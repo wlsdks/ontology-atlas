@@ -102,11 +102,11 @@ function isGenericSegment(segment: string): boolean {
  * at most twice) → split on kebab/snake/camel boundaries → title-case each word,
  * with acronyms fully uppercase.
  *
- *     "src/widgets/ontology-map/ui/topology-world.ts" → "Topology World"
- *     "cli/src/commands/agent-brief.mjs"                 → "Agent Brief"
- *     "src/features/user-auth/index.ts"                  → "User Auth"
- *     ".claude/skills/ontology-sync/SKILL.md"            → "Ontology Sync"
- *     "src/lib/index.ts"                                 → "Src"
+ *     "src/widgets/ontology-map/ui/world/topology-world.ts" → "Topology World"
+ *     "cli/src/commands/agent-brief.mjs"                       → "Agent Brief"
+ *     "src/features/user-auth/index.ts"                        → "User Auth"
+ *     ".claude/skills/ontology-sync/SKILL.md"                  → "Ontology Sync"
+ *     "src/lib/index.ts"                                       → "Src"
  *
  * The last one promotes twice (`lib` is generic too) and then stops, because
  * there is nothing left to promote to.

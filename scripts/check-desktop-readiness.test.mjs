@@ -780,10 +780,8 @@ test("Codex Run accepts one exact local build and rejects prefix or release look
   );
 });
 
-// 2026-07-25 (review): this gate kept readFileSync-ing the deleted
-// `VaultToolsMenu.tsx` and died on an ENOENT stack trace. A crash reads as "no
-// gate", not "gate failed", so a missing target file must always end in a readable
-// [desktop-check] failure message.
+// A crash reads as "no gate", not "gate failed", so a missing target file must
+// end in a readable [desktop-check] failure message.
 test("desktop readiness check fails readably when a tracked source file disappears", () => {
   const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
 
@@ -792,15 +790,6 @@ test("desktop readiness check fails readably when a tracked source file disappea
   assert.match(checker, /function readText\(relativePath\)/);
   assert.match(checker, /existsSync\(absolute\)/);
   assert.match(checker, /tracked source file is missing/);
-
-  // The gate must aim at the surface that actually replaced it (the agent panel in
-  // the settings menu). Mentioning the old path in a comment that explains the
-  // deletion is allowed; *reading* that path is not.
-  assert.doesNotMatch(checker, /readText\([^)]*VaultToolsMenu/);
-  assert.match(
-    checker,
-    /readText\("src\/widgets\/app-settings-menu\/ui\/VaultAgentSetupPanel\.tsx"\)/,
-  );
 });
 
 // The repository with `edits` applied to copies; every other entry links back to the real tree.

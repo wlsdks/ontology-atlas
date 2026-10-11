@@ -5,20 +5,10 @@
  * (flick-release landing projection) and `hysteresis.ts` (click-vs-drag
  * gate, consumed by `interaction/pointer-state-machine.ts`, not here).
  *
- * `docs/design/ontology-map.md` §1.3 mandates reusing
- * `src/widgets/topology-map-canvas/lib/camera.ts`'s pure functions —
- * `fitBounds`/`zoomAt`/`panBy`/`clampScale` — rather than reimplementing
- * fit-to-bounds geometry. This module's job is the *spring/momentum layer on
- * top* of that geometry: `fitBounds` computes a target `{tx, ty, k}`; this
- * module springs the live camera toward that target frame-by-frame.
- *
- * DECISION (lead, 2026-07-18): v2 is self-contained on scale bounds — the
- * approved prototype's `0.24–2.6` (its own `--map-camera-scale-*`
- * tokens) win over `topology-map-canvas/lib/camera.ts`'s `0.25–3`. Reusing the
- * old `clampScale` would silently clamp v2 to the un-approved bounds, and the
- * module contract forbids cross-widget engine imports anyway. Bounds are
- * threaded as explicit parameters; the old widget keeps its own values until
- * P6 deletes it.
+ * Fit geometry lives in `ui/camera/topology-camera-math.ts`; this module springs
+ * the live camera toward the target it computes, frame by frame. Scale bounds
+ * are the prototype's `0.24–2.6` (`--map-camera-scale-*`), passed in as
+ * explicit parameters.
  */
 
 import { stepSpring, type SpringAxisState } from "./spring";

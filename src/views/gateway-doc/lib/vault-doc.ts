@@ -2,7 +2,7 @@ import { resolveStaticVaultSource } from '@/entities/docs-vault';
 import { parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 
 /**
- * The gateway's reading pages render vault markdown verbatim: `docs/GUIDE.md` and
+ * The gateway's reading pages render vault markdown verbatim: the `docs/guide/` chapters and
  * `docs/CHANGELOG.md` are reviewed in the repository, and a screen-only copy would drift.
  */
 

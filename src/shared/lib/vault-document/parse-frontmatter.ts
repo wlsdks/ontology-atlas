@@ -552,11 +552,9 @@ export const WIKI_DIR = 'wiki';
  *
  * `docs/ontology/` is the **nested MCP vault** this project dogfoods, and
  * wikilinks inside it use slugs relative to that vault's root, as MCP tools and
- * people write them (`capabilities/x`, `domains/y` — e.g.
- * `[[capabilities/topology-canvas-render]]` in
- * `docs/ontology/elements/sigma-graphology.md`). In the merged tree the `/docs`
+ * people write them (`capabilities/x`, `domains/y`). In the merged tree the `/docs`
  * page builds, the same document's real slug carries an `ontology/` prefix
- * (`ontology/capabilities/topology-canvas-render`), so without this correction
+ * (`ontology/capabilities/x`), so without this correction
  * the `backlinksDetail` keys disagree and a real backlink is missing from the
  * lookup. Wikilinks in top-level documents outside `ontology/` (such as
  * `[[FEATURES]]` in `docs/CHANGELOG.md`) are already root-relative and are left

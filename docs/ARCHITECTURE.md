@@ -375,7 +375,7 @@ into ontology nodes. The Architecture view may reconstruct a dated observation
 only against its matching profile snapshot. [Contract and boundaries](contracts/analysis-records.md).
 
 History page selection shares a pure bounded filename collector from
-`mcp/src/analysis-history/name-page.mjs`. MCP streams directory entries; the app
+`mcp/src/analysis-history/name-page.mts`. MCP streams directory entries; the app
 uses its file-handle iterator. Both preserve lexical ordering, strict cursors,
 and scanned-file totals before filtering parsed records.
 

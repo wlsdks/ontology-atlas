@@ -58,7 +58,7 @@ import { readArrivalMemory, writeArrivalMemory } from "./route-arrival-memory-st
  * really takes — that fallback is honest and stays.
  *
  * ⚠️ **Key the memory on what the value describes.** The vault identity boundary in
- * `app/providers/AppShell.tsx` exists because a pane once painted one vault's data while
+ * `src/app/providers/AppShell.tsx` exists because a pane once painted one vault's data while
  * another was mounted. Remembering a value under a key that does not name its vault would
  * recreate exactly that defect, so `null` is accepted as "do not remember this" and a
  * changed key re-derives during render rather than in an effect (an effect would cost the

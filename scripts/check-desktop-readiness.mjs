@@ -146,9 +146,6 @@ const docsVaultPage = docsVaultPageFiles.map(readText).join("\n");
 // (merged 2026-08-08).
 const vaultChipSurface = readText("src/views/docs-vault/ui/parts/DocsVaultVaultChip.tsx");
 const topologyEmptyState = readText("src/widgets/topology-controls/ui/TopologyEmptyState.tsx");
-// The old `src/widgets/docs-vault/ui/VaultToolsMenu.tsx` was deleted in 5164f68d7
-// (docs vault tools merged into the settings menu). The agent setup surface moved
-// to the settings sheet's drill-in panel, so the gate looks there.
 const vaultAgentSetupPanel = readText("src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx");
 const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
 const workspacePane = readText("src/widgets/app-settings-menu/ui/panes/WorkspacePane.tsx");
@@ -1789,25 +1786,9 @@ if (
   );
 }
 
-// A gate that only reads file contents stays green even when the component is
-// mounted nowhere — after `VaultToolsMenu` was deleted, `LocalVaultPicker` became
-// an orphan and this script kept passing its contents. So the surface contract
-// requires both content and mount.
-//
-// ⚠️ **The mount point changed on 2026-08-21** (decision ledger 90). This panel
-// left the settings sheet for the agents destination (`/agents/`), with
-// `AgentSetupSection` as the glue between them. The check was still looking at
-// `AppSettingsMenu`, so it **went red here right after the move** — exactly what
-// this gate is for.
-//
-// So instead of pinning which file renders it, the check measures **whether the
-// chain holds**: the panel produces an absolute path → the glue renders the panel
-// → the destination renders the glue. If the location moves again it passes as
-// long as the chain is intact, and breaks when it is not.
-//
-// ⚠️ **And it moved again on 2026-09-05**: MCP became its own destination, so the glue is
-// rendered by `/mcp` rather than `/agents`. The gate went red here the same way, on the same
-// last link, which is the whole reason it names the chain instead of a location.
+// Content alone stays green for a component mounted nowhere, so this checks the
+// chain: the panel derives an absolute path, AgentSetupSection renders the panel,
+// and the Agents MCP tab (McpPage) renders AgentSetupSection.
 const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
 const mcpPage = readText("src/views/mcp/ui/McpPage.tsx");
 

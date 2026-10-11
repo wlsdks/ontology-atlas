@@ -3,14 +3,10 @@
  * `hitTestWorld` (prototype `worldToScreen()`/`screenToWorld()`/`fitTarget()`/
  * `hitTest()`, `docs/prototypes/topology-b2plus.html` §8/§9).
  *
- * Camera convention (`engine/spring.ts`/`engine/momentum.ts` JSDoc — already
- * committed, tested): `camera.x`/`camera.y` are the WORLD point the camera is
- * centered on, `camera.scale` the world-to-screen zoom factor — the
- * prototype's own convention, not `topology-map-canvas/lib/camera.ts`'s
- * `{tx,ty,k}` translate convention (a different parameterization the already-
- * built engine modules don't use). These are this file's local, tiny
- * (prototype-faithful) equivalents of that lib's `fitBounds`/pan math, kept
- * in the convention the engine layer expects.
+ * Camera convention (`engine/spring.ts`/`engine/momentum.ts` JSDoc):
+ * `camera.x`/`camera.y` are the WORLD point the camera is centered on and
+ * `camera.scale` the world-to-screen zoom factor — the prototype's own
+ * convention, which the engine layer expects.
  */
 
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../../engine/camera";

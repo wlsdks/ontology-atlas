@@ -147,14 +147,12 @@ describe('conflict boundary', () => {
         'docs/DECISIONS.md',
         'public/docs-vault/CHANGELOG.md',
         'src/entities/docs-vault/data/content.json',
-        'src/views/download/model/dogfood-census.generated.ts',
       ]),
       {
         ledgers: ['docs/CHANGELOG.md', 'docs/DECISIONS.md'],
         generated: [
           'public/docs-vault/CHANGELOG.md',
           'src/entities/docs-vault/data/content.json',
-          'src/views/download/model/dogfood-census.generated.ts',
         ],
         unsupported: [],
       },
@@ -176,7 +174,6 @@ describe('resolveRepositoryConflicts', () => {
     await mkdir(path.join(root, 'src', 'entities', 'docs-vault', 'data'), {
       recursive: true,
     });
-    await mkdir(path.join(root, 'src', 'views', 'download', 'model'), { recursive: true });
     git('init', '-q', '-b', 'main');
     git('config', 'user.name', 'Atlas Test');
     git('config', 'user.email', 'atlas@example.invalid');
@@ -195,10 +192,6 @@ describe('resolveRepositoryConflicts', () => {
       await writeFile(
         path.join(repoRoot, 'src', 'entities', 'docs-vault', 'data', 'content.json'),
         `${JSON.stringify({ CHANGELOG: changelog, DECISIONS: decisions }, null, 2)}\n`,
-      );
-      await writeFile(
-        path.join(repoRoot, 'src', 'views', 'download', 'model', 'dogfood-census.generated.ts'),
-        `export const decisionSource = ${JSON.stringify(decisions)};\n`,
       );
     };
     const writeSources = async (changelog, decisions) => {
@@ -291,7 +284,6 @@ describe('resolveRepositoryConflicts', () => {
     const cached = git('diff', '--cached', '--name-status');
     assert.match(cached, /D\s+src\/entities\/docs-vault\/data\/content\.json/);
     assert.match(cached, /D\s+public\/docs-vault\/CHANGELOG\.md/);
-    assert.match(cached, /M\s+src\/views\/download\/model\/dogfood-census\.generated\.ts/);
     assert.doesNotMatch(
       git(
         'ls-files',
@@ -301,11 +293,6 @@ describe('resolveRepositoryConflicts', () => {
       ),
       /\S/,
       'materialized Docs Vault outputs must leave the index',
-    );
-    assert.match(
-      git('ls-files', 'src/views/download/model/dogfood-census.generated.ts'),
-      /dogfood-census\.generated\.ts/,
-      'the separately tracked generated exception stays tracked',
     );
   });
 

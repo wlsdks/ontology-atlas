@@ -24,12 +24,12 @@ const checkboxAccentSelectors = [
   {
     selector: 'Literal[value=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
     message:
-      '체크박스 accent 는 --color-indigo-brand 하나다 — 직접 쓰지 말고 Checkbox(shared/ui/checkbox.tsx)를 쓴다. 근거: 2026-08-15 체계석 비준(docs/DECISIONS.md).',
+      'The checkbox accent is the single --color-indigo-brand token; use Checkbox (shared/ui/checkbox.tsx) instead of styling it directly (docs/DECISIONS.md).',
   },
   {
     selector: 'TemplateElement[value.raw=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
     message:
-      '체크박스 accent 는 --color-indigo-brand 하나다 (template literal) — Checkbox 프리미티브를 쓴다.',
+      'The checkbox accent is the single --color-indigo-brand token (template literal); use the Checkbox primitive.',
   },
 ];
 
@@ -148,12 +148,12 @@ const inlineShadowSelectors = [
   {
     selector: `Property[key.name="boxShadow"] > Literal[value=/${SHADOW_INLINE_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 (인라인 style) — 그림자의 **기하**도 토큰이 정한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. 인라인 스타일은 클래스 셀렉터에 안 걸리므로 여기서 막는다.',
+      'Off the elevation ladder (inline style): the token also owns shadow geometry. Use --shadow-elevation-1/2/3 (coach-mark < popover < dialog), -dock-bottom/-dock-side for edge docking, --shadow-control-press for pressed controls. Class selectors cannot see inline styles, so this rule catches them.',
   },
   {
     selector: `Property[key.name="boxShadow"] TemplateElement[value.raw=/${SHADOW_INLINE_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 (인라인 style, template literal) — --shadow-elevation-* / -dock-* / --shadow-control-press 를 참조한다.',
+      'Off the elevation ladder (inline style, template literal): reference --shadow-elevation-*, -dock-* or --shadow-control-press.',
   },
 ];
 
@@ -195,24 +195,24 @@ const inlineSizeSelectors = [
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] > Literal:not([raw=/var\\(/])',
     message:
-      '인라인 style 의 크기·반경 하드코딩 금지 — 클래스가 안 생겨 램프 룰이 못 보는 층이다. 크기는 타입 램프 유틸리티(클래스)로, 반경은 radius 램프로, CSS 변수가 닿지 않는 표면(Satori·canvas)만 eslint-disable + 사유.',
+      'No hard-coded size or radius in an inline style: it creates no class, so the ramp rules cannot see it. Use a type-ramp utility class for size and the radius ramp for radius; only surfaces CSS variables cannot reach (Satori, canvas) get eslint-disable with a reason.',
   },
   {
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] ConditionalExpression > Literal:not([raw=/var\\(/])',
     message:
-      '인라인 style 의 크기·반경 하드코딩 금지 (삼항 가지) — 조건이 갈려도 두 가지 모두 램프를 탄다.',
+      'No hard-coded size or radius in an inline style (ternary branch): both branches must follow the ramp.',
   },
   {
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(fontSize|borderRadius)$/] > TemplateLiteral:not(:has(TemplateElement[value.raw=/var\\(/]))',
     message:
-      '인라인 style 의 크기·반경 하드코딩 금지 (template literal) — 토큰을 var() 로 참조하지 않는 조립 문자열은 램프 밖이다.',
+      'No hard-coded size or radius in an inline style (template literal): an assembled string that does not reference a token via var() sits outside the ramp.',
   },
   {
     selector: 'JSXAttribute[name.name="style"] Property[key.name="fontSize"] > Literal[value=/var\\(--text-/]',
     message:
-      '타입 램프 토큰을 인라인 fontSize 로 우회 참조 금지 — 크기만 얻고 그 단이 싣는 행간 짝을 잃는다. 램프 유틸리티(클래스)를 쓴다. 램프 밖 표면 전용 크기 토큰은 이 룰에 걸리지 않는다.',
+      'Do not reference a type-ramp token through inline fontSize: you get the size but lose the line-height pair of that step. Use a ramp utility class. Size tokens for surfaces outside the ramp are not flagged.',
   },
 ];
 
@@ -245,13 +245,13 @@ const cursorAffordanceSelectors = [
     selector:
       'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] Literal[value=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
     message:
-      'button/summary 의 pointer 커서는 app/globals.css 의 base 규칙이 이미 정한다 — 여기 다시 적으면 중복이고, 중복이 쌓이면 다음 사람이 «여기만 특별한가» 를 매번 다시 판단한다. 지워라. 중앙 규칙이 안 닿는 원소(li[role=option] · label · 클릭되는 카드 등)에서는 정당하다.',
+      'The pointer cursor on button/summary is already set by the base rule in app/globals.css; repeating it is duplication that forces readers to ask whether this spot is special. Delete it. It is justified only on elements the central rule does not reach (li[role=option], label, clickable cards, etc.).',
   },
   {
     selector:
       'JSXOpeningElement[name.name=/^(button|summary)$/] JSXAttribute[name.name="className"] TemplateElement[value.raw=/(^|[^-\\w])(enabled:)?cursor-pointer([^-\\w]|$)/]',
     message:
-      'button/summary 의 pointer 커서는 base 규칙이 정한다 (template literal). 중복을 지워라.',
+      'The pointer cursor on button/summary is set by the base rule (template literal). Delete the duplicate.',
   },
 ];
 
@@ -278,13 +278,13 @@ const disabledAffordanceSelectors = [
     selector:
       'Literal[value=/(^|[^-\\w])((aria-|group-|peer-)?disabled):opacity-(?!55([^0-9]|$))/]',
     message:
-      '비활성 흐림 값은 값 층이 정한다 — disabled:opacity-55 (control-class.ts CONTROL_DISABLED_CLASS). controlClass/fieldClass 기반이면 base 가 이미 실으니 이 클래스를 지우고, 손 컨트롤이면 CONTROL_DISABLED_CLASS 를 조합하라. 근거: tests/contract/disabled-affordance.contract.test.ts',
+      'The disabled opacity is owned by the value layer: disabled:opacity-55 (CONTROL_DISABLED_CLASS in control-class.ts). Remove this class if the element builds on controlClass/fieldClass, which already applies it; for a hand-built control, compose CONTROL_DISABLED_CLASS. See tests/contract/disabled-affordance.contract.test.ts',
   },
   {
     selector:
       'TemplateElement[value.raw=/(^|[^-\\w])((aria-|group-|peer-)?disabled):opacity-(?!55([^0-9]|$))/]',
     message:
-      '비활성 흐림 값은 값 층이 정한다 (template literal) — disabled:opacity-55 하나. 손 컨트롤은 CONTROL_DISABLED_CLASS 를 조합하라.',
+      'The disabled opacity is owned by the value layer (template literal): disabled:opacity-55 only. Hand-built controls compose CONTROL_DISABLED_CLASS.',
   },
 ];
 
@@ -325,31 +325,31 @@ const typographyAxisSelectors = [
     selector:
       "Literal[value=/(^|\\s|:)leading-(relaxed|snug|none|tight|loose|[3-9]|10)(\\s|$)/]",
     message:
-      '행간도 램프다. 이름 붙은 Tailwind 행간 스텝 금지 — --leading-caption/label/body/body-lg/title/display/hero 짝과 --leading-display-tight/prose 를 쓴다. 크기 스텝이 자기 행간을 함께 싣는 자리라면 행간 클래스 자체가 필요 없다.',
+      'Line height is a ramp too. No named Tailwind leading steps; use the --leading-caption/label/body/body-lg/title/display/hero pairs and --leading-display-tight/prose. Where a size step already carries its own line height, no leading class is needed.',
   },
   {
     selector:
       "TemplateElement[value.raw=/(^|\\s|:)leading-(relaxed|snug|none|tight|loose|[3-9]|10)(\\s|$)/]",
     message:
-      '행간도 램프다. 이름 붙은 Tailwind 행간 스텝 금지 (template literal). --leading-* 램프가 만드는 유틸리티로.',
+      'Line height is a ramp too. No named Tailwind leading steps (template literal); use utilities from the --leading-* ramp.',
   },
   {
     selector: 'Literal[value=/tracking-\\[-?[0-9.]+(em|px|rem)\\]/]',
     message:
-      '자간도 램프다. 대문자 마이크로 라벨은 --tracking-caps-08/10/12/14/16, 본문 짝은 --tracking-caption/label/body/body-lg/title, 큰 제목은 --tracking-display/hero/section/card 를 쓴다. 램프 밖 값이 필요하면 스텝을 등재하는 PR 을 먼저 낸다.',
+      'Letter spacing is a ramp too. Use --tracking-caps-08/10/12/14/16 for uppercase micro labels, --tracking-caption/label/body/body-lg/title for body pairs, --tracking-display/hero/section/card for large headings. For a value outside the ramp, open a PR that registers the step first.',
   },
   {
     selector: 'TemplateElement[value.raw=/tracking-\\[-?[0-9.]+(em|px|rem)\\]/]',
-    message: '자간도 램프다 (template literal). --tracking-* 토큰을 쓴다.',
+    message: 'Letter spacing is a ramp too (template literal). Use --tracking-* tokens.',
   },
   {
     selector: 'Literal[value=/font-\\[[0-9]+\\]/]',
     message:
-      '글자 무게도 램프다. --font-weight-signature(510) · -emphasis(560) · -strong(650) 셋뿐이다. 숫자를 직접 적으면 그 의도가 이름 없이 산다.',
+      'Font weight is a ramp too: only --font-weight-signature(510), -emphasis(560) and -strong(650). A raw number leaves its intent unnamed.',
   },
   {
     selector: 'TemplateElement[value.raw=/font-\\[[0-9]+\\]/]',
-    message: '글자 무게도 램프다 (template literal). --font-weight-* 를 쓴다.',
+    message: 'Font weight is a ramp too (template literal). Use --font-weight-*.',
   },
   /*
    * ## Named weight steps — the other half of what was only blocking brackets (2026-08-05)
@@ -370,24 +370,24 @@ const typographyAxisSelectors = [
     selector:
       'Literal[value=/(^|[^-\\w])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)([^-\\w]|$)/]',
     message:
-      '이름 있는 Tailwind 무게 스텝 금지 — 램프는 --font-weight-signature(510) · -emphasis(560) · -strong(650) 셋뿐이다. 제목 역할(h1~h6 · <b>/<strong> · 다이얼로그 제목 · display 이상 크기)은 strong, 그 밖의 인라인 강조는 emphasis 를 쓴다. 강조를 끄는 자리는 font-normal 이 맞다.',
+      'No named Tailwind weight steps; the ramp is only --font-weight-signature(510), -emphasis(560) and -strong(650). Use strong for heading roles (h1~h6, <b>/<strong>, dialog titles, display size and above) and emphasis for other inline emphasis. To drop emphasis, use font-normal.',
   },
   {
     selector:
       'TemplateElement[value.raw=/(^|[^-\\w])font-(thin|extralight|light|medium|semibold|bold|extrabold|black)([^-\\w]|$)/]',
     message:
-      '이름 있는 Tailwind 무게 스텝 금지 (template literal). --font-weight-signature/-emphasis/-strong 을 쓴다.',
+      'No named Tailwind weight steps (template literal). Use --font-weight-signature/-emphasis/-strong.',
   },
   {
     selector:
       'Literal[value=/(^|[^-\\w])(?:text|bg|border|ring|fill|stroke|from|to|via)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\\d{2,3})?(?:\\/\\d+)?([^-\\w]|$)/]',
     message:
-      'Tailwind 기본 팔레트 금지 — 헌장은 무채색 + 인디고 하나다. --color-* 토큰을 쓴다. ⚠️ 값이 아니라 **자리**가 토큰을 정한다: 인디고 면 위 흰 글자는 --color-text-primary 가 아니라 --color-text-on-accent 다(전자는 4.42:1 로 AA 미달).',
+      'No Tailwind default palette: the charter is neutral plus a single indigo. Use --color-* tokens. Warning: the token follows the role, not the value. White text on an indigo surface is --color-text-on-accent, not --color-text-primary (which is 4.42:1, below AA).',
   },
   {
     selector:
       'TemplateElement[value.raw=/(^|[^-\\w])(?:text|bg|border|ring|fill|stroke|from|to|via)-(?:white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)(?:-\\d{2,3})?(?:\\/\\d+)?([^-\\w]|$)/]',
-    message: 'Tailwind 기본 팔레트 금지 (template literal). --color-* 토큰을 쓴다.',
+    message: 'No Tailwind default palette (template literal). Use --color-* tokens.',
   },
 ];
 
@@ -426,17 +426,17 @@ const typographyAxisSelectors = [
  */
 const OFF_LADDER_NAMED_Z = '(?:[2-9][1-9]|[6-9]0|[1-9][0-9]{2,})';
 const NAMED_Z_MESSAGE =
-  '층위 20 이상은 앱 전역 계약이다 — 이름 있는 z-N 도 Tailwind v4 에서는 임의값과 같다(z-70 은 실제로 70 을 낸다). 20/30/40/50 은 sticky·map-hint·map-popover·overlay-chrome 의 이름이라 그대로 쓰고, 그 밖의 값은 --z-* 사다리를 쓴다(map-scrim < dialog < tour < tour-card < tooltip < skip-link). 한 표면 안에서만 유효한 지역 쌓임은 20 미만으로 쓴다.';
+  'Layers 20 and above are an app-wide contract. A named z-N is the same as an arbitrary value in Tailwind v4 (z-70 really emits 70). 20/30/40/50 are the names of sticky, map-hint, map-popover and overlay-chrome, so use them as-is; for any other value use the --z-* ladder (map-scrim < dialog < tour < tour-card < tooltip < skip-link). Stacking local to one surface stays below 20.';
 
 const layerSelectors = [
   {
     selector: 'Literal[value=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
     message:
-      '층위 20 이상은 앱 전역 계약이다 — 숫자를 직접 적지 말고 --z-* 사다리를 쓴다(surface-sticky < map-hint < map-scrim < map-popover < overlay-chrome < dialog-scrim < dialog < tour < tour-card < tooltip < skip-link). 한 표면 안에서만 유효한 지역 쌓임은 20 미만으로 쓴다.',
+      'Layers 20 and above are an app-wide contract: do not write the number, use the --z-* ladder (surface-sticky < map-hint < map-scrim < map-popover < overlay-chrome < dialog-scrim < dialog < tour < tour-card < tooltip < skip-link). Stacking local to one surface stays below 20.',
   },
   {
     selector: 'TemplateElement[value.raw=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
-    message: '층위 20 이상은 --z-* 사다리를 쓴다 (template literal).',
+    message: 'Layers 20 and above use the --z-* ladder (template literal).',
   },
   {
     selector: `Literal[value=/(^|[^-\\w])z-${OFF_LADDER_NAMED_Z}([^-\\w]|$)/]`,
@@ -459,13 +459,13 @@ const accentTintPairingSelectors = [
     selector:
       'CallExpression[callee.name="controlClass"] ObjectExpression:has(:matches(Property[key.name="tone"] > Literal[value="accent"], Property[key.name="tone"] ConditionalExpression > Literal[value="accent"])):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      '인디고/앰버 틴트 채움 위 잉크는 tone accent(#7170ff, 합성 대비 3.5~4.4:1 — AA 미달)가 아니라 accentOnTint 다. 삼항식 가지도 같다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+      'Ink on an indigo/amber tint fill is accentOnTint, not the tone accent (#7170ff, composite contrast 3.5~4.4:1, below AA). Ternary branches are covered too. See tests/contract/accent-ink-contrast.contract.test.ts',
   },
   {
     selector:
       'JSXOpeningElement:has(:matches(JSXAttribute[name.name="tone"] > Literal[value="accent"], JSXAttribute[name.name="tone"] JSXExpressionContainer ConditionalExpression > Literal[value="accent"])):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      '인디고/앰버 틴트 채움 위 잉크는 tone="accent"(#7170ff, AA 미달)가 아니라 tone="accentOnTint" 다. 삼항식 가지(tone={cond ? "accent" : …})도 같다. 근거: tests/contract/accent-ink-contrast.contract.test.ts',
+      'Ink on an indigo/amber tint fill is tone="accentOnTint", not tone="accent" (#7170ff, below AA). Ternary branches (tone={cond ? "accent" : …}) are covered too. See tests/contract/accent-ink-contrast.contract.test.ts',
   },
 ];
 
@@ -496,34 +496,34 @@ export const colorLiteralSelectors = [
   {
     selector: 'Literal[value=/(?:^|[^\\w-])(?:rgba?|hsla?)\\(\\s*\\d/]',
     message:
-      '디자인 헌장 — rgb()/rgba()/hsl() 리터럴 금지. --color-* 토큰을 var() 로 참조한다. 캔버스·Satori·독립 HTML 처럼 CSS 변수가 닿지 않는 표면만 eslint-disable + 사유.',
+      'Design charter: no rgb()/rgba()/hsl() literals. Reference --color-* tokens via var(). Only surfaces CSS variables cannot reach (canvas, Satori, standalone HTML) get eslint-disable with a reason.',
   },
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^\\w-])(?:rgba?|hsla?)\\(\\s*\\d/]',
     message:
-      '디자인 헌장 — rgb()/rgba()/hsl() 리터럴 금지 (template literal). --color-* 토큰을 var() 로.',
+      'Design charter: no rgb()/rgba()/hsl() literals (template literal). Reference --color-* tokens via var().',
   },
   {
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(?:color|backgroundColor|background|borderColor|outlineColor|fill|stroke|caretColor|accentColor)$/] > Literal[value=/#[0-9a-fA-F]{3,8}/]',
     message:
-      '디자인 헌장 — 인라인 style 의 색 hex 금지. 클래스가 안 생겨 대괄호 hex 게이트가 못 보는 층이다. --color-* 토큰을 var() 로.',
+      'Design charter: no hex colors in an inline style; it creates no class, so the bracket-hex gate cannot see it. Reference --color-* tokens via var().',
   },
   {
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(?:maskImage|WebkitMaskImage)$/] > Literal[value=/#[0-9a-fA-F]{3,8}|rgba?\\(\\s*\\d/]',
     message:
-      '마스크 스텐실의 색 리터럴 금지 — 알파만 뜻하더라도 게이트가 못 보는 자리다. `black`/`transparent` 키워드 또는 --color-* 토큰을 var() 로.',
+      'No color literals in a mask stencil, even when only alpha matters; the gate cannot see them. Use the `black`/`transparent` keyword or a --color-* token via var().',
   },
   {
     selector: 'Literal[value=/(?:^|[^-\\w])ease-(?:in|out|in-out|linear)(?![-\\w\\[])/]',
     message:
-      '모션 곡선 하드코딩 금지 — Tailwind 기본 곡선 대신 ease 유틸리티 안에서 --motion-ease / --motion-ease-exit / --topology-motion-ease-out 을 var() 로 참조한다.',
+      'No hard-coded motion curves: instead of Tailwind default curves, reference --motion-ease / --motion-ease-exit / --topology-motion-ease-out via var() inside the ease utility.',
   },
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])ease-(?:in|out|in-out|linear)(?![-\\w\\[])/]',
     message:
-      '모션 곡선 하드코딩 금지 (template literal) — --motion-ease* 토큰을 var() 로.',
+      'No hard-coded motion curves (template literal): reference --motion-ease* tokens via var().',
   },
 ];
 
@@ -554,12 +554,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 타입 스텝 금지(램프 우회). text-caption/label/body/body-lg/title/display/hero 로.',
+      'Geometry Codex: no Tailwind default type steps (they bypass the ramp). Use text-caption/label/body/body-lg/title/display/hero.',
   },
   {
     selector: 'TemplateElement[value.raw=/(^|[^-\\w])text-(xs|sm)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 타입 스텝 금지 (template literal). text-* 램프로.',
+      'Geometry Codex: no Tailwind default type steps (template literal). Use the text-* ramp.',
   },
   /*
    * 2026-08-04 — Included directional suffix forms (`rounded-t-*` etc.) in the scope. Previously
@@ -570,13 +570,13 @@ export const arbitrarySizeSelectors = [
     selector:
       'Literal[value=/(^|[^-\\w])rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 radius 스텝 금지(램프 우회). rounded-micro/chip/card/panel/sheet 로.',
+      'Geometry Codex: no Tailwind default radius steps (they bypass the ramp). Use rounded-micro/chip/card/panel/sheet.',
   },
   {
     selector:
       'TemplateElement[value.raw=/(^|[^-\\w])rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?(sm|md|lg|xl)([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 기본 radius 스텝 금지 (template literal). rounded-* 램프로.',
+      'Geometry Codex: no Tailwind default radius steps (template literal). Use the rounded-* ramp.',
   },
   /*
    * Un-suffixed `rounded`(4px) — an alias kept alive by Tailwind v4, so it doesn't
@@ -602,33 +602,33 @@ export const arbitrarySizeSelectors = [
     selector:
       'Literal[value=/(^|[^-\\w])(rounded-(xs|2xl|3xl)|text-(base|lg|xl|2xl|3xl|4xl))([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 이름 스텝 금지(램프 우회). 반경은 rounded-micro/chip/card/panel/sheet, 크기는 text-caption/label/body/body-lg/title/display/hero 로.',
+      'Geometry Codex: no Tailwind named steps (they bypass the ramp). Use rounded-micro/chip/card/panel/sheet for radius and text-caption/label/body/body-lg/title/display/hero for size.',
   },
   {
     selector:
       'TemplateElement[value.raw=/(^|[^-\\w])(rounded-(xs|2xl|3xl)|text-(base|lg|xl|2xl|3xl|4xl))([^-\\w]|$)/]',
     message:
-      'Geometry Codex — Tailwind 이름 스텝 금지 (template literal). 램프 토큰으로.',
+      'Geometry Codex: no Tailwind named steps (template literal). Use ramp tokens.',
   },
   {
     selector: 'Literal[value=/(^|[^-\\w])rounded([^-\\w]|$)/]',
     message:
-      'Geometry Codex — 무접미 rounded(4px) 금지(램프 우회). 같은 4px 은 rounded-micro 다.',
+      'Geometry Codex: no bare rounded (4px; it bypasses the ramp). The same 4px is rounded-micro.',
   },
   {
     selector: 'TemplateElement[value.raw=/(^|[^-\\w])rounded([^-\\w]|$)/]',
     message:
-      'Geometry Codex — 무접미 rounded(4px) 금지 (template literal). rounded-micro 로.',
+      'Geometry Codex: no bare rounded (4px) (template literal). Use rounded-micro.',
   },
   {
     selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
     message:
-      'Geometry Codex — text-[Npx] 하드코딩 금지. text-caption/label/body/body-lg/title/display/hero 램프로. 램프 밖이면 eslint-disable + 사유.',
+      'Geometry Codex: no hard-coded text-[Npx]. Use the text-caption/label/body/body-lg/title/display/hero ramp, or eslint-disable with a reason if outside the ramp.',
   },
   {
     selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+px\\]/]',
     message:
-      'Geometry Codex — text-[Npx] 하드코딩 금지 (template literal). text-* 램프로.',
+      'Geometry Codex: no hard-coded text-[Npx] (template literal). Use the text-* ramp.',
   },
   // The ramp moved to `rem` on 2026-09-12 so that a browser's text-only zoom reaches it
   // (`app/globals.css`, "The ramp is written in `rem`"). The two selectors above only know the
@@ -637,12 +637,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/text-\\[[0-9.]+rem\\]/]',
     message:
-      'Geometry Codex — text-[Nrem] 하드코딩 금지. text-caption/label/body/body-lg/title/display/hero 램프로. 램프 밖이면 eslint-disable + 사유.',
+      'Geometry Codex: no hard-coded text-[Nrem]. Use the text-caption/label/body/body-lg/title/display/hero ramp, or eslint-disable with a reason if outside the ramp.',
   },
   {
     selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+rem\\]/]',
     message:
-      'Geometry Codex — text-[Nrem] 하드코딩 금지 (template literal). text-* 램프로.',
+      'Geometry Codex: no hard-coded text-[Nrem] (template literal). Use the text-* ramp.',
   },
   // The two spellings the four selectors above still cannot see: the explicit `length:` data
   // type, and `em`. `em` is the worse of the two — it resolves against the *parent's* size, so
@@ -650,34 +650,34 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/text-\\[length:[0-9.]+(px|rem|em)\\]/]',
     message:
-      'Geometry Codex — text-[length:N단위] 하드코딩 금지. text-* 램프로. 램프 밖이면 eslint-disable + 사유.',
+      'Geometry Codex: no hard-coded text-[length:N<unit>]. Use the text-* ramp, or eslint-disable with a reason if outside the ramp.',
   },
   {
     selector: 'TemplateElement[value.raw=/text-\\[length:[0-9.]+(px|rem|em)\\]/]',
     message:
-      'Geometry Codex — text-[length:N단위] 하드코딩 금지 (template literal). text-* 램프로.',
+      'Geometry Codex: no hard-coded text-[length:N<unit>] (template literal). Use the text-* ramp.',
   },
   {
     selector: 'Literal[value=/text-\\[[0-9.]+em\\]/]',
     message:
-      'Geometry Codex — text-[Nem] 금지. em 은 부모 크기에 상대적이라 픽셀도 루트도 따르지 않는다. text-* 램프로.',
+      'Geometry Codex: no text-[Nem]. em is relative to the parent size, so it follows neither pixels nor the root. Use the text-* ramp.',
   },
   {
     selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+em\\]/]',
     message:
-      'Geometry Codex — text-[Nem] 금지 (template literal). text-* 램프로.',
+      'Geometry Codex: no text-[Nem] (template literal). Use the text-* ramp.',
   },
   {
     selector:
       'Literal[value=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',
     message:
-      'Geometry Codex — rounded-[Npx] 하드코딩 금지(방향 접미 포함). rounded-chip/card/panel/sheet 램프로. 램프 밖이면 eslint-disable + 사유.',
+      'Geometry Codex: no hard-coded rounded-[Npx] (directional suffixes included). Use the rounded-chip/card/panel/sheet ramp, or eslint-disable with a reason if outside the ramp.',
   },
   {
     selector:
       'TemplateElement[value.raw=/rounded-((t|b|l|r|s|e|tl|tr|bl|br|ss|se|es|ee)-)?\\[[0-9.]+px\\]/]',
     message:
-      'Geometry Codex — rounded-[Npx] 하드코딩 금지 (template literal). rounded-* 램프로.',
+      'Geometry Codex: no hard-coded rounded-[Npx] (template literal). Use the rounded-* ramp.',
   },
   // 2026-07-26 — Hole revealed by owner question ("box shape or corner or border spec ... **also in code**"). `text`/`rounded` were caught, but **shadows had no rule** — even though `design.md` defined the `--shadow-elevation-1/2/3` ladder, 5 hardcoded rgba shadows remained alive (replacement complete).
   //
@@ -697,12 +697,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: `Literal[value=/${SHADOW_CLASS_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 — 그림자의 **기하**도 토큰이 정하고, 판정은 **레이어 하나하나**에 대해 한다. --shadow-elevation-1/2/3 (coach-mark < popover < dialog), 가장자리 도킹은 -dock-bottom/-dock-side, 눌린 컨트롤은 --shadow-control-press. inset 헤어라인은 재질이라 허용되지만, 그 옆 레이어까지 면제해 주지는 않는다 — 정상 레이어 한 겹이 손으로 쓴 고도 그림자를 세탁하던 것이 2026-08-06 에 막힌 구멍이다.',
+      'Off the elevation ladder: the token also owns shadow geometry, and the check applies to every layer individually. Use --shadow-elevation-1/2/3 (coach-mark < popover < dialog), -dock-bottom/-dock-side for edge docking, --shadow-control-press for pressed controls. An inset hairline is material and allowed, but it does not exempt the layers beside it: a single valid layer once laundered a hand-written elevation shadow (closed 2026-08-06).',
   },
   {
     selector: `TemplateElement[value.raw=/${SHADOW_CLASS_LAYER_VIOLATION}/]`,
     message:
-      '고도 사다리 이탈 (template literal) — 레이어마다 판정한다. --shadow-elevation-* / -dock-* / --shadow-control-press 를 쓴다.',
+      'Off the elevation ladder (template literal): checked per layer. Use --shadow-elevation-* / -dock-* / --shadow-control-press.',
   },
   // 2026-07-26 hex — **a preventive gate with 0 current violations.** Full sweep measurement showed no src/app had hex embedded in
   // Tailwind arbitrary values, and the remaining 127 hex instances were all justified exceptions: test fixtures 83 · PR number comments 16 ·
@@ -716,12 +716,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
     message:
-      '디자인 헌장 — Tailwind arbitrary value 안 hex 금지. --color-* 토큰을 var() 로 참조한다. CSS 변수가 닿지 않는 표면(Canvas·next/og·standalone HTML)은 eslint-disable + 사유.',
+      'Design charter: no hex inside a Tailwind arbitrary value. Reference --color-* tokens via var(). Surfaces CSS variables cannot reach (Canvas, next/og, standalone HTML) get eslint-disable with a reason.',
   },
   {
     selector: 'TemplateElement[value.raw=/-\\[(?:color:)?#[0-9a-fA-F]{3,8}/]',
     message:
-      '디자인 헌장 — Tailwind arbitrary value 안 hex 금지 (template literal). --color-* 토큰을 var() 로.',
+      'Design charter: no hex inside a Tailwind arbitrary value (template literal). Reference --color-* tokens via var().',
   },
   // 2026-07-27 motion duration — **the same failure mode** as the shadow ladder. Defined the ramp
   // (--motion-fast/base/settle) but had no rule, so while only one component referenced it, 30 literals lived beside it.
@@ -744,18 +744,18 @@ export const arbitrarySizeSelectors = [
     selector:
       'Literal[value=/(?:hover|focus-within|focus-visible):[^"]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^"]*(?:hover|focus-within|focus-visible):/]',
     message:
-      '모션 예산 — 호버/포커스로 트리거되는 고빈도 표면에 이동(base)/확정(settle) 예산을 쓰지 않는다. fast 램프 토큰으로 강등하거나, 고빈도가 아니라는 근거를 eslint-disable 주석에 남긴다.',
+      'Motion budget: do not spend the move (base) or settle budget on high-frequency surfaces triggered by hover/focus. Demote to a fast ramp token, or record in the eslint-disable comment why the surface is not high-frequency.',
   },
   {
     selector:
       'TemplateElement[value.raw=/(?:hover|focus-within|focus-visible):[^`]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^`]*(?:hover|focus-within|focus-visible):/]',
     message:
-      '모션 예산 — 호버/포커스 고빈도 표면에 이동/확정 예산 금지 (template literal). fast 램프로 강등한다.',
+      'Motion budget: no move/settle budget on high-frequency hover/focus surfaces (template literal). Demote to the fast ramp.',
   },
   {
     selector: 'Literal[value=/(?:^|[^-\\w])duration-\\d/]',
     message:
-      '모션 duration 하드코딩 금지. 기본(--motion-fast, 확인)이면 duration 클래스를 생략하고, 표면 이동은 --motion-base, 확정은 --motion-settle 을 duration 유틸리티 안에서 var() 로 참조한다.',
+      'No hard-coded motion duration. For the default (--motion-fast) omit the duration class; reference --motion-base for surface moves and --motion-settle for confirmations via var() inside the duration utility.',
   },
   // 2026-07-28 — **scope hole** of the duration rule. The selector above only sees duration utilities, but surfaces using keyframes load duration inside animation shorthand syntax:
   // ms embedded there didn't hit any gate. Full sweep measurement showed 3 instances alive (150/180/220ms), and 220 was a value not even in the ramp. Replaced the 3 first
@@ -766,12 +766,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
     message:
-      '모션 duration 하드코딩 금지 — 애니메이션 단축 문법 안의 시간도 램프를 탄다. --motion-fast/base/settle 와 --motion-ease 를 var() 로 참조한다.',
+      'No hard-coded motion duration: times inside the animation shorthand follow the ramp too. Reference --motion-fast/base/settle and --motion-ease via var().',
   },
   {
     selector: 'TemplateElement[value.raw=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
     message:
-      '모션 duration 하드코딩 금지 — 애니메이션 단축 문법 안의 시간 (template literal). --motion-* 토큰을 var() 로.',
+      'No hard-coded motion duration inside the animation shorthand (template literal). Reference --motion-* tokens via var().',
   },
   // 2026-07-28 duration's **bracket form** — the `duration-<number>` rule only sees utility number suffixes. `duration-[180ms]` is outside that regex since it's in brackets,
   // and doesn't hit the ramp bypass rule (referencing ramp tokens as arbitrary length). Measured 1 instance (document sidebar width transition) replaced and enabled — 0 violations, total unchanged.
@@ -779,12 +779,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/duration-\\[[0-9.]+m?s\\]/]',
     message:
-      '모션 duration 하드코딩 금지 — 대괄호 안의 시간도 램프를 탄다. --motion-fast/base/settle 을 var() 로 참조한다.',
+      'No hard-coded motion duration: times inside brackets follow the ramp too. Reference --motion-fast/base/settle via var().',
   },
   {
     selector: 'TemplateElement[value.raw=/duration-\\[[0-9.]+m?s\\]/]',
     message:
-      '모션 duration 하드코딩 금지 — 대괄호 안의 시간 (template literal). --motion-* 토큰을 var() 로.',
+      'No hard-coded motion duration inside brackets (template literal). Reference --motion-* tokens via var().',
   },
   // 2026-07-28 Tailwind **named shadows** — defined the high ladder (`--shadow-elevation-1/2/3`)
   // but the rule only saw arbitrary values, so framework defaults like `shadow-2xl` lived outside the ladder. Full sweep measured 6 instances all in sheet/dialog (= dialog tier), replaceable in one PR, and 0 violations · total unchanged after replacement.
@@ -793,17 +793,17 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/(?:^|[^-\\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\\w])/]',
     message:
-      '고도 사다리 이탈 — Tailwind 기본 그림자 대신 --shadow-elevation-1/2/3 (coach-mark < popover < dialog) 을 shadow 유틸리티 안에서 var() 로 참조한다.',
+      'Off the elevation ladder: instead of Tailwind default shadows, reference --shadow-elevation-1/2/3 (coach-mark < popover < dialog) via var() inside the shadow utility.',
   },
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])shadow-(?:2xs|xs|sm|md|lg|xl|2xl)(?![-\\w])/]',
     message:
-      '고도 사다리 이탈 (template literal) — --shadow-elevation-* 토큰을 var() 로 참조한다.',
+      'Off the elevation ladder (template literal): reference --shadow-elevation-* tokens via var().',
   },
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])duration-\\d/]',
     message:
-      '모션 duration 하드코딩 금지 (template literal). --motion-fast/base/settle 토큰으로.',
+      'No hard-coded motion duration (template literal). Use --motion-fast/base/settle tokens.',
   },
   // 2026-07-27 line-height — letter size had specs, but line spacing didn't. Full sweep
   // measurement showed arbitrary 19 types split into 4 clusters, and value differences **within** clusters (1.5·1.55·1.6·1.65 in the same panel) were all drift.
@@ -815,12 +815,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/leading-\\[[0-9.]+\\]/]',
     message:
-      '행간 하드코딩 금지. --leading-caption 부터 --leading-prose 까지 9단 램프가 만드는 유틸리티로 쓴다 (크기 스텝과 1:1 짝). 램프 밖이면 eslint-disable + 사유.',
+      'No hard-coded line height. Use utilities from the nine-step ramp from --leading-caption to --leading-prose (paired 1:1 with the size steps), or eslint-disable with a reason if outside the ramp.',
   },
   {
     selector: 'TemplateElement[value.raw=/leading-\\[[0-9.]+\\]/]',
     message:
-      '행간 하드코딩 금지 (template literal). --leading-* 램프 토큰이 만드는 유틸리티로.',
+      'No hard-coded line height (template literal). Use utilities from the --leading-* ramp tokens.',
   },
   // 2026-07-27 ramp bypass — a new failure mode after line-height companion combination (B2).
   // As size steps started carrying line-height together, **bypassing ramp tokens as arbitrary length**
@@ -837,12 +837,12 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/text-\\[length:var\\(--text-/]',
     message:
-      '타입 램프 토큰을 arbitrary length 로 우회 참조 금지. 램프 유틸리티(text-<스텝>)를 직접 쓴다 — 우회하면 크기만 얻고 그 단이 싣는 행간 짝을 잃는다. 램프 밖 크기 토큰(레일·크롬 전용)은 이 룰에 걸리지 않는다.',
+      'Do not reference a type-ramp token through an arbitrary length. Use the ramp utility (text-<step>) directly; the bypass gives the size but loses the line-height pair of that step. Size tokens outside the ramp (rail/chrome only) are not flagged.',
   },
   {
     selector: 'TemplateElement[value.raw=/text-\\[length:var\\(--text-/]',
     message:
-      '타입 램프 토큰을 arbitrary length 로 우회 참조 금지 (template literal). 램프 유틸리티를 직접 쓴다.',
+      'Do not reference a type-ramp token through an arbitrary length (template literal). Use the ramp utility directly.',
   },
   // framer-motion literals (2026-07-28 design council "system").
 //
@@ -854,13 +854,13 @@ export const arbitrarySizeSelectors = [
     selector:
       'JSXAttribute[name.name="transition"] ObjectExpression > Property[key.name="duration"] > Literal',
     message:
-      'framer transition duration 리터럴 금지 — `@/shared/motion` 의 램프 거울(MOTION.fast/base/settle)을 import 한다. 램프 밖 값이 필요하면 먼저 CSS 램프에 등재하고 거울 계약 테스트를 넓힌다.',
+      'No literal framer transition duration. Import the ramp mirror from `@/shared/motion` (MOTION.fast/base/settle). For a value outside the ramp, register it in the CSS ramp first and widen the mirror contract test.',
   },
   {
     selector:
       'JSXAttribute[name.name="transition"] ObjectExpression > Property[key.name="ease"] > :matches(ArrayExpression, Literal)',
     message:
-      'framer transition ease 리터럴 금지 — `MOTION_EASE`(= --motion-ease 의 값 복사)를 쓴다. 램프 duration 을 받는 원소는 이징도 같은 패밀리로 간다.',
+      'No literal framer transition ease. Use `MOTION_EASE` (a copy of the --motion-ease value); an element taking a ramp duration takes its easing from the same family.',
   },
   // 2026-08-27 inline style time literals — **the third syntax of the duration rule.**
   // The class rules above see className strings and the framer rule sees `transition={{...}}`,
@@ -882,13 +882,13 @@ export const arbitrarySizeSelectors = [
     selector:
       'JSXAttribute[name.name="style"] Property:matches([key.name=/^(animation|transition)(Delay|Duration)$/], [key.value=/^--/]) Literal[value=/^[0-9.]+m?s$/]',
     message:
-      '모션 시간 하드코딩 금지 — JSX style 객체 안의 리터럴 시간값(딜레이·지속시간·커스텀 프로퍼티)도 램프를 탄다. --motion-fast/base/settle 을 var() 로 참조하고, 스태거는 단위 없는 스텝 커스텀 프로퍼티에 숫자만 싣고 시간은 CSS 쪽 calc(var(--*-stagger) * step) 이 만든다.',
+      'No hard-coded motion time: literal times in a JSX style object (delay, duration, custom properties) follow the ramp too. Reference --motion-fast/base/settle via var(); for stagger, put only a number in a unitless step custom property and let CSS calc(var(--*-stagger) * step) produce the time.',
   },
   {
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(animation|transition)$/] Literal[value=/(^|[^-\\w(])[0-9.]+m?s([^-\\w]|$)/]',
     message:
-      '모션 시간 하드코딩 금지 — JSX style 의 animation/transition 단축 문법 안에 박힌 리터럴 시간도 램프를 탄다. --motion-fast/base/settle 과 --motion-ease 를 var() 로 참조한다.',
+      'No hard-coded motion time: literal times inside an animation/transition shorthand in a JSX style follow the ramp too. Reference --motion-fast/base/settle and --motion-ease via var().',
   },
 ];
 
@@ -1195,12 +1195,12 @@ const eslintConfig = defineConfig([
         {
           selector: 'Literal[value=/color-amber-docs-/]',
           message:
-            '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다. 경고 신호는 --color-amber-source-* (면·보더) 와 --color-amber-source-text-* (글자) 사다리를 쓴다 — 한 배지 안에서 두 앰버 계보가 섞이면 신호가 아니라 장식으로 읽힌다.',
+            'Do not use the docs-surface decorative quarantine amber in the settings sheet. For warning signals use the --color-amber-source-* (fill, border) and --color-amber-source-text-* (text) ladders; mixing two amber lineages in one badge reads as decoration, not signal.',
         },
         {
           selector: 'TemplateElement[value.raw=/color-amber-docs-/]',
           message:
-            '설정 시트에서 docs 표면 장식용 quarantine 앰버를 쓰지 않는다 (template literal). --color-amber-source-* / --color-amber-source-text-* 사다리를 쓴다.',
+            'Do not use the docs-surface decorative quarantine amber in the settings sheet (template literal). Use the --color-amber-source-* / --color-amber-source-text-* ladders.',
         },
         ...closureScopeSelectors,
       ],

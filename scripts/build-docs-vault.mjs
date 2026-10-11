@@ -100,8 +100,7 @@ const STOREFRONT_HEADINGS_OUT = path.join(
 // storefront") instead of the dogfood vault, which describes this tool itself.
 // The dogfood output (manifest.json / content.json / public/docs-vault) is never
 // touched — `docs-vault:check` must keep passing unchanged. No public raw copies
-// and no census module are produced for storefront: its only consumer so far is a
-// JSON import.
+// are produced for storefront: its only consumer so far is a JSON import.
 const SAMPLES_STOREFRONT_DIR = path.join(ROOT, 'samples', 'storefront');
 const STOREFRONT_MANIFEST_OUT = path.join(
   ROOT,
@@ -119,10 +118,6 @@ const STOREFRONT_CONTENT_OUT = path.join(
   'data',
   'sample-storefront.content.json',
 );
-// The dogfood vault census consumed by the evidence miniature (VaultInstrument)
-// in `/download`'s intro section. Emitted as a small constants module so that
-// manifest.json (400KB) never enters that bundle.
-
 /** Is this a shallow (depth-limited) clone? False when git is absent or this is not a repository. */
 export function isShallowRepository(rootDir) {
   try {
@@ -551,7 +546,7 @@ export function deterministicGeneratedAt(docs) {
  * `trimToRecentSections` in `src/views/gateway-doc/lib/vault-doc.ts`**: the screen
  * trims the bundled preview once more against its own limit, so if the two
  * implementations disagree on section boundaries the reported fold count is a lie.
- * `tests/contract/gateway-changelog-preview.contract.test.ts` proves the two agree
+ * `tests/contract/bundled-vault-budget.contract.test.ts` proves the two agree
  * against the real CHANGELOG (the same pattern as the parse-frontmatter 3-way
  * contract).
  */
@@ -658,9 +653,6 @@ async function latestInputDay(inputs, rootDir, gitDays) {
   }
   return days.length > 0 ? days.reduce((left, right) => left >= right ? left : right) : null;
 }
-
-// Source of the dogfood census module — deterministic, with no timestamp, so it
-// only diffs when the vault content actually changes.
 
 async function assertOutputsCurrent({
   manifest,
@@ -1129,8 +1121,8 @@ async function buildDocsVault({ check = false } = {}) {
 
 /**
  * Builds the storefront sample vault (`samples/storefront/`) — only its own
- * manifest/content pair, separate from dogfood. No public raw copies, no census
- * module, no PUBLIC_OUT reset: nothing consumes them yet, and when something does
+ * manifest/content pair, separate from dogfood. No public raw copies and no
+ * PUBLIC_OUT reset: nothing consumes them yet, and when something does
  * the extension stays inside this function.
  */
 async function buildStorefrontSample({ check = false } = {}) {

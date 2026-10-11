@@ -16,9 +16,6 @@ const GENERATED_PREFIXES = [
   'public/docs-vault/',
   'src/entities/docs-vault/data/',
 ];
-const GENERATED_EXACT_PATHS = [
-  'src/views/download/model/dogfood-census.generated.ts',
-];
 
 const DATED_RECORD = /^## (\d{4}-\d{2}-\d{2})(?=\s|$).*$/gm;
 const MAX_GIT_OUTPUT = 64 * 1024 * 1024;
@@ -203,13 +200,6 @@ export function mergeAppendOnlyLedger({ path: ledgerPath, base, ours, theirs }) 
 }
 
 function isGeneratedPath(filePath) {
-  return (
-    GENERATED_EXACT_PATHS.includes(filePath) ||
-    GENERATED_PREFIXES.some((prefix) => filePath.startsWith(prefix))
-  );
-}
-
-function isMaterializedDocsVaultPath(filePath) {
   return GENERATED_PREFIXES.some((prefix) => filePath.startsWith(prefix));
 }
 
@@ -364,19 +354,15 @@ export async function resolveRepositoryConflicts({
   // path. Remove only those exact conflict paths from the index while retaining the
   // worktree copy; regeneration below replaces conflict-marker/stale bytes with the
   // local ignored materialization.
-  const materializedConflicts = classified.generated.filter(isMaterializedDocsVaultPath);
+  const materializedConflicts = classified.generated;
   if (materializedConflicts.length > 0) {
     gitOutput(root, ['rm', '--cached', '-f', '--ignore-unmatch', '--', ...materializedConflicts]);
   }
   await regenerate({ root });
 
-  const stagePaths = [
-    ...plans.map((plan) => plan.path),
-    ...classified.generated.filter((filePath) => GENERATED_EXACT_PATHS.includes(filePath)),
-  ].filter(
-    (filePath) =>
-      existsSync(path.join(root, filePath)) || classified.generated.includes(filePath),
-  );
+  const stagePaths = plans
+    .map((plan) => plan.path)
+    .filter((filePath) => existsSync(path.join(root, filePath)));
   gitOutput(root, ['add', '--', ...stagePaths]);
 
   const remaining = splitNul(

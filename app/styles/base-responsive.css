@@ -580,7 +580,7 @@
      * "hidden until JS attaches the in class". For users with reduced motion, the alternative to choreography is **a screen fully visible from the start** — what is lost is decoration (entrance order), and all information remains.
      *
      * ⚠️ Must be inside `@layer base`, **after** the global kill rule —
-     * `!important` outside the layer loses to the one inside (measurement in the toast comment above this file). Gate: `tests/contract/gateway-fx-exception.contract.test.ts`.
+     * `!important` outside the layer loses to the one inside (measurement in the toast comment above this file). Gate: `tests/contract/gateway-fx-reduced-motion.contract.test.ts`.
      */
     .gateway-rise {
       opacity: 1 !important;

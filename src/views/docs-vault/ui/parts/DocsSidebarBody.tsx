@@ -289,7 +289,7 @@ export function DocsSidebarBody({
          so state and action separate. */}
       {/* Not `role="tablist"`: the row also holds non-tab buttons, which axe
          reports as an `aria-required-children` violation (WCAG 4.1.2). Same reasoning as `DocsVaultTabStrip`. */}
-      {/* A container: labels appear only when the row reaches `DOCS_HEAD_LABEL_MIN_PX`, since at the
+      {/* A container: labels appear only once the row reaches 320px (`@min-[320px]`), since at the
          280px pane width a label pushes the `+` past the pane border. */}
       <div
         data-testid="docs-sidebar-head-row"

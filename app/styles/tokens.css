@@ -513,17 +513,11 @@
   --gateway-stage-max: clamp(48rem, 40vw, 80rem);
 
   /*
-   * ── Gateway Field (FX) Token — `--gateway-fx-*` Sealed Namespace ──────────────
+   * ── Gateway Field (FX) Token — `--gateway-fx-*` ──────────────
    *
-   * This is the **sole explicit exception** to the Charter's prohibition on
-   * 「Moving Gradient Background」.
-   * (`.claude/rules/forbidden.md` 「Design」section — format like footprint smearing).
-   * Scope: Only inside `.gateway-fx-stage` (gateway landing), and only with the
-   * alpha cap below. It freezes during the first second and in reduced-motion. Two gates—
-   * `eslint.config.mjs` gateway-fx scope selector (consumers locked to
-   * `src/views/download/**`) +
-   * `tests/contract/gateway-fx-exception.contract.test.ts`(alpha cap ·
-   * single consumer · reduced-motion freeze · documentation inclusion).
+   * The gateway landing's light field, grain and cursor ring, drawn inside `.gateway-fx-stage`.
+   * The alpha caps below keep the field a mood rather than a competitor for body ink; under
+   * reduced motion it draws one still frame (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`).
    *
    * Colors are not defined here — the light source ink reads and writes
    * `--color-indigo-brand` at the consumer (automatically following accent transitions).
@@ -532,11 +526,11 @@
   --gateway-fx-deep: #050506;
   /* Film grain overlay alpha cap — raising it further turns texture into noise. */
   --gateway-fx-grain-alpha: 0.05;
-  /* Field light source (radial) alpha cap — background sets the mood only; it must not compete with body ink. Contract tests enforce ≤ 0.15. */
+  /* Field light source (radial) alpha cap — background sets the mood only; it must not compete with body ink. */
   --gateway-fx-blob-alpha: 0.14;
   /* Dust particle alpha cap. */
   --gateway-fx-dust-alpha: 0.28;
-  /* Dust ink — achromatic white. Paired with the alpha cap, it sits in the same sealed namespace (the `check:tokens` requirement is to prevent primary color literals from remaining in canvas code). The value is byte-identical to the previous canvas literal — pixels do not move. */
+  /* Dust ink — achromatic white, a token so no color literal stays in canvas code. */
   --gateway-fx-dust: #ececf0;
   /* Custom cursor ring rest state ink — derived from existing ink tokens (new hue 0). */
   --gateway-fx-cursor-ring: color-mix(in srgb, var(--color-text-primary) 38%, transparent);
@@ -564,8 +558,8 @@
    * ② JS to read the **same number** via `parseFloat` to derive camera reservation width. Without registration, the computed value remains a token stream, causing JS to see NaN.
    *
    * The reason not to register the atomic values (`--gateway-*`) is the opposite — those are values manually set by humans,
-   * so natural typos like `2.5rem` silently drift back as initial-value without error
-   * (`src/views/download/lib/gateway-grid.ts` read-only block). This origin is a derived value, so no one writes it manually.
+   * so natural typos like `2.5rem` silently drift back as initial-value without error.
+   * This origin is a derived value, so no one writes it manually.
    */
   /*
    * [Revision 2026-08-19] The column cap in the formula changed from `--page-max` to `--gateway-page-max`

@@ -74,10 +74,7 @@ const SKIP_DIR = new Set(["node_modules", "dist", "build", ".next", "data"]);
  * Paths whose absence is a record rather than rot. Kept deliberately short: a
  * long allowlist is how this kind of gate quietly stops checking anything.
  */
-const HISTORICAL = new Set([
-  "docs/engineering/deployment.md",
-  "docs/GUIDE.md",
-]);
+const HISTORICAL = new Set(["docs/GUIDE.md"]);
 
 function walk(dir, out = []) {
   let entries;
