@@ -6,37 +6,8 @@ import { collectTokens } from '../../scripts/design-tokens.mjs';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The gateway stage width (`--gateway-stage-max`) — the invariants of the
- * wide-width revision (2026-08-19).
- *
- * Ledger entry (83) brought the demo stage down to 48rem (owner: *"The video is too big right now"* — the video is too big right now; at 1512 the clip took 73% of the
- * width). That prescription addressed a **proportion** problem but froze it in
- * absolute px, so on the owner's 2560 screenshot the stage shrank to 30% of the
- * viewport and the screen looked empty. The revision raised the cap to a
- * `clamp(48rem, 40vw, 80rem)` token, and this test locks the **promises** those
- * three values carry:
- *
- *  (a) **Floor = 48rem** — the owner-approved value from ledger (83). The same
- *      form of pinned decision as the footprint bloom exception pinning
- *      "default 0, cap 6".
- *  (b) **No-regression invariant at ≤1920** — the slope (the vw coefficient)
- *      evaluated at 1920 does not exceed the floor. Break this and the
- *      owner-approved 768px render moves silently across the 1440–1920 widths the
- *      gate protects. (40vw×1920 = 768 = 48rem — growth starts only just above the
- *      widest no-regression width.)
- *  (c) **Cap ≤ the clip's source width** — the demo clip's source is 1512px wide.
- *      A larger cap upscales the video at 1x density, and we would be calling a
- *      blurrier picture "bigger".
- *  (d) **One source of truth for the stage width** — the demo section is the
- *      token's one consumer since 2026-09-02 (the agent scene moved to the
- *      evidence section's grid), and no local `max-w-[48rem]` survives.
- *  (e) **Printed** — `pnpm design:tokens` reports the same formula, which is how the
- *      design document points at it instead of carrying a copy.
- *
- * Whether the rendered stage actually grows with this token (and whether the demo
- * and agent scenes share a width) is measured per width with rects by
- * `tests/e2e/download-gateway-grid.spec.ts` — static invariants here, measurement
- * there.
+ * Gateway stage width: the 48rem floor is pinned, the vw slope at 1920 must not exceed the floor,
+ * the cap must not exceed the 1512px clip source, and the token has one consumer.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");
@@ -93,12 +64,6 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
     ).toBeLessThanOrEqual(1512);
   });
 
-  /*
-   * [2026-09-02] The agent scene left the stage: it now shares the evidence section's 11/20
-   * grid with the three cards stacked beside it (`DownloadPage.tsx`, agents section), so the
-   * demo is the token's one consumer (standing beside its head from 90rem since 2026-09-25). The e2e grid spec holds
-   * the scene to the evidence map frame's width instead.
-   */
   it("(d) 무대 폭의 진실원은 토큰 하나다 — 소비 1곳 + 로컬 48rem 0곳", () => {
     const downloadFiles = walk(join(repoRoot, "src", "views", "download"));
     const consumers: string[] = [];

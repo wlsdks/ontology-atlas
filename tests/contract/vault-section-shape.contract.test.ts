@@ -5,61 +5,23 @@ import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
 
 /**
- * **Body-section size ratchet for the dogfood vault — it can never grow.**
- *
- * **Why** (measured 2026-08-25):
- *
- * A vault node holds two different things, and only one of them is worth
- * storing. Decisions — which capability belongs to which domain, what is
- * explicitly excluded, which limit must not be crossed — do not exist anywhere
- * in the source. Descriptions of what the code does can be re-derived by any
- * agent that reads the code, so paying context for them buys nothing.
- *
- * The failure this gate exists to stop is not "too much description". It is
- * **a decision wearing a descriptive heading**. `capabilities/mcp-server.md`
- * carried a single `## Core Flow` section of 12,865 bytes: five lines of actual
- * flow, followed by twenty-two paragraphs of hard limits, fail-closed rules and
- * per-language scan boundaries. Every one of those rules was real and
- * unrecoverable from the source — and an agent had to read 12 KB of prose named
- * "Core Flow" to reach any of them.
- *
- * Splitting that one file moved the whole vault from 37.5% decision content to
- * 45.7%, without editing a single sentence. Three more files took it to 51.4%.
- *
- * **Why a byte cap and not a heading vocabulary.** A fixed list of allowed
- * headings would be enforceable but wrong: the vault's best sections
- * (`Identity Boundaries`, `Active Tool Inventory Contract`, `Inclusions /
- * Exclusions`) were all invented for one node. Size is the honest proxy — a
- * section that outgrows the cap is holding more than one idea, whatever it is
- * called. The fix is always to name the second idea, never to delete it.
- *
- * ⚠️ **When the worst section shrinks, lower the cap with it.** Otherwise every
- * split becomes new headroom, and the second test below fails on purpose to
- * make that impossible to forget.
+ * Body-section size ratchet for the dogfood vault: it can never grow. A byte cap, not a heading
+ * vocabulary, because a section that outgrows the cap holds more than one idea. When the worst
+ * section shrinks, lower the cap with it.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 const VAULT_ROOT = join(REPO_ROOT, "docs", "ontology");
 
 /**
- * **The worst surviving section, in bytes** (`Verify the agent loop` in
- * `README.md`, 1,736 B, measured 2026-09-22 after the product rebuilt this
- * vault through its own construction path).
- *
- * The 5,952 B `Behaviour Contract` the cap was written against is gone with the
- * hand-curated nodes; the largest section any node now carries is a 701 B
- * `## Uncertainty`, and the four sections above it are all orientation prose in
- * the vault README. It is the honest current ceiling, not a target.
+ * The worst surviving section in bytes (`Verify the agent loop` in `README.md`); the honest current
+ * ceiling, not a target.
  */
 const SECTION_BYTE_CAP = 1_800;
 
 /**
- * **The gap the cap is allowed to sit above reality.**
- *
- * A cap far above the worst real section is a gate that can never fire. This
- * keeps the ratchet within sight of the thing it measures, and it came down
- * with the cap: 400 B of slack above a 1,736 B ceiling is a quarter of the
- * measurement, where it used to be a fifteenth.
+ * How far the cap may sit above the worst real section: a cap far above it is a gate that can never
+ * fire.
  */
 const CAP_HEADROOM = 100;
 

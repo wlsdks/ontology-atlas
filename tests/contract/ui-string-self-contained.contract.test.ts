@@ -4,20 +4,8 @@ import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
 
 /**
- * When on-screen copy uses a shell variable, that variable must be defined **within
- * the same namespace.**
- *
- * **Why** (measured 2026-08-17). The "connect my agent" card said:
- *
- *   "Verify connection in terminal: node $ATLAS/cli/src/index.mjs mcp-verify."
- *
- * What `$ATLAS` is was written only in strings belonging to **two other panels**
- * (`projectPages.selector` and `atlasGit`). Someone looking at this card alone pastes
- * that line and it fails — with no way to learn that the cause lives on a screen they
- * never saw. **Dead-end guidance is worse than no guidance.**
- *
- * The namespace, not the string, is the unit: a command and the hint defining its
- * variable are read side by side in one panel, which is not a dead end.
+ * A shell variable used in on-screen copy must be defined within the same namespace, so a command and
+ * the hint defining its variable are read side by side and guidance is never a dead end.
  */
 
 type Json = { [key: string]: string | Json };
@@ -70,11 +58,9 @@ describe('화면 문구는 스스로 완결한다 — 막다른 셸 변수 금�
     expect(
       danglingShellVars({ card: { hint: 'run node $ATLAS/cli/src/index.mjs' } }),
     ).toEqual(['card ($ATLAS)']);
-    // and the verdict must hold at shallow depth too — the earlier implementation
-    // degraded here.
+    // The check must hold at shallow depth too.
     expect(danglingShellVars({ hint: 'run node $ATLAS/x' })).toEqual(['(root) ($ATLAS)']);
-    // A definition in the same namespace passes — the legitimate pair measured on
-    // 2026-08-17 has this shape.
+    // A definition in the same namespace passes.
     expect(
       danglingShellVars({
         card: { setup: 'export ATLAS="…"', hint: 'run node $ATLAS/cli/src/index.mjs' },

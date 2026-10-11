@@ -23,24 +23,8 @@ function rustConstant(name: string): string {
 }
 
 /**
- * **The app mints the source receipt; a fresh MCP process reproduces it.**
- *
- * The 2026-08-03 decision ("The new MCP handoff re-verifies the person's source
- * connection on its own") makes `connect_project_source` re-run the app's bounded
- * inventory probe in a separate process and compare fingerprints. The two probes are
- * separate implementations — Rust in `src-tauri/src/project_source/mod.rs`, JavaScript in
- * `mcp/src/project-source-inspection.mjs` — so every bound they walk with has to be
- * the same number on both sides.
- *
- * If one side drifts, the failure is quiet in the worst direction: the fingerprints
- * differ over an unchanged tree, the receipt turns `review_required / source_changed`,
- * and the handoff reports drift that never happened. Types and lint pass either way,
- * and only the `mcp` CI lane notices — and only when a changed path selects it.
- *
- * That lane selection is how the cap itself went unnoticed: the repository crossed
- * 4000 visible files in #1558, which changed no `mcp/` path, so the first PR to run
- * the lane afterwards inherited a red `main`. The headroom case below is the cheap
- * early warning for the next time.
+ * The Rust and JavaScript source inventory probes are separate implementations, so every bound
+ * they walk with must be the same number on both sides.
  */
 describe('source inventory bounds — the app and the MCP probe must agree', () => {
   it('the file cap is one number on both sides', () => {

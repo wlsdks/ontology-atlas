@@ -3,17 +3,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * Every node in a shipped manifest carries a computed `meaningFindings` list.
- *
- * `VaultDoc.meaningFindings` has three states: absent (not a node), `null`
- * (the rule could not run) and an array (the rule ran). The app reads `null`
- * as "not computed" and must never show it as clean, but the Insights verdict
- * still reads zero counts as healthy, so a manifest built without the rule
- * would look clean by silence. The build script records `null` only when
- * `mcp/` is missing from the checkout; the shipped manifests are built from a
- * full checkout, so `null` there is a broken build, not a state to tolerate.
- * Independent review asked for this invariant to be enforced rather than
- * promised (2026-09-22).
+ * `meaningFindings` is null only when `mcp/` is missing from the checkout. Shipped manifests are
+ * built from a full checkout, so null there is a broken build; Insights reads zero counts as
+ * healthy, so a null would look clean by silence.
  */
 const DATA_DIR = path.join(process.cwd(), 'src', 'entities', 'docs-vault', 'data');
 const SHIPPED_MANIFESTS = ['manifest.json', 'sample-storefront.manifest.json'];

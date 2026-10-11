@@ -4,76 +4,9 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from "../../scripts/lib/global-css.mjs";
 
 /**
- * The settings sheet has **one** type dialect (2026-08-02, three owner reports).
- *
- * **What was there — a per-section font inventory** (measured, 1512×806, dark):
- *
- * | Section | 12.5px | 11px | **9.5px** |
- * |---|---|---|---|
- * | Appearance | 10 | 5 | 0 |
- * | Workspace | 5 | 1 | 0 |
- * | AI agents | 4 | 3 | 0 |
- * | **Expand** | **0** | 4 | **10** |
- * | Footprint | 0 | 4 | 1 |
- * | Map background | 3 | 2 | 4 |
- *
- * One sheet with the same kind of content (label + control + one-line
- * description), and yet **a whole ramp step was shifted** depending on the
- * section. That is what the owner saw: *"this button is too small too — the settings themselves feel small"* (this button is too small too — the settings themselves feel small),
- * pointing at the Expand section.
- *
- * The cause is inheritance, not taste. `Slider` and `Choice` were born inside
- * `FootprintSettings`' **collapsed details** and carried that place's small
- * dimensions; when they were promoted to shared primitives and became
- * `ExpandSettings`' **primary decision controls**, they brought those dimensions
- * along. Nobody decided "the Expand section is small".
- *
- * **The spec this file locks**:
- *
- * | What | Step |
- * |---|---|
- * | Row and control labels, pressable text | `text-body` (12.5px) |
- * | One-line descriptions, secondary captions, numeric readouts | `text-label` (11px) |
- * | `text-caption` (9.5px) | **not used in the root sheet** |
- *
- * The basis for excluding 9.5px is the ramp's own **definition** —
- * `--text-caption` is the step for "micro labels, legends, timestamps"
- * (`app/globals.css`). A radio button's name is none of those three.
- *
- * **Reach — it includes drill-ins** (widened 2026-08-09).
- *
- * ⚠️ **Drill-ins were excluded at first, and that judgement was wrong.**
- *
- * On 2026-08-02, `VaultAgentSetupPanel` and `AiConnectionPanel` were left outside
- * the reach, on the grounds that *"most `text-caption` in there fits the ramp
- * definition (eyebrows, path code, step badges), so including it becomes 82 items
- * of noise"*. **The noise concern was right and the premise "most are legitimate"
- * was wrong.**
- *
- * On 2026-08-09 the owner pointed at "connect my agent": *"why does this look so small — isn't this unified in our design system? Other places are bigger; it is all too small to read"* (why does this look so small — isn't this unified in our design system? Other places are bigger; it is all too small to read). Measured (1512×900, vault connected, all eight panes):
- *
- * | Pane | 12.5 | 11 | **9.5** |
- * |---|---|---|---|
- * | Appearance · map background · expand · footprint · notifications · workspace | 2–9 | 1–14 | **0** (all six) |
- * | **Connect my agent** | 2 | 12 | **10 / 24 = 42%** |
- *
- * Six panes had no 9.5px at all, while in this one **42% of visible text** was
- * below the sheet's floor. And opening the supposedly legitimate uses one by one,
- * they were not:
- *
- * - A `dt` (name) at 9.5px whose `dd` (value) was 11px — **the name smaller than
- *   its own value**, the same hierarchy inversion 2026-08-02 named in the Expand
- *   section
- * - An `<input>` for typing API keys and URLs called `fieldClass` and then
- *   **overrode that ramp's default (`text-body-lg`, 14px) with `text-caption`** —
- *   4.5px below its own ramp
- * - A settings JSON `<pre>` the user must check character by character, at 9.5px
- *
- * So the reach widens to drill-ins and below. The chain is
- * `VaultAgentSetupPanel` → `useAgentClientControls` (`AgentClientButtons.tsx`) → `WebManualConnectPanel`.
- *
- * **Noise is prevented by narrowing the exemption, not the reach.** Measured when
- * widening: **41 violations → 0 after replacement**, with overflow still 0.
+ * The settings sheet has one type dialect: labels and pressable text use `text-body`, descriptions
+ * and readouts use `text-label`, and `text-caption` (9.5px) is not used in the root sheet or
+ * its drill-ins. The exemption is narrow, not the reach.
  */
 
 const UI = "src/widgets/app-settings-menu/ui";
@@ -116,18 +49,8 @@ function sourceAtPath(path: string): string {
 }
 
 /**
- * Lines using 9.5px. **There is no exemption.**
- *
- * ⚠️ At first, eyebrows carrying `uppercase` were exempt, and that is what drew
- * the owner's second report (2026-08-09). The grounds were the ramp definition
- * ("micro label") plus `uppercase` — but **`uppercase` does nothing to Hangul**,
- * so the typographic device of an uppercase micro label does not exist and what
- * remains is simply dim 9.5px text. Four section names really did stay at 9.5px
- * through that exemption.
- *
- * Decisive was the fact that **the root sheet already used 11px for the same
- * role** (`SETTINGS_SECTION_LABEL`). The exemption was open for a spec nobody
- * used, so deleting it makes the rule simpler.
+ * Lines using 9.5px. There is no exemption: `uppercase` does nothing to Hangul, so an uppercase
+ * micro label is just dim small text.
  */
 function captionLines(source: string): string[] {
   return source
@@ -207,8 +130,7 @@ describe("설정 루트 시트 — 타입 방언은 하나다", () => {
     for (const file of ROOT_SHEET_FILES) {
       const source = sourceWithoutComments(file);
       expect(source.length, `${file} 을 못 읽었다`).toBeGreaterThan(200);
-      // A pane whose every line comes from the shared primitives (Footprint since its intro
-      // moved to the pane head, 2026-09-25) still sits on the ramp through them.
+      // A pane built wholly from the shared primitives still sits on the ramp through them.
       expect(source, `${file} 이 타입 램프를 안 쓴다 — 목록이 낡았다`).toMatch(
         /text-(body|label|title|body-lg)|from '\.\.?\/settings-primitives'/,
       );
@@ -228,37 +150,16 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
    * carried its old dimensions.
    */
   /**
-   * ⚠️ **Do not pin the source's class string** (that broke this on 2026-08-06).
-   *
-   * This assertion used to search for `flex h-8 items-center rounded-chip border
-   * px-3 text-body` verbatim by regex. **Moving that place into the value layer
-   * (`controlClass`)** made the string disappear and the test go red — the check
-   * breaking in the direction of a better spec, which makes the next person revert
-   * **the spec** rather than the check (`documentation.md`).
-   *
-   * The substance of the spec is not "how it was written" but **"does it use the
-   * same height and the same step"**. So the source is checked without regard to
-   * syntax, for whether the height (`h-8`) and the type step (`text-body`) are
-   * really standing — as a literal or through `controlClass({ className })`.
+   * Do not pin the source class string: the check asserts the same height (`h-8`) and type step
+   * (`text-body`), as a literal or through `controlClass({ className })`.
    */
   it("라디오 칩 · 세그먼트 · 알림 칩이 같은 높이·같은 단을 쓴다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
     /*
-     * Height — all three on the one 32px step.
-     *
-     * ⚠️ **This assertion moved in the second round of 2026-08-15.** It used to check
-     * whether an `h-8` literal existed inside `settings-primitives.tsx`. That day
-     * `Choice` also became a `SegmentedControl` adapter like `SegmentSwitch`, the
-     * literal disappeared, and the assertion **went red while the spec improved** —
-     * the shape `design-gates.md` calls "a gate holding on to letterforms rather than
-     * the spec" (such a gate makes the next person revert the spec instead of the
-     * gate).
-     *
-     * So the 32px guarantee is measured **where it is actually produced**: do the two
-     * adapters delegate to the primitive, and do the primitive's two shapes sit on the
-     * same height step.
+     * The 32px guarantee is measured where it is produced: both adapters delegate to the primitive
+     * and its two shapes sit on the same height step.
      */
     expect(
       primitives.match(/<SegmentedControl\b/g)?.length ?? 0,
@@ -310,32 +211,12 @@ describe("한 시트 안에서 «값 하나 고르기» 는 한 규격이다", (
 
 describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   /**
-   * The old LNB item was `px-2.5 py-1.5` → 32px with a 14px icon. 32px is the value
-   * of the **nav-rail utility tile** (`--app-nav-rail-tile-height`) — a destination
-   * people deliberately enter to read and choose in was borrowing the dimensions of
-   * a toolbar that floats over the map and yields screen space.
-   *
-   * The locked-scale contract limits its own reach to **workbench chrome**
-   * (`design.md`) — the same logic that excluded the gateway chrome (`GatewayNav`)
-   * applies here. So the value is drawn from inside this sheet: **the same padding**
-   * as the right pane's `SettingsRow` (`px-3 py-2`), on the row label's step
-   * (`text-body`, since 2026-09-25). No new token is created — with a single consumer, a
-   * variable adds a second thing to reference and blurs where the spec lives (the
-   * discipline left by that same passage).
+   * The LNB takes its dimensions from this sheet (the same padding as `SettingsRow`, `px-3 py-2`), not
+   * from the nav-rail tile. No new token is created: a single consumer does not need one.
    */
   /**
-   * ⚠️ **Do not pin the source's class string as one block** (this broke a second
-   * time on 2026-08-06).
-   *
-   * This assertion used to find `flex w-full items-center gap-2.5 rounded-card px-3
-   * py-2 text-left text-body-lg` as **one regex block**. Moving that place into the
-   * value layer (`controlClass({ shape: 'row' })`) split the string — the shape emits
-   * `flex w-full items-center text-left` and only the rest stays in `className` — and
-   * it went red.
-   *
-   * The substance of the spec is not "was it written as one block" but **"does it use
-   * the same inset as the right pane's row and text one step above"**. So it is
-   * checked **value by value**.
+   * Do not pin the class string as one block: the value layer splits it, so the inset and type step
+   * are checked value by value.
    */
   it("LNB 항목이 오른쪽 칸 행과 같은 인셋을 쓰고 한 단 위 글자를 쓴다", () => {
     const nav = sourceWithoutComments("SettingsNav.tsx");
@@ -366,12 +247,7 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
 
     // Inset — must equal the `px-3 py-2` used by the right pane's row (`SettingsRow`).
     expect(lnb, "LNB 인셋이 크롬 치수(px-2.5 py-1.5)로 되돌아갔다").toMatch(/\bpx-3 py-2\b/);
-    /*
-     * Type — the row label's own step (`text-body`) since 2026-09-25. It was one step above
-     * (`text-body-lg`) as the sheet's attention winner, which made the index louder than every
-     * setting it leads to. The winner is now each pane's head on the title step, checked below,
-     * so type descends pane head → row title → caption and the nav stays a quiet index.
-     */
+    /* Type uses the row label step (`text-body`) so the nav stays a quiet index below each pane head. */
     expect(lnb, "LNB 글자가 행 제목 단(text-body)이 아니다").toMatch(/\btext-body\b(?!-)/);
     expect(lnb, "LNB 가 다시 칸 제목보다 커졌다").not.toMatch(/\btext-body-lg\b/);
     const primitives = sourceWithoutComments("settings-primitives.tsx");
@@ -393,11 +269,8 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
   it("오른쪽 칸 행의 인셋이 LNB 가 맞춘 그 값이다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     /*
-     * The horizontal inset lives **unconditionally** in the shared part — that is the value the
-     * LNB matched. What the row does with its two blocks is not this gate's subject and changed
-     * on 2026-09-19 (they wrap at phone width instead of sharing one line), so the assertion
-     * names the inset and the gap rather than the whole class string, which had pinned a layout
-     * decision this contract never meant to own.
+     * The horizontal inset lives unconditionally in the shared part; assert the inset and gap, not the
+     * whole class string, since the row layout is not this gate subject.
      */
     expect(primitives).toMatch(/\bflex\b[^"']*\bpx-3\b/);
     expect(primitives).toMatch(/\bgap(?:-x)?-3\b/);
@@ -405,16 +278,7 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
     expect(primitives).toMatch(/\bmin-h-12 py-2\b/);
   });
 
-  /*
-   * 2026-08-16 — there are now two row heights. **No height-choosing axis was
-   * created**; rows carrying another product's mark simply hold different content: a
-   * 32px mark in a 48px row is boxed in top and bottom, and squeezing it to 12px
-   * makes it unrecognisable so it stops working as a scanning channel.
-   *
-   * So the second height is **decided by the presence of a mark.** This test keeps
-   * that binding — using it to enlarge arbitrary rows unrelated to a mark is caught
-   * here.
-   */
+  /* There are two row heights: the taller one is decided by the presence of a mark, not a free axis. */
   it("키가 큰 행은 마크가 있는 행뿐이다 — 높이를 고르는 축이 아니다", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     expect(primitives, "큰 치수가 사라졌다면 이 계약을 지울 때다").toMatch(
@@ -427,15 +291,8 @@ describe("LNB 는 크롬 치수를 빌려오지 않는다", () => {
 
 describe("패널은 최소 창 안에서 자기 거터를 먹지 않는다", () => {
   /**
-   * The fixed-size contract (owner, 2026-07-29) stands. Only the height changed,
-   * and that value is **derived**, not chosen: within 696 (Tauri's minimum window
-   * height of 720 minus the overlay gutter `p-3`, 12px top and bottom), the largest
-   * height that still leaves one more gutter (696 − 24 = 672).
-   *
-   * While it was 640, the busiest section (Appearance) was clipped by 41px while
-   * 118px sat empty outside the panel at a 14-inch viewport (1512×806) — a clipped
-   * box and spare space on the same screen is the mechanical form of the owner's
-   * "it feels cramped."
+   * The panel height is derived: the minimum window height 720 minus the overlay gutter `p-3`,
+   * less one more gutter (696 - 24 = 672).
    */
   it("패널 높이가 최소 창 − 오버레이 거터 2벌 을 넘지 않는다", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");

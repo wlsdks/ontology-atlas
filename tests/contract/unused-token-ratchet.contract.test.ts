@@ -5,34 +5,9 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
- * The reverse-direction gate for **tokens that are defined but nobody uses.**
- *
- * `undeclared-token-ref.contract.test.ts` guards the forward direction: it fails
- * when a `var()` points at a token that does not exist. This file guards the
- * reverse: a token declared and used by nobody is **misinformation, not a spec**.
- * The precedent is 2026-07-26, when two dead tokens (`--pad-card`/`--pad-panel`)
- * held **different values** from the panel's actual ones.
- *
- * ## Why a ratchet rather than 0
- *
- * As this file's own comments say, an alpha ladder is sometimes laid down as a set
- * **before the components that will use it** ("adding high-frequency orphan alphas
- * from the colour inventory"). That is legitimate design-system practice, so
- * forcing 0 would punish it. Instead it fails **when the count grows** — the same
- * form as the procedure this repository already uses (measure → classify → confirm
- * it fits one PR → gate), and a sibling of the `type-ramp-coverage` ratchet.
- *
- * ## Why a contract test rather than lint
- *
- * The verdict needs **the full value list of other files**. `no-restricted-syntax`
- * is an AST selector over one file and cannot express "nowhere in the repository
- * uses this token".
- *
- * ## The three invisible consumption paths
- *
- * These can never be found by text search, so they are excluded via an allowlist.
- * When adding to that list, also record **why text search cannot see it** — "looks
- * unused but I was afraid to remove it" is not a reason.
+ * Reverse direction of `undeclared-token-ref.contract.test.ts`: a token defined and used by nobody is
+ * misinformation. A ratchet rather than 0, because a ladder may be laid down before its consumers.
+ * The allowlist covers consumption paths text search cannot see; record why with each entry.
  */
 
 /** Consumed by the framework or a third party without naming the token. */

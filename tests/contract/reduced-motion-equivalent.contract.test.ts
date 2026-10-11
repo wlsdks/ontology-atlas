@@ -4,42 +4,16 @@ import path from 'node:path';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * reduced-motion contract gate — enforces `docs/DESIGN-SYSTEM.md`'s *"not switched
- * off, but a less-shaking equivalent"* (not switched off, but a less-shaking equivalent) in
- * code.
- *
- * Why it is needed: the contract lived only in a document and exactly one selector
- * actually honoured it. Every other surface was cut by the global rule
- * (`animation-duration: 0.01ms`) into a hard cut, and nobody knew (found by frame
- * measurement, 2026-07-26). A spec written only in a document is not kept —
- * `.claude/rules/design.md`, "the spec is enforced by lint".
- *
- * What is checked:
- *  1. The global kill rule is alive — it is the safety net for unaudited motion
- *     (infinite heartbeats, decorative flows) and must not be deleted.
- *  2. Each crossfade-family class regains a **non-zero** duration inside the
- *     reduced-motion block.
- *  3. Equivalents regain time through tokens only — no literal ms rewrites.
+ * Enforces the reduced-motion contract of `docs/DESIGN-SYSTEM.md`: a less-shaking equivalent, not
+ * switched off. The global kill rule is the safety net, crossfade classes regain non-zero time through
+ * tokens only, and no literal ms rewrites.
  */
 
 const CSS = readGlobalCss();
 
 /**
- * **Deliberately stopped under reduced motion** — the reason is recorded here.
- *
- * ⚠️ This used to be inverted: a hand-written list of "surfaces that must have an
- * equivalent", checked in isolation. Under that shape **a surface missing from the
- * list is not a violation but nonexistent**, and five leaked out that way as
- * complete hard cuts for reduced-motion users (studio stage entry · support
- * picking · summary convergence · practice steps · route loading). The same thing
- * happened on 2026-07-28 and the comment then said *"the list is the reach"* (the
- * list is the reach) — but only the list's upkeep was fixed, while **the structure
- * that depends on a list** stayed.
- *
- * So it is inverted: candidates are **extracted from the CSS** (every class that
- * has an animation), and anything not mentioned in the reduced block must be
- * recorded here with its reason to pass. Creating a new surface defaults to
- * **red**.
+ * Animated classes are extracted from the CSS; any not mentioned in the reduced block must be recorded
+ * here with its reason, so a new surface defaults to red.
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
@@ -60,35 +34,14 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
     "Infinite travel shown only while a WorkProgress of unknown length runs. Reduced motion parks the bar left-anchored at a third of the track, claiming no scale; the consumer's label and count carry the fact.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
-  // ── Two scroll timelines (2026-08-22) ───────────────────────────────────
-  //
-  // This scanner's model is "an animation driven by time must still have time under
-  // reduced motion (no hard cuts)". These two sit outside that model — **time does
-  // not drive them.** Their only input for progress is
-  // `animation-timeline: view()`, i.e. scroll position, and no duration exists at
-  // all (`auto`). There is nothing here to give a "short reduced-motion duration"
-  // to.
-  //
-  // What happens under reduced motion is the evidence for this registration: **the
-  // declaration does not exist.** Both live only inside
-  // `@media (prefers-reduced-motion: no-preference)`, so for a reduced-motion user
-  // the rule is never parsed and what remains is `.gateway-rise`'s rest state —
-  // **everything visible from the start**. That is exactly the substitute the
-  // gateway's other choreography gives under reduced motion (the base-layer
-  // carve-out); what is lost is the entry order, and no information at all.
-  //
-  // ⚠️ This exemption stands on **one condition: being inside `no-preference`**. If
-  // someone moves the declaration outside that media query the reason becomes false
-  // at that moment — the test just below actually measures that condition, so moving
-  // it turns red.
+  // Driven by scroll position via `animation-timeline: view()`, with no duration to shorten. They live
+  // only inside `no-preference`, so reduced-motion users see everything from the start. The exemption
+  // holds only inside that media query, which the test below measures.
   "gateway-scroll-stage":
     "스크롤이 굴린다(view() 타임라인) — duration 이 없어 감속용 시간을 줄 대상이 없다. 감속에서는 선언 자체가 존재하지 않고 무대(영상·지도·ACP 장면)는 처음부터 전부 보인다.",
-  // The headline's landing (2026-09-02, council 2026-09-03). Each typed character firms
-  // from weight 400 / 60% ink to the signature weight over `--motion-settle`. It lives only
-  // inside `no-preference`; under reduced motion the base-layer carve-out shows every
-  // character complete from the first frame (`.gateway-type-ch { visibility: visible }`), so
-  // the declaration never exists there and no time axis is left to shorten. The condition
-  // is measured below with the scroll-timeline classes.
+  // Each typed character firms up over `--motion-settle`, inside `no-preference` only; under reduced
+  // motion the base-layer carve-out (`.gateway-type-ch { visibility: visible }`) shows it complete, so
+  // no time axis is left to shorten. The condition is measured below with the scroll-timeline classes.
   "gateway-type-land":
     "타자 안착 — 감속에서는 선언 자체가 없고 문장은 첫 프레임부터 완성돼 보인다(base 레이어 carve-out). 줄일 시간축이 없다.",
 };
@@ -183,7 +136,7 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   it('후보를 CSS 에서 실제로 뽑아냈다 — 빈손으로 통과하지 않는다', () => {
-    // Measured at 27 after the Studio-only motion was retired. A drop means the scanner has gone blind.
+    // Floor so a drop means the scanner has gone blind.
     expect(
       animatedClasses.length,
       `애니메이션 클래스를 ${animatedClasses.length}개만 찾았다 — 스캐너가 헛돈다`,
@@ -316,20 +269,9 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
-   * Composer growth, 2026-08-02 — **deliberately not in `EQUIVALENT_CLASSES`.**
-   *
-   * An equivalent is needed for axes that **carry information** without touching the
-   * vestibular system, like opacity. An input growing from two lines to three is not
-   * such an axis but **real movement**, like the cutout ring, so for a reduced-motion
-   * user the right answer is **arriving instantly**, not a `swap` — and the global
-   * kill rule (`transition-duration: 0.01ms`) already gives that answer, so a
-   * carve-out would undo it.
-   *
-   * What is guarded here is therefore two things: ① the duration is a ramp token so
-   * the global rule reaches it, and ② nobody slips a carve-out onto this surface.
-   * This is the shape that keeps a decision recorded and checked even when it is
-   * outside the registry (the cutout ring survived only as a comment, so the next
-   * person could revert it).
+   * Composer growth is deliberately not in `EQUIVALENT_CLASSES`: it is real movement, so arriving
+   * instantly is right and the global kill rule already gives it. Guards that the duration is a ramp
+   * token and that no carve-out is added.
    */
   describe('컴포저 자람 — 감속에서는 즉시 도착', () => {
     const PANEL = 'src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx';
@@ -364,12 +306,9 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
-   * D8 (2026-07-28) — for toasts, the vendor (sonner) switches everything off with
-   * `transition: none !important` inside its own `@media (prefers-reduced-motion)`.
-   * Measured, **only the worse of the two** survived: the informational motion of the
-   * notification arriving (opacity) vanished in one frame while the 53.5px position
-   * jump remained. The equivalent must be the reverse — remove the movement axis at
-   * its origin and give the opacity its time back.
+   * Toasts: the vendor (sonner) switches everything off with `transition: none !important`, which keeps
+   * the position jump and loses the opacity. The equivalent removes the movement axis at its origin
+   * and gives opacity its time back.
    */
   it('토스트 동등물은 흔들리는 축(--y)을 출발점에서 없앤다', () => {
     const toastRules = allRules.filter((r) => r.selector.includes('.app-toast'));
@@ -389,12 +328,8 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
-   * D7 (2026-07-28) — **WCAG 2.2 §2.3.3 explicitly exempts user-initiated
-   * movement.** This app's largest spatial motion (the canvas camera) ignored that
-   * exemption and snapped wheel, pinch, and pan too, so for a reduced-motion user
-   * **the whole viewport teleported in one frame** — worse for the vestibular system
-   * than the 400ms easing it replaced. It must branch in two: what a hand pushes
-   * keeps its time, and only what the app takes you to arrives instantly.
+   * WCAG 2.2 section 2.3.3 exempts user-initiated movement: wheel, pinch and pan keep their time, and
+   * only app-initiated camera moves snap, since snapping everything teleports the viewport.
    */
   it('캔버스 카메라의 reduced-motion 스냅은 앱 개시 이동에만 걸린다', () => {
     const step = TS('src/widgets/ontology-map/ui/frame-loop/topology-physics-step.ts');
@@ -421,17 +356,14 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
-   * D12 (2026-07-28) — sheets drawn by framer are out of reach of the CSS global
-   * kill rule, producing a half swap where **opacity survives and only geometry is
-   * cut** — exactly the wrong axis kept and the wrong axis removed. Unified onto the
-   * equivalent the three overlays already use.
+   * Sheets drawn by framer are out of reach of the CSS global kill rule, which would keep opacity and
+   * cut only geometry; they must use the shared equivalent.
    */
   it('framer 오버레이는 감속 경로에서 공용 동등물을 탄다', () => {
     for (const rel of [
       'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx',
       'src/widgets/search-palette/ui/SearchPalette.tsx',
-      // NewDocKindDialog became a consumer of the Dialog primitive on 2026-08-15 — the
-      // framer reduced-motion equivalent is now carried by that one primitive.
+      // `NewDocKindDialog` consumes the `Dialog` primitive, which carries the framer equivalent.
       'src/shared/ui/dialog.tsx',
     ]) {
       const src = TS(rel);
@@ -440,14 +372,9 @@ describe('reduced-motion 동등물 계약', () => {
   });
 
   /**
-   * In map chrome (the node popover), **brightness and movement ride different
-   * curves** (frame measurement, 2026-07-27). While both were bound into one
-   * keyframe, the movement's expo-out curve also governed opacity: 46.7% on the first
-   * frame and 85.6% by frame 3 (50ms) — the thing the user asked for appeared as
-   * effectively a hard cut. After separating them: 16.3% / 70.6%.
-   *
-   * The regression is silent (frames catch it, eyes do not), so the structure is
-   * pinned: if `opacity` returns to an entry/exit keyframe it is caught here.
+   * In map chrome, brightness and movement ride different curves: with one shared keyframe the expo-out
+   * movement curve also governed opacity and the entry read as a hard cut. If `opacity` returns to an
+   * entry/exit keyframe it is caught here, because frames catch it and eyes do not.
    */
   describe('지도 크롬 등장 — 밝기와 이동의 커브 분리', () => {
     function keyframeBody(name: string): string {

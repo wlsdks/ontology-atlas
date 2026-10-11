@@ -10,82 +10,14 @@ import { judgeRatchet, RAISES_DIR, type RatchetJudgement } from './lib/ratchet-b
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Control adoption ratchet — **hand-written control classNames can never grow.**
- *
- * Six counts: two tag families (button, anchor) × three categories (registered,
- * debt, no-basis), plus the form count below. The ratchet only lets them fall;
- * a rise means the value layer lost a consumer.
- *
- * **Judged against the merge base, not against a number in this file.** Every
- * count is measured on the working tree and again, with the same code, on the
- * merge-base tree (`lib/ratchet-base.ts`); a change fails only when it made a
- * count grow. The registries live in
- * `tests/contract/control-adoption/<registry>/<file>.<claim>.json`, one file per
- * row, so two branches registering different places touch different files. A
- * deliberate rise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record
- * whose `why` a reviewer reads.
- *
- * The round-by-round history (exhaustive counts, rejected claims, hole census)
- * is in Git: `git show 2b60604d8:tests/contract/control-adoption-ratchet.contract.test.ts`.
- *
- * ## The three categories
- *
- * | Category | Meaning |
- * |---|---|
- * | **Registered** | The value layer cannot produce this place in principle; the row says why (`control-adoption/buttons/`, `anchors/`). |
- * | **No-basis** | The value layer could produce it but has nothing to produce: a full-screen click surface (`control-adoption/no-basis/`). Not a repayment target. |
- * | **Debt** | Movable but not moved yet. Tends toward 0; progress is read only here. |
- *
- * Two questions sort a place: can the value layer produce it? If not, register
- * it. If so, does it have anything to produce? If yes it is debt; if no it is
- * no-basis. "Too cumbersome to move" and "pixels move" are debt, never no-basis.
- * Debt must be able to reach 0, which is why the other two are kept apart.
- *
- * ## The registry is a debt list, not a permit list
- *
- * 1. **Register only a place that passed verification.** "Probably cannot move"
- *    is debt; unverified debt errs in the safe direction.
- * 2. **A row registers a count, not a file.** One more hand control in a
- *    registered file keeps the registered count and raises debt.
- * 3. **When the proof disappears, the row dies.** Each row carries a `proof`
- *    string that must still be in the file; a `chrome-token` row also checks in
- *    `globals.css` that the token is not a fixed step.
- * 4. **Registering a movable place is the failure this file exists to stop.**
- *
- * ## Registration claims
- *
- * `controlClass()` produces a className, so these are outside it in principle:
- *
- * | Claim | What is outside the value layer |
- * |---|---|
- * | `chrome-token` | A chrome token owns the size as a viewport function or a pointer/width redefinition; the height ramp has fixed steps only. |
- * | `stage-geometry` | The size comes from JS-computed `style` (absolute stage coordinates), not a className. |
- * | `value-layer-peer` | The value layer's own primitives declaring their spec. |
- * | `standard-button` | An anchor already shaped by `buttonVariants()`, the one shape `control-class.ts` yields to `<Button>`. |
- * | `no-spec` | The tag declares no shape, size or colour (pure `className={className}` passthrough or an `inline-flex` placeholder). |
- * | `state-scoped` | The whole spec sits under a variant prefix (a `focus:` skip link); `controlClass()` emits unprefixed classes. |
- * | `prose` | A link inside running text; every value-layer shape is flex, and `inline-flex` breaks line wrapping. Its contract is `.prose-link`. |
- * | `shape-gap` | The eight shapes cannot express the layout; always `conditional`, so the row is deleted once the shape exists. |
- *
- * "The value layer does not have that shape yet" is not a claim: that is debt.
- * A `conditional` row names when to reopen it.
- *
- * ## Known over-count
- *
- * The count reads a literal `controlClass(` on the opening tag (or a constant
- * built from it in the same file). A finished class imported from another file
- * counts as hand-written: a safe-direction error that penalises sharing.
+ * Hand-written control classNames can never grow: button, anchor and form counts (registered, debt,
+ * no-basis) are judged against the merge base (`lib/ratchet-base.ts`). A deliberate rise needs a
+ * `tests/contract/ratchet-raises/<gate>/<slug>.json` record; registry rows are one file each.
  */
 /**
- * The **kind of claim** that something is outside the value layer. A new kind must also be added
- * to the registration-criteria table above.
- *
- * `shape-gap` (added 2026-08-06): **the value layer's eight shapes cannot in principle produce that
- * layout.** Different from `chrome-token`: that one cannot be emitted because the token changes per
- * condition; this one because the layout itself is not in the vocabulary. ⚠️ It must always carry a
- * `conditional` — once the shape or axis exists, the registration is deleted and the place drops
- * back into debt. Without a condition it becomes a permanent exemption, which breaks this
- * registry's definition as a debt list rather than a permit list (probe ⑭ holds this).
+ * Kind of claim that a place is outside the value layer; a new kind also goes in the criteria table
+ * above. `shape-gap` must always carry a `conditional`, else it becomes a permanent exemption and
+ * the registry stops being a debt list.
  */
 const OUTSIDE_CLAIMS = [
   'chrome-token',
@@ -115,7 +47,6 @@ interface OutsideEntry {
   readonly why: string;
   /** "Move it once X exists" — when the value layer gains that axis, delete the registration and drop the place into debt. */
   readonly conditional?: string;
-  /** Round history that used to sit beside the row as a comment. Not read by any check. */
   readonly note?: string;
 }
 
@@ -166,23 +97,8 @@ interface NoBasisEntry {
 }
 
 /**
- * **The registries are data files, one per row.**
- *
- * `buttons/`, `anchors/` and `fields/` hold the verified "outside the value layer" rows;
- * `no-basis/` holds the "nothing for the value layer to emit" rows. A row is
- * `<registry>/<file basename>.<claim>[.<proof slug>].json`.
- *
- * If you find a place that is outside the value layer but not listed, **open it
- * and verify before adding a row** (discipline 1 above). If you cannot verify it,
- * leave it in debt. Adding a row raises a registered count, so it also needs the
- * raise record that says why; that pair is the review.
- *
- * ⚠️ 2026-08-23, worth keeping: an evidence link was first written trailing a
- * sentence, which forces `display: inline` and therefore a `prose` registration.
- * Measuring instead of registering showed the sentence position was the mistake —
- * moved onto its own line it was an ordinary `shape: 'link'` control and no row
- * was needed. **Check whether the position is wrong before registering a shape the
- * value layer cannot make.**
+ * Registries are data files, one row each: `<registry>/<file basename>.<claim>[.<proof slug>].json`.
+ * Verify a place before adding a row; a row raises a registered count and needs a raise record.
  */
 const REGISTRY_DIR = 'tests/contract/control-adoption';
 type RegistryName = 'buttons' | 'anchors' | 'fields' | 'no-basis';
@@ -240,13 +156,9 @@ const NO_BASIS_BUTTONS = NO_BASIS.filter((e) => e.family === 'button');
 const NO_BASIS_ANCHORS = NO_BASIS.filter((e) => e.family === 'anchor');
 
 /**
- * **The counts when this gate moved to the merge-base judge (2026-09-27). Never edited.**
- *
- * They are not the baseline — the merge base is. They are the ceiling used where there is no
- * merge base to compare with (a shallow clone), and a floor under a tree compared with itself
- * (a push to `main`). Raise records widen them too, so a deliberate rise never needs an edit
- * here. Each is a **literal** (probe ④): a value derived from the registry would rise with every
- * row, which is how the hard-cut ratchet's "never grows" became impossible to fail.
+ * Ceilings for when no merge base exists (shallow clone) and a floor when the tree is compared with
+ * itself; raise records widen them. Each is a literal: a value derived from the registry would rise
+ * with every row and never fail.
  */
 const FALLBACK = {
   registered: 24,
@@ -284,20 +196,8 @@ function walk(dir: string, out: string[] = []): string[] {
  * the number is wrong even though it is a number.**
  */
 /**
- * Blank out comments before any tag parsing, keeping byte offsets and line
- * numbers intact (block comments become spaces, not nothing).
- *
- * **Why this is required, not optional** (measured 2026-08-22). `openingTag`
- * tracks quotes so a `"` inside an attribute cannot end the tag early. A comment
- * sitting inside a JSX opening tag defeats that: an English apostrophe — as in
- * `This scrim's name` — opens a quote that never closes, so the parser runs past
- * the tag and swallows the JSX after it. The click-surface count in this file
- * silently fell 5 → 4 the moment the repo's comments were translated to English.
- *
- * Korean prose has no apostrophes, which is why the defect stayed latent for as
- * long as the comments were Korean. Sibling gates (`field-adoption-ratchet`,
- * `focus-ring-presence`, `static-surface-census`) already strip first; this is
- * the same pattern, not a new one.
+ * Blank comments before tag parsing, keeping offsets and line numbers: an apostrophe in a comment
+ * inside a JSX opening tag opens a quote `openingTag` never closes, swallowing the JSX after it.
  */
 function stripComments(source: string): string {
   return source
@@ -320,15 +220,6 @@ function openingTag(source: string, from: number): string {
   return source.slice(from, from + 2000);
 }
 
-/**
- * **A control is not only `<button>`** (2026-08-04).
- *
- * For one day this ratchet counted `<button>` alone, leaving **109 hand-specced
- * anchors** (`<Link>` 85 · `<a>` 24) outside the gate's field of view. They are
- * no different from buttons: pressable elements that hand-write their own
- * height, inset, and radius — the value layer's `link` shape exists precisely
- * for them.
- */
 const BUTTON_TAGS = ['button'] as const;
 const ANCHOR_TAGS = ['Link', 'a'] as const;
 const FIELD_TAGS = ['input', 'textarea', 'select', 'label'] as const;
@@ -423,19 +314,9 @@ function handWrittenTags(file: string, tags: readonly string[] = BUTTON_TAGS): s
     const tag = openingTag(source, m.index + m[0].length);
     if (!/className/.test(tag)) continue; // No class means no hand-written spec
     /*
-     * Did it go through the system? **Looking only at literals in the opening
-     * tag is not enough** — when a finished class is extracted into a constant
-     * shared by several places (`const INDIGO_CHIP = controlClass({…})`), those
-     * consumers get caught as "hand-written".
-     *
-     * The 2026-08-03 recovery round actually took that penalty: the indigo
-     * emphasis chip needed border and hover to be complete, so it had to be
-     * bundled into 4 constants — and then the ratchet reported a regression.
-     * **A gate that discourages the correct refactor is not a gate.**
-     *
-     * `fieldClass` joined on 2026-08-06. **Leave that one name out and moved
-     * places keep counting as debt, so the baseline never falls** — the system
-     * (design-systems) seat named this the top idling candidate in that PR.
+     * A finished class extracted into a constant built from `controlClass(` or `fieldClass` and shared by
+     * several places must not count as hand-written; leaving a value-layer name out keeps moved places
+     * counted as debt.
      */
     const className = classValue(tag);
     if (VALUE_LAYER_CALL.test(className)) continue;
@@ -701,92 +582,6 @@ const judgeControl = {
     }),
 } satisfies Record<keyof typeof FALLBACK, (o?: JudgeOptions) => RatchetJudgement>;
 
-/**
- * ════════════════════════════════════════════════════════════════════
- * ## Anchor controls — **the third and fourth counts** (2026-08-04)
- * ════════════════════════════════════════════════════════════════════
- *
- * ### Why a new count instead of adding to debt 85
- *
- * The preamble already recorded the judgement: *"Previously, 113 was one lump,
- * so it was impossible to know what had progressed"* (113 used to be one lump, which made
- * progress unreadable — unmovable places and not-yet-moved places sat in the same
- * cell). The same lesson applies here.
- *
- * Adding anchors to debt 85 makes **194**, and when that number falls nobody can
- * tell whether a button or an anchor moved. The two families are **different
- * units of work** — a button is usually one `controlClass({ shape })` line, while
- * an anchor forces `<Link>` through a `cn` merge (measured in this file: raw
- * `buttonVariants()` leaves both the base's `border-transparent` and the variant
- * border in place, and source order lets transparent win) and external links also
- * hit the leading `↗` marker rule.
- *
- * ### Why `<Link>` and `<a>` are one count
- *
- * These two are **not** split. `<Link>` renders an `<a>`, and in the value layer
- * both have the same destination, `shape: 'link'`. Putting one prescription in
- * two cells is bookkeeping, not a progress gauge. The per-tag breakdown is
- * recorded here instead — **`<Link>` 71 · `<a>` 21** (measured after the 10
- * recovered by the 2026-08-04 round that rejected splitting by type).
- *
- * ⚠️ The audit report's number was **77**. That difference is drift or a
- * different filter, and the number the gate uses must be **what this file's
- * parser actually counted** — writing someone else's count into a baseline makes
- * the first run red, and then a person fixes the number instead of the gate.
- *
- * ### Registrations became 19 a day later — the 0 on the day the gate opened meant "not yet verified"
- *
- * On the day it was created no "outside the value layer" claim had been verified,
- * so all 110 were debt. Opening each place per discipline 1, **19 were true**, and
- * one of them (the bottom tab bar's `--topology-bottom-tab-min-height`) was
- * **rejected by the gate itself** — a single fixed 56px declaration, which
- * `tokenIsBeyondFixedSteps` refuses. This is where the round proved by
- * measurement that registration is not an escape hatch.
- */
-
-/**
- * ════════════════════════════════════════════════════════════════════
- * ## Forms — **the fifth count** (2026-08-05)
- * ════════════════════════════════════════════════════════════════════
- *
- * ### This gate could not see forms
- *
- * The two families above count only `button` and `Link`/`a`. So **`<input>`,
- * `<textarea>`, `<select>`, and `<label>` were outside this ratchet's field of
- * view**, and the promise that hand-written controls never grow had never once
- * been true for forms.
- *
- * The 2026-08-05 exhaustive count measured the cost:
- *
- * | Item | Measured |
- * |---|---:|
- * | `<input>` · `<textarea>` · native `<select>` · `<label>` | **62** |
- * | `<input>` that actually reads `--control-h-*` | **6 / 33 (18%)** |
- * | Distinct (height, radius, type, border) combinations | **34 across 44 places (77%)** |
- * | Native checkboxes below WCAG 2.5.8 AA (24px) | **5 / 5** |
- *
- * That is **more scattered** than chips at "50 combinations across 143 (35%)".
- * The absolute number is smaller because the population is smaller, but the
- * share of places inventing a value by hand is higher.
- *
- * ### Why a third count instead of adding to debt 74
- *
- * Same reason anchors were counted separately (the "third and fourth counts"
- * section above). Adding forms to button debt means that when the number falls
- * **nobody can tell whether a button or a form moved.** The unit of work also
- * differs — a button is usually one `controlClass({ shape })` line, whereas a
- * form needs a **shape the value layer does not have yet** (`field`), so
- * convening system (the design-systems seat) comes first.
- *
- * ### Today this count does not claim anything is movable
- *
- * The registration list (`control-adoption/fields/`) was **empty**, because
- * without a field shape in the value layer there is not yet any basis to claim
- * "the value layer cannot emit this in principle". So today this count does
- * exactly one thing: **stop it growing further.** When the shape exists,
- * registrations appear and debt comes down.
- */
-
 describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>` · `<label>`)', () => {
   /**
    * ⚠️ **A lower bound on the debt count punishes progress.** This assertion used
@@ -799,16 +594,8 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
    * check that, **while debt is non-zero**, the three categories sum to the total.
    */
   /**
-   * ⚠️ **It broke the moment the count reached 0** — the **sixth** time in this
-   * file, and this time it was the genuine completion point (2026-08-06).
-   *
-   * This assertion used to check "total == baseline". Once every remaining place
-   * was listed and debt reached 0, it diverged as "total 20 vs baseline 0".
-   * **Total and debt are different numbers** — the total is how many of that tag
-   * exist, debt is how many of them are not moved yet.
-   *
-   * The question is whether **the three categories (debt, registered, no-basis)
-   * sum to the total**. That must hold whether debt is 0 or 100.
+   * Total and debt are different numbers: assert the three categories sum to the total, which holds
+   * whether debt is 0 or 100.
    */
   it('세 부류의 합이 전수와 같다 — 어느 칸에도 안 들어간 폼이 없다', () => {
     expect(fieldCensus.registered + fieldCensus.noBasis + fieldCensus.debt).toBe(fieldCensus.total);
@@ -832,26 +619,12 @@ describe('컨트롤 채택 래칫 — 폼(`<input>` · `<textarea>` · `<select>
   });
 
   /**
-   * **Check non-zero per tag, one tag at a time.** "Not being an empty set is
-   * different from seeing the whole set" — this prevents a repeat of the
-   * 2026-08-05 defect where the icon ratchet matched single quotes only and still
-   * passed its denominator assertion. `label` alone puts the total over 20, so a
-   * total-only assertion cannot catch `input` going uncounted.
+   * Check non-zero per tag, one tag at a time: `label` alone puts the total over 20, so a total-only
+   * assertion cannot catch `input` going uncounted.
    */
   /**
-   * ⚠️ **Do not measure this with debt — it punishes progress** (it actually broke
-   * on 2026-08-06).
-   *
-   * This assertion used to require **at least one debt item** per tag. That day
-   * every native `<select>` moved to `fieldClass`, the count hit 0, and the check
-   * went red — a gate breaking in the direction of a better spec, which makes the
-   * next person revert **the spec** rather than the gate (exactly the shape
-   * `documentation.md` forbids). That was the second time the same failure happened
-   * in a single day.
-   *
-   * So we measure the **scanner's field of view** — whether that tag exists in the
-   * repository at all, debt or not. Debt reaching 0 is the destination, not a
-   * defect.
+   * Measure the scanner's field of view (the tag exists in the repository), not debt: debt reaching
+   * 0 is the destination, and a lower bound on debt turns red on progress.
    */
   it('네 태그를 각각 보고 있다 — 한 태그만 보면서 총계로 위장하지 못한다', () => {
     const seen = Object.fromEntries(FIELD_TAGS.map((tag) => [tag, 0])) as Record<string, number>;
@@ -991,11 +764,8 @@ describe('컨트롤 채택 래칫 — 앵커(`<Link>` · `<a>`)', () => {
   });
 
   /**
-   * The per-tag split used to be a literal (`{ Link: n, a: m }`) edited with every registered
-   * anchor — 25 commits, the most-edited line in this file. It guarded nothing the three judged
-   * anchor counts do not: every new anchor is registered, no-basis, or debt, and each of those is
-   * judged against the merge base. What remains is the property the name promised: both tags are
-   * counted, and together they are the whole census.
+   * Per-tag counts are not pinned as a literal: both tags are counted and together they are the
+   * whole census.
    */
   it('태그 내역이 전수와 맞는다 — 두 태그가 서로를 잃지 않는다', () => {
     const perTag = Object.fromEntries(
@@ -1115,10 +885,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     expect(countInFile(FIXTURE), '픽스처의 손 컨트롤 2건을 못 셌다면 파서가 깨진 것이다').toBe(2);
 
     /*
-     * Alive on the real tree too. ⚠️ **Do not ask "how many are left" here** — that
-     * number shrinks with debt, so a lower bound turns red on the day everything is
-     * moved (re-reviewed 2026-08-06). Measure the **number of files scanned** (the
-     * scanner's field of view) instead; that is independent of debt.
+     * Measure the number of files scanned, not remaining debt: a lower bound on debt turns red once
+     * everything is moved.
      */
     expect(scannedFiles.length, '훑은 파일이 너무 적다 — 스캐너의 시야가 죽었다').toBeGreaterThan(150);
   });
@@ -1280,25 +1048,13 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **Do not pin the negative example to a token name** (doing so turned this
-   * red once, on 2026-08-05).
-   *
-   * This check used to name `--control-h-md` as its negative example — *"a single
-   * 32px, so the value layer can emit it as is"*. Then a legitimate change raised
-   * control heights to 44px under `@media (pointer: coarse)`, the token **moved to
-   * the positive side**, and the check failed even though the helper was fine.
-   *
-   * That is the shape `documentation.md` forbids — a hand-written expectation
-   * breaks on changes that improve the spec, and the next person reverts **the
-   * spec** rather than the check. So the negative example is **derived from the
-   * CSS**: pick a token that really is "one declaration + a plain px" today and
-   * check that the helper rejects it.
+   * The negative example is derived from the CSS rather than a named token, so a legitimate change to
+   * one token's value cannot fail the check.
    */
   it('⑤ 토큰 검사가 아무거나 통과시키지 않는다 — 고정 단 토큰은 반드시 거절한다', () => {
     // Positive: redefined per condition, or using a viewport function.
     expect(tokenIsBeyondFixedSteps(globalsCss, '--git-row-h')).toBe(true);
     expect(tokenIsBeyondFixedSteps(globalsCss, '--overlay-close-size')).toBe(true);
-    // Since 2026-08-05 `--control-h-md` is redeclared as 44 on coarse → positive.
     expect(
       tokenIsBeyondFixedSteps(globalsCss, '--control-h-md'),
       'coarse 승격이 사라졌다면 그건 손가락 바닥이 무너진 것이다',
@@ -1368,16 +1124,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **Do not require a real defect to still exist** (it actually broke on
-   * 2026-08-06).
-   *
-   * This probe used to assert *"DownloadPage's release-notes link is still in
-   * debt"*. Moving that link into the value layer turned it **red** — punishing the
-   * fix. That was the third time the same failure happened in this file in one day.
-   *
-   * The question is not "does the defect still exist" but **"does registration leak
-   * into a file-wide exemption"**. Plant a hand anchor in a registered file and
-   * check that debt rises — a form that holds even when defects are 0.
+   * Plant a hand anchor in a registered file and check debt rises: registration must not become a
+   * file-wide exemption, and the check holds even at zero defects.
    */
   it('⑫ 앵커 등재는 **파일 면제가 아니다** — 등재된 파일에 손 앵커를 더하면 부채가 오른다', () => {
     const file = 'src/views/download/ui/DownloadPage.tsx';
@@ -1396,16 +1144,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * **`shape-gap` cannot be used without a condition** (added 2026-08-06).
-   *
-   * The claim is that the value layer's eight shapes cannot produce that layout in
-   * principle — but shapes and axes are things that can be built. Without recording
-   * **when it reopens** it becomes a permanent exemption, which breaks this
-   * registry's definition as a debt list rather than a permit list.
-   *
-   * The discipline comes from the owner: a place with a final verdict comes out of
-   * the debt count, but **why it was removed and when it returns** must stay on the
-   * record.
+   * `shape-gap` needs a condition for when it reopens; without one it becomes a permanent exemption,
+   * breaking the debt-list definition of the registry.
    */
   it('⑭ `shape-gap` 등재는 전부 «언제 다시 여는가» 를 진다', () => {
     const gaps = OUTSIDE_VALUE_LAYER.concat(OUTSIDE_VALUE_LAYER_ANCHORS).filter(
@@ -1426,28 +1166,16 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 
   it('⑬ 기각된 주장이 실제로 기각된다 — 하단 탭바의 56px 은 크롬 토큰 면제가 아니다', () => {
     /*
-     * The place where this round claimed `chrome-token` for
-     * `--topology-bottom-tab-min-height` and then rejected its own claim. This pins
-     * that the rejection was **the gate's verdict, not an opinion** — the day the
-     * value becomes conditional this probe turns red and the registration is
-     * reconsidered.
+     * Pins that the fixed 56px token is rejected by the gate; if the value becomes conditional this turns
+     * red and the registration is reconsidered.
      */
     expect(
       tokenIsBeyondFixedSteps(globalsCss, '--topology-bottom-tab-min-height'),
       '이 토큰이 조건부가 됐다 — BottomTabBar 2건의 `chrome-token` 등재를 다시 심사하라',
     ).toBe(false);
     /*
-     * ⚠️ **What was rejected is the one `chrome-token` claim, not "any
-     * registration".**
-     *
-     * This assertion used to require *"BottomTabBar is **not registered**"*. So when
-     * it was honestly registered on 2026-08-06 under a **different claim**
-     * (`shape-gap` — the eight shapes cannot produce a vertical stack layout, 4
-     * places exhaustively), it turned red.
-     *
-     * A probe must guard only the property it exists to guard. Here that property is
-     * **"a fixed 56px token cannot buy a chrome exemption"**, so it checks only
-     * whether the place is registered under *that* claim.
+     * Guards only that a fixed 56px token cannot buy a chrome exemption: checks registration under the
+     * `chrome-token` claim, not any registration.
      */
     const bottomTabClaims = OUTSIDE_VALUE_LAYER_ANCHORS.concat(OUTSIDE_VALUE_LAYER)
       .filter((e) => e.file === 'src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx')
@@ -1468,11 +1196,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /*
-   * ── Probes for the no-basis category (2026-08-04). This category **fails if it
-   * becomes an escape hatch**, so the predicate is aimed at in both directions:
-   * what it catches on the real tree (⑭), what it **rejects** on the real tree
-   * (⑮), how it dies on synthetic input (⑯), and whether deleting a row returns the
-   * place to debt (⑰).
+   * The no-basis category fails if it becomes an escape hatch, so its predicate is probed both ways:
+   * what it catches on the real tree, what it rejects, synthetic input, and row deletion.
    */
 
   it('⑭ 판정 함수가 실물에서 센다 — 빈 집합 위에서 놀지 않는다', () => {
@@ -1487,20 +1212,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **Do not require a real defect to still exist** — the **fourth** time in
-   * this file alone.
-   *
-   * This probe used to require `DemoStage`'s full-bleed overlay to **still be in
-   * debt**. When that overlay moved into the value layer on 2026-08-06,
-   * `handWrittenTags` returned 0 and it turned red — punishing the fix.
-   *
-   * The question is not "is that file still unmoved" but **"does being full-bleed
-   * alone buy an exemption"**. That is a property of the **predicate**
-   * (`isClickSurface`), so a synthetic tag answers it, and it holds even when
-   * defects are 0.
-   *
-   * What `DemoStage` looked like is kept as the control case, so the next person
-   * does not misread "full-bleed therefore scrim".
+   * Test the predicate (`isClickSurface`) with a synthetic tag, not a real file's debt: being full-bleed
+   * alone must not buy an exemption, and this holds at zero defects.
    */
   it('⑮ 음성 대조군 — 전면이어도 규격을 지면 클릭면이 아니다', () => {
     /*
@@ -1566,18 +1279,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   });
 
   /**
-   * ⚠️ **Do not require a real defect to still exist** — the **fifth** time in
-   * this file alone, and this time it broke **the moment debt reached 0**
-   * (2026-08-06).
-   *
-   * This probe used to require *"`CommitDetail` is still in debt"*. Moving that
-   * file into the value layer took button debt to **0** and turned it red — the
-   * textbook shape of **a gate that dies on the day the work is finished**.
-   *
-   * The question is not "is that file still unmoved" but **"does registration
-   * exempt a whole file"**. Plant a hand control in a registered file and check
-   * that debt rises; that holds even when defects are 0 (the anchor side's ⑫ is
-   * already in this shape).
+   * Plant a hand control in a registered file and check debt rises: registration must not exempt a
+   * whole file; this holds even when defects are 0.
    */
   it('⑥ 등재는 **파일 면제가 아니다** — 등재된 파일에 손 컨트롤을 더하면 부채가 오른다', () => {
     const registeredFile = OUTSIDE_VALUE_LAYER[0]?.file;
@@ -1593,25 +1296,8 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
 });
 
 /**
- * ════════════════════════════════════════════════════════════════════
- * ## One surface, one close — **the seventh count is a rule, not a number** (2026-09-06)
- * ════════════════════════════════════════════════════════════════════
- *
- * Measured in the installed app: the meaning dock drew **two identical X buttons a few pixels
- * apart**, one from the workbench and one from the chat panel inside it. Both closed the same
- * thing, and the inner one closed a surface the chat panel does not own — a control that acts on
- * its host is a control that cannot be reasoned about from the file it lives in.
- *
- * This is not a hand-written-className problem, so it is not a count. It is an **ownership** rule,
- * and it belongs beside the other control rules because the failure is the same shape: a control
- * appears because a file could add one, not because the surface needed one.
- *
- * > **A panel rendered inside another surface does not draw that surface's close button.**
- *
- * The detector reads the JSX, not the prop list: `onClose` is a perfectly good prop name for a
- * panel that owns its own dismissal, and the violation is a *host* handing it down. Both halves
- * are checked — the hosts must not pass it, and the panel must not have a close control to pass it
- * to, so the rule cannot be half-satisfied by a prop that is simply ignored.
+ * A panel rendered inside another surface does not draw that surface's close button. Both halves are
+ * checked: hosts must not pass `onClose`, and the panel must have no close control to receive it.
  */
 const WORKBENCH_HOSTED_PANEL = 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx';
 const WORKBENCH_HOSTED_PANEL_PROPS = 'src/widgets/acp-chat-panel/ui/chat-panel/types.ts';
@@ -1693,16 +1379,9 @@ describe('컨트롤 소유권 — 한 화면에 닫기는 하나', () => {
 });
 
 /**
- * ════════════════════════════════════════════════════════════════════
- * ## The merge-base judgement, on a scratch repository (2026-09-27)
- * ════════════════════════════════════════════════════════════════════
- *
- * The tests above can only compare this checkout with its own merge base. These probes build a
- * small repository in the same shape (`src/` plus the registry directory), run **the same eight
- * `judgeControl` calls**, and plant one regression per count: each must turn RED, a raise record
- * written in the same change must turn it GREEN, and a fall needs no file at all. The last probes
- * are the reason for the conversion: two branches that each register a different place merge
- * without a conflict, and a registry row added in a change cannot lift the ceiling it is judged by.
+ * Probes build a scratch repository and run the same eight `judgeControl` calls: each planted
+ * regression must turn red, a raise record turns it green, a fall needs no file. Two branches
+ * registering different places must merge without a conflict.
  */
 describe('머지 베이스 판정 — 스크래치 저장소 프로브', () => {
   const scratch = mkdtempSync(join(tmpdir(), 'control-adoption-judge-'));

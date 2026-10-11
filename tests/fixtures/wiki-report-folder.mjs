@@ -1,30 +1,7 @@
 /**
- * One wiki folder, as bytes, plus the exact findings it must produce.
- *
- * This plants the four codes the real fixture at
- * `/Users/jinan/scratch/atlas-library-fixture-20260911/vault` fires, and it lives here
- * rather than there because a contract test may not depend on somebody's scratch
- * directory. `wiki-validate` measured that folder on 2026-09-12 as 6 pages, 0/6 fit, 9
- * findings over 4 codes — `uncited-fact`, `citation-target-missing`, `orphan-page`,
- * `shared-source-unlinked` — which is the same four, one per reason a check can fire: a
- * page's own bullet, a page's own citation, a fact about the folder, and a fact about a
- * pair of pages.
- *
- * The expected set below is stated **whole**, so the contract fails closed. A surface that
- * silently drops an advisory row would pass a subset assertion, which is exactly the hole
- * both PO seats found in the slice's hand-written proof list on 2026-09-12.
- *
- * `docs/DECISIONS.md` 2026-09-11 makes the agreement load-bearing: *"a structural finding
- * differs between the app's report and `wiki-validate`"* is that record's falsifier.
- *
- * ## The link topology is deliberate
- *
- * `orphan-page` is true of every page nobody points at, so the links decide how many
- * orphans the folder has, and a fixture that forgot them would report four orphans and
- * teach nothing. Here: merchant ← refund, refund ← merchant and settlement,
- * settlement ← refund, and **settlement-ko ← nobody**. One orphan, on purpose.
- * `settlement` and `settlement-ko` are two write-ups of one document that do not link
- * each other, which is the pair `shared-source-unlinked` exists to name.
+ * One wiki folder as bytes plus the exact findings it must produce, so no contract depends on an
+ * outside directory. The expected set is stated whole so a dropped advisory row fails. Links leave one
+ * orphan (settlement-ko); two pages share a source without linking.
  */
 
 const HASH = 'a'.repeat(64);

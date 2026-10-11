@@ -90,18 +90,8 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   });
 
   /**
-   * The 2026-08-28 cap is gone, and this is the assertion that replaces it.
-   *
-   * The hook ran both correctness lanes at `--maxWorkers=2 --testTimeout=30000`
-   * because four workers starved two React tests "past their explicit 5-second
-   * wait". Those explicit waits were hand-raised per-call `waitFor` ceilings, which
-   * `.claude/rules/testing.md` ("The timing rule") now forbids — `vitest.setup.ts`
-   * sets one `asyncUtilTimeout` instead. With the cause removed, the cap was pure
-   * cost: 377.7 s against 124.3 s on the same 759-file suite (measured 2026-09-12).
-   *
-   * So what is pinned now is the opposite: **no lane may buy quiet with the clock.**
-   * A worker cap or a stretched per-test timeout in this hook is the signature of a
-   * test that reads the clock, and the fix belongs in that test.
+   * No lane may buy quiet with the clock: a worker cap or stretched per-test timeout in this hook
+   * marks a test that reads the clock, and the fix belongs in that test (`.claude/rules/testing.md`).
    */
   it("정확성 레인은 시계로 조용함을 사지 않는다 — worker 상한도 늘린 timeout도 없다", () => {
     const laneLine = (name: string) =>
@@ -141,12 +131,8 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   });
 
   /**
-   * A cost nobody prints is a cost that grows. This hook measured **367 s for a
-   * one-file change** on 2026-09-12 and nothing said so, which is how it got there.
-   *
-   * Reported, never enforced: refusing a green push because the machine was busy is
-   * the exact failure `.claude/rules/testing.md` forbids, so the budget line must
-   * not be able to change the push's fate.
+   * The budget is reported, never enforced: refusing a green push because the machine was busy is
+   * forbidden by `.claude/rules/testing.md`, so the budget line must not change the push's fate.
    */
   it("예산은 보고만 한다 — 예산으로 푸시를 막지 않는다", () => {
     expect(executable, "예산과 견주는 줄이 없다").toMatch(/\$total.*-gt.*\$BUDGET_SECONDS/);
@@ -169,9 +155,8 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
         scripts?: Record<string, string>;
       }).scripts ?? {},
     );
-    // The class must span the whole token, uppercase included. A narrower class
-    // silently truncates a typo back into a valid name — `docs:surface:checkX`
-    // matched as `docs:surface:check` and the probe passed (measured 2026-08-22).
+    // The class must span the whole token, uppercase included, or a narrower class truncates a typo
+    // like `docs:surface:checkX` back into a valid name.
     const named = [...executable.matchAll(/pnpm\s+([A-Za-z][A-Za-z0-9:_-]*)/g)]
       .map((m) => m[1])
       .filter((name) => name !== "exec");

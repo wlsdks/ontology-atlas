@@ -9,14 +9,8 @@ type ServerStates = Record<
 >;
 
 /**
- * **The screen and an agent answer the evidence question in one voice.**
- *
- * `/ontology/insights` states per concept whether the code it cites moved after its meaning
- * was last touched; `validate_vault` states the same thing to a coding agent. They were two
- * implementations for a day and disagreed on a concept citing both a path that is gone and a
- * path the walk never reached: one said `missing`, the other `unknown` (design-handoff,
- * 2026-09-19). Both now call `shared/lib/git/evidence-verdict.mjs`, and this test is what keeps
- * them there: it feeds one fixture through both and compares the verdicts.
+ * The screen and `validate_vault` answer the evidence question in one voice: both call the shared
+ * evidence module in `shared/lib/git/`, and this test feeds one fixture through both and compares.
  */
 
 interface Case {

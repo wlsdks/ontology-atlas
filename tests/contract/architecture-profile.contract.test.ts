@@ -180,11 +180,8 @@ describe('architecture-profile/v1 cross-surface contract', () => {
   });
 
   /*
-   * ⚠️ **One record reached twice is not a conflict.** Measured 2026-08-26: `atlas architecture .`
-   * at this repository's root died with `Duplicate architecture profile slug: atlas-web.` and
-   * nothing else. The cause was the repository's own generated mirror — `pnpm docs-vault:build`
-   * copies the vault into `public/docs-vault/`, so the one profile was read twice. Refusing to run
-   * was wrong: there was nothing for a person to resolve, and the message named neither document.
+   * One record reached twice is not a conflict: `pnpm docs-vault:build` mirrors the vault into
+   * `public/docs-vault/`, so one profile is read twice.
    */
   it.each([
     ['web', (docs: Parameters<typeof deriveWebProfiles>[0]) => deriveWebProfiles(docs)],
@@ -212,10 +209,9 @@ describe('architecture-profile/v1 cross-surface contract', () => {
       },
     ];
     /*
-     * ⚠️ **One sentence, two ways of delivering it.** An agent reading a half-scanned vault must
-     * not mistake it for a whole one, so the MCP still throws; the screen keeps the profiles it
-     * could read and names the collision beside them (2026-09-03). The wording is the same on
-     * both surfaces, because "which two documents?" is the same question either way.
+     * The MCP still throws on a collision so an agent does not mistake a half-scanned vault for a whole
+     * one; the screen keeps the readable profiles and names the collision. The wording is the same on
+     * both.
      */
     let thrown: unknown = null;
     try {

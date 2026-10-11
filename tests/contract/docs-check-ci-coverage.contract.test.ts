@@ -3,22 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * Locks that **every sub-check of `docs:check` is actually invoked in CI**.
- *
- * **Why this contract exists** (code review, 2026-08-07). `docs:check` was wired into
- * CI on 2026-08-06, but its `docs:surface:check` **launches a real MCP server** and so
- * runs only in a job that has `mcp/node_modules`. One step was therefore split across
- * two jobs — the two that only read files go in `gates`, and the one that launches a
- * server goes in
- * `mcp`.
- *
- * That split was **tied to `package.json`'s definition by nothing at all.** Adding a
- * fourth sub-check to `docs:check` means it **runs nowhere in CI**, with no signal.
- * The very reason this step exists — "a check that is never invoked does not exist" —
- * had simply moved up one level.
- *
- * So the list is **extracted from the definition** rather than kept in sync by
- * hand.
+ * Every sub-check of `docs:check` must be invoked in CI. `docs:surface:check` launches a real MCP
+ * server and runs only in a job with `mcp/node_modules`, so the list is extracted from the
+ * `package.json` definition rather than kept in sync by hand.
  */
 
 const ROOT = process.cwd();

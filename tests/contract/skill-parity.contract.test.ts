@@ -6,20 +6,8 @@ import { analyzeAgentFiles as analyzeCli } from '../../cli/src/lib/agent-files.m
 import { CASES as FIXTURE_CASES } from '../fixtures/agent-files-cases.mjs';
 
 /**
- * **Does the screen's skill-copy verdict state the same facts as the CLI?**
- *
- * `tests/contract/agent-files.contract.test.ts` keeps the two implementations
- * producing the same **per-file findings**. This file is the layer above: whether
- * the result the screen **folds per skill** for a human matches the CLI's totals.
- *
- * Why it is needed separately: the folding step exists only on the screen, outside
- * the existing contract's reach — yet the number a user reads is the folded one.
- * "The CLI says 3 but the screen says 2" means one of them is lying, and the one
- * that loses trust is **the screen**.
- *
- * For the same reason it locks that the model must be **empty** in the
- * `not-applicable` case (no skill tree) — drawing something that does not exist as
- * "0 findings, matching" would claim verification that never happened.
+ * Checks that the screen skill-copy folding states the same totals as the CLI, and that the model
+ * is empty in the `not-applicable` case, since drawing it as 0 findings would claim a verification.
  */
 
 interface FixtureCase {

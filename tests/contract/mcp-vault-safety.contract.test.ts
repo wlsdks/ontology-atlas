@@ -5,35 +5,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **This server reads only the folder it was given.**
- *
- * ## Why this check exists (2026-08-16 review, confirmed by measurement)
- *
- * The four folder-walking tools (`analyze_repo_structure` · `infer_imports` ·
- * `index_project` · `validate_vault`) only called `resolve()` on `rootPath` and
- * **checked no boundary at all**. So this call simply succeeded:
- *
- * ```
- * analyze_repo_structure {"rootPath":"/etc"}  → ok, returns the directory structure
- * ```
- *
- * And because all four are **read tools**, `OATLAS_READ_ONLY` does not block them —
- * that mode is described as "recommended when whoever registered the server is not
- * the vault's owner", yet in that state writing was impossible while walking the
- * entire disk was not.
- *
- * This collides head-on with the promise this product makes to users: *"Files on the
- * user's disk such as passwords and credentials are never scanned automatically"* (files
- * on the user's disk such as passwords and credentials are never scanned
- * automatically) — `.claude/rules/local-first.md`. A tool call induced by one line
- * of a prompt must not break that promise.
- *
- * ## Why a real server is started
- *
- * Calling the function directly cannot confirm the function is **actually called at
- * that point**. This repository already hit that failure once — a gate that passed
- * on invented input. So the server is started as a process and called over
- * JSON-RPC.
+ * The server must read only the folder it was given. A real server is started and called over
+ * JSON-RPC, since calling the function directly cannot confirm it is invoked at that point.
  */
 
 const OUTSIDE = '/etc';
@@ -117,17 +90,8 @@ function makeVault(): string {
 
 describe('MCP 이름 바꾸기 — 대소문자만 다른 이름은 같은 파일이다', () => {
   /**
-   * The 2026-08-16 review **reproduced an actual document disappearing**:
-   *
-   * ```
-   * rename_concept{oldSlug:"Auth", newSlug:"auth", confirm:true, overwrite:true}
-   *   → ok:true, moved:true, backlinkUpdates:{totalUpdated:1}
-   *   → on disk, neither Auth.md nor auth.md remains. The reference is left dangling
-   * ```
-   *
-   * The upstream collision check is a **string comparison**, so it saw two different
-   * names while macOS saw one file. Writing under the new name and then deleting the
-   * old one deleted what had just been written — and the tool reported success.
+   * The upstream collision check is a string comparison, so a case-only rename looked like two names
+   * while macOS saw one file; writing then deleting the old name deleted the new file.
    */
   it('대소문자만 다른 이름 바꾸기는 **거절**하고, 파일은 그대로 남는다', () => {
     const vault = mkdtempSync(join(tmpdir(), 'atlas-case-'));

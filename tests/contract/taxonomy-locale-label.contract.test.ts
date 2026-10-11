@@ -7,27 +7,8 @@ import { routing } from "@/i18n/routing";
 import { pickTaxonomyLabel } from "@/shared/lib/locale-text/taxonomy-label";
 
 /**
- * Locale gate for taxonomy (category / status) labels.
- *
- * Real-use sweep 2026-07-28: the category and status dropdowns and the card
- * preview on `/en/project/new` drew Korean even on the English screen (12 rendered
- * Hangul strings). There were two layers of cause — ① `Status` had no English
- * label field at all, and ② even the existing `Category.labelEn` went unused
- * because the option builder read `.label` directly.
- *
- * `pnpm test:i18n:messages` cannot catch this — it checks key symmetry in the
- * **message catalogue**, not strings originating outside it (code constants).
- * Human-facing words outside the catalogue are outside that gate's reach.
- *
- * So two layers are locked here:
- *   (a) **Data** — every entry in the defaults carries labels for both locales. A
- *       new entry without an English label is blocked here (the root of ①).
- *   (b) **Wiring** — call sites never read `.label` directly. There is exactly one
- *       place that picks a label, `TaxonomyProvider` (the root of ②).
- *
- * The layer that checks what is actually rendered on screen belongs to e2e
- * (`tests/e2e/public-surface-health.spec.ts`) — render output is a layer neither lint nor
- * vitest can see, so it needs a browser.
+ * Two layers: every default taxonomy entry carries labels for both locales, and call sites never
+ * read `.label` directly; `TaxonomyProvider` is the one place that picks a label.
  */
 
 const HANGUL = /[ㄱ-ㆎ가-힣]/;

@@ -486,9 +486,8 @@ const PERMITTED_SITES: readonly { path: string; count: number; reason: string }[
   {
     path: 'src/shared/lib/llm-connection/local-endpoint.ts',
     count: 1,
-    // `LocalVerifyVerdict.detail` is declared, in its own doc comment, as "the fact the screen
-    // appends" — the machine half of the sentence-plus-detail shape. The verdict's `reason` is
-    // what picks the sentence; `detail` never stands alone.
+    // `LocalVerifyVerdict.detail` is the machine half of a sentence-plus-detail shape; `reason` picks
+    // the sentence and `detail` never stands alone.
     reason: 'the detail half of a verdict whose reason picks the sentence',
   },
   {
@@ -563,9 +562,8 @@ describe('no raw error copy — a failure speaks the reader\'s language', () => 
   });
 
   /**
-   * An allowlist entry that is no longer needed is a blanket exemption nobody notices. Each row
-   * must still match the site it was written for, exactly — one fewer and the row goes, one more
-   * and the new one needs its own reason.
+   * An unneeded allowlist entry is a blanket exemption nobody notices, so each row must still match
+   * its site exactly.
    */
   it.each(PERMITTED_SITES)('the allowlist row for $path is still earned', ({ path, count, reason }) => {
     expect(SOURCES.includes(path), `${path} is gone; drop the allowlist row`).toBe(true);

@@ -3,25 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Blocks decorative arrows attached to the end of a label.
- *
- * Owner verdict (2026-07-26), on seeing `Open in map →`:
- *
- * > *"I dislike arrows next to text like this — it feels AI-generated."*
- * > (I dislike arrows next to text like this — it feels AI-generated)
- *
- * An arrow after a label adds no information: the label already says where it goes,
- * and the control's appearance already says it is pressable. What remains is the
- * texture of a generated landing page, and on a screen like the workbench where the
- * same label appears twelve times, the noise repeats twelve times too.
- *
- * **Arrows themselves are not banned.** An arrow mid-sentence is usually data:
- * `{source} → {target}` (a path), `Old → Recent` (order), `Settings → Developer` (a
- * menu path), `Click table of contents → Go to location` (causation). So this gate looks only at
- * **the end of a string**. The test: delete the arrow and read the label aloud. If
- * nothing was lost, it was decoration.
- *
- * Full text: `docs/DESIGN-SYSTEM.md` "Arrows carry information or they don't ship".
+ * Blocks decorative arrows at the end of a label. Mid-sentence arrows are data (path, order,
+ * causation), so only the end of a string is checked. See `docs/DESIGN-SYSTEM.md`.
  */
 
 /** A decorative arrow at the end of a label. Mid-sentence is not in scope. */
@@ -93,40 +76,9 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
   });
 
   /**
-   * ── The gate's hole (measured 2026-07-26) ─────────────────────────────
-   *
-   * The check above reads `messages/**
- * `.json` only. The violation that actually survived
- * was a **JSX glyph** — a `↗` in a span at the end of an in-app `<Link>` in
- * `ProjectDetailPage`, in the very file the PR that registered this rule had
- * redesigned the same day. A gate that guards only translation strings cannot see
- * leakage through markup.
- *
- * `↗` has exactly one use — **a leading warning on a link that leaves the app**. So
- * the glyph must declare itself where it is used (`data-external-link-marker`). An
- * undeclared `↗` is treated as decoration.
- *
- * ── The reach was too short (measured 2026-07-27) ──────────────────────
- *
- * The paragraph above used to say "`→` is out of scope — every standalone `→` in
- * this codebase is a mid-sentence data arrow" and exempted `→` wholesale. Under that
- * exemption the studio's **primary save button** lived as
- * `Confirm and Save <span>→</span>`. The day after registering the rule, the repository
- * that registered it broke it. **A rule whose reach is too short is the same as no
- * rule.**
- *
- * The exemption is removed, but mid-sentence data arrows must still pass. What
- * separates them is not the glyph but **what follows it**:
- *
- * - `{a} <span>→</span> {b}` — a sibling follows → mid-sentence, data.
- * - `{labels.save} <span>→</span></button>` — the parent's closing tag follows →
- *   end of label, decoration. Delete it and nothing is lost.
- *
- * Inventory before switching it on (2026-07-27, every .tsx in `src` and `app`): 3
- * trailing (all in the studio save-button family) and 7 mid-sentence. Small enough
- * to clear in one PR, so it was switched on — the .claude/rules/design.md procedure
- * "always measure before switching a rule on".
- */
+   * A JSX external-link glyph must declare itself with `data-external-link-marker`, and an arrow is
+   * decoration when the parent closing tag follows it; a following sibling means a mid-sentence arrow.
+   */
   const DECORATIVE_GLYPH_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*[↗➜⟶»]\s*</g;
   /** An element whose entire content is a single arrow — what follows decides whether it is mid-sentence or trailing. */
   const LONE_ARROW_NODE = /<([A-Za-z][\w.]*)\b([^<>]*)>\s*([→↗➜⟶»])\s*<\/\1\s*>/g;
@@ -205,27 +157,6 @@ describe("라벨 장식 — 화살표는 정보를 나를 때만", () => {
     ).toEqual([]);
   });
 
-  /**
-   * ── Dead code was holding up the allowance clause (measured 2026-08-03) ──
-   *
-   * This test used to start with `expect(declared.length).toBeGreaterThan(0)`, on the
-   * grounds that *"if the marker disappears, the allowance clause stays unverified"*.
-   * Measurement showed the only `.tsx` carrying that marker was
-   * **`shared/ui/link-list-editor.tsx`**, a **dead primitive with zero production
-   * consumers**. Of the 13 production files using `target="_blank"`, zero used the
-   * marker. **A component nobody rendered was holding up the rule's allowance
-   * clause**, and deleting that file would turn this assertion red for a reason
-   * unrelated to the rule.
-   *
-   * Diagnosis: the idling guard was aimed at the wrong set. **The set that must not be
-   * empty is "files scanned", not "files using the exception".** The scanned set is
-   * already locked by the two tests above with `files.length > 100`, and whether the
-   * detector works is locked by the synthetic probes below. A conditional rule with
-   * zero consumers is **a rule waiting for its first case, not a broken gate.**
-   *
-   * Verdict and falsifier: `docs/DECISIONS.md` 2026-08-03 "two dead primitives".
-   */
-  /** Per-file verdict — a file with no declaration is out of scope for this rule, so it passes. */
   function externalMarkerSitsOnExternalLink(source: string): boolean {
     if (!source.includes(EXTERNAL_MARKER)) return true;
     return source.includes('target="_blank"');

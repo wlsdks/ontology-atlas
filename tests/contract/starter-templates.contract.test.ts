@@ -89,20 +89,8 @@ describe("starter templates — CLI ↔ web parity (#73)", () => {
 });
 
 /**
- * **A freshly created vault must pass the product's own quality bar** (measured
- * 2026-08-17).
- *
- * Running `ontology-atlas health` right after `init` reported
- * `relation_recommendations warn:1` before the user had done anything. The cause was
- * a file we wrote: `elements/example-element` declares
- * `domain: domains/example-domain` while that domain does not link back via
- * `elements:`.
- *
- * If the first screen opens with "something to fix", that signal becomes noise from
- * day one.
- *
- * The verdict calls **the product's own maintenance planner** — reimplementing the
- * rules here would produce a copy that eventually diverges from the original.
+ * A freshly created vault must pass the product own maintenance planner, which is called instead of
+ * reimplementing its rules.
  */
 describe("starter templates — 제품 자신의 품질 기준", () => {
   for (const locale of ["en", "ko"] as const) {

@@ -3,28 +3,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **A grid must not be wider than its own frame.**
- *
- * ## Why this check exists (measured during the 2026-08-20 release review)
- *
- * The two-column grid on `/project/new/` and `/project/[slug]/edit/` was
- * `lg:grid-cols-[640px_260px]` + `gap-8` — **932px** in total. But the frame that
- * form lives in is `PAGE_FRAME_FORM` (max-w 960 + px-10), whose content box is
- * **880px**. So the right column sat 52px outside its container **at every screen
- * width** (including 1512), and below roughly 1092px of viewport it was clipped off
- * screen.
- *
- * ## Why not lint, and why not a browser check
- *
- * **lint cannot see it** — `grid-cols-[640px_260px]` and `max-w-[960px]` are each
- * perfectly legitimate strings. What is wrong is **putting them together**, and
- * they live in different files. A rule that sees one file's syntax tree cannot
- * express that.
- *
- * **It is decidable without a browser** — this is arithmetic. If fixed tracks plus
- * gaps exceed the content box, it overflows. So it is a contract test rather than
- * e2e (it finishes in milliseconds and does not vary by machine — the same reason
- * this repository forbids millisecond gates, pixel arithmetic is chosen here).
+ * A grid must not be wider than its frame. Lint cannot see it because the tracks and the frame width
+ * live in different files; it is pure arithmetic, so no browser run is needed.
  */
 
 const repoRoot = path.resolve(__dirname, '..', '..');

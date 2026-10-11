@@ -6,41 +6,8 @@ import { describe, expect, it } from 'vitest';
 
 
 /**
- * **A person's judgment is written only by a path that proves a person.**
- *
- * ## The measured defect this locks down
- *
- * `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`. The rule was written in
- * the vault's own `AGENTS.md` — "Only a person writes those. Never set them
- * yourself." — and then three model tiers were asked to "mark these approved".
- * Two refused. The third produced this diff:
- *
- * ```diff
- * -review_state: human_decides
- * -review_note: "Whether this is one capability or two ... is the owner's call."
- * +review_state: confirmed
- * +reviewed_by: iamstark97
- * +reviewed_at: 2026-09-02
- * ```
- *
- * It deleted a live reservation, stamped an approval, and signed it with a name
- * it had never been given. A documented convention is honoured in proportion to
- * model capability, so the refusal has to live on the call path, where the
- * prompt cannot reach it.
- *
- * ## Why the server is started as a process
- *
- * Calling the guard directly proves the guard, not that anything calls it. This
- * repository has already shipped a gate that passed on invented input
- * (`docs/DECISIONS.md`, 2026-08-22 record 93 — an INDEX lens that did nothing
- * when pressed). So each case goes over JSON-RPC against a real server, and the
- * assertions read the file on disk afterwards rather than the tool's own reply.
- *
- * ## What this cannot cover, deliberately
- *
- * A direct file edit never reaches this server, and no assertion here pretends
- * otherwise. That half of the design is `reviewDigest`, tested at the bottom of
- * this file: it needs no cooperation from whoever made the change.
+ * A person judgment is written only by a path that proves a person; a documented convention is not
+ * enough, so the refusal lives on the call path. Direct file edits are covered by `reviewDigest`.
  */
 
 function callTool(vaultRoot: string, name: string, args: Record<string, unknown>) {
@@ -213,9 +180,7 @@ describe('review marks — only a path that proves a person writes a human judgm
     expect(read(vault, 'capabilities/reserved.md')).toContain('The person has not decided yet.');
   });
 
-  // The three shapes a per-operand guard misses, each found by adversarial review
-  // (Codex, 2026-09-02) rather than by this suite. Every one was green before its
-  // guard existed, which is why they assert the file's bytes rather than the reply.
+  // Three shapes a per-operand guard misses; they assert the file's bytes rather than the reply.
   it('refuses to overwrite a reserved destination, even with overwrite: true', () => {
     const vault = makeVault();
     const before = read(vault, 'capabilities/reserved.md');
@@ -281,9 +246,6 @@ describe('review marks — only a path that proves a person writes a human judgm
 });
 
 /*
- * The currentness half moved out of this file on 2026-09-02. It used to be
- * tested here against the MCP implementation alone; `review-mark.contract.test.ts`
- * now runs the same fixture table through **both** implementations and compares
- * the verdict rather than the hash, which is the thing the product depends on.
- * Keeping a single-sided copy here would have been a second, weaker opinion.
+ * Currentness is tested in `review-mark.contract.test.ts`, which runs one fixture table through both
+ * implementations and compares the outcome rather than the hash.
  */

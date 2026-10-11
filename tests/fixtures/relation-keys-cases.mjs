@@ -1,15 +1,7 @@
 /**
- * The relation-key matrix — the full set of frontmatter keys MCP reads as graph edges
- * (`mcp/src/vault/` GRAPH_ARRAY_KEYS = NEIGHBOR_KEYS + alias `depends_on`)
- * and the edge type each key must produce in the web derive
- * (`derive-ontology-from-vault`). This table is the only source of truth.
- *
- * The contract (`tests/contract/derive-relation-keys.contract.test.ts`):
- *   1. If MCP admits a new key, this table will not know it and the test fails
- *      immediately — structurally blocking the regression where the web derive
- *      silently drops that key (describes, 2026-07-27; depends_on, 2026-08-12).
- *   2. Each row is fed to both MCP's `collectNeighborRefs` and the web derive to
- *      confirm both really read that key.
+ * The full set of frontmatter keys MCP reads as graph edges (`GRAPH_ARRAY_KEYS` in `mcp/src/vault/`)
+ * and the edge type each must produce in the web derive. A new MCP key fails
+ * `tests/contract/derive-relation-keys.contract.test.ts` until it is added here.
  */
 export const RELATION_KEY_CASES = [
   {
@@ -39,9 +31,8 @@ export const RELATION_KEY_CASES = [
     expectedEdgeType: 'depends_on',
   },
   {
-    // The canonical schema key (the capability/element canon in mcp/src/schema.mjs) —
-    // MCP folds it into dependencies as an alias, and the web derive must read it at the
-    // same place (2026-08-12: the hole where only this key was lost on the web).
+    // The canonical schema key (`mcp/src/schema.mjs`): MCP folds it into dependencies as an alias, and the
+    // web derive must read it at the same place.
     key: 'depends_on',
     frontmatter: { kind: 'capability', depends_on: ['key-store'] },
     expectedEdgeType: 'depends_on',

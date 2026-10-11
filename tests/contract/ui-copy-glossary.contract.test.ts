@@ -5,28 +5,9 @@ import { describe, expect, it } from "vitest";
 import { column } from "../../scripts/lib/locale-vocabulary.mjs";
 
 /**
- * Prevents code-style phrasing from seeping back into on-screen text — the canonical source is `docs/GLOSSARY.md`.
- *
- * ## Why it was created (2026-08-22)
- *
- * The owner read the screen and documentation and said — *"I can't understand a single thing you're saying!"*. Upon review, **23 instances** of code-style phrasing remained among 3,130 characters of human-readable text: `frontmatter` 13 · `edge` · `handle` ·
- * `parsing` · `rendering` · `query` · `contract` · `index` · `metadata`.
- *
- * The same audit also caught **commands for which no English screen exists** —
- * `pnpm folder:validate` is not in `package.json` (only `vault:validate` exists). So this test measures not just words but **whether the commands invoked by the screens actually exist**: even if words are easily corrected, invoking a non-existent command blocks the user just as much.
- *
- * ## Why code comments are not checked
- *
- * Because those words are **correct** there. Expanding "gate" to "an inspection that automatically blocks violations" every time would only make it longer without changing the meaning. The scope is
- * `messages/*.json` — one file containing text read by humans on screens.
- *
- * ## Why exemptions are necessary
- *
- * There are two places where removing the words makes them unusable.
- *
- * - **Values entered directly by users** — `kind: project` is code, not a sentence.
- * - **Words that must be found** — removing `frontmatter` entirely from error messages
- *   prevents users from searching for that term. That's why the `GLOSSARY.md` parenthesis rule exists, and here we **only allow what is inside parentheses**.
+ * Keeps code-style phrasing out of on-screen text (`messages/*.json`); the canonical source is
+ * `docs/GLOSSARY.md`. Also checks that commands the screens invoke exist. Values users type and words
+ * that must be found are exempt, and only what is inside parentheses is allowed.
  */
 
 const ROOT = process.cwd();

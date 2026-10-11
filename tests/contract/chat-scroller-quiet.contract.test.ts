@@ -4,28 +4,9 @@ import { followStep } from '@/widgets/acp-chat-panel/model/transcript-follow';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **No scroller draws a bar, and the surfaces that lost a cue pay for it** (owner, 2026-09-06:
- * *"a scrollbar keeps appearing on the right while we are talking … it should just move down
- * smoothly. keep the scrollbar hidden — it still scrolls"*; owner, 2026-09-07: *"I don't want
- * scrollbars to appear when things scroll. Everything, just smooth scrolling"*).
- *
- * ⚠️ **The second verdict moved the rule and kept the class.** The bar-hiding declarations are
- * now on the document, because a per-surface opt-in makes every new `overflow-y-auto` in the
- * repository a bar somebody has to remember to remove — and the six surfaces that carried the
- * class by hand were themselves the record of that not happening. What `.atlas-scroll-quiet`
- * means from here is narrower and still worth a gate: **this scroller was designed without a
- * bar**, so it either needs no "there is more" mark or draws one of its own.
- *
- * Three halves need a gate, and none is visible to lint:
- *
- * 1. **The document rule exists**, in both dialects — Safari and the macOS WebView ignore
- *    `scrollbar-width` entirely, and the installed app is where the owner saw the bar.
- * 2. **The named surfaces still carry the class**, unchanged: a scroller that quietly stopped
- *    declaring its own design is one nobody re-reads before hiding a cue.
- * 3. **Where the bar was the only signal, a `--tabbar-edge-fade` mask replaces it** — the
- *    conversation's past-conversation list and transcript, and the Library's index column,
- *    whose one list of file names is otherwise cut by a hard edge that says nothing about
- *    whether the cut is the end.
+ * No scroller draws a bar: the document rule exists in both dialects (Safari and the macOS WebView
+ * ignore `scrollbar-width`), named surfaces keep `.atlas-scroll-quiet`, and a `--tabbar-edge-fade`
+ * mask replaces the bar where it was the only cue.
  */
 const CSS = readGlobalCss();
 

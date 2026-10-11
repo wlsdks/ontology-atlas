@@ -9,23 +9,8 @@ import {
 } from '@/entities/docs-vault';
 
 /**
- * **Every** project node in a bundled sample has its own canonical address.
- *
- * ## Measured defect (2026-08-01)
- *
- * `/ko/project/storefront/` was a 404 because `generateStaticParams` took slugs from
- * the dogfood manifest only — the one demo the app promotes everywhere had no address
- * of its own, blocking sharing, bookmarks, and crawlers.
- * `/project/ontology-atlas/` was fine, so the defect was not "the route is missing"
- * but **only one vault was visible**, and opening the screen does not reveal it (you
- * have to type the address).
- *
- * Hence two gates:
- *   1. Does the enumeration function contain the project slugs of **every bundled
- *      sample** (behaviour)?
- *   2. Do the route files use that enumeration function? A regression back to a
- *      single manifest is not caught by (1) alone, which looks at the function and
- *      not at the routes.
+ * Every project node in every bundled sample needs its own route address, and the route files must
+ * use the enumeration function; the function check alone does not catch a single-manifest regression.
  */
 
 const PROJECT_ROUTE_FILES = [

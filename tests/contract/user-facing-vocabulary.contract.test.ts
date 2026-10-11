@@ -5,35 +5,9 @@ import ko from '../../messages/ko.json';
 import { column } from '../../scripts/lib/locale-vocabulary.mjs';
 
 /**
- * **One word per thing, in the strings people read.**
- *
- * ⚠️ **Why** (owner, 2026-08-25: *"make these terms consistent across the product and not strange.
- * You may use the word ontology."*, then *"proper domain terms are fine — do not mangle them into
- * something odd for non-developers. The universal technical term is what matters."*)
- *
- * The old rule banned the word ontology outside the brand and told authors to say map / concept /
- * workspace instead. Avoiding the accurate word did not produce plain language — it produced **four
- * words for one thing**. A measured inventory of `messages/ko.json` found the person's own folder
- * called by four different names across 41 strings.
- *
- * The first repair over-corrected in the opposite direction, flattening everything to a plainer folder word and
- * turning the word for validation into a vaguer one — replacing a real term with a folksier one, which is the mangling the owner
- * named. The settled answer is neither: **one correct term**, the settled term.
- *
- * `vault` was considered and rejected on the owner's own test. It is Obsidian's coinage rather than
- * a universal term — Logseq says graph, Foam and Zettlr say workspace, and knowledge engineering
- * does not use the word at all. Nothing forbids it; it simply is not the standard the owner asked
- * for. Inside the code, CLI, MCP and docs `vault` stays: there it is a filesystem and API name, and
- * renaming a public contract is a separate decision.
- *
- * The same round found the empty map saying "no projects to draw on the map" — a sentence built
- * out of `project`, a schema kind, describing a number that is actually the node count. The screen's
- * first sentence to a newcomer was written in this repository's private vocabulary.
- *
- * This gate counts synonyms; it does not pin anybody's prose, which `documentation.md` forbids. It
- * asserts that a thing is called one thing, not that a sentence says something.
- *
- * The rule it enforces lives in `.claude/rules/design.md`, "One word per thing".
+ * One word per thing in the strings people read: this gate counts synonyms and does not pin prose.
+ * Inside code, CLI, MCP and docs `vault` stays as a filesystem and API name. The rule is in
+ * `.claude/rules/design.md`, "One word per thing".
  */
 
 function strings(catalog: unknown): Array<{ path: string; text: string }> {
@@ -107,20 +81,13 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
    * fall but never rise is the honest shape for a word that has both a right and a wrong use.
    */
   /*
-   * ⚠️ The actor that reads this folder had four names on one screen: the agent word, "AI", "AI
-   * agent" and "AI tool", with the brief's own card titled with the agent word while the button
-   * beside it said AI (walkthrough, 2026-09-20). They are one thing, the coding agent connected to
-   * this folder, and the rail, the brief and the activity log already use the agent word.
-   *
-   * A ratchet rather than a ban, for the same reason as the project-kind rule below: "AI" is
-   * honest where it names the *category* rather than this folder's agent, as the product's own
-   * tagline does. What must not happen is the count climbing back.
+   * The coding agent connected to this folder has one name; "AI" is honest where it names the category.
+   * A ratchet rather than a ban: the count must not climb back.
    */
   it('「AI」 사용이 늘지 않는다 — 이 폴더의 에이전트는 「에이전트」다', () => {
     /*
-     * 82 after merging main on 2026-09-20: the entries that arrived name the category rather than
-     * this folder's agent, which is the use this ratchet allows. The number moves only with a
-     * measurement beside it.
+     * The baseline moves only with a measurement beside it; entries naming the category are the
+     * use this ratchet allows.
      */
     const { word, baseline: AI_BASELINE } = column('aiWord', 'ko');
     const current = hits(word).length;
@@ -133,15 +100,8 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
 
   it('「프로젝트」 사용이 늘지 않는다 — 종류를 말할 때만 쓴다', () => {
     /*
-     * 143 → 144 on 2026-09-20. The map's search palette labelled its project filter
-     * row with the English `Project · {count}` while all 26 of its other strings were
-     * Korean, so the Korean screen showed `Kind` and `Project · 1` above chips that
-     * carried the four kind names and the project's own name. Translating it adds one
-     * occurrence of exactly the use this gate's note above calls legitimate — a
-     * filter, and a count of projects — and removes an untranslated label rather
-     * than spreading the word to mean "anything on the map", which is what the
-     * ratchet exists to stop. The number moves for a translation, never for a new
-     * sentence that reaches for the kind's name.
+     * The count moves for a translation of a filter or a count of projects, never for a new sentence that
+     * reaches for the kind name to mean anything on the map.
      */
     const { word, baseline: PROJECT_BASELINE } = column('projectKindWord', 'ko');
     const current = hits(word).length;
@@ -153,29 +113,13 @@ describe('사용자가 읽는 말 — 한 가지는 한 이름으로', () => {
   });
 
   /*
-   * ⚠️ The other half of the owner's correction, and the opposite failure from the one above (owner,
-   * 2026-08-25: *"proper domain terms are fine — do not mangle them into something odd for
-   * non-developers. The universal technical term is what matters."*).
-   *
-   * The five kinds have fixed names, and copy had been quietly translating two of
-   * them into plainer Korean: domain became a vaguer word, capability another. That reads easier and teaches the
-   * wrong word — somebody who then opens a file, the CLI or the MCP tools meets the real kind names and
-   * has to learn the vocabulary a second time. A schema kind is a name, and a name is not translated
-   * for comfort.
-   *
-   * A ratchet rather than a ban: both softened words are ordinary Korean with honest uses elsewhere.
-   * What must not happen is their number growing back.
+   * The five kinds have fixed names; copy must not translate them into plainer words, because people
+   * who then open a file, the CLI or MCP meet the real names. A ratchet: both words have honest uses.
    */
   it('종류 이름을 쉬운 말로 바꿔 부르지 않는다 — 도메인은 a plainer word for domain이 아니다', () => {
     /*
-     * The softened word for domain went 13 → 14 on 2026-09-24: the owner named a map view with
-     * it (Territories). It is the view's name in the picker, not a word for the domain kind —
-     * the view's own copy still uses the kind's real name wherever it means the kind, and its
-     * accessible labels avoid the word.
-     *
-     * The softened word for capability went 6 → 7 on 2026-09-25: the owner named the Jev row's
-     * Korean badge "experimental feature" (`agents.models.experimental`), and the Korean word
-     * for feature is the counted one. It labels the app's own feature, not the capability kind.
+     * Counted uses of a softened word that name a view or an app feature rather than the kind are the
+     * allowed ones; the baseline moves only for those.
      */
     for (const [softened, cap] of Object.entries(column('softenedKindNames', 'ko').baselines as Record<string, number>)) {
       const current = hits(softened).length;

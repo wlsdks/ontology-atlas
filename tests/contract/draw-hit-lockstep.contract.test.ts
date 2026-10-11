@@ -7,31 +7,8 @@ import {
 } from "@/widgets/ontology-map/model/tier-visibility";
 
 /**
- * The contract that **draw and hit read the same value**.
- *
- * Background (exhaustive check 2026-07-31): draw had four channels that pierce
- * the tier gate (edge selection, footprint lens, ego focus, recent-change
- * spotlight) while hit had **only ego** — so a node surfaced by the footprint lens
- * was **visible but unclickable**. Meanwhile the draw-side comment claimed *"the
- * same piercing applies to hit testing, so it can be clicked again straight from
- * the map"*. **The very case the comment set out to fix was not fixed** — it was
- * written from the draw side alone.
- *
- * How it is fixed matters: passing one more argument each time means **it drifts
- * again the next time a channel is added** (which is how this defect arose). If
- * hit reads the alpha map draw already builds, they cannot drift structurally.
- *
- * ⚠️ **The wording changed on 2026-08-29, and the contract got stronger.** It
- * used to be "if it is at least half revealed it is hittable", with 0.02–0.5 an
- * intended "visible but not hittable" band. Measured on the installed app, that
- * band is where about ninety painted circles at the storefront vault's resting
- * camera sat: a click on one did nothing, and a click on another fell through to
- * an edge crossing the same pixels, because a node the hit test rejects lets the
- * click reach the edge test behind it. The reveal bands were narrowed to start at
- * the old floor, so the band no longer exists rather than being made clickable,
- * and the contract is now the plain one this file's title always implied: **if it
- * is drawn, it is hittable.** Rationale and dissent: `docs/DECISIONS.md`,
- * 2026-08-29.
+ * Draw and hit read the same value: hit reads the alpha map draw already builds, so they cannot
+ * drift when a channel is added. If a node is drawn, it is hittable.
  */
 
 const node = (id: string, kind: HittableNodeInput["kind"] = "element"): HittableNodeInput => ({
@@ -58,10 +35,8 @@ describe("draw/hit lockstep contract", () => {
   });
 
   it("드로우가 칠한 알파면 어느 값이든 잡힌다 — 그려진 것은 잡힌다", () => {
-    // What used to be the "drawn but not hittable" band. Every value in it is
-    // now hittable, because a node is no longer painted at these alphas unless
-    // something deliberately revealed it — and a deliberate reveal is exactly
-    // the case that must answer the pointer.
+    // A node is not painted at these alphas unless something deliberately revealed it, and a deliberate
+    // reveal must answer the pointer, so every value in this band is hittable.
     for (const alpha of [0.03, 0.2, 0.49]) {
       const drawn = new Map([["n", alpha]]);
       expect(

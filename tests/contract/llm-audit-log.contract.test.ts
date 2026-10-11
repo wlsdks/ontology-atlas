@@ -73,8 +73,8 @@ describe('llm-audit.jsonl 계약 (Rust writer ↔ web reader)', () => {
   });
 
   it('벤더마다 다른 거부 상태 코드가 같은 결과 어휘로 읽힌다', () => {
-    // Gemini returns 400 for a wrong key (measured 2026-07-26). The status code is kept
-    // verbatim, but the conclusion the screen reads is `denied` regardless of vendor.
+    // Gemini returns 400 for a wrong key; the status is kept verbatim but the outcome is `denied`
+    // regardless of vendor.
     expect(entries[3].provider).toBe('gemini');
     expect(entries[3].host).toBe('generativelanguage.googleapis.com');
     expect(entries[3].outcome).toBe('denied');

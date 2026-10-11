@@ -24,39 +24,9 @@ import {
 import { aggregateWikiFindings as aggregateMcp } from '../../mcp/src/wiki-report.mjs';
 
 /**
- * **One folder, three surfaces, one enumeration.**
- *
- * `docs/DECISIONS.md` 2026-09-11 ("The Library keeps its spine, and computes the
- * structural check itself") licenses the app to compute the structural check itself, and
- * names the risk in its own falsifier: *"a structural finding differs between the app's
- * report and `wiki-validate`"*. A person is expected to be able to hold the Check-results
- * page beside a terminal and see the same folder described the same way. This file is that
- * promise, run on every change to either side.
- *
- * The three arms are the three things a person or an agent can actually ask:
- *
- * 1. **`ontology-atlas wiki-validate --json`** — the command's own code path, executed
- *    against a real folder written to a temp directory. Not a stand-in: `runWikiValidate`
- *    walks the directory, reads the bytes, lists the sources and prints the payload.
- * 2. **`validate_wiki`'s validators** — `validateWikiPage` + `validateWikiFolder` from
- *    `mcp/src/wiki-schema.mjs`, which is literally what `validateWikiTool` calls (see
- *    `mcp/src/index.js`). The tool itself resolves its vault from `OATLAS_VAULT` at
- *    import time, so spawning the server inside a unit run would test the harness rather
- *    than the contract; the module under it is the shared half either way. The CLI arm
- *    above *does* execute a whole command, which is what keeps this from being a
- *    self-comparison.
- * 3. **The app** — the TypeScript twin in `src/shared/lib/library/wiki-page-schema.ts`, fed
- *    through the aggregator the way `use-library-model.ts` feeds it, reached by the
- *    bridge module the Library imports.
- *
- * Message wording may differ between the twin and the canonical module
- * (`wiki-page-schema.contract.test.ts` owns that rule). **Codes, page lists, group order
- * and the advisory split may not** — those are what the report draws and what an agent
- * branches on.
- *
- * The expected set is stated whole, so the check fails closed. A surface that quietly
- * drops an advisory row would otherwise pass a subset assertion, which is exactly the hole
- * both PO seats found in the slice's hand-written proof list on 2026-09-12.
+ * One folder, three surfaces, one enumeration: the `wiki-validate --json` command, the
+ * `validate_wiki` validators and the app TypeScript twin must agree on codes, page lists, group
+ * order and advisory split. The expected set is stated whole so the check fails closed.
  */
 
 let vaultRoot: string;
@@ -158,9 +128,8 @@ describe('the structural check — the CLI, the MCP validators and the app enume
     }))).toEqual([...WIKI_REPORT_EXPECTED_GROUPS]);
     expect(report.findingCount).toBe(WIKI_REPORT_EXPECTED.length);
     expect(report.pageCount).toBe(WIKI_REPORT_FOLDER.length);
-    // The one number the app and the CLI used to disagree about: `wiki-validate` calls
-    // every page with any finding off-template, and a page whose only findings are
-    // advisory fits. Both are true; only one may be called "off-template" on a screen.
+    // `wiki-validate` calls every page with any finding off-template, but a page whose only findings are
+    // advisory fits; only one of the two may be called off-template on a screen.
     expect(report.blockingPageCount).toBe(WIKI_REPORT_EXPECTED_BLOCKING_PAGES);
     expect(report.fitPageCount).toBe(WIKI_REPORT_EXPECTED_FIT_PAGES);
   });
@@ -184,10 +153,8 @@ describe('the structural check — the CLI, the MCP validators and the app enume
   });
 
   it('names the sources of a shared-source finding in one order on every surface', () => {
-    // The one divergence measured on 2026-09-12 before this slice: `shared` was built from
-    // whichever page the caller's input order made `first`, so the CLI and `validate_wiki`
-    // printed the two paths in opposite orders. Codes and pages agreed, so the older
-    // contract passed, while a person read one finding worded two ways.
+    // The sources of a shared-source finding must be named in one order on every surface, independent of
+    // the caller's input order.
     const sentence = (
       pages: Array<{ page: string; problems: Array<{ code: string; message: string }> }>,
     ) =>

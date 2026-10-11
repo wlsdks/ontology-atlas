@@ -92,7 +92,7 @@ describe("알파 합성 — 이게 빠지면 계기가 낙관한다", () => {
     const solid = judged({ fg: "rgb(255,255,255)", bg, fontSizePx: 14, fontWeight: 400 });
     const faded = judged({ fg: "rgba(255,255,255,0.45)", bg, fontSizePx: 14, fontWeight: 400 });
     expect(solid.ratio).toBeGreaterThan(faded.ratio);
-    // And the drop is large enough to flip the verdict — omitting compositing turns it into a pass.
+    // Omitting compositing would turn the faded case into a pass.
     expect(solid.passes).toBe(true);
     expect(faded.passes).toBe(false);
   });
@@ -107,7 +107,7 @@ describe("문턱 판정", () => {
     expect(body.required).toBe(4.5);
     expect(large.required).toBe(3);
     expect(body.ratio).toBe(large.ratio); // Same colour…
-    expect(body.passes).toBe(false); // …but the verdict differs
+    expect(body.passes).toBe(false);
     expect(large.passes).toBe(true);
   });
 
@@ -143,14 +143,8 @@ describe("인접 마크 — hue 로만 갈리는 설계를 잡는다", () => {
   });
 
   /**
-   * An unreadable colour is **unmeasured, not a pass** — the same contract as its
-   * sibling `judgeText` (code review 2026-08-07).
-   *
-   * Without the guard, `composite(null, …)` threw a `TypeError`. Inside a manual
-   * instrument a person saw it, but once this entered the CI ratchet on 2026-08-06 it
-   * became **a path that crashes the gate**. The real inputs `parseColor` cannot read
-   * are Chromium's serialisations of wide colour spaces and `color-mix()`:
-   * `color(srgb …)` and `oklch(…)`.
+   * An unreadable colour is unmeasured, not a pass: `parseColor` cannot read wide colour spaces or
+   * `color-mix()` output such as `color(srgb ...)` and `oklch(...)`.
    */
   it("못 읽는 색은 던지지 않고 null 로 돌아온다", () => {
     for (const bad of ["oklch(0.7 0.1 250)", "color(srgb 0.2 0.3 0.4)", "wat"]) {

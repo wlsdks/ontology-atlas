@@ -4,34 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **One node gets one reveal ramp.**
- *
- * Background (measured 2026-07-31): the drawn alpha of a child revealed by
- * expanding a chip was **the product of two exponentials** — the tier-piercing
- * channel (`expandRevealById`) entered `tierAlpha` through `effectiveAlphaById`,
- * and the group fade (`nearestExpandedRevealMul`) multiplied again through
- * `revealMul`.
- *
- * | Time | Chip (single ramp) | Child (product) |
- * |---|---|---|
- * | 200ms | 69.2% | 41.4% |
- * | 320ms | 84.8% | 65.0% |
- * | Reaching 90% | 391ms | **621ms** |
- *
- * For **230ms** after the chip said "expanded", children were still arriving —
- * past `design.md`'s *"one input equals one event; a start-time gap over 120ms
- * reads as two events and is a defect"* (one input equals one event; a start-time gap over 120ms
- * reads as two events and is a defect).
- *
- * **Why this is a recurring failure**: draw already had a "no double fade" guard
- * for `batchAppear`, with a comment on it. The fifth channel was simply added
- * **later** and never entered that guard. A sixth will do the same — so what is
- * measured is not "there is no product today" but **"the path that creates a
- * product is structurally blocked"**.
- *
- * ⚠️ Frame measurement (the real alpha curve on screen) belongs to
- * design-motion's `/ui-proof` — a verdict without a recording is invalid.
- * This test locks only the **structural premise** that verdict needs.
+ * One node gets one reveal ramp: the child alpha must not be the product of two exponentials.
+ * This locks the structural premise; frame measurement belongs to `/ui-proof`.
  */
 
 const DRAW = join(process.cwd(), "src/widgets/ontology-map/ui/frame-draw/paint-nodes.ts");
@@ -76,19 +50,8 @@ describe("등장 램프는 노드당 하나다", () => {
   });
 
   it("**칩 클릭이 실제로 타는 경로**(배치-공개)가 칩과 같은 tau 다", () => {
-    // ⚠️ This is the most important test in the file. The ones above lock the
-    // **shape** of the `revealMul` expression, and frame measurement (design-motion,
-    // 2026-07-31) caught the screen behaving the old way while that shape was
-    // correct:
-    //
-    //   The `revealMul` ternary checks `batchAppear` **first**, and **every** child
-    //   of a chip click is registered on that batch path (all of `visibleOrdered`,
-    //   even when `hidden.length === 0`). So the fifth channel's branch is never
-    //   taken on a chip click — fixing the expression changes nothing on screen.
-    //
-    // So what must be measured is not "does the branch exist" but **"which tau does
-    // the branch actually taken use"**. If the batch-reveal step goes back to ego's
-    // tau, this fails.
+    // Every child of a chip click is registered on the batch path, and the `revealMul` ternary checks
+    // `batchAppear` first. So what is measured is which tau the branch actually taken uses.
     const src = read(REVEAL);
     const anchor = src.indexOf("const appearMap = batchAppearRef.current;");
     expect(anchor, "배치-공개 스텝을 못 찾았다 — 이름이 바뀌었으면 이 테스트도 갱신한다").toBeGreaterThan(0);

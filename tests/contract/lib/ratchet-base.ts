@@ -14,32 +14,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 /**
- * **Judge a change against its own merge base, not against a number in a file.**
- *
- * A ratchet that stores its baseline as a literal (`CEILING = 280`) is a shared write
- * target: every branch that lowers or raises the count edits the same line, so two
- * parallel branches that each improve the metric conflict, and a bundle merge has to
- * recount by hand. That happened on 2026-09-26, twice in one day.
- *
- * This helper removes the counter. The ratchet measures the working tree, then
- * measures the **same metric with the same code** on the merge-base tree, and fails
- * only when this change made it worse. A saving needs no bookkeeping: the next
- * branch's merge base already contains it, so it cannot be spent again. That is what
- * the old "lower the literal" test existed to enforce, and it now holds for free.
- *
- * **A deliberate raise** is a file, not a line: `tests/contract/ratchet-raises/<gate>/<slug>.json`
- * with `{ "gate", "raise", "why" }`. Only records this change adds (absent at the merge
- * base) widen its ceiling, so the reason is reviewed in the diff that needs it, and two
- * branches raising the same gate add two files instead of editing one line. A commit
- * trailer would say the same thing, but the landing train squashes branches, so a
- * trailer is not reliably visible to the lane that has to honor it; a file is.
- *
- * **No merge base** (a shallow clone, or no `origin/main`) falls back to the absolute
- * ceiling recorded when the gate was converted, plus every raise record ever landed.
- * That ceiling is never edited and never has to be tight; it only keeps the gate from
- * passing vacuously where there is nothing to compare against. It is also applied when
- * a base exists, so a tree compared with itself (a push to `main`) still meets a floor.
- * The CI lanes that run contracts check out with `fetch-depth: 0`, so they compare.
+ * Judge a change against its own merge base, not a literal: a stored baseline is a shared write
+ * target. A deliberate raise is a file `tests/contract/ratchet-raises/<gate>/<slug>.json` added by
+ * the change. Without a merge base the recorded absolute ceiling plus all raise records apply.
  */
 
 export const RAISES_DIR = "tests/contract/ratchet-raises";

@@ -6,38 +6,8 @@ import {
   HOME_QUERY_KEYS,
   VAULT_SCOPED_HOME_QUERY_KEYS } from "@/views/home/model/url-state";
 /**
- * # Declared scope registry — the gate for state that outlived its scope
- *
- * **What this class of defect is.** State that only has meaning within scope X (a
- * vault) survives a change of X and becomes **the input to a false verdict**.
- * Observed in practice:
- *
- * - docs `?slug=` — judging "the requested document does not exist" for a document
- *   nobody requested
- * - editor draft — another vault's body presented as my unsaved change, and when the
- *   bytes match, **saving overwrote someone else's file**
- * - map `?p=` — a non-existent node judged as the selection, dimming the whole map
- * - `?pathFrom`/`?pathTo` — **asserting "no path"** between two non-existent nodes
- * - change baseline and notification read timestamps — per-vault content under a
- *   global key
- *
- * **Why a contract test rather than lint.** The defect is **a relationship between a
- * key and a scope living in another file**, and the failing state leaves no literal
- * behind — a cleanup effect that is *absent* is invisible to an AST selector.
- * `no-restricted-syntax` matches the AST of one file and cannot express this spec
- * (.claude/rules/design.md: layers lint cannot see belong to contract tests).
- *
- * **The registry is the gate.** The two tables below carry **every** URL query key
- * and persistent storage key, one row each. Three checks:
- *
- * 1. a key in the code but not in the registry fails (no new key can appear quietly)
- * 2. a key in the registry but not in the code fails (dead rows do not accumulate)
- * 3. a `vault-scoped` key that is not protected fails — a storage key must be built
- *    through a scope function, and a URL key must be in the cleanup list on a scope
- *    change
- *
- * Precedents: `tests/contract/rules-path-scope.contract.test.ts` (registry as gate)
- * and `src/entities/docs-vault/lib/vault-scope-key.ts` (scoped keys).
+ * Registry gate for state that outlives its scope: every URL query key and persistent storage
+ * key has one row. A key missing from registry or code fails; a `vault-scoped` key must be protected.
  */
 // ────────────────────────────────────────────────────────────────────────────
 // Scope providers — **which functions count as an exact scope**
@@ -117,11 +87,8 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
 interface StorageEntry {
   key: string;
   /**
-   * `storage` = a localStorage/sessionStorage/IndexedDB key (or its prefix).
-   * `event` = a window event name sharing the same namespace — not storage. The
-   *   scanner sees only literals and cannot tell them apart, so they are registered
-   *   here too (zero blind spots).
-   * `legacy` = **an old key no longer in use.** Never read back, only cleaned up once.
+   * `storage` is a localStorage/sessionStorage/IndexedDB key (or prefix); `event` is a window event name
+   * sharing the namespace; `legacy` is an old key never read back, only cleaned up once.
    */
   kind: "storage" | "event" | "legacy";
   scope: Scope;
@@ -130,12 +97,8 @@ interface StorageEntry {
   /** The file declaring the key literal — the "did the declaration move" check reads this. */
   file?: string;
   /**
-   * **The test file that locks the behaviour.** Checking whether the scope function's
-   * *name appears* in the source does not prove protection — measured 2026-08-01: the
-   * scope was removed inside a hook while the file still mentioned the name, and the
-   * contract test stayed green. So every key must name a test that actually asserts
-   * "a value written in vault A is not visible in vault B". That test is this class's
-   * real detector.
+   * The test file that asserts a value written in vault A is not visible in vault B. Finding the scope
+   * function name in source does not prove protection.
    */
   provenBy?: string;
   note: string;
@@ -358,7 +321,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "최근 검색 슬러그 — 소비처가 현재 노드와 교집합으로 걸러 피해가 작다",
   },
 
-  // ── Legacy keys — never read back ────────────────────────────────────────
   {
     key: "demo:change-baseline:v1",
     kind: "legacy",

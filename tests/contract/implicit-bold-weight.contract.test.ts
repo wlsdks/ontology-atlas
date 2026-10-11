@@ -4,35 +4,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **`<b>` and `<strong>` must state a weight** — otherwise the browser default is
- * **700**, and 700 is outside this repository's weight ramp (510 · 560 · 650).
- *
- * ## Why this gate is required (measured 2026-08-05)
- *
- * **Even after** the weight axis was closed (#942) and every named step moved onto
- * the ramp, built screens were still painting 700. `/ko/projects/` alone showed
- * **7**, and the exhaustive count is **8 places**.
- *
- * What makes this defect special is that **no value is left in the code**. Without
- * a weight class on `<b>` there is no string for a lint selector to see, and no
- * source scan that counts off-ramp values can catch it. It is the same layer the
- * cursor-affordance gate (`cursor-affordance.spec.ts`) describes when it says a
- * missing central rule can only be seen by measuring the render — and this one was
- * likewise caught **by measuring the static export in a browser**.
- *
- * It had already **split within a single file**: of the 8 engraved-numeral `<b>`
- * elements in `OntologyMapDetailPanel`, 4 stated `strong` (650) and 4 did not.
- * Siblings in the same role diverged at 650 and 700 and nobody saw it.
- *
- * ## Why "must state" rather than "700 forbidden"
- *
- * Blocking places that write 700 is already `typographyAxisSelectors`'s job (the
- * `font-bold` named step is forbidden). What is blocked here is **writing nothing
- * at all**, so the predicate asks whether a value exists, not which value it is.
- *
- * `font-normal` (400) passes too — it is an explicit declaration that emphasis is
- * off, and it is genuinely used to return a `<b>` to body weight
- * (`ConceptEgoCard`, `CommitDetail`).
+ * `<b>` and `<strong>` must state a weight, else the browser default 700 is outside the weight ramp.
+ * No value is left in source for a lint selector, so the predicate asks whether one exists.
  */
 
 const ROOT = process.cwd();
@@ -54,13 +27,7 @@ function openingTag(src: string, from: number): string {
   return src.slice(from, from + 3000);
 }
 
-/**
- * **Strips comments.** Without this the file falls into the trap it documents — the
- * doc-block above quotes `<b>`, and the first implementation counted 2 of its own
- * comments as violations. (The same disease as `unused-token-ratchet` mistaking a
- * token mentioned in a comment for a token in use, registered separately by the
- * 2026-08-05 audit.)
- */
+/** Comments are stripped first so the doc block above, which quotes `<b>`, is not counted. */
 function stripComments(src: string): string {
   return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 }

@@ -9,51 +9,18 @@ import {
 } from "../../scripts/lib/static-surface-census.mjs";
 
 /**
- * Static badge adoption ratchet — **hand-written badge geometry cannot grow**
- * (2026-08-15).
- *
- * **Why** (ratified by the system seat, docs/DECISIONS.md). Inventory: 67 static badges
- * split across **30 geometries and 60 colours**. The per-box spec table already had a
- * badge row, and its prescription (`rounded-chip px-2 py-0.5` label) had **zero exact
- * matches in production** — by this repository's own precedent, *a spec nobody uses is
- * not a spec but misinformation*.
- *
- * This category also has a history of **a part dying once**: `Card`, `Badge`, and
- * `DetailCard` were deleted on 2026-08-03 with zero consumers. The post-mortem named
- * the cause not as the components but as **components without a gate**, so this
- * ratchet is born in the **same PR** as `badgeClass`. The three alive today (Dialog,
- * Checkbox, SegmentedControl) were all born that way.
- *
- * **What is counted**: a `<span>` that hand-writes **geometry (radius plus inset or a
- * type step)** without going through `badgeClass`. Not counted: status dots (textless
- * circles), the `shared/ui` primitive layer, and tests.
- *
- * Colour and letter-spacing are **not counted** — those are axes the value layer
- * deliberately does not cover (there is no majority), so counting them would create
- * debt that can never be repaid. Colour convergence is a per-place design verdict and
- * belongs to the next round.
+ * Hand-written badge geometry (radius plus inset or type step) without `badgeClass` cannot grow.
+ * Status dots, the `shared/ui` primitive layer and tests are not counted; colour is not counted.
  */
 
 const ROOT = process.cwd();
 
 /**
- * **The scanner is not built here** — it calls
- * `scripts/lib/static-surface-census.mjs`. The ledger and the gate must count with
- * **the same function** for the two-way "the ledger is more generous than the
- * measurement" check to mean anything (a discipline codified in
- * `/ui-proof` after a hand-written ledger was wrong four times on
- * 2026-08-15).
+ * The scanner is `scripts/lib/static-surface-census.mjs`: the ledger and the gate must count with the
+ * same function for the ledger-more-generous check to mean anything.
  */
 
-/**
- * **The debt ledger** — measured right after the 2026-08-15 migration (17
- * byte-identical places). These are per-file ceilings; growth turns red, and a row
- * reaching 0 is deleted.
- *
- * The repayment order follows `/ui-proof`'s fix order: ① geometry that
- * already matches (0 pixels moved) → ② ±1px → ③ places needing a design verdict. This
- * PR finished ①; most of what remains is ② and ③ and needs a per-place verdict.
- */
+/** Per-file ceilings: growth turns red, and a row reaching 0 is deleted. */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/entities/project/ui/ProjectCard.tsx", 1],
   ["src/features/agent-activity/ui/AgentActivityChip.tsx", 1],
@@ -84,9 +51,7 @@ describe("정적 배지 채택 래칫", () => {
   const ledger = new Map(DEBT);
 
   it("탐지기가 공회전하지 않는다 — 파일을 실제로 훑고 장부가 실재한다", () => {
-    // Locks "enough files were scanned", not "the number of caught files is non-zero"
-    // (the 2026-08-03 label-decoration precedent: do not aim the idling guard at the
-    // wrong thing).
+    // Locks that enough files were scanned, not that the number of caught files is non-zero.
     expect(census.scanned, "훑은 파일이 너무 적다 — 워커가 죽었다").toBeGreaterThan(100);
     for (const [file] of DEBT) {
       expect(statSync(path.join(ROOT, file)).isFile(), `${file} 이 실재하지 않는다`).toBe(true);

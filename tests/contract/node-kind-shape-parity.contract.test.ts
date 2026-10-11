@@ -6,28 +6,9 @@ import { bodyPoints } from "@/widgets/ontology-map/render/node-shapes";
 import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
 
 /**
- * Verifies the kind → silhouette mapping is identical across both render facades
- * (canvas and DOM).
- *
- * **Why a contract test.** The "node spec" section of `docs/DESIGN-SYSTEM.md`
- * records "project=hex · domain=square · capability=circle · element=square +
- * via-hole" as a **hard invariant**, and two facades — `render/node-shapes.ts`
- * (canvas) and `shared/ui/map-kind-glyph.tsx` (DOM) — each keep that rule
- * independently. But each file's own unit test (`node-shapes.test.ts`,
- * `map-kind-glyph.test.tsx`) checks consistency **within its own file
- * only**, so a kind mapping changed on one side is invisible to the other's test.
- * lint sees AST selectors within one file, so it cannot catch this divergence in
- * principle (the classification rule in .claude/rules/design.md: if the verdict
- * needs a value from another file, it is a contract test).
- *
- * Why `.test.ts` (using `createElement` rather than JSX): the vitest `include` glob
- * for `tests/contract/**` matches `.test.ts` and not `.tsx` (`vitest.config.ts`) —
- * rather than widening a shared glob for this one file, JSX is avoided and the
- * existing contracts stay untouched.
- *
- * Inventory before switching it on (2026-08-01): before this file there were zero
- * tests holding the two facades' mappings together — they agreed by coincidence,
- * not by contract.
+ * The kind to silhouette mapping is kept independently by the canvas (`render/node-shapes.ts`) and
+ * DOM (`shared/ui/map-kind-glyph.tsx`) facades, and no single-file test or lint sees both. The file is
+ * `.test.ts` with `createElement` because the vitest glob for `tests/contract/**` excludes `.tsx`.
  */
 
 type ShapeFamily = "hex6" | "rect4" | "circle";

@@ -10,25 +10,9 @@ import {
 } from '../../src/widgets/docs-vault/lib/relative-doc-path';
 
 /**
- * **The agent reads the link the screen wrote** — a seam across two packages.
- *
- * An editor `@` mention writes two things: a relation in frontmatter (the fact) and
- * a standard markdown link in the body (the path a person clicks). Whether **MCP's
- * `find_backlinks` recognises that body notation** is decided by two pieces of code
- * that know nothing of each other — the web side is produced by
- * `relative-doc-path.ts`, and MCP finds it with the body needles in `vault/`
- * (`[[slug]]` · `(slug.md)` · `/slug.md`).
- *
- * **Why a contract test.** The body notation changed **three times in one day on
- * 2026-08-08** — plain text → wiki link → standard link (each on owner feedback).
- * Nobody asked "does the agent still find this" at any point, and the answer really
- * could have changed: a same-folder link written as `[name](tgt.md)` without `./`
- * matches none of the three needles (there is no slash for `/tgt.md`). Today the
- * `./` makes it match, and **if that fact looks accidental the next person removes
- * it.**
- *
- * So instead of copying the logic, **both real functions are pointed at the same
- * temporary vault**. A change on either side breaks here first.
+ * The web mention link and MCP `find_backlinks` are decided by code that knows nothing of each other,
+ * so both real functions are pointed at the same temporary vault. The `./` prefix is what makes a
+ * same-folder link match the body needles.
  */
 
 let root: string;

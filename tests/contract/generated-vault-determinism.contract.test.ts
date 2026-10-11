@@ -5,32 +5,8 @@ import path from 'node:path';
 import { FULL_LANE_COMMANDS } from '../../scripts/classify-change.mjs';
 
 /**
- * Generated-manifest determinism guard — stops **generation time** leaking into
- * committed build output.
- *
- * Measured defect (2026-07-27): `manifest.json`'s `generatedAt` and each document's
- * `updatedAt` were recorded at git commit **timestamp** precision (`%cI`), falling
- * back to filesystem mtime (wall clock) when no commit time was found. But those
- * values describe the commit that contains them, and that commit's timestamp is
- * unknowable at generation time — GitHub squash-merge discards the PR branch's
- * commits and stamps a new one with a new time, and rebase and amend do the same.
- * So the baseline that landed on main was wrong for 1–32 documents **from birth**
- * (24 of the last 25 commits), and anyone regenerating later saw lines they had not
- * touched appear in their diff. The result was rebase conflicts on every PR,
- * unreviewable phantom diffs, and tsc breakage from conflict markers left inside
- * the JSON.
- *
- * The prescription is **date precision**: a merge restamping the time leaves the
- * value unchanged as long as it is the same day, and two branches that diverged on
- * the same day write the same string so git merges them automatically. Every
- * consumer works at day granularity or coarser ("N days ago" ladder, the last-7-days
- * lens, the weekly heatmap, sorting), so no accuracy is lost.
- *
- * This guard enforces that spec in code — a spec that lives only in a document is
- * not enforced. The determinism of the derivation itself (same source → same bytes,
- * resilience to commit-time restamping) is demonstrated against a temporary git
- * repository by the determinism-contract suite in
- * `scripts/build-docs-vault.test.mjs`.
+ * Generated dates are day precision so a merge restamping the commit time leaves them unchanged
+ * and branches diverging on the same day write identical strings.
  */
 
 const DAY_ONLY = /^\d{4}-\d{2}-\d{2}$/;

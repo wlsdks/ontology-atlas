@@ -5,23 +5,8 @@ import { column } from "../../scripts/lib/locale-vocabulary.mjs";
 const topology = koMessages.topology;
 
 /**
- * ⚠️ **Half of this file was deleted on 2026-08-25** (owner: *"if a gate is catching things by
- * wording in a strange way, it's fine to remove it"*).
- *
- * It used to pin the exact Korean of sixteen labels — `contains` had to be the string one exact Korean phrase,
- * `realm.enterAction` had to be another exact phrase. `documentation.md` is explicit that a check may
- * verify only facts a machine can derive and must **never pin a sentence written by a person**; the
- * predecessor that broke this rule ended up with 1,915 assertions passing while behaviour changed
- * and failing when a correct sentence was reworded.
- *
- * That is exactly what it did here. Repairing the empty-state copy — which was leaking a schema kind
- * at a first-time reader — broke assertions that had no opinion about the repair, and the effort of
- * updating them is a standing tax on writing better words.
- *
- * What survives is the half that was never about prose: **no internal vocabulary reaches a label**.
- * That is a denylist of terms this repository invented, and a machine can check it without deciding
- * how a sentence should read. The wider vocabulary rule lives in
- * `user-facing-vocabulary.contract.test.ts`.
+ * No internal vocabulary reaches a label: a denylist of terms this repository invented. Exact
+ * wording is not pinned; `user-facing-vocabulary.contract.test.ts` holds the wider rule.
  */
 describe("topology Korean plain-language contract", () => {
   it("does not expose internal handoff or measurement wording in the inspected labels", () => {

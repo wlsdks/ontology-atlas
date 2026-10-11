@@ -11,18 +11,9 @@ import {
 import { readAcpRust } from "../helpers/read-acp-rust";
 
 /**
- * **The one line the screen offers when a login is stale has to actually work**
- * (2026-08-17).
- *
- * The previous guidance ("log in again in the terminal") was a dead end in this
- * case — the owner followed it exactly and the app kept failing, because the app
- * launches Claude with a dedicated config directory and Claude stores the login in
- * a **keychain entry per config directory**.
- *
- * So if the folder this line names is not the folder the app actually uses, the
- * new guidance is just as much of a dead end. That is why **three copies** are
- * pinned together: the identifier in `tauri.conf.json`, the path Rust builds, and
- * this command.
+ * The repair line must name the folder the app actually uses, since Claude keeps the login in a
+ * keychain entry per config directory. Three copies are pinned together: the `tauri.conf.json`
+ * identifier, the path Rust builds, and this command.
  */
 const TAURI_CONF = JSON.parse(
   readFileSync(join(process.cwd(), "src-tauri", "tauri.conf.json"), "utf8"),
@@ -52,13 +43,8 @@ describe("앱 몫 로그인 복구 명령", () => {
   });
 
   /**
-   * **It must not be a command that logs in again** (corrected 2026-08-20).
-   *
-   * The previous command (`CLAUDE_CONFIG_DIR=<app folder> claude /login`) was the
-   * cause of this defect. That login creates a keychain entry under the app folder,
-   * the entry shadows the linked user credential, and it dies when the token
-   * rotates — at which point the screen offers the same command and re-arms the same
-   * trap. The fix direction is **removing the entry**.
+   * The command must delete the shadow keychain entry, not log in again: a login under the app
+   * folder creates an entry that shadows the user credential and dies when the token rotates.
    */
   it("로그인이 아니라 그림자 항목을 지우는 명령이다", () => {
     const cmd = claudeLoginRepairCommand();

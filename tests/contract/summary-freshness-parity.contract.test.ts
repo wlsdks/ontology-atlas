@@ -1,19 +1,7 @@
 /**
- * Pins the two implementations of the summary-freshness rule to the same verdict.
- *
- * The rule exists twice on purpose. `mcp/src/stale-parent.mjs` answers it for agents
- * over MCP; `src/entities/docs-vault/lib/summary-freshness.ts` answers it for the
- * installed app, which cannot import the server because `src/` and `mcp/` are separate
- * packages and the web bundle ships without it. Two copies of a rule is drift waiting to
- * happen, so both run over the same cases here and must agree.
- *
- * What is compared is the **verdict and the lag**, not the object shape: the MCP side
- * returns rows carrying scores and prose for an agent, the client side returns the
- * minimum a popover row needs. Requiring identical shapes would pin presentation and
- * make the contract fire on harmless edits; requiring identical answers pins the rule.
- *
- * A case that changes one side's answer and not the other fails here rather than
- * shipping as "the app and the agent disagree about whether this domain is current".
+ * The summary-freshness rule exists twice (`mcp/src/stale-parent.mjs` and
+ * `src/entities/docs-vault/lib/summary-freshness.ts`) because `src/` cannot import `mcp/`.
+ * Both run the same cases and compare the outcome and the lag, not the object shape.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -155,7 +143,7 @@ function serverVerdict(testCase: Case) {
     docs: [{ slug: SLUG, frontmatter: { kind: testCase.kind, capabilities: testCase.timeline.at(-1)!.children } }],
     revisionsOf: () => serverRevisions(testCase),
   }) as Array<{ slug: string; behindByMs?: number; reasonCode?: string }>;
-  // `insufficient-history` is a "cannot tell", which the client expresses as no verdict.
+  // `insufficient-history` is a cannot-tell, which the client expresses as no answer.
   const row = rows.find((candidate) => !candidate.reasonCode);
   return row ?? null;
 }

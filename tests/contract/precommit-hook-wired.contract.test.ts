@@ -5,23 +5,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The gate that keeps the commit hook **present and wired.**
- *
- * `.githooks/pre-commit` blocks vault-artifact drift at commit time (2026-08-02 — the
- * same failure happened three times in two days as #826, #828, and #831). This hook
- * has two **quiet disappearance paths** that other gates do not:
- *
- * 1. If the directory `core.hooksPath` points at **does not exist, git says nothing.**
- *    It is not that the hook is missing — the fact that a hook ever existed vanishes
- *    from view. Measured: before this branch, `.githooks/` was missing in every
- *    worktree and git passed commits without a single warning.
- * 2. Without the executable bit git **skips** the hook. The file is still visible while
- *    only the gate is gone — the least visible form of regression in review.
- *
- * So what is measured here is not the hook's *verdict* but its *existence*. The hook
- * proves its verdict on every commit; this test proves the hook is wired to actually
- * be called on every commit. One step before "a gate that only ever passes is not a
- * gate" — this blocks **a gate that is never even called.**
+ * Keeps the commit hook present and wired. A missing `core.hooksPath` directory is silent in git, and
+ * a hook without the executable bit is skipped, so existence is checked here, not the hook outcome.
  */
 
 const ROOT = join(__dirname, "..", "..");

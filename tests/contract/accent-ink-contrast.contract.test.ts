@@ -8,18 +8,8 @@ import { controlClass } from "../../src/shared/ui/control-class";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Blank out comments before scanning, preserving line numbers so reported
- * locations stay right.
- *
- * **Why (measured 2026-08-22).** This gate looks for class-like literals in the
- * source. A comment is not a class literal — nothing in a comment ever renders —
- * but the scan read the raw file, so prose could trip it. Translating the
- * repository's comments to English made that live: `text-width` written inside a
- * sentence in `DomainCapacityBar.tsx` was reported as an undefined `text-*` ramp
- * step, and token names mentioned in prose were counted as ink/fill pairings.
- *
- * Korean prose rarely contains hyphenated Latin compounds, which is why the hole
- * stayed closed for as long as the comments were Korean.
+ * Blank out comments before scanning, preserving line numbers, so prose cannot trip the
+ * class-literal scan.
  */
 function stripComments(source: string): string {
   return source
@@ -29,27 +19,9 @@ function stripComments(source: string): string {
 
 
 /**
- * The **licence contract** for the two indigo ink steps (System seat verdict
- * 2026-08-03, follow-up to PR #886).
- *
- * **What it locks.** This app has two solutions for indigo ink:
- *
- * | Tone | Token | Licence |
- * |---|---|---|
- * | `accent` | `--color-indigo-accent`(#7170ff) | **darkest backgrounds only** (canvas/panel/elevated) |
- * | `accentOnTint` | `--color-indigo-text-soft` | anywhere — including tint fills and hover fills |
- *
- * The verdict is **measured composite contrast**, not a name: this file reads the
- * real token values from `app/globals.css` and computes WCAG 2.2 §1.4.3
- * (AA 4.5:1). If a token value moves, the test recomputes the truth of that moment
- * — no constants are copied, so there is nothing to drift.
- *
- * **Why lint alone is not enough.** The eslint pairing selectors
- * (`accentTintPairingSelectors`) see only **literals within the same call or
- * element**. A className routed through a file constant such as `INDIGO_CHIP` does
- * not fit in one AST selector — this source scan (which resolves constants) covers
- * that layer. (.claude/rules/design.md: layers lint cannot see belong to contract
- * tests.)
+ * Locks the licence of the two indigo ink steps with composite contrast (WCAG 2.2 1.4.3, AA 4.5:1)
+ * from the real tokens in `app/globals.css`. The source scan resolves constants that lint selectors
+ * cannot see.
  */
 
 /** Reads a token value from `app/globals.css`, first definition wins. */
@@ -173,39 +145,9 @@ describe("accent × 틴트 페어링 금지 — lint 가 못 보는 상수 우�
   };
 
   /**
-   * **The hand-written layer — where this gate could not see (2026-08-04).**
-   *
-   * The scan above looks for **the value layer's `tone` declarations**. Places that
-   * use no `tone` at all and instead write ink and tint **side by side by hand** were
-   * entirely out of view:
-   *
-   * ```
-   * className="… bg-[color:var(--color-indigo-a16)] text-[color:var(--color-indigo-accent)]"
-   * ```
-   *
-   * The 2026-08-04 system audit measured one such place (the step-number badge in
-   * agent connect) at **4.27:1**, and neither this file nor `a11y-ratchet` had ever
-   * seen it — the former looked only at `tone`, the latter measured only the first
-   * screen, and on top of that the badge is `aria-hidden`, so axe's `color-contrast`
-   * skips it in principle. **Three automated checks had blind spots that overlapped
-   * on one element.**
-   *
-   * **Why a ratchet and not 0.** Inventory before switching it on: **24 places**.
-   * Changing ink changes pixels, and pixel decisions belong to the design gate, not a
-   * value rule (.claude/rules/design.md). Also the verdict **depends on the host
-   * background** — accent is 4.27 (fail) on `a16`/panel but 4.55 (pass) on
-   * `a16`/canvas, and a static scan does not know which background a place is drawn
-   * on. So this only locks the count against **growth**, and the real verdict is left
-   * to the runtime instrument that opens the surfaces (`a11y-ratchet`).
-   *
-   * The audit's named place was repaid in that round (8.39:1), and the other places
-   * were migrated exhaustively by the 2026-08-04 system ink round (open-surface
-   * overlay contrast) — only the ink changed to `--color-indigo-text-soft`, with zero
-   * change to dimensions or borders. After migration every place measures at least
-   * 6.30:1 composite (the lowest being a32/elevated). Hence a baseline of 0: this
-   * layer's licence is now the single rule "ink on a tint is soft", and a new
-   * violation is red from the first one. The detector itself is kept honest by the
-   * probe tests below.
+   * Hand-written ink and tint pairs bypass the `tone` scan. Baseline 0: ink on a tint must be
+   * `--color-indigo-text-soft`. Accent contrast depends on the host background, which a static scan
+   * cannot know.
    */
   const HAND_WRITTEN_INK = /text-\[color:var\(--color-indigo-accent\)\]/;
   const HAND_WRITTEN_TINT = /bg-\[color:var\(--color-(indigo|amber)[a-z-]*-a\d+\)\]/;

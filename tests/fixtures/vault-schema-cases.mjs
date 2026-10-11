@@ -74,10 +74,8 @@ export const BUILD_FM_CASES = [
     },
   },
   {
-    // After preferredOrder, a capability's domain should precede elements for
-    // readability (slug → kind → title → domain → arrays). vitest's toEqual does not
-    // compare key order, but the fixture keeps the intended order so a reviewer sees
-    // it at a glance.
+    // Key order after preferredOrder (slug, kind, title, domain, arrays); `toEqual` ignores order but the
+    // fixture keeps it readable.
     name: 'capability — domain 명시 + elements 빈 배열 (domain 이 elements 앞)',
     input: {
       uid: '11890f3e-7b5d-4c0a-8f14-123456789abc',
@@ -212,10 +210,7 @@ export const FOLDER_CASES = [
   { kind: 'no-such', expected: '' },
 ];
 
-/**
- * Slug flatness (2026-08-01 verdict: a slug is a flat identifier).
- * `expected: null` = passes; `expected: 'issue'` = flatSlugIssue returns a message.
- */
+/** Slug flatness: `expected: null` passes; `expected: 'issue'` means `flatSlugIssue` returns a message. */
 export const FLAT_SLUG_CASES = [
   // Schema folder plus a flat name — correct.
   { name: 'element flat', kind: 'element', slug: 'elements/jwt-token', expected: null },

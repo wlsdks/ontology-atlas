@@ -11,9 +11,8 @@ import {
   VAULT_KIND_SCHEMA as SCHEMA_MCP,
 } from "../../mcp/src/schema.mjs";
 /*
- * ⚠️ Only the names the CLI runtime re-exports. `cli/src/lib/schema.mjs` executes
- * `mcp/src/schema.mjs` since 2026-08-30, so a "cli === mcp" assertion over a name
- * the CLI never imports would compare an object with itself.
+ * Only names the CLI runtime re-exports: `cli/src/lib/schema.mjs` executes `mcp/src/schema.mjs`, so a
+ * cli === mcp assertion over any other name would compare an object with itself.
  */
 import {
   buildFrontmatter as buildCli,
@@ -30,20 +29,9 @@ import { VAULT_CREATED_BY_HUMAN } from "@/entities/docs-vault";
 const TEST_UID = "01890f3e-7b5d-4c0a-8f14-123456789abc";
 
 /**
- * Node authorship provenance (`created_by`) contract — ledger 2026-07-31,
- * "Marking human-authored nodes: retroactive provenance does not exist".
- *
- * Four invariants held here:
- *   ① The value convention is `human` | `agent:<name>` and nothing else, and
- *      mcp/cli/web share the same constant.
- *   ② Normalisation **preserves** a value but never **invents** one for a node that
- *      lacks it.
- *   ③ Absence is unknown, not a defect — no validation warning and no default.
- *   ④ "show only what a human made" works as a query filter.
- *
- * Whether the MCP write paths (add_concept / add_concepts / absorb_document) really
- * stamp it, and whether patch_concept preserves it, is only observable with the
- * server running and is owned by `mcp/src/integration.test.mjs`.
+ * Value is `human` or `agent:<name>`, shared by mcp, cli and web; normalisation preserves but never
+ * invents a value; absence is unknown, not a defect. MCP write paths are covered by
+ * `mcp/src/integration.test.mjs`.
  */
 
 /** The `.mjs` schema is untyped — narrowed only at the indexing site. */

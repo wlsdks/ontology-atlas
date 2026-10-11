@@ -4,42 +4,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The **target size** contract for native checkboxes and radios
- * (WCAG 2.5.8 AA — 24×24).
- *
- * **Why this gate is needed — two checks missed it side by side.** Exhaustive count
- * 2026-08-05: **all 5 native checkboxes were under 24px** (`h-4`=16 · `h-3.5`=14 ·
- * `size-3.5`=14 ×2 · **no size class at all** ×1). Yet not one gate in this
- * repository went red:
- *
- * | Gate | Why it could not see |
- * |---|---|
- * | `control-adoption-ratchet` | it counts only the tags `button`, `Link`, `a` |
- * | `touch-target-contract.spec.ts` | all four selectors are `button, a[href]` |
- *
- * **Both guard hand-written controls, and forms were outside both fields of view.**
- * So forms could grow without limit, and they did.
- *
- * **The predicate is WCAG transcribed.** A target is not "how many px is the icon"
- * but **"what receives the click"** (SC 2.5.5 Understanding). When a `<label>`
- * wraps the checkbox, the **native behaviour** that clicking the label toggles it
- * makes the whole label one target. So there are two ways to pass:
- *
- * 1. the checkbox itself is at least 24px, or
- * 2. **the wrapping `<label>` has a 24px floor**.
- *
- * All five places today chose (2) — growing a 14px checkbox to 24px would make it
- * larger than the 11px label text, inverting the hierarchy in the opposite
- * direction ("the thing you press is smaller than its label"). Instead the label
- * carries `min-h-6` (24, AA) together with `atlas-touch-floor` (coarse 44, toward
- * AAA).
- *
- * **What this check cannot do — hence a separate e2e.** It reads source only, so it
- * does not know the **rendered rect**. If a label has the 24px floor but a parent
- * clips it with `overflow-hidden`, this check is green while the screen fails. That
- * layer belongs to `tests/e2e/touch-target-contract.spec.ts`. This contract watches
- * the **cause** (is the floor in the code); the e2e watches the **result** (is it 24
- * on screen).
+ * Native checkboxes and radios need a 24x24 target (WCAG 2.5.8): the input itself, or a wrapping
+ * `<label>` with a 24px floor. Reads source only; the rendered rect belongs to
+ * `tests/e2e/touch-target-contract.spec.ts`.
  */
 
 const ROOT = join(__dirname, '..', '..');
@@ -110,14 +77,8 @@ type Site = {
  * `</label>` sits in between.
  */
 /**
- * Slices from `<input` to where the tag **really ends**.
- *
- * ⚠️ **`[^>]*` does not work — the first version did that and mis-flagged all five
- * places.** A JSX handler is an arrow function (`onChange={(e) => …}`), so the
- * slice stops at that `>` and never reaches the `className` after it. The verdict
- * becomes "no size class" while the code plainly has one.
- *
- * Brace depth is counted, and only a `>` **at depth 0** ends the tag.
+ * Slices from `<input` to where the tag really ends: `[^>]*` stops at the `>` of an arrow handler,
+ * so brace depth is counted and only a `>` at depth 0 ends the tag.
  */
 function inputTagAt(source: string, start: number): string {
   let depth = 0;
@@ -205,18 +166,8 @@ describe('네이티브 체크박스·라디오의 타깃 크기 (WCAG 2.5.8 AA)'
    * goes quiet, this assertion turns red first.
    */
   /**
-   * ⚠️ **Never put a lower bound on the number of defects (or targets)** (caught in
-   * the 2026-08-06 re-review).
-   *
-   * This assertion used to require **at least 5** checkboxes. The measurement was
-   * **6**, leaving a margin of **1** — deleting one checkbox turns it red for no
-   * reason. The same disease as "the gate punishes progress", hit six times in this
-   * repository today.
-   *
-   * The question is not "are there enough targets" but **"is the scanner alive"**. So
-   * it checks ① that enough files were scanned (the scanner's field of view) and
-   * ② that a checkbox is really extracted from a **synthetic tag** (the predicate's
-   * survival). Neither depends on the real count.
+   * Never put a lower bound on the target count; assert the scanner is alive instead (enough files
+   * scanned, a synthetic checkbox extracted).
    */
   it('탐지기가 살아 있다 — 시야가 넓고, 합성 체크박스를 실제로 뽑는다', () => {
     expect(

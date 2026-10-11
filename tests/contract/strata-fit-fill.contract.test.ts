@@ -14,41 +14,10 @@ import { computeDomeFitCameraTarget } from "@/widgets/ontology-map/ui/camera/top
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **Does the 3D structure actually land on the canvas?** (2026-09-05, owner direction B2;
- * retargeted from the Cone to Strata on 2026-09-25, when the Cone left the picker.)
- *
- * ## The defect this locks out
- *
- * Measured on the sample vault (125 concepts) in the dev build, with the index
- * panel open and the map in the then-default Cone view:
- *
- * | viewport | free canvas | outline | fill |
- * |---|---|---|---|
- * | 1920x1080 | 1532 x 1080 | 602 x 620 | **22.6%** |
- * | 1440x900 | 1052 x 900 | 469 x 482 | **23.9%** |
- * | 1024x768 | 636 x 768 | 371 x 382 | **29.0%** |
- * | 834x1112 | 510 x 1112 | 276 x 284 | **13.9%** |
- *
- * A hundred and twenty-five dots inside a fifth of the stage is not a map of a
- * codebase, it is an ornament sitting in the middle of one. Both causes were pure
- * arithmetic, which is why this gate is arithmetic too: the structure was fitted
- * through the 2D overview fit (which reserves bands the 3D view never draws) after
- * its bounds were padded 15% a side, and the silhouette was taller than wide in a
- * landscape frame.
- *
- * ## What is measured here
- *
- * The real fit is run at the four viewport sizes the direction names, with the panel
- * obstruction measured on those screens, against **the Strata silhouette the model
- * actually builds** for a sample-shaped vault, at every yaw a turn passes through, with
- * a margin either side. The floors are Strata's own: its planes fill their whole discs,
- * so its outline is wider and flatter than the cone's was (≈1.10 : 1 against 1.22), and
- * at 1920 it reaches 55% (the cone reached 60%) for the same reason the browser twin
- * (`tests/e2e/map-3d-strata-drawing.spec.ts`) floors 1512 at 58%. No spill is allowed at
- * any size, because a fit that overflows is a crop, not a fill.
+ * The real fit is run at four viewport sizes against the Strata silhouette the model builds, at every
+ * yaw a turn passes through. No spill is allowed at any size, since an overflowing fit is a crop.
  */
 
-/** The panel obstruction measured on each screen (index panel open, 2026-09-05). */
 const SCREENS = [
   { name: "1920x1080", canvasW: 1856, canvasH: 1080, insetLeft: 324, insetRight: 0, floor: 0.53 },
   { name: "1440x900", canvasW: 1376, canvasH: 900, insetLeft: 324, insetRight: 0, floor: 0.53 },

@@ -9,35 +9,8 @@ import { createOntologyEngine } from "../../mcp/src/ontology-engine.mjs";
 import { parseFrontmatter } from "../../mcp/src/parser.mjs";
 
 /**
- * The contract that the screen, the CLI, and MCP **answer with the same concepts
- * for the same vault**.
- *
- * Measured background (2026-07-26): the web map and insights reported 296
- * concepts while `ontology-atlas overview` and MCP `list_kinds` reported 96 nodes.
- * The 200 difference were concepts named only inside another document's relation
- * key (derived nodes) — no screen stated that boundary, and the CLI and MCP did
- * not know they existed. Calling `get_concept` with the slug of the node the map
- * ranked first for "changing this spreads furthest" returned "not found" — the
- * exact place where this product's promise ("people and agents see the same
- * ontology") breaks head-on.
- *
- * So three things are pinned:
- *
- * 1. **All three entry points agree on the count of documented concepts** — the
- *    web's `hasOwnDocument` node count == the compiler's `nodeCount`.
- * 2. **The set of undocumented concepts matches too** — the set of raw references
- *    behind the web's derived nodes == the set of references the compiler could
- *    not resolve. Two places applying their own rules diverge here (the web really
- *    did not know about `slug:` aliases and was creating 7 phantom twins).
- * 3. **A name the screen offers for copying works when pasted** — every node's
- *    agent name either resolves in the compiled vault (documented) or is a
- *    reference the vault knows, so the engine honestly answers "only the document
- *    is missing" (undocumented).
- *
- * Numbers are not pinned as constants, for the same reason as
- * `derived-node-document.contract.test.ts`: the dogfood vault grows often, so a
- * fixed number is noise rather than a gate. What is pinned instead are
- * **identities and set equalities**, which cannot drift.
+ * The web, the CLI and MCP must answer with the same concepts for the same vault; identities and
+ * set equalities are pinned rather than counts, because the dogfood vault grows.
  */
 
 const VAULT_ROOT = join(process.cwd(), "docs/ontology");
@@ -140,16 +113,8 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
   });
 
   /**
-   * Measured background (2026-07-27): web insights reported **448 relations**
-   * while the CLI's `overview` and MCP's `query_ontology` reported **542** (those two
-   * agreed right down to `graphHash`). Of the 94 difference, 84 was scope (the
-   * compiler counts written references, the web counts distinct relations) and
-   * **10 was a real hole**: the web derivation did not read the `describes:` key at
-   * all, so document nodes were not connected to the concepts they describe.
-   *
-   * So rather than matching numbers, **the folding rule is pinned** — folding
-   * compiler edges by (from,to,type) must equal the web's edge set exactly. Whichever
-   * side learns a new frontmatter key first, it is caught here.
+   * Folding compiler edges by (from,to,type) must equal the web's edge set exactly, so whichever side
+   * learns a new frontmatter key first is caught here.
    */
   it("컴파일러 관계를 (from,to,type) 로 접으면 화면의 관계 집합과 정확히 같다", () => {
     const strip = (value: string) => value.replace(/^ontology\//, '');
@@ -207,10 +172,6 @@ describe("화면 · CLI · MCP 개념 정합 (번들 dogfood == docs/ontology)",
 
 describe("이름만 적힌 개념을 물으면 엔진이 정직하게 답한다", () => {
   it("'없음' 이 아니라 '누가 어떤 키로 적었는지' 를 돌려준다", () => {
-    // 2026-08-01: this contract used to require an unresolved reference to **really
-    // exist** in dogfood (`expect(ref).toBeTruthy()`) — a gate that demands a defect
-    // preserves that defect. The engine's honesty is now always verified against a
-    // synthetic sample.
     const syntheticCompiled = compileOntology([
       {
         slug: "capabilities/ghost-parent",

@@ -5,34 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { GUIDE_PAGES } from '@/views/gateway-doc/model/guide-pages';
 
 /**
- * Whether internal links in the guide **body** point at routes that exist.
- *
- * ## Why this contract exists (2026-08-07 usability audit)
- *
- * **All 34** in-body internal links across the guide's 13 chapters were 404s. The
- * markdown source writes them **without a locale prefix**, e.g.
- * `[How to read the map](/guide/reading-the-map)` (one copy serves both `/ko` and `/en`,
- * so the source cannot hardcode a locale), and the body renderer put that value
- * straight into `<a href>`. No such route exists.
- *
- * The table of contents on the left of the same screen used `Link` (which adds the
- * locale) from the start — locale-prefixed and non-prefixed links coexisted on one
- * screen, and the side people mostly click was the working one, so it went
- * unnoticed.
- *
- * ## Why `docs:links` cannot catch it
- *
- * That check asks whether the **file path** a document cites exists.
- * `/guide/relations` is a **route**, not a file path, and exists nowhere as a file,
- * so it was never in scope. Same family of question — does the target exist — but
- * **a different kind of target**, so it needs its own check.
- *
- * ## What is measured
- *
- * Internal absolute-path links are extracted from the markdown source and checked
- * against a destination set **derived from code**. The destinations are not written
- * by hand: they come from `GUIDE_PAGES` (the authoritative list of guide segments)
- * and the real routes under `app/[locale]/**`.
+ * Internal links in guide bodies are written without a locale prefix and must still resolve;
+ * destinations derive from `GUIDE_PAGES` and the real routes under `app/[locale]/**`.
  */
 
 const ROOT = process.cwd();
@@ -67,22 +41,8 @@ function inBodyInternalLinks(): Array<{ file: string; href: string }> {
 }
 
 /**
- * **Every** link in the markdown body — extracted regardless of kind.
- *
- * ## Why a second scanner (measured during the 2026-08-14 walkthrough)
- *
- * `inBodyInternalLinks` above sees only the `](/…)` form, so a **relative-path
- * link** such as `[specification](../ONTOLOGY-ATLAS-SPEC.md#…)` passed unchecked — and the
- * e2e spec only looked at `a[href^="/"]`, so it did too. Clicking such a link goes
- * to `/ko/guide/ONTOLOGY-ATLAS-SPEC.md`, where the `findGuidePage()` fallback
- * **silently** rendered chapter 1: a **misdelivery**, not a 404, which is why
- * neither gate saw it.
- *
- * Inventory before switching it on: the 13 guide chapters contained exactly 2
- * relative links and both were this defect — there is **no** legitimate convention
- * for linking between guide chapters by relative path. So all of them are blocked
- * with no allowlist: internal links use the absolute `/guide/<chapter>` form, and
- * repository documents go to GitHub (the same discipline as above).
+ * Relative-path links in guide bodies are blocked with no allowlist: `findGuidePage()` would
+ * silently render chapter 1 instead of a 404.
  */
 function inBodyAllLinks(): Array<{ file: string; href: string }> {
   const out: Array<{ file: string; href: string }> = [];

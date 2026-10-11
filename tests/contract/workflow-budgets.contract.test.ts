@@ -4,34 +4,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **Every CI job declares what it costs, and its timeout cannot be a blank cheque.**
- *
- * ## Why this exists
- *
- * Measured 2026-09-12 over the last 20 runs. `Unit · Contract` averaged 437 s and hit
- * 705 s, inside a `timeout-minutes: 20` — so it could have doubled again and the only
- * signal would have been the owner's report that CI "takes far too long every single
- * time". Three other jobs carried no `timeout-minutes` at all (`deploy-pages`'s build
- * and deploy, and the registry publish), which means their ceiling was GitHub's
- * six-hour default.
- *
- * A timeout set far above the real cost is not a safety net, it is a hiding place. So
- * each job states its measured p95 as a `# budget: <n>s` comment beside its
- * `timeout-minutes`, and the timeout must sit between the budget and 1.5x it. A job
- * that grows past its budget fails on the clock **in CI, once**, and the person who
- * made it slower is the one who has to re-measure and say so — rather than the cost
- * arriving quietly in everyone else's afternoon.
- *
- * The 120-second floor is GitHub's granularity, not slack: `timeout-minutes` is whole
- * minutes, so a 30-second job cannot express a 45-second ceiling.
- *
- * ## What this does not do
- *
- * It never compares a *run* against the budget. The budget is a declared property of
- * the workflow file, checked by reading the file — nothing here measures a machine, so
- * this gate cannot go red because a runner was slow (`.claude/rules/testing.md`, "The
- * timing rule"). Only a job's own `timeout-minutes` can do that, and that is the
- * mechanism being bounded.
+ * Every CI job declares its measured p95 as a `# budget: <n>s` comment, and `timeout-minutes` must sit
+ * between the budget and 1.5x it. The 120-second floor is GitHub's whole-minute granularity. Only the
+ * workflow file is read; no run is compared, so a slow runner cannot turn this red.
  */
 
 const WORKFLOWS = path.join(process.cwd(), ".github/workflows");
@@ -166,17 +141,9 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
   });
 
   /**
-   * **A required context that stops reporting blocks every merge, forever.**
-   *
-   * `main` requires eight status contexts by exact name. Sharding `Unit · Contract`
-   * renamed the job that produced one of them, and nothing in the repository would have
-   * said so: the pull request would simply have waited for a check that no longer
-   * existed. `pnpm pr:land`'s own falsifier names this — "a landing that merges while a
-   * required context reads skipped".
-   *
-   * The names are pinned here rather than read from the API, because a test must not
-   * need the network to say whether the workflows still produce what `main` asks for. If
-   * branch protection changes, this list changes with it in the same pull request.
+   * `main` requires these contexts by exact name; a renamed job would leave a pull request waiting for
+   * a check that no longer exists. The names are pinned here, not read from the API, because a test
+   * must not need the network. Changing branch protection changes this list in the same pull request.
    */
   const REQUIRED_CONTEXTS = [
     "Types · Lint · Docs",
@@ -219,28 +186,9 @@ describe("CI job budgets — a lane cannot grow in silence", () => {
   });
 
   /**
-   * **Why a check named `Unit · Contract ${{ matrix.shard }}/3` is tolerated.**
-   *
-   * A matrix job skipped by its own `if` is skipped *before* the matrix expands, so
-   * GitHub reports one check with the expression still in the name. Two of those sat
-   * in PR #1578's rollup in `SKIPPED` state, and the landing hung — but not because
-   * of them. It hung because `pr-land.mjs` resolved a name that reported twice (the
-   * draft's `SKIPPED` and the real verdict) by keeping whichever came last, and read
-   * a FAILED required context as "never ran". That is fixed at the lander, where the
-   * defect was, and `scripts/pr-land.test.mjs` pins it with the recorded rollup —
-   * both phantom names included — and asserts the verdict is order-independent.
-   *
-   * Removing the phantom itself would cost more than it is worth. Moving the gate
-   * into the steps makes the matrix expand, and breaks
-   * `workflow-security.contract.test.ts`: "skips every job on a draft, so a draft
-   * costs no runner minute" requires the guard in every job **header**, which is a
-   * standing decision. Writing the three shards out as static jobs instead would
-   * triplicate about fifty lines of YAML each, in a repository that keeps
-   * `setup-playwright` as one composite action "rather than five drifting copies".
-   *
-   * So the phantom stays, cannot match a required context name, and no longer
-   * confuses the only thing that read it. This test records that trade rather than
-   * enforcing it, and names where the enforcement actually lives.
+   * A matrix job skipped by its own `if` reports one check with the expression still in the name. That
+   * phantom is tolerated: the draft guard must stay in every job header, and static jobs would
+   * triplicate the YAML. `scripts/pr-land.test.mjs` holds the enforcement.
    */
   it("keeps the draft guard in every matrix job header, as the draft-cost decision requires", () => {
     const guard = "github.event.pull_request.draft == false";

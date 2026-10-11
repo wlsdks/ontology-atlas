@@ -6,42 +6,8 @@ import { collectTokens } from '../../scripts/design-tokens.mjs';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The gateway body column cap (`--gateway-page-max`) — the invariants of the
- * second wide-width revision (2026-08-19).
- *
- * Measured from the owner's 2560 screenshot: the column stopped at `--page-max`
- * (1600), leaving 480px of margin on each side — 37.5% of the screen was empty
- * canvas. Of four options the owner chose **"widen the gateway only"** —
- * [320][1920][320] at 2560, every other screen stays at 1600. So instead of
- * raising `--page-max`, a gateway-only cap was added, and this test locks the
- * **promises** that value carries:
- *
- *  (a) **Value = 1920px** — the owner's chosen value. The same form of pinned
- *      decision as the stage-width gate pinning a 48rem floor.
- *  (b) **No-regression invariant at ≤1920 — cap ≥ `--page-max`.** The origin
- *      formula is `max(gutter, (vw − cap)/2)` and the column is
- *      `min(vw − 2×gutter, cap)`, so as long as the cap is at least `--page-max`,
- *      every vw ≤ `--page-max` + 2×gutter (= 2000) yields **byte-identical**
- *      origin and column to the old formula (in both, the gutter wins and the
- *      column is vw − 2×gutter). Break this property and the 1440–1920 renders the
- *      gate protects move silently.
- *  (c) **Origin and column read the same cap** — the `--gateway-origin` formula
- *      consumes this token. Change only one and the column widens while the origin
- *      centres on the old number, making the sides asymmetric — this pairing is the
- *      premise behind "five elements on the same x, sides equal".
- *  (d) **One source of truth for the column cap** — `PAGE_COLUMN`
- *      (shared/lib/public-pages/gateway-frame.ts) consumes this token, and no
- *      `max-w-[var(--page-max)]` remains in gateway surface code. A half migration
- *      (column widened, origin still on the old cap, or the reverse) is the drift
- *      this repository has caught repeatedly.
- *  (e) **Printed** — `pnpm design:tokens` reports the same value, which is how the
- *      design document points at it instead of carrying a copy.
- *
- * Whether the rendered column and origin actually follow this value (and whether
- * the sides match) is measured per width with rects by
- * `tests/e2e/download-gateway-grid.spec.ts` — that spec reads the computed
- * `--gateway-origin` live, so it follows automatically when this value changes.
- * Static invariants here; measurement there.
+ * Gateway body column cap: at or below 1920 origin and column must equal the old `--page-max`
+ * formula, and origin, column and `PAGE_COLUMN` must all read this one token.
  */
 
 const repoRoot = join(import.meta.dirname, "..", "..");

@@ -5,14 +5,8 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Every token `docs/DESIGN-SYSTEM.md` cites must exist in `app/styles`.
- *
- * The document used to cite hundreds of tokens of screens that no longer exist, and a
- * ratchet only stopped the count from growing. Values now come from `pnpm design:tokens`,
- * the document names a token only to state a rule about it, and the ceiling is zero.
- *
- * A name counts only inside backticks or `var(...)`. A prefix that ends in a dash names a
- * family, and a shell command (`pnpm ...`, `git ...`, `rg ...`) names flags, not tokens.
+ * Every token `docs/DESIGN-SYSTEM.md` cites must exist in `app/styles`. A name counts only inside
+ * backticks or `var(...)`; a dash-ending prefix names a family; shell commands name flags, not tokens.
  */
 
 const ROOT = process.cwd();

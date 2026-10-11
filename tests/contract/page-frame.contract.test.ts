@@ -18,50 +18,21 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 
 /**
- * **The page frame is defined in one place.**
- *
- * **What happened** (2026-08-09, owner):
- *
- * > *"Insights, projects, and skills should all have the same top spacing — isn't
- * > there a design system? why are they all different?"*
- * > (insights, projects, and skills should all have the same top spacing — isn't
- * > there a design system? why are they all different?)
- *
- * Measured: **32 / 48 / 20px** to the title. And the top was not the only axis out
- * of step — the horizontal insets (40/40/32) and max widths
- * (1600/1600/**1400**) differed across the three as well, and the same 1600 was
- * written in **two places**, a CSS token (`--page-max`) and a JS constant
- * (`PAGE_MAX_WIDTH`).
- *
- * **Why e2e alone is not enough.** `rail-destinations.spec.ts` measures **whether the three
- * agree with each other**, so it catches one screen leaving the frame (probe: setting
- * skills back to 20px turns it red) but **passes when the shared value is changed
- * wholesale, because the three still agree** (probe: 48→32 stays green).
- *
- * That hole is closed here by pinning the spec strings themselves as a ledger. The
- * values can change freely, but **this file must change with them, so the judgement
- * lands in the diff** (the same method the map panel ink ledger uses).
+ * The page frame is defined in one place. The e2e spec only checks that screens agree with each other,
+ * so a wholesale change passes; pinning the spec strings here forces the judgement into the diff.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
 
 /** Screens wearing this frame — an `mx-auto` document column in the shell's scroll slot with an `h1` as the first content. */
-/**
- * Screens using the form/edit column (2026-08-11) — **the same top spacing as the
- * list screens, only narrower**.
- */
+/** Screens using the form/edit column: the same top spacing as the list screens, only narrower. */
 const FORM_MEMBERS = [
   "src/views/project-editor/ui/ProjectEditorPage.tsx",
   /*
-   * ⚠️ **Agents and MCP moved here on 2026-09-06** (owner: *"they should use the 960 centred
-   * column like the project editor, not the 1600 one"*). Both are text-and-settings screens: you
-   * read a sentence and act on a row, and a row you read across gets worse the wider it is —
-   * measured on the connectors tab at 2560, about 700px of every row was dead span between the
-   * name on the left and the switch on the right. The frame file records the rule they generalise
-   * to, so the next screen decides by direction of travel rather than by taste.
+   * Agents and MCP are text-and-settings screens: a row read across gets worse the wider it is, so they
+   * use the 960 centred column. The frame file records the rule so the next screen decides by it.
    */
-  // `McpPage` left this list on 2026-09-19: it is the Agents page's second tab body, drawn
-  // inside that page's frame, not a page of its own.
+  // `McpPage` is not listed: it is the Agents page's second tab body, drawn inside that page's frame.
   "src/views/agents/ui/AgentsPage.tsx",
 ] as const;
 
@@ -107,22 +78,9 @@ describe("페이지 틀 규격", () => {
   });
 
   /**
-   * **The bottom belongs to the frame at `lg`, and to the page below it** (2026-09-05).
-   *
-   * The frame owned three of four dimensions and left the bottom to each screen, so the four
-   * members answered it four ways: `lg:pb-[var(--page-bottom-breath)]`, a literal `md:pb-10`, and
-   * **nothing at all** on two of them. With a folder open, `/mcp` is several screens tall and its
-   * last card sat flush against the bottom edge of the installed app's window.
-   *
-   * ⚠️ **Why a class assertion and not only the rendered gate.** `scroll-end-gap.spec.ts` measures
-   * the pixels, and it did not catch this — not through a defect of its own, but because it opens
-   * every route **with no folder**, and in that state these two are shorter than the viewport, so
-   * its measurement is skipped before it begins. A gate that cannot reach the state cannot judge
-   * it. The pixel layer stays; this is the prescription layer beside it.
-   *
-   * Below `lg` the reservation is a **different quantity** (the bottom tab bar stands there and
-   * how much to reserve depends on the surface), so the frame deliberately says nothing there and
-   * the page keeps paying that half.
+   * The frame owns the bottom at `lg`; below it the tab bar reservation is a different quantity, so the
+   * page pays it. `scroll-end-gap.spec.ts` opens routes with no folder, where these pages are shorter
+   * than the viewport and its measurement is skipped, so a class assertion is needed.
    */
   it("바닥 여백은 lg 에서 틀이 낸다 — 화면마다 다시 정하지 않는다", () => {
     expect(PAGE_FRAME, "틀이 lg 바닥 여백을 안 낸다").toContain(
@@ -140,13 +98,8 @@ describe("페이지 틀 규격", () => {
   });
 
   /**
-   * **The form column carries the desktop bottom breath itself** (2026-09-06 record).
-   *
-   * `/agents` and `/mcp` moved onto the 960 column and brought the taller-than-viewport case with
-   * them, so `scroll-end-gap` requires them to reserve `--page-bottom-breath` at `lg`. For one
-   * round the two members paid it in their own `className`; the record moved the value into the
-   * constant beside the list frame's own, so it has one definition site again and a member that
-   * restates it is caught below with the list members.
+   * The form column carries the desktop bottom breath itself, so it has one definition site and a
+   * member that restates it is caught below.
    */
   it("폼 틀이 lg 바닥 여백을 스스로 낸다", () => {
     expect(PAGE_FRAME_FORM).toContain("lg:pb-[var(--page-bottom-breath)]");
@@ -163,9 +116,8 @@ describe("페이지 틀 규격", () => {
   });
 
   it("멤버 세 화면이 전부 이 틀을 입는다", () => {
-    // Two since 2026-09-06: Agents and MCP left for the 960 column. The floor exists so an empty
-    // list cannot pass as a green run; it is not a claim about how many screens the wide frame
-    // deserves.
+    // The floor exists so an empty list cannot pass as a green run; it is not a claim about how many
+    // screens the wide frame deserves.
     expect(MEMBERS.length, "멤버가 비면 이 시험 전체가 공회전한다").toBeGreaterThan(1);
     for (const member of MEMBERS) {
       const source = read(member);
@@ -212,13 +164,8 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
   });
 
   /**
-   * **960 is written once, and both constants read the same one** (PO council, 2026-09-05).
-   *
-   * `PAGE_COLUMN_FORM` arrived carrying its own `max-w-[960px]`, a second copy of a width
-   * `page-frame.ts` is meant to define once. The two are bound rather than merged, because they are different
-   * roles — one is the page column, the other the column of rows inside a page-width card — and
-   * merging them would be the drift in the other direction. Binding them means a re-decided 960
-   * cannot move on one and stay on the other.
+   * 960 is written once and both constants read the same value. They are bound rather than merged
+   * because they are different roles (page column vs. row column inside a card).
    */
   it("폼 폭 960 은 한 번만 정해진다 — 두 상수가 같은 값을 본다", () => {
     const width = (spec: string) => spec.match(/max-w-\[\d+px\]/)?.[0] ?? "";
@@ -231,7 +178,7 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
   it("폼 컬럼은 좁고, 폭을 한 곳에서만 정한다", () => {
     expect(PAGE_FRAME_FORM).toContain("max-w-[960px]");
     expect(PAGE_FRAME_FORM).not.toContain("--page-max");
-    // Two members since 2026-09-19 (the MCP tab body left the list); an empty list is idling.
+    // The floor exists so an empty list cannot pass as a green run.
     expect(FORM_MEMBERS.length, "폼 멤버가 비면 공회전이다").toBeGreaterThanOrEqual(2);
     for (const member of FORM_MEMBERS) {
       const source = read(member);

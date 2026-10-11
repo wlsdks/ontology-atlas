@@ -6,17 +6,8 @@ import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontm
 import { parseFrontmatter as parseCli } from "../../cli/src/lib/parse-frontmatter.mjs";
 
 /**
- * 4-way contract — the vault frontmatter parser lives in four places:
- *   - src/shared/lib (runtime TS)
- *   - mcp/src (separate package — the AI agent surface)
- *   - scripts/lib (build and CLI scripts)
- *   - cli/src/lib (separate package — the developer CLI)
- *
- * Each package ships separately and cannot be folded into one physical module, so
- * forcing all of them through the same fixture matrix is what unifies them in effect.
- * If one implementation drifts, this test fails immediately.
- *
- * (Back to 4-way from 5-way after the VSCode plugin was removed.)
+ * The frontmatter parser ships in four packages that cannot share a module, so the same fixture
+ * matrix runs through all four: src/shared/lib, mcp/src, scripts/lib and cli/src/lib.
  */
 
 const PARSERS = {

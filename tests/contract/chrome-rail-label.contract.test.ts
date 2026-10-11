@@ -82,10 +82,8 @@ describe('chrome rail label contract', () => {
   });
 
   it('reduced motion keeps the reveal and drops only the growth', () => {
-    // The global kill rule cuts every transition to 0.01ms, which is exactly the
-    // wanted equivalent here: the label still appears, the box no longer grows. A
-    // carve-out that gave this class its time back would restore the moving axis, so
-    // the absence of one is the contract.
+    // The global kill rule cuts transitions to 0.01ms, the wanted equivalent: the label appears, the
+    // box no longer grows. A carve-out for this class would restore the moving axis.
     expect(CSS).toMatch(/transition-duration:\s*0\.01ms\s*!important/);
     const reducedBlocks = CSS.split('@media (prefers-reduced-motion: reduce)').slice(1);
     expect(reducedBlocks.length).toBeGreaterThan(0);

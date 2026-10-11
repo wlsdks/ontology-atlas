@@ -6,18 +6,9 @@ const ROOT = resolve(__dirname, '../..');
 const read = (relative: string) => readFileSync(resolve(ROOT, relative), 'utf8');
 
 /**
- * An empty state ends in one door.
- *
- * The 2026-09-05 audit counted 24 empty states rendering explanatory prose with
- * no control at all. The repeating shape was not oversight in the abstract: on
- * `/ontology/insights` and on the project detail, a sibling empty state on the
- * very same page already solved the identical problem with one navigating link,
- * and the copied variant lost it. Each row below is one of those copies, now
- * carrying the sibling's door.
- *
- * Pinned by test id and destination rather than by prose, so rewording stays
- * free while deleting the door does not. One entry per empty state — a second
- * competing action would be the opposite defect and is not what these fix.
+ * An empty state ends in one door, pinned by test id and destination rather than prose, so rewording
+ * stays free while deleting the door does not. One entry per empty state; a second competing action
+ * would be the opposite defect.
  */
 const DOORS: ReadonlyArray<{
   readonly what: string;
@@ -51,9 +42,8 @@ describe('an empty state ends in one door', () => {
   }
 
   it('each door is a real route, not an invented one', () => {
-    // `/topology` and `/projects` both exist as locale-prefixed App Router
-    // segments; a door pointing at a retired namespace would be worse than no
-    // door at all.
+    // Both are locale-prefixed App Router segments; a door pointing at a retired namespace would be
+    // worse than none.
     const destinations = new Set(DOORS.map((door) => door.href.split('?')[0]));
     expect([...destinations].sort()).toEqual(['/projects/', '/topology/']);
     for (const segment of ['topology', 'projects']) {

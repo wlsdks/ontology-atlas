@@ -13,15 +13,9 @@ import {
 } from "../../cli/src/lib/parse-frontmatter.mjs";
 
 /**
- * Writer contract — MCP write tools and CLI add/import write the same markdown.
- *
- * ⚠️ Since 2026-08-30 `cli/src/lib/parse-frontmatter.mjs` re-exports
- * `mcp/src/parser.mjs`, so the CLI arm no longer proves that two files agree; it
- * proves that the CLI's writer really reaches the canonical one. `serializeFrontmatter`
- * is not imported from the CLI at all, because the CLI runtime never calls it — only
- * `buildMarkdown`, which uses it internally — and a re-export added to satisfy a test
- * is dead code. Parser parity is covered by parse-frontmatter.contract.test.ts; this
- * file catches write-shape drift.
+ * The CLI arm proves the CLI's writer reaches the canonical one (`mcp/src/parser.mjs`), not that two
+ * files agree. `serializeFrontmatter` is not imported from the CLI because its runtime never calls it.
+ * Parser parity is covered by `parse-frontmatter.contract.test.ts`.
  */
 
 describe("frontmatter writer contract — MCP and CLI agree", () => {
@@ -41,23 +35,8 @@ describe("frontmatter writer contract — MCP and CLI agree", () => {
 });
 
 /**
- * **The round trip closes** — `parse(build(x)) === x`.
- *
- * Two defects lived because this contract did not exist (measured 2026-07-28):
- *
- * 1. The serializer escaped `"` while the parser did not unescape. Every time
- *    `patch_concept` re-serialised frontmatter the backslashes **doubled** (three
- *    round trips: 1 → 2 → 4). Repeated saving was corruption growth.
- * 2. Inline lists and objects were split on commas unconditionally, so a comma
- *    inside a value truncated the data (`labels: { ko: "map, search" }` → `"map"`).
- *
- * Why the existing matrix missed them: the parser contract watched only
- * **input → parse result**, and the writer contract only **input → string**. Joining
- * them — "does writing and reading back give the same thing" — was in neither's
- * range.
- *
- * Why three round trips: some defects pass on the first pass while **accumulating**.
- * Defect 1 above did exactly that.
+ * Round trip: `parse(build(x))` must equal `x`, including after repeated saves; the parser and
+ * writer contracts each watch only one direction.
  */
 const ROUND_TRIP_CASES: Array<{ name: string; frontmatter: Record<string, unknown> }> = [
   { name: "quoted mapping keys and nested strings", frontmatter: { 'a:b': 'Top', labels: { 'x,y': '001', flag: 'false', empty: '', "owner's": 'Literal', '한글:키': 'Value' } } },

@@ -5,15 +5,6 @@ import { resolve } from 'node:path';
 const ROOT = resolve(__dirname, '../..');
 const read = (relative: string) => readFileSync(resolve(ROOT, relative), 'utf8');
 
-/**
- * Counted groups were measured truncating in silence (2026-09-05 audit). Each
- * knew its true total one line away from where it cut the array.
- *
- * The behaviour (renders iff `total > shown`, always carries the difference)
- * lives in `src/shared/ui/hidden-count-line.test.tsx`. This file pins the call
- * sites by path, so deleting a remainder line from one of them turns a gate red
- * instead of quietly restoring the silence.
- */
 describe('the capped lists this round measured state their remainder', () => {
   const SITES: ReadonlyArray<readonly [string, string]> = [
     [

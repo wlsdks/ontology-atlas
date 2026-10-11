@@ -3,25 +3,14 @@ import { describe, expect, it } from "vitest";
 import { isContainmentRelation, isDirectionalRelation } from "@/entities/knowledge-graph/lib/ontology-tree/relations";
 
 /**
- * The contract that **the map does not claim a direction that does not exist.**
- *
- * Background (measured 2026-07-31): the topology adapter
- * (`views/home/lib/map-adapter.ts`) classified relations into two buckets with
- * `isContainmentRelation(type) ? "contains" : "depends"`, and the renderer drew a
- * **directional taper** (thick at source → thin at target) on every "depends". But of
- * the dogfood vault's 89 non-containment relations, **62 (70%) were `related_to`** — a
- * symmetric relation. Most of the edges were asserting a false causality.
- *
- * Why lint cannot do this: the verdict needs **the relation type lists** (two Sets),
- * and `no-restricted-syntax` matches selectors against one file's AST and cannot see
- * another file's values. See `.claude/rules/design.md`, "the layer lint cannot see
- * belongs to a contract test".
+ * The map must not claim a direction that does not exist. Most non-containment relations are
+ * `related_to`, which is symmetric, so a directional taper asserted false causality. Lint cannot see
+ * the relation type lists in another file.
  */
 describe("relation directionality contract", () => {
   it("`related_to` 는 방향이 없다 — 두 철자 모두", () => {
-    // derive (`derive-ontology-from-vault.ts`) uses `related_to` while MCP and the schema
-    // use the key name `relates`. The verdict must be the same whichever path it arrives
-    // through.
+    // derive uses `related_to` while MCP and the schema use the key `relates`; the result must be the
+    // same through either path.
     expect(isDirectionalRelation("related_to")).toBe(false);
     expect(isDirectionalRelation("relates")).toBe(false);
   });
@@ -51,9 +40,8 @@ describe("relation directionality contract", () => {
   });
 
   it("dogfood 볼트의 실측 분포에서 다수가 대칭이다 — 이 계약이 지키는 것의 크기", () => {
-    // Exhaustive count of `docs/ontology/`, 2026-07-31: dependencies 27, relates 62. A
-    // large change in those numbers means this contract's priority evidence should be
-    // re-examined.
+    // Counts from `docs/ontology/`: dependencies 27, relates 62. A large change in those numbers means
+    // this contract's priority evidence should be re-examined.
     const observed = { depends_on: 27, related_to: 62 };
     const symmetric = Object.entries(observed)
       .filter(([type]) => !isDirectionalRelation(type))

@@ -7,74 +7,14 @@ import { ICON_SIZE } from '../../src/shared/ui/icon-size';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Content icon size ramp — **CSS ↔ JS mirror plus an off-ramp literal ratchet.**
- *
- * ## Why this gate has to exist (system seat inventory 2026-08-04, docs/DECISIONS.md)
- *
- * Content icon (lucide) sizes arrive as a JSX **numeric prop** (`size={N}`). That
- * is not a className, so it is out of range of the value lints (`text-[Npx]` and
- * friends), and the size tokens (`--topology-chrome-icon-size` and so on) are
- * surface-owned, leaving content icons nothing to lean on. The result: 167 call
- * sites split across **9 px values** (10·11·12·13·14·15·16·17 plus unspecified 24),
- * and two surfaces mixed 4 values within a single file (docs palette 10/11/12/14 ·
- * dependency picker 10/11/12/13). That is drift, not role.
- * A field tester's note: *"It did not tell me the values differed."*
- * (nothing told me the values differed)
- *
- * The same disease as the framer duration incident
- * (`motion-token-mirror.contract.test.ts`): **a value living in a channel no gate
- * watches will always drift.**
- *
- * ## Why a ratchet and not a lint rule
- *
- * 64 debt items cannot be cleared in one PR — each substitution moves rendered
- * pixels (±1–2px) and needs a per-place design verdict (the same reasoning as the
- * control ratchet's founding judgement). And a lint rule would need the debt files
- * excluded via `no-restricted-syntax`, but flat config replaces rule options
- * rather than merging them, so an icon-only exception block would swap out **those
- * files' ramp selectors wholesale** (the multi-block trap) — the exception's range
- * cannot be made to fit. The ratchet counts exactly these literals per file, and
- * **a new file must be 0 from day one.**
- *
- * ## Range
- *
- * Only lucide opening tags in production `.tsx` files that import lucide. Chrome
- * and rail icon tokens (`--*-icon-size` · `--chrome-icon`) are owned by the
- * surface contract and are out of scope. Two known limits, **both in the
- * under-reporting direction**:
- *
- * 1. **A conditional is not a literal and is invisible**, e.g.
- *    `size={cond ? 14 : undefined}` (1 place today, AppSettingsMenu — and that
- *    place is not a defect: all three variants are covered by a className token
- *    (`--app-nav-rail-utility-icon-size` · `--topology-chrome-icon-size`) or by
- *    size={14}. Re-measured 2026-08-15 — the earlier claim that "the else branch
- *    renders unspecified at 24" was a misreading that ignored the className).
- * 2. **Icons rendered through a runtime variable**
- *    (`const Icon = item.icon; <Icon size={17} />`) are invisible because the
- *    opening tag name is not in the lucide import set. Measured 2026-08-05: 8
- *    places, and **one of them really was off-ramp** — `BottomTabBar`'s nav icons
- *    at 17px **disagreed within a single bar** with the neighbouring "get the app"
- *    icon at 16px (found by measuring in the browser: the source scan saw not one
- *    17, while the screen drew four). It was fixed; the other 7 sit on the ramp.
- *    **Aliases such as `Map as MapIcon` are in view** (import parsing follows the
- *    alias).
- *
- * → **Never claim "0" from the source scan alone.** Both limits live in the
- *    rendered screen, so every round also measures `svg` in the browser.
+ * Content icon sizes are a numeric JSX prop that value lints cannot see. Runtime-variable icons and
+ * conditionals are invisible to this scan, so also measure `svg` in the browser.
  */
 
 const ROOT = process.cwd();
 const CSS = readGlobalCss();
 
-/**
- * A ramp token's length **in pixels at the default 16px root**.
- *
- * `px` and `rem` are both read, because the type ramp (2026-09-12) and the content icon ramp
- * (2026-09-29) are written in `rem` so that a browser's text-only zoom reaches them. The unit used to be
- * hard-coded into this regex, which made the first `rem` step read as **"the token is
- * missing"** rather than as a changed value; that is the one thing this helper must never say
- * about a token that is right there.
- */
+/** Returns a ramp token's length in pixels at a 16px root; both `px` and `rem` are read. */
 function cssPx(name: string): number {
   const m = CSS.match(new RegExp(`^\\s*${name}\\s*:\\s*([0-9.]+)(px|rem);`, 'm'));
   if (!m) throw new Error(`${name} 이 app/globals.css 에 없다`);
@@ -83,12 +23,8 @@ function cssPx(name: string): number {
 
 /** Terminates an opening tag by brace depth — the trap the control ratchet stepped on twice. */
 /**
- * Comments are blanked before tag parsing — byte offsets and line numbers are
- * preserved. `openingTag` tracks quotes, and a comment inside a JSX opening tag
- * defeats that: an English apostrophe (`This scrim's name`) opens a quote that
- * never closes, so the parser runs past the tag. Measured 2026-08-22 in
- * `control-adoption-ratchet`, where a census silently fell 5 → 4. Latent here
- * for the same reason and closed the same way.
+ * Comments are blanked before tag parsing, preserving offsets: an apostrophe in a comment inside a JSX
+ * opening tag opens a quote that never closes and the parser runs past the tag.
  */
 function stripComments(source: string): string {
   return source
@@ -121,26 +57,11 @@ interface IconScan {
 }
 
 /**
- * **The size of an `icon={…}` slot is owned by the consumer** (2026-08-15).
- *
- * The previous ledger treated "unspecified lucide = renders at the 24px default"
- * and carried 9 places (5 files) as debt. **All 9 were false debt** — the slot
- * container sets the size in CSS in every case: ChromeChip
- * `[&>svg]:size-3.5` (14) · ChromeTile `[&>svg]:size-[var(--chrome-icon)]` (16) ·
- * EmptyState `[&>svg]:size-4` (16). "Repaying" these by adding a `size=` prop
- * would write the container's value a second time at the call site — and a value
- * written in two places starts drifting from then on (Carbon).
- *
- * So they are excluded from the unspecified count. But **not every `icon={` is
- * exempt**: only when the nearest opening tag before the slot is in the list below
- * (primitives proven by a separate assertion to set `[&>svg]:size-` on the slot).
- * An unknown consumer's `icon={<X/>}` still counts as unspecified — the
- * over-reporting direction, so a person sees it. Off-ramp literals such as
- * `size={13}` are still caught inside a slot.
+ * The size of an `icon={...}` slot is owned by the consumer: slots of the listed primitives set
+ * `[&>svg]:size-` in CSS, so they do not count as unspecified. Unknown consumers still count.
  */
 const SIZED_SLOT_OWNERS = new Set(['ChromeChip', 'ChromeTile', 'EmptyState']);
 
-/** Slot-owner resolution — the nearest opening component tag before `icon={`. */
 function slotOwner(source: string, tagIndex: number): string | null {
   const before = source.slice(0, tagIndex);
   if (!/icon=\{\s*$/.test(before)) return null;
@@ -156,19 +77,7 @@ function scanSource(rel: string, raw: string, ramp: Set<number>, acc: IconScan):
   // [\s\S]*? — the lazy quantifier swallows past another module's import and
   // contaminates the icon name set (it did, in a full scan: 9 files were silently
   // misclassified).
-  /*
-   * ⚠️ **Match both quote styles** (2026-08-05). This used to match only the single
-   * quotes of `'lucide-react'`, while **72 of this repository's 99 lucide imports
-   * used double quotes** — meaning the ratchet had never once seen **73% of the
-   * icons**. The debt recorded in the ledger as 63 measured **230**.
-   *
-   * The denominator assertion (`total >= 120`) did not close this hole: 27
-   * single-quote files alone exceed 120. **Not being an empty set is different from
-   * seeing the whole set** — a denominator assertion proves only the former.
-   *
-   * A case of **syntax**, not value, evading a gate — the third in this round alone
-   * (named weight steps · scoped-block override · here).
-   */
+  /* Match both quote styles of the lucide import; a lazy `[\s\S]*?` would swallow other imports. */
   const importMatch = /import\s*\{([^}]*)\}\s*from\s*['"]lucide-react['"]/.exec(source);
   if (!importMatch) return;
   const lucide = new Set(
@@ -213,56 +122,17 @@ function scanProduction(ramp: Set<number>): IconScan {
 }
 
 /**
- * **A literal ledger — not derived from the scan** (the control ratchet's
- * discipline: deriving the baseline from the measurement makes "it never grows"
- * impossible to fail in principle).
- *
- * Values are the 2026-08-04 inventory. Files listed here are **debt, not
- * exemptions** — the gate turns red when a count grows, and when it reaches 0 the
- * row must be deleted. Repaying is a design pass with a per-place before→after
- * table (±1–2px of pixel movement).
- */
-/*
- * ## 2026-08-05: the ledger was wrong end to end — the scanner missed 73%
- *
- * See the quote-style comment above. The ledger said 16 files / 63 items; making
- * it see double-quoted imports produced **41 files / 230 items**. The ledger was
- * not generous, it was **blind**.
- *
- * **127 of those were repaid in that round** — the ones whose ramp step is
- * determined without a verdict (9·10·11 → sm, 17·18 → lg). At the same time the
- * 207 that were already on the ramp were converted from literals to `ICON_SIZE`
- * references: until then `ICON_SIZE` and `--icon-*` had **0 consumers**, so the
- * values merely happened to match and there was no ramp ("a token nobody uses is
- * misinformation, not a spec" — design.md).
- *
- * **The remaining 103 are all 13px and 15px.** Both sit **exactly halfway**
- * between two ramp steps (13 → 12|14, 15 → 14|16), so "nearest" gives no answer.
- * The ramp's tiebreaker is the type step sitting beside the icon, and measurement
- * found that **59 places have no type at all** (icon-only controls and icon-only
- * buttons). That is not a value a codemod can invent, so it goes to a design pass
- * with a per-place before→after table — the same reasoning as this file's founding
- * judgement.
+ * A literal ledger, not derived from the scan, so "it never grows" can fail. Listed files are debt,
+ * not exemptions; delete a row when it reaches 0.
  */
 const OFF_RAMP_DEBT: ReadonlyArray<readonly [string, number]> = [
-  // **2026-08-05: empty.** All 103 of the 13/15 ties were moved onto the ramp.
-  //
-  // An empty array must not make the checks below free green — the scanner still
-  // sweeps the whole repository and counts the denominator (`total`), so a single
-  // new off-ramp value turns it red as "exceeded the ledger's 0".
+  // An empty ledger does not idle the checks: the scanner still sweeps the repository and counts
+  // the denominator, so one new off-ramp value fails as exceeding 0.
 ];
 
 /**
- * **Empty because an `icon={…}` slot is sized by its container**, not because a
- * debt was repaid: ChromeChip (14), ChromeTile (16) and EmptyState (16) set it in
- * CSS (`[&>svg]:size-*`), so such an icon never renders at the 24px default. The
- * `SIZED_SLOT_OWNERS` classification plus the slot-owner CSS assertion carry that
- * judgement.
- *
- * An empty array does not make the check idle — the scanner still sweeps the whole
- * repository, and a single unspecified icon outside a slot, or inside an unknown
- * consumer's slot, turns it red as "exceeded the ledger's 0" (probes prove both
- * directions).
+ * Empty because an `icon={...}` slot is sized by its container (`SIZED_SLOT_OWNERS` plus the
+ * CSS assertion on those primitives). A stray unspecified icon elsewhere fails.
  */
 const UNSIZED_DEBT: ReadonlyArray<readonly [string, number]> = [];
 
@@ -290,9 +160,7 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   const scan = scanProduction(ramp);
 
   it('탐지기가 공회전하지 않는다 — 제품을 실제로 먹는다', () => {
-    // Measured 167 on 2026-08-04. Not there to block refactors that remove icons —
-    // it is the floor that stops "the scan target vanished, therefore 0 violations"
-    // from reading as green.
+    // Floor so that a vanished scan target cannot read as zero violations.
     expect(scan.total).toBeGreaterThanOrEqual(120);
   });
 
@@ -400,13 +268,8 @@ describe('콘텐츠 아이콘 크기 램프', () => {
   });
 
   /**
-   * **Quote-style probe — reproduces the blindness that actually occurred on
-   * 2026-08-05.**
-   *
-   * The old scanner saw only single-quoted imports while **73% of this repository's
-   * files used double quotes**. The synthetic probes above failed to catch it
-   * because the probes themselves were written with single quotes only — **a probe
-   * that shares the defect's assumption cannot prove the defect.**
+   * Probe with double-quoted imports: probes written with single quotes only would share the
+   * scanner's blind spot and prove nothing.
    */
   it('프로브: 큰따옴표 lucide import 도 본다 (73% 를 못 보던 실명의 재현)', () => {
     const acc: IconScan = { total: 0, offRamp: new Map(), unsized: new Map() };

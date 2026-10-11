@@ -3,29 +3,9 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * **Does a release ship with a stale ACP registry?**
- *
- * **Why this exists** (pre-launch review, 2026-08-20). `pnpm acp:registry:check`
- * **already existed**, but it was in neither CI nor a git hook, so **nobody called
- * it**. The snapshot fell quietly behind, and measuring found **9 packages** older
- * than upstream — two of them adapters we actually launch
- * (`claude-agent-acp` 0.69.0→0.70.0 · `codex-acp` 1.4.0→1.6.2).
- *
- * **A gate that exists but never runs is worse than none** — it gives false
- * reassurance. The release this repository lost in 2026-08 had the same shape (a
- * smoke gate whose markers outlived their components).
- *
- * **Why at release rather than every PR.** This check turns red **when upstream
- * publishes**. As a PR gate, someone else's change would randomly block our PRs,
- * making it noise rather than a rule — the same discipline this repository already
- * set for lint rules ("if it is too much to fix in one PR, the rule is warning noise
- * rather than a rule"). A release is started by hand, so asking there blocks exactly
- * one thing: shipping something stale.
- *
- * **What this check guards.** Whether the snapshot is current is **not checked here**
- * (that needs the network, and this repository's CI does not go outside). What is
- * guarded is one thing: **that the place asking the question still exists on the
- * release path.**
+ * Whether the snapshot is current needs the network and is not checked here; what is guarded is that
+ * `pnpm acp:registry:check` stays on the release path. It runs at release, not per PR, because it goes
+ * red when upstream publishes and would randomly block unrelated PRs.
  */
 
 const repoRoot = path.resolve(__dirname, '..', '..');

@@ -2,47 +2,9 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * The editor's top row: **the status chips share one spec** (measured
- * 2026-08-08).
- *
- * **What was there.** Measuring the fonts of the chips standing side by side in
- * `/ko/docs` edit mode (1440×900, local vault) found two specs mixed into one
- * row:
- *
- * | Chip | Measured |
- * |---|---|
- * | Save state — "No changes · Matches disk" | **9.5px** |
- * | "Auto backup · Last saved" | 11px |
- * | "Validation · Undo" | 11px |
- *
- * The parent row is `text-label` (11px), yet the first chip alone dropped a step
- * to `text-caption`. **Same type and same cause** as the defect caught in the
- * settings sheet on 2026-08-02 — nobody ever decided "this chip should be
- * smaller"; a value happened to diverge and stayed.
- *
- * **What this gate locks.** *Chips of the same kind standing in the same row use
- * the same type step.* This row's spec is `text-label` (11px). By the ramp's own
- * definition `text-caption` (9.5px) is the step for "micro labels, legends,
- * timestamps" (`app/globals.css`), and the only thing in this row that qualifies
- * is **the eyebrow** (`editorEyebrow` — "Edit · <slug>"). So this test does not
- * ban `text-caption` outright but **permits it at the eyebrow only** — an outright
- * ban blocks legitimate use, and unlimited permission returns to the state that
- * created the defect.
- *
- * **Why lint cannot do this.** `text-caption` is a legitimate ramp step, so a
- * value lint has nothing to catch. The violation is "was it used *here*", and
- * deciding that requires knowing **what the other chips in the same file use** —
- * beyond the reach of an AST selector that sees one node.
- *
- * **Reach — why «chips» rather than the whole file.** The first version counted
- * every `text-caption` in this file, and all three hits were **legitimate**: the
- * wikilink autocomplete popover's eyebrow, the per-row slug path, and the footer
- * hint. All three are the "micro label / path" the ramp definition describes.
- * Left that way it would have made someone edit correct code (the failure
- * `design-audit` warns about). The property being protected is not "this file
- * contains no 9.5px" but "chips standing together in a row do not diverge in
- * spec", so the target is narrowed to **the chip shape** — status indicators
- * using `rounded-micro` together with `tracking-caps-*`.
+ * Chips of the same kind in the same row use the same type step: `text-label` here, with
+ * `text-caption` permitted only at the eyebrow (`editorEyebrow`). Lint cannot see it, since it needs
+ * what the other chips use. Targets the chip shape: `rounded-micro` with `tracking-caps-*`.
  */
 
 const EDITOR = "src/widgets/docs-vault/ui/DocsVaultEditor.tsx";
@@ -114,35 +76,8 @@ describe("편집기 상단 줄 — 상태 칩의 타입 방언은 하나다", ()
 });
 
 /**
- * Two "Preview" labels on one screen came out of the same review
- * (2026-08-08).
- *
- * The document header's 「Preview | Edit」 tab (read this or edit it) and the
- * editor's split-view toggle (see the result beside what I am editing) carried
- * **the same label 52px apart vertically**. Both are legitimate features, but
- * identical names read as a duplicate of one thing. The latter became
- * 「Side by Side」 (side by side).
- */
-/**
- * **In this whole file, `text-caption` appears at the eyebrow only** (widened
- * 2026-08-08).
- *
- * The test above looked at «chips» alone (the `rounded-micro` + `tracking-caps`
- * signature). That narrow reach was breached twice in one day — building the `@`
- * mention menu put `text-caption` on the header hint row, and the gate stayed
- * silent because it was not a chip. **The same defect was created three times in
- * the same file in one day**, and that repetition is the signal to widen the
- * scope.
- *
- * What made widening possible: the rule could not previously cover the whole file
- * because the wikilink popover used caption for its slug and footer hints, and
- * when that popover became the `@` mention menu they all moved up to
- * `text-label`. The only legitimate caption left is **the eyebrow** — precisely
- * the "micro label" the ramp definition describes.
- *
- * So the verdict inverts: not "banned on chips" but **"permitted at the eyebrow
- * only"**. If a new place genuinely needs caption, this list grows with the
- * reason written down — stopping it growing quietly is this gate's job.
+ * In this whole file `text-caption` appears at the eyebrow only, the one micro label the ramp
+ * describes. A new place that needs caption grows this list with the reason written down.
  */
 describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
   it("`text-caption` 을 쓰는 자리가 아이브로우 외에 없다", () => {
@@ -159,7 +94,7 @@ describe("편집기의 9.5px 은 아이브로우 한 곳뿐이다", () => {
       "text-caption 이 한 곳도 없다 — 아이브로우가 사라졌거나 게이트가 낡았다",
     ).toBeGreaterThanOrEqual(1);
 
-    // The eyebrow renders its own i18n key on the very next line — that is the signal used to separate it.
+    // The eyebrow renders its own i18n key on the next line; that is how it is told apart.
     const offenders = captionLines.filter(
       ({ no }) => !lines.slice(no - 1, no + 2).join(" ").includes("editorEyebrow"),
     );

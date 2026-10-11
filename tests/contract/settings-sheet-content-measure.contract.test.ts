@@ -4,16 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * Prose in the settings sheet keeps the prose measure.
- *
- * Until 2026-09-25 this file also locked `--settings-content-measure`, the row width the API Key
- * drill-in shared with the root face (the drill-in had once spread its rows to 846px). That pane
- * moved to the Agents destination's models tab, where rows take the destination frame's width
- * like the tab beside them; the token lost its last consumer and was retired with its checks
- * (`docs/DESIGN-SYSTEM.md`, "Settings Sheet Row Measurement Width").
- *
- * What stays true: a sentence in the sheet is read, not operated, so it keeps the reading
- * measure (`--git-setup-measure`) — on the one head every pane opens with.
+ * Prose in the settings sheet keeps the reading measure (`--git-setup-measure`) on the one head every
+ * pane opens with (`docs/DESIGN-SYSTEM.md`).
  */
 
 const ROOT = process.cwd();

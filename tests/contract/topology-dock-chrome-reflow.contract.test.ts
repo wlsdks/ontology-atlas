@@ -43,8 +43,6 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
   });
 
   it("pulls every right map-control rail toward the inset dock with one shared seam", () => {
-    // Four rails since 2026-09-02: fit, guided tour, shortcuts help, and the growth
-    // replay tile that took the fourth slot of the same rhythm.
     expect(chrome.match(/data-agent-dock-adjacent-rail/g)).toHaveLength(1);
     expect(canvas.match(/data-agent-dock-adjacent-rail/g)).toHaveLength(3);
     expect(fit).toContain('data-agent-dock-adjacent-rail="true"');

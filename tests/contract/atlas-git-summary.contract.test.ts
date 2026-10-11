@@ -22,10 +22,8 @@ import {
  * drift.
  */
 
-// `-z` record form — the form both parsers read since the CLI moved off the
-// newline output (git's default core.quotePath C-quoted non-ASCII paths and a
-// Korean filename broke the snapshot; bug sweep 2026-09-01). A rename record
-// is `XY new\0orig\0`, new path first.
+// `-z` record form, as both parsers read it: git's default quotePath C-quotes non-ASCII paths.
+// A rename record is `XY new\0orig\0`, new path first.
 const PORCELAIN_FIXTURES = [
   { name: "mixed add/modify/delete", input: "?? docs/new.md\0 M docs/edit.md\0D  docs/gone.md\0" },
   { name: "rename with arrow", input: "R  docs/new.md\0docs/old.md\0" },

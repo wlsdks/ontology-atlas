@@ -3,28 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Gate keeping **the folder-watch bridge alive on both surfaces.**
- *
- * ## Why it exists
- *
- * Measured while judging the demo video's scenario on 2026-07-29: the *immediacy* in
- * "edit a file and the map follows instantly" **is itself a desktop-only
- * capability** (the app uses an OS watcher with a 500ms debounce; the web uses
- * adaptive polling). The video sells that capability, and it was **not registered**
- * in the capability bridge table (`.claude/rules/surfaces.md`) — that table had five
- * rows and this was the sixth.
- *
- * An unregistered capability is protected by nobody. If the watcher silently breaks,
- * the app **does nothing at all** (unlike the web it has no polling fallback), while
- * the video keeps selling the capability.
- *
- * ## Why not `DEGRADED_SURFACES`
- *
- * Every row in that registry claims *"a browser cannot do this in principle → the
- * only destination is `/download/`"*. For folder watching that claim is **false**:
- * the web catches up eventually, and what differs is *when*. Adding it there makes
- * the next auditor read "the web cannot see file changes". This is **latency, not
- * degradation** — a different axis, and a different axis means a different gate.
+ * Keeps the folder-watch bridge alive on both surfaces. The app uses an OS watcher with a 500ms
+ * debounce and has no polling fallback; the web polls adaptively. This is latency, not degradation,
+ * so it is a different gate from `DEGRADED_SURFACES`.
  */
 
 function read(relative: string): string {

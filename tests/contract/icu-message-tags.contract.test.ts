@@ -2,31 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * **`<…>` is not a character inside a message.**
- *
- * ## Why this gate exists (2026-07-29, the second time the same mistake happened)
- *
- * next-intl parses `<name>` inside an ICU message as a **rich-text tag**. Without a
- * closing partner the message fails to render and the screen shows the **key path**
- * (`atlasGit.cliPlaceholderHint`) instead of a sentence. The exception only reaches
- * the console, so it passes type checking, lint, and unit tests.
- *
- * It happened twice in one session:
- *
- * 1. The CLI placeholder was written as `<atlas>` and the entire CLI row on
- *    `/projects` disappeared → changed to `$ATLAS`.
- * 2. The sentence **explaining** that `$ATLAS` was written as
- *    `export ATLAS=<path>` and `/git`'s guidance rendered as a key path → changed
- *    to quotes.
- *
- * The second is the nasty one — it happened right next to the comment recording the
- * first one's lesson. **Human memory is not a gate.**
- *
- * ## What is measured
- *
- * Every `<` inside a message string that is **not a well-formed rich-text tag**.
- * The tags this repository actually uses (`<b>…</b>` and friends) are balanced and
- * pass. To write an angle bracket as a character, use quotes, parentheses, or 「」.
+ * next-intl parses `<name>` in a message as a rich-text tag; without a closing partner the message
+ * fails to render and shows the key path. Only well-formed balanced tags may appear.
  */
 
 const LOCALES = ["ko", "en"] as const;

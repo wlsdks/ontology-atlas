@@ -4,31 +4,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **Folding a chip to icon-only is two halves, and one of them was optional.**
- *
- * `ChromeChip` already has a complete icon-only mode: the `compact` prop sends the
- * label `sr-only` **and** narrows the box to `--chrome-tile-size`. Its doc-block
- * also offers a second door — a responsive variant on `[data-chip-label]` — for
- * callers that collapse by viewport rather than by prop. That door only carried the
- * label half. The padding stayed, so the chip landed on a width belonging to no
- * role.
- *
- * Measured 2026-09-05, `/topology` top chrome at 1024×768:
- *
- * | Control | Width | Shape |
- * |---|---:|---|
- * | `topology-expand-all` · `-auto-arrange` · `-view-3d` · `-concept-search` | 36 | icon-only tile |
- * | `topology-switch-to-my-data` | **44** | icon-only chip, labelled padding |
- * | `topology-spotlight-toggle` | 88 | labelled — the owner's 2026-08-02 record |
- *
- * Three widths for what a person reads as one row of buttons, and the 44 is the one
- * that carried no meaning: it recorded which file collapsed the chip, not what the
- * control is. `design.md`, "Dimensional regularity".
- *
- * **Why a contract and not lint.** The verdict needs two class strings to agree
- * about one element, and the second lives behind a `ChromeChip` prop in another
- * file. `no-restricted-syntax` selects within one AST node; the pairing rules this
- * repository already keeps for accent/tint are contracts for the same reason.
+ * Folding a chip to icon-only needs both halves: label `sr-only` and the box narrowed to
+ * `--chrome-tile-size`. Two class strings must agree, one behind a `ChromeChip` prop in another file,
+ * which lint cannot see.
  */
 
 const ROOT = process.cwd();
@@ -51,8 +29,7 @@ describe("크롬 칩 축소 — 라벨을 접으면 상자도 접힌다", () => 
 
   it("탐지기가 공회전하지 않는다 — 반응형 라벨 접기가 실재한다", () => {
     const hooks = files.flatMap((file) => [...readFileSync(file, "utf8").matchAll(LABEL_HOOK)]);
-    // The day this reaches zero, every caller folds through the `compact` prop and this
-    // contract can be retired — not before.
+    // When this reaches zero every caller folds through `compact` and this contract can be retired.
     expect(hooks.length, "반응형 라벨 접기를 하나도 못 찾았다 — 셀렉터가 깨졌다").toBeGreaterThan(0);
   });
 

@@ -96,9 +96,8 @@ describe('review currentness — the same verdict on both sides', () => {
   });
 
   it('a malformed binding is unknown on both sides, never an accusation', async () => {
-    // Measured in review (Codex, 2026-09-02): any non-empty string was compared,
-    // so a hand-typed placeholder produced "changed since review" for a node
-    // nobody had touched.
+    // A malformed binding is unknown on both sides: comparing any non-empty string made a hand-typed
+    // placeholder report "changed since review" for an untouched node.
     for (const bogus of ['not-a-digest', '   ', 'ABCDEF0123456789ABCDEF0123456789', '70498bae']) {
       const frontmatter = { ...base.frontmatter, review_state: 'confirmed', reviewed_digest: bogus };
       expect(mcp.reviewCurrentness(frontmatter, base.body), bogus).toBe('unknown');

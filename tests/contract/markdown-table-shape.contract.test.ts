@@ -3,21 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 
 /**
- * ⚠️ **A table row whose cell count disagrees with its header is always a bug**, and it is one a
- * reader cannot see: Markdown pads the row out, so the content simply lands in the wrong column or
- * a column silently disappears. It has no false positives, which is why it is worth a gate and the
- * other table smells found alongside it are not.
- *
- * Three live instances on 2026-08-28, none of them noticed by anyone reading the rendered page:
- *
- * | File | What it did |
- * |---|---|
- * | `docs/engineering/tech-stack.md` | a rationale rendered in the verdict column, leaving the rationale empty |
- * | `docs/DEVELOPMENT-CHECKS.md` | six rows of a two-column table pasted into a three-column one, one of them an empty duplicate, and one row that had swallowed a whole separate check into its last cell |
- * | `docs/DESIGN-SYSTEM.md` | two rows whose "do not" half was pressed into the "do" cell, ending in "are forbidden" because prose had to stand in for the missing column |
- *
- * This checks structure, never wording: `.claude/rules/documentation.md` forbids pinning a
- * sentence a person wrote, and nothing here reads what a cell says.
+ * A table row whose cell count disagrees with its header is always a bug a reader cannot see, because
+ * Markdown pads the row. This checks structure only, never wording.
  */
 
 const TRACKED = execFileSync('git', ['ls-files', '*.md'], { encoding: 'utf8' })

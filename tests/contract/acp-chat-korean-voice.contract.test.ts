@@ -3,24 +3,9 @@ import { describe, expect, it } from 'vitest';
 import ko from '../../messages/ko.json';
 
 /**
- * **The conversation panel speaks in one voice, and uses words people say.**
- *
- * Owner, 2026-09-19, of the Korean catalogue: some of it reads like a bad translation. Measured,
- * the panel was speaking in two registers: 48 of its 285 Korean strings used the formal one and 61
- * the plain one, and the split ran **through** single surfaces rather than between them. The
- * permission card's own title was plain while the review inside it was formal, and one notice
- * managed both inside a single sentence.
- *
- * Alongside it sat words that are English wearing Hangul: the transliteration of "turn" for a
- * conversational turn, of "capture" for what the app wrote down, of "snapshot" for a saved record,
- * and a rendering of "generation" that in Korean means a human generation. One phrase read
- * "matches at file-time precision", which is not a sentence anybody says.
- *
- * ⚠️ **This gate claims only this panel.** The same drift runs through the rest of the catalogue —
- * 605 strings in fifteen namespaces, `library` heaviest at 159 — and converting those is a
- * product-wide copy decision, not a rider on a panel fix. Widen this gate namespace by namespace as
- * each one is actually converted; a gate that fails on work nobody has done yet is a gate people
- * learn to skip.
+ * Claims only the `acpChat` panel: its Korean strings keep one register and avoid transliterated
+ * English. Widen namespace by namespace as each is converted, so the gate never fails on unconverted
+ * work.
  */
 const PANEL = ko.acpChat as unknown as Record<string, unknown>;
 

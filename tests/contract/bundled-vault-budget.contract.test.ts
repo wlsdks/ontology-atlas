@@ -10,25 +10,8 @@ import {
 import { readLedgerSource } from '../../scripts/lib/record-ledgers.mjs';
 
 /**
- * **Always-on size gate** for the bundled vault data (2026-08-19).
- *
- * **Why this test exists.** The hard budgets in `pnpm desktop:perf` (largest
- * chunk 1.5MiB, Next static total 8MiB) run only in
- * `desktop:release-preflight`, so **nobody saw red** while CHANGELOG grew to
- * 634KB and 263KB of headings rode in every route's shared chunk — it surfaced at
- * release prep as 1.71MiB/8.42MiB. Chunk size cannot be measured without
- * `next build`, but the **cause** of the growth (data JSON statically imported
- * into the shared chunk) is a file size and can be measured on every
- * `pnpm test:run`. This test moves that half to always-on; the other half (real
- * chunk measurement) still belongs to `desktop:perf`, which `checks:changed`
- * recommends when the relevant paths change.
- *
- * **Basis for the cap (measured 2026-08-19).** The shared chunk = this data
- * (minified) + app code ≈ 0.72MiB against a 1.5MiB budget. With a pretty-printed
- * total of 867KB, a 1.25MiB cap here turns red well before the minified chunk
- * approaches its budget. A PR raising this cap must include measured
- * `pnpm build && pnpm desktop:perf` output in its body — raising the number to
- * get green is breaking the instrument.
+ * Always-on size gate: data JSON statically imported into the shared chunk is measurable as file
+ * size. A change raising the cap must include measured `pnpm build && pnpm desktop:perf` output.
  */
 
 const DATA_DIR = path.join(process.cwd(), 'src', 'entities', 'docs-vault', 'data');
@@ -100,14 +83,8 @@ describe('번들 볼트 데이터 상시 예산', () => {
 
 describe('관문 CHANGELOG 미리보기 계약', () => {
   /*
-   * ⚠️ **The changelog is composed, not read** (2026-09-13). `docs/CHANGELOG.md` is a frozen
-   * historical document since the records migration, and the current changelog is that document
-   * plus every `docs/records/changes/*.md` fact and release marker. This assertion used to read
-   * the frozen file, which matched the generator only while no change record existed: the first
-   * one ever written shifted the preview's section window and turned this red for the right
-   * input and the wrong reason. `readLedgerSource` is the same composer the generator uses, so
-   * the drift contract below still compares two implementations of the trim rather than two
-   * sources.
+   * `docs/CHANGELOG.md` is frozen; the current changelog is composed by `readLedgerSource`, the same
+   * composer the generator uses, so the drift check compares two implementations of the trim.
    */
   const changelogRaw = readLedgerSource('docs/CHANGELOG.md')?.content ?? '';
   const committed = JSON.parse(

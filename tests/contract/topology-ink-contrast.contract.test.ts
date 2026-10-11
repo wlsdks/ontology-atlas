@@ -5,20 +5,8 @@ import { realmDepthClarityAlpha } from "@/widgets/ontology-map/model/realm-trans
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * The contract that map ink sits above **WCAG 1.4.11 (non-text contrast 3:1)**.
- *
- * Background (measured 2026-07-31): **all eight** of the map's edge and node strokes
- * were below it — the brightest, the project stroke, at 2.78:1 and the darkest,
- * contains-l2, at 1.59:1. The hierarchy seat's on-screen measurement caught
- * the same thing from another angle: the contains line's peak luminance was 14.4
- * against a background of 13.3 — **the line was effectively absent** — and the
- * brightest thing on screen was the summary chip (102.5), not a connection. The
- * map's job is to show connections, and connections were the faintest thing on it.
- *
- * Why lint cannot do this: the verdict needs **another token's value** (the
- * background colour) plus the contrast formula. `no-restricted-syntax` is an AST
- * selector over one file and cannot compute values. See `design.md`, "layers lint
- * cannot see are handled by contract tests".
+ * Map ink must clear WCAG 1.4.11 (3:1 non-text contrast) against the background. The check needs
+ * another token value plus the contrast formula, which a lint selector cannot compute.
  */
 
 const CSS = readGlobalCss();
@@ -27,18 +15,8 @@ const CSS = readGlobalCss();
 const MIN_CONTRAST = 3;
 
 /**
- * WCAG 1.4.3 — the floor for **text**, which the map's labels are.
- *
- * The 3:1 floor above is 1.4.11, and it applies to strokes and marks. A label is a
- * word a person reads, so it owes the text floor instead. The large-text exemption
- * (18.66px bold / 24px regular) does not reach any of them: `LABEL_FONT_SIZE` in
- * `render/labels.ts` is 15 / 10.5 / 10 / 9.5px, and `labelZoomScale` caps the zoom
- * multiplier at 1.9, so even the loudest label at full zoom is 28.5px only while
- * the camera is pushed all the way in — the resting sizes are what must pass.
- *
- * Caught by this contract on 2026-09-05: `--map-label-element` was
- * `#6a6a73` = **3.69:1** at 9.5px, carrying a comment that claimed "AA-large" for a
- * size the AA-large rule cannot reach.
+ * WCAG 1.4.3 text floor for the map labels. The large-text exemption does not reach them: sizes are
+ * 15 / 10.5 / 10 / 9.5px in `LABEL_FONT_SIZE`, so the resting sizes must pass.
  */
 const MIN_TEXT_CONTRAST = 4.5;
 
@@ -140,10 +118,7 @@ describe("topology ink contrast contract", () => {
   });
 
   it("크롬(클러스터 칩)은 rest 에서 어떤 노드보다 어둡다", () => {
-    // Hierarchy seat's on-screen measurement (2026-07-31): chip peak luminance 102.5 against
-    // child node 28.4 = **a 3.6× inversion**. The map's job is to show connections and
-    // concepts, yet the summary button was the brightest thing. At rest the chip must
-    // sit on the ramp's bottom step.
+    // At rest the cluster chip must sit on the ramp bottom step, below every node ink.
     const chip = ["map-cluster-chip-border-rest", "map-cluster-chip-ink-rest"].map(
       (name) => contrast(readToken(name), CANVAS),
     );
@@ -157,12 +132,8 @@ describe("topology ink contrast contract", () => {
   });
 
   it("노드 stroke 와 containment 엣지가 **같은 깊이 축**을 참조한다", () => {
-    // System seat's verdict (2026-07-31): these two draw the same tree depth twice.
-    // Written separately, three pairs converged to within 0.02 contrast **by
-    // coincidence** — luck, not a contract, and editing one side would split them with
-    // no warning. So the **alias relationship** is pinned rather than the values. If the
-    // value does not exist in two places, no rule to catch the drift is needed
-    // (Carbon).
+    // Node stroke and containment edge draw the same tree depth, so the alias relationship is pinned
+    // rather than the values.
     const AXIS_PAIRS = [
       ["map-node-stroke-element", "map-edge-contains-l2", "leaf"],
       ["map-node-stroke-capability", "map-edge-contains", "mid"],
@@ -188,20 +159,13 @@ describe("topology ink contrast contract", () => {
   });
 
   it("관문 스테이지가 엣지 잉크를 **강등**하지 않는다", () => {
-    // The old `html[data-gateway-stage]` block overrode map ink for the gateway's map; the
-    // gateway no longer mounts a map, so reviving the scope is caught here.
+    // The gateway no longer mounts a map, so reviving the `html[data-gateway-stage]` scope fails here.
     expect(CSS).not.toMatch(/html\[data-gateway-stage\]\s*\{/);
   });
 
   it("깊이 선명도 알파와 **합성해도** 잉크 사다리가 3:1 바닥 위다", () => {
-    // Infoviz seat's measurement (2026-08-18): multiplying
-    // `--map-ink-depth-leaf` (#7a7a86, 4.7:1 on its own) by the S5 clarity
-    // alpha of 0.84 gives a composited contrast of **2.58:1** on the map surface — a
-    // shortfall the standalone check (the first test above) cannot catch. Measuring the
-    // screen means compositing with the alpha the renderer actually multiplies by
-    // (`realmDepthClarityAlpha`). (The 3D dome's depth fog is outside this floor by
-    // owner deferral — `docs/DECISIONS.md` "3D deferral list", the 3D deferral list. This
-    // contract is the 2D map's.)
+    // Composited with the alpha the renderer multiplies by (`realmDepthClarityAlpha`), since the
+    // standalone check cannot see the loss. The 3D dome depth fog is outside this floor.
     const surface = readToken("map-canvas-bg-near");
     const compositeHex = (ink: string, alpha: number, bg: string): string => {
       const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);

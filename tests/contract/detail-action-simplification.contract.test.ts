@@ -2,11 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
- * The actions in the node detail do not expand back into a tile grid.
- *
- * In the owner's observation on 2026-08-22, seven tiles had to be interpreted before reading one node.
- * The current contract is one primary action + two edit/overflow menu items. The long CJK label of the primary action
- * is truncated in one line, and the full meaning remains in the aria-label.
+ * Node detail actions stay one primary action plus two edit/overflow menu items, not a tile grid.
+ * The long CJK primary label truncates to one line and the full meaning stays in the aria-label.
  */
 const FILE = "src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx";
 

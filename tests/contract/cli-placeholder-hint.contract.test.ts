@@ -5,26 +5,9 @@ import { describe, expect, it } from "vitest";
 import { ATLAS_CHECKOUT_PLACEHOLDER } from "@/shared/config/cli-invocation";
 
 /**
- * **A screen that shows a placeholder also shows how to fill it in.**
- *
- * **Why this gate exists** (dogfooding, 2026-07-29). `/git`'s web-degraded card
- * offered `node $ATLAS/cli/src/index.mjs snapshot` with a copy button, and nothing
- * anywhere said what `$ATLAS` was. Copy and paste it and the shell expands the empty
- * variable, running `node /cli/src/index.mjs` — **a live channel handing out a dead
- * command.**
- *
- * The explanatory sentence already existed in `cli-invocation.ts`, and that file's
- * own comment said *"any surface that emits the command must carry this with it"*.
- * This repository's recurring lesson — a spec that lives only in a document is not
- * kept — repeated itself exactly.
- *
- * **What is measured.** Whether a file that **shows the placeholder to a person**
- * also uses the hint message key in the same file. Text handed to agents (recipes
- * that already carry `ATLAS_CLI_HINT_EN`) and the file defining the placeholder
- * itself are excluded.
- *
- * A tooltip does not count as a hint — it is unreachable on touch. So the check
- * looks for where the visible copy comes from (an i18n key).
+ * A file that shows the placeholder to a person must also use the hint message key; a tooltip
+ * does not count (unreachable on touch). Agent-facing text with `ATLAS_CLI_HINT_EN` and the
+ * defining file are excluded.
  */
 
 const HINT_KEY = "cliPlaceholderHint";
@@ -124,8 +107,8 @@ describe("CLI 자리 표시 — 보여 주는 화면은 채우는 법도 보여 
   });
 
   it("probe: 자리 표시를 쓰는 파일이 실제로 존재한다 — 0건이면 탐지기가 죽은 것", () => {
-    // Keep the retired helper name in the detector so an unhinted reintroduction
-    // cannot bypass this contract merely because its implementation was deleted.
+    // The detector also matches `atlasCli` so a reintroduced, unhinted helper cannot bypass this
+    // contract.
     const users = [...sources].filter(
       ([, s]) => s.includes(ATLAS_CHECKOUT_PLACEHOLDER) || /\b(ATLAS_CLI|atlasCli)\b/.test(s),
     );
@@ -197,8 +180,6 @@ describe("CLI 자리 표시 안내 — 두 로케일에 다 있다", () => {
   const PATHS = [
     ["atlasGit", HINT_KEY],
     ["projectPages", "selector", HINT_KEY],
-    // The agents destination's terminal block draws the same placeholder for a
-    // visitor who will not give the browser a folder (2026-09-04).
     ["nav", "settingsMenu", HINT_KEY],
   ] as const;
 

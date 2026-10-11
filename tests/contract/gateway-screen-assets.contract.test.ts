@@ -11,16 +11,8 @@ import {
 } from '@/views/download/model/gateway-screens';
 
 /**
- * **The gateway's captured screens exist for every locale, at the capture size, and are two sets.**
- *
- * The screens stage (2026-09-24) reads `public/gateway/<file>.<locale>.png`. A missing file is a
- * broken image on the first impression; a file at another size is a picture the page scales
- * blurry or crops; and — the quiet one — a Korean file that is a copy of the English one leaves
- * every other check green while a Korean visitor is shown an English app. That last accident is
- * the one `demo-clip-assets.contract` records for the demo video, and it is guarded the same way:
- * two captures of the same screen in two languages are never byte-identical.
- *
- * Size is read from the PNG's IHDR chunk (fixed offsets), so no image library is needed.
+ * A Korean capture that is a copy of the English one must fail: captures of one screen in two
+ * languages are never byte-identical. Size is read from the PNG IHDR chunk.
  */
 
 const DIR = join(process.cwd(), 'public', 'gateway');

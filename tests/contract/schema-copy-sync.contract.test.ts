@@ -3,29 +3,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * **No CLI lib file re-implements an MCP module** (2026-08-30).
- *
- * This file used to assert the opposite: that `cli/src/lib/schema.mjs` stayed
- * *byte-identical* to `mcp/src/schema.mjs`. The 2026-08-13 hygiene sweep justified
- * that duplicate with "neither imports the other … each must be embedded in its own
- * execution entry point (the spawned MCP server, the directly executed CLI)".
- *
- * ⚠️ **That premise was already false when it was written.** `vault-sidecar.mjs`,
- * `architecture-record.mjs`, and `activity-log.mjs` in the same directory each
- * resolved their MCP twin at runtime — source checkout first, installed
- * `ontology-atlas-mcp` second — `cli/package.json` declares that dependency, and
- * `mcp/package.json`'s `files` already ships schema, validate, absorb, suggestions,
- * and parser. Five copies were being kept in step by hand for a constraint that had
- * a resolver sitting beside it.
- *
- * So the invariant is inverted. A byte-comparison gate can only notice drift after
- * someone writes it; making the second copy impossible removes the failure mode
- * instead of reporting it. Each file below must be a re-export through
- * `loadMcpModule(` and must declare no logic of its own — the moment somebody
- * pastes a function body back in, this fails.
- *
- * Ledger: `docs/DECISIONS.md`, 2026-08-30 ("The CLI executes the MCP modules
- * instead of copying them").
+ * No CLI lib file re-implements an MCP module: each must be a re-export through `loadMcpModule(`
+ * and declare no logic of its own, so a second copy cannot drift.
  */
 
 const CLI_LIB = join(process.cwd(), "cli", "src", "lib");

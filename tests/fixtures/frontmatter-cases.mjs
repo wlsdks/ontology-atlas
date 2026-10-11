@@ -265,12 +265,9 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // The inline flow-map form `add_relation(why)` actually writes, with the value
-    // quoted because it carries a comma and a colon. Unquoted, the comma would end
-    // the entry early and turn the rest of the sentence plus the next slug into a
-    // pseudo-key (the acp-runtime accident, 2026-08-30). Every parser must read
-    // one map with two string entries, or `find_path` and the compiler read a
-    // rationale the writer never meant.
+    // The inline flow map `add_relation(why)` writes, quoted because it holds a comma and a colon.
+    // Unquoted, the comma would end the entry early; every parser must read one map with two string
+    // entries.
     name: "relation_notes inline flow map — quoted values with commas and colons",
     input:
       '---\nkind: capability\ntitle: T\ndependencies: [capabilities/mcp-server]\nrelates: [capabilities/reviewed-ontology-writing]\n' +
@@ -289,15 +286,9 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
       body: "body",
     },
   },
-  // ── Line endings and encoding (measured in the 2026-07-28 code-quality review) ──
-  //
-  // This matrix had **zero** CRLF or BOM cases. The 4-way contract guarantees the four
-  // parsers *agree*, but **it passes when all four are wrong the same way** — and all
-  // four were.
-  //
-  // Why that is critical: the population `.claude/rules/surfaces.md` explicitly
-  // supports is "the fallback workbench on Windows Chromium", and what Windows editors
-  // produce is exactly CRLF. PowerShell `Out-File` defaults to UTF-8 **with BOM**.
+  // Windows editors produce CRLF and PowerShell `Out-File` writes UTF-8 with BOM. The four-parser
+  // contract passes when all four are wrong the same way, so these cases pin line endings and
+  // encoding.
   {
     // `.trim()` rescues scalars, so only block lists die — which makes the symptom
     // "the nodes are visible but every relation disappeared", with no warning at all.
@@ -328,14 +319,8 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     input: "\uFEFF---\r\nkind: domain\r\ntitle: D\r\n---\r\n본문",
     expected: { frontmatter: { kind: "domain", title: "D" }, body: "본문" },
   },
-  // ── Quoting and separators (measured in the 2026-07-28 code-quality review) ──
-  //
-  // The serializer escapes `"` as `\"` while the parser never unescaped it, so every
-  // re-serialisation of frontmatter by `patch_concept` **doubled** the backslashes —
-  // repeated saves multiplied the corruption (measured over 3 saves: 1 → 2 → 4).
-  //
-  // Inline lists and objects were unconditionally `split(',')`, so they split on commas
-  // inside values: the tail of `labels: { ko: "map, search" }` silently disappeared.
+  // The serializer escapes a double quote with a backslash, so the parser must unescape it. Inline lists
+  // and objects must not split on commas inside quoted values.
   {
     name: "따옴표 안의 이스케이프된 따옴표 — 원문으로 되돌린다",
     input: '---\nkind: capability\ntitle: "say \\"hello\\""\n---\n',
@@ -362,24 +347,8 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
       body: "",
     },
   },
-  // ── Two forms YAML allows that our parser could not read (dogfooding, 2026-07-29) ──
-  //
-  // Every block-list case in this matrix used **two-space indentation**. But YAML does
-  // not require a sequence under a key to be indented — writing `- ` at column 0 is
-  // valid in PyYAML, js-yaml, gray-matter, Obsidian, and GitHub alike. Our parser used
-  // `/^\s+-\s+/`, requiring **at least one space**, so relations written that way
-  // became empty strings wholesale. The symptom matches the CRLF case: **the nodes are
-  // visible, every relation disappeared, zero warnings.**
-  //
-  // Block scalars (`|`, `>`) were worse. The indicator was stored as the value
-  // (`"|"`), and the indented body lines that followed were **reinterpreted as
-  // top-level keys**, because the parser `.trim()`s keys. So a single `kind: element`
-  // line inside a description **changed that node's kind** — a document overwriting
-  // its own type with its own prose.
-  //
-  // The 4-way contract passes when all four are wrong the same way, so adding a case
-  // to this matrix — the source of truth — is what makes it a requirement on all four
-  // parsers.
+  // Block lists may start at column 0, and block scalars must not turn their indented lines into
+  // top-level keys. A case added here is a requirement on all four parsers.
   {
     name: "블록 리스트 — 0칸 들여쓰기도 YAML 이다",
     input: "---\nkind: capability\ndepends_on:\n- alpha\n- beta\n---\n",
@@ -436,14 +405,9 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // Writer/reader indentation mismatch (bug sweep 2026-09-01, reproduced).
-    // The writer indents every line by a fixed 2 spaces, but the reader took its
-    // base indent from the first non-blank line — so a value whose FIRST line
-    // carries its own leading whitespace re-parsed with a deeper base, and every
-    // later line broke out of the scalar into the top-level loop: a
-    // `kind: capability` line inside a description overwrote the node's kind.
-    // The fix is YAML's explicit indentation indicator: the writer emits `|2-`
-    // for such values and every reader honors the digit.
+    // The writer indents by a fixed 2 spaces but the reader took its base indent from the first
+    // non-blank line, so a value whose first line has leading spaces broke out of the scalar. The `|2-`
+    // indicator fixes it.
     name: "block scalar `|2-` — explicit indentation indicator keeps the first line's own leading spaces",
     input:
       "---\nkind: element\ndefinition: |2-\n    sample: yaml\n  kind: capability\n  note about it\n---\n",
@@ -465,10 +429,7 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // Bug sweep 2026-09-01: only the mcp parser diagnosed a scalar at a graph
-    // key; the TS and scripts parsers stayed silent, so `domains: payments`
-    // drew no edge on the web with zero diagnostics anywhere while MCP
-    // validate flagged it. All four must agree.
+    // All four parsers must diagnose a scalar at a graph key, or it draws no edge with no diagnostic.
     name: "a scalar at a graph key parses but is diagnosed — it draws no edge otherwise",
     input: "---\nkind: capability\ndomains: payments\n---\n",
     expected: {
@@ -484,9 +445,7 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // Found in this repository's own vault, 2026-08-31, on `display_ko`.
-    // `unquote` only strips a matching pair, so the opening quote survived as
-    // literal text and every reader rendered the stray quote — with 0 issues.
+    // `unquote` only strips a matching pair, so a closing quote that ends early leaves a stray quote.
     name: "quoted scalar closing early keeps the quote — diagnosed",
     input: '---\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n',
     expected: {
@@ -551,11 +510,8 @@ labels: {"key\\name": "001", 'tail\': "false", next: true}
     },
   },
   {
-    // 2026-09-01 review: the serializer writes booleans and numbers unquoted,
-    // but the read side returned them as strings — `draft: false` came back as
-    // the truthy string 'false' after one round trip, with the type depending
-    // on nesting depth in the same file. Top-level scalars are typed like
-    // nested ones.
+    // The serializer writes booleans and numbers unquoted, so top-level scalars must be typed like nested
+    // ones, or `draft: false` comes back as a truthy string.
     name: "top-level booleans and numbers are typed, matching nested members",
     input: "---\ndraft: false\ncount: 2\nratio: 0.8\nmeta: { flag: false }\n---\n",
     expected: {

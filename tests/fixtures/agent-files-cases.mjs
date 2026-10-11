@@ -362,10 +362,8 @@ export const CASES = [
     },
   },
   {
-    // The seat-brief pair exists for a **different reason** than the skills: one is the
-    // registry a subagent is summoned from, the other is the reference a tool without
-    // subagents opens while walking the council sequentially. Different purposes, but the
-    // contents must match.
+    // The seat-brief pair serves different purposes (subagent registry versus a sequential-walk
+    // reference), but the contents must match.
     name: 'agent brief copy in sync — identical bytes in both duplicated trees',
     input: {
       files: [
@@ -420,9 +418,7 @@ export const CASES = [
     },
   },
   {
-    // Unlike skills, a seat present on only one side is drift rather than informational
-    // — the council protocol does not hold at all in that tool.
-    // Measured 2026-08-04: all 15 seats were in this state with no signal at all.
+    // Unlike skills, a seat on only one side is drift: the protocol does not hold at all in that tool.
     name: 'agent brief one-sided — a seat that exists in only one tree is drift, not informational',
     input: {
       files: [

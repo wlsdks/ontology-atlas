@@ -7,25 +7,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The contract that **a test suite nobody calls does not exist**.
- *
- * `pnpm test:run` is Vitest, and its include covers `app/**`, `src/**` and
- * `tests/contract/**`. A `node --test` suite is outside all three, so it runs
- * only where a workflow or a git hook names it. Define one and forget to name it
- * and it runs nowhere — passing forever, including while broken.
- *
- * `.github/workflows/checks.yml` records this failure twice in its own comments:
- * two suites broken on main with nobody knowing (2026-07-26), then `check:tokens`
- * and its unit test defined and never called (2026-08-05), under the line "a gate
- * that doesn't trigger is not a gate but a comment". On 2026-08-24 it had
- * happened a third time, and larger: nineteen of thirty-one `node --test` suites
- * were unreachable, `test:claude:hooks` among them — the only coverage the
- * publish guard, the Git guard, the generated-output guard, the commit-message
- * gate, the drift reporter and the secret-read guard have.
- *
- * Two comments were not enough, so this is a test. Reachable means named in a
- * workflow, named in a git hook, composed by another script that is itself
- * reachable, or selected for an actual source path by the impact planner.
+ * A `node --test` suite is outside the Vitest include, so it runs only where a workflow or git hook
+ * names it. Reachable: named in a workflow or hook, a reachable script, or the impact planner.
  */
 
 const ROOT = process.cwd();

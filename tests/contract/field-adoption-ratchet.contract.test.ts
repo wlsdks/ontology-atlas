@@ -4,25 +4,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Form adoption ratchet — **raw form elements outside the primitive layer cannot
- * exceed the ceiling.**
- *
- * **Why** (ratified by the system seat 2026-08-15, docs/DECISIONS.md). A behaviour
- * layer now exists (`Input`/`Textarea`/`Checkbox` in src/shared/ui). Existing direct
- * `fieldClass` call sites are **not debt** (they comply with the value layer, and a
- * ledger declared closed is not reopened). This ratchet enforces one thing: **raw
- * form elements in a new file are 0 from day one** — so that when an agent assembles
- * from this system alone, the primitive carries the name enforcement and the error
- * wiring (aria-invalid, describedby, role=alert).
- *
- * `type="checkbox"` is at **0 everywhere** after migration (6 places → Checkbox),
- * radio was already 0, and range has one settings Slider registered with its
- * evidence.
- *
- * Reach: `src/shared/ui/` is excluded — the primitive layer is the legitimate home
- * of native elements, and spec changes to that layer are guarded by design.md's
- * "to change the spec" list. Same exhaustive walk as dialog-adoption (no hand
- * lists), counted after comments are stripped.
+ * Raw form elements outside the primitive layer cannot exceed the ceiling, and new files start at 0 so
+ * the primitive carries name enforcement and error wiring (aria-invalid, describedby, role=alert).
+ * `src/shared/ui/` is excluded as their home; walks all of `src/`, comments stripped.
  */
 
 const ROOT = process.cwd();
@@ -90,10 +74,8 @@ function scanProduction(): FieldScan {
 }
 
 /**
- * The text-family ceiling — the founding inventory of 2026-08-15 (38 places across
- * 25 files). **A ceiling, not debt**: existing sites comply with the value layer and
- * carry no obligation to repay; they simply cannot grow. If they shrink, the ceiling
- * comes down with them.
+ * Text-family ceiling: existing sites comply with the value layer and carry no repayment duty, but
+ * cannot grow; if they shrink, the ceiling comes down with them.
  */
 const TEXT_CAP: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/docs-vault-local/ui/WebManualConnectPanel.tsx", 1],

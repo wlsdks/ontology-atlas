@@ -6,33 +6,8 @@ import en from '../../messages/en.json';
 import ko from '../../messages/ko.json';
 
 /**
- * If a string says "go to the X section of settings", **that section must exist.**
- *
- * **Why** (measured 2026-08-17). The settings sheet had nine section names at the
- * time — two of them became 「Agents」 and 「MCP Connection」 by owner instruction on
- * 2026-08-19 — Screen · Map Background · Extension · Footprint · Notification · Workspace ·
- * **Chat in App** · **Connect in Terminal** · API Key. Two pieces of guidance named
- * sections that did not exist:
- *
- * | Where | What it said | The real name |
- * |---|---|---|
- * | Runtimes degradation card | in the 「**MCP**」 section | Connect in Terminal |
- * | Chat launch-failure notice | in settings' **Agents** section | Chat in App |
- *
- * Whoever reads it hunts for a tab that is not there and gives up. Same species as
- * what this repository already wrote down: *"a row with no destination is the same
- * as never having been registered."*
- *
- * **Why measure this instead of pinning the sentence.** The defect first surfaced in
- * the web smoke test, and that check was pinning **the whole wording**
- * (`alsoHere: /My Agent Connection/`). So a wording change turned it red, and that red
- * could not distinguish "the wording is stale" from "it points nowhere" — exactly the
- * shape `.claude/rules/documentation.md` forbids: *do not pin a sentence a human
- * wrote; check only what a machine can generate.*
- *
- * So this measures a **relation** instead of a sentence: is the name inside 「…」 one
- * of the `section.*` values? The wording may be edited or translated freely, and this
- * breaks only when it points at a section that does not exist.
+ * Guidance that points at a settings section must name one that exists. Checks the relation (the name
+ * inside the quotes is a `section.*` value), not the wording.
  */
 
 /** 「X」 field · “X” section · section 「X」 — the shapes a "go to that section" instruction takes. */
@@ -44,16 +19,8 @@ const SECTION_REFERENCE_PATTERNS = [
 type Bundle = Record<string, unknown>;
 
 /**
- * **The places that can be pointed at live in two tables** (2026-08-21, ledger 90).
- *
- * Runtimes and MCP connect left the sheet and became the "agent" destination, so
- * guidance may point at a sheet section **or at a section of that destination**.
- * Looking at only one table reports perfectly good guidance as a defect.
- *
- * Does adding a table loosen the check? No. **Both are sets of names that really
- * exist on screen**, and what this check blocks is naming something that does not
- * exist, not which table it is in. To compensate, each table gets **its own idling
- * floor** below.
+ * Guidance may point at a sheet section or a section of the agent destination, so both tables are
+ * valid sets; each has its own floor below.
  */
 function sheetSectionNames(bundle: Bundle): Set<string> {
   const nav = (bundle.nav as Bundle | undefined)?.settingsMenu as Bundle | undefined;
@@ -62,12 +29,8 @@ function sheetSectionNames(bundle: Bundle): Set<string> {
 }
 
 /**
- * The section headings a **destination** renders on screen.
- *
- * ⚠️ **Two namespaces, because the destination split** (2026-09-05). MCP left `/agents`
- * for `/mcp`, and reading only `agents` would report the MCP screen's own section names
- * as places that do not exist. The rule is unchanged — a name may be pointed at only
- * while something on screen really carries it; what changed is which screens exist.
+ * Section headings a destination renders on screen. Two namespaces, `agents` and `mcp`, because
+ * those screens are separate.
  */
 const DESTINATION_NAMESPACES = ['agents', 'mcp'] as const;
 
@@ -136,8 +99,7 @@ describe.each([
    * notice); if guidance is deleted, lower this line with it.
    */
   it('가리키는 안내가 실제로 있다 — 없으면 본 검사가 헛돈다', () => {
-    // 2026-08-21: one line, the runtimes degradation card, points at a destination
-    // section. If that guidance is deleted, lower this line with it.
+    // One runtimes degradation card points at a destination section; lower this line if it is deleted.
     expect(refs.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -158,16 +120,8 @@ describe('두 언어가 같은 자리를 가리킨다', () => {
 });
 
 /*
- * A name that exists but whose section is not rendered is the same defect
- * (2026-08-19).
- *
- * The check above compares the name inside 「…」 against `section.*` **values**. But
- * if the value survives while its key drops out of `SETTINGS_GROUPS` — removing the
- * section from the menu and forgetting to delete the translation key — the check
- * above stays green while the guidance points at **a section that is never
- * rendered**. So instead of pinning a sentence, both sides are **extracted and
- * compared**: the set of `section.*` keys in messages == the set of items the menu
- * actually renders.
+ * The set of `section.*` keys in messages must equal the set of items the menu renders, so a
+ * translation left behind after removing a section is caught.
  */
 describe('section.* 키는 전부 실제로 그려지는 칸이다', () => {
   const renderedItems = [...SETTINGS_SECTIONS];

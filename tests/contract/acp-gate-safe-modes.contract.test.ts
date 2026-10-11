@@ -10,42 +10,9 @@ import {
 } from '@/features/acp-session/model/acp-client';
 
 /**
- * **Modes that remove the checkpoint are never offered on screen.**
- *
- * ## Why this gate exists
- *
- * In the runner list this app **promises in words** that Atlas will ask on the
- * user's behalf when something outside the folder is touched. Exactly one mechanism
- * keeps that promise: `session/request_permission` reaching us.
- *
- * But the mode lists adapters advertise include modes that stop that request being
- * sent at all (measured 2026-08-16):
- *
- * - claude: `bypassPermissions` — *"Bypass all permission checks"*
- * - claude: `acceptEdits` — *"Auto-accept file edit operations"*
- * - codex: `agent-full-access`
- *
- * Putting those straight into a dropdown means **one user choice voids our
- * promise** — and then it is a default, not a promise.
- *
- * ⚠️ This does not block strict modes. `dontAsk` **refuses** anything not
- * pre-approved, so it fails safe and is allowed through. The one criterion is
- * **"does it let things through without asking".**
- *
- * ## What changed on 2026-09-05
- *
- * Two things, both read out of the shipped distributions rather than guessed.
- *
- * ① `auto` is now on the hidden side. It was let through here because it *sounded* like a
- * classifier that still asks. `claude-agent-acp` 0.74.0 advertises it to **every** session
- * (*"Auto" / "Claude handles permission decisions"*) and its own source records that a mode-level
- * auto-approval never reaches the ACP client as `session/request_permission` — so Atlas would draw
- * no card at all. That is the one criterion above, failed.
- *
- * ② The adapters now state a mode's class in `_meta.kind`, and the class does not travel on the
- * name: `claude-agent-acp` calls the self-approving mode `auto` and `codex-acp` calls it `agent`.
- * `mode-safety.ts` therefore reads the kind and lets it outrank the id in both directions, which
- * only works while `readSessionChoices` actually carries `_meta` through — pinned below.
+ * Modes that let tool use through without `session/request_permission` are never offered; `dontAsk`
+ * refuses unapproved actions so it fails safe. `mode-safety.ts` lets `_meta.kind` outrank the id,
+ * which needs `readSessionChoices` to carry `_meta` through.
  */
 
 function choice(id: string, name = id, metaKind: string | null = null): AcpChoice {
@@ -92,7 +59,6 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 
     expect(kept).not.toContain('bypassPermissions');
     expect(kept).not.toContain('acceptEdits');
-    // `auto` joined the hidden side on 2026-09-05 — see the block at the top of this file.
     expect(kept).not.toContain('auto');
     // What fails safe, and what is useful, stays.
     expect(kept).toEqual(['default', 'plan', 'dontAsk']);
@@ -100,9 +66,8 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 
   it('claude-agent-acp 0.77.0 이 실제로 짓는 목록을 그대로 넣어 본다', () => {
     /*
-     * Read from `dist/session-mode.js` `buildAvailableModes(allowBypass)` on 2026-09-15.
-     * `bypassPermissions` is appended only when that session argument is true, and `dontAsk`
-     * remains absent from the built list.
+     * From `dist/session-mode.js` `buildAvailableModes(allowBypass)`: `bypassPermissions` is appended
+     * only when allowed, and `dontAsk` is absent from the built list.
      */
     const kept = keepGateSafeModes([
       choice('default', 'Manual', 'standard'),
@@ -121,15 +86,9 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
       choice('agent-full-access', 'Agent (full access)'),
     ]).map((m) => m.id);
     /*
-     * ⚠️ The previous expectation was `['read-only', 'agent']` — **this file was
-     * pinning the hole**. `agent` only sounds like a normal mode,
-     * and this repository's own measurement is recorded in `docs/DECISIONS.md` (2026-08-16):
-     * launching codex in that default mode produced *"files written outside the working
-     * folder with 0 permission requests"*. It fails the criterion above exactly.
-     *
-     * The mode filter therefore leaves only `read-only`, but this does **not** make
-     * Codex eligible for in-app chat. Installed acceptance later proved an Atlas MCP
-     * write can bypass that mode; `runtime-gate.ts` owns the separate runtime boundary.
+     * `agent` mode wrote files outside the folder with 0 permission requests (`docs/DECISIONS.md`), so
+     * only `read-only` remains. `runtime-gate.ts` owns the separate runtime boundary for Atlas MCP
+     * writes.
      */
     expect(kept).toEqual(['read-only']);
   });
@@ -169,9 +128,8 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 
   it('`_meta` 가 필터까지 실제로 도착한다 — 종류가 이름을 이긴다', () => {
     /*
-     * The kind rule is only worth anything while the parser carries `_meta` from the wire to the
-     * verdict. Feeding a raw session response with an id on the measured-safe list and a kind that
-     * contradicts it pins both halves at once: drop the parse and this goes green-for-nothing.
+     * A session response with a safe-list id and a contradicting kind pins that `_meta` reaches the
+     * filter.
      */
     const choices = readSessionChoices({
       modes: {
@@ -197,18 +155,8 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 });
 
 /**
- * **The transcription is pinned to the version it was transcribed from.**
- *
- * Version-specific arrays are transcribed from the exact adapter release source. A fixture becomes
- * a fiction when the registry gets bumped,
- * the adapter changes what it builds, and these arrays keep passing while describing a version
- * nobody runs any more. This repository has the failure on record already, in the words the
- * permission tests use: *a gate that passes on invented input is not a gate*. A stale transcription
- * is invented input that used to be real.
- *
- * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
- * app actually launches from. A bump turns this red, and the person doing the bump has to open the
- * new release source and re-transcribe rather than discover the drift in an installed session.
+ * Arrays are transcribed from the exact adapter release; asserting the version against
+ * `src-tauri/src/acp-registry.json` turns a bump red so the arrays are re-transcribed.
  */
 const TRANSCRIBED_FROM = {
   /**

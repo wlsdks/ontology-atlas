@@ -14,28 +14,9 @@ import {
 } from "../../scripts/lib/design-spec-census.mjs";
 
 /**
- * Contract keeping “Changing the specification requires `design-contract`” from
- * reverting to **a rule that lives only in a
- * document.**
- *
- * ## Background (rules audit, measured 2026-08-03)
- *
- * Rule 3 of "Rules for expanding the system" in `docs/DESIGN-SYSTEM.md` and its trigger list
- * (`.claude/rules/design.md`) both existed, but **nothing enforced them.** Of the
- * five most recent commits that widened a value-layer ramp, one had a ledger record,
- * and `pnpm decisions:check` looked only at routes and the MCP/CLI contract, so spec
- * changes passed straight through.
- *
- * This contract protects four things:
- *
- * 1. The trigger list lives in **one authoritative document** and the gate reads it.
- * 2. Every path on the list **exists** — a list pointing at a missing file is a rule
- *    that silently disappeared (this repository has a precedent of a glob matching 0
- *    files and the rule evaporating).
- * 3. The detector **does not run on an empty set** — each trigger file really carries
- *    spec entries today.
- * 4. **False positives are suppressed** — a diff changing only comments or whitespace
- *    is not a spec change.
+ * Keeps the rule that changing the specification requires `design-contract` from living only in a
+ * document: one authoritative trigger list the gate reads, every listed path exists, the detector
+ * does not run on an empty set, and comment- or whitespace-only diffs are not spec changes.
  */
 
 const TRIGGER_SECTION_DOC = SPEC_RULE_DOC as string;

@@ -3,30 +3,9 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Blocks the failure mode created once size steps started carrying a companion line
- * height: **an element that conditionally swaps only the font size, breaking the
- * pair.**
- *
- * **The shape of the defect.** `text-<step>` now also loads that step's line height.
- * But layering a conditional arbitrary size on the same element (`text-[Npx]`,
- * `text-[length:…]`, clamp) **changes only the size while the original step's line
- * height stays** — an arbitrary size has no companion. A ratio nobody ever chose is
- * produced, and only at that breakpoint. Measured 2026-07-27: the /git headline at
- * wide widths carried 23px text with the title step's 24px line height (1.04), the
- * largest deviation in this repository.
- *
- * Two prescriptions: ① make the conditional size a ramp utility too (then the pair
- * follows), or ② attach an explicit `leading-*` so the line height is set directly for
- * both sizes. ② is a real, legitimate choice (a single-line cohesive hero), so it is
- * not counted as a violation.
- *
- * **Why a contract test and not ESLint.** `no-restricted-syntax` matches a selector
- * against **one AST node**. This verdict needs **all** of an element's classes, and a
- * className splits across several literals as `cn()` arguments, which no single
- * selector can hold. Lint catches only the **subset** that routes a ramp token through
- * an arbitrary length (`arbitrarySizeSelectors` in `eslint.config.mjs`); the general
- * form is caught here. (`.claude/rules/design.md`: the layer lint cannot see belongs
- * to a contract test.)
+ * Blocks an element that conditionally swaps only the font size: `text-<step>` also loads a line
+ * height, an arbitrary size has none, so an unchosen ratio appears at that breakpoint. An explicit
+ * `leading-*` is legitimate. A className splits across `cn()` arguments, so lint cannot hold it.
  */
 
 const ROOTS = ["src", "app"] as const;
@@ -61,9 +40,8 @@ function collectSourceFiles(dir: string, out: string[]): void {
 }
 
 /**
- * Extracts the whole string region a `className` carries. Classes split across
- * several `cn(...)` arguments must be seen as one blob for the verdict to hold, so a
- * brace expression is read to its end by counting pairs.
+ * Extracts the whole string region a `className` carries. Classes split across `cn(...)` arguments
+ * must be seen as one blob, so a brace expression is read to its end by counting pairs.
  */
 export function extractClassNameRegions(source: string): string[] {
   const out: string[] = [];

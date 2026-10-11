@@ -30,8 +30,8 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
   });
 
   it("고른 도메인이 미리 골라진다 — 방금 누른 노드를 다시 묻지 않는다", () => {
-    // Seeded with the domain's own address, the value the picker offers for it (map-edit QA
-    // D10, 2026-09-26): the bare graph-id tail wrote a second spelling of the relation.
+    // Seeded with the domain's own vault ref, the value the picker offers; the bare graph-id tail would
+    // write a second spelling of the relation.
     expect(inspector).toMatch(/setCreateNodeSeedDomain\(resolveNodeVaultRef\(canvasSelectedGraphNode\)\)/);
     expect(authoring).toMatch(/value: resolveNodeVaultRef\(node\)/);
     expect(composer).toMatch(/defaultDomain=\{props\.createNodeSeedDomain\}/);
@@ -42,10 +42,8 @@ describe("「이어서 새로 만들기」 — 어포던스 계약", () => {
 
   it("화면에서 만든 노드에 `human` 스탬프가 찍힌다", () => {
     /*
-     * The stamp is applied **at write time, and only for an actor the call path
-     * proves** (ledger, 2026-07-31). This path is the screen's single "create concept",
-     * which satisfies that condition. Provenance survives as the fact that MCP/CLI and a
-     * person audit the same graph.
+     * The `human` stamp is applied at write time and only for an actor the call path proves; this is the
+     * screen's single create-concept path.
      */
     expect(authoring).toMatch(/buildNewNodeDoc\(\{ \.\.\.input, createdBy: "human" \}\)/);
     expect(read("src/entities/docs-vault/lib/build-vault-markdown.ts")).toMatch(

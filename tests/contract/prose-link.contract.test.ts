@@ -7,35 +7,8 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { classNameOf, readClassSource, stringsOf } from './lib/jsx-class-source';
 
 /**
- * Prose-link contract — **a link inside markdown body flow is not a control.**
- *
- * **Why this contract** (the 2026-08-04 link floor-24 round). Opening the control
- * ledger's (`control-adoption-ratchet`) "always-on underline 12" category found six
- * markdown body links — their siblings are text, the line box is owned by the
- * parent's `--leading-prose`, and WCAG 2.5.8 explicitly exempts in-sentence targets
- * (*"The target is in a sentence"*). The value layer (`controlClass`) cannot produce
- * this place in principle: all eight shapes are flex-family, and **inline-flex kills
- * wrapping in a prose position** — measured at 320px, an inline-flex link overflows
- * as a single rect (the 2 "pseudo-prose" cases, DocsVaultViewer's external/repo
- * links) while the inline control wraps into 2 rects.
- *
- * So the destination for a prose link is one thing, `.prose-link` (globals.css), and
- * this contract holds three disciplines:
- *
- * ① **Do not add a display** — the anchor's default inline is the condition for
- *    wrapping.
- * ② **Do not add its own line height or font size** — the line box belongs to the
- *    prose parent.
- * ③ **Leave focus to the UA default** — a 2px indigo box around a word inside a
- *    sentence reads as a highlight, not as focus.
- *
- * Underline geometry (offset) is also owned by `.prose-link` — a consumer re-adding
- * `underline-offset-*` gives one document two underline geometries.
- *
- * **Why lint cannot do this.** The verdict needs "is this anchor inside prose flow",
- * which is a fact about the render tree (the ReactMarkdown components map) and cannot
- * be expressed by a single file's AST selector. So this is a contract test applying
- * the discipline to every tag using `.prose-link`.
+ * A link inside markdown body flow is not a control: `.prose-link` owns it. Do not add a display
+ * (inline is needed for wrapping), line height, font size, focus ring or underline offset.
  */
 
 const ANCHOR_REGISTRY = 'tests/contract/control-adoption/anchors';

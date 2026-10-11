@@ -4,22 +4,9 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **A class name that emits nothing looks exactly like one that works.**
- *
- * The full-detail body styled its rendered Markdown with `prose prose-invert` for as long
- * as nobody read a long body on that surface. `@tailwindcss/typography` is not a dependency
- * of this project and `globals.css` defines no `.prose` rule, so both names compiled to
- * nothing: the Markdown parsed into real `h2` and `ul` elements, and Preflight then
- * flattened every one of them into body-sized text with no bullets (2026-09-14).
- *
- * Neither lint nor the design ramps could see it. The ramp gates ask whether a *value* is
- * off-ramp; this is the opposite failure, a name with no value behind it at all. So the
- * check is the one a reader would make: if the plugin is not installed and the stylesheet
- * declares no `.prose`, then no product file may name it.
- *
- * It is deliberately not a list of forbidden words. Both sides are derived — the dependency
- * from `package.json`, the rule from `globals.css` — so installing the plugin, or writing
- * the rule by hand, retires this test without anyone editing it.
+ * A class name that emits nothing looks like one that works. `@tailwindcss/typography` is not a
+ * dependency and `globals.css` defines no `.prose` rule, so no product file may name it. Both sides
+ * are derived from `package.json` and `globals.css`.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");

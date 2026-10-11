@@ -6,41 +6,17 @@ import { describe, expect, it } from 'vitest';
 import { CONTROL_DISABLED_CLASS } from '@/shared/ui/control-class';
 
 /**
- * **If it cannot be pressed, it must not look pressable.**
- *
- * ## Why this gate exists
- *
- * Owner report, 2026-08-03: *"I pressed 'Recent changes' and nothing happened?"*
- * That chip was `disabled`, and a code comment said the slot stays and a tooltip
- * gives the reason. Measured, its **computed style was completely identical to the
- * three active chips beside it** — color, bg, border, opacity, and cursor all the
- * same.
- *
- * | Chip | disabled | opacity | cursor |
- * |---|---|---|---|
- * | Auto-align | false | 1 | default |
- * | Search | false | 1 | default |
- * | Switch to my data | false | 1 | default |
- * | **Recent changes** | **true** | **1** | **default** |
- *
- * `ChromeChip` had **no `disabled:` handling at all**, and being a shared primitive
- * meant **every chip carried the same hole**. The tooltip requires hovering and
- * waiting, so **for someone pressing it there was only silence.**
- *
- * This repository's recurring lesson: **a spec that exists only in a comment does
- * not exist on screen.** Lint cannot catch it — the question is not a value rule but
- * whether handling for this state exists at all.
+ * If it cannot be pressed, it must not look pressable: a tooltip needs hovering, so a disabled chip
+ * without `disabled:` handling leaves silence for someone pressing it. Lint cannot catch it, since
+ * the question is whether handling exists at all.
  */
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
 
 /**
- * The value authority is `CONTROL_DISABLED_CLASS` in `control-class.ts`. This test
- * asks about **the value, not the class string in the source** (rewritten
- * 2026-08-06): it used to require a `disabled:opacity-` literal in every file, so
- * exactly the right refactor — moving to a value-layer constant — broke the gate. It
- * now asks only where a file receives its disabled handling from (composing the
- * constant or its own literal) and whether every path yields one value.
+ * The value authority is `CONTROL_DISABLED_CLASS` in `control-class.ts`. This asks where a file gets
+ * its disabled handling (the constant or its own literal) and whether every path yields one value,
+ * so moving to the constant does not break the gate.
  */
 const DISABLED_STEP = (() => {
   const m = CONTROL_DISABLED_CLASS.match(/disabled:opacity-(\d+)/);

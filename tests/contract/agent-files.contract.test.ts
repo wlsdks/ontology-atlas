@@ -4,17 +4,9 @@ import { analyzeAgentFiles as analyzeWeb } from "@/entities/agent-files";
 import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.mjs";
 
 /**
- * Agent-files detection contract — the read-only agent-file scanner lives in
- * 2 places that cannot share a physical module:
- *   - cli/src/lib/agent-files.mjs (separate package — `ontology-atlas agent-files`,
- *     a full-fs scanner running all six drift checks, dot-dirs included)
- *   - src/entities/agent-files/model/agent-files.ts (web docs surface — an FSA scanner;
- *     dot-dirs are invisible to it, so it degrades honestly to `unverifiable`)
- *
- * Against the same fixture matrix (tests/fixtures/agent-files-cases.mjs), the two
- * implementations and the fixture's expected verdict must all agree (effectively
- * 3-way: expected × cli × web). Message phrasing is free; the structural contract
- * (records / check status / drift check, code, path) is strict.
+ * The scanner lives in `cli/src/lib/agent-files.mjs` and
+ * `src/entities/agent-files/model/agent-files.ts`, which cannot share a module. Against the same
+ * fixtures, expected, cli and web must agree structurally; message phrasing is free.
  */
 
 type AnalyzeInput = Parameters<typeof analyzeWeb>[0];

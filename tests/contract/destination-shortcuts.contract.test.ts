@@ -57,11 +57,9 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
     for (const key of keys) {
       expect(key, `${key} 는 한 글자여야 한다`).toMatch(/^[a-z]$/);
     }
-    // Does the reverse table say the same thing as the forward one? `d` is the one
-    // compatibility alias: Docs no longer has a tile, but its published leader
-    // shortcut and context-aware deep link still open Library's Ontology tab.
-    // `c` is the second alias: MCP left the rail for the Agents tab on 2026-09-17, and
-    // its published `g c` still lands there.
+    // The reverse table matches the forward one plus two compatibility aliases: `d` (Docs has no tile;
+    // its published shortcut opens Library's Ontology tab) and `c` (MCP; its published `g c` still
+    // lands on the Agents tab).
     expect(Object.keys(DESTINATION_BY_KEY).sort()).toEqual([...keys, 'd', DESTINATION_KEY.mcp].sort());
     for (const id of DESTINATION_IDS) {
       expect(DESTINATION_BY_KEY[DESTINATION_KEY[id]]).toBe(id);
@@ -112,11 +110,8 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
   });
 
   /**
-   * **Counting a hidden modal kills navigation permanently** (2026-08-09, caught by
-   * e2e). The first implementation used a single `querySelector`, which returns the
-   * document's first match — if a surface still in the DOM during its exit animation
-   * matches first, every shortcut stops working with no clue on screen. So it scans
-   * **all of them and counts only the rendered ones**.
+   * Count only rendered modals: a single `querySelector` returns the first match, and a surface still
+   * in the DOM during its exit animation would stop every shortcut. Scan all and count rendered ones.
    */
   it("숨은 모달을 막는 표면으로 세지 않는다", () => {
     const hook = read("src/shared/lib/keyboard/use-destination-shortcuts.ts");
@@ -137,7 +132,6 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
 
 describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   it("MCP 는 에이전트의 둘째 탭이다 — 레일에 일부러 없다", () => {
-    // 2026-09-17: the tile folded into Agents; the address stays as a tab.
     expect(DESTINATION_IDS).not.toContain("mcp");
     expect(DESTINATION_HREF.mcp).toBe("/agents/?tab=mcp");
   });
@@ -207,28 +201,9 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Nine remains the measured ceiling** (record of 2026-09-06), while the current
-   * visible inventory is eight after Docs moved inside Library on 2026-09-14.
-   *
-   * The number moved because the rail was measured again, and the tile's own padding
-   * moved with it. At the app's minimum window (`minWidth: 1040`, `minHeight: 720`)
-   * the destinations pane is 616px tall. Measured on the rendered rail, 2026-09-06:
-   *
-   * | tiles | button padding | pitch | stack | spare |
-   * |---|---|---|---|---|
-   * | 8 | `py-1.5` | 64px | 12–522 | 94px |
-   * | 9 | `py-1.5` | 64px | 12–586 | 30px |
-   * | 9 | `py-1`   | 60px | 12–550 | 66px |
-   *
-   * The gear is drawn 48px above the window edge in every one of those, and nothing
-   * scrolls. The fixed tokens did not move — 38×32 tile, 20px icon, 11px label — so
-   * what paid for the ninth tile is the one quantity in the tile carrying no
-   * information. The pane still owns its own scroll (`min-h-0 overflow-y-auto
-   * overscroll-contain`, asserted below) for zoom, longer translations and every
-   * smaller effective viewport.
-   *
-   * What this check blocks is a tenth arriving quietly. The exact-inventory assertion
-   * below separately blocks using the newly free seat without a decision.
+   * Nine is the ceiling the rail height supports at the app's minimum window (`minWidth: 1040`,
+   * `minHeight: 720`, 616px pane) with nothing scrolling. A tenth needs its own decision; the pane
+   * still scrolls for zoom and longer translations.
    */
   it("목적지는 아홉을 넘지 않는다 — 열째는 별도 결정을 요구한다", () => {
     expect(
@@ -240,11 +215,8 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
 
   it("현재 목록은 여덟이다 — 자동화는 관리 허브로, 문서함과 MCP 통합은 유지된다", () => {
     /*
-     * The same grammar the system seat used on other ratchets: a ceiling with the
-     * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Eight exist today: the 2026-09-14 owner decision moved Docs inside Library
-     * while retaining `/docs` only as a compatibility address, the 2026-09-17 decision
-     * folded MCP into Agents the same way, and Automations now owns schedule management.
+     * A ceiling far above the current count turns slack into a free pass, so the exact inventory is
+     * pinned: a change to the list needs a decision.
      */
     expect(
       DESTINATION_IDS.length,

@@ -4,22 +4,8 @@ import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * `Button variant="danger"` stays on the confirm step of an irreversible action.
- *
- * The variant (2026-09-25, `src/shared/ui/button.tsx`) is red so that "Remove" and "Cancel" in a
- * confirm row stop differing only by order. Red that also appears on the button that *opens* the
- * question, or on anything merely important, stops meaning "this is the irreversible step" — and
- * a design system spreads a colour one plausible call site at a time.
- *
- * The allowlist is honest in two parts, because either alone can be gamed:
- *
- * 1. **Every use carries `data-confirm-step`** on the same element — the author states, in the
- *    DOM, that this button is the second press of a two-press action.
- * 2. **Every file that uses it is listed below with the confirm row it belongs to.** A new file
- *    fails until a reviewer reads the reason and adds it; the marker alone is self-declared.
- *
- * A use is any `<Button …>` opening tag or `buttonVariants({ … })` call whose text contains the
- * string literal `danger`, so a ternary (`variant={x ? 'danger' : 'ghost'}`) counts too.
+ * `Button` with the danger variant is only for the confirm step of an irreversible action. Every
+ * use carries `data-confirm-step` and every file using it is listed with its confirm row.
  */
 const CONFIRM_ROWS: Record<string, { uses: number; row: string }> = {
   "src/views/automations/ui/AutomationScheduleActions.tsx": {

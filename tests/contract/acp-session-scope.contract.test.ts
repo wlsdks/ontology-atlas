@@ -6,26 +6,8 @@ import {
 } from '@/features/acp-session/model/acp-client';
 
 /**
- * The past-conversation list shows **only this folder's**.
- *
- * **Why this gate exists (measured 2026-08-16).** Passing `cwd` to `session/list`
- * does not make the adapter filter by that folder. What actually came back included
- * conversations from other repositories never opened in the app — **titles and
- * all**:
- *
- * ```
- * { cwd: "/Users/…/side-project/ontology-atlas", title: "Design System Level Assessment" }
- * { cwd: "/Users/…/workspaces/…/main-3",        title: "Buzz Open Source Analysis ..." }
- * ```
- *
- * Rendering that directly makes Atlas display **work titles from folders the user
- * never opened in this app**. Trust charter ② (nothing collected without the user
- * knowing) and the local-first rule (never scan outside the vault) both forbid it
- * head-on, and nobody finds out until the user sees the screen — the code looks
- * fine and every check passes.
- *
- * **This check stays even if the adapter starts filtering correctly.** Our promises
- * are not staked on somebody else's fix.
+ * `session/list` ignores `cwd` and returns conversations from other folders, so the list is filtered
+ * to this folder. The check stays even if the adapter starts filtering.
  */
 
 function row(cwd: string, id = cwd): AcpSessionSummary {
@@ -79,8 +61,8 @@ describe('지난 대화 목록 — 이 폴더 밖은 나가지 않는다', () =>
 
   it('실측에서 실제로 돌아온 목록을 그대로 넣어 본다', () => {
     /*
-     * Invented input cannot show whether this gate blocks the real accident. These are
-     * the exact rows the 2026-08-16 probe received.
+     * Rows are the exact ones the real probe received; invented input cannot show the gate blocks the
+     * real case.
      */
     const measured: AcpSessionSummary[] = [
       { sessionId: 'cbc05282', cwd: '/Users/jinan/orca/workspaces/ontology-atlas/main-3', title: 'Buzz 오픈소스 분석 및 Claude 통합 연구', updatedAt: '2026-08-16T06:02:05.323Z' },

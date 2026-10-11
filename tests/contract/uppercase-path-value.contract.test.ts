@@ -3,39 +3,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Gate against CSS `uppercase` transforming a file address's value.
- *
- * An inventory on 2026-08-14 found 11 places where a **value** — a slug, a path
- * literal, a folder name — sat directly inside an eyebrow or meta label carrying
- * `uppercase`, so `docs/ontology` appeared as `DOCS/ONTOLOGY`. A value is an
- * address: changing its case makes it a different address. There are two
- * prescriptions:
- *
- * 1. If the whole element is a value, drop `uppercase` (and the caps tracking).
- * 2. If it mixes label and value, wrap the value in a
- *    `normal-case tracking-normal` span (precedent: sourceKind in
- *    `src/widgets/full-detail-a1/ui/FullDetailA1.tsx`). For i18n interpolation, put a
- *    `<value>` tag in the message and attach a normal-case renderer through `t.rich`
- *    (precedent: footerSummary · footerUpdated ·
- *    editorEyebrow).
- *
- * ## The judgement is a text heuristic — stated honestly
- *
- * This test does not parse JSX. From a line whose class string contains
- * `uppercase` it takes a window of up to 12 lines downward (to the first closing
- * `</`) and looks for path-like expressions inside it. Therefore:
- *
- * - **What it misses**: children beyond the 12-line window; a value that follows a
- *   nested child element; a class string extracted into a variable far from its
- *   render site; variant prefixes such as `md:uppercase` / `[&_th]:uppercase` (the
- *   markdown table `th` is a deliberate boundary, judged separately); and whether a
- *   `t.rich` renderer really is normal-case.
- * - **Exemption signals**: matches after a `normal-case` or `t.rich(` inside the
- *   window are skipped, because that is prescription 2's healthy pattern.
- *
- * It is narrowed to miss things rather than block legitimate code with false
- * positives. When a new bypass pattern appears, widen the window rule here and
- * confirm the red with a probe.
+ * CSS `uppercase` must not transform a value such as a slug or path, since case makes a different
+ * address. Drop `uppercase` or wrap the value in a `normal-case tracking-normal` span. This is a text
+ * heuristic with a 12-line window; it is narrowed to miss things rather than block legitimate code.
  */
 
 /** A standalone `uppercase` in a class string (variant-prefixed `:uppercase` excluded). */

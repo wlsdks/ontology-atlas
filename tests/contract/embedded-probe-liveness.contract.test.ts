@@ -99,15 +99,9 @@ describe('the verifier JavaScript contains no dead literals', () => {
   });
 
   it('references no identifier the script never declares', () => {
-    // The gap that let a real regression through on 2026-08-24: removing three dead consts left two
-    // references behind, the probe threw `Can't find variable` on its first line, and **every**
-    // marker was lost — while 12 contract lanes and 222 Rust tests stayed green, because none of
-    // them run the script. Only launching the packaged app caught it.
-    //
-    // This is a deliberately shallow check, not a JavaScript engine: it collects `const`/`let`
-    // declarations and function parameters, then looks for camelCase identifiers used but never
-    // declared and not reachable as a global. Shallow is enough — the failure mode is a deleted
-    // declaration whose use survived, and that is exactly what an undeclared name looks like.
+    // Shallow check, not a JavaScript engine: collect `const`/`let` declarations and function parameters,
+    // then flag camelCase identifiers used but never declared and not global. A deleted declaration whose
+    // use survived looks exactly like that, and no other lane runs the script.
     const globals = new Set([
       'window', 'document', 'navigator', 'location', 'console', 'Math', 'Number', 'String',
       'Boolean', 'Array', 'Object', 'JSON', 'Date', 'Set', 'Map', 'Promise', 'getComputedStyle',

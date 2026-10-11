@@ -19,23 +19,9 @@ const tsSource = ['walk-vault.ts', 'build-local-manifest.ts']
   .join('\n');
 
 /**
- * **The two walkers must use the same rules.**
- *
- * Adding `vault_fingerprint` (Rust) on 2026-07-31 made two places walk the vault: TS's
- * `walk()` (web and the real build) and Rust's `walk_vault_stamps` (the app's
- * fingerprint). If they do not count the same file set **the fingerprint differs**, and
- * the defect appears as:
- *
- * - Rust counting more → nothing changed, yet the app **rebuilds everything every time**
- * - Rust counting fewer → a file changed and **it goes unnoticed**
- *
- * Both are quiet: no error on screen, and types and lint pass. So the **rule constants**
- * of the two sources are compared directly here — editing only one breaks this first.
- *
- * ⚠️ This gate only checks that the constants **match**. It cannot catch the walk
- * logic itself diverging — that requires comparing both fingerprints over the same
- * vault in the installed app, which belongs to desktop measurement
- * (`.claude/rules/surfaces.md`).
+ * TS `walk()` and Rust `walk_vault_stamps` must count the same file set, or the fingerprint differs:
+ * Rust counting more rebuilds everything every time, counting fewer misses a change. Only the rule
+ * constants are compared; walk logic is measured in the installed app (`.claude/rules/surfaces.md`).
  */
 describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
   it('깊이 상한이 같다', () => {

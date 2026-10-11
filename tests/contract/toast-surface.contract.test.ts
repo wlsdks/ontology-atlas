@@ -7,19 +7,8 @@ import { composite, contrastRatio, parseColor } from "../../scripts/lib/contrast
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
- * **The toast is one neutral box whose tone is a small glyph** (owner, 2026-09-24:
- * *"the toast at the top — the design is poor, the colour too, and the position"*).
- *
- * Three claims, each read from the source that makes it true:
- *
- * 1. The box is drawn from the ramps the design system names for a toast: the
- *    elevated surface, `--radius-card`, and tier 1 of the shadow ladder, which
- *    `docs/DESIGN-SYSTEM.md` assigns to "toast" (it had drifted to tier 2).
- * 2. Every tone is a glyph ink with **no fill behind it**, and each ink clears 4.5:1 on
- *    the box — read from `app/globals.css`, so retuning a token re-judges this.
- * 3. The walls the toaster stands between are declared on the surfaces at the map's
- *    sides (rail, INDEX, panel) and floor (readout, first-visit hint); a lost attribute
- *    would put the box back over them.
+ * The toast is one neutral box drawn from the elevated surface, `--radius-card` and shadow tier 1
+ * (`docs/DESIGN-SYSTEM.md`); each tone is a glyph ink clearing 4.5:1 on the box with no fill.
  */
 
 const ROOT = process.cwd();

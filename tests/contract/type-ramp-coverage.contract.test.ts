@@ -13,72 +13,20 @@ import {
 } from "../../eslint.config.mjs";
 
 /**
- * The contract pinning **coverage** of the type / radius / leading / motion /
- * shadow ramp specs.
- *
- * **Why this file was rewritten** (2026-08-04). It used to be a ratchet that counted,
- * by regex, whether debt grew in directories lint **did not look at**. That design
- * rested on one premise — that coverage was an **allowlist**
- * (`codexMigratedGlobs`). An allowlist has exactly one failure mode, and it happens
- * to be the thing a product does most often:
- *
- * > **A newly created directory is on no list.**
- *
- * Measured in the 2026-08-04 field trial: planting four violations
- * (`text-[13px] rounded-[5px] leading-[1.9] duration-300`) on one line of a new
- * `src/views/<name>/ui/*.tsx` and running `pnpm exec eslint` gave **0 errors, 0
- * warnings**. That path received **7** `no-restricted-syntax` selectors
- * (scale/gradient 5 + accent tint 2) and **0** ramp selectors. The owner's goal is
- * *"just give the order and a screen comes out built on the design system"* — yet **a new screen was exactly
- * where none of the spec was enforced**.
- *
- * So `eslint.config.mjs` was inverted into a **denylist**, and this file's job
- * changed with it. What it now blocks is not "a violation" but **"coverage
- * narrowing again"** — the same shape as what
- * `audited-route-coverage.contract.test.ts` does for routes.
- *
- * **What is measured:**
- *
- * 1. Whether the covering globs are still **denylist-shaped** (all of `src/**` +
- *    `app/**`).
- * 2. Whether a **path that does not exist yet** receives every ramp selector — asked
- *    directly through ESLint's `calculateConfigForFile`. No real file is needed, so
- *    "the directory somebody creates next" can be measured today.
- * 3. Whether the detector idles — do those four planted lines actually **turn red**,
- *    and do normal ramp values **pass**.
- * 4. Whether exceptions are **per file** (a directory exception drags in new files
- *    created inside it).
- * 5. Whether an exception file's debt exceeds the ledger — the ratchet only goes
- *    down.
- *
- * ⚠️ **Do not duplicate the violation verdict as a regex.** This file used to hold a
- * hand-copied regex list of the ESLint selectors, and its comment claimed "the same
- * verdict" while only 7 of 12 families were actually copied (measured 2026-07-28). A
- * copy always diverges, so **ESLint itself is run** here.
+ * Pins coverage of the type, radius, leading, motion and shadow ramp specs. The lint config is a
+ * denylist, so a newly created directory is covered; ESLint itself is run through
+ * `calculateConfigForFile` rather than copying its selectors as regexes.
  */
 
 /**
- * The debt ledger for exception files — **emptied on 2026-08-05.**
- *
- * Moving the last 7 files' 93 items (text 68 · radius 25) onto the ramp brought the
- * list to 0. The record up to that point is kept here, because a rollback needs to
- * know what was how much:
- *
- *   ProjectCard 16 · ProjectMetaGrid 2 ·
- *   FirstRunPage 14 · StudioCompass 24 · ProjectEditorPage 2 · RootEntryPage 5
- *
- * ⚠️ An empty array must not make the checks below **green for free**. So when it
- * is empty the verdict is **inverted** — instead of "is the exception a real
- * exception", it measures "does a formerly exempt file really receive the ramp
- * selectors now".
+ * Debt ledger for exception files, empty. An empty array must not make the checks green for free,
+ * so when it is empty they instead measure that a formerly exempt file receives the ramp selectors.
  */
 const EXEMPT_DEBT: ReadonlyArray<readonly [string, number]> = [];
 
 /**
- * Files that were once exceptions. With the list empty they are used to confirm
- * those paths **really do receive the ramp selectors** — if the exception was
- * deleted but they are still uncovered for some other reason, only the list is
- * clean while the spec is still absent.
+ * Files that were once exceptions: confirms those paths really receive the ramp selectors, so an
+ * empty list cannot hide a spec that is still absent.
  */
 const FORMERLY_EXEMPT = [
   "src/entities/project/ui/ProjectCard.tsx",
@@ -116,18 +64,8 @@ const rampSelectors = (arbitrarySizeSelectors as { selector: string }[]).map(
 );
 
 /**
- * **An explicit timeout for the cases that really run ESLint** (2026-08-05).
- *
- * This is the only contract in the repository that **runs real ESLint over files**,
- * so it is inherently slow with high variance. It sat right on vitest's default
- * 5,000ms — **902ms** locally versus **5,503ms** on the CI runner (about 6×) — and a
- * docs-only PR went red on the timeout.
- *
- * **A gate that fails on time is noise.** If red-because-the-spec-was-broken cannot
- * be told apart from red-because-the-runner-was-slow, the next person learns to
- * ignore the red — exactly the decay this repository warns about under "always
- * measure before switching a rule on". 30 seconds is 33× the measured 902ms, and a
- * genuine infinite loop is still caught.
+ * Explicit timeout: this is the only contract that runs real ESLint over files, so it is slow with
+ * high variance, and a gate that fails on time is noise. 30 seconds still catches a genuine loop.
  */
 const ESLINT_CASE_TIMEOUT_MS = 30_000;
 
@@ -179,8 +117,8 @@ describe("램프 lint 커버리지 — 새 표면이 첫날부터 덮이는가",
     // If the selector array is empty, every universal assertion below goes green for free.
     expect(rampSelectors.length).toBeGreaterThanOrEqual(20);
     expect(rampSelectors.some((selector) => selector.includes("text-\\[[0-9.]+px"))).toBe(true);
-    // Both spellings, since the ramp itself is `rem` (2026-09-12): a selector set that knows
-    // only `px` leaves `text-[0.8125rem]` outside every rule.
+    // Both spellings, since the ramp is `rem`: a selector set that knows only `px` leaves
+    // `text-[0.8125rem]` outside every rule.
     expect(rampSelectors.some((selector) => selector.includes("text-\\[[0-9.]+rem"))).toBe(true);
   });
 

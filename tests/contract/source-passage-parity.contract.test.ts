@@ -221,12 +221,8 @@ describe('the passage reader stays out of the compile path', () => {
       { encoding: 'utf8' },
     ).trim();
     /*
-     * `src/features/vault-agent/model/source-text.ts` keeps `docx` and `xlsx` in
-     * `PARSER_SOURCE_FORMATS`, and the person is told the format needs a reader Atlas
-     * does not ship on that route. Wiring this module into Compile would change what
-     * leaves the computer on the next turn — `SOURCE_TEXT_CHAR_CAP`'s own header says
-     * every character read is a character that leaves — so it is a transfer decision
-     * with its own record, not a side effect of a reading pane (po-steward, 2026-09-11).
+     * `docx` and `xlsx` stay in `PARSER_SOURCE_FORMATS`: wiring this module into Compile would change
+     * what leaves the computer, so it is a transfer decision with its own record.
      */
     expect(offenders).toBe('');
   });

@@ -123,9 +123,8 @@ describe("Goodhart 방지 문장이 살아 있다", () => {
     expect(rules).not.toContain("file path straight into `elements:`");
   });
 
-  // In this spec a number is a verification threshold, not a target. Remove the
-  // sentences below and what remains is "keep it under N", a metric a model satisfies
-  // with two empty buckets — exactly what the council rejected in every form.
+  // A number here is a verification threshold, not a target; without these sentences it reads as
+  // 'keep it under N', which a model satisfies with empty buckets.
   it("상한이 아니라 트리거라고 명시한다", () => {
     expect(CONSTRUCTION_RULES_EN).toContain("NOT a limit");
     expect(CONSTRUCTION_RULES_EN).toContain("There is no maximum number of children");
@@ -172,14 +171,8 @@ describe("언어 경계 — 모델이 읽는 문자열은 영어 단일", () => 
 });
 
 /**
- * Bridge nodes — decision ledger extension, 2026-08-01.
- *
- * Step 4 **already** instructed creating bridges precisely. What was missing was
- * not the procedure but the **name**, so the LLM could not grasp "this kind of node
- * may be created" as a concept. What this block guards is therefore ① that the name
- * exists and ② that the four qualifying conditions accompany it — recommending a
- * bridge without qualification is approving an empty bucket, exactly the Goodhart
- * trap this whole spec exists to block.
+ * Bridge nodes: the name must travel with the four qualifying conditions; recommending a bridge
+ * without qualification approves an empty bucket.
  */
 describe("브릿지 노드 — 이름과 자격 조건은 함께 간다", () => {
   it("이름이 있다", () => {

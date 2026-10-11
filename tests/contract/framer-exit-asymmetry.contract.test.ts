@@ -5,47 +5,9 @@ import { describe, expect, it } from 'vitest';
 import { EXIT_TRANSITION, MOTION } from '../../src/shared/motion';
 
 /**
- * **The framer half of the exit contract.**
- *
- * `exit-motion-restart.contract.test.ts` reads `app/globals.css`, so it covers only the
- * surfaces whose exit is a CSS class (`.topology-chrome-out`, `.map-overlay-out`, the
- * settings sheet). Every surface that leaves through `AnimatePresence` sits outside that
- * scanner — and that is exactly the place this repository has already been bitten twice
- * (`motion-token-mirror`: 15 of 22 framer durations were off-ramp because "the lint
- * selector reads Tailwind class strings only").
- *
- * Measured 2026-09-05, 1440×900, dev server, WAAPI `getTiming()` on the exiting element:
- *
- * | Surface | entry | exit | `pointer-events` on exit |
- * |---|---|---|---|
- * | node inspector (`Surface`, CSS) | 180 ms | **120.6 ms**, own keyframe | **none** + `inert` |
- * | docs quick drawer scrim | 180 ms | **180 ms, same curve** | **auto** |
- * | search palette panel | 180 ms | **180 ms, same curve** | **auto** |
- *
- * `document.elementFromPoint` at the centre of the exiting drawer returned a node
- * **inside the exiting surface**, so a click landing during the leave was still eaten by
- * a panel that had visually gone. The CSS surface returned the element beneath.
- *
- * Both invariants are derived from the source rather than a hand list — a
- * hand-maintained roster is how the CSS scanner went blind on the dropdown in 2026-08-11.
- *
- * **The lockout moved out of the animated value set (2026-09-05).** The first fix put
- * `pointerEvents: "none"` inside every `exit` object, tweened with a per-value
- * `{ duration: 0 }` transition. That broke CI: two `FirstRunStarterModule.test.tsx`
- * cases waiting for the portal `Dialog` to leave the DOM hung for 5 s on GitHub's Linux
- * runner (jsdom, vitest) while passing locally every time. Bisection showed dropping
- * `pointerEvents` from the two Dialog exits made the job pass; giving it its own
- * zero-duration transition did not — a string value inside a framer exit set stalls
- * `AnimatePresence` completion under jsdom regardless of its own duration.
- *
- * The lockout now lives in `useExitLockout` (`src/shared/motion/use-exit-lockout.ts`):
- * an imperative `element.style.pointerEvents = 'none'` set from `onAnimationStart` when
- * the definition's `transition` is `=== EXIT_TRANSITION`. So the input-lockout invariant
- * changed from "every exit literal carries `pointerEvents: 'none'`" to "every element
- * carrying an `exit` prop also carries `onAnimationStart` wired to that check" — judged
- * from the JSX tag, because `ShortcutSheet`'s two exit literals are never attached to a
- * tag directly (they live inside a `surfaceMotion` object first) and only the tag that
- * spreads `surfaceMotion.exit` can be judged for wiring.
+ * Framer half of the exit contract: `AnimatePresence` exits sit outside the CSS scanner. The lockout
+ * lives in `useExitLockout` (`src/shared/motion/use-exit-lockout.ts`), not in the exit set: a string
+ * value there stalls `AnimatePresence` under jsdom. So every `exit` prop needs `onAnimationStart`.
  */
 
 const SRC = path.join(process.cwd(), 'src');
@@ -154,8 +116,7 @@ const allExitTags = files.flatMap((entry) =>
 
 describe('framer exit asymmetry contract', () => {
   it('finds the AnimatePresence exits — an empty scan is not a pass', () => {
-    // Measured 21 across 12 files on 2026-09-05. A drop means a surface lost its exit or
-    // the scanner went blind; either way somebody looks.
+    // A drop means a surface lost its exit or the scanner went blind.
     expect(allExits.length, `only ${allExits.length} exit props found — the scanner is idling`).toBeGreaterThanOrEqual(20);
     expect(files.length).toBeGreaterThanOrEqual(10);
   });

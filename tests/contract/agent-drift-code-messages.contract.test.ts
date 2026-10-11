@@ -7,17 +7,8 @@ import en from "../../messages/en.json";
 import ko from "../../messages/ko.json";
 
 /**
- * **Every drift code a scanner can emit has a sentence in both catalogues.**
- *
- * `agent-files.ts` is the one place that emits these findings, and each carries an English
- * `message` written for a contributor reading a scanner. Two screens show them to a person:
- * the Harness guides view and the Analysis board's guidance panel. Without a catalogue entry a
- * code falls back to that raw English sentence, which is how a Korean screen came to print
- * "duplicated skill file diverged between .claude/skills and .agents/skills" in the middle of
- * its own chrome (design audit, 2026-09-20).
- *
- * The expectation is derived from the code rather than hand-written here, so a twelfth code
- * added next year fails this test instead of quietly shipping English.
+ * Every drift code `agent-files.ts` emits needs a sentence in both catalogues, else a screen falls
+ * back to raw English. The expectation is derived from the code, so a new code fails the test.
  */
 const SOURCE = readFileSync(
   join(import.meta.dirname, "..", "..", "src", "entities", "agent-files", "model", "agent-files.ts"),

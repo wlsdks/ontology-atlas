@@ -5,17 +5,8 @@ import ko from "../../messages/ko.json";
 import en from "../../messages/en.json";
 
 /**
- * The error screen's two actions are **standard buttons with translated labels**.
- *
- * History. On 2026-08-17 both actions used `shape: "icon"` (square, no horizontal
- * padding), so their labels overflowed and overlapped; they were moved to a hand-built
- * `pill` with `h-10`, a custom indigo fill and a manual focus ring. On 2026-09-25 the
- * sibling 404 still used `<Button>`, so the two dead ends differed in radius, fill and
- * height, and the copy was hard-coded English under a Korean URL.
- *
- * This screen is only visible **when something has already gone wrong**, so it can stay
- * broken without anyone meeting it. What is pinned is the grammar, not a sentence: the
- * screen draws the primitive, not a hand dialect, and every label comes from both locales.
+ * The error screen's two actions are standard `<Button>`s with labels from both locales, not a hand
+ * dialect. Pins the grammar, not a sentence; the screen is rarely seen, so it could stay broken.
  */
 const SCREEN = readFileSync(
   join(process.cwd(), "src", "views", "terminal-state", "ui", "RouteErrorScreen.tsx"),

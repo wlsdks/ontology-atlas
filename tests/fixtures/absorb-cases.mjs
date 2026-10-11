@@ -154,7 +154,6 @@ export const CLASSIFY_CASES = [
     minConfidence: 0.5,
   },
   {
-    // Plural "Conventions" — the bare singular `convention` used to miss this.
     name: 'Code Conventions (plural) → policy/document',
     section: { heading: 'TUI code conventions', body: 'Prefer stylize helpers over raw ANSI.' },
     expectedCategory: 'policy',
@@ -163,7 +162,6 @@ export const CLASSIFY_CASES = [
     minConfidence: 0.5,
   },
   {
-    // Plural "Commits" — the `commit(?:ting)?` form used to miss the plural.
     name: 'Commits and PR Titles → policy/document',
     section: { heading: 'Commits and PR Titles', body: 'Use conventional-commit prefixes.' },
     expectedCategory: 'policy',
@@ -172,7 +170,6 @@ export const CLASSIFY_CASES = [
     minConfidence: 0.5,
   },
   {
-    // "Tests" / "Testing" — only `testing` used to match; bare "Tests" missed.
     name: 'Tests → policy/document',
     section: { heading: 'Tests', body: 'Run the snapshot suite before pushing.' },
     expectedCategory: 'policy',
@@ -181,7 +178,6 @@ export const CLASSIFY_CASES = [
     minConfidence: 0.5,
   },
   {
-    // "Style Guide" — `guideline` used to miss the bare "guide".
     name: 'Style Guide → policy/document',
     section: { heading: 'Style Guide', body: 'Two-space indentation, no semicolons.' },
     expectedCategory: 'policy',
@@ -190,8 +186,6 @@ export const CLASSIFY_CASES = [
     minConfidence: 0.5,
   },
   {
-    // "Best Practices" — used to be mis-kinded as an architecture capability
-    // whenever the heading also contained "API"; now correctly policy.
     name: 'API Development Best Practices → policy/document (not architecture)',
     section: {
       heading: 'App-server API Development Best Practices',

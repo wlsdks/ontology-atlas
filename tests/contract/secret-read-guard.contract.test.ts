@@ -4,26 +4,9 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The contract that **the secrets rule has a mechanism**.
- *
- * `.claude/rules/local-first.md` says never to scan password, credential or key
- * files from the user's disk, and `.claude/rules/forbidden.md` says never to
- * commit service accounts, API keys or `.env*` files. Until 2026-08-24 both
- * sentences were prose and nothing else. `.gitignore` stops a secret being
- * committed; nothing stopped one being read into a transcript and sent to a
- * model, which is the direction that actually leaks.
- *
- * A `permissions.deny` rule is the right instrument. It needs no path to
- * resolve, unlike a hook, and it applies without waiting for workspace trust,
- * unlike an allow rule. Claude Code evaluates deny ahead of ask, allow, and any
- * PreToolUse hook decision.
- *
- * The `.env` names are enumerated rather than globbed on purpose: a deny rule
- * cannot carry an exception, and `.env.example` is tracked, documented, and
- * scanned by the source-language gate, so `Read(.env.*)` would blind the
- * repository to its own file. That makes `.gitignore` the source of truth for
- * which names are secret, and this derives the expectation from it rather than
- * repeating the list a third time.
+ * The secrets rule is enforced by `permissions.deny` in `.claude/settings.json`. `.env` names are
+ * enumerated, not globbed, because a deny rule cannot carry an exception for `.env.example`;
+ * `.gitignore` is the source of truth for which names are secret.
  */
 
 const ROOT = process.cwd();

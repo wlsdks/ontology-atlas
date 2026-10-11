@@ -7,31 +7,9 @@ import ko from '../../messages/ko.json';
 import { readAcpRust } from '../helpers/read-acp-rust';
 
 /**
- * **As long as the app symlinks the user's credential file**, the screen must say so.
- *
- * **Why** (2026-08-17). Starting a conversation makes Rust create a per-tool config
- * folder inside app data and symlink it to the user's real credential file
- * (`~/.claude/.credentials.json`). That design is correct: isolating it breaks login
- * (measured: `Authentication required`), and **copying** a secret into the app folder
- * is the kind of thing the trust charter forbids, so a symlink is the answer in
- * between.
- *
- * But **no screen said so.** The API-key section right beside it explains in two
- * sentences where the key is kept. Silence from the side that touches the real
- * credential file is inconsistent — the charter promises "nothing happens without the
- * user knowing", not "we do nothing bad".
- *
- * **What is checked**: if the code that creates the link exists, then the disclosure
- * copy exists in both locales and the screen actually renders it — **referential
- * integrity**.
- *
- * **What is not checked**: the **sentences** of that copy. Sentences a human wrote are
- * not pinned (`.claude/rules/documentation.md`) — the wording may be edited or
- * translated freely. What is locked is *whether it says something*, not *what it
- * says*.
- *
- * So this check **releases itself when the link code disappears.** With no link there
- * is nothing to disclose, and then it requires no copy.
+ * While the app symlinks the user's credential file the screen must say so. Checks the disclosure
+ * copy exists in both locales and is rendered, not its wording; releases itself when the link code
+ * is gone.
  */
 
 const PANEL = 'src/widgets/app-settings-menu/ui/AcpRuntimeSettings.tsx';
