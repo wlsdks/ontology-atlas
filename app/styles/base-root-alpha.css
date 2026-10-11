@@ -149,9 +149,6 @@
        width is how they drift apart. */
     --tabbar-edge-fade: 22px;
 
-    --topology-relation-summary-surface: rgba(139, 151, 255, 0.18);
-    --topology-relation-summary-border: var(--color-indigo-line-a42);
-    --topology-relation-summary-text: rgba(222, 225, 255, 0.94);
     --topology-relation-spine-halo: rgba(139, 151, 255, 0.34);
     --topology-relation-spine-terminal: rgba(205, 210, 255, 0.86);
     /* R+ Planner Acknowledgment ①: 1.1~1.6px × effective alpha ~0.25 is invisible on dark canvas — cards read as "floating labels." Since affiliation/trust structure is the reason for the map's existence, raise ink by one step (target 3:1 contrast). */
@@ -200,39 +197,6 @@
     --app-nav-rail-label-size: calc(var(--text-caption) * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-width: calc(38px * var(--topology-ui-scale-factor));
     --app-nav-rail-tile-height: calc(32px * var(--topology-ui-scale-factor));
-    --topology-panel-path-rail-width: clamp(
-      calc(320px / var(--topology-ui-scale-factor)),
-      calc(23vw / var(--topology-ui-scale-factor)),
-      calc(360px / var(--topology-ui-scale-factor))
-    );
-    --topology-panel-phone-utility-rail-reserve: 82px;
-    --topology-panel-path-responsive-width: min(
-      var(--topology-panel-path-rail-width),
-      calc(100vw - var(--topology-panel-phone-utility-rail-reserve))
-    );
-    --topology-panel-support-surface: rgba(15, 16, 17, 0.99);
-    --topology-command-spine-padding: clamp(8px, 0.56vw, 10px);
-    --topology-command-spine-gap: clamp(6px, 0.48vw, 8px);
-    --topology-command-spine-surface: linear-gradient(
-      180deg,
-      rgba(139, 151, 255, 0.085),
-      rgba(255, 255, 255, 0.018) 42%,
-      rgba(255, 255, 255, 0.012)
-    );
-    --topology-command-spine-border: rgba(139, 151, 255, 0.16);
-    --topology-command-primary-surface: rgba(139, 151, 255, 0.105);
-    --topology-command-primary-border: rgba(139, 151, 255, 0.24);
-    --topology-command-primary-min-height: clamp(40px, 2.6vw, 44px);
-    --topology-path-handoff-surface: rgba(139, 151, 255, 0.045);
-    --topology-path-handoff-border: rgba(139, 151, 255, 0.16);
-    --topology-path-handoff-action-min-height: 20px;
-    --topology-path-handoff-action-radius: 4px;
-    --topology-path-route-surface: rgba(255, 255, 255, 0.024);
-    --topology-path-route-border: rgba(139, 151, 255, 0.14);
-    --topology-path-route-chip-surface: rgba(139, 151, 255, 0.07);
-    --topology-path-route-chip-border: rgba(139, 151, 255, 0.18);
-    --topology-floating-control-surface: rgba(15, 16, 17, 0.92);
-    --topology-floating-control-border: rgba(255, 255, 255, 0.07);
     /* The readout's corner stands on the chrome inset like the utility rail above it,
        so its right edge stays on the rail's column at every width. It used to step to
        32px at ≥1920 for a 1.15 chrome zoom that was since retired, while the rail stepped
@@ -242,8 +206,6 @@
        (BottomTabBar section) to avoid overlap(owner measurement 2026-07-23,
        tablet bottom overlap — readout hidden behind tab bar). */
     --topology-relation-legend-bottom-inset: var(--topology-relation-legend-inset);
-    --topology-map-dim-anchor-opacity: 0.26;
-    --topology-map-dim-context-opacity: 0.08;
     --topology-floating-control-phone-bottom: calc(
       var(--topology-mobile-bottom-tab-reserve) + 56px
     );

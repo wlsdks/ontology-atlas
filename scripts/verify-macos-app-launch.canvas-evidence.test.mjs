@@ -11,7 +11,6 @@ test("WebView evidence proves the current ontology-map canvas renderer", () => {
       topologySigmaViewportVisible: true,
       topologySigmaCanvasCount: 1,
       ontologyMapCanvasInkPixels: 128,
-      topologySigmaBootError: false,
     },
   });
 
@@ -37,7 +36,6 @@ test("v2 canvas evidence stays incomplete without rendered pixels", () => {
       topologySigmaViewportVisible: true,
       topologySigmaCanvasCount: 1,
       ontologyMapCanvasInkPixels: 0,
-      topologySigmaBootError: false,
     },
   });
 

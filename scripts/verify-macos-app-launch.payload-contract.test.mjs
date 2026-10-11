@@ -49,7 +49,7 @@ import {
  * breaking one thing at a time from here.
  *
  * ⚠️ **Uses the docs route.** `/topology` carries further live requirements
- * (Relief markers, Korean chrome labels, stage pan thresholds, …). Filling all of
+ * (the ontology-map engine, Korean chrome labels, stage pan thresholds, …). Filling all of
  * those into the minimal payload would turn this test into **a copy of the map's
  * requirement list rather than a measurement of the general contract**. That the
  * map's requirements are still alive is verified separately by the last test
@@ -375,17 +375,29 @@ test("payload contract · 중첩 JSON 을 그대로 되읽는다", () => {
   assert.deepEqual(parseWebviewVerifyPayload(stdout), payload);
 });
 
-test("payload contract · 지도 라우트의 요구는 여전히 살아 있다", () => {
-  /*
-   * What was retired is **the card-era probes**; the map payload's baseline
-   * requirements stand. Without this test the file would measure only the general
-   * contract, and the map side could go silently inert with nobody noticing.
-   */
-  const message = validateWebviewVerifyPayload(
-    validPayload({ href: "tauri://localhost/ko/topology/" }),
+test("payload contract · topology routes require the ontology-map engine", () => {
+  // Differential: the same map payload passes with the v2 engine and fails with any
+  // other or none, so the failure belongs to the engine requirement alone.
+  const mapPayload = (engine) =>
+    validPayload({
+      href: "tauri://localhost/en/topology/",
+      markers: {
+        ...(engine === undefined ? {} : { topologyMapEngine: engine }),
+        ontologyMapCanvasInkPixels: 128,
+        topologyStagePanClickCancelPx: 7,
+      },
+    });
+  assert.equal(validateWebviewVerifyPayload(mapPayload("v2")), null);
+  for (const engine of [undefined, "", "canvas", "sigma"]) {
+    assert.equal(typeof validateWebviewVerifyPayload(mapPayload(engine)), "string", String(engine));
+  }
+  // The map's own requirements stay alive behind the engine gate.
+  assert.equal(
+    typeof validateWebviewVerifyPayload(
+      validPayload({ href: "tauri://localhost/en/topology/", markers: { topologyMapEngine: "v2" } }),
+    ),
+    "string",
   );
-  assert.equal(typeof message, "string", "지도 라우트인데 아무것도 요구하지 않는다");
-  assert.match(message, /topology|Relief/i);
 });
 
 /**
@@ -410,7 +422,6 @@ function insightsPayload(markerOverrides) {
       insightsSelectedPanelVisible: true,
       insightsTabCount: 5,
       insightsSelectedTabCount: 1,
-      insightsHandoff: false,
       ...markerOverrides,
     },
   });

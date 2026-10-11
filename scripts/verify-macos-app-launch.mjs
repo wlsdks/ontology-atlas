@@ -19,7 +19,6 @@ export * from "./lib/verify-macos/ai-settings-contract.mjs";
 export * from "./lib/verify-macos/webview-env.mjs";
 export * from "./lib/verify-macos/cli-args.mjs";
 export * from "./lib/verify-macos/process-lock.mjs";
-export * from "./lib/verify-macos/topology-panel-contracts.mjs";
 export * from "./lib/verify-macos/relation-marker-validators.mjs";
 export * from "./lib/verify-macos/payload-contract.mjs";
 export * from "./lib/verify-macos/window-accessibility.mjs";
