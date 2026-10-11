@@ -53,7 +53,11 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/features/project-edit/ui/MarkdownField.tsx", 1],
   // 8 → 7 (2026-08-17): removed the panel box wrapping "fill in more" — a 92px box
   // wrapped a single collapsed line. Chrome containing nothing.
-  ["src/features/project-edit/ui/ProjectForm.tsx", 7],
+  ["src/features/project-edit/ui/ProjectForm.tsx", 1],
+  ["src/features/project-edit/ui/ProjectFormActions.tsx", 1],
+  ["src/features/project-edit/ui/ProjectFormBanners.tsx", 2],
+  ["src/features/project-edit/ui/ProjectFormPreview.tsx", 2],
+  ["src/features/project-edit/ui/project-form-parts.tsx", 1],
   ["src/views/docs-vault/ui/parts/EmptyState.tsx", 1],
   // 1 → 0 (2026-08-19): that single card was the download panel, and it went with the
   // wholesale deletion of the install section (`docs/DECISIONS.md`, entry 83).
