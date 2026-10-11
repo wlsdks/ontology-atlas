@@ -45,9 +45,7 @@ import { collectProbeSelectors, findDeadSelectors, readProbeSources } from "./li
  * entry, confirm the probe really degrades gracefully (it records a `reason` when
  * absent and the contract does not reject).
  */
-const KNOWN_STALE_OPTIONAL = new Set([
-  "topology-top-left-chrome-group",
-]);
+const KNOWN_STALE_OPTIONAL = new Set<string>();
 
 describe("WebView 프로브 셀렉터 계약", () => {
   const probeSources = readProbeSources(process.cwd());

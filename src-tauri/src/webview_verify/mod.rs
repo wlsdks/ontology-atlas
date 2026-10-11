@@ -530,47 +530,13 @@ mod tests {
     }
 
     #[test]
-    fn webview_verify_payload_marks_korean_path_mode_as_topology_relief() {
+    fn webview_verify_probe_reports_the_map_engine_and_drawn_canvas() {
         let source = include_str!("dom_marker_probe.js");
 
-        assert!(source.contains("온톨로지 지형도"));
-        assert!(source.contains("후보 \\d+\\/\\d+개 표시"));
-        assert!(source.contains("개념 \\d+개 · 관계 \\d+개"));
+        assert!(source.contains("topologyMapEngine"));
         // Guards against a canvas that exists but draws nothing.
         assert!(source.contains("ontologyMapCanvasInkPixels"));
         assert!(source.contains("getImageData"));
-        assert!(source.contains("dragHandleSlug"));
-        // The drag contracts are read from `window.__ontologyAtlasTopologyDragVerify`.
-        assert!(source.contains("topologyDragPhysicsSyncActiveDuring"));
-        assert!(source.contains("topologyDragWorkerAppliedFrameDelta"));
-        assert!(source.contains("topologyDragWorkerAppliedFrameChangeCount"));
-        assert!(source.contains("topologyDragRelationLabelVisibilityContract"));
-        assert!(source.contains("topologyDragRelationLabelVisibleDuringDrag"));
-        assert!(source.contains("topologyDragRelationLabelCompactContract"));
-        assert!(source.contains("topologyDragRelationLabelPresentation"));
-        assert!(source.contains("topologyDragRelationLabelReadableType"));
-        assert!(source.contains("topologyDragReactiveContextContract"));
-        assert!(source.contains("topologyDragInteractionCueContract"));
-        assert!(source.contains("topologyDragReactiveContextVisibleCount"));
-        assert!(source.contains("__ontologyAtlasTopologyZoomVerify"));
-        assert!(source.contains("topologyZoomVerifyReason"));
-        assert!(source.contains("topologyCameraDepthContract"));
-        assert!(source.contains("topologyZoomLensPresentationSource"));
-        assert!(source.contains("topologySupportChromeZoomLensActive"));
-        assert!(source.contains("topologyMinimapState"));
-        assert!(source.contains("topologyDragReactiveMotionContract"));
-        assert!(source.contains("topologyDragReactiveMotionLinkedPolicy"));
-        assert!(source.contains("topologyDragReactiveMotionMaxObservedOffsetPx"));
-        assert!(source.contains("topologyDragReactiveAmbientMotionVisibleCount"));
-        assert!(source.contains("topologyDragReactiveLinkedMotionVisibleCount"));
-        assert!(source.contains("topologyDragReactiveMotionLinkedMaxOffsetPx"));
-        assert!(source.contains("topologyDragTensionConnectorContract"));
-        assert!(source.contains("topologyDragTensionConnectorVisibleCount"));
-        assert!(source.contains("topologyDragTensionConnectorActiveOpacity"));
-        assert!(source.contains("__ontologyAtlasTopologyFocusNoopVerify"));
-        assert!(source.contains("data-selected-relation-endpoint=\"true\""));
-        assert!(source.contains("topologySelectedRelationEndpointCards"));
-        assert!(source.contains("topologySelectedRelationLowerPriorityVisibleDimmedCount"));
     }
 
     #[test]

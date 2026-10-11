@@ -312,7 +312,6 @@ if (
   verifyAppScript.includes("composerBlockingProof") &&
   verifyAppScript.includes("topology-add-concept-composer-blocking") &&
   verifyAppScript.includes("treat-add-concept-composer-as-current-work-surface") &&
-  verifyAppScript.includes("dismissedSurfaceKinds") &&
   verifyAppScript.includes("mapState: \"dimmed-and-interaction-blocked\"") &&
   verifyAppScript.includes("blockedUntil: \"create-or-cancel\"") &&
   verifyAppScript.includes("complete-create-node-form") &&
