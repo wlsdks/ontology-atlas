@@ -69,13 +69,13 @@ export const rules = [
   {
     order: 690,
     command:
-      'pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts',
+      'pnpm exec vitest run tests/contract/ci-gates/e2e-change-scope.contract.test.ts tests/contract/ci-gates/e2e-suite-split.contract.test.ts tests/contract/ci-gates/ci-bounded-network.contract.test.ts',
     reason:
       'E2E scope, required-check liveness, suite split, or bounded Playwright preparation changed',
     matches: [
       /^\.github\/workflows\/e2e\.yml$/,
       /^\.github\/actions\/setup-playwright\/action\.yml$/,
-      /^tests\/contract\/(?:e2e-change-scope|e2e-suite-split|ci-bounded-network)\.contract\.test\.ts$/,
+      /^tests\/contract\/ci-gates\/(?:e2e-change-scope|e2e-suite-split|ci-bounded-network)\.contract\.test\.ts$/,
     ],
   },
 ];

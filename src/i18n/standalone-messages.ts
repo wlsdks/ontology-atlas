@@ -8,7 +8,7 @@ import type { AppLocale } from '@/i18n/locales';
  * Server-side only: the message subset for screens outside `app/[locale]/layout.tsx` (the root
  * 404 and error boundary). Never import it from a `'use client'` module, or about 836 KB of JSON
  * ships in every page; a server component passes the picked namespaces as props. The
- * contract `tests/contract/standalone-messages-server-only.contract.test.ts` enforces this.
+ * contract `tests/contract/messages/standalone-messages-server-only.contract.test.ts` enforces this.
  */
 const ALL = { ko: koMessages, en: enMessages, ja: jaMessages, zh: zhMessages } as const satisfies Record<AppLocale, unknown>;
 

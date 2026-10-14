@@ -41,7 +41,7 @@ function getInvoke(): TauriInvoke | null {
  * The marker key that stands in for a value in an outgoing ACP line.
  *
  * The same literal exists in `src-tauri/src/connector_secrets.rs` as `SECRET_REF_KEY`, and
- * `tests/contract/connector-secret-ref-parity.contract.test.ts` compares the two. If they drifted,
+ * `tests/contract/security/connector-secret-ref-parity.contract.test.ts` compares the two. If they drifted,
  * the marker would travel to the agent verbatim — a connector configured with the string
  * `connector:c1:NOTION_TOKEN` as its token, failing on every call for a reason nothing states.
  */

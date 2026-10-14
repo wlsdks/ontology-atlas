@@ -36,7 +36,7 @@ import {
  * So the tests were fitted to the product. What remains is **what actually runs on
  * every deploy today**: payload shape · route · fixture vault · reduced motion ·
  * WebView size. `pnpm desktop:deploy:app` passes those every session, and
- * `tests/contract/desktop-probe-markers.contract.test.ts` stops the retired
+ * `tests/contract/desktop/desktop-probe-markers.contract.test.ts` stops the retired
  * requirements coming back.
  *
  * ⚠️ **Do not read the shrinkage as a weaker check.** The 288 deleted assertions

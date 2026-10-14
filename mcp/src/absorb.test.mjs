@@ -14,7 +14,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// Cross-package parity lives in tests/contract/absorb.contract.test.ts over
+// Cross-package parity lives in tests/contract/vault-format/absorb.contract.test.ts over
 // tests/fixtures/absorb-cases.mjs; this covers buildSlimPointer's
 // content-preservation contract and edges the fixture matrix misses.
 

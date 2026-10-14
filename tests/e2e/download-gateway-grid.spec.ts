@@ -55,7 +55,7 @@ async function measure(page: import("@playwright/test").Page) {
       bandRight: right('[data-testid="gateway-facts"]'),
       /**
        * Stage width follows the computed `--gateway-stage-max`; formula invariants live in
-       * `tests/contract/gateway-stage-width.contract.test.ts`.
+       * `tests/contract/layout/gateway-stage-width.contract.test.ts`.
        */
       stage: (() => {
         const demo = laidOut('[data-testid="demo-stage"]');

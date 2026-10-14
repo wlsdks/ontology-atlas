@@ -10,7 +10,7 @@ export const rules = [
   {
     order: 205,
     command:
-      'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts',
+      'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
     reason: 'a test source changed — its titles, assertion messages and comment bytes are judged against the merge base',
     matches: [/\.(?:test|spec)\.[cm]?[jt]sx?$/],
   },
@@ -28,7 +28,7 @@ export const rules = [
   },
   {
     order: 710,
-    command: 'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
+    command: 'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-format/vault-schema.contract.test.ts',
     reason: 'Vitest config, setup, or test discovery changed',
     matches: [/^vitest\.config\.ts$/, /^vitest\.setup\.ts$/],
   },

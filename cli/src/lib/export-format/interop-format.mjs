@@ -1,7 +1,7 @@
 /**
  * Interop serializers from a compiled graph to JSON-LD 1.1 and GraphML; identity is `urn:uuid:<uid>`, and edges
  * without both endpoints are dropped. Twin of `src/shared/lib/ontology-graph/interop-format.ts`, byte-identical per
- * `tests/contract/interop-format.contract.test.ts`.
+ * `tests/contract/vault-format/interop-format.contract.test.ts`.
  */
 
 const INTEROP_URN_BASE = 'urn:uuid';

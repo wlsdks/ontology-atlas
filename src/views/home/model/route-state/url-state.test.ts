@@ -976,7 +976,7 @@ describe("isDeeplinkRouteState", () => {
 });
 
 /**
- * Every vault-scoped key must be a real query key; `tests/contract/scope-registry.contract.test.ts`
+ * Every vault-scoped key must be a real query key; `tests/contract/routes/scope-registry.contract.test.ts`
  * checks that every key is registered.
  */
 describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {

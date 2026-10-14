@@ -44,7 +44,7 @@ const closureScopeSelectors = [
 
 // `accent` (#7170ff) is AA only on the darkest backgrounds; on indigo/amber tints contrast falls
 // to 3.5-4.4, so tinted controls use `accentOnTint`. Only literal pairings in one call/element are
-// seen; constants are covered by tests/contract/accent-ink-contrast.contract.test.ts.
+// seen; constants are covered by tests/contract/design-tokens/accent-ink-contrast.contract.test.ts.
 /*
  * Inline `style={{ boxShadow }}` creates no class, so className selectors cannot see it. Loaded in
  * both global and ramp blocks: flat config replaces rule options, never merges. Allowed values
@@ -139,7 +139,7 @@ const disabledAffordanceSelectors = [
     selector:
       'Literal[value=/(^|[^-\\w])((aria-|group-|peer-)?disabled):opacity-(?!55([^0-9]|$))/]',
     message:
-      'The disabled opacity is owned by the value layer: disabled:opacity-55 (CONTROL_DISABLED_CLASS in control-class.ts). Remove this class if the element builds on controlClass/fieldClass, which already applies it; for a hand-built control, compose CONTROL_DISABLED_CLASS. See tests/contract/disabled-affordance.contract.test.ts',
+      'The disabled opacity is owned by the value layer: disabled:opacity-55 (CONTROL_DISABLED_CLASS in control-class.ts). Remove this class if the element builds on controlClass/fieldClass, which already applies it; for a hand-built control, compose CONTROL_DISABLED_CLASS. See tests/contract/controls/disabled-affordance.contract.test.ts',
   },
   {
     selector:
@@ -261,13 +261,13 @@ const accentTintPairingSelectors = [
     selector:
       'CallExpression[callee.name="controlClass"] ObjectExpression:has(:matches(Property[key.name="tone"] > Literal[value="accent"], Property[key.name="tone"] ConditionalExpression > Literal[value="accent"])):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      'Ink on an indigo/amber tint fill is accentOnTint, not the tone accent (#7170ff, composite contrast 3.5~4.4:1, below AA). Ternary branches are covered too. See tests/contract/accent-ink-contrast.contract.test.ts',
+      'Ink on an indigo/amber tint fill is accentOnTint, not the tone accent (#7170ff, composite contrast 3.5~4.4:1, below AA). Ternary branches are covered too. See tests/contract/design-tokens/accent-ink-contrast.contract.test.ts',
   },
   {
     selector:
       'JSXOpeningElement:has(:matches(JSXAttribute[name.name="tone"] > Literal[value="accent"], JSXAttribute[name.name="tone"] JSXExpressionContainer ConditionalExpression > Literal[value="accent"])):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
     message:
-      'Ink on an indigo/amber tint fill is tone="accentOnTint", not tone="accent" (#7170ff, below AA). Ternary branches (tone={cond ? "accent" : …}) are covered too. See tests/contract/accent-ink-contrast.contract.test.ts',
+      'Ink on an indigo/amber tint fill is tone="accentOnTint", not tone="accent" (#7170ff, below AA). Ternary branches (tone={cond ? "accent" : …}) are covered too. See tests/contract/design-tokens/accent-ink-contrast.contract.test.ts',
   },
 ];
 
@@ -536,7 +536,7 @@ export const arbitrarySizeSelectors = [
       'No hard-coded line height (template literal). Use utilities from the --leading-* ramp tokens.',
   },
   // A ramp token through an arbitrary length gains the size but loses that step's paired
-  // line-height. Mismatches in general: tests/contract/type-ramp-leading-pair.contract.test.ts. No
+  // line-height. Mismatches in general: tests/contract/typography/type-ramp-leading-pair.contract.test.ts. No
   // literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector: 'Literal[value=/text-\\[length:var\\(--text-/]',
@@ -587,7 +587,7 @@ export const rampCoveredGlobs = ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'];
 
 /**
  * Files exempted from the ramp. The key is a file, never a directory glob, or new files beside it
- * would be exempt. tests/contract/type-ramp-coverage.contract.test.ts checks the paths exist, debt
+ * would be exempt. tests/contract/typography/type-ramp-coverage.contract.test.ts checks the paths exist, debt
  * stays within the ledger, and the cover glob is not narrowed.
  */
 export const rampDebtExemptions = [
@@ -844,7 +844,7 @@ const eslintConfig = defineConfig([
   },
   /*
    * The `_` prefix marks intentionally unused names. `ignoreRestSiblings` stays off because it would
-   * exempt unmarked names; the probe in tests/contract/lint-warning-ratchet.contract.test.ts proves
+   * exempt unmarked names; the probe in tests/contract/ci-gates/lint-warning-ratchet.contract.test.ts proves
    * unmarked unused variables are still caught.
    */
   {

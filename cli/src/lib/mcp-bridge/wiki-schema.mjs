@@ -1,7 +1,7 @@
 import { loadMcpModule } from './mcp-module.mjs';
 
 // The MCP package owns the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11); the CLI executes that file,
-// and `tests/contract/wiki-page-schema.contract.test.ts` holds the web TypeScript twin to its problem codes.
+// and `tests/contract/library/wiki-page-schema.contract.test.ts` holds the web TypeScript twin to its problem codes.
 /** @type {typeof import('../../../../mcp/src/wiki-schema.mjs')} */
 const wiki = await loadMcpModule('wiki-schema.mjs');
 

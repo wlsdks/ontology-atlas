@@ -6,7 +6,7 @@
  * stays open"). Pure over `{ kind, slug, frontmatter, body, repoRoot }`: no
  * writes or vault scan, and the only disk question is whether a cited path is a
  * directory. Advisory (construction rule 5). `src/shared/lib/vault-document/meaning-findings.ts`
- * is the app twin, compared by `tests/contract/meaning-findings-parity.contract.test.ts`.
+ * is the app twin, compared by `tests/contract/analysis/meaning-findings-parity.contract.test.ts`.
  */
 
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';

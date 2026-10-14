@@ -144,7 +144,7 @@ and stopping conditions the tool list alone cannot: review reads
 candidates against evidence before proposing, absorb checks for duplicates
 before extracting. All three refuse to write until a person picks. Byte-parity
 between the CLI templates and the web starter constants is gated by
-`tests/contract/starter-templates.contract.test.ts`.
+`tests/contract/vault-format/starter-templates.contract.test.ts`.
 
 ## 5. Web first open
 

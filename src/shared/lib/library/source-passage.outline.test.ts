@@ -20,7 +20,7 @@ import {
  * defect: a number a person would believe.
  *
  * The fixture bytes are the parity table's own, so these assertions and
- * `tests/contract/source-passage-parity.contract.test.ts` describe the same files.
+ * `tests/contract/vault-format/source-passage-parity.contract.test.ts` describe the same files.
  */
 
 const caseBytes = (path: string) => {

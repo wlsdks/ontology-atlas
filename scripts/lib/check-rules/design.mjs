@@ -10,7 +10,7 @@ export const rules = [
   {
     order: 92,
     command:
-      'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts',
+      'pnpm exec vitest run tests/contract/design-tokens/unused-token-ratchet.contract.test.ts tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
     reason: 'the global stylesheet changed — the token gates read it whole, whatever else the diff holds',
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/],
   },
@@ -43,7 +43,7 @@ export const rules = [
     matches: [
       /^scripts\/(?:lib\/)?design\/design-proof-router\.mjs$/,
       /^scripts\/(?:lib\/design\/design-spec-census|records\/check-decision-record)\.mjs$/,
-      /^tests\/contract\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-instructions\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
       /^docs\/engineering\/motion-recording\.md$/,
       /^\.(?:claude|agents)\/skills\/(?:ui-build|ui-proof)\/(?:SKILL\.md|workflow\.md|guides\/[^/]+\.md)$/,

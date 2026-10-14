@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { validateVaultDocument } from './validate.mjs';
 
 // `cli/src/lib/mcp-bridge/validate.mjs` re-exports mcp/src/validate.mjs, so these cases also prove the re-export resolves,
-// including in the packed two-package install; tests/contract/validate-vault-document.contract.test.ts pins
+// including in the packed two-package install; tests/contract/vault-format/validate-vault-document.contract.test.ts pins
 // the issue codes the TypeScript twin must agree on.
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 

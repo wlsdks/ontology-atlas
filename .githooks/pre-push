@@ -132,7 +132,7 @@ if [ -f "$TMP/docs-registry" ]; then
   lane docs_registry 'pnpm dev-checks:check'
 fi
 if [ -f "$TMP/workflows" ]; then
-  lane workflows 'pnpm exec vitest run tests/contract/workflow-security.contract.test.ts tests/contract/github-action-pins.contract.test.ts'
+  lane workflows 'pnpm exec vitest run tests/contract/security/workflow-security.contract.test.ts tests/contract/security/github-action-pins.contract.test.ts'
 fi
 # The import graph selects unit files once; performance and full contract suites stay in CI.
 if [ -n "$UNIT_COMMAND" ] && [ "$UNIT_COMMAND" != ':' ]; then

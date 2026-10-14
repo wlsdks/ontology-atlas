@@ -20,7 +20,7 @@
  *
  * Mirror copy: `cli/src/lib/export-format/interop-format.mjs` (the CLI `export` command +
  * the source the MCP compiler feeds). The contract test
- * `tests/contract/interop-format.contract.test.ts` keeps the two in lock-step —
+ * `tests/contract/vault-format/interop-format.contract.test.ts` keeps the two in lock-step —
  * the same input must yield byte-identical output. If you change anything here,
  * mirror it there (and vice versa).
  *

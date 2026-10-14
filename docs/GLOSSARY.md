@@ -99,7 +99,7 @@ Do **not** unify these. A sweep that collapses them destroys meaning. Measured
 ## 5. User-facing register
 
 On screen, use the plain column.
-`tests/contract/ui-copy-glossary.contract.test.ts` enforces this against
+`tests/contract/copy/ui-copy-glossary.contract.test.ts` enforces this against
 the composed `messages/<locale>.json`.
 
 | Internal | Plain concept | English screen |
@@ -146,7 +146,7 @@ info icon whose tooltip shows the expansion, then one sentence in the current
 locale. Its catalogue is `src/shared/config/term-glossary.ts` with
 `messages/{en,ko}/termHints.json`. Put one at the first prominent occurrence
 on a screen (a section heading or a settings row), not on every mention.
-`tests/contract/plain-language-catalog.contract.test.ts` requires every such
+`tests/contract/copy/plain-language-catalog.contract.test.ts` requires every such
 term in the catalogue to have a glossary entry and a drawn `TermHint`.
 
 ---
@@ -274,7 +274,7 @@ boundary, not a ban.
 
 | Gate | Scope |
 |---|---|
-| `tests/contract/ui-copy-glossary.contract.test.ts` | §5 — user-facing strings |
+| `tests/contract/copy/ui-copy-glossary.contract.test.ts` | §5 — user-facing strings |
 | `pnpm docs:links` | Markdown-to-markdown links and cited repo paths |
 | `pnpm docs:comment-refs` | `.md` paths cited from code comments resolve |
 | `pnpm source:language` | Source, test, config, and prototype comments contain no Hangul, Han, or kana |

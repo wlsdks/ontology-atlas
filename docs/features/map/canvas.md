@@ -251,7 +251,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   overlapping node pairs at 1512x982, and none of them are same-tier. Geometry:
   `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/strata.ts`; gates:
   `tests/e2e/map-3d-strata-drawing.spec.ts` and
-  `tests/contract/strata-fit-fill.contract.test.ts`.
+  `tests/contract/map/strata-fit-fill.contract.test.ts`.
 - **The lit 3D map** (2026-09-25) — Strata and Neural are drawn as light in the
   canvas-2D engine. Each Strata plane is a translucent floor in its kind's colour
   with a faint polar grid, and every domain owns a band of the capability and

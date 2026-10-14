@@ -1595,7 +1595,7 @@ and resolved edge endpoints are mapped from slug to the target UID URN. Edge
 `via` keys become `oatlas:` predicates (JSON-LD) / a `via`
 attribute (GraphML). The CLI and MCP serializer stay byte-identical through
 `interop-format`, lock-stepped by
-`tests/contract/interop-format.contract.test.ts`. The retired web ERD builder
+`tests/contract/vault-format/interop-format.contract.test.ts`. The retired web ERD builder
 is not an export surface.
 
 ### Loading recipes
@@ -1797,8 +1797,8 @@ there surface as the compiler's `ambiguous-alias` warning.
 2026-08-30 it re-exports this module, resolved at runtime from the source
 checkout or from the installed `ontology-atlas-mcp` package. Change it here and
 the CLI has changed with it; there is nothing to mirror.
-`tests/contract/schema-copy-sync.contract.test.ts` blocks a copy from coming
-back, and `tests/contract/vault-schema.contract.test.ts` still holds the UI
+`tests/contract/architecture/schema-copy-sync.contract.test.ts` blocks a copy from coming
+back, and `tests/contract/vault-format/vault-schema.contract.test.ts` still holds the UI
 dictionary to the same required fields.
 
 ## Local verification (UX-3)

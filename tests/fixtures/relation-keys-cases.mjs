@@ -1,7 +1,7 @@
 /**
  * The full set of frontmatter keys MCP reads as graph edges (`GRAPH_ARRAY_KEYS` in `mcp/src/vault/`)
  * and the edge type each must produce in the web derive. A new MCP key fails
- * `tests/contract/derive-relation-keys.contract.test.ts` until it is added here.
+ * `tests/contract/analysis/derive-relation-keys.contract.test.ts` until it is added here.
  */
 export const RELATION_KEY_CASES = [
   {

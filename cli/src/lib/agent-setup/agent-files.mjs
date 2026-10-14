@@ -1,6 +1,6 @@
 // Read-only agent-file detection, pure logic: classifies known agent-file paths (one data table) and runs
 // drift checks; never converts, syncs or repairs. Web twin `src/entities/agent-files/model/agent-files.ts`, held
-// equal by `tests/contract/agent-files.contract.test.ts` over `tests/fixtures/agent-files-cases.mjs`.
+// equal by `tests/contract/harness/agent-files.contract.test.ts` over `tests/fixtures/agent-files-cases.mjs`.
 
 export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
 

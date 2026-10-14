@@ -1,5 +1,5 @@
 // Wiring test: the CLI write door applies slug flatness; the rule is tested in
-// tests/contract/vault-schema.contract.test.ts.
+// tests/contract/vault-format/vault-schema.contract.test.ts.
 import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';

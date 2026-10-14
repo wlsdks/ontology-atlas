@@ -86,7 +86,7 @@ before relying on it.
 
 The budget is declared in the workflow as `# budget: <n>s` beside the job's
 `timeout-minutes`, which must sit between the budget and 1.5x it;
-`tests/contract/workflow-budgets.contract.test.ts` refuses a job without both.
+`tests/contract/ci-gates/workflow-budgets.contract.test.ts` refuses a job without both.
 Playwright jobs are exempt from the ceiling half, because
 `ci-bounded-network.contract.test.ts` already requires them to leave half the
 job for tests after a bounded 12-minute browser install.
@@ -233,12 +233,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm test:ci:impact`
 **Proves**: Changes select evidence, including nested specs; tooling tests stay focused while runtime planners remain exhaustive. Type-only imports do not wake runtime tests; source-reading contracts retain them. Main uses verified ancestry; scheduled/manual runs are exhaustive.
-**Escalate**: `pnpm exec vitest run tests/contract/workflow-budgets.contract.test.ts tests/contract/workflow-security.contract.test.ts` when workflow wiring changes
+**Escalate**: `pnpm exec vitest run tests/contract/ci-gates/workflow-budgets.contract.test.ts tests/contract/security/workflow-security.contract.test.ts` when workflow wiring changes
 **Fix**: update `scripts/ci/classify-change.mjs`'s path-to-check rules so the new or moved path is classified instead of falling through as unknown.
 
 ### CI preparation step infinite wait
 
-**Run**: `pnpm exec vitest run tests/contract/ci-bounded-network.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/ci-gates/ci-bounded-network.contract.test.ts`
 **Proves**: A CI preparation or retry step cannot wait on the network forever; retries stay bounded.
 **Escalate**: `pnpm test:desktop:check` unit-tests the retry runner itself.
 
@@ -331,12 +331,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm test:contracts`
 **Proves**: `cli-output-language.contract.test.ts` counts zero Hangul code points in non-test `cli/src/**/*.mjs` printed strings, the blind spot the comment-only `source:language` scan misses.
-**Escalate**: `tests/contract/cli-output-language.contract.test.ts` to isolate the CLI printed-string language failure
+**Escalate**: `tests/contract/cli/cli-output-language.contract.test.ts` to isolate the CLI printed-string language failure
 **Fix**: translate the flagged printed string to English; `cli/src/lib/mcp-bridge/absorb.mjs` stays the sole allowlisted matcher exception.
 
 ### CLI re-exports the MCP schema instead of copying it
 
-**Run**: `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/architecture/schema-copy-sync.contract.test.ts`
 **Proves**: `cli/src/lib/mcp-bridge/schema.mjs`, `validate.mjs`, `absorb.mjs`, `suggestions.mjs`, and `parse-frontmatter.mjs` stay thin re-exports of the MCP modules through `loadMcpModule`; a function or class body in any of them means a copy came back.
 **Escalate**: none.
 **Fix**: Replace the copied logic with a re-export from the canonical `mcp/src/` module; mcp is canonical.
@@ -367,14 +367,14 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Control adoption
 
-**Run**: `pnpm exec vitest run tests/contract/control-adoption-ratchet.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts`
 **Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>/<slug>.json` record saying why.
 
 ### Copy that names the reader's surface
 
-**Run**: `pnpm exec vitest run tests/contract/surface-naming-ratchet.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/copy/surface-naming-ratchet.contract.test.ts`
 **Proves**: Copy names the reader's actual surface rather than an unnamed or wrong one, and the count does not grow against the merge base (see the next entry).
 **Escalate**: `pnpm test:contracts`.
 
@@ -401,12 +401,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm decisions:check`
 **Proves**: A change tripping a mechanical significant-decision trigger (new/removed page route, edited public CLI/MCP contract, or design-system specification change) has a matching append to `docs/DECISIONS.md`.
-**Escalate**: `pnpm exec vitest run tests/contract/design-spec-ledger.contract.test.ts` verifies the trigger file list itself is not duplicated and stays non-empty.
+**Escalate**: `pnpm exec vitest run tests/contract/agent-instructions/design-spec-ledger.contract.test.ts` verifies the trigger file list itself is not duplicated and stays non-empty.
 **Fix**: Supply evidence and change/boundary facts to `pnpm po:route -- --help` for a routed review.
 
 ### Demo clip declaration vs shipped asset
 
-**Run**: `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/brand/demo-clip-assets.contract.test.ts`
 **Proves**: Every declared demo clip reference matches a shipped asset file.
 **Escalate**: `pnpm test:contracts`.
 
@@ -418,7 +418,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Design don't-list drift
 
-**Run**: `pnpm exec vitest run tests/contract/design-donts-parity.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/agent-instructions/design-donts-parity.contract.test.ts`
 **Proves**: Every `dont:` marker in `.claude/rules/forbidden.md` still pairs with a row in `docs/DESIGN-SYSTEM.md`'s Don'ts list, so the two lists cannot silently diverge.
 **Escalate**: `pnpm test:contracts`.
 
@@ -525,7 +525,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Drawing-surface type (canvas ctx.font, inline SVG attrs)
 
-**Run**: `pnpm exec vitest run tests/contract/drawing-surface-type.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/typography/drawing-surface-type.contract.test.ts`
 **Proves**: Canvas `ctx.font` calls and inline SVG text attributes use the correct drawing-surface value type instead of a CSS-only convention a canvas or SVG context cannot read.
 **Escalate**: `pnpm test:contracts`.
 
@@ -550,7 +550,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Focus ring presence (value layer emits it)
 
-**Run**: `pnpm exec vitest run tests/contract/focus-ring-presence.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/controls/focus-ring-presence.contract.test.ts`
 **Proves**: The value layer itself emits a focus ring, so keyboard focus stays visible without relying on a component that might omit it.
 **Escalate**: `pnpm test:contracts`.
 
@@ -645,7 +645,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Guide in-body link targets (markdown source)
 
-**Run**: `pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts`
 **Proves**: Every in-body internal link inside a guide chapter's Markdown source resolves to a real destination.
 **Escalate**: `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` opens both locales and checks the rendered link carries that locale's prefix and returns 200.
 
@@ -665,7 +665,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Implicit b weight (browser default 700)
 
-**Run**: `pnpm exec vitest run tests/contract/implicit-bold-weight.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/typography/implicit-bold-weight.contract.test.ts`
 **Proves**: No rendered `<b>`/`<strong>` element relies on the browser's implicit 700 default weight instead of an explicit token.
 **Escalate**: `pnpm test:contracts`.
 
@@ -683,7 +683,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Integration check list vs screen text
 
-**Run**: `pnpm exec vitest run tests/contract/agent-doctor-checks.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/agent-chat/agent-doctor-checks.contract.test.ts`
 **Proves**: The integration check list a screen prints matches the checks the doctor actually runs.
 **Escalate**: `cargo test` (src-tauri)'s `acp_doctor` test.
 
@@ -763,7 +763,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Markdown table shape (rows vs their header)
 
-**Run**: `pnpm exec vitest run tests/contract/markdown-table-shape.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/ci-gates/markdown-table-shape.contract.test.ts`
 **Proves**: Every Markdown table's rows have the same column count as its header, so no row silently loses or gains a cell.
 **Escalate**: `pnpm test:contracts`.
 
@@ -892,7 +892,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm test:pr:land`
 **Proves**: against a fake GitHub, queued pull requests merge behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, a `feat`, `fix`, `perf` or `design` pull request needs a change record or a `No change record:` reason, and `--plan` writes nothing; a real Git fixture keeps original commits reachable after merging.
-**Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/workflow-security.contract.test.ts` when a workflow trigger does
+**Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/security/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/landing/pr-land.mjs` (I/O) or `scripts/lib/landing/landing-train.mjs` (decisions).
 
 ### Moved documents
@@ -937,7 +937,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Pixel identity palette, frame continuity, and safe map lane
 
-**Run**: `pnpm exec vitest run tests/contract/mascot-palette-boundary.contract.test.ts tests/contract/mascot-motion.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/brand/mascot-palette-boundary.contract.test.ts tests/contract/motion/mascot-motion.contract.test.ts`
 **Proves**: The mascot's fixed palette stays out of CSS/data/status/control colour, its animation frames stay continuous, and it stays clear of the map's functional lane.
 **Escalate**: `pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts`.
 
@@ -956,7 +956,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Project source witness parity
 
-**Run**: `node --test mcp/src/project-meaning-evidence.test.mjs mcp/src/project-meaning-inventory.test.mjs mcp/src/project-source-connect.test.mjs && pnpm exec vitest run src/views/home/lib/project-source/project-source-witnesses.test.ts tests/contract/project-source-connect.contract.test.ts`
+**Run**: `node --test mcp/src/project-meaning-evidence.test.mjs mcp/src/project-meaning-inventory.test.mjs mcp/src/project-source-connect.test.mjs && pnpm exec vitest run src/views/home/lib/project-source/project-source-witnesses.test.ts tests/contract/analysis/project-source-connect.contract.test.ts`
 **Proves**: A literal repository-root path stays rejected beside valid sibling evidence, keeping unsafe source-witness paths red.
 **Escalate**: none
 
@@ -982,7 +982,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Ratchets judged against the merge base
 
-**Run**: `pnpm exec vitest run tests/contract/ratchet-merge-base.contract.test.ts`
+**Run**: `pnpm exec vitest run tests/contract/ci-gates/ratchet-merge-base.contract.test.ts`
 **Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>/<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
@@ -1077,10 +1077,10 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Source hygiene against the merge base
 
-**Run**: `pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts tests/contract/source-shape.contract.test.ts`
-**Proves**: In each area the changed files touch, Hangul test titles and assertion messages, comment bytes, files over 800 lines and parent folders over 30 direct files do not grow against the merge base.
+**Run**: `pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts tests/contract/architecture/source-shape.contract.test.ts`
+**Proves**: In each area a change touches, Hangul test titles and messages, comment bytes, files over 800 lines and folders over 30 direct files do not grow against the merge base.
 **Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
-**Fix**: Translate the title or message, delete or shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
+**Fix**: Translate the title or message, shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
 
 ### Source-checkout MCP dependency preflight
 
@@ -1143,7 +1143,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Vault section shape
 
-**Run**: `pnpm test:run tests/contract/vault-section-shape.contract.test.ts`
+**Run**: `pnpm test:run tests/contract/vault-data/vault-section-shape.contract.test.ts`
 **Proves**: Every vault markdown section stays within the 6,000-byte ratchet, with a non-empty section inventory.
 **Escalate**: none
 **Fix**: Split an oversized section under a second meaningful heading.
@@ -1156,7 +1156,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Vitest config/setup smoke
 
-**Run**: `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts`
+**Run**: `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-format/vault-schema.contract.test.ts`
 **Proves**: A `vitest.config.ts` or `vitest.setup.ts` change still boots jsdom setup and contract discovery correctly, without needing the entire suite.
 **Escalate**: none.
 

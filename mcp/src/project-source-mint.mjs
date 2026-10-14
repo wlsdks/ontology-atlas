@@ -30,7 +30,7 @@ export function witnessInventoryPaths(probe) {
 
 /**
  * Mints a receipt from a bounded probe and the declared source-role
- * claims. `tests/contract/project-source-connect.contract.test.ts` pins the app and MCP
+ * claims. `tests/contract/analysis/project-source-connect.contract.test.ts` pins the app and MCP
  * entry points to byte-identical output.
  */
 export function buildProjectSourceReceipt(input) {

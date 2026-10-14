@@ -119,7 +119,7 @@ The app bundle, whose connect button writes absolute paths, or a source checkout
 run as `node <checkout>/cli/src/index.mjs`. Neither `ontology-atlas` nor
 `ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
 authority: `src/shared/config/mcp-server-launch.ts`. Gate:
-`tests/contract/npm-channel-retired.contract.test.ts`.
+`tests/contract/release/npm-channel-retired.contract.test.ts`.
 
 ### Installing an agent tool for the user
 

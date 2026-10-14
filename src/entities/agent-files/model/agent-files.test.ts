@@ -7,7 +7,7 @@ import {
   WEB_SCAN_ANALYZE_OPTIONS,
 } from './agent-files';
 
-// The classifier is checked against the CLI in `tests/contract/agent-files.contract.test.ts`; this
+// The classifier is checked against the CLI in `tests/contract/harness/agent-files.contract.test.ts`; this
 // covers the web adapter: repo-root gate, entry selection and the UI join.
 
 describe('manifestIncludesRepoRoot — honest repo-root gate', () => {

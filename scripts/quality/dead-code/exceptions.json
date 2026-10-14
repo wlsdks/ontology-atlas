@@ -10,7 +10,7 @@
     {
       "key": "cli:runtime:exports:src/lib/export-format/interop-format.mjs:INTEROP_SCHEMA_VERSION",
       "reason": "The interop schema version is pinned by the cross-surface contract test; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/interop-format.contract.test.ts",
+      "consumer": "tests/contract/vault-format/interop-format.contract.test.ts",
       "witness": "INTEROP_SCHEMA_VERSION"
     },
     {
@@ -178,13 +178,13 @@
     {
       "key": "mcp:runtime:exports:src/architecture-profile.mjs:matchesPathPattern",
       "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
-      "consumer": "tests/contract/architecture-profile.contract.test.ts",
+      "consumer": "tests/contract/harness/architecture-profile.contract.test.ts",
       "witness": "matchesPathPattern"
     },
     {
       "key": "mcp:runtime:exports:src/construction-rules.mjs:CHAT_RULES_DELTA_EN",
       "reason": "The construction-rules contract test reads the chat delta directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/construction-rules.contract.test.ts",
+      "consumer": "tests/contract/mcp/construction-rules.contract.test.ts",
       "witness": "CHAT_RULES_DELTA_EN"
     },
     {
@@ -202,7 +202,7 @@
     {
       "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
       "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/graph-truth-parity.contract.test.ts",
+      "consumer": "tests/contract/analysis/graph-truth-parity.contract.test.ts",
       "witness": "createOntologyEngine"
     },
     {
@@ -220,7 +220,7 @@
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_UNKNOWN",
       "reason": "The created-by provenance contract test compares the MCP unknown-agent value with the web writer; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/created-by-provenance.contract.test.ts",
+      "consumer": "tests/contract/vault-format/created-by-provenance.contract.test.ts",
       "witness": "CREATED_BY_AGENT_UNKNOWN"
     },
     {

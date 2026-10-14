@@ -1,5 +1,5 @@
 // `ontology-atlas export [vault] --format jsonld|graphml|json` adapts MCP `compile_ontology` through
-// lib/export-format/interop-format.mjs, the web ERD builder's twin (tests/contract/interop-format.contract.test.ts).
+// lib/export-format/interop-format.mjs, the web ERD builder's twin (tests/contract/vault-format/interop-format.contract.test.ts).
 // Payload goes to stdout only, status and errors to stderr, so piping is safe.
 
 import { COLORS } from '../../lib/colors.mjs';

@@ -623,7 +623,7 @@ function splitSourceText(
 /**
  * Read one raw source into citable units, in the MCP tool's own windowed shape.
  *
- * This exists so `tests/contract/source-passage-parity.contract.test.ts` can compare the
+ * This exists so `tests/contract/vault-format/source-passage-parity.contract.test.ts` can compare the
  * two readers answer for answer, including pagination and the character cap. The screen
  * uses `citedPassage` instead.
  */

@@ -5,7 +5,7 @@
  * `src-tauri/src/git/changes.rs`, and the web panel) must report "added/modified/deleted
  * per kind, plus sample slugs" using the same formula, so the CLI's
  * parsePorcelain / classifyChange / formatSnapshotSummary are mirrored here in TS.
- * `tests/contract/atlas-git-summary.contract.test.ts` runs the same fixtures
+ * `tests/contract/vault-format/atlas-git-summary.contract.test.ts` runs the same fixtures
  * through both and fails the moment either side drifts.
  *
  * The web panel's real input is `files: ChangeEntry[]` (path/status/kind/slug),

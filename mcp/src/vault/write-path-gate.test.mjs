@@ -2,7 +2,7 @@
  * Proves only that the node-eligibility gate is wired into the shared write
  * primitive, so add_concept, patch_concept and add_relation all inherit it
  * (`docs/DECISIONS.md`, the ontology construction rules). What the gate decides
- * belongs to `tests/contract/vault-schema.contract.test.ts` and the rule
+ * belongs to `tests/contract/vault-format/vault-schema.contract.test.ts` and the rule
  * literals; if a door is re-routed around `commitDoc`, this fails and nothing
  * else does.
  */

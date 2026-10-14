@@ -56,7 +56,7 @@ const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap'
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
  * (`animation-timeline: view()`) do not exist under reduced motion
- * (`tests/contract/reduced-motion-equivalent.contract.test.ts`).
+ * (`tests/contract/motion/reduced-motion-equivalent.contract.test.ts`).
  */
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';

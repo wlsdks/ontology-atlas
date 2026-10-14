@@ -236,8 +236,8 @@ cli integration 24 → **32** (+8 new):
 ### Internals
 
 - `cli/src/lib/mcp-bridge/parse-frontmatter.mjs` — copy of `mcp/src/parser.mjs` (read + serialize). cli 가 별도 npm package 라 cross-import 불가능 → contract test 로 drift 차단:
-  - `tests/contract/parse-frontmatter.contract.test.ts` 4-way (src/shared · mcp · scripts/lib · cli)
-  - `tests/contract/validate-vault-document.contract.test.ts` 3-way (src/shared · mcp · cli)
+  - `tests/contract/vault-format/parse-frontmatter.contract.test.ts` 4-way (src/shared · mcp · scripts/lib · cli)
+  - `tests/contract/vault-format/validate-vault-document.contract.test.ts` 3-way (src/shared · mcp · cli)
 - `cli/src/lib/vault-files/walk-vault.mjs` — fs walk + slug 변환.
 - `cli/src/lib/mcp-bridge/validate.mjs` — vault frontmatter validator.
 - `cli/src/lib/vault-files/write-vault.mjs` — `slugToPath` (vault root sandbox) + `writeDoc`.

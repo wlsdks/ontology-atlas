@@ -11,7 +11,7 @@ belongs in `AGENTS.md`.
 `.claude/rules/` contains always-loaded `forbidden`, `git`, and
 `local-first` rules. Path-loaded rules are `design`, `design-gates`,
 `architecture`, `testing`, `surfaces`, and `documentation`; their frontmatter
-paths and `tests/contract/rules-path-scope.contract.test.ts` keep the
+paths and `rules-path-scope.contract.test.ts` keep the
 conditions live. Making a rule resident updates that contract, this sentence,
 and the commit's reason together.
 

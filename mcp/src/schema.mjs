@@ -404,7 +404,7 @@ export const VAULT_KIND_SCHEMA = {
  * under `capabilities:`, resolves silently, and is counted as a capability. The
  * same-kind bridge spec §5 allows is absent: a bridge is a person's decision.
  * The app copy `src/shared/lib/vault-document/containment-keys.ts` is compared over every kind
- * pair by `tests/contract/vault-schema.contract.test.ts`.
+ * pair by `tests/contract/vault-format/vault-schema.contract.test.ts`.
  */
 export const CONTAINMENT_KEY_FOR_KIND = Object.freeze({
   domain: 'domains',

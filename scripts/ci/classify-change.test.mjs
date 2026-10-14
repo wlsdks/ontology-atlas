@@ -76,8 +76,8 @@ test('app tests run affected Vitest and the test-source ratchets without waking 
   assert.equal(plan.lanes.unit.affected, true);
   assert.equal(plan.lanes.unit.contract, 'focused');
   assert.deepEqual(plan.lanes.unit.contractFiles, [
-    'tests/contract/source-comment-bytes.contract.test.ts',
-    'tests/contract/test-title-language.contract.test.ts',
+    'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
+    'tests/contract/ci-gates/test-title-language.contract.test.ts',
   ]);
   assert.equal(plan.lanes.e2e.mode, 'skip');
 });
@@ -87,10 +87,10 @@ test('a stylesheet change runs the token gates that read it whole', () => {
     const { contract, contractFiles } = buildImpactPlan({ files: [file] }).lanes.unit;
     assert.equal(contract, 'focused', file);
     for (const gate of [
-      'tests/contract/design-doc-token-integrity.contract.test.ts',
-      'tests/contract/source-comment-bytes.contract.test.ts',
-      'tests/contract/undeclared-token-ref.contract.test.ts',
-      'tests/contract/unused-token-ratchet.contract.test.ts',
+      'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
+      'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
+      'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
+      'tests/contract/design-tokens/unused-token-ratchet.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
 });
@@ -110,7 +110,7 @@ test('code outside app and src runs every suite and contract its importers reach
   const unit = buildImpactPlan({ files: ['mcp/src/architecture-profile.mjs'] }).lanes.unit;
   assert.equal(unit.affected, true, 'a src suite imports this MCP module');
   assert.equal(unit.contract, 'focused');
-  assert.ok(unit.contractFiles.includes('tests/contract/architecture-profile.contract.test.ts'));
+  assert.ok(unit.contractFiles.includes('tests/contract/harness/architecture-profile.contract.test.ts'));
   assert.equal(unitUsesAllShards(unit), true);
 });
 
@@ -126,7 +126,7 @@ test('a deleted file still imported somewhere runs the suites that import it by 
   const unit = buildImpactPlan({ files: [], deletedFiles: ['mcp/src/architecture-profile.mjs'] }).lanes.unit;
   const stale = 'src/views/architecture/model/analysis-architecture-record.test.ts';
   assert.ok(unit.extraCommands.some((command) => command.split(' ').includes(stale)));
-  assert.ok(unit.contractFiles.includes('tests/contract/architecture-profile.contract.test.ts'));
+  assert.ok(unit.contractFiles.includes('tests/contract/harness/architecture-profile.contract.test.ts'));
 });
 
 test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2e only', () => {
@@ -549,7 +549,7 @@ test('the perf lane starts only for code a measurement could import, and on ever
   assert.equal(mode({ files: ['src/shared/lib/cn.test.ts'] }), 'skip');
   assert.equal(mode({ files: ['docs/DESIGN-SYSTEM.md'] }), 'skip');
   assert.equal(mode({ files: ['mcp/src/schema.mjs'] }), 'skip');
-  assert.equal(mode({ files: ['tests/contract/workflow-budgets.contract.test.ts'] }), 'skip');
+  assert.equal(mode({ files: ['tests/contract/ci-gates/workflow-budgets.contract.test.ts'] }), 'skip');
   // A vanished module is in nobody's import graph, so `--changed` could not find its users.
   assert.equal(mode({ files: [], deletedFiles: ['src/shared/lib/search-match/hangul-match.ts'] }), 'full');
   // The Vitest configuration decides what the perf project is.

@@ -24,7 +24,7 @@ const ALLOWED_FLAGS = ['--vault', '--json', '--strict', '--list-codes', '--fail-
 
 
 // Every issue code `validateVaultDocument` can surface, for `--list-codes` and unknown `--fail-on`
-// codes. Kept in step with cli/src/lib/mcp-bridge/validate.mjs by tests/contract/known-codes-drift.contract.test.ts.
+// codes. Kept in step with cli/src/lib/mcp-bridge/validate.mjs by tests/contract/cli/known-codes-drift.contract.test.ts.
 export const KNOWN_CODES = [
   {
     code: 'unclosed-frontmatter',

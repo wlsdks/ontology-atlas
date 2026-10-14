@@ -7,8 +7,8 @@ import packageJson from './package.json' with { type: 'json' };
 
 // Only these contract files render components; source/parser guards need no DOM.
 const domContracts = [
-  'tests/contract/brand-asset-parity.contract.test.ts',
-  'tests/contract/node-kind-shape-parity.contract.test.ts',
+  'tests/contract/brand/brand-asset-parity.contract.test.ts',
+  'tests/contract/map/node-kind-shape-parity.contract.test.ts',
 ];
 // Vitest 4 does not forward CLI exclude options into inline projects.
 // Use its own parser and carry the exclusions into both project inventories.

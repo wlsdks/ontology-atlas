@@ -1,7 +1,7 @@
 import { loadMcpModule } from './mcp-module.mjs';
 
 // The MCP package owns the frontmatter validator; the CLI executes it, and
-// `tests/contract/validate-vault-document.contract.test.ts` holds `src/shared/lib` to its issue codes.
+// `tests/contract/vault-format/validate-vault-document.contract.test.ts` holds `src/shared/lib` to its issue codes.
 /** @type {typeof import('../../../../mcp/src/validate.mjs')} */
 const validate = await loadMcpModule('validate.mjs');
 
