@@ -72,7 +72,7 @@ export function resolveDocLink({
   const [rawTarget, rawAnchor] = href.split('#');
   /*
    * Percent-decode and NFC-normalise both sides: the parser passes Hangul slugs encoded and macOS
-   * stores NFD (same judgement as `cli/src/commands/validate.mjs`).
+   * stores NFD (same judgement as `cli/src/commands/local-vault/validate.mjs`).
    */
   const target = decodeVaultPath(rawTarget);
   const anchor = rawAnchor ? decodeVaultPath(rawAnchor) : undefined;

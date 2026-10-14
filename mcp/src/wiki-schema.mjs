@@ -9,7 +9,7 @@ import { parseFrontmatter } from './parser.mjs';
  * every `## Facts` bullet; ungrounded text goes under `## Not in sources`. A
  * page never has `kind:` (`deriveDocNode` requires it), checked first.
  * The app twin src/shared/lib/library/wiki-page-schema.ts must return the same problem
- * codes; tests/contract/wiki-page-schema.contract.test.ts runs both on one table.
+ * codes; tests/contract/library/wiki-page-schema.contract.test.ts runs both on one table.
  */
 
 /** Vault folder holding wiki pages. */

@@ -157,7 +157,7 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
     },
   ],
   /*
-   * The headline the screen opens on. `tests/contract/tour-anchor-testids.contract.test.ts`
+   * The headline the screen opens on. `tests/contract/map/tour-anchor-testids.contract.test.ts`
    * catches a testid no screen carries but not which tab is open, so this anchor must be on
    * the landing tab.
    */

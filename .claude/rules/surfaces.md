@@ -5,7 +5,7 @@ paths:
   - "src/features/docs-vault-local/**"
   - "src-tauri/**"
   - "tests/e2e/web-surface-smoke.spec.ts"
-  - "tests/e2e/responsive-overflow-audit.spec.ts"
+  - "tests/e2e/design-audits/responsive-overflow-audit.spec.ts"
   - "src/shared/config/mcp-server-launch.ts"
   - ".github/workflows/e2e.yml"
 ---
@@ -109,7 +109,7 @@ ability to `DEGRADED_SURFACES`. Its CI job runs for any runtime change,
 including `src-tauri/**`.
 
 `DEGRADED_SURFACES` holds only web-versus-app absence. Absence below a viewport
-breakpoint belongs to `tests/e2e/responsive-overflow-audit.spec.ts`, and a
+breakpoint belongs to `tests/e2e/design-audits/responsive-overflow-audit.spec.ts`, and a
 direct URL must still answer. Proof per surface: `testing.md`, "Verify web and
 app separately".
 
@@ -119,7 +119,7 @@ The app bundle, whose connect button writes absolute paths, or a source checkout
 run as `node <checkout>/cli/src/index.mjs`. Neither `ontology-atlas` nor
 `ontology-atlas-mcp` exists on npm; `npx ontology-atlas init` is a 404. Code
 authority: `src/shared/config/mcp-server-launch.ts`. Gate:
-`tests/contract/npm-channel-retired.contract.test.ts`.
+`tests/contract/release/npm-channel-retired.contract.test.ts`.
 
 ### Installing an agent tool for the user
 

@@ -1,0 +1,192 @@
+// `ontology-atlas remove-relation <from> <to> <type> [vault]`: the mirror of `relate`, same arguments and flags.
+// Writes with the write-vault.mjs primitives and the `expectedRevision` guard, so it cannot clobber a newer edit.
+// It reads the document's own frontmatter instead of calling `relation-check`, which answers whether one may exist.
+
+import { COLORS } from '../../lib/colors.mjs';
+import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
+import { emptiedRelationListValue } from '../../lib/mcp-bridge/schema.mjs';
+import { normalizeRelationRefs, readDocFrontmatter, writeFrontmatterKey, writeFrontmatterKeys } from '../../lib/vault-files/write-vault.mjs';
+import { validateRelationTypeList } from '../../lib/relation-types.mjs';
+import {
+  formatUnknownFlagError,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../../lib/cli-args.mjs';
+import { recordCliWrite } from '../../lib/mcp-bridge/activity-log.mjs';
+
+const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run'];
+
+// Mirrors `relate.mjs`'s copy, for the same reason it keeps one: the CLI does not
+// import across the mcp/cli package boundary.
+const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
+const RELATION_KEY = Object.freeze({
+  depends_on: 'dependencies',
+  relates: 'relates',
+  contains: 'contains',
+  describes: 'describes',
+  domains: 'domains',
+  capabilities: 'capabilities',
+  elements: 'elements',
+  domain: 'domain',
+});
+
+const DEFAULT_RUNTIME = Object.freeze({
+  readDocFrontmatter,
+  writeFrontmatterKey,
+  writeFrontmatterKeys,
+  recordCliWrite,
+});
+
+/**
+ * Finds the relation on the document, or says precisely why it is not there: a slug missing from
+ * the list and a list missing from the document are different mistakes.
+ */
+export function planRemoval(frontmatter, relation, to) {
+  const key = RELATION_KEY[relation] ?? relation;
+  if (key === 'domain') {
+    const current = typeof frontmatter.domain === 'string' ? frontmatter.domain : null;
+    if (current !== to) {
+      return { key, found: false, reason: current ? `domain is ${current}, not ${to}` : 'no domain is set' };
+    }
+    return { key, found: true, next: null };
+  }
+  // Alias-aware, like the MCP remover: a hand-authored `depends_on:` array is the same edge family
+  // as `dependencies:`.
+  const aliasKeys = (LEGACY_KEYS[key] ?? []).filter((k) => frontmatter[k] !== undefined);
+  const existing = [key, ...aliasKeys]
+    .map((k) => frontmatter[k])
+    .filter(Array.isArray)
+    .flat();
+  if (existing.length === 0 && !Array.isArray(frontmatter[key]) && aliasKeys.length === 0) {
+    return { key, found: false, reason: `this document has no ${key}` };
+  }
+  const normalized = normalizeRelationRefs(existing);
+  if (!normalized.includes(to)) {
+    return { key, found: false, reason: `${to} is not in ${key} (${normalized.length} entr${normalized.length === 1 ? 'y' : 'ies'})` };
+  }
+  return { key, found: true, next: normalized.filter((ref) => ref !== to), aliasKeys };
+}
+
+function removeRelation(rootPath, { from, to, relation }, runtime) {
+  const { frontmatter, revision } = runtime.readDocFrontmatter(rootPath, from);
+  const plan = planRemoval(frontmatter, relation, to);
+  if (!plan.found) throw new Error(`nothing to remove: ${plan.reason}`);
+
+  // Delete `relation_notes[to]` with the relation; a note on a removed edge would be a trusted
+  // orphan.
+  const notes =
+    frontmatter.relation_notes && typeof frontmatter.relation_notes === 'object'
+      ? { ...frontmatter.relation_notes }
+      : null;
+  const hadNote = notes !== null && Object.prototype.hasOwnProperty.call(notes, to);
+  if (hadNote) delete notes[to];
+  // An emptied map is deleted, not written as `relation_notes: {  }`.
+  const nextNotes = notes !== null && Object.keys(notes).length > 0 ? notes : null;
+
+  if (plan.key === 'domain') {
+    const patch = hadNote ? { domain: null, relation_notes: nextNotes } : { domain: null };
+    return { ...runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision }), plan };
+  }
+  // The last entry takes its key with it, except a kind's scaffold list, which goes back to the
+  // `[]` creating the node writes — the MCP writers' rule (`emptiedRelationListValue`).
+  const nextList = plan.next.length > 0 ? plan.next : emptiedRelationListValue(frontmatter.kind, plan.key);
+  const patch = hadNote ? { [plan.key]: nextList, relation_notes: nextNotes } : { [plan.key]: nextList };
+  // Consolidate: the surviving refs land under the canonical key and any alias
+  // key they were read from is deleted, exactly as the MCP writer does.
+  for (const alias of plan.aliasKeys ?? []) patch[alias] = null;
+  return { ...runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision }), plan };
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) return { help: true };
+  const flags = { vault: null, json: false, dryRun: false };
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--json') flags.json = true;
+    else if (a === '--dry-run') flags.dryRun = true;
+    else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+  if (positional.length < 3) return { error: '<from>, <to>, and <type> are required' };
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  const typeError = validateRelationTypeList([positional[2]], 'type');
+  if (typeError) return { error: typeError.message };
+  const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 3 });
+  if (vaultResult.error) return vaultResult;
+  return {
+    from: positional[0],
+    to: positional[1],
+    relation: positional[2],
+    vault: vaultResult.vault,
+    json: flags.json,
+    dryRun: flags.dryRun,
+  };
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `${COLORS.bold}remove-relation${COLORS.reset} — take one relation off a node\n\n` +
+      `${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas remove-relation <from> <to> <type> [vault] [--vault path] [--json] [--dry-run]\n\n` +
+      `The mirror of ${COLORS.bold}relate${COLORS.reset}: same arguments, opposite direction.\n` +
+      `--dry-run reports what would be removed without writing.\n\n` +
+      `  ontology-atlas remove-relation capabilities/foo capabilities/bar depends_on --dry-run\n`,
+  );
+}
+
+export async function runRemoveRelation(args, runtimeOverrides = {}) {
+  const runtime = { ...DEFAULT_RUNTIME, ...runtimeOverrides };
+  const { from, to, relation, vault, json, dryRun, error, help } = parseArgs(args);
+  if (help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
+    printUsage();
+    return 1;
+  }
+
+  const vaultRoot = resolveVaultRoot(vault);
+
+  if (dryRun) {
+    const { frontmatter } = runtime.readDocFrontmatter(vaultRoot, from);
+    const plan = planRemoval(frontmatter, relation, to);
+    if (json) {
+      process.stdout.write(JSON.stringify({ from, to, relation, ...plan, dryRun: true }, null, 2) + '\n');
+    } else if (plan.found) {
+      process.stdout.write(`would remove ${to} from ${from}.${plan.key}\n`);
+    } else {
+      process.stdout.write(`nothing to remove: ${plan.reason}\n`);
+    }
+    return plan.found ? 0 : 1;
+  }
+
+  let result;
+  try {
+    result = removeRelation(vaultRoot, { from, to, relation }, runtime);
+  } catch (error) {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    return 1;
+  }
+
+  await runtime.recordCliWrite(vaultRoot, {
+    tool: 'cli:remove-relation',
+    target: from,
+    summary: `${from} --${relation}--x ${to}`,
+  });
+
+  if (json) {
+    process.stdout.write(
+      JSON.stringify({ from, to, relation, key: result.plan.key, removed: true, dryRun: false }, null, 2) + '\n',
+    );
+  } else {
+    process.stdout.write(`removed ${to} from ${from}.${result.plan.key}\n`);
+  }
+  return 0;
+}

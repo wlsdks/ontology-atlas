@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 /**
  * Vault kind schema: the per-kind frontmatter shape add_concept and the CLI both
- * apply (`cli/src/lib/schema.mjs` loads this file). `arrayDefaults` are always
+ * apply (`cli/src/lib/mcp-bridge/schema.mjs` loads this file). `arrayDefaults` are always
  * emitted, as empty arrays when unsupplied; `optional` keys are never
  * auto-emitted. `relation_notes` (`{ <ref>: "one sentence" }` on the source
  * document, keyed as the relation array spells the ref) is optional on every
@@ -404,7 +404,7 @@ export const VAULT_KIND_SCHEMA = {
  * under `capabilities:`, resolves silently, and is counted as a capability. The
  * same-kind bridge spec §5 allows is absent: a bridge is a person's decision.
  * The app copy `src/shared/lib/vault-document/containment-keys.ts` is compared over every kind
- * pair by `tests/contract/vault-schema.contract.test.ts`.
+ * pair by `tests/contract/vault-format/vault-schema.contract.test.ts`.
  */
 export const CONTAINMENT_KEY_FOR_KIND = Object.freeze({
   domain: 'domains',

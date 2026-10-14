@@ -49,7 +49,7 @@ The contribution model is what keeps them out of reach:
   CI cannot read them.
 - **`pull_request_target` is never used.** That trigger runs a fork's code *with*
   the base repository's secrets, and it is the usual way open-source projects lose
-  credentials. `tests/contract/workflow-security.contract.test.ts` fails the build
+  credentials. `tests/contract/security/workflow-security.contract.test.ts` fails the build
   if it ever appears.
 - **Workflows triggered by `pull_request` reference no secrets at all** — enforced
   by the same contract, which also makes every workflow name each secret it reads:

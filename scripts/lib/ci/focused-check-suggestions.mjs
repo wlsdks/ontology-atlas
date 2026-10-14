@@ -184,7 +184,7 @@ function directSourceLanguageSuggestions(paths) {
       paths: sourcePaths,
     }] : []),
     ...(untestedSourcePaths.length ? [{
-      command: 'pnpm exec vitest run tests/contract/source-comment-bytes.contract.test.ts',
+      command: 'pnpm exec vitest run tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
       reason: 'comment bytes may only fall in each source area this change touches',
       paths: untestedSourcePaths,
     }] : []),

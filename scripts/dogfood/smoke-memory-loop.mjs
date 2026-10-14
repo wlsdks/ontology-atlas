@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { callMcpTool } from '../../cli/src/lib/mcp-call.mjs';
+import { callMcpTool } from '../../cli/src/lib/mcp-bridge/mcp-call.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const CLI = join(ROOT, 'cli', 'src', 'index.mjs');

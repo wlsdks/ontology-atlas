@@ -43,7 +43,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   and finished at 4.9 s, with no task longer than 343 ms (492 ms before), no homing spring
   at all, and still frames up to 350 ms apart while documents are parsed. In Chrome over an origin-private folder, 10,000
   documents drew at 0.67 s instead of 26.3 s and finished at 6.6 s. Gate:
-  `tests/e2e/vault-progressive-open.spec.ts`.
+  `tests/e2e/vault-session/vault-progressive-open.spec.ts`.
 
 - **A name blocked below tries the slot above** (2026-09-20) → the greedy label
   placer walked the candidates by priority and dropped any whose box overlapped
@@ -211,7 +211,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   Neural, and into Flat past 6,500 or 6,300 concepts, the old picture
   crossfades instead, as every pick does under reduced motion; a view reached by
   address or from another tab switches without motion. Gate:
-  `tests/e2e/map-layout-morph.spec.ts`.
+  `tests/e2e/map/frame-loop/map-layout-morph.spec.ts`.
   The Cone left the picker on 2026-09-25; a stored Cone choice opens Strata.
 
   **Domain structure** opens named project/domain/capability/element membership
@@ -250,8 +250,8 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
   overlapping node pairs at 1512x982, and none of them are same-tier. Geometry:
   `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/strata.ts`; gates:
-  `tests/e2e/map-3d-strata-drawing.spec.ts` and
-  `tests/contract/strata-fit-fill.contract.test.ts`.
+  `tests/e2e/map/3d/map-3d-strata-drawing.spec.ts` and
+  `tests/contract/map/strata-fit-fill.contract.test.ts`.
 - **The lit 3D map** (2026-09-25) — Strata and Neural are drawn as light in the
   canvas-2D engine. Each Strata plane is a translucent floor in its kind's colour
   with a faint polar grid, and every domain owns a band of the capability and
@@ -268,7 +268,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   rest into a deeper fog (down to 0.28 at the back); particles run only along
   that subtree's dependency edges. Pitch stays between 0.15 and 0.95 rad, so the
   floors are always seen from above. Reduced motion: no spin, no particles, the
-  fly-to arrives at once. Gate: `tests/e2e/map-3d-lit-strata.spec.ts`.
+  fly-to arrives at once. Gate: `tests/e2e/map/3d/map-3d-lit-strata.spec.ts`.
 - **Strata at scale** (2026-10-01) — once a capability or element plane is too
   dense to read as discs (median lane gap under 0.9 disc diameters, or more than
   1,500 of its discs on screen), it crossfades to **dust**: one mark per concept
@@ -303,7 +303,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   evidence 85% stale, it takes 7.7 ms and 1,086 calls (119, 116 and 73 fps). The
   sample vault and anything below the threshold draw pixel-identically. Model:
   `src/widgets/ontology-map/model/dome-view/strata-lod.ts`; gate:
-  `tests/e2e/map-3d-strata-lod.spec.ts`.
+  `tests/e2e/map/3d/map-3d-strata-lod.spec.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic
   relation communities as a layout aid, with tighter local groups, lit cell bodies,
   and shallow connection arcs. Group proximity is inferred layout, not a new domain
@@ -329,4 +329,4 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   ratio 2, 1.26 / 1.33 / 1.14 : 1 before the floor and 2.44 / 2.26 / 2.51 : 1
   now; at ratio 1, 1.29 / 1.25 / 1.27 : 1 before and 2.72 / 2.33 / 2.52 : 1 now.
   The 2D map is untouched at either ratio. Gate:
-  `tests/e2e/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
+  `tests/e2e/map/3d/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.

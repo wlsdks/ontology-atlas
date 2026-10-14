@@ -99,7 +99,7 @@ describe("View3dMenu view picker", () => {
 
   /**
    * The map's 3D contrast floors assume the flat sky is not also painted
-   * (`tests/e2e/map-3d-relation-ink.spec.ts`), so the picker never leaves both on.
+   * (`tests/e2e/map/3d/map-3d-relation-ink.spec.ts`), so the picker never leaves both on.
    */
   it("turns the sky on and 3D off when structure is picked, so both are never on", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");

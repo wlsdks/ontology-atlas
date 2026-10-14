@@ -636,7 +636,7 @@ describe('알림함 — 세 탭', () => {
 
 /**
  * The target node link must not float above neighbouring text; the cause is in
- * `tests/contract/agent-bar-link-alignment.contract.test.ts`.
+ * `tests/contract/layout/agent-bar-link-alignment.contract.test.ts`.
  */
 describe('하단 바 — 대상 링크 정렬', () => {
   it('모양의 flex 를 지킨다 — truncate 축을 쓰면 깨진다', () => {

@@ -276,7 +276,7 @@ The pixel mascot is the one shipping identity (contract `docs/design/brand.md`; 
 
 ## Absolute rules (Don'ts)
 
-This list is the single canonical source. `.claude/rules/forbidden.md` carries a resident subset and `.claude/rules/design.md` points here. Each item ends with a `dont:` key matched by slug in `tests/contract/design-donts-parity.contract.test.ts`: rewrite the sentence freely, never the key.
+This list is the single canonical source. `.claude/rules/forbidden.md` carries a resident subset and `.claude/rules/design.md` points here. Each item ends with a `dont:` key matched by slug in `tests/contract/agent-instructions/design-donts-parity.contract.test.ts`: rewrite the sentence freely, never the key.
 
 - Clicking a topology node opens a fullscreen or full-bleed detail modal. The default is ego focus plus a compact popover anchored to the node; full detail is opt-in from inside that popover. <!--dont:node-click-fullscreen-modal-->
 - Floating-box soup: unrelated panels, popovers, HUD, minimap and cards at equal visual weight. <!--dont:floating-box-soup-->

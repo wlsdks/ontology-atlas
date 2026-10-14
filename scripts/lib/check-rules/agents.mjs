@@ -3,7 +3,7 @@
 export const rules = [
   {
     order: 585,
-    command: 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts',
+    command: 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts',
     reason: 'the construction replay or its prompt extractor changed',
     matches: [/^\.claude\/skills\/ontology-field-trial\/scripts\//,
       /^scripts\/lib\/benchmark\/construction-prompts(?:\.test)?\.mjs$/],
@@ -36,13 +36,13 @@ export const rules = [
       /^\.agents\/.+/,
       /^\.codex\/.+/,
       /^\.mcp\.json$/,
-      /^cli\/src\/lib\/agent-files\.mjs$/,
-      /^cli\/src\/commands\/agent-files\.mjs$/,
+      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
+      /^cli\/src\/commands\/agent-setup\/agent-files\.mjs$/,
     ],
   },
   {
     order: 610,
-    command: 'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
+    command: 'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts',
     reason: 'one side of the agent-files pair, or a rule glob the nested pointers derive from, changed',
     /*
      * The two agent-files implementations are one contract, and nested `AGENTS.md` pointers derive
@@ -50,7 +50,7 @@ export const rules = [
      * contracts.
      */
     matches: [
-      /^cli\/src\/lib\/agent-files\.mjs$/,
+      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
       /^src\/entities\/agent-files\/model\/agent-files\.ts$/,
       /^tests\/fixtures\/agent-files-cases\.mjs$/,
       /^\.claude\/rules\/[^/]+\.md$/,
@@ -59,14 +59,14 @@ export const rules = [
       /^CLAUDE\.md$/,
       /^\.claude\/skills\/[^/]+\/(?:SKILL|workflow)\.md$/,
       /^\.agents\/skills\/[^/]+\/(?:SKILL|workflow)\.md$/,
-      /^tests\/contract\/rules-path-scope\.contract\.test\.ts$/,
-      /^tests\/contract\/secret-read-guard\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-instructions\/rules-path-scope\.contract\.test\.ts$/,
+      /^tests\/contract\/security\/secret-read-guard\.contract\.test\.ts$/,
       /^\.gitignore$/,
       /^\.claude\/settings\.json$/,
       /^package\.json$/,
       /^\.github\/workflows\/[^/]+\.ya?ml$/,
-      /^tests\/contract\/node-test-reachability\.contract\.test\.ts$/,
-      /^tests\/contract\/agent-file-citations\.contract\.test\.ts$/,
+      /^tests\/contract\/ci-gates\/node-test-reachability\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-instructions\/agent-file-citations\.contract\.test\.ts$/,
     ],
   },
   {
@@ -76,7 +76,7 @@ export const rules = [
     matches: [
       /^scripts\/(?:lib\/)?records\/po-(?:risk-router|pilot)\.mjs$/,
       /^scripts\/records\/check-decision-record\.mjs$/,
-      /^tests\/contract\/(?:po-route|reviewer-wiring)\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-instructions\/(?:po-route|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
       /^docs\/records\/po-(?:runs|updates|policy)\//,
       /^scripts\/lib\/records\/po-pilot-records(?:\.test)?\.mjs$/,
@@ -93,7 +93,7 @@ export const rules = [
     matches: [
       /^scripts\/(?:lib\/)?records\/po-(?:risk-router|pilot)\.mjs$/,
       /^scripts\/records\/check-decision-record\.mjs$/,
-      /^tests\/contract\/(?:po-route|reviewer-wiring)\.contract\.test\.ts$/,
+      /^tests\/contract\/agent-instructions\/(?:po-route|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
       /^docs\/records\/po-(?:runs|updates|policy)\//,
       /^scripts\/lib\/records\/po-pilot-records(?:\.test)?\.mjs$/,

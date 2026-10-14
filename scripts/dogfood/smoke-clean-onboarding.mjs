@@ -11,7 +11,7 @@ import {
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-metadata.mjs';
+import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)));
 const CLI = join(ROOT, 'cli', 'src', 'index.mjs');

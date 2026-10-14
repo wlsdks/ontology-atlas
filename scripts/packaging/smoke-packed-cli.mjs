@@ -19,7 +19,7 @@ import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { checkMcpLeanTarballFiles } from './check-package-contracts.mjs';
-import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-metadata.mjs';
+import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
 import { expectedToolsListAnnotationSummary } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
 import {
   structuredContentVerifySummary,

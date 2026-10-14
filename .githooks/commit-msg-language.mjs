@@ -4,14 +4,14 @@
 // `scripts/harness/claude-hooks.test.mjs` can call the decision directly instead of
 // spawning a shell, and so the pattern sits beside its tests.
 //
-// The character classes match `agent-language` in `cli/src/lib/agent-files.mjs`:
+// The character classes match `agent-language` in `cli/src/lib/agent-setup/agent-files.mjs`:
 // Hangul, kana and Han. Emoji, accented Latin and typographic dashes stay legal
 // — the gate is about the language a reader must know, not ASCII purity.
 
 import { readFileSync } from 'node:fs';
 
 // Includes Jamo blocks and halfwidth Kana/Hangul, matching the markdown-language HANGUL class.
-// Mirror: cli/src/lib/agent-files.mjs NON_ENGLISH_SCRIPT_RE.
+// Mirror: cli/src/lib/agent-setup/agent-files.mjs NON_ENGLISH_SCRIPT_RE.
 const NON_ENGLISH_SCRIPT_RE =
   /[\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\u3400-\u4DBF\u4E00-\u9FFF\uA960-\uA97F\uAC00-\uD7FF\uF900-\uFAFF\uFF65-\uFFDC]/u;
 

@@ -23,7 +23,7 @@ name: Vault freshness
 # No `merge_group` trigger: this workflow produces no required status context,
 # and its whole output is a comment on a pull request, which a merge group does
 # not have. The combination's vault is validated by the `gates` lane, which runs
-# exhaustively on a merge group. `tests/contract/workflow-security.contract.test.ts`
+# exhaustively on a merge group. `tests/contract/security/workflow-security.contract.test.ts`
 # holds the rule: the trigger belongs exactly where a required context is.
 on:
   pull_request:

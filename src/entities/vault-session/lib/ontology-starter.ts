@@ -795,7 +795,7 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
  * repository uses at its own root.
  *
  * The product already has a check for this — `claude-agents-bridge` in
- * `cli/src/lib/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
+ * `cli/src/lib/agent-setup/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
  * applicable"**, so nobody saw that the guidance was reaching only half its audience. Placing the
  * file is what puts that check to work.
  */
@@ -831,7 +831,7 @@ export function vaultClaudeBridgeForLocale(locale: string): StarterFile {
 /**
  * Procedural skills the vault carries; the agent launches from the vault, so `.claude/skills/` shows.
  * Not concept nodes: adding them to `starterFilesForLocale` would break the count contract.
- * `description` is cut to one line in `/`; gate: `tests/contract/starter-templates.contract.test.ts`.
+ * `description` is cut to one line in `/`; gate: `tests/contract/vault-format/starter-templates.contract.test.ts`.
  */
 export const VAULT_SKILL_NAMES = ["atlas-review", "atlas-grow", "atlas-absorb"] as const;
 

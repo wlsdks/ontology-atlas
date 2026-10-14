@@ -1,0 +1,274 @@
+import { expect, test } from '@playwright/test';
+import { installDesktopBridge } from '../rounds-desktop-bridge';
+
+test.describe('Automations workspace', () => {
+  test('exposes both lanes and a valid tabpanel in the browser no-vault state', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/ko/automations/?guides=off', { waitUntil: 'domcontentloaded' });
+
+    await expect(page.getByTestId('app-nav-rail-item-automations')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-ontology');
+    await expect(page.getByText('자동화는 데스크톱 앱에서만 실행돼요')).toBeVisible();
+
+    await page.getByTestId('automations-tab-documents').click();
+    await expect(page).toHaveURL(/\/ko\/automations\/\?guides=off&kind=documents$/);
+    await expect(page.getByTestId('automations-tab-documents')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.locator('[role="tabpanel"]')).toHaveAttribute('id', 'automations-tabpanel-documents');
+  });
+
+});
+
+
+test('schedule rows expose result evidence, collapse, and keep creation cancellable', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  await expect(page.getByTestId('automations-last-run').filter({ visible: true })).toContainText('Checked 4 documents');
+  await page.getByText('Earlier runs · 3', { exact: true }).click();
+  const reviewPage = page.getByRole('link', { name: 'Open design-system in Wiki', exact: true });
+  await expect(reviewPage).toHaveAttribute('href', '/en/docs/?slug=wiki%2Fdesign-system');
+  await reviewPage.click();
+  await expect(page).toHaveURL(/\/en\/docs\/\?slug=wiki%2Fdesign-system/);
+  // The page's unlabelled citation reads as its file and place, not as the raw `src:` address.
+  await expect(page.getByRole('article')).toContainText('Design system design-system.pdf · page 1.');
+  await page.goBack();
+  await page.getByTestId('automation-r-consistency').press('Enter');
+  await expect(page.getByTestId('automation-r-consistency')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('automations-run-now').filter({ visible: true })).toHaveCount(0);
+  await page.getByTestId('automation-r-confluence').press('Enter');
+  const report = page.getByTestId('automations-last-run').filter({ visible: true });
+  // Each touched file is named once: a wiki page as its link, any other file as its path.
+  await expect(report).toContainText('sources/onboarding.md');
+  await expect(report.locator('a[href*="slug=wiki%2Fonboarding"]')).toHaveCount(1);
+  await expect(report).not.toContainText('wiki/onboarding.md');
+  await report.getByText('Tool activity', { exact: true }).press('Enter');
+  await expect(report.getByText(/Refused: mcp__confluence__create_page/)).toBeVisible();
+  await page.getByTestId('automations-remove').click();
+  await expect(page.getByTestId('automations-confirm-remove')).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByTestId('automations-confirm-remove')).toHaveCount(0);
+  await page.getByTestId('automations-tab-ontology').click();
+  await expect(page.getByTestId('automations-tab-ontology')).toHaveAttribute('aria-selected', 'true');
+  await page.getByTestId('automations-new').press('Enter');
+  await expect(page.getByTestId('ontology-automation-name')).toBeFocused();
+  await page.keyboard.type('A review that will be cancelled');
+  await page.keyboard.press('Tab');
+  await expect(page.getByTestId('ontology-automation-focus')).toBeFocused();
+  await page.keyboard.type('Missing evidence');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('ontology-automation-sheet')).toHaveCount(0);
+  await expect(page.getByTestId('automations-new')).toBeFocused();
+  const rounds = await page.evaluate(() => JSON.parse((window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']).rounds);
+  expect(rounds.map((round: { id: string }) => round.id)).toEqual(['r-consistency', 'r-confluence']);
+});
+
+test('new schedules start fresh after cancellation and save, including rapid reopening', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  await page.getByTestId('automations-new').click();
+  await page.getByTestId('library-rounds-rename').click();
+  await page.getByTestId('library-rounds-name').fill('Cancelled document draft');
+  await page.getByTestId('library-rounds-name').press('Enter');
+  await page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Day', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  // Do not wait for the old exit to finish before opening the next draft.
+  await page.getByTestId('automations-new').press('Enter');
+  const documents = page.getByTestId('library-rounds-sheet');
+  await expect(documents).not.toContainText('Cancelled document draft');
+  await expect(page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Hours', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('library-rounds-add-place').click();
+  await expect(page.getByTestId('library-rounds-add-menu')).toBeVisible();
+  await expect(page.getByTestId('library-rounds-add-menu')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('library-rounds-add-place')).toBeFocused();
+  // Escape first dismisses the nested menu; save the fresh default document schedule.
+  await page.getByTestId('library-rounds-allow').click();
+  await expect(documents).toHaveCount(0);
+  await page.getByTestId('automations-new').click();
+  await expect(page.getByTestId('library-rounds-add-menu')).toHaveCount(0);
+  await expect(page.getByTestId('library-rounds-rename')).not.toContainText('Cancelled document draft');
+  await page.keyboard.press('Escape');
+  await expect(documents).toHaveCount(0);
+
+  await page.getByTestId('automations-tab-ontology').click();
+  await page.getByTestId('automations-new').click();
+  await page.getByTestId('ontology-automation-name').fill('Cancelled ontology draft');
+  await page.keyboard.press('Escape');
+  await page.getByTestId('automations-new').press('Enter');
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
+  await page.getByTestId('ontology-automation-name').fill('Saved ontology review');
+  await page.getByTestId('ontology-automation-focus').fill('Evidence links');
+  await page.getByTestId('ontology-automation-allow').click();
+  await expect(page.getByTestId('ontology-automation-sheet')).toHaveCount(0);
+  await expect(page.getByTestId('automations-list')).toContainText('Saved ontology review');
+  await page.getByTestId('automations-new').click();
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
+  await expect(page.getByTestId('ontology-automation-focus')).toHaveValue('');
+  await page.keyboard.press('Escape');
+});
+
+test('a pass that had no agent says why in its run history, on the history column start line', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  // The local check's newest pass found a stale page, and no agent was ready to redraft it.
+  await page.addInitScript(() => {
+    const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+    const path = '.ontology-atlas/rounds-ledger.jsonl';
+    const endedAt = new Date().toISOString();
+    files[path] += `${JSON.stringify({ v: 1, id: 'p-no-agent', roundId: 'r-consistency', roundName: 'Pages still match',
+      kind: 'consistency', startedAt: endedAt, endedAt, outcome: 'stale', checked: 4, stale: ['wiki/design-system'],
+      written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'manual', note: 'no-agent' })}\n`;
+  });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  const report = page.getByTestId('automations-last-run').filter({ visible: true });
+  await expect(report).toContainText('Checked 4 documents');
+  // The Library ledger's own sentence for the same stored fact.
+  const note = report.locator('[data-run-note="no-agent"]');
+  await expect(note).toHaveText('No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.');
+
+  for (const width of [1280, 1040]) {
+    await page.setViewportSize({ width, height: 800 });
+    const row = page.locator('li', { has: page.getByTestId('automation-r-consistency') });
+    const geometry = await row.evaluate((li) => {
+      const noteEl = li.querySelector('[data-run-note="no-agent"]') as HTMLElement;
+      const caption = li.querySelector('[data-testid="automations-history"] h3') as HTMLElement;
+      const actions = (li.querySelector('[data-testid="automations-run-now"]') as HTMLElement).parentElement as HTMLElement;
+      const box = noteEl.getBoundingClientRect();
+      const hits = [0.1, 0.5, 0.9].map((fx) => {
+        const hit = document.elementFromPoint(box.left + box.width * fx, box.top + 6);
+        return !!hit && (hit === noteEl || noteEl.contains(hit));
+      });
+      return {
+        startOffset: Math.abs(box.left - caption.getBoundingClientRect().left),
+        gapToActions: actions.getBoundingClientRect().top - box.bottom,
+        overhang: box.right - li.getBoundingClientRect().right,
+        hits,
+      };
+    });
+    expect(geometry.startOffset, `${width}: one text start line`).toBeLessThanOrEqual(0.5);
+    expect(geometry.gapToActions, `${width}: the note ends above the actions`).toBeGreaterThanOrEqual(0);
+    expect(geometry.overhang, `${width}: the note stays inside its card`).toBeLessThanOrEqual(0);
+    expect(geometry.hits, `${width}: nothing covers the note`).toEqual([true, true, true]);
+  }
+});
+
+for (const lane of ['documents', 'ontology'] as const) {
+  test(`${lane} save blocks dismissal while pending and recovers from a disk failure`, async ({ page }) => {
+    await installDesktopBridge(page, { seedRounds: true });
+    await page.goto('/en/');
+    await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+    await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+    await page.goto(`/en/automations/?guides=off&kind=${lane}`);
+    await page.getByTestId('automations-new').click();
+    const prefix = lane === 'documents' ? 'library-rounds' : 'ontology-automation';
+    const sheet = page.getByTestId(`${prefix}-sheet`);
+    const save = page.getByTestId(`${prefix}-allow`);
+    await page.evaluate(() => {
+      const stub = window as unknown as {
+        __TAURI_INTERNALS__: { invoke: (command: string, args?: Record<string, unknown>) => Promise<unknown> };
+        __failScheduleWrite?: () => void;
+      };
+      const original = stub.__TAURI_INTERNALS__.invoke;
+      stub.__TAURI_INTERNALS__.invoke = (command, args) => {
+        if (command === 'write_vault_text_file' && args?.relativePath === '.ontology-atlas/rounds.json') {
+          return new Promise((_, reject) => {
+            stub.__failScheduleWrite = () => {
+              stub.__TAURI_INTERNALS__.invoke = original;
+              reject(new Error('Simulated disk failure'));
+            };
+          });
+        }
+        return original(command, args);
+      };
+    });
+    await save.click();
+    await expect(save).toHaveText('Scheduling…');
+    await expect(save).toBeDisabled();
+    await expect(sheet.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled();
+    await page.keyboard.press('Escape');
+    await expect(sheet).toBeVisible();
+    await expect(page.getByTestId(lane === 'documents' ? 'library-rounds-rename' : 'ontology-automation-name')).toBeDisabled();
+    await page.waitForFunction(() => typeof (window as unknown as { __failScheduleWrite?: unknown }).__failScheduleWrite === 'function');
+    await page.evaluate(() => (window as unknown as { __failScheduleWrite: () => void }).__failScheduleWrite());
+    await expect(sheet.getByRole('alert')).toBeVisible();
+    await expect(save).toBeEnabled();
+    await save.click();
+    await expect(sheet).toHaveCount(0);
+    const count = await page.evaluate(() => JSON.parse((window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']).rounds.length);
+    expect(count).toBe(3);
+  });
+}
+
+test('a round and a connector a cloned folder switched on wait for this Mac, and one press allows each', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true, allowedHere: false });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  const row = page.getByTestId('automation-r-confluence');
+  const item = page.locator('li', { has: row });
+  await expect(row).toContainText('Not on this Mac');
+  await expect(item.getByTestId('automation-allow-here')).toContainText('Switched on in this folder, not on this Mac');
+  await expect(item.getByTestId('automation-allow-here-line')).toContainText('confluence · looks for “pages changed in the last day” · at most 20 new documents a pass');
+  const before = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
+  await item.getByTestId('automation-allow-here-button').click();
+  await expect(item.getByTestId('automation-allow-here')).toHaveCount(0);
+  await expect(row).toContainText('Scheduled');
+  await expect(page.getByTestId('automation-r-consistency')).toContainText('Not on this Mac');
+  const after = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
+  expect(after).toBe(before);
+
+  await page.goto('/en/agents/?tab=mcp&mcp=connectors&guides=off');
+  const connector = page.getByTestId('connectors-item').filter({ hasText: 'confluence' });
+  await expect(connector).toHaveAttribute('data-connector-waiting', 'true');
+  await expect(connector).toHaveAttribute('data-connector-enabled', 'false');
+  await expect(connector.getByTestId('connectors-item-runs')).toHaveText('https://mcp.atlassian.com/v1/mcp');
+  await connector.getByTestId('connectors-item-allow').click();
+  await expect(connector).toHaveAttribute('data-connector-enabled', 'true');
+  await expect(connector.getByTestId('connectors-item-waiting')).toHaveCount(0);
+});
+
+test('a document round is edited in place: same id, its history kept, the new cadence on the row', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents&round=r-consistency');
+  const row = page.getByTestId('automation-r-consistency');
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  const item = page.locator('li', { has: row });
+  await item.getByTestId('automations-edit').click();
+  const sheet = page.getByTestId('library-rounds-sheet');
+  await expect(sheet).toContainText('Edit the document review');
+  await expect(page.getByTestId('library-rounds-rename')).toContainText('Pages still match');
+  await page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Day', exact: true }).click();
+  await expect(page.getByTestId('library-rounds-allow')).toHaveText('Save changes');
+  await page.getByTestId('library-rounds-allow').click();
+  await expect(sheet).toHaveCount(0);
+  await expect(row).toContainText('Daily at 09:00');
+  await expect(item.getByText('Earlier runs · 3', { exact: true })).toBeVisible();
+  const rounds = await page.evaluate(() => JSON.parse((window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']).rounds);
+  expect(rounds.map((round: { id: string }) => round.id)).toEqual(['r-consistency', 'r-confluence']);
+  expect(rounds[0]).toMatchObject({ id: 'r-consistency', name: 'Pages still match', cadence: { daily: '09:00', weekdaysOnly: false } });
+  await expect(row).toContainText('Scheduled');
+});
+
+test('the door to Library check history opens with the schedule it came from selected', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents&round=r-confluence');
+  await expect(page.getByTestId('automation-r-confluence')).toHaveAttribute('aria-expanded', 'true');
+  await page.getByTestId('automations-open-library-rounds').click();
+  await expect(page.getByTestId('library-round-r-confluence')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('library-round-r-consistency')).toHaveAttribute('aria-pressed', 'false');
+});

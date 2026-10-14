@@ -59,7 +59,7 @@ function executorFor(
 
 describe('the Compile catalogue stays out of AGENT_TOOLS', () => {
   it('the compile tools do not join the MCP-mirrored list', () => {
-    // tests/contract/agent-tool-catalog.contract.test.ts demands AGENT_TOOLS match MCP exactly.
+    // tests/contract/mcp/agent-tool-catalog.contract.test.ts demands AGENT_TOOLS match MCP exactly.
     const names = AGENT_TOOLS.map((tool) => tool.name);
     expect(names).not.toContain('read_source_text');
     expect(names).not.toContain('read_wiki_page');

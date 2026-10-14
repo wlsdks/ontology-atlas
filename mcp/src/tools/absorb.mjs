@@ -48,9 +48,9 @@ import {
 
 const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
 
-// Mirrors the write path of cli/src/commands/absorb.mjs. The plan logic lives in
-// mcp/src/absorb.mjs, kept in lock-step with cli/src/lib/absorb.mjs by
-// tests/contract/absorb.contract.test.ts.
+// Mirrors the write path of cli/src/commands/local-vault/absorb.mjs. The plan logic lives in
+// mcp/src/absorb.mjs, kept in lock-step with cli/src/lib/mcp-bridge/absorb.mjs by
+// tests/contract/vault-format/absorb.contract.test.ts.
 /**
  * `review_state: human_decides` on the file `absorb_document` was pointed at.
  *

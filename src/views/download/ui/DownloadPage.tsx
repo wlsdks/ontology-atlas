@@ -40,7 +40,7 @@ import type { StageGraph } from '../lib/stage-graph';
 /**
  * One grid: every section's content sits in `PAGE_GUTTER` + `PAGE_COLUMN`, starting at
  * max(--gateway-gutter, (viewport − --gateway-page-max) / 2), the --gateway-origin
- * (`shared/lib/public-pages/gateway-frame.ts`, `tests/e2e/download-gateway-grid.spec.ts`).
+ * (`shared/lib/public-pages/gateway-frame.ts`, `tests/e2e/gateway/download-gateway-grid.spec.ts`).
  */
 
 const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
@@ -56,7 +56,7 @@ const HERO_CTA_WRAP = 'min-w-0 whitespace-normal text-left sm:whitespace-nowrap'
 /**
  * Serves /download and /: a hero on its own clock, then sections whose scroll entrances
  * (`animation-timeline: view()`) do not exist under reduced motion
- * (`tests/contract/reduced-motion-equivalent.contract.test.ts`).
+ * (`tests/contract/motion/reduced-motion-equivalent.contract.test.ts`).
  */
 export function DownloadPage() {
   const pathname = usePathname() ?? '/';

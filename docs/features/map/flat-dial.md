@@ -19,7 +19,7 @@ are not authored ontology data. The frame meter remains opt-in.
 
 ## What a line counts
 
-A line between two domains counts the `depends_on` relations (a concept's `dependencies` or `depends_on`) whose ends resolve to those two domains: a domain is itself, a capability its domain, an element its capability's domain or the domain that holds it. The count is per direction and equals what `query_ontology({operation:"domain_matrix", types:["depends_on"]})` reports for that pair (`tests/contract/domain-flow-parity.contract.test.ts`). Lines are counted aggregates, never bundles of individual relations. A pair joined only by `relates` draws a quiet line with no number.
+A line between two domains counts the `depends_on` relations (a concept's `dependencies` or `depends_on`) whose ends resolve to those two domains: a domain is itself, a capability its domain, an element its capability's domain or the domain that holds it. The count is per direction and equals what `query_ontology({operation:"domain_matrix", types:["depends_on"]})` reports for that pair (`tests/contract/analysis/domain-flow-parity.contract.test.ts`). Lines are counted aggregates, never bundles of individual relations. A pair joined only by `relates` draws a quiet line with no number.
 
 Links are counted between the deepest drawn ends: at the overview from domain to domain, and once a domain's capabilities are drawn, from capability to capability inside it. At rest at most 40 lines show (each end's strongest first, then the strongest of the rest, at most 6 per end once more than 12 ends show); the hidden ones still count in `__atlasMap.dial().budget`. The strongest few carry their number.
 

@@ -7,9 +7,9 @@ import { registerGatedFrameClient } from '../lib/gateway-frame-loop';
 /**
  * The gateway's light field, grain and cursor ring. Only inside `.gateway-fx-stage`, alpha capped
  * by `--gateway-fx-*` tokens, still for the first second so the headline enters undisturbed, one
- * still frame under reduced motion (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`),
+ * still frame under reduced motion (`tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`),
  * drawing only while the hero is in view.
- * The ring never hides the native cursor (`tests/e2e/cursor-affordance.spec.ts`); it grows over
+ * The ring never hides the native cursor (`tests/e2e/design-audits/cursor-affordance.spec.ts`); it grows over
  * pressable targets.
  */
 export function GatewayFx() {

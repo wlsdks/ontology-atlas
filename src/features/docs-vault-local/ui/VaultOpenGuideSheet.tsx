@@ -105,7 +105,7 @@ export function VaultOpenGuideSheet({
             aria-label={t("title")}
             data-testid="vault-guide-sheet"
             // Focus moves here on open so a screen reader starts from the title; the ring is removed
-            // because this focus is for announcement (tests/e2e/dialog-focus-ring.spec.ts).
+            // because this focus is for announcement (tests/e2e/design-audits/dialog-focus-ring.spec.ts).
             className="flex max-h-full w-full max-w-[var(--dialog-w-sm)] flex-col overflow-y-auto rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-3)] focus-visible:outline-none"
           >
             <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-5 py-4">

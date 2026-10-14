@@ -10,7 +10,7 @@ elements: [elements/cli-mcp-verify, elements/cli-vault-bootstrap]
 path: cli/src/lib/cli-commands.mjs
 created_by: "agent:claude-code"
 dependencies: [capabilities/vault-validation]
-relation_notes: { elements/cli-vault-bootstrap: You asked for element nodes named by role under the capability that uses them; the first-time build from a repository is this role., elements/cli-mcp-verify: You asked for element nodes named by role under the capability that uses them; proving the installed server answers is this role., capabilities/vault-validation: "cli/src/lib/validate.mjs loads mcp/src/validate.mjs at runtime with `loadMcpModule('validate.mjs')` and re-exports `validateVaultDocument` for cli/src/commands/validate.mjs, the module the registry in cli/src/lib/cli-commands.mjs dispatches for the validate command (`runner('validate.mjs', 'runValidate')`)." }
+relation_notes: { elements/cli-vault-bootstrap: You asked for element nodes named by role under the capability that uses them; the first-time build from a repository is this role., elements/cli-mcp-verify: You asked for element nodes named by role under the capability that uses them; proving the installed server answers is this role., capabilities/vault-validation: "cli/src/lib/mcp-bridge/validate.mjs loads mcp/src/validate.mjs at runtime with `loadMcpModule('validate.mjs')` and re-exports `validateVaultDocument` for cli/src/commands/local-vault/validate.mjs, the module the registry in cli/src/lib/cli-commands.mjs dispatches for the validate command (`runner('validate.mjs', 'runValidate')`)." }
 ---
 
 Carries the same authority over the vault from a terminal, so scaffolding a vault, exploring the graph, and writing to it are available without opening the app or connecting an agent. The public inventory of commands and their flags lives in `cli/README.md`.
@@ -18,7 +18,7 @@ Carries the same authority over the vault from a terminal, so scaffolding a vaul
 ## Includes
 - Scaffolding a new vault, importing and exporting, graph queries, writes, validation, and the connection smoke check.
 - A growth command that prints the plan the agent surface returns, counting the next reads recorded unknowns ask for beside the writes waiting.
-- Agent setup names the resolved configured vault in its post-change sync guidance, including when the vault and codebase are separate folders (`cli/src/commands/agent-setup.mjs`).
+- Agent setup names the resolved configured vault in its post-change sync guidance, including when the vault and codebase are separate folders (`cli/src/commands/agent-setup/agent-setup.mjs`).
 - The same findings and codes the MCP surface reports, by the same names.
 
 ## Excludes
@@ -27,4 +27,4 @@ Carries the same authority over the vault from a terminal, so scaffolding a vaul
 
 ## Uncertainty
 - Read from the file list under `cli/src/commands/` and the command table in `docs/FEATURES.md`; the command count stated there was not verified against the code, and no command was run in this scan.
-- The growth command was read at its header and its next-reads handling (`cli/src/commands/growth.mjs`: the `GROUPS` table, and the summary line and empty-plan branch of `renderGrowth`), which show it refusing to print "no growth candidates" while reads are waiting. Its shared response contract in `cli/src/lib/query-result-contract/maintenance-growth.mjs` was seen referenced but not opened.
+- The growth command was read at its header and its next-reads handling (`cli/src/commands/diagnosis/growth.mjs`: the `GROUPS` table, and the summary line and empty-plan branch of `renderGrowth`), which show it refusing to print "no growth candidates" while reads are waiting. Its shared response contract in `cli/src/lib/query-result-contract/maintenance-growth.mjs` was seen referenced but not opened.

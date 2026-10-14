@@ -76,8 +76,8 @@ test('app tests run affected Vitest and the test-source ratchets without waking 
   assert.equal(plan.lanes.unit.affected, true);
   assert.equal(plan.lanes.unit.contract, 'focused');
   assert.deepEqual(plan.lanes.unit.contractFiles, [
-    'tests/contract/source-comment-bytes.contract.test.ts',
-    'tests/contract/test-title-language.contract.test.ts',
+    'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
+    'tests/contract/ci-gates/test-title-language.contract.test.ts',
   ]);
   assert.equal(plan.lanes.e2e.mode, 'skip');
 });
@@ -87,10 +87,10 @@ test('a stylesheet change runs the token gates that read it whole', () => {
     const { contract, contractFiles } = buildImpactPlan({ files: [file] }).lanes.unit;
     assert.equal(contract, 'focused', file);
     for (const gate of [
-      'tests/contract/design-doc-token-integrity.contract.test.ts',
-      'tests/contract/source-comment-bytes.contract.test.ts',
-      'tests/contract/undeclared-token-ref.contract.test.ts',
-      'tests/contract/unused-token-ratchet.contract.test.ts',
+      'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
+      'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
+      'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
+      'tests/contract/design-tokens/unused-token-ratchet.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
 });
@@ -110,7 +110,7 @@ test('code outside app and src runs every suite and contract its importers reach
   const unit = buildImpactPlan({ files: ['mcp/src/architecture-profile.mjs'] }).lanes.unit;
   assert.equal(unit.affected, true, 'a src suite imports this MCP module');
   assert.equal(unit.contract, 'focused');
-  assert.ok(unit.contractFiles.includes('tests/contract/architecture-profile.contract.test.ts'));
+  assert.ok(unit.contractFiles.includes('tests/contract/harness/architecture-profile.contract.test.ts'));
   assert.equal(unitUsesAllShards(unit), true);
 });
 
@@ -126,7 +126,7 @@ test('a deleted file still imported somewhere runs the suites that import it by 
   const unit = buildImpactPlan({ files: [], deletedFiles: ['mcp/src/architecture-profile.mjs'] }).lanes.unit;
   const stale = 'src/views/architecture/model/analysis-architecture-record.test.ts';
   assert.ok(unit.extraCommands.some((command) => command.split(' ').includes(stale)));
-  assert.ok(unit.contractFiles.includes('tests/contract/architecture-profile.contract.test.ts'));
+  assert.ok(unit.contractFiles.includes('tests/contract/harness/architecture-profile.contract.test.ts'));
 });
 
 test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2e only', () => {
@@ -139,9 +139,9 @@ test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2
   assert.equal(plan.lanes.mcp.mode, 'skip');
   assert.equal(plan.lanes.e2e.mode, 'targeted');
   assert.deepEqual(plan.lanes.e2e.specs, [
-    'tests/e2e/docs-deeplink.spec.ts',
-    'tests/e2e/document-scroll-lock.spec.ts',
-    'tests/e2e/vault-truth-telling.spec.ts',
+    'tests/e2e/design-audits/document-scroll-lock.spec.ts',
+    'tests/e2e/library/docs/docs-deeplink.spec.ts',
+    'tests/e2e/vault-session/vault-truth-telling.spec.ts',
   ]);
 });
 
@@ -176,14 +176,14 @@ test('an additive sweep joins a page root plan without standing in for its smoke
   const unmapped = buildImpactPlan({ files: ['src/views/git/ui/GitPage.tsx'] }).lanes.e2e;
   assert.equal(unmapped.mode, 'smoke');
   assert.deepEqual(unmapped.unmappedPaths, ['src/views/git/ui/GitPage.tsx']);
-  assert.ok(unmapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+  assert.ok(unmapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
 
   const mapped = buildImpactPlan({ files: ['src/views/architecture/ui/HarnessPage.tsx'] }).lanes.e2e;
   assert.equal(mapped.mode, 'targeted');
-  assert.ok(mapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+  assert.ok(mapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
 
   const withSpec = buildImpactPlan({
-    files: ['tests/e2e/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
+    files: ['tests/e2e/design-audits/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
   }).lanes.e2e;
   assert.equal(withSpec.mode, 'targeted');
 });
@@ -192,8 +192,8 @@ test('every library graph source runs the graph specs and its ui keeps the smoke
   const sources = readdirSync('src/widgets/library-graph', { recursive: true })
     .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
     .map((file) => `src/widgets/library-graph/${file}`);
-  const specs = readdirSync('tests/e2e')
-    .filter((file) => /^library-graph-.+\.spec\.ts$/.test(file))
+  const specs = readdirSync('tests/e2e', { recursive: true })
+    .filter((file) => /(?:^|\/)library-graph-[^/]+\.spec\.ts$/.test(file))
     .map((file) => `tests/e2e/${file}`);
   assert.ok(sources.length > 0 && specs.length > 0, 'the library graph or its specs moved; move this case');
   for (const source of sources) {
@@ -236,7 +236,7 @@ test('MCP dependency changes promote only the MCP boundary to its exhaustive lan
 });
 
 test('direct Playwright spec edits run that spec, including post-merge instruments', () => {
-  for (const spec of ['tests/e2e/camera-transition.spec.ts', 'tests/e2e/gray-area/panel-layout.spec.ts']) {
+  for (const spec of ['tests/e2e/map/camera/camera-transition.spec.ts', 'tests/e2e/gray-area/panel-layout.spec.ts']) {
     const focused = suggestFocusedChecks([spec]).commands.map((row) => row.command);
     assert.ok(focused.includes(`pnpm exec playwright test ${spec}`));
     const plan = buildImpactPlan({ files: [spec] });
@@ -392,17 +392,17 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   const part = buildImpactPlan({ files: ['app/styles/tokens.css'] });
   assert.ok(part.lanes.gates.commands.includes('pnpm check:tokens'));
   assert.deepEqual(part.lanes.e2e.specs, [
-    'tests/e2e/hangul-tracking.spec.ts',
-    'tests/e2e/overflow-sweep.spec.ts',
-    'tests/e2e/prose-measure-calibration.spec.ts',
-    'tests/e2e/text-zoom-ramp.spec.ts',
+    'tests/e2e/design-audits/overflow-sweep.spec.ts',
+    'tests/e2e/settings/text-zoom-ramp.spec.ts',
+    'tests/e2e/typography/hangul-tracking.spec.ts',
+    'tests/e2e/typography/prose-measure-calibration.spec.ts',
   ]);
   assert.equal(part.lanes.e2e.webSurface, true);
 
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
   assert.ok(toc.lanes.gates.commands.includes('pnpm design:toc:check'));
 
-  const cli = buildImpactPlan({ files: ['cli/src/commands/relate.mjs'] });
+  const cli = buildImpactPlan({ files: ['cli/src/commands/graph-write/relate.mjs'] });
   assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
   // The command tests spawn the source MCP server, so the lane must install mcp/node_modules first.
   assert.equal(cli.lanes.gates.needsMcp, true);
@@ -549,7 +549,7 @@ test('the perf lane starts only for code a measurement could import, and on ever
   assert.equal(mode({ files: ['src/shared/lib/cn.test.ts'] }), 'skip');
   assert.equal(mode({ files: ['docs/DESIGN-SYSTEM.md'] }), 'skip');
   assert.equal(mode({ files: ['mcp/src/schema.mjs'] }), 'skip');
-  assert.equal(mode({ files: ['tests/contract/workflow-budgets.contract.test.ts'] }), 'skip');
+  assert.equal(mode({ files: ['tests/contract/ci-gates/workflow-budgets.contract.test.ts'] }), 'skip');
   // A vanished module is in nobody's import graph, so `--changed` could not find its users.
   assert.equal(mode({ files: [], deletedFiles: ['src/shared/lib/search-match/hangul-match.ts'] }), 'full');
   // The Vitest configuration decides what the perf project is.

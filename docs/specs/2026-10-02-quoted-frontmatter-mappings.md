@@ -55,7 +55,7 @@ The independently inspected source explains these results:
   (`src/entities/docs-vault/lib/authoring/frontmatter-updates.ts:45`, `:59`, `:91`).
   Updating a decoded quoted key must replace the intended field, not append a
   second field while leaving the old quoted one in place.
-- CLI delegates to MCP (`cli/src/lib/parse-frontmatter.mjs:1`): four delivery
+- CLI delegates to MCP (`cli/src/lib/mcp-bridge/parse-frontmatter.mjs:1`): four delivery
   paths, three physical reader implementations. The existing parser and writer
   contract tests exercise the public entrypoints.
 
@@ -199,7 +199,7 @@ the repair does not add a new screen, toast or label.
 1. **Given** the six observed before-state cases, **when** each public reader
    consumes the corrected fixtures, **then** expected decoded keys and quoted
    scalar types agree across renderer, MCP, scripts and CLI. Prove RED/GREEN in
-   `tests/contract/parse-frontmatter.contract.test.ts`, using shared cases.
+   `tests/contract/vault-format/parse-frontmatter.contract.test.ts`, using shared cases.
 2. **Given** supported top-level, inline and block keys containing colons, commas,
    Unicode, doubled single quotes and supported double-quote escapes, **when** read
    and then written three times, **then** keys, scalar types and body remain stable.

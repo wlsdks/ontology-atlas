@@ -8,7 +8,7 @@ import {
 
 /**
  * Opening lines drawn from the folder's real state. Pure and model-free: a chip is built before
- * consent, so a call would be an unconsented transfer (`tests/contract/agent-first-words-local.contract.test.ts`).
+ * consent, so a call would be an unconsented transfer (`tests/contract/agent-chat/agent-first-words-local.contract.test.ts`).
  * A chip is a prefill, and one generator feeds every entrance.
  */
 

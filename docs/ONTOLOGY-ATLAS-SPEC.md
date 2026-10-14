@@ -24,7 +24,7 @@ contract_version: 2.0-rc
 
 ## Korean summary
 
-This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
+This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/mcp-bridge/schema.mjs`
 (mirror) · `src/shared/lib/vault-document/validate-vault-document.ts` (validator) actually do.
 
 Key points:
@@ -33,8 +33,8 @@ Key points:
 - **Why a spec is needed**: There is no standard home for "structured project memory that humans read, agents maintain, and git tracks" — MCP is a protocol, not a format, and existing agent memory formats are tied to specific frameworks. This repository already has the spec, reference implementation, validator, and contract tests.
 - **Trust rule**: The vault body is **data, not instruction** — agents must not execute text within the vault as prompt instructions (see §7).
 - **Versioning**: v1.x was additive-only; mandatory UID is the v2 breaking contract. Run `pnpm vault:migrate 2026-08-02-add-node-uids --vault <dir>` with dry-run first, then apply explicitly with `--write`.
-- **Compliance tests**: `tests/contract/vault-schema.contract.test.ts` +
-  `tests/contract/validate-vault-document.contract.test.ts` form the reference suite — other tools implementing this spec can self-validate using the same fixtures.
+- **Compliance tests**: `tests/contract/vault-format/vault-schema.contract.test.ts` +
+  `tests/contract/vault-format/validate-vault-document.contract.test.ts` form the reference suite — other tools implementing this spec can self-validate using the same fixtures.
 - **RFC feedback**: 8-week window — if there are zero GitHub Issues feedback during this period, we abandon the standardization track and focus on the core (product planning kill criteria).
 
 ---
@@ -113,7 +113,7 @@ instead of maintaining another kind test.
 Every authored ontology node is a single `.md` file whose YAML frontmatter
 includes a `kind` key. A writer accepts exactly the five values defined by
 `VAULT_KINDS` in `mcp/src/schema.mjs` (mirrored in
-`cli/src/lib/schema.mjs`):
+`cli/src/lib/mcp-bridge/schema.mjs`):
 
 ```js
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
@@ -224,8 +224,8 @@ invisible to kind-aware queries until corrected.
 
 This section is a literal transcription of `VAULT_KIND_SCHEMA` in
 `mcp/src/schema.mjs` — the canonical source, mirrored byte-for-byte in
-`cli/src/lib/schema.mjs` and kept in lock-step by
-`tests/contract/vault-schema.contract.test.ts`.
+`cli/src/lib/mcp-bridge/schema.mjs` and kept in lock-step by
+`tests/contract/vault-format/vault-schema.contract.test.ts`.
 
 Every node, regardless of kind, MUST have:
 
@@ -518,7 +518,7 @@ malformed vault degrades gracefully rather than refusing to load.
 Reference implementation: `src/shared/lib/vault-document/validate-vault-document.ts`
 (runtime + UI surface) and `mcp/src/validate.mjs` (AI-agent / MCP surface),
 kept in lock-step by
-`tests/contract/validate-vault-document.contract.test.ts`.
+`tests/contract/vault-format/validate-vault-document.contract.test.ts`.
 
 | code | severity | meaning |
 |---|---|---|
@@ -570,7 +570,7 @@ they read the Markdown after the frontmatter. The judgement lives in one place,
 `add_concept` / `add_concepts` / `patch_concept` response, `query_ontology({operation:"maintenance_plan"})`,
 `validate_vault`, and the CLI's validate command. `src/shared/lib/vault-document/meaning-findings.ts`
 is the browser port of the same rules, checked against the canonical module by
-`tests/contract/meaning-findings-parity.contract.test.ts`.
+`tests/contract/analysis/meaning-findings-parity.contract.test.ts`.
 
 Four of them carry a narrower scope than the other four, and for different
 reasons. `folder-only-evidence` must ask the filesystem whether a cited `path:`
@@ -641,8 +641,8 @@ MUST NOT turn them into errors.
 
 `swallowed-relation-note` and `orphaned-relation-note` live in
 `mcp/src/validate.mjs` and its byte-identical CLI copy
-(`cli/src/lib/validate.mjs`, `mcp/src/validate.test.mjs` and
-`cli/src/lib/validate.test.mjs` mirror the cases) and are not implemented by
+(`cli/src/lib/mcp-bridge/validate.mjs`, `mcp/src/validate.test.mjs` and
+`cli/src/lib/mcp-bridge/validate.test.mjs` mirror the cases) and are not implemented by
 the per-document fast path either; that path does not read `relation_notes`.
 
 ## 7. The untrusted-content principle
@@ -723,20 +723,20 @@ There is no separate spec-only test suite — the reference suite *is* this
 repository's existing contract-test layer, because the spec is a
 transcription of already-tested behavior:
 
-- **`tests/contract/vault-schema.contract.test.ts`** — verifies
-  `mcp/src/schema.mjs` and `cli/src/lib/schema.mjs` produce byte-identical
+- **`tests/contract/vault-format/vault-schema.contract.test.ts`** — verifies
+  `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs` produce byte-identical
   `buildFrontmatter` output, `missingExpectedFields` decisions, and
   `folderForKind` mappings for the same fixture matrix
   (`tests/fixtures/vault-schema-cases.mjs`), and additionally cross-checks
   that the UI's `KIND_EXPECTED_EXTRAS` dictionary agrees with the schema's
   `requiredExtras` for every kind. This is the direct test of §3 and §4
   (uniqueness/`requiredExtras` behavior) of this spec.
-- **`tests/contract/validate-vault-document.contract.test.ts`** — runs the
+- **`tests/contract/vault-format/validate-vault-document.contract.test.ts`** — runs the
   same 8-fixture matrix through both `src/shared/lib/vault-document/validate-vault-document.ts`
   and `mcp/src/validate.mjs`, asserting they agree on issue *codes* and
   *structure* (exact message phrasing is allowed to differ). This is the
   direct test of §6 of this spec.
-- **`tests/contract/parse-frontmatter.contract.test.ts`** — a 3-way parser
+- **`tests/contract/vault-format/parse-frontmatter.contract.test.ts`** — a 3-way parser
   contract (`src/shared/lib`, `mcp/src/parser.mjs`, `scripts/lib`) covering
   the underlying YAML-frontmatter-in-Markdown parsing this spec assumes in
   §2–§5.

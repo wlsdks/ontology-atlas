@@ -154,7 +154,7 @@ export function DocsVaultViewer({
         /*
          * Wikilinks become standard links with a sentinel the `a` component catches. The sentinel
          * must not look like a URL scheme, or react-markdown's `defaultUrlTransform` empties the
-         * href (`tests/contract/wikilink-url-scheme.contract.test.ts`).
+         * href (`tests/contract/security/wikilink-url-scheme.contract.test.ts`).
          */
         cleaned = rewriteWikilinks(cleaned);
         setRaw(cleaned);

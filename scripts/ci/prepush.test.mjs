@@ -124,10 +124,10 @@ test('document registries and workflow guards run only for their inputs and bloc
   assert.equal(green.status, 0, green.stdout + green.stderr);
   const commands = fixture.commands();
   assert.equal(commands.filter((args) => args[0] === 'dev-checks:check').length, 1);
-  const workflow = commands.filter((args) => args.includes('tests/contract/workflow-security.contract.test.ts'));
+  const workflow = commands.filter((args) => args.includes('tests/contract/security/workflow-security.contract.test.ts'));
   assert.equal(workflow.length, 1);
-  assert.ok(workflow[0].includes('tests/contract/github-action-pins.contract.test.ts'));
-  for (const arg of ['dev-checks:check', 'tests/contract/workflow-security.contract.test.ts']) {
+  assert.ok(workflow[0].includes('tests/contract/security/github-action-pins.contract.test.ts'));
+  for (const arg of ['dev-checks:check', 'tests/contract/security/workflow-security.contract.test.ts']) {
     const red = fixture.run({ env: { FAIL_ARGUMENT: arg } });
     assert.equal(red.status, 1, red.stdout + red.stderr);
   }

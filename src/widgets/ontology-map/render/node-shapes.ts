@@ -417,7 +417,7 @@ function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y:
  * This kind's polygon points at draw radius `r` — `null` for capability, which
  * is already a plain circle. Exported (in addition to internal use by
  * `draw()`/`strokeKindOutline()`/`outlinePerimeter()`) so
- * `tests/contract/node-kind-shape-parity.contract.test.ts` can read the
+ * `tests/contract/map/node-kind-shape-parity.contract.test.ts` can read the
  * canvas gateway's kind→silhouette mapping directly instead of re-deriving it
  * from `draw()`'s side effects — that contract test is the ONLY thing that
  * checks this mapping agrees with the DOM gateway's
@@ -498,7 +498,7 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
 /**
  * The walked path's star: the node, emitting. Composites with `lighter` so light adds on a dark
  * canvas; the face is never filled so the numeral stays readable (the bloom is an annulus).
- * Licence for the composite: `tests/contract/canvas-composite-license.contract.test.ts`.
+ * Licence for the composite: `tests/contract/map/canvas-composite-license.contract.test.ts`.
  */
 export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, ink: string, lit: number, swell = 1,
 /** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */

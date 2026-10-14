@@ -32,7 +32,7 @@ The local workspace for gathering originals, writing and checking Wiki pages tha
 ## Evidence
 - `src/views/library/ui/LibraryPage.tsx` coordinates the authoring and question/report flows; `src/views/library/ui/parts/questions/LibraryQuestionDesk.tsx` owns the inquiry surface and guarded source opening.
 - `src/features/library/lib/questions/question-desk.ts` implements bounded local retrieval; `src/features/library/lib/questions/question-desk-brief.ts` owns the report brief, section handling and inert export boundary.
-- `src/app/library-workspace/index.tsx` owns navigation and legacy set-link canonicalization. `tests/e2e/library-question-desk.spec.ts` and `tests/e2e/library-workspace.spec.ts` cover search, current report behavior, source reach, URL identity and draft recovery.
+- `src/app/library-workspace/index.tsx` owns navigation and legacy set-link canonicalization. `tests/e2e/library/answers/library-question-desk.spec.ts` and `tests/e2e/library/library-workspace.spec.ts` cover search, current report behavior, source reach, URL identity and draft recovery.
 
 ## Uncertainty
 - Re-read and exercised in the installed macOS app on 2026-09-28 with two synthetic Wiki pages and two originals: local search, real Codex source rereading/report arrival, exact source navigation, Markdown export, and earlier A4 PDF/file-as-Wiki proof. PR #2059 carries native captures and motion evidence. This replaces the earlier unrun-workspace note.

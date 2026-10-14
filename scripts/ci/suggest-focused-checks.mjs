@@ -202,7 +202,7 @@ export function collapseCoveredContractCommands(commands, scripts = packageScrip
     const files = typeof body === 'string' && body.startsWith('vitest run ')
       ? body.slice('vitest run '.length).split(' ') : [];
     const subset = files.length > 0 && files.every((path) =>
-      /^tests\/contract\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.test\.[cm]?[jt]sx?$/.test(path));
+      /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.test\.[cm]?[jt]sx?$/.test(path));
     const nodePaths = typeof body === 'string' && body.startsWith('node --test ')
       ? body.slice('node --test '.length).split(' ') : [];
     const exactNodeFiles = nodePaths.length > 0 && nodePaths.every((path) =>

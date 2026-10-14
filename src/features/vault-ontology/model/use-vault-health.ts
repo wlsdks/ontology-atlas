@@ -14,7 +14,7 @@ import {
  * Browser twin of the CLI `health`: same rule outcomes from raw frontmatter, with
  * `useOntologyInsight`'s mode selection.
  */
-// The manifest only through the resolver (tests/contract/static-vault-source.contract.test.ts).
+// The manifest only through the resolver (tests/contract/vault-data/static-vault-source.contract.test.ts).
 const staticManifest = resolveStaticVaultSource('dogfood').manifest;
 const storefrontManifest = resolveStaticVaultSource('storefront').manifest;
 

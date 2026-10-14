@@ -28,7 +28,7 @@ Keeps a named selection of ontology concepts, with its purpose, so a person or a
 ## Evidence
 - `src/features/saved-constellations/model/use-saved-constellations.ts` owns captured-vault loading and guarded saves; `src/entities/library-collection/model/library-collection.ts` defines the compatible identities and targets.
 - `src/views/library/ui/LibraryConstellations.tsx` resolves and displays sets; `src/app/library-workspace/index.tsx` owns the new location and compatible URL state.
-- `tests/e2e/library-workspace.spec.ts` recovers a planted saved set with a missing UID at zero current nodes, preserves URL context and the last unsaved document keystroke, and reaches the real ontology starter. `src/widgets/saved-constellations/ui/SavedConstellationsControl.test.tsx` checks conflict/recreation authority.
+- `tests/e2e/library/library-workspace.spec.ts` recovers a planted saved set with a missing UID at zero current nodes, preserves URL context and the last unsaved document keystroke, and reaches the real ontology starter. `src/widgets/saved-constellations/ui/SavedConstellationsControl.test.tsx` checks conflict/recreation authority.
 
 ## Uncertainty
 - Storage, membership and recovery code were read for PR #2059; the installed app's empty-set navigation was exercised on 2026-09-28 and a redirecting zero-node action was corrected. This supersedes the earlier file-layout-only reading.

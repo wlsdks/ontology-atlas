@@ -188,7 +188,7 @@ export const MAX_FIT_CHROME_SHARE = 0.5;
 
 /**
  * How the two insets of one axis give way past the ceiling. `equal`: side lanes cut by the same
- * pixels, keeping the drawing centred (`tests/contract/map-fit-side-air.contract.test.ts`).
+ * pixels, keeping the drawing centred (`tests/contract/map/map-fit-side-air.contract.test.ts`).
  * `proportional`: top and bottom bands, which have no shared air to centre.
  */
 export type FitInsetShare = "equal" | "proportional";

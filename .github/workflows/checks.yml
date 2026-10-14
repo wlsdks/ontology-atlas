@@ -314,7 +314,7 @@ jobs:
   # merge forever — `pnpm pr:land`'s own falsifier names "a landing that merges while a
   # required context reads skipped". Rather than edit branch protection, the name stays
   # and this job carries it: it passes only if every shard did, so the required context
-  # means exactly what it meant before, and `tests/contract/workflow-budgets.contract.test.ts`
+  # means exactly what it meant before, and `tests/contract/ci-gates/workflow-budgets.contract.test.ts`
   # asserts each required name still resolves to a real job.
   #
   # The sharded job keeps the key `unit`, not the name, because
@@ -438,7 +438,7 @@ jobs:
   #
   # The `draft == false` clause is vacuous for `push` and `workflow_dispatch` — neither
   # event carries a pull request — and is written because
-  # `tests/contract/workflow-security.contract.test.ts` holds that every job in a
+  # `tests/contract/security/workflow-security.contract.test.ts` holds that every job in a
   # workflow with a `pull_request` trigger names the draft guard.
   install-windows-canary:
     name: Windows install canary

@@ -586,7 +586,7 @@ export function ProjectForm({
     /*
      * The input column takes the remaining width and only the preview is fixed; `minmax(0,…)`
      * keeps long content inside the frame. The 640 in docs/prototypes/project-forms-final.html
-     * is a single column, not a sidebar track. Gate: tests/contract/page-grid-fits-frame.contract.test.ts.
+     * is a single column, not a sidebar track. Gate: tests/contract/layout/page-grid-fits-frame.contract.test.ts.
      */
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
       {mode === "create" ? createForm : editForm}
