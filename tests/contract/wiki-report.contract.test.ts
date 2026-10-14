@@ -81,7 +81,7 @@ function judge(
 
 describe('the structural check — the CLI, the MCP validators and the app enumerate one folder', () => {
   it('the CLI command prints exactly the expected findings', async () => {
-    const { runWikiValidate } = await import('../../cli/src/commands/wiki-validate.mjs');
+    const { runWikiValidate } = await import('../../cli/src/commands/library/wiki-validate.mjs');
     const written: string[] = [];
     const write = process.stdout.write.bind(process.stdout);
     process.stdout.write = ((chunk: string) => {

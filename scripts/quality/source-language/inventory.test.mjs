@@ -196,7 +196,7 @@ test("a comment marker inside a string literal is still not a comment", () => {
 test('scopes the printed-string scan to programs whose strings are output', () => {
   assert.equal(classifyStringScanPath('scripts/desktop-release/release-rehearsal.mjs'), 'scripts');
   assert.equal(classifyStringScanPath('mcp/src/index.js'), 'mcpServer');
-  assert.equal(classifyStringScanPath('cli/src/commands/validate.mjs'), 'cliCommands');
+  assert.equal(classifyStringScanPath('cli/src/commands/local-vault/validate.mjs'), 'cliCommands');
   // Test names are Korean by convention here, fixtures must hold Korean input, and the product's
   // own locale data is not this ratchet's business.
   assert.equal(classifyStringScanPath('scripts/release-rehearsal.test.mjs'), null);

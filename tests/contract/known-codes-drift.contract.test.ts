@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { VALIDATE_CASES } from '../fixtures/validate-vault-cases.mjs';
-import { validateVaultDocument as validateCli } from '../../cli/src/lib/validate.mjs';
-import { KNOWN_CODES } from '../../cli/src/commands/validate.mjs';
+import { validateVaultDocument as validateCli } from '../../cli/src/lib/mcp-bridge/validate.mjs';
+import { KNOWN_CODES } from '../../cli/src/commands/local-vault/validate.mjs';
 import { VAULT_ISSUE_CODE_VALUES } from '../../mcp/src/validate.mjs';
 
 /**

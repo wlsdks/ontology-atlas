@@ -26,7 +26,7 @@ import {
   kindForContainmentKey as kindForContainmentKeyApp,
 } from "@/shared/lib/vault-document/containment-keys";
 /*
- * Only the names the CLI runtime re-exports are imported here, since `cli/src/lib/schema.mjs`
+ * Only the names the CLI runtime re-exports are imported here, since `cli/src/lib/mcp-bridge/schema.mjs`
  * re-exports `mcp/src/schema.mjs`; a cli === mcp assertion on other names would compare an object to
  * itself. `schema-copy-sync.contract.test.ts` keeps the re-export from growing a body.
  */
@@ -36,7 +36,7 @@ import {
   folderForKind as folderCli,
   flatSlugIssue as flatSlugCli,
   nodeUidIssue as uidIssueCli,
-} from "../../cli/src/lib/schema.mjs";
+} from "../../cli/src/lib/mcp-bridge/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/vault-document/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
 import {
@@ -50,7 +50,7 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
  * 2-way + 1 cross-check vault schema contract:
  *
  *   - mcp/src/schema.mjs (AI agent surface — `add_concept`)
- *   - cli/src/lib/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
+ *   - cli/src/lib/mcp-bridge/schema.mjs (developer CLI — `node $ATLAS/cli/src/index.mjs add`)
  *   - KIND_EXPECTED_EXTRAS in src/shared/lib/vault-document/validate-vault-document.ts
  *     (web/UI advisory)
  *

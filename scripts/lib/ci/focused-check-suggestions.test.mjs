@@ -372,7 +372,7 @@ describe('focused check suggestions', () => {
   it('suggests cross-package contracts for parser schema and validator drift', () => {
     const result = suggestFocusedChecks([
       'mcp/src/schema.mjs',
-      'cli/src/lib/parse-frontmatter.mjs',
+      'cli/src/lib/mcp-bridge/parse-frontmatter.mjs',
       'src/shared/lib/vault-document/validate-vault-document.ts',
       'tests/fixtures/validate-vault-cases.mjs',
       'tests/fixtures/vault-schema-cases.mjs',
@@ -558,7 +558,7 @@ describe('focused check suggestions', () => {
   it('routes architecture changes through the cross-surface gate and rendered workflow', () => {
     const result = suggestFocusedChecks([
       'mcp/src/architecture-profile.mjs',
-      'cli/src/commands/architecture.mjs',
+      'cli/src/commands/repo-analysis/architecture.mjs',
       'src/views/architecture/ui/ArchitectureWorkbench.tsx',
     ]);
 
@@ -700,19 +700,19 @@ describe('focused check suggestions', () => {
 
   it('deduplicates direct CLI lib unit tests when source and test both changed', () => {
     const result = suggestFocusedChecks([
-      'cli/src/lib/mcp-call.mjs',
-      'cli/src/lib/mcp-call.test.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm test:cli:mcp-call',
-      'pnpm exec node --test cli/src/lib/mcp-call.test.mjs',
+      'pnpm exec node --test cli/src/lib/mcp-bridge/mcp-call.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
     ]);
-    assert.deepEqual(result.commands.find((row) => row.command.endsWith('cli/src/lib/mcp-call.test.mjs')).paths, [
-      'cli/src/lib/mcp-call.mjs',
-      'cli/src/lib/mcp-call.test.mjs',
+    assert.deepEqual(result.commands.find((row) => row.command.endsWith('cli/src/lib/mcp-bridge/mcp-call.test.mjs')).paths, [
+      'cli/src/lib/mcp-bridge/mcp-call.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.test.mjs',
     ]);
   });
 
@@ -743,9 +743,9 @@ describe('focused check suggestions', () => {
 
   it('suggests setup integration for agent config repair helpers', () => {
     const result = suggestFocusedChecks([
-      'cli/src/lib/agent-config.mjs',
-      'cli/src/lib/agent-config.test.mjs',
-      'cli/src/commands/agent-setup.mjs',
+      'cli/src/lib/agent-setup/agent-config.mjs',
+      'cli/src/lib/agent-setup/agent-config.test.mjs',
+      'cli/src/commands/agent-setup/agent-setup.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1474,7 +1474,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI and MCP verify gates without jumping straight to full suites', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/mcp-verify.mjs',
+      'cli/src/commands/agent-setup/mcp-verify.mjs',
       'mcp/scripts/verify.mjs',
       'scripts/packaging/smoke-packed-cli.mjs',
     ]);
@@ -1504,9 +1504,9 @@ describe('focused check suggestions', () => {
 
   it('runs source-checkout MCP dependency guard tests from every implementation path', () => {
     assert.deepEqual(
-      domainCommands(suggestFocusedChecks(['cli/src/lib/mcp-module.mjs'])),
+      domainCommands(suggestFocusedChecks(['cli/src/lib/mcp-bridge/mcp-module.mjs'])),
       [
-        'pnpm exec node --test cli/src/lib/mcp-module.test.mjs',
+        'pnpm exec node --test cli/src/lib/mcp-bridge/mcp-module.test.mjs',
         'pnpm test:cli:lib',
         'pnpm vault:validate',
       ],
@@ -1554,9 +1554,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI diagnosis integration for health, agent-brief, and workspace-brief commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/health.mjs',
-      'cli/src/commands/agent-brief.mjs',
-      'cli/src/commands/workspace-brief.mjs',
+      'cli/src/commands/diagnosis/health.mjs',
+      'cli/src/commands/diagnosis/agent-brief.mjs',
+      'cli/src/commands/diagnosis/workspace-brief.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1568,12 +1568,12 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI graph-read integration for read-only graph commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/backlinks.mjs',
-      'cli/src/commands/path.mjs',
-      'cli/src/commands/all-paths.mjs',
-      'cli/src/commands/relation-check.mjs',
-      'cli/src/commands/node-profile.mjs',
-      'cli/src/commands/similar.mjs',
+      'cli/src/commands/graph-traversal/backlinks.mjs',
+      'cli/src/commands/graph-traversal/path.mjs',
+      'cli/src/commands/graph-traversal/all-paths.mjs',
+      'cli/src/commands/graph-write/relation-check.mjs',
+      'cli/src/commands/graph-query/node-profile.mjs',
+      'cli/src/commands/graph-query/similar.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1596,9 +1596,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI graph-write integration for destructive graph commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/rename.mjs',
-      'cli/src/commands/delete.mjs',
-      'cli/src/commands/merge.mjs',
+      'cli/src/commands/graph-write/rename.mjs',
+      'cli/src/commands/graph-write/delete.mjs',
+      'cli/src/commands/graph-write/merge.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1610,9 +1610,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI repo-analysis integration for code-to-vault commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/analyze.mjs',
-      'cli/src/commands/infer-imports.mjs',
-      'cli/src/commands/bootstrap.mjs',
+      'cli/src/commands/repo-analysis/analyze.mjs',
+      'cli/src/commands/repo-analysis/infer-imports.mjs',
+      'cli/src/commands/repo-analysis/bootstrap.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1624,11 +1624,11 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI local vault integration for frontmatter commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/add.mjs',
-      'cli/src/commands/import.mjs',
-      'cli/src/commands/list.mjs',
-      'cli/src/commands/find.mjs',
-      'cli/src/commands/validate.mjs',
+      'cli/src/commands/local-vault/add.mjs',
+      'cli/src/commands/local-vault/import.mjs',
+      'cli/src/commands/local-vault/list.mjs',
+      'cli/src/commands/local-vault/find.mjs',
+      'cli/src/commands/local-vault/validate.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1876,7 +1876,7 @@ describe('agent-file surface', () => {
       '.agents/agents/reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
-      'cli/src/lib/agent-files.mjs',
+      'cli/src/lib/agent-setup/agent-files.mjs',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes('pnpm agents:check'),
@@ -1918,7 +1918,7 @@ describe('agent-file surface', () => {
     const contract =
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts';
     for (const path of [
-      'cli/src/lib/agent-files.mjs',
+      'cli/src/lib/agent-setup/agent-files.mjs',
       'src/entities/agent-files/model/agent-files.ts',
       'tests/fixtures/agent-files-cases.mjs',
       '.claude/rules/testing.md',

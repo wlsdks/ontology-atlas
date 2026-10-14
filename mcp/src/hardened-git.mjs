@@ -2,7 +2,7 @@
 // vault or connected project source may be attacker-authored, so each invocation
 // carries config that neutralises code execution driven by the repository's own
 // git config before git honours it. The Rust desktop (`src-tauri/src/git/runner.rs`) and
-// the CLI (`cli/src/lib/hardened-git.mjs`) mirror these rules.
+// the CLI (`cli/src/lib/git/hardened-git.mjs`) mirror these rules.
 
 import { spawnSync } from 'node:child_process';
 

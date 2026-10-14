@@ -1,6 +1,6 @@
 /**
  * Absorption tool fixtures — CLAUDE.md/AGENTS.md-style markdown → typed vault
- * node conversion. Shared input matrix so `cli/src/lib/absorb.mjs` and
+ * node conversion. Shared input matrix so `cli/src/lib/mcp-bridge/absorb.mjs` and
  * `mcp/src/absorb.mjs` (mirror copies, see PRODUCT-PLAN-2026-07.md §9 Slice 0)
  * agree on section splitting, kind-mapping heuristics, and injection
  * flagging. A drift between the two is a contract-test failure.

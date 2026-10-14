@@ -6,7 +6,7 @@ title: CLI connection verification
 display_en: CLI connection verification
 display_ko: CLI 연결 검증
 domain: domains/agent-access
-path: cli/src/commands/mcp-verify.mjs
+path: cli/src/commands/agent-setup/mcp-verify.mjs
 created_by: "agent:claude-code"
 ---
 

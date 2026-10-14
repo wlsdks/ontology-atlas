@@ -10,7 +10,7 @@ import {
   buildGraphML as graphmlCli,
   buildJsonLd as jsonldCli,
   INTEROP_SCHEMA_VERSION as schemaVersionCli,
-} from '../../cli/src/lib/interop-format.mjs';
+} from '../../cli/src/lib/export-format/interop-format.mjs';
 
 /**
  * Interop-format contract — the web ERD builder export (`src/shared/lib`) and

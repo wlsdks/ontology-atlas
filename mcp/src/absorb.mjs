@@ -3,7 +3,7 @@
 // decision sections become `kind: document` nodes with `role: policy`;
 // architecture sections become element/capability suggestions only, never
 // written automatically. Unclassified and injection-suspect sections stay
-// verbatim in the rewritten slim pointer file. `cli/src/lib/absorb.mjs`
+// verbatim in the rewritten slim pointer file. `cli/src/lib/mcp-bridge/absorb.mjs`
 // re-exports this module. Pure: callers supply `isSlugTaken`.
 
 import { folderForKind } from './schema.mjs';

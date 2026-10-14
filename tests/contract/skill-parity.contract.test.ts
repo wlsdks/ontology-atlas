@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { analyzeAgentFiles as analyzeWeb } from '@/entities/agent-files';
 import { buildSkillParityModel } from '@/views/docs-vault/lib/agent-files/skill-parity';
-import { analyzeAgentFiles as analyzeCli } from '../../cli/src/lib/agent-files.mjs';
+import { analyzeAgentFiles as analyzeCli } from '../../cli/src/lib/agent-setup/agent-files.mjs';
 import { CASES as FIXTURE_CASES } from '../fixtures/agent-files-cases.mjs';
 
 /**

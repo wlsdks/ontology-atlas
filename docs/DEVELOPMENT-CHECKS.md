@@ -332,12 +332,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm test:contracts`
 **Proves**: `cli-output-language.contract.test.ts` counts zero Hangul code points in non-test `cli/src/**/*.mjs` printed strings, the blind spot the comment-only `source:language` scan misses.
 **Escalate**: `tests/contract/cli-output-language.contract.test.ts` to isolate the CLI printed-string language failure
-**Fix**: translate the flagged printed string to English; `cli/src/lib/absorb.mjs` stays the sole allowlisted matcher exception.
+**Fix**: translate the flagged printed string to English; `cli/src/lib/mcp-bridge/absorb.mjs` stays the sole allowlisted matcher exception.
 
 ### CLI re-exports the MCP schema instead of copying it
 
 **Run**: `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts`
-**Proves**: `cli/src/lib/schema.mjs`, `validate.mjs`, `absorb.mjs`, `suggestions.mjs`, and `parse-frontmatter.mjs` stay thin re-exports of the MCP modules through `loadMcpModule`; a function or class body in any of them means a copy came back.
+**Proves**: `cli/src/lib/mcp-bridge/schema.mjs`, `validate.mjs`, `absorb.mjs`, `suggestions.mjs`, and `parse-frontmatter.mjs` stay thin re-exports of the MCP modules through `loadMcpModule`; a function or class body in any of them means a copy came back.
 **Escalate**: none.
 **Fix**: Replace the copied logic with a re-export from the canonical `mcp/src/` module; mcp is canonical.
 

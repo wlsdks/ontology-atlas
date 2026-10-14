@@ -24,7 +24,7 @@ contract_version: 2.0-rc
 
 ## Korean summary
 
-This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/schema.mjs`
+This document **elevates to a public specification** the vault markdown frontmatter schema that the `ontology-atlas` repository has already implemented and enforced. v2 is the first breaking revision requiring an immutable UUIDv4 `uid` for all `kind:` nodes — it documents exactly what `mcp/src/schema.mjs` (canonical) · `cli/src/lib/mcp-bridge/schema.mjs`
 (mirror) · `src/shared/lib/vault-document/validate-vault-document.ts` (validator) actually do.
 
 Key points:
@@ -113,7 +113,7 @@ instead of maintaining another kind test.
 Every authored ontology node is a single `.md` file whose YAML frontmatter
 includes a `kind` key. A writer accepts exactly the five values defined by
 `VAULT_KINDS` in `mcp/src/schema.mjs` (mirrored in
-`cli/src/lib/schema.mjs`):
+`cli/src/lib/mcp-bridge/schema.mjs`):
 
 ```js
 export const VAULT_KINDS = ['project', 'domain', 'capability', 'element', 'document'];
@@ -224,7 +224,7 @@ invisible to kind-aware queries until corrected.
 
 This section is a literal transcription of `VAULT_KIND_SCHEMA` in
 `mcp/src/schema.mjs` — the canonical source, mirrored byte-for-byte in
-`cli/src/lib/schema.mjs` and kept in lock-step by
+`cli/src/lib/mcp-bridge/schema.mjs` and kept in lock-step by
 `tests/contract/vault-schema.contract.test.ts`.
 
 Every node, regardless of kind, MUST have:
@@ -641,8 +641,8 @@ MUST NOT turn them into errors.
 
 `swallowed-relation-note` and `orphaned-relation-note` live in
 `mcp/src/validate.mjs` and its byte-identical CLI copy
-(`cli/src/lib/validate.mjs`, `mcp/src/validate.test.mjs` and
-`cli/src/lib/validate.test.mjs` mirror the cases) and are not implemented by
+(`cli/src/lib/mcp-bridge/validate.mjs`, `mcp/src/validate.test.mjs` and
+`cli/src/lib/mcp-bridge/validate.test.mjs` mirror the cases) and are not implemented by
 the per-document fast path either; that path does not read `relation_notes`.
 
 ## 7. The untrusted-content principle
@@ -724,7 +724,7 @@ repository's existing contract-test layer, because the spec is a
 transcription of already-tested behavior:
 
 - **`tests/contract/vault-schema.contract.test.ts`** — verifies
-  `mcp/src/schema.mjs` and `cli/src/lib/schema.mjs` produce byte-identical
+  `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs` produce byte-identical
   `buildFrontmatter` output, `missingExpectedFields` decisions, and
   `folderForKind` mappings for the same fixture matrix
   (`tests/fixtures/vault-schema-cases.mjs`), and additionally cross-checks

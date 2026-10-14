@@ -2,7 +2,7 @@ import {
   generateNodeUid,
   inspectMergedUids,
   nodeUidIssue,
-} from "../../cli/src/lib/schema.mjs";
+} from "../../cli/src/lib/mcp-bridge/schema.mjs";
 import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 
 export const id = "2026-08-02-add-node-uids";

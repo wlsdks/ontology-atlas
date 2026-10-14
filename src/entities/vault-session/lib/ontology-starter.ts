@@ -795,7 +795,7 @@ export function vaultAgentGuideForLocale(locale: string): StarterFile {
  * repository uses at its own root.
  *
  * The product already has a check for this — `claude-agents-bridge` in
- * `cli/src/lib/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
+ * `cli/src/lib/agent-setup/agent-files.mjs`. But with no `CLAUDE.md` at all it **silently reports "not
  * applicable"**, so nobody saw that the guidance was reaching only half its audience. Placing the
  * file is what puts that check to work.
  */

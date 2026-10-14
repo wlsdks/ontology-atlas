@@ -2,7 +2,7 @@
 // show the same result.
 
 import { COLORS } from './colors.mjs';
-import { callMcpTool } from './mcp-call.mjs';
+import { callMcpTool } from './mcp-bridge/mcp-call.mjs';
 import { assertRelationCheckShape } from './query-result-contract/relation-check.mjs';
 
 /**

@@ -10,7 +10,7 @@ import {
 import {
   buildMarkdown as buildCliMarkdown,
   parseFrontmatter as parseCliFrontmatter,
-} from "../../cli/src/lib/parse-frontmatter.mjs";
+} from "../../cli/src/lib/mcp-bridge/parse-frontmatter.mjs";
 
 /**
  * The CLI arm proves the CLI's writer reaches the canonical one (`mcp/src/parser.mjs`), not that two

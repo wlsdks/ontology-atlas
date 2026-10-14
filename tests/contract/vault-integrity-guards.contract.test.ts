@@ -22,9 +22,9 @@ import {
   writeFileAtomically as mcpWriteFileAtomically,
 } from "../../mcp/src/vault/atomic-writes.mjs";
 import { compileOntology } from "../../mcp/src/ontology-compiler.mjs";
-import { writeFileAtomically as cliWriteFileAtomically } from "../../cli/src/lib/atomic-write.mjs";
-import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/write-vault.mjs";
-import { walkMd as cliWalkMd } from "../../cli/src/lib/walk-vault.mjs";
+import { writeFileAtomically as cliWriteFileAtomically } from "../../cli/src/lib/vault-files/atomic-write.mjs";
+import { slugToPath as cliSlugToPath, writeFrontmatterKey } from "../../cli/src/lib/vault-files/write-vault.mjs";
+import { walkMd as cliWalkMd } from "../../cli/src/lib/vault-files/walk-vault.mjs";
 
 /**
  * Cases that look valid in one file and so escape a per-file check. The pure functions are called

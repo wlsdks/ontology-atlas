@@ -199,7 +199,7 @@ post-publish architectural audit 발견 — CLI 6 vs MCP 14 ergonomic asymmetry.
 - **`merge <fromSlug> <intoSlug>`** — atomic merge. wraps MCP `merge_concepts`. dry-run by default, `--confirm` to apply.
 - **`delete <slug>`** — permanent delete. wraps MCP `delete_concept`. dry-run by default, `--confirm` to apply, `--force` to ignore backlinks.
 
-### Implementation — `cli/src/lib/mcp-call.mjs` (single source of truth via spawn)
+### Implementation — `cli/src/lib/mcp-bridge/mcp-call.mjs` (single source of truth via spawn)
 
 새 명령들은 MCP server child_process spawn + JSON-RPC 로 호출. mcp 가 *진실원*, cli 는 thin wrapper. drift surface 0 (logic 복제 안 함). spawn overhead ~50-100ms per call — 한 번씩 호출이라 acceptable.
 
@@ -235,12 +235,12 @@ cli integration 24 → **32** (+8 new):
 
 ### Internals
 
-- `cli/src/lib/parse-frontmatter.mjs` — copy of `mcp/src/parser.mjs` (read + serialize). cli 가 별도 npm package 라 cross-import 불가능 → contract test 로 drift 차단:
+- `cli/src/lib/mcp-bridge/parse-frontmatter.mjs` — copy of `mcp/src/parser.mjs` (read + serialize). cli 가 별도 npm package 라 cross-import 불가능 → contract test 로 drift 차단:
   - `tests/contract/parse-frontmatter.contract.test.ts` 4-way (src/shared · mcp · scripts/lib · cli)
   - `tests/contract/validate-vault-document.contract.test.ts` 3-way (src/shared · mcp · cli)
-- `cli/src/lib/walk-vault.mjs` — fs walk + slug 변환.
-- `cli/src/lib/validate.mjs` — vault frontmatter validator.
-- `cli/src/lib/write-vault.mjs` — `slugToPath` (vault root sandbox) + `writeDoc`.
+- `cli/src/lib/vault-files/walk-vault.mjs` — fs walk + slug 변환.
+- `cli/src/lib/mcp-bridge/validate.mjs` — vault frontmatter validator.
+- `cli/src/lib/vault-files/write-vault.mjs` — `slugToPath` (vault root sandbox) + `writeDoc`.
 - `cli/src/integration.test.mjs` — 11 spawn-based integration cases (영구 회귀 가드).
 
 ### Onboarding flow

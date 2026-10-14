@@ -1793,7 +1793,7 @@ A vault's **own** folder nesting outside the schema kind folders
 local-first means the user's disk layout is respected; real tail collisions
 there surface as the compiler's `ambiguous-alias` warning.
 
-`cli/src/lib/schema.mjs` is **not a second copy of this schema** — since
+`cli/src/lib/mcp-bridge/schema.mjs` is **not a second copy of this schema** — since
 2026-08-30 it re-exports this module, resolved at runtime from the source
 checkout or from the installed `ontology-atlas-mcp` package. Change it here and
 the CLI has changed with it; there is nothing to mirror.

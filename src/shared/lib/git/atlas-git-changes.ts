@@ -1,7 +1,7 @@
 /**
  * Atlas Git — the pure change-summary logic (no I/O, no React).
  *
- * Three surfaces (the CLI `cli/src/lib/git-snapshot.mjs`, Rust
+ * Three surfaces (the CLI `cli/src/lib/git/git-snapshot.mjs`, Rust
  * `src-tauri/src/git/changes.rs`, and the web panel) must report "added/modified/deleted
  * per kind, plus sample slugs" using the same formula, so the CLI's
  * parsePorcelain / classifyChange / formatSnapshotSummary are mirrored here in TS.

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VALIDATE_CASES } from '../fixtures/validate-vault-cases.mjs';
 import { validateVaultDocument as validateTs } from '@/shared/lib/vault-document/validate-vault-document';
 import { validateVaultDocument as validateMcp } from '../../mcp/src/validate.mjs';
-import { validateVaultDocument as validateCli } from '../../cli/src/lib/validate.mjs';
+import { validateVaultDocument as validateCli } from '../../cli/src/lib/mcp-bridge/validate.mjs';
 
 /**
  * R11 #27 — vault validator contract. Guarantees that src/shared/lib (runtime plus
@@ -33,7 +33,7 @@ type Validator = (raw: string, options?: ValidatorOptions) => ValidatorReport;
 const VALIDATORS: Record<string, Validator> = {
   'src/shared/lib (TS)': validateTs,
   'mcp/src/validate.mjs': validateMcp as Validator,
-  'cli/src/lib/validate.mjs': validateCli as Validator,
+  'cli/src/lib/mcp-bridge/validate.mjs': validateCli as Validator,
 };
 
 describe('validator contract — 3 implementations agree on issue codes', () => {

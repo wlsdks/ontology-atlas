@@ -10,13 +10,13 @@ import {
   defaultBody as mcpDefaultBody,
 } from "../../mcp/src/schema.mjs";
 /*
- * Only the names the CLI re-exports; `cli/src/lib/schema.mjs` executes `mcp/src/schema.mjs`, so
+ * Only the names the CLI re-exports; `cli/src/lib/mcp-bridge/schema.mjs` executes `mcp/src/schema.mjs`, so
  * this proves the CLI reaches the canon.
  */
 import {
   VAULT_KINDS as CLI_VAULT_KINDS,
   defaultBody as cliDefaultBody,
-} from "../../cli/src/lib/schema.mjs";
+} from "../../cli/src/lib/mcp-bridge/schema.mjs";
 import {
   META_MODEL_RULES_EN as APP_META_MODEL_RULES_EN,
 } from "../../src/features/vault-agent/model/system-prompt";

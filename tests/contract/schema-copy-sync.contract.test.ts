@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
  * and declare no logic of its own, so a second copy cannot drift.
  */
 
-const CLI_LIB = join(process.cwd(), "cli", "src", "lib");
+const CLI_LIB = join(process.cwd(), "cli", "src", "lib", "mcp-bridge");
 
 /** Every CLI lib file whose implementation belongs to the MCP package. */
 const SHIMS = [

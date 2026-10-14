@@ -11,7 +11,7 @@ import {
   VAULT_KIND_SCHEMA as SCHEMA_MCP,
 } from "../../mcp/src/schema.mjs";
 /*
- * Only names the CLI runtime re-exports: `cli/src/lib/schema.mjs` executes `mcp/src/schema.mjs`, so a
+ * Only names the CLI runtime re-exports: `cli/src/lib/mcp-bridge/schema.mjs` executes `mcp/src/schema.mjs`, so a
  * cli === mcp assertion over any other name would compare an object with itself.
  */
 import {
@@ -20,7 +20,7 @@ import {
   agentCreatedBy as agentCli,
   CREATED_BY_KEY as KEY_CLI,
   CREATED_BY_HUMAN as HUMAN_CLI,
-} from "../../cli/src/lib/schema.mjs";
+} from "../../cli/src/lib/mcp-bridge/schema.mjs";
 import { parseFilter } from "../../mcp/src/query.mjs";
 import { buildNewNodeDoc } from "@/entities/docs-vault";
 import { buildProposal } from "@/features/vault-agent/model/proposals/proposal-builder";

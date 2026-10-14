@@ -1,5 +1,5 @@
 // Shared fixture matrix for the agent-files detection contract —
-// `cli/src/lib/agent-files.mjs` (developer CLI, full-fs scanner) and
+// `cli/src/lib/agent-setup/agent-files.mjs` (developer CLI, full-fs scanner) and
 // `src/entities/agent-files/model/agent-files.ts` (web docs workbench, FSA scanner)
 // must produce identical structural verdicts for every case below.
 // Consumed by tests/contract/agent-files.contract.test.ts (R11 pattern).

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { CASES } from "../fixtures/agent-files-cases.mjs";
 import { analyzeAgentFiles as analyzeWeb } from "@/entities/agent-files";
-import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-files.mjs";
+import { analyzeAgentFiles as analyzeCli } from "../../cli/src/lib/agent-setup/agent-files.mjs";
 
 /**
- * The scanner lives in `cli/src/lib/agent-files.mjs` and
+ * The scanner lives in `cli/src/lib/agent-setup/agent-files.mjs` and
  * `src/entities/agent-files/model/agent-files.ts`, which cannot share a module. Against the same
  * fixtures, expected, cli and web must agree structurally; message phrasing is free.
  */
@@ -13,7 +13,7 @@ type AnalyzeInput = Parameters<typeof analyzeWeb>[0];
 type Analysis = ReturnType<typeof analyzeWeb>;
 
 const IMPLEMENTATIONS = {
-  "cli/src/lib/agent-files.mjs": analyzeCli as unknown as typeof analyzeWeb,
+  "cli/src/lib/agent-setup/agent-files.mjs": analyzeCli as unknown as typeof analyzeWeb,
   "src/entities/agent-files/model/agent-files.ts": analyzeWeb,
 };
 

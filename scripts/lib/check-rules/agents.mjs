@@ -36,8 +36,8 @@ export const rules = [
       /^\.agents\/.+/,
       /^\.codex\/.+/,
       /^\.mcp\.json$/,
-      /^cli\/src\/lib\/agent-files\.mjs$/,
-      /^cli\/src\/commands\/agent-files\.mjs$/,
+      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
+      /^cli\/src\/commands\/agent-setup\/agent-files\.mjs$/,
     ],
   },
   {
@@ -50,7 +50,7 @@ export const rules = [
      * contracts.
      */
     matches: [
-      /^cli\/src\/lib\/agent-files\.mjs$/,
+      /^cli\/src\/lib\/agent-setup\/agent-files\.mjs$/,
       /^src\/entities\/agent-files\/model\/agent-files\.ts$/,
       /^tests\/fixtures\/agent-files-cases\.mjs$/,
       /^\.claude\/rules\/[^/]+\.md$/,

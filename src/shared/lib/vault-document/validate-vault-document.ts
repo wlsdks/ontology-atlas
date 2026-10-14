@@ -46,7 +46,7 @@ export type VaultIssueCode =
 
 /**
  * R14 — per-kind fields that ought to be present. Matches `requiredExtras` in
- * `mcp/src/schema.mjs` and `cli/src/lib/schema.mjs`; a contract test keeps the three in
+ * `mcp/src/schema.mjs` and `cli/src/lib/mcp-bridge/schema.mjs`; a contract test keeps the three in
  * sync. These drive advisory warnings only, never hard errors, so pre-existing vaults stay
  * valid.
  */

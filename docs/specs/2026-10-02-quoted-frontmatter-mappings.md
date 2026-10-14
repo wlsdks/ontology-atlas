@@ -55,7 +55,7 @@ The independently inspected source explains these results:
   (`src/entities/docs-vault/lib/authoring/frontmatter-updates.ts:45`, `:59`, `:91`).
   Updating a decoded quoted key must replace the intended field, not append a
   second field while leaving the old quoted one in place.
-- CLI delegates to MCP (`cli/src/lib/parse-frontmatter.mjs:1`): four delivery
+- CLI delegates to MCP (`cli/src/lib/mcp-bridge/parse-frontmatter.mjs:1`): four delivery
   paths, three physical reader implementations. The existing parser and writer
   contract tests exercise the public entrypoints.
 

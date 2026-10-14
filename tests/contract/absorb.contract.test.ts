@@ -5,7 +5,7 @@ import {
   INJECTION_CASES,
   PLAN_CASES,
 } from "../fixtures/absorb-cases.mjs";
-import * as absorbCli from "../../cli/src/lib/absorb.mjs";
+import * as absorbCli from "../../cli/src/lib/mcp-bridge/absorb.mjs";
 import * as absorbMcp from "../../mcp/src/absorb.mjs";
 
 /**

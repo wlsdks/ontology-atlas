@@ -11,7 +11,7 @@ import {
   vaultClaudeBridgeForLocale,
 } from "@/entities/vault-session/lib/ontology-starter";
 import { MCP_SERVER_NAME } from "@/shared/config/mcp-server-launch";
-import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
+import { analyzeAgentFiles } from "../../cli/src/lib/agent-setup/agent-files.mjs";
 import { runCliJson } from "../helpers/run-cli-json";
 
 /**

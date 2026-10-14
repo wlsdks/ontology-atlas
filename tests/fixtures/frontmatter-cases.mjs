@@ -4,7 +4,7 @@
 //   - src/shared/lib/vault-document/parse-frontmatter.ts        (runtime)
 //   - mcp/src/parser.mjs                         (AI agent surface, separate package)
 //   - scripts/lib/parse-frontmatter.mjs          (build scripts + validator CLI)
-//   - cli/src/lib/parse-frontmatter.mjs          (developer CLI, separate package)
+//   - cli/src/lib/mcp-bridge/parse-frontmatter.mjs          (developer CLI, separate package)
 //
 // If one drifts, the contract test catches it immediately. `mcp/` and `cli/` ship
 // separately and cannot be folded into one physical module, so the contract test is

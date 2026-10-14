@@ -1,0 +1,175 @@
+// `ontology-atlas export [vault] --format jsonld|graphml|json` adapts MCP `compile_ontology` through
+// lib/export-format/interop-format.mjs, the web ERD builder's twin (tests/contract/interop-format.contract.test.ts).
+// Payload goes to stdout only, status and errors to stderr, so piping is safe.
+
+import { COLORS } from '../../lib/colors.mjs';
+import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
+import { describeExportOmissions } from '../../lib/export-format/export-omissions.mjs';
+import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
+import { buildGraphML, buildJsonLd } from '../../lib/export-format/interop-format.mjs';
+import {
+  closestAllowedValue,
+  formatUnknownFlagError,
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../../lib/cli-args.mjs';
+
+const FORMATS = ['jsonld', 'graphml', 'json'];
+const DEFAULT_FORMAT = 'jsonld';
+const ALLOWED_FLAGS = ['--vault', '--format'];
+
+export async function runExport(args) {
+  // Pipe-safety — `export ... | head` (or any reader that closes early) makes
+  // the large stdout payload fail with EPIPE. Swallow it instead of crashing
+  // with an unhandled 'error' event.
+  process.stdout.on('error', (err) => {
+    if (err && err.code === 'EPIPE') process.exit(0);
+    throw err;
+  });
+
+  const parsed = parseArgs(args);
+  if (parsed.help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (parsed.error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${parsed.error}\n`);
+    printUsage();
+    return 1;
+  }
+
+  const vaultRoot = resolveVaultRoot(parsed.vault);
+  let artifact;
+  try {
+    // Full graph — no pagination — so the export is a complete snapshot.
+    artifact = await callMcpTool(vaultRoot, 'compile_ontology', { full: true });
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+
+  if (!Array.isArray(artifact?.nodes) || !Array.isArray(artifact?.edges)) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  compile_ontology response missing nodes/edges arrays; cannot export\n`,
+    );
+    return 2;
+  }
+
+  const graph = { nodes: artifact.nodes, edges: artifact.edges };
+  let payload;
+  try {
+    if (parsed.format === 'json') {
+      payload = JSON.stringify(artifact, null, 2) + '\n';
+    } else if (parsed.format === 'graphml') {
+      payload = buildGraphML(graph);
+    } else {
+      payload = buildJsonLd(graph);
+    }
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+
+  process.stdout.write(payload);
+
+  // Provenance to stderr — never pollutes the piped payload.
+  const hash =
+    typeof artifact.graphHash === 'string' ? artifact.graphHash.slice(0, 8) : 'none';
+  process.stderr.write(
+    `${COLORS.dim}exported ${parsed.format} · ${artifact.nodeCount ?? artifact.nodes.length} nodes · ` +
+      `${artifact.edgeCount ?? artifact.edges.length} edges · graphHash ${hash}${COLORS.reset}\n`,
+  );
+
+  /*
+   * Say which fields the format left out. Derived from the payload just produced, because a
+   * hand-written list would go stale silently as the schema grows.
+   */
+  const omissions = describeExportOmissions({
+    nodes: artifact.nodes,
+    edges: artifact.edges,
+    carriedKeys: carriedKeysOf(parsed.format, payload),
+    // Neither format carries edge rationales today. When one does, only this changes.
+    carriesEdgeRationale: false,
+  });
+  if (omissions.sentence) {
+    process.stderr.write(`${COLORS.dim}${omissions.sentence}${COLORS.reset}\n`);
+  }
+  return 0;
+}
+
+/** The node fields this format actually carried, derived from the produced result. */
+function carriedKeysOf(format, payload) {
+  // `json` is the raw compile artifact, so nothing is lost.
+  if (format === 'json') return null;
+  if (format === 'jsonld') {
+    try {
+      const graph = JSON.parse(payload)['@graph'];
+      const keys = new Set();
+      for (const node of Array.isArray(graph) ? graph : []) {
+        for (const key of Object.keys(node ?? {})) keys.add(key);
+      }
+      return [...keys];
+    } catch {
+      // If it cannot be read, assert nothing — silence beats a wrong loss list.
+      return null;
+    }
+  }
+  if (format === 'graphml') {
+    return [...new Set([...payload.matchAll(/<key[^>]*attr\.name="([^"]+)"/g)].map((m) => m[1]))];
+  }
+  return null;
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) {
+    return { help: true };
+  }
+  const flags = { vault: null, format: DEFAULT_FORMAT };
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--format') flags.format = parseRequiredFlagValue('--format', args[++i]);
+    else if (a.startsWith('--format=')) flags.format = parseRequiredFlagValue('--format', a.slice('--format='.length));
+    else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  if (!FORMATS.includes(flags.format)) {
+    const suggestion = closestAllowedValue(flags.format, FORMATS);
+    return {
+      error:
+        `unknown --format "${flags.format}".` +
+        (suggestion ? ` Did you mean ${suggestion}?` : '') +
+        ` Allowed: ${FORMATS.join(', ')}.`,
+    };
+  }
+  const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
+  if (vaultResult.error) return vaultResult;
+  return { ...flags, vault: vaultResult.vault };
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas export [vault] [--format jsonld|graphml|json]\n\n` +
+      `Export the compiled ontology to a portable interchange format.\n\n` +
+      `Options:\n` +
+      `  --format jsonld   RDF 1.1 JSON-LD: rdflib / Protégé / triplestores (default)\n` +
+      `  --format graphml  XML graph: Gephi / Cytoscape / NetworkX\n` +
+      `  --format json     raw deterministic compile artifact (nodes/edges/graphHash)\n` +
+      `  --vault path      vault root (default: cwd or OATLAS_VAULT)\n\n` +
+      `The payload is written to stdout (pipe-safe); status goes to stderr.\n` +
+      `Node identity is the permanent UID URN: urn:uuid:<uid>; slug remains readable data.\n` +
+      `This export is a snapshot; the compiler graphHash is its version. External / dangling\n` +
+      `refs are omitted (an interop snapshot never mints phantom nodes).\n`,
+  );
+}

@@ -8,11 +8,11 @@ import {
   classifyChange as classifyCli,
   formatSnapshotSummary as formatCli,
   getPorcelainStatus as getPorcelainCli,
-} from "../../cli/src/lib/git-snapshot.mjs";
+} from "../../cli/src/lib/git/git-snapshot.mjs";
 
 /**
  * Atlas Git summary arithmetic, 2-way contract — the same logic lives in two places:
- *   - cli/src/lib/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
+ *   - cli/src/lib/git/git-snapshot.mjs (developer CLI `node $ATLAS/cli/src/index.mjs snapshot`)
  *   - src/shared/lib/git/atlas-git-changes.ts (the web Atlas Git panel)
  * (Rust `src-tauri/src/git/changes.rs` is a third mirror — its Rust unit tests verify
  * the same fixtures.)
