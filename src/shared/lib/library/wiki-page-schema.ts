@@ -7,7 +7,7 @@ import { parseFrontmatter, WIKI_DIR } from '../vault-document/parse-frontmatter'
  * copy is `mcp/src/wiki-schema.mjs`, which the MCP server and the CLI both execute. This
  * is its TypeScript twin: the MCP package ships separately from the web bundle, so one
  * physical module cannot serve both, and
- * `tests/contract/wiki-page-schema.contract.test.ts` runs one fixture table through the
+ * `tests/contract/library/wiki-page-schema.contract.test.ts` runs one fixture table through the
  * two of them. Message wording may differ. **Problem codes may not** — the Docs sidebar,
  * the CLI's exit code, and an agent's retry all branch on the code.
  *

@@ -32,7 +32,7 @@ export function useArrivalMemory<T>(
   /*
    * Stable identity like a `useState` setter, so callers can list it in dependencies. The write is
    * deferred to a microtask because React may run an updater during render, where side effects are
-   * forbidden (`tests/contract/pure-updater.contract.test.ts`).
+   * forbidden (`tests/contract/architecture/pure-updater.contract.test.ts`).
    */
   const set = useCallback((next: T) => {
     setEntry((previous) => {

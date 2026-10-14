@@ -23,7 +23,7 @@
 
 /*
  * The ring does not hide the native cursor (no `cursor: none`), keeping the contract in
- * `tests/e2e/cursor-affordance.spec.ts`. z-index 90 sits below `--z-skip-link` (100) and above
+ * `tests/e2e/design-audits/cursor-affordance.spec.ts`. z-index 90 sits below `--z-skip-link` (100) and above
  * tooltip (80); the `--z-*` ladder is for surfaces and this ring is the pointer's shadow.
  */
 .gateway-cursor {

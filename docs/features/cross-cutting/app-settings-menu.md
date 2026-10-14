@@ -25,7 +25,7 @@ routes: []
   hairline, so they read apart from the rows they head.
 - Every pane keeps one start line: the head (title and sentence), group labels, card edges and
   any caption outside a card share the card's left edge; row text sits inside the card
-  (`tests/e2e/settings-reading.spec.ts`, at 1040 and 1440).
+  (`tests/e2e/settings/settings-reading.spec.ts`, at 1040 and 1440).
 - **Panes** (`ui/panes/`): Screen · language (language, view mode on every screen, text size
   Default / Large / Larger, concept icons, Motion status, screen guides); Map (background,
   drag and zoom speed, INDEX default only where the map injects it, frame meter On · Off);
@@ -56,10 +56,10 @@ routes: []
    file under `.ontology-atlas/` through an entity store that calls `ensureSidecarIgnore`. A
    secret goes in Keychain through a `tauri-*` bridge. Never IndexedDB, which holds the folder
    handle only.
-2. Register the key in `tests/contract/scope-registry.contract.test.ts`.
+2. Register the key in `tests/contract/routes/scope-registry.contract.test.ts`.
 3. Render the row with `settingId` (it becomes `data-setting-id`) in its pane under `ui/panes/`,
    and add a catalog entry in `model/catalog/<section>.ts`. Copy goes in the pane's message
-   namespace. `tests/contract/settings-catalog.contract.test.ts` fails when the two disagree.
+   namespace. `tests/contract/settings/settings-catalog.contract.test.ts` fails when the two disagree.
 4. If the setting changes what can leave the computer, add or update the row in
    `model/outbound-paths.ts`; the outbound contract fails otherwise.
 5. App-only rows set `surface: 'desktop'` and are not drawn on the web.

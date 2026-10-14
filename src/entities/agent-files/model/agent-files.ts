@@ -5,8 +5,8 @@ interface VaultDocRef {
 }
 
 /**
- * Web mirror of `cli/src/lib/agent-files.mjs`, held together by
- * `tests/contract/agent-files.contract.test.ts`. Detection and display only; nothing is written.
+ * Web mirror of `cli/src/lib/agent-setup/agent-files.mjs`, held together by
+ * `tests/contract/harness/agent-files.contract.test.ts`. Detection and display only; nothing is written.
  */
 
 const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;

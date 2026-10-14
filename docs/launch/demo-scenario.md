@@ -191,7 +191,7 @@ After encoding:
   appears. The X take instead holds the privacy-clean Agents destination long enough to read.
 - **Breadth proof** — source-hidden evaluators classify the X cut as a codebase-ontology
   workbench by three seconds and recall at least four distinct work surfaces after viewing.
-- **Asset contract** — `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts`.
+- **Asset contract** — `pnpm exec vitest run tests/contract/brand/demo-clip-assets.contract.test.ts`.
 - **Locale contract** — `/ko/download/` loads `.ko.` sources and `/en/download/` loads `.en.`
   sources; the two takes and posters are not byte-identical.
 - **Responsive playback** — measure the video stage and poster at 1280, 1512, 1920, and 2560;

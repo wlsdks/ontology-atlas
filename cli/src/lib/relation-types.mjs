@@ -1,4 +1,4 @@
-import { formatAllowedValueError } from './suggestions.mjs';
+import { formatAllowedValueError } from './mcp-bridge/suggestions.mjs';
 
 export const RELATION_TYPE_VALUES = Object.freeze([
   'domains',

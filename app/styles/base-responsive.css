@@ -56,7 +56,7 @@
   /*
    * Prose links are not controls: no `display`, `line-height` or `font-size`, since line boxes belong
    * to the prose parent (inline-flex links overflow at 320px). UA focus is preserved. Gate:
-   * `tests/contract/prose-link.contract.test.ts`.
+   * `tests/contract/typography/prose-link.contract.test.ts`.
    */
   .prose-link {
     text-decoration-line: underline;
@@ -452,7 +452,7 @@
     /*
      * Must sit inside `@layer base`, after the global kill rule: `!important` outside the layer loses to
      * the one inside. Reduced motion shows the screen fully visible from the start. Gate:
-     * `tests/contract/gateway-fx-reduced-motion.contract.test.ts`.
+     * `tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`.
      */
     .gateway-rise {
       opacity: 1 !important;

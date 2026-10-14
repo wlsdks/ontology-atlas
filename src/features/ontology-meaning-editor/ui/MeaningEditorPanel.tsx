@@ -228,7 +228,7 @@ export function MeaningEditorPanel({
             />
           ) : (
             <>
-              {/* Each help line names the program that reads the value (tests/contract/field-help-consumers.contract.test.ts). */}
+              {/* Each help line names the program that reads the value (tests/contract/controls/field-help-consumers.contract.test.ts). */}
               <FieldWithHelp
                 id="meaning-editor-relation-field"
                 label={t('relation')}

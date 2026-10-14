@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn';
 /**
  * Single source of class strings for pressable controls: values live here, while behaviour
  * (`type`, accessible name) is a component or lint concern. New controls are held by
- * `tests/contract/control-adoption-ratchet.contract.test.ts`.
+ * `tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts`.
  */
 
 /**
@@ -156,7 +156,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
       /**
        * Indigo accent for bare ground only: `--color-indigo-accent` falls below AA 4.5 over an indigo
        * tint or amber hint. Controls carrying a tint use `accentOnTint`. Gate:
-       * `tests/contract/accent-ink-contrast.contract.test.ts`.
+       * `tests/contract/design-tokens/accent-ink-contrast.contract.test.ts`.
        */
       accent: 'text-[color:var(--color-indigo-accent)]',
       /**

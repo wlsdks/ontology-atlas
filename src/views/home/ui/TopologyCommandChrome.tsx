@@ -279,7 +279,7 @@ export function TopologyCommandChrome({
             className="self-start"
             // No auto margin: from `xl` this lane holds the free map's left edge and the utility
             // lane's `ml-auto` the right, and it stays put while the inspector owns the right
-            // rail. Gate: tests/e2e/map-toolbar-balance.spec.ts
+            // rail. Gate: tests/e2e/map/chrome/map-toolbar-balance.spec.ts
             density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
             phoneFocusSuppressed={selectedNodeFocusActive}
             constellationControl={(
@@ -467,7 +467,7 @@ export function TopologyCommandChrome({
                 >
                   {/* ScanSearch, not HelpCircle: this opens the meaning workbench, and the question
                      mark means the shortcut sheet.
-                     Gate: tests/contract/map-chrome-icon-roles.contract.test.ts */}
+                     Gate: tests/contract/map/map-chrome-icon-roles.contract.test.ts */}
                   <ChromeChip
                     icon={<ScanSearch />}
                     aria-label={tWorkbench('meaningTitle')}

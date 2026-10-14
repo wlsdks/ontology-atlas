@@ -36,7 +36,7 @@ describe('scopeReaches — containment runs both ways', () => {
 
   it('reaches a scope inside the path', () => {
     /* A check naming one file inside `cli/src` is a check that names that capability. */
-    expect(scopeReaches('cli/src/lib/architecture-results.test.mjs', 'cli/src')).toBe(true);
+    expect(scopeReaches('cli/src/lib/analysis-results/architecture-results.test.mjs', 'cli/src')).toBe(true);
   });
 
   it('does not treat a shared name prefix as containment', () => {

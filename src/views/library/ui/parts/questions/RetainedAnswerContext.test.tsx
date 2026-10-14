@@ -29,7 +29,7 @@ import { RetainedAnswerContext } from './RetainedAnswerContext';
  * 2. **The press should never have been offered.** The index card beside it already read
  *    `answers.version.unresolved`, computed from the same frontmatter this block had in hand.
  *
- * `tests/contract/no-raw-error-copy.contract.test.ts` guards the shape in source. This
+ * `tests/contract/copy/no-raw-error-copy.contract.test.ts` guards the shape in source. This
  * file guards the **rendered tree**: what the DOM actually carries after each failure the
  * refresh can raise, and whether the control is offered when the page already knows it
  * would be refused. Source and DOM are different claims, and B2 needed both.

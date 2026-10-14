@@ -1,6 +1,6 @@
 /**
  * The agent's tools, with names, arguments and effects exactly the MCP server's
- * (tests/contract/agent-tool-catalog.contract.test.ts). Source scanning, structural changes,
+ * (tests/contract/mcp/agent-tool-catalog.contract.test.ts). Source scanning, structural changes,
  * bulk ingestion, snapshots and omnibus queries are deliberately not handed out.
  */
 

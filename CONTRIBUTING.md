@@ -69,7 +69,7 @@ git remote add upstream https://github.com/wlsdks/ontology-atlas
 Workflows on fork pull requests wait for maintainer approval before running.
 That is expected — it is not the CI being broken.
 
-`tests/contract/workflow-security.contract.test.ts` enforces the rules this
+`tests/contract/security/workflow-security.contract.test.ts` enforces the rules this
 depends on (no `pull_request_target`, no secrets in pull-request workflows, no
 untrusted strings in shell commands). See [`SECURITY.md`](SECURITY.md) for the
 full picture and for how to report a vulnerability.

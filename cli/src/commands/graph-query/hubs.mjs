@@ -1,0 +1,172 @@
+// `ontology-atlas hubs [vault]` — hub node ranking by centrality.
+// Thin wrapper over MCP `query_ontology({operation: 'centrality'})`.
+
+import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
+import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
+import { assertCentralityShape } from '../../lib/query-result-contract/overview-queries.mjs';
+import { assertQueryPlanShape } from '../../lib/query-result-contract/query-plan.mjs';
+import {
+  printQueryPlan,
+  shouldBlockPlannedExecution,
+} from '../../lib/query-plan-output.mjs';
+import { validateRelationTypeList } from '../../lib/relation-types.mjs';
+import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
+import {
+  formatUnknownFlagError,
+  parseBoundedPositiveIntegerFlag,
+  parseCsvListFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../../lib/cli-args.mjs';
+
+const LIMIT_CAP = 500;
+const ALLOWED_FLAGS = ['--vault', '--limit', '--types', '--plan', '--force', '--json'];
+
+
+export async function runHubs(args) {
+  const { vault, json, limit, types, plan: shouldPlan, force, error, help } = parseArgs(args);
+  if (help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
+    printUsage();
+    return 1;
+  }
+  const vaultRoot = resolveVaultRoot(vault);
+  let plan = null;
+  let result;
+  try {
+    const query = {
+      operation: 'centrality',
+      limit,
+      ...(types.length > 0 ? { types } : {}),
+    };
+    if (shouldPlan) {
+      plan = await callMcpTool(vaultRoot, 'query_ontology', {
+        ...query,
+        operation: 'query_plan',
+        targetOperation: 'centrality',
+      });
+      assertQueryPlanShape(plan, 'centrality');
+      if (shouldBlockPlannedExecution(plan) && !force) {
+        if (json) {
+          process.stdout.write(JSON.stringify({ plan, skipped: true }, null, 2) + '\n');
+        } else {
+          printQueryPlan(plan, COLORS, {
+            fallbackHint: 'lower --limit, add --types, or reduce graph scope before ranking',
+          });
+          process.stdout.write(
+            `\n${COLORS.yellow}skipped${COLORS.reset} centrality blocked by query_plan. Re-run with --force to execute anyway.\n`,
+          );
+        }
+        return 1;
+      }
+    }
+    result = await callMcpTool(vaultRoot, 'query_ontology', query);
+    assertCentralityShape(result);
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+  if (json) {
+    process.stdout.write(JSON.stringify(plan ? { plan, result } : result, null, 2) + '\n');
+    return 0;
+  }
+  if (plan) {
+    printQueryPlan(plan, COLORS, {
+      fallbackHint: 'lower --limit, add --types, or reduce graph scope before ranking',
+    });
+  }
+  render(result);
+  return 0;
+}
+
+function render(result) {
+  const r = result?.rankings ?? {};
+  const sections = [
+    ['PageRank (influence)', r.pageRank, 'pageRank'],
+    ['Bridges (nodes joining domains)', r.bridges, 'bridgeScore'],
+    ['Authorities (referenced often)', r.authorities, 'inDegree'],
+    ['Hubs (referencing often)', r.hubs, 'outDegree'],
+  ];
+  for (const [title, rows, scoreKey] of sections) {
+    if (!Array.isArray(rows) || rows.length === 0) continue;
+    process.stdout.write(`${COLORS.dim}${title}${COLORS.reset}\n`);
+    for (let i = 0; i < rows.length; i += 1) {
+      const h = rows[i];
+      const kc = KIND_COLORS[h.kind] || COLORS.dim;
+      const rank = String(i + 1).padStart(2);
+      const slug = h.slug.padEnd(50);
+      const score =
+        typeof h[scoreKey] === 'number' ? h[scoreKey].toFixed(scoreKey === 'pageRank' ? 4 : 0) : '-';
+      const deg = `${COLORS.dim}${scoreKey} ${score}${COLORS.reset} ${COLORS.dim}(deg ${h.degree})${COLORS.reset}`;
+      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}· ${h.title}${COLORS.reset}` : '';
+      process.stdout.write(`  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${slug}${COLORS.reset}${titleText} ${deg}\n`);
+    }
+    process.stdout.write('\n');
+  }
+  const focus =
+    (Array.isArray(r.pageRank) && r.pageRank[0]) ||
+    (Array.isArray(r.bridges) && r.bridges[0]) ||
+    (Array.isArray(r.authorities) && r.authorities[0]) ||
+    (Array.isArray(r.hubs) && r.hubs[0]);
+  if (focus?.slug) {
+    process.stdout.write(
+      `${COLORS.dim}next${COLORS.reset} hub ${COLORS.bold}${focus.slug}${COLORS.reset}` +
+        `${COLORS.dim} · ranking rows are hotspots, not proof; inspect the node and impact before onboarding/refactor decisions${COLORS.reset}\n`,
+    );
+    process.stdout.write(`  ${COLORS.cyan}ontology-atlas node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(
+      `  ${COLORS.cyan}ontology-atlas blast-radius ${focus.slug} [vault] --plan --depth 2 --direction both${COLORS.reset}\n`,
+    );
+  }
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) return { help: true };
+  const flags = { vault: null, json: false, limit: 10, types: [], plan: false, force: false };
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--json') flags.json = true;
+    else if (a === '--plan') flags.plan = true;
+    else if (a === '--force') flags.force = true;
+    else if (a === '--limit') flags.limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: LIMIT_CAP });
+    else if (a.startsWith('--limit=')) flags.limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: LIMIT_CAP });
+    else if (a === '--types') flags.types = parseCsvListFlag('--types', args[++i], { itemName: 'relation type' });
+    else if (a.startsWith('--types=')) flags.types = parseCsvListFlag('--types', a.slice('--types='.length), { itemName: 'relation type' });
+    else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  const typeError = validateRelationTypeList(flags.types, '--types items');
+  if (typeError) return { error: typeError.message };
+  const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
+  if (vaultResult.error) return vaultResult;
+  return {
+    vault: vaultResult.vault,
+    json: flags.json,
+    limit: flags.limit,
+    types: flags.types,
+    plan: flags.plan,
+    force: flags.force,
+  };
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas hubs [vault] [--limit N] [--types A,B] [--plan] [--force] [--json]\n\n` +
+      `--limit range 1-${LIMIT_CAP}. --types narrows relation types before PageRank.\n` +
+      `Use --plan to run query_plan(centrality) first; expensive or warning plans skip execution unless --force is passed.\n` +
+      `4 rankings: PageRank (influence) · Bridges (joining domains) · Authorities (referenced) · Hubs (referencing).\n`,
+  );
+}

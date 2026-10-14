@@ -235,7 +235,7 @@ export function AcpRuntimeSettings({
     runtimes !== null && ready.some((r) => !isGuardedRuntime(r.id, r.isolated));
   /*
     Discloses that starting a chat symlinks the user's credential files into the app's data folder
-    (`link_credentials` in `src-tauri/src/acp/isolation.rs`; gate: `tests/contract/acp-disk-disclosure.contract.test.ts`).
+    (`link_credentials` in `src-tauri/src/acp/isolation.rs`; gate: `tests/contract/security/acp-disk-disclosure.contract.test.ts`).
     Shown only where a chat can start, the chat button's own condition, as a hint in the group
     heading beside the re-scan press.
   */

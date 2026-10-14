@@ -1,0 +1,128 @@
+// `ontology-atlas orphans [vault]`: nodes no other node references in frontmatter, over MCP find_orphans.
+
+import { COLORS, KIND_COLORS } from '../../lib/colors.mjs';
+import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
+import { validateKindList, validateKindValue } from '../../lib/kinds.mjs';
+import { assertOrphansShape } from '../../lib/query-result-contract/node-lookups.mjs';
+import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
+import {
+  parseCsvListFlag,
+  formatUnknownFlagError,
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../../lib/cli-args.mjs';
+
+const ALLOWED_FLAGS = ['--vault', '--json', '--kind', '--exclude-kinds'];
+
+
+
+export async function runOrphans(args) {
+  const { vault, json, kind, excludeKinds, error, help } = parseArgs(args);
+  if (help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
+    printUsage();
+    return 1;
+  }
+
+  const vaultRoot = resolveVaultRoot(vault);
+  const toolArgs = {};
+  if (kind) toolArgs.kind = kind;
+  if (excludeKinds.length > 0) toolArgs.excludeKinds = excludeKinds;
+
+  let result;
+  try {
+    result = await callMcpTool(vaultRoot, 'find_orphans', toolArgs);
+    assertOrphansShape(result);
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+
+  if (json) {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return 0;
+  }
+
+  const orphans = result?.orphans ?? [];
+  if (orphans.length === 0) {
+    const kindFilter = kind ? ` (kind=${kind})` : '';
+    process.stdout.write(
+      `${COLORS.green}[ontology-atlas] ${COLORS.reset}` +
+        `${COLORS.dim}orphan 0${kindFilter}: vault clean ✓${COLORS.reset}\n`,
+    );
+    return 0;
+  }
+
+  const kindFilter = kind ? ` (kind=${kind})` : '';
+  process.stdout.write(
+    `${COLORS.bold}${result?.total ?? orphans.length} orphan(s)${COLORS.reset}` +
+      `${COLORS.dim}${kindFilter}: nodes no frontmatter anywhere references${COLORS.reset}\n\n`,
+  );
+  for (const o of orphans) {
+    const color = KIND_COLORS[o.kind] || '';
+    const kindCol = `${color}${(o.kind ?? '?').padEnd(13)}${COLORS.reset}`;
+    const slugCol = (o.slug ?? '').padEnd(45);
+    const titleCol = o.title
+      ? o.title
+      : `${COLORS.dim}(no title)${COLORS.reset}`;
+    process.stdout.write(`  ${kindCol} ${slugCol} ${titleCol}\n`);
+  }
+  return 0;
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) return { help: true };
+  const flags = { vault: null, json: false, kind: null, excludeKinds: [] };
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--json') flags.json = true;
+    else if (a === '--kind') flags.kind = parseRequiredFlagValue('--kind', args[++i]);
+    else if (a.startsWith('--kind=')) flags.kind = parseRequiredFlagValue('--kind', a.slice('--kind='.length));
+    else if (a === '--exclude-kinds') {
+      const next = parseCsvListFlag('--exclude-kinds', args[++i], { itemName: 'kind' });
+      if (next instanceof Error) return { error: next.message };
+      flags.excludeKinds = next;
+    } else if (a.startsWith('--exclude-kinds=')) {
+      const next = parseCsvListFlag('--exclude-kinds', a.slice('--exclude-kinds='.length), { itemName: 'kind' });
+      if (next instanceof Error) return { error: next.message };
+      flags.excludeKinds = next;
+    } else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  const kindError = validateKindValue('--kind', flags.kind);
+  if (kindError) return { error: kindError };
+  const excludeKindsError = validateKindList('--exclude-kinds', flags.excludeKinds);
+  if (excludeKindsError) return { error: excludeKindsError };
+  const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
+  if (vaultResult.error) return vaultResult;
+  return {
+    vault: vaultResult.vault,
+    json: flags.json,
+    kind: flags.kind,
+    excludeKinds: flags.excludeKinds,
+  };
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas orphans [vault] [--kind X] [--exclude-kinds A,B] [--vault path] [--json]\n\n` +
+      `${COLORS.bold}Examples:${COLORS.reset}\n` +
+      `  ontology-atlas orphans\n` +
+      `  ontology-atlas orphans --kind capability\n` +
+      `  ontology-atlas orphans ./docs/ontology --json\n`,
+  );
+}

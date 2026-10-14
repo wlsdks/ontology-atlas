@@ -14,7 +14,7 @@
  *
  * Every expectation in `github-anchor-slug.test.ts` was read off GitHub's
  * rendered `id=` attribute rather than derived from this code, and
- * `tests/contract/anchor-slug-parity.contract.test.ts` holds this function and
+ * `tests/contract/routes/anchor-slug-parity.contract.test.ts` holds this function and
  * `headingAnchorSlug` in `scripts/lib/docs/doc-links.mjs` — the link gate's copy — to
  * the same output. This is the app-side copy: they are separate module systems,
  * so parity is enforced rather than shared.

@@ -125,7 +125,7 @@ export const escalations = [
     order: 20,
     command: 'pnpm dogfood:verify',
     reason: 'shared MCP/CLI verification surface changed',
-    matches: [/^mcp\//, /^cli\/src\/commands\/mcp-verify\.mjs$/, /^scripts\/packaging\/smoke-packed-cli\.mjs$/],
+    matches: [/^mcp\//, /^cli\/src\/commands\/agent-setup\/mcp-verify\.mjs$/, /^scripts\/packaging\/smoke-packed-cli\.mjs$/],
   },
 ];
 

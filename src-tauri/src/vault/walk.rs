@@ -223,7 +223,7 @@ fn walk_vault_stamps(
 
 /// Paths and mtimes only, in one call instead of reading every body across IPC. The
 /// walk rules must match TS exactly or fingerprints diverge; the contract
-/// test `tests/contract/vault-walk-rules.contract.test.ts` holds both.
+/// test `tests/contract/vault-format/vault-walk-rules.contract.test.ts` holds both.
 #[tauri::command(async)]
 pub(crate) fn vault_fingerprint(root_path: String) -> Result<VaultFingerprint, String> {
     let root = resolve_existing_inside(&root_path, "")?;

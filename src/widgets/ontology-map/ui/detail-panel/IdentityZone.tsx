@@ -45,7 +45,7 @@ export function IdentityZone({
         </h2>
         {/* Kind is a badge you read (glyph plus word), the counterweight on the right. One chip grammar
            with the domain chip: both are the chip `md` step (32px, `rounded-chip`, `text-label`), the
-           close button is the 32px icon step. Gate: `tests/e2e/map-inspector-header-chips.spec.ts`. */}
+           close button is the 32px icon step. Gate: `tests/e2e/map/panels/map-inspector-header-chips.spec.ts`. */}
         <span
           data-testid="map-detail-panel-kind"
           className={badgeClass({

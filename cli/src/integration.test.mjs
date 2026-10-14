@@ -24,14 +24,14 @@ import {
   CLI_COMMAND_RUNNERS,
   parseCliCommandMetadataFromDescription,
 } from './lib/cli-commands.mjs';
-import { parseMcpToolMetadataFromDescription } from './lib/mcp-metadata.mjs';
+import { parseMcpToolMetadataFromDescription } from './lib/mcp-bridge/mcp-metadata.mjs';
 import {
   formatNoTestMatchMessage,
   formatTestFilterSuffix,
   resolveTestNamePattern,
 } from '../../scripts/lib/ci/test-name-pattern.mjs';
 import { assertPnpmScriptsExist } from '../../scripts/lib/pnpm-script-refs.mjs';
-import { CLI_CLIENT_INFO } from './lib/mcp-call.mjs';
+import { CLI_CLIENT_INFO } from './lib/mcp-bridge/mcp-call.mjs';
 import {
   expectedToolsListAnnotationSummary,
 } from '../../mcp/scripts/verify/tools-list/inventory.mjs';
@@ -249,7 +249,8 @@ await test('command inventory — help and command modules stay aligned', async 
     assert.equal(typeof mod[runner.exportName], 'function', `${command} exports ${runner.exportName}`);
   }
 
-  const commandFiles = readdirSync(join(__dirname, 'commands'))
+  const commandFiles = readdirSync(join(__dirname, 'commands'), { recursive: true })
+    .map((name) => name.replaceAll('\\', '/'))
     .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
     .sort();
   assert.deepEqual(commandFiles, Object.values(CLI_COMMAND_MODULES).sort());
@@ -505,7 +506,7 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
       /*
-       * The vault scan skips dot folders (`cli/src/lib/walk-vault.mjs`, `.claude/rules/local-first.md`), and skills
+       * The vault scan skips dot folders (`cli/src/lib/vault-files/walk-vault.mjs`, `.claude/rules/local-first.md`), and skills
        * install at the repository root: assert where they went and that the document count holds, in Korean too.
        */
       const vaultRoot = join(repo, dir);
@@ -1236,7 +1237,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       '--ontology-slug',
       'capabilities/agent-live-activity-contract',
       '--file',
-      'cli/src/commands/agent-activity.mjs',
+      'cli/src/commands/diagnosis/agent-activity.mjs',
       '--file',
       'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
       '--plan',
@@ -1266,7 +1267,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       kind: 'ontology',
       ontologySlug: 'capabilities/agent-live-activity-contract',
       files: [
-        'cli/src/commands/agent-activity.mjs',
+        'cli/src/commands/diagnosis/agent-activity.mjs',
         'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
       ],
       label: 'ontology · capabilities/agent-live-activity-contract',
@@ -1281,7 +1282,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       label: 'MCP · 1, Source · 1, Verify · 1',
     });
     assert.deepEqual(data.heartbeat.focus.files, [
-      'cli/src/commands/agent-activity.mjs',
+      'cli/src/commands/diagnosis/agent-activity.mjs',
       'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
     ]);
     assert.deepEqual(data.heartbeat.plan, ['run focused tests']);
@@ -1314,14 +1315,14 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       'capabilities/agent-live-activity-contract',
     );
     assert.deepEqual(shown.refreshRequest.previousFiles, [
-      'cli/src/commands/agent-activity.mjs',
+      'cli/src/commands/diagnosis/agent-activity.mjs',
       'src/views/ontology-view/ui/parts/AgentStatusPopover.tsx',
     ]);
     assert.equal(typeof shown.refreshRequest.command, 'string');
     assert.match(shown.refreshRequest.command, /ontology-atlas agent-activity <vault>/);
     assert.match(shown.refreshRequest.command, /--state planning/);
     assert.match(shown.refreshRequest.command, /--ontology-slug capabilities\/agent-live-activity-contract/);
-    assert.match(shown.refreshRequest.command, /--file cli\/src\/commands\/agent-activity\.mjs/);
+    assert.match(shown.refreshRequest.command, /--file cli\/src\/commands\/diagnosis\/agent-activity\.mjs/);
     assert.match(shown.refreshRequest.command, /--mcp validate_vault/);
     assert.match(shown.refreshRequest.command, /--source 'serena symbol overview cli agent activity'/);
     assert.match(shown.refreshRequest.command, /--verify 'pnpm integration:cli:entry'/);
@@ -1353,7 +1354,7 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       '--focus',
       'Extract product meaning from source changes',
       '--file',
-      '  cli/src/commands/agent-activity.mjs  ',
+      '  cli/src/commands/diagnosis/agent-activity.mjs  ',
       '--json',
     ]);
     assert.equal(sourceOnlyWrite.code, 0);
@@ -1362,8 +1363,8 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
     assert.deepEqual(sourceOnlyData.reviewTarget, {
       kind: 'source',
       ontologySlug: null,
-      files: ['cli/src/commands/agent-activity.mjs'],
-      label: 'source · cli/src/commands/agent-activity.mjs',
+      files: ['cli/src/commands/diagnosis/agent-activity.mjs'],
+      label: 'source · cli/src/commands/diagnosis/agent-activity.mjs',
     });
 
     const humanSourceOnlyWrite = await run([
@@ -1376,14 +1377,14 @@ await test('agent-activity — writes, shows, and clears the live heartbeat file
       '--focus',
       'Extract product meaning from source changes',
       '--file',
-      'cli/src/commands/agent-activity.mjs',
+      'cli/src/commands/diagnosis/agent-activity.mjs',
     ]);
     assert.equal(humanSourceOnlyWrite.code, 0);
     assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review mode · business-extraction/);
     assert.match(stripAnsi(humanSourceOnlyWrite.stdout), /review target kind · source/);
     assert.match(
       stripAnsi(humanSourceOnlyWrite.stdout),
-      /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
+      /review target · source · cli\/src\/commands\/diagnosis\/agent-activity\.mjs/,
     );
 
     const legacyCodegraphWrite = await run([
@@ -1539,7 +1540,7 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
         state: 'editing',
         focus: {
           summary: '  Extract business meaning from source  ',
-          files: ['  cli/src/commands/agent-activity.mjs  ', '', 7],
+          files: ['  cli/src/commands/diagnosis/agent-activity.mjs  ', '', 7],
         },
         plan: [],
         evidence: {
@@ -1561,8 +1562,8 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
     assert.deepEqual(data.reviewTarget, {
       kind: 'source',
       ontologySlug: null,
-      files: ['cli/src/commands/agent-activity.mjs'],
-      label: 'source · cli/src/commands/agent-activity.mjs',
+      files: ['cli/src/commands/diagnosis/agent-activity.mjs'],
+      label: 'source · cli/src/commands/diagnosis/agent-activity.mjs',
     });
     assert.deepEqual(data.proof, {
       count: 4,
@@ -1578,7 +1579,7 @@ await test('agent-activity — show normalizes handwritten heartbeat summary fie
     assert.equal(human.code, 0);
     assert.match(
       stripAnsi(human.stdout),
-      /review target · source · cli\/src\/commands\/agent-activity\.mjs/,
+      /review target · source · cli\/src\/commands\/diagnosis\/agent-activity\.mjs/,
     );
     assert.match(stripAnsi(human.stdout), /proof · MCP · 1, Source · 2, Verify · 1/);
   } finally {
@@ -1598,7 +1599,7 @@ await test('agent-activity — show normalizes handwritten heartbeat scalar fiel
         focus: {
           summary: '  Review live focus contract  ',
           ontologySlug: '  capabilities/agent-live-activity-contract  ',
-          files: ['  cli/src/commands/agent-activity.mjs  '],
+          files: ['  cli/src/commands/diagnosis/agent-activity.mjs  '],
         },
         plan: ['  run focused test  '],
         evidence: {
@@ -1622,7 +1623,7 @@ await test('agent-activity — show normalizes handwritten heartbeat scalar fiel
       data.heartbeat.focus.ontologySlug,
       'capabilities/agent-live-activity-contract',
     );
-    assert.deepEqual(data.heartbeat.focus.files, ['cli/src/commands/agent-activity.mjs']);
+    assert.deepEqual(data.heartbeat.focus.files, ['cli/src/commands/diagnosis/agent-activity.mjs']);
     assert.deepEqual(data.heartbeat.plan, ['run focused test']);
     assert.deepEqual(data.heartbeat.evidence, {
       mcp: ['node_profile capabilities/agent-live-activity-contract'],
@@ -1636,7 +1637,7 @@ await test('agent-activity — show normalizes handwritten heartbeat scalar fiel
     assert.deepEqual(data.reviewTarget, {
       kind: 'ontology',
       ontologySlug: 'capabilities/agent-live-activity-contract',
-      files: ['cli/src/commands/agent-activity.mjs'],
+      files: ['cli/src/commands/diagnosis/agent-activity.mjs'],
       label: 'ontology · capabilities/agent-live-activity-contract',
     });
   } finally {

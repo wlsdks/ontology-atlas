@@ -14,7 +14,7 @@ import {
  * an icon control's required name and a real `<button>` for rows. Values come only
  * through `controlClass()` (`controls.test.tsx`). Each emits `data-control="chip|icon|row"` so
  * tests and instruments can query a class of control
- * (`tests/e2e/touch-target-contract.spec.ts`, `scripts/design/measure-contrast.mjs`).
+ * (`tests/e2e/gateway/touch-target-contract.spec.ts`, `scripts/design/measure-contrast.mjs`).
  */
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'type'> & {

@@ -100,7 +100,7 @@ function parseHomeMapView(value: string | null): HomeMapView | null {
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
 /**
- * The registry's source of truth: `tests/contract/scope-registry.contract.test.ts` requires
+ * The registry's source of truth: `tests/contract/routes/scope-registry.contract.test.ts` requires
  * a `global` or `vault-scoped` tag for every key, so each new key answers "clear on vault change?".
  */
 export const HOME_QUERY_KEYS = {

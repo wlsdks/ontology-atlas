@@ -29,7 +29,7 @@ export function realmInsideFlipDelayFor(depth: number): number {
  * Depth 1 → 1.0, 2 → 0.98, 3+ → 0.96; the caller restores hovered and ego members to 1.0.
  * The multiplier composites onto the stroke ink, and below 0.955 the darkest depth ink
  * (`--map-ink-depth-leaf`) falls under the 3:1 WCAG 1.4.11 floor
- * (`tests/contract/topology-ink-contrast.contract.test.ts`). Brightening the ink instead
+ * (`tests/contract/map/topology-ink-contrast.contract.test.ts`). Brightening the ink instead
  * would flatten the depth ramp.
  */
 export function realmDepthClarityAlpha(depth: number): number {

@@ -14,7 +14,7 @@ import {
 /**
  * The browser port's own behaviour. Whether it *agrees with the canonical
  * module* is a different question and belongs to
- * `tests/contract/meaning-findings-parity.contract.test.ts`, which runs both
+ * `tests/contract/analysis/meaning-findings-parity.contract.test.ts`, which runs both
  * over one table; this file pins the edges that make each rule what it is.
  */
 

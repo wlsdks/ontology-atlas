@@ -26,7 +26,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * One reading page for `/guide` and `/changelog`: the prose measure (`--measure-prose`, derived in
- * `app/globals.css`, held by `tests/e2e/prose-measure-calibration.spec.ts`), `leading-prose`
+ * `app/globals.css`, held by `tests/e2e/typography/prose-measure-calibration.spec.ts`), `leading-prose`
  * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
  */
 export interface GatewayDocPageProps {
@@ -256,7 +256,7 @@ const GUIDE_SEGMENTS = new Set(GUIDE_PAGES.map((page) => page.segment));
 /**
  * Resolves a prose link for this locale (one markdown copy serves all). Body links point only at
  * guide chapters, since a vault-less visitor sees the sample and vault links would open nothing;
- * vault documents go to GitHub (`tests/contract/guide-inbody-links.contract.test.ts`).
+ * vault documents go to GitHub (`tests/contract/routes/guide-inbody-links.contract.test.ts`).
  */
 function resolveProseHref(href: string, locale: string): string {
   if (!href.startsWith('/')) return href;
@@ -269,8 +269,8 @@ function resolveProseHref(href: string, locale: string): string {
 
 /**
  * Body links: a root-absolute vault slug becomes a locale-prefixed route, kept as an `<a>` with
- * `.prose-link` (`.claude/rules/design.md`). `tests/contract/guide-inbody-links.contract.test.ts`
- * checks where it points and `tests/e2e/guide-inbody-links.spec.ts` that it returns 200.
+ * `.prose-link` (`.claude/rules/design.md`). `tests/contract/routes/guide-inbody-links.contract.test.ts`
+ * checks where it points and `tests/e2e/gateway/guide-inbody-links.spec.ts` that it returns 200.
  */
 function ProseLink({ href, children, ...rest }: React.ComponentPropsWithoutRef<'a'>) {
   const locale = useLocale();

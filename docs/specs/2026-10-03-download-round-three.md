@@ -37,7 +37,7 @@ Baseline `b3ef671a3`. Probe captures (scratch, not committed):
   below 20% visible and in a hidden tab (`ConductionFigure.tsx:79-95`). The screens Map row links `#evidence` with an
   up arrow (`ScreensStage.tsx:82-106`).
 - Off-screen work: the hero WebGL scene draws every frame with no visibility gate (`lib/hero-atlas-scene.ts:458-466`) and
-  keeps its drawing buffer for one test (`:98`; read at `tests/e2e/download-gateway-grid.spec.ts:561-606`); the field draws
+  keeps its drawing buffer for one test (`:98`; read at `tests/e2e/gateway/download-gateway-grid.spec.ts:561-606`); the field draws
   at 30 fps for the whole page (`GatewayFx.tsx:184-188`); scroll counts as input, so the shared loop never sleeps while
   scrolling (`lib/gateway-frame-loop.ts:42-48`, `:69`).
 - With scripting off, the headline's characters stay `visibility: hidden` (`app/styles/gateway.css:236`); only reduced
@@ -194,13 +194,13 @@ nothing until slice 2. ja and zh: add `factShaLink` and the three changed `scree
 2. Given the static export, DPR 2, headed Chromium on the owner's Mac, at 1440×900, 1040×720 and a GPU-load variant
    1920×1080, When the probe runs a brisk leg (top to bottom at ~1,000 px/s) and a parked leg (stop on each figure until
    it rests, then move on), Then each leg's median of 3 has ≤ 2% dropped frames, no frame interval over 50 ms and no long
-   task over 50 ms. New `tests/e2e/download-scroll-budget.spec.ts` (local headed project), numbers in the PR.
+   task over 50 ms. New `tests/e2e/gateway/download-scroll-budget.spec.ts` (local headed project), numbers in the PR.
 3. Given the page parked at the colophon for 2 s, Then no time-based animation runs, the hero and field draw no frame,
    and the gateway loop has no client; given the conduction figure at 19% visible, it is paused; given it at rest, the
-   layer tree holds no composited layer for it. New `tests/e2e/download-visibility-gate.spec.ts` (CDP `LayerTree`).
+   layer tree holds no composited layer for it. New `tests/e2e/gateway/download-visibility-gate.spec.ts` (CDP `LayerTree`).
 4. Given reduced motion, When the page loads and scrolls top to bottom, Then `document.getAnimations()` stays empty, the
    gateway loop never registers a client, and the hero and field each draw once; given scripting off, the headline and
-   every section's text are visible. New `tests/e2e/download-still.spec.ts` (reduced motion and scripting off).
+   every section's text are visible. New `tests/e2e/gateway/download-still.spec.ts` (reduced motion and scripting off).
 5. Given a published release, When the visitor presses the facts strip's hash, Then the release page of that file
    opens in a new tab, the link's name is `download.factShaLink`, and `docs/guide/trust.md` holds
    `shasum -a 256 <file>` and `Get-FileHash <file> -Algorithm SHA256`. `DownloadPage.test.tsx`, `download-hero-release.spec.ts`.

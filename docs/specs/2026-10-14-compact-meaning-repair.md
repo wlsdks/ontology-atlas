@@ -46,8 +46,8 @@ it failing PR #2765's train; `ontology-atlas agent-brief --compact` exits 2 with
   (`cli/src/lib/query-result-contract/agent-brief/agent-brief-compact.mjs:102`), which
   requires exact v2 keys and all six steps
   (`cli/src/lib/query-result-contract/project-source-meaning.mjs:194-270`, `:296-339`).
-  `REPAIR READ` reads `repair.workflow` (`cli/src/commands/agent-brief.mjs:629-630`), and
-  `OATLAS_MCP_PATH` can point the CLI at another server build (`cli/src/lib/mcp-call.mjs:28-37`).
+  `REPAIR READ` reads `repair.workflow` (`cli/src/commands/diagnosis/agent-brief.mjs:629-630`), and
+  `OATLAS_MCP_PATH` can point the CLI at another server build (`cli/src/lib/mcp-bridge/mcp-call.mjs:28-37`).
 - **No vault node says compact repeats the workflow**: neither
   `capabilities/task-agent-brief.md` nor `elements/task-scoped-agent-brief-projection.md`
   mentions repair.
@@ -80,7 +80,7 @@ workflow to a reader who ignores the contract id. An absent key cannot be read a
 
 **Why the top level stays `agentBriefCompact:v2`:** only the nested object changes, and it
 carries its own id. A v3 would touch eight dispatch sites (for example
-`cli/src/lib/mcp-call.mjs:333` and `mcp/src/server/rpc.mjs:44`), and older CLIs would reject
+`cli/src/lib/mcp-bridge/mcp-call.mjs:333` and `mcp/src/server/rpc.mjs:44`), and older CLIs would reject
 the whole response.
 
 ## Flow
@@ -131,7 +131,7 @@ new validator: the shared v2 rules, `omitted` with exactly three keys and
 **Changes together:** `mcp/src/agent-brief-compact.mjs` (projection, navigation-path packet,
 prompt line); `project-source-meaning.mjs` (new validator sharing the step-1 check),
 `agent-brief-compact.mjs:102` and `agent-brief-fixtures.mjs` (`humanMeaningRepairCompact`);
-`cli/src/commands/agent-brief.mjs:629-630` (`REPAIR READ` reads
+`cli/src/commands/diagnosis/agent-brief.mjs:629-630` (`REPAIR READ` reads
 `repair.firstStep?.calls?.[0] ?? repair.workflow?.[0]?.calls?.[0]`, so a legacy v2 compact from an
 older MCP still prints it); `graph.mjs:329/385/388/391`; `mcp/README.md:753-754`, `:1030` (say
 "the v2 manifest" so it cannot be read as compact `agent_brief`) and after the paragraph that

@@ -1,0 +1,199 @@
+import { expect, test } from "@playwright/test";
+
+import {
+  CUT_TEXT,
+  TEXT_ZOOM_ROUTES,
+  ZOOMED_ROOT_PX,
+} from "./text-zoom-probes";
+import { seedFirstRunSeen } from "../first-run-seed";
+import { stubDirectoryPicker } from "../vault-picker-stub";
+
+async function openOntologyAudit(page: import("@playwright/test").Page) {
+  await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/ko/library/" && url.searchParams.get("tab") === "ontology",
+  );
+  await expect(
+    page.locator('#library-workspace-tabpanel-ontology [data-docs-viewer]'),
+  ).toBeVisible();
+}
+
+/**
+ * **The browser's own text-size setting, at 200% — the layout half.**
+ *
+ * Its sibling `text-zoom-ramp.spec.ts` sets the root in script, which is exact for the type
+ * and wrong for everything else: `rem` inside a **media query** resolves against the root
+ * element's *initial* font size — the browser's own default — and an author-set
+ * `html { font-size }` cannot move it. Tailwind v4's breakpoints are `rem`
+ * (`48rem` / `64rem` / `80rem`), so a real font-size preference moves them and the script
+ * stand-in does not.
+ *
+ * Measured at a 1512 viewport: with the author-set root, `(min-width: 48rem)` is **true**;
+ * with the browser's default font size at 32px it is **false**, while the repository's own
+ * `(min-width: 768px)` queries stay **true** in both. A real reader at 200% is therefore in a
+ * state no stand-in produces — the below-`lg` layout inside a 1512 window, mixed with
+ * desktop-true px queries — and a layout claim measured the other way describes a screen the
+ * browser never draws.
+ *
+ * `launchOptions` lives at the top of the file because Playwright refuses it inside a
+ * `describe`: it forces a new worker. The first test is a self-probe on that breakpoint, so
+ * this file cannot quietly fall back to the stand-in's state and keep reporting zero.
+ */
+test.use({
+  launchOptions: {
+    args: ["--blink-settings=defaultFontSize=32,defaultFixedFontSize=26"],
+  },
+});
+
+test.describe("실제 브라우저 글자 크기 설정 200%", () => {
+  test("계측 상태가 진짜다 — rem 미디어 쿼리가 실제로 움직였다", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 900 });
+    await openOntologyAudit(page);
+    await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
+
+    // Without this, the whole group could silently fall back to the script stand-in's state —
+    // where every `rem` breakpoint stays at its 16px value — and keep reporting zero. The two
+    // populations disagreeing is the state a real reader is in, so it is asserted, not assumed.
+    const state = await page.evaluate(() => ({
+      root: getComputedStyle(document.documentElement).fontSize,
+      remBreakpoint: matchMedia("(min-width: 48rem)").matches,
+      pxBreakpoint: matchMedia("(min-width: 768px)").matches,
+    }));
+    expect(state.root).toBe(`${ZOOMED_ROOT_PX}px`);
+    expect(
+      state.remBreakpoint,
+      "48rem holds at 1512, so it is measured against the author-set root, not the browser's 32px default " +
+        "font size. Every layout claim in this group becomes meaningless",
+    ).toBe(false);
+    expect(state.pxBreakpoint, "레포의 px 미디어 쿼리는 그대로여야 한다").toBe(true);
+  });
+
+  test("선택된 공유 탭이 확대된 라인 박스를 경계 안에 담는다", async ({ page }) => {
+    await page.setViewportSize({ width: 1040, height: 900 });
+    await seedFirstRunSeen(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "storefront");
+    });
+    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
+    const selected = page.locator('[role="tab"][aria-selected="true"]');
+    await expect(selected).toHaveCount(1);
+    await expect(selected).toBeVisible({ timeout: 30_000 });
+
+    const measured = await selected.evaluate((tab) => {
+      const label = tab.querySelector(":scope > span");
+      const tabRect = tab.getBoundingClientRect();
+      const labelRect = label?.getBoundingClientRect();
+      const style = getComputedStyle(tab);
+      const px = (value: string) => Number.parseFloat(value) || 0;
+      return {
+        root: getComputedStyle(document.documentElement).fontSize,
+        tabHeight: tabRect.height,
+        labelHeight: labelRect?.height ?? 0,
+        contained:
+          labelRect !== undefined &&
+          labelRect.top >= tabRect.top + px(style.borderTopWidth) &&
+          labelRect.bottom <= tabRect.bottom - px(style.borderBottomWidth),
+      };
+    });
+
+    expect(measured.root).toBe(`${ZOOMED_ROOT_PX}px`);
+    expect(measured.labelHeight, "선택 탭 라벨의 라인 박스를 재지 못했다").toBeGreaterThan(0);
+    expect(
+      measured.contained,
+      `확대 라인 ${measured.labelHeight}px 이 선택 탭 ${measured.tabHeight}px 경계를 벗어났다`,
+    ).toBe(true);
+  });
+
+  // At a 32px default font size every `rem` breakpoint reads the 1512 window as below `lg`
+  // too, so the app floor alone draws the narrowest layout the reader meets.
+  for (const width of [1040] as const) {
+    for (const route of TEXT_ZOOM_ROUTES) {
+      test(`${route} · ${width}px — 잘린 채 닿을 수 없는 글자가 없다`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(route, { waitUntil: "domcontentloaded" });
+        await expect(page.locator("main").first()).toBeVisible({ timeout: 30_000 });
+        await page.evaluate(
+          () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+
+        const cut = (await page.evaluate(eval(CUT_TEXT))) as string[];
+        expect(
+          cut,
+          "Some text is cut off with no way to see the rest. With an ellipsis, a line clamp or a scroller\n" +
+            "it is a narrow box's designed behaviour, but with none of the three the reader cannot\n" +
+            "reach that text. html and body are both overflow-x: hidden, so the document's scrollWidth\n" +
+            "can never show this.\n" +
+            cut.join("\n"),
+        ).toEqual([]);
+      });
+    }
+  }
+
+  test("the first-run folder picker remains reachable above the bottom tab bar", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await stubDirectoryPicker(page, {
+      "README.md": "# Text zoom fixture\n\nA folder chosen from the first-run guide.\n",
+    });
+    await page.goto("/en/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-starter-open").click();
+    const sheet = page.getByTestId("vault-guide-sheet");
+    const pick = page.getByTestId("vault-guide-pick-existing");
+    await expect(sheet).toBeVisible();
+    await pick.scrollIntoViewIfNeeded();
+
+    const measured = await page.evaluate(() => {
+      const sheetElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-sheet"]');
+      const pickElement = document.querySelector<HTMLElement>('[data-testid="vault-guide-pick-existing"]');
+      const bar = document.querySelector<HTMLElement>('[data-tabbar="primary"]');
+      if (!sheetElement || !pickElement || !bar) return { subjects: 0 };
+      const pickRect = pickElement.getBoundingClientRect();
+      const barRect = bar.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        pickRect.x + pickRect.width / 2,
+        pickRect.y + pickRect.height / 2,
+      );
+      return {
+        subjects: 1,
+        sheetScrollable:
+          /auto|scroll/.test(getComputedStyle(sheetElement).overflowY) &&
+          sheetElement.scrollHeight > sheetElement.clientHeight,
+        pickBottom: pickRect.bottom,
+        barTop: barRect.top,
+        hit: hit === pickElement || pickElement.contains(hit),
+      };
+    });
+
+    expect(measured.subjects, "first-run picker measurement found no subject").toBe(1);
+    expect(measured.sheetScrollable, "the enlarged guide has no vertical scroller").toBe(true);
+    expect(
+      measured.pickBottom,
+      `folder picker bottom ${measured.pickBottom} crosses tab bar top ${measured.barTop}`,
+    ).toBeLessThanOrEqual(measured.barTop!);
+    expect(measured.hit, "the bottom tab bar intercepts the folder picker").toBe(true);
+
+    await pick.click();
+    await expect(page.getByTestId("first-run-starter")).toHaveCount(0);
+  });
+
+  test("게이트웨이 헤드라인이 자기 섹션 제목보다 작아지지 않는다", async ({ page }) => {
+    await page.setViewportSize({ width: 1040, height: 900 });
+    await page.goto("/ko/download/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("h1").first()).toBeVisible({ timeout: 30_000 });
+
+    // `--text-monument`'s `cqw` term cannot be reached by text zoom, so while its floor was
+    // `40px` the `h1` stood at 40px (768) and 44.54px (1024) under its own 46px `h2`s — a page
+    // whose headline was smaller than its sections. The floor is `2.5rem` now, the same 40px
+    // at the default root.
+    const sizes = await page.evaluate(() => {
+      const size = (el: Element) => Number.parseFloat(getComputedStyle(el).fontSize);
+      const painted = (el: Element) => el.getBoundingClientRect().width > 2;
+      return {
+        h1: [...document.querySelectorAll("h1")].filter(painted).map(size),
+        h2: [...document.querySelectorAll("h2")].filter(painted).map(size),
+      };
+    });
+    expect(sizes.h1.length, "h1 이 없다 — 측정 대상이 없다").toBeGreaterThan(0);
+    expect(sizes.h2.length, "h2 가 없다 — 비교 대상이 없다").toBeGreaterThan(0);
+    expect(Math.min(...sizes.h1)).toBeGreaterThanOrEqual(Math.max(...sizes.h2));
+  });
+});

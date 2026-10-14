@@ -4,13 +4,13 @@
     {
       "key": "cli:runtime:dependencies:package.json:ontology-atlas-mcp",
       "reason": "The CLI resolves the installed MCP package dynamically for source-checkout verification.",
-      "consumer": "cli/src/commands/mcp-verify.mjs",
+      "consumer": "cli/src/commands/agent-setup/mcp-verify.mjs",
       "witness": "require_.resolve('ontology-atlas-mcp/scripts/verify.mjs')"
     },
     {
-      "key": "cli:runtime:exports:src/lib/interop-format.mjs:INTEROP_SCHEMA_VERSION",
+      "key": "cli:runtime:exports:src/lib/export-format/interop-format.mjs:INTEROP_SCHEMA_VERSION",
       "reason": "The interop schema version is pinned by the cross-surface contract test; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/interop-format.contract.test.ts",
+      "consumer": "tests/contract/vault-format/interop-format.contract.test.ts",
       "witness": "INTEROP_SCHEMA_VERSION"
     },
     {
@@ -20,7 +20,7 @@
       "witness": "RELATION_TYPE_VALUES"
     },
     {
-      "key": "cli:runtime:exports:src/lib/schema.mjs:generateNodeUid",
+      "key": "cli:runtime:exports:src/lib/mcp-bridge/schema.mjs:generateNodeUid",
       "reason": "The UID migration (scripts/vault/migrate-node-uids.mjs inventory) mints node UIDs through the CLI's schema shim; the cli runtime lane cannot see that cross-scope consumer. Dropping the export broke pnpm test:vault:migrate on 2026-08-31.",
       "consumer": "scripts/migrations/2026-08-02-add-node-uids.mjs",
       "witness": "generateNodeUid"
@@ -70,7 +70,7 @@
     {
       "key": "frontend:runtime:dependencies:package.json:jsonc-parser",
       "reason": "Root installation intentionally supplies this parser to source-checkout CLI scripts as well as the nested CLI manifest.",
-      "consumer": "cli/src/lib/agent-config.mjs",
+      "consumer": "cli/src/lib/agent-setup/agent-config.mjs",
       "witness": "from 'jsonc-parser'"
     },
     {
@@ -94,7 +94,7 @@
     {
       "key": "frontend:runtime:devDependencies:package.json:axe-core",
       "reason": "The accessibility specs run axe-core in the browser; Playwright specs are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/a11y-ratchet.spec.ts",
+      "consumer": "tests/e2e/design-audits/a11y-ratchet.spec.ts",
       "witness": "axe-core"
     },
     {
@@ -118,7 +118,7 @@
     {
       "key": "frontend:runtime:exports:src/shared/ui/tokens/reading-measure.ts:PROSE_MEASURE_PX",
       "reason": "Three layout specs hold the rendered column to this default-root measure; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/prose-measure-calibration.spec.ts",
+      "consumer": "tests/e2e/typography/prose-measure-calibration.spec.ts",
       "witness": "PROSE_MEASURE_PX"
     },
     {
@@ -178,13 +178,13 @@
     {
       "key": "mcp:runtime:exports:src/architecture-profile.mjs:matchesPathPattern",
       "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
-      "consumer": "tests/contract/architecture-profile.contract.test.ts",
+      "consumer": "tests/contract/harness/architecture-profile.contract.test.ts",
       "witness": "matchesPathPattern"
     },
     {
       "key": "mcp:runtime:exports:src/construction-rules.mjs:CHAT_RULES_DELTA_EN",
       "reason": "The construction-rules contract test reads the chat delta directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/construction-rules.contract.test.ts",
+      "consumer": "tests/contract/mcp/construction-rules.contract.test.ts",
       "witness": "CHAT_RULES_DELTA_EN"
     },
     {
@@ -202,7 +202,7 @@
     {
       "key": "mcp:runtime:exports:src/ontology-engine.mjs:createOntologyEngine",
       "reason": "The graph-truth parity contract test drives the engine directly; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/graph-truth-parity.contract.test.ts",
+      "consumer": "tests/contract/analysis/graph-truth-parity.contract.test.ts",
       "witness": "createOntologyEngine"
     },
     {
@@ -214,19 +214,19 @@
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_PREFIX",
       "reason": "The CLI schema shim re-exports the provenance prefix; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/schema.mjs",
+      "consumer": "cli/src/lib/mcp-bridge/schema.mjs",
       "witness": "CREATED_BY_AGENT_PREFIX"
     },
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_AGENT_UNKNOWN",
       "reason": "The created-by provenance contract test compares the MCP unknown-agent value with the web writer; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "tests/contract/created-by-provenance.contract.test.ts",
+      "consumer": "tests/contract/vault-format/created-by-provenance.contract.test.ts",
       "witness": "CREATED_BY_AGENT_UNKNOWN"
     },
     {
       "key": "mcp:runtime:exports:src/schema.mjs:CREATED_BY_HUMAN",
       "reason": "The CLI schema shim re-exports the human provenance value; the export is consumed outside its Knip scope, where the lane cannot see it.",
-      "consumer": "cli/src/lib/schema.mjs",
+      "consumer": "cli/src/lib/mcp-bridge/schema.mjs",
       "witness": "CREATED_BY_HUMAN"
     },
     {

@@ -229,7 +229,7 @@ export function useTopologyInspectorState({
     useViewportBelow(LG_BREAKPOINT_PX) && nodePanelMounted && Boolean(panelDatasheetModel);
   // Raised only while the activity inbox is open: the lane's `z-20` context traps the inbox under
   // later tiles, and a permanent raise pokes through the scrim (`--z-map-scrim`, 25).
-  // Gate: `tests/e2e/agent-activity-placement.spec.ts`.
+  // Gate: `tests/e2e/agents/agent-activity-placement.spec.ts`.
   const [activityInboxOpen, setActivityInboxOpen] = useState(false);
   const topologyUtilityLaneSuppressionContract = selectedRelationActive
     ? "selected-relation-inspector-owns-right-rail"

@@ -219,15 +219,15 @@ Rendered unchanged from their own namespaces: `downloadConduction.agent`, `.paus
    fail when A or B needs MCP tool names or frontmatter, or claims something the app does not ship. `/ui-proof`.
 2. Given slice 1's probe, When it runs the brisk and parked legs (parked on A and B until each rests) at 1440×900,
    1040×720 and 1920×1080, DPR 2, Then each leg's median of 3 keeps ≤ 2% dropped frames, no frame interval over 50 ms
-   and no long task over 50 ms. `tests/e2e/download-scroll-budget.spec.ts`.
+   and no long task over 50 ms. `tests/e2e/gateway/download-scroll-budget.spec.ts`.
 3. Given reduced motion or scripting off, Then A and B render their rest frame on first paint, `Element.animate` is never
    called for them, no control renders, and their text is in the static HTML. New `ChangeFigure.test.tsx`,
-   `StartFigure.test.tsx`; `tests/e2e/download-still.spec.ts`.
+   `StartFigure.test.tsx`; `tests/e2e/gateway/download-still.spec.ts`.
 4. Given the vault, Then every A concept's `path:` equals its file and the file exists, no A concept is in
    `CONDUCTION_CAST`, B renders exactly the reused keys under Copy, and `VaultStartSteps` still leads with `analyze` for a
    code folder. `ChangeFigure.test.tsx`, `StartFigure.test.tsx`, `VaultStartSteps.test.tsx`.
 5. Given A and B at rest, Then each holds no running animation and no composited layer, and at most 32 elements per
-   figure carried an animation during its run. `tests/e2e/download-visibility-gate.spec.ts`.
+   figure carried an animation during its run. `tests/e2e/gateway/download-visibility-gate.spec.ts`.
 6. Given real macOS recordings at 1440 and 1040, Then every beat starts within 33 ms of its table time, no stall exceeds
    50 ms in the run, and the rest frame matches the reduced-motion frame within 0.5% of pixels. `/ui-proof`.
 7. Given 1040×720, Then A's figure is ≤ 520 px tall, B is one window stepping in place, and each figure's cause and effect

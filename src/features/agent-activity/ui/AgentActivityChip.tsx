@@ -29,7 +29,7 @@ import type { AgentLiveWorkInput } from '../model/agent-work-projection';
  * This root owns the feed, outer click, Escape, and focus return together.
  * Atlas does not claim the agent is 「Connected」. Only fresh heartbeats are in present tense,
  * otherwise it says 「Last task N minutes ago」. The gate
- * `tests/e2e/agent-activity-placement.spec.ts` measures position·square·width·overlap.
+ * `tests/e2e/agents/agent-activity-placement.spec.ts` measures position·square·width·overlap.
  */
 export function AgentActivityChip({
   suppressed = false,

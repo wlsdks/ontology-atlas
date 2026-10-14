@@ -27,7 +27,7 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 
 /*
  * Hides the scrollbar without changing behaviour; where the bar was the only 'more below' cue, pair
- * it with a `--tabbar-edge-fade` mask. Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
+ * it with a `--tabbar-edge-fade` mask. Gate: `tests/contract/agent-chat/chat-scroller-quiet.contract.test.ts`.
  */
 .atlas-scroll-quiet {
   scrollbar-width: none;
@@ -39,7 +39,7 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 /*
  * No scroller draws a bar; only the page scroller is smooth, since `scroll-behavior: smooth` makes
  * `element.scrollTop = n` return before arrival and races measuring specs. Reduced motion carries
- * `scroll-behavior: auto !important`. Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
+ * `scroll-behavior: auto !important`. Gate: `tests/contract/agent-chat/chat-scroller-quiet.contract.test.ts`.
  */
 html,
 body,
@@ -61,7 +61,7 @@ body *::-webkit-scrollbar {
 /*
  * Container query on the pane height, not window width: below `lg` the reader is half a column.
  * Finished steps fold their caption and actions. 640 is written twice since `var()` does not work in
- * `@container`; `tests/e2e/library-spine.spec.ts` reads `--library-spine-collapse-height`.
+ * `@container`; `tests/e2e/library/compile/library-spine.spec.ts` reads `--library-spine-collapse-height`.
  */
 .library-spine-scope {
   container-type: size;
@@ -106,7 +106,7 @@ body *::-webkit-scrollbar {
  * `.font-mono.uppercase` is the device itself and nothing else: a path, a slug or a command
  * carries `font-mono` **without** `uppercase`, so mono survives everywhere it means "this is
  * code". Outside every layer, next to the tracking override, for the same reason it gives.
- * Gate: `tests/contract/caps-label-latin-only.contract.test.ts`.
+ * Gate: `tests/contract/typography/caps-label-latin-only.contract.test.ts`.
  */
 :root:is(:lang(ko), :lang(ja), :lang(zh)) .font-mono.uppercase {
   font-family: var(--font-sans);
@@ -116,7 +116,7 @@ body *::-webkit-scrollbar {
 /*
  * `keep-all` on `body` so Korean breaks between words, scoped to `:lang(ko)` (set before first paint
  * by `LANG_BOOT`). Elements that break anywhere override it. Unlayered like the caps override.
- * Gates: `tests/contract/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
+ * Gates: `tests/contract/typography/hangul-word-keep.contract.test.ts`, `tests/e2e/typography/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {
   word-break: keep-all;

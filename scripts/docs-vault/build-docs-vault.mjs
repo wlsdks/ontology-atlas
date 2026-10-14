@@ -528,7 +528,7 @@ export function deterministicGeneratedAt(docs) {
  * `trimToRecentSections` in `src/views/gateway-doc/lib/vault-doc.ts`**: the screen
  * trims the bundled preview once more against its own limit, so if the two
  * implementations disagree on section boundaries the reported fold count is a lie.
- * `tests/contract/bundled-vault-budget.contract.test.ts` proves the two agree
+ * `tests/contract/vault-data/bundled-vault-budget.contract.test.ts` proves the two agree
  * against the real CHANGELOG (the same pattern as the parse-frontmatter 3-way
  * contract).
  */
@@ -746,7 +746,7 @@ async function assertOutputsCurrent({
  * rather than retyped so the static manifest and the app's own builder answer with one
  * rule. The import is dynamic and optional because this script is also copied on its own
  * into a bare worktree by the `prepare` hook (`scripts/worktree-materialization.test.mjs`,
- * `tests/contract/precommit-hook-wired.contract.test.ts` both seed a repository with a
+ * `tests/contract/ci-gates/precommit-hook-wired.contract.test.ts` both seed a repository with a
  * `scripts/` and no `mcp/`): a static import there is a module-resolution crash before
  * the first document is read.
  */
@@ -780,7 +780,7 @@ if (!meaningRules) {
  * browser and desktop manifest builder call. The canonical judgements live in
  * `mcp/src/meaning-findings.mjs`; the fifth, `slug-outside-kind-folder`, sits in the write
  * gate instead of that module, so it is read from the schema it is built on — the same two
- * lines `tests/contract/meaning-findings-parity.contract.test.ts` runs to prove the port
+ * lines `tests/contract/analysis/meaning-findings-parity.contract.test.ts` runs to prove the port
  * and the canonical rule agree.
  *
  * The sixth finding, `folder-only-evidence`, is deliberately absent on both paths: it asks

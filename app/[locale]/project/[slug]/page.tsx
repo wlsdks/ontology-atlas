@@ -15,7 +15,7 @@ interface Params {
 
 /**
  * Slugs come from every bundled sample via `bundledProjectSlugs()`; gate:
- * tests/contract/bundled-project-routes.contract.test.ts.
+ * tests/contract/vault-data/bundled-project-routes.contract.test.ts.
  */
 export async function generateStaticParams(): Promise<Params[]> {
   return bundledProjectSlugs().map((slug) => ({ slug }));

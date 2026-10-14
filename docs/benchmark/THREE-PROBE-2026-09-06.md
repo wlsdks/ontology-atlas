@@ -47,7 +47,7 @@ arrangement the engine computes rather than a lookalike. That required naming
 the placement in `ontology-map/index.ts`'s public API (the ESLint slice rule
 forbids reaching inside a slice). It is a widget→widget edge the architecture
 rules discourage and
-`tests/contract/same-layer-cross-import-ratchet.contract.test.ts` counts, so
+`tests/contract/architecture/same-layer-cross-import-ratchet.contract.test.ts` counts, so
 **that contract test now fails on one new row** (`widgets:topology-three-probe->ontology-map: 2 (ledger 0)`), deliberately left
 failing rather than edited, because a shipped version should move `dome-view`'s
 placement down a layer instead of buying a ledger entry. `pnpm exec tsc

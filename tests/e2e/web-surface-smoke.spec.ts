@@ -523,7 +523,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await expect(windows).toHaveAttribute("href", /github\.com/);
 
     // The path to what works today is on the same row: the web product at `/topology`. The
-    // label-destination pairing is guarded by `tests/contract/map-destination-route.contract.test.ts`.
+    // label-destination pairing is guarded by `tests/contract/routes/map-destination-route.contract.test.ts`.
     const web = page.getByTestId("gateway-hero-web-cta");
     await expect(web).toBeVisible();
     await expect(web).toHaveAttribute("href", /\/ko\/topology\/?$/);

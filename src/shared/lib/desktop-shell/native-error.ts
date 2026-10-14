@@ -46,7 +46,7 @@ export function parseNativeError(err: unknown): NativeErrorParts {
  * agent loop's `noticeFor` recognises a failed turn by `audit-blocked:` and
  * `timed-out:` prefixes, so a caller that has not been wired to a catalogue must
  * keep its code, or an unwritable folder silently becomes "check your network" —
- * the exact regression `tests/contract/agent-notice-codes.contract.test.ts` exists
+ * the exact regression `tests/contract/agent-chat/agent-notice-codes.contract.test.ts` exists
  * to prevent.
  *
  * With a lookup, an **unknown** code still degrades to the English detail, so a

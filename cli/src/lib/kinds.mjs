@@ -1,5 +1,5 @@
-import { VAULT_KINDS } from './schema.mjs';
-import { formatAllowedValueError } from './suggestions.mjs';
+import { VAULT_KINDS } from './mcp-bridge/schema.mjs';
+import { formatAllowedValueError } from './mcp-bridge/suggestions.mjs';
 
 export const READABLE_KIND_VALUES = Object.freeze([...VAULT_KINDS, 'vault-readme']);
 

@@ -1,7 +1,7 @@
 /**
  * Layer-1 system prompt: product discipline in code, readable from the panel, English only (the
  * model channel). The rule blocks are literal copies of `mcp/src/construction-rules.mjs`, held
- * byte-equal by tests/contract/ontology-meta-model.contract.test.ts and vault-schema.contract.test.ts.
+ * byte-equal by tests/contract/mcp/ontology-meta-model.contract.test.ts and vault-schema.contract.test.ts.
  */
 
 import { NEXT_STEP_MAX_CHARS } from './next-step';

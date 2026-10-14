@@ -10,7 +10,7 @@ import { cn } from '@/shared/lib/cn';
 /**
  * Below it the plane drops into the plinth under the facts strip; narrower bands put its ink under
  * the decision block. Tailwind spells it `min-[90rem]:`, kept equal by the contract
- * tests/contract/hero-split-width.contract.test.ts.
+ * tests/contract/layout/hero-split-width.contract.test.ts.
  */
 export const HERO_SPLIT_MIN_WIDTH_REM = 90;
 const HERO_SPLIT_MEDIA = `(min-width: ${HERO_SPLIT_MIN_WIDTH_REM}rem)`;
