@@ -5,7 +5,7 @@ status: current
 area: analysis
 stores: ".ontology-atlas/analyses/"
 contract_version: 1
-enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/commands/analysis.mjs]
+enforced_by: [src/entities/analysis-record/lib/analysis-store.ts, cli/src/commands/repo-analysis/analysis.mjs]
 ---
 
 # Analysis records

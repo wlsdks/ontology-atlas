@@ -123,7 +123,7 @@ Because the batch is deterministic, two runs under the same conditions are **byt
 
 ⚠️ **Do not read "cannot measure" as a perfect score.** If the density gate folds a subtree and all remaining edges share endpoints, crossings become fundamentally impossible—treating that as quality 1 would lead to the opposite conclusion that "larger vaults are better." Therefore, it emits `null` along with the reason.
 
-**Why trust overlap 0** — because it distinguishes from the detector being idle. Since the calculation is a pure function outside the page (`scripts/lib/design/graph-readability.mjs`), you can feed in known answers, and `tests/contract/graph-readability.contract.test.ts` does exactly that. We injected four types of defects (current line regression · sweep axis inversion · endpoint-sharing pair miscount · overlap threshold weakening) and confirmed they all turn red.
+**Why trust overlap 0** — because it distinguishes from the detector being idle. Since the calculation is a pure function outside the page (`scripts/lib/design/graph-readability.mjs`), you can feed in known answers, and `tests/contract/map/graph-readability.contract.test.ts` does exactly that. We injected four types of defects (current line regression · sweep axis inversion · endpoint-sharing pair miscount · overlap threshold weakening) and confirmed they all turn red.
 
 Procedure and pitfalls (real mouse input, headed runs, `work` not `gap`, a
 control group, and the on-screen Frame meter under Settings → Map background):

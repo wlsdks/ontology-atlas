@@ -20,7 +20,7 @@ import {
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
 const DEAD_CODE_COMMAND = 'pnpm knip';
 const COMMENT_REFS_COMMAND = 'pnpm docs:comment-refs';
-const COMMENT_BYTES_COMMAND = 'pnpm exec vitest run tests/contract/source-comment-bytes.contract.test.ts';
+const COMMENT_BYTES_COMMAND = 'pnpm exec vitest run tests/contract/ci-gates/source-comment-bytes.contract.test.ts';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -35,10 +35,10 @@ const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-war
 
 const SECURITY_COMMAND = SECURITY_RULES[0].command;
 const TEST_HYGIENE_COMMAND =
-  'pnpm exec vitest run tests/contract/test-title-language.contract.test.ts tests/contract/source-comment-bytes.contract.test.ts';
-const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/ime-enter-guard.contract.test.ts';
+  'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts';
+const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/controls/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
-  'pnpm exec vitest run tests/contract/unused-token-ratchet.contract.test.ts tests/contract/undeclared-token-ref.contract.test.ts tests/contract/design-doc-token-integrity.contract.test.ts';
+  'pnpm exec vitest run tests/contract/design-tokens/unused-token-ratchet.contract.test.ts tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts';
 
 // Import-graph rows are facts about this repository's imports; one test below owns them.
 function ruleCommands(result) {
@@ -87,9 +87,9 @@ describe('focused check suggestions', () => {
       ['mcp/src/server/tool-schemas/git-results.mjs', 'pnpm integration:mcp:surface'],
       ['mcp/src/server/tool-schemas/destructive-preview.mjs', 'pnpm integration:mcp:write'],
       ['mcp/src/tools/repo-analysis.mjs', 'pnpm integration:mcp:repo-analysis'],
-      ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
-      ['scripts/lib/benchmark/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/field-trial-replay-scripts.contract.test.ts'],
-      ['docs/guide/body-backed-construction.md', 'pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts'],
+      ['.claude/skills/ontology-field-trial/scripts/acp-replay.sh', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],
+      ['scripts/lib/benchmark/construction-prompts.mjs', 'pnpm exec vitest run tests/contract/agent-instructions/field-trial-replay-scripts.contract.test.ts'],
+      ['docs/guide/body-backed-construction.md', 'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts'],
     ];
     assert.ok(subjects.length > 0);
     for (const [path, command] of subjects) {
@@ -128,7 +128,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:build',
-      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
+      'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
@@ -136,8 +136,8 @@ describe('focused check suggestions', () => {
       // The gateway renders one vault file verbatim and states the vault's node count, so any
       // vault edit can invalidate the committed copy of it.
       'pnpm gateway:specimen:check',
-      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
-      'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
+      'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts',
+      'pnpm test:run tests/contract/vault-data/vault-section-shape.contract.test.ts',
     ]);
   });
 
@@ -146,7 +146,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:build',
-      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
+      'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:meta && pnpm docs:move -- --check',
@@ -238,7 +238,7 @@ describe('focused check suggestions', () => {
       'src/shared/lib/cn.test.ts',
       'src/widgets/example/ui/Example.test.tsx',
       'tests/e2e/rail-destinations.spec.ts',
-      'tests/contract/page-frame.contract.test.ts',
+      'tests/contract/layout/page-frame.contract.test.ts',
       'scripts/desktop/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',
       'cli/src/integration.test.mjs',
@@ -353,13 +353,13 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:build',
-      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
+      'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:meta && pnpm docs:move -- --check',
       'pnpm test:guide-examples',
-      'pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts',
-      'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
+      'pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts',
+      'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts',
     ]);
   });
 
@@ -372,7 +372,7 @@ describe('focused check suggestions', () => {
   it('suggests cross-package contracts for parser schema and validator drift', () => {
     const result = suggestFocusedChecks([
       'mcp/src/schema.mjs',
-      'cli/src/lib/parse-frontmatter.mjs',
+      'cli/src/lib/mcp-bridge/parse-frontmatter.mjs',
       'src/shared/lib/vault-document/validate-vault-document.ts',
       'tests/fixtures/validate-vault-cases.mjs',
       'tests/fixtures/vault-schema-cases.mjs',
@@ -558,7 +558,7 @@ describe('focused check suggestions', () => {
   it('routes architecture changes through the cross-surface gate and rendered workflow', () => {
     const result = suggestFocusedChecks([
       'mcp/src/architecture-profile.mjs',
-      'cli/src/commands/architecture.mjs',
+      'cli/src/commands/repo-analysis/architecture.mjs',
       'src/views/architecture/ui/ArchitectureWorkbench.tsx',
     ]);
 
@@ -700,19 +700,19 @@ describe('focused check suggestions', () => {
 
   it('deduplicates direct CLI lib unit tests when source and test both changed', () => {
     const result = suggestFocusedChecks([
-      'cli/src/lib/mcp-call.mjs',
-      'cli/src/lib/mcp-call.test.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.test.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
       'pnpm test:cli:mcp-call',
-      'pnpm exec node --test cli/src/lib/mcp-call.test.mjs',
+      'pnpm exec node --test cli/src/lib/mcp-bridge/mcp-call.test.mjs',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
     ]);
-    assert.deepEqual(result.commands.find((row) => row.command.endsWith('cli/src/lib/mcp-call.test.mjs')).paths, [
-      'cli/src/lib/mcp-call.mjs',
-      'cli/src/lib/mcp-call.test.mjs',
+    assert.deepEqual(result.commands.find((row) => row.command.endsWith('cli/src/lib/mcp-bridge/mcp-call.test.mjs')).paths, [
+      'cli/src/lib/mcp-bridge/mcp-call.mjs',
+      'cli/src/lib/mcp-bridge/mcp-call.test.mjs',
     ]);
   });
 
@@ -743,9 +743,9 @@ describe('focused check suggestions', () => {
 
   it('suggests setup integration for agent config repair helpers', () => {
     const result = suggestFocusedChecks([
-      'cli/src/lib/agent-config.mjs',
-      'cli/src/lib/agent-config.test.mjs',
-      'cli/src/commands/agent-setup.mjs',
+      'cli/src/lib/agent-setup/agent-config.mjs',
+      'cli/src/lib/agent-setup/agent-config.test.mjs',
+      'cli/src/commands/agent-setup/agent-setup.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -847,7 +847,7 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/harness/claude-hooks.test.mjs',
       'pnpm test:claude:hooks',
       'pnpm agents:check',
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
+      'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts',
     ]);
   });
 
@@ -936,7 +936,7 @@ describe('focused check suggestions', () => {
       'pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm docs-vault:build',
-      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
+      'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:meta && pnpm docs:move -- --check',
@@ -1179,13 +1179,13 @@ describe('focused check suggestions', () => {
 
   it('routes every E2E scope surface to the direct workflow contracts', () => {
     const command =
-      'pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts';
+      'pnpm exec vitest run tests/contract/ci-gates/e2e-change-scope.contract.test.ts tests/contract/ci-gates/e2e-suite-split.contract.test.ts tests/contract/ci-gates/ci-bounded-network.contract.test.ts';
     const paths = [
       '.github/workflows/e2e.yml',
       '.github/actions/setup-playwright/action.yml',
-      'tests/contract/e2e-change-scope.contract.test.ts',
-      'tests/contract/e2e-suite-split.contract.test.ts',
-      'tests/contract/ci-bounded-network.contract.test.ts',
+      'tests/contract/ci-gates/e2e-change-scope.contract.test.ts',
+      'tests/contract/ci-gates/e2e-suite-split.contract.test.ts',
+      'tests/contract/ci-gates/ci-bounded-network.contract.test.ts',
     ];
 
     assert.ok(paths.length > 0, 'the E2E scope surface inventory must not be empty');
@@ -1214,7 +1214,7 @@ describe('focused check suggestions', () => {
       'pnpm acp:registry:check',
       // A workflow is where a node:test suite becomes reachable or stops being
       // reachable, so editing one re-checks that nothing now runs nowhere.
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
+      'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts',
       'pnpm test:mcp:package',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
@@ -1254,7 +1254,7 @@ describe('focused check suggestions', () => {
     // MCP code joins the Vitest rows when a suite or contract reaches it.
     const mcp = suggestFocusedChecks(['mcp/src/architecture-profile.mjs']).commands.filter((item) => item.importGraph);
     assert.match(mcp[0].command, /^pnpm exec vitest related .* mcp\/src\/architecture-profile\.mjs$/);
-    assert.ok(mcp[1].command.split(' ').includes('tests/contract/architecture-profile.contract.test.ts'));
+    assert.ok(mcp[1].command.split(' ').includes('tests/contract/harness/architecture-profile.contract.test.ts'));
     assert.deepEqual(mcp[1].paths, ['mcp/src/architecture-profile.mjs']);
 
     // A deleted file is gone from Vitest's graph; the suites still importing it run by name.
@@ -1392,7 +1392,7 @@ describe('focused check suggestions', () => {
     const vitest = suggestFocusedChecks(['vitest.config.ts', 'vitest.setup.ts']);
 
     assert.deepEqual(domainCommands(vitest), [
-      'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts',
+      'pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-format/vault-schema.contract.test.ts',
     ]);
 
     const playwright = suggestFocusedChecks(['playwright.config.ts']);
@@ -1455,7 +1455,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm docs-vault:build',
-      'pnpm exec vitest run tests/contract/bundled-vault-budget.contract.test.ts',
+      'pnpm exec vitest run tests/contract/vault-data/bundled-vault-budget.contract.test.ts',
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm docs:meta && pnpm docs:move -- --check',
@@ -1466,7 +1466,7 @@ describe('focused check suggestions', () => {
       // `.claude/rules/testing.md` and the skill are agent files, and a rule's
       // globs are what the nested `AGENTS.md` pointers derive from.
       'pnpm agents:check',
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',
+      'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts',
       'pnpm test:mcp:docs',
       'pnpm vault:validate',
     ]);
@@ -1474,7 +1474,7 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI and MCP verify gates without jumping straight to full suites', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/mcp-verify.mjs',
+      'cli/src/commands/agent-setup/mcp-verify.mjs',
       'mcp/scripts/verify.mjs',
       'scripts/packaging/smoke-packed-cli.mjs',
     ]);
@@ -1504,9 +1504,9 @@ describe('focused check suggestions', () => {
 
   it('runs source-checkout MCP dependency guard tests from every implementation path', () => {
     assert.deepEqual(
-      domainCommands(suggestFocusedChecks(['cli/src/lib/mcp-module.mjs'])),
+      domainCommands(suggestFocusedChecks(['cli/src/lib/mcp-bridge/mcp-module.mjs'])),
       [
-        'pnpm exec node --test cli/src/lib/mcp-module.test.mjs',
+        'pnpm exec node --test cli/src/lib/mcp-bridge/mcp-module.test.mjs',
         'pnpm test:cli:lib',
         'pnpm vault:validate',
       ],
@@ -1554,9 +1554,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI diagnosis integration for health, agent-brief, and workspace-brief commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/health.mjs',
-      'cli/src/commands/agent-brief.mjs',
-      'cli/src/commands/workspace-brief.mjs',
+      'cli/src/commands/diagnosis/health.mjs',
+      'cli/src/commands/diagnosis/agent-brief.mjs',
+      'cli/src/commands/diagnosis/workspace-brief.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1568,12 +1568,12 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI graph-read integration for read-only graph commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/backlinks.mjs',
-      'cli/src/commands/path.mjs',
-      'cli/src/commands/all-paths.mjs',
-      'cli/src/commands/relation-check.mjs',
-      'cli/src/commands/node-profile.mjs',
-      'cli/src/commands/similar.mjs',
+      'cli/src/commands/graph-traversal/backlinks.mjs',
+      'cli/src/commands/graph-traversal/path.mjs',
+      'cli/src/commands/graph-traversal/all-paths.mjs',
+      'cli/src/commands/graph-write/relation-check.mjs',
+      'cli/src/commands/graph-query/node-profile.mjs',
+      'cli/src/commands/graph-query/similar.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1596,9 +1596,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI graph-write integration for destructive graph commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/rename.mjs',
-      'cli/src/commands/delete.mjs',
-      'cli/src/commands/merge.mjs',
+      'cli/src/commands/graph-write/rename.mjs',
+      'cli/src/commands/graph-write/delete.mjs',
+      'cli/src/commands/graph-write/merge.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1610,9 +1610,9 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI repo-analysis integration for code-to-vault commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/analyze.mjs',
-      'cli/src/commands/infer-imports.mjs',
-      'cli/src/commands/bootstrap.mjs',
+      'cli/src/commands/repo-analysis/analyze.mjs',
+      'cli/src/commands/repo-analysis/infer-imports.mjs',
+      'cli/src/commands/repo-analysis/bootstrap.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1624,11 +1624,11 @@ describe('focused check suggestions', () => {
 
   it('suggests focused CLI local vault integration for frontmatter commands', () => {
     const result = suggestFocusedChecks([
-      'cli/src/commands/add.mjs',
-      'cli/src/commands/import.mjs',
-      'cli/src/commands/list.mjs',
-      'cli/src/commands/find.mjs',
-      'cli/src/commands/validate.mjs',
+      'cli/src/commands/local-vault/add.mjs',
+      'cli/src/commands/local-vault/import.mjs',
+      'cli/src/commands/local-vault/list.mjs',
+      'cli/src/commands/local-vault/find.mjs',
+      'cli/src/commands/local-vault/validate.mjs',
     ]);
 
     assert.deepEqual(domainCommands(result), [
@@ -1685,8 +1685,8 @@ describe('focused check suggestions', () => {
       'scripts/lib/records/po-pilot.mjs',
       'scripts/records/po-pilot.mjs',
       'scripts/records/check-decision-record.mjs',
-      'tests/contract/po-route.contract.test.ts',
-      'tests/contract/reviewer-wiring.contract.test.ts',
+      'tests/contract/agent-instructions/po-route.contract.test.ts',
+      'tests/contract/agent-instructions/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
       'docs/PO-PILOT.md',
       '.claude/skills/product-check/SKILL.md',
@@ -1712,9 +1712,9 @@ describe('focused check suggestions', () => {
       'scripts/design/design-proof-router.mjs',
       'scripts/lib/design/design-spec-census.mjs',
       'scripts/records/check-decision-record.mjs',
-      'tests/contract/design-proof-router.contract.test.ts',
-      'tests/contract/design-spec-ledger.contract.test.ts',
-      'tests/contract/reviewer-wiring.contract.test.ts',
+      'tests/contract/agent-instructions/design-proof-router.contract.test.ts',
+      'tests/contract/agent-instructions/design-spec-ledger.contract.test.ts',
+      'tests/contract/agent-instructions/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
       '.claude/skills/ui-build/SKILL.md',
       '.agents/skills/ui-proof/SKILL.md',
@@ -1811,7 +1811,7 @@ describe('focused check suggestions', () => {
         (s) => s.command === 'pnpm typecheck',
       );
 
-    assert.ok(typecheck('tests/contract/release-preflight.contract.test.ts'), 'tests/**');
+    assert.ok(typecheck('tests/contract/release/release-preflight.contract.test.ts'), 'tests/**');
     assert.ok(typecheck('src/shared/lib/cn.test.ts'), 'src 의 테스트 파일');
 
     // What already worked still works — confirming the reach was widened without narrowing.
@@ -1836,7 +1836,7 @@ describe('focused check suggestions', () => {
   it('화면에 그려지는 마크다운에는 문구 게이트도 권한다', () => {
     // The integrity check and the copy check measure different things: an em dash in vault prose
     // passes `vault:validate`.
-    const prose = 'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts';
+    const prose = 'pnpm test:run tests/contract/copy/em-dash-ratchet.contract.test.ts';
     for (const path of [
       'docs/ontology/elements/agents-destination.md',
       'docs/guide/getting-started.md',
@@ -1876,7 +1876,7 @@ describe('agent-file surface', () => {
       '.agents/agents/reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
-      'cli/src/lib/agent-files.mjs',
+      'cli/src/lib/agent-setup/agent-files.mjs',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes('pnpm agents:check'),
@@ -1916,9 +1916,9 @@ describe('agent-file surface', () => {
 
   it('recommends the paired contracts when either implementation moves alone', () => {
     const contract =
-      'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts';
+      'pnpm exec vitest run tests/contract/harness/agent-files.contract.test.ts tests/contract/agent-instructions/nested-agents-pointers.contract.test.ts tests/contract/agent-instructions/skill-routing.contract.test.ts tests/contract/agent-instructions/rules-path-scope.contract.test.ts tests/contract/security/secret-read-guard.contract.test.ts tests/contract/ci-gates/node-test-reachability.contract.test.ts tests/contract/agent-instructions/agent-file-citations.contract.test.ts';
     for (const path of [
-      'cli/src/lib/agent-files.mjs',
+      'cli/src/lib/agent-setup/agent-files.mjs',
       'src/entities/agent-files/model/agent-files.ts',
       'tests/fixtures/agent-files-cases.mjs',
       '.claude/rules/testing.md',

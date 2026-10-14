@@ -57,7 +57,7 @@ export default defineConfig({
    *
    * `pnpm exec playwright test` without filters runs both projects —
    * local and main push behavior remains unchanged pre-split. Only PRs use `--project=smoke`.
-   * Verify wiring is alive via `tests/contract/e2e-suite-split.contract.test.ts`.
+   * Verify wiring is alive via `tests/contract/ci-gates/e2e-suite-split.contract.test.ts`.
    */
   projects: [
     { name: 'smoke', testIgnore: POST_MERGE_SPECS.map((file) => `**/${file}`) },

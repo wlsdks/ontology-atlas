@@ -4,7 +4,7 @@ import type { AgentToolDefinition } from '../agent-tools/tool-catalog';
 import { PARSER_SOURCE_FORMATS, READABLE_SOURCE_FORMATS, SOURCE_TEXT_CHAR_CAP } from './source-text';
 
 /**
- * The three Compile tools, kept out of `AGENT_TOOLS` so tests/contract/agent-tool-catalog.contract.test.ts
+ * The three Compile tools, kept out of `AGENT_TOOLS` so tests/contract/mcp/agent-tool-catalog.contract.test.ts
  * stays exact against MCP. The writer supplies fields, not Markdown; Atlas mints the skeleton,
  * provenance and `source_hash`, so a model cannot name a source it did not open.
  */

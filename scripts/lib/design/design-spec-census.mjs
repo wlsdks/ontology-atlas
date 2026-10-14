@@ -162,7 +162,7 @@ const VALUE_EXPORT_FILES = new Set(['src/shared/ui/tokens/page-frame.ts']);
  * Duplicating it makes two copies, and two copies with no gate means drift is the
  * default (a failure this repository actually suffered with duplicated skill
  * files). So the list lives only in design.md and is read here. Divergence itself
- * is caught by `tests/contract/design-spec-ledger.contract.test.ts`.
+ * is caught by `tests/contract/agent-instructions/design-spec-ledger.contract.test.ts`.
  */
 export function parseTriggerFiles(designMdText) {
   const section = extractSection(designMdText, SPEC_RULE_SECTION);

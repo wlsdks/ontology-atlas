@@ -4,7 +4,7 @@
 
 import { COLORS } from './lib/colors.mjs';
 import { cliInvocation } from './lib/self-invocation.mjs';
-import { cwdBindingScope } from './lib/cwd-binding-scope.mjs';
+import { cwdBindingScope } from './lib/agent-setup/cwd-binding-scope.mjs';
 import {
   mkdirSync,
   existsSync,
@@ -22,10 +22,10 @@ import { createRequire } from 'node:module';
 import { stdout, stderr, argv, cwd } from 'node:process';
 import { CLI_COMMAND_COUNT, CLI_COMMAND_RUNNERS, CLI_COMMANDS } from './lib/cli-commands.mjs';
 import { startHereContext, startHereRows } from './lib/start-here.mjs';
-import { indentBriefing, rootBriefing } from './lib/root-briefing.mjs';
+import { indentBriefing, rootBriefing } from './lib/agent-setup/root-briefing.mjs';
 import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs';
-import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
-import { runBootstrap } from './commands/bootstrap.mjs';
+import { readMcpPackageMetadata } from './lib/mcp-bridge/mcp-metadata.mjs';
+import { runBootstrap } from './commands/repo-analysis/bootstrap.mjs';
 import { stampInitCompleted } from './lib/telemetry.mjs';
 import {
   repairCodexConfigText,
@@ -33,7 +33,7 @@ import {
   writeCurrentCodexMergeTemplate,
   writeCurrentMcpMergeTemplate,
   writeTextAtomically,
-} from './lib/agent-config.mjs';
+} from './lib/agent-setup/agent-config.mjs';
 
 // Prefix for the **runnable** commands printed on screen. Anything this file shows
 // must actually run when pasted — the full discipline is in `lib/self-invocation.mjs`.
@@ -603,7 +603,7 @@ async function runInit(targetArg, opts = {}) {
   writeCodexConfig(target, '.', vaultRepoArg, 'vault');
 
   // 2. cwd (codebase root), only when the vault is created inside it. Otherwise cwd is merely where the
-  // person stood, and rewriting its configs would silently rebind an unrelated project (lib/cwd-binding-scope.mjs).
+  // person stood, and rewriting its configs would silently rebind an unrelated project (lib/agent-setup/cwd-binding-scope.mjs).
   const bindingScope = cwdBindingScope(cwdPath, canonicalTarget);
   // Every printed follow-up and the quick-start bootstrap name the vault just scaffolded, never '.',
   // or pasted commands (including `absorb --write`) would target wherever the person stood.

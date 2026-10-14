@@ -7118,7 +7118,7 @@ await test("add_concept/add_concepts — implementation path is preserved as evi
 
 // `created_by`: a write through this server is an agent's, which the call path
 // proves. The pure contract lives
-// in `tests/contract/created-by-provenance.contract.test.ts`; this measures what the
+// in `tests/contract/vault-format/created-by-provenance.contract.test.ts`; this measures what the
 // running server leaves on disk.
 
 function writeHeartbeat(root, agent) {

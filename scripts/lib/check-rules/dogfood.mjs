@@ -12,7 +12,7 @@ export const rules = [
       /^scripts\/lib\/dogfood-walk\/check-mcp-source-dependencies\.(?:mjs|test\.mjs)$/,
       /^scripts\/ci\/run-focused-node-test\.(?:mjs|test\.mjs)$/,
       /^scripts\/dogfood\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/,
-      /^cli\/src\/commands\/mcp-verify\.mjs$/,
+      /^cli\/src\/commands\/agent-setup\/mcp-verify\.mjs$/,
       /^mcp\/scripts\/verify(?:\.mjs|\/.+\.mjs)$/,
       /^README\.md$/,
       /^docs\/DEVELOPMENT-CHECKS\.md$/,

@@ -1,7 +1,7 @@
 /**
  * Captured once per locale (`public/gateway/<file>.<locale>.png`), or a visitor sees the app in a
  * language it will not speak to them. `scripts/download/capture-gateway-screens.mjs` shoots both, and the
- * contract `tests/contract/gateway-screen-assets.contract.test.ts` checks they are not one file twice.
+ * contract `tests/contract/brand/gateway-screen-assets.contract.test.ts` checks they are not one file twice.
  */
 export const GATEWAY_SCREEN_LOCALES = ['ko', 'en'] as const;
 

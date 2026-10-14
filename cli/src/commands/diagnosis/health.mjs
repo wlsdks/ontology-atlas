@@ -1,0 +1,132 @@
+// `ontology-atlas health [vault]` — graph integrity dashboard.
+// Thin wrapper over MCP `query_ontology({operation: 'health'})`.
+
+import { COLORS } from '../../lib/colors.mjs';
+import { callMcpTool } from '../../lib/mcp-bridge/mcp-call.mjs';
+import {
+  assertHealthShape,
+  healthResultExitCode,
+} from '../../lib/query-result-contract/workspace-health.mjs';
+import { resolveVaultRoot } from '../../lib/resolve-vault.mjs';
+import {
+  formatUnknownFlagError,
+  parseBoundedPositiveIntegerFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../../lib/cli-args.mjs';
+import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../../lib/diagnosis/diagnosis-options.mjs';
+import { diagnosisStatusColor, healthCheckStatusColor } from '../../lib/diagnosis/diagnosis-colors.mjs';
+
+const ALLOWED_FLAGS = ['--vault', '--json', '--limit', ...DIAGNOSIS_OPTION_FLAGS];
+
+const STATUS_ICONS = {
+  pass: '✓',
+  fail: '✗',
+  warn: '⚠',
+  info: 'ℹ',
+};
+
+export async function runHealth(args) {
+  const { vault, json, options, error, help } = parseArgs(args);
+  if (help) {
+    printUsage(process.stdout);
+    return 0;
+  }
+  if (error) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
+    printUsage();
+    return 1;
+  }
+  const vaultRoot = resolveVaultRoot(vault);
+  let result;
+  try {
+    result = await callMcpTool(vaultRoot, 'query_ontology', { operation: 'health', ...options });
+    assertHealthShape(result);
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+  if (json) {
+    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    return healthResultExitCode(result);
+  }
+  const status = result?.status ?? 'unknown';
+  const sc = diagnosisStatusColor(status, COLORS);
+  const sum = result?.summary ?? {};
+  process.stdout.write(
+    `${COLORS.bold}vault health${COLORS.reset} ${sc}${status}${COLORS.reset}` +
+      ` ${COLORS.dim}· ${sum.nodes ?? 0} nodes · ${sum.edges ?? 0} relations${COLORS.reset}\n\n`,
+  );
+  const checks = Array.isArray(result?.checks) ? result.checks : [];
+  for (const c of checks) {
+    const cc = healthCheckStatusColor(c.status, COLORS);
+    const icon = STATUS_ICONS[c.status] || '·';
+    process.stdout.write(
+      `  ${cc}${icon}${COLORS.reset} ${cc}${(c.id || '').padEnd(28)}${COLORS.reset}` +
+        ` ${COLORS.dim}${c.status}:${c.count}${COLORS.reset}` +
+        ` ${COLORS.dim}${c.message ?? ''}${COLORS.reset}\n`,
+    );
+  }
+  if (sum.dependencyCycles) {
+    process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset}: run \`cycles\` for detail\n`);
+  }
+  // actionableComponents > 1 means meaningful nodes have split into disconnected
+  // islands. Ignored kinds (vault-readme and friends) are already excluded, so
+  // anything above 1 is a real break; `components` lists them.
+  if (sum.actionableComponents > 1) {
+    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset}: the graph is split -- run \`components\` for detail\n`);
+  }
+  return healthResultExitCode(result);
+}
+
+function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) return { help: true };
+  const flags = { vault: null, json: false };
+  const options = {};
+  const positional = [];
+  for (let i = 0; i < args.length; i += 1) {
+    const a = args[i];
+    const [maybeFlag, maybeValue] = a.includes('=') ? a.split(/=(.*)/s, 2) : [a, null];
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
+    else if (a === '--json') flags.json = true;
+    else if (a === '--limit') {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    } else if (a.startsWith('--limit=')) {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    }
+    else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
+      const error = parseDiagnosisOption(options, a, args[++i]);
+      if (error) return { error: error.message };
+    } else if (DIAGNOSIS_OPTION_FLAGS.includes(maybeFlag)) {
+      const error = parseDiagnosisOption(options, maybeFlag, maybeValue);
+      if (error) return { error: error.message };
+    } else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else positional.push(a);
+  }
+  const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
+  if (vaultResult.error) return vaultResult;
+  return { vault: vaultResult.vault, json: flags.json, options };
+}
+
+function printUsage(stream = process.stderr) {
+  stream.write(
+    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  ontology-atlas health [vault] [--json]\n` +
+      `       [--dependency-types A,B] [--component-types A,B]\n` +
+      `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
+      `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +
+      `pass=healthy / warn=info-only / fail=blocking. Only exit 0 is healthy.\n` +
+      `--limit is a first-contact alias for --node-limit so agent_brief CLI fallbacks run directly.\n` +
+      `Use --json for repeatable automation gates such as pnpm dogfood:health.\n` +
+      `Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions.\n` +
+      `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + agent-brief + maintenance queue.\n` +
+      `Tuning flags forward to query_ontology health for focused diagnostics.\n`,
+  );
+}

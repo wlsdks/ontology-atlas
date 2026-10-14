@@ -26,7 +26,7 @@
   /*
    * Minimum luminance above 4.5:1 on elevated (#828282 gives 4.54), keeping the gap to tertiary. Valid
    * on static achromatic backgrounds up to overlay-1; above that use tertiary. Gates:
-   * `tests/contract/quaternary-ink-surface.contract.test.ts`, `tests/e2e/a11y-open-surfaces.spec.ts`.
+   * `tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts`, `tests/e2e/a11y-open-surfaces.spec.ts`.
    */
   --color-text-quaternary: #82828a;
   /*
@@ -43,7 +43,7 @@
   /*
    * The plate sits only inside the 32px executor tiles: vendor marks are mostly drawn for light
    * backgrounds and vanish on dark. Monochrome, so no new hue; brand colour comes from `brandInk` in
-   * `src-tauri/src/acp-registry.json`. Gate: `tests/contract/vendor-mark-plate.contract.test.ts`.
+   * `src-tauri/src/acp-registry.json`. Gate: `tests/contract/brand/vendor-mark-plate.contract.test.ts`.
    */
   --color-vendor-plate: #f2f3f5;
   --color-vendor-plate-edge: rgba(0, 0, 0, 0.12);
@@ -273,7 +273,7 @@
      wide gaps between syllables and fullwidth parentheses. Latin and
      digits still resolve to JetBrains first, so slugs, paths and tabular numerals
      are unchanged; only Hangul now lands on the Korean face the rest of the app
-     already uses. Guard: tests/contract/mono-hangul-fallback.contract.test.ts */
+     already uses. Guard: tests/contract/typography/mono-hangul-fallback.contract.test.ts */
   --font-mono: var(--font-jetbrains), var(--font-pretendard), ui-monospace, monospace;
 
   /* Linear proprietary — 510 weight (between regular and medium) */
@@ -313,7 +313,7 @@
   /*
    * Gateway body column cap. Origin is `max(gutter, (vw - this) / 2)`; keep it at least `--page-max`
    * (1600) so 1440 to 1920 renders do not move. Gates:
-   * `tests/contract/gateway-column-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
+   * `tests/contract/layout/gateway-column-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
    */
   --gateway-page-max: 1920px;
   /*
@@ -324,7 +324,7 @@
   /*
    * Proportional stage width: floor 48rem (equals 40vw at 1920, so nothing moves below it), slope
    * 40vw, cap 80rem (the demo clip is 1512px wide). Gates:
-   * `tests/contract/gateway-stage-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
+   * `tests/contract/layout/gateway-stage-width.contract.test.ts`, `tests/e2e/download-gateway-grid.spec.ts`.
    */
   --gateway-stage-max: clamp(48rem, 40vw, 80rem);
 
@@ -333,7 +333,7 @@
    *
    * The gateway landing's light field, grain and cursor ring, drawn inside `.gateway-fx-stage`.
    * The alpha caps below keep the field a mood rather than a competitor for body ink; under
-   * reduced motion it draws one still frame (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`).
+   * reduced motion it draws one still frame (`tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`).
    *
    * Colors are not defined here — the light source ink reads and writes
    * `--color-indigo-brand` at the consumer (automatically following accent transitions).
@@ -624,7 +624,7 @@
   /*
    * The ramp is in `rem` so browser text-only zoom reaches it; each step equals its old px value over
    * the 16px root. Chrome geometry, `--text-monument` and `DOC_COLUMN_PX` stay in px. Gates:
-   * `tests/e2e/text-zoom-ramp.spec.ts`, `tests/contract/type-ramp-root-relative.contract.test.ts`.
+   * `tests/e2e/text-zoom-ramp.spec.ts`, `tests/contract/typography/type-ramp-root-relative.contract.test.ts`.
    */
   --text-caption: 0.59375rem; /* micro labels/legends/timestamps (pair: tracking-caption) */
   --text-label: 0.6875rem; /* chips/badges/auxiliary labels (pair: tracking-label) */
@@ -731,7 +731,7 @@
 
      `micro`(4px) is listed in the system stone on 2026-08-03. While this section says "1~4px are explicit exceptions",
      4px radius was actually alive on screen in **96 places** (rounded-sm 59 + un-suffixed rounded 37) — micro badges · command tags · kbd level, i.e., one layer below chips (6px). The value repeated 96 times is not an exception but a step missing from the ramp. Since all were mechanically replaced with `rounded-micro` at inclusion time, pixel movement is 0, and named Tailwind default steps are blocked by eslint selector + named-off-ramp ratchet.
-     Pair for step registration: `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`(tailwind-merge conflict merge), `tests/contract/control-class.contract.test.ts` RADIUS_STEPS. */
+     Pair for step registration: `src/shared/lib/cn.ts` `RADIUS_RAMP_STEPS`(tailwind-merge conflict merge), `tests/contract/controls/control-class.contract.test.ts` RADIUS_STEPS. */
   --radius-micro: 4px; /* Micro badges · command tags · kbd — one layer below chips */
   --radius-chip: 6px; /* Chips · badges · small buttons */
   --radius-card: 9px; /* Cards and medium surfaces; inputs use chip (6px), as `fieldClass` does. */

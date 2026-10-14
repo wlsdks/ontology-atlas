@@ -775,7 +775,7 @@ describe('AppSettingsMenu appearance pickers', () => {
     expect(range('app-settings-expand-max-open')).toEqual(['1', '6']);
   });
 
-  // The default value itself is pinned in tests/contract/expand-settings.contract.test.ts.
+  // The default value itself is pinned in tests/contract/settings/expand-settings.contract.test.ts.
   it('defaults the affordance to the overhead bar', () => {
     openSection('expand');
     expect(screen.getByTestId('app-settings-expand-affordance-bar')).toHaveAttribute(

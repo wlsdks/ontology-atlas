@@ -609,7 +609,7 @@ a browser, one ability on both surfaces), the text is stored nowhere and dropped
 pane closes, and nothing leaves the computer; the pane therefore stops saying Atlas has
 never opened the file, and its sha256 row says it was measured on this read. The splitter
 is `src/shared/lib/library/source-passage.ts`, the MCP `read_source` reader's twin, pinned unit for
-unit by `tests/contract/source-passage-parity.contract.test.ts`; it carries its own
+unit by `tests/contract/vault-format/source-passage-parity.contract.test.ts`; it carries its own
 raw-DEFLATE decoder (a Word or Excel file is a zip, and the app's macOS floor does not
 guarantee `DecompressionStream`) and verifies each zip entry's CRC-32, because what it
 renders is offered as the document's own words. Measured on a six-source folder: 70 units

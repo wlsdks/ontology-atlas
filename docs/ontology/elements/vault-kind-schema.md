@@ -23,5 +23,5 @@ Declares, once, what frontmatter each node kind must carry, which folder its slu
 - Enforcing itself; the write paths call it, it does not intercept them.
 
 ## Uncertainty
-- Read from the module header and its stated role as the single source for both the agent and terminal write paths. Its declared mirror at `cli/src/lib/schema.mjs` was not opened; the repository names a contract test that holds the two in lock-step, which this scan did not run.
-- Re-read 2026-09-26: `containmentKeyFor` and `emptiedRelationListValue` in `mcp/src/schema.mjs` (bundles #1874 and #1883); the app copy in `src/shared/lib/vault-document/containment-keys.ts` is held to it by `tests/contract/vault-schema.contract.test.ts`.
+- Read from the module header and its stated role as the single source for both the agent and terminal write paths. Its declared mirror at `cli/src/lib/mcp-bridge/schema.mjs` was not opened; the repository names a contract test that holds the two in lock-step, which this scan did not run.
+- Re-read 2026-09-26: `containmentKeyFor` and `emptiedRelationListValue` in `mcp/src/schema.mjs` (bundles #1874 and #1883); the app copy in `src/shared/lib/vault-document/containment-keys.ts` is held to it by `tests/contract/vault-format/vault-schema.contract.test.ts`.

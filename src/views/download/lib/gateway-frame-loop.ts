@@ -2,7 +2,7 @@
  * One shared rAF loop for the gateway's canvas layers, sleeping under the map's ambient-sleep
  * contract (`ambient-sleep.ts`, imported, never copied), or the gateway burns frames forever.
  * rAF never stops: idle is re-decided every frame, so no missed wake can freeze the screen.
- * Reduced motion never registers a client (`tests/contract/gateway-fx-reduced-motion.contract.test.ts`),
+ * Reduced motion never registers a client (`tests/contract/motion/gateway-fx-reduced-motion.contract.test.ts`),
  * and `tests/e2e/gateway-idle-sleep.spec.ts` measures the idle floor. Every client is gated by
  * `registerGatedFrameClient`: it draws only while its section is in view in a visible tab.
  */

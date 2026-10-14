@@ -12,7 +12,7 @@ import {
 /** A hand-written copy would split the page a visitor sees from the document the repository reviews. */
 describe('gateway reading comes from vault documents', () => {
   it('finds the first guide page and the changelog in the vault', () => {
-    // The full guide page list is `tests/contract/gateway-routes.contract.test.ts`'s job.
+    // The full guide page list is `tests/contract/routes/gateway-routes.contract.test.ts`'s job.
     expect(readVaultDoc('guide/what-is-atlas')).toBeTruthy();
     expect(readVaultDoc('CHANGELOG')).toBeTruthy();
   });

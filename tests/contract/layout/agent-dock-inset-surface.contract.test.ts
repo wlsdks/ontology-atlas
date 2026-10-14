@@ -1,0 +1,115 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import ts from 'typescript';
+
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle } from "../../../src/shared/ui/surfaces/agent-dock-surface";
+
+const home = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+const dock = readFileSync("src/views/home/ui/TopologyAgentDock.tsx", "utf8");
+const orchestration = readFileSync("src/views/home/model/agent/use-topology-agent-orchestration.tsx", "utf8");
+const runtimeController = readFileSync("src/views/home/model/agent/use-acp-runtime-controller.ts", "utf8");
+const vaultAgent = readFileSync("src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx", "utf8");
+
+function insetDockOpenSources(source: string): string[][] {
+  const file = ts.createSourceFile('HomePage.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const found: string[][] = [];
+  const identifiers = (expression: ts.Expression): string[] => {
+    if (ts.isParenthesizedExpression(expression)) return identifiers(expression.expression);
+    if (ts.isBinaryExpression(expression) && expression.operatorToken.kind === ts.SyntaxKind.BarBarToken) return [...identifiers(expression.left), ...identifiers(expression.right)];
+    return [ts.isIdentifier(expression) ? expression.text : '<non-state-expression>'];
+  };
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxOpeningElement(node) && node.tagName.getText(file) === 'Surface') {
+      const attrs = node.attributes.properties.filter(ts.isJsxAttribute);
+      const marker = attrs.find((attr) => attr.name.getText(file) === 'data-agent-dock-surface')?.initializer;
+      if (marker && ts.isStringLiteral(marker) && marker.text === 'inset') {
+        const open = attrs.find((attr) => attr.name.getText(file) === 'open')?.initializer;
+        found.push(open && ts.isJsxExpression(open) && open.expression ? identifiers(open.expression) : []);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return found;
+}
+
+describe("agent dock inset surface", () => {
+  it("uses the existing panel material on all four visible edges", () => {
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain("inset-y-3");
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain("right-3");
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain(
+      "rounded-[var(--map-panel-radius)]",
+    );
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain(
+      "border-[color:var(--map-panel-border)]",
+    );
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain(
+      "bg-[color:var(--color-panel)]",
+    );
+    expect(AGENT_DOCK_INSET_SURFACE_CLASS).toContain(
+      "shadow-[var(--map-panel-shadow)]",
+    );
+  });
+
+  it("applies the same surface to both agent implementations", () => {
+    for (const source of [dock, vaultAgent]) {
+      expect(source).toContain("AGENT_DOCK_INSET_SURFACE_CLASS");
+      expect(source).toContain('data-agent-dock-surface="inset"');
+      expect(source).toContain("var(--chrome-inset)");
+    }
+  });
+
+  it("gives all five agent docks one reflow and one overlay grammar", () => {
+    const docks = [
+      "src/views/home/ui/TopologyAgentDock.tsx",
+      "src/views/project-detail/ui/parts/ProjectAgentDock.tsx",
+      "src/views/architecture/ui/ArchitectureAgentDock.tsx",
+      "src/views/library/ui/parts/agent/LibraryAgentDock.tsx",
+      "src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx",
+    ].map((path) => [path, readFileSync(path, "utf8")] as const);
+    for (const [path, source] of docks) {
+      expect(source, path).toMatch(/\.\.\.agentDockReflowStyle\(/);
+      expect(source, path).not.toMatch(/transitionDuration:\s*["']var\(--agent-panel-reflow-duration\)/);
+      expect(source, path).toContain('motion="overlay"');
+    }
+    expect(agentDockReflowStyle("width")).toEqual({
+      transitionProperty: "width",
+      transitionDuration: "var(--agent-panel-reflow-duration)",
+      transitionTimingFunction: "var(--topology-motion-ease-out)",
+    });
+  });
+
+  it("mounts the ACP scaffold with the dock, and starts only after reflow settles", () => {
+    expect(insetDockOpenSources(dock)).toEqual([['acpDockFrameOpen', 'meaningWorkbenchOpen']]);
+    expect(dock).toContain('motion="overlay"');
+    expect(dock).toContain("sessionEnabled={acpChatOpen}");
+  });
+
+  it('probes the actual dock Surface even when its child still has the correct open expression', () => {
+    const broken = dock.replace('open={acpDockFrameOpen || meaningWorkbenchOpen}', 'open={false /* probe */}');
+    expect(broken).not.toBe(dock);
+    expect(broken).toContain('open={acpDockFrameOpen || meaningWorkbenchOpen}');
+    expect(insetDockOpenSources(broken)).not.toEqual([['acpDockFrameOpen', 'meaningWorkbenchOpen']]);
+  });
+
+  it("lets the map camera finish before ACP startup can occupy the main thread", () => {
+    expect(home).toMatch(/\buseAcpRuntimeController\(setAcpChatOpen\)/);
+    expect(runtimeController).toContain("ACP_SESSION_START_AFTER_REFLOW_MS");
+    expect(dock).toContain("scheduleAcpSessionStart()");
+    expect(runtimeController).toMatch(
+      /window\.setTimeout\([\s\S]*setAcpChatOpen\(true\)[\s\S]*ACP_SESSION_START_AFTER_REFLOW_MS/,
+    );
+    expect(orchestration).toContain("cancelAcpSessionStart()");
+  });
+
+  it("publishes the real dock width before the delayed ACP session starts", () => {
+    expect(home).toMatch(
+      /style=\{[\s\S]*acpDockFrameOpen\s*\|\|\s*runtimeChatOpen[\s\S]*--agent-panel-width/,
+    );
+  });
+});
+
+it("keeps the protected topology owners connected to the route", () => {
+  const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
+  expect(route).toContain('<TopologyAgentDock');
+});

@@ -19,7 +19,7 @@ import {
 } from '../../mcp/src/ontology-engine.mjs';
 import { RELATION_TYPE_VALUES as CLI_RELATION_TYPE_VALUES } from '../../cli/src/lib/relation-types.mjs';
 import { SERVER_VERSION } from '../../mcp/src/server-version.mjs';
-import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-metadata.mjs';
+import { parseMcpToolMetadataFromDescription } from '../../cli/src/lib/mcp-bridge/mcp-metadata.mjs';
 import {
   checkPackage,
   checkMcpLeanTarballFiles,
@@ -341,14 +341,14 @@ describe('package contract helpers', () => {
       assert.equal(existsSync(join('cli/src/lib', testFile)), true, `${testFile} must still exist`);
       assert.equal(isCoveredByFiles(`src/lib/${testFile}`, pkg.files), true, `${testFile} must ship for CLI npm test`);
     }
-    assert.equal(isCoveredByFiles('src/lib/import-analysis-results.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/import-analysis-results.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/repo-analysis-results.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/repo-analysis-results.test.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/lib/analysis-results/import-analysis-results.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/lib/analysis-results/import-analysis-results.test.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/lib/analysis-results/repo-analysis-results.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/lib/analysis-results/repo-analysis-results.test.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/lib/cli-commands.test.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/lib/mcp-call.test.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/lib/mcp-bridge/mcp-call.test.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/index.mjs', pkg.files), true);
-    assert.equal(isCoveredByFiles('src/commands/mcp-verify.mjs', pkg.files), true);
+    assert.equal(isCoveredByFiles('src/commands/agent-setup/mcp-verify.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('src/lib/cli-commands.mjs', pkg.files), true);
     assert.equal(isCoveredByFiles('templates/vault/project.md', pkg.files), true);
   });
@@ -426,14 +426,14 @@ function runner(moduleFile, exportName) {
   return { modulePath: \`./commands/\${moduleFile}\`, moduleFile, exportName };
 }
 export const CLI_COMMAND_RUNNERS = Object.freeze({
-  list: runner('list.mjs', 'runList'),
-  'mcp-verify': runner("mcp-verify.mjs", 'runMcpVerify'),
+  list: runner('local-vault/list.mjs', 'runList'),
+  'mcp-verify': runner("agent-setup/mcp-verify.mjs", 'runMcpVerify'),
 });
 `;
 
     assert.deepEqual(importedSpecifiers(source).sort(), [
-      '../commands/list.mjs',
-      '../commands/mcp-verify.mjs',
+      '../commands/local-vault/list.mjs',
+      '../commands/agent-setup/mcp-verify.mjs',
     ].sort());
   });
 

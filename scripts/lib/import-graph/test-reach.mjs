@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
-const CONTRACT_TEST = /^tests\/contract\/.+\.test\.ts$/;
+const CONTRACT_TEST = /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/;
 const PERF_TEST = /^(?:app|src)\/.+\.perf\.test\.tsx?$/;
 const UNIT_TEST = /^(?:app|src)\/.+\.(?:test|spec)\.tsx?$/;
 const TEST_DIRECTORIES = ['app', 'src', 'tests/contract'];

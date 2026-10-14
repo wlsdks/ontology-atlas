@@ -90,7 +90,7 @@ Those names are examples, not a fixed vocabulary: `Identity Boundaries` and
 `Active Tool Inventory Contract` were each invented for one node and are the
 best sections in this vault. Invent a name when the node needs one.
 
-`tests/contract/vault-section-shape.contract.test.ts` caps a single section at
+`tests/contract/vault-data/vault-section-shape.contract.test.ts` caps a single section at
 6,000 bytes. When it fails, the fix is to name the second idea, never to delete
 the text.
 

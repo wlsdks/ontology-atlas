@@ -1,6 +1,6 @@
 /**
  * Browser mirror of the MCP `health()` result, computed from raw frontmatter rather than the
- * auto-healed derived graph so app and CLI agree (`tests/contract/vault-health.contract.test.ts`).
+ * auto-healed derived graph so app and CLI agree (`tests/contract/analysis/vault-health.contract.test.ts`).
  */
 
 import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/cli-invocation';

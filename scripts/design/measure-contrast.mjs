@@ -4,7 +4,7 @@
  *
  * **What this file does — collection, not judgement.** The computation lives in
  * `scripts/lib/design/contrast.mjs` (pure functions with fixture probes in
- * `tests/contract/contrast.contract.test.ts`). What happens here is **resolving the
+ * `tests/contract/design-tokens/contrast.contract.test.ts`). What happens here is **resolving the
  * real background**: walking up the ancestors and compositing translucent
  * backgrounds in order. This app uses alpha tokens for text and borders, so skipping
  * that step reports **better** than reality, and the optimism is silent.
@@ -30,7 +30,7 @@ const ROUTES = (maybeBase?.startsWith("http") ? maybeRoutes : [maybeBase, ...may
 /**
  * The default sweep covers every screen a person can reach; an unmeasured screen looks like a
  * clean one. Adding a route means adding it here (gate:
- * tests/contract/contrast-sweep-coverage.contract.test.ts).
+ * tests/contract/routes/contrast-sweep-coverage.contract.test.ts).
  */
 export const DEFAULT_ROUTES = [
   "/ko/",

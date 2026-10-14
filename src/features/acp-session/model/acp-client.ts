@@ -147,7 +147,7 @@ export interface AcpSessionSummary {
 
 /**
  * The adapter ignores `cwd` in `session/list`, so filter here to keep unopened folders off screen.
- * Gate: `tests/contract/acp-session-scope.contract.test.ts`.
+ * Gate: `tests/contract/security/acp-session-scope.contract.test.ts`.
  */
 export function keepSessionsInFolder(
   sessions: AcpSessionSummary[],

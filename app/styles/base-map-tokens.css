@@ -81,7 +81,7 @@
     /*
      * Trail star ink matches the map's own starfield (`render/starfield.ts`) and collides with no amber
      * or indigo role. `shared/lib/map-canvas/star-emission.ts` explains why the walked star wears no
-     * cross; gate: `tests/contract/canvas-composite-license.contract.test.ts`.
+     * cross; gate: `tests/contract/map/canvas-composite-license.contract.test.ts`.
      */
     --color-footprint-trail-star: #ececf0;
     --map-numeral-shadow: #08080a;
@@ -228,7 +228,7 @@
     --map-label-capability: #84848c;
     /*
      * `#7e7e87` is the dimmest step clearing the 4.5:1 text floor (4.92:1) while staying under
-     * capability's ink. Gate: `tests/contract/topology-ink-contrast.contract.test.ts`.
+     * capability's ink. Gate: `tests/contract/map/topology-ink-contrast.contract.test.ts`.
      */
     --map-label-element: #7e7e87;
     /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
@@ -408,7 +408,7 @@
     /* Tug influence radius (world units). Hop count alone cannot determine "closeness" — in a hub-spoke vault all nodes are within 2 hops, so hop rules alone caused the entire map to move together. Clusters of nodes enclosing the layout ring (domain 250 + competency 145 ≈ 395) retain elasticity, while those outside stop exactly at 0. */
     --map-drag-tug-radius: 600;
     /*
-     * `*-angfreq` tokens ride `tests/contract/spring-stability.contract.test.ts` (bound 16 at the 50 ms
+     * `*-angfreq` tokens ride `tests/contract/motion/spring-stability.contract.test.ts` (bound 16 at the 50 ms
      * frame clamp), so mass lives in zeta. Light nodes release critically damped, heavy ones underdamped
      * (`-heavy-zeta`); drop velocity is capped by `-drop-max-px`.
      */
@@ -452,7 +452,7 @@ RATIO-SYSTEM §4 datasheet 352px scale-up gratitude: safeInsetRight is
 only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
     /*
      * Each side lane is the chrome on that side plus 52 of air (left 24+300+52, right 24+36+52), so the
-     * fit centres the drawing between them. `tests/contract/map-fit-side-air.contract.test.ts` derives
+     * fit centres the drawing between them. `tests/contract/map/map-fit-side-air.contract.test.ts` derives
      * every lane from the chrome tokens and fails on drift.
      */
     --map-safe-inset-left: 376;

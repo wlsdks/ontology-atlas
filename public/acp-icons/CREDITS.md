@@ -70,7 +70,7 @@ dark marks.
 
 Plates, borders, and base ink are all grayscale tokens
 (`--color-vendor-plate` · `-edge` · `--color-vendor-mark-ink`) and live **only
-within the 32px tile**. Gate: `tests/contract/vendor-mark-plate.contract.test.ts`.
+within the 32px tile**. Gate: `tests/contract/brand/vendor-mark-plate.contract.test.ts`.
 
 ## Adding Marks
 
