@@ -651,7 +651,7 @@
        (design-responsive C1, council 2026-09-11).
        ⚠️ A container query condition cannot read `var()` — CSS forbids substitution in
        `@media`/`@container` conditions — so the rule near `.library-spine-scope` carries
-       the same number as a literal and `tests/e2e/library-spine.spec.ts` reads this token
+       the same number as a literal and `tests/e2e/library/compile/library-spine.spec.ts` reads this token
        to prove the two still agree. */
     --library-spine-collapse-height: 640px;
     /* **The least height the Library's index column keeps below `lg`.**

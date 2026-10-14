@@ -1,0 +1,476 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { seedFirstRunSeen } from "../../first-run-seed";
+import type { LibraryGraphProbeNode as ProbeNode } from "./library-graph-probe";
+import { stubDirectoryPicker } from "../../vault-picker-stub";
+import { waitFrames } from "../../settle";
+
+/**
+ * Claims only a browser can settle: the card opens beside the mark, no mark moves, it never covers
+ * its mark or the strip, flips at the edge. Aim via `window.__atlasLibraryGraph`.
+ */
+
+const SOURCES = [
+  "settlement-policy.md",
+  "fee-schedule.csv",
+  "chargeback-runbook.md",
+  "dispute-metrics.xlsx",
+  "merchant-onboarding.html",
+] as const;
+
+const CONCEPTS = [
+  ["domains/settlement", "Settlement domain", "domain"],
+  ["capabilities/payouts", "Payouts", "capability"],
+] as const;
+
+/** `[slug, title, cited indices, named concept indices, stale?]` */
+const PAGES = [
+  ["settlement", "Settlement", [0, 1], [0], true],
+  ["disputes", "Disputes", [2, 3], [1], false],
+  ["onboarding", "Merchant onboarding", [4], [], false],
+] as const;
+
+function seedVault(): Record<string, string> {
+  const vault: Record<string, string> = {
+    "project.md": ["---", "kind: project", "slug: card-probe", "title: Card probe", "---", "", "# Card probe", ""].join("\n"),
+  };
+  CONCEPTS.forEach(([slug, title, kind], index) => {
+    vault[`${slug}.md`] = [
+      "---",
+      `title: ${title}`,
+      `kind: ${kind}`,
+      `uid: 9d1c2a8e-9b4d-4c3e-8a1f-2d3e4f5a6b${(0x80 + index).toString(16)}`,
+      "---",
+      "",
+      `# ${title}`,
+      "",
+    ].join("\n");
+  });
+  for (const name of SOURCES) vault[`sources/${name}`] = `bytes for ${name}\n${"row,value\n".repeat(6)}`;
+  PAGES.forEach(([slug, title, cites, named, stale]) => {
+    vault[`wiki/${slug}.md`] = [
+      "---",
+      `title: ${title}`,
+      "created_by: agent:claude",
+      "compiled_at: 2026-09-12T04:20:00Z",
+      "sources:",
+      ...cites.map((index) => `  - sources/${SOURCES[index]}`),
+      "source_hash:",
+      // A page marked stale records a hash its bytes cannot match, which is the state the
+      // amber pulse and the card's own facts line are about.
+      ...cites.map((index) => `  sources/${SOURCES[index]}: ${(stale ? "0" : "1").repeat(64)}`),
+      "status: draft",
+      `summary: ${title} in one line.`,
+      "---",
+      "",
+      "## Summary",
+      "",
+      `${title} turns a completed transaction into money. It also does other things.`,
+      "",
+      "## Facts",
+      "",
+      ...named.map((concept) => `- Touches [[${CONCEPTS[concept][0]}]].`),
+      `- Recorded in [[src:sources/${SOURCES[cites[0]!]}]].`,
+      "",
+      "## Decisions",
+      "",
+      "## Open questions",
+      "",
+      "## Not in sources",
+      "",
+    ].join("\n");
+  });
+  return vault;
+}
+
+async function openGraph(page: Page): Promise<void> {
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, seedVault());
+  await page.goto("/en/library/?guides=off&e2e=1");
+  await page.getByTestId("library-open-vault").click();
+  await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.nodes().length ?? 0), {
+      timeout: 20_000,
+    })
+    .toBeGreaterThan(8);
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
+    .toBeLessThan(0.01);
+  // The flow layout is laid, not settled, so the alpha is 0 from the first frame; the marks
+  // still travel while the camera eases to its fit, and a press aimed at a mark read
+  // mid-journey lands on canvas.
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.arriving() ?? true), { timeout: 20_000 })
+    .toBe(false);
+  /*
+   * The home's single stale breath runs once the picture settles; let it finish so what
+   * moves next moved because of the press. The breath clears its own timestamp and
+   * `flow().pulsing` reports it, so this asks the canvas rather than budgeting for it.
+   */
+  await expect
+    .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? true), {
+      timeout: 20_000,
+      message: "the arrival breath never let go",
+    })
+    .toBe(false);
+}
+
+const marks = (page: Page): Promise<ProbeNode[]> =>
+  page.evaluate(() => window.__atlasLibraryGraph!.nodes());
+
+/** Presses the mark, in the canvas's own coordinates. */
+async function pressMark(page: Page, mark: ProbeNode): Promise<void> {
+  const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+  await page.mouse.move(box.x + mark.x, box.y + mark.y);
+  await page.mouse.down();
+  await page.mouse.up();
+}
+
+test.describe("a press on a mark opens a card beside it", () => {
+  test("the card stands beside the mark, covers neither it nor the strip, and moves nothing", async ({
+    page,
+  }) => {
+    await openGraph(page);
+    const before = await marks(page);
+    const target = before
+      .filter((node) => node.kind === "page")
+      .sort((first, second) => second.radius - first.radius)[0]!;
+
+    await pressMark(page, target);
+    const card = page.getByTestId("library-graph-card");
+    await expect(card).toBeVisible();
+    expect(await card.getAttribute("data-card-node-id")).toBe(target.id);
+    // The declaration the sweeping surface check measures, rather than guessing.
+    expect(await card.getAttribute("data-transient-surface")).toBe("anchored");
+
+    /* No mark moves on the press. */
+    const after = await marks(page);
+    for (const mark of before) {
+      const now = after.find((candidate) => candidate.id === mark.id)!;
+      expect(Math.hypot(now.x - mark.x, now.y - mark.y), `${mark.id} moved on the press`).toBeLessThan(0.5);
+    }
+
+    const canvasBox = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+    const cardBox = (await card.boundingBox())!;
+    const placement = (await page.evaluate(() => window.__atlasLibraryGraph!.card()))!;
+
+    // Beside its mark: the card's box and the mark's own square share no area.
+    const markLeft = canvasBox.x + placement.mark.x - placement.mark.radius;
+    const markRight = canvasBox.x + placement.mark.x + placement.mark.radius;
+    const markTop = canvasBox.y + placement.mark.y - placement.mark.radius;
+    const markBottom = canvasBox.y + placement.mark.y + placement.mark.radius;
+    const overlap =
+      cardBox.x < markRight &&
+      cardBox.x + cardBox.width > markLeft &&
+      cardBox.y < markBottom &&
+      cardBox.y + cardBox.height > markTop;
+    expect(overlap, "the card covered the mark it belongs to").toBe(false);
+
+    // Inside the canvas, which begins below the caption row — so the strip is safe by
+    // construction, and this asserts both halves.
+    expect(cardBox.x).toBeGreaterThanOrEqual(canvasBox.x - 0.5);
+    expect(cardBox.x + cardBox.width).toBeLessThanOrEqual(canvasBox.x + canvasBox.width + 0.5);
+    expect(cardBox.y).toBeGreaterThanOrEqual(canvasBox.y - 0.5);
+    expect(cardBox.y + cardBox.height).toBeLessThanOrEqual(canvasBox.y + canvasBox.height + 0.5);
+    for (const testId of ["library-graph-counts", "library-strip-stale"]) {
+      const strip = await page.getByTestId(testId).boundingBox();
+      if (!strip) continue;
+      const covered =
+        cardBox.x < strip.x + strip.width &&
+        cardBox.x + cardBox.width > strip.x &&
+        cardBox.y < strip.y + strip.height &&
+        cardBox.y + cardBox.height > strip.y;
+      expect(covered, `the card covered ${testId}`).toBe(false);
+    }
+    expect(cardBox.width).toBeLessThanOrEqual(320.5);
+
+    // What it says: the page's own opening sentence, its counts, and what it leans on.
+    await expect(page.getByTestId("library-graph-card-sentence")).toContainText("turns a completed transaction");
+    await expect(page.getByTestId("library-graph-card-facts")).toBeVisible();
+    await expect(page.getByTestId("library-graph-card-rows")).toBeVisible();
+  });
+
+  test("it flips to the other side of a mark at the canvas edge", async ({ page }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const rightmost = all.reduce((furthest, node) => (node.x > furthest.x ? node : furthest), all[0]!);
+    await pressMark(page, rightmost);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph!.card() !== null))
+      .toBe(true);
+    const placement = (await page.evaluate(() => window.__atlasLibraryGraph!.card()))!;
+    const view = await page.evaluate(() => window.__atlasLibraryGraph!.view());
+    // Either there was room on the right, or it flipped — never a card hanging off the edge.
+    expect(placement.left + placement.width).toBeLessThanOrEqual(view.width + 0.5);
+    if (placement.side === "right") {
+      expect(view.width - rightmost.x).toBeGreaterThan(placement.width);
+    } else {
+      expect(["left", "below", "above"]).toContain(placement.side);
+    }
+  });
+
+  test("Escape, a second press, and its own control each close it — and the keyboard comes back", async ({
+    page,
+  }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const target = all.find((node) => node.kind === "source")!;
+
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    /* The browser has no Finder: a source card's reveal door says "Open a copy", as the source pane does. */
+    await expect(page.getByTestId("library-graph-card-reveal")).toHaveText("Open a copy");
+    // The card took the keyboard, so Tab reaches its doors.
+    await expect
+      .poll(async () =>
+        page.evaluate(() => document.activeElement?.getAttribute("data-testid") ?? ""),
+      )
+      .toBe("library-graph-card");
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+    // One press closes one thing: the canvas has the keyboard, and the stale clause — the
+    // other thing on this screen that answers Escape — was not spent by it.
+    await expect
+      .poll(async () =>
+        page.evaluate(() => document.activeElement?.getAttribute("data-testid") ?? ""),
+      )
+      .toBe("library-graph-canvas");
+
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+
+    await pressMark(page, target);
+    await page.getByTestId("library-graph-card-close").click();
+    await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+
+    // A press on the empty canvas dismisses it too.
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    const view = await page.evaluate(() => window.__atlasLibraryGraph!.view());
+    const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+    const empty = all.every((node) => Math.hypot(node.x - 4, node.y - view.height + 4) > 40);
+    if (empty) {
+      await page.mouse.click(box.x + 4, box.y + view.height - 4);
+      await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+    }
+  });
+
+  test("`Open` is the commit a press used to be, now named", async ({ page }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const target = all.find((node) => node.kind === "page" && node.label === "Settlement")!;
+
+    await pressMark(page, target);
+    await page.getByTestId("library-graph-card-open").click();
+    // The card closes and the reader takes the document column.
+    await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+    await expect(page.getByTestId("library-reading-pane")).toBeVisible();
+  });
+
+  /*
+   * **The mitigation on the record for the second press this direction costs.** A person who
+   * already knows where they are going does not have to read the card: the gesture they
+   * know for "open it" still opens it.
+   */
+  test("a double press is still the shortcut straight to the page", async ({ page }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const target = all.find((node) => node.kind === "page" && node.label === "Disputes")!;
+    const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+    await page.mouse.dblclick(box.x + target.x, box.y + target.y);
+    await expect(page.getByTestId("library-reading-pane")).toBeVisible();
+    await expect(page.getByTestId("library-graph-card")).toHaveCount(0);
+  });
+
+  test("the drifting lines are the open mark's own citations, and only those", async ({ page }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const target = all.find((node) => node.kind === "page" && node.label === "Settlement")!;
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+
+    const flow = await page.evaluate(() => window.__atlasLibraryGraph!.flow());
+    const edges = await page.evaluate(() => window.__atlasLibraryGraph!.edges());
+    expect(flow.edges.length).toBeGreaterThan(0);
+    const citations = edges.filter(
+      (edge) => edge.relation === "cites" && (edge.source === target.id || edge.target === target.id),
+    );
+    expect(flow.edges).toHaveLength(citations.length);
+    // The stale ones are a subset, and they are the ones the amber breath is about.
+    expect(flow.stale.length).toBeGreaterThan(0);
+    expect(flow.stale.length).toBeLessThanOrEqual(flow.edges.length);
+
+    /* The card carries words for the drift, beside the lines. */
+    await expect(page.getByTestId("library-graph-card-flow")).toContainText("flow from each original");
+    /* With the pointer off the marks the slot below the canvas is the legend again. */
+    const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
+    await page.mouse.move(box.x + 3, box.y + 3);
+    await expect(page.getByTestId("library-graph-hint")).toContainText("A filled circle is a page");
+  });
+
+  /** The arrival breath is one pulse and ends: frames during it, none after it. */
+  test("the arrival breath runs once and the canvas then goes quiet", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await stubDirectoryPicker(page, seedVault());
+    await page.goto("/en/library/?guides=off&e2e=1");
+    await page.getByTestId("library-open-vault").click();
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.alpha() ?? 1), { timeout: 20_000 })
+      .toBeLessThan(0.01);
+    const reset = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
+    const read = () => page.evaluate(() => window.__atlasLibraryGraph!.paint().frames);
+
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? false), {
+        timeout: 20_000,
+        message: "the breath never began",
+      })
+      .toBe(true);
+    // The claim is that the breath asks for frames while it runs: count them from here
+    // until more than five have been painted, however long this machine takes to paint them.
+    await reset();
+    await expect
+      .poll(read, { timeout: 20_000, message: "the arrival breath asked for no frames at all" })
+      .toBeGreaterThan(5);
+
+    // Then it clears its own timestamp, and the canvas stops. The timestamp is the
+    // condition; 2.6 s was an estimate of when it would be gone.
+    await expect
+      .poll(async () => page.evaluate(() => window.__atlasLibraryGraph?.flow().pulsing ?? true), {
+        timeout: 20_000,
+        message: "the breath never let go",
+      })
+      .toBe(false);
+    /*
+     * The frame that clears the timestamp is not the last paint: one more resting paint follows,
+     * so the window opens after two more frames.
+     */
+    await waitFrames(page, 2);
+    await reset();
+    // A **measurement window**, not a wait: "the breath became a loop" is a claim about a
+    // stretch of real time with no canvas paint, so the stretch has to pass. The graph's
+    // own paint probe is the counter: page-global rAF also includes unrelated UI animation.
+    // measurement window: no canvas paint over a stretch of real time is the claim.
+    await page.waitForTimeout(2_000);
+    expect(await read(), "the breath became a loop").toBe(0);
+  });
+
+  test("a frame with a card open stays inside its budget", async ({ page }) => {
+    await openGraph(page);
+    const all = await marks(page);
+    const target = all
+      .filter((node) => node.kind === "page")
+      .sort((first, second) => second.radius - first.radius)[0]!;
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+
+    await page.evaluate(() => window.__atlasLibraryGraph!.paint().reset());
+    // A **measurement window**: the budget is per painted frame, so some have to be
+    // painted before the mean and the worst mean anything.
+    // measurement window: a per-frame budget averaged over a fixed second of painting.
+    await page.waitForTimeout(1_000);
+    const paint = await page.evaluate(() => {
+      const { last, mean, worst, frames } = window.__atlasLibraryGraph!.paint();
+      return { last, mean, worst, frames };
+    });
+    // The drift is running, so the loop is awake: a measurement over no frames would pass.
+    expect(paint.frames, "the card's drift scheduled no frames").toBeGreaterThan(20);
+    // A product budget with 5x headroom, so a card that makes every frame expensive fails but a busy
+    // machine does not.
+    console.log(`[library-graph-card] paint mean ${paint.mean.toFixed(2)} ms over ${paint.frames} frames`);
+    expect(paint.mean).toBeLessThan(4.5);
+  });
+});
+
+test.describe("with reduced motion", () => {
+  test("an open card leaves the canvas byte-identical frame to frame", async ({ page }) => {
+    /*
+     * ⚠️ **`emulateMedia`, not `test.use({ reducedMotion })`** — the fixture form is not in
+     * this Playwright version's typings, and the media emulation is what the product reads
+     * (`usePrefersReducedMotion`). Set before the folder is picked, so the picture settles
+     * synchronously the way a reduced-motion visitor's does.
+     */
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openGraph(page);
+
+    const hash = () =>
+      page.evaluate(() => {
+        const element = document.querySelector<HTMLCanvasElement>('[data-testid="library-graph-canvas"]')!;
+        const context = element.getContext("2d")!;
+        const { data } = context.getImageData(0, 0, element.width, element.height);
+        let sum = 0;
+        for (let index = 0; index < data.length; index += 997) sum = (sum * 31 + data[index]!) % 2147483647;
+        return sum;
+      });
+
+    /*
+     * ⚠️ **Wait for the folder to finish judging itself first.** Hashing the files is
+     * asynchronous, and when it lands a square goes from hollow to filled and a citation
+     * from broken to whole — the picture changing because the *facts* changed, which is not
+     * motion and is not this claim. Two identical frames say the judging is done.
+     */
+    await expect
+      .poll(
+        async () => {
+          const first = await hash();
+          // The gap between the two samples of a stability poll, not a gate: the poll
+          // returns the moment two frames agree.
+          // measurement window: two samples must agree across a gap longer than one hash landing.
+          await page.waitForTimeout(260);
+          return (await hash()) === first;
+        },
+        { timeout: 20_000 },
+      )
+      .toBe(true);
+
+    const all = await marks(page);
+    const target = all.find((node) => node.kind === "page" && node.label === "Settlement")!;
+    await pressMark(page, target);
+    await expect(page.getByTestId("library-graph-card")).toBeVisible();
+    /* The ink ramp stays at 120 ms under reduced motion; two identical frames mean it has finished. */
+    await expect
+      .poll(
+        async () => {
+          const sample = await hash();
+          await waitFrames(page, 2);
+          return (await hash()) === sample;
+        },
+        { timeout: 20_000, message: "the ink ramp never finished" },
+      )
+      .toBe(true);
+
+    /*
+     * The static equivalent is a chevron per citation and a full amber dot per break: one paint,
+     * so three frames a third of a second apart are identical.
+     */
+    // Three **measurement** samples a third of a second apart: the claim is about a
+    // stretch of real time in which nothing may change.
+    const first = await hash();
+    // measurement window: nothing may change across a third of a second.
+    await page.waitForTimeout(320);
+    const second = await hash();
+    // measurement window: the second third of a second.
+    await page.waitForTimeout(320);
+    const third = await hash();
+    expect(second).toBe(first);
+    expect(third).toBe(first);
+  });
+});
+
+test("the keyboard walks the flow picture in reading order: the third arrow lands on the third square from the top", async ({ page }) => {
+  await openGraph(page);
+  const canvas = page.getByTestId("library-graph-canvas");
+  await canvas.focus();
+  for (let i = 0; i < 3; i += 1) await page.keyboard.press("ArrowRight");
+  /* The keyboard follows the picture: columns top to bottom, not the model's order. */
+  const expected = await page.evaluate(() => {
+    const sources = window.__atlasLibraryGraph!.nodes().filter((node) => node.kind === "source");
+    return [...sources].sort((a, b) => a.y - b.y || a.x - b.x)[2]!.id;
+  });
+  await expect(canvas).toHaveAttribute("data-focused-node-id", expected);
+});

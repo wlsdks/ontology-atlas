@@ -94,7 +94,7 @@
     {
       "key": "frontend:runtime:devDependencies:package.json:axe-core",
       "reason": "The accessibility specs run axe-core in the browser; Playwright specs are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/a11y-ratchet.spec.ts",
+      "consumer": "tests/e2e/design-audits/a11y-ratchet.spec.ts",
       "witness": "axe-core"
     },
     {
@@ -118,7 +118,7 @@
     {
       "key": "frontend:runtime:exports:src/shared/ui/tokens/reading-measure.ts:PROSE_MEASURE_PX",
       "reason": "Three layout specs hold the rendered column to this default-root measure; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/prose-measure-calibration.spec.ts",
+      "consumer": "tests/e2e/typography/prose-measure-calibration.spec.ts",
       "witness": "PROSE_MEASURE_PX"
     },
     {

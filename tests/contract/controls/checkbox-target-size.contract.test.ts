@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 /**
  * Native checkboxes and radios need a 24x24 target (WCAG 2.5.8): the input itself, or a wrapping
  * `<label>` with a 24px floor. Reads source only; the rendered rect belongs to
- * `tests/e2e/touch-target-contract.spec.ts`.
+ * `tests/e2e/gateway/touch-target-contract.spec.ts`.
  */
 
 const ROOT = join(__dirname, '..', '..', '..');

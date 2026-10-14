@@ -30,7 +30,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
       {/*
        * ⚠️ **This comes after the page root, not before it.**
        *
-       * `tests/e2e/scroll-end-gap.spec.ts` measures on the premise that the shell body slot's
+       * `tests/e2e/design-audits/scroll-end-gap.spec.ts` measures on the premise that the shell body slot's
        * `firstElementChild` is the page root. Putting this `<script>` first makes it that first
        * child, and being zero-height the gate correctly reports "the page root is collapsed
        * (box 0 < content 1589)" — measured: CI failed at two viewport widths.

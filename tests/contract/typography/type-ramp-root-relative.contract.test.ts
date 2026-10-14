@@ -7,7 +7,7 @@ import { locateGlobalCssLine, readGlobalCss } from '../../../scripts/lib/design/
 /**
  * Every step of the type ramp must follow the root font size, because browser text-only zoom changes
  * only the root. A `px` ramp is immune to it. The unit leaves no value to see, so this reads the
- * declaration; `tests/e2e/text-zoom-ramp.spec.ts` measures the rendered complement in the browser.
+ * declaration; `tests/e2e/settings/text-zoom-ramp.spec.ts` measures the rendered complement in the browser.
  */
 const ROOT = process.cwd();
 const CSS = readGlobalCss();

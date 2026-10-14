@@ -28,7 +28,7 @@ import { judgeRatchet } from '../lib/ratchet-base';
 const BASELINE_HARD_CUTS = 0;
 
 /**
- * The total of openable surfaces, also the denominator of `tests/e2e/a11y-open-surfaces.spec.ts`.
+ * The total of openable surfaces, also the denominator of `tests/e2e/design-audits/a11y-open-surfaces.spec.ts`.
  * Judged against the merge base (`tests/contract/lib/ratchet-base.ts`); a new surface is a
  * `tests/contract/ratchet-raises/appearing-surfaces/<slug>.json` record. The fallback is never edited.
  */
@@ -159,7 +159,7 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
   it('⑦ 열 수 있는 표면의 **분모**가 조용히 늘지 않는다 — 접근성 측정 목록의 입력', () => {
     /*
      * This number is the hard-cut inventory's denominator and also the 19 in
-     * `tests/e2e/a11y-open-surfaces.spec.ts`'s "measures 5/19". A new surface turns this
+     * `tests/e2e/design-audits/a11y-open-surfaces.spec.ts`'s "measures 5/19". A new surface turns this
      * red first, and that is the moment to also ask **whether that surface is being
      * opened and measured**. Without a denominator, "0 violations on open surfaces" is
      * said without knowing how many were never opened.

@@ -175,7 +175,7 @@ const SECTIONS: ShortcutSection[] = [
     rows: [
       /*
        * Arrow-key walking, taught here because this sheet is the only keyboard teacher
-       * (`tests/e2e/map-keyboard-walk.spec.ts`).
+       * (`tests/e2e/map/map-keyboard-walk.spec.ts`).
        */
       { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },

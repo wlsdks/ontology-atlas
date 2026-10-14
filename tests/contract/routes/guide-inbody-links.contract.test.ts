@@ -115,7 +115,7 @@ describe('가이드 본문 링크 — 실재하는 라우트만 가리킨다', (
    * wrote — this is the same failure wearing a different face).
    *
    * That layer has to be opened and measured, so
-   * `tests/e2e/guide-inbody-links.spec.ts` owns it: it opens every guide chapter and
+   * `tests/e2e/gateway/guide-inbody-links.spec.ts` owns it: it opens every guide chapter and
    * checks that in-body internal links carry the locale prefix and that those
    * addresses really return 200. This contract looks only at **the destinations in
    * the source markdown.**

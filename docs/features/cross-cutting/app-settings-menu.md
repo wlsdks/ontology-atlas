@@ -25,7 +25,7 @@ routes: []
   hairline, so they read apart from the rows they head.
 - Every pane keeps one start line: the head (title and sentence), group labels, card edges and
   any caption outside a card share the card's left edge; row text sits inside the card
-  (`tests/e2e/settings-reading.spec.ts`, at 1040 and 1440).
+  (`tests/e2e/settings/settings-reading.spec.ts`, at 1040 and 1440).
 - **Panes** (`ui/panes/`): Screen · language (language, view mode on every screen, text size
   Default / Large / Larger, concept icons, Motion status, screen guides); Map (background,
   drag and zoom speed, INDEX default only where the map injects it, frame meter On · Off);

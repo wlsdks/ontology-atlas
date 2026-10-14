@@ -9,34 +9,34 @@ export const rules = [
   },
   {
     order: 420,
-    command: 'pnpm exec playwright test tests/e2e/retired-game-storage.spec.ts tests/e2e/agent-mascot-presence.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/vault-session/retired-game-storage.spec.ts tests/e2e/agents/agent-mascot-presence.spec.ts',
     reason: 'folder entry and work status must preserve personal saves and verified activity after game retirement',
     matches: [
       /^src\/views\/first-run\/ui\/FirstRunPage\.tsx$/,
       /^src\/views\/home\/ui\/TopologyCommandChrome\.tsx$/,
       /^src\/features\/agent-activity\/ui\/Agent(?:ActivityChip|MascotPresence)\.tsx$/,
-      /^tests\/e2e\/retired-game-storage\.spec\.ts$/,
+      /^tests\/e2e\/vault-session\/retired-game-storage\.spec\.ts$/,
     ],
   },
   {
     order: 430,
-    command: 'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/harness/architecture-workbench.spec.ts',
     reason: 'Architecture workflow reachability, scroll anchoring, or mobile navigation changed',
     matches: [
       /^src\/views\/architecture\//,
       /^src\/widgets\/bottom-tab-bar\/ui\/BottomTabBar\.tsx$/,
-      /^tests\/e2e\/architecture-workbench\.spec\.ts$/,
+      /^tests\/e2e\/harness\/architecture-workbench\.spec\.ts$/,
     ],
   },
   {
     order: 720,
-    command: 'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
     reason: 'Playwright config or webServer behavior changed',
     matches: [/^playwright\.config\.ts$/],
   },
   {
     order: 730,
-    command: 'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts',
     reason: 'global CSS, Tailwind, or PostCSS styling behavior changed',
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/, /^postcss\.config\.mjs$/],
   },
@@ -47,7 +47,7 @@ export const rules = [
      * a screen's specs with the screen).
      */
     command:
-      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
+      'pnpm exec playwright test tests/e2e/library/docs/docs-deeplink.spec.ts tests/e2e/design-audits/document-scroll-lock.spec.ts tests/e2e/vault-session/vault-truth-telling.spec.ts',
     reason: 'the docs surface changed — its e2e specs drive that screen by role and testid',
     matches: [
       /^src\/views\/docs-vault\/.+\.tsx?$/,
@@ -62,8 +62,8 @@ export const rules = [
      * cards and tab address.
      */
     command:
-      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
-      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts',
+      'pnpm exec playwright test tests/e2e/agents/mcp-connector-add.spec.ts ' +
+      'tests/e2e/agents/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts',
     reason: 'the Agents destination changed — three e2e specs drive its tabs, its connectors card and its deep link',
     matches: [
       /^src\/views\/(?:agents|mcp|mcp-redirect)\/.+\.tsx?$/,
@@ -100,7 +100,7 @@ export const rules = [
   },
   {
     order: 860,
-    command: 'pnpm exec playwright test tests/e2e/vault-switch-release.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/vault-session/vault-switch-release.spec.ts',
     reason: 'a callback that can outlive a folder switch changed; no earlier folder may stay alive',
     matches: [
       /^src\/entities\/vault-session\/model\/local-vault\/use-(?:local-vault|vault-choice|vault-doc-writes)\.ts$/,
@@ -110,7 +110,7 @@ export const rules = [
       /^src\/views\/library\/lib\/rounds\/use-rounds-runner\.ts$/,
       /^src\/shared\/lib\/(?:use-latest-ref|derived-hook)\.ts$/,
       /^src\/widgets\/ontology-map\/ui\/camera\/use-topology-(?:camera-navigation|overview-navigation|viewport-lifecycle)\.ts$/,
-      /^tests\/e2e\/(?:vault-switch-release\.spec|heap-census)\.ts$/,
+      /^tests\/e2e\/(?:vault-session\/vault-switch-release\.spec|heap-census)\.ts$/,
     ],
   },
   {
@@ -118,7 +118,7 @@ export const rules = [
     // A route is the input of three gates: the decision ledger (`decisions:check`), accessibility
     // classification (`audited-route-coverage`), and the two ratchets that measure contrast.
     command:
-      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
     matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
   },
@@ -126,7 +126,7 @@ export const rules = [
     order: 1030,
     // Editing the gateway layout must run its grid check. `PAGE_COLUMN`/`PAGE_GUTTER` are included
     // because they are the baseline the grid measures against.
-    command: 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-gateway-grid.spec.ts',
     reason: 'the gateway plate or its frame changed — six elements must still share one origin',
     matches: [
       /^src\/views\/download\/.*\.tsx?$/,
@@ -136,11 +136,11 @@ export const rules = [
   },
   {
     order: 1035,
-    command: 'pnpm exec playwright test tests/e2e/download-hero-release.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-hero-release.spec.ts',
     reason: 'the download hero or its renderer changed; leaving /download must give back its WebGL context and page',
     matches: [
       /^src\/views\/download\/(?:lib\/hero-atlas-scene\.ts|ui\/HeroAtlas\.tsx|lib\/gateway-frame-loop\.ts)$/,
-      /^tests\/e2e\/(?:download-hero-release\.spec|heap-census)\.ts$/,
+      /^tests\/e2e\/(?:gateway\/download-hero-release\.spec|heap-census)\.ts$/,
     ],
   },
 ];

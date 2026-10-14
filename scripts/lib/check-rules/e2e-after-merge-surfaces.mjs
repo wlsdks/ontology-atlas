@@ -1,7 +1,7 @@
 export const rules = [
   {
     order: 5200,
-    command: 'pnpm exec playwright test tests/e2e/agent-composer-footer-width.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/agents/agent-composer-footer-width.spec.ts',
     reason: "the agent composer footer's picker width across the panel's drag range changed",
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
@@ -10,7 +10,7 @@ export const rules = [
   },
   {
     order: 5201,
-    command: 'pnpm exec playwright test tests/e2e/agent-footer-running-turn.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/agents/agent-footer-running-turn.spec.ts',
     reason: "the agent composer footer's pieces overlapping while a turn runs changed",
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
@@ -20,7 +20,7 @@ export const rules = [
   },
   {
     order: 5202,
-    command: 'pnpm exec playwright test tests/e2e/app-chrome-layout.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/app-shell/app-chrome-layout.spec.ts',
     reason: 'the app nav rail, settings trigger or vault switcher layout changed',
     matches: [
       /^src\/widgets\/app-nav-rail\/ui\/AppNavRail\.tsx$/,
@@ -30,7 +30,7 @@ export const rules = [
   },
   {
     order: 5203,
-    command: 'pnpm exec playwright test tests/e2e/architecture-role-ledger.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/harness/architecture-role-ledger.spec.ts',
     reason: "the architecture graph's role ledger and evidence rail layout changed",
     matches: [
       /^src\/views\/architecture\/ui\/ArchitectureWorkbench\.tsx$/,
@@ -42,7 +42,7 @@ export const rules = [
   },
   {
     order: 5204,
-    command: 'pnpm exec playwright test tests/e2e/chat-answer-overflow-edge.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/agents/chat-answer-overflow-edge.spec.ts',
     reason: 'the edge cue on a fenced block that overflows the agent panel changed',
     matches: [
       /^src\/widgets\/acp-chat-panel\/ui\/AcpChatPanel\.tsx$/,
@@ -53,7 +53,7 @@ export const rules = [
   },
   {
     order: 5205,
-    command: 'pnpm exec playwright test tests/e2e/download-conduction.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-conduction.spec.ts',
     reason: "the download page's conduction figure changed",
     matches: [
       /^src\/views\/download\/ui\/ConductionFigure\.tsx$/,
@@ -62,7 +62,7 @@ export const rules = [
   },
   {
     order: 5206,
-    command: 'pnpm exec playwright test tests/e2e/download-hero-echo.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-hero-echo.spec.ts',
     reason: "the download hero's typing echo and caption changed",
     matches: [
       /^src\/views\/download\/ui\/HeroAtlas\.tsx$/,
@@ -72,7 +72,7 @@ export const rules = [
   },
   {
     order: 5207,
-    command: 'pnpm exec playwright test tests/e2e/download-scroll-budget.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-scroll-budget.spec.ts',
     reason: "the download page's scroll frame budget changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
@@ -83,7 +83,7 @@ export const rules = [
   },
   {
     order: 5208,
-    command: 'pnpm exec playwright test tests/e2e/download-still.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-still.spec.ts',
     reason: "the download page's reduced-motion and no-script stillness changed",
     matches: [
       /^src\/views\/download\/ui\/DownloadPage\.tsx$/,
@@ -93,7 +93,7 @@ export const rules = [
   },
   {
     order: 5209,
-    command: 'pnpm exec playwright test tests/e2e/download-visibility-gate.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/download-visibility-gate.spec.ts',
     reason: "the download figures' visibility gate changed",
     matches: [
       /^src\/views\/download\/ui\/ConductionFigure\.tsx$/,
@@ -103,7 +103,7 @@ export const rules = [
   },
   {
     order: 5210,
-    command: 'pnpm exec playwright test tests/e2e/gateway-doc-column.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/gateway-doc-column.spec.ts',
     reason: 'the guide and changelog reading column width changed',
     matches: [
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
@@ -111,7 +111,7 @@ export const rules = [
   },
   {
     order: 5211,
-    command: 'pnpm exec playwright test tests/e2e/gateway-reading-reach.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/gateway/gateway-reading-reach.spec.ts',
     reason: "the guide chapter picker's reach on narrow screens changed",
     matches: [
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
@@ -120,7 +120,7 @@ export const rules = [
   },
   {
     order: 5212,
-    command: 'pnpm exec playwright test tests/e2e/git-workbench-stacked-floor.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/git/git-workbench-stacked-floor.spec.ts',
     reason: 'the stacked Git reader at the window floor changed',
     matches: [
       /^src\/widgets\/atlas-git-panel\/ui\/(AtlasGitPanel|DesktopBody|StepList|ActionDock|RemoteControls|SetupMode)\.tsx$/,
@@ -137,7 +137,7 @@ export const rules = [
   },
   {
     order: 5214,
-    command: 'pnpm exec playwright test tests/e2e/harness-auto-insights-layout.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/harness/harness-auto-insights-layout.spec.ts',
     reason: 'placement and overlap on the harness and architecture panels changed',
     matches: [
       /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
@@ -147,7 +147,7 @@ export const rules = [
   },
   {
     order: 5215,
-    command: 'pnpm exec playwright test tests/e2e/harness-tab-layout.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/harness/harness-tab-layout.spec.ts',
     reason: "the harness tab's fitted diagram and role popup changed",
     matches: [
       /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
@@ -157,7 +157,7 @@ export const rules = [
   },
   {
     order: 5216,
-    command: 'pnpm exec playwright test tests/e2e/insights-previews.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/insights/insights-previews.spec.ts',
     reason: 'the insights library and harness tab previews changed',
     matches: [
       /^src\/views\/ontology-insights\/ui\/tabs\/HarnessTab\.tsx$/,
@@ -166,7 +166,7 @@ export const rules = [
   },
   {
     order: 5217,
-    command: 'pnpm exec playwright test tests/e2e/ix-projects-agents-git-layout.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/projects/ix-projects-agents-git-layout.spec.ts',
     reason: 'the project agent dock, agents and Git panel layout at the window floor changed',
     matches: [
       /^src\/views\/project-detail\/ui\/parts\/ProjectAgentDock\.tsx$/,
@@ -177,7 +177,7 @@ export const rules = [
   },
   {
     order: 5218,
-    command: 'pnpm exec playwright test tests/e2e/library-answer-comparison-rows.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/answers/library-answer-comparison-rows.spec.ts',
     reason: "the library answer comparison's row alignment and measure changed",
     matches: [
       /^src\/views\/library\/ui\/parts\/questions\/AnswerRevisionComparison\.tsx$/,
@@ -187,18 +187,18 @@ export const rules = [
   {
     order: 5219,
     command:
-      'pnpm exec playwright test tests/e2e/library-graph-alive.spec.ts tests/e2e/library-graph-card.spec.ts ' +
-      'tests/e2e/library-graph-islands.spec.ts tests/e2e/library-graph-picture.spec.ts',
+      'pnpm exec playwright test tests/e2e/library/graph/library-graph-alive.spec.ts tests/e2e/library/graph/library-graph-card.spec.ts ' +
+      'tests/e2e/library/graph/library-graph-islands.spec.ts tests/e2e/library/graph/library-graph-picture.spec.ts',
     reason: "the library graph changed; these specs measure its motion, card, islands and picture, and other library specs that draw it keep the smoke sweep",
     additive: true,
     matches: [
       /^src\/widgets\/library-graph\/.+(?<!\.test)\.tsx?$/,
-      /^tests\/e2e\/library-graph-probe\.ts$/,
+      /^tests\/e2e\/library\/graph\/library-graph-probe\.ts$/,
     ],
   },
   {
     order: 5221,
-    command: 'pnpm exec playwright test tests/e2e/library-interaction-placement.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/library-interaction-placement.spec.ts',
     reason: "where the library's transient surfaces land changed",
     matches: [
       /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?)$/,
@@ -209,7 +209,7 @@ export const rules = [
   },
   {
     order: 5222,
-    command: 'pnpm exec playwright test tests/e2e/library-question-desk.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/answers/library-question-desk.spec.ts',
     reason: 'the library question desk changed',
     matches: [
       /^src\/views\/library\/ui\/parts\/questions\/LibraryQuestionDesk\.tsx$/,
@@ -217,7 +217,7 @@ export const rules = [
   },
   {
     order: 5223,
-    command: 'pnpm exec playwright test tests/e2e/library-renderer-disposal.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/graph/library-renderer-disposal.spec.ts',
     reason: "the library constellation renderer's disposal changed",
     matches: [
       /^src\/views\/library\/ui\/LibraryConstellations\.tsx$/,
@@ -226,7 +226,7 @@ export const rules = [
   },
   {
     order: 5224,
-    command: 'pnpm exec playwright test tests/e2e/library-source-pane-end.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/library/library-source-pane-end.spec.ts',
     reason: 'where the library source pane ends changed',
     matches: [
       /^src\/views\/library\/ui\/parts\/sources\/SourceSummary\.tsx$/,
@@ -235,7 +235,7 @@ export const rules = [
   },
   {
     order: 5225,
-    command: 'pnpm exec playwright test tests/e2e/project-hero-control-row.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/projects/project-hero-control-row.spec.ts',
     reason: "the project hero's control row changed",
     matches: [
       /^src\/views\/project-detail\/ui\/ProjectDetailPage\.tsx$/,
@@ -243,7 +243,7 @@ export const rules = [
   },
   {
     order: 5226,
-    command: 'pnpm exec playwright test tests/e2e/route-arrival-paint.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/app-shell/route-arrival-paint.spec.ts',
     reason: 'a revisited route arriving painted instead of loading changed',
     matches: [
       /^src\/shared\/ui\/fallbacks\/route-loading-fallback\.tsx$/,
@@ -253,7 +253,7 @@ export const rules = [
   },
   {
     order: 5227,
-    command: 'pnpm exec playwright test tests/e2e/settings-reading-layout.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/settings/settings-reading-layout.spec.ts',
     reason: "the settings popover's reading layout changed",
     matches: [
       /^src\/widgets\/app-settings-menu\/ui\/AppSettingsMenu\.tsx$/,
@@ -262,7 +262,7 @@ export const rules = [
   },
   {
     order: 5228,
-    command: 'pnpm exec playwright test tests/e2e/toast-free-lane.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/map/chrome/toast-free-lane.spec.ts',
     reason: "a toast or agent status standing over the map's chrome changed",
     matches: [
       /^src\/features\/agent-activity\/ui\/AgentActivityChip\.tsx$/,
@@ -272,7 +272,7 @@ export const rules = [
   },
   {
     order: 5229,
-    command: 'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts',
     reason: "a page root's scroll container or bottom breath changed",
     additive: true,
     matches: [
