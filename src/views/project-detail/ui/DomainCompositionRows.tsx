@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { getTopologyFocusHref } from "@/entities/project";
 import { OntologyMapKindGlyph } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";

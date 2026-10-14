@@ -1,5 +1,5 @@
 {
-  "file": "src/shared/ui/button.tsx",
+  "file": "src/shared/ui/controls/button.tsx",
   "count": 1,
   "claim": "value-layer-peer",
   "proof": "buttonVariants",

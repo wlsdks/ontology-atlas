@@ -7,7 +7,7 @@ import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canva
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { useToast } from "@/shared/ui";
-import { BrandWaitingMark } from "@/shared/ui/brand-waiting-mark";
+import { BrandWaitingMark } from "@/shared/ui/marks/brand-waiting-mark";
 import { useTranslations } from "next-intl";
 import {
   AppNavRail,
@@ -35,7 +35,7 @@ import {
 import { useInstallNotice } from "@/features/acp-doctor";
 import { VaultSwitchRailTile } from "@/features/vault-switch";
 import { useSoleProjectHref } from "@/features/project-data-source";
-import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
+import { RouteFocusManager } from "@/shared/ui/routing/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";

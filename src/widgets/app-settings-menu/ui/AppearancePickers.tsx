@@ -14,7 +14,7 @@ import {
   type GlyphSet,
 } from '@/shared/lib/preferences/appearance-preferences';
 import { controlClass } from '@/shared/ui/control-class';
-import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 import type { SettingId } from '../model/catalog/types';
 
 const PICKER_TILE_INK = (active: boolean) =>

@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  *
  * Reimplementing the same 25 lines in the second consumer is the alternative this avoids,
  * and it is the worse one: the two copies would drift on exactly the properties
- * `shared/ui/transient-surface.ts` exists to keep uniform - whether Escape closes, and
+ * `shared/ui/surfaces/transient-surface.ts` exists to keep uniform - whether Escape closes, and
  * whether a press inside the surface counts as outside.
  */
 export function useDismissibleMenu() {

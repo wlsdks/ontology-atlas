@@ -5,10 +5,10 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeft, Search } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { GatewayNav, GatewayReadingLinks } from '@/widgets/gateway-chrome';
-import { Button, buttonVariants } from '@/shared/ui/button';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Button, buttonVariants } from '@/shared/ui/controls/button';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
-import { BrandPortrait } from '@/shared/ui/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
 import { TerminalState, TerminalStatePending } from './TerminalState';
 import {
   StandaloneLocaleProvider,

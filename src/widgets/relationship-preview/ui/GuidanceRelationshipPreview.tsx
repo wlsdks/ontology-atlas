@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { FileText, FolderCode, ListChecks, OctagonMinus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { RelationshipPreview } from './RelationshipPreview';
 
 export function GuidanceRelationshipPreview({ footer }: { footer: ReactNode }) {

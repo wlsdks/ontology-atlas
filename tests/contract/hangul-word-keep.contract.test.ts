@@ -60,7 +60,7 @@ describe("Hangul keeps its words whole", () => {
  * the router's and free of interpolation (the same boundary `JsonLd` owns).
  */
 describe("<html lang> is right before the first paint", () => {
-  const boot = readFileSync(join(ROOT, "src", "shared", "ui", "lang-boot-script.tsx"), "utf8");
+  const boot = readFileSync(join(ROOT, "src", "shared", "ui", "document", "lang-boot-script.tsx"), "utf8");
   const routing = readFileSync(join(ROOT, "src", "i18n", "routing.ts"), "utf8");
   const body = /const LANG_BOOT = \[([\s\S]*?)\]\.join/.exec(boot)?.[1] ?? "";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 
 import { Link } from "@/i18n/navigation";
 import { Button, buttonVariants, CloseButton, RowButton } from "@/shared/ui";

@@ -7,7 +7,7 @@ import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
 import { controlClass } from '@/shared/ui/control-class';
 
 import { BuildFromCodeConfirmDialog } from './BuildFromCodeConfirmDialog';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { useBuildFromCode } from '../model/use-build-from-code';
 

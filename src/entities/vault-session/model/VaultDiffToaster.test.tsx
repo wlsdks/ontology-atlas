@@ -27,7 +27,7 @@ const toastMocks = vi.hoisted(() => ({
   show: vi.fn(),
 }));
 
-vi.mock('@/shared/ui/toast', () => ({
+vi.mock('@/shared/ui/toast/toast', () => ({
   useToast: () => ({ show: toastMocks.show }),
 }));
 

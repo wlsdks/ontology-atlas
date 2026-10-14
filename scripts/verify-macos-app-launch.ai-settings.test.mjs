@@ -416,7 +416,7 @@ test("installed-app AI settings driver walks the real settings testids", () => {
  * **green against the wrong standard.**
  */
 test("model list row cap matches the shipped rule", () => {
-  const source = fs.readFileSync("src/shared/ui/select-growth.ts", "utf8");
+  const source = fs.readFileSync("src/shared/ui/fields/select-growth.ts", "utf8");
   const match = source.match(/export const LISTBOX_MAX_ROWS = (\d+)/);
   assert.ok(match, "select-growth.ts should export LISTBOX_MAX_ROWS");
   assert.equal(

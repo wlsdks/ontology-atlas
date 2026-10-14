@@ -25,8 +25,8 @@ export const rules = [
     matches: [
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/tabs\/BriefTab\.tsx$/,
-      /^src\/shared\/ui\/tab-bar\.tsx$/,
-      /^src\/shared\/ui\/segmented-control\.tsx$/,
+      /^src\/shared\/ui\/controls\/tab-bar\.tsx$/,
+      /^src\/shared\/ui\/fields\/segmented-control\.tsx$/,
     ],
   },
   {
@@ -38,7 +38,7 @@ export const rules = [
     matches: [
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/AnalysisWorkspace\.tsx$/,
-      /^src\/shared\/ui\/segmented-control\.tsx$/,
+      /^src\/shared\/ui\/fields\/segmented-control\.tsx$/,
     ],
   },
   {

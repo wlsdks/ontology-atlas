@@ -6,7 +6,7 @@ import {
   BRAND_MARK_NATIVE_SIZE,
   BrandMark,
   type BrandMarkDetail,
-} from '@/shared/ui/brand-mark';
+} from '@/shared/ui/marks/brand-mark';
 import {
   MASCOT_MASTERS,
   MASCOT_MOTION_ROWS,

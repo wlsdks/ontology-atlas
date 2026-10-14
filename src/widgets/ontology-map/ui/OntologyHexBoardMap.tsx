@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
-import { Chip } from "@/shared/ui/controls";
+import { Chip } from "@/shared/ui/controls/controls";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import type { Rect } from "../interaction/free-area";
 import { DEFAULT_MAP_NAVIGATION_SPEED, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";

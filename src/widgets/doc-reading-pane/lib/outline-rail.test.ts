@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
+import { DOC_COLUMN_PX } from "@/shared/ui/tokens/reading-measure";
 import {
   OUTLINE_RAIL_COLUMN_GAP,
   OUTLINE_RAIL_LANE_CLASS,

@@ -2,7 +2,7 @@ import type { ReactNode, RefObject } from 'react';
 import { ArrowDown } from 'lucide-react';
 
 import { Surface } from '@/shared/ui';
-import { ChromeChip } from '@/shared/ui/chrome-chip';
+import { ChromeChip } from '@/shared/ui/controls/chrome-chip';
 
 import type { ChatT } from './types';
 

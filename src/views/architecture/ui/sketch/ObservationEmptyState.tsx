@@ -1,6 +1,6 @@
 import { ScanSearch } from 'lucide-react';
 
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { balanceLinesByWidthAt, estimateTextWidthAt, splitLinesByWidthAt } from '../../model/summary-lines';
 import type { EmptyPanel } from './types';

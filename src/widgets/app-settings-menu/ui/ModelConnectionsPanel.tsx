@@ -38,14 +38,14 @@ import type { LlmAuditEntry } from '@/shared/lib/llm-connection/llm-audit-log';
 import { LLM_AUDIT_LOG_RELATIVE_PATH } from '@/shared/lib/llm-connection/llm-audit-log';
 import { getTauriVaultRootPath, revealTauriVaultFile } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useLocalVault } from '@/entities/vault-session';
-import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/route-focus-manager';
+import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routing/route-focus-manager';
 import { fieldClass } from '@/shared/ui/control-class';
-import { Chip } from '@/shared/ui/controls';
-import { buttonVariants } from '@/shared/ui/button';
-import { EmptyState } from '@/shared/ui/empty-state';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Chip } from '@/shared/ui/controls/controls';
+import { buttonVariants } from '@/shared/ui/controls/button';
+import { EmptyState } from '@/shared/ui/status/empty-state';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Download } from 'lucide-react';
-import { Select } from '@/shared/ui/select';
+import { Select } from '@/shared/ui/fields/select';
 import { cn } from '@/shared/lib/cn';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
@@ -59,7 +59,7 @@ import {
 } from '../model/local-runners';
 import { useAiConnection, type AiConnectionState } from '../model/use-ai-connection';
 import { ArmedChip, SettingsGroupHeading } from './settings-primitives';
-import { TermHint } from '@/shared/ui/term-hint';
+import { TermHint } from '@/shared/ui/hints/term-hint';
 import type { GlossaryTerm } from '@/shared/config/term-glossary';
 
 /**

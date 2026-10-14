@@ -44,7 +44,7 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
   getTauriVaultRootPath: () => null,
 }));
 
-vi.mock('@/shared/ui/toast', () => ({
+vi.mock('@/shared/ui/toast/toast', () => ({
   useToast: () => ({ show: mocks.toast }),
 }));
 

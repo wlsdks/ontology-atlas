@@ -90,7 +90,7 @@ describe('남의 제품 마크 판 — 예외를 예외로 유지한다', () => 
      * Exactly one file paints the light plate and every consumer goes through it; a second copy of
      * the painting is what this test must keep catching.
      */
-    expect(users.sort()).toEqual(['app/styles/tokens.css', 'src/shared/ui/vendor-mark.tsx']);
+    expect(users.sort()).toEqual(['app/styles/tokens.css', 'src/shared/ui/marks/vendor-mark.tsx']);
   });
 
   it('브랜드 색은 코드가 아니라 생성된 데이터에서 온다', () => {

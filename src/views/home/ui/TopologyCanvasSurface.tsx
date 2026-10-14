@@ -18,7 +18,7 @@ import { RecentChangesNeedsVaultDialog } from "@/features/vault-ontology";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
-import { FrameMeter } from "@/shared/ui/frame-meter";
+import { FrameMeter } from "@/shared/ui/status/frame-meter";
 import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
@@ -452,7 +452,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
         {!structure && <div
           ref={readoutStackRef}
           data-testid="topology-readout-stack"
-          // A toast stands above this reading (`src/shared/ui/toast-walls.ts`).
+          // A toast stands above this reading (`src/shared/ui/toast/toast-walls.ts`).
           data-toast-wall="bottom"
           className={cn(
             "pointer-events-none absolute bottom-[var(--topology-relation-legend-bottom-inset)] right-[var(--topology-relation-legend-inset)] z-20 flex flex-col items-end gap-3 whitespace-nowrap transition-opacity duration-[var(--motion-base)] ease-[var(--motion-ease)] motion-reduce:transition-none",

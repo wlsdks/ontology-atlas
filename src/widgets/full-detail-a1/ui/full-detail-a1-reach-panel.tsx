@@ -6,8 +6,8 @@ import type {
   FullDetailReachModel,
 } from "../lib/full-detail-reach";
 import { controlClass } from "@/shared/ui/control-class";
-import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
-import { SegmentedControl } from "@/shared/ui/segmented-control";
+import { HiddenCountLine } from "@/shared/ui/status/hidden-count-line";
+import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { Link } from "@/i18n/navigation";
 
 /**

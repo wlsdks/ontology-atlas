@@ -2,8 +2,8 @@ import { Orbit } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 import styles from './constellations-starting-point.module.css';
 
 /**

@@ -13,7 +13,7 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { PAGE_TITLE, PAGE_TOP_PAD } from '@/shared/ui/page-frame';
+import { PAGE_TITLE, PAGE_TOP_PAD } from '@/shared/ui/tokens/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';

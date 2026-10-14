@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { GitRemoteState } from "../lib/remote-state";
 import { Check, ShieldCheck } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { fieldClass } from "@/shared/ui/control-class";
 import type { GitSnapshotResult } from "@/shared/lib/git/tauri-git";
 import { Button, Checkbox, controlClass } from "@/shared/ui";

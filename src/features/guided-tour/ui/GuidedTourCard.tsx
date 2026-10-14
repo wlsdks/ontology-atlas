@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/shared/lib/cn";
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/shared/ui/controls/button";
 import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import type { CardPlacement } from "../model/resolve-anchor-rect";
 

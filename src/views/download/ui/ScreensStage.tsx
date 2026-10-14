@@ -9,7 +9,7 @@ import { cn } from '@/shared/lib/cn';
 import { useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
 import { useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { controlClass } from '@/shared/ui/control-class';
-import { TabBar } from '@/shared/ui/tab-bar';
+import { TabBar } from '@/shared/ui/controls/tab-bar';
 
 import { type GatewayScreenFile, gatewayScreenSrc } from '../model/gateway-screens';
 import { SurfaceCapture, type SurfaceHref } from './SurfaceCapture';

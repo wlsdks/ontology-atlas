@@ -15,7 +15,7 @@ import {
 import { OntologyChangeReview } from '@/features/ontology-change-review';
 import { Button, CloseButton, Select, Surface, Textarea } from '@/shared/ui';
 import { fieldLabel } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 export interface MeaningEditorNode {
   id: string;

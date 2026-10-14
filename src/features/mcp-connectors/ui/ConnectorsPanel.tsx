@@ -19,11 +19,11 @@ import {
   resolveServiceMark,
   useToast,
 } from '@/shared/ui';
-import { Input } from '@/shared/ui/input';
-import { PAGE_COLUMN_FORM } from '@/shared/ui/page-frame';
+import { Input } from '@/shared/ui/fields/input';
+import { PAGE_COLUMN_FORM } from '@/shared/ui/tokens/page-frame';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import {
   connectorProblems,
   looksLikeSecretKey,

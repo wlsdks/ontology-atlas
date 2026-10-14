@@ -5,7 +5,7 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";

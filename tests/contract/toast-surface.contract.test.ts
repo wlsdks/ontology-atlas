@@ -13,7 +13,7 @@ import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 const ROOT = process.cwd();
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
-const toastSource = read("src/shared/ui/toast.tsx");
+const toastSource = read("src/shared/ui/toast/toast.tsx");
 const css = readGlobalCss();
 
 function token(name: string): string {

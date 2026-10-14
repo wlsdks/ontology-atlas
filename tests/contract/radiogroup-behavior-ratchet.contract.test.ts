@@ -17,7 +17,7 @@ const ROOT = process.cwd();
 const HOOK = "useRovingRadioGroup";
 const EXEMPT_FILES = new Set([
   "src/shared/lib/keyboard/use-roving-radio-group.ts",
-  "src/shared/ui/segmented-control.tsx",
+  "src/shared/ui/fields/segmented-control.tsx",
 ]);
 
 /**
@@ -162,7 +162,7 @@ describe("radiogroup 행동 래칫 — role 이 약속한 키보드가 실재하
     expect(hook, "훅이 화살표 이동을 잃었다").toContain("ArrowRight");
 
     const primitive = stripComments(
-      readFileSync(path.join(ROOT, "src/shared/ui/segmented-control.tsx"), "utf8"),
+      readFileSync(path.join(ROOT, "src/shared/ui/fields/segmented-control.tsx"), "utf8"),
     );
     expect(
       HOOK_CALL_RE.test(primitive),

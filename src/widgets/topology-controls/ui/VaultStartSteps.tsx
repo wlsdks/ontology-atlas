@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { VendorMark } from "@/shared/ui/vendor-mark";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { VendorMark } from "@/shared/ui/marks/vendor-mark";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   Cable,
@@ -14,7 +14,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { Chip } from "@/shared/ui";
 

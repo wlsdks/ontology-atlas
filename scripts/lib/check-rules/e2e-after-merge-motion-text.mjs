@@ -48,7 +48,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/motion-checkbox.spec.ts',
     reason: 'checkbox state motion changed',
     matches: [
-      /^src\/shared\/ui\/checkbox\.tsx$/,
+      /^src\/shared\/ui\/fields\/checkbox\.tsx$/,
       /^app\/styles\/motion-checkbox\.css$/,
     ],
   },
@@ -57,8 +57,8 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/motion-disclosure.spec.ts',
     reason: 'disclosure open and close motion changed',
     matches: [
-      /^src\/shared\/ui\/disclosure\.tsx$/,
-      /^src\/shared\/ui\/row-disclosure\.tsx$/,
+      /^src\/shared\/ui\/controls\/disclosure\.tsx$/,
+      /^src\/shared\/ui\/controls\/row-disclosure\.tsx$/,
       /^src\/shared\/lib\/list-rows\/use-row-disclosure\.ts$/,
     ],
   },
@@ -68,7 +68,7 @@ export const rules = [
     reason: 'control press and hover motion changed',
     matches: [
       /^src\/shared\/ui\/control-class\.ts$/,
-      /^src\/shared\/ui\/button\.tsx$/,
+      /^src\/shared\/ui\/controls\/button\.tsx$/,
     ],
   },
   {
@@ -114,7 +114,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/motion-surfaces.spec.ts',
     reason: 'tooltip fade motion changed',
     matches: [
-      /^src\/shared\/ui\/tooltip\.tsx$/,
+      /^src\/shared\/ui\/hints\/tooltip\.tsx$/,
       /^app\/styles\/motion-surface\.css$/,
     ],
   },
@@ -134,7 +134,7 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts',
     reason: 'the prose line measure changed',
     matches: [
-      /^src\/shared\/ui\/reading-measure\.ts$/,
+      /^src\/shared\/ui\/tokens\/reading-measure\.ts$/,
       /^app\/styles\/tokens\.css$/,
     ],
   },

@@ -4,7 +4,7 @@ import type {
 } from "react";
 import { ChevronDown } from "lucide-react";
 
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { fieldClass } from "@/shared/ui/control-class";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui";

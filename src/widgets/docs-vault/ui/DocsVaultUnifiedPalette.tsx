@@ -16,7 +16,7 @@ import {
   Terminal,
   X,
 } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { IconButton, LiveAnnouncer, controlClass } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';

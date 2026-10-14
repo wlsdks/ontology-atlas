@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Download } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useFormatter, useTranslations } from 'next-intl';
 import { resolveDisplayReleaseTag } from '../lib/pending-release-tag';
 import { Link, usePathname } from '@/i18n/navigation';

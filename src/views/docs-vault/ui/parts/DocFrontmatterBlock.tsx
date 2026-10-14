@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Check, ChevronRight, Clipboard, Pencil } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { useLocale, useTranslations } from "next-intl";
 import {
   buildNewNodeDoc,
@@ -37,7 +37,7 @@ import {
   Select,
   controlClass,
 } from "@/shared/ui";
-import { Input } from "@/shared/ui/input";
+import { Input } from "@/shared/ui/fields/input";
 import { kindFolderAddress, reclassifyMoveTarget } from "../../lib/kind-folder-move";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "../../lib/resolve-doc-edit-subject";
 import { graphFieldKeys, DANGLING_CHECK_KEYS, REFERENCE_KEYS, toRefTokens, formatValue, isNodeReference } from "./doc-frontmatter/fields";

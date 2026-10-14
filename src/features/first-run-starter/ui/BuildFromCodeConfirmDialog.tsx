@@ -4,7 +4,7 @@ import { Fragment } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
-import { Dialog } from '@/shared/ui/dialog';
+import { Dialog } from '@/shared/ui/surfaces/dialog';
 import { controlClass } from '@/shared/ui/control-class';
 
 import type { useBuildFromCode } from '../model/use-build-from-code';

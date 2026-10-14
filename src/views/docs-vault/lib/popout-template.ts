@@ -1,4 +1,4 @@
-import { DOC_COLUMN_GUTTER_PX, PROSE_MEASURE_REM } from "@/shared/ui/reading-measure";
+import { DOC_COLUMN_GUTTER_PX, PROSE_MEASURE_REM } from "@/shared/ui/tokens/reading-measure";
 
 import { escapeHtml } from "./persistence";
 
@@ -6,7 +6,7 @@ import { escapeHtml } from "./persistence";
  * A self-contained dark HTML page for popout or print. Standalone, so `var(--color-*)` tokens
  * do not resolve: colours are the tokens' literal values, kept equal to `docs/DESIGN-SYSTEM.md`
  * and `app/globals.css`. The column uses `PROSE_MEASURE_REM` and `DOC_COLUMN_GUTTER_PX` from the
- * file `src/shared/ui/reading-measure.ts`. Sizes are `rem` so the page follows the reader's zoom;
+ * file `src/shared/ui/tokens/reading-measure.ts`. Sizes are `rem` so the page follows the reader's zoom;
  * they are not the app's ramp.
  */
 const POPOUT_TOKENS = {

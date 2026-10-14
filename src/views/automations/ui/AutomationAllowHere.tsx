@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { roundPlaces, type RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 /** The line states every field of `roundFingerprint` a person can judge, so the press allows what it shows. */
 export function AutomationAllowHere({ round, runner, cadence, changed, sentenceId }: {

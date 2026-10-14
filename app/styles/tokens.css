@@ -409,7 +409,7 @@
   /*
    * Prose measure at the body size plus a gutter each side (66 x 0.5957 x 16px + 2 x 40px = 709.1px);
    * a box cannot use `ch`, since consumers differ in font size. JS consumers read `DOC_COLUMN_PX` in
-   * `src/shared/ui/reading-measure.ts`, gated in `tests/e2e/prose-measure-calibration.spec.ts`.
+   * `src/shared/ui/tokens/reading-measure.ts`, gated in `tests/e2e/prose-measure-calibration.spec.ts`.
    */
   --measure-doc-column: calc(
     var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-reading) +

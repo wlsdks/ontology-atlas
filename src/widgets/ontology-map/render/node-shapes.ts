@@ -19,7 +19,7 @@
  * real verification for paint correctness, per design doc §4 P3 gate).
  */
 import { smoothstep } from "../model/altitude";
-import { FONT_WEIGHT } from "@/shared/ui/font-weight";
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { computeHoverShimmer } from "../model/hover-shimmer";
 import { drawStarEmission } from "@/shared/lib/map-canvas/star-emission";
 
@@ -421,7 +421,7 @@ function drawEngraved(ctx: CanvasRenderingContext2D, text: string, x: number, y:
  * canvas gateway's kind→silhouette mapping directly instead of re-deriving it
  * from `draw()`'s side effects — that contract test is the ONLY thing that
  * checks this mapping agrees with the DOM gateway's
- * (`shared/ui/map-kind-glyph.tsx`); each file's own unit tests only
+ * (`shared/ui/ontology-node/map-kind-glyph.tsx`); each file's own unit tests only
  * check internal consistency, not parity across the two gateways.
  */
 export function bodyPoints(kind: NodeShapeDrawState["kind"], x: number, y: number, r: number): readonly Point[] | null {

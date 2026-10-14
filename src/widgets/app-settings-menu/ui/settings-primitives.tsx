@@ -3,10 +3,10 @@ import { ChevronRight } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip } from '@/shared/ui/controls';
-import { buildRouteFocusHref } from '@/shared/ui/route-focus-manager';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { VendorMark } from '@/shared/ui/vendor-mark';
+import { Chip } from '@/shared/ui/controls/controls';
+import { buildRouteFocusHref } from '@/shared/ui/routing/route-focus-manager';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
+import { VendorMark } from '@/shared/ui/marks/vendor-mark';
 import type { SettingId } from '../model/catalog/types';
 
 

@@ -12,12 +12,12 @@ import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault"
 import { humanPageSlug } from "@/features/library";
 import { writerLabel } from "../../lib/writer-label";
 import { cn } from "@/shared/lib/cn";
-import { BrandMark } from "@/shared/ui/brand-mark";
+import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
 import { Button, Chip, Dialog, RowButton, Tooltip } from "@/shared/ui";
 import { AgentMissingNotice } from "./AgentMissingNotice";
-import { Input } from "@/shared/ui/input";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { Input } from "@/shared/ui/fields/input";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import {
   readLibraryIndexQuery,
   writeLibraryIndexQuery,

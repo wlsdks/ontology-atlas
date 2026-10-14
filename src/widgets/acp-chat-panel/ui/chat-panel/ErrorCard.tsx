@@ -6,7 +6,7 @@ import { claudeLoginRepairCommand, type readAcpTrouble } from '@/features/acp-se
 import type { useAgentDoctor } from '@/features/acp-doctor';
 import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { RETRY_CHIP_CLASS } from './constants';
 import type { ChatT } from './types';

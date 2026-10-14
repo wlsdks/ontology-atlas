@@ -10,10 +10,10 @@ import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { OPEN_SETTINGS_EVENT, useSurfaceRequest } from '@/shared/lib/keyboard/surface-requests';
 import { useDialogFocusTrap } from '@/shared/lib/overlays/use-dialog-focus-trap';
 import { usePanelPresence } from '@/shared/lib/render-timing/use-presence';
-import { CloseButton } from '@/shared/ui/close-button';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { buildRouteFocusHref } from '@/shared/ui/route-focus-manager';
-import { transientSurface } from '@/shared/ui/transient-surface';
+import { CloseButton } from '@/shared/ui/controls/close-button';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { buildRouteFocusHref } from '@/shared/ui/routing/route-focus-manager';
+import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 
 import { SETTINGS_CATALOG } from '../model/catalog';
 import type { SettingsSectionId } from '../model/catalog/types';

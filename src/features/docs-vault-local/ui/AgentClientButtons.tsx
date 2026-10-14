@@ -3,14 +3,14 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowUpRight, Check, CircleAlert, Copy, Info, Plug } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { BrandMark } from '@/shared/ui/brand-mark';
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { BrandMark } from '@/shared/ui/marks/brand-mark';
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
 import { copyText } from "@/shared/lib/clipboard/copy-text";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
-import { Chip } from "@/shared/ui/controls";
+import { Chip } from "@/shared/ui/controls/controls";
 import { useToast } from "@/shared/ui";
 
 /**

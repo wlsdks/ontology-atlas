@@ -23,7 +23,7 @@ describe("AgentClientButtons goes through a shared control primitive", () => {
    * ring.
    */
   it("imports the shared control primitive", () => {
-    expect(source).toMatch(/from ["']@\/shared\/ui\/controls["']/);
+    expect(source).toMatch(/from ["']@\/shared\/ui\/controls\/controls["']/);
     expect(code).toMatch(/<Chip\b/);
   });
 

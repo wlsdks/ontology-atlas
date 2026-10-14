@@ -7,7 +7,7 @@ import { answerObservation, type RetainedAnswerHead } from '@/features/library';
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { StateBadge } from './StateBadge';
 import { AgentDoor } from './AgentDoor';
 

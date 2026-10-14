@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { FolderOpen, History } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 

@@ -13,7 +13,7 @@ import type { LibraryUiModel } from "@/features/library";
 import { isWikiFolderCode } from "@/features/library";
 import { writerLabel } from "../../lib/writer-label";
 import { BookText } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 /** A spine before it is measured: a one-line title over its caption, with the row's inset. */
 const SHELF_ROW_ESTIMATE_PX = 52;

@@ -8,7 +8,7 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import { computeEditAge } from '@/shared/lib/edit-provenance/edit-age';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { MOTION } from '@/shared/motion';
 import {
   buildRecentVaultRows,

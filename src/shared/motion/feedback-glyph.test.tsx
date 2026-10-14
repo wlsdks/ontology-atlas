@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { CompactCopyButton } from "@/shared/ui/compact-copy-button";
+import { CompactCopyButton } from "@/shared/ui/controls/compact-copy-button";
 import { FeedbackGlyph } from "./feedback-glyph";
 
 const icon = <svg data-testid="idle-icon" />;

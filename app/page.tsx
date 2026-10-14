@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { absoluteUrl } from '@/shared/config';
 import { routing } from '@/i18n/routing';
-import { LocaleRedirect } from '@/shared/ui/locale-redirect';
+import { LocaleRedirect } from '@/shared/ui/routing/locale-redirect';
 
 export const metadata: Metadata = {
   alternates: { canonical: absoluteUrl(`/${routing.defaultLocale}/download/`) },

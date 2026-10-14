@@ -73,7 +73,7 @@ These are the words that were drifting. The **Use** column is binding.
 | **inventory** | census | The full count of existing violations, taken **before** switching a rule on | "Census" reads as demography to English speakers; engineers say "inventory" |
 | **doc-block** | — | The block comment above a file or export | Standard |
 | **surface** | — | A delivery target: the web, or the macOS app | Established by `AGENTS.md` — "two surfaces, one folder" |
-| **`Surface` primitive** | bare "surface" | The UI component in `src/shared/ui/surface.tsx` | Same English word, two meanings. Always backtick the component so they never blur |
+| **`Surface` primitive** | bare "surface" | The UI component in `src/shared/ui/surfaces/surface.tsx` | Same English word, two meanings. Always backtick the component so they never blur |
 | **gateway** | landing page | The first-visit screen behind `/` and `/download` | It is not only marketing — installed-app users hit the same route, so "landing page" would misdescribe it |
 | **facade** | gateway | A single entry point hiding several render paths | The map's canvas/DOM render paths were called "gateways", colliding with the product screen. English already has "facade" |
 | **workbench** | — | The macOS app window where the work happens | VS Code and Eclipse both use "workbench" for exactly this |
@@ -141,7 +141,7 @@ stays as written on both locales: `MCP`, `ACP`, `API key`, `CLI`, never an
 invented Korean phrase with the term in parentheses. Only words with settled
 Korean (settings, folder, search, map) are translated.
 
-The explanation moves into a `TermHint` (`src/shared/ui/term-hint.tsx`): an
+The explanation moves into a `TermHint` (`src/shared/ui/hints/term-hint.tsx`): an
 info icon whose tooltip shows the expansion, then one sentence in the current
 locale. Its catalogue is `src/shared/config/term-glossary.ts` with
 `messages/{en,ko}/termHints.json`. Put one at the first prominent occurrence

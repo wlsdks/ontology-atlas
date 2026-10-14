@@ -10,7 +10,7 @@ import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-fram
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { ChevronRight, Languages } from 'lucide-react';
 import { GithubMark } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import {
   extractEntries,
   separateCategoryLines,

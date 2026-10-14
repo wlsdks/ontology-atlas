@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, Sparkles, Trash2, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
   CHROME_STATUS_CHIP_CLASS,

@@ -15,13 +15,13 @@ import {
   resolveServiceMark,
 } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { Input } from '@/shared/ui/input';
-import { EmptyState } from '@/shared/ui/empty-state';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
+import { Input } from '@/shared/ui/fields/input';
+import { EmptyState } from '@/shared/ui/status/empty-state';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import {
   connectorProblems,
   looksLikeSecretKey,

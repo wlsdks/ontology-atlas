@@ -7,9 +7,9 @@ import { AlertTriangle, FileText } from "lucide-react";
 import type { CompileCardRow, LocalCompileSession } from "@/features/vault-agent";
 import { cn } from "@/shared/lib/cn";
 import { Button } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 /**
  * The card the local Compile turn ends at, under step two: per page the path, sections, citations

@@ -9,7 +9,7 @@ import {
 } from "../../src/shared/lib/preferences/text-size";
 
 const ROOT = process.cwd();
-const boot = readFileSync(join(ROOT, "src", "shared", "ui", "lang-boot-script.tsx"), "utf8");
+const boot = readFileSync(join(ROOT, "src", "shared", "ui", "document", "lang-boot-script.tsx"), "utf8");
 const store = readFileSync(join(ROOT, "src", "shared", "lib", "preferences", "text-size.ts"), "utf8");
 const css = readFileSync(join(ROOT, "app", "styles", "base-responsive.css"), "utf8");
 const snippet = /const TEXT_SIZE_BOOT = \[([\s\S]*?)\]\.join/.exec(boot)?.[1] ?? "";

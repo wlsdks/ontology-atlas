@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, CircleDashed, CircleHelp } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import type { ProjectSourceStatus } from "@/shared/lib/project-source/project-source-receipt";
 import { useDelayedVisible } from "@/shared/lib/render-timing/use-presence";
 

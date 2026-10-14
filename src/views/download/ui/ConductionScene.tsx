@@ -9,8 +9,8 @@ import { cn } from '@/shared/lib/cn';
 import { EXIT_TRANSITION, MOTION_EASE } from '@/shared/motion';
 import { SPRING, springEasing } from '@/shared/motion/spring';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 
 import {
   buildConductionGeometry,

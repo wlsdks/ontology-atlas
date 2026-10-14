@@ -491,7 +491,7 @@ const PERMITTED_SITES: readonly { path: string; count: number; reason: string }[
     reason: 'the detail half of a verdict whose reason picks the sentence',
   },
   {
-    path: 'src/shared/ui/webview-error-reporter.tsx',
+    path: 'src/shared/ui/document/webview-error-reporter.tsx',
     count: 1,
     // The component renders no markup at all, by design ("a reporter that could itself fail to
     // paint would be reporting from inside the problem"). The value goes to the app log through

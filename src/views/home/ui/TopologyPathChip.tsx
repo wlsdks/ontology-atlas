@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Clipboard, Route, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { CHROME_STATUS_CHIP_CLASS, Tooltip, controlClass } from "@/shared/ui";
 
 export interface TopologyPathChipProps {

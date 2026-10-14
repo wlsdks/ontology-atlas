@@ -5,7 +5,7 @@ import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { Button, IconButton } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { GatewayLandingPage } from "@/views/download";
 import { HomePage } from "@/views/home";

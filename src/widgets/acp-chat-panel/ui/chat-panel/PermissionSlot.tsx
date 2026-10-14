@@ -1,6 +1,6 @@
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/controls/button';
 import { Surface } from '@/shared/ui';
 
 import { AcpPermissionCard } from '../AcpPermissionCard';

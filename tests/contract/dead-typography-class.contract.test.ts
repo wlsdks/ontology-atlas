@@ -73,7 +73,7 @@ describe("타이포그래피 클래스 — 값이 없는 이름은 화면에 아
       offenders,
       "@tailwindcss/typography is not installed and globals.css has no .prose rule. " +
         "These class names produce no CSS at all: use MARKDOWN_PROSE_CLASS from " +
-        "shared/ui/markdown-prose, or install the plugin and retire this check.\n" +
+        "shared/ui/tokens/markdown-prose, or install the plugin and retire this check.\n" +
         offenders.join("\n"),
     ).toEqual([]);
   });

@@ -28,11 +28,11 @@ describe.each(['.claude', '.agents'])('design-build references in %s', (tree) =>
 
   /** What the recipe tells you to use. One missing entry makes the recipe a lie. */
   const PRESCRIBED_PRIMITIVES: Array<[name: string, file: string]> = [
-    ['Chip', 'src/shared/ui/controls.tsx'],
-    ['IconButton', 'src/shared/ui/controls.tsx'],
-    ['RowButton', 'src/shared/ui/controls.tsx'],
-    ['Button', 'src/shared/ui/button.tsx'],
-    ['Surface', 'src/shared/ui/surface.tsx'],
+    ['Chip', 'src/shared/ui/controls/controls.tsx'],
+    ['IconButton', 'src/shared/ui/controls/controls.tsx'],
+    ['RowButton', 'src/shared/ui/controls/controls.tsx'],
+    ['Button', 'src/shared/ui/controls/button.tsx'],
+    ['Surface', 'src/shared/ui/surfaces/surface.tsx'],
     ['controlClass', 'src/shared/ui/control-class.ts'],
   ];
 

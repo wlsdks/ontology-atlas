@@ -30,7 +30,7 @@ vi.mock('@/shared/lib/clipboard/use-copy-feedback', () => ({
   useCopyFeedback: () => ({ state: 'idle' as const, copy: mocks.copyPath }),
 }));
 
-vi.mock('@/shared/ui/route-focus-manager', () => ({
+vi.mock('@/shared/ui/routing/route-focus-manager', () => ({
   buildRouteFocusHref: (href: string) =>
     `${href}${href.includes('?') ? '&' : '?'}focus=main`,
   rememberRouteFocusIntent: mocks.rememberRouteFocusIntent,

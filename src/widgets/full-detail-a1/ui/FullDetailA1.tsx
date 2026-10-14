@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Clipboard, Link2, TriangleAlert } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/shared/lib/cn";
-import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/markdown-prose";
+import { MARKDOWN_PROSE_CLASS } from "@/shared/ui/tokens/markdown-prose";
 import {
   buildOntologyNodeHref,
   buildTopologyMeaningEditorNodeHref,
@@ -24,8 +24,8 @@ import { CloseButton, controlClass, LastEditSubjectRow, useToast } from "@/share
 import {
   NodeExplanationEdit,
   type NodeExplanationEditLabels,
-} from "@/shared/ui/node-explanation-edit";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+} from "@/shared/ui/ontology-node/node-explanation-edit";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { formatFullDetailHandoffChain } from "../lib/full-detail-handoff";
 import { formatFullDetailMetricLine } from "../lib/full-detail-metric";

@@ -13,7 +13,7 @@ const checkboxAccentSelectors = [
   {
     selector: 'Literal[value=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',
     message:
-      'The checkbox accent is the single --color-indigo-brand token; use Checkbox (shared/ui/checkbox.tsx) instead of styling it directly (docs/DECISIONS.md).',
+      'The checkbox accent is the single --color-indigo-brand token; use Checkbox (shared/ui/fields/checkbox.tsx) instead of styling it directly (docs/DECISIONS.md).',
   },
   {
     selector: 'TemplateElement[value.raw=/accent-\\[(?!color:var\\(--color-indigo-brand\\))/]',

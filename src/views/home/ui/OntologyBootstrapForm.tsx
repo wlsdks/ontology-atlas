@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Map as MapIcon, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
   selectedElements,

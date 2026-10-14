@@ -10,7 +10,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { TextCursorInput, Trash2 } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { Chip, IconButton, controlClass, useToast } from '@/shared/ui';
 import { DocReadingPane, useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';

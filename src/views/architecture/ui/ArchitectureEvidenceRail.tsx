@@ -4,7 +4,7 @@ import type { Ref } from 'react';
 import type { ArchitectureRecordStatus } from '@/entities/architecture-record';
 import { cn } from '@/shared/lib/cn';
 import { RowButton } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 type DeltaStatus = ArchitectureRecordStatus | 'missing';
 

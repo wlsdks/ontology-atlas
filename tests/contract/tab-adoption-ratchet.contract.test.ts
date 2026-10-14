@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { judgeRatchet } from "./lib/ratchet-base";
 
 const FALLBACK_CEILING = 7;
-const TAB_BAR = "src/shared/ui/tab-bar.tsx";
+const TAB_BAR = "src/shared/ui/controls/tab-bar.tsx";
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!existsSync(dir)) return out;
@@ -77,7 +77,7 @@ describe("tab adoption ratchet", () => {
     expect(countAttributes(`const s = '[role="tab"]'; const a = <b role="tab" />; const c = <i role={"tab"} />;`, "role", "tab")).toBe(2);
   });
 
-  it.each([TAB_BAR, "src/shared/ui/segmented-control.tsx"])("%s draws exactly one selection indicator", (file) => {
+  it.each([TAB_BAR, "src/shared/ui/fields/segmented-control.tsx"])("%s draws exactly one selection indicator", (file) => {
     expect(countAttributes(readFileSync(file, "utf8"), "data-selection-indicator", null)).toBe(1);
   });
 });

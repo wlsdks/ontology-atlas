@@ -16,7 +16,7 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { buildOntologyStarterAgentVerifyPrompt } from '@/features/docs-vault-local';
 import { copyText } from '@/shared/lib/clipboard/copy-text';

@@ -13,8 +13,8 @@ const ENTER_KEY_CODE = 13;
 const GUARDED_FLOOR = 21;
 
 const NOT_TEXT_ENTRY: ReadonlyArray<readonly [file: string, sites: number, target: string]> = [
-  ['src/shared/ui/inline-editable.tsx', 1, 'the read-mode element Enter switches into editing'],
-  ['src/shared/ui/select.tsx', 2, 'listbox trigger and options'],
+  ['src/shared/ui/fields/inline-editable.tsx', 1, 'the read-mode element Enter switches into editing'],
+  ['src/shared/ui/fields/select.tsx', 2, 'listbox trigger and options'],
   ['src/views/architecture/ui/sketch/RoleFaces.tsx', 1, 'SVG role box'],
   ['src/widgets/atlas-git-panel/ui/ConceptEgoGraph.tsx', 1, 'SVG graph mark'],
   ['src/widgets/global-search/ui/GlobalSearch.tsx', 1, 'rows other than the search field, whose Enter cmdk guards'],

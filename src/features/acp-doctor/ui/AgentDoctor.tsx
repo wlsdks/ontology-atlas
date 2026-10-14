@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl';
 
 import { CheckCircle2, ChevronDown, RotateCcw, Stethoscope } from 'lucide-react';
 
-import { Chip } from '@/shared/ui/controls';
+import { Chip } from '@/shared/ui/controls/controls';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { formatDownloadProgress } from '@/shared/lib/locale-text/progress-format';
 import {
   type AcpCheck,

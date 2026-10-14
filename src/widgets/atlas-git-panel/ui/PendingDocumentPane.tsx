@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/shared/lib/cn";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { controlClass, Disclosure } from "@/shared/ui";
 import { gitDocumentDiff, type GitChangeEntry } from "@/shared/lib/git/tauri-git";
 import { parseUnifiedDiff, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";

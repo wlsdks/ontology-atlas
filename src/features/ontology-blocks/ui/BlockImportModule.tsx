@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useReducer, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import {
   EXIT_TRANSITION,
@@ -20,7 +20,7 @@ import {
 } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
-import { CloseButton } from "@/shared/ui/close-button";
+import { CloseButton } from "@/shared/ui/controls/close-button";
 import { useLocalVault } from "@/entities/vault-session";
 import { parseBlockManifest, type BlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";

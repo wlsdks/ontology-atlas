@@ -4,7 +4,7 @@ import { useState, type ComponentType } from 'react';
 import { FileCode2, Folder } from 'lucide-react';
 
 import { Chip, StaggeredFadeIn, OntologyMapKindGlyph } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { useGridColumns } from '../model/grid-columns';
 import type { RoleConcept } from '../model/role-concepts';

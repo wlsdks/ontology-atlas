@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 
-import { docColumnPxAtRoot } from "@/shared/ui/reading-measure";
-import { rootFontPx } from "@/shared/ui/root-font-size";
+import { docColumnPxAtRoot } from "@/shared/ui/tokens/reading-measure";
+import { rootFontPx } from "@/shared/ui/tokens/root-font-size";
 
 import { resolveOutlineRailFit, type OutlineRailFit } from "./outline-rail";
 

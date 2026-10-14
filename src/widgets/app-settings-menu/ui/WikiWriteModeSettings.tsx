@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 import { useWikiWriteMode, writeWikiWriteMode, type WikiWriteMode } from '@/shared/lib/preferences/appearance-preferences';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 import { SettingsRow } from './settings-primitives';
 

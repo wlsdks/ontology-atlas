@@ -15,7 +15,7 @@ const SPACING_STEP = 4;
 
 /** Derives the content-box width from `max-w-[960px] … md:px-10`. */
 function frameContentWidth(frameConst: string): number {
-  const source = read('src/shared/ui/page-frame.ts');
+  const source = read('src/shared/ui/tokens/page-frame.ts');
   // The declaration is split across two lines (the string sits on the line after `= `). A line-wise search misses it.
   const declaration = new RegExp(`export const ${frameConst}\\s*=\\s*"([^"]+)"`).exec(source);
   if (!declaration) throw new Error(`${frameConst} 선언을 못 찾았다`);

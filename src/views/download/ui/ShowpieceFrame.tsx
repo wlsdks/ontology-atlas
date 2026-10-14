@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
-import { IconButton } from '@/shared/ui/controls';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { IconButton } from '@/shared/ui/controls/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { SHOWPIECE_PART, type ShowpieceState } from './showpiece-player';
 

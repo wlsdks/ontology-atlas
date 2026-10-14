@@ -6,7 +6,7 @@ import {
   DOC_COLUMN_GUTTER_PX,
   PROSE_MEASURE_PX,
   PROSE_MEASURE_STEPS,
-} from '../../src/shared/ui/reading-measure';
+} from '../../src/shared/ui/tokens/reading-measure';
 import { installLibraryWorkHarness, type LibraryWorkHarness } from './library-work-harness';
 import { seedFirstRunSeen } from './first-run-seed';
 import { waitForBoxStill } from './settle';

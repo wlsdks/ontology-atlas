@@ -116,7 +116,7 @@
       "witness": "resetStaggerSessionForTests"
     },
     {
-      "key": "frontend:runtime:exports:src/shared/ui/reading-measure.ts:PROSE_MEASURE_PX",
+      "key": "frontend:runtime:exports:src/shared/ui/tokens/reading-measure.ts:PROSE_MEASURE_PX",
       "reason": "Three layout specs hold the rendered column to this default-root measure; test files are not runtime entries, so the lane cannot see this consumer.",
       "consumer": "tests/e2e/prose-measure-calibration.spec.ts",
       "witness": "PROSE_MEASURE_PX"

@@ -24,7 +24,7 @@
  * |---|---|---|
  * | `app/globals.css` | the **names and values** of ramp tokens (type · line height · radius · shadow · control height · content icon · the fixed-scale contract) | surface-only tokens, comments, order, whitespace |
  * | `src/shared/ui/control-class.ts` | cva **axis names, axis options, and defaults** (shape/size/tone/scope…) | the class strings each option emits |
- * | `src/shared/ui/controls.tsx` · `surface.tsx` | **exported primitive names** | internal implementation |
+ * | `src/shared/ui/controls/controls.tsx` · `surface.tsx` | **exported primitive names** | internal implementation |
  * | `.claude/rules/design.md` | the **numbers and token names** in the “Fixed scale contract” section | that section's sentences |
  *
  * The nature of the judgement differs per layer:
@@ -131,12 +131,12 @@ const VARIANT_VOCABULARY_FILES = new Set([
 
 /** These files carry no ramp vocabulary of their own — only their export list is counted. */
 const PRIMITIVE_EXPORT_FILES = new Set([
-  'src/shared/ui/controls.tsx',
-  'src/shared/ui/surface.tsx',
-  'src/shared/ui/dialog.tsx',
-  'src/shared/ui/input.tsx',
-  'src/shared/ui/checkbox.tsx',
-  'src/shared/ui/segmented-control.tsx',
+  'src/shared/ui/controls/controls.tsx',
+  'src/shared/ui/surfaces/surface.tsx',
+  'src/shared/ui/surfaces/dialog.tsx',
+  'src/shared/ui/fields/input.tsx',
+  'src/shared/ui/fields/checkbox.tsx',
+  'src/shared/ui/fields/segmented-control.tsx',
   /*
    * The radiogroup behaviour layer: its exports are the contract (changing `groupProps`/`itemProps`
    * changes every container wearing it). It emits no values, so an export inventory fits.
@@ -154,7 +154,7 @@ const PRIMITIVE_EXPORT_FILES = new Set([
  * spec change like `md:pt-12` → `md:pt-6` — confirmed by measurement (an empty
  * Map). Watching it that way would only pretend to protect it.
  */
-const VALUE_EXPORT_FILES = new Set(['src/shared/ui/page-frame.ts']);
+const VALUE_EXPORT_FILES = new Set(['src/shared/ui/tokens/page-frame.ts']);
 
 /**
  * **Derives** the trigger file list from the authoritative document.

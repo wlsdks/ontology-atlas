@@ -1,4 +1,4 @@
-import { cssLengthToPx, rootFontPx } from "@/shared/ui/root-font-size";
+import { cssLengthToPx, rootFontPx } from "@/shared/ui/tokens/root-font-size";
 
 /**
  * The canvas ink, resolved from CSS once, since canvas 2D cannot read `var()`, as in the

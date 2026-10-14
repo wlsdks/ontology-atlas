@@ -9,8 +9,8 @@ import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
 import { routing } from '@/i18n/routing';
-import { LocaleHtmlLang } from '@/shared/ui/locale-html-lang';
-import { RouteMemory } from '@/shared/ui/route-memory';
+import { LocaleHtmlLang } from '@/shared/ui/document/locale-html-lang';
+import { RouteMemory } from '@/shared/ui/routing/route-memory';
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

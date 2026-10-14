@@ -3,7 +3,7 @@
 import {
   OntologyMapKindGlyph,
   OntologyMapTraceMark,
-} from "@/shared/ui/map-kind-glyph";
+} from "@/shared/ui/ontology-node/map-kind-glyph";
 import type { FullDetailConnectionRow, FullDetailGroups } from "../lib/full-detail-groups";
 import { controlClass } from '@/shared/ui/control-class';
 

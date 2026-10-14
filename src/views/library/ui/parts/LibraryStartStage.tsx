@@ -5,8 +5,8 @@ import { useLocale, type useTranslations } from "next-intl";
 import { CloudDownload, FilePlus2, Search } from "lucide-react";
 
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 
 import { libraryEyebrowClass } from "../../lib/page-eyebrow";
 

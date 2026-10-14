@@ -5,7 +5,7 @@ import { useMediaQuery } from "usehooks-ts";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Hand, Pointer, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { IconButton } from "@/shared/ui";
 

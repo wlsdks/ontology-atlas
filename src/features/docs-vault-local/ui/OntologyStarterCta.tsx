@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useTranslations } from 'next-intl';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';

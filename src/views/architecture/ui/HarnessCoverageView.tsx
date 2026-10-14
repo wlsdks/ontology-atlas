@@ -22,8 +22,8 @@ import {
   CensusBigNumber,
   CensusSubStat,
   CensusTile,
-} from '@/shared/ui/census-tile';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+} from '@/shared/ui/status/census-tile';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 

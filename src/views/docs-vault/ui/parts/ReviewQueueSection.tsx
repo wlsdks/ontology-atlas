@@ -2,7 +2,7 @@
 
 import type { useTranslations } from "next-intl";
 import { CircleDashed, FileQuestion, UserRoundPen } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 import type { ReviewQueueRow } from "@/entities/docs-vault";

@@ -7,10 +7,10 @@ import { Check, ExternalLink } from 'lucide-react';
 import { Button, Chip, CloseButton, Dialog, ServiceMark, resolveServiceMark } from '@/shared/ui';
 import { Link } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
-import { Input } from '@/shared/ui/input';
+import { Input } from '@/shared/ui/fields/input';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/connectors/tauri-connector-secrets';
 import {
   resolveConnectorRuntimes,

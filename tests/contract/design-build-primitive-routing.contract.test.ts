@@ -18,14 +18,14 @@ const ROOT = process.cwd();
  * and `select.tsx`, whose value axes live in `control-class.ts` but which a screen builder must reach.
  */
 const PRIMITIVE_FILES = [
-  "src/shared/ui/controls.tsx",
-  "src/shared/ui/surface.tsx",
-  "src/shared/ui/dialog.tsx",
-  "src/shared/ui/input.tsx",
-  "src/shared/ui/checkbox.tsx",
-  "src/shared/ui/segmented-control.tsx",
-  "src/shared/ui/button.tsx",
-  "src/shared/ui/select.tsx",
+  "src/shared/ui/controls/controls.tsx",
+  "src/shared/ui/surfaces/surface.tsx",
+  "src/shared/ui/surfaces/dialog.tsx",
+  "src/shared/ui/fields/input.tsx",
+  "src/shared/ui/fields/checkbox.tsx",
+  "src/shared/ui/fields/segmented-control.tsx",
+  "src/shared/ui/controls/button.tsx",
+  "src/shared/ui/fields/select.tsx",
 ] as const;
 
 const SKILL_COPIES = [

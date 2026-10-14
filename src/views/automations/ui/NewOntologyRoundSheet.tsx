@@ -18,7 +18,7 @@ import { cn } from "@/shared/lib/cn";
 import { fieldLabel } from "@/shared/ui/control-class";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
 import { Button, Dialog, DialogBody, DialogFooter } from "@/shared/ui";
-import { Input } from "@/shared/ui/input";
+import { Input } from "@/shared/ui/fields/input";
 
 /** The documents sheet's threshold: thirty minutes or faster is 48 agent turns a day. */
 const COST_ALARM_TURNS_PER_DAY = 48;

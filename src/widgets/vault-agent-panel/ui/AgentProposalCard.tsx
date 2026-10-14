@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileText } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
 import { planProposalFiles, proposalLineDiff, summarizeChangeVolume } from '@/features/vault-agent';

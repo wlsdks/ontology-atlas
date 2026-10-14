@@ -3,12 +3,12 @@
 import { useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText, Folder } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { VaultDoc, VaultTreeNode } from '@/entities/docs-vault';
 import {
   OntologyMapKindGlyph,
   isOntologyMapRenderableKind,
-} from '@/shared/ui/map-kind-glyph';
+} from '@/shared/ui/ontology-node/map-kind-glyph';
 import {
   DEFAULT_DOCS_TREE_GROUP,
   DEFAULT_DOCS_TREE_SORT,

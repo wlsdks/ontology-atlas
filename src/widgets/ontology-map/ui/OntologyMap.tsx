@@ -8,7 +8,7 @@ import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
 import { OntologyMapTierLegend } from "./OntologyMapTierLegend";
 import type { TierNameAnchor } from "../model/tier-names";
@@ -38,7 +38,7 @@ const WALK_NOTICE_HOLD_MS = 1900;
 /** From the node's centre to the notice's bottom edge — the largest node radius (30) plus 8 of breathing room. */
 const WALK_NOTICE_NODE_GAP = 38;
 import { useReducedMotion } from "framer-motion";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 export interface OntologyMapNode {
   id: string;

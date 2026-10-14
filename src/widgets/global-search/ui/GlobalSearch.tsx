@@ -7,7 +7,7 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "framer-motion";
 import { Search } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";

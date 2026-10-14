@@ -5,9 +5,9 @@ import { useTranslations } from "next-intl";
 
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
-import { buttonVariants } from "@/shared/ui/button";
+import { buttonVariants } from "@/shared/ui/controls/button";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import { useLocalVault } from "@/entities/vault-session";
 

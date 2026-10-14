@@ -102,7 +102,7 @@ One accurate word per thing. Canonical spellings live in
 - Node click behaviour: `forbidden.md`. Focus, overview-first and scale rules:
   `docs/DESIGN-SYSTEM.md`, "Topology node focus & scale".
 - Shape, radius, magnitude and count rules live only in "Node Spec". Keep
-  `render/node-shapes.ts` and `shared/ui/map-kind-glyph.tsx` aligned
+  `render/node-shapes.ts` and `shared/ui/ontology-node/map-kind-glyph.tsx` aligned
   (`node-kind-shape-parity` contract). Radii 30/17/11/7,
   `DOMAIN_HALF_EXTENT_RATIO`, and any bridge-node visual require reopening the
   map research through a `reviewer` with the `map-marks` lens.
@@ -138,14 +138,14 @@ record when a listed file's vocabulary or values change. Contract:
 `tests/contract/design-spec-ledger.contract.test.ts`.
 
 - `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
-- `src/shared/ui/controls.tsx` — interactive primitives
-- `src/shared/ui/surface.tsx` — appearing/disappearing surface primitive
-- `src/shared/ui/dialog.tsx` — blocking modal authority: scrim, focus trap, Escape, restoration, scroll lock, widths
-- `src/shared/ui/input.tsx` · `src/shared/ui/checkbox.tsx` — form behaviour authority
+- `src/shared/ui/controls/controls.tsx` — interactive primitives
+- `src/shared/ui/surfaces/surface.tsx` — appearing/disappearing surface primitive
+- `src/shared/ui/surfaces/dialog.tsx` — blocking modal authority: scrim, focus trap, Escape, restoration, scroll lock, widths
+- `src/shared/ui/fields/input.tsx` · `src/shared/ui/fields/checkbox.tsx` — form behaviour authority
 - `src/shared/ui/badge-class.ts` — static badge geometry
-- `src/shared/ui/segmented-control.tsx` — exclusive single-selection containers and fill
+- `src/shared/ui/fields/segmented-control.tsx` — exclusive single-selection containers and fill
 - `src/shared/lib/keyboard/use-roving-radio-group.ts` — radiogroup behaviour
-- `src/shared/ui/page-frame.ts` — page inset, top spacing, width, and title layout
+- `src/shared/ui/tokens/page-frame.ts` — page inset, top spacing, width, and title layout
 - `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
 - `.claude/rules/design.md` — this file's “Fixed scale contract” section
 

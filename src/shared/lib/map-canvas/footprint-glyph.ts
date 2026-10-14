@@ -1,4 +1,4 @@
-import { FONT_WEIGHT } from "@/shared/ui/font-weight";
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 
 /**
  * Footprint glyph: the notation for the path you walked. It lives in `shared` because the map canvas

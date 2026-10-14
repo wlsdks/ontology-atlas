@@ -7,8 +7,8 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { PROSE_MEASURE_REM } from '@/shared/ui/reading-measure';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PROSE_MEASURE_REM } from '@/shared/ui/tokens/reading-measure';
 import {
   buildDocsVaultHref,
   type VaultDoc,

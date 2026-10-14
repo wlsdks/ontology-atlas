@@ -12,7 +12,7 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 
 import { resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Surface, WidgetErrorFallback } from "@/shared/ui";
-import { ErrorBoundary } from "@/shared/ui/error-boundary";
+import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";

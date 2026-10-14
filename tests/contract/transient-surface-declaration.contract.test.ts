@@ -9,7 +9,7 @@ import {
   TRANSIENT_SURFACE_ATTR,
   transientSurface,
   type TransientSurfaceKind,
-} from "@/shared/ui/transient-surface";
+} from "@/shared/ui/surfaces/transient-surface";
 
 /**
  * The sweep in `tests/e2e/transient-surface-contract.spec.ts` measures only declared surfaces, so a

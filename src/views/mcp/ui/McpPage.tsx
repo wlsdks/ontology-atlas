@@ -11,7 +11,7 @@ import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { Chip } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
 

@@ -5,7 +5,7 @@ import { ChevronDown, FolderOpen, FolderPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
 import { Button, RowButton, Surface } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 /** Returning users choose a folder; creation stays in one compact disclosure. */
 export function FirstRunFolderActions({ busy, showJustStart, onOpen, onCreate, trigger }: {

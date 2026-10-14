@@ -6,7 +6,7 @@ import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { buttonVariants } from '@/shared/ui';
-import { HiddenCountLine } from '@/shared/ui/hidden-count-line';
+import { HiddenCountLine } from '@/shared/ui/status/hidden-count-line';
 import { RelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 

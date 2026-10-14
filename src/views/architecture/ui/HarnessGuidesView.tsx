@@ -19,7 +19,7 @@ import { ChevronRight } from 'lucide-react';
 
 import { Chip, EmptyState } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';

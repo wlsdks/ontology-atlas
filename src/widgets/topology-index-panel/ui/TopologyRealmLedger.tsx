@@ -8,14 +8,14 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { ChevronDown, CornerUpRight, Search } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import {
   filterTreeByQuery,
   type DomainCensusRow,
   type OntologyTreeNode,
 } from "@/entities/knowledge-graph";
 import { RealmBlockExportAction } from "@/features/ontology-blocks";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import {
   flattenVisibleRowIds,

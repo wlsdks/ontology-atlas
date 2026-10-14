@@ -14,7 +14,7 @@ import type { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { CloseButton, Surface } from "@/shared/ui";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 /**
  * A portal and `fixed`, because the pane is `overflow-hidden` and an absolute panel would be

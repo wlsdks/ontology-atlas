@@ -31,10 +31,10 @@ const DISABLED_STEP = (() => {
  * (`control-class.ts`), so what is registered is the file that emits the value.
  */
 const PRESSABLE_PRIMITIVES = [
-  'src/shared/ui/button.tsx',
-  'src/shared/ui/chrome-chip.tsx',
-  'src/shared/ui/chrome-tile.tsx',
-  'src/shared/ui/select.tsx',
+  'src/shared/ui/controls/button.tsx',
+  'src/shared/ui/controls/chrome-chip.tsx',
+  'src/shared/ui/controls/chrome-tile.tsx',
+  'src/shared/ui/fields/select.tsx',
   'src/shared/ui/control-class.ts',
 ] as const;
 

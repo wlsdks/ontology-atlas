@@ -139,7 +139,7 @@ describe("폼 채택 래칫", () => {
     }
     expect(
       over,
-      "raw 텍스트 필드를 새로 쓰지 마라 — Input/Textarea(shared/ui/input.tsx)가 이름 강제와 오류 배선을 소유한다.",
+      "raw 텍스트 필드를 새로 쓰지 마라 — Input/Textarea(shared/ui/fields/input.tsx)가 이름 강제와 오류 배선을 소유한다.",
     ).toEqual([]);
   });
 
@@ -151,7 +151,7 @@ describe("폼 채택 래칫", () => {
     }
     expect(
       over,
-      "raw checkbox 는 Checkbox(shared/ui/checkbox.tsx)를 쓴다. radio/range 신설은 체계석 소집이 먼저다.",
+      "raw checkbox 는 Checkbox(shared/ui/fields/checkbox.tsx)를 쓴다. radio/range 신설은 체계석 소집이 먼저다.",
     ).toEqual([]);
   });
 

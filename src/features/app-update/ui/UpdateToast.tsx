@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/controls/button';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import {

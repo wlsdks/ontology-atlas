@@ -13,8 +13,8 @@ import {
 } from '@/shared/lib/connectors/machine-approvals';
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { Chip } from '@/shared/ui/controls';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Chip } from '@/shared/ui/controls/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { SettingsSectionId } from '../../model/catalog/types';
 import {
   OUTBOUND_DESTINATION_PLACEHOLDERS,

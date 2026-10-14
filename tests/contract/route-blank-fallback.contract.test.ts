@@ -101,7 +101,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
 
   it("관문 fallback 도 로딩 자막이 아니라 제품 문장을 싣는다", () => {
     const source = readFileSync(
-      join(process.cwd(), "src/shared/ui/gateway-entry-fallback.tsx"),
+      join(process.cwd(), "src/shared/ui/fallbacks/gateway-entry-fallback.tsx"),
       "utf-8",
     );
     // The fallback carries the same sentences as the real screen: the headline plus the two places to go.
@@ -114,7 +114,7 @@ describe("라우트 진입 빈 화면 게이트", () => {
 
   it("그 fallback 은 로딩 자막이 아니라 제품 문장을 싣는다", () => {
     const source = readFileSync(
-      join(process.cwd(), "src/shared/ui/map-entry-fallback.tsx"),
+      join(process.cwd(), "src/shared/ui/fallbacks/map-entry-fallback.tsx"),
       "utf-8",
     );
     // A headline and a lede are what keep the demo URL from reverting to a page with nothing to read.

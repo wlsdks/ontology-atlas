@@ -8,8 +8,8 @@ import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { EXIT_TRANSITION, MOTION_EASE } from '@/shared/motion';
 import { SPRING, springEasing } from '@/shared/motion/spring';
-import { IconButton } from '@/shared/ui/controls';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { IconButton } from '@/shared/ui/controls/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import {
   buildDraftPreviewGeometry,
   DRAFT_PREVIEW_CLOCK,

@@ -12,8 +12,8 @@ import {
   PAGE_COLUMN_FORM,
   PAGE_FRAME_FORM,
   PAGE_TOP_PAD,
-} from "@/shared/ui/page-frame";
-import * as pageFrame from "@/shared/ui/page-frame";
+} from "@/shared/ui/tokens/page-frame";
+import * as pageFrame from "@/shared/ui/tokens/page-frame";
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 import { blankComments } from '../../scripts/quality/source-language/inventory.mjs';
 

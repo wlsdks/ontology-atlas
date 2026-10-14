@@ -8,7 +8,7 @@ import { readProbeSources } from "./lib/probe-selectors";
 /**
  * Every marker a desktop probe waits for must exist in the product or be on the retired list, whose
  * cap only falls. The Select primitive assembles `${dataTestid}-listbox` at runtime
- * (`src/shared/ui/select.tsx`); the predicate knows it, so removing it turns the cap red.
+ * (`src/shared/ui/fields/select.tsx`); the predicate knows it, so removing it turns the cap red.
  */
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..");
@@ -43,7 +43,7 @@ const huntedMarkers = [
 /**
  * The Select primitive assembles its listbox marker at runtime —
  * `data-testid={dataTestid ? \`${dataTestid}-listbox\` : undefined}`
- * (`src/shared/ui/select.tsx`). So `X-listbox` counts as present only while **the
+ * (`src/shared/ui/fields/select.tsx`). So `X-listbox` counts as present only while **the
  * assembling code is alive** and the trigger `X` really exists in the source. If
  * either disappears the marker counts as missing again — when the rule itself dies,
  * the gate turns red.

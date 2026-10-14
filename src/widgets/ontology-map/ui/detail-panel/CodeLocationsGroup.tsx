@@ -1,5 +1,5 @@
 import { Check, Clipboard } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { IconButton } from "@/shared/ui";

@@ -25,8 +25,8 @@ import {
   Save,
   X,
 } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { BrandMark } from '@/shared/ui/brand-mark';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { BrandMark } from '@/shared/ui/marks/brand-mark';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';

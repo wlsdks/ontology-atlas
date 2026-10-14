@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import { buttonVariants } from "@/shared/ui/button";
+import { buttonVariants } from "@/shared/ui/controls/button";
 import {
   CONTROL_PRESS_TRAVEL,
   CONTROL_TRANSITION,
@@ -60,7 +60,7 @@ describe("press feedback presence", () => {
   });
 
   it("ChromeTile, ChromeChip and the select trigger carry the shared press", () => {
-    for (const file of ["src/shared/ui/chrome-tile.tsx", "src/shared/ui/chrome-chip.tsx", "src/shared/ui/select.tsx"]) {
+    for (const file of ["src/shared/ui/controls/chrome-tile.tsx", "src/shared/ui/controls/chrome-chip.tsx", "src/shared/ui/fields/select.tsx"]) {
       const src = readFileSync(file, "utf8");
       expect(src, file).toContain("CONTROL_TRANSITION");
       expect(src, file).toContain("CONTROL_PRESS_TRAVEL");

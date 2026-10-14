@@ -1,4 +1,4 @@
-import { DOC_COLUMN_PX } from "@/shared/ui/reading-measure";
+import { DOC_COLUMN_PX } from "@/shared/ui/tokens/reading-measure";
 
 /** The outline rail's verdicts: how many headings earn it and how wide the pane must be. */
 

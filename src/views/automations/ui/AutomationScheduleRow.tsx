@@ -6,7 +6,7 @@ import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { cn } from '@/shared/lib/cn';
 import { RowButton, RowDisclosure } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationAllowHere } from './AutomationAllowHere';
 import { AutomationScheduleActions } from './AutomationScheduleActions';
 import { AutomationRunHistory } from './AutomationRunHistory';

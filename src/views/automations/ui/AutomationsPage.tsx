@@ -12,10 +12,10 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";
 
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
 import { AutomationEmptyWorkbench } from "./AutomationEmptyWorkbench";
 

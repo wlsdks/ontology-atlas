@@ -3,9 +3,9 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Pause, Play } from 'lucide-react';
 import { controlClass } from '@/shared/ui/control-class';
-import { IconButton } from '@/shared/ui/controls';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { RowDisclosure } from '@/shared/ui/row-disclosure';
+import { IconButton } from '@/shared/ui/controls/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import styles from './relationship-preview.module.css';
 

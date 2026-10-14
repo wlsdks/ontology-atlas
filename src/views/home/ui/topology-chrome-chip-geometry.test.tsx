@@ -9,7 +9,7 @@ vi.mock("@/i18n/navigation", () => ({
   ),
 }));
 
-import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
+import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/controls/chrome-chip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";

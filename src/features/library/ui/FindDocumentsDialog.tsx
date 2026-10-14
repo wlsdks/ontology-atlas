@@ -7,7 +7,7 @@ import { FilePlus2, SearchX } from "lucide-react";
 
 import { candidateKey, formatSourceBytes, type SourceCandidate } from "@/entities/docs-vault";
 import { Button, Checkbox, Chip, CloseButton, Dialog, EmptyState, controlClass } from "@/shared/ui";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 
 import type { DiscoveryOutcome } from "../lib/discover-sources";

@@ -246,9 +246,9 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/route-arrival-paint.spec.ts',
     reason: 'a revisited route arriving painted instead of loading changed',
     matches: [
-      /^src\/shared\/ui\/route-loading-fallback\.tsx$/,
-      /^src\/shared\/ui\/gateway-entry-fallback\.tsx$/,
-      /^src\/shared\/ui\/map-entry-loading-visual\.tsx$/,
+      /^src\/shared\/ui\/fallbacks\/route-loading-fallback\.tsx$/,
+      /^src\/shared\/ui\/fallbacks\/gateway-entry-fallback\.tsx$/,
+      /^src\/shared\/ui\/fallbacks\/map-entry-loading-visual\.tsx$/,
     ],
   },
   {
@@ -278,7 +278,7 @@ export const rules = [
     matches: [
       /^src\/views\/[^/]+\/ui\/[A-Za-z]+Page\.tsx$/,
       /^src\/views\/library\/ui\/library-page\/Library[A-Za-z]+\.tsx$/,
-      /^src\/shared\/ui\/page-frame\.ts$/,
+      /^src\/shared\/ui\/tokens\/page-frame\.ts$/,
     ],
   },
 ]

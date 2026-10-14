@@ -11,7 +11,7 @@ import type {
 } from '@/features/acp-session';
 import { Button, Chip } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 export function AcpPresentationPanel({
   trace,

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { HomePage } from "@/views/home";
 import { buildPageMetadata } from "@/shared/lib/public-pages/page-metadata";
-import { MapEntryFallback } from "@/shared/ui/map-entry-fallback";
+import { MapEntryFallback } from "@/shared/ui/fallbacks/map-entry-fallback";
 
 /**
  * `/topology` — the canvas-2D topology surface (`ontology-map`). An explicit entry alias

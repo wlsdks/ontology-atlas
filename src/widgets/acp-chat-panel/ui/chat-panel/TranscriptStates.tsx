@@ -3,8 +3,8 @@ import { RotateCcw } from 'lucide-react';
 import type { ChatSuggestion } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { RETRY_CHIP_CLASS } from './constants';
 import { StartingSuggestionPreview, SuggestionRows } from './SuggestionRows';

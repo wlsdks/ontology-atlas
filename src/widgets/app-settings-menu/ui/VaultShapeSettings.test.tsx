@@ -14,7 +14,7 @@ const state = vi.hoisted(() => ({
 vi.mock('@/entities/vault-session', () => ({
   useLocalVault: () => ({ status: state.status, manifest: { docs: state.docs }, scaffoldOntology: state.scaffold }),
 }));
-vi.mock('@/shared/ui/toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+vi.mock('@/shared/ui/toast/toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 function mount() {
   return render(

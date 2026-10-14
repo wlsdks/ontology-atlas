@@ -11,8 +11,8 @@ import {
 } from '@/shared/lib/llm-connection/tauri-jev';
 import { useNativeErrorLookup } from '@/shared/lib/desktop-shell/use-native-error-lookup';
 import { nativeErrorMessage } from '@/shared/lib/desktop-shell/native-error';
-import { Chip } from '@/shared/ui/controls';
-import { Textarea } from '@/shared/ui/input';
+import { Chip } from '@/shared/ui/controls/controls';
+import { Textarea } from '@/shared/ui/fields/input';
 
 /**
  * The experimental Jev evidence check: the exact request is shown unfolded before any send,

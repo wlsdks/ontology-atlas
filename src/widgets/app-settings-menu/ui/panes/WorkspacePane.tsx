@@ -21,9 +21,9 @@ import {
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { vaultValidationCounts } from '../../model/vault-validation-counts';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, RowButton } from '@/shared/ui/controls';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/route-focus-manager';
+import { Chip, RowButton } from '@/shared/ui/controls/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routing/route-focus-manager';
 import { SETTINGS_SECTION_SCOPE } from '../../model/catalog/types';
 import {
   ArmedChip,

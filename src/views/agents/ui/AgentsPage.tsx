@@ -11,8 +11,8 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent';
 import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
-import { TermHint } from '@/shared/ui/term-hint';
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { TermHint } from '@/shared/ui/hints/term-hint';
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/tokens/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 

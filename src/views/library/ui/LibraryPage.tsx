@@ -28,13 +28,13 @@ import { cn } from "@/shared/lib/cn";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { PAGE_COLUMN_STAGE } from "@/shared/ui/tokens/page-frame";
 import {
   LIBRARY_TOAST_BOTTOM_OFFSET,
   LIBRARY_TOAST_DIALOG_OFFSET,
   LIBRARY_TOAST_RIGHT_OFFSET,
-} from "@/shared/ui/toast-position";
+} from "@/shared/ui/toast/toast-position";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { Button, Chip, useToast, useToastAnchor } from "@/shared/ui";
 import { isWikiFurnitureSlug } from "@/shared/lib/library/wiki-page-schema";

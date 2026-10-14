@@ -13,8 +13,8 @@ import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import { Button, EmptyState, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/library-rounds-context";

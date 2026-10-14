@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { judgeRatchet } from "./lib/ratchet-base";
 
 const FALLBACK_CEILING = 16;
-const OWNER = "src/shared/ui/disclosure.tsx";
+const OWNER = "src/shared/ui/controls/disclosure.tsx";
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!existsSync(dir)) return out;
@@ -64,7 +64,7 @@ describe("raw details adoption ratchet", () => {
     expect(
       verdict.current,
       `Raw <details> elements reached ${verdict.current}, over the ceiling ${verdict.ceiling}.\n${verdict.explain}\n` +
-        "Use `Disclosure` from `@/shared/ui/disclosure`: it opens through `RowDisclosure`, so the rows below move instead of jumping.\n" +
+        "Use `Disclosure` from `@/shared/ui/controls/disclosure`: it opens through `RowDisclosure`, so the rows below move instead of jumping.\n" +
         [...census.byFile.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => `  ${n} ${f}`).join("\n"),
     ).toBeLessThanOrEqual(verdict.ceiling);
   });

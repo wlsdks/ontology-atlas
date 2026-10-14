@@ -9,7 +9,7 @@ import { judgeRatchet } from "./lib/ratchet-base";
 const FALLBACK_CEILING = 28;
 
 const CHECK_TAGS = new Set(["Check", "CheckCircle2", "CircleCheck"]);
-const OWNERS = ["src/shared/motion/", "src/shared/ui/compact-copy-button.tsx"];
+const OWNERS = ["src/shared/motion/", "src/shared/ui/controls/compact-copy-button.tsx"];
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!existsSync(dir)) return out;

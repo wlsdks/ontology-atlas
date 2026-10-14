@@ -6,7 +6,7 @@ import { BookOpen, HelpCircle, MoreHorizontal } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 type Translator = ReturnType<typeof useTranslations<"library">>;
 

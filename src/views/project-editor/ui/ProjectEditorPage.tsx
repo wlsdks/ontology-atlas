@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
-import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { ProjectForm } from "@/features/project-edit";
 import {

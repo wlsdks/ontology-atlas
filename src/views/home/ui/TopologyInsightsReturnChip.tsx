@@ -1,9 +1,9 @@
 "use client";
 
 import { ArrowLeft, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
-import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/chrome-chip";
+import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/controls/chrome-chip";
 import { controlClass } from "@/shared/ui/control-class";
 
 export interface TopologyInsightsReturnChipProps {

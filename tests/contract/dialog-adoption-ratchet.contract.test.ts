@@ -6,11 +6,11 @@ import { describe, expect, it } from "vitest";
 /**
  * `role=dialog` outside the primitive can never exceed the ledger. Walks all of `src/` because a
  * hand list can sit green on nothing. Comments and selector strings like `[role=dialog]` are not
- * markup; `src/shared/ui/dialog.tsx` is the source of truth and excluded.
+ * markup; `src/shared/ui/surfaces/dialog.tsx` is the source of truth and excluded.
  */
 
 const ROOT = process.cwd();
-const PRIMITIVE = "src/shared/ui/dialog.tsx";
+const PRIMITIVE = "src/shared/ui/surfaces/dialog.tsx";
 
 /** Strips comments while preserving line count (avoiding the lineage that counted block-comment interiors as code). */
 function stripComments(source: string): string {
@@ -69,7 +69,7 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
       "portals itself to document.body — so the thing this ratchet exists to prevent " +
       "(a hand-assembled surface trapped in its trigger's stacking context) is not what " +
       "it is. What it cannot take is the primitive's modality: `Dialog` owns a scrim, a " +
-      "focus trap and a scroll lock, and `shared/ui/transient-surface.ts` gives the " +
+      "focus trap and a scroll lock, and `shared/ui/surfaces/transient-surface.ts` gives the " +
       "`anchored` kind the opposite contract — it stands beside what opened it and leaves " +
       "the background alive and pressable. A scrim over the map would also be a second " +
       "answer to 'is the page still usable', which the single-transient rule forbids. It " +
@@ -159,7 +159,7 @@ describe("Dialog 채택 래칫", () => {
     }
     expect(
       over,
-      "Do not hand-assemble a modal: src/shared/ui/dialog.tsx (Dialog) owns the scrim, focus trap, Escape, focus return and scroll lock. " +
+      "Do not hand-assemble a modal: src/shared/ui/surfaces/dialog.tsx (Dialog) owns the scrim, focus trap, Escape, focus return and scroll lock. " +
         "If a portal is impossible at that site in principle, register it in REGISTERED with the reason.",
     ).toEqual([]);
   });

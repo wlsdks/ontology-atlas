@@ -27,7 +27,7 @@ searching does not extend the system; it creates another one.
 Declare `design-contract` to `pnpm design:route` when changing:
 
 - `src/shared/ui/control-class.ts` axes, options, or defaults;
-- `src/shared/ui/controls.tsx` or `surface.tsx` primitive guarantees;
+- `src/shared/ui/controls/controls.tsx` or `surface.tsx` primitive guarantees;
 - type, leading, radius, shadow, or colour ramps in `app/styles/` (imported by `app/globals.css`);
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 

@@ -364,7 +364,7 @@ describe('reduced-motion 동등물 계약', () => {
       'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx',
       'src/widgets/search-palette/ui/SearchPalette.tsx',
       // `NewDocKindDialog` consumes the `Dialog` primitive, which carries the framer equivalent.
-      'src/shared/ui/dialog.tsx',
+      'src/shared/ui/surfaces/dialog.tsx',
     ]) {
       const src = TS(rel);
       expect(src.includes('OVERLAY_SPRING_REDUCED'), `${rel} 에 감속 동등물이 없다`).toBe(true);

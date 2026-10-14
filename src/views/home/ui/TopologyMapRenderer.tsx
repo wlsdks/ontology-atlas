@@ -18,7 +18,7 @@ import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read
 import type { MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { cancelMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
 import { WidgetErrorFallback } from "@/shared/ui";
-import { ErrorBoundary } from "@/shared/ui/error-boundary";
+import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import {
   MapLayoutMorphOverlay,
   OntologyMap,

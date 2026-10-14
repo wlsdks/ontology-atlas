@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/tokens/page-frame';
 
 /** This shell must not subscribe to graph derivation or import analysis widgets. */
 export function InsightsLoadingView() {

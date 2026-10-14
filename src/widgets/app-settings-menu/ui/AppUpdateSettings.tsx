@@ -13,7 +13,7 @@ import {
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { cn } from '@/shared/lib/cn';
 import { Chip } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { useRunningVersion } from '../model/use-running-version';
 import { DETAIL_TOGGLE_CHIP, SegmentSwitch, SettingsGroup, SettingsRow } from './settings-primitives';

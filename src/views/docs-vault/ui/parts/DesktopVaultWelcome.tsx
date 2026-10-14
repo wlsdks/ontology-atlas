@@ -1,5 +1,5 @@
 import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Terminal } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
 import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/entities/knowledge-graph";

@@ -5,7 +5,7 @@ import type { Dispatch, SetStateAction, ComponentProps } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { ArrowLeft, Menu, PanelLeft, Search } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { cn } from '@/shared/lib/cn';

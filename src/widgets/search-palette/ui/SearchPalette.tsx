@@ -6,7 +6,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Search } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { CloseButton, controlClass } from '@/shared/ui';
 import {
@@ -33,7 +33,7 @@ import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { fieldClass } from '@/shared/ui/control-class';
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 // Vault documents are a supporting section: the top 3 plain includes matches, unsorted.
 function matchVaultDocs(query: string, docs: VaultDoc[]): VaultDoc[] {

@@ -2,7 +2,7 @@
 
 import { useId, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useTranslations } from 'next-intl';
 
 import {
@@ -14,8 +14,8 @@ import {
   type ExpandPreference,
   type ExpandStructure,
 } from '@/shared/lib/preferences/appearance-preferences';
-import { Chip } from '@/shared/ui/controls';
-import { RowDisclosure } from '@/shared/ui/row-disclosure';
+import { Chip } from '@/shared/ui/controls/controls';
+import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
 import { Choice, DETAIL_TOGGLE_CHIP, Slider } from './settings-primitives';
 
 export function ExpandSettings() {

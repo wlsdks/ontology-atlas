@@ -1,0 +1,119 @@
+import { render, screen, act } from '@testing-library/react';
+import { NextIntlClientProvider } from 'next-intl';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { FrameMeter } from './frame-meter';
+import { writeFrameMeter } from '@/shared/lib/preferences/appearance-preferences';
+import en from '../../../../messages/en.json';
+import ko from '../../../../messages/ko.json';
+
+function renderMeter(locale: 'en' | 'ko' = 'en') {
+  return render(
+    <NextIntlClientProvider locale={locale} messages={locale === 'en' ? en : ko}>
+      <FrameMeter />
+    </NextIntlClientProvider>,
+  );
+}
+
+/** Hands the clock and frame loop to the test: `tick(at)` delivers the next frame at `at` ms. */
+function takeFrameLoop() {
+  const frames: FrameRequestCallback[] = [];
+  vi.spyOn(performance, 'now').mockReturnValue(1000);
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+    frames.push(callback);
+    return frames.length;
+  });
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => undefined);
+  return (at: number) =>
+    act(() => {
+      frames.shift()?.(at);
+    });
+}
+
+/** A diagnostic that slows what it diagnoses measures itself, so off must mean absent. */
+describe('FrameMeter', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.localStorage.clear();
+  });
+
+  it('never requests an animation frame while off', () => {
+    const raf = vi.spyOn(window, 'requestAnimationFrame');
+    renderMeter();
+    expect(raf).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing while off', () => {
+    const { container } = renderMeter();
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it('runs the measuring loop when on', () => {
+    const raf = vi.spyOn(window, 'requestAnimationFrame');
+    act(() => {
+      writeFrameMeter(true);
+    });
+    renderMeter();
+    expect(raf).toHaveBeenCalled();
+  });
+
+  it('removes the readout when the stored switch turns off', () => {
+    act(() => {
+      writeFrameMeter(true);
+    });
+    const { rerender } = renderMeter();
+    rerender(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <FrameMeter />
+      </NextIntlClientProvider>,
+    );
+    act(() => {
+      writeFrameMeter(false);
+    });
+    // The stored value is the screen.
+    expect(screen.queryByText(/fps/)).toBeNull();
+  });
+
+  it('shows no number before the first samples arrive', () => {
+    act(() => {
+      writeFrameMeter(true);
+    });
+    // No interval exists before two frames, and "0fps" must not stand in for it.
+    const { container } = renderMeter();
+    expect(container.textContent).not.toContain('fps');
+  });
+
+  /* Every word of the reading is in the screen's language. */
+  it('reads entirely in English on an English screen', () => {
+    act(() => {
+      writeFrameMeter(true);
+    });
+    const tick = takeFrameLoop();
+    const { container } = renderMeter('en');
+    tick(1016);
+    tick(1300); // one 284 ms stall: 2 frames in 300 ms is 7 fps, and one frame dropped
+
+    expect(container.textContent).toContain('7 fps');
+    expect(container.textContent).toContain('worst 284 ms');
+    expect(container.textContent).toContain('1 dropped');
+    expect(container.textContent).not.toMatch(/\p{Script=Hangul}/u);
+  });
+
+  it('reads entirely in Korean on a Korean screen', () => {
+    act(() => {
+      writeFrameMeter(true);
+    });
+    const tick = takeFrameLoop();
+    const { container } = renderMeter('ko');
+    tick(1016);
+    tick(1300);
+
+    expect(container.textContent).toContain('초당 7프레임');
+    expect(container.textContent).toContain('최악 284ms');
+    expect(container.textContent).toContain('끊김 1번');
+    expect(container.textContent).not.toMatch(/fps|worst|dropped/i);
+  });
+});

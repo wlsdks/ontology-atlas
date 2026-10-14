@@ -7,7 +7,7 @@ import { Link } from '@/i18n/navigation';
 import { resolveNodeDocument } from '@/entities/knowledge-graph';
 import { Button, OntologyMapKindGlyph } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { AnalysisClaim } from '../../lib/analysis-model';
 import styles from './analysis.module.css';
 

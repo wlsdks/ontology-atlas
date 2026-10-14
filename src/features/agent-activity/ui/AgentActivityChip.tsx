@@ -6,9 +6,9 @@ import { Bell } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
 import { getTopologyFocusHref } from '@/entities/project';
-import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/chrome-chip';
+import { ChromeChip, CHROME_STATUS_CHIP_CLASS } from '@/shared/ui/controls/chrome-chip';
 import { controlClass } from '@/shared/ui/control-class';
-import { Surface } from '@/shared/ui/surface';
+import { Surface } from '@/shared/ui/surfaces/surface';
 import { cn } from '@/shared/lib/cn';
 import { elapsedParts } from '@/shared/lib/agent-activity/elapsed';
 import { AgentInboxPanel, MarkAllReadDoor } from './AgentInboxPanel';

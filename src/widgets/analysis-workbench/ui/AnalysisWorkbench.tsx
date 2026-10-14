@@ -10,7 +10,7 @@ import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptu
 import { cn } from '@/shared/lib/cn';
 import { Checkbox, Chip, CloseButton, Disclosure, EmptyState, OntologyMapKindGlyph, Select, TabBar, Textarea, useToast } from '@/shared/ui';
 import { History as HistoryIcon, RotateCcw } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { MeaningTransitionHistory, type MeaningTransitionArchiveState } from './MeaningTransitionHistory';
 
 /** Hairline between groups, only where no label already separates them. */

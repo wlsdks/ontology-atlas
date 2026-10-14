@@ -5,10 +5,10 @@ import { BookOpen, Check, ChevronDown, FilePenLine, Pause, TriangleAlert } from 
 import { useTranslations } from "next-intl";
 import type { LibraryWorkActivity, LibraryWorkEvent, LibraryWorkTarget } from "@/features/library";
 import { useDismissibleMenu } from "@/shared/lib/overlays/use-dismissible-menu";
-import { Chip } from "@/shared/ui/controls";
+import { Chip } from "@/shared/ui/controls/controls";
 import { controlClass } from "@/shared/ui/control-class";
-import { Surface } from "@/shared/ui/surface";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { Surface } from "@/shared/ui/surfaces/surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 const ICONS = { read: BookOpen, proposal: FilePenLine, waiting: Pause, write: Check, error: TriangleAlert };
 const INK = {

@@ -18,12 +18,12 @@ import {
   Plus,
   ScanSearch,
 } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { Button, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
 import { PanelFooter } from "./detail-panel/PanelFooter";

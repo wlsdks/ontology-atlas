@@ -1,5 +1,5 @@
 {
-  "file": "src/shared/ui/tab-bar.tsx",
+  "file": "src/shared/ui/controls/tab-bar.tsx",
   "count": 1,
   "claim": "value-layer-peer",
   "proof": "--tabbar-underline",

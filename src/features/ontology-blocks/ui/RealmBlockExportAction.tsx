@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PackagePlus } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import type { OntologyTreeNode } from "@/entities/knowledge-graph";

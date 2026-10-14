@@ -10,7 +10,7 @@ import {
   shellQuoteForPacket,
   vaultPathForPacket,
 } from '@/shared/config/cli-invocation';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 
 /**

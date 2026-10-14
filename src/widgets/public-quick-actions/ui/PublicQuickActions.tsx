@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { CopyPlus, PencilLine } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 

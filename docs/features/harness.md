@@ -137,7 +137,7 @@ separated by fill as well as by hue, and nothing else. The number beside it carr
 number. Above each column stands a card with **one large number: how many domains that column has
 no answer for**, over a denominator printed beside it — and that number is literally the count of
 empty squares below it, so a reader can settle the claim by counting rather than by trusting. The
-card uses the same census grammar as `/ontology/insights` (`shared/ui/census-tile`), reused rather
+card uses the same census grammar as `/ontology/insights` (`shared/ui/status/census-tile`), reused rather
 than re-invented. No length encoding survives: with counts of 0–12 across eight rows, a bar drawn
 against an invisible per-column maximum made a Gated `2` and a Watched `12` the same mark.
 

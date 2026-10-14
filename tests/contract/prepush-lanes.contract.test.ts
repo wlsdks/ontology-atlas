@@ -194,7 +194,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     // A vault node is data, not documentation — but it does live under docs/, so
     // the docs lane covering it is correct and cheap.
     expect(patterns.docs.test("docs/ontology/ontology-atlas.md")).toBe(true);
-    expect(patterns.docs.test("src/shared/ui/toast.tsx")).toBe(false);
+    expect(patterns.docs.test("src/shared/ui/toast/toast.tsx")).toBe(false);
     expect(patterns.mcpCli.test("mcp/src/index.js")).toBe(true);
     expect(patterns.mcpCli.test("src/mcp-thing.ts")).toBe(false);
     expect(patterns.messages.test("messages/ko.json")).toBe(true);

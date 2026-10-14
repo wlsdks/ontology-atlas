@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { listboxBottomIsHidden as endIsHidden, listboxTopIsHidden as startIsHidden } from '@/shared/ui/select-growth';
+import { listboxBottomIsHidden as endIsHidden, listboxTopIsHidden as startIsHidden } from '@/shared/ui/fields/select-growth';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';

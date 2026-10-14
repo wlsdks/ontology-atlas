@@ -1,0 +1,84 @@
+import { readFileSync } from 'node:fs';
+
+import { render } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+
+import { ServiceMark, resolveServiceMark } from './service-mark';
+
+/**
+ * The mark table is a permission ledger: an entry may exist only beside a cited guideline
+ * permitting monochrome integration use; everything else falls back.
+ */
+describe('service marks — only what a read guideline permits', () => {
+  it('ships the one mark whose guideline was read, and nothing else', () => {
+    expect(resolveServiceMark('github', '/usr/local/bin/github-mcp-server stdio')).toBe('github');
+    // Guidelines forbid modification, or could not be verified.
+    for (const [name, runs] of [
+      ['notion', '/opt/homebrew/bin/npx -y @notionhq/notion-mcp-server'],
+      ['linear', 'https://mcp.linear.app/mcp'],
+      ['figma', 'https://mcp.figma.com/mcp'],
+      ['sentry', 'https://mcp.sentry.dev/mcp'],
+      ['jira', 'https://example.atlassian.net/mcp'],
+      ['confluence', 'https://example.atlassian.net/wiki'],
+      ['gitlab', '/usr/bin/gitlab-mcp'],
+      ['gdrive', 'https://drive.google.com/mcp'],
+      ['chrome-devtools', '/usr/bin/chrome-devtools-mcp'],
+    ] as const) {
+      expect(resolveServiceMark(name, runs), `${name} must not carry a mark`).toBeNull();
+    }
+  });
+
+  it('matches on what actually runs, not only on the name a person invented', () => {
+    // A renamed row still points at GitHub; the command is the part that cannot lie.
+    expect(resolveServiceMark('work-repos', '/usr/local/bin/github-mcp-server stdio')).toBe(
+      'github',
+    );
+    expect(resolveServiceMark('copilot', 'https://api.githubcopilot.com/mcp/')).toBe('github');
+  });
+
+  it('a fragment is specific enough that an ordinary path cannot contain it', () => {
+    /*
+     * Fragments match the whole command line, so a bare word could put a logo on a connector
+     * run from a folder whose path contains it.
+     */
+    expect(resolveServiceMark('internal', '/Users/me/github-notes/bin/server')).toBe('github');
+    expect(resolveServiceMark('internal', '/Users/me/chrome-tools/bin/server')).toBeNull();
+    expect(resolveServiceMark('internal', '/Users/me/drive/bin/server')).toBeNull();
+  });
+
+  it('an unknown service is drawn as a connector, not as a hole', () => {
+    render(<ServiceMark mark={resolveServiceMark('internal-tools', '/opt/bin/mcp')} />);
+    expect(document.querySelector('[data-service-mark]')).toHaveAttribute(
+      'data-service-mark',
+      'fallback',
+    );
+  });
+
+  it('a known service draws its own mark', () => {
+    render(<ServiceMark mark={resolveServiceMark('github', 'gh')} />);
+    expect(document.querySelector('[data-service-mark]')).toHaveAttribute(
+      'data-service-mark',
+      'github',
+    );
+    expect(document.querySelector('[data-mark-part="simple-icon"]')).not.toBeNull();
+  });
+
+  it('every shipped mark cites the guideline that permits it', () => {
+    /*
+     * Each key in the table must appear in a comment carrying a guideline URL and the date it
+     * was read.
+     */
+    const source = readFileSync('src/shared/ui/marks/service-mark.tsx', 'utf8');
+    const table = source.slice(
+      source.indexOf('const SERVICE_MARK_PATHS'),
+      source.indexOf('export type ServiceMarkName'),
+    );
+    expect(table.length, 'the mark table was not found, so this test would idle').toBeGreaterThan(200);
+    const keys = [...table.matchAll(/^\s{2}([a-z][\w]*):/gm)].map((match) => match[1]);
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      const citation = new RegExp(`${key}[\\s\\S]{0,400}?https?://[\\S]+[\\s\\S]{0,200}?read \\d{4}-\\d{2}-\\d{2}`, 'i');
+      expect(citation.test(table), `${key} lacks a guideline URL and read date`).toBe(true);
+    }
+  });
+});

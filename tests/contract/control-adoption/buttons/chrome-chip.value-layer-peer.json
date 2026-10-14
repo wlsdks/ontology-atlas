@@ -1,5 +1,5 @@
 {
-  "file": "src/shared/ui/chrome-chip.tsx",
+  "file": "src/shared/ui/controls/chrome-chip.tsx",
   "count": 1,
   "claim": "value-layer-peer",
   "proof": "--chrome-tile-size",

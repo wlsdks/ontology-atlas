@@ -18,25 +18,25 @@ const UI_DIR = path.join(ROOT, "src/shared/ui");
  * carries Atlas domain vocabulary.**
  */
 const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
-  ["chrome-tile.tsx", "지도 크롬 36px 타일 계약 + i18n Link — 스케일 고정 계약이 이 앱의 것이다"],
-  ["chrome-chip.tsx", "같은 크롬 계약(--chrome-tile-size)"],
-  ["gateway-entry-fallback.tsx", "관문(/download) 전용 화면"],
-  ["map-entry-fallback.tsx", "지도 전용 화면"],
-  ["route-focus-manager.tsx", "Next.js 라우팅 + i18n 내비게이션"],
-  ["route-loading-fallback.tsx", "Next.js 라우팅 로딩 표면"],
-  ["route-memory.tsx", "Next.js 라우팅 기억"],
-  ["locale-redirect.tsx", "로케일 라우팅 폴백"],
-  ["term-hint.tsx", "이 앱의 용어집 메시지(termHints)를 읽는다"],
-  ["locale-html-lang.tsx", "로케일 html lang 동기화"],
-  ["brand-mark.tsx", "Atlas 브랜드 자산"],
-  ["github-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
-  ["x-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
-  ["map-kind-glyph.tsx", "온톨로지 kind 데이터 마크"],
-  ["last-edit-subject-row.tsx", "agent | human 타입 유니온 — 제품 정체성 명제"],
-  ["mtime-conflict-badge.tsx", "patch_concept 의 expected_mtime 동시성 계약"],
-  ["node-explanation-edit.tsx", "노드 본문 = 노드의 설명"],
-  ["similar-node-warning.tsx", "중복 노드 경고 — 볼트 어휘"],
-  ["frame-meter.tsx", "지도 프레임 계측 — 앱 전용 계기"],
+  ["controls/chrome-tile.tsx", "지도 크롬 36px 타일 계약 + i18n Link — 스케일 고정 계약이 이 앱의 것이다"],
+  ["controls/chrome-chip.tsx", "같은 크롬 계약(--chrome-tile-size)"],
+  ["fallbacks/gateway-entry-fallback.tsx", "관문(/download) 전용 화면"],
+  ["fallbacks/map-entry-fallback.tsx", "지도 전용 화면"],
+  ["routing/route-focus-manager.tsx", "Next.js 라우팅 + i18n 내비게이션"],
+  ["fallbacks/route-loading-fallback.tsx", "Next.js 라우팅 로딩 표면"],
+  ["routing/route-memory.tsx", "Next.js 라우팅 기억"],
+  ["routing/locale-redirect.tsx", "로케일 라우팅 폴백"],
+  ["hints/term-hint.tsx", "이 앱의 용어집 메시지(termHints)를 읽는다"],
+  ["document/locale-html-lang.tsx", "로케일 html lang 동기화"],
+  ["marks/brand-mark.tsx", "Atlas 브랜드 자산"],
+  ["marks/github-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
+  ["marks/x-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
+  ["ontology-node/map-kind-glyph.tsx", "온톨로지 kind 데이터 마크"],
+  ["ontology-node/last-edit-subject-row.tsx", "agent | human 타입 유니온 — 제품 정체성 명제"],
+  ["ontology-node/mtime-conflict-badge.tsx", "patch_concept 의 expected_mtime 동시성 계약"],
+  ["ontology-node/node-explanation-edit.tsx", "노드 본문 = 노드의 설명"],
+  ["ontology-node/similar-node-warning.tsx", "중복 노드 경고 — 볼트 어휘"],
+  ["status/frame-meter.tsx", "지도 프레임 계측 — 앱 전용 계기"],
 ];
 
 /** What a core part must not have — this app's routing, translations, or upper layers. */
@@ -57,10 +57,15 @@ export function importSources(source: string): string[] {
   return out;
 }
 
+function uiFiles(): string[] {
+  return readdirSync(UI_DIR, { recursive: true })
+    .map((f) => String(f).split(path.sep).join("/"))
+    .filter((f) => (f.endsWith(".tsx") || f.endsWith(".ts")) && !f.includes(".test."));
+}
+
 function coreFiles(): string[] {
   const bound = new Set(ATLAS_BOUND.map(([f]) => f));
-  return readdirSync(UI_DIR)
-    .filter((f) => (f.endsWith(".tsx") || f.endsWith(".ts")) && !f.includes(".test."))
+  return uiFiles()
     .filter((f) => !bound.has(f))
     .sort();
 }
@@ -70,7 +75,7 @@ describe("디자인 시스템 추출 경계", () => {
 
   it("탐지기가 공회전하지 않는다 — 코어가 실재하고 주요 부품을 담는다", () => {
     expect(core.length, "코어 부품을 하나도 못 찾았다").toBeGreaterThan(15);
-    for (const known of ["button.tsx", "input.tsx", "checkbox.tsx", "dialog.tsx", "segmented-control.tsx", "control-class.ts", "toast.tsx"]) {
+    for (const known of ["controls/button.tsx", "fields/input.tsx", "fields/checkbox.tsx", "surfaces/dialog.tsx", "fields/segmented-control.tsx", "control-class.ts", "toast/toast.tsx"]) {
       expect(core, `${known} 이 코어에서 빠졌다`).toContain(known);
     }
   });
@@ -94,7 +99,7 @@ describe("디자인 시스템 추출 경계", () => {
   });
 
   it("ATLAS_BOUND 는 알리바이가 아니다 — 등재 파일은 실재하고 근거를 진다", () => {
-    const existing = new Set(readdirSync(UI_DIR));
+    const existing = new Set(uiFiles());
     const problems: string[] = [];
     for (const [file, why] of ATLAS_BOUND) {
       if (!existing.has(file)) problems.push(`${file}: 실재하지 않는다`);

@@ -11,7 +11,7 @@ import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Chip } from "@/shared/ui";
 
 import { groupLedgerByDay, passDurationSeconds } from "../../lib/round-presentation";

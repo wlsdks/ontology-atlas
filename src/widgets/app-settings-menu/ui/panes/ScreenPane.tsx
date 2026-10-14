@@ -8,8 +8,8 @@ import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { TEXT_SIZES, useTextSize, writeTextSize } from '@/shared/lib/preferences/text-size';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { Chip } from '@/shared/ui/controls';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { Chip } from '@/shared/ui/controls/controls';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { GlyphSetPicker } from '../AppearancePickers';
 import {
   DETAIL_TOGGLE_CHIP,

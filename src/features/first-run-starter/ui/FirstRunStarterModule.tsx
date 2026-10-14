@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { ChevronRight, FolderOpen, FolderPlus } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTranslations } from "next-intl";
 import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { Link } from "@/i18n/navigation";

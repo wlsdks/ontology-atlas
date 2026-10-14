@@ -11,7 +11,7 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
   buildLibraryGraph,

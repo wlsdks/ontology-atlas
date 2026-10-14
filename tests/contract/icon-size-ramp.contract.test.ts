@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { ICON_SIZE } from '../../src/shared/ui/icon-size';
+import { ICON_SIZE } from '../../src/shared/ui/tokens/icon-size';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**
@@ -208,9 +208,9 @@ describe('콘텐츠 아이콘 크기 램프', () => {
    */
   it('슬롯 소유자는 자기 슬롯의 svg 크기를 실제로 소유한다 ([&>svg]:size-*)', () => {
     const OWNER_FILES: Record<string, string> = {
-      ChromeChip: 'src/shared/ui/chrome-chip.tsx',
-      ChromeTile: 'src/shared/ui/chrome-tile.tsx',
-      EmptyState: 'src/shared/ui/empty-state.tsx',
+      ChromeChip: 'src/shared/ui/controls/chrome-chip.tsx',
+      ChromeTile: 'src/shared/ui/controls/chrome-tile.tsx',
+      EmptyState: 'src/shared/ui/status/empty-state.tsx',
     };
     expect(Object.keys(OWNER_FILES).sort()).toEqual([...SIZED_SLOT_OWNERS].sort());
     for (const [owner, rel] of Object.entries(OWNER_FILES)) {

@@ -9,7 +9,7 @@ import {
   DESTINATION_KEY,
   NAV_LEADER_KEY,
 } from "@/shared/config/destinations";
-import { CloseButton } from "@/shared/ui/close-button";
+import { CloseButton } from "@/shared/ui/controls/close-button";
 import {
   EXIT_TRANSITION,
   MOTION,

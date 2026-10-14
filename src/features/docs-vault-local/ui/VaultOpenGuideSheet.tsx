@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import {
   EXIT_TRANSITION,
@@ -18,7 +18,7 @@ import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/overlays/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/overlays/use-dialog-focus-trap";
 import { controlClass } from "@/shared/ui/control-class";
-import { CloseButton } from "@/shared/ui/close-button";
+import { CloseButton } from "@/shared/ui/controls/close-button";
 
 /**
  * The pre-flight sheet before the OS folder picker: three reassurance lines and one

@@ -6,10 +6,10 @@ import { Check } from 'lucide-react';
 
 import { describeVaultShape, type VaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { useLocalVault } from '@/entities/vault-session';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { Chip } from '@/shared/ui/controls';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { Chip } from '@/shared/ui/controls/controls';
 import { useFailureSentence } from '@/shared/lib/failures/use-failure-sentence';
-import { useToast } from '@/shared/ui/toast';
+import { useToast } from '@/shared/ui/toast/toast';
 import { DETAIL_TOGGLE_CHIP, SettingsRow } from './settings-primitives';
 
 export function VaultShapeSettings() {

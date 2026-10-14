@@ -6,7 +6,7 @@ import { stepRowMotionClass, stepRowUsesStagger } from "../lib/step-row-motion";
 import { stepFileNames, stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";
 import { describeSnapshotSubject } from "@/shared/lib/git/atlas-git-record";
 import type { GitCommitInfo } from "@/shared/lib/git/tauri-git";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { controlClass } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import type { Translator } from "../lib/translator";

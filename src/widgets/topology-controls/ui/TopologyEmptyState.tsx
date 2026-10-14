@@ -3,7 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Map as MapIcon, Network, Plus } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui';
 
 /**

@@ -493,7 +493,7 @@
     }
   }
 
-  /* Canonical Select popover entry (src/shared/ui/select.tsx). Adhere to the charter's "motions focus on opacity/color, minimize transform" — use only opacity + scale-y.
+  /* Canonical Select popover entry (src/shared/ui/fields/select.tsx). Adhere to the charter's "motions focus on opacity/color, minimize transform" — use only opacity + scale-y.
      Specify transform-origin inline based on the direction the consumer opens (top if opening downward, bottom if flipping upward). */
   @keyframes select-pop {
     from {

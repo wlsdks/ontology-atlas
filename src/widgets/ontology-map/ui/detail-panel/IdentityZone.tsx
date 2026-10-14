@@ -1,7 +1,7 @@
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { CloseButton, controlClass } from "@/shared/ui";
 import { badgeClass } from "@/shared/ui/badge-class";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
 
 export function IdentityZone({

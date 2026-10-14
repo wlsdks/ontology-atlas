@@ -8,7 +8,7 @@ import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { useRovingRadioGroup } from '@/shared/lib/keyboard/use-roving-radio-group';
 import { controlClass } from '@/shared/ui/control-class';
-import { transientSurface } from '@/shared/ui/transient-surface';
+import { transientSurface } from '@/shared/ui/surfaces/transient-surface';
 import {
   useDomainStructure,
   useHexBoard,

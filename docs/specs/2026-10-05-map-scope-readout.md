@@ -38,7 +38,7 @@ paths below refer to that snapshot if the implementation removes a file.
   supplies its generic domain labels. These are not actual ontology names.
 - `samples/storefront/domains/*.md:4-6` supplies the captured nine named domains.
   The captured storefront contains 125 concepts; no naming repair is needed.
-- `src/shared/ui/frame-meter.tsx:28-35` mounts measurement only when enabled.
+- `src/shared/ui/status/frame-meter.tsx:28-35` mounts measurement only when enabled.
 - MCP full-read `capabilities/ontology-map` describes the existing exploration,
   readers and correction; its currentness is not confirmed. No vault write occurs.
 

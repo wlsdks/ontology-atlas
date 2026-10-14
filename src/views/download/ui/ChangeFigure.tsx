@@ -6,8 +6,8 @@ import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 
 import type { StageGraph } from '../lib/stage-graph';
 import {

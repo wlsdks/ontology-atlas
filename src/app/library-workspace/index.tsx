@@ -13,7 +13,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/preferences/appearance-preferences';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { RouteLoadingFallback, TabBar } from '@/shared/ui';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 import { fadeIn, prefersReducedMotion, tabSwitchFade, whenIdle, whenLoaded, type LibraryTab } from './panel-arrival';
 import styles from './library-workspace.module.css';

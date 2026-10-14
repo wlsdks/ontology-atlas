@@ -10,7 +10,7 @@ import {
   ClipboardCopy,
   Terminal,
 } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
@@ -35,7 +35,7 @@ import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip } from '@/shared/ui/controls';
+import { Chip } from '@/shared/ui/controls/controls';
 import { Dialog, InfoHint } from '@/shared/ui';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';

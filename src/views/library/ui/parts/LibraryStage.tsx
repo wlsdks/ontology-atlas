@@ -9,7 +9,7 @@ import { Link } from "@/i18n/navigation";
 import { countSourceFormats, newestWikiPage } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
   libraryCompileBlockedReason,

@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { RowButton } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';

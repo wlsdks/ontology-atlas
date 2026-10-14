@@ -7,7 +7,7 @@ import {
   PROSE_MEASURE_PX,
   PROSE_MEASURE_STEPS,
   PROSE_ZERO_ADVANCE_EM,
-} from '../../src/shared/ui/reading-measure';
+} from '../../src/shared/ui/tokens/reading-measure';
 
 import { seedFirstRunSeen } from './first-run-seed';
 
@@ -293,7 +293,7 @@ test('the docs and Library body applies the measure inside its column', async ({
  * therefore cannot be, so the column is derived by converting the measure once at
  * `--text-body-lg` using `--measure-zero-advance` — the advance of the digit `0`, measured
  * rather than chosen. That constant is the only place the shipped font's metrics are written
- * down instead of asked for, and `src/shared/ui/reading-measure.ts` mirrors the whole
+ * down instead of asked for, and `src/shared/ui/tokens/reading-measure.ts` mirrors the whole
  * derivation for the three consumers that cannot read a CSS variable.
  *
  * This test asks the browser for all of it: that the ratio still describes the font, that the

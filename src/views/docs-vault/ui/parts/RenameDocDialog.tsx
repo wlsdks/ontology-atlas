@@ -8,7 +8,7 @@ import { slugify } from "@/shared/lib/vault-document/slugify";
 import { useFailureSentence, type FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { Button, Dialog } from "@/shared/ui";
-import { Input } from "@/shared/ui/input";
+import { Input } from "@/shared/ui/fields/input";
 
 import type { RenameDocTarget } from "../../model/use-doc-write-actions";
 

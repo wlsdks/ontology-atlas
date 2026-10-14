@@ -56,7 +56,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
   useRouter: () => ({ push: env.push }),
 }));
-vi.mock('@/shared/ui/toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
+vi.mock('@/shared/ui/toast/toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 
 function withScope(messages: typeof enMessages, scope: string) {
   return {

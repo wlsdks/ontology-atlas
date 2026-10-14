@@ -8,7 +8,7 @@ import { resolveActiveNavDestination } from '@/shared/lib/navigation/nav-destina
 import { readCrossfadeBudgetMs } from '@/shared/lib/navigation/route-view-transition';
 import { SKELETON_DELAY_MS, useDelayedVisible } from '@/shared/lib/render-timing/use-presence';
 import { Button, Surface } from '@/shared/ui';
-import { MapEntryLoadingScene } from '@/shared/ui/map-entry-loading-visual';
+import { MapEntryLoadingScene } from '@/shared/ui/fallbacks/map-entry-loading-visual';
 
 export function MapNavigationOverlay() {
   const pending = useMapNavigationPending();

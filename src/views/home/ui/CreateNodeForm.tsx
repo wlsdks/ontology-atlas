@@ -4,7 +4,7 @@ import { useState } from "react";
 import { fieldClass } from '@/shared/ui/control-class';
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { Plus, X } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, Select, Surface, controlClass } from "@/shared/ui";
 import { OntologyChangeReview } from "@/features/ontology-change-review";
 import type { OntologyChangeSet } from "@/entities/knowledge-graph";

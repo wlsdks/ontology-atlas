@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { FONT_WEIGHT } from '../../src/shared/ui/font-weight';
+import { FONT_WEIGHT } from '../../src/shared/ui/tokens/font-weight';
 import { readGlobalCss } from '../../scripts/lib/global-css.mjs';
 
 /**

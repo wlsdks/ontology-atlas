@@ -3,8 +3,8 @@ import { Presentation } from 'lucide-react';
 
 import type { ChatSuggestion } from '@/features/acp-session';
 import { RowButton, Surface } from '@/shared/ui';
-import { BrandWaitingMark } from '@/shared/ui/brand-waiting-mark';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import { SuggestionRows } from './SuggestionRows';
 import type { ChatT } from './types';

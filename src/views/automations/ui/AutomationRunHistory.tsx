@@ -9,7 +9,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { cn } from '@/shared/lib/cn';
 import { Disclosure } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { automationDate } from './automation-date';
 
 export function AutomationRunHistory({ entries, unrecorded }: { entries: readonly RoundPassEntry[]; unrecorded?: RoundUnrecorded }) {

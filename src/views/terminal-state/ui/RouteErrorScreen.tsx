@@ -2,8 +2,8 @@
 
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button, buttonVariants } from '@/shared/ui/button';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Button, buttonVariants } from '@/shared/ui/controls/button';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { TerminalState } from './TerminalState';

@@ -42,7 +42,7 @@ export function collectProbeSelectors(rustSource: string): string[] {
  * from source; the suffix is stripped and the stem must exist. Name the assembling file per suffix.
  */
 const COMPOSED_SUFFIXES = [
-  // src/shared/ui/select.tsx — appends `-listbox` to the open list.
+  // src/shared/ui/fields/select.tsx — appends `-listbox` to the open list.
   "-listbox",
 ] as const;
 

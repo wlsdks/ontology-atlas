@@ -6,7 +6,7 @@ import { FilePlus2, Library } from "lucide-react";
 
 import type { PageWriteRequest, PageWriteVerdict } from "@/features/library";
 import { cn } from "@/shared/lib/cn";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle, Chip, Surface, Tooltip } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader } from "@/widgets/acp-chat-panel";

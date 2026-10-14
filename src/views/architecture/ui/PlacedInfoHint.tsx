@@ -50,7 +50,7 @@ function hintField(from: HTMLElement): { top: number; right: number; bottom: num
 /**
  * An `InfoHint` with a fixed, measured, clamped panel (below, above, else roomier side; `preferred`
  * edge first), re-placed on arrival, resize and scroll. WCAG 1.4.13: a hit strip bridges the gap and a
- * captured Escape closes only the hint. Belongs in `shared/ui/info-hint.tsx` once that file is free.
+ * captured Escape closes only the hint. Belongs in `shared/ui/hints/info-hint.tsx` once that file is free.
  */
 export function PlacedInfoHint({
   label,

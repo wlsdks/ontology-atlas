@@ -5,7 +5,7 @@ import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";
 import type { DocumentFollow } from "../lib/document-follow";
 import { RefreshCw } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { countChangesByStatus } from "@/shared/lib/git/atlas-git-changes";
 import { describeSnapshotSubject, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";
 import type {

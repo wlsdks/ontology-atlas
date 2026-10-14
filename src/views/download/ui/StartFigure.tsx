@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { OntologyMapKindGlyph } from '@/shared/ui/map-kind-glyph';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { OntologyMapKindGlyph } from '@/shared/ui/ontology-node/map-kind-glyph';
 
 import { DRAWN_OUTLINE, DRAWN_PRIMARY, keyPhrase, ShowpieceFigure, ShowpieceSection } from './ShowpieceFrame';
 import { layoutBox, LIGHT_LAYERS, SHOWPIECE_PART, useShowpiece, type ShowpieceEnv } from './showpiece-player';

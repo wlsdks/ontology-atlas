@@ -14,7 +14,7 @@ import { cn } from "@/shared/lib/cn";
 import type { SourceOutline, SourceUnit } from "@/shared/lib/library/source-passage";
 import { RowButton } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import type { CitedPassageState } from "../../lib/use-cited-passage";
 import type { SourceOutlineState } from "../../lib/use-source-outline";
 import { elideHashMiddle } from "../../lib/elide-hash";

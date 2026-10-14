@@ -6,7 +6,7 @@ import type { useTranslations } from "next-intl";
 import { formatSourceBytes } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { Chip, CloseButton, Surface } from "@/shared/ui";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 import type { LibraryGraphNode } from "../model/build-library-graph";
 import {
@@ -18,7 +18,7 @@ import {
 /**
  * The card a press on a mark opens beside it: ego focus plus a compact surface, with full
  * detail as an explicit door, never a full-screen modal (`.claude/rules/forbidden.md`).
- * As an `anchored` surface (`src/shared/ui/transient-surface.ts`) it stands beside its
+ * As an `anchored` surface (`src/shared/ui/surfaces/transient-surface.ts`) it stands beside its
  * opener, closes on Escape and gives the keyboard back.
  *
  * Focus lands on the card itself, not its first door, or the Enter that opened it presses the

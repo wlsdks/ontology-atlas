@@ -2,7 +2,7 @@ import type { RefObject } from "react";
 import { useTranslations } from "next-intl";
 import { Info, PanelLeftClose } from "lucide-react";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Tooltip, TooltipProvider } from "@/shared/ui";
 
 export function LibraryHeader({

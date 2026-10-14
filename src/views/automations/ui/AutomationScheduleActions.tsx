@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import type { RoundRecord } from '@/entities/library-round';
 import type { RoundsRunnerValue } from '@/features/library-rounds';
 import { Button } from '@/shared/ui';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 export function AutomationScheduleActions({ round, runner, notAllowedSentenceId = null, onEdit }: {
   round: RoundRecord;

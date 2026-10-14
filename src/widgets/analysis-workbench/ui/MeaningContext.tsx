@@ -5,7 +5,7 @@ import { cn } from '@/shared/lib/cn';
 import { FileText } from 'lucide-react';
 import { Checkbox, Chip, Disclosure, IconButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 
 /** Sans, not mono caps; identical to the workbench's section label in `AnalysisWorkbench.tsx`. */

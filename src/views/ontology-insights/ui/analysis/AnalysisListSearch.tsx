@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/shared/ui';
-import { Input } from '@/shared/ui/input';
+import { Input } from '@/shared/ui/fields/input';
 import styles from './analysis.module.css';
 
 export function AnalysisListSearch({ value, onChange, label, shown, matches, total, selectionHidden, testId }: {

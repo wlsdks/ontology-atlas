@@ -21,7 +21,7 @@ import {
 } from '@/shared/motion';
 import { mergeRefs } from "@/shared/lib/merge-refs";
 import { ArrowUpRight, BookOpen, ChevronDown } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { Chip, CloseButton, controlClass } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";

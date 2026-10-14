@@ -1,7 +1,7 @@
 import { CalendarClock, FileCheck2, RefreshCw } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import frame from "./constellations-starting-point.module.css";
 import styles from "./rounds-history-empty.module.css";

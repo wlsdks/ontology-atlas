@@ -73,7 +73,7 @@ function productionFiles(): string[] {
   };
   walk(join(ROOT, "src"));
   walk(join(ROOT, "app"));
-  return out.filter((f) => relative(ROOT, f) !== "src/shared/ui/button.tsx");
+  return out.filter((f) => relative(ROOT, f) !== "src/shared/ui/controls/button.tsx");
 }
 
 describe("Button danger is the confirm step only", () => {

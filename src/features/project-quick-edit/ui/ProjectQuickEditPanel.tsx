@@ -7,7 +7,7 @@ import { useTranslations } from "next-intl";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import type { FailureCopy } from "@/shared/lib/failures/use-failure-sentence";
 import { PencilLine } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { type Project } from "@/entities/project";
 import { isStarterProjectDescription } from "@/entities/docs-vault";
 import {

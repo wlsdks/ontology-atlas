@@ -1,5 +1,5 @@
 import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
-import { FONT_WEIGHT } from "@/shared/ui/font-weight";
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";

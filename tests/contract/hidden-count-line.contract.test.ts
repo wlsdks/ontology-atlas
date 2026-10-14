@@ -26,7 +26,7 @@ describe('the capped lists this round measured state their remainder', () => {
   });
 
   it('the primitive never grows a decorative trailing arrow', () => {
-    const source = read('src/shared/ui/hidden-count-line.tsx');
+    const source = read('src/shared/ui/status/hidden-count-line.tsx');
     expect(source).not.toMatch(/[→↗]/u);
     expect(source).not.toContain('ArrowRight');
     expect(source).not.toContain('ArrowUpRight');

@@ -6,8 +6,8 @@ import { useLocalVault, useVaultSessionIdentityScope } from "@/entities/vault-se
 import { writeLibraryIndexSegment, type LibraryIndexSegment } from "@/shared/lib/preferences/appearance-preferences";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { SegmentedControl } from "@/shared/ui/segmented-control";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 import { Chip } from "@/shared/ui";
 import { libraryProviderDisclosure } from "../../lib/compile-availability";
 import { useLibraryAgent } from "../../lib/use-library-agent";

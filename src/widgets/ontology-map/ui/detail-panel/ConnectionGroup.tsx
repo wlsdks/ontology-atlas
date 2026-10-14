@@ -5,7 +5,7 @@ import {
   type V2DatasheetConnection,
 } from "./map-datasheet";
 import { controlClass, RowButton } from "@/shared/ui";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { GROUP_GLYPH_SLOT, GROUP_ROW_LIST, RelationGroupShell } from "./RelationGroupShell";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
 

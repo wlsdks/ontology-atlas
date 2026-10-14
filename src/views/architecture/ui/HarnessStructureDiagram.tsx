@@ -3,10 +3,10 @@
 import { ArrowRight, BookOpen, CircleHelp, Eye, FolderCode, Shield } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSyncExternalStore, type ReactNode } from 'react';
-import { RowDisclosure } from '@/shared/ui/row-disclosure';
+import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
 import { controlClass } from '@/shared/ui/control-class';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { AnatomyBand, AnatomySlot } from '../model/harness-anatomy';
 import styles from './harness-structure-diagram.module.css';
 

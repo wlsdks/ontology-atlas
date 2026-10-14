@@ -29,7 +29,7 @@ import { navigateWithViewTransition } from "@/shared/lib/navigation/route-view-t
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
-} from "@/shared/ui/route-focus-manager";
+} from "@/shared/ui/routing/route-focus-manager";
 import { resolveActiveNavRailItem, type AppNavRailItemId } from "../lib/resolve-active-item";
 import { shouldShowGetAppTile } from "@/shared/lib/navigation/show-get-app-tile";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
@@ -160,7 +160,7 @@ export function AppNavRail({
     <aside
       aria-label={t("ariaLabel")}
       data-testid="app-nav-rail"
-      // A wall the toaster centres inside rather than across (`src/shared/ui/toast-walls.ts`).
+      // A wall the toaster centres inside rather than across (`src/shared/ui/toast/toast-walls.ts`).
       data-toast-wall="left"
       data-hidden={hidden ? "true" : "false"}
       className={cn(

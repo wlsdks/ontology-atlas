@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 
 import { isImeComposing } from '@/shared/lib/keyboard/ime-composition';
 import { controlClass } from '@/shared/ui/control-class';
-import { Input } from '@/shared/ui/input';
+import { Input } from '@/shared/ui/fields/input';
 
 import type { SettingsSearchGroup, SettingsSearchItem } from '../model/settings-search';
 import { SETTINGS_SECTION_LABEL } from './settings-primitives';

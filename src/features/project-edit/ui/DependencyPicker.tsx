@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Search, Sparkles, X } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
 import {

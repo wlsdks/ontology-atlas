@@ -10,7 +10,7 @@ import {
   DOC_COLUMN_PX,
   PROSE_MEASURE_PX,
   docColumnPxAtRoot,
-} from "../../src/shared/ui/reading-measure";
+} from "../../src/shared/ui/tokens/reading-measure";
 
 async function openOntologyAudit(page: import("@playwright/test").Page) {
   await page.goto("/ko/library/?tab=ontology&guides=off", { waitUntil: "domcontentloaded" });

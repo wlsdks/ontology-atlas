@@ -37,7 +37,7 @@ describe("크롬 칩 축소 — 라벨을 접으면 상자도 접힌다", () => 
     // The shared constant counts as the pair for the breakpoint its own value carries —
     // its literal lives in `chrome-chip.tsx` so Tailwind's scanner can see it, and the
     // third case below proves it is the same box the `compact` prop applies.
-    const chip = readFileSync(join(ROOT, "src/shared/ui/chrome-chip.tsx"), "utf8");
+    const chip = readFileSync(join(ROOT, "src/shared/ui/controls/chrome-chip.tsx"), "utf8");
     const sharedBreakpoint = /export const CHROME_CHIP_COMPACT_BELOW_XL =\s*\n?\s*'(max-[a-z0-9]+):/.exec(chip)?.[1];
     expect(sharedBreakpoint, "공유 상수의 브레이크포인트를 못 읽었다").toBeTruthy();
 
@@ -62,7 +62,7 @@ describe("크롬 칩 축소 — 라벨을 접으면 상자도 접힌다", () => 
   });
 
   it("공유 상수가 프롭 쪽 상자와 같은 값을 쓴다 — 두 벌이 갈라지지 않는다", () => {
-    const chip = readFileSync(join(ROOT, "src/shared/ui/chrome-chip.tsx"), "utf8");
+    const chip = readFileSync(join(ROOT, "src/shared/ui/controls/chrome-chip.tsx"), "utf8");
     const compactProp = /const COMPACT_CLASS =\s*'([^']+)'/.exec(chip)?.[1];
     const responsive = /export const CHROME_CHIP_COMPACT_BELOW_XL =\s*\n?\s*'([^']+)'/.exec(chip)?.[1];
     expect(compactProp, "`COMPACT_CLASS` 를 못 읽었다").toBeTruthy();

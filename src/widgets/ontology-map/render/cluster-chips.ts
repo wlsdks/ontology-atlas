@@ -5,7 +5,7 @@
  */
 
 import type { ExpandAffordance } from "@/shared/lib/preferences/appearance-preferences";
-import { FONT_WEIGHT } from "@/shared/ui/font-weight";
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { lerpColorHex } from "./grid";
 
 /** Chip base height (px, screen space — multiplied by `clusterChipScale`). */

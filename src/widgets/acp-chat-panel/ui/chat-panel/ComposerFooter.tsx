@@ -6,8 +6,8 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { Chip, IconButton, Select } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { Tooltip, TooltipProvider } from '@/shared/ui/hints/tooltip';
 
 import { composerStatusLive, workingShimmer } from '../working-ink';
 import { PICKER_MAX_WIDTH_CLASS, PICKER_MIN_WIDTH_CLASS } from './constants';

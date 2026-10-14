@@ -7,9 +7,9 @@ import type { AskQuestionId } from "@/features/library";
 import { Chip, Surface } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { Input } from "@/shared/ui/input";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { Input } from "@/shared/ui/fields/input";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import type { useTranslations } from "next-intl";
 
 type Translator = ReturnType<typeof useTranslations<"library">>;

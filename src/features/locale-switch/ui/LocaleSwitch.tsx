@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { LOCALE_NAME_KEY } from '@/i18n/locales';
 import { routing } from '@/i18n/routing';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 
 const STORAGE_KEY = 'ontology-atlas:locale';
 

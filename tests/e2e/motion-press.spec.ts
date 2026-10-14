@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { buttonVariants } from "@/shared/ui/button";
+import { buttonVariants } from "@/shared/ui/controls/button";
 import { controlClass } from "@/shared/ui/control-class";
 
 import { colorDistance, motionShares, rotationDegrees, startSampling, stopSampling, translateY } from "./motion-sampler";

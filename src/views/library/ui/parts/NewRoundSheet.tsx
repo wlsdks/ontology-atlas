@@ -26,11 +26,11 @@ import { cn } from "@/shared/lib/cn";
 import { isImeComposing } from "@/shared/lib/keyboard/ime-composition";
 import { CadencePicker, type CadenceUnit } from "@/shared/ui/cadence-picker";
 import { controlClass, fieldLabel } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { SegmentedControl } from "@/shared/ui/segmented-control";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { Button, Chip, Dialog, DialogBody, DialogFooter, IconButton, Surface } from "@/shared/ui";
-import { Input } from "@/shared/ui/input";
+import { Input } from "@/shared/ui/fields/input";
 
 import { capitalize, serviceExample, unusedRoundName } from "../../lib/round-presentation";
 

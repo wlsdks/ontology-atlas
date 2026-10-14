@@ -16,11 +16,11 @@ import {
   type SavedConstellation,
 } from '@/features/saved-constellations';
 import { Button, Checkbox, Dialog, IconButton, RowButton, Surface, Textarea, Tooltip } from '@/shared/ui';
-import { Input } from '@/shared/ui/input';
-import { ChromeChip } from '@/shared/ui/chrome-chip';
+import { Input } from '@/shared/ui/fields/input';
+import { ChromeChip } from '@/shared/ui/controls/chrome-chip';
 import { cn } from '@/shared/lib/cn';
 import { placeAnchoredPopover } from '@/shared/lib/overlays/anchored-popover';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 interface Props {
   handle: FileSystemDirectoryHandle | null;

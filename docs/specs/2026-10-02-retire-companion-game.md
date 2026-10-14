@@ -47,7 +47,7 @@ Source baseline: `43f339b26`. Primary code and owner documents were inspected.
   to verified read/completion events. The existing status/inbox is separately
   rendered by `TopologyCommandChrome.tsx:653`. Removing the game entry without
   retaining this status-only presentation would remove unrelated behavior.
-- `src/shared/ui/brand-waiting-mark.tsx:60` independently uses
+- `src/shared/ui/marks/brand-waiting-mark.tsx:60` independently uses
   `/brand/mascot-walk-row.png`. Shared waiting/agent artwork is not game-only
   merely because it depicts a mascot.
 - [Current feature documentation](../features/map/companion.md) and

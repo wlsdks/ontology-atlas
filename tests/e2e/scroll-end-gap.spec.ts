@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
-import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
+import { PAGE_FRAME_FORM } from "@/shared/ui/tokens/page-frame";
 
 /** The form column's rendered max width, read from the spec so a re-decided value cannot drift. */
 const FORM_FRAME_WIDTH = /max-w-\[(\d+px)\]/.exec(PAGE_FRAME_FORM)?.[1] ?? "";

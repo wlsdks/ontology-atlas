@@ -48,7 +48,7 @@ describe('chrome rail label contract', () => {
     // zero and is transitioned with the width, which a `gap` cannot be.
     expect(REST).toMatch(/margin-inline-start:\s*0\s*;/);
     expect(REVEAL).toMatch(/margin-inline-start:\s*var\(--chrome-tile-label-gap\)/);
-    const tile = readFileSync(path.join(ROOT, 'src/shared/ui/chrome-tile.tsx'), 'utf8');
+    const tile = readFileSync(path.join(ROOT, 'src/shared/ui/controls/chrome-tile.tsx'), 'utf8');
     expect(tile).not.toMatch(/(['"\s])gap-\d/);
   });
 

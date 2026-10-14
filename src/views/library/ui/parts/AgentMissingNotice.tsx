@@ -4,7 +4,7 @@ import type { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { AgentDoor } from "./AgentDoor";
 
 /**

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import ts from 'typescript';
 
-import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle } from "../../src/shared/ui/agent-dock-surface";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, agentDockReflowStyle } from "../../src/shared/ui/surfaces/agent-dock-surface";
 
 const home = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
 const dock = readFileSync("src/views/home/ui/TopologyAgentDock.tsx", "utf8");

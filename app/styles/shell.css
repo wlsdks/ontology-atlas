@@ -215,7 +215,7 @@ body *::-webkit-scrollbar {
 
 /*
  * Bottom-centred in the free lane between the innermost walls (`data-toast-wall`) published by
- * `src/shared/ui/toast-walls.ts`; with none it is the viewport centre. `%` not `vw`: the fixed
+ * `src/shared/ui/toast/toast-walls.ts`; with none it is the viewport centre. `%` not `vw`: the fixed
  * toaster excludes the scrollbar. The `html` prefix wins over sonner's runtime stylesheet.
  */
 html [data-sonner-toaster][data-x-position='center'] {

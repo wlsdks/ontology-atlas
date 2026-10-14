@@ -5,7 +5,7 @@ import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { fieldClass } from "@/shared/ui/control-class";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Button, controlClass } from "@/shared/ui";
-import { Tooltip } from "@/shared/ui/tooltip";
+import { Tooltip } from "@/shared/ui/hints/tooltip";
 import { cn } from "@/shared/lib/cn";
 import type { Translator } from "../lib/translator";
 

@@ -3,12 +3,12 @@
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronRight, FileText } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type {
   VaultBacklinkEntry,
   VaultDoc,
 } from '@/entities/docs-vault';
-import { OntologyMapKindGlyph, isOntologyMapRenderableKind } from '@/shared/ui/map-kind-glyph';
+import { OntologyMapKindGlyph, isOntologyMapRenderableKind } from '@/shared/ui/ontology-node/map-kind-glyph';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { Chip, IconButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';

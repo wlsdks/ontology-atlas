@@ -4,8 +4,8 @@ import { useCallback, useId, useRef, useState, type KeyboardEvent, type PointerE
 
 import { cn } from "@/shared/lib/cn";
 import { controlClass, fieldLabel } from "@/shared/ui/control-class";
-import { Input } from "@/shared/ui/input";
-import { SegmentedControl } from "@/shared/ui/segmented-control";
+import { Input } from "@/shared/ui/fields/input";
+import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 
 import {
   HOUR_DETENTS,

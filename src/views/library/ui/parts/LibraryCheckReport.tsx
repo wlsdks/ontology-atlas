@@ -7,9 +7,9 @@ import type { useTranslations } from "next-intl";
 import { isMapKind, type LintFinding, type LintNodeCandidate } from "@/features/library";
 import type { WikiReport, WikiReportRow } from "@/shared/lib/library/wiki-report.mjs";
 import { Chip, Disclosure, Tooltip } from "@/shared/ui";
-import { BrandMark } from "@/shared/ui/brand-mark";
+import { BrandMark } from "@/shared/ui/marks/brand-mark";
 import { controlClass } from "@/shared/ui/control-class";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import {
   describeWikiProblem,

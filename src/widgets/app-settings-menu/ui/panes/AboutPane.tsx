@@ -13,10 +13,10 @@ import { requestShortcutSheet } from '@/shared/lib/keyboard/surface-requests';
 import { useCopyFeedback } from '@/shared/lib/clipboard/use-copy-feedback';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { countVaultContents, describeVaultShape } from '@/shared/lib/vault-folder/vault-shape';
-import { Chip } from '@/shared/ui/controls';
+import { Chip } from '@/shared/ui/controls/controls';
 import { controlClass } from '@/shared/ui/control-class';
-import { Dialog } from '@/shared/ui/dialog';
-import { DialogBody, DialogFooter } from '@/shared/ui/dialog-sections';
+import { Dialog } from '@/shared/ui/surfaces/dialog';
+import { DialogBody, DialogFooter } from '@/shared/ui/surfaces/dialog-sections';
 
 import { useRunningVersion } from '../../model/use-running-version';
 import { AppUpdateSettings } from '../AppUpdateSettings';

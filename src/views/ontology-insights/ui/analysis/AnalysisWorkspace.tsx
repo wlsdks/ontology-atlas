@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';

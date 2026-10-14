@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/shared/ui/button';
+import { Button } from '@/shared/ui/controls/button';
 
 export function SourceDateRecovery({ status, onChoose, onRetry }: {
   status: string;

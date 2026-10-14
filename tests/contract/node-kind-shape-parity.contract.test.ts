@@ -3,11 +3,11 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { bodyPoints } from "@/widgets/ontology-map/render/node-shapes";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 
 /**
  * The kind to silhouette mapping is kept independently by the canvas (`render/node-shapes.ts`) and
- * DOM (`shared/ui/map-kind-glyph.tsx`) facades, and no single-file test or lint sees both. The file is
+ * DOM (`shared/ui/ontology-node/map-kind-glyph.tsx`) facades, and no single-file test or lint sees both. The file is
  * `.test.ts` with `createElement` because the vitest glob for `tests/contract/**` excludes `.tsx`.
  */
 

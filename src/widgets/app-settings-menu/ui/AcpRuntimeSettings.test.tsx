@@ -29,7 +29,7 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-import { buttonVariants } from '@/shared/ui/button';
+import { buttonVariants } from '@/shared/ui/controls/button';
 
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 

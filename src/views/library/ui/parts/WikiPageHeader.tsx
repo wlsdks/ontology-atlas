@@ -6,8 +6,8 @@ import { FileText } from "lucide-react";
 
 import type { LibraryOriginalLink, VaultDoc } from "@/entities/docs-vault";
 import { Chip, RowButton } from "@/shared/ui";
-import { Disclosure } from "@/shared/ui/disclosure";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { Disclosure } from "@/shared/ui/controls/disclosure";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { wikiStatusLabel, writerLabel } from "../../lib/writer-label";
 
 /**

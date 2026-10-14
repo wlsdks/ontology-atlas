@@ -7,8 +7,8 @@ import { ShieldQuestion, TriangleAlert } from 'lucide-react';
 import type { HarnessReport } from '@/entities/agent-files';
 import { CompactCopyButton } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { HarnessStructureDiagram } from './HarnessStructureDiagram';
 import { cn } from '@/shared/lib/cn';
 

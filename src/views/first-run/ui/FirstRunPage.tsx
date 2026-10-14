@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-folder/vault-shape";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
@@ -13,12 +13,12 @@ import type { FailureCopy } from '@/shared/lib/failures/use-failure-sentence';
 import { deniedFolderName } from "@/entities/vault-session";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
-import { useToast } from "@/shared/ui/toast";
+import { useToast } from "@/shared/ui/toast/toast";
 import { controlClass } from '@/shared/ui/control-class';
 import { FirstRunFolderActions } from "./FirstRunFolderActions";
-import { Chip } from '@/shared/ui/controls';
+import { Chip } from '@/shared/ui/controls/controls';
 import { Button, Dialog, IconButton } from '@/shared/ui';
-import { BrandPortrait } from '@/shared/ui/brand-portrait';
+import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
 import styles from './first-run-chooser.module.css';
 
 /**

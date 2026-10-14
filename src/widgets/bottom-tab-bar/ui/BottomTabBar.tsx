@@ -4,7 +4,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useSoleProjectHref } from '@/features/project-data-source';
 import { describeVaultShape } from '@/shared/lib/vault-folder/vault-shape';

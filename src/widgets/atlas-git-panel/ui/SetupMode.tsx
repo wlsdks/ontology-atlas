@@ -9,13 +9,13 @@ import {
   History as HistoryIcon,
   ShieldCheck,
 } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
-import { OntologyMapKindGlyph } from "@/shared/ui/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { buttonVariants } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
-import { PAGE_TITLE } from "@/shared/ui/page-frame";
+import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import type { Translator } from "../lib/translator";
 
 export const SETUP_ACTION_PLACEMENT = "atlas-touch-floor atlas-touch-floor-wide shrink-0";

@@ -10,10 +10,10 @@ import { getTopologyFocusHref } from '@/entities/project';
 import { agentDisplayName } from '@/shared/lib/agent-activity/agent-display-name';
 import type { VaultProblemCounts } from '@/shared/lib/agent-activity/agent-notifications';
 import { cn } from '@/shared/lib/cn';
-import { Chip, RowButton } from '@/shared/ui/controls';
+import { Chip, RowButton } from '@/shared/ui/controls/controls';
 import { controlClass } from '@/shared/ui/control-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { TabBar } from '@/shared/ui/tab-bar';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { TabBar } from '@/shared/ui/controls/tab-bar';
 import {
   BELL_TABS,
   type BellHistoryRow,
@@ -28,7 +28,7 @@ import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 /**
  * The bell's inside is three questions, not one log (`model/bell-inbox.ts` derives them): `todo`
  * costs something if missed, `results` is one row per finished task, `history` a timeline. Tab strip
- * is `shared/ui/tab-bar`. Opens on the last used tab unless it is empty and another has content.
+ * is `shared/ui/controls/tab-bar`. Opens on the last used tab unless it is empty and another has content.
  */
 const TAB_STORAGE_KEY = 'atlas.agentActivity.tab';
 const TAB_ID_PREFIX = 'agent-inbox';

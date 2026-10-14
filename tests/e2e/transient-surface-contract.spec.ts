@@ -17,7 +17,7 @@ async function routeSettled(page: import("@playwright/test").Page) {
 
 
 /**
- * Sweeps declared transient surfaces (`shared/ui/transient-surface.ts`) on every route. All kinds
+ * Sweeps declared transient surfaces (`shared/ui/surfaces/transient-surface.ts`) on every route. All kinds
  * move on appearance; notice and hint never take focus; anchored, menu and sheet close on Escape
  * and return focus to the opener. The idling guard asserts surfaces were actually opened.
  */

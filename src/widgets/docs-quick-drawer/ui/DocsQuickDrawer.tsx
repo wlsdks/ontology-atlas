@@ -2,7 +2,7 @@
 
 import { Link, useRouter } from "@/i18n/navigation";
 import { fieldClass } from '@/shared/ui/control-class';
-import { AGENT_DOCK_INSET_SURFACE_CLASS } from '@/shared/ui/agent-dock-surface';
+import { AGENT_DOCK_INSET_SURFACE_CLASS } from '@/shared/ui/surfaces/agent-dock-surface';
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useLatinEyebrow } from "@/shared/lib/locale-text/latin-eyebrow";
@@ -20,7 +20,7 @@ import {
   Star,
   X,
 } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import {
   findRelatedDocs,
   pinnedDocsStorageKey,

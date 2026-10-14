@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useRef } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
-import { ICON_SIZE } from "@/shared/ui/icon-size";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass, Surface } from "@/shared/ui";
-import { transientSurface } from "@/shared/ui/transient-surface";
+import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 
 export interface DetailActionItem {
   label: string;

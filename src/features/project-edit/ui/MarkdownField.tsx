@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/shared/lib/cn';
 import { controlClass, fieldClass } from '@/shared/ui/control-class';
-import { MARKDOWN_PROSE_CLASS } from '@/shared/ui/markdown-prose';
+import { MARKDOWN_PROSE_CLASS } from '@/shared/ui/tokens/markdown-prose';
 
 interface Props {
   id?: string;
@@ -55,7 +55,7 @@ export function MarkdownField({ id, value, onChange, placeholder, rows = 8 }: Pr
         <div
           className={cn(
             'min-h-[160px] rounded-chip px-2 py-1.5 text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]',
-            // Element styling lives in `shared/ui/markdown-prose`; this keeps only its container.
+            // Element styling lives in `shared/ui/tokens/markdown-prose`; this keeps only its container.
             MARKDOWN_PROSE_CLASS,
           )}
         >

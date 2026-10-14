@@ -2,7 +2,7 @@
 
 import { isTauriVaultRuntime, pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { cn } from '@/shared/lib/cn';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { Link } from '@/i18n/navigation';
