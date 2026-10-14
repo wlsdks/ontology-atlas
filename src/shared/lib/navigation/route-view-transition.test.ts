@@ -150,7 +150,7 @@ describe("route view transition — the old screen is held until the new route c
  * the door. One crossfade's worth of time after the route commits, a fade that has not
  * begun never will, and the transition is skipped.
  *
- * The pixel proof is `tests/e2e/route-transition-input.spec.ts`; this layer pins the
+ * The pixel proof is `tests/e2e/app-shell/route-transition-input.spec.ts`; this layer pins the
  * decision — *when* the budget starts, and that a fade already running is never cut.
  */
 describe("route view transition — the hold is bounded from the commit, not from the click", () => {

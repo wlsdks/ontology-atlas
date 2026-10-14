@@ -12,7 +12,7 @@ import {
 } from "@/shared/ui/surfaces/transient-surface";
 
 /**
- * The sweep in `tests/e2e/transient-surface-contract.spec.ts` measures only declared surfaces, so a
+ * The sweep in `tests/e2e/map/transient-surface-contract.spec.ts` measures only declared surfaces, so a
  * deleted declaration would pass silently. This locks the declaring-place count and kind vocabulary.
  */
 
@@ -98,7 +98,7 @@ describe("잠깐 뜨는 표면 선언 계약", () => {
    * on its own protects nothing.
    */
   it("모든 종류가 재지거나, 못 재는 이유가 적혀 있다", () => {
-    const specs = readdirSync(join(REPO_ROOT, "tests/e2e"))
+    const specs = readdirSync(join(REPO_ROOT, "tests/e2e"), { recursive: true, encoding: "utf8" })
       .filter((f) => f.endsWith(".spec.ts"))
       .map((f) => readCode(join(REPO_ROOT, "tests/e2e", f)))
       .join("\n");
@@ -109,7 +109,7 @@ describe("잠깐 뜨는 표면 선언 계약", () => {
      * words.
      */
     const sweepDeclared =
-      readCode(join(REPO_ROOT, "tests/e2e/transient-surface-contract.spec.ts")).match(
+      readCode(join(REPO_ROOT, "tests/e2e/map/transient-surface-contract.spec.ts")).match(
         /const SWEEP_MUST_OPEN = \[([^\]]*)\]/,
       )?.[1] ?? "";
     const unexercised = KINDS.filter(
@@ -137,7 +137,7 @@ describe("잠깐 뜨는 표면 선언 계약", () => {
   });
 
   it("스윕이 이 표시로 표면을 찾는다", () => {
-    const spec = readCode(join(REPO_ROOT, "tests/e2e/transient-surface-contract.spec.ts"));
+    const spec = readCode(join(REPO_ROOT, "tests/e2e/map/transient-surface-contract.spec.ts"));
     expect(spec, "스윕이 선언 표시를 셀렉터로 쓰지 않는다").toContain(`[${TRANSIENT_SURFACE_ATTR}]`);
     expect(spec, "스윕이 초점 계약을 재지 않는다").toMatch(/tookFocus/);
   });

@@ -61,7 +61,7 @@ body *::-webkit-scrollbar {
 /*
  * Container query on the pane height, not window width: below `lg` the reader is half a column.
  * Finished steps fold their caption and actions. 640 is written twice since `var()` does not work in
- * `@container`; `tests/e2e/library-spine.spec.ts` reads `--library-spine-collapse-height`.
+ * `@container`; `tests/e2e/library/compile/library-spine.spec.ts` reads `--library-spine-collapse-height`.
  */
 .library-spine-scope {
   container-type: size;
@@ -116,7 +116,7 @@ body *::-webkit-scrollbar {
 /*
  * `keep-all` on `body` so Korean breaks between words, scoped to `:lang(ko)` (set before first paint
  * by `LANG_BOOT`). Elements that break anywhere override it. Unlayered like the caps override.
- * Gates: `tests/contract/typography/hangul-word-keep.contract.test.ts`, `tests/e2e/hangul-first-paint.spec.ts`.
+ * Gates: `tests/contract/typography/hangul-word-keep.contract.test.ts`, `tests/e2e/typography/hangul-first-paint.spec.ts`.
  */
 :root:lang(ko) body {
   word-break: keep-all;

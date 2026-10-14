@@ -521,7 +521,7 @@ describe('DownloadPage', () => {
       expect(screen.getByTestId('gateway-hero-web-cta')).toHaveAttribute('href', '/topology');
     });
 
-    /** The class only; `tests/e2e/scroll-end-gap.spec.ts` measures the pixels (`.claude/rules/design.md`). */
+    /** The class only; `tests/e2e/design-audits/scroll-end-gap.spec.ts` measures the pixels (`.claude/rules/design.md`). */
     it('reserves the bottom tab bar height at /, where the tab bar shows', () => {
       mocks.pathname = '/';
       renderDownloadPage();

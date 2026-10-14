@@ -4,7 +4,7 @@ import sampleStorefrontManifestRaw from '../../data/sample-storefront.manifest.j
 import type { VaultDoc, VaultManifest } from '../../model/types';
 
 // The default sample (`samples/storefront/`) is what every visitor without a vault sees.
-// Expectations derive from the manifest, never pinned counts (precedent: `tests/e2e/map-smoke.spec.ts`).
+// Expectations derive from the manifest, never pinned counts (precedent: `tests/e2e/map/map-smoke.spec.ts`).
 
 const sampleStorefrontManifest = sampleStorefrontManifestRaw as VaultManifest;
 

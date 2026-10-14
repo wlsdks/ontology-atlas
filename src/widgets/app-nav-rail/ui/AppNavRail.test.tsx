@@ -124,7 +124,7 @@ describe("AppNavRail", () => {
   });
 
   /**
-   * How the map reacts to this signal is measured by `tests/e2e/nav-yield-map-frames.spec.ts`; this
+   * How the map reacts to this signal is measured by `tests/e2e/map/frame-loop/nav-yield-map-frames.spec.ts`; this
    * checks the rail fires it.
    */
   it('emits the navigation signal only on clicks that actually navigate', () => {

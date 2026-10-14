@@ -1,0 +1,251 @@
+import { expect, test } from "@playwright/test";
+
+import { seedFirstRunSeen } from "../first-run-seed";
+import { stubDirectoryPicker } from "../vault-picker-stub";
+
+/**
+ * The pane sizes itself to its content, and the ground below a short source is the landing's own.
+ * Asserted: gutters at both ends and the ground, and the `sha256` row's rendered line count.
+ */
+
+const SOURCE = [
+  "# Settlement Policy",
+  "",
+  "## Scope",
+  "",
+  "This policy covers how a completed order becomes money in a merchant's account.",
+  "It applies to card payments and bank transfers. Cash on delivery is out of scope",
+  "and handled by the logistics contract instead.",
+  "",
+  "## Settlement cycle",
+  "",
+  "Card payments settle on T+2 business days. Bank transfers settle same day when",
+  "the transfer clears before 15:00 KST, and on the next business day otherwise.",
+  "",
+  "## Holdback",
+  "",
+  "A merchant in their first 90 days carries a 10% holdback. The holdback is",
+  "released 30 days after the 90-day period ends, provided the chargeback rate",
+  "stayed below 1%.",
+  "",
+  "## Reversal",
+  "",
+  "A refund issued before settlement is netted against that settlement. A refund",
+  "issued after settlement becomes a debit on the next cycle.",
+  "",
+].join("\n");
+
+const VAULT: Record<string, string> = {
+  "sources/settlement-policy.md": SOURCE,
+  "wiki/settlement.md": [
+    "---",
+    "title: Settlement",
+    "created_by: agent:claude",
+    "compiled_at: 2026-09-11T04:20:00Z",
+    "sources:",
+    "  - sources/settlement-policy.md",
+    "source_hash:",
+    `  sources/settlement-policy.md: ${"0".repeat(64)}`,
+    "status: draft",
+    "summary: How a completed order becomes money in a merchant's account.",
+    "---",
+    "",
+    "## Summary",
+    "",
+    "Settlement turns a completed order into money in a merchant's account.",
+    "",
+    "## Facts",
+    "",
+    "- Card payments settle on T+2 business days. [[src:sources/settlement-policy.md#l11]]",
+    "- A holdback stands for the first ninety days. [[src:sources/settlement-policy.md#l16]]",
+    "",
+    "## Decisions",
+    "",
+    "- Cash on delivery is out of scope. [[src:sources/settlement-policy.md#l6]]",
+    "",
+    "## Open questions",
+    "",
+    "- How long a carried balance may stand.",
+    "",
+    "## Not in sources",
+    "",
+    "- Nothing.",
+    "",
+  ].join("\n"),
+};
+
+/** The gutter `pt-8` opens the document with, and therefore the one that must close it. */
+const GUTTER = 32;
+
+/**
+ * What the pane reports about its own end.
+ *
+ * `lastBlockBottom` is the last of the pane's own top-level blocks, not the box: the
+ * difference between the two **is** the gutter, and measuring only the box would pass a
+ * pane that had grown filler.
+ */
+const PANE_END = `(() => {
+  const pane = document.querySelector('[data-testid="library-source-summary"]');
+  if (!pane) return null;
+  let scroller = pane.parentElement;
+  while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) scroller = scroller.parentElement;
+  if (!scroller) return null;
+  const chain = [];
+  let node = pane;
+  while (node && node !== document.body) {
+    const style = getComputedStyle(node);
+    chain.push({
+      id: node.getAttribute('data-testid') ?? node.tagName.toLowerCase(),
+      minHeight: style.minHeight,
+      justify: style.justifyContent,
+      align: style.alignItems,
+    });
+    node = node.parentElement;
+  }
+  const blocks = [...pane.children].map((block) => Math.round(block.getBoundingClientRect().bottom));
+  const paneRect = pane.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const groundY = Math.min(Math.round(scrollerRect.bottom - 6), window.innerHeight - 6);
+  const ground = document.elementFromPoint(Math.round(scrollerRect.x + scrollerRect.width / 2), groundY);
+  const paintedGround = (() => {
+    let node = ground;
+    while (node) {
+      const colour = getComputedStyle(node).backgroundColor;
+      if (colour && colour !== 'rgba(0, 0, 0, 0)' && colour !== 'transparent') {
+        return { colour, on: node.getAttribute('data-testid') ?? node.tagName.toLowerCase() };
+      }
+      node = node.parentElement;
+    }
+    return { colour: 'none', on: 'none' };
+  })();
+  const hashCell = [...pane.querySelectorAll('dl > div')]
+    .map((row) => ({ dt: row.querySelector('dt'), dd: row.querySelector('dd') }))
+    .filter((row) => row.dt && row.dd)
+    .map((row) => ({
+      label: (row.dt.textContent ?? '').trim(),
+      text: (row.dd.textContent ?? '').trim(),
+      title: row.dd.getAttribute('title'),
+      lines: Math.round(row.dd.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(row.dd).lineHeight)),
+    }))
+    .find((row) => row.label.toLowerCase() === 'sha256');
+  return {
+    blocks: blocks.length,
+    lastBlockBottom: Math.max(...blocks),
+    paneBottom: Math.round(paneRect.bottom),
+    paneHeight: Math.round(paneRect.height),
+    scrollEnd: Math.round(scrollerRect.bottom),
+    scrolls: scroller.scrollHeight > scroller.clientHeight + 1,
+    chain,
+    paintedGround,
+    canvas: getComputedStyle(document.querySelector('[data-testid="library-page"]')).backgroundColor,
+    hashCell,
+  };
+})()`;
+
+interface PaneEnd {
+  blocks: number;
+  lastBlockBottom: number;
+  paneBottom: number;
+  paneHeight: number;
+  scrollEnd: number;
+  scrolls: boolean;
+  chain: { id: string; minHeight: string; justify: string; align: string }[];
+  paintedGround: { colour: string; on: string };
+  canvas: string;
+  hashCell?: { label: string; text: string; title: string | null; lines: number };
+}
+
+for (const [width, height] of [
+  [1512, 901],
+  [1040, 720],
+] as const) {
+  test(`원본 창은 내용이 끝나는 자리에서 한 여백 뒤에 끝난다 (${width}x${height})`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    await seedFirstRunSeen(page);
+    await stubDirectoryPicker(page, VAULT);
+    await page.goto("/en/library/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: /^Open my folder/ }).first().click();
+    await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
+
+    // The cited state, reached the way a reader reaches it: a citation on the page.
+    await page.getByTestId("library-workspace-wiki").click();
+    await page.getByTestId("library-wiki-wiki/settlement").click();
+    const citation = page
+      .locator('button[data-source-path="sources/settlement-policy.md"][data-source-anchor="l11"]')
+      .first();
+    await citation.click({ timeout: 30_000 });
+    await expect(page.getByTestId("library-source-summary")).toBeVisible({ timeout: 25_000 });
+    // The passage read is what supplies the measured hash, which is the long value.
+    await expect(page.getByTestId("library-source-passage")).toHaveAttribute("data-state", "resolved", {
+      timeout: 25_000,
+    });
+
+    /*
+     * Measure at the scroll end: citation arrival lands the passage near the top, so viewport coordinates
+     * would put the last block far below the scroller.
+     */
+    await page.evaluate(() => {
+      const pane = document.querySelector<HTMLElement>('[data-testid="library-source-summary"]');
+      let scroller = pane?.parentElement ?? null;
+      while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+        scroller = scroller.parentElement;
+      }
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    });
+    await page.waitForFunction(() => {
+      const pane = document.querySelector<HTMLElement>('[data-testid="library-source-summary"]');
+      let scroller = pane?.parentElement ?? null;
+      while (scroller && !/auto|scroll/.test(getComputedStyle(scroller).overflowY)) {
+        scroller = scroller.parentElement;
+      }
+      return scroller
+        ? Math.abs(scroller.scrollTop - (scroller.scrollHeight - scroller.clientHeight)) < 1
+        : false;
+    });
+
+    /* The pane arrives with a 6px rise (`use-pane-arrival.ts`). A transform moves the
+       blocks but not the scroller, so a read mid-rise put the last block a pixel short of
+       the gutter (31 of 32). The gutter is a rest-state fact: read it once the pane has
+       settled. */
+    await page.waitForFunction(
+      () => document.querySelector('[data-testid="library-pane-body"]')?.getAnimations().length === 0,
+    );
+    const measured = (await page.evaluate(PANE_END)) as PaneEnd | null;
+    expect(measured, "원본 창을 재지 못했다").not.toBeNull();
+    const pane = measured!;
+
+    // ── The pane is a document: nothing between it and the shell stretches or centres it.
+    for (const link of pane.chain) {
+      expect(link.minHeight, `${link.id} 가 최소 높이를 들고 있다`).toMatch(/^(0px|auto)$/);
+      expect(link.justify, `${link.id} 가 내용을 세로로 가운데 둔다`).toBe("normal");
+      expect(link.align, `${link.id} 가 내용을 가로로 가운데 둔다`).toBe("normal");
+    }
+
+    // ── The last block sits one gutter inside the pane's end — a gutter, never filler.
+    expect(pane.blocks, "창의 블록을 충분히 재지 못했다").toBeGreaterThan(3);
+    expect(
+      pane.paneBottom - pane.lastBlockBottom,
+      `마지막 블록과 창 끝 사이: ${pane.paneBottom - pane.lastBlockBottom}px`,
+    ).toBe(GUTTER);
+
+    /*
+     * At 1040x720 the content is taller than its scroller, and the last block must keep clearance
+     * at the scroll end, not sit flush with the window bottom.
+     */
+    expect(
+      pane.scrollEnd - pane.lastBlockBottom,
+      `스크롤 끝에서 마지막 블록이 창 바닥에 붙었다 (${pane.lastBlockBottom} / ${pane.scrollEnd})`,
+    ).toBeGreaterThanOrEqual(GUTTER);
+
+    // ── The ground below is the landing's ground, not a second panel.
+    expect(pane.paintedGround.colour, "창 아래 바닥이 캔버스가 아니다").toBe(pane.canvas);
+    expect(pane.paintedGround.on, "창 아래에 다른 판이 깔렸다").toBe("library-page");
+
+    // ── The sha256 row is one line, and the whole value is still on the cell.
+    expect(pane.hashCell, "sha256 줄을 못 찾았다").toBeTruthy();
+    expect(pane.hashCell!.lines, `sha256 줄 수: ${pane.hashCell!.text}`).toBe(1);
+    expect(pane.hashCell!.text, "해시가 줄임 없이 통째로 들어갔다").toContain("…");
+    expect(pane.hashCell!.title, "전체 해시가 셀에서 사라졌다").toHaveLength(64);
+    expect(pane.hashCell!.title, "제목이 실제 값이 아니다").toMatch(/^[0-9a-f]{64}$/);
+  });
+}

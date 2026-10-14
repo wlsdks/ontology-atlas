@@ -149,7 +149,7 @@ test('smoke keeps the mapped specs that run after merge, once, on the first shar
   assert.equal(plan.lanes.e2e.mode, 'smoke');
   const first = commandsForLane({ lane: 'e2e', plan, shard: '1/3' });
   assert.equal(first.length, 2);
-  assert.match(first[1], /tests\/e2e\/agent-mascot-presence\.spec\.ts .*--project=post-merge --pass-with-no-tests --output=output\/playwright\/mapped-post-merge$/);
+  assert.match(first[1], /tests\/e2e\/agents\/agent-mascot-presence\.spec\.ts .*--project=post-merge --pass-with-no-tests --output=output\/playwright\/mapped-post-merge$/);
   assert.equal(commandsForLane({ lane: 'e2e', plan, shard: '2/3' }).length, 1);
 });
 

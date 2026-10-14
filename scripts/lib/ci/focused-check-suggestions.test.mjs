@@ -237,7 +237,7 @@ describe('focused check suggestions', () => {
     const tests = [
       'src/shared/lib/cn.test.ts',
       'src/widgets/example/ui/Example.test.tsx',
-      'tests/e2e/rail-destinations.spec.ts',
+      'tests/e2e/app-shell/rail-destinations.spec.ts',
       'tests/contract/layout/page-frame.contract.test.ts',
       'scripts/desktop/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',
@@ -566,7 +566,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 src/views/architecture/ui/ArchitectureWorkbench.tsx',
       'pnpm test:cli:commands',
       'pnpm test:architecture',
-      'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
+      'pnpm exec playwright test tests/e2e/harness/architecture-workbench.spec.ts',
       'pnpm test:contracts',
       'pnpm exec node --test mcp/src/architecture-profile.test.mjs',
       'pnpm test:mcp:unit',
@@ -574,7 +574,7 @@ describe('focused check suggestions', () => {
       'pnpm typecheck',
       'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
-      'pnpm exec playwright test tests/e2e/architecture-role-ledger.spec.ts',
+      'pnpm exec playwright test tests/e2e/harness/architecture-role-ledger.spec.ts',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -946,14 +946,14 @@ describe('focused check suggestions', () => {
       'pnpm desktop:check',
       'pnpm test:contracts',
       // This set includes `src/views/docs-vault/**`, so the docs e2e comes with it.
-      'pnpm exec playwright test tests/e2e/docs-deeplink.spec.ts ' +
-        'tests/e2e/document-scroll-lock.spec.ts tests/e2e/vault-truth-telling.spec.ts',
+      'pnpm exec playwright test tests/e2e/library/docs/docs-deeplink.spec.ts ' +
+        'tests/e2e/design-audits/document-scroll-lock.spec.ts tests/e2e/vault-session/vault-truth-telling.spec.ts',
       // A desktop change does not verify the web, which is unattended, so the smoke test is suggested in
       // the same set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm typecheck',
-      'pnpm exec playwright test tests/e2e/settings-reading-layout.spec.ts',
-      'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
+      'pnpm exec playwright test tests/e2e/settings/settings-reading-layout.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/desktop/check-desktop-readiness.mjs',
@@ -989,8 +989,8 @@ describe('focused check suggestions', () => {
      * Delete the rule and this goes red.
      */
     const command =
-      'pnpm exec playwright test tests/e2e/mcp-connector-add.spec.ts ' +
-      'tests/e2e/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts';
+      'pnpm exec playwright test tests/e2e/agents/mcp-connector-add.spec.ts ' +
+      'tests/e2e/agents/agent-connect-panel-census.spec.ts tests/e2e/web-surface-smoke.spec.ts';
     for (const path of [
       'src/views/agents/ui/AgentsPage.tsx',
       'src/views/mcp/ui/McpPage.tsx',
@@ -1018,19 +1018,19 @@ describe('focused check suggestions', () => {
 
   it('points folder-switch and download-hero changes at the leak specs that measure them', () => {
     const cases = [
-      ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/entities/vault-session/model/local-vault/use-vault-choice.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/entities/vault-session/model/local-vault/use-vault-doc-writes.ts', 'tests/e2e/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-vault-choice.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/entities/vault-session/model/local-vault/use-vault-doc-writes.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
       ['src/entities/vault-session/model/local-vault/use-local-vault.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
       ['src/entities/vault-session/model/local-vault/vault-sidecars.ts', 'tests/e2e/web-surface-smoke.spec.ts'],
-      ['src/features/vault-switch/ui/VaultSwitchRailTile.tsx', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/views/home/model/trail/use-past-trails.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/widgets/ontology-map/ui/camera/use-topology-camera-navigation.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/widgets/ontology-map/ui/camera/use-topology-overview-navigation.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/widgets/ontology-map/ui/camera/use-topology-viewport-lifecycle.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/shared/lib/derived-hook.ts', 'tests/e2e/vault-switch-release.spec.ts'],
-      ['src/views/download/lib/hero-atlas-scene.ts', 'tests/e2e/download-hero-release.spec.ts'],
-      ['src/views/download/ui/HeroAtlas.tsx', 'tests/e2e/download-hero-release.spec.ts'],
+      ['src/features/vault-switch/ui/VaultSwitchRailTile.tsx', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/views/home/model/trail/use-past-trails.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/widgets/ontology-map/ui/camera/use-topology-camera-navigation.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/widgets/ontology-map/ui/camera/use-topology-overview-navigation.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/widgets/ontology-map/ui/camera/use-topology-viewport-lifecycle.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/shared/lib/derived-hook.ts', 'tests/e2e/vault-session/vault-switch-release.spec.ts'],
+      ['src/views/download/lib/hero-atlas-scene.ts', 'tests/e2e/gateway/download-hero-release.spec.ts'],
+      ['src/views/download/ui/HeroAtlas.tsx', 'tests/e2e/gateway/download-hero-release.spec.ts'],
     ];
     for (const [path, spec] of cases) {
       assert.ok(existsSync(path), `${path} moved; move its mapping with it`);
@@ -1118,7 +1118,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
       'pnpm test:contracts',
       'pnpm typecheck',
-      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
     ]);
   });
@@ -1135,9 +1135,9 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint --max-warnings 0 src/views/brand-new-surface/ui/BrandNewPage.tsx app/[locale]/brand-new/page.tsx',
       'pnpm test:contracts',
       'pnpm typecheck',
-      'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
-      'pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts',
     ]);
   });
 
@@ -1289,7 +1289,7 @@ describe('focused check suggestions', () => {
       'src/widgets/ontology-map/interaction/free-area.ts',
       'src/views/home/ui/HomePage.tsx',
     ];
-    const command = 'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts';
+    const command = 'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts';
     const result = suggestFocusedChecks(paths);
     const matches = result.commands.filter((row) => row.command === command);
 
@@ -1304,7 +1304,7 @@ describe('focused check suggestions', () => {
       'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx',
       'src/views/ontology-insights/ui/analysis/PairRail.tsx',
     ];
-    const command = 'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts';
+    const command = 'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts';
     const result = suggestFocusedChecks(paths);
     const matches = result.commands.filter((row) => row.command === command);
 
@@ -1316,13 +1316,13 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']);
     const commands = commandNames(result).filter(
       (command) =>
-        command.includes('tests/e2e/map-viewport-reframe.spec.ts') ||
-        command.includes('tests/e2e/ontology-ui.spec.ts'),
+        command.includes('tests/e2e/map/camera/map-viewport-reframe.spec.ts') ||
+        command.includes('tests/e2e/gateway/ontology-ui.spec.ts'),
     );
 
     assert.deepEqual(commands, [
-      'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
-      'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
+      'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts',
+      'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
     ]);
   });
 
@@ -1338,7 +1338,7 @@ describe('focused check suggestions', () => {
 
   it('suggests the touch-target E2E for the selected-node panel owner', () => {
     const paths = ['src/widgets/ontology-map/ui/OntologyMapDetailPanel.tsx'];
-    const command = 'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts';
+    const command = 'pnpm exec playwright test tests/e2e/gateway/touch-target-contract.spec.ts';
     const result = suggestFocusedChecks(paths);
     const matches = result.commands.filter((row) => row.command === command);
 
@@ -1348,11 +1348,11 @@ describe('focused check suggestions', () => {
 
   it('does not broaden installed-audit E2E mappings to neighboring tests or helpers', () => {
     const protectedCommands = new Set([
-      'pnpm exec playwright test tests/e2e/map-viewport-reframe.spec.ts',
-      'pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts',
+      'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts',
+      'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts',
       'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
-      'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
-      'pnpm exec playwright test tests/e2e/touch-target-contract.spec.ts',
+      'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
+      'pnpm exec playwright test tests/e2e/gateway/touch-target-contract.spec.ts',
     ]);
     const result = suggestFocusedChecks([
       'src/widgets/ontology-map/interaction/free-area.test.ts',
@@ -1371,8 +1371,8 @@ describe('focused check suggestions', () => {
 
   it('suggests direct Playwright specs for changed e2e tests', () => {
     const result = suggestFocusedChecks([
-      'tests/e2e/ontology-ui.spec.ts',
-      'tests/e2e/local-vault-picker.spec.ts',
+      'tests/e2e/gateway/ontology-ui.spec.ts',
+      'tests/e2e/vault-session/local-vault-picker.spec.ts',
     ]);
 
     /*
@@ -1380,8 +1380,8 @@ describe('focused check suggestions', () => {
      * `tsc --noEmit` checks them. The direct spec still comes first.
      */
     assert.deepEqual(domainCommands(result), [
-      'pnpm exec playwright test tests/e2e/ontology-ui.spec.ts',
-      'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
+      'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
+      'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
       // A spec may not add a fixed sleep.
       'pnpm test:e2e:sleeps && pnpm e2e:sleeps:check',
       'pnpm typecheck',
@@ -1398,7 +1398,7 @@ describe('focused check suggestions', () => {
     const playwright = suggestFocusedChecks(['playwright.config.ts']);
 
     assert.deepEqual(domainCommands(playwright), [
-      'pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts',
+      'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
     ]);
   });
 
@@ -1408,10 +1408,10 @@ describe('focused check suggestions', () => {
     assert.deepEqual(domainCommands(result), [
       'pnpm check:tokens',
       TOKEN_GATES_COMMAND,
-      'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
-      'pnpm exec playwright test tests/e2e/hangul-tracking.spec.ts',
-      'pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts',
-      'pnpm exec playwright test tests/e2e/text-zoom-ramp.spec.ts',
+      'pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts',
+      'pnpm exec playwright test tests/e2e/typography/hangul-tracking.spec.ts',
+      'pnpm exec playwright test tests/e2e/typography/prose-measure-calibration.spec.ts',
+      'pnpm exec playwright test tests/e2e/settings/text-zoom-ramp.spec.ts',
     ]);
     assert.ok(!commandNames(suggestFocusedChecks(['postcss.config.mjs'])).includes(TOKEN_GATES_COMMAND));
   });
@@ -1764,7 +1764,7 @@ describe('focused check suggestions', () => {
   it('관문의 판·크롬·원점을 고치면 그 격자 검사를 권한다', () => {
     // Editing the gateway layout must suggest its grid check; a check the advisor cannot point at does
     // not exist.
-    const grid = 'pnpm exec playwright test tests/e2e/download-gateway-grid.spec.ts';
+    const grid = 'pnpm exec playwright test tests/e2e/gateway/download-gateway-grid.spec.ts';
     for (const path of [
       'src/views/download/ui/DownloadPage.tsx',
       'src/widgets/gateway-chrome/ui/GatewayNav.tsx',
@@ -2095,7 +2095,7 @@ describe('node tests for a changed script', () => {
 
 describe('files changed only in comments', () => {
   it('keep their lint and language checks but run none of their tests', () => {
-    const paths = ['tests/e2e/map-viewport-reframe.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/harness/review-facts.mjs'];
+    const paths = ['tests/e2e/map/camera/map-viewport-reframe.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/harness/review-facts.mjs'];
     const all = suggestFocusedChecks(paths).commands.map((item) => item.command);
     const skipped = suggestFocusedChecks(paths, { commentOnlyPaths: paths }).commands.map((item) => item.command);
     const tests = (commands) => commands.filter((command) => /playwright test|vitest related|node --test/.test(command));

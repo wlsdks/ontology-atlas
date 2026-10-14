@@ -326,7 +326,7 @@ describe('FirstRunPage', () => {
 
       expect(await screen.findByTestId('recent-vault-list')).toBeTruthy();
       expect(screen.getAllByTestId('recent-vault-row')).toHaveLength(2);
-      /* Wording is checked against the real catalogue by `tests/e2e/vault-launch-chooser.spec.ts`. */
+      /* Wording is checked against the real catalogue by `tests/e2e/vault-session/vault-launch-chooser.spec.ts`. */
       expect(
         document.querySelectorAll('[data-testid="recent-vault-row"][data-current="true"]'),
       ).toHaveLength(1);

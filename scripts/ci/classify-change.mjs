@@ -615,7 +615,7 @@ export function validatePlan(plan) {
   }
   requireStringArray(e2e.specs, 'e2e.specs');
   requireStringArray(e2e.unmappedPaths, 'e2e.unmappedPaths');
-  if (e2e.specs.some((path) => !/^tests\/e2e\/[A-Za-z0-9._-]+\.spec\.ts$/.test(path))) {
+  if (e2e.specs.some((path) => !/^tests\/e2e\/(?:[A-Za-z0-9_-][A-Za-z0-9._-]*\/)*[A-Za-z0-9._-]+\.spec\.ts$/.test(path))) {
     reject('unsafe Playwright spec');
   }
   if (e2e.mode === 'targeted' && (e2e.specs.length === 0 || e2e.unmappedPaths.length > 0)) {

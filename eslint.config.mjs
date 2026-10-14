@@ -113,7 +113,7 @@ const inlineSizeSelectors = [
 /*
  * Only `button`/`summary` with a literal `cursor-pointer` are flagged: the base rule in
  * `app/globals.css` already sets it. Other cursor uses (options, labels, cards, SVG) are
- * legitimate; `cn()` output is covered by tests/e2e/cursor-affordance.spec.ts.
+ * legitimate; `cn()` output is covered by tests/e2e/design-audits/cursor-affordance.spec.ts.
  */
 const cursorAffordanceSelectors = [
   {

@@ -75,7 +75,7 @@ describe('대화 패널 폭 — 사용자가 끌되 지도는 지킨다', () => 
  *
  * The regression that separated them: raising the default to 520 left the app's own 1040px
  * minimum window a 480px map, and at 480 a relation caption on the map stopped fitting
- * (`tests/e2e/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden endpoint
+ * (`tests/e2e/insights/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden endpoint
  * at 1040px"). Nothing about that change went near the map.
  */
 describe('대화 패널 폭 — 아무도 안 고른 폭은 지도에 더 양보한다', () => {
