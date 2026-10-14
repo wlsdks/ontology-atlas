@@ -23,7 +23,7 @@ const VAULT_SENTINEL_DATE = new Date(0);
 const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
 
 // The bundled sample, taken only through the resolver
-// (tests/contract/static-vault-source.contract.test.ts); derived once at module load.
+// (tests/contract/vault-data/static-vault-source.contract.test.ts); derived once at module load.
 const STATIC_DERIVATION: VaultOntologyDerivation = deriveOntologyFromVault(
   resolveStaticVaultSource('dogfood').manifest,
 );

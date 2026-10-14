@@ -156,7 +156,7 @@ Atlas has several instruction channels, each with a different runtime boundary:
 | External MCP client | `mcp/src/server/instructions.mjs` | `server/instance.mjs` attaches the registry's instructions to the MCP initialization response. The receiving host controls their inclusion and placement in model context. |
 
 The shared meta-model block in `mcp/src/construction-rules.mjs` and the vault
-conversation prompt is checked by `tests/contract/ontology-meta-model.contract.test.ts`.
+conversation prompt is checked by `tests/contract/mcp/ontology-meta-model.contract.test.ts`.
 Prompt parity proves consistent guidance, not semantic correctness or obedience.
 Although `buildSystemPrompt` accepts optional owner instructions, the current
 `VaultAgentPanel` passes `projectInstructions: null`; its file-name constant
@@ -257,7 +257,7 @@ person still presses Add. The deep-link plugin is registered immediately after
 the window that exists rather than starting a rival one. The 2026-08-24 council
 that rejected this scheme is overturned only for this door; uid addresses, node
 addresses and any URL that writes or executes remain out, and
-`tests/contract/url-scheme-one-door.contract.test.ts` is what keeps them out.
+`tests/contract/security/url-scheme-one-door.contract.test.ts` is what keeps them out.
 
 **One page policy for both.** A static host sends no headers, so the production export
 carries its Content-Security-Policy as a meta tag in the root layout
@@ -265,7 +265,7 @@ carries its Content-Security-Policy as a meta tag in the root layout
 plugin, `<base>` or form target, and scripts from the page's own origin (inline ones
 included until the export's inline scripts are hashed). The app loads the same HTML
 under its own policy (`tauri.conf.json`), and both apply there, so the web policy allows
-everything the app's does, IPC included; `tests/contract/web-csp-parity.contract.test.ts`
+everything the app's does, IPC included; `tests/contract/security/web-csp-parity.contract.test.ts`
 holds the two together. `next dev` gets no meta, because refresh needs `eval`.
 
 **What each surface is for.** The app is where the vault lives day to day: the
@@ -435,14 +435,14 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `build-local-manifest.ts` emits raw sources as `manifest.sources`, a **sibling of
   `docs`**, so nothing downstream can mistake one for a concept. `walk_vault_stamps` in
   `src-tauri/src/vault/walk.rs` mirrors the rule, and
-  `tests/contract/vault-walk-rules.contract.test.ts` holds the two together — a
+  `tests/contract/vault-format/vault-walk-rules.contract.test.ts` holds the two together — a
   fingerprint that counted a different file set would make the app rebuild constantly or
   miss a dropped document.
 - The wiki page contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11. Its machine half is
   `mcp/src/wiki-schema.mjs` (executed by the CLI's `wiki-validate`), mirrored for the web
   bundle by `src/shared/lib/library/wiki-page-schema.ts` and held together by
-  `tests/contract/wiki-page-schema.contract.test.ts`.
-- `tests/contract/library-never-enters-the-graph.contract.test.ts` runs one fixture
+  `tests/contract/library/wiki-page-schema.contract.test.ts`.
+- `tests/contract/library/library-never-enters-the-graph.contract.test.ts` runs one fixture
   folder through both walkers and the derivation, so neither file kind can become a node
   by accident.
 - Local Compile has its own source read, existing-Wiki read and proposal catalogue in
@@ -706,7 +706,7 @@ until a local manifest, or the first part of one, exists.
                            shared/lib/navigation/nav-destination
 /topology                  map + contextual relation editor + change review. Any link labelled
                            "map" or "edit relation" points here, not at / (gate:
-                           tests/contract/map-destination-route.contract.test.ts)
+                           tests/contract/routes/map-destination-route.contract.test.ts)
 /architecture              the Harness destination (relabelled from Architecture since
                            2026-09-13; route unchanged). Three views on ?view=:
                            coverage (the default) — the ontology's domains crossed with the

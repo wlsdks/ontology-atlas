@@ -307,7 +307,7 @@ const BADGE_NODE_CLEARANCE = 10;
 /*
  * A selected node has this expand control and the DOM orbit button "Show only this", so they take
  * different bearings: bar = north, badge = northwest, orbit button = east. The contract test sweeps
- * radii 7-40 (`tests/contract/expand-settings.contract.test.ts`).
+ * radii 7-40 (`tests/contract/settings/expand-settings.contract.test.ts`).
  */
 /** Distance pushing the orbit button outside the node radius (screen px). */
 const ORBIT_BUTTON_CLEARANCE = 14;

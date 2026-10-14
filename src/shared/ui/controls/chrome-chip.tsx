@@ -41,7 +41,7 @@ const COMPACT_CLASS = 'w-[var(--chrome-tile-size)] px-0';
 /**
  * The width half of the `max-xl` icon-only fold, written as a literal so Tailwind's scanner
  * sees it. Pair it with the label hook
- * (`tests/contract/chrome-chip-compact-pairing.contract.test.ts`).
+ * (`tests/contract/layout/chrome-chip-compact-pairing.contract.test.ts`).
  */
 export const CHROME_CHIP_COMPACT_BELOW_XL =
   'max-xl:w-[var(--chrome-tile-size)] max-xl:px-0';

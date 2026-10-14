@@ -98,7 +98,7 @@ describe("clusterBadgeRect", () => {
 
   /**
    * The badge sits upper-left because the upper-right is the orbit button's bearing; sharing a shoulder
-   * put 80% of the badge under the button (`tests/contract/expand-settings.contract.test.ts`).
+   * put 80% of the badge under the button (`tests/contract/settings/expand-settings.contract.test.ts`).
    */
   it("배지는 부모의 좌상단(스크린 x- 왼쪽, y- 위)에 앉는다", () => {
     const rect = clusterBadgeRect(PARENT_X, PARENT_Y, NODE_R, clusterBadgeLabel(63));

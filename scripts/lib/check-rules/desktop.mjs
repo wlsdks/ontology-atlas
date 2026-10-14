@@ -35,7 +35,7 @@ export const rules = [
   },
   {
     order: 340,
-    // The no-build half of this budget is tests/contract/bundled-vault-budget.contract.test.ts.
+    // The no-build half of this budget is tests/contract/vault-data/bundled-vault-budget.contract.test.ts.
     command: 'pnpm build && pnpm desktop:perf',
     reason: 'bundled vault data or the desktop performance budget surface changed — re-measure the static budgets',
     matches: [

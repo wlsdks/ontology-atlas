@@ -3,7 +3,7 @@
  * `CONTAINMENT_KEY_FOR_KIND` / `CONTAINMENT_HOLDER_KINDS` in `mcp/src/schema.mjs` (spec §5).
  *
  * `src/`, `mcp/` and `cli/` do not import one another, so the rule is copied and
- * `tests/contract/vault-schema.contract.test.ts` compares the two answers over every kind pair —
+ * `tests/contract/vault-format/vault-schema.contract.test.ts` compares the two answers over every kind pair —
  * the same arrangement that keeps `KIND_EXPECTED_EXTRAS` in step with the schema.
  *
  * A list's name says what its entries are: `capabilities: [...]` holds capabilities. When a

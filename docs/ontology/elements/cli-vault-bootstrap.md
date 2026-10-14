@@ -6,7 +6,7 @@ title: CLI vault bootstrap
 display_en: CLI vault bootstrap
 display_ko: CLI 볼트 부트스트랩
 domain: domains/agent-access
-path: cli/src/commands/bootstrap.mjs
+path: cli/src/commands/repo-analysis/bootstrap.mjs
 created_by: "agent:claude-code"
 ---
 

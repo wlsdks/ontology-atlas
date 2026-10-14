@@ -123,7 +123,7 @@ function useToastLane(active: boolean): void {
 /**
  * The tone glyph: small, in its tone's ink on no fill, its shape carrying the tone without colour
  * on one neutral box. Each ink clears 4.5:1 on `--color-elevated`, error's `--color-danger-text`
- * included (tests/contract/toast-surface.contract.test.ts).
+ * included (tests/contract/layout/toast-surface.contract.test.ts).
  */
 const TONE_GLYPH_SIZE = ICON_SIZE.md;
 

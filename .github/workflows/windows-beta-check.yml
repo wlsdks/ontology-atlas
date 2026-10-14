@@ -34,7 +34,7 @@ name: Windows x64 Beta Check
 # on every merge group whatever it contains, and neither job here produces a required status context,
 # so it would gate nothing while doing so. The pre-merge signal is the `pull_request` trigger below
 # and the post-merge signal is the `push` to `main`, both path-filtered.
-# `tests/contract/workflow-security.contract.test.ts` holds that rule: a workflow that produces a
+# `tests/contract/security/workflow-security.contract.test.ts` holds that rule: a workflow that produces a
 # required context must carry `merge_group`, and this one must not.
 on:
   pull_request:
@@ -50,7 +50,7 @@ on:
       - "scripts/download/stage-windows-release-assets.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
-      - "tests/contract/windows-desktop-release.contract.test.ts"
+      - "tests/contract/release/windows-desktop-release.contract.test.ts"
   push:
     branches:
       - main
@@ -65,7 +65,7 @@ on:
       - "scripts/download/stage-windows-release-assets.mjs"
       - "scripts/lib/packaging/mcp-binary.mjs"
       - "src-tauri/**"
-      - "tests/contract/windows-desktop-release.contract.test.ts"
+      - "tests/contract/release/windows-desktop-release.contract.test.ts"
   workflow_dispatch:
 
 permissions:

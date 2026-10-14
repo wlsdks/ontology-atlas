@@ -836,7 +836,7 @@ export function DocFrontmatterBlock({
             ---
           </div>
           {/* One consumer reads all relation keys: the compiler, which reports, never refuses, an
-             unresolved entry (`tests/contract/field-help-consumers.contract.test.ts`). */}
+             unresolved entry (`tests/contract/controls/field-help-consumers.contract.test.ts`). */}
           {hasReferenceField ? (
             <p
               data-testid="doc-frontmatter-relations-help"

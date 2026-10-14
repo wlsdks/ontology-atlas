@@ -18,7 +18,7 @@ export interface HiddenCountLineProps {
 /**
  * One quiet line saying what a truncated view leaves out and where to read it. Renders only
  * when `total > shown` (`hidden-count-line.test.tsx`). No trailing arrow
- * (`tests/contract/label-decoration.contract.test.ts`), and no colour or icon, because it
+ * (`tests/contract/copy/label-decoration.contract.test.ts`), and no colour or icon, because it
  * states a view boundary, not a vault problem.
  */
 export function HiddenCountLine({

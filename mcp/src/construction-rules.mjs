@@ -7,7 +7,7 @@
  * by issue code.
  *
  * Since `src/` cannot import `mcp/`, `src/features/vault-agent/model/system-prompt.ts`
- * carries a literal copy; `tests/contract/vault-schema.contract.test.ts` keeps it
+ * carries a literal copy; `tests/contract/vault-format/vault-schema.contract.test.ts` keeps it
  * byte-aligned and `construction-rules.contract.test.ts` proves the MCP imports.
  */
 
@@ -20,7 +20,7 @@ import {
 /**
  * Compact meta-model boundary for the MCP prompt and the in-app agent, for when
  * the public specification is unavailable. `src/` cannot import `mcp/`, so the
- * app mirrors it literally, guarded by `tests/contract/ontology-meta-model.contract.test.ts`.
+ * app mirrors it literally, guarded by `tests/contract/mcp/ontology-meta-model.contract.test.ts`.
  */
 export const META_MODEL_RULES_EN = `## Meta-model truth boundary
 

@@ -76,7 +76,7 @@ export const rules = [
      * A vault section that outgrows its cap holds more than one idea; neither `vault:validate`
      * (frontmatter) nor the em-dash ratchet (copy) sees body shape.
      */
-    command: 'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
+    command: 'pnpm test:run tests/contract/vault-data/vault-section-shape.contract.test.ts',
     reason: 'vault node bodies changed — a section may now hold more than one idea',
     matches: [/^docs\/ontology\/.*\.md$/],
   },

@@ -51,7 +51,7 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
 - Settings sheets and their drill-ins: row labels and interactive text use
   `text-body`, descriptions and values `text-label`, and `text-caption` (9.5px)
   only for one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body`.
-  Gate: `tests/contract/settings-sheet-type-dialect.contract.test.ts`.
+  Gate: `tests/contract/settings/settings-sheet-type-dialect.contract.test.ts`.
 
 ## Design charter
 
@@ -70,7 +70,7 @@ a composition.
 - Hub amber `#d4b478` belongs to hub nodes and Layer 0 containers. The walked
   trail uses one of three named tones (star ink by default, yellow, indigo) and
   shows only while its popover is open. Gate:
-  `tests/contract/footprint-trail-ink.contract.test.ts`.
+  `tests/contract/map/footprint-trail-ink.contract.test.ts`.
 - Kind colour is data: a small marker plus a label on a neutral surface. Colour
   alone may carry kind only in the map's kind light, whose legend names each
   hue. Bars use neutrals plus one indigo, separated by a 1px track gap.
@@ -83,7 +83,7 @@ a composition.
 ## One word per thing
 
 One accurate word per thing. Canonical spellings live in
-`tests/contract/user-facing-vocabulary.contract.test.ts`; history is in
+`tests/contract/copy/user-facing-vocabulary.contract.test.ts`; history is in
 `docs/DECISIONS.md` (2026-08-25).
 
 | Thing | Word in copy |
@@ -110,7 +110,7 @@ One accurate word per thing. Canonical spellings live in
   is licensed only where the mark is light: the gateway hero, the walked-path
   star (`shared/lib/map-canvas/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
   a node carries at most one diffraction cross per frame. Gate:
-  `tests/contract/canvas-composite-license.contract.test.ts`.
+  `tests/contract/map/canvas-composite-license.contract.test.ts`.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
   with identity, composites `plus-lighter` (licensed only there), and runs only
   for an event in Flat. Gates: the composite licence and
@@ -135,7 +135,7 @@ the `tokens` and `attention` lenses, a system audit, and a gate probe.
 `scripts/lib/design/design-spec-census.mjs` reads this list (only rows shaped
 `` - `path` — description ``), and `pnpm decisions:check` requires a decision
 record when a listed file's vocabulary or values change. Contract:
-`tests/contract/design-spec-ledger.contract.test.ts`.
+`tests/contract/agent-instructions/design-spec-ledger.contract.test.ts`.
 
 - `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
 - `src/shared/ui/controls/controls.tsx` — interactive primitives

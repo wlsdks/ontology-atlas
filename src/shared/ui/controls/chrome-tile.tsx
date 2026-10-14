@@ -51,7 +51,7 @@ const TILE_CLASS =
 
 /**
  * What cannot be pressed must not look pressable; same values as `ChromeChip`
- * (`tests/contract/disabled-affordance.contract.test.ts`).
+ * (`tests/contract/controls/disabled-affordance.contract.test.ts`).
  */
 const DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-[color:var(--chrome-border)] disabled:hover:bg-[color:var(--chrome-surface)] disabled:hover:text-[color:var(--color-text-tertiary)]';

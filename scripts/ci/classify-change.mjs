@@ -262,7 +262,7 @@ function exactContractFiles(command) {
   if (!/^pnpm (?:exec vitest run|test:run)\b/.test(command)) return [];
   return command
     .split(/\s+/)
-    .filter((token) => /^tests\/contract\/[A-Za-z0-9._/-]+\.test\.ts$/.test(token));
+    .filter((token) => /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?[A-Za-z0-9._/-]+\.test\.ts$/.test(token));
 }
 
 function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
@@ -285,12 +285,12 @@ function unitPlan({ paths, existingPaths, deletedPaths, suggestions, full }) {
   const broadContractInputs = broadContractRows.flatMap((row) => row.paths);
   const contractFull = broadContractInputs.some(
     (path) =>
-      deletedPaths.includes(path) || !/^tests\/contract\/.+\.test\.ts$/.test(path),
+      deletedPaths.includes(path) || !/^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/.test(path),
   );
   const contractFiles = contractFull
     ? []
     : unique([
-        ...existingPaths.filter((path) => /^tests\/contract\/.+\.test\.ts$/.test(path)),
+        ...existingPaths.filter((path) => /^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?.+\.test\.ts$/.test(path)),
         ...rows.flatMap((row) => exactContractFiles(row.command)),
       ]).sort();
   const knip = rows.some((row) => row.command === 'pnpm knip');
@@ -588,7 +588,7 @@ export function validatePlan(plan) {
   }
   requireStringArray(unit.contractFiles, 'unit.contractFiles');
   requireStringArray(unit.extraCommands, 'unit.extraCommands');
-  if (unit.contractFiles.some((path) => !/^tests\/contract\/[A-Za-z0-9._/-]+\.test\.ts$/.test(path))) {
+  if (unit.contractFiles.some((path) => !/^tests\/contract\/(?:vault-format|design-tokens|agent-chat|security|desktop|control-adoption|layout|routes|controls|harness|agent-instructions|mcp|analysis|architecture|brand|vault-data|map|typography|messages|ci-gates|cli|library|copy|motion|settings|release\/)?[A-Za-z0-9._/-]+\.test\.ts$/.test(path))) {
     reject('unsafe contract file');
   }
   if (unit.mode === 'skip' && (unit.affected || unit.contract !== 'skip' || unit.knip || unit.extraCommands.length > 0)) {

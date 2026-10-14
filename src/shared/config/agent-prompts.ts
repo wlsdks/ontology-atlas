@@ -6,7 +6,7 @@
  * make it call a different tool. The screen caption explains to the person.
  *
  * Every tool and command named here must exist, or the paste fails at once; repo-only skills
- * and `npx ontology-atlas` are unusable. `tests/contract/agent-prompt-tool-names.contract.test.ts`
+ * and `npx ontology-atlas` are unusable. `tests/contract/mcp/agent-prompt-tool-names.contract.test.ts`
  * checks the tool names.
  */
 

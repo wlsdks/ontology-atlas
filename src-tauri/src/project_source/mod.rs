@@ -43,7 +43,7 @@ struct SourceInventory {
 }
 
 // Byte-for-byte aligned with mcp/src/project-source-inspection.mjs so a fresh MCP
-// process reproduces the receipt; tests/contract/source-inventory-bound.contract.test.ts
+// process reproduces the receipt; tests/contract/vault-format/source-inventory-bound.contract.test.ts
 // fails on drift.
 const SOURCE_INVENTORY_VERSION: &str = "inventory-v2";
 const SOURCE_INVENTORY_MAX_DEPTH: usize = 20;

@@ -6,7 +6,7 @@
 
 > Subset of `docs/DESIGN-SYSTEM.md` "Absolute rules (Don'ts)", which is
 > canonical; absence here is not permission. Each `dont:` marker pairs a row
-> with that source (`tests/contract/design-donts-parity.contract.test.ts`).
+> with that source (`design-donts-parity.contract.test.ts`).
 
 - **Node click → full-screen or full-bleed detail modal.** The default is ego
   focus plus a compact popover beside the node; full detail is an explicit action

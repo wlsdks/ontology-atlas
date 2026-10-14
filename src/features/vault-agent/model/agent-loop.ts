@@ -88,7 +88,7 @@ export function startTurn(input: StartTurnInput): AgentTurn {
 
 /**
  * Prefixes in `src-tauri/src/llm`, mirrored because Rust cannot export to TypeScript;
- * tests/contract/agent-notice-codes.contract.test.ts keeps the copies equal.
+ * tests/contract/agent-chat/agent-notice-codes.contract.test.ts keeps the copies equal.
  */
 export const AUDIT_BLOCKED_PREFIX = 'audit-blocked:';
 export const TIMED_OUT_PREFIX = 'timed-out:';
@@ -99,7 +99,7 @@ function noticeFor(deps: AgentLoopDeps, status: number | null, message: string):
     return { kind: 'notice', code: 'rejected', text: deps.notices.rejected };
   }
   // Codes, not prose, or an unwritable vault reads as a network failure;
-  // tests/contract/agent-notice-codes.contract.test.ts holds both sides.
+  // tests/contract/agent-chat/agent-notice-codes.contract.test.ts holds both sides.
   if (message.includes(AUDIT_BLOCKED_PREFIX)) {
     return { kind: 'notice', code: 'audit-blocked', text: deps.notices.auditBlocked };
   }

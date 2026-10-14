@@ -18,9 +18,9 @@
  * compiler's `graphHash` is its *version*. Consumers key on the UID URN;
  * renaming the readable slug does not mint a new identity.
  *
- * Mirror copy: `cli/src/lib/interop-format.mjs` (the CLI `export` command +
+ * Mirror copy: `cli/src/lib/export-format/interop-format.mjs` (the CLI `export` command +
  * the source the MCP compiler feeds). The contract test
- * `tests/contract/interop-format.contract.test.ts` keeps the two in lock-step —
+ * `tests/contract/vault-format/interop-format.contract.test.ts` keeps the two in lock-step —
  * the same input must yield byte-identical output. If you change anything here,
  * mirror it there (and vice versa).
  *
@@ -137,7 +137,7 @@ function normalizeGraph(graph: InteropGraph): {
     const via = typeof e?.via === 'string' && e.via.trim() ? e.via.trim() : '';
     if (!from || !to || !via) continue;
     if (!nodeBySlug.has(from) || !nodeBySlug.has(to)) continue;
-    // No separator: this file and `cli/src/lib/interop-format.mjs` must produce the same output for the
+    // No separator: this file and `cli/src/lib/export-format/interop-format.mjs` must produce the same output for the
     // same input, and a space separator is ambiguous. `JSON.stringify` avoids both problems.
     const key = JSON.stringify([from, via, to]);
     if (seenEdge.has(key)) continue;

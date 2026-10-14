@@ -3,7 +3,7 @@
  * instructions string (Claude Code keeps only its first 2,048 characters). It must
  * fit that window with the identity line and suffice alone; long-form rules are
  * on demand through `connection_info({guide})`. The contract test
- * tests/contract/mcp-instructions-card.contract.test.ts holds the budget.
+ * tests/contract/mcp/mcp-instructions-card.contract.test.ts holds the budget.
  */
 
 /**

@@ -5,7 +5,7 @@
 import {
   readVaultSidecarText,
   replaceVaultSidecarText,
-} from './vault-sidecar.mjs';
+} from './mcp-bridge/vault-sidecar.mjs';
 
 export const TELEMETRY_RELATIVE_PATH = '.ontology-atlas/telemetry.local.json';
 const TELEMETRY_FILENAME = 'telemetry.local.json';
