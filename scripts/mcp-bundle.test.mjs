@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
@@ -24,12 +25,26 @@ import {
   serverJsonProblems,
 } from './lib/mcp-bundle.mjs';
 import { parseArgs, tagProblems, usage } from './build-server-json.mjs';
+import { stage } from './build-mcp-bundle.mjs';
 
 const MCP_PACKAGE = JSON.parse(readFileSync('mcp/package.json', 'utf8'));
 const DOCKERFILE = readFileSync('mcp/Dockerfile', 'utf8');
 const WORKFLOW = readFileSync('.github/workflows/release-macos.yml', 'utf8');
 
 describe('bundle contents', () => {
+  it('stages nested verification modules declared as a package directory', () => {
+    const { stageDir } = stage(MCP_PACKAGE);
+    try {
+      const nested = 'scripts/verify/cli.mjs';
+      assert.equal(
+        readFileSync(join(stageDir, 'server', nested), 'utf8'),
+        readFileSync(join('mcp', nested), 'utf8'),
+      );
+    } finally {
+      rmSync(stageDir, { recursive: true, force: true });
+    }
+  });
+
   /**
    * The bundle ships what the server itself declares. If these two lists were
    * maintained separately, a new module would reach npm's `files` and silently

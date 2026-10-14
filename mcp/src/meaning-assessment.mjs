@@ -453,6 +453,15 @@ export function deriveMeaningAssessment(input) {
       { id: "review_source_evidence" },
     );
   }
+  if (safeInput.competency.bodyMatchesReceipt === false) {
+    return result(
+      safeInput,
+      normalized,
+      "review_required",
+      { dimension: "competency", id: "competency_body_changed" },
+      { id: "reevaluate_competency" },
+    );
+  }
   if (
     safeInput.competency.graphHash !== safeInput.graphHash
     || normalized.inventory.graphHash !== safeInput.graphHash

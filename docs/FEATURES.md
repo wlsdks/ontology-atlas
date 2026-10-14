@@ -37,6 +37,12 @@ completion artwork share the same traveler proportions and equipment.
 Agent setup names the connected vault in its post-change sync guidance, including
 when the vault and codebase are separate folders.
 
+MCP and CLI meaning checks distinguish a parseable project document changed since
+finalization from malformed input. Source and inventory prerequisites remain in
+force; the recovery asks for review and explicit finalization without accepting
+incomplete answers. MCP bundles also retain nested modules declared as package
+directories.
+
 ## Surfaces
 
 | Surface | Entry | Reference |

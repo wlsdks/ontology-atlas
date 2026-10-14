@@ -439,9 +439,6 @@ export function readProjectMeaningAssessment(input) {
   } catch {
     return invalidAssessment({ projectSlug, graphHash, structure, source, inventory });
   }
-  if (receipt.bodyDigest !== bodyDigest(projectBody)) {
-    return invalidAssessment({ projectSlug, graphHash, structure, source, inventory });
-  }
   return deriveMeaningAssessment({
     projectSlug,
     graphHash,
@@ -450,6 +447,7 @@ export function readProjectMeaningAssessment(input) {
     competency: {
       contract: MEANING_COMPETENCY_CONTRACT,
       receiptVersion: PROJECT_MEANING_RECEIPT_VERSION,
+      bodyMatchesReceipt: receipt.bodyDigest === bodyDigest(projectBody),
       evaluator: receipt.evaluator,
       graphHash: receipt.graphHash,
       inventory: inventory && typeof inventory === 'object' && safeOpaque(inventory.sourceFingerprint)

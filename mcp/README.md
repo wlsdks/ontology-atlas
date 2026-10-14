@@ -930,6 +930,15 @@ inconsistent; no numeric confidence is synthesized. Pass `project` to
 `ontology-atlas agent-brief <vault> --project SLUG`, to select one project in a
 multi-project vault.
 
+A parseable project document whose whole-body digest differs from its valid
+finalize receipt reports `review_required` / `competency_body_changed` with
+`reevaluate_competency` once source prerequisites hold. Review the answers against
+current evidence, validate, compile and explicitly finalize again. Existing
+source remedies take priority for well-formed inputs; malformed Markdown,
+unsafe/corrupt receipts and missing witness inventories retain their fail-closed
+classification. Reads never rewrite the document or receipt, and finalizing
+partial answers still reports `needs_evidence`.
+
 The same handoff preserves capability quantifiers. `Definition` / `Includes`
 lists are bounded positive claims, not exhaustive inventories. The
 `agent_brief.writePolicy` and copyable prompt forbid introducing

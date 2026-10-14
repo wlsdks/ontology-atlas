@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +8,10 @@ import test from 'node:test';
 
 import {
   finalizeProjectMeaningReceipt,
+  renderProjectCompetencyMarkdown,
 } from './project-meaning-receipt.mjs';
+import { runJsonRpcProcess } from '../../scripts/lib/mcp-test-rpc.mjs';
+import { assertAgentBriefResponseShape } from '../../cli/src/lib/query-result-contract/agent-brief/agent-brief.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const modulePath = join(here, 'project-meaning-receipt.mjs');
@@ -147,5 +150,91 @@ test('a fresh Node process re-derives the same current meaning without source re
     assert.equal(stored.includes('bounded checkout outcome'), false);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });
+  }
+});
+
+test('fresh MCP readers keep edited answers unconfirmed until explicit finalization', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'atlas-meaning-recovery-'));
+  const vaultRoot = join(root, 'vault');
+  const sourceRoot = join(root, 'source');
+  const serverEntry = process.env.OATLAS_TEST_SERVER_ENTRY ?? join(here, 'index.js');
+  const call = async (calls) => {
+    const { responses } = await runJsonRpcProcess({
+      command: process.execPath, args: [serverEntry], timeoutMs: 30_000,
+      env: { ...process.env, OATLAS_VAULT: vaultRoot, OATLAS_REPO_ROOT: sourceRoot },
+      requests: [
+        { jsonrpc: '2.0', id: 1, method: 'initialize', params: {
+          protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'receipt-recovery-test', version: '1' },
+        } },
+        { jsonrpc: '2.0', method: 'notifications/initialized' },
+        ...calls.map(([name, args], index) => ({
+          jsonrpc: '2.0', id: index + 2, method: 'tools/call', params: { name, arguments: args },
+        })),
+      ],
+    });
+    return calls.map((_, index) => {
+      const response = responses.find(({ id }) => id === index + 2);
+      assert.ok(response?.result && !response.result.isError, JSON.stringify(response));
+      return response.result.structuredContent ?? JSON.parse(response.result.content[0].text);
+    });
+  };
+  try {
+    for (const directory of [vaultRoot, join(vaultRoot, 'domains'), join(vaultRoot, 'capabilities'), sourceRoot]) {
+      mkdirSync(directory, { recursive: true });
+    }
+    writeFileSync(join(sourceRoot, 'README.md'), '# Receipt recovery fixture\n');
+    writeFileSync(join(sourceRoot, 'charge.mjs'), 'export function charge() { return 1; }\n');
+    const answers = renderProjectCompetencyMarkdown(Object.fromEntries(
+      ['scope', 'domains', 'abilities', 'evidence', 'impact'].map((id) => [id, {
+        status: 'partial', answer: `The ${id} claim needs review.`, gap: 'The fixture does not accept this claim.',
+        witnesses: { concepts: [], relations: [], evidence: [], paths: [] },
+      }]),
+    ));
+    const documents = [
+      ['demo', 'kind: project\ntitle: Demo\ndomains: [domains/payments]\npath: README.md', `## Definition\n\nA bounded payment fixture.\n\n${answers}`],
+      ['domains/payments', 'kind: domain\ntitle: Payments\ncapabilities: [capabilities/charge]', 'Payments owns charging.'],
+      ['capabilities/charge', 'kind: capability\ntitle: Charge\ndomain: domains/payments\npath: charge.mjs', 'Charges one payment.'],
+    ];
+    for (const [index, [slug, fields, body]] of documents.entries()) {
+      writeFileSync(join(vaultRoot, `${slug}.md`), `---\nuid: 00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}\nslug: ${slug}\n${fields}\n---\n\n${body}\n`);
+    }
+    const projectPath = join(vaultRoot, 'demo.md');
+    const receiptPath = join(vaultRoot, '.ontology-atlas/project-meaning.json');
+    const [bound] = await call([['connect_project_source', { projectSlug: 'demo', rootPath: sourceRoot, confirm: true }]]);
+    assert.equal(bound.projectSource.currentness, 'current');
+    const [initial] = await call([['finalize_project_meaning', { projectSlug: 'demo', expected_mtime: statSync(projectPath).mtimeMs }]]);
+    assert.equal(initial.meaningAssessment.status, 'needs_evidence');
+    const receiptBefore = readFileSync(receiptPath, 'utf8');
+    const edited = readFileSync(projectPath, 'utf8').replace('A bounded payment fixture.', 'A revised bounded payment fixture.');
+    writeFileSync(projectPath, edited);
+    const [health, workspace, full, compact] = await call([
+      ['query_ontology', { operation: 'health' }],
+      ['query_ontology', { operation: 'workspace_brief' }],
+      ['query_ontology', { operation: 'agent_brief', project: 'demo' }],
+      ['query_ontology', { operation: 'agent_brief', project: 'demo', detail: 'compact', task: 'Review payment evidence' }],
+    ]);
+    assertAgentBriefResponseShape(full);
+    assertAgentBriefResponseShape(compact);
+    for (const assessment of [full.meaningAssessment, compact.currentness.meaning]) {
+      assert.equal(assessment.status, 'review_required');
+      assert.equal(assessment.topGap.id, 'competency_body_changed');
+      assert.equal(assessment.nextAction.id, 'reevaluate_competency');
+    }
+    assert.equal(full.projectSource.currentness, 'current');
+    assert.equal(health.status, 'needs_attention');
+    assert.equal(workspace.status, 'needs_attention');
+    for (const checks of [health.checks, workspace.health.checks]) {
+      assert.equal(checks.find(({ id }) => id === 'meaning_assessment').status, 'warn');
+    }
+    assert.equal(readFileSync(receiptPath, 'utf8'), receiptBefore);
+    assert.equal(readFileSync(projectPath, 'utf8'), edited);
+    assert.equal(JSON.stringify(full.meaningAssessment).includes(sourceRoot), false);
+    const [finalized] = await call([['finalize_project_meaning', { projectSlug: 'demo', expected_mtime: statSync(projectPath).mtimeMs }]]);
+    assert.equal(finalized.meaningAssessment.status, 'needs_evidence');
+    const [after] = await call([['query_ontology', { operation: 'agent_brief', project: 'demo' }]]);
+    assert.equal(after.meaningAssessment.topGap.id, 'competency_question_incomplete');
+    assert.equal(after.meaningAssessment.status, 'needs_evidence');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });

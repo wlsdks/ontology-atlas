@@ -259,6 +259,8 @@ test('body digest binds the receipt to the entire current project Markdown', () 
     measuredAt: MEASURED_AT,
   });
 
+  const receiptPath = join(root, PROJECT_MEANING_STATE_RELATIVE_PATH);
+  const before = readFileSync(receiptPath, 'utf8');
   const assessment = readProjectMeaningAssessment({
     vaultRoot: root,
     projectSlug: 'projects/demo',
@@ -269,7 +271,39 @@ test('body digest binds the receipt to the entire current project Markdown', () 
     inventory: inventory(),
   });
 
-  assert.equal(assessment.status, 'invalid');
+  assert.equal(assessment.status, 'review_required');
+  assert.deepEqual(assessment.topGap, { dimension: 'competency', id: 'competency_body_changed' });
+  assert.deepEqual(assessment.nextAction, { id: 'reevaluate_competency' });
+  assert.equal(assessment.dimensions.source.currentness, 'current');
+  assert.equal(readFileSync(receiptPath, 'utf8'), before);
+  assert.equal(JSON.stringify(assessment).includes(root), false);
+  assert.equal(JSON.stringify(assessment).includes('Demo renamed'), false);
+}));
+
+test('changed project bodies preserve source remedies and invalid inventory failures', () => withVault((root) => {
+  const body = competencyBody();
+  finalizeProjectMeaningReceipt({
+    vaultRoot: root, projectSlug: 'projects/demo', projectBody: body,
+    graphHash: GRAPH_HASH, sourceFingerprint: SOURCE_FINGERPRINT, measuredAt: MEASURED_AT,
+  });
+  const input = {
+    vaultRoot: root, projectSlug: 'projects/demo',
+    projectBody: body.replace('# Demo', '# Updated project'),
+    graphHash: GRAPH_HASH, structure: { status: 'ready' },
+    source: source(), inventory: inventory(),
+  };
+  for (const [overrides, status, gap, action] of [
+    [{ source: source({ status: 'review_required', currentness: 'stale', topGapId: 'source_changed' }) }, 'review_required', 'source_changed', 'remeasure_source'],
+    [{ source: source({ currentness: 'unavailable' }) }, 'review_required', 'source_currentness_unavailable', 'verify_source_currentness'],
+    [{ source: { status: 'not_measured', currentness: 'unavailable' } }, 'needs_evidence', 'source_evidence_missing', 'measure_source'],
+    [{ source: { status: 'invalid', currentness: 'unavailable' } }, 'invalid', 'source_receipt_invalid', 'repair_source_receipt'],
+    [{ inventory: null }, 'invalid', 'assessment_input_invalid', 'repair_assessment_input'],
+    [{ structure: { status: 'invalid' } }, 'invalid', 'structure_not_ready', 'repair_ontology_structure'],
+    [{ graphHash: 'project-graph-v1:ffffffff', source: source({ graphHash: 'project-graph-v1:ffffffff' }), inventory: inventory({ graphHash: 'project-graph-v1:ffffffff' }) }, 'review_required', 'competency_body_changed', 'reevaluate_competency'],
+  ]) {
+    const result = readProjectMeaningAssessment({ ...input, ...overrides });
+    assert.deepEqual([result.status, result.topGap.id, result.nextAction.id], [status, gap, action]);
+  }
 }));
 
 test('one envelope preserves at most one receipt for each project', () => withVault((root) => {

@@ -9,8 +9,10 @@ domains: [domains/agent-access, domains/code-evidence, domains/human-workbench, 
 capabilities: []
 elements: []
 created_by: "agent:claude-code"
-relation_notes: { domains/meaning-layer: You asked which domains this product has; you approved the meaning layer as one of the four., domains/code-evidence: You asked which domains this product has; you approved code evidence as one of the four., domains/human-workbench: You asked which domains this product has; you approved the human workbench as one of the four., domains/agent-access: You asked which domains this product has; you approved agent access as one of the four. }
+relation_notes: { domains/meaning-layer: "Atlas keeps its shared meaning as Markdown and a typed graph. This domain owns that record, its schema and guarded writes; source evidence and reader interfaces belong to separate domains (docs/ARCHITECTURE.md).", domains/code-evidence: Recorded meaning needs checkable implementation evidence. This domain binds the project to its code and reports missing or changed evidence; path support does not accept the meaning (mcp/src/tools/project-source.mjs)., domains/human-workbench: "A person must be able to inspect, challenge and correct the shared record. Map, Library, Analysis and Git provide those human review surfaces while code verification and deployment remain separate decisions (docs/PRODUCT-DIRECTION.md).", domains/agent-access: Coding agents read and propose changes to the same local meaning record through MCP and CLI. This domain owns those interfaces and task handoffs; connection alone does not guarantee that a host uses them (docs/ARCHITECTURE.md). }
 ---
+
+## Definition
 
 Ontology Atlas is a local-first workbench that keeps one reviewable Markdown record of what this codebase builds, why it has its current boundaries, and what a change would affect, shared by the people who own the system and the AI agents that change its code.
 
@@ -31,6 +33,8 @@ Ontology Atlas is a local-first workbench that keeps one reviewable Markdown rec
 - The 2026-09-28 census has 32 capabilities and 61 elements. The competency inventories below retain the initial 29-capability/56-element reading as historical evidence; this sync does not requalify all later additions or their runtime impact.
 
 - The bounded 2026-10-10 Analysis sync updates the inspection capability, its retired helper claims, and canonical document-property visibility. It does not repeat the full capability inventory, prove runtime change impact, or accept the model's remaining meanings.
+
+- The bounded 2026-10-14 self-use pass opened this vault in the installed macOS app, inspected the project and its four domain explanations, remeasured declared source paths, and consumed actual MCP task briefs. It preserves the existing domain boundaries and the partial ability, evidence and impact answers; the remaining codebase has not received a complete semantic re-review.
 
 ## Competency answers
 

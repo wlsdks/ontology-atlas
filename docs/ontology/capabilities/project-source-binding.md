@@ -20,9 +20,15 @@ Binds a project node to the local code folder it describes, and measures how man
 - A missing-path repair in the map opens the exact current concept and safe relative path. Stale, duplicate, missing or foreign targets require remeasurement; copied repair handoffs exclude the absolute source root (`src/views/home/model/project-source-repair.ts`, `src/shared/lib/project-source/project-source-receipt.ts`).
 - A receipt of how many declared paths resolved, written without the absolute folder path leaving the machine.
 
+## Evidence
+- `mcp/src/tools/project-source.mjs` writes a source binding only after confirmation and refuses unsafe or malformed sidecars.
+- `src/shared/lib/project-source/project-source-receipt.ts` compares the recorded graph hash, source identity, fingerprint and revision with the current observation.
+
 ## Excludes
 - Copying, importing, or mirroring the code into the vault; only the binding is recorded.
 - Deciding what the bound code means.
 
 ## Uncertainty
-- Understood from the tool's own description and from `mcp/src/tools/project-source.mjs` by name; the several `project-source-*` modules beside it were listed but not read, so how the measurement handles a partly-moved folder is unknown here.
+- Observed in the installed macOS app on 2026-10-14: opening this vault, reading its project and remeasuring the bound code changed the source state from stale to current; the MCP handoff then reported 124 of 124 declared witnesses supported. This dated result does not stay current after later code or ontology changes.
+- In that same handoff, the project meaning assessment remained unconfirmed after its document changed. Source path support does not certify competency answers or accept product meaning.
+- Partial folder moves, denied filesystem access, Windows and large-repository behavior were not exercised in this observation.

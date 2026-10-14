@@ -399,6 +399,12 @@ const MEANING_AUTHORED_NOT_FINALIZED_HINT =
   + 'has no finalize receipt for them. Nothing is broken. Call '
   + 'finalize_project_meaning to record the receipt.';
 
+const MEANING_BODY_CHANGED_HINT =
+  'The project document changed since its competency answers were finalized. '
+  + 'Review its `## Competency answers` against the current ontology and source evidence. '
+  + 'After any approved changes, validate the vault, compile the ontology, '
+  + 'and call finalize_project_meaning again.';
+
 const MEANING_NEXT_ACTION_HINTS = Object.freeze({
   // Never claim the section is missing: a vault can have it without having
   // finalised it. This text covers a section that is absent or does not parse.
@@ -411,8 +417,10 @@ const MEANING_NEXT_ACTION_HINTS = Object.freeze({
     + 'relations, or evidence paths) that resolve in this vault. Fill the gap in '
     + 'the project document, then call finalize_project_meaning again.',
   reevaluate_competency:
-    'The graph moved since the answers were finalized. Re-check the competency '
-    + 'answers against the current graph, then call finalize_project_meaning again.',
+    'The ontology or source evidence changed since the competency answers were finalized. '
+    + 'Review the project document\'s `## Competency answers` against the current ontology and source evidence. '
+    + 'After any approved changes, validate the vault, compile the ontology, '
+    + 'and call finalize_project_meaning again.',
   repair_assessment_input:
     'The assessment input is malformed. Inspect the project document\'s '
     + '`## Competency answers` section and the source receipt.',
@@ -499,7 +507,9 @@ function meaningReadinessCheck(artifact, loadedDocs) {
     };
   }
   const first = unresolved[0];
-  const firstHint = first.nextAction === 'author_competency_answers' && first.competencyAuthored
+  const firstHint = first.topGap === 'competency_body_changed'
+    ? MEANING_BODY_CHANGED_HINT
+    : first.nextAction === 'author_competency_answers' && first.competencyAuthored
     ? MEANING_AUTHORED_NOT_FINALIZED_HINT
     : MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`;
   const liveNote = first.sourceLive

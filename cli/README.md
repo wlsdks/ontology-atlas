@@ -62,6 +62,12 @@ lifecycle. See the [repository walkthrough](../docs/guide/from-your-repo.md).
 Run the desktop shell from the same checkout with `pnpm desktop:dev`.
 ## Commands
 
+Project meaning diagnostics distinguish a parseable document edited since
+finalization (`competency_body_changed` / `reevaluate_competency`) from malformed
+input. Review the answers against current evidence, validate and compile, then
+explicitly finalize through MCP. Existing source and inventory prerequisites
+remain; the diagnostic never accepts meaning or writes a receipt automatically.
+
 Every ontology node carries an immutable lowercase UUIDv4 `uid` and a mutable,
 human-readable `slug`. Writers mint the UID locally; callers do not choose it.
 Relations, file paths, URLs, and graph-command arguments remain slug-based.

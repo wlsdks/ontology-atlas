@@ -131,7 +131,7 @@ function stripTypedModule(stageServerDir) {
   writeFileSync(importer, after);
 }
 
-function stage(pkg) {
+export function stage(pkg) {
   const stageDir = mkdtempSync(path.join(tmpdir(), 'ontology-atlas-mcpb-'));
   const serverDir = path.join(stageDir, BUNDLE_SERVER_DIR);
   mkdirSync(serverDir, { recursive: true });
@@ -143,7 +143,7 @@ function stage(pkg) {
     if (!existsSync(source)) fail(`mcp/package.json declares a file that is missing: ${file}`);
     const destination = path.join(serverDir, file);
     mkdirSync(path.dirname(destination), { recursive: true });
-    cpSync(source, destination);
+    cpSync(source, destination, { recursive: true });
   }
   writeFileSync(
     path.join(serverDir, 'package.json'),
