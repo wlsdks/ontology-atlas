@@ -65,8 +65,8 @@ describe.each(['.claude', '.agents'])('design-build references in %s', (tree) =>
   const ANNOUNCED_GATES = [
     ['control-adoption-ratchet', 'tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts'],
     ['surface-motion-ratchet', 'tests/contract/motion/surface-motion-ratchet.contract.test.ts'],
-    ['contrast-ratchet', 'tests/e2e/contrast-ratchet.spec.ts'],
-    ['a11y-ratchet', 'tests/e2e/a11y-ratchet.spec.ts'],
+    ['contrast-ratchet', 'tests/e2e/design-audits/contrast-ratchet.spec.ts'],
+    ['a11y-ratchet', 'tests/e2e/design-audits/a11y-ratchet.spec.ts'],
     ['disabled-affordance', 'tests/contract/controls/disabled-affordance.contract.test.ts'],
     ['control-class', 'tests/contract/controls/control-class.contract.test.ts'],
   ] as const;

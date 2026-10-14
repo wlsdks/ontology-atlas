@@ -1,0 +1,179 @@
+import { expect, test, type Page } from "@playwright/test";
+import { seedFirstRunSeen } from "../first-run-seed";
+import { waitFrames } from "../settle";
+
+interface EchoWindow {
+  lit: () => number;
+  nodes: () => { s: string; k: string; x: number; y: number }[];
+  count: number;
+}
+
+async function openHero(page: Page, reducedMotion: "reduce" | "no-preference") {
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.emulateMedia({ reducedMotion });
+  await seedFirstRunSeen(page);
+  await page.goto("/en/download/?e2e=1&guides=off", { waitUntil: "load" });
+  await page.waitForFunction(() => Boolean((window as unknown as { __heroEcho?: unknown }).__heroEcho));
+}
+
+const readEcho = (page: Page) =>
+  page.evaluate(() => {
+    const echo = (window as unknown as { __heroEcho: EchoWindow }).__heroEcho;
+    // Scoped to the hero headline: the agent scene types too, with the same characters.
+    // A character counts as typed when it is *visible*, not when it carries `is-on`: under reduced
+    // motion the stylesheet's carve-out shows every character while React keeps the server's
+    // classes, so the class would report a dark headline the reader can plainly read.
+    const h1 = document.querySelector('[data-testid="gateway-hero"] h1');
+    const chars = [...(h1?.querySelectorAll(".gateway-type-ch") ?? [])];
+    const typed = chars.filter((c) => getComputedStyle(c).visibility === "visible").length;
+    return { typed, total: chars.length, lit: echo.lit(), count: echo.count };
+  });
+
+test.describe("download hero — the typing echo", () => {
+  test("the dots lit follow the characters typed, and both finish together", async ({ page }) => {
+    await openHero(page, "no-preference");
+
+    const samples: { typed: number; lit: number; count: number; total: number }[] = [];
+    /*
+     * The ceiling is generous because sampling itself spends wall time on a loaded runner;
+     * the loop breaks as soon as the echo completes.
+     */
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+      const s = await readEcho(page);
+      samples.push(s);
+      if (s.typed >= s.total && s.lit >= s.count) break;
+      // One sample per painted frame: the typing advances by frames, not by this runner's clock.
+      await waitFrames(page, 1);
+    }
+    const last = samples.at(-1)!;
+    expect(last.total, "the headline has characters").toBeGreaterThan(0);
+    expect(last.count, "the object has dots").toBeGreaterThan(0);
+    expect(last.typed, "the headline finished typing").toBe(last.total);
+    expect(last.lit, "the last character lit the last dot").toBe(last.count);
+
+    // Mid-sentence the echo is progressive: some sample has typed part of the sentence and lit
+    // part of the object — not everything on one frame, not nothing until the end.
+    const mid = samples.filter((s) => s.typed > 0 && s.typed < s.total);
+    expect(mid.length, "typing was observed mid-sentence").toBeGreaterThan(0);
+    expect(mid.some((s) => s.lit > 0 && s.lit < s.count), "the object was observed mid-assembly").toBe(true);
+
+    // The lit count is the typed count's echo: it never exceeds what the typed count has earned
+    // (ceil of the proportion) and never lags it by more than two keystrokes' worth. Two, not
+    // one: the character paints, then an effect reports it, then the engine lights the dot, and
+    // on a loaded CI runner that chain measured one 30ms English keystroke behind the caret.
+    for (const s of samples) {
+      const earned = s.typed >= s.total ? s.count : Math.ceil((s.typed / s.total) * s.count);
+      const earnedBefore = s.typed <= 2 ? 0 : Math.ceil(((s.typed - 2) / s.total) * s.count);
+      expect(s.lit, `typed ${s.typed}/${s.total} lit ${s.lit}/${s.count}`).toBeLessThanOrEqual(earned);
+      expect(s.lit, `typed ${s.typed}/${s.total} lit ${s.lit}/${s.count}`).toBeGreaterThanOrEqual(earnedBefore);
+    }
+    for (let i = 1; i < samples.length; i += 1) {
+      expect(samples[i].lit, "dots are never put out").toBeGreaterThanOrEqual(samples[i - 1].lit);
+    }
+  });
+
+  /**
+   * The sampler lives in the page (rAF loop installed before any app script) because a
+   * runner-driven sampler spends the budget it measures.
+   */
+  test("the headline finishes typing within its budget of the first character", async ({ page }) => {
+    await page.addInitScript(() => {
+      const w = window as unknown as { __typing?: { first: number | null; done: number | null } };
+      w.__typing = { first: null, done: null };
+      const tick = () => {
+        const chars = document.querySelectorAll('[data-testid="gateway-hero"] h1 .gateway-type-ch');
+        const on = document.querySelectorAll('[data-testid="gateway-hero"] h1 .gateway-type-ch.is-on').length;
+        const now = performance.now();
+        if (on > 0 && w.__typing!.first === null) w.__typing!.first = now;
+        if (chars.length > 0 && on === chars.length) {
+          w.__typing!.done = now;
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/download/?guides=off", { waitUntil: "load" });
+    await page.waitForFunction(
+      () => (window as unknown as { __typing: { done: number | null } }).__typing.done !== null,
+      undefined,
+      { timeout: 15_000 },
+    );
+    const typing = await page.evaluate(
+      () => (window as unknown as { __typing: { first: number; done: number } }).__typing,
+    );
+    // The budget is 1800ms and the Korean sentence types in ~1.2s at the resting cadence; 1600
+    // leaves one late frame of room without letting a tick-counted run (3–5s) pass.
+    expect(typing.done - typing.first, "the headline took too long to finish typing").toBeLessThanOrEqual(1600);
+  });
+
+  test("under reduced motion the sentence and the object are complete from the first frame", async ({ page }) => {
+    await openHero(page, "reduce");
+    // "Complete from the first frame" is measured as: the count is never partial. The first
+    // sample may still be the server's dark headline before hydration; what must never appear is
+    // a headline or an object part-way through, because one that merely finishes quickly is not
+    // a still one.
+    const seen: { typed: number; total: number; lit: number; count: number }[] = [];
+    /*
+     * Sampled until the page is complete, not for 1.5s of wall time: on a loaded runner hydration
+     * alone can outlast that window, and the last sample was then the server's dark headline — a
+     * red run that said nothing about motion. The frame ceiling is a hang guard, never reached by
+     * a healthy page.
+     */
+    for (let frame = 0; frame < 3_000; frame += 1) {
+      const s = await readEcho(page);
+      seen.push(s);
+      if (s.total > 0 && s.typed === s.total && s.lit === s.count) break;
+      // One sample per painted frame, so a partial frame cannot fall between two samples.
+      await waitFrames(page, 1);
+    }
+    const last = seen.at(-1)!;
+    expect(last.typed).toBe(last.total);
+    expect(last.lit).toBe(last.count);
+    for (const s of seen) {
+      expect(s.typed === 0 || s.typed === s.total, `a partial headline was drawn: ${s.typed}/${s.total}`).toBe(true);
+      expect(s.lit === 0 || s.lit === s.count, `a partial object was drawn: ${s.lit}/${s.count}`).toBe(true);
+    }
+  });
+
+  test("a fine pointer on a dot prints one fact, and the caption line keeps its box", async ({ page }) => {
+    await openHero(page, "no-preference");
+    await page.waitForFunction(() => {
+      const echo = (window as unknown as { __heroEcho: EchoWindow }).__heroEcho;
+      return echo.lit() >= echo.count;
+    });
+
+    const caption = page.getByTestId("gateway-hero-caption");
+    const stage = page.getByTestId("gateway-hero-object");
+    const before = { caption: await caption.boundingBox(), stage: await stage.boundingBox() };
+    expect(before.caption, "the caption line is reserved while nothing is pointed at").not.toBeNull();
+    expect(before.caption!.height).toBeGreaterThan(0);
+    await expect(caption).toHaveText(/^\s*$/);
+
+    // The apex is the one dot that never sits at the rim, so it is reachable at every yaw.
+    const canvas = stage.locator("canvas");
+    const box = (await canvas.boundingBox())!;
+    const apex = await page.evaluate(() => {
+      const echo = (window as unknown as { __heroEcho: EchoWindow }).__heroEcho;
+      return echo.nodes().find((n) => n.k === "project") ?? null;
+    });
+    expect(apex, "the project apex is on screen").not.toBeNull();
+    await page.mouse.move(box.x + apex!.x, box.y + apex!.y, { steps: 4 });
+    await expect(caption).not.toHaveText(/^\s*$/);
+
+    const after = { caption: await caption.boundingBox(), stage: await stage.boundingBox() };
+    expect(after.caption!.height, "the caption's box did not grow").toBe(before.caption!.height);
+    expect(after.caption!.y, "the caption did not move").toBe(before.caption!.y);
+    expect(after.stage!.height, "the stage did not move").toBe(before.stage!.height);
+    // The fact stays inside its box — a long label is cut, never spilled.
+    const fits = await caption.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+    expect(fits, "the caption is not wider than its line").toBe(true);
+
+    await page.mouse.move(box.x + box.width + 40, box.y + box.height + 40, { steps: 2 });
+    await expect(caption).toHaveText(/^\s*$/);
+    expect((await caption.boundingBox())!.height).toBe(before.caption!.height);
+  });
+});

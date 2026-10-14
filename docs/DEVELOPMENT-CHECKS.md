@@ -129,13 +129,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Accessibility ratchet (route-level)
 
-**Run**: `pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts`
 **Proves**: Zero accessibility violations outside the recorded baseline across the audited routes; recorded counts may only go down.
 **Escalate**: none.
 
 ### Accessibility ratchet (vault-mounted)
 
-**Run**: `pnpm exec playwright test tests/e2e/a11y-vault-backed.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/a11y-vault-backed.spec.ts`
 **Proves**: The same accessibility ratchet holds with a real vault mounted, across map, insights tabs, project detail/edit/list, docs, and studio compass states, each required to actually render.
 **Escalate**: none.
 
@@ -144,7 +144,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `node scripts/design/measure-a11y.mjs`
 **Proves**: An axe-core census over WCAG 2.x A/AA rules, folded by rule, measures current violations before any ratchet baseline changes.
 **Escalate**: none.
-**Fix**: Run this before changing the baseline in `tests/e2e/a11y-ratchet.spec.ts`.
+**Fix**: Run this before changing the baseline in `tests/e2e/design-audits/a11y-ratchet.spec.ts`.
 
 ### ACP agent-runtime registry snapshot
 
@@ -361,7 +361,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Contrast ratchet (CI)
 
-**Run**: `pnpm exec playwright test tests/e2e/contrast-ratchet.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/contrast-ratchet.spec.ts`
 **Proves**: WCAG 1.4.3 text combinations and 1.4.11 touching data-mark pairs stay at the recorded baseline of zero across the 17 audited routes.
 **Escalate**: none.
 
@@ -393,7 +393,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Dead-end folder-open CTA
 
-**Run**: `pnpm exec playwright test tests/e2e/open-vault-cta.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/vault-session/open-vault-cta.spec.ts`
 **Proves**: Every sentence telling a visitor to open their folder has a folder-opening path in its own box that actually calls the picker, and degrades to the app download when the File System Access API is unavailable.
 **Escalate**: none.
 
@@ -412,7 +412,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Demo clip locale (played source vs poster)
 
-**Run**: `pnpm exec playwright test tests/e2e/demo-clip-locale.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/gateway/demo-clip-locale.spec.ts`
 **Proves**: The locale of the clip actually played matches the locale of its poster image, so a viewer does not see one language's poster before hearing another's audio.
 **Escalate**: `pnpm exec playwright test` for the full suite.
 
@@ -614,7 +614,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Gateway reading-surface reach
 
-**Run**: `pnpm exec playwright test tests/e2e/gateway-reading-reach.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/gateway/gateway-reading-reach.spec.ts`
 **Proves**: A narrow viewport still reaches `/guide` and `/changelog` from the gateway routes, and the guide exposes five or more distinct chapters, matching the wide-viewport chapter list.
 **Escalate**: none.
 
@@ -633,7 +633,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Global CSS/PostCSS overflow smoke
 
-**Run**: `pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts`
 **Proves**: A `postcss.config.mjs` or `app/globals.css` or `app/styles/*.css` change does not overflow the core responsive routes.
 **Escalate**: none.
 
@@ -647,7 +647,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm exec vitest run tests/contract/routes/guide-inbody-links.contract.test.ts`
 **Proves**: Every in-body internal link inside a guide chapter's Markdown source resolves to a real destination.
-**Escalate**: `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` opens both locales and checks the rendered link carries that locale's prefix and returns 200.
+**Escalate**: `pnpm exec playwright test tests/e2e/gateway/guide-inbody-links.spec.ts` opens both locales and checks the rendered link carries that locale's prefix and returns 200.
 
 ### i18n message catalog parity
 
@@ -671,7 +671,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Insights to-do badge agreement
 
-**Run**: `pnpm exec playwright test tests/e2e/insights-badge-agreement.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts`
 **Proves**: The Insights "To-do" tab badge equals the sum of the rendered work-group badges plus the repair queue's blocking chips.
 **Escalate**: none.
 
@@ -696,7 +696,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Korean word-break rendering
 
-**Run**: `pnpm exec playwright test tests/e2e/korean-word-break.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/typography/korean-word-break.spec.ts`
 **Proves**: Korean text never breaks mid-word at a line wrap across the audited destinations; wraps at spaces are normal.
 **Escalate**: none.
 
@@ -939,11 +939,11 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm exec vitest run tests/contract/brand/mascot-palette-boundary.contract.test.ts tests/contract/motion/mascot-motion.contract.test.ts`
 **Proves**: The mascot's fixed palette stays out of CSS/data/status/control colour, its animation frames stay continuous, and it stays clear of the map's functional lane.
-**Escalate**: `pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts`.
+**Escalate**: `pnpm exec playwright test tests/e2e/agents/agent-mascot-presence.spec.ts`.
 
 ### Playwright config/webServer smoke
 
-**Run**: `pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts`
 **Proves**: A `playwright.config.ts` change still exercises the webServer startup path, before running the whole browser journey suite.
 **Escalate**: none.
 
@@ -962,7 +962,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Prose measure calibration (characters per line, not `ch`)
 
-**Run**: `pnpm exec playwright test tests/e2e/prose-measure-calibration.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/typography/prose-measure-calibration.spec.ts`
 **Proves**: the shipped font is rendering here (a load failure fails as itself, never as calibration drift), `--measure-prose` buys 65–82 characters per line, the body applies it, and `--measure-doc-column` is still that measure plus two gutters and still matches its `DOC_COLUMN_PX` mirror.
 **Escalate**: `pnpm exec playwright test` for the full suite when the body font or a reading column changed.
 **Fix**: change the `ch` number in `app/globals.css` until the measured character count is back in band; do not widen the band.
@@ -1038,14 +1038,14 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Screen hierarchy and accent discipline
 
-**Run**: `pnpm exec playwright test tests/e2e/screen-hierarchy.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/screen-hierarchy.spec.ts`
 **Proves**: No painted text is larger than the route's largest h1 outside it, and at most one accent-filled control appears per screen, across every audited route.
 **Escalate**: none.
 **Fix**: Set `HIERARCHY_PROBE=<kind>` to plant a violation and confirm the layer still fires.
 
 ### Scroll-end bottom clearance
 
-**Run**: `pnpm exec playwright test tests/e2e/scroll-end-gap.spec.ts`
+**Run**: `pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts`
 **Proves**: The page box is not compressed, the gap under the last ink is at least 24px, and the last ink does not slide behind the bottom tab bar, across the audited routes and viewports.
 **Escalate**: none.
 

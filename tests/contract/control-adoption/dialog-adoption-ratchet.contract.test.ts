@@ -88,7 +88,7 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
       "retains inert evidence through Surface exit, and restores only the correct live trigger for " +
       "Escape/Close intent. Replacement and outside intent cannot steal focus. The narrow branch " +
       "still uses the modal Dialog primitive. Behavioral evidence: HarnessCoverageOverview.test.tsx " +
-      "and tests/e2e/harness-tab.spec.ts. Native geometry/motion acceptance remains separate.",
+      "and tests/e2e/harness/harness-tab.spec.ts. Native geometry/motion acceptance remains separate.",
   ],
 ];
 

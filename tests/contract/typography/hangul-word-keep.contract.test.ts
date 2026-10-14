@@ -56,7 +56,7 @@ describe("Hangul keeps its words whole", () => {
 /**
  * The boot script plants `<html lang>` from the path before the first paint, so the rule above
  * matches the first frame of a `/ko/*` page rather than the frame after hydration. The rendered
- * proof is `tests/e2e/hangul-first-paint.spec.ts`; this keeps the script's locale list equal to
+ * proof is `tests/e2e/typography/hangul-first-paint.spec.ts`; this keeps the script's locale list equal to
  * the router's and free of interpolation (the same boundary `JsonLd` owns).
  */
 describe("<html lang> is right before the first paint", () => {

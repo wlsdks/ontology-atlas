@@ -102,7 +102,7 @@ describe('머지 후 스위프 목록은 실재하는 스펙만 담는다', () =
     // project filter), but the job's reason for existing ("runs on every PR") and the
     // list's claim ("post-merge") would then contradict each other silently.
     const pkg = readFileSync(join(ROOT, 'package.json'), 'utf8');
-    const invoked = [...(workflow + runner + pkg).matchAll(/tests\/e2e\/([\w-]+\.spec\.ts)/g)].map(
+    const invoked = [...(workflow + runner + pkg).matchAll(/tests\/e2e\/((?:[\w-]+\/)*[\w-]+\.spec\.ts)/g)].map(
       (m) => m[1],
     );
     expect(invoked.length, '직접 부르는 스펙을 하나도 못 찾았다 — 스캐너가 죽었다').toBeGreaterThan(0);
@@ -113,32 +113,32 @@ describe('머지 후 스위프 목록은 실재하는 스펙만 담는다', () =
 });
 
 const UNMAPPED_POST_MERGE_SPECS = [
-  'camera-transition.spec.ts',
-  'cjk-locale-sweep.spec.ts',
-  'control-row-geometry.spec.ts',
-  'cursor-affordance.spec.ts',
-  'datasheet-hover-map-brush.spec.ts',
-  'focus-ring-contrast.spec.ts',
-  'gateway-idle-sleep.spec.ts',
-  'hover-contrast.spec.ts',
-  'korean-word-break.spec.ts',
-  'map-3d-grip.spec.ts',
-  'map-3d-lit-strata.spec.ts',
-  'map-flat-dial-frame-work.spec.ts',
-  'map-frame-allocation.spec.ts',
-  'map-hex-board.spec.ts',
-  'map-hex-frame-work.spec.ts',
-  'map-hover-release.spec.ts',
-  'map-sleep-frames.spec.ts',
-  'map-toolbar-no-overlap.spec.ts',
-  'map-trail.spec.ts',
-  'nav-yield-map-frames.spec.ts',
-  'offscreen-node-census.spec.ts',
-  'responsive-overflow-audit.spec.ts',
-  'route-cycle-leak.spec.ts',
-  'route-transition-input.spec.ts',
-  'screen-hierarchy.spec.ts',
-  'surface-vocabulary-ratchet.spec.ts',
+  'app-shell/route-cycle-leak.spec.ts',
+  'app-shell/route-transition-input.spec.ts',
+  'design-audits/control-row-geometry.spec.ts',
+  'design-audits/cursor-affordance.spec.ts',
+  'design-audits/focus-ring-contrast.spec.ts',
+  'design-audits/hover-contrast.spec.ts',
+  'design-audits/responsive-overflow-audit.spec.ts',
+  'design-audits/screen-hierarchy.spec.ts',
+  'design-audits/surface-vocabulary-ratchet.spec.ts',
+  'gateway/gateway-idle-sleep.spec.ts',
+  'map/3d/map-3d-grip.spec.ts',
+  'map/3d/map-3d-lit-strata.spec.ts',
+  'map/camera/camera-transition.spec.ts',
+  'map/camera/offscreen-node-census.spec.ts',
+  'map/chrome/map-toolbar-no-overlap.spec.ts',
+  'map/chrome/map-trail.spec.ts',
+  'map/flat-dial/map-flat-dial-frame-work.spec.ts',
+  'map/frame-loop/map-frame-allocation.spec.ts',
+  'map/frame-loop/map-hover-release.spec.ts',
+  'map/frame-loop/map-sleep-frames.spec.ts',
+  'map/frame-loop/nav-yield-map-frames.spec.ts',
+  'map/hex-board/map-hex-board.spec.ts',
+  'map/hex-board/map-hex-frame-work.spec.ts',
+  'map/selection/datasheet-hover-map-brush.spec.ts',
+  'typography/cjk-locale-sweep.spec.ts',
+  'typography/korean-word-break.spec.ts',
 ];
 
 describe('post-merge specs reach the pull requests that change their owner', () => {

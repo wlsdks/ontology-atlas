@@ -344,7 +344,7 @@ answer replaced the `lg` split; the switch that replaced the stacking on 2026-09
 same answer again, so the column behaves one way at every width. What does not reach a
 phone is the fold: below `lg` the index is the bottom half of one column and there is no
 second pane to give its width to. Cases: `the Library pane` and `the graph takes the top of
-the column at …` in `tests/e2e/library.spec.ts`.
+the column at …` in `tests/e2e/library/library.spec.ts`.
 
 **The graph is a live force simulation** (2026-09-07). The owner opened the installed
 app on the real folder — 7 sources, 6 pages, every page citing 4–7 of them — and read the
@@ -428,7 +428,7 @@ Beyond that ceiling or depth 12 it reports truncation. Folders are listed eight 
 browser reads are pooled at 64 in flight, and the app reads Markdown 64 files per native call
 with eight calls in flight. This capacity bound does not promise a frame rate or an opening time
 for every 100,000-file folder. Gates:
-`tests/e2e/library-graph-islands.spec.ts`. Decision:
+`tests/e2e/library/graph/library-graph-islands.spec.ts`. Decision:
 `docs/records/decisions/2026-09-18-library-islands-map-*.md`.
 
 **Four gestures, and a picture that is still until a hand moves it.** A drag on a mark
@@ -443,7 +443,7 @@ at full ink and dims everything else to 35% over `--motion-fast`. Marks are grad
 degree inside a band that follows the canvas (below), edges are quadratic bows deeper the
 longer they run, and every mark clears a halo of the canvas ground one line width wide. Under `prefers-reduced-motion` there is no settle: the
 simulation is run to rest synchronously and drawn once, and
-`tests/e2e/library-graph-alive.spec.ts` proves the canvas is byte-identical frame to frame.
+`tests/e2e/library/graph/library-graph-alive.spec.ts` proves the canvas is byte-identical frame to frame.
 
 **Hover changes ink, never position, and a settled picture stops the loop** (2026-09-08).
 The canvas used to keep a 0.28px / 7.2s **ambient drift** after it settled, repainted one
@@ -466,7 +466,7 @@ hover, at every width except the one the picture was last measured at. Both sent
 lie in one grid cell, so the taller sets the row's height and the visible one never changes
 it; the canvas height delta across a hover is 0px at 1400, 1040, 768 and 390.
 `docs/DECISIONS.md` (2026-09-08) carries the reversal and what the 2026-09-07 record staked
-on the other answer; `tests/e2e/library-graph-alive.spec.ts` owns the standing gate — a
+on the other answer; `tests/e2e/library/graph/library-graph-alive.spec.ts` owns the standing gate — a
 settled canvas that asks for a frame, or a mark that moves under a hovering pointer, fails
 it.
 
@@ -524,7 +524,7 @@ for. And the canvas stands on the **map's own blueprint grid** (`--map-grid-mino
 canvases in this product share one floor. Every mark still clears the 3:1 non-text floor over
 the worst of that ground — page 12.77:1, source 5.74:1, concept and edge 4.90:1, the selected
 node 3.97:1 over a major grid line — and the grid is 1.07:1 from the canvas it rules.
-`tests/e2e/library-graph-picture.spec.ts` holds the occupancy, the band, both fills and the
+`tests/e2e/library/graph/library-graph-picture.spec.ts` holds the occupancy, the band, both fills and the
 name placement at both windows on all three folders.
 
 **A press opens a card beside the mark, and the picture shows where knowledge flows**
@@ -556,7 +556,7 @@ full-size amber dot — and the canvas is byte-identical frame to frame with a c
 Nothing else moves: at rest, and with a concept's card open, the loop asks for zero frames.
 The added frame cost is +0.05ms at 372 marks and +0.53ms at 992 (`< 2ms`, gated in
 `library-force-simulation.perf.test.ts`); in a browser a frame with a card open averages
-1.29–1.74ms at 372 marks. `tests/e2e/library-graph-card.spec.ts` holds the geometry, the
+1.29–1.74ms at 372 marks. `tests/e2e/library/graph/library-graph-card.spec.ts` holds the geometry, the
 three ways out, both commits, which lines flow, the bounded arrival breath and the frame
 budget; `library-graph-card.test.ts` sweeps 1,638 mark positions for the two rules a
 screenshot cannot check — the card never covers its mark, and never leaves the canvas.
@@ -573,7 +573,7 @@ four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders und
 unchanged pixel for pixel (the six-document folder keeps its 97 strict-amber pixels at 1512),
 and the three-hundred-source folder with 480 unverified citations goes from 5,202 amber pixels
 and 15.57% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
-`tests/e2e/library-graph-picture.spec.ts` holds both arms and the three routes back.
+`tests/e2e/library/graph/library-graph-picture.spec.ts` holds both arms and the three routes back.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;

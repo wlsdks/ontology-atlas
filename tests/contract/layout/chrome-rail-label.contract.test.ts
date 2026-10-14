@@ -6,7 +6,7 @@ import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 /**
  * ChromeTile retains an optional group-label mode for labelled rails. The topology
  * utility stack deliberately uses fixed square controls with individual tooltips;
- * its rendered contract lives in `tests/e2e/map-rail-labels.spec.ts`.
+ * its rendered contract lives in `tests/e2e/map/chrome/map-rail-labels.spec.ts`.
  */
 
 const ROOT = process.cwd();

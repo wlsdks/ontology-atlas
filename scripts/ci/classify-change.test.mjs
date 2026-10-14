@@ -139,9 +139,9 @@ test('a filesystem-scanned UI file runs affected units, contracts, and mapped e2
   assert.equal(plan.lanes.mcp.mode, 'skip');
   assert.equal(plan.lanes.e2e.mode, 'targeted');
   assert.deepEqual(plan.lanes.e2e.specs, [
-    'tests/e2e/docs-deeplink.spec.ts',
-    'tests/e2e/document-scroll-lock.spec.ts',
-    'tests/e2e/vault-truth-telling.spec.ts',
+    'tests/e2e/design-audits/document-scroll-lock.spec.ts',
+    'tests/e2e/library/docs/docs-deeplink.spec.ts',
+    'tests/e2e/vault-session/vault-truth-telling.spec.ts',
   ]);
 });
 
@@ -176,14 +176,14 @@ test('an additive sweep joins a page root plan without standing in for its smoke
   const unmapped = buildImpactPlan({ files: ['src/views/git/ui/GitPage.tsx'] }).lanes.e2e;
   assert.equal(unmapped.mode, 'smoke');
   assert.deepEqual(unmapped.unmappedPaths, ['src/views/git/ui/GitPage.tsx']);
-  assert.ok(unmapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+  assert.ok(unmapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
 
   const mapped = buildImpactPlan({ files: ['src/views/architecture/ui/HarnessPage.tsx'] }).lanes.e2e;
   assert.equal(mapped.mode, 'targeted');
-  assert.ok(mapped.specs.includes('tests/e2e/scroll-end-gap.spec.ts'));
+  assert.ok(mapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
 
   const withSpec = buildImpactPlan({
-    files: ['tests/e2e/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
+    files: ['tests/e2e/design-audits/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
   }).lanes.e2e;
   assert.equal(withSpec.mode, 'targeted');
 });
@@ -192,8 +192,8 @@ test('every library graph source runs the graph specs and its ui keeps the smoke
   const sources = readdirSync('src/widgets/library-graph', { recursive: true })
     .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
     .map((file) => `src/widgets/library-graph/${file}`);
-  const specs = readdirSync('tests/e2e')
-    .filter((file) => /^library-graph-.+\.spec\.ts$/.test(file))
+  const specs = readdirSync('tests/e2e', { recursive: true })
+    .filter((file) => /(?:^|\/)library-graph-[^/]+\.spec\.ts$/.test(file))
     .map((file) => `tests/e2e/${file}`);
   assert.ok(sources.length > 0 && specs.length > 0, 'the library graph or its specs moved; move this case');
   for (const source of sources) {
@@ -236,7 +236,7 @@ test('MCP dependency changes promote only the MCP boundary to its exhaustive lan
 });
 
 test('direct Playwright spec edits run that spec, including post-merge instruments', () => {
-  for (const spec of ['tests/e2e/camera-transition.spec.ts', 'tests/e2e/gray-area/panel-layout.spec.ts']) {
+  for (const spec of ['tests/e2e/map/camera/camera-transition.spec.ts', 'tests/e2e/gray-area/panel-layout.spec.ts']) {
     const focused = suggestFocusedChecks([spec]).commands.map((row) => row.command);
     assert.ok(focused.includes(`pnpm exec playwright test ${spec}`));
     const plan = buildImpactPlan({ files: [spec] });
@@ -392,10 +392,10 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   const part = buildImpactPlan({ files: ['app/styles/tokens.css'] });
   assert.ok(part.lanes.gates.commands.includes('pnpm check:tokens'));
   assert.deepEqual(part.lanes.e2e.specs, [
-    'tests/e2e/hangul-tracking.spec.ts',
-    'tests/e2e/overflow-sweep.spec.ts',
-    'tests/e2e/prose-measure-calibration.spec.ts',
-    'tests/e2e/text-zoom-ramp.spec.ts',
+    'tests/e2e/design-audits/overflow-sweep.spec.ts',
+    'tests/e2e/settings/text-zoom-ramp.spec.ts',
+    'tests/e2e/typography/hangul-tracking.spec.ts',
+    'tests/e2e/typography/prose-measure-calibration.spec.ts',
   ]);
   assert.equal(part.lanes.e2e.webSurface, true);
 

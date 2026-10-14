@@ -29,7 +29,7 @@ const BOX_H = 72;
 /*
  * The receipt is one line and the sentence two; the row gap pays for it so seven rows fit
  * 1512x945 with the inspector open: 7×82 + 6×12 + 2×20 = 686.
- * Gate: `tests/e2e/architecture-role-ledger.spec.ts`, which fails at 90px.
+ * Gate: `tests/e2e/harness/architecture-role-ledger.spec.ts`, which fails at 90px.
  */
 const BOX_H_LEDGER = 82;
 const ROW_GAP_LEDGER = 12;

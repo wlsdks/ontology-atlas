@@ -446,7 +446,7 @@ describe("hover lift — a hovered node's lines rise toward the ego ink on the r
  * device — below one device pixel the rasteriser spreads the stroke's alpha over
  * two rows and the peak contrast collapses, which is how the depth-ink floor's
  * whole gain disappeared at DPR 1 while measuring intact at DPR 2
- * (`tests/e2e/map-3d-relation-ink.spec.ts`). The 2D map passes nothing, and this
+ * (`tests/e2e/map/3d/map-3d-relation-ink.spec.ts`). The 2D map passes nothing, and this
  * pins that "nothing" is the same drawing it always was.
  */
 describe("draw — the resting line's device-pixel width floor", () => {

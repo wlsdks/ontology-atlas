@@ -350,7 +350,7 @@ describe('the rail label keeps the end of the name', () => {
     expect('ontology-atlas-old'.endsWith(b.replace(/^\u2026/, ''))).toBe(true);
     expect(a.length).toBeLessThanOrEqual(RAIL_LABEL_MAX_CHARS);
     expect(b.length).toBeLessThanOrEqual(RAIL_LABEL_MAX_CHARS);
-    // The rendered check is in `tests/e2e/vault-launch-chooser.spec.ts`.
+    // The rendered check is in `tests/e2e/vault-session/vault-launch-chooser.spec.ts`.
     expect(RAIL_LABEL_MAX_CHARS).toBeLessThanOrEqual(9);
   });
 });
