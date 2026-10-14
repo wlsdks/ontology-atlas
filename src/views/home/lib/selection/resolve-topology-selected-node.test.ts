@@ -29,7 +29,7 @@ describe("resolveTopologySelectedOntologyNode", () => {
     node("vault-readme:README", ["README"], "vault-readme"),
   ];
 
-  it("resolves graph ids used by Sigma clicks", () => {
+  it("resolves graph ids used by map clicks", () => {
     expect(
       resolveTopologySelectedOntologyNode("capability:topology-analysis-modes", nodes),
     ).toMatchObject({ id: "capability:topology-analysis-modes" });

@@ -193,16 +193,16 @@ Options:
   --min-webview-size=WIDTHxHEIGHT
                     Require the direct-launch WebView DOM viewport to be at least WIDTH by
                     HEIGHT CSS pixels. Use this for deterministic fullscreen/large-screen
-                    Relief checks even when macOS screen capture is unavailable.
+                    map checks even when macOS screen capture is unavailable.
   --max-webview-size=WIDTHxHEIGHT
                     Require the direct-launch WebView DOM viewport to be no larger than
-                    WIDTH by HEIGHT CSS pixels. Use this to prove a compact Relief smoke is
+                    WIDTH by HEIGHT CSS pixels. Use this to prove a compact map smoke is
                     actually exercising a compact installed-app viewport instead of the
                     default desktop window.
   --webview-window-size=WIDTHxHEIGHT
                     Request a verification-only Tauri main-window size before the WebView
                     evidence probe runs. This is direct executable launch only; pair it with
-                    --max-webview-size to prove compact Relief behavior in the installed app.
+                    --max-webview-size to prove compact map behavior in the installed app.
 `);
 }
 

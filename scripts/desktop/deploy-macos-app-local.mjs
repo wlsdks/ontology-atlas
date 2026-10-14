@@ -15,11 +15,11 @@ import { verifyMcpExactCase } from "../packaging/verify-mcp-binary.mjs";
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
 const DEFAULT_ROUTE = "/en/topology/";
-const DEFAULT_SCREENSHOT = path.join(root, ".tmp", "ontology-atlas-deployed-relief.png");
+const DEFAULT_SCREENSHOT = path.join(root, ".tmp", "ontology-atlas-deployed-map.png");
 const DEFAULT_WEBVIEW_EVIDENCE = path.join(
   root,
   ".tmp",
-  "ontology-atlas-deployed-relief.webview.json",
+  "ontology-atlas-deployed-map.webview.json",
 );
 const DEFAULT_MIN_WINDOW_SIZE = "1360x840";
 const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";

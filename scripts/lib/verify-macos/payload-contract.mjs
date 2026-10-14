@@ -248,10 +248,10 @@ export function validateWebviewVerifyPayload(payload, {
     payload.markers.topologyCommandChromeState !== "collapsed-active-relation"
   ) {
     if (!String(payload.markers.topologyTopRelayoutLabel || "").trim().includes("자동 정렬")) {
-      return `WebView Korean Relief top relayout label was ${payload.markers.topologyTopRelayoutLabel || "missing"}`;
+      return `WebView Korean map top relayout label was ${payload.markers.topologyTopRelayoutLabel || "missing"}`;
     }
     if (!String(payload.markers.topologyTopSearchLabel || "").trim().includes("검색")) {
-      return `WebView Korean Relief top search label was ${payload.markers.topologyTopSearchLabel || "missing"}`;
+      return `WebView Korean map top search label was ${payload.markers.topologyTopSearchLabel || "missing"}`;
     }
     const workspaceLabel = String(payload.markers.topologyTopWorkspaceLabel || "").trim();
     if (
@@ -259,7 +259,7 @@ export function validateWebviewVerifyPayload(payload, {
       !workspaceLabel.includes("작업공간") &&
       payload.markers.topologyCommandChromeState !== "selected-node-inspector"
     ) {
-      return `WebView Korean Relief top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
+      return `WebView Korean map top workspace label was ${payload.markers.topologyTopWorkspaceLabel || "missing"}`;
     }
   }
   if (webviewPath.includes("/topology") && payload.markers.topologyCreateNodeOpen === true) {
@@ -416,7 +416,7 @@ export function validateWebviewVerifyPayload(payload, {
         submitLabel.includes("만들기") &&
         ["도메인", "역량", "요소"].every((option) => kindOptions.includes(option));
       if (!localizedComposer) {
-        return "WebView Korean Relief localized Add Concept composer markers were missing";
+        return "WebView Korean map localized Add Concept composer markers were missing";
       }
     }
   }
@@ -428,7 +428,7 @@ export function validateWebviewVerifyPayload(payload, {
     const ontologyMapSelectedContextVisible =
       payload.markers.ontologyMapDetailPanelVisible === true;
     if (!ontologyMapSelectedContextVisible && !blockingComposerOpen) {
-      return `WebView did not report a visible Relief selected node context for ${topologySelectedParam}`;
+      return `WebView did not report a visible map selected node context for ${topologySelectedParam}`;
     }
     if (ontologyMapSelectedContextVisible) {
       const v2SelectedNodeId = String(

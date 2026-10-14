@@ -1344,18 +1344,18 @@ if (
   deployMacosAppLocalScript.includes('const DEFAULT_MIN_WINDOW_SIZE = "1360x840"') &&
   deployMacosAppLocalScript.includes('const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860"') &&
   deployMacosAppLocalScript.includes("--min-webview-size=${options.minWebviewSize}") &&
-  deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.webview.json") &&
+  deployMacosAppLocalScript.includes("ontology-atlas-deployed-map.webview.json") &&
   deployMacosAppLocalScript.includes("--webview-evidence=${options.webviewEvidencePath}") &&
   verifyAppScript.includes("writeWebviewEvidence(webviewPayload, webviewEvidencePath, {") &&
   verifyAppScript.includes("visualEvidencePath: tryWindowScreenshotPath ?? windowScreenshotPath") &&
   deployMacosAppLocalScript.includes("--require-capturable-window") &&
-  deployMacosAppLocalScript.includes("ontology-atlas-deployed-relief.png") &&
+  deployMacosAppLocalScript.includes("ontology-atlas-deployed-map.png") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/desktop/deploy-macos-app-local.test.mjs")
 ) {
-  pass("desktop local deploy command builds without release updater signing, installs, and verifies Relief health from /Applications with default best-effort visual and WebView evidence");
+  pass("desktop local deploy command builds without release updater signing, installs, and verifies map health from /Applications with default best-effort visual and WebView evidence");
 } else {
   fail(
-    "package.json must expose desktop:deploy:app plus desktop:build:app:local with updater artifacts disabled, cover scripts/desktop/deploy-macos-app-local.test.mjs, and the deploy script must build without release updater signing, ditto the app to /Applications, verify /en/topology/ Relief health plus drag dogfood, keep screenshot proof available as an opt-in, attempt 14-inch-compatible best-effort visual evidence by default, and save deterministic WebView evidence",
+    "package.json must expose desktop:deploy:app plus desktop:build:app:local with updater artifacts disabled, cover scripts/desktop/deploy-macos-app-local.test.mjs, and the deploy script must build without release updater signing, ditto the app to /Applications, verify /en/topology/ map health plus drag dogfood, keep screenshot proof available as an opt-in, attempt 14-inch-compatible best-effort visual evidence by default, and save deterministic WebView evidence",
   );
 }
 

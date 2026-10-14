@@ -100,7 +100,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local deploy command builds without release updater signing, installs, and verifies Relief health from \/Applications with default best-effort visual and WebView evidence/,
+    /✓ desktop local deploy command builds without release updater signing, installs, and verifies map health from \/Applications with default best-effort visual and WebView evidence/,
   );
   assert.match(
     result.stdout,
@@ -252,7 +252,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local deploy command builds without release updater signing, installs, and verifies Relief health from \/Applications with default best-effort visual and WebView evidence/,
+    /✓ desktop local deploy command builds without release updater signing, installs, and verifies map health from \/Applications with default best-effort visual and WebView evidence/,
   );
   assert.match(
     result.stdout,

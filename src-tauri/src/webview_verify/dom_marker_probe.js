@@ -184,16 +184,16 @@
                               );
                               const ontologyMapPrefersReducedMotion =
                                 window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-                              const sigmaViewport = document.querySelector('[data-testid="ontology-map"]');
-                              const sigmaViewportRect = sigmaViewport?.getBoundingClientRect();
-                              const sigmaViewportStyle = sigmaViewport ? getComputedStyle(sigmaViewport) : null;
+                              const mapViewport = document.querySelector('[data-testid="ontology-map"]');
+                              const mapViewportRect = mapViewport?.getBoundingClientRect();
+                              const mapViewportStyle = mapViewport ? getComputedStyle(mapViewport) : null;
                               const topologyStagePanClickCancelPx = Number(
-                                sigmaViewport?.getAttribute("data-stage-pan-click-cancel-px") ||
+                                mapViewport?.getAttribute("data-stage-pan-click-cancel-px") ||
                                 topologyMapEngineEl?.getAttribute("data-stage-pan-click-cancel-px") ||
                                 "0"
                               );
-                              const sigmaCanvases = sigmaViewport
-                                ? Array.from(sigmaViewport.querySelectorAll("canvas")).map((canvas) => {
+                              const mapCanvases = mapViewport
+                                ? Array.from(mapViewport.querySelectorAll("canvas")).map((canvas) => {
                                     const rect = canvas.getBoundingClientRect();
                                     return { width: rect.width, height: rect.height };
                                   })
@@ -375,16 +375,16 @@
                                   insightsSelectedTabCount: insightsSelectedTabs.length,
                                   insightsSelectedPanelVisible,
                                   topologyAttentionWinner,
-                                  topologySigmaViewportVisible: Boolean(
-                                    sigmaViewportRect &&
-                                    sigmaViewportStyle &&
-                                    sigmaViewportStyle.display !== "none" &&
-                                    sigmaViewportStyle.visibility !== "hidden" &&
-                                    sigmaViewportRect.width > 0 &&
-                                    sigmaViewportRect.height > 0
+                                  topologyMapViewportVisible: Boolean(
+                                    mapViewportRect &&
+                                    mapViewportStyle &&
+                                    mapViewportStyle.display !== "none" &&
+                                    mapViewportStyle.visibility !== "hidden" &&
+                                    mapViewportRect.width > 0 &&
+                                    mapViewportRect.height > 0
                                   ),
-                                  topologySigmaCanvasCount: sigmaCanvases.length,
-                                  topologySigmaCanvasSizes: sigmaCanvases,
+                                  topologyMapCanvasCount: mapCanvases.length,
+                                  topologyMapCanvasSizes: mapCanvases,
                                   topologyStagePanClickCancelPx,
                                   topologyTopWorkspaceLabel:
                                     topologyTopWorkspaceButton?.textContent?.trim() || "",

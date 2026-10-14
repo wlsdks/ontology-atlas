@@ -602,7 +602,7 @@ Pros:
 Cons:
 
 - Requires Node.js.
-- Bundle is heavy after publish (Sigma + xyflow + …).
+- Bundle is heavy after publish.
 - Puts the distribution channel outside the product — a registry the user has
   to trust, and 38 files of guidance that stay false until someone publishes.
   This is what killed the npm half.

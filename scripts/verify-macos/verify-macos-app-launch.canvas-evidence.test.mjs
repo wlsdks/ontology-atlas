@@ -8,8 +8,8 @@ test("WebView evidence proves the current ontology-map canvas renderer", () => {
     bodyText: "Atlas 지도 INDEX 74 개념",
     markers: {
       topologyMapEngine: "v2",
-      topologySigmaViewportVisible: true,
-      topologySigmaCanvasCount: 1,
+      topologyMapViewportVisible: true,
+      topologyMapCanvasCount: 1,
       ontologyMapCanvasInkPixels: 128,
     },
   });
@@ -33,8 +33,8 @@ test("v2 canvas evidence stays incomplete without rendered pixels", () => {
     bodyText: "Atlas 지도 INDEX 74 개념",
     markers: {
       topologyMapEngine: "v2",
-      topologySigmaViewportVisible: true,
-      topologySigmaCanvasCount: 1,
+      topologyMapViewportVisible: true,
+      topologyMapCanvasCount: 1,
       ontologyMapCanvasInkPixels: 0,
     },
   });

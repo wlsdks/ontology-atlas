@@ -111,7 +111,7 @@ test("local macOS app deploy builds without release updater signing, installs, a
   assert.equal(options.visualEvidence, true);
   assert.equal(
     options.webviewEvidencePath,
-    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json"),
   );
   assert.equal(options.route, "/en/topology/");
   assert.equal(options.holdMs, 12000);
@@ -148,9 +148,9 @@ test("local macOS app deploy builds without release updater signing, installs, a
       "--require-window",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1360x840",
-      `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+      `--try-window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.png")}`,
       "--min-webview-size=1400x860",
-      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
+      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json")}`,
       "--leave-running",
     ],
   ]);
@@ -164,7 +164,7 @@ test("local macOS app deploy builds without release updater signing, installs, a
       "--require-webview-route=/en/topology/",
       `--webview-fixture-vault=${path.join(process.cwd(), "docs", "ontology")}`,
       "--min-webview-size=1400x860",
-      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
+      `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json")}`,
       "--leave-running",
     ],
   ]);
@@ -192,7 +192,7 @@ test("local macOS app deploy can require a screenshot proof when macOS capture i
   assert.ok(plan.verify[1].includes("--require-capturable-window"));
   assert.ok(
     plan.verify[1].includes(
-      `--window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+      `--window-screenshot=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.png")}`,
     ),
   );
 });
@@ -271,7 +271,7 @@ test("local macOS app deploy reports visual evidence honestly when window captur
 
   assert.equal(
     summary.screenshot,
-    `unavailable-after-window-fallback:${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png")}`,
+    `unavailable-after-window-fallback:${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.png")}`,
   );
   assert.equal(
     summary.visualEvidence,
@@ -279,7 +279,7 @@ test("local macOS app deploy reports visual evidence honestly when window captur
   );
   assert.equal(
     summary.webviewEvidence,
-    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+    path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json"),
   );
 });
 
@@ -294,9 +294,9 @@ test("local macOS app deploy distinguishes saved visual evidence from disabled v
       usedFallback: false,
     }),
     {
-      screenshot: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png"),
-      visualEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.png"),
-      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+      screenshot: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.png"),
+      visualEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.png"),
+      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json"),
     },
   );
 
@@ -312,7 +312,7 @@ test("local macOS app deploy distinguishes saved visual evidence from disabled v
     {
       screenshot: "not requested",
       visualEvidence: "disabled",
-      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json"),
+      webviewEvidence: path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-map.webview.json"),
     },
   );
 });
