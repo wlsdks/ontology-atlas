@@ -125,6 +125,14 @@ describe("buildLedger", () => {
     for (const row of left.rows) expect(row.box.minX).toBeGreaterThanOrEqual(0);
     expect(buildLedger(input({ discs: set, freeRect: { minX: 250, minY: 0, maxX: 600, maxY: 800 } }))).toBeNull();
   });
+
+  it("stands no column beside discs that are under a panel, past the free area's edge", () => {
+    const set = discs(8);
+    const underPanel = set.map((d) => ({ ...d, x: d.x + 700 }));
+    expect(buildLedger(input({ discs: underPanel, freeRect: { minX: 0, minY: 0, maxX: 900, maxY: 800 } }))).toBeNull();
+    const plan = buildLedger(input({ discs: underPanel, freeRect: { minX: 0, minY: 0, maxX: 1400, maxY: 800 } }))!;
+    for (const row of plan.rows) expect(row.box.maxX).toBeLessThanOrEqual(1400);
+  });
 });
 
 describe("ledgerWanted", () => {

@@ -95,7 +95,7 @@ export function NodeExplanationEdit({
           <div
             data-testid="node-explanation-rendered"
             className={cn(
-              "mt-2 [overflow-wrap:anywhere] text-body leading-body text-[color:var(--color-text-secondary)]",
+              "mt-2 max-w-[var(--measure-prose)] [overflow-wrap:anywhere] text-body leading-body text-[color:var(--color-text-secondary)]",
               MARKDOWN_PROSE_CLASS,
             )}
           >

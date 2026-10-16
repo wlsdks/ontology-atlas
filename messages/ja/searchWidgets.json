@@ -139,6 +139,7 @@
       "showShortcuts": "キーボードショートカットを表示または非表示",
       "stepCloseOverlays": "開いているパネルを1つずつ閉じる",
       "clickSelect": "概念を選択",
+      "enterZoom": "選択した概念へズーム",
       "dragPan": "マップを移動（空きスペース）、または概念を動かす（バネで戻る）",
       "wheelZoom": "拡大または縮小",
       "keyZoom": "1段階ずつ拡大または縮小",

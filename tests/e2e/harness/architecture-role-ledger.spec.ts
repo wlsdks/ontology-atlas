@@ -91,11 +91,11 @@ function seedRecord(seed: Record<string, string>): void {
 const BOX_SIDE_PAD = 12;
 
 /** Opens the seeded vault the only way a browser can: through the picker the stub replaces. */
-async function openSeededVault(page: import('@playwright/test').Page) {
+async function openSeededVault(page: import('@playwright/test').Page, { receipt = true } = {}) {
   await page.setViewportSize({ width: 1512, height: 945 });
   await seedFirstRunSeen(page);
   const seed = collectVault(VAULT_ROOT);
-  seedRecord(seed);
+  if (receipt) seedRecord(seed);
   await stubDirectoryPicker(page, seed);
 
   await page.goto('/en/topology/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
@@ -175,7 +175,10 @@ test('a measured profile separates each role contract and receipt, whole chain o
                 if (hits(drawn[i].r, drawn[j].r)) out.push(`${drawn[i].id} touches ${drawn[j].id}`);
             return out;
           })(),
-          sentencesDrawn: document.querySelectorAll('[data-edge-sentence="drawn"]').length,
+          countsDrawn: document.querySelectorAll('[data-edge-sentence-kind="traffic"][data-edge-sentence="drawn"]').length,
+          trafficStrokesDrawn: document.querySelectorAll('path[data-edge-drawn="true"][data-edge-kind="traffic"]').length,
+          ruleSentencesDrawn: document.querySelectorAll('[data-edge-sentence-kind="permitted"][data-edge-sentence="drawn"]').length,
+          ruleSaidOnce: document.querySelectorAll('[data-edge-sentence-kind="rule"][data-edge-sentence="drawn"]').length,
         };
       });
 
@@ -189,9 +192,12 @@ test('a measured profile separates each role contract and receipt, whole chain o
       );
       /* And no role box sits below the fold: the whole chain is one screen. */
       expect(measured.belowFold, where).toBeLessThanOrEqual(1);
-      /* Direction B: the strokes say their sentences, and none of them touches anything. */
+      /* Every measured stroke says its count, the rules share one sentence, and none touches anything. */
       expect(measured.sentenceOffenders, `${where} ${measured.sentenceOffenders.join('\n')}`).toEqual([]);
-      expect(measured.sentencesDrawn, where).toBeGreaterThanOrEqual(6);
+      expect(measured.trafficStrokesDrawn, where).toBeGreaterThanOrEqual(3);
+      expect(measured.ruleSentencesDrawn, `${where}: a lower-only rule repeated per stroke`).toBe(0);
+      expect(measured.ruleSaidOnce, `${where}: the lower-only rule said once`).toBe(1);
+      expect(measured.countsDrawn, `${where}: a measured stroke without its count`).toBe(measured.trafficStrokesDrawn);
       expect(measured.evidenceLayout, where).toBe('paired-ladder');
     }
 
@@ -222,6 +228,68 @@ test('a measured profile separates each role contract and receipt, whole chain o
       await page.mouse.move(5, 5);
     }
   }
+});
+
+test('a landing receipt fills the empty column where it stood, and no contract face moves', async ({ page }) => {
+  test.setTimeout(120_000);
+  await openSeededVault(page, { receipt: false });
+  await page.goto('/en/architecture/?view=architecture&e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('architecture-graph-box-entities')).toBeVisible({ timeout: 60_000 });
+  const panel = page.getByTestId('architecture-observation-empty');
+  await expect(panel).toBeVisible({ timeout: 30_000 });
+  await graphSettled(page);
+
+  const contractFaces = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[data-testid^="architecture-graph-box-"] .architecture-canvas-node')].map((face) => {
+        const r = face.getBoundingClientRect();
+        return { x: Math.round(r.left), width: Math.round(r.width) };
+      }),
+    );
+  const before = await contractFaces();
+  const column = await panel.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  });
+
+  const landed = collectVault(VAULT_ROOT);
+  seedRecord(landed);
+  const receipt = Object.entries(landed).find(([file]) => file.startsWith('.ontology-atlas/'));
+  if (!receipt) throw new Error('the seeded receipt is missing');
+  await page.evaluate(async ([file, body]) => {
+    const root = await navigator.storage.getDirectory();
+    const names: string[] = [];
+    for await (const name of (root as unknown as { keys(): AsyncIterable<string> }).keys()) {
+      if (name.startsWith('stub-vault-')) names.push(name);
+    }
+    let dir = await root.getDirectoryHandle(names.sort().at(-1)!);
+    const segments = file.split('/');
+    const name = segments.pop()!;
+    for (const segment of segments) dir = await dir.getDirectoryHandle(segment, { create: true });
+    const writable = await (await dir.getFileHandle(name, { create: true })).createWritable();
+    await writable.write(body);
+    await writable.close();
+    window.dispatchEvent(new Event('atlas-analysis-records-changed'));
+  }, receipt);
+
+  await expect(page.locator('[data-testid^="architecture-observation-box-"]')).toHaveCount(7, { timeout: 30_000 });
+  await expect(panel).toHaveCount(0, { timeout: 10_000 });
+  await graphSettled(page);
+  const observed = await page.evaluate(() => {
+    const rects = [...document.querySelectorAll('[data-testid^="architecture-observation-box-"]')].map((box) =>
+      box.getBoundingClientRect(),
+    );
+    return {
+      left: Math.min(...rects.map((r) => r.left)),
+      top: Math.min(...rects.map((r) => r.top)),
+      right: Math.max(...rects.map((r) => r.right)),
+      bottom: Math.max(...rects.map((r) => r.bottom)),
+    };
+  });
+  for (const side of ['left', 'top', 'right', 'bottom'] as const) {
+    expect(Math.abs(observed[side] - column[side]), `the column's ${side} edge`).toBeLessThanOrEqual(1);
+  }
+  expect(await contractFaces(), 'no contract face moves on arrival').toEqual(before);
 });
 
 test('the workbench holds one screen: no page scroll, and the panels open on a click', async ({
@@ -431,14 +499,14 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
     expect(await axisOf(), `choosing ${role} turned the chain`).toBe('down');
     const seen = await page.evaluate((id) => {
       const box = document.querySelector(`[data-testid="architecture-graph-box-${id}"]`)!.getBoundingClientRect();
-      const scroller = document.querySelector('[data-testid="architecture-graph"]')!.parentElement!.getBoundingClientRect();
+      const scroller = document.querySelector('[data-testid="architecture-canvas-scroller"]')!.getBoundingClientRect();
       return box.left >= scroller.left - 1 && box.right <= scroller.right + 1 && box.top >= scroller.top - 1 && box.bottom <= scroller.bottom + 1;
     }, role);
     expect(seen, `${role} is chosen but not in view`).toBe(true);
     /* No stale sentence survives the re-render: one sentence element per stroke, no two alike. */
     const counts = await page.evaluate(() => {
       const strokes = document.querySelectorAll('path[data-edge-from]').length;
-      const sentences = [...document.querySelectorAll('[data-edge-sentence]')];
+      const sentences = [...document.querySelectorAll('[data-edge-sentence]:not([data-edge-sentence-kind="rule"])')];
       const seenKeys = new Set<string>();
       let alike = 0;
       for (const t of sentences) {

@@ -10,6 +10,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import {
   type SpringOffset,
 } from "../../expressive/release-offsets";
@@ -46,6 +47,7 @@ interface Dependencies {
   cameraTargetRef: RefObject<CameraTarget>;
   userDrivenCameraRef: RefObject<boolean>;
   hasInitializedRef: RefObject<boolean>;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
   overviewScaleRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
   pendingSpotlightFitRef: RefObject<boolean>;
@@ -105,6 +107,7 @@ export function useTopologyWorldLifecycle({
   cameraTargetRef,
   userDrivenCameraRef,
   hasInitializedRef,
+  domeRuntimeRef,
   overviewScaleRef,
   cameraAngularFreqRef,
   pendingSpotlightFitRef,
@@ -182,6 +185,12 @@ export function useTopologyWorldLifecycle({
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
+    // An active dome has fitted the camera itself and keeps the structure where it stands across a
+    // rebuilt world; a flat fit here would land the 3D entry on the flat overview.
+    if (domeRuntimeRef.current?.active) {
+      hasInitializedRef.current = true;
+      return;
+    }
     const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     const measuredTokens = overviewFitTokens(cameraTokens(tokens));
         const dialFit = dialOverviewFit(world);
@@ -211,11 +220,11 @@ export function useTopologyWorldLifecycle({
     if (pendingSpotlightFitRef.current && runSpotlightFitRef.current?.()) {
       pendingSpotlightFitRef.current = false;
     }
-  }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [cameraAngularFreqRef, cameraRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, domeRuntimeRef, hasInitializedRef, overviewFitRef, overviewScaleRef, pendingSpotlightFitRef, runSpotlightFitRef, userDrivenCameraRef, viewportRef, worldRef]);
 
   const glideArrivedWorld = (previousWorld: TopologyWorld, world: TopologyWorld, tokens: OntologyMapTokens, still: boolean) => {
     const { width, height } = viewportRef.current;
-    if (!userDrivenCameraRef.current && width > 0 && height > 0) {
+    if (!userDrivenCameraRef.current && !domeRuntimeRef.current?.active && width > 0 && height > 0) {
       const fitBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
       const measuredTokens = overviewFitTokens(cameraTokens(tokens));
       const target = computeOverviewCameraTarget(fitBounds, width, height, measuredTokens, world.nodes.length, dialOverviewFit(world));

@@ -67,14 +67,15 @@ describe('the conduction clock', () => {
     }
   });
 
-  it('builds three times and ends on the finished frame, whether it opens on that frame or on the build', () => {
+  it('builds three times and ends on the finished frame; from rest it opens on the clear, skipping the hold', () => {
     const rest = c.rest / c.loop;
+    const clear = c.clear / c.loop;
     for (const fromRest of [true, false]) {
       const timing = conductionTiming(fromRest);
       const start = timing.iterationStart ?? 0;
       const end = start + Number(timing.iterations);
       expect(timing.fill).toBe('both');
-      expect(start, `fromRest=${fromRest}`).toBeCloseTo(fromRest ? rest : 0, 6);
+      expect(start, `fromRest=${fromRest}`).toBeCloseTo(fromRest ? clear : 0, 6);
       expect(end % 1, `fromRest=${fromRest}`).toBeCloseTo(rest, 6);
       const builds = Math.floor(end) - Math.ceil(start) + 1;
       expect(builds, `fromRest=${fromRest}`).toBe(CONDUCTION_LOOPS);

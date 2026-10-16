@@ -95,6 +95,8 @@ export interface DocEntry {
   date: string | null;
   /** The remainder with the date and separator stripped; the heading verbatim when absent. */
   title: string;
+  version: string | null;
+  subject: string;
 }
 
 /**
@@ -122,11 +124,13 @@ export function extractEntries(markdown: string): DocEntry[] {
     const dateMatch = /^(\d{4}-\d{2}-\d{2})\s*[—–·-]?\s*(.*)$/.exec(heading);
     const date = dateMatch ? dateMatch[1]! : null;
     const title = dateMatch && dateMatch[2] ? dateMatch[2]! : heading;
+    const version = /^(v\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?|Unreleased)(?=:|\s|$)/.exec(title)?.[1] ?? null;
+    const subject = (version ? title.slice(version.length).replace(/^[\s:·—–-]+/u, '') : title) || title;
 
     const base = slugifyHeading(heading);
     const seen = used.get(base) ?? 0;
     used.set(base, seen + 1);
-    out.push({ id: seen === 0 ? base : `${base}-${seen + 1}`, heading, date, title });
+    out.push({ id: seen === 0 ? base : `${base}-${seen + 1}`, heading, date, title, version, subject });
   }
   return out;
 }

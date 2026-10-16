@@ -307,17 +307,14 @@
      as a line somebody made rather than as a border the layout emitted. */
   --color-architecture-sketch-ink: #6d7080;
 
-  /*
-   * The fill is capped under `--color-panel`: any stronger and the nearest plane would close on the
-   * face standing on it. One flat fill, no per-depth ramp; depth comes from the shear, the rank
-   * numeral and the arrows.
-   */
+  /* Capped under `--color-panel`, so no face closes on its band. */
   --architecture-plane-fill: var(--color-overlay-1);
   --architecture-plane-edge: rgba(255, 255, 255, 0.07);
   /* A violated import climbs the stack. The halo says so at rest and doubles when its role is
      chosen; both ends are tokens so the raise can never become a one-off brightness. */
   --architecture-plane-climb-halo: 0.34;
   --architecture-plane-climb-halo-raised: 0.7;
+  --architecture-evidence-rail-max: 420px;
 }
 
 .architecture-canvas-ground {
@@ -449,6 +446,68 @@
   animation-play-state: running;
 }
 
+/* A receipt landing, ≈630ms: bands grow, faces rise by rank, arrows draw, a violation climbs last. */
+.architecture-empty-panel-out {
+  animation: overlayFadeOut calc(var(--motion-base) * 0.67) var(--motion-ease) both;
+  pointer-events: none;
+}
+
+@keyframes architectureArrivePlane {
+  from {
+    opacity: 0;
+    transform: scaleX(var(--architecture-plane-from, 0));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.architecture-arrive-plane {
+  animation: architectureArrivePlane var(--motion-base) var(--motion-ease) backwards;
+  transform-box: fill-box;
+  transform-origin: left center;
+}
+
+.architecture-arrive-face {
+  animation: motionStaggerIn var(--motion-base) var(--motion-ease) backwards;
+  animation-delay: calc(var(--motion-base) + var(--motion-stagger-index, 0) * var(--motion-stagger));
+}
+
+.architecture-arrive-draw,
+.architecture-arrive-climb {
+  stroke-dasharray: 1;
+  animation: structureLinkIn var(--motion-base) var(--motion-ease) backwards;
+  animation-delay: calc(var(--motion-base) + var(--motion-stagger-index, 0) * var(--motion-stagger));
+}
+
+.architecture-arrive-climb {
+  animation-duration: var(--motion-settle);
+}
+
+.architecture-arrive-mark {
+  animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) backwards;
+  animation-delay: calc(
+    var(--motion-base) + var(--motion-fast) + var(--motion-stagger-index, 0) * var(--motion-stagger)
+  );
+}
+
+[data-architecture-arrival='whole'] :is(
+    .architecture-arrive-plane,
+    .architecture-arrive-face,
+    .architecture-arrive-draw,
+    .architecture-arrive-climb,
+    .architecture-arrive-mark
+  ) {
+  animation: panelCrossfadeIn var(--motion-fast) var(--motion-ease) backwards;
+  stroke-dasharray: none;
+}
+
+[data-architecture-arrival='whole'] .architecture-empty-panel-out {
+  animation-duration: var(--motion-fast);
+}
+
 /*
  * A local, truthful progress line for the Architecture observation lane. It exists only while an
  * ACP turn is actually active; it never loops over a stored receipt or an idle contract. The text
@@ -472,10 +531,25 @@
 @media (prefers-reduced-motion: reduce) {
   .architecture-evidence-rail-segment,
   .architecture-role-reveal,
-  .architecture-observation-reveal {
+  .architecture-observation-reveal,
+  .architecture-arrive-plane,
+  .architecture-arrive-face,
+  .architecture-arrive-draw,
+  .architecture-arrive-climb,
+  .architecture-arrive-mark {
     animation-name: panelCrossfadeIn !important;
     animation-duration: var(--motion-fast) !important;
     animation-delay: 0ms !important;
+  }
+
+  .architecture-arrive-draw,
+  .architecture-arrive-climb {
+    stroke-dasharray: none;
+  }
+
+  .architecture-empty-panel-out {
+    animation-name: overlayFadeOut !important;
+    animation-duration: var(--motion-fast) !important;
   }
 
   .architecture-selection-trace {

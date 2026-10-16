@@ -30,10 +30,7 @@ export interface DocsVaultVaultChipProps {
   t: ReturnType<typeof useTranslations<"docsVault">>;
 }
 
-/**
- * The header's vault chip: source, name and count, with a menu to switch. The census belongs
- * to the breadcrumb strip.
- */
+/** The header's vault chip: source and name, with a menu that holds the census and the switch. */
 export function DocsVaultVaultChip({
   label,
   docCount,
@@ -54,7 +51,7 @@ export function DocsVaultVaultChip({
   t,
 }: DocsVaultVaultChipProps) {
   return (
-    <div ref={menuRef} className="relative min-w-0 flex-none">
+    <div ref={menuRef} className="relative min-w-0 shrink">
       <Chip
         onClick={onToggle}
         aria-haspopup="menu"
@@ -62,7 +59,7 @@ export function DocsVaultVaultChip({
         aria-label={t("vaultChip.menuAriaLabel")}
         // A locale-independent handle for e2e specs.
         data-testid="vault-chip-menu-trigger"
-        className="min-h-[var(--chrome-tile-size)] min-w-0 max-w-[200px] flex-none hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
+        className="min-h-[var(--chrome-tile-size)] min-w-0 max-w-[min(200px,100%)] flex-none gap-1 px-2 hover:border-[color:var(--color-indigo-line-a32)] hover:text-[color:var(--color-text-primary)]"
       >
         {/* The icon states the source. */}
         {isSample ? (
@@ -73,9 +70,6 @@ export function DocsVaultVaultChip({
         {/* One sans face for name and count; paths keep mono elsewhere (DESIGN-SYSTEM "Machine strings"). */}
         <span className="hidden min-w-0 truncate text-[color:var(--color-text-secondary)] sm:inline">
           {label}
-        </span>
-        <span className="flex-none tabular-nums text-[color:var(--color-text-secondary)]">
-          {docCount === null ? null : t("header.docCount", { count: docCount })}
         </span>
         <ChevronDown
           size={ICON_SIZE.sm}
@@ -94,8 +88,9 @@ export function DocsVaultVaultChip({
           <p className="truncate rounded-micro px-1.5 py-1 font-mono text-label text-[color:var(--color-text-tertiary)]">
             {path}
           </p>
-          <p className="px-1.5 py-1 text-label text-[color:var(--color-text-secondary)]">
+          <p data-testid="vault-chip-census" className="px-1.5 py-1 text-label tabular-nums text-[color:var(--color-text-secondary)]">
             {t("header.vaultPillFolders", { count: folderCount })}
+            {docCount === null ? null : ` · ${t("header.docCount", { count: docCount })}`}
           </p>
           {isLocalSourceLoaded ? (
             <p className="inline-flex items-center gap-1 px-1.5 py-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-indigo-pale-a86)]">

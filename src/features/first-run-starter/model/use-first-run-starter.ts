@@ -25,7 +25,7 @@ import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settle
  * capture phase so `preventDefault()` stops the bubble-phase `topology-esc-ladder` in
  * `HomePage.tsx` (see `topology-esc-ladder.ts`).
  */
-export function useFirstRunStarter() {
+export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectionActive?: boolean } = {}) {
   const vault = useLocalVault();
   const locale = useLocale();
   const sampleModeSettled = useFirstRunSampleModeSettled();
@@ -113,20 +113,17 @@ export function useFirstRunStarter() {
   const errorDetail = failure?.detail ?? null;
 
   useEffect(() => {
-    if (!visible) return;
+    // Escape belongs first to a map selection, the tour, a modal or an edge panel.
+    if (!visible || mapSelectionActive) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      // Yield while the guided tour (`src/features/guided-tour`) is open: its Escape closes only the
-      // tour (`close-tour` in `topology-esc-ladder.ts`), and this card is beneath the scrim.
-      if (document.querySelector('[data-testid="guided-tour-overlay"]') !== null) return;
-      // Yield while a modal is open too, so Escape closes only the sheet.
-      if (document.querySelector('[role="dialog"][aria-modal="true"]') !== null) return;
+      if (document.querySelector('[data-testid="map-edge-panel"], [data-testid="guided-tour-overlay"], [role="dialog"][aria-modal="true"]') !== null) return;
       event.preventDefault();
       dismiss();
     };
     window.addEventListener('keydown', handler, { capture: true });
     return () => window.removeEventListener('keydown', handler, { capture: true });
-  }, [visible, dismiss]);
+  }, [visible, mapSelectionActive, dismiss]);
 
   return {
     visible,

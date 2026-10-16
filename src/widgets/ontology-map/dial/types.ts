@@ -8,7 +8,7 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number;
 }
 export interface Pad { left: number; right: number; top: number; bottom: number;
 }
-export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string;
+export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
 }
 export interface DialTokens {
   pitch: number;
@@ -26,7 +26,6 @@ export interface DialTokens {
   flowHeadGain: number;
   flowTrimStartPx: number;
   flowTrimEndPx: number;
-  numeralSize: number;
   numeralHaloPx: number;
   numeralGapPx: number;
   restNumbersShare: number;
@@ -52,6 +51,12 @@ export interface DialTokens {
   ledgerRowPx: number;
   ledgerGapPx: number;
   attendedNameInk: string;
+  fillDomain: string;
+  fillCapability: string;
+  strokeDomain: string;
+  strokeCapability: string;
+  strokeElement: string;
+  ring: string;
   spiralC: number;
   spiralK0: number;
   elementRoom: number;
@@ -139,7 +144,7 @@ type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger
 export interface TextMark { id: string | null; role: TextRole; text: string; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
     }[] | null;
 }
-interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box;
+interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
 }
 interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: number; ink: number;
 }
@@ -160,7 +165,7 @@ export interface DialOwnershipInput {
 }
 export interface DialFrameInput {
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
-  nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; labelScale: number; zoomRatio: number;
+  nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
   viewportWidth: number; viewportHeight: number; freeRect: Box;
   mapTokens: import("../tokens/read-map-tokens").OntologyMapTokens; dialTokens: DialTokens; labels: DialLabels | null; evidence: ReadonlyMap<string, DialEvidence> | null;
   hoveredNodeId: string | null; focusedNodeId: string | null; agentFocusNodeId: string | null;
@@ -197,15 +202,17 @@ export interface DialProbe {
         state: "reading" | "provisional" | "settled";
         held: number;
     };
-  texts: { id: string | null; role: TextRole; text: string; box: Box;
+  texts: { id: string | null; role: TextRole; text: string; box: Box; font: string;
     }[];
     numerals: {
         flowKey: string;
         text: string;
         box: Box;
+        font: string;
     }[];
     discs: (DialPick & {
         ink: string;
+        dashed: boolean;
     })[]; squares: number; strips: { flowKey: string; role: StripMark["role"]; ink: string;
     }[];
   ledger: { domainId: string; shown: number; total: number; more: number; leaderCrossings: number;

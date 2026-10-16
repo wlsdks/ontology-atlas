@@ -38,10 +38,10 @@ export function IdentityZone({
   return (
     <div className="px-[var(--map-panel-pad)] pt-[15px] pb-4">
       <div className="mb-[11px] flex items-center gap-2.5">
-        <h2
-          {...morphTargetProps(morphName("concept", nodeId))}
-          className="min-w-0 flex-1 truncate text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
-          {title}
+        <h2 className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
+          <span {...morphTargetProps(morphName("concept", nodeId))} className="block w-fit max-w-full truncate">
+            {title}
+          </span>
         </h2>
         {/* Kind is a badge you read (glyph plus word), the counterweight on the right. One chip grammar
            with the domain chip: both are the chip `md` step (32px, `rounded-chip`, `text-label`), the

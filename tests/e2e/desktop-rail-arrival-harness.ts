@@ -221,7 +221,7 @@ export async function installDesktopRailRuntime(
             );
           }
           case "git_diff":
-            return slow({ count: pending.length, files: pending, diff, truncated: false });
+            return slow({ count: status.changedCount, files: status.changes, diff, truncated: false });
           case "git_document_diff":
             return slow({
               path: args.relativePath,

@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
+import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type TierNameAnchor } from "../../model/dome-view/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
@@ -62,7 +63,7 @@ export interface UseTopologyLoopArgs {
   onHoverEdge?: (
     edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null,
     position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void;
-  onSelect?: (slug: string) => void;
+  onSelect?: (slug: string, source: SelectionSource) => void;
   /**
    * An arrow key found no neighbour in that direction; repeats are debounced
    * by the hook. Carries **where** the walk stopped (canvas-local coords)

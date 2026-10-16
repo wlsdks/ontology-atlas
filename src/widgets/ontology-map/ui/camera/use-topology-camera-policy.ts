@@ -11,7 +11,7 @@ import {
   measureEdgeFitObstacle,
   type EdgeFitObstacle
 } from "../../interaction/free-area";
-import { cameraTransitionDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude } from "../../model/camera/camera-easing";
+import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   DOME_NODE_FIT_ALLOWANCE_PX,
   domeReachesRect,
@@ -153,7 +153,7 @@ export function useTopologyCameraPolicy({
    * only), so listing it in the programmatic-move effects' deps never re-fires
    * them.
    */
-  const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: "out", altitude: CameraTweenAltitude = "follows-camera") => {
+  const beginCameraTween = useCallback((target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase, altitude: CameraTweenAltitude = "follows-camera") => {
     if (reducedMotionRef.current) {
       cameraTweenRef.current = null;
       return;
@@ -161,7 +161,7 @@ export function useTopologyCameraPolicy({
     const cam = cameraRef.current;
     const start: CameraKeyframe = { x: cam.x.value, y: cam.y.value, scale: cam.scale.value };
     const tgt: CameraKeyframe = { x: target.tx, y: target.ty, scale: target.tscale };
-    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? cameraTransitionDurationMs(start, tgt), ease, altitude };
+    cameraTweenRef.current = { start, target: tgt, startMs: performance.now(), durationMs: durationOverrideMs ?? (ease === "spring" ? CANVAS_SPRING_PAN_MS : cameraTransitionDurationMs(start, tgt)), ease, altitude };
   }, [cameraRef, cameraTweenRef, reducedMotionRef]);
   return { cameraTokens, domeFitTarget, beginCameraTween };
 }

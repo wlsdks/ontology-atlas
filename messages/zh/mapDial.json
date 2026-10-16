@@ -7,6 +7,7 @@
   "ringAtLeast": "被其他 {min, number} 个以上领域依赖",
   "ringAtMostOne": "最多被其他 1 个领域依赖",
   "linksShown": "共 {total, number} 条链接，显示 {shown, number} 条",
+  "evidenceUnmeasured": "依据未测量",
   "reading": "正在读取文件：{read, number} / {total, number}",
   "settling": "读完所有文件后，圆环才会确定",
   "legendNeeds": "依赖",

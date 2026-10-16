@@ -17,7 +17,7 @@ test('Agents opens the requested runner after the login scan completes', async (
   await page.goto('/ko/?guides=off&e2e=1');
   await page.getByTestId('first-run-open').click();
   await page.getByTestId('app-nav-rail').getByRole('link', { name: '에이전트', exact: true }).click();
-  await expect(page.getByTestId('app-settings-runtime-codex-acp')).toContainText('준비됨');
+  await expect(page.locator('[data-runtime-row-state="ready"]', { has: page.getByTestId('app-settings-runtime-codex-acp') })).toHaveCount(1);
   await page.getByTestId('app-settings-runtime-chat-codex-acp').click();
   const panel = page.getByTestId('acp-chat-panel');
   await expect(panel).toBeVisible();

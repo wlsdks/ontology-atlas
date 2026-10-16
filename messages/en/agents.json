@@ -9,7 +9,7 @@
   "title": "Agents",
   "lede": "Atlas finds the coding tools already on this computer.",
   "ledeWeb": "The desktop app finds the coding tools on this computer and lets you talk to them inside Atlas.",
-  "runtimesHeading": "Tools on this computer",
+  "runtimesHeading": "Tools you can chat with",
   "models": {
     "lede": "Connect the model the conversation beside the map calls.",
     "providerAnthropic": "Anthropic",

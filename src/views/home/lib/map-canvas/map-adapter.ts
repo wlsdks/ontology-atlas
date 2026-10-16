@@ -3,18 +3,13 @@ import {
   computeDomainCensusRows,
   domainCensusById,
   isContainmentRelation,
+  isMapConcept,
 } from "@/entities/knowledge-graph";
 import type { OntologyMapEdge, OntologyMapNode } from "@/widgets/ontology-map";
 import { computeSubtreeWeights } from "./subtree-weights";
 import { classifyTopologyRelationQuality } from "../topology-analysis";
 
-const RENDERABLE_KINDS = new Set(["project", "domain", "capability", "element"]);
-
-type RenderableKind = "project" | "domain" | "capability" | "element";
-
-function isRenderableKind(kind: string): kind is RenderableKind {
-  return RENDERABLE_KINDS.has(kind);
-}
+type RenderableKind = OntologyMapNode["kind"];
 
 export interface BuildOntologyMapGraphOptions {
   changedSlugs?: ReadonlySet<string>;
@@ -39,7 +34,7 @@ export function buildOntologyMapGraph(
   edges: readonly KnowledgeGraphEdge[],
   options: BuildOntologyMapGraphOptions = {},
 ): OntologyMapGraph {
-  const includedNodes = nodes.filter((node) => isRenderableKind(node.kind));
+  const includedNodes = nodes.filter(isMapConcept);
   const includedIds = new Set(includedNodes.map((node) => node.id));
   if (includedNodes.length === 0) return { nodes: [], edges: [] };
 

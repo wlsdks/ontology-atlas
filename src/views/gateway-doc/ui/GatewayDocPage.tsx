@@ -158,12 +158,7 @@ export function GatewayDocPage({
           <header className="w-full max-w-[var(--measure-prose)]">
             <h1
               data-testid="gateway-doc-title"
-              /*
-               * The top of the ramp (`--text-hero-lg`) with its pair `--leading-hero-lg`, the gateway
-               * headline's step; a size outside the ramp is dropped unless registered in
-               * `TYPE_RAMP_STEPS` in `cn.ts`.
-               */
-              className="text-hero-lg leading-hero-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+              className="text-hero leading-hero font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
             >
               {title}
             </h1>
@@ -303,7 +298,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   h3: ({ children, ...rest }) => (
     <h3
-      className="mt-8 mb-2 text-body-lg leading-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+      className="mt-8 mb-2 text-title leading-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
       {...rest}
     >
       {children}
@@ -311,7 +306,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   p: ({ children, ...rest }) => (
     <p
-      className="my-4 text-body-lg leading-prose text-[color:var(--color-text-secondary)]"
+      className="my-4 text-reading leading-prose text-[color:var(--color-text-secondary)]"
       {...rest}
     >
       {children}
@@ -319,7 +314,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   ul: ({ children, ...rest }) => (
     <ul
-      className="my-4 list-disc pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+      className="my-4 list-disc pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
       {...rest}
     >
       {children}
@@ -327,7 +322,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   ol: ({ children, ...rest }) => (
     <ol
-      className="my-4 list-decimal pl-6 text-body-lg leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
+      className="my-4 list-decimal pl-6 text-reading leading-prose text-[color:var(--color-text-secondary)] marker:text-[color:var(--color-text-quaternary)]"
       {...rest}
     >
       {children}
@@ -345,7 +340,7 @@ const PROSE_COMPONENTS: Components = {
   ),
   blockquote: ({ children, ...rest }) => (
     <blockquote
-      className="my-6 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]"
+      className="my-6 border-l-2 border-[color:var(--color-indigo-line-a35)] pl-4 text-reading leading-prose text-[color:var(--color-text-tertiary)]"
       {...rest}
     >
       {children}
@@ -564,7 +559,7 @@ function GuideChapterPicker({ activeSegment }: { activeSegment?: string }) {
 }
 
 /**
- * The changelog's entry list, date first. Anchors, not routes: the changelog is one flow, and
+ * The changelog's entry list, version then title; the date stays in the entry. Anchors, not routes: the changelog is one flow, and
  * `<a href="#…">` gives back, shareable addresses and no-JS behaviour for free.
  */
 function EntrySidebar({ entries }: { entries: DocEntry[] }) {
@@ -580,23 +575,19 @@ function EntrySidebar({ entries }: { entries: DocEntry[] }) {
         <p className="mb-3 px-2 text-label leading-label font-[var(--font-weight-signature)] tracking-wide text-[color:var(--color-text-quaternary)] uppercase">
           {t('entryNavLabel')}
         </p>
-        <ul lang="en" className="flex flex-col gap-0.5">
+        <ul lang="en" className="flex flex-col gap-1.5">
           {entries.map((entry) => (
             <li key={entry.id}>
               <a
                 href={`#${entry.id}`}
+                title={entry.subject}
                 data-testid={`entry-nav-${entry.id}`}
-                className={controlClass({ shape: "row", size: "sm", className: "block hover:bg-[color:var(--color-elevated)]" })}
+                className={controlClass({ shape: "row", size: "sm", className: "gap-2 text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-elevated)]" })}
               >
-                {entry.date ? (
-                  <span className="block font-mono text-label leading-label text-[color:var(--color-text-quaternary)]">
-                    {entry.date}
-                  </span>
-                ) : null}
-                {/* Titles clamp to two lines, so one near-sentence title cannot eat half the list. */}
-                <span className="line-clamp-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                  {entry.title}
-                </span>
+                {entry.version ? (
+                  <span className="shrink-0 font-mono text-[color:var(--color-text-quaternary)]">{entry.version}</span>
+                ) : null}{' '}
+                <span className="min-w-0 truncate">{entry.subject}</span>
               </a>
             </li>
           ))}

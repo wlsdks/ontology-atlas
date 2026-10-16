@@ -436,6 +436,8 @@ export function TopologyIndexPanel({
     });
   }
   const tidyHeadingId = useId();
+  const projectRoots = treeResult.roots.filter((root) => root.node.kind === "project").length;
+  const projectCount = projectRoots === 1 ? totalConcepts : null;
   return (
     <aside
       aria-label={labels.label}
@@ -489,7 +491,7 @@ export function TopologyIndexPanel({
         data-testid="topology-index-fold"
         className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
-        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]">
+        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-secondary)]">
           {labels.label}
         </span>
         {/* No visible count here; the terrain HUD shows it and the sr-only census stays. */}
@@ -699,6 +701,7 @@ export function TopologyIndexPanel({
                   agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}
                   maxDomainDescendantCount={maxDomainDescendantCount}
                   domainCensus={domainCensus}
+                  projectCount={projectCount}
                   query={trimmedQuery || undefined}
                   labels={labels}
                 />
@@ -716,7 +719,7 @@ export function TopologyIndexPanel({
         <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0">
           <p
             id={tidyHeadingId}
-            className="mb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-quaternary)]"
+            className="mb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-secondary)]"
           >
             {labels.tidyHeading}
           </p>
@@ -725,13 +728,13 @@ export function TopologyIndexPanel({
               <li key={row.key}>
                 {row.href ? (
                   <Link href={row.href} data-testid={row.testId} className={TIDY_ROW_CLASS}>
-                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">{row.label}</span>
-                    <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{row.action}</span>
+                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-secondary)]">{row.label}</span>
+                    <span className="shrink-0 text-[color:var(--color-indigo-text-strong)]">{row.action}</span>
                   </Link>
                 ) : (
                   <button type="button" onClick={row.onClick} data-testid={row.testId} className={TIDY_ROW_CLASS}>
-                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-tertiary)]">{row.label}</span>
-                    <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{row.action}</span>
+                    <span className="min-w-0 flex-1 truncate text-[color:var(--map-panel-text-secondary)]">{row.label}</span>
+                    <span className="shrink-0 text-[color:var(--color-indigo-text-strong)]">{row.action}</span>
                   </button>
                 )}
               </li>

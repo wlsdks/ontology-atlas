@@ -7,17 +7,46 @@ import type { SinceRow } from './since-list';
  * reason is said once, not per core.
  */
 export type BriefRow =
-  | { kind: 'line'; core: BriefCoreKey; availability: BriefAvailability; line: BriefLine }
+  | { kind: 'line'; core: BriefCoreKey; availability: BriefAvailability; line: BriefLine; total?: number }
   | {
       kind: 'status';
       core: BriefCoreKey;
       status: 'no-source' | 'no-data' | 'reading' | 'unreadable' | 'quiet';
+      /** What a quiet core counted in all, so "nothing new" still states how much it covers. */
+      total?: number;
       /** The no-source row stands for the concepts' unchecked-evidence line; see `briefRows`. */
       unchecked?: true;
     }
   | { kind: 'app-only'; cores: readonly BriefCoreKey[] };
 
 const STATE_RANK: Record<BriefLine['state'], number> = { stale: 0, unknown: 1, current: 2 };
+const ZERO_RANK = 3;
+
+/** The whole a line's count is part of: concepts, pages, guide files or code areas. `null` where no whole exists. */
+export function lineTotal(core: BriefCore, line: BriefLine): number | null {
+  if (core.availability !== 'measured') return null;
+  switch (line.id) {
+    case 'harness-untold-areas':
+      return (core.current ?? 0) + line.count;
+    case 'harness-ungated-areas':
+      return (core.stale ?? 0) + line.count;
+    case 'harness-unwatched-areas':
+      return (core.unknown ?? 0) + line.count;
+    case 'harness-mirror-drift':
+      return core.headline;
+    case 'wiki-stale-pages':
+    case 'wiki-orphan-pages':
+      return core.headline;
+    case 'ontology-evidence-moved':
+    case 'ontology-evidence-missing':
+    case 'ontology-evidence-folder-only':
+    case 'ontology-evidence-unchecked':
+    case 'ontology-agent-unreviewed':
+      return core.core === 'ontology' ? core.headline : null;
+    default:
+      return null;
+  }
+}
 
 /** The since card names these one by one, so the brief does not repeat them as "happened" lines. */
 const SINCE_LINE: Record<SinceRow['kind'], string> = {
@@ -53,11 +82,15 @@ export function briefRows(
         lineIndex: visibleLines(core).indexOf(absorbed),
       });
     }
-    visibleLines(core).forEach((line, lineIndex) => {
+    let listed = 0;
+    core.lines.forEach((line, lineIndex) => {
       if (line === absorbed || namedElsewhere.has(line.id)) return;
+      const total = lineTotal(core, line);
+      if (line.count === 0 && total === null) return;
+      listed += 1;
       lines.push({
-        row: { kind: 'line', core: core.core, availability: core.availability, line },
-        rank: STATE_RANK[line.state],
+        row: { kind: 'line', core: core.core, availability: core.availability, line, ...(total === null ? {} : { total }) },
+        rank: line.count === 0 ? ZERO_RANK : STATE_RANK[line.state],
         coreIndex,
         lineIndex,
       });
@@ -75,7 +108,7 @@ export function briefRows(
         statuses.push({ kind: 'status', core: core.core, status: core.availability });
         break;
       case 'measured':
-        if (visibleLines(core).length === 0) statuses.push({ kind: 'status', core: core.core, status: 'quiet' });
+        if (listed === 0 && visibleLines(core).length === 0) statuses.push({ kind: 'status', core: core.core, status: 'quiet', ...(core.headline === null ? {} : { total: core.headline }) });
         break;
     }
   });

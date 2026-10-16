@@ -139,6 +139,7 @@
       "showShortcuts": "키보드 단축키 보기·닫기",
       "stepCloseOverlays": "열린 패널을 한 단계씩 닫기",
       "clickSelect": "개념 선택",
+      "enterZoom": "선택한 개념으로 확대",
       "dragPan": "지도 이동(빈 공간) 또는 개념 위치 이동(스프링 반사)",
       "wheelZoom": "확대·축소",
       "keyZoom": "확대 · 축소 한 단계",

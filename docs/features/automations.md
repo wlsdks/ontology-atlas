@@ -16,7 +16,12 @@ its latest report and the Run now, Edit, Pause/Resume, and Remove actions (remov
 an inline confirmation);
 older runs expand on demand. Document results retain checked counts, stale pages,
 updated files, and tool receipts when recorded. An empty lane presents one first
-schedule action. Without a folder, the installed app opens a folder in place.
+schedule action. Both states share one list panel, whose column header uses the row's own grid; an
+empty lane shows one dimmed ghost row with the default cadence where the first schedule will appear,
+and saving it turns that row real in place. The new-schedule button keeps its place at the tab row,
+filled while the lane is empty. The tab row and the list stop at 960px under the title at every width; from
+1536px the three facts stand beside the list, and below that they follow it.
+Without a folder, the installed app opens a folder in place.
 The browser explains the installed-app requirement.
 
 Edit opens the schedule's own sheet on the schedule as it stands, with its name, cadence and

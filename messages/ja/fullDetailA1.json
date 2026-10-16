@@ -7,12 +7,6 @@
   "copyLink": "概念のリンクをコピー",
   "copyLinkCopied": "概念のリンクをコピーしました",
   "close": "閉じる",
-  "metric": {
-    "contains": "含む",
-    "usedBy": "利用元",
-    "dependsOn": "依存先",
-    "reach": "3ステップ到達"
-  },
   "groups": {
     "containsTitle": "この概念が含むもの",
     "containsCaption": "この概念の内側にあるもの",
@@ -22,8 +16,11 @@
     "dependsOnCaption": "これがないと動きません",
     "belongsToTitle": "所属先",
     "belongsToCaption": "この概念が属している概念",
-    "empty": "直接のつながりはありません。",
-    "freshDotTitle": "最近更新"
+    "freshDotTitle": "最近更新",
+    "directLinks": "直接のつながり{count, number}件",
+    "domainCount": "ドメイン{count, number}件",
+    "domainLinks": "このドメインとのリンク{count, number}件",
+    "emptyGroup": "{title}なし"
   },
   "reach": {
     "leadIn": "この概念から、",

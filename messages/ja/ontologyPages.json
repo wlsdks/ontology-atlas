@@ -22,12 +22,6 @@
       "sinceGloss": "行を開くと数えた概念が見られます。行末のリンクから修正する場所に移動できます。",
       "headline": "<learn>学ぶこと{stale}件</learn><sep> · </sep><unchecked>未確認{unknown}件</unchecked>",
       "headlineCounting": "<learn>学ぶこと</learn>と<unchecked>未確認のこと</unchecked>を集計中",
-      "unit": {
-        "ontology": "",
-        "wiki": "ページ",
-        "harness": "ファイル",
-        "agent": "回"
-      },
       "sinceTitle": "{count}件の変更：前回から",
       "sinceTitleKind": {
         "concept-doc": "変更された概念文書{count}件：前回から",
@@ -74,17 +68,6 @@
         "harness": "案内",
         "agent": "エージェント"
       },
-      "col": {
-        "current": "最新",
-        "stale": "古い",
-        "unknown": "不明",
-        "told": "案内",
-        "gated": "遮断",
-        "watched": "監視",
-        "reads": "読取",
-        "writes": "書込",
-        "agents": "エージェント"
-      },
       "appOnly": "アプリでのみ計測します。ブラウザではフォルダの隣にあるコードや隠しフォルダを読めません。",
       "quiet": "それ以降、新しく学ぶことはありません。",
       "open": "開く",
@@ -122,13 +105,6 @@
       "evidenceUnreadable": "リンク先のコードを確認できませんでした。フォルダを開き直して再試行してください。",
       "evidenceNoSource": "概念がコードと今も合っているかは、まだ確認していません。マップでコードリポジトリを接続すると、ここで集計します。",
       "noSourceShared": "概念がコードと今も合っているか、ガイドがどこまで届いているかは、まだ集計していません。マップでコードリポジトリを接続すると、どちらもここで集計します。",
-      "bandState": {
-        "app-only": "最新・古いはアプリで計測",
-        "no-data": "まだなし",
-        "no-source": "リポジトリ未接続",
-        "reading": "読込中",
-        "unreadable": "読込不可"
-      },
       "coreJoin": " · "
     },
     "unmatched": {
@@ -496,7 +472,7 @@
       "copySelectedCheck": "読み取り専用の確認依頼をコピー",
       "copiedSelected": "コピー済み",
       "reviewSelectedRequest": "依頼内容を確認",
-      "declarationRange": "線1本が宣言1件です · {total}件中{from}–{to}",
+      "lineLegend": "線1本が宣言1件です",
       "previousDeclarations": "前の宣言",
       "nextDeclarations": "次の宣言",
       "selectionMissing": "保存された選択はこのフォルダにありません。現在の記録の概要を表示しています。",
@@ -506,7 +482,8 @@
         "dated": "ソース日付を比較済み・意味は未検証",
         "unknown": "ソースの現在の状態は未確認"
       },
-      "declarationCompact": "宣言{count}件",
+      "declarationsInView": "この図で宣言{count}件",
+      "declarationPage": "{from}–{to} / {total}",
       "documentTitle": "分析 · Ontology Atlas",
       "findConnection": "関係を検索",
       "findCapability": "能力を検索",

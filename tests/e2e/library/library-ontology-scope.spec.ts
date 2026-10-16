@@ -22,6 +22,14 @@ async function openOntology(page: Page, slug?: string) {
   await expect(page.getByRole('heading', { level: 1, name: 'Ontology' })).toBeVisible();
 }
 
+async function expectCensus(page: Page, text: string) {
+  const trigger = page.getByTestId('vault-chip-menu-trigger');
+  await trigger.click();
+  await expect(page.getByTestId('vault-chip-census')).toContainText(text);
+  await trigger.click();
+  await expect(page.getByTestId('vault-chip-census')).toBeHidden();
+}
+
 async function pinCurrentDocument(page: Page) {
   await page.getByRole('button', { name: 'Open palette (search · commands · tags)' }).click();
   const palette = page.getByRole('dialog', { name: 'Ontology workspace palette' });
@@ -38,7 +46,7 @@ test('Library Ontology exposes only the five explicit schema kinds', async ({ pa
   await loadVault(page, MIXED_LIBRARY_VAULT);
   await openOntology(page);
 
-  await expect(page.getByTestId('vault-chip-menu-trigger')).toContainText('5 documents');
+  await expectCensus(page, '5 documents');
   for (const id of ['all', 'guides', 'ontology']) {
     await expect(page.getByTestId(`docs-sidebar-collection-${id}`)).toHaveCount(0);
   }
@@ -154,7 +162,7 @@ test('a wiki-only vault leaves Ontology empty and restores no ordinary tab', asy
   await expect(page.getByRole('heading', { level: 1, name: 'Document' })).toHaveCount(1);
   await expect(page.locator('[data-docs-header-zone="tabs"]')).toContainText('Vault instructions');
   await openOntology(page);
-  await expect(page.getByTestId('vault-chip-menu-trigger')).toContainText('0 documents');
+  await expectCensus(page, '0 documents');
   await expect(page.locator('[data-docs-header-zone="tabs"]')).not.toContainText('Vault instructions');
   await expect(page.getByRole('heading', { level: 1, name: 'Ontology' })).toHaveCount(1);
 });

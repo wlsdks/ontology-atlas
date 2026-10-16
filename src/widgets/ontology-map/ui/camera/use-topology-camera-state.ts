@@ -1,11 +1,9 @@
 "use client";
 
-import {
-  useEffect,
-  useRef
-} from "react";
+import { useRef } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
+import type { SelectionCamera } from "../../model/camera/flat-selection-camera";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -33,9 +31,6 @@ export function useTopologyCameraState({
   } | null>(null);
 
   const previousConstellationFocusIdRef = useRef<string | null>(constellationFocusId);
-
-  useEffect(() => {
-    }, []);
 
   /**
    * WCAG 2.2 §2.3.3 — "who moved the camera last". Pointer-handler gestures
@@ -123,12 +118,14 @@ export function useTopologyCameraState({
    */
   const overviewFitRef = useRef(overviewFit);
 
+  const selectionCameraRef = useRef<SelectionCamera | null>(null);
+
   return {
     cameraRef, cameraTargetRef, constellationCameraRef,
     previousConstellationFocusIdRef, userDrivenCameraRef, cameraGestureRevisionRef, cameraTweenRef, zoomEaseRef,
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
     runSpotlightFitRef, reframeViewportRef, viewportCameraTrackedRef, initialRelayoutTokenRef, panelInsetsRef,
-    overviewFitRef,
+    overviewFitRef, selectionCameraRef,
   };
 }

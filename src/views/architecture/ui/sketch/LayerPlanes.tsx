@@ -1,76 +1,70 @@
-import { PAD_X, PLANE_INSET_Y, PLANE_STEP } from './geometry';
-import type { ArchitectureSketchProps, Placed } from './types';
+import type { CSSProperties } from 'react';
 
+import { PLANE_INSET_Y } from './geometry';
+import type { ArchitectureSketchProps, ArrivalPhase, Placed } from './types';
+
+/** One row band per role, joining its contract face to its observation face with equal overhang. */
 export function LayerPlanes({
   graph,
-  ranks,
-  observationEmpty,
+  arrival,
   pairedGutterW,
   contractBoxW,
   observationBoxW,
   boxH,
-  planeLean,
-  planeDrift,
   planeRoom,
-  layoutLeadRoom,
   placed,
 }: {
   graph: ArchitectureSketchProps['graph'];
-  ranks: number;
-  observationEmpty: boolean;
+  arrival: ArrivalPhase;
   pairedGutterW: number;
   contractBoxW: number;
   observationBoxW: number;
   boxH: number;
-  planeLean: number;
-  planeDrift: number;
   planeRoom: number;
-  layoutLeadRoom: number;
   placed: ReadonlyMap<string, Placed>;
 }) {
+  const bandW = contractBoxW + pairedGutterW + observationBoxW + planeRoom * 2;
   return (
     <g
       aria-hidden
       pointerEvents="none"
       data-testid="architecture-layer-planes"
-      data-layer-step={PLANE_STEP}
+      data-plane-overhang={planeRoom}
     >
       {graph.boxes.map((box) => {
         const at = placed.get(box.id);
         if (!at) return null;
-        const depth =
-          ranks === 1 ? 1 : (ranks - 1 - box.column) / (ranks - 1);
-        /* The left edge steps one `PLANE_STEP` per rank and every plane ends on one right edge, so the stagger reads as depth, not misalignment (`ArchitectureSketch.test.tsx`, "every layer plane ends on one line"). */
-        const stagger = (ranks - 1 - box.column) * PLANE_STEP;
-        const x = PAD_X + layoutLeadRoom - planeRoom + stagger;
-        /* Before an inspection the planes end at the contract faces instead of running under the empty panel. */
-        const planeW =
-          contractBoxW +
-          (observationEmpty ? 0 : pairedGutterW + observationBoxW) +
-          planeRoom * 2 -
-          planeDrift -
-          planeLean -
-          stagger;
+        const x = at.x - planeRoom;
         const top = at.y - PLANE_INSET_Y;
-        const bottom = at.y + boxH + PLANE_INSET_Y;
         return (
           <g
             key={`plane-${box.id}`}
-            className="architecture-layer-plane architecture-role-reveal"
+            className={
+              arrival === 'arriving'
+                ? 'architecture-arrive-plane'
+                : arrival === 'rest'
+                  ? 'architecture-role-reveal'
+                  : undefined
+            }
+            style={
+              arrival === 'arriving'
+                ? ({ '--architecture-plane-from': (contractBoxW + planeRoom) / bandW } as CSSProperties)
+                : undefined
+            }
             data-testid={`architecture-layer-plane-${box.id}`}
             data-layer-rank={box.column}
-            data-layer-depth={Math.round(depth * 100) / 100}
           >
-            <path
-              d={`M ${x} ${bottom} H ${x + planeW} L ${x + planeW + planeLean} ${top} H ${
-                x + planeLean
-              } Z`}
+            <rect
+              x={x}
+              y={top}
+              width={bandW}
+              height={boxH + PLANE_INSET_Y * 2}
               fill="var(--architecture-plane-fill)"
             />
             {/* The lit top face, the same one-flat-line device a raised node already uses. */}
             <line
-              x1={x + planeLean}
-              x2={x + planeLean + planeW}
+              x1={x}
+              x2={x + bandW}
               y1={top}
               y2={top}
               stroke="var(--architecture-plane-edge)"

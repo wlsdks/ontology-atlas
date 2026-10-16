@@ -12,7 +12,8 @@ import { useTranslations } from 'next-intl';
 import { TextCursorInput, Trash2 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
-import { Chip, IconButton, controlClass, useToast } from '@/shared/ui';
+import { IconButton, controlClass, useToast } from '@/shared/ui';
+import { cn } from '@/shared/lib/cn';
 import { DocReadingPane, useBackToTop, useDocReadingScrollSpy } from '@/widgets/doc-reading-pane';
 import {
   DocsVaultBacklinks,
@@ -41,6 +42,8 @@ function splitVaultSlugPath(slug: string): { dir: string; name: string } {
 
 export function DocsVaultDocumentPane({
   selectedDoc,
+  columnTitle,
+  onBodyPainted,
   editing,
   setEditing,
   showSampleWelcomeNote,
@@ -80,6 +83,8 @@ export function DocsVaultDocumentPane({
   staticVault,
 }: {
   selectedDoc: VaultManifest['docs'][number];
+  columnTitle: string | null;
+  onBodyPainted: (doc: string, body: string | null) => void;
   editing: boolean;
   setEditing: Dispatch<SetStateAction<boolean>>;
   showSampleWelcomeNote: boolean;
@@ -125,6 +130,82 @@ export function DocsVaultDocumentPane({
   // Null means no place in the graph, so "open on the map" is not rendered.
   const mapDeeplinkForSelectedDoc =
     buildTopologyDeeplinkForDoc(selectedDoc) ?? buildOntologyDeeplinkForDoc(selectedDoc);
+  const filePath = (
+    <p data-testid="docs-editor-path" className="min-w-0 flex-auto truncate font-mono text-label leading-label text-[color:var(--color-text-tertiary)]">
+      <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>
+      {splitVaultSlugPath(selectedDoc.slug).name}.md
+    </p>
+  );
+  const headControls = (
+    <div className="ml-auto flex min-h-[var(--chrome-tile-size)] flex-none items-center gap-2">
+      {/* Hidden while editing: a move under an open editor would strand unsaved text. */}
+      {canEditCurrent && !editing ? (
+        <span data-testid="docs-file-actions" className="flex flex-none items-center">
+          <IconButton
+            label={t('fileActions.rename')}
+            tone="muted"
+            hoverInk="strong"
+            hoverSurface="lift"
+            onClick={handleRenameCurrent}
+            data-testid="docs-file-rename"
+            className="size-[var(--chrome-tile-size)]"
+          >
+            <TextCursorInput size={ICON_SIZE.lg} aria-hidden />
+          </IconButton>
+          <IconButton
+            label={t('fileActions.delete')}
+            tone="muted"
+            hoverInk="strong"
+            hoverSurface="lift"
+            onClick={handleDeleteCurrent}
+            data-testid="docs-file-delete"
+            className="size-[var(--chrome-tile-size)]"
+          >
+            <Trash2 size={ICON_SIZE.lg} aria-hidden />
+          </IconButton>
+        </span>
+      ) : null}
+      {!editing && !isLocalSourceLoaded ? (
+        <SampleNotice onOpenFolder={() => handleSourceChange('local')} />
+      ) : null}
+      {canEditCurrent ? (
+        <div
+          role="tablist"
+          data-testid="docs-editor-mode"
+          aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
+          className="inline-flex flex-none items-center gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-px"
+        >
+          {([false, true] as const).map((mode) => (
+            <button
+              key={mode ? 'edit' : 'preview'}
+              type="button"
+              role="tab"
+              aria-selected={editing === mode}
+              onClick={() => setEditing(mode)}
+              className={controlClass({
+                shape: 'segment',
+                size: 'lg',
+                active: editing === mode,
+                hoverInk: 'strong',
+                hoverSurface: 'lift',
+              })}
+            >
+              {mode ? t('editorHeader.editTab') : t('editorHeader.previewTab')}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {isLocalSourceLoaded ? (
+        <span data-testid="docs-local-synced" className="flex-none text-label leading-label text-[color:var(--color-text-quaternary)]">
+          <span
+            className="mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle"
+            aria-hidden
+          />
+          {t('editorHeader.localSynced')}
+        </span>
+      ) : null}
+    </div>
+  );
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {!editing && showSampleWelcomeNote ? (
@@ -134,84 +215,6 @@ export function DocsVaultDocumentPane({
           onDismiss={() => setSampleWelcomeDismissed(true)}
         />
       ) : null}
-      {/* Display title lives in the tab and H1; this row shows only where the file lives. */}
-      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-[color:var(--color-border-soft)] px-4 py-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1">
-          <span data-testid="docs-editor-path" className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
-            <span>{splitVaultSlugPath(selectedDoc.slug).dir}</span>
-            {splitVaultSlugPath(selectedDoc.slug).name}.md
-          </span>
-          {/* Rename and delete sit beside the path they change, only when writable and not editing,
-             since a move under an open editor would strand unsaved text. */}
-          {canEditCurrent && !editing ? (
-            <span data-testid="docs-file-actions" className="flex flex-none items-center gap-0.5">
-              <IconButton
-                label={t('fileActions.rename')}
-                tone="muted"
-                hoverInk="strong"
-                hoverSurface="lift"
-                onClick={handleRenameCurrent}
-                data-testid="docs-file-rename"
-              >
-                <TextCursorInput size={ICON_SIZE.sm} aria-hidden />
-              </IconButton>
-              <IconButton
-                label={t('fileActions.delete')}
-                tone="muted"
-                hoverInk="strong"
-                hoverSurface="lift"
-                onClick={handleDeleteCurrent}
-                data-testid="docs-file-delete"
-              >
-                <Trash2 size={ICON_SIZE.sm} aria-hidden />
-              </IconButton>
-            </span>
-          ) : null}
-        </div>
-        {/* Read-only is a vault fact, stated here at zero vertical cost. */}
-        {!editing && !isLocalSourceLoaded ? (
-          <SampleNotice onOpenFolder={() => handleSourceChange('local')} />
-        ) : null}
-        {canEditCurrent ? (
-          <div
-            role="tablist"
-            aria-label={`${t('editorHeader.previewTab')} / ${t('editorHeader.editTab')}`}
-            className="inline-flex flex-none items-stretch gap-px rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-px shadow-[inset_0_1px_2px_var(--color-shadow-a35)]"
-          >
-            <Chip
-              role="tab"
-              aria-selected={!editing}
-              active={!editing}
-              tone={!editing ? 'strong' : 'muted'}
-              onClick={() => setEditing(false)}
-              className="hover:text-[color:var(--color-text-secondary)]"
-            >
-              {t('editorHeader.previewTab')}
-            </Chip>
-            <Chip
-              role="tab"
-              aria-selected={editing}
-              active={editing}
-              tone={editing ? 'strong' : 'muted'}
-              onClick={() => setEditing(true)}
-              className="hover:text-[color:var(--color-text-secondary)]"
-            >
-              {t('editorHeader.editTab')}
-            </Chip>
-          </div>
-        ) : null}
-        {/* The dot is the label's bullet; it states only whether the vault source is local. */}
-        {isLocalSourceLoaded ? (
-          <span className="flex-none text-label text-[color:var(--color-text-quaternary)]">
-            <span
-              className="mr-1.5 inline-block h-[5px] w-[5px] rounded-full bg-[color:var(--color-indigo-accent)] align-middle"
-              aria-hidden
-            />
-            {t('editorHeader.localSynced')}
-          </span>
-        ) : null}
-      </div>
-
       <div className="flex min-h-0 flex-1">
         <DocReadingPane
           data-testid="docs-reading-pane"
@@ -227,6 +230,30 @@ export function DocsVaultDocumentPane({
           }
           backToTop={!editing ? backToTop : null}
         >
+          <header
+            data-testid="docs-reading-head"
+            className={cn("mx-auto max-w-[var(--measure-doc-column)] px-6 pt-3 md:px-10", editing && "pb-4")}
+          >
+            {columnTitle ? (
+              <>
+                {filePath}
+                <div className="mt-1 flex flex-wrap items-start gap-x-4 gap-y-2">
+                  <h1
+                    data-testid="docs-reading-title"
+                    className="min-w-0 flex-1 py-1 text-display leading-display font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+                  >
+                    {columnTitle}
+                  </h1>
+                  {headControls}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                {filePath}
+                {headControls}
+              </div>
+            )}
+          </header>
             {editing && canEditCurrent && editResolver ? (
               <DocsVaultEditor
                 key={`edit:${vaultScope}:${selectedDoc.slug}`}
@@ -283,6 +310,8 @@ export function DocsVaultDocumentPane({
                 <DocsVaultViewer
                   key={`${source}:${selectedDoc.slug}`}
                   doc={selectedDoc}
+                  onBodyPainted={(body) => onBodyPainted(`${source}:${selectedDoc.slug}`, body)}
+                  compactTop
                   vaultSlugs={vaultSlugs}
                   onNavigate={handleSelect}
                   getDocContent={getDocContent}

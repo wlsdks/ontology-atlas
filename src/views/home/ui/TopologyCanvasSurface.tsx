@@ -21,7 +21,7 @@ import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/status/frame-meter";
 import { Compass, HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
 import { TopologyScopeReadout } from "./TopologyScopeReadout";
 import { resolveMapScopeCount } from "../lib/map-scope/resolve-count";
@@ -135,6 +135,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { openGuidedTour } = topologyKeyboardTour;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
+  const railRecedes = !view3d && selectedNodeFocusActive;
+  const [railReceded, setRailReceded] = useState(false);
+  if (railRecedes && !railReceded) setRailReceded(true);
+  const railMotion = railRecedes ? "map-chrome-recede-out pointer-events-none" : `${railReceded ? "map-overlay-in " : ""}pointer-events-auto`;
 
   const scopeConceptCount = useMemo(() => {
     if (isSynthetic) return ontologyMapGraph.nodes.length;
@@ -262,8 +266,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {structure || createNodeOpen ||
             topologyBlockingOverlayActive ||
             selectedEdgeOwnsRightRail ||
-            (selectedNodeFocusActive && (!view3d || !nodePopoverDismissed)) ? null : (
+            (view3d && selectedNodeFocusActive && !nodePopoverDismissed) ? null : (
             <TopologyFitControl
+              className={railMotion}
+              inert={railRecedes}
               mobileObscured={renderedIndexState === "expanded"}
               density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
               onFitView={() => {
@@ -276,9 +282,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
-            selectedNodeFocusActive ? null : (
+            (view3d && selectedNodeFocusActive) ? null : (
             <Tooltip content={t('controls.tourTooltip')} side="left">
               <ChromeTile
+                inert={railRecedes}
                 icon={<Compass />}
                 title=""
                 aria-label={t('controls.tourTooltip')}
@@ -286,7 +293,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                 data-testid="topology-tour-button"
                 data-agent-dock-adjacent-rail="true"
                 data-map-fit-obstacle="right"
-                className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex"
+                className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex`}
               />
             </Tooltip>
           )}
@@ -295,9 +302,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
-            selectedNodeFocusActive ? null : (
+            (view3d && selectedNodeFocusActive) ? null : (
             <Tooltip content={t('controls.shortcutsTooltip')} side="left">
               <ChromeTile
+                inert={railRecedes}
                 icon={<HelpCircle />}
                 title=""
                 aria-label={t('controls.shortcutsTooltip')}
@@ -330,7 +338,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                       : "--topology-shortcuts-help-phone-top"
                     : undefined
                 }
-                className={`topology-ui-scale pointer-events-auto absolute right-4 ${selectedNodeFocusActive
+                className={`${railMotion} topology-ui-scale absolute right-4 ${selectedNodeFocusActive
                   ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                   : "top-[var(--topology-shortcuts-help-phone-top)]"
                   } z-20 md:right-[var(--chrome-inset)] md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex ${
@@ -348,9 +356,10 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||
             topologyBlockingOverlayActive ||
-            selectedNodeFocusActive ? null : (
+            (view3d && selectedNodeFocusActive) ? null : (
             <div
-              className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block"
+              inert={railRecedes}
+              className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-growth-replay-desktop-top)] md:block`}
               data-agent-dock-adjacent-rail="true"
               data-map-fit-obstacle="right"
             >

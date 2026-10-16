@@ -1,18 +1,22 @@
-import type { Dispatch, RefObject, SetStateAction } from 'react';
+import type { CSSProperties, Dispatch, RefObject, SetStateAction } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 
 import type { ArchitectureGraph as Graph } from '../../model/graph-layout';
 import type { RoleLedger } from '../../model/role-ledger';
-import { captionLineRoom, splitLinesByWidthAt } from '../../model/summary-lines';
+import { balanceLinesByWidthAt, captionLineRoom, splitLinesByWidthAt } from '../../model/summary-lines';
 import { ConnectionPort } from './ConnectionPort';
-import { SUMMARY_LINES } from './geometry';
+import { SUMMARY_FONT_PX, SUMMARY_LINES } from './geometry';
 import { EDGE_STROKE, RECEDED_ROLE_OPACITY } from './ink';
-import type { ArchitectureSketchProps, FlowAxis, Placed } from './types';
+import type { ArchitectureSketchProps, ArrivalPhase, FlowAxis, Placed } from './types';
 
-const SUMMARY_FONT_PX = 11;
 /** One sentence line to the next, in SVG units: the `--leading-label` pair of `text-label`. */
 const SUMMARY_LEADING = 16;
+const SPLIT_SUMMARY_FONT_PX = 12.5;
+const SPLIT_SUMMARY_LEADING = 20;
+const SPLIT_NAME_FONT_PX = 14;
+/** A glyph's visual centre sits about this many ems above its baseline. */
+const GLYPH_CENTRE_EM = 0.35;
 
 /** Shapes, not colour: tick for clean, slashed circle where a role's edges break its rules, hollow circle where no source matched. */
 const LEDGER_GLYPH: Record<RoleLedger['state'], string> = {
@@ -48,6 +52,7 @@ export function RoleFaces({
   observationBoxH,
   summaryLineCount,
   observationOffset,
+  arrival,
   hovered,
   setHovered,
   pressed,
@@ -84,6 +89,7 @@ export function RoleFaces({
   observationBoxH: number;
   summaryLineCount: number;
   observationOffset: number;
+  arrival: ArrivalPhase;
   hovered: string | null;
   setHovered: Dispatch<SetStateAction<string | null>>;
   pressed: string | null;
@@ -94,6 +100,20 @@ export function RoleFaces({
   swallowClick: RefObject<boolean>;
   visibleEdges: Graph['edges'];
 }) {
+  /* One step for the whole column: if any sentence would be cut at `text-body`, all step down. */
+  const roomy =
+    splitsEvidence &&
+    graph.boxes.every((box) => {
+      const text = roleSummary(box.id);
+      return (
+        text === null ||
+        !splitLinesByWidthAt(text, captionLineRoom(contractBoxW), summaryLineCount, SPLIT_SUMMARY_FONT_PX)
+          .at(-1)
+          ?.endsWith('…')
+      );
+    });
+  const summaryPx = roomy ? SPLIT_SUMMARY_FONT_PX : SUMMARY_FONT_PX;
+  const leading = roomy ? SPLIT_SUMMARY_LEADING : SUMMARY_LEADING;
   return (
     <>
       {graph.boxes.map((box, boxIndex) => {
@@ -126,11 +146,7 @@ export function RoleFaces({
         const contractPortEdges = visibleEdges.filter(
           (edge) => !splitsEvidence || edge.kind === 'permitted',
         );
-        const contractIncoming = contractPortEdges.filter((edge) => edge.to === box.id);
         const contractOutgoing = contractPortEdges.filter((edge) => edge.from === box.id);
-        const observationIncoming = visibleEdges.filter(
-          (edge) => edge.kind === 'traffic' && edge.to === box.id,
-        );
         const observationOutgoing = visibleEdges.filter(
           (edge) => edge.kind === 'traffic' && edge.from === box.id,
         );
@@ -138,9 +154,16 @@ export function RoleFaces({
           ({ axis, at: face, boxW: faceW, boxH: faceH, lane, active: focus === box.id });
         /* Budgeted by characters, because an SVG text node does not wrap or ellipsize. */
         const summary = roleSummary(box.id);
-        /* With a ledger every baseline is fixed from the top so the rule lands between declared and counted; without one the block is centred, keeping two-line positions for its budget. */
+        const summaryLines =
+          summary === null
+            ? null
+            : splitsEvidence
+              ? balanceLinesByWidthAt(summary, captionLineRoom(contractBoxW), summaryLineCount, summaryPx)
+              : splitLinesByWidthAt(summary, captionLineRoom(contractBoxW), summaryLineCount, SUMMARY_FONT_PX);
+        /* With an in-face ledger every baseline is fixed so the rule lands between declared and counted. */
+        const blockTop = at.y + (boxH - leading * (1 + (summaryLines?.length ?? 1))) / 2;
         const nameY = splitsEvidence
-          ? at.y + 23
+          ? blockTop + leading / 2 + SPLIT_NAME_FONT_PX * GLYPH_CENTRE_EM
           : axis === 'down'
             ? at.y + 18
             : ledger
@@ -149,15 +172,15 @@ export function RoleFaces({
               ? at.y + boxH / 2 - 4
               : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * SUMMARY_LEADING) / 2;
         const countsY = splitsEvidence
-          ? at.y + 43
+          ? blockTop + leading * 1.5 + summaryPx * GLYPH_CENTRE_EM
           : axis === 'down'
             ? at.y + 34
             : nameY + 15;
-        const summaryLines =
-          summary === null
-            ? null
-            : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches. */
-              splitLinesByWidthAt(summary, captionLineRoom(contractBoxW), summaryLineCount, SUMMARY_FONT_PX);
+        const arriving = arrival === 'arriving';
+        const riseStyle = arriving
+          ? ({ '--motion-stagger-index': box.column } as CSSProperties)
+          : undefined;
+        const revealClass = arrival === 'rest' ? 'architecture-observation-reveal' : undefined;
 
         return (
           <g
@@ -248,13 +271,12 @@ export function RoleFaces({
               className="architecture-canvas-node architecture-node-face"
               data-node-selected={isSelected ? 'true' : 'false'}
             />
-            {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+            {/* A side port marks where a skip leaves; its head arrives bare. */}
+            {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && edge.from === box.id) ? (
               <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" side="left" />
             ) : null}
-            {contractIncoming.length > 0 ? (
-              <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="incoming" />
-            ) : null}
-            {contractOutgoing.length > 0 ? (
+            {/* The spine meets both faces bare: 18px of clear line on roomy rows, 16 on tight. */}
+            {contractOutgoing.length > 0 && !usesPairedDown ? (
               <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" />
             ) : null}
             {splitsEvidence ? (
@@ -268,7 +290,7 @@ export function RoleFaces({
                   'architecture-node-copy font-mono text-caption tabular-nums',
                   isSelected
                     ? 'fill-[color:var(--color-indigo-text-soft)]'
-                    : 'fill-[color:var(--color-text-quaternary)]',
+                    : 'fill-[color:var(--color-text-tertiary)]',
                 )}
               >
                 {String(boxIndex + 1).padStart(2, '0')}
@@ -278,7 +300,10 @@ export function RoleFaces({
               x={at.x + contractBoxW / 2}
               y={nameY}
               textAnchor="middle"
-              className="fill-[color:var(--color-text-primary)] text-body font-[var(--font-weight-strong)]"
+              className={cn(
+                'fill-[color:var(--color-text-primary)] font-[var(--font-weight-strong)]',
+                splitsEvidence ? 'text-body-lg' : 'text-body',
+              )}
             >
               {roleLabel(box.id)}
             </text>
@@ -287,7 +312,8 @@ export function RoleFaces({
               y={countsY}
               textAnchor="middle"
               className={cn(
-                'text-label fill-[color:var(--color-text-tertiary)]',
+                roomy ? 'text-body' : 'text-label',
+                'fill-[color:var(--color-text-tertiary)]',
                 summaryLines === null && 'tabular-nums',
               )}
               data-testid={`architecture-box-line-${box.id}`}
@@ -302,7 +328,7 @@ export function RoleFaces({
                     <tspan
                       key={index}
                       x={at.x + contractBoxW / 2}
-                      y={countsY + index * SUMMARY_LEADING}
+                      y={countsY + index * leading}
                     >
                       {line}
                     </tspan>
@@ -339,7 +365,11 @@ export function RoleFaces({
               </>
             ) : null}
             {splitsEvidence && observedAt && !observationEmpty ? (
-              <g className="architecture-observation-reveal">
+              <>
+              <g
+                className={arriving ? 'architecture-arrive-mark' : revealClass}
+                style={riseStyle}
+              >
                 <line
                   x1={usesPairedDown ? at.x + contractBoxW + 8 : at.x + contractBoxW / 2}
                   x2={usesPairedDown ? observedAt.x - 8 : at.x + contractBoxW / 2}
@@ -396,6 +426,11 @@ export function RoleFaces({
                     aria-hidden
                   />
                 ) : null}
+              </g>
+              <g
+                className={arriving ? 'architecture-arrive-face' : revealClass}
+                style={riseStyle}
+              >
                 <rect
                   x={observedAt.x}
                   y={observedAt.y}
@@ -424,13 +459,10 @@ export function RoleFaces({
                   data-testid={`architecture-observation-box-${box.id}`}
                   data-observation-state={ledger?.state ?? 'missing'}
                 />
-                {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && edge.from === box.id) ? (
                   <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" side="right" />
                 ) : null}
-                {observationIncoming.length > 0 ? (
-                  <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="incoming" />
-                ) : null}
-                {observationOutgoing.length > 0 ? (
+                {observationOutgoing.length > 0 && !usesPairedDown ? (
                   <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" />
                 ) : null}
                 <text
@@ -462,6 +494,7 @@ export function RoleFaces({
                       : `○ ${observationMissingLabel}`}
                 </text>
               </g>
+              </>
             ) : null}
           </g>
         );

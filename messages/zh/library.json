@@ -810,16 +810,11 @@
     "emptyDescription": "每次定时检查运行后，结果都会出现在这里，最新的在前。",
     "emptyAction": "在自动化中安排",
     "emptyKinds": "可以安排的检查",
-    "emptySignals": "每轮会在这里留下什么",
     "signal": {
       "stale": "过时",
-      "staleBody": "页面引用的某份来源已变更。点按页面即可在 Wiki 中打开。",
       "redrafted": "已重写",
-      "redraftedBody": "智能体写了新草稿。在你复核之前，它一直是草稿。",
       "refused": "已拒绝",
-      "refusedBody": "计划从不允许的请求。清单中会写明被拦下的是什么。",
-      "held": "无变化",
-      "heldBody": "每个页面仍与其来源一致。只占一行。"
+      "held": "无变化"
     },
     "kind": {
       "consistency": "页面仍与来源一致",
@@ -920,7 +915,12 @@
         "unreadable": "Atlas 无法回读它来检查。"
       },
       "undoneCopy": "Atlas 取出的文本保存在 {copy} 中。",
-      "leftAsIs": "{page} 在这一轮写入后又被修改，Atlas 保持原样。"
+      "leftAsIs": "{page} 在这一轮写入后又被修改，Atlas 保持原样。",
+      "columnTime": "时间",
+      "columnRound": "巡检",
+      "columnOutcome": "结果",
+      "ghostTime": "––:––",
+      "ghostAria": "第一次运行会出现在这里"
     },
     "sheet": {
       "readbackHour": "每小时",

@@ -7,6 +7,7 @@
   "ringAtLeast": "used by {min, number}+ other domains",
   "ringAtMostOne": "used by at most 1 other domain",
   "linksShown": "{shown, number} of {total, number} links shown",
+  "evidenceUnmeasured": "Evidence not measured",
   "reading": "Reading {read, number} of {total, number} files",
   "settling": "Rings settle when every file is read",
   "legendNeeds": "needs",

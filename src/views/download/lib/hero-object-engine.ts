@@ -7,6 +7,9 @@
 
 import { registerGatedFrameClient } from './gateway-frame-loop';
 import { echoCount, echoOrder, preferredParents } from './hero-echo';
+import { chainWalker, HERO_CHAIN, HERO_TURN_MS, heroChains } from './hero-chain';
+import { drawChainCanvas } from './hero-chain-canvas';
+import type { HeroBox } from './hero-bounds';
 
 const TAU = Math.PI * 2;
 
@@ -34,7 +37,7 @@ export interface HeroGraphData {
 export interface HeroEngineOptions {
   /** Defaults to document.documentElement. */
   tokenEl?: Element;
-  /** Default 48000: a rotation to gaze at, not a carousel. */
+  /** A rotation to gaze at, not a carousel. */
   periodMs?: number;
   inkScale?: number;
   /** Measured on the shorter side. */
@@ -45,8 +48,11 @@ export interface HeroEngineOptions {
   echo?: boolean;
   /** Never fires while dragging. */
   onHover?: (slug: string | null) => void;
+  onChain?: (slug: string | null) => void;
   /** Fractions of the stage for the ink envelope's centre (default 0.5/0.5). */
   anchor?: { x: number; y?: number; bottomPx?: number };
+  bounds?: () => HeroBox | null;
+  watch?: (refit: () => void) => () => void;
   /** A background dome must yield to the type over it. */
   dim?: number;
   /** Lean toward a fine pointer; never under reduced motion. */
@@ -67,6 +73,7 @@ export interface HeroEngineHandle {
   litCount: () => number;
   /** Last drawn frame, canvas CSS px; for gates. */
   nodesOnScreen: () => { s: string; k: HeroGraphNode['k']; x: number; y: number }[];
+  activeChain: () => { nodes: { s: string; x: number; y: number }[] } | null;
 }
 
 function smooth01(u: number): number {
@@ -243,7 +250,7 @@ export function mountHeroObject(
   const ink = hexRgb(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
   const fill = hexRgb(cssVar(rootEl, '--color-panel', '#0f1011'));
 
-  const PERIOD = opts.periodMs ?? 48000;
+  const PERIOD = opts.periodMs ?? HERO_TURN_MS.plane;
   const PITCH = opts.pitch ?? (flat ? 0.95 : 0.34);
   const F = 1050;
   const ASSEMBLE = 1600;
@@ -321,11 +328,26 @@ export function mountHeroObject(
     );
     const ax = opts.anchor?.x ?? 0.5;
     const ay = opts.anchor?.y ?? 0.5;
+    const box = opts.bounds?.() ?? null;
+    const slack = 1 + MARGIN;
+    if (box) {
+      scaleFit = Math.min(scaleFit, (box.bottom - box.top) / (envH * slack), (box.right - box.left) / (envW * slack));
+    }
     const envMidY = ((envelope.y0 + envelope.y1) / 2) * scaleFit;
     centerX = W * ax - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
     // Pixels from the foot, not a fraction: the stage grows with the copy, the plinth does not.
     centerY =
-      opts.anchor?.bottomPx !== undefined ? H - opts.anchor.bottomPx - envMidY : H * ay - envMidY;
+      opts.anchor?.bottomPx !== undefined
+        ? H - opts.anchor.bottomPx - envMidY
+        : H * ay - envMidY;
+    if (box) {
+      const padX = (envW * scaleFit * MARGIN) / 2;
+      const padY = (envH * scaleFit * MARGIN) / 2;
+      centerX += Math.max(0, box.left + padX - (centerX + envelope.x0 * scaleFit));
+      centerX -= Math.max(0, centerX + envelope.x1 * scaleFit - (box.right - padX));
+      centerY += Math.max(0, box.top + padY - (centerY + envelope.y0 * scaleFit));
+      centerY -= Math.max(0, centerY + envelope.y1 * scaleFit - (box.bottom - padY));
+    }
   }
   size();
 
@@ -434,6 +456,10 @@ export function mountHeroObject(
   const boxObserver =
     typeof ResizeObserver === 'function' ? new ResizeObserver(() => onResize()) : null;
   boxObserver?.observe(canvas);
+  const unwatch = opts.watch?.(() => {
+    size();
+    drawAt(lastT);
+  });
   /* A lost 2D context would leave a permanent blank, so restore resizes and redraws. */
   const onContextLost = (e: Event): void => e.preventDefault();
   const onContextRestored = (): void => onResize();
@@ -519,6 +545,47 @@ export function mountHeroObject(
   let lastT = 0;
   let disposed = false;
   let unregisterFrame: (() => void) | null = null;
+
+  const HOP_MS = parseFloat(cssVar(rootEl, '--map-light-hop-max-ms', '')) || HERO_CHAIN.hopMs;
+  const walker = chainWalker(heroChains(model.nodes, model.edges), HOP_MS, reduced);
+  const inkRgb = `rgb(${ink[0]},${ink[1]},${ink[2]})`;
+  let echoDoneAt: number | null = echo ? null : ASSEMBLE + 600;
+  const depthOf = (slug: string): number => lastProjected.get(slug)?.z ?? 0;
+  const chainPts: [Projected, Projected, Projected] = [
+    { x: 0, y: 0, s: 1, z: 0 },
+    { x: 0, y: 0, s: 1, z: 0 },
+    { x: 0, y: 0, s: 1, z: 0 },
+  ];
+  const chainR: [number, number, number] = [0, 0, 0];
+  let chainOn = false;
+  let captioned: string | null = null;
+  const caption = (slug: string | null): void => {
+    if (slug === captioned) return;
+    captioned = slug;
+    opts.onChain?.(slug);
+  };
+
+  function drawChain(t: number, projected: Map<string, Projected>, alpha: number): void {
+    const frame = walker.frame(echoDoneAt === null ? null : t - echoDoneAt, depthOf);
+    const chain = walker.chain();
+    chainOn = false;
+    if (!frame || !chain || frame.alpha <= 0) {
+      caption(null);
+      return;
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const p = projected.get(chain[i]!);
+      if (!p) {
+        caption(null);
+        return;
+      }
+      chainPts[i] = p;
+      chainR[i] = Math.max(0.8, NODE_R[model.bySlug.get(chain[i]!)!.k] * p.s * scaleFit * 2.1);
+    }
+    chainOn = true;
+    caption(frame.caption >= 0 ? chain[frame.caption]! : null);
+    drawChainCanvas(ctx!, frame, chainPts, chainR, inkRgb, alpha);
+  }
 
   function drawAt(t: number): void {
     if (disposed) return;
@@ -648,7 +715,6 @@ export function mountHeroObject(
       ctx!.stroke();
     }
 
-    // Dash motion, not glow: the map section's `.flow` pulse grammar.
     for (const e of dependsEdges) {
       const na = model.bySlug.get(e.a);
       const nb = model.bySlug.get(e.b);
@@ -676,15 +742,6 @@ export function mountHeroObject(
       ctx!.strokeStyle = `rgba(${accent[0]},${accent[1]},${accent[2]},${Math.min(0.9, 0.75 * f) * a})`;
       ctx!.lineWidth = 1.1;
       ctx!.stroke();
-      if (!reduced) {
-        ctx!.save();
-        ctx!.setLineDash([3, 150]);
-        ctx!.lineDashOffset = -((t / 14) % 153);
-        ctx!.strokeStyle = `rgba(${accent2[0]},${accent2[1]},${accent2[2]},${Math.min(1, 1.1 * f) * a})`;
-        ctx!.lineWidth = 1.6;
-        ctx!.stroke();
-        ctx!.restore();
-      }
     }
 
     const nSorted = model.nodes
@@ -726,6 +783,8 @@ export function mountHeroObject(
         ctx!.stroke();
       }
     }
+
+    drawChain(t, projected, ctx!.globalAlpha / (opts.dim ?? 1));
 
     // A stroke ring, not a shadow, as the map's selection draws.
     if (hover !== null) {
@@ -785,6 +844,7 @@ export function mountHeroObject(
       unregisterFrame?.();
       removeEventListener('resize', onResize);
       boxObserver?.disconnect();
+      unwatch?.();
       canvas.removeEventListener('contextlost', onContextLost);
       canvas.removeEventListener('contextrestored', onContextRestored);
       if (tilt) {
@@ -803,10 +863,15 @@ export function mountHeroObject(
       // Only ever added: a remounted headline's smaller count must not put out seen ink.
       const before = revealAt.size;
       for (let i = revealAt.size; i < n; i += 1) revealAt.set(order[i], lastT);
+      if (echoDoneAt === null && order.length > 0 && revealAt.size >= order.length) echoDoneAt = lastT + REVEAL_MS;
       // Reduced motion draws only when ink was added, so a still page paints once.
       if (reduced && revealAt.size > before) drawStill();
     },
     litCount: () => revealAt.size,
+    activeChain: () => {
+      const chain = walker.chain();
+      return chainOn && chain ? { nodes: chain.map((s, i) => ({ s, x: chainPts[i].x, y: chainPts[i].y })) } : null;
+    },
     nodesOnScreen: () =>
       model.nodes.map((n) => {
         const p = lastProjected.get(n.s);

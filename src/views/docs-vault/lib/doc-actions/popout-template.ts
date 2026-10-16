@@ -19,7 +19,7 @@ const POPOUT_TOKENS = {
   panel: "#0f1011",
   textPrimary: "#f7f8f8",
   textSecondary: "#d0d6e0",
-  textTertiary: "#8a8f98",
+  textTertiary: "#9a9fa8",
   borderSoft: "rgba(255,255,255,0.08)",
   // One hue: indigo alpha only.
   indigoAlphaStrong: "rgba(139,151,255,0.9)",

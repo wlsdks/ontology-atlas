@@ -1598,7 +1598,7 @@ describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
     const name = screen.getByRole("heading", { level: 2 });
     expect(name).toHaveTextContent("Views");
     expect(name.className).toContain("text-title");
-    expect(name.className).toContain("truncate");
+    expect(name.querySelector("span")?.className).toContain("truncate");
   });
 
   it("renders a quiet kind badge with the localized kind word next to the name", () => {

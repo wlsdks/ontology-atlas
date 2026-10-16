@@ -9,7 +9,7 @@
   "title": "エージェント",
   "lede": "Atlasは、このコンピュータにあるコーディングツールを自動で見つけます。",
   "ledeWeb": "デスクトップアプリは、このコンピュータのコーディングツールを見つけ、Atlasの中で会話できるようにします。",
-  "runtimesHeading": "このコンピュータのツール",
+  "runtimesHeading": "会話できるツール",
   "models": {
     "lede": "マップの横にある会話が呼び出すモデルを接続します。",
     "providerAnthropic": "Anthropic",

@@ -14,7 +14,8 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildDialModel, dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { mixOver, resolveDialInks } from "../ink";
 import { pickDial } from "../pick";
-import { buildDialMarks, dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
+import { dialChipRadiusPx, dialDiscRadiusPx } from "../tokens";
+import { buildDialMarks, dialHubRadiusPx, emptyDialFrameMarks, type DialDisclosureInput, type DialMarksInput } from "./marks";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
 import type { DialCluster, DialEvidence, DialItem, DialLabels, DialModel, DialScene, Point } from "../types";
@@ -114,12 +115,12 @@ function run(o: RunOptions = {}) {
   const input: DialMarksInput = {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: INKS, labels: LABELS,
     evidence: o.evidence === undefined ? null : dialEvidenceView(model, o.evidence),
-    attention: resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: 1, labelScale: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
+    attention: resolveDialAttention(model, null, o.focusId ?? null), inkAttention: resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), previous: null, inkMix: 1, chordPresence: 1,
+    scale, zoomRatio: 1, viewportWidth: 1000, viewportHeight: 800, freeRect: { minX: 0, minY: 0, maxX: 1000, maxY: 800 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: o.appearOf ?? (() => 1), measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: o.brushId ?? o.hoverId ?? null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, o.hoverId ?? null, o.focusId ?? null), TOKENS), ...o.disclosure },
+    disclosure: { ...resolveDialDisclosure(model, scene, { scale, viewportWidth: 1000, viewportHeight: 800, toScreen }, { minX: 0, minY: 0, maxX: 1000, maxY: 800 }, resolveDialAttention(model, null, o.focusId ?? null), TOKENS), ...o.disclosure },
   };
   const out = emptyDialFrameMarks();
   const result = buildDialMarks(input, out);
@@ -216,7 +217,7 @@ describe("buildDialMarks", () => {
     const quiet = model.domains.map((d) => d.id).find((id) => id !== "d0" && !partners.has(id))!;
     expect(run({ focusId: "d0" }).out.glyphs.find((g) => g.id === quiet)!.egoState).toBe("dim");
     const brushed = run({ focusId: "d0", brushId: quiet }).out.glyphs.find((g) => g.id === quiet)!;
-    expect(brushed).toMatchObject({ hovered: true, egoState: "normal", fill: null });
+    expect(brushed).toMatchObject({ hovered: true, egoState: "normal", fill: run().out.glyphs.find((g) => g.id === quiet)!.fill });
   });
 
   it("shows the ledger only when in-place names leave some unnamed below reach-cap", () => {
@@ -289,15 +290,32 @@ describe("buildDialMarks", () => {
     expect(out.inks[related.rim]).toBe(mixOver(INKS.capabilityRim, INKS.bg, 1));
   });
 
-  it("colours rims by evidence only when evidence is measured", () => {
+  it("keeps every resting name and count in place on hover, changes only ink, and names the hovered capability", () => {
+    const rest = run();
+    const named = new Set(rest.out.texts.map((t) => t.id));
+    const bare = rest.out.discs.map((d) => d.id).find((id) => !named.has(id))!;
+    expect(bare).toBeDefined();
+    const hover = run({ hoverId: bare });
+    const where = (r: ReturnType<typeof run>) => r.out.texts.filter((t) => t.id !== bare).map((t) => `${t.id}|${t.text}|${t.x}|${t.y}`);
+    expect(where(hover)).toEqual(where(rest));
+    expect(hover.out.numerals.map((n) => n.text)).toEqual(rest.out.numerals.map((n) => n.text));
+    const own = hover.out.texts.find((t) => t.id === bare && t.role === "capability")!;
+    expect(hover.out.inks[own.ink]).toBe(INKS.domainLabel);
+    expect(hover.out.texts.filter((t) => t.id !== bare).some((t) => hover.out.inks[t.ink] !== rest.out.inks[t.ink])).toBe(true);
+  });
+
+  it("colours rims by evidence, and draws every disc unknown when nothing was measured", () => {
     const states = new Map<string, DialEvidence>();
     for (let d = 0; d < DOMAINS; d += 1) for (let c = 0; c < 2; c += 1) states.set(`d${d}c${c}`, "current");
     states.set("d2c0", "stale");
     states.set("d2c1", "unknown");
-    const unmeasured = run({ evidence: null });
+    const unmeasured = run({});
     const rimOf = (r: ReturnType<typeof run>, id: string) => r.out.inks[r.out.discs.find((d) => d.id === id)!.rim];
     expect(rimOf(unmeasured, "d2c0")).toBe(rimOf(unmeasured, "d5c0"));
     expect(unmeasured.out.discs.every((d) => !d.dashed)).toBe(true);
+    const unknown = run({ evidence: new Map() });
+    expect(unknown.out.discs.length).toBeGreaterThan(0);
+    expect(unknown.out.discs.every((d) => d.dashed)).toBe(true);
     const measured = run({ evidence: states });
     expect(rimOf(measured, "d2c0")).toBe(mixOver(INKS.stale, INKS.bg, 1));
     expect(measured.out.discs.find((d) => d.id === "d2c1")!.dashed).toBe(true);

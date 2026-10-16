@@ -33,7 +33,7 @@ export interface SentencePlacement {
   y: number;
   anchor: 'start' | 'end' | 'middle';
   /** Present when the sentence is not drawn, with the reason. */
-  hidden?: 'no-room' | 'collision';
+  hidden?: 'no-room' | 'collision' | 'said-once';
   /** The drawn rectangle, for gates. Absent when hidden. */
   rect?: { x: number; y: number; width: number; height: number };
 }
@@ -77,9 +77,9 @@ export interface SentenceLayoutInput {
   focus?: string | null;
 }
 
-/** Edge-sentence glyph width; captions use 4.8 and a wider script set (summary-lines.ts). */
-const CHAR_PX = 4.7;
-const WIDE_CHAR_PX = 8;
+/** Edge-sentence glyph width at `text-label`. */
+const CHAR_PX = 5.5;
+const WIDE_CHAR_PX = 9.3;
 const LINE_H = 12;
 /** Air between a sentence and the box or stroke it belongs to. */
 const GAP_TO_BOX = 20;

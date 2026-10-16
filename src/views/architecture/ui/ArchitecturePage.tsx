@@ -273,7 +273,7 @@ export function ArchitecturePage({
       ? ('unbound' as const)
       : ('browser' as const);
   /* Receipts live in the vault sidecar; static and demo mode have none. */
-  const recordsByProfile = useArchitectureRecords(
+  const { records: recordsByProfile, loaded: recordsLoaded } = useArchitectureRecords(
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     profiles.map((profile) => profile.slug),
     profileDocuments,
@@ -383,6 +383,7 @@ export function ArchitecturePage({
           /* The installed app must never offer its own download. */
           offersInstalledApp={!desktopRuntime}
           recordsByProfile={recordsByProfile}
+          recordsLoaded={recordsLoaded}
           conceptsByProfile={conceptsByProfile}
           agentRoute={agentRoute}
           agentLabel={acpRuntime?.label ?? null}

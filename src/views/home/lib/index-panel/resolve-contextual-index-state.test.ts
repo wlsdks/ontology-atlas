@@ -6,6 +6,7 @@ const resting = {
   meaningEditorOpen: false,
   selectionActive: false,
   selectionManualExpand: false,
+  selectionKeepsIndex: false,
   graphEmpty: false,
   emptyManualExpand: false,
   agentDockOpen: false,
@@ -33,20 +34,20 @@ describe("resolveContextualIndexState", () => {
     ).toBe("collapsed");
   });
 
-  it("preserves the existing selection, empty-graph, and editor demotions", () => {
+  it("folds for a selection outside wide Flat, and keeps INDEX for a selection on wide Flat", () => {
+    expect(resolveContextualIndexState({ ...resting, selectionActive: true })).toBe("collapsed");
+    expect(
+      resolveContextualIndexState({ ...resting, selectionActive: true, selectionManualExpand: true }),
+    ).toBe("expanded");
+    expect(
+      resolveContextualIndexState({ ...resting, selectionActive: true, selectionKeepsIndex: true }),
+    ).toBe("expanded");
+  });
+
+  it("keeps the empty-graph and editor demotions", () => {
     expect(
       resolveContextualIndexState({ ...resting, meaningEditorOpen: true }),
     ).toBe("collapsed");
-    expect(
-      resolveContextualIndexState({ ...resting, selectionActive: true }),
-    ).toBe("collapsed");
-    expect(
-      resolveContextualIndexState({
-        ...resting,
-        selectionActive: true,
-        selectionManualExpand: true,
-      }),
-    ).toBe("expanded");
     expect(
       resolveContextualIndexState({ ...resting, graphEmpty: true }),
     ).toBe("collapsed");

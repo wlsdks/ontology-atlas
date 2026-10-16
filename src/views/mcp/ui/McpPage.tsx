@@ -12,6 +12,7 @@ import { useLocalVault } from '@/entities/vault-session';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PAGE_TWO_TRACK } from '@/shared/ui/tokens/page-frame';
 
 import { MCP_SECTION_PARAM, parseMcpTab } from '../lib/mcp-tab-state';
 
@@ -80,7 +81,7 @@ export function McpPage({
       data-testid="mcp-page"
       data-mcp-section={section}
       aria-label={t('title')}
-      className="flex min-w-0 flex-col gap-6"
+      className={`${PAGE_TWO_TRACK} gap-6`}
     >
       <AgentSetupSection />
 

@@ -134,32 +134,61 @@ describe('ConductionFigure', () => {
     expect(screen.queryByTestId('download-conduction-control')).toBeNull();
   });
 
-  it('trusts the latest of several intersection entries delivered together, so a scroll right after load still plays', async () => {
-    const observers: { callback: IntersectionObserverCallback; options?: IntersectionObserverInit }[] = [];
+  const observeWith = () => {
+    const observers: IntersectionObserverCallback[] = [];
     vi.stubGlobal(
       'IntersectionObserver',
       class {
-        constructor(callback: IntersectionObserverCallback, options?: IntersectionObserverInit) {
-          observers.push({ callback, options });
+        constructor(callback: IntersectionObserverCallback) {
+          observers.push(callback);
         }
         observe() {}
         disconnect() {}
       },
     );
-    mount();
-    const deliver = (intersecting: boolean[]) =>
+    const entry = (share: number) =>
+      ({
+        isIntersecting: share > 0,
+        intersectionRatio: share,
+        boundingClientRect: { height: 400 },
+        rootBounds: { height: 900 },
+        intersectionRect: { height: 400 * share },
+      }) as unknown as IntersectionObserverEntry;
+    const deliver = (shares: number[]) =>
       act(() => {
-        for (const { callback } of observers) {
-          callback(intersecting.map((isIntersecting) => ({ isIntersecting }) as IntersectionObserverEntry), {} as IntersectionObserver);
-        }
+        for (const callback of observers) callback(shares.map(entry), {} as IntersectionObserver);
       });
+    return { observers, deliver };
+  };
+
+  it('holds the finished picture without animating until it is nearly whole in view', async () => {
+    const { observers, deliver } = observeWith();
+    mount();
     await waitFor(() => expect(observers.length).toBeGreaterThanOrEqual(2));
-    deliver([false, true]);
+    deliver([0.62]);
+    await screen.findByTestId('download-conduction-scene');
+    const figure = screen.getByTestId('download-conduction-figure');
+    expect(figure).toHaveAttribute('data-conduction-state', 'primed');
+    expect(animate).not.toHaveBeenCalled();
+    deliver([0.95]);
+    await waitFor(() => expect(figure).toHaveAttribute('data-conduction-state', 'running'));
+    expect(animate).toHaveBeenCalled();
+    deliver([0.3]);
+    expect(figure).toHaveAttribute('data-conduction-state', 'running');
+    deliver([0.1]);
+    await waitFor(() => expect(figure).toHaveAttribute('data-conduction-state', 'paused'));
+  });
+
+  it('trusts the latest of several intersection entries delivered together, so a scroll right after load still plays', async () => {
+    const { observers, deliver } = observeWith();
+    mount();
+    await waitFor(() => expect(observers.length).toBeGreaterThanOrEqual(2));
+    deliver([0, 1]);
     await screen.findByTestId('download-conduction-scene');
     await waitFor(() =>
       expect(screen.getByTestId('download-conduction-figure')).toHaveAttribute('data-conduction-state', 'running'),
     );
-    deliver([true, false]);
+    deliver([1, 0]);
     await waitFor(() =>
       expect(screen.getByTestId('download-conduction-figure')).toHaveAttribute('data-conduction-state', 'paused'),
     );

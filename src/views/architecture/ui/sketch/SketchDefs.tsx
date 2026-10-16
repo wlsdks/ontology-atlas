@@ -1,5 +1,7 @@
 import { EDGE_STROKE, VIOLATION_HALO_BLUR } from './ink';
 
+const ARROW_HEAD_LENGTH = 4.2;
+
 export function SketchDefs({
   width,
   height,
@@ -9,39 +11,31 @@ export function SketchDefs({
 }) {
   return (
     <defs>
-      <marker
-        id="architecture-sketch-arrow"
-        viewBox="0 0 8 8"
-        refX="6"
-        refY="4"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        {/* An explicit stroke, not `context-stroke`, which WebKit does not resolve on markers. */}
-        <path
-          d="M0,0.5 L7.5,4 L0,7.5"
-          fill="none"
-          stroke={EDGE_STROKE}
-          strokeWidth={1.4}
-        />
-      </marker>
-      <marker
-        id="architecture-sketch-arrow-violation"
-        viewBox="0 0 8 8"
-        refX="6"
-        refY="4"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        <path
-          d="M0,0.5 L7.5,4 L0,7.5"
-          fill="none"
-          stroke="var(--color-danger-text)"
-          strokeWidth={1.4}
-        />
-      </marker>
+      {/* An explicit stroke, not `context-stroke`, which WebKit does not resolve on markers. */}
+      {[
+        ['architecture-sketch-arrow', EDGE_STROKE],
+        ['architecture-sketch-arrow-violation', 'var(--color-danger-text)'],
+      ].map(([id, stroke]) => (
+        <marker
+          key={id}
+          id={id}
+          viewBox={`0 0 ${ARROW_HEAD_LENGTH} 5.4`}
+          refX={ARROW_HEAD_LENGTH}
+          refY="2.7"
+          markerWidth={ARROW_HEAD_LENGTH}
+          markerHeight="5.4"
+          orient="auto"
+        >
+          <path
+            d="M0.5,0.6 L3.7,2.7 L0.5,4.8"
+            fill="none"
+            stroke={stroke}
+            strokeWidth={1}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </marker>
+      ))}
       {/* `userSpaceOnUse`: a vertical stroke has a zero-width bounding box, which would clip a percentage filter region to nothing. */}
       <filter
         id="architecture-violation-halo"

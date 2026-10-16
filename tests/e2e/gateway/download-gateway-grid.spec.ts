@@ -362,16 +362,20 @@ test.describe("the decision block reads over the stage at every split width", ()
    * canvas share under the decision block and headline. Destinations keep their rows, none narrower
    * than its label.
    */
-  /* 1280 and 1366 sit below the 90rem split, 1440 is its first band, 1512 a common laptop width. */
+  /* 1280 sits below the 90rem split; past it a wider headline moves the object's room. */
   /* Both engines draw this stage: the 2D engine is what a software renderer (this headless
      browser) gets, and `?hero=three` forces the WebGL object a hardware-backed browser gets
      (`HeroAtlas`). The type must stay clear of either. */
+  const cases = [
+    ...[1280, 1440, 1536, 1920].map((width) => ({ width, locale: "en" })),
+    ...[1440, 1536, 1920].map((width) => ({ width, locale: "ko" })),
+  ];
   for (const engine of ["2d", "three"] as const) {
-  for (const width of [1280, 1440]) {
-    test(`${width}px (${engine}) — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
+  for (const { width, locale } of cases) {
+    test(`${width}px ${locale} (${engine}) — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width === 1920 ? 1080 : 900 });
       await seedFirstRunSeen(page);
-      await page.goto(engine === "three" ? "/en/download/?hero=three&e2e=1" : "/en/download/", { waitUntil: "load" });
+      await page.goto(`/${locale}/download/?e2e=1${engine === "three" ? "&hero=three" : ""}`, { waitUntil: "load" });
       if (engine === "three") {
         await page.waitForFunction(
           () => document.querySelector('[data-testid="gateway-hero-object"]')?.getAttribute("data-hero-engine") === "three",
@@ -379,11 +383,18 @@ test.describe("the decision block reads over the stage at every split width", ()
       }
       await page.evaluate(() => document.fonts.ready);
       /*
-       * Wait for layout and ink, not for the headline to finish typing: the h1 box is complete from the
-       * first frame, and typing is starved under this headless browser's software WebGL.
+       * The h1 box is complete from the first frame. The plane waits for its full echo; the WebGL object
+       * cannot, since typing is starved under this headless browser's software WebGL.
        */
       await waitForBoxStill(page.locator('[data-testid="gateway-hero"]'));
       await waitForAnimationsDone(page.locator('[data-testid="gateway-hero-object"]'));
+      if (engine === "2d") {
+        await page.waitForFunction(() => {
+          const echo = (window as unknown as { __heroEcho?: { lit: () => number; count: number } }).__heroEcho;
+          return echo !== undefined && echo.lit() >= echo.count;
+        });
+        await waitFrames(page, 30);
+      }
       const m = await page.evaluate(() => {
         const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
         const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
@@ -423,6 +434,31 @@ test.describe("the decision block reads over the stage at every split width", ()
           if (a.scrollWidth > a.clientWidth + 1) out.push(`${a.getAttribute("data-testid")} is narrower than its label by ${a.scrollWidth - a.clientWidth}px`);
         }
         const block = document.querySelector('[data-testid="gateway-hero-cta"]')!.parentElement!.parentElement!;
+        const range = document.createRange();
+        let typeRight = 0;
+        let typeTop = Infinity;
+        let typeBottom = 0;
+        for (const el of [document.querySelector('[data-testid="gateway-hero"] h1')!, ...block.children]) {
+          range.selectNodeContents(el);
+          for (const r of range.getClientRects()) {
+            if (r.width === 0) continue;
+            typeRight = Math.max(typeRight, r.right);
+            typeTop = Math.min(typeTop, r.top);
+            typeBottom = Math.max(typeBottom, r.bottom);
+          }
+        }
+        const y0 = Math.max(0, Math.round((typeTop - stage.top) * dpr));
+        const bandRows = Math.max(1, Math.min(canvas.height, Math.round((typeBottom - stage.top) * dpr)) - y0);
+        const band = ctx.getImageData(0, y0, canvas.width, bandRows).data;
+        let firstLit = Infinity;
+        for (let y = 0; y < bandRows; y += 1) {
+          for (let x = 0; x < Math.min(canvas.width, firstLit); x += 1) {
+            if (band[(y * canvas.width + x) * 4 + 3] > 40) {
+              firstLit = x;
+              break;
+            }
+          }
+        }
         const widths = [...document.querySelectorAll('a[data-testid^="gateway-hero-"]')].map((a) => `${a.getAttribute("data-testid")}=${Math.round(a.getBoundingClientRect().width)}`);
         return {
           out,
@@ -430,6 +466,7 @@ test.describe("the decision block reads over the stage at every split width", ()
           stageWidth: Math.round(stage.width),
           inkUnderHeadline: litShare(document.querySelector('[data-testid="gateway-hero"] h1')!),
           inkUnderBlock: litShare(block),
+          clearOfType: Math.round(firstLit / dpr + stage.left - typeRight),
           widths,
         };
       });
@@ -440,6 +477,7 @@ test.describe("the decision block reads over the stage at every split width", ()
       /* The thresholds leave room for narrower widths, where the plane sits closer to the type. */
       expect(m.inkUnderHeadline, `ink under the headline at ${width}`).toBeLessThanOrEqual(0.03);
       expect(m.inkUnderBlock, `ink under the decision block at ${width}`).toBeLessThanOrEqual(0.06);
+      if (width >= 1440) expect(m.clearOfType, `the object's ink clears the type by the gutter at ${width} ${locale}`).toBeGreaterThanOrEqual(48);
     });
   }
   }

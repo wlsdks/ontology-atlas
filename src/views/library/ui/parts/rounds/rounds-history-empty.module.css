@@ -5,7 +5,3 @@
 .name { color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
 .body { max-width: var(--measure-prose); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
 
-.dot { flex: none; width: .5rem; height: .5rem; border-radius: 9999px; background: var(--color-text-quaternary); }
-.dot[data-tone="stale"] { background: var(--color-status-warning); }
-.dot[data-tone="redrafted"] { background: var(--color-indigo-text-soft); }
-.dot[data-tone="refused"] { background: var(--color-status-danger); }

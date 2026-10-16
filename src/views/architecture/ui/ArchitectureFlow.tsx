@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 
 import {
   buildArchitectureLayout,
@@ -38,6 +38,10 @@ export function ArchitectureFlow({
   observationMissingLabel,
   observationEmptyTitle,
   observationEmptyBody,
+  observationEmptyAction,
+  onObservationEmptyActionSeated,
+  observationKnown,
+  lowerOnlyRuleLabel,
   violatedPairs,
   selected,
   roleInspectorOpen,
@@ -84,6 +88,10 @@ export function ArchitectureFlow({
   /** The one empty state the measured columns show before any source was inspected. */
   observationEmptyTitle: string;
   observationEmptyBody: string;
+  observationEmptyAction?: ReactNode;
+  onObservationEmptyActionSeated?: (seated: boolean | null) => void;
+  observationKnown?: boolean;
+  lowerOnlyRuleLabel: string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
   roleInspectorOpen: boolean;
@@ -157,6 +165,11 @@ export function ArchitectureFlow({
           observationMissingLabel={observationMissingLabel}
           observationEmptyTitle={observationEmptyTitle}
           observationEmptyBody={observationEmptyBody}
+          observationEmptyAction={observationEmptyAction}
+          onObservationEmptyActionSeated={onObservationEmptyActionSeated}
+          observationKnown={observationKnown}
+          profileKey={profile.slug}
+          lowerOnlyRuleLabel={lowerOnlyRuleLabel}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           moduleCounts={moduleCounts}

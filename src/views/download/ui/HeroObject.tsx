@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { mountHeroObject, type HeroEngineHandle, type HeroGraphData } from '../lib/hero-object-engine';
+import { heroBounds, releaseCaption, watchHeroType } from '../lib/hero-bounds';
 import { echoFact } from '../lib/hero-echo';
 import type { StageGraph } from '../lib/stage-graph';
 import { cn } from '@/shared/lib/cn';
@@ -50,8 +51,10 @@ export function HeroObject({
   const t = useTranslations('download');
   const tKinds = useTranslations('kinds');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const captionRef = useRef<HTMLParagraphElement | null>(null);
   const handleRef = useRef<HeroEngineHandle | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const [walked, setWalked] = useState<string | null>(null);
   const typingRef = useRef({ typed, total });
   // Declared before the mount effect so it runs first in the same commit.
   useEffect(() => {
@@ -63,6 +66,7 @@ export function HeroObject({
 
   useEffect(() => {
     const canvas = canvasRef.current;
+    const caption = captionRef.current;
     if (!canvas || graph.nodes.length === 0) return;
 
     const keep = (kind: StageGraph['nodes'][number]['kind']): boolean => !phone || kind !== 'element';
@@ -89,12 +93,14 @@ export function HeroObject({
     const handle = mountHeroObject(canvas, data, {
       inkScale: 0.97,
       // A divisor: larger draws smaller. 1180 keeps the narrow plane below the facts strip's links.
-      fitPx: wide ? 620 : phone ? 820 : 1180,
+      fitPx: wide ? 540 : phone ? 820 : 1180,
       echo: true,
       onHover: setHover,
+      onChain: setWalked,
       form: 'plane',
-      // Wide y 0.5: lower, the near rim crosses the facts strip's rule.
-      anchor: wide ? { x: 0.72, y: 0.5 } : { x: 0.5, bottomPx: 176 },
+      anchor: wide ? { x: 0.74, y: 0.43 } : { x: 0.5, bottomPx: 176 },
+      bounds: wide ? () => heroBounds(canvas, caption) : undefined,
+      watch: wide ? (refit) => watchHeroType(canvas, caption, refit) : undefined,
       dim: wide ? 0.55 : 0.7,
       tilt: true,
       // Split width only: below it the lift carried the plane up through the strip's links.
@@ -119,6 +125,7 @@ export function HeroObject({
       (window as unknown as { __heroEcho?: unknown }).__heroEcho = {
         lit: () => handle!.litCount(),
         nodes: () => handle!.nodesOnScreen(),
+        chain: () => handle!.activeChain(),
         count: graph.nodes.length,
       };
     }
@@ -126,6 +133,7 @@ export function HeroObject({
       handleRef.current = null;
       if (inspect) delete (window as unknown as { __heroEcho?: unknown }).__heroEcho;
       handle?.dispose();
+      releaseCaption(caption);
     };
   }, [graph, wide, phone]);
 
@@ -134,8 +142,9 @@ export function HeroObject({
     if (total > 0) handleRef.current?.setTyping(typed, total);
   }, [typed, total]);
 
-  const fact = hover !== null ? echoFact(graph, hover) : null;
-  const hovered = hover !== null ? graph.nodes.find((n) => n.id === hover) : undefined;
+  const named = hover ?? walked;
+  const fact = named !== null ? echoFact(graph, named) : null;
+  const hovered = named !== null ? graph.nodes.find((n) => n.id === named) : undefined;
   /* The kind word leads, since size is the plane's only unstated kind channel. */
   const factLine = fact
     ? fact.relation === 'contains'
@@ -154,7 +163,9 @@ export function HeroObject({
       {/* A non-breaking space reserves the height, so a fact changes ink, never layout. At the
           split it sits in the plane's corner above the facts strip, near the dot that caused it. */}
       <p
+        ref={captionRef}
         data-testid="gateway-hero-caption"
+        data-hero-caption-source={hover !== null ? 'hover' : walked !== null ? 'chain' : undefined}
         className={cn(
           'gateway-hero-caption pointer-events-none absolute right-[var(--gateway-origin)] top-12 max-w-[40%] truncate text-right font-mono text-label leading-label text-[color:var(--color-text-tertiary)] md:top-16 min-[90rem]:top-auto min-[90rem]:bottom-[7.5rem]',
           caption ? 'is-on' : undefined,

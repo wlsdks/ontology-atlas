@@ -150,7 +150,7 @@ describe('HarnessCoverageOverview measured slice', () => {
     fireEvent.click(modeText);
     expect(modeText).toHaveFocus();
     const textFacts = screen.getAllByTestId(/harness-text-domain-/).map((domain) => ({
-      name: domain.querySelector('h4')?.textContent,
+      name: domain.querySelector('h3')?.textContent,
       roles: [...domain.querySelectorAll('[data-role]')].map((role) => role.textContent),
     }));
     expect(textFacts).toEqual(diagramFacts);

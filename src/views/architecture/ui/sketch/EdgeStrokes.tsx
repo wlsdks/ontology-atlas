@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type CSSProperties } from 'react';
 
 import type { ArchitectureGraph as Graph } from '../../model/graph-layout';
 import { skipSwing } from './geometry';
@@ -29,6 +29,7 @@ export function EdgeStrokes({
   observedPlaced,
   skipLane,
   visibleEdges,
+  arriving,
 }: {
   graph: ArchitectureSketchProps['graph'];
   selected: ArchitectureSketchProps['selected'];
@@ -46,7 +47,10 @@ export function EdgeStrokes({
   observedPlaced: ReadonlyMap<string, Placed>;
   skipLane: ReadonlyMap<string, number>;
   visibleEdges: Graph['edges'];
+  arriving: boolean;
 }) {
+  const rankOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
+  const lastRank = Math.max(0, graph.columns - 1);
   return (
     <>
       {graph.edges.map((edge) => {
@@ -77,6 +81,9 @@ export function EdgeStrokes({
         /* A declared rule keeps one width; measured traffic's width carries its count. */
         const isDeclared = edge.kind === 'permitted';
         const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
+        /* A mask, so the arrowhead arrives with its line. */
+        const arrivalMask =
+          arriving && drawn && edge.kind === 'traffic' ? `architecture-arrive-${edge.from}-${edge.to}` : null;
         const swing =
           edge.columnSpan <= 1
             ? 0
@@ -115,6 +122,23 @@ export function EdgeStrokes({
 
         return (
           <Fragment key={`${edge.kind}-${edge.from}-${edge.to}`}>
+          {arrivalMask ? (
+            <mask id={arrivalMask} maskUnits="userSpaceOnUse" style={{ maskType: 'alpha' }}>
+              <path
+                d={d}
+                pathLength={1}
+                fill="none"
+                stroke={EDGE_STROKE}
+                strokeWidth={28}
+                className={violated ? 'architecture-arrive-climb' : 'architecture-arrive-draw'}
+                style={
+                  {
+                    '--motion-stagger-index': violated ? lastRank : rankOf.get(edge.from) ?? 0,
+                  } as CSSProperties
+                }
+              />
+            </mask>
+          ) : null}
           {/* The halo marks the climb up the stack. It has no data-edge-* identity, so stroke counts stay one per crossing; only selection changes its intensity. */}
           {violated && drawn ? (
             <path
@@ -125,6 +149,7 @@ export function EdgeStrokes({
               strokeLinecap="round"
               filter="url(#architecture-violation-halo)"
               className="architecture-violation-halo"
+              mask={arrivalMask ? `url(#${arrivalMask})` : undefined}
               data-edge-raised={raised ? 'true' : 'false'}
               data-testid={`architecture-violation-halo-${edge.from}-${edge.to}`}
               aria-hidden
@@ -151,6 +176,7 @@ export function EdgeStrokes({
                 ? 'url(#architecture-sketch-arrow-violation)'
                 : 'url(#architecture-sketch-arrow)'
             }
+            mask={arrivalMask ? `url(#${arrivalMask})` : undefined}
             pointerEvents={drawn ? undefined : 'none'}
             aria-hidden={!drawn}
             data-edge-drawn={drawn ? 'true' : 'false'}

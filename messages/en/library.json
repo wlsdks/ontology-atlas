@@ -810,16 +810,11 @@
     "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
     "emptyAction": "Schedule in Automations",
     "emptyKinds": "Checks you can schedule",
-    "emptySignals": "What each pass leaves here",
     "signal": {
       "stale": "Stale",
-      "staleBody": "A source the page cites changed. Press the page to open it in Wiki.",
       "redrafted": "Redrafted",
-      "redraftedBody": "The agent wrote a new draft. It stays a draft until you review it.",
       "refused": "Refused",
-      "refusedBody": "A request the schedule never allowed. The ledger names what it stopped.",
-      "held": "No change",
-      "heldBody": "Every page still matched its sources. It takes one quiet line."
+      "held": "No change"
     },
     "kind": {
       "consistency": "Pages still match their sources",
@@ -920,7 +915,12 @@
         "unreadable": "Atlas could not read it back to check it."
       },
       "undoneCopy": "The text Atlas took out is saved in {copy}.",
-      "leftAsIs": "{page} changed after this pass wrote it; Atlas left it as is."
+      "leftAsIs": "{page} changed after this pass wrote it; Atlas left it as is.",
+      "columnTime": "Time",
+      "columnRound": "Round",
+      "columnOutcome": "Outcome",
+      "ghostTime": "––:––",
+      "ghostAria": "Where the first pass will land"
     },
     "sheet": {
       "readbackHour": "Every hour",

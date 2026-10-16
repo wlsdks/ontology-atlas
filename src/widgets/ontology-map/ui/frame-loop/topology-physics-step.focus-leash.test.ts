@@ -24,6 +24,9 @@ const tokens = {
   cameraScaleMin: 0.2,
   cameraScaleMax: 4,
   cameraFocusPanMargin: 180,
+  // Without the zoom ratios the scale clamp yields NaN and the leash's zoom gate reads false from the second step.
+  cameraMinZoomRatio: 0.5,
+  cameraMaxZoomRatio: 3.2,
   overviewEntryRatio: 0.95,
   breatheAmplitude: 0,
   breatheFreqRad: 1,
@@ -97,6 +100,16 @@ describe("stepTopologyPhysics — the focus leash is sized to the screen", () =>
       target: { tx: 0, ty: 400, tscale: 1 },
     });
     expect(camera.y.value).toBeLessThan(400);
+  });
+
+  it("a target past the leash is held at the leash: the camera comes to rest there instead of fighting the clamp", () => {
+    // The token floor is 180 units; the target stands 400 out, as after a wheel zoom anchored away from the node.
+    let step = input(400);
+    for (let frame = 0; frame < 240; frame += 1) step = { ...step, camera: stepTopologyPhysics(step).camera };
+    const before = step.camera.x.value;
+    const after = stepTopologyPhysics(step).camera.x.value;
+    expect(before, "rests at the leash").toBeCloseTo(180, 1);
+    expect(Math.abs(after - before), "still").toBeLessThan(1e-3);
   });
 
   it("the leash follows the live scale: at 2× the same 412 px is 206 units, so 400 out is pulled back", () => {

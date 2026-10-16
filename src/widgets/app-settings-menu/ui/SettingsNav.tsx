@@ -92,7 +92,7 @@ export function SettingsNav({
             data-testid={`app-settings-nav-group-${group.scope}`}
             className="flex w-max shrink-0 gap-1 sm:mt-1.5 sm:block sm:w-auto sm:border-t sm:border-[color:var(--color-divider)] sm:pt-1.5 sm:first:mt-0 sm:first:border-t-0 sm:first:pt-0"
           >
-            <p className="hidden px-3 pb-1 font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-secondary)] sm:block">
+            <p className="hidden px-3 pb-1 font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
               {t(`scope.${group.scope}`)}
             </p>
             {group.sections.map((item) => {
@@ -108,7 +108,7 @@ export function SettingsNav({
                   className={controlClass({
                     shape: 'row',
                     size: 'md',
-                    tone: active ? 'accentOnTint' : 'muted',
+                    tone: active ? 'accentOnTint' : 'default',
                     className: `w-auto shrink-0 gap-2 whitespace-nowrap rounded-card px-3 py-2 text-body sm:w-full sm:whitespace-normal ${
                       active ? 'bg-[color:var(--color-indigo-line-a13)]' : NAV_ROW_HOVER
                     }`,

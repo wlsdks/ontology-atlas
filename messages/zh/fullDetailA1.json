@@ -7,12 +7,6 @@
   "copyLink": "复制概念链接",
   "copyLinkCopied": "已复制概念链接",
   "close": "关闭",
-  "metric": {
-    "contains": "包含",
-    "usedBy": "被使用",
-    "dependsOn": "依赖",
-    "reach": "三步可达"
-  },
   "groups": {
     "containsTitle": "此概念包含",
     "containsCaption": "位于此概念之内",
@@ -22,8 +16,11 @@
     "dependsOnCaption": "缺了它们就无法运转",
     "belongsToTitle": "所属",
     "belongsToCaption": "此概念所在的上级概念",
-    "empty": "没有直接连接。",
-    "freshDotTitle": "最近更新"
+    "freshDotTitle": "最近更新",
+    "directLinks": "直接连接 {count, number}",
+    "domainCount": "{count, number} 个领域",
+    "domainLinks": "与此领域的链接 {count, number} 条",
+    "emptyGroup": "{title}：无"
   },
   "reach": {
     "leadIn": "从此概念出发，",

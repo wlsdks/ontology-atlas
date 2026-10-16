@@ -76,8 +76,7 @@ describe("FlowTab", () => {
     expect(screen.getByTestId("flow-version")).toHaveTextContent("written by claude-acp");
     expect(screen.getByTestId("flow-version")).toHaveTextContent(labels.standingCurrent);
     // The request is still reachable, but it is not what the tab shows first.
-    const request = screen.getByTestId("flow-request-open").closest("details");
-    expect(request?.open, "the request wall opens on demand, never on arrival").toBeFalsy();
+    expect(screen.getByTestId("flow-request-open"), "the request wall opens on demand, never on arrival").toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByTestId("flow-no-version")).not.toBeInTheDocument();
   });
 
@@ -156,8 +155,10 @@ describe("FlowTab", () => {
     const { rerender } = render(
       <FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent onPrefill={vi.fn()} />,
     );
-    expect(screen.getByText(REQUEST)).toBeInTheDocument();
     expect(screen.getByTestId("flow-copy")).toBeInTheDocument();
+    expect(screen.getByTestId("flow-request-open")).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByTestId("flow-request-open"));
+    expect(screen.getByText(REQUEST)).toBeInTheDocument();
 
     rerender(<FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent={false} />);
     expect(
@@ -170,7 +171,7 @@ describe("FlowTab", () => {
     render(
       <FlowTab labels={labels} request={REQUEST} versions={saved ? [version()] : []} hasGraph hasOwnFolder canLaunchAgent={false} />,
     );
-    if (saved) fireEvent.click(screen.getByTestId("flow-request-open"));
+    fireEvent.click(screen.getByTestId("flow-request-open"));
 
     const region = screen.getByRole("region", { name: labels.requestLabel });
     expect(region).toHaveAttribute("tabindex", "0");
@@ -201,6 +202,7 @@ describe("FlowTab on the built-in sample", () => {
       />,
     );
 
+    fireEvent.click(screen.getByTestId("flow-request-open"));
     expect(screen.getByText(REQUEST)).toBeInTheDocument();
     expect(
       screen.queryByTestId("flow-prefill"),

@@ -19,7 +19,7 @@ export const CHAT_MARKDOWN = [
 
 /** One step quieter than the answer. */
 export const WORK_MARKDOWN = [
-  'break-keep text-label leading-label text-[color:var(--color-text-quaternary)]',
+  'break-keep text-label leading-label text-[color:var(--color-text-tertiary)]',
   '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
   '[&_p]:mb-1.5',
   '[&_ul]:my-1.5 [&_ul]:pl-[18px] [&_ol]:my-1.5 [&_ol]:pl-[18px]',

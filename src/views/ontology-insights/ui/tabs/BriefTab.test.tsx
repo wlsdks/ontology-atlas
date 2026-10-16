@@ -177,10 +177,7 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
-    // The band shows the ring where no magnitude exists, never dashes; the list gives the reason once.
-    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
-    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("앱에서 재요");
-    expect(screen.getByTestId("brief-core-wiki")).not.toHaveTextContent("아직 없음");
+    expect(screen.queryByTestId("brief-band")).toBeNull();
     // The list says why and where to go, one row per core.
     const wiki = screen.getByTestId("brief-core-empty-wiki");
     expect(wiki).toHaveTextContent("이 폴더엔 아직 위키 페이지가 없어요");
@@ -191,11 +188,9 @@ describe("BriefTab", () => {
     expect(appOnly.querySelector('a[href="/download/"]')).not.toBeNull();
   });
 
-  // Nothing is listed twice: no placeholder dash in the band and one "Get the app".
-  it("prints no placeholder dash in the band and offers the app exactly once", () => {
+  it("offers the app exactly once", () => {
     const unchecked = { id: "ontology-evidence-unchecked", count: 125, state: "unknown" } as const;
     mount(brief({ ontology: core({ core: "ontology", availability: "app-only", headline: 125, current: null, stale: null, unknown: 125, lines: [unchecked] }) }));
-    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("–");
     expect(document.querySelectorAll('a[href="/download/"]')).toHaveLength(1);
     expect(screen.getAllByText(/앱에서만 잴 수 있어요/)).toHaveLength(1);
     expect(screen.getByTestId("brief-app-only")).toHaveTextContent("개념 · 지침");
@@ -448,9 +443,6 @@ describe("no repository", () => {
     expect(connect).toHaveTextContent("개념 · 지침");
     expect(connect.querySelector('a[href="/topology/"]')).not.toBeNull();
     expect(container.querySelectorAll('[data-testid="brief-lines"] a[href="/topology/"]')).toHaveLength(1);
-    // The band states no reason; the row above says it once.
-    expect(screen.getByTestId("brief-band")).not.toHaveTextContent("저장소 연결 전");
-    expect(screen.getByTestId("brief-core-state-harness")).toHaveTextContent("모름");
     expect(screen.getAllByText(/저장소를 연결하면/)).toHaveLength(1);
   });
 });

@@ -1,10 +1,13 @@
-import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
+import { LABEL_OFFSET, scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { domainLabelBlock, sideOf, type MeasureText } from "./label-marks";
 import type { Box, DialLabels, DialModel, DialScene, DialTokens, Pad } from "./types";
 
 const NAME_GAP_PX = 5;
 const ORPHAN_GAP_PX = 8;
 const EDGE_SHARE = 0.01;
+const CAMERA_SPINE_NAME_ALLOWANCE_PX = Math.max(...Object.values(LABEL_OFFSET)) + 4;
+const OPENING_WINDOW_FIT_HEIGHT_PX = 949 - 148 - 96 - CAMERA_SPINE_NAME_ALLOWANCE_PX;
+const CAMERA_LABEL_ALLOWANCE_SHARE = (2 * CAMERA_SPINE_NAME_ALLOWANCE_PX) / (OPENING_WINDOW_FIT_HEIGHT_PX - CAMERA_SPINE_NAME_ALLOWANCE_PX);
 
 type Side = keyof Pad;
 
@@ -29,7 +32,28 @@ function addBlock(pad: Pad, touched: Set<Side>, angle: number, width: number, he
   grow(pad, side, (side === "left" || side === "right" ? width : height) + clearance);
 }
 
+export function dialOverviewBounds(scene: Pick<DialScene, "rings" | "extent" | "clusters" | "orphans">): Box {
+  const r = Math.max(0, ...scene.rings.map((ring) => ring.radius));
+  if (r <= 0) return { ...scene.extent };
+  const reach: Pad = { left: r, right: r, top: r, bottom: r };
+  const reachOut = (x: number, y: number, f: number) => {
+    grow(reach, "left", f - x);
+    grow(reach, "right", x + f);
+    grow(reach, "top", f - y);
+    grow(reach, "bottom", y + f);
+  };
+  for (const c of scene.clusters) reachOut(c.chip.x, c.chip.y, c.footprint);
+  if (scene.orphans.ids.length > 0) reachOut(scene.orphans.centre.x, scene.orphans.centre.y, scene.orphans.radius);
+  const hx = Math.min(reach.left, reach.right);
+  const hy = Math.min(reach.top, reach.bottom);
+  return { minX: -hx, minY: -hy * (1 + CAMERA_LABEL_ALLOWANCE_SHARE), maxX: hx, maxY: hy };
+}
+
 export function dialOverviewPad(scene: DialScene, model: DialModel, labels: DialLabels | null, measure: MeasureText, tokens: DialTokens): Pad {
+  return scene.rings.length > 0 ? { left: 0, right: 0, top: 0, bottom: 0 } : dialLabelPad(scene, model, labels, measure, tokens);
+}
+
+function dialLabelPad(scene: DialScene, model: DialModel, labels: DialLabels | null, measure: MeasureText, tokens: DialTokens): Pad {
   const pad: Pad = { left: 0, right: 0, top: 0, bottom: 0 };
   const clearance = tokens.chipMaxPx + NAME_GAP_PX;
   for (const cluster of scene.clusters) {

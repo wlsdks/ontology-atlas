@@ -58,7 +58,8 @@ export interface TopologyIndexTreeRowProps {
    * nodes.
    */
   domainCensus?: ReadonlyMap<string, DomainCensusRow> | null;
-  labels: TopologyIndexTreeRowLabels;
+  labels: TopologyIndexTreeRowLabels & { censusConcepts?: string };
+  projectCount?: number | null;
   /** The panel's search text, so the row can mark where the query landed. */
   query?: string;
 }
@@ -84,6 +85,7 @@ export function TopologyIndexTreeRow({
   maxDomainDescendantCount,
   domainCensus = null,
   labels,
+  projectCount = null,
   query,
 }: TopologyIndexTreeRowProps) {
   const { node, children } = entry;
@@ -108,7 +110,8 @@ export function TopologyIndexTreeRow({
   const capacityRatio = subcounts
     ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
     : 0;
-  const count = censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
+  const projectCensus = node.kind === "project" && projectCount !== null;
+  const count = projectCensus ? projectCount : censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
   // The expansion lifetime uses the shared list-row disclosure hook.
   const {
     mounted: branchMounted,
@@ -209,7 +212,7 @@ export function TopologyIndexTreeRow({
                 data-testid="topology-index-subcounts"
                 // Label step, sans with tabular figures: a count line people read, and mono pushes
                 // Hangul apart.
-                className="shrink-0 text-label leading-label tabular-nums text-[color:var(--map-panel-text-tertiary)]"
+                className="shrink-0 text-label leading-label tabular-nums text-[color:var(--map-panel-text-secondary)]"
               >
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}
@@ -233,7 +236,9 @@ export function TopologyIndexTreeRow({
             // Explains why domain badges sum past the census (multi-membership counts more than
             // once); the scope word leads when present.
             title={
-              isDomain
+              projectCensus
+                ? labels.censusConcepts ? `${count} ${labels.censusConcepts}` : undefined
+                : isDomain
                 ? labels.subtotalTitle
                   ? `${labels.subtotalTitle} ${count} · ${labels.domainCountTitle}`
                   : labels.domainCountTitle
@@ -281,6 +286,7 @@ export function TopologyIndexTreeRow({
               maxDomainDescendantCount={maxDomainDescendantCount}
               domainCensus={domainCensus}
               labels={labels}
+              projectCount={projectCount}
               query={query}
             />
           ))}

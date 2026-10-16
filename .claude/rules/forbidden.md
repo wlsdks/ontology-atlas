@@ -9,8 +9,8 @@
 > with that source (`design-donts-parity.contract.test.ts`).
 
 - **Node click → full-screen or full-bleed detail modal.** The default is ego
-  focus plus a compact popover beside the node; full detail is an explicit action
-  inside that popover. <!--dont:node-click-fullscreen-modal-->
+  focus plus a compact panel at the map's right inset; full detail is an
+  explicit action inside it. <!--dont:node-click-fullscreen-modal-->
 - Gradients, glass, glow, neon, scale hover, overshoot or bounce motion, and
   hues beside indigo are allowed (`docs/DECISIONS.md`, "The expression bans are
   lifted"). Every value still goes through a token and its ramp, contrast floors

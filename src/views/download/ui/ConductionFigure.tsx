@@ -18,7 +18,18 @@ import { CONDUCTION_ANSWER, CONDUCTION_CAST, CONDUCTION_PROPOSAL, CONDUCTION_QUE
 const SCENE_PLACEHOLDER = <div aria-hidden className="h-[38rem] min-[70rem]:h-[22rem]" />;
 const ConductionScene = dynamic(() => import('./ConductionScene'), { ssr: false, loading: () => SCENE_PLACEHOLDER });
 
-type FigureState = 'still' | 'running' | 'paused' | 'finished';
+type FigureState = 'still' | 'primed' | 'running' | 'paused' | 'finished';
+
+const START_SHARE = 0.9;
+const HOLD_SHARE = 0.2;
+const SHARE_STEPS = Array.from({ length: 21 }, (_, step) => step / 20);
+
+/** Of what the window can show of the figure, so a figure taller than the window can still start. */
+function visibleShare(entry: IntersectionObserverEntry): number {
+  if (!entry.isIntersecting) return 0;
+  const room = Math.min(entry.boundingClientRect.height, entry.rootBounds?.height ?? Infinity);
+  return room > 0 ? entry.intersectionRect.height / room : entry.intersectionRatio;
+}
 
 const unchanging = () => () => undefined;
 const animatesOnClient = () => typeof Element !== 'undefined' && typeof Element.prototype.animate === 'function';
@@ -48,6 +59,7 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
   const [available, setAvailable] = useState(0);
   const [near, setNear] = useState(false);
   const [inView, setInView] = useState(false);
+  const [started, setStarted] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   const [userPaused, setUserPaused] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -58,8 +70,9 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
   const observes = useSyncExternalStore(unchanging, observesOnClient, onServer);
   const approached = near || !observes;
   const seen = inView || !observes;
+  const begun = started || !observes;
   const canAnimate = animates && !reduced && !refused;
-  const running = useFigureTurn(canAnimate && !finished && !userPaused && seen && pageVisible);
+  const running = useFigureTurn(canAnimate && begun && !finished && !userPaused && seen && pageVisible);
 
   useLayoutEffect(() => {
     if (!host) return;
@@ -83,9 +96,16 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
       },
       { rootMargin: '100% 0px' },
     );
-    const view = new IntersectionObserver((entries) => setInView(entries.at(-1)?.isIntersecting ?? true), {
-      threshold: 0.2,
-    });
+    const view = new IntersectionObserver(
+      (entries) => {
+        const entry = entries.at(-1);
+        if (!entry) return;
+        const share = visibleShare(entry);
+        setInView(share >= HOLD_SHARE);
+        if (share >= START_SHARE) setStarted(true);
+      },
+      { threshold: SHARE_STEPS },
+    );
     approach.observe(figure);
     view.observe(figure);
     return () => {
@@ -113,7 +133,15 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
     target: labelOf(CONDUCTION_PROPOSAL.to),
   });
 
-  const state: FigureState = !canAnimate ? 'still' : finished ? 'finished' : running ? 'running' : 'paused';
+  const state: FigureState = !canAnimate
+    ? 'still'
+    : finished
+      ? 'finished'
+      : running
+        ? 'running'
+        : begun
+          ? 'paused'
+          : 'primed';
   const control = finished
     ? { label: t('replay'), icon: <RotateCcw size={ICON_SIZE.sm} aria-hidden /> }
     : userPaused
@@ -163,7 +191,7 @@ export function ConductionFigure({ graph }: { graph: StageGraph }) {
             available={available}
             labelOf={labelOf}
             focusDomain={focusDomain}
-            animate={canAnimate && !finished}
+            animate={canAnimate && begun && !finished}
             running={running}
             generation={generation}
             onFinished={() => setFinished(true)}

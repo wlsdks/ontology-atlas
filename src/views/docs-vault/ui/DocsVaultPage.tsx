@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
@@ -12,6 +12,7 @@ import { OntologyStarterCta } from '@/features/docs-vault-local';
 import { recentVaultRowKey } from '@/features/vault-switch';
 import { buildOntologyDeeplinkForDoc } from '@/entities/docs-vault';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
+import { firstHeading, parseFrontmatter } from '@/shared/lib/vault-document/parse-frontmatter';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-text/locale-display-name';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useClaimShellKey } from '@/shared/lib/keyboard/shell-key-claims';
@@ -99,6 +100,7 @@ function DocsVaultContent({
   const [sourceTreeOpen, setSourceTreeOpen] = useState(false);
   const [docListCollapsed, setDocListCollapsedState] = useState(readStoredListCollapsed);
   const [docListToggled, setDocListToggled] = useState(false);
+  const [treeToolsHost, setTreeToolsHost] = useState<HTMLDivElement | null>(null);
   const docListPresence = usePanelPresence(!docListCollapsed);
   const docListLeaving = docListToggled && docListCollapsed && docListPresence.mounted;
   const toggleDocListCollapsed = useCallback(() => {
@@ -351,6 +353,24 @@ function DocsVaultContent({
     void openLocalVault();
   }, [source, isDesktopRuntime, handleSourceChange, openLocalVault]);
 
+  const [paintedBody, setPaintedBody] = useState<{ doc: string; titled: boolean } | null>(null);
+  const paintedDoc = selectedDoc ? `${source}:${selectedDoc.slug}` : null;
+  const reportPaintedBody = useCallback((doc: string, body: string | null) => {
+    const titled = body !== null && firstHeading(body) !== null;
+    setPaintedBody((previous) => (previous?.doc === doc && previous.titled === titled ? previous : { doc, titled }));
+  }, []);
+  const bundledBodyBeforePaint = selectedDoc && source !== 'local' ? staticVault.content[selectedDoc.slug] : undefined;
+  const bundledBodyTitled = useMemo(
+    () => (bundledBodyBeforePaint === undefined ? undefined : firstHeading(parseFrontmatter(bundledBodyBeforePaint).body) !== null),
+    [bundledBodyBeforePaint],
+  );
+  const titledBeforeBodyPaints =
+    source === 'local' && selectedDoc ? selectedDoc.headings.some((heading) => heading.depth === 1) : bundledBodyTitled;
+  const bodyTitled = paintedBody?.doc === paintedDoc ? paintedBody.titled : titledBeforeBodyPaints;
+  const columnTitle = selectedDoc && !showDesktopWelcome && bodyTitled === false ? selectedDocDisplayTitle : null;
+  const headerTreeTools =
+    documentScope === 'ontology' && !legacyDocumentMode && !docListCollapsed && !showDesktopWelcome;
+
   // One neutral frame until source and restored manifest settle, so the static manifest
   // never paints as the installed app's data.
   if (!vaultScopeSettled || legacyRedirectToLibrary) return <RouteLoadingFallback />;
@@ -391,6 +411,8 @@ function DocsVaultContent({
         handleSelect={handleSelect}
         handleCloseDocTab={handleCloseDocTab}
         setPaletteQuery={setPaletteQuery}
+        treeToolsHostRef={headerTreeTools ? setTreeToolsHost : undefined}
+        showPageHeading={columnTitle === null}
       />
       </div>
       <DocsVaultAuditModal
@@ -506,32 +528,35 @@ function DocsVaultContent({
           docListLeaving={docListLeaving}
           docListToggled={docListToggled}
         >
-          <DocsSidebarBody
-            reviewQueue={reviewQueue}
-            pinnedSlugs={collectionPinnedSlugs}
-            recentSlugs={collectionRecentSlugs}
-            selectedSlug={selectedSlug}
-            docsBySlug={docsBySlug}
-            activeTag={activeTag}
-            manifest={collectionManifest}
-            collection={docCollection}
-            collectionCounts={collectionCounts}
-            showCollectionChooser={documentScope !== 'ontology'}
-            showCreateDocument={!legacyDocumentMode}
-            visibleDocSlugs={collectionDocSlugs}
-            onSelect={handleSelectFromSidebar}
-            onCollectionChange={handleCollectionChange}
-            onTogglePin={handleTogglePin}
-            onTagSelect={setActiveTag}
-            // In the read-only sample the `+` opens a folder, the path that makes creating possible.
-            onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
-            canCreateNewDoc={canEditCurrent}
-            sort={treeSort}
-            group={treeGroup}
-            onSortChange={handleTreeSortChange}
-            onGroupChange={handleTreeGroupChange}
-            agentFiles={documentScope === 'ontology' ? null : agentFiles}
-          />
+          {(placement) => (
+            <DocsSidebarBody
+              reviewQueue={reviewQueue}
+              pinnedSlugs={collectionPinnedSlugs}
+              recentSlugs={collectionRecentSlugs}
+              selectedSlug={selectedSlug}
+              docsBySlug={docsBySlug}
+              activeTag={activeTag}
+              manifest={collectionManifest}
+              collection={docCollection}
+              collectionCounts={collectionCounts}
+              showCollectionChooser={documentScope !== 'ontology'}
+              showCreateDocument={!legacyDocumentMode}
+              visibleDocSlugs={collectionDocSlugs}
+              onSelect={handleSelectFromSidebar}
+              onCollectionChange={handleCollectionChange}
+              onTogglePin={handleTogglePin}
+              onTagSelect={setActiveTag}
+              // In the read-only sample the `+` opens a folder, the path that makes creating possible.
+              onCreateNewDoc={canEditCurrent ? handleOpenNewDocDialog : handleVaultPillSwap}
+              canCreateNewDoc={canEditCurrent}
+              sort={treeSort}
+              group={treeGroup}
+              onSortChange={handleTreeSortChange}
+              onGroupChange={handleTreeGroupChange}
+              agentFiles={documentScope === 'ontology' ? null : agentFiles}
+              toolsHost={placement === 'pane' && headerTreeTools ? treeToolsHost : null}
+            />
+          )}
         </DocsVaultSidebar>
 
         <main
@@ -550,6 +575,8 @@ function DocsVaultContent({
           {selectedDoc ? (
             <DocsVaultDocumentPane
               selectedDoc={selectedDoc}
+              columnTitle={columnTitle}
+              onBodyPainted={reportPaintedBody}
               editing={editing}
               setEditing={setEditing}
               showSampleWelcomeNote={showSampleWelcomeNote}

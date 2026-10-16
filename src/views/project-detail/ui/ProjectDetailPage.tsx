@@ -91,15 +91,14 @@ function ProjectDetailShell({
   return (
     // The dock is a sticky sibling of `main`: a column from `xl`, an overlay below it.
     <div className="relative flex min-h-full w-full">
-      {/* Base `pb` plus an `lg:` override, since `max-lg:pb-[...]` loses to `md:py-14` by stylesheet
-          order. The inset sits inside the cap, as `PAGE_FRAME` does on `/projects`. */}
-      <main id="main" tabIndex={-1} inert={dockCoversPage} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]">
+      {/* Below `lg` the main reserves the tab bar; from `lg` the frame carries the breath, as `PAGE_FRAME` does. */}
+      <main id="main" tabIndex={-1} inert={dockCoversPage} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-0">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
           // A named container: with the dock open the column is narrower than the viewport.
-          className="@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))]"
+          className="@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))] lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]"
         >
           {children}
         </motion.div>
@@ -525,8 +524,7 @@ export function ProjectDetailPage({
                 ariaLabel={t("inlineDescriptionAria")}
                 placeholder={t("inlineDescriptionPlaceholder")}
                 dataTestId="project-detail-description"
-                // The overview prose's own box, so hero and card words share both edges.
-                className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
+                className="mt-2.5 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
               />
             </div>
             <div
@@ -725,9 +723,7 @@ export function ProjectDetailPage({
           {bodyContent ? (
             <ProjectBriefSummary
               body={dedupedBodyContent ?? bodyContent}
-              // The reading column (`docs/DECISIONS.md`), left-aligned in a card at body-lg so it does not
-              // outrank the hero; hierarchy is weight and space, not size.
-              proseClassName={`${storyMarkdownClassName} max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))]`}
+              proseClassName={`${storyMarkdownClassName} max-w-[var(--measure-prose)]`}
               coversLabel={t("bodyCovers")}
               leadSentence={heroTagline}
               sectionNames={{

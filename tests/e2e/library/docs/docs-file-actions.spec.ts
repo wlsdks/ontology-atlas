@@ -3,8 +3,26 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 import { stubDirectoryPicker } from "../../vault-picker-stub";
 import { HEALTHY_VAULT } from "../../fixtures/broken-vault";
 
+const UNTITLED_BODY = "capabilities/refund.md";
+const VAULT = {
+  ...HEALTHY_VAULT,
+  [UNTITLED_BODY]: [
+    "---",
+    "kind: capability",
+    "slug: refund",
+    "title: Refund",
+    "display_ko: 환불하기",
+    "domain: orders",
+    "uid: 77777777-7777-4777-8777-777777777777",
+    "---",
+    "",
+    "Money goes back to the card the order was paid with.",
+    "",
+  ].join("\n"),
+};
+
 async function openCheckout(page: Page) {
-  await stubDirectoryPicker(page, HEALTHY_VAULT);
+  await stubDirectoryPicker(page, VAULT);
   await seedFirstRunSeen(page);
   await page.goto("/ko/topology/?guides=off");
   await page.waitForLoadState("networkidle");
@@ -18,7 +36,7 @@ async function openCheckout(page: Page) {
   });
 }
 
-test("the file's rename and delete doors stand beside its address and open product dialogs", async ({
+test("the file's rename and delete doors stand beside its name and open product dialogs", async ({
   page,
 }) => {
   const nativeDialogs: string[] = [];
@@ -46,6 +64,7 @@ test("the file's rename and delete doors stand beside its address and open produ
     };
     return {
       path: measure("docs-editor-path"),
+      title: measure("docs-reading-title"),
       rename: measure("docs-file-rename"),
       remove: measure("docs-file-delete"),
     };
@@ -53,13 +72,15 @@ test("the file's rename and delete doors stand beside its address and open produ
   console.log("[docs-file-actions/geometry]", JSON.stringify(geometry));
   expect(geometry.rename, "the rename door is on the page").not.toBeNull();
   expect(geometry.remove, "the delete door is on the page").not.toBeNull();
+  // `checkout` opens with its own `#` heading, so the doors stand on the address line.
+  expect(geometry.title).toBeNull();
+  const name = geometry.path!;
   for (const door of [geometry.rename!, geometry.remove!]) {
     expect(door.onTop, "the door is what a press at its centre reaches").toBe(true);
-    expect(Math.min(door.width, door.height), "WCAG 2.5.8 floor").toBeGreaterThanOrEqual(24);
-    // Beside the address: after its right edge, and on its line.
-    expect(door.left).toBeGreaterThanOrEqual(geometry.path!.right);
-    expect(door.top).toBeLessThan(geometry.path!.bottom);
-    expect(door.bottom).toBeGreaterThan(geometry.path!.top);
+    expect(Math.min(door.width, door.height), "the chrome icon tile").toBe(36);
+    expect(door.left).toBeGreaterThanOrEqual(name.right);
+    expect(door.top).toBeLessThan(name.bottom);
+    expect(door.bottom).toBeGreaterThan(name.top);
   }
 
   await page.getByTestId("docs-file-rename").click();
@@ -86,4 +107,35 @@ test("the file's rename and delete doors stand beside its address and open produ
   await expect(page.getByTestId("docs-editor-path")).toHaveText("capabilities/checkout.md");
 
   expect(nativeDialogs, "no browser prompt, confirm or alert box").toEqual([]);
+});
+
+test("a body without its own heading is named by the column's one h1; a body with one keeps the page's", async ({ page }) => {
+  await openCheckout(page);
+  const pageHeading = page.getByRole("heading", { level: 1 });
+  await expect(page.getByTestId("docs-reading-title")).toHaveCount(0);
+  await expect(pageHeading).toHaveCount(1);
+  await expect(pageHeading).toHaveText("온톨로지");
+  await expect(page.locator("[data-docs-viewer]")).toContainText("결제하기");
+
+  await page.goto(`/ko/docs/?guides=off&slug=${encodeURIComponent("capabilities/refund")}`);
+  const title = page.getByTestId("docs-reading-title");
+  await expect(title).toHaveText("환불하기", { timeout: 20_000 });
+  await expect(pageHeading).toHaveCount(1);
+  await expect(pageHeading).toHaveText("환불하기");
+  await expect(page.locator("h1.sr-only")).toHaveCount(0);
+  expect(await page.title()).toMatch(/^환불하기/);
+
+  const doors = await page.evaluate(() => {
+    const box = (testId: string) => {
+      const r = document.querySelector(`[data-testid="${testId}"]`)!.getBoundingClientRect();
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width };
+    };
+    return { title: box("docs-reading-title"), rename: box("docs-file-rename"), remove: box("docs-file-delete") };
+  });
+  for (const door of [doors.rename, doors.remove]) {
+    expect(door.width).toBe(36);
+    expect(door.left).toBeGreaterThanOrEqual(doors.title.right);
+    expect(door.top).toBeLessThan(doors.title.bottom);
+    expect(door.bottom).toBeGreaterThan(doors.title.top);
+  }
 });

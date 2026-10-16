@@ -134,7 +134,7 @@ test("while the app is still reading instructions, the headline shows no partial
 
   await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });
   const headline = page.getByTestId("brief-headline");
-  await expect(page.getByTestId("brief-core-harness")).toHaveAttribute("data-brief-availability", "reading", { timeout: 30_000 });
+  await expect(page.getByTestId("brief-core-reading-harness")).toBeVisible({ timeout: 30_000 });
   await expect(headline).toHaveAttribute("data-brief-headline-state", "counting");
   await expect(headline).toHaveAttribute("aria-busy", "true");
   // Drawn once the read outlasts the loading beat, in the working ink.
@@ -143,7 +143,7 @@ test("while the app is still reading instructions, the headline shows no partial
   const counting = await headline.boundingBox();
 
   await page.evaluate(() => (window as unknown as { __releaseGuidanceScan: () => void }).__releaseGuidanceScan());
-  await expect(page.getByTestId("brief-core-harness")).toHaveAttribute("data-brief-availability", /measured|no-data/, { timeout: 30_000 });
+  await expect(page.getByTestId("brief-core-reading-harness")).toHaveCount(0, { timeout: 30_000 });
   await expect(headline).toHaveAttribute("data-brief-headline-state", "settled");
   await expect(headline).not.toHaveAttribute("aria-busy", "true");
   await expect(headline).toHaveText(/새로 알아야 할 것 \d+개 · 확인 못 한 것 \d+개/);

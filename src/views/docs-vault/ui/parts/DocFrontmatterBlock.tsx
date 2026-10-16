@@ -838,12 +838,14 @@ export function DocFrontmatterBlock({
           {/* One consumer reads all relation keys: the compiler, which reports, never refuses, an
              unresolved entry (`tests/contract/controls/field-help-consumers.contract.test.ts`). */}
           {hasReferenceField ? (
-            <p
-              data-testid="doc-frontmatter-relations-help"
-              className="mt-2 border-t border-[color:var(--color-divider)] pt-2 font-sans text-label leading-label text-[color:var(--color-text-quaternary)]"
-            >
-              {t("relationsConsumerHelp")}
-            </p>
+            <div className="mt-2 border-t border-[color:var(--color-divider)] pt-2">
+              <p
+                data-testid="doc-frontmatter-relations-help"
+                className="max-w-[var(--measure-prose)] font-sans text-body leading-body text-[color:var(--color-text-tertiary)]"
+              >
+                {t("relationsConsumerHelp")}
+              </p>
+            </div>
           ) : null}
         </div>
         {codeLocations.length > 0 ? (

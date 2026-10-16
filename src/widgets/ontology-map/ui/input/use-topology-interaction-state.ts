@@ -5,6 +5,7 @@ import {
   useRef
 } from "react";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../../interaction/pointer-state-machine";
+import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { type FocusLeashPx } from "../camera/topology-camera-math";
 
 interface Dependencies {
@@ -66,9 +67,11 @@ export function useTopologyInteractionState({
   const focusLeashPxRef = useRef<FocusLeashPx | null>(null);
 
   const lastTapRef = useRef<{ nodeId: string; at: number; x?: number; y?: number; } | null>(null);
+  /** Read once by the next selection change; a selection the map did not make carries none. */
+  const selectionSourceRef = useRef<{ slug: string; source: SelectionSource; } | null>(null);
   return {
     pointerMachineRef, dragHistoryRef, domeGripRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
     lastFocusedSlugRef, panelEmphasisNodeIdRef, hoveredNodeIdRef, hoveredEdgeRef, onHoverEdgeRef,
-    selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef,
+    selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef, selectionSourceRef,
   };
 }

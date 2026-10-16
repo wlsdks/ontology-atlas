@@ -1,9 +1,9 @@
 "use client";
 
-import { LibraryBig, Plus, ShieldCheck, TriangleAlert } from "lucide-react";
+import { LibraryBig, Plus, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore, useTransition, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundRecord } from "@/entities/library-round";
@@ -12,12 +12,17 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
+import { usePanelPresence, useSwapHeight } from "@/shared/lib/render-timing/use-presence";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
+import { MOTION } from "@/shared/motion";
+import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";
 
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW, PAGE_TRACK_CAP, PAGE_TWO_TRACK } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
-import { AutomationEmptyWorkbench } from "./AutomationEmptyWorkbench";
+import { AutomationGhostRow, AutomationLaneFacts, AutomationLaneIntro, AutomationListPanel } from "./AutomationListFrame";
+import listStyles from "./automation-list-frame.module.css";
 
 import { NewOntologyRoundSheet } from "./NewOntologyRoundSheet";
 
@@ -27,6 +32,8 @@ const subscribeToRuntime = () => () => {};
 const serverRuntimeSnapshot = (): boolean | null => null;
 
 const EMPTY_RUNNER_ROUNDS: RoundRecord[] = [];
+
+const ARRIVAL_MS = Math.max(springSettleMs(SPRING.surface), MOTION.settle.duration * 1000);
 
 function isLaneRound(round: RoundRecord, lane: AutomationLane): boolean {
   return lane === "ontology" ? round.kind === "ontology" : round.kind !== "ontology";
@@ -46,6 +53,7 @@ export function AutomationsPage({
   const params = useSearchParams();
   const router = useRouter();
   const toast = useToast();
+  const reduced = usePrefersReducedMotion();
   const requested = params.get("kind");
   const lane: AutomationLane = requested === "documents" ? "documents" : "ontology";
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
@@ -95,90 +103,110 @@ export function AutomationsPage({
     setOntologySheetOpen(true);
   } : onOpenDocumentSchedule;
 
-  const emptyStage = (title: string, description: string, action: ReactNode, canHoldSchedules: boolean) => (
-    <AutomationEmptyWorkbench title={title} description={description} action={action}
-      previewTitle={t(`${lane}.preview.title`)}
-      count={canHoldSchedules ? 0 : null}
-      columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.next`)]}
-      facts={[
-        { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
-        { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
-        { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
-      ]} />
-  );
+  const empty = !ready || rounds.length === 0;
+  const { hostRef: introHostRef, capture: captureIntro } = useSwapHeight(empty);
+  const intro = usePanelPresence(empty);
+  const ghost = usePanelPresence(empty);
+  /* Empty to filled (or back) within one lane, not a tab switch or a load. */
+  const [seen, setSeen] = useState<{ lane: AutomationLane; ready: boolean; empty: boolean; arrived: ReadonlySet<string> | null }>(
+    { lane, ready, empty, arrived: null });
+  if (seen.lane !== lane || seen.ready !== ready || seen.empty !== empty) {
+    const inPlace = seen.lane === lane && seen.ready && ready;
+    if (inPlace) captureIntro();
+    const arrived = inPlace && seen.empty && !empty;
+    setSeen({ lane, ready, empty, arrived: arrived ? new Set(rounds.map((round) => round.id)) : null });
+    if (arrived) setSelectedId(null);
+  }
+  useEffect(() => {
+    if (!seen.arrived) return;
+    const timer = window.setTimeout(() => setSeen((current) => ({ ...current, arrived: null })), ARRIVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [seen.arrived]);
+  const arrival = (id: string): { className?: string; style?: CSSProperties } => {
+    if (!seen.arrived?.has(id)) return {};
+    if (reduced) return { className: "motion-swap-in" };
+    return {
+      className: listStyles.arriving,
+      style: { "--arrive-rise-duration": `${springSettleMs(SPRING.surface)}ms`, "--arrive-rise-easing": springEasing(SPRING.surface) } as CSSProperties,
+    };
+  };
+
+  const canHoldSchedules = state === "ready";
+  const introCopy = state === "app-required"
+    ? { title: t("appRequiredTitle"), description: t("appRequiredDescription"),
+      action: <Link href="/download/" className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link> }
+    : state === "no-vault"
+      ? { title: t("openFolderTitle"), description: t("openFolderDescription"),
+        action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
+      : { title: t(`${lane}.emptyTitle`), description: t(`${lane}.emptyDescription`) };
+  const ghostRow = (className?: string) => <AutomationGhostRow className={className}
+    cadence={lane === "ontology" ? t("cadence.6h") : t("cadence.hour")} outcome={t("outcome.none")} />;
 
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
       className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}>
+      <div className={`${PAGE_FRAME} flex min-h-full flex-col gap-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
         <header className={PAGE_HEADER_ROW}>
           <div className="min-w-0">
-            <h1 className={PAGE_TITLE}>{t("title")}</h1>
-            <p className="mt-2 max-w-prose text-body-lg text-[color:var(--color-text-tertiary)]">{t("lede")}</p>
+            <div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t("title")}</h1></div>
+            <p className={`mt-2 max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
           </div>
         </header>
 
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3">
+        <div className={`flex flex-wrap items-end justify-between gap-3 border-b border-[color:var(--color-divider)] pb-3 ${PAGE_TRACK_CAP}`}>
           <TabBar ariaLabel={t("tabsAria")} activeKey={lane} onSelect={(key) => selectLane(key as AutomationLane)}
             idPrefix="automations" testId="automations-tabs" placement="header"
             items={[
               { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
               { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
             ]} />
-          {ready && rounds.length > 0 ? <Button variant="outline" onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
+          {ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={add} disabled={lanePending}
+            data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
             <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
           </Button> : null}
         </div>
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
-          {state === "app-required" || state === "no-vault" ? (
-            // The empty-lane stage, so the tabs still show what each lane would do.
-            <div className="flex flex-1 flex-col pt-6 pb-8">
-              {emptyStage(
-                state === "app-required" ? t("appRequiredTitle") : t("openFolderTitle"),
-                state === "app-required" ? t("appRequiredDescription") : t("openFolderDescription"),
-                state === "app-required"
-                  ? <Link href="/download/" className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link>
-                  : <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />,
-                false,
-              )}
-            </div>
-          ) : state === "loading" ? (
-            <div role="status" aria-busy="true"><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
+          {state === "loading" ? (
+            <div role="status" aria-busy="true" className={PAGE_TRACK_CAP}><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
           ) : state === "malformed" || state === "unavailable" ? (
-            <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
+            <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid" className={PAGE_TRACK_CAP}
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
-          ) : runner ? (
-            <>
-              {/* A quiet count: at title size it tied every row name for attention. */}
-              {rounds.length > 0 ? <div data-testid="automations-lane-card" className="flex min-h-8 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-                  <h2 className="text-body font-[var(--font-weight-emphasis)] tabular-nums text-[color:var(--color-text-secondary)]">{t("scheduleCount", { count: rounds.length })}</h2>
-                  <p className="flex items-center gap-1.5 text-body text-[color:var(--color-text-tertiary)]">
-                    <ShieldCheck size={ICON_SIZE.sm} className="flex-none" aria-hidden />{t(`${lane}.guard`)}
-                  </p>
+          ) : (
+            <div className={`${PAGE_TWO_TRACK} gap-8`}>
+              <div className="flex min-w-0 flex-col">
+                <div ref={introHostRef} className="relative min-w-0 overflow-hidden">
+                  {intro.mounted ? <div inert={intro.exiting} aria-hidden={intro.exiting || undefined}
+                    className={cn(intro.exiting && "motion-swap-out pointer-events-none absolute inset-x-0 top-0")}>
+                    <AutomationLaneIntro {...introCopy} />
+                  </div> : null}
                 </div>
-                {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                {/* -mr-3.5 cancels the ghost's px-3.5 so the label ends on the cards' right edge. */}
-                {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
-                  <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
-                </Link> : null}
-              </div> : null}
-              {rounds.length === 0 ? (
-                <div className="flex flex-1 flex-col pt-6 pb-8">
-                  {emptyStage(t(`${lane}.emptyTitle`), t(`${lane}.emptyDescription`),
-                    <Button size="sm" onClick={add} disabled={lanePending} data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide"><Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}</Button>,
-                    true)}
-                </div>
-              ) : (
-                <ul data-testid="automations-list" className="flex flex-col gap-2">
-                  {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
-                    expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
-                    onEdit={() => edit(round)} />)}
-                </ul>
-              )}
-            </>
-          ) : null}
+                <AutomationListPanel title={t(`${lane}.preview.title`)} count={canHoldSchedules ? rounds.length : null}
+                  columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
+                  trailing={runner && canHoldSchedules ? <>
+                    {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
+                    {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
+                    {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
+                      <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
+                    </Link> : null}
+                  </> : null}>
+                  {empty || !runner ? ghostRow() : <div className="relative">
+                    <ul data-testid="automations-list" className="flex flex-col">
+                      {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
+                        expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
+                        onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
+                    </ul>
+                    {ghost.mounted && seen.arrived ? ghostRow("motion-swap-out pointer-events-none absolute inset-x-0 top-0") : null}
+                  </div>}
+                </AutomationListPanel>
+              </div>
+              <AutomationLaneFacts facts={[
+                { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
+                { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
+                { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
+              ]} />
+            </div>
+          )}
         </section>
         <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology}
           round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true} />

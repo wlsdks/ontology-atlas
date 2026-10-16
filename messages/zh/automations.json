@@ -27,7 +27,6 @@
     "limit": "每轮最多新增 {count} 份文档",
     "button": "允许此 Mac"
   },
-  "scheduleCount": "{count} 个定时任务",
   "title": "自动化",
   "lede": "安排定期审阅，再查看每次运行的发现。Atlas 打开时，它们在这台电脑上运行。",
   "tabsAria": "自动化分类",
@@ -113,7 +112,6 @@
   "ontology": {
     "new": "新建本体审阅",
     "title": "本体优化",
-    "guard": "只读 · 绝不修改本体",
     "facts": {
       "runs": {
         "title": "做什么",
@@ -134,7 +132,7 @@
       "title": "计划",
       "name": "名称",
       "cadence": "频率",
-      "next": "下次运行"
+      "last": "上次结果"
     },
     "defaultName": "本体优化",
     "sheet": {
@@ -152,7 +150,6 @@
   },
   "documents": {
     "new": "新建文档轮次",
-    "guard": "只改已批准的资料库范围 · 绝不改本体",
     "facts": {
       "runs": {
         "title": "做什么",
@@ -173,7 +170,7 @@
       "title": "计划",
       "name": "名称",
       "cadence": "频率",
-      "next": "下次运行"
+      "last": "上次结果"
     },
     "openRounds": "打开资料库检查历史"
   }

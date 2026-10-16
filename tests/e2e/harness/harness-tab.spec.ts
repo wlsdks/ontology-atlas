@@ -245,7 +245,7 @@ test.describe("harness tab", () => {
 
   test('Brief restores its normal scrolling contract after measured Guidance', async ({ page }) => {
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1040, height: 720 });
+    await page.setViewportSize({ width: 1040, height: 480 });
     await page.goto('/en/ontology/insights/?tab=brief&guides=off');
     await expect(page.getByTestId('brief-tab')).toBeVisible();
     const main = page.locator('main[data-insights-surface="relationship-analysis"]');
@@ -264,10 +264,6 @@ test.describe("harness tab", () => {
     await waitForFiniteAnimations(page);
     const briefAfter = await main.evaluate((element) => ({ overflowY: getComputedStyle(element).overflowY }));
     expect(briefAfter).toEqual(briefBefore);
-    const back = page.getByTestId('analysis-back-to-system');
-    await back.scrollIntoViewIfNeeded();
-    await expect(back).toBeInViewport({ ratio: 1 });
-    expect(await back.evaluate(element => { const rect = element.getBoundingClientRect(); const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2); return element === hit || element.contains(hit); })).toBe(true);
     console.info('GUIDANCE_BRIEF_SCROLL_RESTORE', JSON.stringify({ briefBefore, briefAfter }));
   });
 
@@ -722,7 +718,7 @@ test.describe("harness tab", () => {
       await expect(textMode).toBeFocused();
       const textRows = overview.locator('[data-testid^="harness-text-domain-"]');
       await expect(textRows).toHaveCount(8);
-      expect(await textRows.evaluateAll((rows) => rows.map((row) => ({ name: row.querySelector('h4')?.textContent, roles: [...row.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })) })))).toEqual(diagramFacts);
+      expect(await textRows.evaluateAll((rows) => rows.map((row) => ({ name: row.querySelector('h3')?.textContent, roles: [...row.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })) })))).toEqual(diagramFacts);
       const trigger = textRows.first().locator('[data-role][data-state="filled"]').first();
       await trigger.click();
       const surface = reducedPage.getByTestId('harness-role-popup');

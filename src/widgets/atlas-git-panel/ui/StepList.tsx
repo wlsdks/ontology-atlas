@@ -225,7 +225,7 @@ export function StepList({
     return (
       <div className="flex flex-col gap-1 px-4 py-3">
         <p className="text-label text-[color:var(--color-text-tertiary)]">{t("historyEmpty")}</p>
-        <p className="text-caption leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
           {t("historyEmptyHint")}
         </p>
       </div>
@@ -397,7 +397,7 @@ export function StepList({
       ) : (
         <li
           data-testid="atlas-git-history-end"
-          className="px-4 pt-3 pb-2 text-caption text-[color:var(--color-text-quaternary)]"
+          className="px-4 pt-3 pb-2 text-label text-[color:var(--color-text-tertiary)]"
         >
           {t("historyEnd")}
         </li>
