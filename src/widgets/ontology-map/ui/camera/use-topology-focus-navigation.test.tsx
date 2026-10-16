@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraTarget } from "../../engine/camera";
+import type { SelectionCamera, SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { FocusLeashPx } from "./topology-camera-math";
 import type { TopologyWorld } from "../world/topology-world";
@@ -100,8 +101,151 @@ describe("useTopologyFocusNavigation", () => {
     vi.restoreAllMocks();
   });
 
+  const ref = <T,>(current: T) => ({ current });
+  const axes = (x: number, y: number, scale: number) => ({
+    x: { value: x, velocity: 0 }, y: { value: y, velocity: 0 }, scale: { value: scale, velocity: 0 },
+  });
+
+  function setup(overrides: Partial<Parameters<typeof useTopologyFocusNavigation>[0]> = {}) {
+    const deps = {
+      lastFocusedSlugRef: ref<string | null>(null),
+      egoRevealBatchesRef: ref(1),
+      selectionPulseRef: ref(null),
+      cameraTargetRef: ref<CameraTarget>({ tx: 0, ty: 0, tscale: 1 }),
+      cameraRef: ref(axes(0, 0, 1)),
+      constellationFocusId: null,
+      cameraGestureRevisionRef: ref(0),
+      userDrivenCameraRef: ref(false),
+      dampingRef: ref(1),
+      cameraAngularFreqRef: ref<number | null>(null),
+      lastActiveMsRef: ref(0),
+      beginCameraTween: vi.fn(),
+      focusedSlugRef: ref<string | null>(null),
+      canvasRef: ref(null),
+      worldRef: ref<TopologyWorld | null>(world()),
+      viewportRef: ref({ width: 1200, height: 800, dpr: 1 }),
+      overviewScaleRef: ref(1),
+      view3dRef: ref(false),
+      realmTransitionRef: ref({ phase: "idle" }),
+      domeRuntimeRef: ref(null),
+      realmDataRef: ref(null),
+      expandedParentsRef: ref<ReadonlySet<string>>(new Set()),
+      cameraTokens: <T,>(t: T) => t,
+      focusLeashPxRef: ref<FocusLeashPx | null>(null),
+      overviewFitRef: ref<"full" | "spine">("spine"),
+      clusteredIdsRef: ref<ReadonlySet<string>>(new Set()),
+      mapLensKindRef: ref("recent"),
+      spotlightIdsRef: ref(null),
+      selectionCameraRef: ref<SelectionCamera | null>(null),
+      selectionSourceRef: ref<{ slug: string; source: SelectionSource } | null>(null),
+      ...overrides,
+    } as unknown as Parameters<typeof useTopologyFocusNavigation>[0];
+    const hook = renderHook((focusedSlug: string | null) => useTopologyFocusNavigation({ ...deps, focusedSlug }), {
+      initialProps: null as string | null,
+    });
+    const select = (slug: string | null, { click = false } = {}) => {
+      if (click && slug !== null) deps.selectionSourceRef.current = { slug, source: "canvas-click" };
+      deps.focusedSlugRef.current = slug;
+      hook.rerender(slug);
+      frames.shift()!(performance.now());
+    };
+    return { deps, hook, select };
+  }
+
+  it("a click selects without moving the camera when the node already sits in the free map", () => {
+    const { deps, select } = setup();
+    select("p", { click: true });
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 0, ty: 0, tscale: 1 });
+  });
+
+  it("a click under the panel slides sideways at the same scale on the canvas spring, and one deselect slides it back exactly", () => {
+    const { deps, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: 400 }) });
+    select("f", { click: true });
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 664, ty: 0, tscale: 1 });
+    expect(deps.beginCameraTween).toHaveBeenLastCalledWith({ tx: 664, ty: 0, tscale: 1 }, undefined, "spring");
+    select(null);
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 0, ty: 0, tscale: 1 });
+    expect(deps.beginCameraTween).toHaveBeenLastCalledWith({ tx: 0, ty: 0, tscale: 1 }, undefined, "spring");
+  });
+
+  it("a deselect never takes back a view the reader moved after the click", () => {
+    const { deps, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: 400 }) });
+    select("f", { click: true });
+    deps.cameraTargetRef.current = { tx: 700, ty: 40, tscale: 1.4 };
+    vi.mocked(deps.beginCameraTween).mockClear();
+    select(null);
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 700, ty: 40, tscale: 1.4 });
+  });
+
+  it("a pan the focus leash held short stays where the reader sees it after the deselect", () => {
+    for (const seenX of [350, 700]) {
+      const { deps, select } = setup();
+      select("f");
+      deps.cameraTargetRef.current = { tx: 300, ty: 0, tscale: 1.4 };
+      deps.cameraRef.current = axes(seenX, 0, 1.4);
+      deps.cameraGestureRevisionRef.current += 1;
+      vi.mocked(deps.beginCameraTween).mockClear();
+      select(null);
+      expect(deps.beginCameraTween).not.toHaveBeenCalled();
+      const tx = deps.cameraTargetRef.current.tx;
+      if (seenX === 350) expect(tx).toBe(350);
+      else expect(tx > 300 && tx < 700).toBe(true);
+      expect(deps.cameraTargetRef.current.tscale).toBe(1.4);
+    }
+  });
+
+  it("framing a node is its own gesture, and the deselect after it returns past the click's slide", () => {
+    const { deps, hook, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: 400 }) });
+    select("f", { click: true });
+    hook.result.current.flyToNode("f");
+    expect(deps.cameraTargetRef.current.tscale).not.toBe(1);
+    expect(deps.beginCameraTween).toHaveBeenLastCalledWith(deps.cameraTargetRef.current, undefined, undefined);
+    select(null);
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 0, ty: 0, tscale: 1 });
+  });
+
+  it("a selection from a panel link frames the node, and one deselect returns within a pixel of the view before the link", () => {
+    const { deps, select } = setup();
+    const before = { tx: 120, ty: -60, tscale: 1 };
+    deps.cameraTargetRef.current = { ...before };
+    select("p", { click: true });
+    select("f");
+    expect(deps.cameraTargetRef.current).not.toEqual(before);
+    select(null);
+    const back = deps.cameraTargetRef.current;
+    expect(Math.abs(back.tx - before.tx)).toBeLessThan(1);
+    expect(Math.abs(back.ty - before.ty)).toBeLessThan(1);
+    expect(back.tscale).toBeCloseTo(before.tscale, 6);
+  });
+
+  it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {
+    const { deps, hook, select } = setup();
+    select("p", { click: true });
+    hook.result.current.flyToNode("p");
+    const panned = { ...deps.cameraTargetRef.current, tx: deps.cameraTargetRef.current.tx + 200 };
+    deps.cameraTargetRef.current = panned;
+    deps.cameraGestureRevisionRef.current += 1;
+    vi.mocked(deps.beginCameraTween).mockClear();
+    select(null);
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual(panned);
+  });
+
+  it("a deep link framed on arrival leaves a moved view alone on deselect", () => {
+    const { deps, select } = setup();
+    select("f");
+    deps.selectionCameraRef.current = null;
+    deps.cameraTargetRef.current = { tx: 760, ty: 0, tscale: 1.3 };
+    deps.userDrivenCameraRef.current = true;
+    vi.mocked(deps.beginCameraTween).mockClear();
+    select(null);
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 760, ty: 0, tscale: 1.3 });
+  });
+
   it("aims a selection at a camera the physics lets rest, when the overview refits in the frame before", () => {
-    const ref = <T,>(current: T) => ({ current });
     const cameraTargetRef = ref<CameraTarget>({ tx: 0, ty: 0, tscale: 1.157 });
     const overviewScaleRef = ref(1.218);
     const focusLeashPxRef = ref<FocusLeashPx | null>(null);
@@ -134,6 +278,8 @@ describe("useTopologyFocusNavigation", () => {
       clusteredIdsRef: ref<ReadonlySet<string>>(new Set()),
       mapLensKindRef: ref("recent"),
       spotlightIdsRef: ref(null),
+      selectionCameraRef: ref<SelectionCamera | null>(null),
+      selectionSourceRef: ref(null),
     } as unknown as Parameters<typeof useTopologyFocusNavigation>[0];
 
     const { rerender } = renderHook((focusedSlug: string | null) => useTopologyFocusNavigation({ ...deps, focusedSlug }), {

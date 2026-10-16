@@ -212,11 +212,7 @@ export function useTopologyInspectorState({
       : selectedSlug
         ? "compact-focus"
         : "visible";
-  const topologyUtilityChromeCompact =
-    reviewUsesSheet ||
-    topologyUtilityChromeState === "compact-focus" ||
-    topologyUtilityChromeState === "selected-node-inspector" ||
-    agentDockRequestedOpen;
+  const topologyUtilityChromeCompact = reviewUsesSheet || agentDockRequestedOpen;
   // See `search-lane-density.ts` for the measured band.
   const searchLaneCrowded = isSearchLaneCrowded({
     viewportBelowCrowdedWidth: useViewportBelow(SEARCH_LANE_CROWDED_BELOW_PX),

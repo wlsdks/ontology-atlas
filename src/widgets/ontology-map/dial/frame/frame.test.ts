@@ -14,6 +14,7 @@ import { buildDialModel, resolveDialAttention } from "../dial-model";
 import {
   clearDialFrame,
   countCrossings,
+  crossfadeNumerals,
   describeLastDialFrame,
   dialFrameSummary,
   dialChordPresence,
@@ -26,6 +27,7 @@ import {
   paintDialFrame,
   sampleStrips } from "./frame";
 import { layoutDial } from "../layout";
+import { emptyDialFrameMarks } from "./marks";
 import { circularDomainOrder } from "../order";
 import { resolveDialTokens } from "../tokens";
 import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "../types";
@@ -64,7 +66,7 @@ function recordingContext(): CanvasRenderingContext2D {
         },
     }) as unknown as CanvasRenderingContext2D;
 }
-function modelOf(): DialModel {
+function modelOf(links = true): DialModel {
     const nodes: TreeInputNode[] = [{ id: "p", label: "Project", kind: "project" }];
     const edges: TreeInputEdge[] = [];
     const contains = (s: string, t: string) => edges.push({ source: s, target: t, kind: "contains", relationType: "contains" });
@@ -76,9 +78,9 @@ function modelOf(): DialModel {
             contains(`d${d}`, `d${d}c${c}`);
         }
     }
-    for (let d = 0; d < 5; d += 1)
+    for (let d = 0; d < 5 && links; d += 1)
         edges.push({ source: `d${d}c0`, target: `d${(d + 1) % 5}c1`, kind: "depends", relationType: "depends_on" });
-    edges.push({ source: "d1c2", target: "d0c3", kind: "depends", relationType: "depends_on" }, { source: "d2c2", target: "d0c3", kind: "depends", relationType: "depends_on" });
+    if (links) edges.push({ source: "d1c2", target: "d0c3", kind: "depends", relationType: "depends_on" }, { source: "d2c2", target: "d0c3", kind: "depends", relationType: "depends_on" });
     const tree = readContainmentTree(nodes, edges);
     const dependencies = rollDomainDependencies(tree, edges);
     return buildDialModel({ tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)) });
@@ -92,7 +94,7 @@ function frameInput(model: DialModel, over: Partial<DialFrameInput> = {}): DialF
     const toScreen = (x: number, y: number): Point => ({ x: W / 2 + x * scale, y: H / 2 + y * scale });
     return {
         ctx: recordingContext(), dial: { model, scene, overviewPadPx: { left: 0, right: 0, top: 0, bottom: 0 } }, worldKey: {},
-        nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, labelScale: TOKENS.labelScale, zoomRatio: 1,
+        nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen, scale, zoomRatio: 1,
         viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 60, maxX: W - 60, maxY: H - 30 },
         mapTokens: MAP, dialTokens: TOKENS, labels: LABELS, evidence: null,
         hoveredNodeId: null, focusedNodeId: null, agentFocusNodeId: null, selectionPulse: null, appearOf: () => 1, hubCount: null,
@@ -150,6 +152,44 @@ describe("focus clock", () => {
         expect(focusInkMix(key, onD2, 700, false).previous).toBeNull();
     });
 });
+describe("count crossfade", () => {
+    const box = { minX: 0, minY: 0, maxX: 10, maxY: 10 };
+    const frameWith = (text: string, width = 10) => {
+        const marks = emptyDialFrameMarks();
+        marks.inks.push("#aaaaaa");
+        marks.numerals.push({ flowKey: "far\0d1", text, x: 5, y: 5, ink: 0, halo: true, font: "650 11px x", box: { ...box, minX: 5 - width / 2, maxX: 5 + width / 2 }, parts: null });
+        return marks;
+    };
+    const shown = (marks: ReturnType<typeof frameWith>) => marks.numerals.map((n) => [n.text, n.alpha ?? 1]);
+    it("fades a new count in and crossfades a changed one in place over 120 ms", () => {
+        const key = {};
+        expect(shown(withFade(frameWith("←9"), key, 0))).toEqual([["←9", 1]]);
+        expect(shown(withFade(frameWith("←9"), key, 500))).toEqual([["←9", 1]]);
+        expect(shown(withFade(frameWith("←7"), key, 1000))).toEqual([["←7", 0], ["←9", 1]]);
+        expect(shown(withFade(frameWith("←7"), key, 1060))).toEqual([["←7", 0.5], ["←9", 0.5]]);
+        expect(shown(withFade(frameWith("←7"), key, 1120))).toEqual([["←7", 1]]);
+        const empty = emptyDialFrameMarks();
+        crossfadeNumerals(empty, key, 1200, false);
+        expect(shown(withFade(frameWith("←7"), key, 1300))).toEqual([["←7", 0]]);
+        expect(shown(withFade(frameWith("←7"), key, 1360))).toEqual([["←7", 0.5]]);
+    });
+    it("gives the fading figure a box of its own width where the count stands", () => {
+        const key = {};
+        withFade(frameWith("→4 ←3", 40), key, 0);
+        const fading = withFade(frameWith("←9", 16), key, 1000).numerals.find((n) => n.text === "→4 ←3")!;
+        expect(fading.box).toEqual({ minX: -15, minY: 0, maxX: 25, maxY: 10 });
+    });
+    it("swaps at once under reduced motion", () => {
+        const key = {};
+        withFade(frameWith("←9"), key, 0, true);
+        expect(shown(withFade(frameWith("←7"), key, 10, true))).toEqual([["←7", 1]]);
+    });
+    function withFade(marks: ReturnType<typeof frameWith>, key: object, now: number, reduced = false) {
+        crossfadeNumerals(marks, key, now, reduced);
+        return marks;
+    }
+});
+
 describe("focus on a new world", () => {
     it("keeps an unchanged focus settled: the ink stays mixed and nothing crossfades", () => {
         const model = modelOf();
@@ -183,6 +223,19 @@ describe("frame registry", () => {
         expect(lastDialFrame()).toBeNull();
         expect(dialLightFrame()).toBeNull();
         expect(describeLastDialFrame(W, H)).toBeNull();
+    });
+    it("keeps the unmeasured-evidence caption where it rests while the project name fades in", () => {
+        const model = modelOf(false);
+        const labels = { ...LABELS, evidenceUnmeasured: () => "Evidence not measured" };
+        const caption = (appear: number) => {
+            const freeRect = { minX: W / 2 - 60, maxX: W / 2 + 60, minY: 8, maxY: H - 8 };
+            const r = paintDialFrame(frameInput(model, { labels, evidence: new Map(), freeRect, appearOf: (id) => (id.startsWith("d") && !id.includes("c") ? appear : 1) }));
+            return { y: r.marks.texts.find((t) => t.text === "Evidence not measured")!.y, named: r.marks.texts.some((t) => t.role === "project") };
+        };
+        const before = caption(0.05);
+        const after = caption(1);
+        expect([before.named, after.named]).toEqual([false, true]);
+        expect(before.y).toBe(after.y);
     });
     it("describes the last frame with rings, disclosure, budget and placement", () => {
         const model = modelOf();

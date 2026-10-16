@@ -131,7 +131,9 @@ export type ClickAction =
  * - No commit at all → `"none"`.
  * - Empty-canvas click (`nodeId: null`) → `"deselect"` if something was
  *   focused, `"none"` otherwise (nothing to clear).
- * - Clicking the ALREADY-focused node → `"deselect"` (toggle off).
+ * - Clicking the ALREADY-focused node → `"select"` it again: a repeated click is never an undo, so
+ *   the first tap of a double-click on a selected node keeps it and the second zooms. It also
+ *   reopens a panel the reader closed. Deselect is a background click or Escape.
  * - Clicking any OTHER node id → `"select"` that node. This is the branch
  *   that must fire for an ego-revealed child — it never falls through to
  *   deselect just because a DIFFERENT node was focused a moment ago.
@@ -144,6 +146,5 @@ export function resolveClickAction(
   if (commitClick.nodeId === null) {
     return focusedNodeId !== null ? { type: "deselect" } : { type: "none" };
   }
-  if (commitClick.nodeId === focusedNodeId) return { type: "deselect" };
   return { type: "select", nodeId: commitClick.nodeId };
 }

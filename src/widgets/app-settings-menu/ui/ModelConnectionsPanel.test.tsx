@@ -144,7 +144,9 @@ describe('models tab layout', () => {
     renderPanel(makeConnection());
     const view = screen.getByTestId('ai-connection-view');
     const order = [...view.children].map((node) => node.getAttribute('data-testid'));
-    expect(order).toEqual(['models-local', 'models-keys', 'models-external', 'ai-audit-tail', 'models-announcer']);
+    expect(order).toEqual(['models-rows', 'ai-audit-tail', 'models-announcer']);
+    const rows = [...screen.getByTestId('models-rows').children].map((node) => node.getAttribute('data-testid'));
+    expect(rows).toEqual(['models-local', 'models-keys', 'models-external']);
     // The four runner rows and the three vendor rows, each one row.
     const local = screen.getByTestId('models-local');
     for (const id of ['ollama', 'lmstudio', 'llamacpp', 'custom']) {

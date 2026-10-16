@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CANVAS_SPRING_PAN_MS,
   CAMERA_TRANSITION_MAX_MS,
   CAMERA_TRANSITION_MIN_MS,
   cameraTransitionDurationMs,
@@ -261,5 +262,15 @@ describe("van Wijk path keeps optical flow constant", () => {
       linear.ratio,
       `linear interpolation does not vary in this metric (${linear.ratio.toFixed(2)}x), so the sample cannot see the difference`,
     ).toBeGreaterThan(1.5);
+  });
+
+  it("a spring pan never changes the scale, and ends on its target inside the camera budget", () => {
+    const start = { x: 0, y: 0, scale: 0.9 };
+    const target = { x: 120, y: 0, scale: 0.9 };
+    for (let ms = 0; ms < CANVAS_SPRING_PAN_MS; ms += 16) {
+      expect(easeCameraKeyframe(start, target, ms, CANVAS_SPRING_PAN_MS, 1856, "spring").scale).toBe(0.9);
+    }
+    expect(CANVAS_SPRING_PAN_MS).toBeLessThanOrEqual(CAMERA_TRANSITION_MAX_MS);
+    expect(easeCameraKeyframe(start, target, CANVAS_SPRING_PAN_MS, CANVAS_SPRING_PAN_MS, 1856, "spring")).toEqual(target);
   });
 });

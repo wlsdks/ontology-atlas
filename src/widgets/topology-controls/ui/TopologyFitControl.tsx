@@ -10,18 +10,22 @@ interface TopologyFitControlProps {
   density?: 'default' | 'compact-focus';
   /** A phone INDEX sheet owns the map area while it is expanded. */
   mobileObscured?: boolean;
+  /** Motion and pointer classes from the rail it stands in. */
+  className?: string;
+  inert?: boolean;
 }
 
 /**
  * The fit-to-view tile on the map's right rail; keeps the first-tile position tokens
  * (--topology-floating-control-*) so the rail's rhythm stays aligned.
  */
-export function TopologyFitControl({ onFitView, density = 'default', mobileObscured = false }: TopologyFitControlProps) {
+export function TopologyFitControl({ onFitView, density = 'default', mobileObscured = false, className = 'pointer-events-auto', inert }: TopologyFitControlProps) {
   const t = useTranslations('topologyWidgets.controls');
 
   return (
     <div
-      className={`topology-ui-scale pointer-events-auto absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-[var(--chrome-inset)] md:top-[var(--topology-floating-control-desktop-top)]`}
+      inert={inert}
+      className={`${className} topology-ui-scale absolute bottom-[var(--topology-floating-control-phone-bottom)] right-4 z-20 ${mobileObscured ? 'hidden md:flex' : 'flex'} flex-col gap-2 md:bottom-auto md:right-[var(--chrome-inset)] md:top-[var(--topology-floating-control-desktop-top)]`}
       data-testid="topology-fit-control"
       data-agent-dock-adjacent-rail="true"
       // The rail column is chrome on the map; map fits keep clear of it

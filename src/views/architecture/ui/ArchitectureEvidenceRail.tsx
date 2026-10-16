@@ -22,7 +22,7 @@ const DELTA_DOT_CLASS: Record<DeltaStatus, string> = {
   missing: 'bg-[color:var(--color-amber-source-a50)]',
 };
 
-/** One row states the three authorities; the full provenance plane opens in its own dock. */
+/** One phrase states the three authorities; the full provenance plane opens in its own dock. */
 export function ArchitectureEvidenceRail({
   ariaLabel,
   buttonRef,
@@ -47,7 +47,7 @@ export function ArchitectureEvidenceRail({
   compact?: boolean;
 }) {
   return (
-    <div className={cn('basis-full flex-1 overflow-hidden rounded-panel border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] shadow-[inset_0_1px_0_var(--color-overlay-2)] md:basis-auto', compact ? 'min-w-max' : 'min-w-0')}>
+    <div className={cn('basis-full overflow-hidden rounded-panel border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] shadow-[inset_0_1px_0_var(--color-overlay-2)] md:max-w-[var(--architecture-evidence-rail-max)] md:flex-[0_1_auto] md:basis-auto', compact ? 'min-w-max' : 'min-w-0')}>
       <RowButton
         ref={buttonRef}
         size="lg"
@@ -61,7 +61,7 @@ export function ArchitectureEvidenceRail({
         onClick={onToggle}
         className="relative min-h-10 w-full min-w-0 justify-start overflow-hidden rounded-none py-2"
       >
-        <span className="architecture-evidence-rail-segment relative flex min-w-0 flex-1 items-center gap-2">
+        <span className="architecture-evidence-rail-segment relative flex min-w-0 items-center gap-2">
           <GitCompareArrows
             size={ICON_SIZE.sm}
             className="shrink-0 text-[color:var(--color-text-quaternary)]"
@@ -96,9 +96,15 @@ export function ArchitectureEvidenceRail({
         </span>
 
         <span
-          className="architecture-evidence-rail-segment ml-auto flex min-w-0 shrink-0 items-center gap-2"
+          className="architecture-evidence-rail-segment ml-2 flex min-w-0 shrink-0 items-center gap-2"
+          data-testid="architecture-evidence-rail-delta"
         >
-          <span className={cn('flex min-w-0 items-center gap-1.5 text-caption', DELTA_TEXT_CLASS[deltaStatus])}>
+          <span
+            className={cn(
+              'flex min-w-0 items-center gap-1.5 text-label font-[var(--font-weight-emphasis)]',
+              DELTA_TEXT_CLASS[deltaStatus],
+            )}
+          >
             <span
               aria-hidden
               className={cn('h-1.5 w-1.5 shrink-0 rounded-full', DELTA_DOT_CLASS[deltaStatus])}

@@ -12,7 +12,7 @@
 import { clampPointToPanBounds, computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../../engine/camera";
 import { LABEL_OFFSET } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeClusterDiscBounds, computeEgoBounds, computeIdsBounds, radiusForKind, type Bounds, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
+import { computeClusterDiscBounds, computeEgoBounds, computeIdsBounds, dialOverviewFit, radiusForKind, type Bounds, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
 import type { WorldNode } from "../world/topology-world";
 
 interface Point {
@@ -507,6 +507,11 @@ export function focusLeashPx(
   return { x: Math.max(0, freeHalfX - FOCUS_LEASH_EDGE_PAD_PX), y: Math.max(0, freeHalfY - FOCUS_LEASH_EDGE_PAD_PX) };
 }
 
+/** The leash `computeFocusCameraTarget` aims inside, so the physics holds the same box. */
+export function focusTargetLeashPx(tokens: SafeInsetTokens, viewportWidth: number, viewportHeight: number): FocusLeashPx {
+  return focusLeashPx(viewportWidth, viewportHeight, readSafeInsets(tokens, viewportWidth, viewportHeight));
+}
+
 /** The leash in world units at `scale`: the screen leash, never tighter than the token. */
 export function focusLeashWorld(leashPx: number, scale: number, tokenMargin: number): number {
   const floor = Number.isFinite(tokenMargin) ? tokenMargin : 0;
@@ -551,7 +556,7 @@ export function computeFocusCameraTarget(
   if (focusedSlug === null) {
     // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
     // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
-    return computeOverviewCameraTarget(overviewBounds, viewportWidth, viewportHeight, tokens);
+    return computeOverviewCameraTarget(overviewBounds, viewportWidth, viewportHeight, tokens, world.nodes.length, dialOverviewFit(world));
   }
   const egoBounds = dialFrame ? computeIdsBounds(world, tokens, dialFrame.ids) : computeEgoBounds(world, tokens, focusedSlug, restrictIds);
   if (!egoBounds) return null;

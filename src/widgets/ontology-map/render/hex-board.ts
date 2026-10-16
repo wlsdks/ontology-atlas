@@ -1,5 +1,6 @@
 import { BOARD_ARRIVAL } from "../board/board-scene";
 import { HEX_TYPE, type HexBand, type HexMeasure, type HexTextRole } from "../model/board/hex-board";
+import { productFontFamily } from "./labels";
 
 export type HexEvidenceState = "current" | "stale" | "unknown";
 
@@ -27,16 +28,12 @@ function fontsFor(family: string): Record<HexTextRole, string> {
 let resolvedFonts: Record<HexTextRole, string> | null = null;
 
 /**
- * Fonts per text role, on the product's weight ramp (510 signature, 560 emphasis, 650 strong).
- * The product face is read from `--font-pretendard` (the generated family name belongs to
- * `next/font`, so it is resolved, never spelled here).
+ * Fonts per text role, on the product's weight ramp (510 signature, 560 emphasis, 650 strong),
+ * in the family the map's names use (`productFontFamily`).
  */
 export function hexFonts(): Record<HexTextRole, string> {
   if (resolvedFonts) return resolvedFonts;
-  const product =
-    typeof document === "undefined"
-      ? ""
-      : getComputedStyle(document.documentElement).getPropertyValue("--font-pretendard").trim();
+  const product = productFontFamily();
   if (!product) return fontsFor(SYSTEM_FAMILY);
   resolvedFonts = fontsFor(`${product}, ${SYSTEM_FAMILY}`);
   return resolvedFonts;

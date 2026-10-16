@@ -69,7 +69,6 @@ export function FullDetailA1ReachPanel({
 }) {
   const atDepth = reach.byDepth[step];
   const topRows = atDepth.domainRows.slice(0, DOMAIN_ROW_LIMIT);
-  const maxCount = topRows.reduce((max, row) => Math.max(max, row.count), 0) || 1;
 
   return (
     <section data-fulldetail-reach className={["border-y border-[color:var(--map-panel-border)] py-4", className ?? ""].join(" ")}>
@@ -107,13 +106,13 @@ export function FullDetailA1ReachPanel({
       {topRows.length > 0 ? (
         <div
           data-fulldetail-domain-bars
-          className="mt-3.5 grid max-w-[var(--measure-stage-column)] grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:grid-cols-[170px_1fr_44px] items-center gap-x-3.5 gap-y-1.5"
+          className="mt-3.5 grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:grid-cols-[170px_1fr_44px] items-center gap-x-3.5 gap-y-1.5"
         >
           {topRows.map((row) => (
             <DomainBarRow
               key={row.domainId ?? "no-domain"}
               row={row}
-              maxCount={maxCount}
+              total={reach.totalNodes}
               displayName={domainDisplayName(row, labels)}
             />
           ))}
@@ -141,14 +140,14 @@ export function FullDetailA1ReachPanel({
 
 function DomainBarRow({
   row,
-  maxCount,
+  total,
   displayName,
 }: {
   row: FullDetailReachDomainRow;
-  maxCount: number;
+  total: number;
   displayName: string;
 }) {
-  const widthPercent = Math.max(2, Math.round((row.count / maxCount) * 100));
+  const widthPercent = Math.max(1, Math.round((row.count / Math.max(total, 1)) * 1000) / 10);
   return (
     <>
       <span

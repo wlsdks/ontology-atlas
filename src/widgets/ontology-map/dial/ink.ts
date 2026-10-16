@@ -17,6 +17,9 @@ export interface DialInks {
   projectLabel: string;
   rail: string;
   railReceded: string;
+  domainFill: string;
+  domainRim: string;
+  ring: string;
   capabilityFill: string;
   capabilityRim: string;
   capabilityReceded: string;
@@ -86,12 +89,15 @@ export function resolveDialInks(map: OntologyMapTokens, dial: DialTokens): DialI
     projectLabel: opaque(map.labelProject),
     rail: opaque(map.edgeContainsL2),
     railReceded: recede(map.edgeContainsL2),
-    capabilityFill: opaque(map.nodeFillCapability),
-    capabilityRim: opaque(map.nodeStrokeCapability),
-    capabilityReceded: recede(map.nodeStrokeCapability),
+    domainFill: opaque(dial.fillDomain),
+    domainRim: opaque(dial.strokeDomain),
+    ring: opaque(dial.ring),
+    capabilityFill: opaque(dial.fillCapability),
+    capabilityRim: opaque(dial.strokeCapability),
+    capabilityReceded: recede(dial.strokeCapability),
     elementFill: opaque(map.nodeFillElement),
-    element: opaque(map.nodeStrokeElement),
-    elementReceded: recede(map.nodeStrokeElement),
+    element: opaque(dial.strokeElement),
+    elementReceded: recede(dial.strokeElement),
     holeFill: opaque(map.nodeHoleFill),
     stale: opaque(map.statusWarning),
     unknownRim: opaque(map.nodeStrokeDim),

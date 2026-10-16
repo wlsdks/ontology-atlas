@@ -22,12 +22,12 @@
   /* Text */
   --color-text-primary: #f7f8f8;
   --color-text-secondary: #d0d6e0;
-  --color-text-tertiary: #8a8f98;
   /*
-   * Minimum luminance above 4.5:1 on elevated (#828282 gives 4.54), keeping the gap to tertiary. Valid
-   * on static achromatic backgrounds up to overlay-1; above that use tertiary. Gates:
-   * `tests/contract/design-tokens/quaternary-ink-surface.contract.test.ts`, `tests/e2e/design-audits/a11y-open-surfaces.spec.ts`.
+   * Tertiary: 7:1 on canvas and panel only (6.56 elevated, 6.26 panel+overlay-2). Quaternary (4.57
+   * on elevated): 12.5 px and up, up to overlay-1. Gates: `quaternary-ink-surface.contract.test.ts`,
+   * `a11y-open-surfaces.spec.ts`.
    */
+  --color-text-tertiary: #9a9fa8;
   --color-text-quaternary: #82828a;
   /*
    * Foreground **above** filled indigo. All four lamp palettes are for dark backgrounds, so none can be used on filled controls — thus, all 9 filled indigo buttons in the repository were manually writing `text-white` literals, and this spot was missing from the eight `tone`s of `controlClass`, leaving two rounds (features 5 · widgets 6) entirely outside the value layer.

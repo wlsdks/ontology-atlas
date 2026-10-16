@@ -4,6 +4,11 @@ export const PAGE_FRAME =
 export const PAGE_FRAME_FORM =
   "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]" as const;
 
+export const PAGE_TWO_TRACK =
+  "grid min-w-0 max-w-[960px] 2xl:max-w-none 2xl:grid-cols-[minmax(0,960px)_minmax(0,1fr)] 2xl:items-start 2xl:gap-x-10" as const;
+
+export const PAGE_TRACK_CAP = "max-w-[960px]" as const;
+
 export const PAGE_COLUMN_STAGE =
   "mx-auto w-full max-w-[var(--measure-stage-column)]" as const;
 

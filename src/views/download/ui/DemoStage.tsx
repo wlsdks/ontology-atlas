@@ -28,7 +28,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
       {/* Rewrite this sentence with every new take: no gate knows what was filmed (`docs/launch/demo-scenario.md`). */}
       <p
         data-testid="demo-provisional-note"
-        className="mt-3.5 break-keep text-caption leading-caption text-[color:var(--color-text-tertiary)]"
+        className="mt-3.5 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
       >
         {t('demoProvisionalNote', { seconds: clip.seconds })}
       </p>

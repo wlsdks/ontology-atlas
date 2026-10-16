@@ -150,20 +150,47 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
   });
 
-  it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over a list that is only its frame', (lane) => {
+  it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over one ghost row in the real row geometry', (lane) => {
     search = `kind=${lane}`;
     renderPage(runner({ storeStatus: 'missing' }));
-    const preview = en.automations[lane].preview;
-    const list = screen.getByRole('complementary', { name: preview.title });
-    expect(list.textContent).toBe(`${preview.title}0${preview.name}${preview.cadence}${preview.next}`);
+    const list = screen.getByRole('region', { name: en.automations[lane].preview.title });
+    expect(within(list).getByTestId('automations-list-count')).toHaveTextContent('0');
+    expect(within(list).getByTestId('automations-list-head')).toHaveTextContent(en.automations[lane].preview.last);
+    const ghost = within(list).getByTestId('automations-ghost-row');
+    expect(ghost).toHaveAttribute('aria-hidden', 'true');
+    expect(ghost).toHaveTextContent(lane === 'ontology' ? en.automations.cadence['6h'] : en.automations.cadence.hour);
+    expect(ghost).toHaveTextContent(en.automations.outcome.none);
     expect(screen.getAllByText(en.automations[lane].emptyTitle)).toHaveLength(1);
+    expect(screen.getByTestId('automations-new').className).toMatch(/bg-\[color:var\(--color-indigo/);
   });
 
   it('keeps the list a bare frame where no schedule can exist yet, without a count', () => {
     renderPage(runner({ storeStatus: 'no-vault' }));
-    const preview = en.automations.ontology.preview;
-    const list = screen.getByRole('complementary', { name: preview.title });
-    expect(list.textContent).toBe(`${preview.title}${preview.name}${preview.cadence}${preview.next}`);
+    const list = screen.getByRole('region', { name: en.automations.ontology.preview.title });
+    expect(within(list).queryByTestId('automations-list-count')).toBeNull();
+    expect(within(list).getByTestId('automations-ghost-row')).toBeInTheDocument();
+    expect(screen.queryByTestId('automations-new')).toBeNull();
+  });
+
+  it('turns the ghost row into the first schedule in place, keeping the button in its slot', () => {
+    const round: RoundRecord = { id: 'first', kind: 'ontology', name: 'Morning review', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
+    const view = renderPage(runner({ storeStatus: 'missing' }));
+    const button = screen.getByTestId('automations-new');
+    view.rerender(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <AutomationsPage runner={runner({ rounds: [round], state: { v: 1, rounds: [round] } })} onOpenDocumentSchedule={vi.fn()} onEditDocumentSchedule={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('automations-new')).toBe(button);
+    expect(screen.getByTestId('automations-new').className).not.toMatch(/bg-\[color:var\(--color-indigo/);
+    expect(screen.getByTestId('automations-list-count')).toHaveTextContent('1');
+    const row = screen.getByTestId('automation-first');
+    expect(row).toHaveAttribute('aria-expanded', 'false');
+    expect(row.closest('li')?.className).toMatch(/arriving|motion-swap-in/);
+    for (const leaving of [screen.queryByTestId('automations-ghost-row'), screen.queryByTestId('automations-empty-workbench')]) {
+      if (leaving) expect(leaving.closest('[aria-hidden="true"]')).not.toBeNull();
+    }
   });
 
   it('keeps the document lane as a real tabpanel and opens the existing document round sheet', () => {

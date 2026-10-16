@@ -1,6 +1,7 @@
 import type { DialTokens } from "./types";
 
-type NumericKey = Exclude<keyof DialTokens, "attendedNameInk">;
+type InkKey = "fillDomain" | "fillCapability" | "strokeDomain" | "strokeCapability" | "strokeElement" | "ring";
+type NumericKey = Exclude<keyof DialTokens, "attendedNameInk" | InkKey>;
 
 export const DIAL_TOKEN_SPECS: readonly { key: NumericKey; cssVar: string }[] = [
   { key: "pitch", cssVar: "--map-dial-pitch" },
@@ -18,7 +19,6 @@ export const DIAL_TOKEN_SPECS: readonly { key: NumericKey; cssVar: string }[] = 
   { key: "flowHeadGain", cssVar: "--map-dial-flow-head-gain" },
   { key: "flowTrimStartPx", cssVar: "--map-dial-flow-trim-start-px" },
   { key: "flowTrimEndPx", cssVar: "--map-dial-flow-trim-end-px" },
-  { key: "numeralSize", cssVar: "--map-dial-numeral-size" },
   { key: "numeralHaloPx", cssVar: "--map-dial-numeral-halo-px" },
   { key: "numeralGapPx", cssVar: "--map-dial-numeral-gap-px" },
   { key: "restNumbersShare", cssVar: "--map-dial-rest-numbers-share" },
@@ -70,6 +70,15 @@ export const DIAL_TOKEN_SPECS: readonly { key: NumericKey; cssVar: string }[] = 
   { key: "labelScale", cssVar: "--map-dial-label-scale" },
 ];
 
+export const DIAL_INK_SPECS: readonly { key: InkKey; cssVar: string }[] = [
+  { key: "fillDomain", cssVar: "--map-dial-fill-domain" },
+  { key: "fillCapability", cssVar: "--map-dial-fill-capability" },
+  { key: "strokeDomain", cssVar: "--map-dial-stroke-domain" },
+  { key: "strokeCapability", cssVar: "--map-dial-stroke-capability" },
+  { key: "strokeElement", cssVar: "--map-dial-stroke-element" },
+  { key: "ring", cssVar: "--map-dial-ring" },
+];
+
 const ATTENDED_NAME_INK = "--map-panel-text-primary";
 
 export function resolveDialTokens(get: (cssVar: string) => string): DialTokens {
@@ -81,9 +90,11 @@ export function resolveDialTokens(get: (cssVar: string) => string): DialTokens {
     if (!raw || !Number.isFinite(value)) missing.push(cssVar);
     out[key] = value;
   }
-  const ink = get(ATTENDED_NAME_INK).trim();
-  if (!ink) missing.push(ATTENDED_NAME_INK);
-  out.attendedNameInk = ink;
+  for (const { key, cssVar } of [...DIAL_INK_SPECS, { key: "attendedNameInk", cssVar: ATTENDED_NAME_INK }]) {
+    const ink = get(cssVar).trim();
+    if (!ink) missing.push(cssVar);
+    out[key] = ink;
+  }
   if (missing.length) throw new Error(`Dial token drift: missing/empty ${missing.join(", ")}`);
   return out as unknown as DialTokens;
 }
@@ -103,4 +114,16 @@ export function readDialTokens(): DialTokens {
   const tokens = resolveDialTokens((v) => style.getPropertyValue(v));
   cached = { doc: document, theme, tokens };
   return tokens;
+}
+
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+export function dialDiscRadiusPx(tokens: Pick<DialTokens, "pitch" | "discPitchShare" | "discMinPx" | "discMaxPx" | "discCapShare">, scale: number, elements: number): number {
+  const pitchPx = tokens.pitch * scale;
+  const base = clamp(pitchPx * tokens.discPitchShare, tokens.discMinPx, tokens.discMaxPx);
+  return Math.min(pitchPx * tokens.discCapShare, base * (0.8 + 0.2 * Math.min(3, Math.sqrt(elements))));
+}
+
+export function dialChipRadiusPx(tokens: Pick<DialTokens, "chipMinPx" | "chipMaxPx">, items: number, maxItems: number): number {
+  return tokens.chipMinPx + (tokens.chipMaxPx - tokens.chipMinPx) * Math.sqrt(items / Math.max(1, maxItems));
 }

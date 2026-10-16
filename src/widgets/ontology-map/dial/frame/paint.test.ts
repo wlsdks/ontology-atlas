@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import { numeralFont } from "../../render/labels";
 import {
   readContainmentTree,
   rollDirectedDomainFlows,
@@ -12,11 +12,11 @@ import {
 } from "../../model/containment-tree";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildDialModel, resolveDialAttention } from "../dial-model";
-import { resolveDialInks } from "../ink";
+import { mixOver, resolveDialInks } from "../ink";
 import { layoutDial } from "../layout";
 import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "./marks";
 import { circularDomainOrder } from "../order";
-import { paintDialMarks } from "./paint";
+import { knockoutRects, paintDialMarks } from "./paint";
 import { resolveDialDisclosure } from "./disclosure";
 import { resolveDialTokens } from "../tokens";
 import type { DialLabels, DialModel } from "../types";
@@ -42,7 +42,7 @@ const LABELS: DialLabels = {
 const DRAW_CALLS = new Set(["fill", "stroke", "fillText", "strokeText", "fillRect", "strokeRect", "drawImage"]);
 
 function recordingContext() {
-  const calls: { name: string; args: unknown[]; font: string; composite: string }[] = [];
+  const calls: { name: string; args: unknown[]; font: string; composite: string; strokeStyle: string }[] = [];
   const state: Record<string, unknown> = { globalCompositeOperation: "source-over", globalAlpha: 1, font: "10px sans-serif", lineWidth: 1 };
   const stack: Record<string, unknown>[] = [];
   const methods: Record<string, (...args: unknown[]) => unknown> = {
@@ -58,7 +58,7 @@ function recordingContext() {
       if (key in methods) return methods[key];
       if (key in target) return target[key];
       return (...args: unknown[]) => {
-        calls.push({ name: key, args, font: String(target.font), composite: String(target.globalCompositeOperation) });
+        calls.push({ name: key, args, font: String(target.font), composite: String(target.globalCompositeOperation), strokeStyle: String(target.strokeStyle) });
       };
     },
     set(target, key: string, value) {
@@ -118,8 +118,8 @@ function frame(model: DialModel, focusId: string | null, zoom = 1) {
   const toScreen = (x: number, y: number) => ({ x: W / 2 + (x - cx) * scale, y: H / 2 + (y - cy) * scale });
   const input: DialMarksInput = {
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
-    attention: resolveDialAttention(model, null, focusId), previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: zoom, labelScale: TOKENS.labelScale, viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 },
+    attention: resolveDialAttention(model, null, focusId), inkAttention: resolveDialAttention(model, null, focusId), previous: null, inkMix: 1, chordPresence: 1,
+    scale, zoomRatio: zoom, viewportWidth: W, viewportHeight: H, freeRect: { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 },
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     appearOf: () => 1, measureText: (text) => text.length * 6, elementLabel: (id) => id,
     hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: "10k",
@@ -160,12 +160,45 @@ describe("paintDialMarks", () => {
     expect(ringArc).toBeGreaterThan(firstStroke);
   });
 
+  it("knocks overlapping and repeated boxes out once, so no overlap is drawn back in", () => {
+    const name = { minX: 20, minY: 20, maxX: 80, maxY: 40 };
+    const units = { minX: 30.4, minY: 36, maxX: 70, maxY: 56 };
+    const count = { minX: 20, minY: 70, maxX: 80, maxY: 80 };
+    const rects = knockoutRects([name, units, count, { ...count }]);
+    const cover = (x: number, y: number) => rects.filter((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h).length;
+    for (let x = 0; x < 100; x += 1) {
+      for (let y = 0; y < 100; y += 1) {
+        const inside = [name, units, count].some((b) => x >= Math.floor(b.minX) && x < Math.ceil(b.maxX) && y >= Math.floor(b.minY) && y < Math.ceil(b.maxY));
+        expect(cover(x + 0.5, y + 0.5)).toBe(inside ? 1 : 0);
+      }
+    }
+  });
+
+  it("stops the rings at every name and count box, and strokes every name in the ground", () => {
+    const { calls, marks } = frame(big, "d0", 1);
+    const clip = calls.findIndex((c) => c.name === "clip");
+    expect(calls[clip]!.args).toEqual(["evenodd"]);
+    const opened = calls.slice(0, clip).findLastIndex((c) => c.name === "beginPath");
+    const rects = calls.slice(opened, clip).filter((c) => c.name === "rect").slice(1).map((c) => c.args as number[]);
+    for (const m of [...marks.texts, ...marks.extraTexts, ...marks.numerals]) {
+      const cx = (m.box.minX + m.box.maxX) / 2;
+      const cy = (m.box.minY + m.box.maxY) / 2;
+      expect(rects.filter(([x, y, w, h]) => cx >= x! && cx < x! + w! && cy >= y! && cy < y! + h!)).toHaveLength(1);
+    }
+    expect(calls.findIndex((c, i) => i > clip && c.name === "arc")).toBeGreaterThan(clip);
+    const ground = mixOver(MAP.canvasBgNear, MAP.canvasBgNear);
+    for (const t of marks.texts.filter((m) => m.parts === null)) {
+      expect(calls.some((c) => c.name === "strokeText" && c.args[0] === t.text && c.strokeStyle === ground)).toBe(true);
+    }
+  });
+
   it("batches element squares per alpha step", () => {
     const { calls, marks } = frame(overviewModel(6, 60, 6), null, 3);
     const elements = marks.squares.filter((q) => q.id !== null);
     expect(elements.length).toBeGreaterThan(10);
     const steps = new Set(marks.squares.map((q) => `${q.fill}|${q.rim}`)).size;
-    expect(calls.filter((c) => c.name === "rect")).toHaveLength(marks.squares.length);
+    const clipped = calls.findLastIndex((c) => c.name === "clip");
+    expect(calls.filter((c, i) => c.name === "rect" && i > clipped)).toHaveLength(marks.squares.length);
     expect(calls.filter((c) => c.name === "fillRect")).toHaveLength(0);
     const rectRuns = calls.filter((c, i) => c.name === "fill" && calls[i - 1]?.name === "rect").length;
     expect(rectRuns).toBe(steps);
@@ -179,20 +212,20 @@ describe("paintDialMarks", () => {
         expect(c.composite).toBe("source-over");
       }
       expect(state.globalCompositeOperation).toBe("source-over");
-      const font = `${FONT_WEIGHT.strong} ${Math.round(TOKENS.numeralSize * TOKENS.labelScale * 2) / 2}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-      for (const n of marks.numerals) {
-        expect(n.font).toBe(font);
-        const painted = calls.find((c) => c.name === "fillText" && c.args[0] === n.text && c.args[1] === n.x);
-        expect(painted?.font).toBe(font);
-      }
+      const font = numeralFont();
+      for (const n of marks.numerals) expect(n.font).toBe(font);
+      const glyphs = marks.numerals.reduce((sum, n) => sum + [...n.text].length, 0);
+      const fills = calls.filter((c) => c.name === "fillText");
+      for (const c of fills.slice(fills.length - glyphs)) expect(c.font).toBe(font);
     }
   });
 
-  it("paints numerals last", () => {
+  it("paints numerals last, one glyph per tabular cell", () => {
     const { calls, marks } = frame(big, "d0", 1);
     expect(marks.numerals.length).toBeGreaterThan(0);
+    const glyphs = marks.numerals.reduce((sum, n) => sum + [...n.text].length, 0);
     const texts = calls.filter((c) => c.name === "fillText");
-    const tail = texts.slice(texts.length - marks.numerals.length).map((c) => c.args[0]);
-    expect(tail).toEqual(marks.numerals.map((n) => n.text));
+    const tail = texts.slice(texts.length - glyphs).map((c) => c.args[0]);
+    expect(tail.join("")).toBe(marks.numerals.map((n) => n.text).join(""));
   });
 });

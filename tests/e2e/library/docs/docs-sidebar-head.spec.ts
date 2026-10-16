@@ -4,7 +4,7 @@ import { seedFirstRunSeen } from "../../first-run-seed";
 
 /** Rendered geometry: jsdom reports zero for container queries and scrollWidth. */
 
-/** Every control in Library's fixed-scope head row. */
+/** Every tool the document list carries; at `lg` they stand in the header over the list. */
 const HEAD_CONTROL_IDS = [
   "docs-sidebar-search-toggle",
   "docs-sidebar-order-toggle",
@@ -12,6 +12,7 @@ const HEAD_CONTROL_IDS = [
 ] as const;
 
 interface HeadGeometry {
+  listRight: number;
   rowWidth: number;
   scrollWidth: number;
   clientWidth: number;
@@ -25,23 +26,16 @@ async function measureHead(
   ids: readonly string[],
 ): Promise<HeadGeometry> {
   return page.evaluate((controlIds) => {
-    /*
-     * The same sidebar body is mounted twice — the drawer below `lg` and the persistent pane
-     * at `lg` and up — so a bare selector is ambiguous and would silently measure the hidden
-     * copy at whichever width it is not the answer for. Only one of the two is laid out, and
-     * a hidden one has no box; that is the one fact that tells them apart at every width.
-     */
-    const laidOut = [...document.querySelectorAll('[data-testid="docs-sidebar-head-row"]')].filter(
-      (el) => el instanceof HTMLElement && el.getBoundingClientRect().width > 0,
-    );
-    if (laidOut.length !== 1) {
-      throw new Error(`expected exactly one laid-out docs sidebar head row, found ${laidOut.length}`);
+    const row = document.querySelector('[data-testid="docs-header-tree-tools"]');
+    if (!(row instanceof HTMLElement) || row.getBoundingClientRect().width === 0) {
+      throw new Error("the header's list tools are not laid out");
     }
-    const row = laidOut[0] as HTMLElement;
-    const scope = row.parentElement ?? document.body;
+    const scope = row;
     const rect = row.getBoundingClientRect();
     const style = getComputedStyle(row);
+    const list = document.querySelector('[data-testid="docs-vault-doc-list"]');
     return {
+      listRight: list ? list.getBoundingClientRect().right : Number.NaN,
       rowWidth: rect.width,
       scrollWidth: row.scrollWidth,
       clientWidth: row.clientWidth,
@@ -72,16 +66,21 @@ function expectHeadHolds(geometry: HeadGeometry) {
   // One row, one height — `.claude/rules/forbidden.md` forbids heights that differ only
   // because their contents do.
   const heights = new Set(geometry.controls.map((c) => Math.round(c.height)));
-  expect([...heights]).toHaveLength(1);
+  expect([...heights]).toEqual([36]);
+  // Over the list they act on: the last tool ends inside the list column.
+  for (const control of geometry.controls) {
+    expect(control.right).toBeLessThanOrEqual(geometry.listRight + 0.5);
+  }
 }
 
-test("the document box header row is not clipped in the desktop 280px column", async ({ page }) => {
+test("the document list's tools stand unclipped in the header over the desktop 280px column", async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 800 });
   await seedFirstRunSeen(page);
   await page.goto("/ko/library/?tab=ontology");
   await expect(page.getByTestId("docs-sidebar-collection-all")).toHaveCount(0);
   await expect(page.getByTestId("docs-sidebar-collection-guides")).toHaveCount(0);
   await expect(page.getByTestId("docs-sidebar-collection-ontology")).toHaveCount(0);
-  await expect(page.getByTestId("docs-vault-doc-list").getByTestId("docs-sidebar-new-doc")).toBeVisible();
+  await expect(page.getByTestId("docs-header-tree-tools").getByTestId("docs-sidebar-new-doc")).toBeVisible();
+  await expect(page.getByTestId("docs-sidebar-head-row")).toHaveCount(0);
   expectHeadHolds(await measureHead(page, HEAD_CONTROL_IDS));
 });

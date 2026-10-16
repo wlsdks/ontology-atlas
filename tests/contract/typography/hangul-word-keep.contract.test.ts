@@ -86,7 +86,7 @@ describe("<html lang> is right before the first paint", () => {
  * Per-element `break-keep` may not grow. The ceiling is exact in both directions: lower it when
  * sites are removed so the freed room cannot be spent silently.
  */
-const BREAK_KEEP_CEILING = 294;
+const BREAK_KEEP_CEILING = 292;
 
 function stripComments(source: string): string {
   return source

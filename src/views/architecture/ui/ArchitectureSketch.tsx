@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { listboxBottomIsHidden as endIsHidden, listboxTopIsHidden as startIsHidden } from '@/shared/ui/fields/select-growth';
 
 import { cn } from '@/shared/lib/cn';
+import { usePanelPresence, useHeldValue } from '@/shared/lib/render-timing/use-presence';
+import { MOTION, STAGGER } from '@/shared/motion/tokens';
 import { badgeClass } from '@/shared/ui/badge-class';
 
 import type { ArchitectureGraph as Graph } from '../model/graph-layout';
@@ -15,7 +17,6 @@ import { solveSketchFrame } from './sketch/frame';
 import {
   OBSERVATION_LANE_GAP,
   PAD_X,
-  PAIRED_HEADER_H,
   PAIRED_OBSERVATION_W,
   PAIRED_SIDE_ROOM_MIN,
   PAIRED_TRAIL_ROOM_MAX,
@@ -25,7 +26,7 @@ import {
 } from './sketch/geometry';
 import { AcrossLaneHeadings, PairedLaneHeadings } from './sketch/LaneHeadings';
 import { LayerPlanes } from './sketch/LayerPlanes';
-import { ObservationEmptyState } from './sketch/ObservationEmptyState';
+import { ObservationEmptyBand, ObservationEmptyColumn } from './sketch/ObservationEmptyState';
 import { RoleFaces } from './sketch/RoleFaces';
 import { SketchDefs } from './sketch/SketchDefs';
 import type { ArchitectureSketchProps } from './sketch/types';
@@ -33,11 +34,11 @@ import { useEdgeSentenceLayout } from './sketch/use-edge-sentence-layout';
 import { useSketchPlacement } from './sketch/use-sketch-placement';
 
 const PAIRED_SIDE_ROOM_MAX = 180;
-/* Every stroke at rest says its sentence; rooms use the 4.7px edge-sentence glyph, not the caption's 4.8. */
+/* Rooms use the edge sentence's own `text-label` glyph estimate (`edge-sentences.ts`). */
 const SENTENCE_LEAD_MAX = 380;
 const SENTENCE_TOP_ROOM = 44;
 const SENTENCE_TRAIL_ROOM = 260;
-const SENTENCE_CHAR_PX = 4.7;
+const SENTENCE_CHAR_PX = 5.5;
 
 const HIDDEN_COUNT_BADGE_CLASS = badgeClass({
   shape: 'pill',
@@ -75,6 +76,11 @@ export function ArchitectureSketch({
   observationMissingLabel,
   observationEmptyTitle,
   observationEmptyBody,
+  observationEmptyAction = null,
+  onObservationEmptyActionSeated,
+  observationKnown = true,
+  profileKey = '',
+  lowerOnlyRuleLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -116,17 +122,19 @@ export function ArchitectureSketch({
     colGap,
     observationOffset,
     usesLayerPlanes,
-    planeLean,
-    planeDrift,
     planeRoom,
     planeTrailRoom,
     planeHeadRoom,
+    pairedHeaderH,
+    saysRuleOnce,
+    holdsSkipLane,
   } = solveSketchFrame({
     graph,
     ledgers,
     boxWidth,
     restWidth,
     restHeight,
+    roleSummary,
   });
 
   /* Hover answers locally; only selection dims the graph. */
@@ -194,7 +202,6 @@ export function ArchitectureSketch({
     boxEnd,
   } = useSketchPlacement({
     graph,
-    edgeSentence,
     axis,
     usesPairedDown,
     splitsEvidence,
@@ -208,13 +215,65 @@ export function ArchitectureSketch({
     observationBoxH,
     colGap,
     observationOffset,
-    usesLayerPlanes,
-    planeDrift,
-    planeRoom,
     planeHeadRoom,
-    toSentenceEdge,
+    pairedHeaderH,
     layoutLeadRoom,
   });
+
+  /* A receipt landing on a ladder that showed "not inspected" arrives (tier 3); one read on opening does not. Any input settles it. */
+  const hasObservation =
+    graph.boxes.some((box) => ledgers[box.id] !== undefined) ||
+    graph.edges.some((edge) => edge.kind === 'traffic');
+  const knownEmpty = observationKnown && !hasObservation && usesPairedDown && axisWidth > 0;
+  const frameKey = `${contractBoxW}:${pairedGutterW}:${layoutLeadRoom}`;
+  const [seen, setSeen] = useState({ profileKey, knownEmpty, frameKey });
+  const [arriving, setArriving] = useState(false);
+  const [arrivesWhole, setArrivesWhole] = useState(false);
+  const [arrived, setArrived] = useState(false);
+  if (seen.profileKey !== profileKey || seen.knownEmpty !== knownEmpty || seen.frameKey !== frameKey) {
+    setSeen({ profileKey, knownEmpty, frameKey });
+    if (seen.profileKey !== profileKey || seen.knownEmpty !== knownEmpty) {
+      /* Choosing another profile that already has a record is a switch, not a landing. */
+      const arrives =
+        seen.profileKey === profileKey && seen.knownEmpty && hasObservation && usesPairedDown && axisWidth > 0;
+      setArriving(arrives);
+      /* A skip claiming a lane the empty ladder could not hold moves faces: one crossfade. */
+      setArrivesWhole(arrives && seen.frameKey !== frameKey);
+      if (arrives) setArrived(true);
+    }
+  }
+  const arrival = arriving ? 'arriving' : arrived ? 'arrived' : 'rest';
+  const arrivalWindowMs = Math.ceil(
+    (arrivesWhole
+      ? MOTION.fast.duration
+      : MOTION.base.duration + Math.max(0, ranks - 1) * STAGGER + MOTION.settle.duration) * 1000,
+  );
+  useEffect(() => {
+    if (!arriving) return undefined;
+    const settle = () => setArriving(false);
+    const timer = window.setTimeout(settle, arrivalWindowMs);
+    const inputs = ['pointerdown', 'keydown', 'wheel'] as const;
+    for (const input of inputs) window.addEventListener(input, settle, true);
+    return () => {
+      window.clearTimeout(timer);
+      for (const input of inputs) window.removeEventListener(input, settle, true);
+    };
+  }, [arriving, arrivalWindowMs]);
+
+  const shownColumn = observationKnown ? emptyColumn : null;
+  const columnPanel = useHeldValue(
+    shownColumn,
+    shownColumn ? `${shownColumn.x}:${shownColumn.y}:${shownColumn.width}:${shownColumn.height}` : null,
+  );
+  const columnPresence = usePanelPresence(shownColumn !== null);
+  const columnShown = shownColumn !== null || (arriving && columnPresence.exiting);
+  /* Settled before paint, so the toolbar and the column never both wear the primary. */
+  const actionSeated =
+    observationKnown && axisWidth > 0 ? shownColumn !== null && observationEmptyAction !== null : null;
+  useLayoutEffect(() => {
+    onObservationEmptyActionSeated?.(actionSeated);
+  }, [actionSeated, onObservationEmptyActionSeated]);
+  useLayoutEffect(() => () => onObservationEmptyActionSeated?.(false), [onObservationEmptyActionSeated]);
 
   /* A canvas that scrolls must say so: macOS hides its overlay scrollbar. Read on the node itself through a callback ref, since an effect fires while the ref is null. */
   const [covered, setCovered] = useState<{
@@ -408,6 +467,7 @@ export function ArchitectureSketch({
     placed,
     observedPlaced,
     emptyColumnLeft,
+    saysRuleOnce,
   });
 
   /* Per render O(B·E + E²): per-role port filters and per-sentence edges.find / visibleEdges.includes are linear scans over tens of edges. */
@@ -419,9 +479,9 @@ export function ArchitectureSketch({
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * colGap
       : padY * 2 + ranks * boxH + (ranks - 1) * rowGap +
-        (usesPairedDown ? PAIRED_HEADER_H : 0) +
-        /* Plane head room and bottom ledge; zero on layouts without planes. */
-        (usesLayerPlanes ? planeHeadRoom + PLANE_INSET_Y : 0);
+        (usesPairedDown ? pairedHeaderH : 0) +
+        /* Band head room and ledge, held before the bands exist. */
+        (planeHeadRoom > 0 ? planeHeadRoom + PLANE_INSET_Y : 0);
   const acrossExtent =
     axis === 'across'
       ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom + leadRoom + trailRoom
@@ -481,7 +541,15 @@ export function ArchitectureSketch({
           'flex min-h-0 flex-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
+        data-testid="architecture-canvas-scroller"
       >
+        {/* One box for the drawing and its HTML, so SVG units stay CSS pixels. */}
+        <div
+          className="relative shrink-0"
+          style={{ width, height }}
+          data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
+          data-architecture-arrival={arriving ? (arrivesWhole ? 'whole' : 'staged') : undefined}
+        >
         <svg
           viewBox={`0 0 ${width} ${height}`}
           width={width}
@@ -495,9 +563,9 @@ export function ArchitectureSketch({
           data-box-width-mode={usesRoomyBoxes ? 'roomy' : 'compact'}
           data-evidence-layout={usesPairedDown ? 'paired-ladder' : splitsEvidence ? 'split' : 'combined'}
           data-ladder-density={usesPairedDown ? ladderDensity : undefined}
+          data-skip-lane={usesPairedDown ? (holdsSkipLane ? 'held' : 'free') : undefined}
           data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
-          /* `shrink-0`: in the centring flex scroller the SVG would otherwise shrink and scale its text. */
-          className="block shrink-0"
+          className="block"
         >
         <SketchDefs
           width={width}
@@ -527,40 +595,34 @@ export function ArchitectureSketch({
             laneHeadingY={laneHeadingY}
             layoutLeadRoom={layoutLeadRoom}
             emptyColumn={emptyColumn}
+            ruleSentence={saysRuleOnce ? lowerOnlyRuleLabel : null}
+            arriving={arriving}
           />
         ) : null}
 
-        {/*
-          Layer planes draw import direction as depth, stepping one `PLANE_STEP` per layer. One fill,
-          capped under `--color-panel` so no face is darker than its plane; depth is the shear, the
-          numeral and the arrows, with `data-layer-depth` carrying the normalised fact.
-        */}
         {usesLayerPlanes ? (
           <LayerPlanes
             graph={graph}
-            ranks={ranks}
-            observationEmpty={observationEmpty}
+            arrival={arrival}
             pairedGutterW={pairedGutterW}
             contractBoxW={contractBoxW}
             observationBoxW={observationBoxW}
             boxH={boxH}
-            planeLean={planeLean}
-            planeDrift={planeDrift}
             planeRoom={planeRoom}
-            layoutLeadRoom={layoutLeadRoom}
             placed={placed}
           />
         ) : null}
 
-        {/* One empty state where the measured columns will be: one note for assistive tech, no pointer events. */}
-        {emptyPanels.map((panel) => (
-          <ObservationEmptyState
-            key={panel.key}
-            panel={panel}
-            title={observationEmptyTitle}
-            body={observationEmptyBody}
-          />
-        ))}
+        {emptyPanels
+          .filter((panel) => observationKnown && panel.layout === 'band')
+          .map((panel) => (
+            <ObservationEmptyBand
+              key={panel.key}
+              panel={panel}
+              title={observationEmptyTitle}
+              body={observationEmptyBody}
+            />
+          ))}
 
         <EdgeStrokes
           graph={graph}
@@ -579,15 +641,17 @@ export function ArchitectureSketch({
           observedPlaced={observedPlaced}
           skipLane={skipLane}
           visibleEdges={visibleEdges}
+          arriving={arriving}
         />
 
-        {/* Every stroke says its sentence at rest, in the dock's own strings; one with no room is held, never cropped, and says why in `data-edge-sentence`. */}
+        {/* A sentence with no room, or a lower-only rule said once above, is held, never cropped; `data-edge-sentence` says why. */}
         <EdgeSentences
           graph={graph}
           selected={selected}
           violatedPairs={violatedPairs}
           sentences={sentences}
           visibleEdges={visibleEdges}
+          arriving={arriving}
         />
 
         <RoleFaces
@@ -617,6 +681,7 @@ export function ArchitectureSketch({
           observationBoxH={observationBoxH}
           summaryLineCount={summaryLineCount}
           observationOffset={observationOffset}
+          arrival={arrival}
           hovered={hovered}
           setHovered={setHovered}
           pressed={pressed}
@@ -628,6 +693,18 @@ export function ArchitectureSketch({
           visibleEdges={visibleEdges}
         />
         </svg>
+        {columnPresence.mounted && columnShown && columnPanel ? (
+          <ObservationEmptyColumn
+            panel={columnPanel}
+            title={observationEmptyTitle}
+            body={observationEmptyBody}
+            deltaLabel={deltaTrackLabel}
+            deltaUnknownLabel={deltaUnknownLabel}
+            action={observationEmptyAction}
+            exiting={columnPresence.exiting}
+          />
+        ) : null}
+        </div>
       </div>
       {/* The below count overlays the bottom fade instead: a row there would take the height it counts against. The strip is two insets tall (coveredMask) so the badge covers no opaque ink. */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (

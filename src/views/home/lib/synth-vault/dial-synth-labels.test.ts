@@ -133,8 +133,8 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
   const occupied: Box[] = [];
   const marks: DialMarks = { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [] };
   const flows = buildFlowMarks({
-    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, labelScale: TOKENS.labelScale, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free, nodeScreen, toScreen,
+    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
+    scale, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free, nodeScreen, toScreen,
     endRadiusPx: (id) => discs.get(id)?.r ?? chips.get(id)?.r ?? TOKENS.chipMinPx, appearOf: () => 1, measureText: measure, occupied, chords: [],
     resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
   }, marks);

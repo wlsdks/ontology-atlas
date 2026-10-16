@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+import type { ComponentProps } from 'react';
+import { describe, expect, it, vi } from 'vitest';
 
 import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/architecture-profile';
 import {
@@ -7,7 +8,6 @@ import {
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { buildArchitectureGraph } from '../model/graph-layout';
-import { estimateCaptionWidth } from '../model/summary-lines';
 import type { RoleLedger } from '../model/role-ledger';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 import { ArchitectureSketch } from './ArchitectureSketch';
@@ -18,18 +18,19 @@ const OBSERVED_TRAFFIC: ArchitectureRoleEdge[] = [
   { fromRole: 'port', toRole: 'domain', count: 4 },
 ];
 
-function draw(
+function sketch(
   ledgers: Record<string, RoleLedger> = {},
   violatedPairs = new Set<string>(),
   traffic: readonly ArchitectureRoleEdge[] = [],
   profileFrontmatter: unknown = HEXAGONAL_PROFILE_FRONTMATTER,
   selected: string | null = null,
+  extra: Partial<ComponentProps<typeof ArchitectureSketch>> = {},
 ) {
   const graph = buildArchitectureGraph(
     buildArchitectureLayout(parseArchitectureProfile(profileFrontmatter as never)),
     traffic,
   );
-  return render(
+  return (
     <ArchitectureSketch
       graph={graph}
       ledgers={ledgers}
@@ -52,6 +53,7 @@ function draw(
       observationMissingLabel="Not inspected"
       observationEmptyTitle="Source not inspected yet"
       observationEmptyBody="Inspect source has an agent read the real imports and fill this in for each role."
+      lowerOnlyRuleLabel="Each role may depend only on roles below it."
       selected={selected}
       roleInspectorOpen={false}
       onSelect={() => {}}
@@ -64,26 +66,37 @@ function draw(
       hiddenLeftLabel={(count) => `${count} more to the left`}
       hiddenAboveLabel={(count) => `${count} more above`}
       hiddenBelowLabel={(count) => `${count} more below`}
-    />,
+      {...extra}
+    />
   );
+}
+
+function draw(...args: Parameters<typeof sketch>) {
+  return render(sketch(...args));
+}
+
+/* jsdom lays nothing out, so a test that needs a measured canvas stubs element geometry around its run. */
+function withGeometry(geometry: Record<string, number>, run: () => void) {
+  const originals = Object.fromEntries(
+    Object.keys(geometry).map((key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]),
+  );
+  for (const [key, value] of Object.entries(geometry))
+    Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value });
+  try {
+    run();
+  } finally {
+    for (const [key, descriptor] of Object.entries(originals))
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+  }
 }
 
 describe('the count of what is below', () => {
   it('sits over the fade and takes no height from the scroller it counts against', () => {
     /* A flow-row pill took the height that decided whether it should appear; jsdom lays nothing out, so geometry is stubbed and the pill's placement asserted. */
-    const geometry: Record<string, number> = { clientWidth: 1200, scrollWidth: 1200, clientHeight: 100, scrollHeight: 700 };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]),
-    );
-    for (const [key, value] of Object.entries(geometry))
-      Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value });
-    try {
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 100, scrollHeight: 700 }, () => {
       draw();
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals))
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-    }
+    });
     const pill = screen.getByTestId('architecture-canvas-hidden-below');
     const wrapper = pill.parentElement as HTMLElement;
     expect(wrapper.className).toContain('absolute');
@@ -141,37 +154,18 @@ describe('the role ledger', () => {
 
 describe('the evidence split plane', () => {
   it('uses the selected dual evidence ladder when seven roles fit as paired downward rows', () => {
-    const geometry: Record<string, number> = {
-      clientWidth: 1200,
-      scrollWidth: 1200,
-      clientHeight: 700,
-      scrollHeight: 700,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
-    );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 700, scrollHeight: 700 }, () => {
       const { container } = draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       /*
-       * The contract face grows to `PAIRED_CONTRACT_W_MAX` and the rest is split evenly; no skip-arc
-       * reserve without a traffic-side skip. 1200 = 56 padding + 560 contract + 160 gutter + 240
-       * observation + 92 on each side.
+       * The empty column holds the skip lane a record will need, so a landing record moves no face:
+       * 1200 = 56 padding + 424 contract + 72 gutter + 240 observation + 204 on each side.
        */
       expect(graph).toHaveAttribute('width', '1200');
-      /* 8 + 20 + 7×72 + 6×24 + 8, plus 8px head room for the top plane's lit edge and a 3px ledge. */
-      expect(graph).toHaveAttribute('height', '695');
+      /* 8 + 20 + 16 + 7×72 + 6×24 + 8, plus the bands' 8px head room and 3px ledge. */
+      expect(graph).toHaveAttribute('height', '711');
       const headings = screen.getByTestId('architecture-paired-lane-headings');
       expect(headings).toHaveTextContent('Contract');
       expect(headings).toHaveTextContent('Observation');
@@ -185,93 +179,164 @@ describe('the evidence split plane', () => {
       expect(empties).toHaveLength(1);
       expect(empties[0]).toHaveAttribute('data-empty-layout', 'column');
       expect(empties[0]).toHaveAttribute('role', 'note');
-      expect(empties[0]).toHaveAttribute(
-        'aria-label',
-        'Source not inspected yet Inspect source has an agent read the real imports and fill this in for each role.',
+      expect(empties[0]).toHaveAccessibleName('Source not inspected yet');
+      expect(empties[0]).toHaveTextContent('Delta');
+      expect(empties[0]).toHaveTextContent('not observed yet');
+      expect(empties[0]).toHaveTextContent(
+        'Inspect source has an agent read the real imports and fill this in for each role.',
       );
+      expect(screen.getByTestId('architecture-lower-only-sentence')).toHaveTextContent(
+        'Each role may depend only on roles below it.',
+      );
+      const rules = [...container.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
+      expect(rules).toHaveLength(6);
+      expect(rules.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(true);
       expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveAttribute(
         'data-box-width',
-        '560',
+        '424',
       );
       /* An ellipsis in the contract lane means the face is narrower than its copy. */
       const sentences = [...container.querySelectorAll('[data-testid^="architecture-box-line-"]')]
         .map((node) => node.textContent ?? '');
       expect(sentences.length).toBeGreaterThan(0);
       expect(sentences.filter((line) => line.trimEnd().endsWith('…'))).toEqual([]);
-      /* Every layer plane ends on one right edge; depth is the leftward stagger, the lit top face and the numeral. */
-      const planeEdges = [...container.querySelectorAll('[data-testid^="architecture-layer-plane-"]')]
-        .map((plane) => {
-          const d = plane.querySelector('path')!.getAttribute('d') ?? '';
-          const [, bottomLeft, , bottomRight] = /M ([\d.]+) ([\d.]+) H ([\d.]+)/.exec(d)!;
-          return { left: Number(bottomLeft), right: Number(bottomRight) };
-        });
-      expect(planeEdges.length).toBe(7);
-      expect(new Set(planeEdges.map((edge) => edge.right)).size).toBe(1);
-      const lefts = planeEdges.map((edge) => edge.left);
-      expect(new Set(lefts).size).toBe(7);
-      expect(Math.max(...lefts) - Math.min(...lefts)).toBe(6 * 14);
+      expect(container.querySelectorAll('[data-testid^="architecture-layer-plane-"]')).toHaveLength(0);
 
-      /* The chrome row does not sit on what is under it: headings stand above the first row and the panel. */
       const laneHeading = container.querySelector('[data-testid="architecture-paired-lane-headings"] text')!;
-      const panel = empties[0].querySelector('rect')!;
+      const panel = empties[0] as HTMLElement;
       const faces = [...container.querySelectorAll('[data-graph-box] rect.architecture-node-face')];
       const faceTops = faces.map((face) => Number(face.getAttribute('y')));
       const faceBottom = Math.max(...faceTops) + Number(faces[0].getAttribute('height'));
-      const panelX = Number(panel.getAttribute('x'));
-      const panelY = Number(panel.getAttribute('y'));
+      const panelX = parseFloat(panel.style.left);
+      const panelY = parseFloat(panel.style.top);
       expect(panelY).toBe(Math.min(...faceTops));
-      expect(panelY + Number(panel.getAttribute('height'))).toBe(faceBottom);
+      expect(panelY + parseFloat(panel.style.height)).toBe(faceBottom);
       expect(panelY).toBeGreaterThan(Number(laneHeading.getAttribute('y')));
-      const contractRight = Number(faces[0].getAttribute('x')) + 560;
-      expect(panelX + Number(panel.getAttribute('width'))).toBe(contractRight + 160 + 240);
-      expect(Math.max(...planeEdges.map((edge) => edge.right))).toBeLessThan(panelX);
-      for (const sentence of container.querySelectorAll('[data-edge-sentence-kind="permitted"]')) {
-        const end = Number(sentence.getAttribute('x')) + estimateCaptionWidth(sentence.textContent ?? '');
-        expect(end).toBeLessThanOrEqual(panelX - 12);
-      }
-      const lines = [...empties[0].querySelectorAll('[data-testid="architecture-observation-empty-line"]')];
-      expect(lines.length).toBeGreaterThan(0);
-      expect(lines.every((line) => !(line.textContent ?? '').endsWith('…'))).toBe(true);
+      const contractRight = Number(faces[0].getAttribute('x')) + 424;
+      expect(panelX).toBe(contractRight + 72);
+      expect(parseFloat(panel.style.width)).toBe(240);
       expect(screen.queryByTestId('architecture-role-observation-widgets')).toBeNull();
       expect(screen.getByTestId('architecture-graph-box-widgets').getAttribute('aria-label')).not.toContain(
         'Not inspected',
       );
       expect(Number(screen.getByTestId('architecture-observation-heading').getAttribute('x'))).toBe(
-        panelX + Number(panel.getAttribute('width')) / 2,
+        panelX + parseFloat(panel.style.width) / 2,
       );
       const hitAreas = [...container.querySelectorAll('[data-architecture-role-hit-area="true"]')];
       expect(hitAreas).toHaveLength(7);
-      expect(hitAreas.every((area) => area.getAttribute('width') === '560')).toBe(true);
-      expect(empties[0]).toHaveAttribute('pointer-events', 'none');
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
+      expect(hitAreas.every((area) => area.getAttribute('width') === '424')).toBe(true);
+    });
+  });
+
+  it('seats the inspect action in the empty column and gives it up when a receipt lands', () => {
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 700, scrollHeight: 700 }, () => {
+      const seated = vi.fn();
+      const extra = {
+        observationEmptyAction: <button type="button">Inspect source</button>,
+        onObservationEmptyActionSeated: seated,
+      };
+      const { rerender } = render(sketch({}, new Set(), [], FSD_PROFILE_FRONTMATTER, null, extra));
+      const panel = screen.getByTestId('architecture-observation-empty');
+      expect(panel.querySelector('button')).toHaveTextContent('Inspect source');
+      expect(seated).toHaveBeenLastCalledWith(true);
+
+      const receipt: RoleLedger = { state: 'clean', violated: 0, outgoing: 1, sampleLimited: false, importsOut: 12 };
+      const roles = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+      rerender(sketch(Object.fromEntries(roles.map((role) => [role, receipt])), new Set(), [], FSD_PROFILE_FRONTMATTER, null, extra));
+      expect(seated).toHaveBeenLastCalledWith(false);
+      expect(screen.getByTestId('architecture-observation-empty')).toHaveClass('architecture-empty-panel-out');
+      expect(document.querySelectorAll('.architecture-arrive-plane')).toHaveLength(7);
+      expect(document.querySelectorAll('.architecture-arrive-face')).toHaveLength(7);
+      act(() => {
+        window.dispatchEvent(new Event('pointerdown'));
+      });
+      expect(document.querySelectorAll('.architecture-arrive-plane')).toHaveLength(0);
+    });
+  });
+
+  it('arrives only on its own profile, and a landing receipt fills the column without moving a face', () => {
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 700, scrollHeight: 700 }, () => {
+      const receipt: RoleLedger = { state: 'clean', violated: 0, outgoing: 1, sampleLimited: false, importsOut: 12 };
+      const roles = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+      const ledgers = Object.fromEntries(roles.map((role) => [role, receipt]));
+      const skips: ArchitectureRoleEdge[] = [
+        { fromRole: 'routing', toRole: 'app', count: 12 },
+        { fromRole: 'views', toRole: 'shared', count: 5 },
+      ];
+      const face = () => {
+        const rect = document.querySelector('[data-testid="architecture-graph-box-routing"] .architecture-canvas-node')!;
+        return [rect.getAttribute('x'), rect.getAttribute('width')];
+      };
+
+      const { rerender } = render(sketch({}, new Set(), [], FSD_PROFILE_FRONTMATTER, null, { profileKey: 'web' }));
+      const panel = screen.getByTestId('architecture-observation-empty');
+      const column = [panel.style.left, panel.style.width];
+      const contract = face();
+      rerender(sketch(ledgers, new Set(), skips, FSD_PROFILE_FRONTMATTER, null, { profileKey: 'web' }));
+      const observed = screen.getByTestId('architecture-observation-box-routing');
+      expect([`${observed.getAttribute('x')}px`, `${observed.getAttribute('width')}px`]).toEqual(column);
+      expect(face()).toEqual(contract);
+      expect(document.querySelectorAll('.architecture-arrive-face')).toHaveLength(7);
+
+      rerender(sketch({}, new Set(), [], FSD_PROFILE_FRONTMATTER, null, { profileKey: 'web' }));
+      rerender(sketch(ledgers, new Set(), skips, FSD_PROFILE_FRONTMATTER, null, { profileKey: 'payments' }));
+      expect(document.querySelectorAll('[class*="architecture-arrive-"]')).toHaveLength(0);
+      expect(screen.queryByTestId('architecture-observation-empty')).toBeNull();
+    });
+  });
+
+  const CLEAN: RoleLedger = { state: 'clean', violated: 0, outgoing: 1, sampleLimited: false, importsOut: 12 };
+  const FSD_ROLES = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+  const LONG_VIEWS = 'Every screen a person can open is one module here, and it composes the layers below it into the page.';
+  const frameOf = () => {
+    const face = document.querySelector('[data-testid="architecture-graph-box-routing"] .architecture-canvas-node')!;
+    const panel = screen.queryByTestId('architecture-observation-empty');
+    const observed = screen.queryByTestId('architecture-observation-box-routing');
+    return {
+      contract: [face.getAttribute('x'), face.getAttribute('width')],
+      column: panel
+        ? [parseFloat(panel.style.left), parseFloat(panel.style.width)]
+        : [Number(observed?.getAttribute('x')), Number(observed?.getAttribute('width'))],
+      lane: screen.getByTestId('architecture-graph').getAttribute('data-skip-lane'),
+      cut: [...document.querySelectorAll('[data-testid^="architecture-box-line-"]')].filter((line) =>
+        (line.textContent ?? '').trimEnd().endsWith('…'),
+      ).length,
+    };
+  };
+
+  it.each([
+    ['no traffic', 1200, []],
+    ['adjacent imports only', 1200, [{ fromRole: 'routing', toRole: 'app', count: 12 }]],
+    ['no traffic, lane left free', 900, []],
+  ] as const)('a record with %s lands at %ipx without moving a face', (_, width, traffic) => {
+    withGeometry({ clientWidth: width, scrollWidth: width, clientHeight: 700, scrollHeight: 700 }, () => {
+      const extra = { profileKey: 'web', roleSummary: (id: string) => (id === 'views' ? LONG_VIEWS : null) };
+      const ledgers = Object.fromEntries(FSD_ROLES.map((role) => [role, CLEAN]));
+      const { rerender } = render(sketch({}, new Set(), [], FSD_PROFILE_FRONTMATTER, null, extra));
+      const empty = frameOf();
+      rerender(sketch(ledgers, new Set(), traffic, FSD_PROFILE_FRONTMATTER, null, extra));
+      expect(frameOf()).toEqual(empty);
+      expect(document.querySelector('[data-architecture-arrival]')).toHaveAttribute('data-architecture-arrival', 'staged');
+    });
+  });
+
+  it('leaves the skip lane free where holding it would cut a description, and a skip that claims it lands whole', () => {
+    withGeometry({ clientWidth: 900, scrollWidth: 900, clientHeight: 700, scrollHeight: 700 }, () => {
+      const extra = { profileKey: 'web', roleSummary: (id: string) => (id === 'views' ? LONG_VIEWS : null) };
+      const { rerender } = render(sketch({}, new Set(), [], FSD_PROFILE_FRONTMATTER, null, extra));
+      const empty = frameOf();
+      expect(empty.lane).toBe('free');
+      expect(empty.cut).toBe(0);
+      const ledgers = Object.fromEntries(FSD_ROLES.map((role) => [role, CLEAN]));
+      rerender(sketch(ledgers, new Set(), [{ fromRole: 'views', toRole: 'shared', count: 5 }], FSD_PROFILE_FRONTMATTER, null, extra));
+      expect(frameOf().lane).toBe('held');
+      expect(document.querySelector('[data-architecture-arrival]')).toHaveAttribute('data-architecture-arrival', 'whole');
+    });
   });
 
   /* With a receipt the ladder has a face and a mark per role, and the delta heading returns with its hover limit. */
   it('draws the per-role faces and the delta heading once every role carries a receipt', () => {
-    const geometry: Record<string, number> = {
-      clientWidth: 1200,
-      scrollWidth: 1200,
-      clientHeight: 700,
-      scrollHeight: 700,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
-    );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 700, scrollHeight: 700 }, () => {
       const receipt: RoleLedger = {
         state: 'clean',
         violated: 0,
@@ -288,12 +353,7 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-delta-heading').querySelector('title')).toHaveTextContent(
         "Each mark says what that role's own outgoing imports did.",
       );
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
+    });
   });
 
   /* An across chain at 1920 cut every role sentence; the ladder rows win whenever the canvas is tall enough. */
@@ -336,8 +396,8 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-ladder-density', 'roomy');
       const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
       expect(sentences).toHaveLength(6);
-      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(true);
-      expect(sentences.every((node) => node.getAttribute('text-anchor') === 'start')).toBe(true);
+      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(true);
+      expect(screen.getByTestId('architecture-lower-only-sentence')).toBeInTheDocument();
     } finally {
       window.matchMedia = originalMatchMedia;
       for (const [key, descriptor] of Object.entries(originals)) {
@@ -384,14 +444,14 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       expect(graph).toHaveAttribute('data-ladder-density', 'tight');
-      /* 4 + 20 + 7x58 + 6x22 + 4, plus 8px head room and a 3px ledge: exactly `pairedTightH`. */
-      expect(graph).toHaveAttribute('height', '577');
+      /* 4 + 20 + 16 + 7x58 + 6x22 + 4, plus 8px head room and a 3px ledge: exactly `pairedTightH`. */
+      expect(graph).toHaveAttribute('height', '593');
       const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
       expect(boxes).toHaveLength(7);
       expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
       const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
       expect(sentences).toHaveLength(6);
-      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(
+      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(
         true,
       );
     } finally {
@@ -405,25 +465,7 @@ describe('the evidence split plane', () => {
 
   it('expands into aligned contract and observation lanes only when the full role set fits', () => {
     /* Too short for four paired rows (16 + 20 + 4×72 + 3×24 = 396), so the across chain is honest. */
-    const geometry: Record<string, number> = {
-      clientWidth: 1600,
-      scrollWidth: 1600,
-      clientHeight: 360,
-      scrollHeight: 360,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
-    );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
+    withGeometry({ clientWidth: 1600, scrollWidth: 1600, clientHeight: 360, scrollHeight: 360 }, () => {
       const { container } = draw();
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-box-width-mode', 'roomy');
@@ -437,20 +479,11 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-role-index-adapter')).toHaveTextContent('01');
       expect(screen.getByTestId('architecture-role-index-domain')).toHaveTextContent('04');
       expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(4);
-      expect(container.querySelectorAll('[data-architecture-port="contract"]')).toHaveLength(6);
-      expect(
-        container.querySelector(
-          '[data-graph-box="adapter"] [data-port-direction="incoming"]',
-        ),
-      ).toBeNull();
+      expect(container.querySelectorAll('[data-architecture-port="contract"]')).toHaveLength(3);
+      expect(container.querySelectorAll('[data-port-direction="incoming"]')).toHaveLength(0);
       expect(
         container.querySelector(
           '[data-graph-box="adapter"] [data-port-direction="outgoing"]',
-        ),
-      ).not.toBeNull();
-      expect(
-        container.querySelector(
-          '[data-graph-box="domain"] [data-port-direction="incoming"]',
         ),
       ).not.toBeNull();
       expect(
@@ -464,12 +497,7 @@ describe('the evidence split plane', () => {
       );
       expect(screen.queryByTestId('architecture-role-observation-domain')).toBeNull();
       expect(container.querySelector('[data-testid="architecture-graph-run"]')).toBeNull();
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
+    });
   });
 
   it('keeps a split observation card to its import count while the gutter carries status', () => {
@@ -504,25 +532,7 @@ describe('the evidence split plane', () => {
   });
 
   it('draws reviewed permission and matching observed traffic on distinct compact tracks', () => {
-    const geometry: Record<string, number> = {
-      clientWidth: 400,
-      scrollWidth: 400,
-      clientHeight: 700,
-      scrollHeight: 700,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
-    );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
+    withGeometry({ clientWidth: 400, scrollWidth: 400, clientHeight: 700, scrollHeight: 700 }, () => {
       const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
       const rule = container.querySelector<SVGPathElement>(
         '[data-edge-kind="permitted"][data-edge-from="adapter"][data-edge-to="application"]',
@@ -547,12 +557,7 @@ describe('the evidence split plane', () => {
           '[data-edge-sentence-kind="traffic"][data-edge-sentence="drawn"]',
         ),
       ).not.toBeNull();
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
+    });
   });
 
   it('keeps a violated edge and arrowhead red while shared ports remain indigo', () => {
@@ -628,17 +633,25 @@ describe('the layer planes', () => {
     }
   }
 
-  /** The x the plane's parallelogram starts from: `M <x> <y> H …`. */
-  function planeOriginX(plane: Element): number {
-    const d = plane.querySelector('path')?.getAttribute('d') ?? '';
-    return Number(/^M ([\d.-]+) /.exec(d)?.[1]);
-  }
+  const FSD_ROLES = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+  const CLEAN: RoleLedger = { state: 'clean', violated: 0, outgoing: 1, sampleLimited: false, importsOut: 12 };
 
-  it('stacks one plane per layer, ordered nearest to deepest and stepping by one constant', () => {
+  it('draws no band before anything was observed, then one band per role joining both faces with equal overhang', () => {
     withLadderCanvas(() => {
-      draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
-      const planes = [...document.querySelectorAll('[data-testid^="architecture-layer-plane-"]')];
-      expect(planes).toHaveLength(7);
+      const empty = draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+      expect(document.querySelectorAll('[data-testid^="architecture-layer-plane-"]')).toHaveLength(0);
+      const emptyFaceY = Number(
+        document.querySelector('[data-testid="architecture-graph-box-app"] rect.architecture-node-face')?.getAttribute('y'),
+      );
+      empty.unmount();
+
+      const { container } = draw(
+        Object.fromEntries(FSD_ROLES.map((role) => [role, CLEAN])),
+        new Set(),
+        [],
+        FSD_PROFILE_FRONTMATTER,
+      );
+      const planes = [...container.querySelectorAll('[data-testid^="architecture-layer-plane-"]')];
       expect(planes.map((plane) => plane.getAttribute('data-layer-rank'))).toEqual([
         '0',
         '1',
@@ -648,33 +661,34 @@ describe('the layer planes', () => {
         '5',
         '6',
       ]);
-      /* Depth is the fact the DOM carries; the ramp ends stay in CSS tokens. */
-      const depths = planes.map((plane) => Number(plane.getAttribute('data-layer-depth')));
-      expect(depths[0]).toBe(1);
-      expect(depths[depths.length - 1]).toBe(0);
-      expect(depths.every((depth, index) => index === 0 || depth < depths[index - 1])).toBe(true);
-      const origins = planes.map(planeOriginX);
-      const steps = origins.slice(1).map((x, index) => origins[index] - x);
-      expect(new Set(steps)).toEqual(new Set([14]));
+      for (const role of FSD_ROLES) {
+        const band = container.querySelector(`[data-testid="architecture-layer-plane-${role}"] rect`)!;
+        const face = container.querySelector(`[data-testid="architecture-graph-box-${role}"] rect.architecture-node-face`)!;
+        const observed = container.querySelector(`[data-testid="architecture-observation-box-${role}"]`)!;
+        const bandLeft = Number(band.getAttribute('x'));
+        const bandRight = bandLeft + Number(band.getAttribute('width'));
+        const observedRight = Number(observed.getAttribute('x')) + Number(observed.getAttribute('width'));
+        expect(Number(face.getAttribute('x')) - bandLeft).toBe(20);
+        expect(bandRight - observedRight).toBe(20);
+      }
+      expect(
+        Number(container.querySelector('[data-testid="architecture-graph-box-app"] rect.architecture-node-face')?.getAttribute('y')),
+      ).toBe(emptyFaceY);
     });
   });
 
   it('gives every role ground to stand on, and adds nothing an assistive reader must hear', () => {
     withLadderCanvas(() => {
-      const { container } = draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+      const { container } = draw(
+        Object.fromEntries(FSD_ROLES.map((role) => [role, CLEAN])),
+        new Set(),
+        [],
+        FSD_PROFILE_FRONTMATTER,
+      );
       const group = container.querySelector('[data-testid="architecture-layer-planes"]');
       expect(group).toHaveAttribute('aria-hidden', 'true');
       expect(group).toHaveAttribute('pointer-events', 'none');
       expect(group?.querySelectorAll('text')).toHaveLength(0);
-      /* The nearest plane shifts furthest, so it is the tightest containment case. */
-      const faceX = Number(
-        container
-          .querySelector('[data-testid="architecture-graph-box-app"] rect')
-          ?.getAttribute('x'),
-      );
-      const nearest = container.querySelector('[data-testid="architecture-layer-plane-app"]');
-      expect(nearest).not.toBeNull();
-      expect(planeOriginX(nearest as Element)).toBeLessThan(faceX);
     });
   });
 

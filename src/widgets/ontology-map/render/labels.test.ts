@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import {
@@ -8,6 +8,9 @@ import {
   resolveLabelBaselineY,
   resolveFlippedLabelBaselineY,
   scaledLabelFontSize,
+  scaledLabelFont,
+  numeralFont,
+  tabularWidth,
   LABEL_NODE_CLEARANCE,
   LABEL_NODE_OUTLINE_ALLOWANCE,
   LABEL_HALO_PX,
@@ -320,5 +323,58 @@ describe("label halo", () => {
   it("puts the glyph back in its own ink after the stroke", () => {
     const style = paint().find((c) => c.op === "fillText")?.args.at(-1) as Record<string, unknown>;
     expect(style.fillStyle).toBe("#d");
+  });
+});
+
+describe("label type", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("sets every kind on the locked ramp and the weight ladder, domain above capability", () => {
+    const sizeOf = (kind: "project" | "domain" | "capability" | "element") => scaledLabelFontSize(kind, 1);
+    expect([sizeOf("project"), sizeOf("domain"), sizeOf("capability"), sizeOf("element")]).toEqual([16, 12.5, 11, 9.5]);
+    expect(["project", "domain", "capability", "element"].map((k) => scaledLabelFont(k as "domain", 1).split(" ")[0])).toEqual(["650", "560", "510", "400"]);
+    expect(numeralFont()).toMatch(/^650 11px /);
+  });
+
+  it("gives every digit the widest digit's advance", () => {
+    const measure = (text: string) => (text === "1" ? 5 : text === "0" ? 7 : 6);
+    expect(tabularWidth("10", "f", measure)).toBe(14);
+    expect(tabularWidth("→1", "f", measure)).toBe(13);
+  });
+
+  it("adopts the page's family only once every ladder weight has loaded, and keeps the system stack before", async () => {
+    vi.resetModules();
+    const loaded = new Set<string>();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: (name: string) => (name === "--font-sans" ? " pretendard, sans-serif " : "") }));
+    Object.defineProperty(document, "fonts", {
+      configurable: true,
+      value: {
+        status: "loaded",
+        load: async (face: string) => {
+          await gate;
+          loaded.add(face);
+          return [];
+        },
+        check: (face: string) => loaded.has(face),
+      },
+    });
+    const labels = await import("./labels");
+    expect(labels.labelFontFamily()).toMatch(/apple-system/);
+    expect(labels.scaledLabelFont("domain", 1)).toMatch(/apple-system/);
+    release();
+    expect(await labels.adoptBodyLabelFont()).toBe(true);
+    expect([...loaded].sort()).toEqual(["400 12px pretendard, sans-serif", "510 12px pretendard, sans-serif", "560 12px pretendard, sans-serif", "650 12px pretendard, sans-serif"]);
+    expect(labels.labelFontFamily()).toBe("pretendard, sans-serif");
+  });
+
+  it("keeps the system stack when a weight never loads", async () => {
+    vi.resetModules();
+    vi.stubGlobal("getComputedStyle", () => ({ getPropertyValue: () => "pretendard, sans-serif" }));
+    Object.defineProperty(document, "fonts", { configurable: true, value: { status: "loaded", load: async () => [], check: () => false } });
+    const labels = await import("./labels");
+    expect(await labels.adoptBodyLabelFont()).toBe(false);
+    expect(labels.labelFontFamily()).toMatch(/apple-system/);
   });
 });

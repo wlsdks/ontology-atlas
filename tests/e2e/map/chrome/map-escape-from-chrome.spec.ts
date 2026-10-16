@@ -8,8 +8,8 @@ import { waitForMapStill } from "../../settle";
 const selection = (page: Page) =>
   page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
 
-/** Select a domain drawn clear of the panels, then close its card: the next rung is "deselect". */
-async function selectDomainWithCardClosed(page: Page) {
+/** Select a domain drawn clear of the panels: on the flat map the next rung is "deselect". */
+async function selectDomain(page: Page) {
   // Aim at the settled frame: on a slow runner the agent dock arrives after the first
   // settle and the map reframes.
   await waitForMapStill(page);
@@ -30,9 +30,6 @@ async function selectDomainWithCardClosed(page: Page) {
   expect(target, "no domain drawn in the middle of the canvas to select").not.toBeNull();
   await page.mouse.click(target!.x, target!.y);
   await expect.poll(() => selection(page)).toBe(target!.id);
-  await page.keyboard.press("Escape");
-  // The card closed and the selection stayed: one Escape, one surface.
-  await expect.poll(() => selection(page)).toBe(target!.id);
   return target!.id;
 }
 
@@ -45,7 +42,7 @@ test("Escape from the gear and the tool tiles reaches the map's dismissal order"
   await waitForMapStill(page);
 
   // The gear, focused with its sheet closed.
-  await selectDomainWithCardClosed(page);
+  await selectDomain(page);
   const gear = page.getByTestId("app-settings-trigger").first();
   await gear.focus();
   await page.keyboard.press("Escape");
@@ -53,7 +50,7 @@ test("Escape from the gear and the tool tiles reaches the map's dismissal order"
 
   // The gear after its sheet closed: the first Escape closes the sheet and hands focus
   // back to the gear, the next one is the map's.
-  const id = await selectDomainWithCardClosed(page);
+  const id = await selectDomain(page);
   await gear.click();
   await expect(page.getByTestId("app-settings-popover")).toBeVisible();
   await page.keyboard.press("Escape");
@@ -64,7 +61,7 @@ test("Escape from the gear and the tool tiles reaches the map's dismissal order"
   await expect.poll(() => selection(page), { message: "Escape after the sheet closed did not reach the map" }).toBeNull();
 
   // A tool tile after the surface it opened is put away: the view picker.
-  await selectDomainWithCardClosed(page);
+  await selectDomain(page);
   const viewChip = page.getByTestId("topology-view-3d");
   await viewChip.click();
   await expect(page.getByTestId("topology-view-3d-choice-flat")).toBeVisible();

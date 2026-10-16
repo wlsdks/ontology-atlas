@@ -179,6 +179,7 @@ const SECTIONS: ShortcutSection[] = [
        */
       { keys: ["↑", "↓", "←", "→"], labelKey: "walkNeighbors" },
       { keys: [k("click")], labelKey: "clickSelect" },
+      { keys: ["↵"], labelKey: "enterZoom" },
       { keys: [k("drag")], labelKey: "dragPan" },
       { keys: [k("scroll")], labelKey: "wheelZoom" },
       { keys: ["+", "−"], labelKey: "keyZoom" },

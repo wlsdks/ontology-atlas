@@ -18,6 +18,7 @@ routes: []
 | `?` | Every screen with the rail | Toggle shortcut sheet |
 | `⌘O` | Home / Topology static sample | Open a local Markdown folder |
 | `Esc` | All | Close the highest-priority open dialog, picker, preview, or map state |
+| `Enter` | Map canvas with a selection | Zoom in to the selected node, the double-click's twin; `Esc` returns the camera unless you moved it since |
 | `↑↓` | Hub rail | Cycle hubs |
 | `Home` / `End` | Hub rail | First / last hub |
 | `Tab` (in palette) | Workspace palette | Cycle mode (`""` → `>` → `#`) |

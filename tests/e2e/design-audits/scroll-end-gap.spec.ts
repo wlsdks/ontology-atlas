@@ -237,14 +237,18 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
     });
 
     const slotRect = slot.getBoundingClientRect();
-    const rootStyle = root ? getComputedStyle(root) : null;
     const pageMax = getComputedStyle(document.documentElement).getPropertyValue("--page-max").trim();
     const widths = [pageMax, formWidth].filter(Boolean);
+    // The frame is the first shown element at a frame width; the reserve is its own bottom padding.
+    const frame = root
+      ? [root, ...root.querySelectorAll("*")].find((el) => widths.includes(getComputedStyle(el).maxWidth) && el.checkVisibility())
+      : undefined;
+    const frameStyle = frame ? getComputedStyle(frame) : null;
     return {
       slot: true,
-      framed: Boolean(rootStyle && widths.includes(rootStyle.maxWidth)),
-      frameWidth: rootStyle && widths.includes(rootStyle.maxWidth) ? rootStyle.maxWidth : "",
-      rootPaddingBottom: rootStyle ? Math.round(Number.parseFloat(rootStyle.paddingBottom) || 0) : 0,
+      framed: frameStyle !== null,
+      frameWidth: frameStyle?.maxWidth ?? "",
+      rootPaddingBottom: frameStyle ? Math.round(Number.parseFloat(frameStyle.paddingBottom) || 0) : 0,
       scrollable: slot.scrollHeight > slot.clientHeight + 1,
       rootHeight: Math.round(root?.getBoundingClientRect().height ?? 0),
       scrollHeight: Math.round(slot.scrollHeight),
@@ -358,11 +362,7 @@ for (const vp of VIEWPORTS) {
         `${vp.label}: no route wearing the page frame was found, so check (4) ran on nothing. ` +
           `Either the frame is gone (then the contract changed) or the --page-max detection is stale.`,
         ).toBeGreaterThan(1);
-      /*
-       * The frame that must be seen is the 960 form column: assert the width itself, not only the
-       * count, so a detector that knows only `--page-max` fails. The wide-frame members
-       * (`/ko/projects/`, `/ko/ontology/insights/`) are not reached: their root is not the slot child.
-       */
+      // Assert the 960 width itself, not only the count, so a detector that knows only `--page-max` fails.
       expect(
         [...framedWidths],
         `${vp.label}: the 960 form frame was never measured, so the width discrimination knows only the old frame`,

@@ -126,7 +126,7 @@ describe("TopologyIndexPanel", () => {
    * One badge column, one meaning: the row's number is the map node's mark, counted from the same
    * domain census for every kind (`views/home/lib/map-canvas/map-adapter.ts`).
    */
-  it("a project row counts everything below it, the same number its node carries", () => {
+  it("a lone project row states the map census, the number its hub carries", () => {
     const census = new Map([
       ["project:root", { id: "project:root", title: "ontology-atlas", capabilityCount: 2, elementCount: 1, total: 3 }],
       ["domain:onboarding", { id: "domain:onboarding", title: "Onboarding & UX", capabilityCount: 2, elementCount: 1, total: 3 }],
@@ -148,12 +148,13 @@ describe("TopologyIndexPanel", () => {
 
     const projectRow = document.querySelector('[data-index-row="project:root"]')!;
     const badge = projectRow.querySelector('[data-testid="topology-index-row-count"]')!;
-    // 1 would be the count of its direct children — the number the map never shows.
-    expect(badge.textContent?.trim(), 'a project row must state the same count as the map node').toBe("3");
-    expect(badge.getAttribute("title")).toBe("하위 전체 3");
+    expect(badge.textContent?.trim(), 'the project row and the census line must state one number').toBe("4");
+    expect(badge.getAttribute("title")).toBe("4 concepts");
+    const domainBadge = document.querySelector('[data-index-row="domain:onboarding"] [data-testid="topology-index-row-count"]')!;
+    expect(domainBadge.getAttribute("title")).toContain("하위 전체 3");
   });
 
-  it("falls back to the child count when no census reaches the row", () => {
+  it("the project row follows the census even when no domain census reaches it", () => {
     render(
       <TopologyIndexPanel
         treeResult={buildFixtureTree()}
@@ -168,7 +169,7 @@ describe("TopologyIndexPanel", () => {
       />,
     );
     const projectRow = document.querySelector('[data-index-row="project:root"]')!;
-    expect(projectRow.querySelector('[data-testid="topology-index-row-count"]')?.textContent?.trim()).toBe("1");
+    expect(projectRow.querySelector('[data-testid="topology-index-row-count"]')?.textContent?.trim()).toBe("4");
   });
 
   it("uses one tree role without conflicting navigation semantics", () => {

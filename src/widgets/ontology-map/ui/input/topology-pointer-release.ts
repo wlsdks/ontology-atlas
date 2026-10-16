@@ -30,7 +30,7 @@ export function createPointerReleaseHandlers(
     navigationSpeedRef, worldRef, cameraRef, cameraTargetRef, dampingRef, cameraAngularFreqRef,
     pointerMachineRef, dragHistoryRef, canvasRef, focusedSlugRef, reducedMotionRef, simRef, heatRef,
     nodeDragRef, dragStartPosRef, overviewScaleRef, activeTouchesRef, pinchRef, selectedEdgeRef,
-    clusterChipsRef, lastTapRef, tierRevealRef, onSelect, onSelectEdge, onPaneClick,
+    clusterChipsRef, lastTapRef, tierRevealRef, onSelect, onFlyToNode, onSelectEdge, onPaneClick,
     onToggleCluster, onExpandEgoNeighbors, onExpandClusterBatch, noteUserCameraGesture,
     domeInteractive, clearEdgeHover, clearClusterHover,
   } = ctx;
@@ -187,7 +187,7 @@ export function createPointerReleaseHandlers(
       if (last !== null && last.nodeId === nodeId && now - last.at <= DOUBLE_TAP_WINDOW_MS) {
         lastTapRef.current = null;
         if (focusedSlugRef.current !== nodeId)
-          onSelect?.(nodeId);
+          onSelect?.(nodeId, "canvas-dblclick");
         // 3D: the double-click is the fly-to — the one gesture that moves the view to a node
         // (`DOME_FLY_MS`). The single click before it only selected.
         const flyDome = domeInteractive();
@@ -199,20 +199,16 @@ export function createPointerReleaseHandlers(
         if (chip && onToggleCluster) {
           onToggleCluster(nodeId);
           clearClusterHover();
+          return;
         }
+        onFlyToNode?.(nodeId);
         return;
       }
       lastTapRef.current = { nodeId, at: now, x: clickPoint?.x, y: clickPoint?.y };
     }
     const action = resolveClickAction(commitClick, focusedSlugRef.current);
     if (action.type === "select") {
-      onSelect?.(action.nodeId);
-      return;
-    }
-    // 3D dome: re-clicking a selected node re-selects it, because the panel's X only collapses the
-    // panel and re-clicking is how it reopens. Deselect stays with background click or Escape.
-    if (action.type === "deselect" && commitClick !== null && commitClick.nodeId !== null && domeInteractive() !== null) {
-      onSelect?.(commitClick.nodeId);
+      onSelect?.(action.nodeId, "canvas-click");
       return;
     }
     // Density gate — an empty-space click (node miss) over a cluster chip toggles

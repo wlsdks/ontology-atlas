@@ -24,6 +24,18 @@ export function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - c, 3);
 }
 
+const NAME_FROM_APPEAR = 0.9;
+
+function riseMsAt(appear: number): number {
+  return (1 - Math.cbrt(1 - appear)) * TIER_RISE_MS;
+}
+
+export function tierNameAlpha(appear: number): number {
+  if (!(appear < 1)) return 1;
+  if (!(appear > NAME_FROM_APPEAR)) return 0;
+  return Math.min(1, (riseMsAt(appear) - riseMsAt(NAME_FROM_APPEAR)) / (MOTION.fast.duration * 1000));
+}
+
 interface AssemblyNode {
   id: string;
   kind: TierKind;

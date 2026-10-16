@@ -178,7 +178,7 @@ async function measureGuidanceText(
   const rows = overview.locator('[data-testid^="harness-text-domain-"]');
   await expect(rows).toHaveCount(sample.domains);
   const textFacts = await rows.evaluateAll((items) => items.map((item) => ({
-    name: item.querySelector('h4')?.textContent,
+    name: item.querySelector('h3')?.textContent,
     roles: [...item.querySelectorAll<HTMLElement>('[data-role]')].map((role) => ({ role: role.dataset.role, count: role.textContent?.match(/\d+/)?.[0] })),
   })));
   expect(textFacts).toEqual(diagramFacts);
@@ -206,7 +206,7 @@ async function measureGuidanceText(
       return row.top >= fieldRect.top && row.bottom <= fieldRect.bottom;
     })).toBe(true);
   }
-  const heading = last.locator('h4');
+  const heading = last.locator('h3');
   for (const text of [heading, last.locator('p').first()]) {
     const lineCount = await text.evaluate((element) => { const range = document.createRange(); range.selectNodeContents(element); return range.getClientRects().length; });
     for (let line = 0; line < lineCount; line += 1) {

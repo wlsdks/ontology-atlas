@@ -1,3 +1,4 @@
+import { dialOverviewBounds } from "../../dial/fit";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import {
   computeFoldedIds,
@@ -13,9 +14,8 @@ export function overviewBoundsFor(
   tokens: OntologyMapTokens,
   expandedParents: ReadonlySet<string>,
   clustered: ReadonlySet<string> | null) {
-  return fit === "full"
-    ? world.bounds
-    : computeRevealedBounds(world, tokens, expandedParents, clustered);
+  if (fit === "full") return world.bounds;
+  return world.dial ? dialOverviewBounds(world.dial.scene) : computeRevealedBounds(world, tokens, expandedParents, clustered);
 }
 
 export function overviewFitTokens<T extends { cameraScaleMin: number; }>(

@@ -41,11 +41,12 @@ export function domainOfEnd(model: DialModel, id: string): string {
   return model.capabilityById.get(id)?.domainId ?? id;
 }
 
-export function aggregateLinks(model: DialModel, resolved: ReadonlySet<string>, attention: DialAttention): DialLink[] {
+export function aggregateLinks(model: DialModel, resolved: ReadonlySet<string>, attention: DialAttention, named: ReadonlySet<string> | null = null): DialLink[] {
   const { capPairCounts, depsByDomain } = precompute(model);
   const out = new Map<string, DialLink>();
   const add = (from: string, to: string, n: number, relatesOnly = false) => {
     if (from === to || n <= 0) return;
+    if (named && (domainOfEnd(model, from) === to || domainOfEnd(model, to) === from)) return;
     const [u, v] = from < to ? [from, to] : [to, from];
     const key = `${u}\0${v}`;
     let link = out.get(key);
@@ -86,7 +87,8 @@ export function aggregateLinks(model: DialModel, resolved: ReadonlySet<string>, 
     add(f.b, f.a, f.ba - less(f.b, f.a));
   }
   const seen = new Set<number>();
-  const at = (cap: string, dom: string) => (resolved.has(dom) || cap === focusCap ? cap : dom);
+  const shown = (cap: string) => named === null || cap === focusCap || named.has(cap);
+  const at = (cap: string, dom: string) => ((resolved.has(dom) || cap === focusCap) && shown(cap) ? cap : dom);
   for (const dom of resolved) {
     for (const i of depsByDomain.get(dom) ?? []) {
       if (seen.has(i)) continue;
@@ -98,7 +100,7 @@ export function aggregateLinks(model: DialModel, resolved: ReadonlySet<string>, 
   for (const i of partialDeps) {
     if (seen.has(i)) continue;
     const d = deps[i]!;
-    const end = (cap: string, dom: string) => (cap === partial || dom === focusDomain || resolved.has(dom) ? cap : dom);
+    const end = (cap: string, dom: string) => ((cap === partial || dom === focusDomain || resolved.has(dom)) && shown(cap) ? cap : dom);
     add(end(d.from, d.fromDomain), end(d.to, d.toDomain), 1);
   }
   const links = [...out.values()];

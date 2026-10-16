@@ -13,7 +13,8 @@ routes: [/library]
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
 meaning across Sources, Wiki, Ontology, and Check history. Ontology contains
 Concept documents (the explicitly typed graph nodes) and Bookmarks (saved map
-selections). Sources and Wiki draw the other two file kinds.
+selections); their switch stands beside the tabs and takes a row of its own only when the
+tabs would no longer fit beside it. Sources and Wiki draw the other two file kinds.
 
 The Library supports general knowledge as well as documents associated with code.
 Sources remain original files; write-ups and filed answers remain wiki pages.

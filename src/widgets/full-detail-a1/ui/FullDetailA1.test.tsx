@@ -43,12 +43,6 @@ const messages = {
     copyLink: "노드 링크 복사",
     copyLinkCopied: "노드 링크를 복사했어요",
     close: "닫기",
-    metric: {
-      contains: "담는 것",
-      usedBy: "이 노드를 쓰는 곳",
-      dependsOn: "이 노드가 기대는 곳",
-      reach: "3단계 도달",
-    },
     groups: {
       containsTitle: "이 노드가 담는 것",
       containsCaption: "contains",
@@ -58,8 +52,11 @@ const messages = {
       dependsOnCaption: "depends on",
       belongsToTitle: "속한 곳",
       belongsToCaption: "belongs to",
-      empty: "직접 연결이 없습니다.",
       freshDotTitle: "최근 갱신",
+      directLinks: "직접 연결 {count}",
+      domainCount: "도메인 {count}곳",
+      domainLinks: "링크 {count}개",
+      emptyGroup: "{title} 없음",
     },
     reach: {
       domainsHiddenRoute: koMessages.fullDetailA1.reach.domainsHiddenRoute,
@@ -169,6 +166,24 @@ function renderFullDetail(overrides: Partial<Parameters<typeof FullDetailA1>[0]>
   return { onSelectNode, onClose };
 }
 
+function renderFullDetailWithContainer(overrides: Partial<Parameters<typeof FullDetailA1>[0]> = {}) {
+  const onSelectNode = vi.fn();
+  const { container } = render(
+    <NextIntlClientProvider locale="ko" messages={messages}>
+      <FullDetailA1
+        node={{ id: "domain:a", title: "Domain A", kind: "domain", slug: "domains/a", fresh: true }}
+        groups={buildFullDetailGroups("domain:a", nodes, edges)}
+        reach={buildFullDetailReachModel("domain:a", nodes, edges)}
+        bodyMarkdown="본문 텍스트입니다."
+        onSelectNode={onSelectNode}
+        onClose={vi.fn()}
+        {...overrides}
+      />
+    </NextIntlClientProvider>,
+  );
+  return { container, onSelectNode };
+}
+
 function projectSourceView(overrides: Partial<ProjectSourceView> = {}): ProjectSourceView {
   return {
     contractVersion: 1,
@@ -217,11 +232,26 @@ describe("FullDetailA1", () => {
     ).not.toBeInTheDocument();
   });
 
-  it('renders contains, used by, depends on and reach in one metric strip', () => {
-    renderFullDetail();
-    const metric = screen.getByText(/담는 것 1/);
-    expect(metric.textContent).toContain("이 노드를 쓰는 곳 1");
-    expect(metric.textContent).toContain("이 노드가 기대는 곳 0");
+  it('draws a card only for a group with something in it and folds the empty ones into one line', () => {
+    const { container } = renderFullDetailWithContainer();
+    expect(container.querySelector('[data-fulldetail-group="used-by"]')).not.toBeNull();
+    expect(container.querySelector('[data-fulldetail-group="depends-on"]')).toBeNull();
+    expect(container.querySelector('[data-fulldetail-empty-groups]')?.textContent).toBe("이 노드가 기대는 곳 없음·속한 곳 없음");
+    expect(container.querySelector('[data-fulldetail-metric]')).toBeNull();
+  });
+
+  it('counts a domain by the domains that use it, with its direct links as a second line', () => {
+    const groups = {
+      ...buildFullDetailGroups("domain:a", nodes, edges),
+      domainLevel: { usedBy: [{ id: "domain:b", title: "Domain B", links: 9 }], needs: [] },
+    };
+    const { container, onSelectNode } = renderFullDetailWithContainer({ groups });
+    const card = container.querySelector('[data-fulldetail-group="used-by"]')!;
+    expect(card.querySelector('[data-fulldetail-group-total="used-by"]')?.textContent).toBe("도메인 1곳");
+    expect(within(card as HTMLElement).getByRole("button", { name: /Domain B/ })).toHaveAccessibleName("Domain B, 링크 9개");
+    expect(card.querySelector('[data-fulldetail-direct-links="used-by"]')?.textContent).toBe("직접 연결 1");
+    fireEvent.click(within(card as HTMLElement).getByText("Domain B"));
+    expect(onSelectNode).toHaveBeenCalledWith("domain:b");
   });
 
   it('calls onSelectNode when a contains row is clicked', () => {

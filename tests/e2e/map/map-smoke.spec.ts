@@ -92,14 +92,8 @@ test.describe("ontology-map smoke", () => {
       await page.keyboard.press("Escape");
       await expect(detailPanel).toHaveCount(0, { timeout: 1_000 });
     }).toPass({ timeout: 15_000 });
-    // The Esc ladder: the first effective Esc closes only the popover/panel and keeps
-    // the ego focus (`?p=`) — one step at a time. Releasing the focus takes the next
-    // Esc.
-    expect(new URL(page.url()).searchParams.get("p")).toBe(REAL_CAPABILITY_SLUG);
-    await expect(async () => {
-      await page.keyboard.press("Escape");
-      expect(new URL(page.url()).searchParams.get("p")).toBeNull();
-    }).toPass({ timeout: 15_000 });
+    // On the Flat map the effective Escape closes the panel and releases the focus together.
+    await expect.poll(() => new URL(page.url()).searchParams.get("p"), { timeout: 5_000 }).toBeNull();
   });
 
   test("opening the doc and going back keeps the map selection", async ({ page }) => {

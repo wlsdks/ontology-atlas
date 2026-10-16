@@ -54,7 +54,7 @@ export function DomainCompositionRows({ domains, labels }: Props) {
       <div className="mt-2.5 border-t border-[color:var(--color-divider)] pt-2.5">
         <p
           data-testid="project-detail-domain-overlap-note"
-          className="max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-pretty text-label leading-label text-[color:var(--color-text-quaternary)]"
+          className="max-w-[var(--measure-prose)] break-keep text-pretty text-body leading-body text-[color:var(--color-text-quaternary)]"
         >
           {labels.legendCaption} {labels.overlapNote}
         </p>

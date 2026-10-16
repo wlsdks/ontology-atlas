@@ -8,6 +8,7 @@ import {
   settleTierAssembly,
   stepTierAssembly,
   tierAssemblyAppear,
+  tierNameAlpha,
   TIER_ASSEMBLE_TOTAL_MS,
   TIER_DELAY_MS,
   TIER_RISE_MS,
@@ -118,6 +119,18 @@ describe("tier assembly", () => {
     expect(tierAssemblyAppear(world, "project", 0)).toBe(1);
     expect(tierAssemblyAppear(world, "capability", TIER_DELAY_MS.capability)).toBe(0);
     expect(tierAssemblyAppear({}, "domain", 0)).toBeNull();
+  });
+});
+
+describe("tierNameAlpha", () => {
+  it("waits for 90% of the rise, then reaches full ink within the fast step", () => {
+    expect(tierNameAlpha(0)).toBe(0);
+    expect(tierNameAlpha(0.9)).toBe(0);
+    expect(tierNameAlpha(1)).toBe(1);
+    const appearAt = (ms: number) => 1 - Math.pow(1 - ms / TIER_RISE_MS, 3);
+    const from = TIER_RISE_MS * (1 - Math.cbrt(0.1));
+    expect(tierNameAlpha(appearAt(from + 60))).toBeCloseTo(0.5, 5);
+    expect(tierNameAlpha(appearAt(from + 130))).toBe(1);
   });
 });
 

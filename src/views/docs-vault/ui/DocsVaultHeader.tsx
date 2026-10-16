@@ -47,6 +47,8 @@ export function DocsVaultHeader({
   handleSelect,
   handleCloseDocTab,
   setPaletteQuery,
+  treeToolsHostRef,
+  showPageHeading,
 }: {
   legacyDocumentMode: boolean;
   docListCollapsed: boolean;
@@ -77,6 +79,8 @@ export function DocsVaultHeader({
   handleSelect: (slug: string, query?: string) => void;
   handleCloseDocTab: (slug: string) => void;
   setPaletteQuery: Dispatch<SetStateAction<string | null>>;
+  treeToolsHostRef?: (element: HTMLDivElement | null) => void;
+  showPageHeading: boolean;
 }) {
   const t = useTranslations('docsVault');
   const localVault = useLocalVault();
@@ -105,11 +109,14 @@ export function DocsVaultHeader({
       data-docs-header-zone="identity"
       className={cn(
         // From md this uses content width; the pane alignment applies at lg only.
-        "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap md:gap-3",
+        "flex w-full min-w-0 flex-none flex-wrap items-center gap-2 md:w-auto md:flex-nowrap",
+        treeToolsHostRef ? "md:gap-1.5" : "md:gap-3",
         legacyDocumentMode
           ? "lg:w-auto"
           : docListCollapsed
           ? "lg:w-auto"
+          : treeToolsHostRef
+          ? "lg:w-[calc(var(--docs-list-width)-1rem)]"
           : "lg:w-[calc(var(--docs-list-width)-1.5rem)]",
       )}
     >
@@ -209,6 +216,9 @@ export function DocsVaultHeader({
         toolsMovedHint={t('header.vaultToolsMovedHint')}
         t={t}
       />
+      {treeToolsHostRef ? (
+        <div ref={treeToolsHostRef} data-testid="docs-header-tree-tools" className="ml-auto hidden pr-1 lg:flex" />
+      ) : null}
     </div>
   );
   // `self-stretch` fills the header height so the active tab covers the baseline.
@@ -231,7 +241,7 @@ export function DocsVaultHeader({
   // Fixed order at natural width; zone-c shrinks so nothing overlaps. From md `ml-auto`
   // right-aligns; at lg zone-c owns the gap.
   const toolsZone = (
-    <div className="flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap">
+    <div className={cn("flex w-full flex-none flex-wrap items-center justify-end gap-2 md:ml-auto md:w-auto md:flex-nowrap", treeToolsHostRef && "lg:pl-2")}>
       {/* Source display and switching live in the vault chip only. */}
       <DocsHeaderTile
         icon={<Search size={ICON_SIZE.lg} aria-hidden />}
@@ -257,10 +267,12 @@ export function DocsVaultHeader({
   // lifts the header over the reading pane so its dropdowns are not covered. Keep it
   // below `--z-map-scrim` (25) and `--z-dialog` (60).
   return (
-    <header className="relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0">
-      <h1 className="sr-only">
-        {legacyDocumentMode ? t('compatibility.title') : t('header.title')}
-      </h1>
+    <header className={cn("relative isolate z-10 flex min-h-14 flex-none flex-wrap items-center gap-x-3 gap-y-2 bg-[color:var(--color-panel)] px-3 py-2 md:h-11 md:min-h-0 md:flex-nowrap md:gap-2 md:px-4 md:py-0", treeToolsHostRef && "lg:gap-0")}>
+      {showPageHeading ? (
+        <h1 className="sr-only">
+          {legacyDocumentMode ? t('compatibility.title') : t('header.title')}
+        </h1>
+      ) : null}
       {/* Absolutely positioned so the active tab can cover it with its own 2px underline. */}
       <span
         aria-hidden

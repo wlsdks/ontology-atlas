@@ -7,6 +7,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import {
   buildContainmentParents,
   buildOntologyReachability,
+  isMapConcept,
   nearestDomainId,
 } from "@/entities/knowledge-graph";
 
@@ -31,7 +32,7 @@ export interface FullDetailReachAtDepth {
 }
 
 export interface FullDetailReachModel {
-  /** Whole-graph node count — the sentence's "N / total" denominator. */
+  /** The map's census (`computeCanonicalCensus`), the sentence's "N / total" denominator. */
   totalNodes: number;
   byDepth: Record<FullDetailReachDepth, FullDetailReachAtDepth>;
 }
@@ -69,7 +70,8 @@ export function buildFullDetailReachModel(
   for (const depth of ALL_DEPTHS) {
     const layerNodes = reachability.layers
       .filter((layer) => layer.distance <= depth)
-      .flatMap((layer) => layer.nodes);
+      .flatMap((layer) => layer.nodes)
+      .filter((n) => isMapConcept(nodeById.get(n.id) ?? { kind: "" }));
 
     const counts = new Map<string | null, number>();
     for (const n of layerNodes) {
@@ -94,5 +96,5 @@ export function buildFullDetailReachModel(
     byDepth[depth] = { depth, reachableCount: layerNodes.length, domainRows };
   }
 
-  return { totalNodes: nodes.length, byDepth };
+  return { totalNodes: nodes.filter(isMapConcept).length, byDepth };
 }

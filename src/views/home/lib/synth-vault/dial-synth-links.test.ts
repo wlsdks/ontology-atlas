@@ -128,8 +128,8 @@ function overview(model: DialModel) {
   const cy = (e.minY + e.maxY) / 2;
   const toScreen = (x: number, y: number) => ({ x: (free.minX + free.maxX) / 2 + (x - cx) * scale, y: (free.minY + free.maxY) / 2 + (y - cy) * scale });
   const input: FlowMarksInput = {
-    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention: resolveDialAttention(model, null, null), previous: null,
-    inkMix: 1, chordPresence: 1, scale, labelScale: 1, viewportWidth: W, viewportHeight: H, freeRect: free,
+    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention: resolveDialAttention(model, null, null), inkAttention: resolveDialAttention(model, null, null), previous: null,
+    inkMix: 1, chordPresence: 1, scale, viewportWidth: W, viewportHeight: H, freeRect: free,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     endRadiusPx: () => 10, appearOf: () => 1, measureText: (t) => t.length * 6.5, occupied: [], chords: [],
     resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, resolveDialAttention(model, null, null), TOKENS),

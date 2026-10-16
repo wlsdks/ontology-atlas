@@ -9,6 +9,8 @@ import { buttonVariants } from '@/shared/ui';
 import { HiddenCountLine } from '@/shared/ui/status/hidden-count-line';
 import { RelationshipPreview } from '@/widgets/relationship-preview';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
+import { INSIGHTS_EXAMPLE_TITLE } from './insights-headline';
+import { PreviewLead } from './PreviewLead';
 
 const ROWS = 6;
 
@@ -24,7 +26,8 @@ export function LibraryTab({ detail, nowMs }: { detail: InsightsBrief['library']
   const format = useFormatter();
   if (detail.availability !== 'measured') {
     return (
-      <section data-testid="library-tab" className="flex flex-col gap-[var(--card-gap)]">
+      <section data-testid="library-tab" className={cn('flex flex-col gap-[var(--card-gap)]', INSIGHTS_EXAMPLE_TITLE)}>
+        <WikiAnalysisLead />
         <WikiAnalysisPreview />
       </section>
     );
@@ -170,9 +173,16 @@ function WikiAnalysisPreview() {
   return <RelationshipPreview title={t('title')} description={t('body')} exampleLabel={t('exampleLabel')} pauseLabel={t('pauseAnimation')} resumeLabel={t('resumeAnimation')} emphasizedItemId="page"
     items={stages.map(id => ({ id, title:t(`stages.${id}.title`),caption:t(`stages.${id}.example`),label:t(`stages.${id}.buttonLabel`),explanation:t(`stages.${id}.setup`),visual:<StagePreview kind={id} />,
       description:id==='source'?`${t('exampleLabel')} ${t('sourceExcerpt')}`:id==='page'?`${t('pageEyebrow')}: ${t('pageExampleTitle')}. ${t('pageExampleBody')} ${t('stages.page.citation')}`:t('stages.check.example'),
-    }))}
-    footer={<><div className="min-w-0 max-w-prose"><p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('emptyTitle')}</p><p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('emptyDescription')}</p></div>
-      <Link href="/library/" data-testid="preview-primary-action" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor shrink-0')}>{t('openLibrary')}</Link></>} />;
+    }))} />;
+}
+
+function WikiAnalysisLead() {
+  const t = useTranslations('ontologyPages.insights.libraryTab.preview');
+  return (
+    <PreviewLead title={t('emptyTitle')} description={t('emptyDescription')}>
+      <Link href="/library/" data-testid="preview-primary-action" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor shrink-0')}>{t('openLibrary')}</Link>
+    </PreviewLead>
+  );
 }
 
 function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
@@ -189,7 +199,7 @@ function StagePreview({ kind }: { kind: 'source' | 'page' | 'check' }) {
     return (
       <span data-relationship-port className="flex min-w-0 w-full max-w-80 flex-col rounded-panel border border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-elevated)] p-4 text-left shadow-[var(--shadow-elevation-2)] sm:p-5">
         <span className="text-caption uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]">{t('pageEyebrow')}</span>
-        <span className="mt-3 break-words text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)] sm:text-display">{t('pageExampleTitle')}</span>
+        <span className="mt-3 break-words text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">{t('pageExampleTitle')}</span>
         <span className="mt-3 text-body-lg text-[color:var(--color-text-secondary)] [overflow-wrap:anywhere]">{t('pageExampleBody')}</span>
         <span className="mt-5 h-px w-full bg-[color:var(--color-divider)]" />
         <span className="mt-3 border-l-2 border-[color:var(--color-indigo-line-a32)] pl-3 text-body text-[color:var(--color-indigo-text-soft)]">{t('stages.page.citation')}</span>

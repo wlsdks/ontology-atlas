@@ -201,6 +201,7 @@ export function useTopologySceneControls({
       reading: (read, total) => tDial("reading", { read, total }),
       settling: () => tDial("settling"),
       linksShown: (shown, total) => tDial("linksShown", { shown, total }),
+      evidenceUnmeasured: () => tDial("evidenceUnmeasured"),
     }),
     [tDial],
   );

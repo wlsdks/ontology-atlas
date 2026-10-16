@@ -1784,8 +1784,8 @@ describe("AtlasGitPanel omits unusable controls", () => {
     // A rename has no diff lines, so the screen opens on the latest commit; open the "now" row.
     fireEvent.click(await screen.findByTestId("atlas-git-pending-row"));
     await screen.findByTestId("atlas-git-change-groups");
-    fireEvent.click(screen.getAllByTestId("atlas-git-change-row")[0]);
-    await waitFor(() => expect(screen.getByTestId("atlas-git-change-groups")).toHaveTextContent("baz"));
+    expect(screen.queryByTestId("atlas-git-change-row")).toBeNull();
+    await waitFor(() => expect(screen.getByTestId("atlas-git-pending-pane")).toHaveTextContent("baz"));
     expect(screen.queryByTestId("atlas-git-discard")).toBeNull();
   });
 });

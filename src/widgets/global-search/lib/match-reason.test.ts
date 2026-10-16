@@ -79,7 +79,7 @@ describe("describeMatchReason", () => {
 });
 
 describe("reasonLineClass", () => {
-  it('uses a fixed-width cell with one start line from md upward', () => {
+  it('uses a fixed-width cell of at most two lines with one start line from md upward', () => {
     for (const reason of [
       { kind: "id" as const, text: "shipping-fee", query: "fee" },
       { kind: "summary" as const, text: "Decides who pays." },
@@ -87,6 +87,8 @@ describe("reasonLineClass", () => {
       const className = reasonLineClass(reason);
       expect(className).toContain("md:w-[14rem]");
       expect(className).toContain("md:shrink-0");
+      expect(className).toMatch(/(^|\s)(md:)?line-clamp-2(\s|$)/);
+      expect(className).not.toMatch(/(^|\s)(md:)?(truncate|block)(\s|$)/);
       expect(className).not.toContain("max-w-");
     }
   });

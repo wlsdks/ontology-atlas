@@ -30,9 +30,11 @@ function hexPoints(cx: number, cy: number, r: number): string {
   return pts.join(" ");
 }
 
+export const MAP_KIND_GLYPH_SIZE = 15;
+
 export function OntologyMapKindGlyph({
   kind,
-  size = 15,
+  size = MAP_KIND_GLYPH_SIZE,
   className,
   glyphSet,
 }: {

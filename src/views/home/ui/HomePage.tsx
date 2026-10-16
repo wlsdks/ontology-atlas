@@ -67,11 +67,10 @@ import { TopologyBlockingOverlays } from "./TopologyBlockingOverlays";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 /**
- * Boot render gate: the first client commit renders only the server fallback's shared loading
- * visual, and the body renders in a following `startTransition`, whose lane yields about every 5 ms
- * and splits the largest boot long task. Server and client share `MapEntryLoadingVisual`, so markup
- * cannot drift. SSG goes straight to the body (no `window`), which suspends on `useSearchParams`,
- * keeping the export byte-identical.
+ * Boot render gate: the first client commit renders the server fallback's `MapEntryLoadingVisual`
+ * and the body follows in a `startTransition`, splitting the largest boot long task. A client mount
+ * with no loader on screen holds it back for `--motion-base`, so a shorter boot shows none. SSG
+ * goes straight to the body, which suspends on `useSearchParams`, keeping the export identical.
  */
 export function HomePage() {
   const tMapEntry = useTranslations('mapEntry');
@@ -82,19 +81,25 @@ export function HomePage() {
   // during static render and hydration, so the exported HTML and first commit are unchanged.
   const [bootedOnce, rememberBooted] = useArrivalMemory("home-map-booted", false);
   const [bootRenderReady, setBootRenderReady] = useState(bootedOnce);
+  const [loaderOnScreen] = useState(() => typeof document === 'undefined' || document.querySelector('[data-testid="map-entry-fallback"]') !== null);
   useEffect(() => {
     rememberBooted(true);
     if (bootRenderReady) return;
     startTransition(() => setBootRenderReady(true));
   }, [bootRenderReady, rememberBooted]);
   if (!bootRenderReady) {
-    return (
+    const visual = (
       <MapEntryLoadingVisual
         title={tMapEntry('mapComing')}
         description={tMapEntry('loadingDetail')}
         headline={tMapEntry('headline')}
         lede={tMapEntry('lede')}
       />
+    );
+    return loaderOnScreen ? visual : (
+      <div className="route-loading-in flex h-full min-h-full flex-1 flex-col" style={{ animationDelay: 'var(--motion-base)' }}>
+        {visual}
+      </div>
     );
   }
   return <ErrorBoundary

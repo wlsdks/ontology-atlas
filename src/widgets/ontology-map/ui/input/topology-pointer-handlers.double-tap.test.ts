@@ -59,7 +59,7 @@ describe("createTopologyPointerHandlers — a double-click opens the node's chil
     const handlers = createTopologyPointerHandlers(refs);
 
     tap(refs, handlers, "domain:order", 1_000);
-    expect(onSelect).toHaveBeenCalledWith("domain:order");
+    expect(onSelect).toHaveBeenCalledWith("domain:order", "canvas-click");
     // The first tap's selection has landed by the time the second tap arrives.
     refs.focusedSlugRef.current = "domain:order";
 
@@ -83,7 +83,7 @@ describe("createTopologyPointerHandlers — a double-click opens the node's chil
     expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
-  it("a slow second tap is an ordinary click: it deselects, as before", () => {
+  it("a slow second tap on the selected node keeps it: a repeated click is never an undo", () => {
     const onSelect = vi.fn();
     const onPaneClick = vi.fn();
     const onToggleCluster = vi.fn();
@@ -100,12 +100,33 @@ describe("createTopologyPointerHandlers — a double-click opens the node's chil
     tap(refs, handlers, "domain:order", 3_000 + DOUBLE_TAP_WINDOW_MS + 1);
 
     expect(onToggleCluster).not.toHaveBeenCalled();
-    // One select, then the 2D toggle's deselect (a pane click), exactly as before.
-    expect(onSelect).toHaveBeenCalledTimes(1);
-    expect(onPaneClick).toHaveBeenCalledTimes(1);
+    expect(onPaneClick).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenLastCalledWith("domain:order", "canvas-click");
   });
 
-  it("a double-click on an already selected node opens it and keeps it selected", () => {
+  it("a double-click on an already selected node zooms and never toggles the selection", () => {
+    const onSelect = vi.fn();
+    const onPaneClick = vi.fn();
+    const onFlyToNode = vi.fn();
+    const refs = buildRefs({
+      onSelect,
+      onPaneClick,
+      onFlyToNode,
+      focusedSlugRef: ref("capability:pay"),
+      clusterChipsRef: ref([]),
+    });
+    const handlers = createTopologyPointerHandlers(refs);
+
+    tap(refs, handlers, "capability:pay", 4_000);
+    tap(refs, handlers, "capability:pay", 4_120);
+
+    expect(onPaneClick).not.toHaveBeenCalled();
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onSelect).toHaveBeenCalledWith("capability:pay", "canvas-click");
+    expect(onFlyToNode).toHaveBeenCalledWith("capability:pay");
+  });
+
+  it("a double-click on an already selected parent opens it and keeps it selected", () => {
     const onSelect = vi.fn();
     const onPaneClick = vi.fn();
     const onToggleCluster = vi.fn();
@@ -119,13 +140,8 @@ describe("createTopologyPointerHandlers — a double-click opens the node's chil
     const handlers = createTopologyPointerHandlers(refs);
 
     tap(refs, handlers, "domain:order", 4_000);
-    // The first tap of the pair deselected (the 2D rule for a focused node) …
-    expect(onPaneClick).toHaveBeenCalledTimes(1);
-    expect(onSelect).not.toHaveBeenCalled();
-    refs.focusedSlugRef.current = null;
     tap(refs, handlers, "domain:order", 4_120);
-    // … and the second tap restores the selection while opening the children.
+    expect(onPaneClick).not.toHaveBeenCalled();
     expect(onToggleCluster).toHaveBeenCalledWith("domain:order");
-    expect(onSelect).toHaveBeenLastCalledWith("domain:order");
   });
 });

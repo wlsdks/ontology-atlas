@@ -12,7 +12,7 @@ import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent'
 import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
 import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { TermHint } from '@/shared/ui/hints/term-hint';
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW, PAGE_TRACK_CAP } from '@/shared/ui/tokens/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 
@@ -86,7 +86,7 @@ export function AgentsPage({
       tabIndex={-1}
       data-testid="agents-page"
       data-agents-tab={tab}
-      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+      className={`${PAGE_FRAME} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/* The lede stays outside: `PAGE_HEADER_ROW` is `justify-between` and would push it right. */}
       <header className={PAGE_HEADER_ROW}>
@@ -110,7 +110,7 @@ export function AgentsPage({
               : t('ledeWeb')}
       </p>
 
-      <nav className="mt-5" data-testid="agents-tabs">
+      <nav className={`mt-5 ${PAGE_TRACK_CAP}`} data-testid="agents-tabs">
         <TabBar
           idPrefix="agents"
           ariaLabel={t('workspace.aria')}

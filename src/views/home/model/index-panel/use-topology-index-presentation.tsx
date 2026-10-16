@@ -8,7 +8,9 @@ import { readFirstRunStarterDismissed, writeFirstRunStarterDismissed } from "@/f
 import { useSurfaceSwap } from "@/shared/lib/render-timing/use-presence";
 import { VAULT_START_STEPS_DISMISSED_KEY } from "@/widgets/topology-controls";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { resolveContextualIndexState } from "../../lib/index-panel/resolve-contextual-index-state";
+import { FLAT_SELECTION_KEEPS_INDEX_FROM_PX, resolveContextualIndexState } from "../../lib/index-panel/resolve-contextual-index-state";
+import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
+import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useIndexSelectionOverride } from "./use-index-selection-override";
 
 interface Options {
@@ -87,9 +89,10 @@ export function useTopologyIndexPresentation({
     const oy = Math.max(0, Math.min(rect.height, pointer.y - rect.top));
     positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
   }, [lastCanvasPointerRef, nodePopoverPositionerRef, nodePopoverSlug]);
-  // The realm and spotlight ledgers also close during a selection, returning when it clears;
-  // the chips' ✕ and Esc remain their exits.
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
+  const flatMap = useFlatMapView();
+  const belowFlatKeepWidth = useViewportBelow(FLAT_SELECTION_KEEPS_INDEX_FROM_PX);
+  const flatSelectionKeepsIndex = flatMap && !belowFlatKeepWidth;
   // The agent dock applies the same session demotion, or the map becomes a corridor between two
   // panels.
   // The stored preference is untouched; a URL ask intent follows the same rule from its first
@@ -102,8 +105,6 @@ export function useTopologyIndexPresentation({
       llmBridgeAvailable &&
       (routeState.askIntent || routeState.askBusinessFlow),
     );
-  // The checklist centres in the map area, so INDEX yields while it shows. Declared here
-  // because `resolveContextualIndexState` below needs it before INDEX resolves.
   const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
     readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
   );
@@ -123,6 +124,7 @@ export function useTopologyIndexPresentation({
     // `?index=expanded` is an explicit deep-link contract that redirects carry.
     selectionManualExpand:
       indexManualExpandDuringSelection || indexState === "expanded",
+    selectionKeepsIndex: flatSelectionKeepsIndex,
     graphEmpty: topologyGraphEmpty,
     emptyManualExpand: indexManualExpandWhileEmpty,
     agentDockOpen: agentDockRequestedOpen,

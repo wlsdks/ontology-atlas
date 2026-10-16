@@ -40,14 +40,31 @@ for (const route of ROUTES) {
   }
 }
 
-test("changelog entry titles never start with the date separator", async ({ page }) => {
+test("changelog entries list version then title on one line each, the full title on hover, no date", async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 900 });
   await page.goto("/ko/changelog/?guides=off", { waitUntil: "domcontentloaded" });
-  const titles = await page
-    .locator('[data-testid^="entry-nav-"] span.line-clamp-2')
-    .allTextContents();
-  expect(titles.length, "found no entry titles; the check would idle").toBeGreaterThan(3);
-  expect(titles.filter((title) => /^[\s·—–-]/u.test(title))).toEqual([]);
+  const entries = page.locator('[data-testid^="entry-nav-"]');
+  const rows = await entries.evaluateAll((links) =>
+    links.map((a) => {
+      const subject = a.lastElementChild as HTMLElement;
+      return {
+        text: (a.textContent ?? "").trim(),
+        version: a.children.length > 1 ? (a.firstElementChild?.textContent ?? "") : null,
+        title: a.getAttribute("title") ?? "",
+        subject: subject.textContent ?? "",
+        height: Math.round(a.getBoundingClientRect().height),
+        top: Math.round(a.getBoundingClientRect().top),
+      };
+    }),
+  );
+  expect(rows.length, "found no entries; the check would idle").toBeGreaterThan(3);
+  expect(rows.filter((row) => /^\d{4}-\d{2}-\d{2}/u.test(row.text) || /^[\s·—–:-]/u.test(row.subject))).toEqual([]);
+  expect(rows.filter((row) => row.text !== (row.version ? `${row.version} ${row.subject}` : row.subject))).toEqual([]);
+  expect(rows.filter((row) => row.version !== null).length, "no entry carried a version").toBeGreaterThan(0);
+  expect(rows.filter((row) => row.title !== row.subject)).toEqual([]);
+  expect(new Set(rows.map((row) => row.height)).size, `entry heights ${rows.map((row) => row.height).join(",")}`).toBe(1);
+  const pitches = new Set(rows.slice(1).map((row, i) => row.top - rows[i]!.top));
+  expect([...pitches], "one pitch down the list").toHaveLength(1);
 });
 
 /* The table of contents starts on the brand's line at every width. */

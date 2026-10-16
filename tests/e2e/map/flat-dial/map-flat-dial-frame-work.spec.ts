@@ -231,6 +231,7 @@ for (const shape of SHAPES) {
     const target = [...dial.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
     const n = target.capabilityIds.length;
     const origin = await canvasOrigin(page);
+    await page.evaluate((id) => (window.__atlasMap as unknown as { select: (id: string) => void }).select(id), target.domainId);
     await page.mouse.move(origin.x + target.chip.x, origin.y + target.chip.y);
     let ledger: DialProbe["ledger"] = null;
     let last: DialProbe = dial;

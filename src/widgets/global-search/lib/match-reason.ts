@@ -45,10 +45,10 @@ export function describeMatchReason(input: {
 }
 
 /**
- * From `md` up a fixed-width column, so one text start line. Below `md` a marked reason drops to
- * its own line under the name; an unmarked summary stays an md-and-up column.
+ * From `md` up a fixed-width column of at most two lines, so one text start line. Below `md` a
+ * marked reason drops to its own line under the name; an unmarked summary stays an md-and-up column.
  */
 export function reasonLineClass(reason: MatchReason): string {
-  const shared = "min-w-0 truncate text-body text-[color:var(--color-text-tertiary)] md:w-[14rem] md:shrink-0";
-  return reason.query ? `block ${shared}` : `hidden md:block ${shared}`;
+  const shared = "min-w-0 text-body leading-body text-[color:var(--color-text-tertiary)] md:w-[14rem] md:shrink-0";
+  return reason.query ? `line-clamp-2 ${shared}` : `hidden md:line-clamp-2 ${shared}`;
 }

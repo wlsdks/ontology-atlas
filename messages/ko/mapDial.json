@@ -7,6 +7,7 @@
   "ringAtLeast": "다른 도메인 {min, number}곳 이상이 사용",
   "ringAtMostOne": "다른 도메인 1곳 이하가 사용",
   "linksShown": "링크 {total, number}개 중 {shown, number}개 표시",
+  "evidenceUnmeasured": "근거 미측정",
   "reading": "파일 {total, number}개 중 {read, number}개 읽는 중",
   "settling": "모든 파일을 읽으면 고리가 자리를 잡습니다",
   "legendNeeds": "필요한 곳",

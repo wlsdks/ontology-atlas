@@ -22,12 +22,6 @@
       "sinceGloss": "줄을 펴면 해당 개념이, 문장 끝 링크를 누르면 고치는 곳이 열려요.",
       "headline": "<learn>새로 알아야 할 것 {stale}개</learn><sep> · </sep><unchecked>확인 못 한 것 {unknown}개</unchecked>",
       "headlineCounting": "<learn>새로 알아야 할 것</learn>과 <unchecked>확인 못 한 것</unchecked>을 세고 있어요",
-      "unit": {
-        "ontology": "",
-        "wiki": "페이지",
-        "harness": "파일",
-        "agent": "호출"
-      },
       "sinceTitle": "그 뒤로 바뀐 것 {count, number}건",
       "sinceTitleKind": {
         "concept-doc": "그 뒤로 바뀐 개념 문서 {count, number}건",
@@ -74,17 +68,6 @@
         "harness": "지침",
         "agent": "에이전트"
       },
-      "col": {
-        "current": "현재",
-        "stale": "낡음",
-        "unknown": "모름",
-        "told": "알려줌",
-        "gated": "막음",
-        "watched": "지켜봄",
-        "reads": "읽기",
-        "writes": "쓰기",
-        "agents": "에이전트"
-      },
       "appOnly": "앱에서만 잴 수 있어요. 브라우저는 폴더 옆의 코드와 숨김 폴더를 읽지 못해요.",
       "quiet": "그 뒤로 새로 알아야 할 것이 없어요.",
       "open": "열기",
@@ -122,13 +105,6 @@
       "evidenceUnreadable": "연결된 코드를 확인하지 못했어요. 폴더를 다시 열면 다시 시도해요.",
       "evidenceNoSource": "개념이 지금 코드와 맞는지 아직 확인하지 못했어요. 지도에서 코드 저장소를 연결하면 여기서 세요.",
       "noSourceShared": "개념이 지금 코드와 맞는지, 지침이 어디에 닿는지 아직 세지 못했어요. 지도에서 코드 저장소를 연결하면 여기서 세요.",
-      "bandState": {
-        "app-only": "현재·낡음은 앱에서 재요",
-        "no-data": "아직 없음",
-        "no-source": "저장소 연결 전",
-        "reading": "읽는 중",
-        "unreadable": "읽지 못함"
-      },
       "coreJoin": " · "
     },
     "unmatched": {
@@ -496,7 +472,7 @@
       "copySelectedCheck": "읽기 전용 확인 요청 복사",
       "copiedSelected": "복사됨",
       "reviewSelectedRequest": "보낼 내용 확인",
-      "declarationRange": "선 하나가 선언 하나예요 · {total}개 중 {from}–{to}",
+      "lineLegend": "선 하나가 선언 하나예요",
       "previousDeclarations": "이전 선언",
       "nextDeclarations": "다음 선언",
       "selectionMissing": "저장된 선택을 이 폴더에서 찾을 수 없어요. 현재 기록의 개요를 보여줘요.",
@@ -506,7 +482,8 @@
         "dated": "소스 날짜 비교됨 · 의미는 미검증",
         "unknown": "이 주장의 소스 상태 미확인"
       },
-      "declarationCompact": "선언 {count}개",
+      "declarationsInView": "이 그림에서 선언 {count}개",
+      "declarationPage": "{from}–{to} / {total}",
       "documentTitle": "분석 · Ontology Atlas",
       "findConnection": "연결 찾기",
       "findCapability": "역량 찾기",

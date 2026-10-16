@@ -60,6 +60,7 @@ import {
 import { useAiConnection, type AiConnectionState } from '../model/use-ai-connection';
 import { ArmedChip, SettingsGroupHeading } from './settings-primitives';
 import { TermHint } from '@/shared/ui/hints/term-hint';
+import { PAGE_TRACK_CAP, PAGE_TWO_TRACK } from '@/shared/ui/tokens/page-frame';
 import type { GlossaryTerm } from '@/shared/config/term-glossary';
 
 /**
@@ -193,7 +194,7 @@ export function ModelConnectionsPanel({
      * sample rows: a key or runner drawn here would be data this browser does not have.
      */
     return (
-      <div className="grid min-w-0 content-start gap-3" data-testid="ai-connection-view">
+      <div className={`grid min-w-0 content-start gap-3 ${PAGE_TRACK_CAP}`} data-testid="ai-connection-view">
         <div data-testid="ai-connection-web-degraded">
           <EmptyState
             tone="solid"
@@ -201,10 +202,10 @@ export function ModelConnectionsPanel({
             title={t('webDegradedTitle')}
             description={
               <>
-                <span className="block">{t('webDegradedBody')}</span>
+                <span className="block max-w-2xl">{t('webDegradedBody')}</span>
                 {/* Why key-less runners do not work here either: without it the card reads as
                     "if keys are the problem, then key-less Ollama must work". */}
-                <span className="mt-1.5 block" data-testid="ai-connection-web-degraded-local">
+                <span className="mt-1.5 block max-w-2xl" data-testid="ai-connection-web-degraded-local">
                   {t('webDegradedLocalBody')}
                 </span>
               </>
@@ -234,7 +235,7 @@ export function ModelConnectionsPanel({
   return (
     <div
       ref={rootRef}
-      className="grid min-w-0 content-start gap-6"
+      className={`${PAGE_TWO_TRACK} content-start gap-6`}
       data-testid="ai-connection-view"
       onKeyDown={(event) => {
         // Esc collapses the open row first and stops there. An Esc an inner control already
@@ -245,61 +246,63 @@ export function ModelConnectionsPanel({
         collapse(expanded);
       }}
     >
-      <ModelGroup label={t('localTitle')} hint={t('localTitleHint')} testId="models-local">
-        {LOCAL_RUNNERS.map((runner) => (
-          <LocalRunnerRow
-            key={runner.id}
-            runner={runner}
-            local={local}
-            activeRunner={activeRunner}
-            vaultRootPath={vaultRootPath}
-            expanded={expanded === `local:${runner.id}`}
-            onExpand={() => setExpanded(`local:${runner.id}`)}
-            onCollapse={() => collapse(`local:${runner.id}`)}
-            onSettings={setLocal}
-            onVerified={refreshAudit}
-            announce={announce}
-          />
-        ))}
-      </ModelGroup>
+      <div className="grid min-w-0 content-start gap-6" data-testid="models-rows">
+        <ModelGroup label={t('localTitle')} hint={t('localTitleHint')} testId="models-local">
+          {LOCAL_RUNNERS.map((runner) => (
+            <LocalRunnerRow
+              key={runner.id}
+              runner={runner}
+              local={local}
+              activeRunner={activeRunner}
+              vaultRootPath={vaultRootPath}
+              expanded={expanded === `local:${runner.id}`}
+              onExpand={() => setExpanded(`local:${runner.id}`)}
+              onCollapse={() => collapse(`local:${runner.id}`)}
+              onSettings={setLocal}
+              onVerified={refreshAudit}
+              announce={announce}
+            />
+          ))}
+        </ModelGroup>
 
-      <ModelGroup label={t('keysTitle')} term="apiKey" hint={t('keysTitleHint')} testId="models-keys">
-        {SECRET_PROVIDERS.map((provider) => (
-          <KeyRow
-            key={provider}
-            provider={provider}
-            status={statuses[provider]}
+        <ModelGroup label={t('keysTitle')} term="apiKey" hint={t('keysTitleHint')} testId="models-keys">
+          {SECRET_PROVIDERS.map((provider) => (
+            <KeyRow
+              key={provider}
+              provider={provider}
+              status={statuses[provider]}
+              read={keysRead}
+              vaultRootPath={vaultRootPath}
+              expanded={expanded === `key:${provider}`}
+              onExpand={() => setExpanded(`key:${provider}`)}
+              onCollapse={() => collapse(`key:${provider}`)}
+              onStatus={(next) => {
+                applyStatus(provider, next);
+                collapse(`key:${provider}`);
+              }}
+              onVerified={refreshAudit}
+              announce={announce}
+            />
+          ))}
+        </ModelGroup>
+
+        <ModelGroup label={t('externalTitle')} testId="models-external">
+          <JevRow
+            status={jevStatus}
             read={keysRead}
             vaultRootPath={vaultRootPath}
-            expanded={expanded === `key:${provider}`}
-            onExpand={() => setExpanded(`key:${provider}`)}
-            onCollapse={() => collapse(`key:${provider}`)}
+            mode={expanded === 'jev:key' ? 'key' : expanded === 'jev:check' ? 'check' : null}
+            onMode={(mode) => setExpanded(mode === 'key' ? 'jev:key' : 'jev:check')}
+            onCollapse={(mode) => collapse(mode === 'key' ? 'jev:key' : 'jev:check')}
             onStatus={(next) => {
-              applyStatus(provider, next);
-              collapse(`key:${provider}`);
+              applyJevStatus(next);
+              collapse('jev:key');
             }}
-            onVerified={refreshAudit}
+            onSent={refreshAudit}
             announce={announce}
           />
-        ))}
-      </ModelGroup>
-
-      <ModelGroup label={t('externalTitle')} testId="models-external">
-        <JevRow
-          status={jevStatus}
-          read={keysRead}
-          vaultRootPath={vaultRootPath}
-          mode={expanded === 'jev:key' ? 'key' : expanded === 'jev:check' ? 'check' : null}
-          onMode={(mode) => setExpanded(mode === 'key' ? 'jev:key' : 'jev:check')}
-          onCollapse={(mode) => collapse(mode === 'key' ? 'jev:key' : 'jev:check')}
-          onStatus={(next) => {
-            applyJevStatus(next);
-            collapse('jev:key');
-          }}
-          onSent={refreshAudit}
-          announce={announce}
-        />
-      </ModelGroup>
+        </ModelGroup>
+      </div>
 
       <AuditSection entries={auditEntries} total={auditTotal} vaultRootPath={vaultRootPath} error={connection.auditError} retry={connection.refreshAudit} />
 
@@ -1315,14 +1318,9 @@ function AuditSection({
   const t = useTranslations('agents.models');
   const hasLog = !error && Boolean(vaultRootPath) && total !== null && total > 0;
   return (
-    <section
-      aria-label={t('auditTitle')}
-      className="min-w-0 border-t border-[color:var(--color-divider)] pt-4"
-      data-testid="ai-audit-tail"
-    >
-      {/* One line carries the section's name and its fact ("N transfers Atlas sent · all recorded
-          in this folder"), so the name is not said twice above the sentence that contains it. */}
-      <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <section aria-labelledby="ai-audit-title" className="min-w-0" data-testid="ai-audit-tail">
+      <SettingsGroupHeading id="ai-audit-title" label={t('auditTitle')} />
+      <div className="mt-1.5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         {!vaultRootPath ? (
           <p className="text-body text-[color:var(--color-text-tertiary)]" data-testid="ai-audit-no-vault">
             {t('auditNoVault')}

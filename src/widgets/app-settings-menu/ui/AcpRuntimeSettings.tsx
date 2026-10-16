@@ -20,6 +20,8 @@ import { isGuardedRuntime } from '@/features/acp-session';
 import { AGENT_CLIENTS } from '@/entities/vault-session';
 import { RowStateBadge } from '@/features/docs-vault-local';
 import { requestAgentChat } from '@/shared/lib/agent-chat/agent-chat-intent';
+import { usePanelPresence, useSurfaceSwap } from '@/shared/lib/render-timing/use-presence';
+import { PAGE_TRACK_CAP, PAGE_TWO_TRACK } from '@/shared/ui/tokens/page-frame';
 
 import {
   DETAIL_TOGGLE_CHIP,
@@ -113,7 +115,7 @@ export function AcpRuntimeSettings({
      * as the ways on. No icon tile, which `EmptyState` would indent apart from the actions.
      */
     return (
-      <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
+      <div data-testid="app-settings-runtimes-web" className={embedded ? `${PAGE_TWO_TRACK} gap-3` : 'grid min-w-0 gap-3'}>
         <EmptyState
           tone="solid"
           /* The quiet next-step card surface; the surface-vocabulary ratchet refuses a new combination. */
@@ -160,7 +162,7 @@ export function AcpRuntimeSettings({
             id="app-settings-runtimes-web-tools-heading"
             label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
           />
-          <ul className="mt-1.5 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3 xl:grid-cols-4">
+          <ul className={cn('mt-1.5 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3 xl:grid-cols-4', embedded && '2xl:grid-cols-2')}>
             {APP_CODING_TOOLS.map((tool) => (
               <li
                 key={tool.id}
@@ -168,7 +170,7 @@ export function AcpRuntimeSettings({
                 className="flex min-w-0 items-center gap-2.5"
               >
                 {/* Stepped back like the desktop shelf's marks, so they do not outweigh the press above. */}
-                <span className="flex shrink-0 opacity-60">
+                <span className="flex shrink-0 opacity-55">
                   <ProductMark icon={tool.icon} ink={tool.brandInk} monogram={tool.name} />
                 </span>
                 <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
@@ -189,20 +191,38 @@ export function AcpRuntimeSettings({
     .filter((r) => r.state !== 'cli-unknown')
     .sort((a, b) => nextStepRank(a.state) - nextStepRank(b.state));
   const undetectable = others.filter((r) => r.state === 'cli-unknown');
+  /*
+   * On the page a chat-capable tool keeps its row, in registry order, before it is ready: it is
+   * named once, and arriving changes its ink and last slot in place instead of moving it.
+   */
+  const listed = embedded
+    ? (runtimes ?? []).filter((r) => isRuntimeUsable(r.state) || (r.state !== 'cli-unknown' && isGuardedRuntime(r.id, r.isolated)))
+    : ready;
+  const shelf = embedded ? nextUp.filter((r) => !isGuardedRuntime(r.id, r.isolated)) : nextUp;
+  const waiting = listed.length - ready.length;
+  /* With nothing ready the first install guide carries the indigo the search door used to. */
+  const leadId = embedded && ready.length === 0
+    ? listed.find((r) => r.website && r.state !== 'login-needed')?.id
+    : undefined;
+  const pageNote = !embedded || (ready.length > 0 && waiting === 0)
+    ? null
+    : waiting > 0
+      ? t('waitingNote')
+      : t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList');
+  /* `contents` keeps the sheet's single grid; the page splits rows and shelf into two tracks. */
+  const track = embedded ? 'grid min-w-0 content-start gap-3' : 'contents';
+  const shelfColumns = embedded ? ' 2xl:grid-cols-2' : '';
+  const hasShelf = runtimes !== null && others.length > 0;
 
   // The setup window's door, on the first shelf group's heading; emphasised when nothing is confirmed.
   const searchChip = (
     <Chip
       size="lg"
-      tone={ready.length === 0 ? 'accentOnTint' : 'secondary'}
+      tone={listed.length === 0 ? 'accentOnTint' : 'secondary'}
       data-testid="app-settings-runtimes-others-toggle"
       aria-haspopup="dialog"
       onClick={() => openOthers('')}
-      className={
-        ready.length === 0
-          ? `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]`
-          : `${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`
-      }
+      className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap${listed.length === 0 ? ` ${LEAD_CHIP}` : ''}`}
     >
       <Search size={ICON_SIZE.md} aria-hidden />
       {t('othersSearchLabel')}
@@ -252,60 +272,63 @@ export function AcpRuntimeSettings({
     ) : null;
 
   return (
-    <div className="grid min-w-0 gap-3" data-testid="app-settings-runtimes">
-      {/*
-        One row above the list: in the sheet the intro line, and the guard note naming the tools
-        that open a chat. Not drawn when empty, or it would still spend the grid gap.
-      */}
-      {!embedded || showGuardNote ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          {embedded ? null : (
-            <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-              {t('intro')}
-            </p>
-          )}
-          {embedded ? null : (
-            <Link
-              href={DESTINATION_HREF.mcp}
-              data-testid="app-settings-runtimes-mcp-link"
-              className={controlClass({
-                shape: 'link',
-                tone: 'muted',
-                hoverInk: 'strong',
-                className: 'text-label',
-              })}
-            >
-              {t('mcpLink')}
-            </Link>
-          )}
-          {showGuardNote ? (
-            <p
-              data-testid="app-settings-runtimes-guard-note"
-              data-guarded-count={guardedNames.length}
-              className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
-            >
-              {guardedNames.length > 0
-                ? t('guardedExplainer', { names: guardedNames.join(' · ') })
-                : t('guardedExplainerNone')}{' '}
-              <TermHint term="acp" />
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+    <div
+      className={!embedded ? 'grid min-w-0 gap-3' : hasShelf ? `${PAGE_TWO_TRACK} gap-3` : `grid min-w-0 gap-3 ${PAGE_TRACK_CAP}`}
+      data-testid="app-settings-runtimes"
+    >
+      <div className={track}>
+        {/*
+          One row above the list: in the sheet the intro line, and the guard note naming the tools
+          that open a chat. Not drawn when empty, or it would still spend the grid gap.
+        */}
+        {!embedded || showGuardNote ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {embedded ? null : (
+              <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+                {t('intro')}
+              </p>
+            )}
+            {embedded ? null : (
+              <Link
+                href={DESTINATION_HREF.mcp}
+                data-testid="app-settings-runtimes-mcp-link"
+                className={controlClass({
+                  shape: 'link',
+                  tone: 'muted',
+                  hoverInk: 'strong',
+                  className: 'text-label',
+                })}
+              >
+                {t('mcpLink')}
+              </Link>
+            )}
+            {showGuardNote ? (
+              <p
+                data-testid="app-settings-runtimes-guard-note"
+                data-guarded-count={guardedNames.length}
+                className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+              >
+                {guardedNames.length > 0
+                  ? t('guardedExplainer', { names: guardedNames.join(' · ') })
+                  : t('guardedExplainerNone')}{' '}
+                <TermHint term="acp" />
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
-      {runtimes === null ? (
-        /*
-         * Named while the scan runs and counted once it answers, so the heading that holds the
-         * re-scan press (a guided-tour anchor) exists from the start.
-         */
-        <SettingsGroup label={t('heading')} trailing={recheck}>
-          <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
-        </SettingsGroup>
-      ) : (
-        <>
-          {/* Name · hint · action, the order the MCP tab's own group heading uses. */}
+        {runtimes === null ? (
+          /*
+           * Named while the scan runs and counted once it answers, so the heading that holds the
+           * re-scan press (a guided-tour anchor) exists from the start.
+           */
+          <SettingsGroup label={t(embedded ? 'pageHeading' : 'heading')} trailing={recheck}>
+            <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />
+          </SettingsGroup>
+        ) : (
+          /* Name · hint · action, the order the MCP tab's own group heading uses. */
           <SettingsGroup
-            label={t('readyHeading', { count: ready.length })}
+            label={t(embedded ? 'pageReadyHeading' : 'readyHeading', { count: ready.length })}
             trailing={
               <>
                 {diskHint}
@@ -313,95 +336,102 @@ export function AcpRuntimeSettings({
               </>
             }
           >
-            {ready.length === 0 ? (
+            {listed.length === 0 ? (
               /* "The install guides are in the list below" only when there is a list below. */
-              <SettingsRow label={t('noneReady')} caption={t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList')} control={null} />
+              <SettingsRow label={t('noneReady')} caption={embedded ? undefined : t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList')} control={null} />
             ) : (
-              ready.map((runtime) => (
+              listed.map((runtime) => (
                 <RuntimeRow
                   key={runtime.id}
                   runtime={runtime}
                   onOpenChat={onOpenChat}
                   onRuntimesChanged={() => void refresh()}
+                  page={embedded}
+                  lead={runtime.id === leadId}
                 />
               ))
             )}
           </SettingsGroup>
+        )}
+        {runtimes !== null && pageNote ? (
+          <p data-testid="app-settings-runtimes-page-note" className="text-body leading-body text-[color:var(--color-text-tertiary)]">
+            {pageNote}
+          </p>
+        ) : null}
+      </div>
 
-          {others.length > 0 ? (
-            /*
-             * The other tools: a shelf of marks sorted by next step (sign-in, then installs, then
-             * the undetectable group), each opening the searchable setup `Dialog` at its tool, the
-             * same primitive as the connector dialog. With nothing confirmed the door carries the
-             * indigo, since the install instructions live there. Falsifier: if people read the
-             * shelf instead of reaching the ready tools, it goes back behind the chip.
-             */
-            <>
-              {nextUp.length > 0 ? (
-                <section
-                  className="min-w-0"
-                  aria-labelledby="app-settings-runtimes-others-heading"
-                  data-testid="app-settings-runtimes-others"
-                >
-                  <SettingsGroupHeading
-                    id="app-settings-runtimes-others-heading"
-                    label={t('nextHeading', { count: nextUp.length })}
-                    trailing={searchChip}
-                  />
-                  <ul
-                    data-testid="app-settings-runtimes-others-shelf"
-                    className="mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4"
-                  >
-                    {nextUp.map((runtime) => (
-                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} />
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-              {undetectable.length > 0 ? (
-                /*
-                 * What Atlas cannot detect: the heading names the state once and the tiles are
-                 * name-only entries, still opening each tool's install guide.
-                 */
-                <section
-                  className="min-w-0"
-                  aria-labelledby="app-settings-runtimes-unknown-heading"
-                  data-testid={nextUp.length > 0 ? 'app-settings-runtimes-unknown' : 'app-settings-runtimes-others'}
-                >
-                  <SettingsGroupHeading
-                    id="app-settings-runtimes-unknown-heading"
-                    label={t('unknownHeading', { count: undetectable.length })}
-                    trailing={nextUp.length > 0 ? null : searchChip}
-                  />
-                  <p
-                    data-testid="app-settings-runtimes-unknown-shelf-note"
-                    className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
-                  >
-                    {t('unknownShelfNote')}
-                  </p>
-                  <ul
-                    data-testid="app-settings-runtimes-unknown-shelf"
-                    className="mt-1 grid min-w-0 grid-cols-2 gap-x-2 md:grid-cols-3 xl:grid-cols-4"
-                  >
-                    {undetectable.map((runtime) => (
-                      <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} quiet />
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-              <OtherRuntimesDialog
-                open={othersOpen}
-                onClose={() => setOthersOpen(false)}
-                runtimes={others}
-                query={othersQuery}
-                onQueryChange={setOthersQuery}
-                onOpenChat={onOpenChat}
-                onRuntimesChanged={() => void refresh()}
+      {hasShelf ? (
+        /*
+         * The other tools: a shelf of marks sorted by next step (sign-in, then installs, then
+         * the undetectable group), each opening the searchable setup `Dialog` at its tool, the
+         * same primitive as the connector dialog. With nothing confirmed the door carries the
+         * indigo, since the install instructions live there. Falsifier: if people read the
+         * shelf instead of reaching the ready tools, it goes back behind the chip.
+         */
+        <div className={track}>
+          {shelf.length > 0 ? (
+            <section
+              className="min-w-0"
+              aria-labelledby="app-settings-runtimes-others-heading"
+              data-testid="app-settings-runtimes-others"
+            >
+              <SettingsGroupHeading
+                id="app-settings-runtimes-others-heading"
+                label={t('nextHeading', { count: shelf.length })}
+                trailing={searchChip}
               />
-            </>
+              <ul
+                data-testid="app-settings-runtimes-others-shelf"
+                className={`mt-1.5 grid min-w-0 grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4${shelfColumns}`}
+              >
+                {shelf.map((runtime) => (
+                  <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} />
+                ))}
+              </ul>
+            </section>
           ) : null}
-        </>
-      )}
+          {undetectable.length > 0 ? (
+            /*
+             * What Atlas cannot detect: the heading names the state once and the tiles are
+             * name-only entries, still opening each tool's install guide.
+             */
+            <section
+              className="min-w-0"
+              aria-labelledby="app-settings-runtimes-unknown-heading"
+              data-testid={shelf.length > 0 ? 'app-settings-runtimes-unknown' : 'app-settings-runtimes-others'}
+            >
+              <SettingsGroupHeading
+                id="app-settings-runtimes-unknown-heading"
+                label={t('unknownHeading', { count: undetectable.length })}
+                trailing={shelf.length > 0 ? null : searchChip}
+              />
+              <p
+                data-testid="app-settings-runtimes-unknown-shelf-note"
+                className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
+              >
+                {t('unknownShelfNote')}
+              </p>
+              <ul
+                data-testid="app-settings-runtimes-unknown-shelf"
+                className={`mt-1 grid min-w-0 grid-cols-2 gap-x-2 md:grid-cols-3 xl:grid-cols-4${shelfColumns}`}
+              >
+                {undetectable.map((runtime) => (
+                  <ShelfTile key={runtime.id} runtime={runtime} onOpen={openOthers} quiet />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          <OtherRuntimesDialog
+            open={othersOpen}
+            onClose={() => setOthersOpen(false)}
+            runtimes={others}
+            query={othersQuery}
+            onQueryChange={setOthersQuery}
+            onOpenChat={onOpenChat}
+            onRuntimesChanged={() => void refresh()}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -591,7 +621,7 @@ function ShelfTile({
             'group w-full gap-2.5 bg-[color:var(--color-overlay-1)] py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
         })}
       >
-        <span className="flex shrink-0 opacity-70 grayscale transition-[opacity,filter] duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0 motion-reduce:transition-none">
+        <span className="flex shrink-0 opacity-55 transition-opacity duration-[var(--motion-fast)] ease-[var(--motion-ease)] group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none">
           <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
         </span>
         <span className="min-w-0 flex-1">
@@ -615,18 +645,25 @@ function runtimeMark(runtime: AcpRuntimeStatus): { icon: string | null; ink: str
   return client ? { icon: client.icon, ink: runtime.brandInk ?? client.brandInk } : { icon: null, ink: null };
 }
 
+const LEAD_CHIP = 'border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]';
+
 function RuntimeRow({
   runtime,
   onOpenChat,
   onRuntimesChanged,
+  page = false,
+  lead = false,
 }: {
   runtime: AcpRuntimeStatus;
   onOpenChat: (runtimeId: string) => void;
   onRuntimesChanged?: () => void;
+  lead?: boolean;
+  /** The Agents page: the last slot holds the state until a chat can open, then the press. */
+  page?: boolean;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
-  const isReady = runtime.state === 'ready';
   const isUsable = isRuntimeUsable(runtime.state);
+  const guarded = isGuardedRuntime(runtime.id, runtime.isolated);
 
   /*
    * A link to the tool's own instructions, never an install button: a script behind a URL can
@@ -634,6 +671,11 @@ function RuntimeRow({
    * versioned, child-process only, and started by the person. No install command is copied here.
    */
   const website = isUsable ? null : runtime.website;
+  /* A tool that only needs a login gets no install link. */
+  const showInstall = website !== null && runtime.state !== 'login-needed';
+  const install = usePanelPresence(page && showInstall);
+  const slot = isUsable && guarded ? 'chat' : runtime.state;
+  const { leaving } = useSurfaceSwap(page ? slot : '');
 
   /*
    * The doctor is offered only for gated tools: an unmeasured tool has no app-owned config or
@@ -641,22 +683,99 @@ function RuntimeRow({
    */
   const doctor = useAgentDoctor(runtime.id, onRuntimesChanged);
   const mark = runtimeMark(runtime);
-  const showDoctor = isGuardedRuntime(runtime.id, runtime.isolated) && isAgentDoctorAvailable();
+  const showDoctor = guarded && isAgentDoctorAvailable();
 
   /*
-   * Results go below the row, full width: in the control slot of the one-line `SettingsRow`
-   * they would take over the row.
+   * Filled (`onAccent`): opening a chat is the tab's one action, so the focus ring takes the
+   * primary ink. The verb is the label and the full sentence the accessible name. Gated tools
+   * only, or the promise that the app asks before leaving the folder breaks.
    */
+  const chat = (copy = false) => (
+    <Chip
+      size="lg"
+      tone="onAccent"
+      data-testid={copy ? undefined : `app-settings-runtime-chat-${runtime.id}`}
+      aria-label={t('openChat')}
+      onClick={() => onOpenChat(runtime.id)}
+      className="shrink-0 focus-visible:ring-[color:var(--color-text-primary)]"
+    >
+      <MessageSquare size={ICON_SIZE.md} aria-hidden />
+      {t('openChatShort')}
+    </Chip>
+  );
+  /* A state, not a control (`RowStateBadge`, as on the MCP tab), so it does not outshout the action. */
+  const badge = (state: AcpRuntimeStatus['state'], copy = false) => (
+    <RowStateBadge ready={state === 'ready'} data-runtime-state={copy ? undefined : state}>
+      {t(`state.${state}`)}
+    </RowStateBadge>
+  );
+  /* Someone whose chat will not open at all comes here, not only to the chat's problem card. */
+  const installLink = (exiting = false) => (
+    <a
+      href={runtime.website ?? undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid="app-settings-runtime-install"
+      inert={exiting}
+      /* One chip size for every control on the row; the ↗ before the label says it leaves the app. */
+      className={controlClass({
+        shape: 'chip',
+        size: 'lg',
+        tone: lead ? 'accentOnTint' : 'secondary',
+        hoverInk: 'strong',
+        className: cn('shrink-0', lead && LEAD_CHIP, exiting && 'motion-swap-out pointer-events-none'),
+      })}
+    >
+      <span aria-hidden data-external-link-marker>
+        ↗
+      </span>
+      {t('installGuide')}
+    </a>
+  );
+
+  /*
+   * In the sheet the controls every row has (check, badge) share the right edge. On the page the
+   * last slot is the state or the chat press, and arriving crossfades one into the other there.
+   */
+  const control = page ? (
+    <span className="flex items-center gap-2">
+      {install.mounted ? installLink(install.exiting) : null}
+      {showDoctor ? doctor.scanButton : null}
+      <span className="grid min-w-24 justify-items-end" data-testid={`app-settings-runtime-slot-${runtime.id}`}>
+        <span key={slot} className={cn('col-start-1 row-start-1', leaving !== null && 'motion-swap-in')}>
+          {slot === 'chat' ? chat() : badge(runtime.state)}
+        </span>
+        {leaving === null ? null : (
+          <span key={`leaving:${leaving}`} aria-hidden inert className="motion-swap-out pointer-events-none col-start-1 row-start-1">
+            {leaving === 'chat' ? chat(true) : badge(leaving as AcpRuntimeStatus['state'], true)}
+          </span>
+        )}
+      </span>
+    </span>
+  ) : (
+    <span className="flex items-center gap-2">
+      {isUsable && guarded ? chat() : null}
+      {showInstall ? installLink() : null}
+      {showDoctor ? doctor.scanButton : null}
+      {badge(runtime.state)}
+    </span>
+  );
+
   return (
-    <div className="min-w-0">
-        <SettingsRow
+    <div
+      className={cn(
+        'min-w-0',
+        page && '[&_[data-vendor-mark]]:transition-opacity [&_[data-vendor-mark]]:duration-[var(--motion-settle)] [&_[data-vendor-mark]]:ease-[var(--motion-ease)]',
+        page && !isUsable && '[&_[data-vendor-mark]]:opacity-55',
+      )}
+      data-runtime-row-state={page ? runtime.state : undefined}
+    >
+      <SettingsRow
         label={runtime.label}
-        // A tool that only lacks a login gets the command to run, not only a badge.
         caption={
           runtime.state === 'login-needed'
             ? t('loginHint')
-            : /* The check got no answer; the caption says so and that the tool still opens. */
-              runtime.state === 'login-unknown'
+            : runtime.state === 'login-unknown'
               ? t('loginUnknownHint')
               : undefined
         }
@@ -664,80 +783,9 @@ function RuntimeRow({
         icon={mark.icon}
         iconInk={mark.ink}
         monogram={runtime.label}
-        control={
-          /* Right-aligned, with the controls every row has (check, badge) at the right end and the
-             optional ones to their left, so the fixed columns share one edge down the list. */
-        <span className="flex items-center gap-2">
-            {/*
-             * No guard badge or per-row sentence, visible or `sr-only`: the guard fact needs a
-             * condition and a consequence, so it is said once above the group, before the list.
-             */}
-            {/*
-             * The way to open a chat from here, for gated tools only: an ungated tool would break
-             * the promise above that the app asks before going outside the folder.
-             */}
-            {isUsable && isGuardedRuntime(runtime.id, runtime.isolated) ? (
-              /*
-               * Filled (`onAccent`): opening a chat is the tab's one action. The inset indigo focus
-               * ring would vanish on the fill, so the ring takes the primary ink.
-               */
-              <Chip
-                size="lg"
-                tone="onAccent"
-                data-testid={`app-settings-runtime-chat-${runtime.id}`}
-                /*
-                 * The verb as the label, the full sentence as the accessible name: a screen reader
-                 * moving between controls does not see the row's tool name.
-                 */
-                aria-label={t('openChat')}
-                onClick={() => onOpenChat(runtime.id)}
-                className="shrink-0 focus-visible:ring-[color:var(--color-text-primary)]"
-              >
-                <MessageSquare size={ICON_SIZE.md} aria-hidden />
-                {t('openChatShort')}
-              </Chip>
-            ) : null}
-            {/*
-             * Here, not only in the chat's problem card: someone whose chat will not open at all
-             * comes to this screen.
-             */}
-            {/* A tool that only needs a login gets no install link. */}
-            {runtime.state === 'login-needed' ? null : website ? (
-              <a
-                href={website}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="app-settings-runtime-install"
-                /* A chip like its neighbours, so the row has one control kind; the ↗ glyph says it leaves the app. */
-                className={controlClass({
-                  shape: 'chip',
-                  /* One size for every control on the row; the primary differs by tone, not type size. */
-                  size: 'lg',
-                  tone: 'secondary',
-                  hoverInk: 'strong',
-                  className: 'shrink-0',
-                })}
-              >
-                {/* A link that **leaves** the app, so the glyph precedes the label and declares itself. */}
-                <span aria-hidden data-external-link-marker>
-                  ↗
-                </span>
-                {t('installGuide')}
-              </a>
-            ) : null}
-            {showDoctor ? doctor.scanButton : null}
-            {/* A state, not a control: a green dot and a neutral label (`RowStateBadge`, as on the
-                MCP tab), so it does not outshout the row's action. `CommitDetail` keeps a filled
-                pill because there the status is the line's subject. */}
-            <RowStateBadge ready={isReady} data-runtime-state={runtime.state}>
-              {t(`state.${runtime.state}`)}
-            </RowStateBadge>
-          </span>
-        }
+        control={control}
       />
-      {/* Only when there is a result, or an empty strip sits under every guarded row. */}
-      {/* Through `Surface` for the ramp's enter/exit and reduced-motion cut, not a hard cut; a
-          re-run keeps the previous checks, so the exit never fades an empty box. */}
+      {/* Through `Surface` for the ramp's enter/exit, and only when there is a result. */}
       {showDoctor ? (
         <Surface open={Boolean(doctor.result)} className="min-w-0 px-3 pb-2.5">
           {doctor.result}

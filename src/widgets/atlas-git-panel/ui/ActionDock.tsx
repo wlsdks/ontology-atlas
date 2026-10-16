@@ -296,7 +296,7 @@ export function ActionDock({
         detached would rewrite the real remote.
       */}
       {upstream || remoteState === "unknown" ? (
-        <p className="flex items-center gap-1.5 text-caption leading-label text-[color:var(--color-text-quaternary)]">
+        <p className="flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           {t("scopeNotice")}
         </p>

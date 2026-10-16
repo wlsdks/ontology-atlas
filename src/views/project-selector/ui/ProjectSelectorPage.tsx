@@ -1,22 +1,28 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
+import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from "@/shared/motion";
+import { SPRING } from "@/shared/motion/spring";
+import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getProjectRuntimeDetailHref, getTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
+import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
 import { Link } from "@/i18n/navigation";
-import { Copy } from "lucide-react";
+import { Copy, Plus } from "lucide-react";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { OntologyMapKindGlyph } from "@/shared/ui";
+import { MAP_KIND_GLYPH_SIZE } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/tokens/page-frame";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { resolveAuthoredDescription } from "../lib/authored-description";
+import { resolveRiseBaseline, slugsToRise, type ShownProjects } from "../lib/rise-rule";
 import { resolveRecentActivityAgo, type RecentActivityAgo } from "../lib/recent-activity";
 import { useProjects, useVaultDocs } from "@/features/project-data-source";
 
@@ -28,6 +34,14 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
   return t("activityAgoDaysAgo", { days: ago.days });
 }
 
+let lastShown: ShownProjects | null = null;
+
+const TILE_SPRING = {
+  type: "spring",
+  stiffness: SPRING.surface.stiffness,
+  damping: 2 * SPRING.surface.dampingRatio * Math.sqrt(SPRING.surface.stiffness),
+} as const;
+
 /** Shared by the project cards and the next-project tile. */
 const TILE_SURFACE =
   "rounded-card border bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]";
@@ -35,7 +49,7 @@ const TILE_SURFACE =
 export function ProjectSelectorPage() {
   const t = useTranslations("projectPages.selector");
   useDocumentTitle(t("documentTitle"));
-  const { projects } = useProjects();
+  const { projects, loaded } = useProjects();
   const docs = useVaultDocs();
   useLocalVault();
   const dataSourceMode = useDataSourceMode();
@@ -44,6 +58,20 @@ export function ProjectSelectorPage() {
     [dataSourceMode],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
+  const reducedMotion = usePrefersReducedMotion();
+  const ready = loaded && dataSourceMode === "local";
+  const scope = useVaultIdentityScope();
+  const [baseline, setBaseline] = useState<ShownProjects | null>(null);
+  const setKey = projects.map((project) => project.slug).join("\n");
+  if (ready && (baseline === null || baseline.scope !== scope)) {
+    setBaseline({ scope, slugs: resolveRiseBaseline(lastShown, scope, setKey.split("\n")) });
+  }
+  useEffect(() => {
+    if (ready) lastShown = { scope, slugs: new Set(setKey.split("\n")) };
+  }, [ready, scope, setKey]);
+  const rising = new Set(baseline ? slugsToRise(baseline.slugs, setKey.split("\n")) : []);
+  const riseStart = reducedMotion ? OVERLAY_RISE_REDUCED : OVERLAY_RISE;
+  const riseTransition = reducedMotion ? MOTION.fast : MOTION.base;
 
   return (
     <VaultSourceHydrationBoundary>
@@ -82,19 +110,34 @@ export function ProjectSelectorPage() {
                 {projects.map((project) => {
                   const doc = findProjectDocInList(docs, project.slug);
                   return (
-                    <li key={project.slug} className="flex min-w-0">
-                      <ProjectCard project={project} description={resolveAuthoredDescription(doc, project)} t={t} />
-                    </li>
+                    <motion.li
+                      key={project.slug}
+                      className="flex min-w-0"
+                      initial={rising.has(project.slug) ? riseStart : false}
+                      animate={OVERLAY_SETTLED}
+                      transition={riseTransition}
+                    >
+                      <ProjectCard
+                        project={project}
+                        description={resolveAuthoredDescription(doc, project)}
+                        t={t}
+                      />
+                    </motion.li>
                   );
                 })}
                 {/* Alone on its row, the tile spans it. */}
-                <li className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}>
-                  <NextProjectTile t={t} />
-                </li>
+                <motion.li
+                  layout={reducedMotion ? false : "position"}
+                  layoutDependency={setKey}
+                  transition={TILE_SPRING}
+                  className={`flex min-w-0 ${projects.length % 2 === 0 ? "md:col-span-2" : ""}`}
+                >
+                  <NextProjectTile t={t} hasProjects />
+                </motion.li>
               </ul>
             ) : (
               <div className="mt-7 flex">
-                <NextProjectTile t={t} description={t("emptyStateDesc")} />
+                <NextProjectTile t={t} description={t("emptyStateDesc")} hasProjects={false} />
               </div>
             )}
           </div>
@@ -158,7 +201,7 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
           href={detailHref}
           prefetch={false}
           aria-label={t("cardDetailAriaLabel", { name })}
-          className={controlClass({ shape: "chip", size: "md", tone: "accent", className: "relative z-[1]" })}
+          className={controlClass({ shape: "chip", size: "md", tone: "secondary", className: "relative z-[1]" })}
         >
           {t("footDetail")}
         </Link>
@@ -172,7 +215,7 @@ function ProjectCard({ project, description, t }: { project: Project; descriptio
  * The page's one way to add a project: the form or a request to paste into an agent, side by
  * side in the card's grammar, two lines deep so a neighbouring card does not stretch.
  */
-function NextProjectTile({ t, description }: { t: SelectorTranslator; description?: string }) {
+function NextProjectTile({ t, description, hasProjects }: { t: SelectorTranslator; description?: string; hasProjects: boolean }) {
   const copy = useCopyFeedback();
   const copyLabel =
     copy.state === "copied" ? t("nextSlotCopied") : copy.state === "failed" ? t("nextSlotCopyError") : t("nextSlotCopy");
@@ -187,12 +230,17 @@ function NextProjectTile({ t, description }: { t: SelectorTranslator; descriptio
       className="@container/next-slot flex w-full min-w-0 flex-col rounded-card border border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
     >
       <div className="flex min-w-0 flex-1 flex-col p-[var(--card-pad)]">
-        <h2
-          id="project-selector-next-slot-title"
-          className="text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
-        >
-          {t("nextSlotTitle")}
-        </h2>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span aria-hidden className="flex shrink-0 text-[color:var(--color-text-tertiary)]">
+            <Plus size={MAP_KIND_GLYPH_SIZE} />
+          </span>
+          <h2
+            id="project-selector-next-slot-title"
+            className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] tracking-[var(--tracking-card)] text-[color:var(--color-text-secondary)]"
+          >
+            {t("nextSlotTitle")}
+          </h2>
+        </div>
         {description ? (
           <p className="mt-2.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] text-pretty text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
             {description}
@@ -213,7 +261,7 @@ function NextProjectTile({ t, description }: { t: SelectorTranslator; descriptio
             <Link
               href={newProjectHref}
               data-testid="project-selector-new-cta"
-              className={controlClass({ shape: "chip", size: "md", tone: "accent" })}
+              className={controlClass({ shape: "chip", size: "md", tone: hasProjects ? "secondary" : "accent" })}
             >
               {t("ctaNewProject")}
             </Link>

@@ -336,7 +336,7 @@ export function OntologyMapDetailPanel({
           ) : null}
           {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
           {summaryHistoryUnavailable && labels.summaryHistoryUnavailable ? (
-            <p role="status" data-testid="summary-history-unavailable" className="text-label text-[color:var(--color-text-tertiary)]">
+            <p role="status" data-testid="summary-history-unavailable" className="text-balance text-body leading-body text-[color:var(--color-text-tertiary)]">
               {labels.summaryHistoryUnavailable}
             </p>
           ) : summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (

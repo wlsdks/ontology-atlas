@@ -122,6 +122,8 @@ function CardDisclosure({
   );
 }
 
+const guidedTourOpen = () => document.querySelector('[data-testid="guided-tour-overlay"]') !== null;
+
 export function FirstRunStarterModule({
   concepts,
   relations,
@@ -154,7 +156,7 @@ export function FirstRunStarterModule({
     errorText,
     errorDetail,
     fsaUnsupported,
-  } = useFirstRunStarter();
+  } = useFirstRunStarter({ mapSelectionActive: nodeSelected });
   const { state: cliCopyState, copy: copyCliCommand } = useCopyFeedback();
   const [sampleSource, setSampleSource] = useSampleSource();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -190,7 +192,8 @@ export function FirstRunStarterModule({
   }, [lensActive]);
   const selectionCollapsedRef = useRef(false);
   useEffect(() => {
-    if (!nodeSelected || selectionCollapsedRef.current) return;
+    // The tour's own try-click does not count.
+    if (!nodeSelected || selectionCollapsedRef.current || guidedTourOpen()) return;
     selectionCollapsedRef.current = true;
     setCollapsed(true);
   }, [nodeSelected]);

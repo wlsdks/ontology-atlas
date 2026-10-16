@@ -139,6 +139,7 @@
       "showShortcuts": "Show or hide keyboard shortcuts",
       "stepCloseOverlays": "Close open panels one step at a time",
       "clickSelect": "Select a concept",
+      "enterZoom": "Zoom to the selected concept",
       "dragPan": "Pan the map (empty space) or move a concept (spring rebound)",
       "wheelZoom": "Zoom in or out",
       "keyZoom": "Zoom in or out one step",

@@ -1,4 +1,6 @@
-import { PAD_X } from './geometry';
+import { cn } from '@/shared/lib/cn';
+
+import { PAD_X, RULE_SENTENCE_ROW_H } from './geometry';
 import type { ArchitectureSketchProps, EmptyPanel } from './types';
 
 export function AcrossLaneHeadings({
@@ -53,6 +55,8 @@ export function PairedLaneHeadings({
   laneHeadingY,
   layoutLeadRoom,
   emptyColumn,
+  ruleSentence,
+  arriving,
 }: {
   contractTrackLabel: ArchitectureSketchProps['contractTrackLabel'];
   observationTrackLabel: ArchitectureSketchProps['observationTrackLabel'];
@@ -64,6 +68,8 @@ export function PairedLaneHeadings({
   laneHeadingY: number;
   layoutLeadRoom: number;
   emptyColumn: EmptyPanel | null;
+  ruleSentence: string | null;
+  arriving: boolean;
 }) {
   return (
     <g
@@ -79,6 +85,19 @@ export function PairedLaneHeadings({
       >
         {contractTrackLabel}
       </text>
+      {ruleSentence ? (
+        <text
+          x={PAD_X + layoutLeadRoom + contractBoxW / 2}
+          y={laneHeadingY + RULE_SENTENCE_ROW_H}
+          textAnchor="middle"
+          data-testid="architecture-lower-only-sentence"
+          data-edge-sentence="drawn"
+          data-edge-sentence-kind="rule"
+          className="fill-[color:var(--color-text-tertiary)] text-label"
+        >
+          {ruleSentence}
+        </text>
+      ) : null}
       {/* The lane headings are one row of chrome in one ink; state colour belongs to the markers. */}
       {/* The delta heading carries the mark's limit as hover text and waits for its marks; before an inspection the observation heading centres on the empty state. */}
       {emptyColumn === null ? (
@@ -88,7 +107,10 @@ export function PairedLaneHeadings({
           textAnchor="middle"
           pointerEvents="all"
           data-testid="architecture-delta-heading"
-          className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+          className={cn(
+            'fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]',
+            arriving && 'architecture-arrive-mark',
+          )}
         >
           <title>{deltaColumnHint}</title>
           {deltaTrackLabel}

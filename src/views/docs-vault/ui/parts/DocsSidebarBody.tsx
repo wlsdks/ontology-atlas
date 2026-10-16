@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import {
   ArrowDownUp,
   BookOpen,
@@ -80,6 +81,7 @@ export interface DocsSidebarBodyProps {
    * nothing is converted or repaired.
    */
   agentFiles?: AgentFilesUiModel | null;
+  toolsHost?: HTMLElement | null;
 }
 
 // A preview, not a second listing: more rows would add a scroller beside the tree.
@@ -143,7 +145,7 @@ function RailIconButton({
         disabled={disabled}
         {...railStateAria(state)}
         data-testid={testId}
-        className="flex-none hover:text-[color:var(--color-text-primary)]"
+        className="size-[var(--chrome-tile-size)] flex-none hover:text-[color:var(--color-text-primary)]"
       >
         {icon}
       </IconButton>
@@ -207,6 +209,7 @@ export function DocsSidebarBody({
   onSortChange,
   onGroupChange,
   agentFiles = null,
+  toolsHost = null,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const locale = useLocale();
@@ -283,6 +286,89 @@ export function DocsSidebarBody({
     ontology: <Waypoints size={ICON_SIZE.md} className="flex-none" aria-hidden />,
   };
   const searchExpanded = searchOpen || Boolean(treeQuery);
+  const treeTools = (
+    <div data-testid="docs-sidebar-tree-tools" className="ml-auto flex flex-none items-center">
+      <RailIconButton
+        testId="docs-sidebar-search-toggle"
+        // A funnel, not a magnifier: ⌘K global search already uses the magnifier.
+        icon={<ListFilter size={ICON_SIZE.lg} aria-hidden />}
+        label={t("searchLabel")}
+        active={searchExpanded}
+        state={{ kind: "toggle", pressed: searchExpanded }}
+        onClick={() => {
+          if (searchExpanded) {
+            setTreeQuery("");
+            setSearchOpen(false);
+          } else {
+            setSearchOpen(true);
+          }
+        }}
+      />
+      <div ref={orderMenuRef} className="relative flex-none">
+        <RailIconButton
+          testId="docs-sidebar-order-toggle"
+          icon={<ArrowDownUp size={ICON_SIZE.lg} aria-hidden />}
+          label={orderSummary}
+          // Indigo says "not the default order"; the aria state says "menu open".
+          active={orderMenuOpen || !orderIsDefault}
+          state={{ kind: "disclosure", expanded: orderMenuOpen }}
+          onClick={() => setOrderMenuOpen((open) => !open)}
+        />
+        <Surface
+            open={orderMenuOpen}
+            origin="top right"
+            role="menu"
+            aria-label={t("orderMenuLabel")}
+            data-testid="docs-sidebar-order-menu"
+          // Anchored right: at the sidebar edge a `left-0` menu overflows. Grows from the nearest edge.
+            className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
+          >
+            <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+              {t("orderSortHeader")}
+            </p>
+            {DOCS_TREE_SORTS.map((option) => (
+              <OrderOption
+                key={option}
+                testId={`docs-sidebar-order-sort-${option}`}
+                label={t(`orderSort.${option}`)}
+                checked={sort === option}
+                onSelect={() => {
+                  onSortChange(option);
+                  setOrderMenuOpen(false);
+                }}
+              />
+            ))}
+            <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+              {t("orderGroupHeader")}
+            </p>
+            {DOCS_TREE_GROUPS.map((option) => (
+              <OrderOption
+                key={option}
+                testId={`docs-sidebar-order-group-${option}`}
+                label={t(`orderGroup.${option}`)}
+                checked={group === option}
+                onSelect={() => {
+                  onGroupChange(option);
+                  setOrderMenuOpen(false);
+                }}
+              />
+            ))}
+        </Surface>
+      </div>
+      {/* Pressable in the read-only sample: it leads to opening a folder, and its label says so. */}
+      {showCreateDocument ? (
+        <RailIconButton
+          testId="docs-sidebar-new-doc"
+          icon={<Plus size={ICON_SIZE.lg} aria-hidden />}
+          label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
+          active={false}
+          state={{ kind: "action" }}
+          onClick={onCreateNewDoc}
+        />
+      ) : null}
+    </div>
+  );
+  const toolsInHeader = Boolean(toolsHost) && !showCollectionChooser;
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Filters plus three actions; a border binds the filters and the active one is labelled,
@@ -291,6 +377,7 @@ export function DocsSidebarBody({
          reports as an `aria-required-children` violation (WCAG 4.1.2). Same reasoning as `DocsVaultTabStrip`. */}
       {/* A container: labels appear from a 320px row (`@min-[320px]`); at the
          280px pane width a label pushes the `+` past the pane border. */}
+      {toolsInHeader && toolsHost ? createPortal(treeTools, toolsHost) : (
       <div
         data-testid="docs-sidebar-head-row"
         className="@container/docs-head flex flex-none items-center gap-2 border-b border-[color:var(--color-overlay-2)] px-2 py-2"
@@ -336,95 +423,9 @@ export function DocsSidebarBody({
             })}
           </div>
         ) : null}
-        {/* The three trailing controls are one `flex-none` cluster, so the collection well gives way
-           when the row narrows; a hairline separates state from action. */}
-        <div className="ml-auto flex flex-none items-center gap-0.5">
-          <RailIconButton
-            testId="docs-sidebar-search-toggle"
-            // A funnel, not a magnifier: ⌘K global search already uses the magnifier.
-            icon={<ListFilter size={ICON_SIZE.md} aria-hidden />}
-            label={t("searchLabel")}
-            active={searchExpanded}
-            state={{ kind: "toggle", pressed: searchExpanded }}
-            onClick={() => {
-              if (searchExpanded) {
-                setTreeQuery("");
-                setSearchOpen(false);
-              } else {
-                setSearchOpen(true);
-              }
-            }}
-          />
-          <div ref={orderMenuRef} className="relative flex-none">
-            <RailIconButton
-              testId="docs-sidebar-order-toggle"
-              icon={<ArrowDownUp size={ICON_SIZE.md} aria-hidden />}
-              label={orderSummary}
-              // Indigo says "not the default order"; the aria state says "menu open".
-              active={orderMenuOpen || !orderIsDefault}
-              state={{ kind: "disclosure", expanded: orderMenuOpen }}
-              onClick={() => setOrderMenuOpen((open) => !open)}
-            />
-            <Surface
-                open={orderMenuOpen}
-                origin="top right"
-                role="menu"
-                aria-label={t("orderMenuLabel")}
-                data-testid="docs-sidebar-order-menu"
-              // Anchored right: at the sidebar edge a `left-0` menu overflows. Grows from the nearest edge.
-                className="absolute right-0 top-[calc(100%+6px)] z-50 w-48 rounded-[var(--chrome-radius-inner)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-2 shadow-[var(--chrome-shadow)]"
-              >
-                <p className="px-1.5 pb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-                  {t("orderSortHeader")}
-                </p>
-                {DOCS_TREE_SORTS.map((option) => (
-                  <OrderOption
-                    key={option}
-                    testId={`docs-sidebar-order-sort-${option}`}
-                    label={t(`orderSort.${option}`)}
-                    checked={sort === option}
-                    onSelect={() => {
-                      onSortChange(option);
-                      setOrderMenuOpen(false);
-                    }}
-                  />
-                ))}
-                <p className="mt-1 border-t border-[color:var(--color-border-soft)] px-1.5 pb-1 pt-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
-                  {t("orderGroupHeader")}
-                </p>
-                {DOCS_TREE_GROUPS.map((option) => (
-                  <OrderOption
-                    key={option}
-                    testId={`docs-sidebar-order-group-${option}`}
-                    label={t(`orderGroup.${option}`)}
-                    checked={group === option}
-                    onSelect={() => {
-                      onGroupChange(option);
-                      setOrderMenuOpen(false);
-                    }}
-                  />
-                ))}
-            </Surface>
-          </div>
-          {showCreateDocument ? (
-            <span
-              aria-hidden
-              className="mx-0.5 h-4 w-px flex-none bg-[color:var(--color-border-soft)]"
-            />
-          ) : null}
-          {/* Pressable in the read-only sample: it leads to opening a folder, and its label says so. */}
-          {showCreateDocument ? (
-            <RailIconButton
-              testId="docs-sidebar-new-doc"
-              icon={<Plus size={ICON_SIZE.md} aria-hidden />}
-              label={canCreateNewDoc ? t("newDocButtonLabel") : t("newDocDisabledHint")}
-              active={false}
-              state={{ kind: "action" }}
-              onClick={onCreateNewDoc}
-            />
-          ) : null}
-        </div>
+        {treeTools}
       </div>
+      )}
       {/* Only what a control cannot say: typed search text and tags. Collection name and count are on the active chip. */}
       {normalizedTreeQuery || activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">

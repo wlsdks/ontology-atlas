@@ -9,7 +9,7 @@
   "title": "에이전트",
   "lede": "Atlas가 이 컴퓨터에 이미 있는 코딩 도구를 찾아요.",
   "ledeWeb": "데스크톱 앱은 이 컴퓨터에 있는 코딩 도구를 찾아 Atlas 안에서 바로 대화하게 해요.",
-  "runtimesHeading": "이 컴퓨터의 도구",
+  "runtimesHeading": "대화할 수 있는 도구",
   "models": {
     "lede": "지도 옆 대화가 부를 모델을 연결해요.",
     "providerAnthropic": "Anthropic",

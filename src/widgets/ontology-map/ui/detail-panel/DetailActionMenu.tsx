@@ -78,7 +78,7 @@ export function DetailActionMenu({
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
           size: iconOnly ? "lg" : "md",
-          tone: "muted",
+          tone: "default",
           className:
             (iconOnly ? "" : "py-1 text-body-lg ") +
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",

@@ -3,21 +3,17 @@
     view-transition-name: none;
   }
 
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation-duration: var(--motion-base);
-    animation-timing-function: var(--motion-ease);
+  html.morph-transition::view-transition-group(*) {
+    animation-duration: var(--morph-travel-duration, var(--motion-base));
+    animation-timing-function: var(--morph-travel-easing, var(--motion-ease));
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    ::view-transition-group(*) {
-      animation: none;
-    }
+  html.morph-transition::view-transition-old(*) {
+    animation: none;
+    opacity: 0;
+  }
 
-    ::view-transition-old(*),
-    ::view-transition-new(*) {
-      animation-duration: var(--motion-fast);
-    }
+  html.morph-transition::view-transition-new(*) {
+    animation: none;
   }
 }

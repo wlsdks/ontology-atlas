@@ -810,16 +810,11 @@
     "emptyDescription": "예약한 점검이 돌 때마다 결과가 여기에 최신순으로 쌓여요.",
     "emptyAction": "자동화에서 예약하기",
     "emptyKinds": "예약할 수 있는 점검",
-    "emptySignals": "실행마다 여기에 남는 것",
     "signal": {
       "stale": "낡음",
-      "staleBody": "인용한 원문이 바뀐 문서예요. 누르면 위키에서 바로 열려요.",
       "redrafted": "다시 씀",
-      "redraftedBody": "에이전트가 새로 쓴 초안이에요. 검토하기 전까지 초안으로 남아요.",
       "refused": "거부됨",
-      "refusedBody": "예약할 때 허락하지 않은 요청이에요. 무엇을 막았는지 이름이 남아요.",
-      "held": "바뀐 것 없음",
-      "heldBody": "모든 문서가 원문과 맞았던 실행이에요. 한 줄로만 남아요."
+      "held": "바뀐 것 없음"
     },
     "kind": {
       "consistency": "문서가 원문과 여전히 맞는지",
@@ -920,7 +915,12 @@
         "unreadable": "Atlas가 다시 읽어 확인하지 못했어요."
       },
       "undoneCopy": "Atlas가 빼낸 글은 {copy}에 보관했어요.",
-      "leftAsIs": "{page} 문서는 이번 점검이 쓴 뒤에 바뀌어 Atlas가 그대로 두었어요."
+      "leftAsIs": "{page} 문서는 이번 점검이 쓴 뒤에 바뀌어 Atlas가 그대로 두었어요.",
+      "columnTime": "시각",
+      "columnRound": "점검",
+      "columnOutcome": "결과",
+      "ghostTime": "––:––",
+      "ghostAria": "첫 실행이 들어올 자리"
     },
     "sheet": {
       "readbackHour": "한 시간마다",

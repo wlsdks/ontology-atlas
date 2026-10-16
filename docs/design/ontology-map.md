@@ -157,8 +157,8 @@ A new token family `--map-*` is introduced (separated from the existing 657 toke
 | `--map-edge-dim` | `#1e1e22` | `COL.dimEdge` |
 | `--map-hull-stroke` | `#3a3a42` | `COL.hull` (domain cluster boundary) |
 | `--map-label-domain` | `#b8b8c1` | `COL.labelDomain` |
-| `--map-label-capability` | `#84848c` | `COL.labelCap` |
-| `--map-label-element` | `#57575f` | `COL.labelEl` |
+| `--map-label-capability` | `#a3a3ac` | `COL.labelCap` (7.90:1) |
+| `--map-label-element` | `#9a9aa3` | `COL.labelEl` (7.08:1) |
 | `--map-canvas-bg-near` | `#0a0a0d` | circuit-side background (§working) |
 | `--map-canvas-bg-far` | `#050507` | constellation-side background (§far-field), `lerpColor` endpoint |
 | `--map-grid-minor` | `#0e0e13` | `buildGrid()` thin lines |

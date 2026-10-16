@@ -151,7 +151,7 @@ test.describe("download hero — the typing echo", () => {
     const before = { caption: await caption.boundingBox(), stage: await stage.boundingBox() };
     expect(before.caption, "the caption line is reserved while nothing is pointed at").not.toBeNull();
     expect(before.caption!.height).toBeGreaterThan(0);
-    await expect(caption).toHaveText(/^\s*$/);
+    await expect(caption).not.toHaveAttribute("data-hero-caption-source", "hover");
 
     // The apex is the one dot that never sits at the rim, so it is reachable at every yaw.
     const canvas = stage.locator("canvas");
@@ -162,6 +162,7 @@ test.describe("download hero — the typing echo", () => {
     });
     expect(apex, "the project apex is on screen").not.toBeNull();
     await page.mouse.move(box.x + apex!.x, box.y + apex!.y, { steps: 4 });
+    await expect(caption).toHaveAttribute("data-hero-caption-source", "hover");
     await expect(caption).not.toHaveText(/^\s*$/);
 
     const after = { caption: await caption.boundingBox(), stage: await stage.boundingBox() };
@@ -173,7 +174,7 @@ test.describe("download hero — the typing echo", () => {
     expect(fits, "the caption is not wider than its line").toBe(true);
 
     await page.mouse.move(box.x + box.width + 40, box.y + box.height + 40, { steps: 2 });
-    await expect(caption).toHaveText(/^\s*$/);
+    await expect(caption).not.toHaveAttribute("data-hero-caption-source", "hover");
     expect((await caption.boundingBox())!.height).toBe(before.caption!.height);
   });
 });

@@ -20,7 +20,7 @@ export function DocsVaultSidebar({
   docListCollapsed: boolean;
   docListLeaving: boolean;
   docListToggled: boolean;
-  children: ReactNode;
+  children: (placement: 'drawer' | 'pane') => ReactNode;
 }) {
   const t = useTranslations('docsVault');
   return (
@@ -51,7 +51,7 @@ export function DocsVaultSidebar({
               </IconButton>
             </div>
             <div className="flex flex-1 flex-col overflow-auto">
-              {children}
+              {children('drawer')}
             </div>
           </aside>
       </Surface>
@@ -69,7 +69,7 @@ export function DocsVaultSidebar({
             : docListLeaving && 'map-overlay-out absolute inset-y-0 left-0 lg:flex',
         )}
       >
-        {children}
+        {children('pane')}
       </aside>
     </>
   );

@@ -44,8 +44,10 @@ and everything-at-once.
 
 ## Decision (implemented)
 
-The current mechanism is: **click → durable ego focus, camera framing, compact
-`OntologyMapDetailPanel`, and dimmed unrelated graph.** The default map is a
+The current mechanism is: **click → durable ego focus, compact
+`OntologyMapDetailPanel`, and dimmed unrelated graph, with the camera left where
+the reader put it.** Zooming to a node is its own gesture (double-click, Enter,
+wheel). The default map is a
 semantic-zoom overview, not the full graph. Full detail is an explicit
 `FullDetailA1` drill-down.
 
@@ -62,9 +64,9 @@ demand). See [References](#references).
 |---|---|
 | **Overview (default)** | Project/domain/hub spine is visible first; semantic-zoom tier and density gates reveal more only when useful. |
 | **Hover** | Hover emphasis/ripple lights the hovered ego set, and since 2026-09-02 the hovered node's own lines rise toward the ego ink while every other line recedes a step, both on the same 90 ms ramp — without changing durable focus or camera. |
-| **Focus (click)** | `focus-state` keeps the node and bounded direct-neighbor ego readable, dims unrelated nodes/edges, and the camera reframes through the canvas layer. |
+| **Focus (click)** | `focus-state` keeps the node and bounded direct-neighbor ego readable and dims unrelated nodes/edges. On the flat map a click keeps the camera's scale and slides sideways only when the panel would cover the node; every other selection source frames the node. |
 | **Detail (opt-in)** | `OntologyMapDetailPanel` is the compact current datasheet; its explicit action opens `FullDetailA1` for deeper detail. |
-| **Clear** | The pointer state machine clears focus on the selected node again or empty-canvas interaction; the page Escape ladder closes one active layer at a time. |
+| **Clear** | An empty-canvas click or Escape clears focus; a click on the selected node keeps it. On the flat map one Escape clears the selection and returns the camera the selection moved from unless the reader moved the view since; other views close the popover first. |
 
 ### Current compact detail panel
 
