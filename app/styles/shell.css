@@ -166,6 +166,10 @@ body *::-webkit-scrollbar {
   [data-testid='topology-top-toolbar'][data-right-inspector-reserve='recenter-in-remaining-map'] {
     margin-right: calc(var(--map-panel-width) + var(--topology-node-popover-right-inset));
   }
+
+  [data-right-inspector-reserve='recenter-in-remaining-map'] > [data-toolbar-right-column] {
+    margin-right: calc(-1 * (var(--map-panel-width) + var(--topology-node-popover-right-inset)));
+  }
 }
 
 [data-testid='topology-top-toolbar'][data-agent-dock-adjacent-rail='true'] {

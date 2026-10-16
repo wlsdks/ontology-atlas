@@ -33,6 +33,7 @@ export function useEdgeSentenceLayout({
   placed,
   observedPlaced,
   emptyColumnLeft,
+  saysRuleOnce,
 }: {
   graph: ArchitectureSketchProps['graph'];
   edgeSentence: ArchitectureSketchProps['edgeSentence'];
@@ -58,6 +59,7 @@ export function useEdgeSentenceLayout({
   placed: ReadonlyMap<string, Placed>;
   observedPlaced: ReadonlyMap<string, Placed>;
   emptyColumnLeft: number | null;
+  saysRuleOnce: boolean;
 }) {
   /** Which lane each skip takes, counted within its span; deterministic because the edge order is stable. */
   const skipLane = useMemo(() => {
@@ -132,6 +134,8 @@ export function useEdgeSentenceLayout({
       boxH,
       usesPairedDown ? 'negative' : 'positive',
       headings,
+    ).map((placement) =>
+      saysRuleOnce ? { ...placement, hidden: 'said-once' as const, rect: undefined } : placement,
     );
     /* The rule lane places first; a count sentence that would touch it gives way. */
     const held = [...headings, ...rules.flatMap((placement) => (placement.rect ? [placement.rect] : []))];
@@ -167,6 +171,7 @@ export function useEdgeSentenceLayout({
     pairedGutterW,
     placed,
     rowGap,
+    saysRuleOnce,
     skipLane,
     splitsEvidence,
     toSentenceEdge,

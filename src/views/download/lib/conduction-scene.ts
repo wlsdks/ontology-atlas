@@ -50,10 +50,11 @@ type LightLayer = (typeof LIGHT_LAYERS)[number];
 
 export function conductionTiming(fromRest: boolean): KeyframeAnimationOptions {
   const rest = CONDUCTION_CLOCK.rest / CONDUCTION_CLOCK.loop;
+  const clear = CONDUCTION_CLOCK.clear / CONDUCTION_CLOCK.loop;
   return {
     duration: CONDUCTION_CLOCK.loop,
-    iterations: fromRest ? CONDUCTION_LOOPS : CONDUCTION_LOOPS - 1 + rest,
-    iterationStart: fromRest ? rest : 0,
+    iterations: fromRest ? CONDUCTION_LOOPS + rest - clear : CONDUCTION_LOOPS - 1 + rest,
+    iterationStart: fromRest ? clear : 0,
     fill: 'both',
   };
 }

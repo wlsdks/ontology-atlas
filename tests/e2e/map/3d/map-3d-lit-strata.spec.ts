@@ -293,18 +293,24 @@ test.describe("lit 3D map on the dogfood vault", () => {
       await page.screenshot({ path: path.join(CAPTURE_DIR, "neuron-rest.png") });
     }
     const target = await pickNode(page, "domain");
-    // Sample the camera on every frame through the flight: the fly-to is 800 ms and eases out.
+    /*
+     * Sample the camera on every frame through the flight: the fly-to is 800 ms and eases out. The dome
+     * flies by turning (yaw, pitch) and panning as much as by zooming, and its zoom may dip and return, so
+     * progress reads the axes that travel, each by its own distance.
+     */
     await page.evaluate(() => {
       const host = window as unknown as {
-        flySamples: { t: number; s: number }[];
+        flySamples: { t: number; v: number[]; flight: string | null }[];
         flySamplesDone: boolean;
-        __atlasMap: { camera(): { scale: number } };
+        __atlasMap: { camera(): { x: number; y: number; scale: number }; dome(): { yaw: number; pitch: number; flight: string | null } | null };
       };
       host.flySamples = [];
       host.flySamplesDone = false;
       const start = performance.now();
       const tick = () => {
-        host.flySamples.push({ t: performance.now() - start, s: host.__atlasMap.camera().scale });
+        const cam = host.__atlasMap.camera();
+        const dome = host.__atlasMap.dome();
+        host.flySamples.push({ t: performance.now() - start, v: [cam.x, cam.y, cam.scale, dome?.yaw ?? 0, dome?.pitch ?? 0], flight: dome?.flight ?? null });
         // measurement window: the claim is the flight's shape, sampled on every frame for 4 s —
         // five times the 800 ms flight, so a loaded runner still records the landing.
         if (performance.now() - start < 4_000) requestAnimationFrame(tick);
@@ -318,24 +324,36 @@ test.describe("lit 3D map on the dogfood vault", () => {
     await page.waitForFunction(() => (window as unknown as { flySamplesDone?: boolean }).flySamplesDone === true, undefined, {
       timeout: 30_000,
     });
-    const samples = await page.evaluate(() => (window as unknown as { flySamples: { t: number; s: number }[] }).flySamples);
-    const end = samples.at(-1)!.s;
-    const moving = samples.filter((x, i) => i > 0 && Math.abs(x.s - samples[i - 1]!.s) > 1e-5);
-    expect(moving.length, "the camera never moved on the fly-to").toBeGreaterThan(5);
-    const t0 = moving[0]!.t;
-    const startScale = samples.find((x) => x.t >= t0 - 1)!.s;
-    /*
-     * Arrived is within 1% of the travel, not of the final scale: the claim is the flight's duration and
-     * shape, not which domain the layout puts in the middle.
-     */
-    const travel = Math.abs(end - startScale);
-    const arrived = samples.find((x) => x.t > t0 && Math.abs(x.s - end) <= travel * 0.01);
+    const samples = await page.evaluate(
+      () => (window as unknown as { flySamples: { t: number; v: number[]; flight: string | null }[] }).flySamples,
+    );
+    const first = samples.findIndex((x) => x.flight === target.id);
+    expect(first, "the flight never began inside the window").toBeGreaterThan(0);
+    const from = samples[first - 1]!.v;
+    const end = samples.at(-1)!.v;
+    const flight = samples.slice(first);
+    // An axis counts when the flight carries it somewhere; one that dips and returns (the zoom's lift) does not.
+    const axes = from
+      .map((_, i) => i)
+      .filter((i) => {
+        const values = flight.map((x) => x.v[i]!);
+        const range = Math.max(...values) - Math.min(...values);
+        return range > 1e-4 && Math.abs(end[i]! - from[i]!) >= range * 0.5;
+      });
+    expect(axes, "the camera never moved on the fly-to").not.toEqual([]);
+    const remaining = (v: number[]) =>
+      Math.sqrt(axes.reduce((sum, i) => sum + ((v[i]! - end[i]!) / (end[i]! - from[i]!)) ** 2, 0) / axes.length);
+    const t0 = samples[first]!.t;
+    // Arrived is within 1% of the travel, not at an absolute pose: the claim is the flight's duration and shape.
+    const arrived = flight.find((x) => remaining(x.v) <= 0.01);
     expect(arrived, "the fly-to never came within 1% of its landing inside the window").toBeDefined();
     const duration = arrived!.t - t0;
     // Ease-out: most of the travel happens in the first half of the flight.
-    const mid = samples.reduce((best, x) => (Math.abs(x.t - (t0 + duration / 2)) < Math.abs(best.t - (t0 + duration / 2)) ? x : best));
-    const firstHalf = Math.abs(mid.s - startScale) / Math.max(1e-6, Math.abs(end - startScale));
-    console.log(`[fly-to] ${duration.toFixed(0)} ms to within 1%, ${(firstHalf * 100).toFixed(0)}% of the zoom done at half time`);
+    const mid = flight.reduce((best, x) => (Math.abs(x.t - (t0 + duration / 2)) < Math.abs(best.t - (t0 + duration / 2)) ? x : best));
+    const firstHalf = 1 - remaining(mid.v);
+    console.log(
+      `[fly-to] ${duration.toFixed(0)} ms to within 1% on ${axes.length} axis(es), ${(firstHalf * 100).toFixed(0)}% of the travel done at half time`,
+    );
     /*
      * The claim is the flight's shape relative to its own duration: several frames, eased out.
      * Absolute duration bounds measure the runner's frame pacing.

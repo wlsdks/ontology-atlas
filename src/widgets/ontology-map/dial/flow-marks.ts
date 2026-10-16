@@ -1,5 +1,5 @@
-import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
-import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
+import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
@@ -12,11 +12,11 @@ export interface FlowMarksInput {
   tokens: DialTokens;
   inks: DialInks;
   attention: DialAttention;
+  inkAttention: DialAttention;
   previous: DialAttention | null;
   inkMix: number;
   chordPresence: number;
   scale: number;
-  labelScale: number;
   viewportWidth: number;
   viewportHeight: number;
   freeRect: Box;
@@ -29,6 +29,8 @@ export interface FlowMarksInput {
   avoidTexts?: readonly Box[];
   chords: DialChordLight[];
   resolution: DialResolution;
+  named?: ReadonlySet<string>;
+  nameBoxes?: ReadonlyMap<string, Box>;
 }
 
 export interface FlowMarksResult {
@@ -43,9 +45,6 @@ export interface FlowMarksResult {
 type FlowMarks = Pick<DialMarks, "inks" | "strips" | "numerals" | "texts">;
 
 const REST_SLOTS = [0.5, 0.42, 0.58, 0.34, 0.66, 0.27, 0.73];
-const NEAR_END = [0.8, 0.72, 0.88, 0.64, 0.56];
-const NEAR_START = [0.2, 0.28, 0.12, 0.36, 0.44];
-const BESIDE_SLOTS = [0.5, 0.4, 0.6, 0.3, 0.7];
 const PRESENCE_FLOOR = 0.02;
 const OFFSCREEN_PX = 40;
 const FREE_SLACK_PX = 6;
@@ -75,10 +74,6 @@ export function rampedFocusWidth(tokens: DialTokens, count: number, maxTotal: nu
 
 export function flowHeadSize(tokens: DialTokens, w0: number, w1: number): number {
   return tokens.flowHeadBasePx + tokens.flowHeadGain * Math.max(w0, w1);
-}
-
-function dialNumeralFont(tokens: DialTokens, labelScale: number): string {
-  return `${FONT_WEIGHT.strong} ${Math.round(tokens.numeralSize * labelScale * 2) / 2}px ui-monospace, SFMono-Regular, Menlo, monospace`;
 }
 
 function overlaps(a: Box, b: Box): boolean {
@@ -163,36 +158,6 @@ interface Stroke {
   numeral: string | null;
   numeralInk: string;
   slots: readonly number[];
-  halo: boolean;
-}
-
-function placeBeside(
-  input: FlowMarksInput,
-  a: Point,
-  c: Point,
-  b: Point,
-  slots: readonly number[],
-  textW: number,
-  textH: number,
-  boxAt: (x: number, y: number) => Box,
-  place: (x: number, y: number, box: Box) => void,
-): void {
-  const view = { minX: 0, minY: 0, maxX: input.viewportWidth, maxY: input.viewportHeight };
-  const reach = Math.hypot(textW / 2, textH / 2) + input.tokens.numeralGapPx;
-  for (const t of [...slots, ...BESIDE_SLOTS]) {
-    const q = quadAt(a, c, b, t);
-    const dx = 2 * (1 - t) * (c.x - a.x) + 2 * t * (b.x - c.x);
-    const dy = 2 * (1 - t) * (c.y - a.y) + 2 * t * (b.y - c.y);
-    const len = Math.hypot(dx, dy) || 1;
-    for (const side of [1, -1]) {
-      const x = q.x - (side * dy * reach) / len;
-      const y = q.y + (side * dx * reach) / len;
-      const box = boxAt(x, y);
-      if (!inside(box, view) || input.occupied.some((o) => overlaps(o, box))) continue;
-      place(x, y, box);
-      return;
-    }
-  }
 }
 
 function trimmedPiece(p0: Point, c: Point, p1: Point, trimStart: number, trimEnd: number): [Point, Point, Point] | null {
@@ -209,15 +174,10 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
   let gapT0 = 0;
   let gapT1 = 0;
   if (s.numeral !== null) {
-    const font = dialNumeralFont(input.tokens, input.labelScale);
-    const textW = input.measureText(s.numeral, font);
-    const textH = Math.max(9, input.tokens.numeralSize * input.labelScale);
+    const font = numeralFont();
+    const textW = tabularWidth(s.numeral, font, input.measureText);
+    const textH = NUMERAL_FONT_PX;
     const boxAt = (x: number, y: number) => ({ minX: x - textW / 2 - 3, maxX: x + textW / 2 + 3, minY: y - textH / 2 - 2, maxY: y + textH / 2 + 2 });
-    const place = (x: number, y: number, box: Box) => {
-      input.occupied.push(box);
-      out.numerals.push({ flowKey: s.key, text: s.numeral!, x, y: y + 0.5, ink: inkIndex(out, s.numeralInk), halo: s.halo, font, box });
-    };
-    let placed = false;
     for (const t of s.slots) {
       const q = quadAt(a, c, b, t);
       const box = boxAt(q.x, q.y);
@@ -225,11 +185,10 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
       const half = (textW / 2 + input.tokens.numeralGapPx) / Math.max(1, trimmed);
       gapT0 = Math.max(0, t - half);
       gapT1 = Math.min(1, t + half);
-      place(q.x, q.y, box);
-      placed = true;
+      input.occupied.push(box);
+      out.numerals.push({ flowKey: s.key, text: s.numeral, x: q.x, y: q.y + 0.5, ink: inkIndex(out, s.numeralInk), halo: false, font, box });
       break;
     }
-    if (!placed && s.halo) placeBeside(input, a, c, b, s.slots, textW, textH, boxAt, place);
   }
   out.strips.push({
     flowKey: s.key, role: s.role, ink: inkIndex(out, s.ink),
@@ -291,17 +250,50 @@ function stubLength(tokens: DialTokens, free: Box): number {
   return Math.max(tokens.stubMinPx, Math.min(tokens.stubMaxPx, tokens.stubFreeShare * Math.min(free.maxX - free.minX, free.maxY - free.minY)));
 }
 
-export function stubText(name: string, needs: number, used: number): string {
-  return [name, needs > 0 ? `→${needs}` : null, used > 0 ? `←${used}` : null].filter((p) => p !== null).join(" ");
-}
-
 interface Stub {
   link: DialLink;
   near: End;
   nearId: string;
   farId: string;
+  farP: Point;
   angle: number;
   presence: number;
+  counts?: { needs: number; used: number };
+}
+
+function mergeAttendedStubs(model: DialModel, attn: DialAttention, stubs: readonly Stub[], chip: End | null): Stub[] {
+  if (!attn.domainId || !chip) return [...stubs];
+  const mine = mineOf(model, attn);
+  const byFar = new Map<string, Stub[]>();
+  const out: Stub[] = [];
+  for (const st of stubs) {
+    if (!st.link.attended || !mine(st.nearId)) {
+      out.push(st);
+      continue;
+    }
+    const list = byFar.get(st.farId);
+    if (list) list.push(st);
+    else byFar.set(st.farId, [st]);
+  }
+  for (const [farId, list] of byFar) {
+    if (list.length === 1) {
+      out.push(list[0]!);
+      continue;
+    }
+    const counts = { needs: 0, used: 0 };
+    for (const st of list) {
+      const nearIsU = st.nearId === st.link.u;
+      counts.needs += nearIsU ? st.link.uv : st.link.vu;
+      counts.used += nearIsU ? st.link.vu : st.link.uv;
+    }
+    const lead = list.reduce((a, b) => (b.link.total > a.link.total || (b.link.total === a.link.total && b.link.key < a.link.key) ? b : a));
+    const farP = lead.farP;
+    out.push({
+      link: lead.link, near: chip, nearId: attn.domainId, farId, farP, presence: Math.max(...list.map((st) => st.presence)), counts,
+      angle: Math.atan2(farP.y - chip.p.y, farP.x - chip.p.x),
+    });
+  }
+  return out;
 }
 
 export function fanAngles(angles: readonly number[], gapDeg: number): number[] {
@@ -370,8 +362,8 @@ function planStubs(input: FlowMarksInput, stubs: Stub[], nameFont: string, nameF
       const start = { x: st.near.p.x + cos * (st.near.r + 4), y: st.near.p.y + sin * (st.near.r + 4) };
       const end = { x: st.near.p.x + cos * reach, y: st.near.p.y + sin * reach };
       const nearIsU = st.nearId === st.link.u;
-      const needs = nearIsU ? st.link.uv : st.link.vu;
-      const used = nearIsU ? st.link.vu : st.link.uv;
+      const needs = st.counts?.needs ?? (nearIsU ? st.link.uv : st.link.vu);
+      const used = st.counts?.used ?? (nearIsU ? st.link.vu : st.link.uv);
       const name = model.capabilityById.get(st.farId)?.label ?? model.domainById.get(st.farId)?.label ?? st.farId;
       const text = stubText(name, needs, used);
       const align: CanvasTextAlign = cos > 0.25 ? "left" : cos < -0.25 ? "right" : "center";
@@ -388,9 +380,8 @@ function planStubs(input: FlowMarksInput, stubs: Stub[], nameFont: string, nameF
 
 function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[]): void {
   const { tokens, inks, model } = input;
-  const ls = Math.min(1.3, input.labelScale);
-  const nameFont = scaledLabelFont("capability", ls);
-  const nameFontPx = scaledLabelFontSize("capability", ls);
+  const nameFont = scaledLabelFont("capability", tokens.labelScale);
+  const nameFontPx = scaledLabelFontSize("capability", tokens.labelScale);
   const accepted: StubPlan[] = [];
   const hits = (plan: StubPlan, box: Box) => segmentHitsBox(plan.start.x, plan.start.y, plan.end.x, plan.end.y, grown(box, STUB_LINE_PAD_PX));
   for (const plan of planStubs(input, stubs, nameFont, nameFontPx)) {
@@ -402,8 +393,8 @@ function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result
     if (input.avoidTexts?.some((t) => hits(plan, t))) continue;
     accepted.push(plan);
     input.occupied.push(box);
-    const needsInk = mixOver(strokeInk(inks, model, input.attention, st.link, st.nearId, false), inks.bg, st.presence);
-    const usedInk = mixOver(strokeInk(inks, model, input.attention, st.link, st.farId, false), inks.bg, st.presence);
+    const needsInk = mixOver(strokeInk(inks, model, input.inkAttention, st.link, st.nearId, false), inks.bg, st.presence);
+    const usedInk = mixOver(strokeInk(inks, model, input.inkAttention, st.link, st.farId, false), inks.bg, st.presence);
     const nameInk = mixOver(st.link.attended ? inks.domainLabelAttended : inks.domainLabel, inks.bg, st.presence);
     const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
     const off = needs > 0 && used > 0 ? tokens.flowSplitPx * 0.5 : 0;
@@ -413,7 +404,7 @@ function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result
       const w0 = focusFlowWidth(tokens, count);
       const drawn = emit(input, out, {
         key: st.link.key, role: "stub", p0, c, p1, w0, w1: w0 * tokens.flowTaper, ink, headStart: false, headEnd: true,
-        trimStart: 0, trimEnd: 0, dashed: false, numeral: null, numeralInk: ink, slots: [], halo: false,
+        trimStart: 0, trimEnd: 0, dashed: false, numeral: null, numeralInk: ink, slots: [],
       });
       if (drawn && lit) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, a: drawn.a, c: drawn.c, b: drawn.b, widthPx: w0, chipRadiusPx: 0 });
     };
@@ -447,7 +438,7 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   result.entered = resolution.entered;
   result.resolved = resolution.resolved;
   const resolved = new Set(resolution.resolved && resolution.entered ? [resolution.entered] : []);
-  const links = aggregateLinks(model, resolved, attn);
+  const links = aggregateLinks(model, resolved, attn, input.named ?? null);
   result.links = links;
 
   const endOf = (id: string): End | null => {
@@ -520,7 +511,7 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
       if (l.relatesOnly) continue;
       const near = ina ? a : b;
       const far = ina ? b : a;
-      stubs.push({ link: l, near, nearId: ina ? l.u : l.v, farId: ina ? l.v : l.u, angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence });
+      stubs.push({ link: l, near, nearId: ina ? l.u : l.v, farId: ina ? l.v : l.u, farP: far.p, angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence });
       continue;
     }
     toDraw.push({ l, a, b, presence });
@@ -530,13 +521,27 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     const c = controlOf(input, l, a, b, hub);
     return Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES));
   });
-  paintStubs(input, out, stubs, result, chordLines);
   toDraw.sort((x, y) => Number(x.l.attended) - Number(y.l.attended) || x.l.total - y.l.total || (x.l.key < y.l.key ? -1 : 1));
+  placeFarNumerals(input, out, farCounts(input, toDraw));
+  const focusChip = attn.domainId ? endOf(attn.domainId) : null;
+  paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
   for (const { l, a, b, presence } of toDraw) {
     drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key));
     result.drawn.push(l.key);
   }
   for (const st of result.stubs) if (!result.drawn.includes(st.flowKey)) result.drawn.push(st.flowKey);
+  const fan = (fanAttn: DialAttention | null, share: number) => {
+    if (!fanAttn?.domainId || fanAttn.key === attn.key || share <= PRESENCE_FLOOR) return;
+    const shown = new Set(result.drawn);
+    for (const l of aggregateLinks(model, resolved, fanAttn)) {
+      if (!l.attended || l.relatesOnly || shown.has(l.key)) continue;
+      const a = endOf(l.u);
+      const b = endOf(l.v);
+      if (a && b && within(a.p) && within(b.p)) drawFanLink(input, out, fanAttn, l, a, b, share * presenceOf(l), hub);
+    }
+  };
+  fan(input.inkAttention, input.inkMix);
+  if (input.previous?.key !== input.inkAttention.key) fan(input.previous, 1 - input.inkMix);
   result.budget.shown = result.drawn.filter((k) => budget.keep.has(k)).length;
   return result;
 }
@@ -551,19 +556,44 @@ function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Poin
   return routeControl(a.p, b.p, hub, pivot, sameRing);
 }
 
+function linkInk(input: FlowMarksInput, l: DialLink, from: string, numeral: boolean, presence: number): string {
+  const { model, inks } = input;
+  const now = strokeInk(inks, model, input.inkAttention, l, from, numeral);
+  const was = input.previous ? strokeInk(inks, model, input.previous, l, from, numeral) : now;
+  return mixOver(crossfadeInk(was, now, input.inkMix), inks.bg, presence);
+}
+
+function farCounts(input: FlowMarksInput, toDraw: readonly { l: DialLink; a: End; b: End; presence: number }[]): Map<string, FarCount> {
+  const { model, attention: attn } = input;
+  const far = new Map<string, FarCount>();
+  if (!attn.domainId) return far;
+  const mine = mineOf(model, attn);
+  for (const { l, a, b, presence } of toDraw) {
+    if (!l.attended || l.relatesOnly) continue;
+    const mineIsU = mine(l.u);
+    const meId = mineIsU ? l.u : l.v;
+    const themId = mineIsU ? l.v : l.u;
+    if (!model.domainById.has(themId)) continue;
+    const count = far.get(themId) ?? {
+      needs: 0, used: 0, needsInk: linkInk(input, l, meId, true, presence), usedInk: linkInk(input, l, themId, true, presence),
+      chip: mineIsU ? b : a, toward: (mineIsU ? a : b).p,
+    };
+    count.needs += mineIsU ? l.uv : l.vu;
+    count.used += mineIsU ? l.vu : l.uv;
+    far.set(themId, count);
+  }
+  return far;
+}
+
 function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean): void {
   const { tokens, model, attention: attn, inks } = input;
   const C = controlOf(input, l, a, b, hub);
-  const ink = (from: string, numeral: boolean) => {
-    const now = strokeInk(inks, model, attn, l, from, numeral);
-    const was = input.previous ? strokeInk(inks, model, input.previous, l, from, numeral) : now;
-    return mixOver(crossfadeInk(was, now, input.inkMix), inks.bg, presence);
-  };
+  const ink = (from: string, numeral: boolean) => linkInk(input, l, from, numeral, presence);
   if (l.relatesOnly) {
     const rest = restStroke(tokens, l, a, b);
     emit(input, out, {
       key: l.key, role: "relates", p0: rest.p0, c: C, p1: rest.p1, w0: 1, w1: 1, ink: ink(l.u, false), headStart: false, headEnd: false,
-      trimStart: rest.trimStart, trimEnd: rest.trimEnd, dashed: true, numeral: null, numeralInk: inks.numeral, slots: [], halo: false,
+      trimStart: rest.trimStart, trimEnd: rest.trimEnd, dashed: true, numeral: null, numeralInk: inks.numeral, slots: [],
     });
     return;
   }
@@ -579,19 +609,20 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
     const ny = them.p.x - me.p.x;
     const nl = Math.hypot(nx, ny) || 1;
     const offset = needs > 0 && used > 0 ? tokens.flowSplitPx : 0;
-    const run = (from: string, to: string, p0: End, p1: End, count: number, sign: number, slots: readonly number[]) => {
+    const toName = model.capabilityById.has(meId) || model.capabilityById.has(themId);
+    const run = (from: string, to: string, p0: End, p1: End, count: number, sign: number) => {
       const o = { x: (sign * nx * offset) / nl, y: (sign * ny * offset) / nl };
-      const w0 = rampedFocusWidth(tokens, count, maxTotal);
+      const w0 = toName ? tokens.flowFocusBase : rampedFocusWidth(tokens, count, maxTotal);
       const drawn = emit(input, out, {
         key: l.key, role: "chord", p0: { x: p0.p.x + o.x, y: p0.p.y + o.y }, c: { x: C.x + o.x, y: C.y + o.y }, p1: { x: p1.p.x + o.x, y: p1.p.y + o.y },
         w0, w1: w0 * tokens.flowTaper, ink: ink(from, false), headStart: false, headEnd: true,
         trimStart: p0.r + tokens.flowTrimStartPx, trimEnd: p1.r + tokens.flowTrimEndPx,
-        dashed: false, numeral: String(count), numeralInk: ink(from, true), slots, halo: true,
+        dashed: false, numeral: null, numeralInk: inks.numeral, slots: [],
       });
       if (drawn) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, a: drawn.a, c: drawn.c, b: drawn.b, widthPx: w0, chipRadiusPx: p1.r });
     };
-    if (needs > 0) run(meId, themId, me, them, needs, 1, NEAR_END);
-    if (used > 0) run(themId, meId, them, me, used, -1, NEAR_START);
+    if (needs > 0) run(meId, themId, me, them, needs, 1);
+    if (used > 0) run(themId, meId, them, me, used, -1);
     return;
   }
   const rest = restStroke(tokens, l, a, b);
@@ -599,7 +630,18 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
   emit(input, out, {
     key: l.key, role: "chord", p0: rest.p0, c: C, p1: rest.p1, w0: w, w1: rest.twoWay ? w : w * tokens.flowTaper, ink: ink(rest.from, false),
     headStart: rest.twoWay, headEnd: true, trimStart: rest.trimStart, trimEnd: rest.trimEnd,
-    dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(rest.from, true), slots: REST_SLOTS, halo: false,
+    dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(rest.from, true), slots: REST_SLOTS,
+  });
+}
+
+function drawFanLink(input: FlowMarksInput, out: FlowMarks, attn: DialAttention, l: DialLink, a: End, b: End, share: number, hub: Point): void {
+  const { tokens, inks, model } = input;
+  const rest = restStroke(tokens, l, a, b);
+  const w = tokens.flowFocusBase;
+  emit(input, out, {
+    key: l.key, role: "chord", p0: rest.p0, c: controlOf(input, l, a, b, hub), p1: rest.p1, w0: w, w1: rest.twoWay ? w : w * tokens.flowTaper,
+    ink: mixOver(strokeInk(inks, model, attn, l, rest.from, false), inks.bg, share), headStart: rest.twoWay, headEnd: true,
+    trimStart: rest.trimStart, trimEnd: rest.trimEnd, dashed: false, numeral: null, numeralInk: inks.numeral, slots: [],
   });
 }
 

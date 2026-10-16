@@ -27,7 +27,6 @@
     "limit": "at most {count} new documents a pass",
     "button": "Allow on this Mac"
   },
-  "scheduleCount": "{count, plural, one {# scheduled automation} other {# scheduled automations}}",
   "title": "Automations",
   "lede": "Schedule recurring reviews, then inspect what each run found. They run on this computer while Atlas is open.",
   "tabsAria": "Automation lanes",
@@ -113,7 +112,6 @@
   "ontology": {
     "new": "New ontology review",
     "title": "Ontology refinement",
-    "guard": "Read-only · never changes the ontology",
     "facts": {
       "runs": {
         "title": "What it does",
@@ -134,7 +132,7 @@
       "title": "Schedules",
       "name": "Name",
       "cadence": "Cadence",
-      "next": "Next run"
+      "last": "Last result"
     },
     "defaultName": "Ontology refinement",
     "sheet": {
@@ -152,7 +150,6 @@
   },
   "documents": {
     "new": "New document round",
-    "guard": "Changes only the approved Library scope · never the ontology",
     "facts": {
       "runs": {
         "title": "What it does",
@@ -173,7 +170,7 @@
       "title": "Schedules",
       "name": "Name",
       "cadence": "Cadence",
-      "next": "Next run"
+      "last": "Last result"
     },
     "openRounds": "Open Library check history"
   }

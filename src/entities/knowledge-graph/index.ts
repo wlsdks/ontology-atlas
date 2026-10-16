@@ -114,7 +114,7 @@ export type {
   DomainCensusRow,
   OntologyTreeBuildResult,
 } from "./lib/ontology-tree";
-export { computeCanonicalCensus, isCanonicalConcept } from "./lib/ontology-tree/canonical-census";
+export { computeCanonicalCensus, isCanonicalConcept, isMapConcept } from "./lib/ontology-tree/canonical-census";
 export { buildProjectOntologyMetrics } from "./lib/project-ontology-metrics";
 export type { ProjectOntologyMetrics } from "./lib/project-ontology-metrics";
 export { buildConnections, groupConnectionsByRole, groupConnectionsByDirection } from "./lib/ontology-tree/connections";

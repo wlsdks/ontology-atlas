@@ -105,6 +105,7 @@ describe('runtime list: what works now comes first', () => {
     render(<AcpRuntimeSettings embedded />);
     await waitFor(() => expect(screen.getByText('noneReady')).toBeInTheDocument());
     expect(screen.queryByTestId('app-settings-runtimes-disk-note')).toBeNull();
+    expect(screen.getByText('noneReady').parentElement?.previousElementSibling, 'an empty mark tile sits beside the sentence').toBeNull();
   });
 
   it('keeps the MCP link in the sheet, which has no tab bar', async () => {
@@ -137,7 +138,7 @@ describe('runtime list: what works now comes first', () => {
     await screen.findByTestId('app-settings-runtime-claude-acp');
     const chip = screen.getByTestId('app-settings-runtimes-recheck');
     // Every string here is its own key (see the `next-intl` mock at the top of this file).
-    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    const heading = screen.getByRole('heading', { name: 'pageReadyHeading:{"count":1}' });
     expect(heading.parentElement?.contains(chip)).toBe(true);
   });
 
@@ -145,7 +146,7 @@ describe('runtime list: what works now comes first', () => {
     let settle: (value: unknown) => void = () => undefined;
     bridge.detect.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
     render(<AcpRuntimeSettings embedded />);
-    const heading = screen.getByRole('heading', { name: 'heading' });
+    const heading = screen.getByRole('heading', { name: 'pageHeading' });
     const chip = screen.getByTestId('app-settings-runtimes-recheck');
     expect(heading.parentElement?.contains(chip)).toBe(true);
     settle([makeRuntime({ id: 'claude-acp', isolated: true, verified: true })]);
@@ -170,7 +171,7 @@ describe('runtime list: what works now comes first', () => {
     render(<AcpRuntimeSettings embedded />);
     await screen.findByTestId('app-settings-runtime-claude-acp');
     // Every string here is its own key (see the `next-intl` mock at the top of this file).
-    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    const heading = screen.getByRole('heading', { name: 'pageReadyHeading:{"count":1}' });
     const hint = screen.getByRole('button', { name: 'hintLabel' });
     expect(heading.parentElement?.contains(hint)).toBe(true);
     // Containment rather than coordinates, and the row keeps its order: hint before the re-scan.
@@ -190,7 +191,7 @@ describe('runtime list: what works now comes first', () => {
     await screen.findByTestId('app-settings-runtime-claude-acp');
     expect(screen.queryByTestId('app-settings-runtimes-guard-note')).toBeNull();
     const group = screen.getByTestId('app-settings-runtimes');
-    const heading = screen.getByRole('heading', { name: 'readyHeading:{"count":1}' });
+    const heading = screen.getByRole('heading', { name: 'pageReadyHeading:{"count":1}' });
     // The heading's own section is the first thing in the panel; nothing empty precedes it.
     expect(group.firstElementChild?.contains(heading)).toBe(true);
   });
@@ -602,10 +603,10 @@ describe('runtime rows: marks, columns and the result block', () => {
     await screen.findByTestId('app-settings-runtime-claude-acp');
     fireEvent.click(screen.getByTestId('app-settings-runtimes-others-toggle'));
 
-    for (const id of ['claude-acp', 'cursor']) {
-      const badge = screen.getByTestId(`app-settings-runtime-${id}`).querySelector('[data-runtime-state]');
-      expect(badge).toHaveClass('min-w-18', 'justify-center');
-    }
+    // On the page the last slot holds the badge or the chat press, so the floor is the slot's.
+    expect(screen.getByTestId('app-settings-runtime-slot-claude-acp')).toHaveClass('min-w-24', 'justify-items-end');
+    const badge = screen.getByTestId('app-settings-runtime-cursor').querySelector('[data-runtime-state]');
+    expect(badge).toHaveClass('min-w-18', 'justify-center');
   });
 
   it('offers the Mac app as the one filled press, in the standard primary Button shape', () => {
@@ -661,11 +662,9 @@ describe('the other-tools shelf', () => {
     const next = screen.getByTestId('app-settings-runtimes-others-shelf');
     expect(
       within(next).getAllByRole('button').map((b) => b.getAttribute('data-testid')),
-    ).toEqual([
-      'app-settings-runtimes-tile-codex-acp',
-      'app-settings-runtimes-tile-cursor',
-      'app-settings-runtimes-tile-devin',
-    ]);
+    ).toEqual(['app-settings-runtimes-tile-cursor', 'app-settings-runtimes-tile-devin']);
+    // A chat-capable tool waiting for its sign-in keeps its row instead of a tile.
+    expect(screen.getByTestId('app-settings-runtime-codex-acp')).toBeInTheDocument();
     const unknown = screen.getByTestId('app-settings-runtimes-unknown-shelf');
     expect(within(unknown).getAllByRole('button')).toHaveLength(2);
     // The state is said by the group, not by every tile; the tile's accessible name keeps it.
@@ -706,6 +705,33 @@ describe('the other-tools shelf', () => {
     // Setting a tool up still happens in the dialog: no install link or badge row on the page.
     expect(within(shelf).queryByTestId('app-settings-runtime-install')).toBeNull();
     expect(screen.queryByTestId('app-settings-runtime-cursor')).toBeNull();
+  });
+
+  it('keeps a chat-capable tool in its row before it is ready, then puts the press in its state slot', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, state: 'cli-missing' }),
+      makeRuntime({ id: 'codex-acp', isolated: true, state: 'login-needed' }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    const row = await screen.findByTestId('app-settings-runtime-claude-acp');
+    expect(row.closest('[data-runtime-row-state]')).toHaveAttribute('data-runtime-row-state', 'cli-missing');
+    expect(screen.getByTestId('app-settings-runtime-slot-claude-acp')).toHaveTextContent('state.cli-missing');
+    expect(screen.getByTestId('app-settings-runtime-slot-codex-acp')).toHaveTextContent('state.login-needed');
+    expect(screen.queryByTestId('app-settings-runtimes-tile-claude-acp')).toBeNull();
+    expect(screen.queryByTestId('app-settings-runtimes-tile-codex-acp')).toBeNull();
+    expect(screen.getByTestId('app-settings-runtimes-page-note')).toHaveTextContent('waitingNote');
+    expect(screen.queryByText('noneReady')).toBeNull();
+
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true }),
+      makeRuntime({ id: 'codex-acp', isolated: true, state: 'login-needed' }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+    ]);
+    fireEvent.click(screen.getByTestId('app-settings-runtimes-recheck'));
+    const slot = screen.getByTestId('app-settings-runtime-slot-claude-acp');
+    await waitFor(() => expect(within(slot).getByTestId('app-settings-runtime-chat-claude-acp')).toBeInTheDocument());
+    expect(screen.getByTestId('app-settings-runtime-claude-acp').closest('[data-runtime-row-state]')).toHaveAttribute('data-runtime-row-state', 'ready');
   });
 
   it('a tile opens the dialog already searched to that tool', async () => {

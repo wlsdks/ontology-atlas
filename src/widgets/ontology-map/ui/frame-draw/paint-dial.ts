@@ -7,7 +7,7 @@ import { passState, effectiveAlphaByIdReused } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 
 function paintOwnedDial(frame: FrameInputs): boolean {
-  const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse, ctx, labelScale } = frame;
+  const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse, ctx } = frame;
   const dial = world.dial;
   if (!dial)
     return false;
@@ -36,7 +36,7 @@ function paintOwnedDial(frame: FrameInputs): boolean {
       const node = world.nodeById.get(id);
       return node ? toScreen(node.x, node.y) : null;
     },
-    toScreen, scale, labelScale, zoomRatio: frame.zoomRatio,
+    toScreen, scale, zoomRatio: frame.zoomRatio,
     viewportWidth, viewportHeight,
     freeRect: {
       minX: Math.max(0, insets.left),

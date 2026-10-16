@@ -27,7 +27,7 @@ export interface UseGuidedTourArgs {
   storageKey?: string;
   /**
    * Called once when leaving step 5 (datasheet) by advancing or skipping; HomePage deselects the
-   * node. A kept selection folds the utility lane and makes steps 7 and 8 unreachable.
+   * node, whose selection would fade step 7's anchor.
    */
   onLeaveDatasheet?: () => void;
 }

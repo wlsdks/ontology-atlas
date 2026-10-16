@@ -6,17 +6,24 @@ export interface CanonicalCensus {
   relationCount: number;
 }
 
-/** Exported so any surface counting a subset of concepts starts from the same membership. */
 export function isCanonicalConcept(node: Pick<KnowledgeGraphNode, 'kind'>): boolean {
   return node.kind !== 'vault-readme';
+}
+
+const MAP_CONCEPT_KINDS: ReadonlySet<string> = new Set(['project', 'domain', 'capability', 'element']);
+
+/** What the map draws; a document is evidence, not a concept on the map. */
+export function isMapConcept(node: Pick<KnowledgeGraphNode, 'kind'>): boolean {
+  return MAP_CONCEPT_KINDS.has(node.kind);
 }
 
 export function computeCanonicalCensus(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
 ): CanonicalCensus {
+  const concepts = new Set(nodes.filter(isMapConcept).map((node) => node.id));
   return {
-    conceptCount: nodes.filter(isCanonicalConcept).length,
-    relationCount: edges.length,
+    conceptCount: concepts.size,
+    relationCount: edges.filter((edge) => concepts.has(edge.from) && concepts.has(edge.to)).length,
   };
 }

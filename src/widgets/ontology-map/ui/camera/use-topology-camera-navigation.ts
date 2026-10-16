@@ -8,7 +8,8 @@ import {
 } from "react";
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
-import { type CameraTween } from "../../model/camera/camera-easing";
+import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
+import { recordSelectionCamera, selectionNudgeTarget, type SelectionCamera } from "../../model/camera/flat-selection-camera";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
@@ -43,7 +44,7 @@ interface Dependencies {
   userDrivenCameraRef: RefObject<boolean>;
   dampingRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
-  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
+  beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase) => void;
   domeRuntimeRef: RefObject<DomeRuntime | null>;
   domeFitTarget: (model: DomeModel, yaw: number, pitch: number, width: number, height: number, tokens: OntologyMapTokens) => CameraTarget | null;
   lastActiveMsRef: RefObject<number>;
@@ -70,6 +71,8 @@ interface Dependencies {
   selectedEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType?: string; } | null>;
   domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
   reframeViewportRef: RefObject<((motion: ViewportReframeMotion) => boolean) | null>;
+  selectionCameraRef: RefObject<SelectionCamera | null>;
+  cameraGestureRevisionRef: RefObject<number>;
 }
 
 type SpotlightMotion = "tween" | "follow" | "snap";
@@ -118,6 +121,8 @@ export function useTopologyCameraNavigation({
   selectedEdgeRef,
   domeFocusPendingRef,
   reframeViewportRef,
+  selectionCameraRef,
+  cameraGestureRevisionRef,
 }: Dependencies) {
 
   useEffect(() => {
@@ -323,6 +328,23 @@ export function useTopologyCameraNavigation({
       return true;
     }
 
+    const memory = selectionCameraRef.current;
+    if (mode === "focus" && focused !== null && !realmActive && memory?.slug === focused && !memory.framed) {
+      // A click only selected, so a new viewport only re-checks that the panel does not cover the node.
+      const node = world.nodeById.get(focused);
+      const current = cameraTargetRef.current;
+      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight });
+      if (nudge === null) return false;
+      selectionCameraRef.current = recordSelectionCamera(memory, { slug: focused, framed: false, current, landed: nudge, gesture: cameraGestureRevisionRef.current });
+      cameraTargetRef.current = nudge;
+      userDrivenCameraRef.current = false;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      lastActiveMsRef.current = performance.now();
+      beginCameraTween(nudge, undefined, "spring");
+      return true;
+    }
+
     let target: CameraTarget | null = null;
     if (mode === "focus" && focused !== null && !realmActive && isPathTargetPick(mapLensKindRef.current, focused, spotlightIdsRef.current)) {
             target = computeOverviewCameraTarget(
@@ -373,6 +395,7 @@ export function useTopologyCameraNavigation({
     }
 
     if (target === null) return false;
+    if (mode === "focus" && memory !== null && memory.slug === focused) selectionCameraRef.current = { ...memory, landed: { ...target } };
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
     dampingRef.current = tokens.cameraDampingDefault;

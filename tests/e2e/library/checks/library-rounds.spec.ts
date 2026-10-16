@@ -86,8 +86,9 @@ test.describe("Library rounds", () => {
     await openRounds(page);
 
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
-    // Before the first round there is no rounds section: the empty sheet holds the one door.
-    await expect(page.getByTestId("library-rounds-index")).toHaveCount(0);
+    // Before the first round the list's first row holds the one door.
+    await expect(page.getByTestId("library-rounds-first-step")).toBeVisible();
+    await expect(page.getByTestId("library-rounds-new")).toHaveCount(1);
     await openNewDocumentSchedule(page);
     const sheet = page.getByTestId("library-rounds-sheet");
     await expect(sheet).toBeVisible();
@@ -187,8 +188,7 @@ test.describe("Library rounds", () => {
         range.selectNodeContents(node);
         return range.getClientRects()[0]?.x ?? Number.NaN;
       };
-      const group = root.querySelector('[data-testid="library-rounds-empty-ledger"] [role="group"]');
-      const band = root.querySelector('[data-testid="library-rounds-empty-signals"]');
+      const group = root.querySelector('[data-testid="library-rounds-kinds"]');
       const eyebrow = root.querySelector("header p");
       const probe = document.createElement("span");
       probe.style.color = "var(--color-text-quaternary)";
@@ -201,20 +201,51 @@ test.describe("Library rounds", () => {
         eyebrowInk: eyebrow ? getComputedStyle(eyebrow).color : null,
         eyebrowWeight: eyebrow ? getComputedStyle(eyebrow).fontWeight : null,
         quaternary,
-        bandHead: textX(band?.querySelector("h3")),
-        bandFirst: x(band?.querySelector("li")),
+        indexHead: textX(root.querySelector("#library-rounds-index-title")),
+        firstStepGlyph: x(root.querySelector('[data-testid="library-rounds-first-step"] svg')),
+        columnHead: textX(root.querySelector('[data-testid="library-rounds-ledger-head"]')),
+        ghostTime: textX(root.querySelector('[data-testid="library-rounds-waiting-row"] [data-ghost-text]')),
         group: x(group),
         groupHead: textX(group?.firstElementChild),
         kindGlyph: x(group?.querySelector("li svg")),
       };
     });
     expect(Math.abs(sheet.eyebrow - sheet.headline)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(sheet.bandHead - sheet.headline)).toBeLessThanOrEqual(0.5);
-    expect(Math.abs(sheet.bandFirst - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.indexHead - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.firstStepGlyph - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.columnHead - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.ghostTime - sheet.headline)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(sheet.group - sheet.headline)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(sheet.groupHead - sheet.group)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(sheet.kindGlyph - sheet.group)).toBeLessThanOrEqual(0.5);
     expect(sheet.eyebrowInk).toBe(sheet.quaternary);
     expect(sheet.eyebrowWeight).toBe("400");
+  });
+
+  test("the first round lands in the rows the empty page already drew", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: false });
+    await openRounds(page);
+    await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "empty");
+    const place = () => page.evaluate(() => {
+      const top = (testId: string) => document.querySelector(`[data-testid="${testId}"]`)?.getBoundingClientRect().top ?? null;
+      return { list: top("library-rounds-list"), columns: top("library-rounds-ledger-head"), waiting: top("library-rounds-waiting-row") };
+    });
+    const waiting = page.getByTestId("library-rounds-waiting-row");
+    await expect(waiting).toHaveAttribute("data-ink", "ghost");
+    await expect(waiting.locator("[data-ghost-text]")).toHaveAttribute("aria-hidden", "true");
+    const before = await place();
+
+    await openNewDocumentSchedule(page);
+    await page.getByTestId("library-rounds-add-place").click();
+    await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
+    await page.getByTestId("library-rounds-allow").click();
+    await expect(page.getByTestId("library-rounds-sheet")).toBeHidden();
+    await page.getByTestId("automations-open-library-rounds").click();
+    await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "ready");
+    await expect(waiting).toHaveAttribute("data-ink", "live");
+    await expect(page.getByTestId("library-rounds-ledger-empty")).toBeVisible();
+    expect(await place()).toEqual(before);
   });
 
   test("the web build explains and points at the app", async ({ page }) => {

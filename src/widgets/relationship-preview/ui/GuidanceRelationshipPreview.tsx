@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { RelationshipPreview } from './RelationshipPreview';
 
-export function GuidanceRelationshipPreview({ footer }: { footer: ReactNode }) {
+export function GuidanceRelationshipPreview({ footer }: { footer?: ReactNode }) {
   const t = useTranslations('ontologyPages.insights.harnessTab.preview');
   const roles = [
     { id: 'instructions', Icon: FileText },

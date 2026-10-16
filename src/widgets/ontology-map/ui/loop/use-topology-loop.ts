@@ -46,6 +46,7 @@ import {
   DEFAULT_MAP_NAVIGATION_SPEED,
 } from "@/shared/lib/preferences/appearance-preferences";
 import type { DomeViewKind } from "../../model/dome-view/types";
+import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import { createStrataLodState, type StrataLodState } from "../../model/dome-view/strata-lod";
 import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";
 import type { TopologyPointerHandlers } from "../input/topology-pointer-types";
@@ -171,7 +172,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef, cameraAngularFreqRef, overviewScaleRef, hasInitializedRef, fittedDataSourceKeyRef,
     drawnFarTRef, initialFitTokensRef, lastProcessedSpotlightFitTokenRef, pendingSpotlightFitRef,
     runSpotlightFitRef, reframeViewportRef, viewportCameraTrackedRef, initialRelayoutTokenRef, panelInsetsRef,
-    overviewFitRef,
+    overviewFitRef, selectionCameraRef,
   } = useTopologyCameraState({
     constellationFocusId,
     relayoutToken,
@@ -181,7 +182,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const {
     pointerMachineRef, dragHistoryRef, domeGripRef, camStartAtDownRef, canvasRectRef, focusedSlugRef,
     lastFocusedSlugRef, panelEmphasisNodeIdRef, hoveredNodeIdRef, hoveredEdgeRef, onHoverEdgeRef,
-    selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef,
+    selectedEdgeRef, drawnHoveredNodeIdRef, focusLeashPxRef, lastTapRef, selectionSourceRef,
   } = useTopologyInteractionState({
     focusedSlug,
     emphasizedNeighborSlug,
@@ -338,6 +339,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef,
     userDrivenCameraRef,
     hasInitializedRef,
+    domeRuntimeRef,
     overviewScaleRef,
     cameraAngularFreqRef,
     pendingSpotlightFitRef,
@@ -485,6 +487,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectedEdgeRef,
     domeFocusPendingRef,
     reframeViewportRef,
+    selectionCameraRef,
+    cameraGestureRevisionRef,
   });
   useTopologyLayoutCommands({
     relayoutToken,
@@ -503,12 +507,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     homingActiveRef,
         revealToken,
     });
-    useTopologyFocusNavigation({
+    const selectFromMap = useCallback((slug: string, source: SelectionSource) => {
+      selectionSourceRef.current = { slug, source };
+      onSelect?.(slug, source);
+    }, [onSelect, selectionSourceRef]);
+    const { flyToNode } = useTopologyFocusNavigation({
         lastFocusedSlugRef,
         focusedSlug,
         egoRevealBatchesRef,
         selectionPulseRef,
         cameraTargetRef,
+    cameraRef,
     constellationFocusId,
     cameraGestureRevisionRef,
     userDrivenCameraRef,
@@ -532,6 +541,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     clusteredIdsRef,
     mapLensKindRef,
     spotlightIdsRef,
+    selectionCameraRef,
+    selectionSourceRef,
   });
   useTopologyRealmTransition({
     realmRootId,
@@ -902,7 +913,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     tierRevealRef,
         pathEdgeIdsRef,
     visitedTrailRef,
-    onSelect,
+    onSelect: selectFromMap,
     onSelectEdge,
     onHoverEdge,
     onPaneClick,
@@ -920,6 +931,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     onWalkDeadEnd,
     runOverviewFit,
     beginCameraTween,
+    flyToNode,
   });
   useTopologyMapInstrumentation({
     scene: {

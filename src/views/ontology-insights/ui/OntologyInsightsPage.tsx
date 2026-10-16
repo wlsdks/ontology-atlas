@@ -7,7 +7,7 @@ import { useOntologyInsight, useVaultHealthDocs } from '@/features/vault-ontolog
 import { useDataSourceMode, useVaultSessionIdentityScope, VaultSourceHydrationBoundary } from '@/entities/vault-session';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
-import { Button, TabBar } from '@/shared/ui';
+import { TabBar } from '@/shared/ui';
 import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useDocumentTitle } from '@/shared/lib/public-pages/use-document-title';
 import { cn } from '@/shared/lib/cn';
@@ -74,7 +74,7 @@ export function OntologyInsightsPage() {
         <div hidden={record}>
           {search.get('tab') && !['connections', 'do-next'].includes(search.get('tab')!) ? <p className="mb-3 text-label text-[color:var(--color-text-tertiary)]">{t('analysis.legacy')}</p> : null}
           <AnalysisWorkspace agentReady={agentReady} onInspect={text => setInspectRequest(previous => ({ text, scope: identity, nonce: (previous?.nonce ?? 0) + 1 }))} active={!record} key={`${identity}:${evidence}`} nodes={nodes} edges={edges} docs={docs} mode={mode} initialQuestion={evidence ? 'evidence' : 'relationships'} initialClaim={initialClaim} initialEdge={initialEdge} />
-        </div>{record && !sampleFlow ? <Button data-testid="analysis-back-to-system" variant="ghost" size="sm" className="atlas-touch-floor mt-6" onClick={() => setTab('connections')}>{t('analysis.system')}</Button> : null}
+        </div>
       </>}
       </section>
     </main>

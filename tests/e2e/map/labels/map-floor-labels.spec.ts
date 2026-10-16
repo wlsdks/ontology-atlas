@@ -38,11 +38,13 @@ const read = (page: Page) =>
 const emptyStart = (page: Page, dy: number) =>
   page.evaluate((dy) => {
     const m = (window as unknown as { __atlasMap?: Probe }).__atlasMap!;
-    const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!;
+    const box = canvas.getBoundingClientRect();
     const drawn = m.nodes().filter((n) => !n.hidden);
     for (let x = box.left + 80; x < box.right - 80; x += 40) {
       for (let y = box.top + 120; y < box.bottom - 40; y += 40) {
         if (y + dy < box.top + 40 || y + dy > box.bottom - 40) continue;
+        if (document.elementFromPoint(x, y) !== canvas || document.elementFromPoint(x, y + dy) !== canvas) continue;
         if (drawn.every((n) => Math.hypot(box.left + n.x - x, box.top + n.y - y) > n.radius + 40)) return { x, y };
       }
     }

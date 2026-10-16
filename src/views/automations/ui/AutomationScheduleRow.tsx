@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { CalendarClock, ChevronDown, Pause, Play } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { cadenceKey, cadenceMinutes, type RoundRecord } from '@/entities/library-round';
@@ -11,13 +12,15 @@ import { AutomationAllowHere } from './AutomationAllowHere';
 import { AutomationScheduleActions } from './AutomationScheduleActions';
 import { AutomationRunHistory } from './AutomationRunHistory';
 import { automationDate } from './automation-date';
+import { AUTOMATION_ROW_GRID, AUTOMATION_ROW_PAD } from './AutomationListFrame';
 
-export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdit }: {
+export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdit, arrival }: {
   round: RoundRecord;
   runner: RoundsRunnerValue;
   expanded: boolean;
   onToggle: () => void;
   onEdit: () => void;
+  arrival?: { className?: string; style?: CSSProperties };
 }) {
   const t = useTranslations('automations');
   const cadenceText = useTranslations('library.rounds.cadence');
@@ -41,37 +44,35 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdi
   const allowSentenceId = `automation-allow-${round.id}`;
 
   return (
-    // The expanded row is one raised card, so selection and its detail share one surface.
-    <li className={cn('min-w-0 overflow-hidden rounded-panel border transition-[background-color,border-color,box-shadow] motion-reduce:transition-none',
-      expanded
-        ? 'border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)]'
-        : 'border-[color:var(--color-divider)]')}>
+    // A divided row inside the list panel; the expanded row and its detail share one raised surface.
+    <li style={arrival?.style} className={cn('min-w-0 border-t border-[color:var(--color-divider)] transition-[background-color] motion-reduce:transition-none',
+      expanded && 'bg-[color:var(--color-overlay-1)]', arrival?.className)}>
       <RowButton onClick={onToggle} aria-expanded={expanded} aria-controls={detailId}
-        data-testid={`automation-${round.id}`} className="w-full gap-3 px-4 py-4 text-left" hoverSurface="lift">
+        data-testid={`automation-${round.id}`} className={cn('w-full text-left', AUTOMATION_ROW_PAD)} hoverSurface="lift">
         <span className="mt-1 flex w-4 flex-none self-start justify-center text-[color:var(--color-text-tertiary)]">
           {running ? <Play size={ICON_SIZE.md} aria-hidden /> : onHere ? <CalendarClock size={ICON_SIZE.md} aria-hidden /> : <Pause size={ICON_SIZE.md} aria-hidden />}
         </span>
-        <span className="grid min-w-0 flex-1 grid-cols-2 gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)] md:items-center">
-          <span className="col-span-2 min-w-0 md:col-span-1">
+        <span className={AUTOMATION_ROW_GRID}>
+          <span data-automation-col="name" className="col-span-2 min-w-0 md:col-span-1">
             <span className="block break-words text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{round.name}</span>
             <span className="mt-1 block text-body text-[color:var(--color-text-tertiary)]">
               {running ? `${t('state.running')} · ${ledgerText(runner.running?.phase === 'agent' ? 'phaseAgent' : 'phaseChecking')}`
                 : onHere ? t('state.on') : round.enabled ? t('allowHere.state') : t('state.paused')}
             </span>
           </span>
-          <span className="min-w-0 text-body text-[color:var(--color-text-secondary)]">
+          <span data-automation-col="cadence" className="min-w-0 text-body text-[color:var(--color-text-secondary)]">
             <span className="block">{cadence}</span>
             <span className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">
               {onHere ? t('nextRunAt', { time: automationDate(locale, round.nextDueAt) }) : notHere ? t('allowHere.noNextRun') : t('noNextRun')}
             </span>
           </span>
-          <span className="min-w-0 text-body text-[color:var(--color-text-secondary)] md:text-right">
+          <span data-automation-col="outcome" className="min-w-0 text-body text-[color:var(--color-text-secondary)] md:text-right">
             <span className="block">{last ? t(`outcome.${last.outcome}`) : t('outcome.none')}</span>
             {last ? <time dateTime={last.endedAt} className="mt-1 block text-label text-[color:var(--color-text-tertiary)]">{automationDate(locale, last.endedAt)}</time> : null}
             {last && last === unrecorded ? <span className="mt-1 block text-label text-[color:var(--color-amber-source-a90)]">{t('unrecorded.short')}</span> : null}
           </span>
         </span>
-        <ChevronDown size={ICON_SIZE.lg} aria-hidden className={cn('flex-none self-center text-[color:var(--color-text-tertiary)] transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
+        <ChevronDown size={ICON_SIZE.lg} aria-hidden className={cn('size-4 flex-none self-center text-[color:var(--color-text-tertiary)] transition-transform motion-reduce:transition-none', expanded && 'rotate-180')} />
       </RowButton>
 
       {notHere ? (
@@ -79,8 +80,8 @@ export function AutomationScheduleRow({ round, runner, expanded, onToggle, onEdi
           changed={runner.changedSinceAllowed.has(round.id)} sentenceId={allowSentenceId} />
       ) : null}
 
-      {/* pl-11 = the row's px-4 + the w-4 icon slot + gap-3: detail text starts on the name's line. */}
-      <RowDisclosure id={detailId} open={expanded} className="pb-5 pl-11 pr-4">
+      {/* The row's inset, then the w-4 icon slot and gap-3: detail text starts on the name's line. */}
+      <RowDisclosure id={detailId} open={expanded} className="pb-5 pl-[calc(var(--card-pad)+1.75rem)] pr-[var(--card-pad)]">
         <div className="space-y-5 border-t border-[color:var(--color-divider)] pt-4">
         {'query' in round && round.query ? <p className="break-words text-body text-[color:var(--color-text-secondary)]"><span className="text-[color:var(--color-text-tertiary)]">{t('scopeLabel')} · </span>{round.query}</p> : null}
         <AutomationRunHistory entries={entries} unrecorded={unrecorded} />

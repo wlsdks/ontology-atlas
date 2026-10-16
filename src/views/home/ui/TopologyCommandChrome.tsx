@@ -158,6 +158,15 @@ export function TopologyCommandChrome({
   const { acpLiveWork } = topologyAgentActivity;
   const [toolbarElement, setToolbarElement] = useState<HTMLDivElement | null>(null);
   useMapToolbarTopReserve(toolbarElement);
+  const [rightChromeReceded, setRightChromeReceded] = useState(false);
+  if (inspectorOwnsRightRail && !rightChromeReceded) setRightChromeReceded(true);
+  const rightChromeMotion = (arrival: string) =>
+    inspectorOwnsRightRail ? "map-chrome-recede-out pointer-events-none" : `${rightChromeReceded ? "map-overlay-in" : arrival} pointer-events-auto`;
+  const analysisLabel = grayAreaContinuation
+    ? `${grayAreaContinuation.label} · ${grayAreaContinuation.subject}${grayAreaContinuation.countLabel ? ` · ${grayAreaContinuation.countLabel}` : ""}`
+    : "";
+  const [recedingAnalysisLabel, setRecedingAnalysisLabel] = useState(analysisLabel);
+  if (!inspectorOwnsRightRail && recedingAnalysisLabel !== analysisLabel) setRecedingAnalysisLabel(analysisLabel);
 
   return (<>
     <div
@@ -440,10 +449,10 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
-          <div className="flex shrink-0 flex-col items-end gap-4 xl:ml-auto">
-          {inspectorOwnsRightRail ? null : (
+          <div data-toolbar-right-column className="flex shrink-0 flex-col items-end gap-4 transition-none xl:ml-auto">
               <div
-                className={`topology-chrome-in pointer-events-auto shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
+                inert={inspectorOwnsRightRail}
+                className={`${rightChromeMotion("topology-chrome-in")} shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
                     ? "hidden-below-md-while-index-sheet-owns-surface"
@@ -661,10 +670,9 @@ export function TopologyCommandChrome({
                   />
                 </div>
               </div>
-          )}
           {grayAreaContinuation ? <Tooltip content={grayAreaContinuation.description} side="bottom" withProvider={false}>
-            <ChromeChip className="pointer-events-auto min-w-0 max-w-full" onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
-              {grayAreaContinuation.label} · {grayAreaContinuation.subject}{grayAreaContinuation.countLabel?` · ${grayAreaContinuation.countLabel}`:''}
+            <ChromeChip inert={inspectorOwnsRightRail} className={`${rightChromeMotion("")} min-w-0 max-w-full`} onClick={grayAreaContinuation.onOpen} icon={<ScanSearch size={14}/>} data-testid="map-analysis-status-entry">
+              {inspectorOwnsRightRail ? recedingAnalysisLabel : analysisLabel}
             </ChromeChip>
           </Tooltip> : null}
           </div>

@@ -1,5 +1,5 @@
 import { isAfter, type BriefCore, type BriefLine } from './brief-model';
-import { isCanonicalConcept } from '@/entities/knowledge-graph';
+import { isMapConcept } from '@/entities/knowledge-graph';
 
 /** The slice of `KnowledgeGraphNode` the brief reads. */
 export interface OntologyBriefNode {
@@ -73,8 +73,7 @@ function isAgentWritten(createdBy: string | null | undefined): boolean {
 }
 
 export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
-  // The canonical census rule (`canonical-census.ts`), so every count labelled "concept" on this screen agrees.
-  const concepts = input.nodes.filter(isCanonicalConcept);
+  const concepts = input.nodes.filter(isMapConcept);
   let current = 0;
   let stale = 0;
   let unknown = 0;

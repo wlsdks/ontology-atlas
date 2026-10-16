@@ -35,6 +35,7 @@ export interface ArchitectureGraph {
   columns: number;
   /** What the strokes on this profile are, so the legend can say it rather than guess. */
   edgeSource: 'permitted' | 'traffic' | 'both' | 'none';
+  policy: ArchitectureLayout['policy'];
 }
 
 /**
@@ -112,6 +113,7 @@ export function buildArchitectureGraph(
     ),
     columns: layout.rows.length,
     edgeSource,
+    policy: layout.policy,
   };
 }
 

@@ -139,6 +139,7 @@
       "showShortcuts": "显示或隐藏键盘快捷键",
       "stepCloseOverlays": "逐层关闭打开的面板",
       "clickSelect": "选择概念",
+      "enterZoom": "放大到所选概念",
       "dragPan": "平移地图（空白处）或移动概念（弹性回弹）",
       "wheelZoom": "放大或缩小",
       "keyZoom": "按一级放大或缩小",

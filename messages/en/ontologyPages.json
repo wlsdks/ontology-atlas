@@ -22,12 +22,6 @@
       "sinceGloss": "Expand a line to see the concepts it counts; the link at the end of a line opens where to fix them.",
       "headline": "<learn>{stale, plural, one {# thing} other {# things}} to learn</learn><sep> · </sep><unchecked>{unknown, plural, one {# thing} other {# things}} not checked</unchecked>",
       "headlineCounting": "Counting <learn>things to learn</learn> and <unchecked>things not checked</unchecked>",
-      "unit": {
-        "ontology": "",
-        "wiki": "pages",
-        "harness": "files",
-        "agent": "calls"
-      },
       "sinceTitle": "{count, plural, one {# thing} other {# things}} changed since",
       "sinceTitleKind": {
         "concept-doc": "{count, plural, one {# concept document} other {# concept documents}} changed since",
@@ -74,17 +68,6 @@
         "harness": "Guidance",
         "agent": "Agents"
       },
-      "col": {
-        "current": "Current",
-        "stale": "Stale",
-        "unknown": "Unknown",
-        "told": "Told",
-        "gated": "Gated",
-        "watched": "Watched",
-        "reads": "Reads",
-        "writes": "Writes",
-        "agents": "Agents"
-      },
       "appOnly": "Measured in the app only. A browser cannot read the code beside the folder or its hidden folders.",
       "quiet": "Nothing new to learn since then.",
       "open": "Open",
@@ -122,13 +105,6 @@
       "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
       "evidenceNoSource": "Whether concepts still match their code is not checked yet. Connect a code repository on the map and it is counted here.",
       "noSourceShared": "Whether concepts still match their code, and where the guides reach, is not counted yet. Connect a code repository on the map and both are counted here.",
-      "bandState": {
-        "app-only": "current and stale are measured in the app",
-        "no-data": "none yet",
-        "no-source": "no repository yet",
-        "reading": "reading",
-        "unreadable": "could not read"
-      },
       "coreJoin": " · "
     },
     "unmatched": {
@@ -496,7 +472,7 @@
       "copySelectedCheck": "Copy read-only check",
       "copiedSelected": "Copied",
       "reviewSelectedRequest": "Inspect the exact request",
-      "declarationRange": "Each line is one declaration · {from}–{to} of {total}",
+      "lineLegend": "Each line is one declaration",
       "previousDeclarations": "Previous declarations",
       "nextDeclarations": "Next declarations",
       "selectionMissing": "The saved selection is not in this folder. This overview shows the current records.",
@@ -506,7 +482,8 @@
         "dated": "Source dates compared; meaning unverified",
         "unknown": "Source currentness not checked"
       },
-      "declarationCompact": "{count} declarations",
+      "declarationsInView": "{count, plural, one {# declaration} other {# declarations}} in this drawing",
+      "declarationPage": "{from}–{to} / {total}",
       "documentTitle": "Analysis · Ontology Atlas",
       "findConnection": "Search connections",
       "findCapability": "Search capabilities",

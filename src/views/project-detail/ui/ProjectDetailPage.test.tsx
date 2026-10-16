@@ -551,7 +551,7 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
-      "6 concepts in the whole folder",
+      "5 concepts in the whole folder",
     );
     expect(screen.getByTestId("project-detail-global-census")).not.toHaveTextContent(/relation/i);
   });

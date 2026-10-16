@@ -302,6 +302,14 @@ export function useHexBoard(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
+export function useFlatMapView(): boolean {
+  const view3d = useView3d();
+  const structure = useDomainStructure();
+  const territories = useTerritories();
+  const hexBoard = useHexBoard();
+  return !view3d && !structure && !territories && !hexBoard;
+}
+
 const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
 
 const DEFAULT_HEX_RELIEF = false;

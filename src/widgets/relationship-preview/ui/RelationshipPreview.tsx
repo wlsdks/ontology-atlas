@@ -37,7 +37,7 @@ export function RelationshipPreview({ title, description, exampleLabel, pauseLab
   resumeLabel: string;
   items: readonly PreviewItem[];
   anchor?: ReactNode;
-  footer: ReactNode;
+  footer?: ReactNode;
   emphasizedItemId?: string;
 }) {
   const id = useId();
@@ -157,7 +157,7 @@ export function RelationshipPreview({ title, description, exampleLabel, pauseLab
           <p className="max-w-prose break-keep pb-4 text-body-lg text-[color:var(--color-text-primary)]">{item?.explanation}</p>
         </RowDisclosure>
         {/* Copy, then the next step under it on the same start line, not pushed to the far edge. */}
-        <div className="flex flex-col items-start gap-4 border-t border-[color:var(--color-divider)] pt-5">{footer}</div>
+        {footer ? <div className="flex flex-col items-start gap-4 border-t border-[color:var(--color-divider)] pt-5">{footer}</div> : null}
       </div>
     </div>
   );

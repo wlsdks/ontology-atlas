@@ -1,20 +1,7 @@
 import { useMemo } from 'react';
 
-import type { SentenceEdge } from '../../model/edge-sentences';
-import type { ArchitectureGraph as Graph } from '../../model/graph-layout';
-import { estimateCaptionWidth } from '../../model/summary-lines';
-import { EMPTY_PANEL_SENTENCE_AIR, PAD_X, PAIRED_HEADER_H } from './geometry';
+import { PAD_X } from './geometry';
 import type { ArchitectureSketchProps, EmptyPanel, FlowAxis, Placed } from './types';
-
-/** How far an adjacent rule sentence starts past its arrow (`GAP_TO_ARC` in `edge-sentences`). */
-const SENTENCE_ARROW_GAP = 10;
-
-/*
- * Before any inspection the measured columns are one dashed empty-state panel naming the fact and
- * the action. The panel keeps this much air past the planes' ledge (more when a rule sentence
- * reaches further), so planes and words are never covered. SVG units are CSS pixels.
- */
-const EMPTY_PANEL_GAP = 12;
 
 function boxOrigin(
   axis: FlowAxis,
@@ -35,7 +22,6 @@ function boxOrigin(
 
 export function useSketchPlacement({
   graph,
-  edgeSentence,
   axis,
   usesPairedDown,
   splitsEvidence,
@@ -49,15 +35,11 @@ export function useSketchPlacement({
   observationBoxH,
   colGap,
   observationOffset,
-  usesLayerPlanes,
-  planeDrift,
-  planeRoom,
   planeHeadRoom,
-  toSentenceEdge,
+  pairedHeaderH,
   layoutLeadRoom,
 }: {
   graph: ArchitectureSketchProps['graph'];
-  edgeSentence: ArchitectureSketchProps['edgeSentence'];
   axis: FlowAxis;
   usesPairedDown: boolean;
   splitsEvidence: boolean;
@@ -71,11 +53,8 @@ export function useSketchPlacement({
   observationBoxH: number;
   colGap: number;
   observationOffset: number;
-  usesLayerPlanes: boolean;
-  planeDrift: number;
-  planeRoom: number;
   planeHeadRoom: number;
-  toSentenceEdge: (edge: Graph['edges'][number]) => SentenceEdge;
+  pairedHeaderH: number;
   layoutLeadRoom: number;
 }) {
   const placed = useMemo(() => {
@@ -90,7 +69,7 @@ export function useSketchPlacement({
           (axis === 'across'
             ? layoutLeadRoom
             : usesPairedDown
-              ? PAIRED_HEADER_H + planeHeadRoom
+              ? pairedHeaderH + planeHeadRoom
               : 0),
         shape: box.shape,
       });
@@ -104,6 +83,7 @@ export function useSketchPlacement({
     graph.boxes,
     layoutLeadRoom,
     padY,
+    pairedHeaderH,
     planeHeadRoom,
     rowGap,
     usesPairedDown,
@@ -124,32 +104,13 @@ export function useSketchPlacement({
     );
   }, [boxH, observationBoxH, observationOffset, placed, splitsEvidence, usesPairedDown]);
 
-  /* Where the one empty state stands: on the ladder a column-tall panel over the delta gutter and observation face, yielding its left edge to rule sentences; on an across chain one band per row. */
+  /* Where the one empty state stands: the ladder's observation column, or one band per across row. */
   const emptyPanels = useMemo((): EmptyPanel[] => {
     if (!observationEmpty) return [];
     const faces = [...placed.values()];
     if (faces.length === 0) return [];
     if (usesPairedDown) {
-      const contractLeft = Math.min(...faces.map((face) => face.x));
-      const contractRight = contractLeft + contractBoxW;
-      const observationLeft = contractRight + pairedGutterW;
-      const arrowX = contractLeft + contractBoxW / 2;
-      const reach = graph.edges
-        .filter((edge) => edge.kind === 'permitted' && edge.columnSpan <= 1)
-        .reduce(
-          (furthest, edge) =>
-            Math.max(
-              furthest,
-              arrowX + SENTENCE_ARROW_GAP + estimateCaptionWidth(edgeSentence(toSentenceEdge(edge))),
-            ),
-          contractRight,
-        );
-      /* The planes end their ledge (plus the lean of the lit top face) past the contract faces. */
-      const planeLedge = usesLayerPlanes ? planeRoom - planeDrift : 0;
-      const x = Math.min(
-        observationLeft,
-        Math.max(contractRight + planeLedge + EMPTY_PANEL_GAP, reach + EMPTY_PANEL_SENTENCE_AIR),
-      );
+      const x = Math.min(...faces.map((face) => face.x)) + contractBoxW + pairedGutterW;
       const top = Math.min(...faces.map((face) => face.y));
       const bottom = Math.max(...faces.map((face) => face.y)) + boxH;
       return [
@@ -158,7 +119,7 @@ export function useSketchPlacement({
           layout: 'column',
           x,
           y: top,
-          width: observationLeft + observationBoxW - x,
+          width: observationBoxW,
           height: bottom - top,
         },
       ];
@@ -181,18 +142,12 @@ export function useSketchPlacement({
   }, [
     boxH,
     contractBoxW,
-    edgeSentence,
-    graph.edges,
     observationBoxH,
     observationBoxW,
     observationEmpty,
     observedPlaced,
     pairedGutterW,
     placed,
-    planeDrift,
-    planeRoom,
-    toSentenceEdge,
-    usesLayerPlanes,
     usesPairedDown,
   ]);
   const emptyColumn = emptyPanels.find((panel) => panel.layout === 'column') ?? null;

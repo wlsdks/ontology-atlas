@@ -2,6 +2,7 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 import type { Rect } from "../../interaction/hover-card-placement";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { CameraTween, ZoomEase } from "../../model/camera/camera-easing";
+import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { ForceSimulation } from "../../model/layout/force-layout";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { DragTugSets } from "../../interaction/drag-tug";
@@ -125,7 +126,9 @@ export interface PointerHandlerRefs {
    */
   pinchRef?: Ref<{ dist: number; midX: number; midY: number } | null>;
   pinchWheelRef?: Ref<PinchWheelStream>;
-  onSelect?: (slug: string) => void;
+  onSelect?: (slug: string, source: SelectionSource) => void;
+  /** The flat map's zoom to a node: a double-click, as Enter on the canvas. */
+  onFlyToNode?: (slug: string) => void;
   /** P3b — a click at a point with no node hit that is close to an edge. */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   /**

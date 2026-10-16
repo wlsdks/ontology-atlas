@@ -269,7 +269,7 @@ export function AppNavRail({
                       "text-[length:var(--app-nav-rail-label-size)] leading-caption",
                       isShownActive
                         ? "font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-                        : "text-[color:var(--color-text-quaternary)]",
+                        : "text-[color:var(--color-text-tertiary)]",
                     )}
                   >
                     {label}

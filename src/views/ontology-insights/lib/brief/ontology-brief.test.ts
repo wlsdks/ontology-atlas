@@ -10,8 +10,9 @@ const nodes = [
   { id: 'domains/orders', kind: 'domain', createdBy: 'human', docSlug: 'domains/orders' },
   { id: 'elements/cart', kind: 'element', docSlug: null },
   { id: 'projects/shop', kind: 'project', docSlug: 'projects/shop' },
-  // The vault readme is the one node the canonical census leaves out, so it is not counted here either.
+  // The census counts what the map draws: neither the vault readme nor a document is a concept here.
   { id: 'README', kind: 'vault-readme', docSlug: null },
+  { id: 'documents/notes', kind: 'document', docSlug: 'documents/notes' },
 ];
 const docs = new Map([
   ['capabilities/pay', { reviewedBy: null, updatedAt: '2026-09-18T05:00:00Z' }],
@@ -83,6 +84,7 @@ describe('the card and the strip count the same thing', () => {
     expect(brief.headline).toBe(census.conceptCount);
     // Idling guard: without a readme the two would agree for the wrong reason.
     expect(nodes.some((node) => node.kind === 'vault-readme')).toBe(true);
+    expect(nodes.some((node) => node.kind === 'document')).toBe(true);
     expect(census.conceptCount).toBeLessThan(nodes.length);
   });
 

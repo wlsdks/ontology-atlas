@@ -150,10 +150,13 @@ export function buildLedger(input: LedgerInput): LedgerPlan | null {
   const minX = Math.min(...input.discs.map((d) => d.x - d.r), fp ? fp.x - fp.r : Infinity);
   const maxX = Math.max(...input.discs.map((d) => d.x + d.r), fp ? fp.x + fp.r : -Infinity);
   const sides: { side: "right" | "left"; colX: number; step: number }[] = [];
+  // The column stands inside the free area on both edges: discs under a panel get no column beside them.
   for (const step of GAP_STEPS) {
     const gap = tokens.ledgerGapPx * (1 + step);
-    if (maxX + gap + widest <= freeRect.maxX) sides.push({ side: "right", colX: maxX + gap, step });
-    if (minX - gap - widest >= freeRect.minX) sides.push({ side: "left", colX: minX - gap, step });
+    const right = maxX + gap;
+    if (right >= freeRect.minX && right + widest <= freeRect.maxX) sides.push({ side: "right", colX: right, step });
+    const left = minX - gap;
+    if (left - widest >= freeRect.minX && left <= freeRect.maxX) sides.push({ side: "left", colX: left, step });
   }
   if (sides.length === 0) return null;
   const slotCount = shown.length + (moreText ? 1 : 0);

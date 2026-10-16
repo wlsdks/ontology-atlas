@@ -22,6 +22,7 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
+import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
@@ -93,6 +94,7 @@ export function ArchitectureWorkbench({
   sourceListingCapable = false,
   sourceUnavailableReason = 'browser',
   recordsByProfile = {},
+  recordsLoaded = true,
   conceptsByProfile = {},
   agentRoute = 'clipboard',
   agentLabel = null,
@@ -122,6 +124,7 @@ export function ArchitectureWorkbench({
   sourceUnavailableReason?: 'browser' | 'unbound' | null;
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
+  recordsLoaded?: boolean;
   /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
   agentRoute?: ArchitectureAgentRoute;
@@ -298,6 +301,8 @@ export function ArchitectureWorkbench({
   const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
   const requestedAgentKind: ArchitectureAgentTaskKind = chosenAgentKind ?? primaryAgentKind;
   const [taskMenuOpen, setTaskMenuOpen] = useState(false);
+  /* Null until the canvas knows whether the empty column carries the action; the toolbar waits outlined. */
+  const [emptyActionSeated, setEmptyActionSeated] = useState<boolean | null>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -371,6 +376,18 @@ export function ArchitectureWorkbench({
     agentRoute === 'clipboard'
       ? t('copyTaskSentence', { task: requestedAgentLabel ?? '' })
       : requestedAgentLabel ?? t('inspectSourceAction');
+  const agentActionText =
+    agentRoute === 'checking'
+      ? t('checkingAgent')
+      : agentRoute === 'clipboard' && copyState === 'pending'
+        ? t('copyingHandoff')
+        : agentRoute === 'clipboard' && copyState === 'copied'
+          ? t('copiedShort')
+          : agentRoute === 'clipboard' && copyState === 'error'
+            ? t('copyHandoffError')
+            : idleAgentLabel;
+  /* Held while the empty column leaves, so its label does not turn into the re-check as it fades. */
+  const emptyActionText = useHeldValue(selectedRecord === null ? agentActionText : null);
 
   /* The detail panel's facts come from the same layout the canvas draws, so they never disagree. */
   /* `selected` is null on the zero-profile screen, which renders an empty stage, so derived maps must survive it. */
@@ -527,6 +544,31 @@ export function ArchitectureWorkbench({
     void copyHandoff(promptFor(kind), taskLabel);
   }
 
+  const runRequestedTask = () =>
+    runAgentTask(
+      requestedAgentKind,
+      agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null,
+    );
+  const agentActionIcon =
+    agentRoute === 'clipboard' && copyState === 'copied' ? (
+      <Check size={ICON_SIZE.sm} aria-hidden />
+    ) : (
+      <Bot size={ICON_SIZE.sm} aria-hidden />
+    );
+  const observationEmptyAction = (
+    <Button
+      variant="primary"
+      size="md"
+      className="atlas-touch-floor h-auto min-h-10 w-full whitespace-normal px-3 py-2 text-balance"
+      disabled={agentRoute === 'checking' || copyState === 'pending'}
+      data-testid="architecture-observation-empty-action"
+      onClick={runRequestedTask}
+    >
+      {agentActionIcon}
+      <span>{emptyActionText}</span>
+    </Button>
+  );
+
   return (
     <main inert={contextDockOpen && reviewUsesSheet} className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
       <div
@@ -576,10 +618,10 @@ export function ArchitectureWorkbench({
             {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
             {!embedded && onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
-          <div className={cn('mb-3 flex min-w-0 flex-wrap items-center gap-2', !railCompact && 'md:flex-nowrap')}>
+          <div className={cn('mb-3 flex min-w-0 flex-wrap items-center gap-2', !railCompact && 'xl:flex-nowrap')}>
               {embedded ? (
                 /* The profile's name and the door to its history are one group, the name a label, not a control. */
-                <div className="flex min-w-0 shrink-0 items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   <h2 className="max-w-[16rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                     {selected.title}
                   </h2>
@@ -622,9 +664,10 @@ export function ArchitectureWorkbench({
                 deltaStatus={deltaStatus}
                 compact={railCompact}
               />
+              <div className="ml-auto flex shrink-0 items-center gap-2">
               <div
                 ref={taskMenuRef}
-                className="relative ml-auto flex shrink-0 items-stretch"
+                className="relative flex shrink-0 items-stretch"
                 data-testid="architecture-agent-task"
                 onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
                   if (!taskMenuOpen) return;
@@ -643,26 +686,17 @@ export function ArchitectureWorkbench({
                   event.preventDefault();
                 }}
               >
-                {/* The row's one primary: until a source is inspected the Delta and Observation columns are empty, and only this changes what the drawing can say. Its caret keeps the outline, so the pair reads as one split control. */}
+                {/* Primary once a receipt exists; until then the empty column carries the task. */}
                 <Button
-                  variant="primary"
+                  variant={record === null && emptyActionSeated !== false ? 'outline' : 'primary'}
                   size="md"
                   className="atlas-touch-floor rounded-r-none"
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
                   data-testid="architecture-agent-action"
                   data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
-                  onClick={() =>
-                    runAgentTask(
-                      requestedAgentKind,
-                      agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null,
-                    )
-                  }
+                  onClick={runRequestedTask}
                 >
-                  {agentRoute === 'clipboard' && copyState === 'copied' ? (
-                    <Check size={ICON_SIZE.sm} aria-hidden />
-                  ) : (
-                    <Bot size={ICON_SIZE.sm} aria-hidden />
-                  )}
+                  {agentActionIcon}
                   {/* A confirmation does not resize the toolbar: the invisible idle label holds the width, and the full sentence goes to the polite status region. */}
                   <span className="inline-grid">
                     <span aria-hidden className="invisible col-start-1 row-start-1">
@@ -676,17 +710,7 @@ export function ArchitectureWorkbench({
                           </span>
                         ))
                       : null}
-                    <span className="col-start-1 row-start-1">
-                      {agentRoute === 'checking'
-                        ? t('checkingAgent')
-                        : agentRoute === 'clipboard' && copyState === 'pending'
-                          ? t('copyingHandoff')
-                          : agentRoute === 'clipboard' && copyState === 'copied'
-                            ? t('copiedShort')
-                            : agentRoute === 'clipboard' && copyState === 'error'
-                              ? t('copyHandoffError')
-                              : idleAgentLabel}
-                    </span>
+                    <span className="col-start-1 row-start-1">{agentActionText}</span>
                   </span>
                 </Button>
                 <Button
@@ -786,6 +810,7 @@ export function ArchitectureWorkbench({
                 <PanelRight size={ICON_SIZE.sm} aria-hidden />
                 <span className={cn('max-xl:sr-only', railCompact && 'sr-only')}>{t('inspectorTitle')}</span>
               </Button>
+              </div>
           </div>
           <div ref={flowHostRef} className="relative flex min-h-0 flex-1">
               <ArchitectureFlow
@@ -831,6 +856,10 @@ export function ArchitectureWorkbench({
                 observationMissingLabel={t('observationMissingShort')}
                 observationEmptyTitle={t('observationEmptyTitle')}
                 observationEmptyBody={t('observationEmptyBody')}
+                observationKnown={recordsLoaded}
+                observationEmptyAction={observationEmptyAction}
+                onObservationEmptyActionSeated={setEmptyActionSeated}
+                lowerOnlyRuleLabel={t('dependencyLowerOnly')}
                 selected={selectedRole}
                 roleInspectorOpen={inspector === 'role'}
                 onSelect={(id, trigger) => {

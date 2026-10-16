@@ -164,8 +164,8 @@ describe("resolveClickAction — commitClick routing", () => {
     expect(resolveClickAction({ nodeId: null }, "domain:x")).toEqual({ type: "deselect" });
   });
 
-  it("deselects (toggles off) when the clicked node IS the already-focused node", () => {
-    expect(resolveClickAction({ nodeId: "domain:x" }, "domain:x")).toEqual({ type: "deselect" });
+  it("keeps the already-focused node selected: a repeated click is never an undo", () => {
+    expect(resolveClickAction({ nodeId: "domain:x" }, "domain:x")).toEqual({ type: "select", nodeId: "domain:x" });
   });
 
   it("selects any other node id, focused or not — the revealed-child click must select, never eject", () => {

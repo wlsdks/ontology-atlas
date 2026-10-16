@@ -8,6 +8,7 @@ export type {
 export {
   buildFullDetailGroups,
   type FullDetailConnectionRow,
+  type FullDetailDomainLink,
   type FullDetailGroups,
   type FullDetailGroupView,
 } from "./lib/full-detail-groups";
@@ -19,8 +20,3 @@ export {
   type FullDetailReachModel,
 } from "./lib/full-detail-reach";
 export { formatFullDetailHandoffChain } from "./lib/full-detail-handoff";
-export {
-  formatFullDetailMetricLine,
-  type FullDetailMetricLabels,
-  type FullDetailMetricValues,
-} from "./lib/full-detail-metric";

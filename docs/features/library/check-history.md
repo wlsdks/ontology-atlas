@@ -33,7 +33,12 @@ card names it. The stage opens on **Since you left**: the span the window was aw
 that went stale, the redrafts waiting, the refusals, and the passes that held, each page
 a press into Wiki. Below it the **ledger** draws passes on a time axis, newest first: a
 held pass is one quiet line, a change is a card, and a sleep gap is a hatched band with
-its span, because a missed window runs once when the Mac wakes and never replays. Rounds
+its span, because a missed window runs once when the Mac wakes and never replays. The ledger
+keeps its column headers (time, round, outcome) in every state. Before the first round the page
+is already drawn: the scheduled-checks list holds the one next step in a round's row, and the
+ledger's first row is a ghost in the real row geometry whose outcome slot names the four
+outcomes a pass can bring. When the first round is saved, its row fills that list row and the
+ghost row takes primary ink where it stands, and the header count turns over. Rounds
 and their ledger live in `.ontology-atlas/` on this Mac and are not shared through Git.
 The web build explains and points at the app. Decision:
 `docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.

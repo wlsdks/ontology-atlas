@@ -11,6 +11,7 @@ import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { canAutoStartGuidedTour, readGuideAutoStart, readGuidedTourStatus, resolveAnchorRect, useGuidedTour, useGuidedTourAutoStartReady, useRegisterGuideReplay, watchGuidedTourAutoStartCancel, type TourAnchor } from "@/features/guided-tour";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
+import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
 import { derivedHook } from "@/shared/lib/derived-hook";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
@@ -91,6 +92,7 @@ export function useTopologyKeyboardTour({
     setSelectedRelationActive, setNodePopoverDismissed
   } = topologyCanvasFocus;
   const { nodePopoverVisible } = topologyInspectorState;
+  const flatMap = useFlatMapView();
   const { handleExitRealm } = topologyRouteControls;
   const { routedConstellation, setActiveConstellation } = topologyExplorationLenses;
   const { agentDockOpen } = topologyAgentOrchestration;
@@ -102,7 +104,7 @@ export function useTopologyKeyboardTour({
   const tour = useGuidedTour({
     hasSelection: canvasSelectedSlug != null,
     canResolveAnchor: canResolveTourAnchor,
-    // Keeping the selection collapses the utility lane and hides the next step's anchor for good.
+    // A kept selection fades the utility lane, so the next step would light a hidden toggle.
     onLeaveDatasheet: handleClose,
   });
   const tourAnchorRef = useRef<HTMLDivElement | null>(null);
@@ -197,7 +199,7 @@ export function useTopologyKeyboardTour({
       fullDetailOpen,
       selectedRelationActive,
       hasSelection: canvasSelectedSlug != null,
-      nodePopoverOpen: nodePopoverVisible,
+      nodePopoverOpen: !flatMap && nodePopoverVisible,
       hasLocalGraphRoot: localGraphRoot !== null,
     });
     // Inside a realm, Escape returns to the whole map before anything else.

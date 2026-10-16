@@ -5,6 +5,7 @@
  * gesture interrupts. Durations are feel constants, not themable `--map-*` tokens.
  */
 
+import { SPRING, springSettleMs, springState } from "@/shared/motion/spring";
 import type { CameraTarget } from "../../engine/camera";
 import { CAMERA_TWEEN_MAX_MS, CAMERA_TWEEN_MIN_MS, easeZoomScale, zoomStepProgress } from "../motion-physics";
 
@@ -22,11 +23,14 @@ export interface CameraTween {
   startMs: number;
   durationMs: number;
   /** `"out"` decelerates only, for the 3D fly-to that moves the instant a double-click lands. */
-  ease?: "out";
+  ease?: CameraTweenEase;
   altitude?: CameraTweenAltitude;
 }
 
 export type CameraTweenAltitude = "follows-camera" | "held-at-target";
+
+/** `"spring"` is a pan at one scale on `SPRING.canvas`: the selection nudge and its undo. */
+export type CameraTweenEase = "out" | "spring";
 
 export function easeOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
@@ -36,6 +40,9 @@ export function easeOutCubic(t: number): number {
 /** Derived from `motion-physics.ts` so the motion constants have one home. */
 export const CAMERA_TRANSITION_MIN_MS = CAMERA_TWEEN_MIN_MS;
 export const CAMERA_TRANSITION_MAX_MS = CAMERA_TWEEN_MAX_MS;
+
+/** The canvas spring first reaches its target near 415 ms, so it ends inside the camera budget. */
+export const CANVAS_SPRING_PAN_MS = Math.min(CAMERA_TRANSITION_MAX_MS, springSettleMs(SPRING.canvas));
 
 /**
  * Screen-pan distance (px) that alone earns the full duration; pan is world Δ × mean
@@ -139,9 +146,18 @@ export function easeCameraKeyframe(
   durationMs: number,
   /** Given, the move takes the van Wijk path; omitted, per-axis linear interpolation. */
   viewportWidthPx?: number,
-  ease?: "out",
+  ease?: CameraTweenEase,
 ): CameraKeyframe {
   const p = durationMs <= 0 ? 1 : elapsedMs / durationMs;
+  if (ease === "spring") {
+    if (p >= 1) return { ...target };
+    const e = springState(SPRING.canvas, Math.max(0, elapsedMs) / 1000).x;
+    return {
+      x: start.x + (target.x - start.x) * e,
+      y: start.y + (target.y - start.y) * e,
+      scale: start.scale + (target.scale - start.scale) * e,
+    };
+  }
   const e = ease === "out" ? easeOutCubic(p) : easeInOutCubic(p);
   if (viewportWidthPx !== undefined && viewportWidthPx > 0) {
     // Pin the endpoints exactly, or rounding drift hardens into the next gesture's anchor.

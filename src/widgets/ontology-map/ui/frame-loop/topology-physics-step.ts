@@ -8,7 +8,7 @@
  * "live state, stepped every frame" contract (`engine/camera.ts`).
  */
 
-import { stepCamera, type CameraAxes, type CameraTarget } from "../../engine/camera";
+import { clampPointToPanBounds, stepCamera, type CameraAxes, type CameraTarget, type PanBounds } from "../../engine/camera";
 import { computeAltitudeBand, computeFarT } from "../../model/visibility/altitude";
 import { isNodeEmphasisActive, resolveEdgePulseSpeed, stepEmphasis, stepFocusRamp } from "../../model/visibility/focus-state";
 import { settleTierAssembly, tierAssemblyAppear } from "../../morph/tier-assembly";
@@ -178,6 +178,11 @@ export interface PhysicsStepResult {
   zoomRatio: number;
 }
 
+function clampTargetToPanBounds(target: CameraTarget, panBounds: PanBounds): { tx: number; ty: number } {
+  const held = clampPointToPanBounds(target.tx, target.ty, panBounds);
+  return { tx: held.x, ty: held.y };
+}
+
 export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult {
   const {
     world,
@@ -261,11 +266,14 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
     scaleMinOverride ?? Infinity,
   );
+  // The spring aims inside the same box the elastic clamp holds; aimed past it, the two would hold
+  // the camera still-moving at a stalemate outside the box for as long as the target stood there.
+  const heldTarget = isDragging ? target : { ...target, ...clampTargetToPanBounds(target, panBounds) };
   const nextCamera: CameraAxes = freezeCamera
     ? { x: { ...camera.x }, y: { ...camera.y }, scale: { ...camera.scale } }
     : stepCamera({
         camera,
-        target,
+        target: heldTarget,
         dt,
         damping,
         angularFrequency: cameraAngularFrequency,

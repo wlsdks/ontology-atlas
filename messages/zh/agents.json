@@ -9,7 +9,7 @@
   "title": "智能体",
   "lede": "Atlas 会找出这台电脑上已有的编码工具。",
   "ledeWeb": "桌面应用会找出这台电脑上的编码工具，让你在 Atlas 里直接与它们对话。",
-  "runtimesHeading": "这台电脑上的工具",
+  "runtimesHeading": "可以对话的工具",
   "models": {
     "lede": "连接地图旁边的对话所调用的模型。",
     "providerAnthropic": "Anthropic",

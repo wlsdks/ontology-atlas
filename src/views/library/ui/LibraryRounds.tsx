@@ -3,7 +3,7 @@
 import { CalendarClock, Clock3, Pause, Play, TriangleAlert } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
 import { cadenceKey, cadenceMinutes, roundPlaceLabels, roundPlaces } from "@/entities/library-round";
@@ -23,7 +23,8 @@ import { libraryEyebrowClass } from "../lib/page-eyebrow";
 import { lastOutcome, nextRound, sinceSpan, summarizeSince } from "../lib/rounds/round-presentation";
 import { RoundsLedger } from "./parts/rounds/RoundsLedger";
 import { SinceYouLeft } from "./parts/rounds/SinceYouLeft";
-import { RoundsHistoryEmpty } from "./parts/rounds/RoundsHistoryEmpty";
+import { RoundKinds, RoundsFirstStep } from "./parts/rounds/RoundsHistoryEmpty";
+import { countIn } from "./parts/rounds/landing";
 
 /**
  * **Check history** — the Library's read side of document rounds.
@@ -37,6 +38,7 @@ import { RoundsHistoryEmpty } from "./parts/rounds/RoundsHistoryEmpty";
  */
 const EMPTY_ENTRIES: RoundPassEntry[] = [];
 const EMPTY_ROUNDS: RoundRecord[] = [];
+const roundCountLastShownPerFolder = new WeakMap<object, number>();
 const DOCUMENT_AUTOMATIONS_HREF = withQuery(DESTINATION_HREF.automations, { kind: "documents" });
 
 export function LibraryRounds() {
@@ -90,6 +92,18 @@ export function LibraryRounds() {
   const waitingHere = rounds.some((round) => round.enabled && notHere?.has(round.id));
   const next = nextRound(scheduled);
   const allPaused = rounds.length > 0 && scheduled.length === 0;
+  // Counted only once the store has answered, so a load is never mistaken for a first round.
+  const settledCount = runner?.storeStatus === "ok" || runner?.storeStatus === "missing" ? rounds.length : null;
+  const folder = vault.handle ?? null;
+  const [shownCount, setShownCount] = useState(() => (folder ? roundCountLastShownPerFolder.get(folder) ?? settledCount : settledCount));
+  const [firstRoundLanded, setFirstRoundLanded] = useState(false);
+  if (settledCount !== null && shownCount !== settledCount) {
+    setShownCount(settledCount);
+    setFirstRoundLanded(shownCount === 0 && settledCount > 0);
+  }
+  useEffect(() => {
+    if (folder && settledCount !== null) roundCountLastShownPerFolder.set(folder, settledCount);
+  }, [folder, settledCount]);
 
   const openPage = (slug: string) => {
     const bare = slug.replace(/\.md$/, "");
@@ -254,110 +268,108 @@ export function LibraryRounds() {
               <h1 className={`mt-2 ${PAGE_TITLE}`}>
                 {t("title")}
               </h1>
-              <p data-testid="library-rounds-header-line" className={`mt-2 max-w-prose ${PAGE_LEDE}`}>
-                <span className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
+              <p data-testid="library-rounds-header-line" className={`mt-2 max-w-[var(--measure-prose)] ${PAGE_LEDE}`}>
+                <span ref={firstRoundLanded ? countIn : undefined} className="text-[color:var(--color-text-secondary)]">{t("header.rounds", { count: rounds.length })}</span>
                 {" · "}
                 <span className={running ? "text-[color:var(--color-indigo-text-soft)]" : undefined}>{headerLine}</span>
               </p>
-              <p className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t("limit")}</p>
+              <p data-testid="library-rounds-limit" className="mt-1.5 max-w-[var(--measure-prose)] text-body leading-body text-[color:var(--color-text-tertiary)]">{t("limit")}</p>
             </div>
           </header>
 
+          <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} onShowPass={showPass} titleFor={titleFor} />
+          {/* The schedules stand in the page as a section of the same centred form frame every page tab wears,
+             between the away card and the ledger it filters; a side column shifted the headline between tabs. */}
+          <section data-testid="library-rounds-index" aria-labelledby="library-rounds-index-title" className="flex flex-col gap-3">
+            <div className="flex min-h-6 min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <h2 id="library-rounds-index-title" className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                {t("index.title")}
+              </h2>
+              {rounds.length > 0 ? (
+                <Link href={selected ? withQuery(DOCUMENT_AUTOMATIONS_HREF, { round: selected.id }) : DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
+                  className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
+                  <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
+                </Link>
+              ) : null}
+            </div>
+            <ul aria-label={t("indexAria")} data-testid="library-rounds-list"
+              className="-mx-2 grid grid-cols-1 gap-x-4 border-y border-[color:var(--color-divider)] py-1 md:grid-cols-2">
+              {rounds.length === 0 ? (
+                <RoundsFirstStep title={t("emptyTitle")} description={t("emptyDescription")}
+                  action={<Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
+                    className={cn(buttonVariants(), "atlas-touch-floor atlas-touch-floor-wide shrink-0")}>
+                    <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("emptyAction")}</Link>} />
+              ) : null}
+              {rounds.map((round) => {
+                const word = outcomeWord(round);
+                const isRunning = running?.roundId === round.id;
+                const onHere = round.enabled && !notHere?.has(round.id);
+                const stateWord = isRunning
+                  ? t("state.running")
+                  : onHere
+                    ? t("state.on")
+                    : round.enabled
+                      ? t("state.notHere")
+                      : t("state.paused");
+                return (
+                  <li key={round.id}>
+                    <RowButton
+                      data-testid={`library-round-${round.id}`}
+                      data-round-enabled={round.enabled}
+                      data-round-allowed-here={notHere?.has(round.id) ? "false" : "true"}
+                      onClick={() => setSelectedId((current) => (current === round.id ? null : round.id))}
+                      active={selectedId === round.id}
+                      aria-pressed={selectedId === round.id}
+                      hoverInk="strong"
+                      hoverSurface="lift"
+                      className="w-full px-2 text-left"
+                    >
+                      {/*
+                        The round's state as a glyph, readable without reading (spec §9.1).
+                      */}
+                      <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
+                        {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : onHere ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
+                      </span>
+                      <span className="min-w-0 flex-1 py-0.5">
+                        <span className="flex items-center gap-2">
+                          <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", onHere ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
+                            {round.name}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                          {placeWords(round)} · {stateWord}
+                        </span>
+                      </span>
+                      <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>
+                    </RowButton>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+          <div className="flex flex-col gap-3">
+            <h2 className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+              {t("ledger.title")}
+              {selected ? <span className="ml-2 text-body leading-label font-normal text-[color:var(--color-text-tertiary)]">· {selected.name}</span> : null}
+            </h2>
+            <RoundsLedger
+              entries={shownEntries}
+              locale={locale}
+              onOpenPage={openPage}
+              titleFor={titleFor}
+              running={running}
+              nextDueLabel={next ? dueLabel(next.nextDueAt) : null}
+              allPaused={allPaused}
+              beforeFirstRound={rounds.length === 0}
+              landed={firstRoundLanded}
+            />
+          </div>
           {rounds.length === 0 ? (
-            <RoundsHistoryEmpty title={t("emptyTitle")} description={t("emptyDescription")}
-              kindsLabel={t("emptyKinds")}
-              signalsLabel={t("emptySignals")}
-              signals={(["stale", "redrafted", "refused", "held"] as const).map((tone) => ({
-                tone, name: t(`signal.${tone}`), body: t(`signal.${tone}Body`),
-              }))}
-              kinds={[
-                { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
-                { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },
-              ]}
-              action={<Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
-                className={cn(buttonVariants(), "atlas-touch-floor atlas-touch-floor-wide")}>
-                <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("emptyAction")}</Link>} />
-          ) : (
-            <>
-              <SinceYouLeft span={span} summary={summary} locale={locale} onOpenPage={openPage} onShowPass={showPass} titleFor={titleFor} />
-              {/* The schedules stand in the page as a section of the same centred form frame every page tab wears,
-                 between the away card and the ledger it filters; a side column shifted the headline between tabs. */}
-              <section data-testid="library-rounds-index" aria-labelledby="library-rounds-index-title" className="flex flex-col gap-3">
-                <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2">
-                  <h2 id="library-rounds-index-title" className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-                    {t("index.title")}
-                  </h2>
-                  <Link href={selected ? withQuery(DOCUMENT_AUTOMATIONS_HREF, { round: selected.id }) : DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-new"
-                    className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
-                    <CalendarClock size={ICON_SIZE.sm} aria-hidden />{t("manageAutomations")}
-                  </Link>
-                </div>
-                <ul aria-label={t("indexAria")} data-testid="library-rounds-list"
-                  className="-mx-2 grid grid-cols-1 gap-x-4 border-y border-[color:var(--color-divider)] py-1 md:grid-cols-2">
-                  {rounds.map((round) => {
-                    const word = outcomeWord(round);
-                    const isRunning = running?.roundId === round.id;
-                    const onHere = round.enabled && !notHere?.has(round.id);
-                    const stateWord = isRunning
-                      ? t("state.running")
-                      : onHere
-                        ? t("state.on")
-                        : round.enabled
-                          ? t("state.notHere")
-                          : t("state.paused");
-                    return (
-                      <li key={round.id}>
-                        <RowButton
-                          data-testid={`library-round-${round.id}`}
-                          data-round-enabled={round.enabled}
-                          data-round-allowed-here={notHere?.has(round.id) ? "false" : "true"}
-                          onClick={() => setSelectedId((current) => (current === round.id ? null : round.id))}
-                          active={selectedId === round.id}
-                          aria-pressed={selectedId === round.id}
-                          hoverInk="strong"
-                          hoverSurface="lift"
-                          className="w-full px-2 text-left"
-                        >
-                          {/*
-                            The round's state as a glyph, readable without reading (spec §9.1).
-                          */}
-                          <span className="flex-none self-start pt-1 text-[color:var(--color-text-quaternary)]">
-                            {isRunning ? <Play size={ICON_SIZE.sm} aria-hidden /> : onHere ? <Clock3 size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
-                          </span>
-                          <span className="min-w-0 flex-1 py-0.5">
-                            <span className="flex items-center gap-2">
-                              <span className={cn("truncate text-body leading-body font-[var(--font-weight-strong)]", onHere ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]")}>
-                                {round.name}
-                              </span>
-                            </span>
-                            <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                              {placeWords(round)} · {stateWord}
-                            </span>
-                          </span>
-                          <span className={badgeClass({ shape: "micro", className: cn("border shrink-0", toneClass[word.tone]) })}>{word.text}</span>
-                        </RowButton>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-              <div className="flex flex-col gap-3">
-                <h2 className="text-body-lg leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-                  {t("ledger.title")}
-                  {selected ? <span className="ml-2 text-body font-normal text-[color:var(--color-text-tertiary)]">· {selected.name}</span> : null}
-                </h2>
-                <RoundsLedger
-                  entries={shownEntries}
-                  locale={locale}
-                  onOpenPage={openPage}
-                  titleFor={titleFor}
-                  running={running}
-                  nextDueLabel={next ? dueLabel(next.nextDueAt) : null}
-                  allPaused={allPaused}
-                />
-              </div>
-            </>
-          )}
+            <RoundKinds label={t("emptyKinds")} kinds={[
+              { id: "consistency", name: t("kind.consistency"), body: t("kind.consistencyBody") },
+              { id: "service", name: t("kind.service"), body: t("kind.serviceBody") },
+            ]} />
+          ) : null}
         </div>
       </section>
 
@@ -374,7 +386,7 @@ function Header({ t }: { t: ReturnType<typeof useTranslations<"library.rounds">>
           {t("eyebrow")}
         </p>
         <h1 className={`mt-2 ${PAGE_TITLE}`}>{t("title")}</h1>
-        <p className={`mt-2 max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
+        <p className={`mt-2 max-w-[var(--measure-prose)] ${PAGE_LEDE}`}>{t("lede")}</p>
       </div>
       <Link href={DOCUMENT_AUTOMATIONS_HREF} data-testid="library-rounds-manage-automations" className={cn(controlClass({ shape: "link", size: "sm", tone: "secondary" }), "atlas-touch-floor")}>
         <CalendarClock size={ICON_SIZE.sm} aria-hidden />

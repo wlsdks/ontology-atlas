@@ -36,11 +36,11 @@ conversation.
 
 **On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected. That row names the place: the MCP tab on the same strip, one press away, so the sentence carries no link (the settings sheet, which has no strip, still does).
 
-The page wears `PAGE_FRAME_FORM`, and the frame carries the desktop bottom breath itself.
+The page wears `PAGE_FRAME`, as Projects and Automations do, so the title stays put when moving between them; the frame carries the desktop bottom breath itself. At every width the tab strip and the rows stop at 960px under the title (`PAGE_TRACK_CAP`), so no row reads across the whole window. From 1536px `PAGE_TWO_TRACK` puts a reference track beside them in the remaining width: the setup shelf beside the tool rows, the sent log beside the model rows, and the connectors beside the folder's MCP rows. With no tools at all, or on the web's Models tab, the single column keeps the cap. The web's Agents card stands beside the tool marks. Each MCP share row names the file it writes beside its button, as a model row shows its state.
 
 The folder's own MCP connection and the connectors live in the MCP tab. This tab keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 
-Only the tools Atlas confirmed on this machine are listed inline. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product.
+The tools that can open a chat here are listed inline even before they are ready: the mark is dimmed and the last slot holds the state (install needed, sign-in needed) until "Check again" finds the tool ready, when the slot cross-fades to Open chat and the mark returns to full ink. Each tool is named once, so these do not repeat on the shelf. The rest open in a dialog with a search field and a scrolling list — the same dialog primitives the connector dialog uses, so setting up a coding tool and attaching an MCP server feel like one product.
 
 Coding-tool mode lists exclude presets that bypass the permission checkpoint,
 including Codex's workspace-write preset. Codex starts in read-only mode; the

@@ -81,8 +81,9 @@ describe('one name per list', () => {
   it('starts the hidden region name and the visible group label with the same words', () => {
     // One noun phrase and one count grammar across both tabs.
     const region = ko.agents.runtimesHeading;
-    expect(ko.nav.settingsMenu.runtimes.readyHeading.startsWith(region)).toBe(true);
-    expect(ko.nav.settingsMenu.runtimes.readyHeading).toContain('·');
+    expect(ko.nav.settingsMenu.runtimes.pageHeading).toBe(region);
+    expect(ko.nav.settingsMenu.runtimes.pageReadyHeading.startsWith(region)).toBe(true);
+    expect(ko.nav.settingsMenu.runtimes.pageReadyHeading).toContain('·');
     expect(ko.mcp.connectorsHeadingCount).toContain('·');
   });
 });

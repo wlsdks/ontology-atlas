@@ -20,9 +20,16 @@ changing what those pages show or how they are built.
   `/guide/[segment]` address. An unknown segment shows the first chapter and
   says that it substituted one.
 - **Read what changed recently.** `/changelog` renders the most recent
-  sections of `docs/CHANGELOG.md` with a list of entries to jump between, and
-  says how many older sections it folded; the full history stays in the
-  repository.
+  sections of `docs/CHANGELOG.md` with a list of entries to jump between, one
+  line each: the release, then the title cut with an ellipsis (the full title
+  on hover); the date is read in the entry itself. It says how many older
+  sections it folded; the full history stays in the repository.
+- **Read at book size.** Guide and changelog body text is `--text-reading`
+  (16px) at `--leading-prose`, under a `--text-hero` page title. At 1920 a
+  guide line ran 97 characters at the median and 105 at most (2026-10-15),
+  inside the 78-step measure's band (80 to 92 scaled by 78/66, about 95 to
+  109); `prose-measure-calibration.spec.ts` measures the Library reader, not
+  the guide.
 
 ## Where it lives
 

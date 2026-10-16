@@ -4,25 +4,56 @@ import { canvasOrigin, openDial, ORDERS, readDial, report, WIDTHS } from "./map-
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
-test("storefront: hovering Orders draws each direction with its count", async ({ page }) => {
+test("storefront: hovering Orders keeps every name and count; selecting it counts at each named far domain", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
-  const before = await readDial(page);
-  const chip = before.clusters.find((c) => c.domainId === ORDERS)!.chip;
+  const rest = await readDial(page);
+  const chip = rest.clusters.find((c) => c.domainId === ORDERS)!.chip;
   const origin = await canvasOrigin(page);
   await page.mouse.move(origin.x + chip.x - 40, origin.y + chip.y - 40);
   await page.mouse.move(origin.x + chip.x, origin.y + chip.y, { steps: 6 });
   await page.waitForFunction((id) => window.__atlasMap!.hover() === id, ORDERS, { polling: "raf" });
   await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+  const hovered = await readDial(page);
+  const names = (d: DialProbe) => d.texts.filter((t) => t.id !== ORDERS).map((t) => `${t.role}|${t.text}`).sort();
+  const counts = (d: DialProbe) => d.numerals.map((n) => `${n.flowKey}|${n.text}`).sort();
+  expect.soft(names(hovered), "hover keeps the resting names").toEqual(names(rest));
+  expect.soft(counts(hovered), "hover keeps the resting counts").toEqual(counts(rest));
+
+  await page.mouse.down();
+  await page.mouse.up();
+  await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, ORDERS, { polling: "raf" });
+  await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+  await waitForMapStill(page);
   const dial = await readDial(page);
-  const attended = dial.flows.filter((f) => (f.a === ORDERS || f.b === ORDERS) && f.ab + f.ba > 0);
-  report("hover Orders", attended.map((f) => ({ key: f.key, ab: f.ab, ba: f.ba, numerals: dial.numerals.filter((n) => n.flowKey === f.key).map((n) => n.text) })));
-  expect.soft(attended.length, "Orders has flows").toBeGreaterThan(0);
-  for (const flow of attended) {
-    const strips = dial.strips.filter((s) => s.flowKey === flow.key);
-    const numerals = dial.numerals.filter((n) => n.flowKey === flow.key).map((n) => n.text).sort();
-    const want = [flow.ab, flow.ba].filter((n) => n > 0).map(String).sort();
-    expect.soft(strips.length, `${flow.key}: one strip per direction`).toBe(want.length);
-    expect.soft(numerals, `${flow.key}: numerals equal the counts`).toEqual(want);
+  const capOf = new Map(dial.clusters.flatMap((c) => c.capabilityIds.map((id) => [id, c.domainId] as const)));
+  const domains = new Set(dial.clusters.map((c) => c.domainId));
+  const mine = (id: string) => id === ORDERS || capOf.get(id) === ORDERS;
+  const stubbed = new Set(dial.stubs.map((s) => s.flowKey));
+  const want = new Map<string, { needs: number; used: number }>();
+  for (const f of dial.flows) {
+    if (!f.drawn || f.relatesOnly || stubbed.has(f.key) || mine(f.a) === mine(f.b)) continue;
+    const far = mine(f.a) ? f.b : f.a;
+    if (!domains.has(far)) continue;
+    const c = want.get(far) ?? { needs: 0, used: 0 };
+    c.needs += mine(f.a) ? f.ab : f.ba;
+    c.used += mine(f.a) ? f.ba : f.ab;
+    want.set(far, c);
+  }
+  const grammar = ({ needs, used }: { needs: number; used: number }) => [needs > 0 ? `→${needs}` : null, used > 0 ? `←${used}` : null].filter((p) => p !== null).join(" ");
+  const labelOf = new Map((await page.evaluate(() => window.__atlasMap!.nodes().map((n) => [n.id, n.label] as const))));
+  const shown = [...want].map(([far, c]) => ({
+    far,
+    want: grammar(c),
+    count: dial.numerals.find((n) => n.flowKey === `far\u0000${far}`)?.text ?? null,
+    named: dial.texts.some((t) => t.role === "domain" && t.id === far),
+    label: dial.texts.find((t) => t.role === "stub" && t.id === far)?.text ?? null,
+  }));
+  report("select Orders", shown);
+  expect.soft(want.size, "Orders has drawn far domains").toBeGreaterThan(0);
+  expect.soft(dial.numerals.filter((n) => !n.flowKey.startsWith("far\u0000")).map((n) => n.flowKey), "no count on a strand").toEqual([]);
+  for (const s of shown) {
+    if (s.named) expect.soft(s.count, `${s.far}: the count beside its name`).toBe(s.want);
+    else expect.soft(s.label, `${s.far}: its name and count beside its chip`).toBe(`${labelOf.get(s.far)} ${s.want}`);
   }
 });
 

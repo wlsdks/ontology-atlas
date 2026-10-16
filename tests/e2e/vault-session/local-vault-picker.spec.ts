@@ -81,12 +81,10 @@ test.describe("local workspace capability gate (N1)", () => {
     await page.goto("/en/docs/");
 
     await expectSourceIs(page, "sample");
-    // Since #987 the document count lives on the vault chip — sweeping the whole
-    // banner would also catch the menu's copy, so it is measured where the fact
-    // actually lives.
-    await expect(page.getByTestId("vault-chip-menu-trigger")).toHaveText(
-      /\d+ documents/,
-    );
+    // The document count lives in the vault chip's menu, beside the folder count.
+    await page.getByTestId("vault-chip-menu-trigger").click();
+    await expect(page.getByTestId("vault-chip-census")).toHaveText(/\d+ documents/);
+    await page.getByTestId("vault-chip-menu-trigger").click();
     // Contract: on desktop (lg+) the document list is expanded by default, and the
     // header's PanelLeft tile collapses and expands it to 0px, persisted in
     // localStorage.

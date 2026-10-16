@@ -5,17 +5,16 @@ import { waitForMapStill } from "../../settle";
 /**
  * **One badge column, one meaning.**
  *
- * The number at the right of an INDEX row is the same mark the map draws inside a
- * node, and the map counts every kind from the domain census
- * (`views/home/lib/map-canvas/map-adapter.ts`). The row consulted that census for domain rows
- * only, so a project row fell through to its number of direct children. Measured on
- * the sample folder at 1512×982: the project said **3** in the INDEX while its own
- * node on the canvas said **16**, and the three domain rows agreed at 5, 7 and 4.
+ * The number at the right of an INDEX row is the same mark the map draws inside a node.
+ * On the project row it is the canonical census: the four kinds the map draws (project,
+ * domain, capability, element), each once (`docs/records/decisions/2026-10-15-map-concept-census-*`).
+ * A project row that fell through to its number of direct children said **3** while its
+ * own node on the canvas said **16**.
  *
  * This walks the tree the panel itself renders and asserts the project's badge names
- * what is actually below it, rather than pinning the fixture's number.
+ * the drawn concepts it holds, rather than pinning the fixture's number.
  */
-test("the project row's badge counts everything below it", async ({ page }) => {
+test("the project row's badge counts the drawn concepts it holds", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 982 });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -44,10 +43,10 @@ test("the project row's badge counts everything below it", async ({ page }) => {
   }
   await waitForMapStill(page);
 
-  // What the census counts: capabilities and elements anywhere below, each once.
-  const below = new Set((await rowIds()).filter((id) => id.startsWith("capability:") || id.startsWith("element:")));
-  expect(below.size, "펼쳤는데 하위 개념 행이 하나도 없다").toBeGreaterThan(0);
-
+  // What the census counts: the project itself and every domain, capability and element, each once.
+  const drawnKinds = ["project:", "domain:", "capability:", "element:"];
+  const drawn = new Set((await rowIds()).filter((id) => drawnKinds.some((kind) => id.startsWith(kind))));
+  expect(drawn.size, "펼쳤는데 하위 개념 행이 하나도 없다").toBeGreaterThan(1);
   const projectBadge = (await badgeOf(projectId))?.trim();
-  expect(projectBadge, "프로젝트 배지가 지도 노드와 다른 수를 말한다").toBe(String(below.size));
+  expect(projectBadge, "프로젝트 배지가 지도 노드와 다른 수를 말한다").toBe(String(drawn.size));
 });

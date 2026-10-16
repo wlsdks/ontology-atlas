@@ -20,7 +20,8 @@ describe("14-inch map chrome reflows around the agent dock and node inspector", 
     expect(chrome).toMatch(
       /data-right-inspector-reserve=\{\s*inspectorOwnsRightRail \? "recenter-in-remaining-map" : undefined\s*\}/,
     );
-    expect(chrome).toMatch(/\{inspectorOwnsRightRail \? null : \(/);
+    expect(chrome).toMatch(/inert=\{inspectorOwnsRightRail\}/);
+    expect(chrome).toMatch(/inspectorOwnsRightRail \? "map-chrome-recede-out/);
     expect(chrome).not.toMatch(/nodePanelMounted/);
     expect(chrome).toContain('data-testid="topology-top-toolbar"');
     expect(hint).not.toMatch(/\babsolute right-/);

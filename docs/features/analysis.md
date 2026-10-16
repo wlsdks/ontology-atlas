@@ -30,8 +30,11 @@ thin directed line is one declared `depends_on` edge; containment and loose
 associations are excluded. Nodes use canonical kind glyphs, explicit selection
 labels and a second frame. Visible node counts name the declarations shown in
 this graph. Ports follow measured DOM geometry when labels wrap or text grows.
-Four declarations are shown at a time; previous/next controls reach the rest
-without mounting an unbounded graph. The exact witness controls and declaring
+Four declarations are shown at a time as numbered steps that name both ends
+(`01 source → target`); the same numeral sits on its line, so a step and its
+curve read as one, and a caption says each line is one declaration. Each
+declaration leaves and enters its cards at its own port. Previous/next controls
+reach the rest without mounting an unbounded graph. The exact witness controls and declaring
 document are visible together at the minimum app viewport. A missing structured
 relationship note does not prove that the Markdown body has no explanation.
 

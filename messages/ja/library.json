@@ -810,16 +810,11 @@
     "emptyDescription": "スケジュールした点検が実行されるたびに、その結果が新しい順にここへ入ります。",
     "emptyAction": "自動化でスケジュール",
     "emptyKinds": "スケジュールできる点検",
-    "emptySignals": "各実行がここに残すもの",
     "signal": {
       "stale": "古い",
-      "staleBody": "ページが引用しているソースが変更されました。ページを押すとWikiで開きます。",
       "redrafted": "書き直し済み",
-      "redraftedBody": "エージェントが新しい下書きを書きました。確認するまでは下書きのままです。",
       "refused": "拒否",
-      "refusedBody": "スケジュールが許可していないリクエストです。台帳に止めた内容が記載されます。",
-      "held": "変更なし",
-      "heldBody": "すべてのページがソースと一致していました。記録は静かな1行だけです。"
+      "held": "変更なし"
     },
     "kind": {
       "consistency": "ページがソースと一致しているか",
@@ -920,7 +915,12 @@
         "unreadable": "Atlasが確認のために読み戻すことができませんでした。"
       },
       "undoneCopy": "Atlasが取り除いたテキストは{copy}に保存されています。",
-      "leftAsIs": "{page}は、この実行が書き込んだ後に変更されたため、Atlasはそのままにしました。"
+      "leftAsIs": "{page}は、この実行が書き込んだ後に変更されたため、Atlasはそのままにしました。",
+      "columnTime": "時刻",
+      "columnRound": "点検",
+      "columnOutcome": "結果",
+      "ghostTime": "––:––",
+      "ghostAria": "最初の実行が入る場所"
     },
     "sheet": {
       "readbackHour": "1時間ごと",

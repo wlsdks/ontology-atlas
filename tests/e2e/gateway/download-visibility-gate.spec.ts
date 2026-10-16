@@ -76,10 +76,16 @@ test.describe("download — every drawing stops out of view", () => {
       .toBeGreaterThan(0);
   });
 
-  test("the conduction figure pauses at 19% visible and runs at 25%", async ({ page }) => {
+  test("the conduction figure waits at rest until 90% is visible, runs on down to 20%, and pauses at 19%", async ({ page }) => {
     await open(page);
     const figure = page.getByTestId("download-conduction-figure");
+    await showFigureShare(page, 0.85);
+    await waitFrames(page, 4);
+    await expect(figure).toHaveAttribute("data-conduction-state", "primed");
+    await showFigureShare(page, 0.95);
+    await expect(figure).toHaveAttribute("data-conduction-state", "running");
     await showFigureShare(page, 0.25);
+    await waitFrames(page, 4);
     await expect(figure).toHaveAttribute("data-conduction-state", "running");
     await showFigureShare(page, 0.19);
     await expect(figure).toHaveAttribute("data-conduction-state", "paused");

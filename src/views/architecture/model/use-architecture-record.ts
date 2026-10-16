@@ -11,14 +11,15 @@ const EMPTY_RECORDS: Readonly<Record<string, ArchitectureRecord>> = Object.freez
 /**
  * Reads `.ontology-atlas/architecture/<profile-slug>.json` receipts through the vault handle both
  * surfaces hold. A missing or unparsable receipt is a normal "no record", silently. The loaded set
- * stays keyed to the handle and slugs it was read for, so a change falls back without a reset.
+ * stays keyed to the handle and slugs it was read for, so a change falls back without a reset;
+ * `loaded` says whether "no record" is known yet or only not read yet.
  */
 export function useArchitectureRecords(
   handle: FileSystemDirectoryHandle | null,
   slugs: readonly string[],
   profileDocuments?: ReadonlyMap<string, string>,
   fileHandles?: ReadonlyMap<string, FileSystemFileHandle>,
-): Readonly<Record<string, ArchitectureRecord>> {
+): { records: Readonly<Record<string, ArchitectureRecord>>; loaded: boolean } {
   const slugKey = slugs.join('\0');
   const [loaded, setLoaded] = useState<{
     handle: FileSystemDirectoryHandle | null;
@@ -84,5 +85,9 @@ export function useArchitectureRecords(
     return () => { cancelled = true; window.removeEventListener('atlas-analysis-records-changed', update); };
   }, [handle, slugKey, profileDocuments, fileHandles]);
 
-  return loaded.handle === handle && loaded.slugKey === slugKey ? loaded.records : EMPTY_RECORDS;
+  const current = loaded.handle === handle && loaded.slugKey === slugKey;
+  return {
+    records: current ? loaded.records : EMPTY_RECORDS,
+    loaded: current || !handle || slugKey === '',
+  };
 }

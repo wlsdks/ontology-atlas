@@ -18,17 +18,18 @@ test('Flow request keeps a named keyboard scroll target and an unfaded focus fra
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openBrowserFolder(page);
   await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
+  await page.getByTestId('flow-request-open').click();
   const request = page.getByTestId('flow-request-text');
   await expect(request).toHaveRole('region');
-  await expect(request).toHaveAccessibleName(await page.getByTestId('flow-request').getByRole('heading', { level: 3 }).innerText());
+  await expect(request).toHaveAccessibleName(await page.getByTestId('flow-request-open').innerText());
   await page.evaluate(() => document.fonts.ready);
-  await page.getByTestId('flow-copy').focus();
+  await page.getByTestId('flow-request-open').focus();
   await page.keyboard.press('Tab');
   await expect(request).toBeFocused();
   await page.keyboard.press('End');
   await expect.poll(() => request.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop)).toBeLessThanOrEqual(1);
   const measured = await request.evaluate((element) => {
-    const frame = element.parentElement!;
+    const frame = element as HTMLElement;
     const style = getComputedStyle(frame);
     const textStyle = getComputedStyle(element);
     const rect = frame.getBoundingClientRect();
@@ -50,25 +51,6 @@ test('Flow request keeps a named keyboard scroll target and an unfaded focus fra
   expect(measured.focusMask).toBe('none');
   expect(measured.overflow).toBe(0);
   await testInfo.attach('request-keyboard-geometry', { body: JSON.stringify(measured), contentType: 'application/json' });
-  await page.keyboard.press('Tab');
-  await expect(page.getByTestId('analysis-back-to-system')).toBeFocused();
-});
-
-test('long Flow requests keep the contextual return reachable at the app minimum', async ({ page }) => {
-  await page.setViewportSize({ width: 1040, height: 720 });
-  await openBrowserFolder(page);
-  await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
-  await expect(page.getByTestId('flow-request-text')).toBeVisible();
-  const back = page.getByTestId('analysis-back-to-system');
-  await back.scrollIntoViewIfNeeded();
-  const reachable = await back.evaluate(element => {
-    const rect = element.getBoundingClientRect();
-    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    return element === hit || element.contains(hit);
-  });
-  expect(reachable).toBe(true);
-  await back.click();
-  await expect(page.getByTestId('analysis-workspace')).toBeVisible();
 });
 
 test('analysis cards reflow when a side conversation leaves a narrow content column', async ({ page }) => {

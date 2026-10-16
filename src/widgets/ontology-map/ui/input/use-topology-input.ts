@@ -28,6 +28,7 @@ import { keyboardZoomIntent } from "../../interaction/keyboard-zoom";
 import { createPinchWheelStream } from "../../interaction/wheel";
 import { type PointerMachineState } from "../../interaction/pointer-state-machine";
 import { type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
+import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { commitDomeEntrySweep } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
@@ -89,7 +90,7 @@ interface Dependencies {
   tierRevealRef: RefObject<TierRevealConfig>;
     pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
-  onSelect: ((slug: string) => void) | undefined;
+  onSelect: ((slug: string, source: SelectionSource) => void) | undefined;
   onSelectEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; }) => void) | undefined;
   onHoverEdge: ((edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null, position: { x: number; y: number; avoid: readonly HoverAvoidRect[]; } | null) => void) | undefined;
   onPaneClick: (() => void) | undefined;
@@ -107,6 +108,7 @@ interface Dependencies {
   onWalkDeadEnd: ((point: { x: number; y: number; } | null) => void) | null;
   runOverviewFit: () => void;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
+  flyToNode: (slug: string) => void;
 }
 
 /** Bind pointer, wheel, keyboard walk, and realm-entry input; clean up native listeners. */
@@ -156,6 +158,7 @@ export function useTopologyInput({
   tierRevealRef, pathEdgeIdsRef,
   visitedTrailRef,
   onSelect,
+  flyToNode,
   onSelectEdge,
   onHoverEdge,
   onPaneClick,
@@ -232,6 +235,7 @@ export function useTopologyInput({
     pathEdgeIdsRef,
     visitedTrailRef,
     onSelect,
+    onFlyToNode: flyToNode,
     onSelectEdge,
     onHoverEdge,
     onPaneClick,
@@ -380,29 +384,29 @@ export function useTopologyInput({
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
     /*
-     * 3D fly-to keys, the twin of the double-click: Enter flies to the selected node; Home flies back or
-     * frames the whole structure; Esc flies back too and still reaches its other handlers.
+     * Fly-to keys, the twin of the double-click: Enter zooms to the selected node; on the 3D dome Home
+     * flies back or frames the whole structure, and Esc flies back too and still reaches its other handlers.
      */
-    {
+    if (!e.metaKey && !e.ctrlKey && !e.altKey) {
       const dome = domeRuntimeRef.current;
-      if (dome !== null && dome.active && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const focused = focusedSlugRef.current;
-        if (e.key === "Enter" && focused !== null) {
-          e.preventDefault();
+      const focused = focusedSlugRef.current;
+      if (e.key === "Enter" && focused !== null) {
+        e.preventDefault();
+        if (dome !== null && dome.active) {
           dome.flyRequest = { slug: focused };
           lastActiveMsRef.current = performance.now();
-          return;
-        }
-        if (e.key === "Home") {
-          e.preventDefault();
-          dome.flyRequest = { slug: null };
-          lastActiveMsRef.current = performance.now();
-          return;
-        }
-        if (e.key === "Escape" && dome.flight !== null) {
-          dome.flyRequest = { slug: null };
-          lastActiveMsRef.current = performance.now();
-        }
+        } else flyToNode(focused);
+        return;
+      }
+      if (dome !== null && dome.active && e.key === "Home") {
+        e.preventDefault();
+        dome.flyRequest = { slug: null };
+        lastActiveMsRef.current = performance.now();
+        return;
+      }
+      if (dome !== null && dome.active && e.key === "Escape" && dome.flight !== null) {
+        dome.flyRequest = { slug: null };
+        lastActiveMsRef.current = performance.now();
       }
     }
     const zoomIntent = keyboardZoomIntent(e, navigationSpeedRef.current.zoom);
@@ -510,7 +514,7 @@ export function useTopologyInput({
 
     const target = world.nodeById.get(nextId);
     if (!target) return;
-    onSelect?.(nextId);
+    onSelect?.(nextId, "arrow");
 
     /*
      * The camera only follows, and only when the focus is about to leave the free area; recentring on
@@ -566,7 +570,7 @@ export function useTopologyInput({
         beginCameraTween(cameraTarget);
       }
     }
-  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd]);
+  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd, flyToNode]);
 
   const wrappedHandlers = useMemo(
     () => ({

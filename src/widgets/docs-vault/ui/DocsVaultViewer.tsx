@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import Image from 'next/image';
 import ReactMarkdown, { type Components } from 'react-markdown';
@@ -76,6 +76,7 @@ interface Props {
   namedSourcePath?: string;
   /** Uses the smaller top inset when parent context already separates the body. */
   compactTop?: boolean;
+  onBodyPainted?: (body: string | null) => void;
 }
 
 /**
@@ -100,6 +101,7 @@ export function DocsVaultViewer({
   onSourceNavigate,
   namedSourcePath,
   compactTop = false,
+  onBodyPainted,
 }: Props) {
   const t = useTranslations('vaultWidgets.viewer');
   const libraryT = useTranslations('library');
@@ -167,6 +169,11 @@ export function DocsVaultViewer({
       cancelled = true;
     };
   }, [bundledContent, doc.slug, getDocContent, setRaw]);
+
+  useLayoutEffect(() => {
+    if (raw !== null) onBodyPainted?.(raw);
+    else if (error !== null) onBodyPainted?.(null);
+  }, [raw, error, onBodyPainted]);
 
   // Pure function taking the query as an argument so useMemo dependencies stay accurate.
   const highlightChildren = useMemo(() => {

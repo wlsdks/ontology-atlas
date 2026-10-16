@@ -2,7 +2,8 @@ import type { ExpandStructure } from "@/shared/lib/preferences/appearance-prefer
 import type { MapLayoutMark, MapLayoutMarkShape, MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { lastDialFrame } from "../dial/frame/frame";
 import { smoothstep } from "../dial/frame/disclosure";
-import { dialChipRadiusPx, dialDiscRadiusPx, dialHubRadiusPx } from "../dial/frame/marks";
+import { dialHubRadiusPx } from "../dial/frame/marks";
+import { dialChipRadiusPx, dialDiscRadiusPx } from "../dial/tokens";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
 import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/types";

@@ -123,7 +123,7 @@ export function LibraryStartStage({
           would carry past the column edge. */}
       <p
         data-testid="library-start-drop"
-        className="mt-4 text-label leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]"
+        className="mt-4 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all] [overflow-wrap:anywhere]"
       >
         {t("sources.dropHint", { folder: vaultLabel })}
       </p>

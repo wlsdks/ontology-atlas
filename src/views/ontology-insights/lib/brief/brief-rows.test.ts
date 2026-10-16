@@ -93,4 +93,27 @@ describe('briefRows — one list across the four cores', () => {
       { kind: 'status', core: 'agent', status: 'no-data' },
     ]);
   });
+
+  it('gives a total only to lines whose count is part of it', () => {
+    const rows = briefRows([
+      core({ core: 'ontology', availability: 'measured', headline: 98, lines: [
+        { id: 'ontology-unmatched', count: 120, state: 'unknown' },
+        { id: 'ontology-repair', count: 0, state: 'stale' },
+        { id: 'ontology-evidence-moved', count: 3, state: 'stale' },
+      ] }),
+      core({ core: 'wiki', availability: 'measured', headline: 12, lines: [
+        { id: 'wiki-dangling-links', count: 40, state: 'stale' },
+        { id: 'wiki-disagreements', count: 2, state: 'stale' },
+        { id: 'wiki-stale-pages', count: 1, state: 'stale' },
+      ] }),
+    ]);
+    const totals = Object.fromEntries(rows.flatMap((row) => (row.kind === 'line' ? [[row.line.id, row.total]] : [])));
+    expect(totals).toEqual({
+      'ontology-unmatched': undefined,
+      'ontology-evidence-moved': 98,
+      'wiki-dangling-links': undefined,
+      'wiki-disagreements': undefined,
+      'wiki-stale-pages': 12,
+    });
+  });
 });

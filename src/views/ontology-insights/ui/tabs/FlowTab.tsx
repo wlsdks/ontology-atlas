@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Disclosure } from "@/shared/ui";
 import { CopyAgentTextButton } from "../parts/CopyAgentTextButton";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import { INSIGHTS_HEADLINE } from "./insights-headline";
 import { flowHeadingChanges, type FlowVersion } from "../../lib/flow-history";
 
 /**
@@ -76,7 +76,7 @@ export function FlowTab({
   if (!hasGraph) {
     return (
       <section className="flex flex-col gap-3" data-testid="flow-tab">
-        <InsightsSectionTitle level={2}>{labels.noVaultTitle}</InsightsSectionTitle>
+        <InsightsSectionTitle level={2} className={INSIGHTS_HEADLINE}>{labels.noVaultTitle}</InsightsSectionTitle>
         <p className="text-body text-[color:var(--color-text-secondary)]">{labels.noVaultBody}</p>
       </section>
     );
@@ -111,7 +111,7 @@ export function FlowTab({
       <p className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
         {labels.unavailableTitle}
       </p>
-      <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">
+      <p className="max-w-[var(--measure-prose)] text-body leading-prose text-[color:var(--color-text-secondary)]">
         {labels.unavailableBody}
       </p>
     </div>
@@ -130,20 +130,24 @@ export function FlowTab({
 
   const requestFold = (
     <Disclosure summary={labels.requestLabel} summaryTestId="flow-request-open">
-      <div className="mt-2 flex flex-col gap-2">
-        <div className="flex justify-end">{copyButton}</div>
-        <pre role="region" aria-label={labels.requestLabel} tabIndex={0} className="max-h-[22rem] overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
-          {request}
-        </pre>
-      </div>
+      <pre role="region" aria-label={labels.requestLabel} tabIndex={0} data-testid="flow-request-text" className="mt-2 max-h-[22rem] max-w-[var(--measure-prose)] overflow-auto whitespace-pre-wrap break-words rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-sans text-body leading-prose text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]">
+        {request}
+      </pre>
     </Disclosure>
+  );
+
+  const actions = (
+    <div className="flex flex-wrap items-center justify-start gap-x-[var(--card-gap)] gap-y-3">
+      {actionBlock}
+      {copyButton}
+    </div>
   );
 
   return (
     <section className="flex flex-col gap-4" data-testid="flow-tab">
       <div className="flex flex-col gap-2">
-        <InsightsSectionTitle level={2}>{labels.title}</InsightsSectionTitle>
-        <p className="text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
+        <InsightsSectionTitle level={2} className={INSIGHTS_HEADLINE}>{labels.title}</InsightsSectionTitle>
+        <p className="max-w-[var(--measure-prose)] text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
       </div>
 
       {/* What an agent wrote is the body, with how it changed between writings; the request sits behind a fold. */}
@@ -158,7 +162,7 @@ export function FlowTab({
             </span>
             {latest.grounded ? null : <span className="text-label text-[color:var(--color-amber-source-a90)]">{labels.ungrounded}</span>}
           </header>
-          <div className="max-w-[72ch] whitespace-pre-wrap text-body leading-prose text-[color:var(--color-text-primary)]" data-testid="flow-answer">
+          <div className="max-w-[var(--measure-prose)] whitespace-pre-wrap text-body leading-prose text-[color:var(--color-text-primary)]" data-testid="flow-answer">
             {latest.answer}
           </div>
           {changes.length > 0 ? (
@@ -183,105 +187,22 @@ export function FlowTab({
       ) : null}
 
       {latest ? (
-        <>
-          {actionBlock}
+        <div className="flex flex-col gap-3">
+          {actions}
           {requestFold}
-        </>
+        </div>
       ) : (
-        // Before the first writing the request is the tab's only real object, so the two halves sit side by side: what
-        // would appear and how to start it, and the exact text the agent would receive.
-        <div className="grid grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
-          <div className="flex flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
-            <div className="flex flex-col gap-1.5">
-              <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
-              <p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
-            </div>
-            <div className="border-t border-[color:var(--color-divider)] pt-4">{actionBlock}</div>
+        <div className="flex flex-col gap-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]" data-testid="flow-no-version">
+          <div className="flex flex-col gap-1.5">
+            <p className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{labels.noVersionTitle}</p>
+            <p className="max-w-[var(--measure-prose)] text-body leading-prose text-[color:var(--color-text-secondary)]">{labels.noVersionBody}</p>
           </div>
-          {/* The explanation sets the row's height and the request scrolls inside it, so neither card holds a blank band;
-             on one column the request keeps a 16rem floor. */}
-          <section data-testid="flow-request" className="flex min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-            <div className="flex items-center justify-between gap-3">
-              <h3 className="text-body text-[color:var(--color-text-secondary)]">{labels.requestLabel}</h3>
-              {copyButton}
-            </div>
-            <RequestScroller request={request} label={labels.requestLabel} />
-          </section>
+          <div className="flex flex-col gap-3 border-t border-[color:var(--color-divider)] pt-4" data-testid="flow-request">
+            {actions}
+            {requestFold}
+          </div>
         </div>
       )}
     </section>
-  );
-}
-
-/**
- * The request as a scroll region: the frame stays still, and an edge with more text fades over `--tabbar-edge-fade`
- * (the library index and tab strips' mask) only while text lies past it. The text face, not monospace, since
- * Hangul in `<pre>`'s monospace falls back glyph by glyph; `pre-wrap` keeps the line breaks as sent.
- */
-function RequestScroller({ request, label }: { request: string; label: string }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-  const ref = useRef<HTMLPreElement>(null);
-  const [edge, setEdge] = useState({ top: false, bottom: false });
-  // The viewport snaps to a whole number of lines under the top padding, so the last line shown is whole and the fade
-  // reads as "more below".
-  const [viewport, setViewport] = useState<number | null>(null);
-  const measure = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    const top = el.scrollTop > 1;
-    const bottom = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
-    setEdge((prev) => (prev.top === top && prev.bottom === bottom ? prev : { top, bottom }));
-  }, []);
-  const snap = useCallback(() => {
-    const frame = frameRef.current;
-    const el = ref.current;
-    if (!frame || !el) return;
-    const style = getComputedStyle(el);
-    const line = Number.parseFloat(style.lineHeight);
-    const padTop = Number.parseFloat(style.paddingTop) || 0;
-    const available = frame.clientHeight;
-    if (!Number.isFinite(line) || line <= 0 || available <= 0) return;
-    const lines = Math.max(1, Math.floor((available - padTop * 2) / line));
-    const snapped = Math.round(padTop + lines * line);
-    setViewport((prev) => (el.scrollHeight <= available ? null : prev === snapped ? prev : snapped));
-    measure();
-  }, [measure]);
-  useEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    snap();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(snap);
-    observer.observe(frame);
-    return () => observer.disconnect();
-  }, [snap, request]);
-  const fade = "var(--tabbar-edge-fade)";
-  const mask =
-    edge.top && edge.bottom
-      ? `linear-gradient(to bottom, transparent 0, black ${fade}, black calc(100% - ${fade}), transparent 100%)`
-      : edge.bottom
-        ? `linear-gradient(to bottom, black calc(100% - ${fade}), transparent 100%)`
-        : edge.top
-          ? `linear-gradient(to bottom, transparent 0, black ${fade})`
-          : undefined;
-  return (
-    <div ref={frameRef} className="relative min-h-64 flex-1 overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[color:var(--color-indigo-focus-ring)] @min-[960px]/insights:min-h-32">
-      <pre
-        ref={ref}
-        role="region"
-        aria-label={label}
-        tabIndex={0}
-        data-testid="flow-request-text"
-        data-fade-bottom={edge.bottom ? "" : undefined}
-        onScroll={measure}
-        style={{
-          ...(mask ? { maskImage: mask, WebkitMaskImage: mask } : null),
-          ...(viewport != null ? { height: viewport, bottom: "auto" } : null),
-        }}
-        className="atlas-scroll-quiet absolute inset-0 overflow-auto whitespace-pre-wrap break-words p-3 font-sans text-label leading-prose text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:text-[color:var(--color-text-primary)]"
-      >
-        {request}
-      </pre>
-    </div>
   );
 }

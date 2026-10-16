@@ -8,9 +8,9 @@
 /** Mirrors `--measure-prose-steps`; change both together. */
 export const PROSE_MEASURE_STEPS = 66;
 
-/** Mirrors the `min-width: 1536px` band in `base-responsive.css`; change both together. */
 export const PROSE_MEASURE_STEPS_WIDE = 78;
 
+/** The `base-responsive.css` wide band and `PAGE_TWO_TRACK`'s `2xl`; change all three. */
 export const WIDE_READING_MIN_VIEWPORT_PX = 1536;
 
 /**

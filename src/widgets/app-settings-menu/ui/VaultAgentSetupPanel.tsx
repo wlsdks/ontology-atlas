@@ -824,15 +824,21 @@ export function VaultAgentSetupPanel({
               icon={client.icon}
               iconInk={client.brandInk}
               label={client.name}
-              /* The file this row writes, so "ready" and "connect" both say which file they mean. */
-              caption={
-                foreignConfig
-                  ? t('agentSetup.nextInvalid', { path: inspected.path })
-                  : client.files.join(' · ')
-              }
+              caption={foreignConfig ? t('agentSetup.nextInvalid', { path: inspected.path }) : undefined}
               captionTone={foreignConfig ? 'warning' : 'neutral'}
-              /* Natural width, right-aligned like every runtime row on the agents tab. */
-              control={clientRows[client.id]}
+              /* The file it writes sits beside the control, as a model row's state does, so "ready" and "connect" name it. */
+              control={
+                foreignConfig ? (
+                  clientRows[client.id]
+                ) : (
+                  <>
+                    <span className="min-w-0 truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                      {client.files.join(' · ')}
+                    </span>
+                    {clientRows[client.id]}
+                  </>
+                )
+              }
             />
             );
           })

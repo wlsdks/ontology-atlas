@@ -16,7 +16,7 @@ const MIN_CONTRAST = 3;
 
 /**
  * WCAG 1.4.3 text floor for the map labels. The large-text exemption does not reach them: sizes are
- * 15 / 10.5 / 10 / 9.5px in `LABEL_FONT_SIZE`, so the resting sizes must pass.
+ * 16 / 12.5 / 11 / 9.5px in `LABEL_FONT_SIZE`, so the resting sizes must pass.
  */
 const MIN_TEXT_CONTRAST = 4.5;
 
@@ -92,10 +92,8 @@ describe("topology ink contrast contract", () => {
   });
 
   it("the label ink ladder keeps its order (element < capability < domain)", () => {
-    // Raising a floor must not invert the hierarchy it sits in. The gateway's brighter
-    // element ink (7.09:1) would have done exactly that here — above capability's
-    // 5.33:1 — so the workbench takes the dimmest value that clears the text floor
-    // instead of the gateway's value.
+    // Raising a floor must not invert the hierarchy it sits in: element 7.08:1 stays
+    // under capability 7.90:1, which stays under domain 10.04:1.
     const surface = readToken("map-canvas-bg-near");
     const ratios = LABEL_LADDER.map((name) => contrast(readToken(name), surface));
     for (let i = 1; i < ratios.length; i += 1) {

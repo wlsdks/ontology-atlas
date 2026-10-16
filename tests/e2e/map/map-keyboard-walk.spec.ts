@@ -371,6 +371,8 @@ test.describe("map keyboard walk", () => {
    * diverges by the measured 192px and turns red immediately.
    */
   test("after the camera moves, the node sits at the center of the free area", async ({ page }) => {
+    await page.goto("/ko/topology/?guides=off&e2e=1&index=collapsed");
+    await expect(page.getByTestId("topology-index-tab")).toBeVisible({ timeout: 30_000 });
     await focusCanvas(page);
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();

@@ -7,12 +7,6 @@
   "copyLink": "개념 링크 복사",
   "copyLinkCopied": "개념 링크를 복사했어요",
   "close": "닫기",
-  "metric": {
-    "contains": "하위 항목",
-    "usedBy": "이 항목을 사용하는 곳",
-    "dependsOn": "필요한 항목",
-    "reach": "3단계 도달"
-  },
   "groups": {
     "containsTitle": "하위 항목",
     "containsCaption": "이 개념 안에 들어 있는 것들",
@@ -22,8 +16,11 @@
     "dependsOnCaption": "이것들이 없으면 동작하지 않아요",
     "belongsToTitle": "상위 항목",
     "belongsToCaption": "이 개념이 들어가 있는 상위",
-    "empty": "직접 연결이 없어요.",
-    "freshDotTitle": "최근 갱신"
+    "freshDotTitle": "최근 갱신",
+    "directLinks": "직접 연결 {count, number}",
+    "domainCount": "도메인 {count, number}곳",
+    "domainLinks": "이 도메인과 잇는 링크 {count, number}개",
+    "emptyGroup": "{title} 없음"
   },
   "reach": {
     "leadIn": "이 개념에서",

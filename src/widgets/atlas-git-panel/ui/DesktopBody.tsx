@@ -4,7 +4,7 @@ import type { CopyFeedbackState } from "@/shared/lib/clipboard/use-copy-feedback
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import { stripConventionalPrefix, humanizeStepSubject } from "../lib/step-title";
 import type { DocumentFollow } from "../lib/document-follow";
-import { RefreshCw } from "lucide-react";
+import { History as HistoryIcon, RefreshCw } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { countChangesByStatus } from "@/shared/lib/git/atlas-git-changes";
 import { describeSnapshotSubject, type AtlasGitDiffFile } from "@/shared/lib/git/atlas-git-record";
@@ -21,9 +21,10 @@ import type { ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
 import { cn } from "@/shared/lib/cn";
+import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import type { Translator } from "../lib/translator";
 import type { WorkbenchSelection } from "../model/use-workbench-selection";
-import { SETUP_ACTION_PLACEMENT, PageHeader, SetupFrame, SessionChangeSummary } from "./SetupMode";
+import { SETUP_ACTION_PLACEMENT, SetupFrame, SessionChangeSummary } from "./SetupMode";
 import { LocationLine, RemoteResultLine, RemoteSetup } from "./RemoteControls";
 import { StepList, StepListScroller } from "./StepList";
 import { ActionDock, DiscardDock } from "./ActionDock";
@@ -33,6 +34,17 @@ import { ActionDock, DiscardDock } from "./ActionDock";
  * since waiting or re-checking is all the user can do.
  */
 export type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
+
+function PageHeader({ t }: { t: Translator }) {
+  return (
+    <header className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 pb-1">
+      <h1 className={cn("flex items-center gap-2", PAGE_TITLE)}>
+        <HistoryIcon size={ICON_SIZE.lg} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
+        {t("title")}
+      </h1>
+    </header>
+  );
+}
 
 export function DesktopBody({
   t,
@@ -463,7 +475,7 @@ export function DesktopBody({
         under one top bar (title, location, actions) and a divider.
       */}
       <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] px-1 pb-3">
-        <PageHeader t={t} inColumn showScope={false} />
+        <PageHeader t={t} />
         <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
       </div>
       <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />

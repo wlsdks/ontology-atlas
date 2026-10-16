@@ -37,6 +37,8 @@ test("even a short selection inspector pushes the camera into the real free area
   await expect(page.getByTestId("map-detail-panel")).toBeVisible({
     timeout: 20_000,
   });
+  // The default: on the wide Flat map a selection leaves INDEX open, so the free area lies between it and the panel.
+  await expect(page.locator("html")).toHaveAttribute("data-topology-index", "expanded");
   await settleCamera(page);
 
   const measured = await page.evaluate(() => {
@@ -47,11 +49,13 @@ test("even a short selection inspector pushes the camera into the real free area
     const panel = document.querySelector<HTMLElement>(
       '[data-testid="topology-node-popover-positioner"]',
     );
+    const index = document.querySelector<HTMLElement>('[data-testid="topology-index-panel"]');
     const selectedId = probe?.selection().nodeId;
     const selected = probe?.nodes().find((node) => node.id === selectedId);
-    if (!probe || !canvas || !panel || !selected) return null;
+    if (!probe || !canvas || !panel || !index || !selected) return null;
     const canvasRect = canvas.getBoundingClientRect();
     const panelRect = panel.getBoundingClientRect();
+    const indexRight = index.getBoundingClientRect().right;
     const selectedX = canvasRect.left + selected.x;
     return {
       marker: panel.dataset.topologyCameraObstacle,
@@ -59,9 +63,11 @@ test("even a short selection inspector pushes the camera into the real free area
       panelWidth: panelRect.width,
       panelLeft: panelRect.left,
       canvasRight: canvasRect.right,
-      freeCenterX: (canvasRect.left + panelRect.left) / 2,
+      indexRight,
+      freeCenterX: (indexRight + panelRect.left) / 2,
       canvasCenterX: canvasRect.left + canvasRect.width / 2,
       selectedX,
+      radius: selected.radius,
     };
   });
 
@@ -74,9 +80,8 @@ test("even a short selection inspector pushes the camera into the real free area
   expect(measured!.panelWidth).toBeGreaterThan(300);
   expect(measured!.panelLeft).toBeGreaterThan(measured!.canvasCenterX);
   expect(measured!.panelLeft).toBeLessThan(measured!.canvasRight);
-  expect(Math.abs(measured!.selectedX - measured!.freeCenterX)).toBeLessThan(
-    Math.abs(measured!.selectedX - measured!.canvasCenterX),
-  );
+  expect(measured!.selectedX - measured!.radius, "the selected node sits under INDEX").toBeGreaterThan(measured!.indexRight);
+  expect(measured!.selectedX + measured!.radius, "the selected node sits under the inspector").toBeLessThan(measured!.panelLeft);
 });
 
 /**

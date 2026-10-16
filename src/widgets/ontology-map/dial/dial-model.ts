@@ -127,7 +127,7 @@ export function dialEvidenceView(model: DialModel, evidence: ReadonlyMap<string,
     }
   }
   const view: DialEvidenceView = {
-    measured: evidence !== null,
+    measured: evidence !== null && [...evidence.values()].some((state) => state !== "unknown"),
     stateOf: (id) => evidence?.get(id) ?? "unknown",
     staleByDomain,
   };

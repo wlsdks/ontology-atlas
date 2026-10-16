@@ -56,3 +56,16 @@ describe("overview frames — a folded hub", () => {
         expect(bounds.minX).toBe(-403);
     });
 });
+
+describe("overview frames — the dial", () => {
+  const scene = { rings: [{ step: 0, radius: 420 }, { step: 1, radius: 160 }], clusters: [{ chip: { x: 0, y: 400 }, footprint: 100 }], orphans: { ids: [] }, extent: { minX: -300, minY: -200, maxX: 520, maxY: 500 } };
+  const world = { nodes: [], bounds: { minX: -900, minY: -900, maxX: 900, maxY: 900 }, dial: { scene } } as unknown as TopologyWorld;
+  it("frames the outer ring about the hub instead of the content box", () => {
+    const box = overviewBoundsFor("spine", world, tokens, new Set(), null);
+    expect([box.minX, box.maxX, box.maxY]).toEqual([-420, 420, 420]);
+    expect(box.minY).toBeLessThan(-420);
+  });
+  it("keeps the full fit on the world", () => {
+    expect(overviewBoundsFor("full", world, tokens, new Set(), null)).toEqual(world.bounds);
+  });
+});

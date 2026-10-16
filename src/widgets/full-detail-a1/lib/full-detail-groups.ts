@@ -30,6 +30,12 @@ export interface FullDetailGroupView {
   total: number;
 }
 
+export interface FullDetailDomainLink {
+  id: string;
+  title: string;
+  links: number;
+}
+
 export interface FullDetailGroups {
   /** Outgoing containment — what this node contains. */
   contains: FullDetailGroupView;
@@ -39,6 +45,7 @@ export interface FullDetailGroups {
   dependsOn: FullDetailGroupView;
   /** Incoming containment — the (usually single) parent this node belongs to. */
   belongsTo: FullDetailGroupView;
+  domainLevel?: { usedBy: FullDetailDomainLink[]; needs: FullDetailDomainLink[] } | null;
 }
 
 /**

@@ -7,6 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { webglAccelerated } from '@/shared/lib/map-canvas/webgl-probe';
 
 import type { AtlasHandle } from '../lib/hero-atlas-scene';
+import { heroBounds, releaseCaption, watchHeroType } from '../lib/hero-bounds';
 import { echoFact } from '../lib/hero-echo';
 import type { StageGraph } from '../lib/stage-graph';
 import { HERO_SPLIT_MIN_WIDTH_REM, HeroObject } from './HeroObject';
@@ -42,8 +43,10 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
   const t = useTranslations('download');
   const tKinds = useTranslations('kinds');
   const hostRef = useRef<HTMLDivElement | null>(null);
+  const captionRef = useRef<HTMLParagraphElement | null>(null);
   const handleRef = useRef<AtlasHandle | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const [walked, setWalked] = useState<string | null>(null);
   const [mode, setMode] = useState<'pending' | 'three' | 'fallback'>('pending');
   const typingRef = useRef({ typed, total });
   useEffect(() => {
@@ -72,6 +75,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
   useEffect(() => {
     if (mode !== 'three') return;
     const host = hostRef.current;
+    const caption = captionRef.current;
     if (!host || graph.nodes.length === 0) return;
     let disposed = false;
     let handle: AtlasHandle | null = null;
@@ -93,8 +97,15 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
         {
           canvasClassName: 'block h-full w-full touch-pan-y',
           onHover: setHover,
+          onChain: setWalked,
           ...(wide
-            ? { anchor: { x: 0.72, y: 0.52 }, dim: 0.9, distance: 5.2 }
+            ? {
+                anchor: { x: 0.74, y: 0.43 },
+                dim: 0.9,
+                fitPx: 540,
+                bounds: () => heroBounds(host, caption),
+                watch: (refit: () => void) => watchHeroType(host, caption, refit),
+              }
             : phone
               ? { anchor: { x: 0.5, bottomPx: 140 }, dim: 0.75, fitPx: 300, pitch: 0.75 }
               : { anchor: { x: 0.5, bottomPx: 210 }, dim: 0.75, fitPx: 440, pitch: 0.75 }),
@@ -111,6 +122,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
         (window as unknown as { __heroEcho?: unknown }).__heroEcho = {
           lit: () => handle!.litCount(),
           nodes: () => handle!.nodesOnScreen(),
+          chain: () => handle!.activeChain(),
           count: graph.nodes.length,
         };
       }
@@ -122,6 +134,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
         delete (window as unknown as { __heroEcho?: unknown }).__heroEcho;
       }
       handle?.dispose();
+      releaseCaption(caption);
     };
   }, [graph, wide, phone, mode]);
 
@@ -132,8 +145,9 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
 
   if (mode === 'fallback') return <HeroObject graph={graph} typed={typed} total={total} />;
 
-  const fact = hover !== null ? echoFact(graph, hover) : null;
-  const hovered = hover !== null ? graph.nodes.find((n) => n.id === hover) : undefined;
+  const named = hover ?? walked;
+  const fact = named !== null ? echoFact(graph, named) : null;
+  const hovered = named !== null ? graph.nodes.find((n) => n.id === named) : undefined;
   const factLine = fact
     ? fact.relation === 'contains'
       ? t('heroFactContains', { parent: fact.from, child: fact.to })
@@ -151,7 +165,9 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
       <div className={cn('gateway-hero-atlas-wash absolute inset-0', wide ? 'is-wide' : undefined)} />
       <div ref={hostRef} className="absolute inset-0" />
       <p
+        ref={captionRef}
         data-testid="gateway-hero-caption"
+        data-hero-caption-source={hover !== null ? 'hover' : walked !== null ? 'chain' : undefined}
         className={cn(
           'gateway-hero-caption pointer-events-none absolute right-[var(--gateway-origin)] top-12 max-w-[40%] truncate text-right font-mono text-label leading-label text-[color:var(--color-text-tertiary)] md:top-16 min-[90rem]:top-auto min-[90rem]:bottom-[7.5rem]',
           caption ? 'is-on' : undefined,

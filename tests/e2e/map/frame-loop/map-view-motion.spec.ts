@@ -55,7 +55,7 @@ test("a view switch never shows a frame without a picture of the map", async ({ 
         expect(frames.at(-1)).toEqual({ views: [to], overlay: null });
     }
 });
-test("closing the inspector lands the utility lane in place, on the toolbar's one clock", async ({ page }) => {
+test("the chrome under the inspector fades where it stands and returns in place, on the toolbar's one clock", async ({ page }) => {
     const transition = await page.evaluate(() => {
         const cs = getComputedStyle(document.querySelector('[data-testid="topology-top-toolbar"]')!);
         const list = (value: string) => value.match(/[a-z-]+\([^)]*\)|[^,\s][^,]*/g)?.map((part) => part.trim()) ?? [];
@@ -63,6 +63,15 @@ test("closing the inspector lands the utility lane in place, on the toolbar's on
     });
     expect(new Set(transition.durations).size, "left and right move on different clocks").toBe(1);
     expect(new Set(transition.timings).size, "left and right move on different curves").toBe(1);
+    const chrome = ["topology-utility-action-lane", "map-analysis-status-entry", "topology-fit-control", "topology-tour-button", "topology-shortcuts-help-button"];
+    const read = () => page.evaluate((ids) => ids.map((id) => {
+        const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+        if (!el) return { id, box: null, opacity: null, inert: false };
+        const b = el.getBoundingClientRect();
+        return { id, box: [b.x, b.y, b.width, b.height].map(Math.round), opacity: Number(getComputedStyle(el).opacity), inert: el.closest("[inert]") !== null };
+    }), chrome);
+    const resting = await read();
+    expect(resting.filter((r) => r.box === null).map((r) => r.id), "chrome missing at rest, so the spec measures nothing").toEqual([]);
     const node = await page.evaluate(() => {
         const map = (window as unknown as {
             __atlasMap: {
@@ -80,7 +89,12 @@ test("closing the inspector lands the utility lane in place, on the toolbar's on
     });
     await page.mouse.click(node.x, node.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-    await expect(page.getByTestId("topology-utility-action-lane")).toHaveCount(0);
+    await expect.poll(async () => (await read()).map((r) => r.opacity), { message: "a piece of chrome under the panel did not fade out" }).toEqual(chrome.map(() => 0));
+    const receded = await read();
+    for (const [i, r] of receded.entries()) {
+        expect(r.inert, `${r.id} still takes input while faded`).toBe(true);
+        expect(r.box, `${r.id} moved when the inspector opened`).toEqual(resting[i]!.box);
+    }
     const lane = page.evaluate(() => new Promise<number[]>((resolve) => {
         const xs: number[] = [];
         const start = performance.now();
@@ -101,4 +115,6 @@ test("closing the inspector lands the utility lane in place, on the toolbar's on
     const centres = await lane;
     expect(centres.length, "the utility lane never came back").toBeGreaterThan(0);
     expect(Math.max(...centres) - Math.min(...centres), `the lane slid after it appeared: ${centres.join(",")}`).toBeLessThanOrEqual(1);
+    await expect.poll(async () => (await read()).map((r) => r.opacity), { message: "the chrome did not come back" }).toEqual(chrome.map(() => 1));
+    expect((await read()).map((r) => r.box)).toEqual(resting.map((r) => r.box));
 });

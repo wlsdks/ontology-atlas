@@ -2,7 +2,7 @@
 
 import { FileText, Moon, Play, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { RoundPassEntry, RoundPassOutcome } from "@/entities/library-round";
 import { undoneReasonKey } from "@/features/library-rounds";
@@ -15,6 +15,8 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Chip } from "@/shared/ui";
 
 import { groupLedgerByDay, passDurationSeconds } from "../../../lib/rounds/round-presentation";
+import { landInk } from "./landing";
+import styles from "./rounds-ledger.module.css";
 
 /**
  * **The ledger** — passes on a time axis, newest first.
@@ -59,6 +61,45 @@ const OUTCOME_BADGE: Record<Exclude<RoundPassOutcome, "asleep" | "held">, string
 };
 
 const ENTER = "motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]";
+
+const LEDGER_ROW = "grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3";
+const OUTCOME_SIGNALS = ["stale", "redrafted", "refused", "held"] as const;
+
+function LedgerColumns() {
+  const t = useTranslations("library.rounds");
+  return (
+    <div data-testid="library-rounds-ledger-head" className={cn(LEDGER_ROW, styles.head)}>
+      <span>{t("ledger.columnTime")}</span>
+      <span />
+      <span className="flex items-baseline justify-between gap-4"><span>{t("ledger.columnRound")}</span><span>{t("ledger.columnOutcome")}</span></span>
+    </div>
+  );
+}
+
+/** The row the first pass lands in: a ghost before any round exists, then the round's own words. */
+function LedgerWaitingRow({ ink, landed, children }: { ink: "ghost" | "live"; landed: boolean; children: ReactNode }) {
+  const t = useTranslations("library.rounds");
+  return (
+    <div ref={landed ? landInk : undefined} data-testid="library-rounds-waiting-row" data-outcome="waiting" data-ink={ink} className={cn(
+      LEDGER_ROW,
+      ink === "ghost" ? "text-[color:var(--color-text-quaternary)]" : "text-[color:var(--color-text-primary)]",
+    )}>
+      <span className="sr-only">{t("ledger.ghostAria")}</span>
+      <span aria-hidden data-ghost-text="" className="py-1.5 text-label leading-label tabular-nums">{t("ledger.ghostTime")}</span>
+      <span className="flex justify-center py-2.5">
+        <span aria-hidden className="h-1.5 w-1.5 rounded-full border border-current" />
+      </span>
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-1.5">
+        {children}
+        <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
+          {OUTCOME_SIGNALS.map((tone) => <span key={tone} data-signal={tone} className="inline-flex items-center gap-1.5">
+            <span aria-hidden className={styles.dot} data-tone={tone} />{t(`signal.${tone}`)}
+          </span>)}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /** `wiki/payments-api.md` → `payments-api`: the name a person knows the page by. */
 export function pageName(path: string): string {
@@ -125,7 +166,7 @@ function LiveRow({ running, locale }: { running: RunningPass; locale: string }) 
       <li
         data-outcome="running"
         data-phase={running.phase}
-        className="grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3"
+        className={LEDGER_ROW}
       >
         <span className="py-1.5 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
           {time.format(new Date(running.startedAt))}
@@ -158,6 +199,8 @@ export function RoundsLedger({
   running = null,
   nextDueLabel,
   allPaused,
+  beforeFirstRound = false,
+  landed = false,
 }: {
   entries: readonly RoundPassEntry[];
   locale: string;
@@ -173,6 +216,8 @@ export function RoundsLedger({
   /** The first due time, for the empty line. */
   nextDueLabel: string | null;
   allPaused: boolean;
+  beforeFirstRound?: boolean;
+  landed?: boolean;
 }) {
   const t = useTranslations("library.rounds");
   const durationWords = useDurationWords();
@@ -194,17 +239,6 @@ export function RoundsLedger({
     setArrived((current) => new Set([...current, ...fresh]));
   }, [entries]);
 
-  if (entries.length === 0) {
-    // A pass is running: the empty sentence would contradict the row above it.
-    return running ? (
-      <LiveRow key={running.startedAt} running={running} locale={locale} />
-    ) : (
-      <p data-testid="library-rounds-ledger-empty" className="text-body leading-body text-[color:var(--color-text-tertiary)]">
-        {allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
-      </p>
-    );
-  }
-
   const days = groupLedgerByDay(entries);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -214,140 +248,152 @@ export function RoundsLedger({
     date.getTime() === today.getTime() ? t("ledger.today") : date.getTime() === yesterday.getTime() ? t("ledger.yesterday") : dayFormat.format(date);
 
   return (
-    <section aria-label={t("ledger.aria")} data-testid="library-rounds-ledger" className="flex flex-col gap-6">
-      {running ? <LiveRow key={running.startedAt} running={running} locale={locale} /> : null}
-      {days.map((day) => (
-        <div key={day.key} data-ledger-day={day.key}>
-          <h3 className="mb-2 text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
-            {dayLabel(day.date)}
-          </h3>
-          <ol className="relative">
-            {/* The axis: one hairline behind every dot of this day. */}
-            <span aria-hidden className="absolute bottom-0 left-[calc(3.5rem+0.75rem+0.25rem-0.5px)] top-0 w-px bg-[color:var(--color-divider)]" />
-            {day.entries.map((entry) => (
-              <li
-                key={entry.id}
-                id={`library-rounds-pass-${entry.id}`}
-                data-testid={`library-rounds-pass-${entry.id}`}
-                data-outcome={entry.outcome}
-                tabIndex={-1}
-                className={cn("grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3", arrived.has(entry.id) && ENTER)}
-              >
-                {entry.outcome === "asleep" ? (
-                  <>
-                    <span className="pt-2 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
-                    <span className="flex justify-center pt-2">
-                      <Moon size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
-                    </span>
-                    {/*
-                      One inner edge and one type step down this column. Measured at 1512
-                      before this: the card's text began at 489, this band's at 484 and the
-                      held line's at 472 — three starts inside one column, and the band was
-                      11px where the held line beside it was 12.5 (`docs/DESIGN-SYSTEM.md`,
-                      "One text edge per column"). The band now wears the card's own
-                      `--card-pad` horizontally and the held line's step; quiet is carried
-                      by the quaternary ink, which is where quiet belongs.
-                    */}
-                    <div className="my-1 border-y border-dashed border-[color:var(--color-divider)] bg-[repeating-linear-gradient(135deg,var(--color-overlay-1)_0_6px,transparent_6px_12px)] px-[var(--card-pad)] py-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]">
-                      {t("ledger.asleep")} · {t("since.span", { from: time.format(new Date(entry.startedAt)), to: time.format(new Date(entry.endedAt)) })}
-                    </div>
-                  </>
-                ) : entry.outcome === "held" ? (
-                  <>
-                    <span className="py-1.5 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
-                    <span className="flex justify-center py-2.5">
-                      <span className={cn("rounded-full", DOT.held)} />
-                    </span>
-                    <p className="truncate py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                      {t("ledger.heldLine", { name: entry.roundName ?? "", checked: t("ledger.checked", { count: entry.checked }) })}
-                      {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <span className="pt-3 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
-                    <span className="flex justify-center pt-[0.9rem]">
-                      <span className={cn("rounded-full", DOT[entry.outcome])} />
-                    </span>
-                    <article className="my-1 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="min-w-0 flex-1 truncate text-body leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
-                          {entry.roundName}
-                        </span>
-                        <span className={badgeClass({ shape: "micro", className: cn("border", OUTCOME_BADGE[entry.outcome]) })}>
-                          {entry.outcome === "stale"
-                            ? t("outcome.stale", { count: entry.stale.length })
-                            : entry.outcome === "redrafted"
-                              ? t("outcome.redrafted", { count: pagesWritten(entry).length })
-                              : t(`outcome.${entry.outcome}`)}
-                        </span>
-                        {/* A pass under a second says nothing about its length: "0 s" is not a
-                            duration a person can use, and it read as a defect beside a real one. */}
-                        <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {passDurationSeconds(entry) > 0 ? `${durationWords(passDurationSeconds(entry))} · ` : null}
-                          {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
-                          {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
-                        </span>
+    <section aria-label={t("ledger.aria")} data-testid="library-rounds-ledger">
+      <LedgerColumns />
+      <div className="mt-2 flex flex-col gap-6">
+        {running ? <LiveRow key={running.startedAt} running={running} locale={locale} /> : null}
+        {entries.length === 0 && !running ? (
+          <LedgerWaitingRow ink={beforeFirstRound ? "ghost" : "live"} landed={landed}>
+            {beforeFirstRound ? <span aria-hidden className={styles.nameSlot} /> : (
+              <p data-testid="library-rounds-ledger-empty" className="min-w-0 text-body leading-body">
+                {allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
+              </p>
+            )}
+          </LedgerWaitingRow>
+        ) : null}
+        {days.map((day) => (
+          <div key={day.key} data-ledger-day={day.key}>
+            <h3 className="mb-2 text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
+              {dayLabel(day.date)}
+            </h3>
+            <ol className="relative">
+              {/* The axis: one hairline behind every dot of this day. */}
+              <span aria-hidden className="absolute bottom-0 left-[calc(3.5rem+0.75rem+0.25rem-0.5px)] top-0 w-px bg-[color:var(--color-divider)]" />
+              {day.entries.map((entry) => (
+                <li
+                  key={entry.id}
+                  id={`library-rounds-pass-${entry.id}`}
+                  data-testid={`library-rounds-pass-${entry.id}`}
+                  data-outcome={entry.outcome}
+                  tabIndex={-1}
+                  className={cn(LEDGER_ROW, arrived.has(entry.id) && ENTER)}
+                >
+                  {entry.outcome === "asleep" ? (
+                    <>
+                      <span className="pt-2 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
+                      <span className="flex justify-center pt-2">
+                        <Moon size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
+                      </span>
+                      {/*
+                        One inner edge and one type step down this column. Measured at 1512
+                        before this: the card's text began at 489, this band's at 484 and the
+                        held line's at 472 — three starts inside one column, and the band was
+                        11px where the held line beside it was 12.5 (`docs/DESIGN-SYSTEM.md`,
+                        "One text edge per column"). The band now wears the card's own
+                        `--card-pad` horizontally and the held line's step; quiet is carried
+                        by the quaternary ink, which is where quiet belongs.
+                      */}
+                      <div className="my-1 border-y border-dashed border-[color:var(--color-divider)] bg-[repeating-linear-gradient(135deg,var(--color-overlay-1)_0_6px,transparent_6px_12px)] px-[var(--card-pad)] py-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]">
+                        {t("ledger.asleep")} · {t("since.span", { from: time.format(new Date(entry.startedAt)), to: time.format(new Date(entry.endedAt)) })}
                       </div>
-                      <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                        {entry.outcome === "failed" && entry.summary
-                          ? entry.summary === "no-manifest" ? t("ledger.failedFolderNotRead") : t("ledger.failedError", { detail: entry.summary })
-                          : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
+                    </>
+                  ) : entry.outcome === "held" ? (
+                    <>
+                      <span className="py-1.5 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
+                      <span className="flex justify-center py-2.5">
+                        <span className={cn("rounded-full", DOT.held)} />
+                      </span>
+                      <p className="truncate py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                        {t("ledger.heldLine", { name: entry.roundName ?? "", checked: t("ledger.checked", { count: entry.checked }) })}
+                        {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
                       </p>
-                      {entry.undone?.length ? (
-                        <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
-                          {entry.undone.map((item) => `${item.action === "left" ? t("ledger.leftAsIs", { page: item.path }) : t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
-                        </p>
-                      ) : null}
-                      {entry.leftAsIs?.length ? (
-                        <p data-testid="library-rounds-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
-                          {entry.leftAsIs.map((page) => t("ledger.leftAsIs", { page })).join(" ")}
-                        </p>
-                      ) : null}
-                      {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {staleNotRedrafted(entry).map((slug) => (
-                            <RoundChip key={`stale-${slug}`} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
-                              ariaLabel={t("since.openPage", { page: pageTitle(slug) })} />
-                          ))}
-                          {pagesWritten(entry).map((path) => (
-                            <RoundChip key={`written-${path}`} onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
-                              label={pageTitle(path)} ariaLabel={t("since.openPage", { page: pageTitle(path) })} />
-                          ))}
+                    </>
+                  ) : (
+                    <>
+                      <span className="pt-3 text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">{time.format(new Date(entry.endedAt))}</span>
+                      <span className="flex justify-center pt-[0.9rem]">
+                        <span className={cn("rounded-full", DOT[entry.outcome])} />
+                      </span>
+                      <article className="my-1 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="min-w-0 flex-1 truncate text-body leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+                            {entry.roundName}
+                          </span>
+                          <span className={badgeClass({ shape: "micro", className: cn("border", OUTCOME_BADGE[entry.outcome]) })}>
+                            {entry.outcome === "stale"
+                              ? t("outcome.stale", { count: entry.stale.length })
+                              : entry.outcome === "redrafted"
+                                ? t("outcome.redrafted", { count: pagesWritten(entry).length })
+                                : t(`outcome.${entry.outcome}`)}
+                          </span>
+                          {/* A pass under a second says nothing about its length: "0 s" is not a
+                              duration a person can use, and it read as a defect beside a real one. */}
+                          <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
+                            {passDurationSeconds(entry) > 0 ? `${durationWords(passDurationSeconds(entry))} · ` : null}
+                            {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
+                            {entry.trigger !== "clock" ? ` · ${entry.trigger === "manual" ? t("ledger.manual") : t("ledger.catchUp")}` : null}
+                          </span>
                         </div>
-                      ) : null}
-                      {sourcesWritten(entry).length > 0 ? (
-                        <p className="mt-2 truncate text-label leading-label text-[color:var(--color-text-tertiary)]" title={sourcesWritten(entry).join(", ")}>
-                          {t("ledger.wrote")}: {sourcesWritten(entry).join(", ")}
+                        <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                          {entry.outcome === "failed" && entry.summary
+                            ? entry.summary === "no-manifest" ? t("ledger.failedFolderNotRead") : t("ledger.failedError", { detail: entry.summary })
+                            : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
                         </p>
-                      ) : null}
-                      {entry.note === "no-agent" ? (
-                        <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">
-                          {t("ledger.noAgent")}{" "}
-                          <Link href={DESTINATION_HREF.agents} className={controlClass({ shape: "link", size: "md", tone: "accent" })}>{t("ledger.openAgents")}</Link>
-                        </p>
-                      ) : null}
-                      {entry.note === "stopped" ? (
-                        <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>
-                      ) : null}
-                      {entry.refused.length > 0 ? (
-                        <p className="mt-2 truncate text-label leading-label text-[color:var(--color-danger-text)]">
-                          {t("ledger.refused")}: {entry.refused.join(", ")}
-                        </p>
-                      ) : null}
-                      {entry.called.length > 0 ? (
-                        <p className="mt-1 truncate text-label leading-label text-[color:var(--color-text-quaternary)]" title={entry.called.join(", ")}>
-                          {t("ledger.called")}: {entry.called.map((tool) => tool.replace(/^mcp__[^_]+(?:-[^_]+)*__/, "")).join(", ")}
-                        </p>
-                      ) : null}
-                    </article>
-                  </>
-                )}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
+                        {entry.undone?.length ? (
+                          <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
+                            {entry.undone.map((item) => `${item.action === "left" ? t("ledger.leftAsIs", { page: item.path }) : t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
+                          </p>
+                        ) : null}
+                        {entry.leftAsIs?.length ? (
+                          <p data-testid="library-rounds-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                            {entry.leftAsIs.map((page) => t("ledger.leftAsIs", { page })).join(" ")}
+                          </p>
+                        ) : null}
+                        {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {staleNotRedrafted(entry).map((slug) => (
+                              <RoundChip key={`stale-${slug}`} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
+                                ariaLabel={t("since.openPage", { page: pageTitle(slug) })} />
+                            ))}
+                            {pagesWritten(entry).map((path) => (
+                              <RoundChip key={`written-${path}`} onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
+                                label={pageTitle(path)} ariaLabel={t("since.openPage", { page: pageTitle(path) })} />
+                            ))}
+                          </div>
+                        ) : null}
+                        {sourcesWritten(entry).length > 0 ? (
+                          <p className="mt-2 truncate text-label leading-label text-[color:var(--color-text-tertiary)]" title={sourcesWritten(entry).join(", ")}>
+                            {t("ledger.wrote")}: {sourcesWritten(entry).join(", ")}
+                          </p>
+                        ) : null}
+                        {entry.note === "no-agent" ? (
+                          <p className="mt-2 text-label leading-label text-[color:var(--color-amber-source-a90)]">
+                            {t("ledger.noAgent")}{" "}
+                            <Link href={DESTINATION_HREF.agents} className={controlClass({ shape: "link", size: "md", tone: "accent" })}>{t("ledger.openAgents")}</Link>
+                          </p>
+                        ) : null}
+                        {entry.note === "stopped" ? (
+                          <p className="mt-2 text-label leading-label text-[color:var(--color-text-tertiary)]">{t("ledger.stopped")}</p>
+                        ) : null}
+                        {entry.refused.length > 0 ? (
+                          <p className="mt-2 truncate text-label leading-label text-[color:var(--color-danger-text)]">
+                            {t("ledger.refused")}: {entry.refused.join(", ")}
+                          </p>
+                        ) : null}
+                        {entry.called.length > 0 ? (
+                          <p className="mt-1 truncate text-label leading-label text-[color:var(--color-text-quaternary)]" title={entry.called.join(", ")}>
+                            {t("ledger.called")}: {entry.called.map((tool) => tool.replace(/^mcp__[^_]+(?:-[^_]+)*__/, "")).join(", ")}
+                          </p>
+                        ) : null}
+                      </article>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

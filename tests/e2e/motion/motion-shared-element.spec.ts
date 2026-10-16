@@ -2,7 +2,15 @@ import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "../first-run-seed";
 import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "../settle";
 
-type Frame = { t: number; pseudos: string[]; transform: string | null; duration: string | null };
+type Frame = {
+  t: number;
+  pseudos: string[];
+  transform: string | null;
+  duration: string | null;
+  easing: string | null;
+  travel: string | null;
+  oldOpacity: string | null;
+};
 
 async function openPopover(page: Page, reducedMotion: "reduce" | "no-preference") {
   await page.setViewportSize({ width: 1512, height: 900 });
@@ -42,11 +50,15 @@ async function sampleWhile(page: Page, name: string, press: () => Promise<void>)
         .map((a) => (a.effect as KeyframeEffect | null)?.pseudoElement ?? "")
         .filter((p) => p.startsWith("::view-transition"));
       const group = getComputedStyle(html, `::view-transition-group(${groupName})`);
+      const old = getComputedStyle(html, `::view-transition-old(${groupName})`);
       frames.push({
         t,
         pseudos,
         transform: pseudos.length ? group.transform : null,
         duration: pseudos.length ? group.animationDuration : null,
+        easing: pseudos.length ? group.animationTimingFunction : null,
+        travel: pseudos.length ? html.style.getPropertyValue("--morph-travel-duration") : null,
+        oldOpacity: pseudos.length ? old.opacity : null,
       });
       const seen = frames.some((f) => f.pseudos.length > 0);
       const over = seen && pseudos.length === 0 && !html.classList.contains("morph-transition");
@@ -66,21 +78,24 @@ const activeTestId = (page: Page) =>
 test.describe("shared-element morph: concept popover to full detail", () => {
   test.setTimeout(120_000);
 
-  test("the title travels as one named group and focus lands inside full detail", async ({ page }) => {
+  test("the title travels as one object on the surface spring and focus lands inside full detail", async ({ page }) => {
     const name = await openPopover(page, "no-preference");
     await page.getByTestId("map-detail-panel-open-full-detail").focus();
     const frames = await sampleWhile(page, name, () => page.keyboard.press("Enter"));
 
     const pseudos = new Set(frames.flatMap((f) => f.pseudos));
-    expect(pseudos).toContain(`::view-transition-old(${name})`);
-    expect(pseudos).toContain(`::view-transition-new(${name})`);
+    expect(pseudos).toContain(`::view-transition-group(${name})`);
     const transforms = new Set(frames.map((f) => f.transform).filter((v): v is string => v !== null && v !== "none"));
     expect(transforms.size).toBeGreaterThanOrEqual(3);
-    const base = await page.evaluate(() =>
-      getComputedStyle(document.documentElement).getPropertyValue("--motion-base").trim(),
-    );
-    const durations = new Set(frames.map((f) => f.duration).filter((v): v is string => v !== null));
-    expect([...durations]).toEqual([`${parseFloat(base) / (base.endsWith("ms") ? 1000 : 1)}s`]);
+    const running = frames.filter((f) => f.pseudos.length > 0);
+    expect(running.length).toBeGreaterThan(0);
+    expect(running.filter((f) => f.oldOpacity !== "0")).toEqual([]);
+    const travel = [...new Set(running.map((f) => f.travel))];
+    expect(travel).toHaveLength(1);
+    expect(travel[0]).toMatch(/^\d+ms$/);
+    const durations = new Set(running.map((f) => f.duration));
+    expect([...durations]).toEqual([`${parseFloat(travel[0]!) / 1000}s`]);
+    expect(running.every((f) => f.easing?.startsWith("linear("))).toBe(true);
 
     const fullDetail = page.getByTestId("full-detail-a1");
     await expect(fullDetail).toBeVisible();
@@ -99,14 +114,25 @@ test.describe("shared-element morph: concept popover to full detail", () => {
     await expect.poll(() => activeTestId(page)).toBe("map-detail-panel-open-full-detail");
   });
 
-  test("reduced motion keeps the pair but moves no group", async ({ page }) => {
-    const name = await openPopover(page, "reduce");
-    const frames = await sampleWhile(page, name, () =>
-      page.getByTestId("map-detail-panel-open-full-detail").click(),
-    );
-    const pseudos = new Set(frames.flatMap((f) => f.pseudos));
-    expect(pseudos).not.toContain(`::view-transition-group(${name})`);
-    expect(pseudos).toContain(`::view-transition-new(${name})`);
-    await expect(page.getByTestId("full-detail-a1")).toBeVisible();
+  test("reduced motion starts no transition: the title arrives with its surface's fade", async ({ page }) => {
+    await openPopover(page, "reduce");
+    const started = await page.evaluate(() => {
+      const w = window as unknown as { __vtStarted: boolean };
+      w.__vtStarted = false;
+      const original = document.startViewTransition?.bind(document);
+      if (original) {
+        document.startViewTransition = ((update: () => void) => {
+          w.__vtStarted = true;
+          return original(update);
+        }) as typeof document.startViewTransition;
+      }
+      return Boolean(original);
+    });
+    expect(started, "the browser lacks the View Transition API").toBe(true);
+    await page.getByTestId("map-detail-panel-open-full-detail").click();
+    const detail = page.getByTestId("full-detail-a1");
+    await expect(detail).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { __vtStarted: boolean }).__vtStarted)).toBe(false);
+    await expect(detail.locator("h1")).toBeVisible();
   });
 });

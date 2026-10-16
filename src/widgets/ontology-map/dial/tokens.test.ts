@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { DIAL_TOKEN_SPECS, readDialTokens, resolveDialTokens } from "./tokens";
+import { DIAL_INK_SPECS, DIAL_TOKEN_SPECS, readDialTokens, resolveDialTokens } from "./tokens";
 
 const values = (): Map<string, string> => {
   const m = new Map(DIAL_TOKEN_SPECS.map(({ cssVar }, i) => [cssVar, String(i + 1)]));
+  for (const { cssVar } of DIAL_INK_SPECS) m.set(cssVar, "#666672");
   m.set("--map-panel-text-primary", " #ececf0 ");
   return m;
 };
@@ -11,16 +12,17 @@ const values = (): Map<string, string> => {
 describe("resolveDialTokens", () => {
   it("fills every key and borrows the attended name ink", () => {
     const tokens = resolveDialTokens((v) => values().get(v) ?? "");
-    expect(Object.keys(tokens)).toHaveLength(66);
+    expect(Object.keys(tokens)).toHaveLength(71);
+    expect(tokens.ring).toBe("#666672");
     expect(tokens.pitch).toBe(1);
-    expect(tokens.labelScale).toBe(65);
+    expect(tokens.labelScale).toBe(64);
     expect(tokens.attendedNameInk).toBe("#ececf0");
   });
 
-  it("names the 65 tokens once each, in camelCase of the css name", () => {
-    expect(DIAL_TOKEN_SPECS).toHaveLength(65);
-    expect(new Set(DIAL_TOKEN_SPECS.map((s) => s.key)).size).toBe(65);
-    for (const { key, cssVar } of DIAL_TOKEN_SPECS) {
+  it("names the 64 tokens once each, in camelCase of the css name", () => {
+    expect(DIAL_TOKEN_SPECS).toHaveLength(64);
+    expect(new Set(DIAL_TOKEN_SPECS.map((s) => s.key)).size).toBe(64);
+    for (const { key, cssVar } of [...DIAL_TOKEN_SPECS, ...DIAL_INK_SPECS]) {
       expect(cssVar.replace("--map-dial-", "").replace(/-(\w)/g, (_, c: string) => c.toUpperCase())).toBe(key);
     }
   });
@@ -34,7 +36,8 @@ describe("resolveDialTokens", () => {
     expect(() => resolveDialTokens((v) => bad.get(v) ?? "")).toThrow(/--map-dial-pitch/);
     const ink = values();
     ink.delete("--map-panel-text-primary");
-    expect(() => resolveDialTokens((v) => ink.get(v) ?? "")).toThrow(/--map-panel-text-primary/);
+    ink.delete("--map-dial-ring");
+    expect(() => resolveDialTokens((v) => ink.get(v) ?? "")).toThrow(/--map-dial-ring, --map-panel-text-primary/);
   });
 });
 

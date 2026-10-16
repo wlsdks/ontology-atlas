@@ -225,12 +225,12 @@
        fill in the first run v3 flagship mockup, 1:1). */
     --map-label-project: #d4b478;
     --map-label-domain: #b8b8c1;
-    --map-label-capability: #84848c;
     /*
-     * `#7e7e87` is the dimmest step clearing the 4.5:1 text floor (4.92:1) while staying under
-     * capability's ink. Gate: `tests/contract/map/topology-ink-contrast.contract.test.ts`.
+     * Names clear 7:1: element 7.08 < capability 7.90 < domain 10.04.
+     * Gate: `tests/contract/map/topology-ink-contrast.contract.test.ts`.
      */
-    --map-label-element: #7e7e87;
+    --map-label-capability: #a3a3ac;
+    --map-label-element: #9a9aa3;
     /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
        long element title (file path) from clipping the right edge / colliding
        with its horizontal neighbor (Design Guardian readability rejection). */

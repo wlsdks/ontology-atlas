@@ -1,18 +1,12 @@
 {
   "backToMap": "← Map",
   "breadcrumbSeparator": "/",
-  "census": "{concepts} CONCEPTS · {relations} RELATIONS",
+  "census": "{concepts} concepts · {relations} relations",
   "freshOn": "Recently updated",
   "freshOff": "Quiet",
   "copyLink": "Copy concept link",
   "copyLinkCopied": "Copied the concept link",
   "close": "Close",
-  "metric": {
-    "contains": "Contains",
-    "usedBy": "Used by",
-    "dependsOn": "Depends on",
-    "reach": "Reach at 3 steps"
-  },
   "groups": {
     "containsTitle": "What this concept contains",
     "containsCaption": "What sits inside this concept",
@@ -22,8 +16,11 @@
     "dependsOnCaption": "Without these it does not work",
     "belongsToTitle": "Belongs to",
     "belongsToCaption": "The concept this one sits inside",
-    "empty": "No direct connections.",
-    "freshDotTitle": "Recently updated"
+    "freshDotTitle": "Recently updated",
+    "directLinks": "Direct links {count, number}",
+    "domainCount": "{count, plural, one {# domain} other {# domains}}",
+    "domainLinks": "{count, plural, one {# link} other {# links}} with this domain",
+    "emptyGroup": "{title}: none"
   },
   "reach": {
     "leadIn": "From this concept,",

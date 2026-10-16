@@ -350,11 +350,6 @@ export function CommitDetail({
       className="git-fade-in flex min-h-0 flex-1 flex-col"
       data-testid="atlas-git-history-detail"
     >
-      {/*
-        Identity, the pane's one headline in either lens: `text-hero`, one step above the page
-        title so the selection wins, at the signature weight. A short id and a locale date
-        replace the full hash and ISO timestamp.
-      */}
       <header className="flex flex-none flex-col gap-1.5 px-4 pt-5 pb-4">
         <h2
           data-testid="atlas-git-detail-headline"

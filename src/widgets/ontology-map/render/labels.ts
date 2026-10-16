@@ -4,6 +4,7 @@
  * own `revealAlpha`; a selected or hovered node is always full contrast; a dim node is 0.
  */
 
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { smoothstep } from "../model/visibility/altitude";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { lerpColorHex } from "./grid";
@@ -71,29 +72,62 @@ const PROJECT_PLATE_PAD_X = 6;
 const PROJECT_PLATE_PAD_Y = 2;
 
 /**
- * Font string per kind — single source shared by `draw` and
- * `measureLabelWidth` so measured bboxes match painted glyphs.
- *
- * Project bumped 13→15px (canvas-emphasis slice §A4, "one step up") —
- * the project name is the Layer-0 anchor's own label and should read a full
- * step above domain/capability/element, not just barely above domain's 10px.
+ * Size per kind, on the locked type ramp: title, body, label, caption. Shared by `draw` and
+ * `measureLabelWidth` so measured boxes match painted glyphs.
  */
 const LABEL_FONT_SIZE: Record<LabelDrawState["kind"], number> = {
-  project: 15,
-  domain: 10,
-  capability: 10.5,
+  project: 16,
+  domain: 12.5,
+  capability: 11,
   element: 9.5,
 };
 
-/** Font weights for assembling the scaled font string — one source of truth alongside LABEL_FONT_SIZE/FAMILY. */
+/** Weight per kind, on the ladder (`FONT_WEIGHT`), so the hierarchy reads in weight as well as size. */
 const LABEL_FONT_WEIGHT: Record<LabelDrawState["kind"], number> = {
-  project: 600,
-  domain: 600,
-  capability: 500,
+  project: FONT_WEIGHT.strong,
+  domain: FONT_WEIGHT.emphasis,
+  capability: FONT_WEIGHT.signature,
   element: 400,
 };
 
-const LABEL_FONT_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
+const FALLBACK_LABEL_FAMILY = "-apple-system, 'SF Pro Text', sans-serif";
+const LADDER_WEIGHTS = [400, FONT_WEIGHT.signature, FONT_WEIGHT.emphasis, FONT_WEIGHT.strong];
+let labelFamily: string | null = null;
+let adopting: Promise<boolean> | null = null;
+
+/** The page's text family for its locale (`--font-sans`), the one source for every canvas face. */
+export function productFontFamily(): string | null {
+  if (typeof document === "undefined" || !document.documentElement || typeof getComputedStyle !== "function") return null;
+  return getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim() || null;
+}
+
+/** The family canvas names are drawn in: the product family once every ladder weight has loaded. */
+export function labelFontFamily(): string {
+  if (labelFamily === null && adopting === null) void adoptBodyLabelFont();
+  return labelFamily ?? FALLBACK_LABEL_FAMILY;
+}
+
+async function adopt(): Promise<boolean> {
+  if (typeof document === "undefined" || !document.fonts) return false;
+  const family = productFontFamily();
+  if (family === null) return false;
+  const faces = LADDER_WEIGHTS.map((weight) => `${weight} 12px ${family}`);
+  try {
+    await Promise.all(faces.map((face) => document.fonts.load(face)));
+  } catch {
+    return false;
+  }
+  if (!faces.every((face) => document.fonts.check(face))) return false;
+  labelFamily = family;
+  widthCache.clear();
+  return true;
+}
+
+/** Resolves true once the product family became the label family, so the caller can repaint once. */
+export function adoptBodyLabelFont(): Promise<boolean> {
+  adopting ??= adopt();
+  return adopting;
+}
 
 /**
  * Label zoom factor: a sublinear (exponent 0.4) function of camera zoom, capped
@@ -113,25 +147,36 @@ export function scaledLabelFontSize(kind: LabelDrawState["kind"], scale: number)
 
 /** Scaled font string. */
 export function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
-  return `${LABEL_FONT_WEIGHT[kind]} ${scaledLabelFontSize(kind, scale)}px ${LABEL_FONT_FAMILY}`;
+  return labelFontAt(kind, scaledLabelFontSize(kind, scale));
+}
+
+/** A kind's weight and family at an exact size, for surfaces that size their own type. */
+export function labelFontAt(kind: LabelDrawState["kind"], px: number): string {
+  return `${LABEL_FONT_WEIGHT[kind]} ${px}px ${labelFontFamily()}`;
+}
+
+export const NUMERAL_FONT_PX = LABEL_FONT_SIZE.capability;
+
+/** Counts on the map: the label step at the strongest weight, in the names' family. */
+export function numeralFont(): string {
+  return `${FONT_WEIGHT.strong} ${NUMERAL_FONT_PX}px ${labelFontFamily()}`;
+}
+
+export const TABULAR_DIGITS = "0123456789";
+
+/** Width of `text` with every digit on the widest digit's advance: tabular figures by hand. */
+export function tabularWidth(text: string, font: string, measure: (text: string, font: string) => number): number {
+  const cell = Math.max(...[...TABULAR_DIGITS].map((d) => measure(d, font)));
+  let width = 0;
+  for (const ch of text) width += TABULAR_DIGITS.includes(ch) ? cell : measure(ch, font);
+  return width;
 }
 
 /** Letter-tracking for the instrument caption's tracked caps (`drawInstrumentCaption`). */
 const DOMAIN_TRACKING = 1.6;
 
-// Per-frame render-loop profile (perf sweep, 2026-07 —
-// `performance.mark`-instrumented `topology-frame-draw.ts` walk) found
-// ~830 `ctx.measureText` calls PER FRAME at 120Hz on the dogfood vault (400K+
-// over a 4s window) — the single largest canvas-API cost in the paint path.
-// The bulk comes from `ellipsizeToWidth` (render/label-layout.ts) re-testing
-// every word-boundary substring of a label EVERY frame, even though a node's
-// `(kind, text)` pair — and therefore its measured width — never changes
-// between frames (only the camera/ego state does). `LABEL_FONT` is a fixed
-// per-kind constant (not themable), so `(kind, text)` deterministically
-// implies the same width for the lifetime of the page — safe to memoize
-// forever, no invalidation needed. This turns the steady-state cost from
-// O(frames × visible labels × boundary chars) into O(distinct label
-// substrings), computed once.
+// The paint path once called `ctx.measureText` ~830 times a frame. A width depends only on the font
+// string and the text, so it is measured once per pair.
 const widthCache = new Map<string, number>();
 
 function measureLabelWidthUncached(
@@ -145,22 +190,14 @@ function measureLabelWidthUncached(
   return ctx.measureText(text).width;
 }
 
-/**
- * Measures a label's painted width for bbox suppression. Mirrors `draw`'s
- * per-kind font + the domain uppercase/tracking, so the measured box matches
- * what actually lands on the canvas. Cached by `kind + text` (see file header
- * above) — callers that need a fresh disk-verified measurement (none today)
- * should call `measureLabelWidthUncached` directly instead.
- */
+/** Measures a label's painted width for bbox suppression, in `draw`'s font, cached per font and text. */
 export function measureLabelWidth(
   ctx: CanvasRenderingContext2D,
   kind: LabelDrawState["kind"],
   text: string,
   scale = 1,
 ): number {
-  // Once the font became variable the cache key had to include the size
-  // (Guardian). Quantising to 0.5px keeps the key space from exploding.
-  const key = kind + "|" + scaledLabelFontSize(kind, scale) + "|" + text;
+  const key = scaledLabelFont(kind, scale) + "|" + text;
   const cached = widthCache.get(key);
   if (cached !== undefined) return cached;
   const width = measureLabelWidthUncached(ctx, kind, text, scale);
@@ -202,7 +239,7 @@ export function measureLabelVerticalMetrics(
   scale = 1,
 ): LabelVerticalMetrics {
   const fontSize = scaledLabelFontSize(kind, scale);
-  const key = kind + "|" + fontSize;
+  const key = scaledLabelFont(kind, scale);
   const cached = verticalMetricsCache.get(key);
   if (cached !== undefined) return cached;
 
@@ -379,10 +416,8 @@ function drawTrackedText(
 }
 
 /**
- * Instrument caption — one tracked-caps line for map annotations. Exactly the
- * domain watermark's grammar (10px, weight 600, 1.6 tracking, uppercase) but at
- * a fixed screen size, so annotation ink always reads at instrument scale
- * regardless of zoom. No new fonts or tokens.
+ * Instrument caption — one tracked-caps line for map annotations, in the domain weight at the
+ * caption step and a fixed screen size, so annotation ink reads at instrument scale at any zoom.
  */
 export function drawInstrumentCaption(
   ctx: CanvasRenderingContext2D,
@@ -393,7 +428,7 @@ export function drawInstrumentCaption(
   alpha: number,
 ): void {
   if (alpha <= 0.02) return;
-  ctx.font = scaledLabelFont("domain", 1);
+  ctx.font = labelFontAt("domain", LABEL_FONT_SIZE.element);
   drawTrackedText(ctx, text.toUpperCase(), cx, cy, color, DOMAIN_TRACKING, alpha);
 }
 

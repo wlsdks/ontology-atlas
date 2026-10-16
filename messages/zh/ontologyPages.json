@@ -22,12 +22,6 @@
       "sinceGloss": "展开一行可查看其统计的概念；行末链接会打开修复位置。",
       "headline": "<learn>{stale} 项待了解 </learn><sep> · </sep><unchecked>{unknown} 项未检查 </unchecked>",
       "headlineCounting": "正在统计 <learn> 待了解的事项 </learn> 和 <unchecked> 未检查的事项 </unchecked>",
-      "unit": {
-        "ontology": "",
-        "wiki": "个页面",
-        "harness": "个文件",
-        "agent": "次调用"
-      },
       "sinceTitle": "自上次以来有 {count} 项变更",
       "sinceTitleKind": {
         "concept-doc": "自上次以来有 {count} 个概念文档变更",
@@ -74,17 +68,6 @@
         "harness": "指引",
         "agent": "智能体"
       },
-      "col": {
-        "current": "最新",
-        "stale": "过时",
-        "unknown": "未知",
-        "told": "已告知",
-        "gated": "已拦截",
-        "watched": "已监视",
-        "reads": "读取",
-        "writes": "写入",
-        "agents": "智能体"
-      },
       "appOnly": "仅在应用中统计。浏览器无法读取文件夹旁的代码及其隐藏文件夹。",
       "quiet": "此后没有新的待了解内容。",
       "open": "打开",
@@ -122,13 +105,6 @@
       "evidenceUnreadable": "无法检查链接的代码。重新打开文件夹即可重试。",
       "evidenceNoSource": "尚未检查概念是否仍与代码一致。在地图上连接代码仓库后，这里会统计。",
       "noSourceShared": "尚未统计概念是否仍与代码一致，以及指南覆盖的范围。在地图上连接代码仓库后，两者都会在这里统计。",
-      "bandState": {
-        "app-only": "最新和过时仅在应用中统计",
-        "no-data": "暂无",
-        "no-source": "尚无仓库",
-        "reading": "读取中",
-        "unreadable": "无法读取"
-      },
       "coreJoin": " · "
     },
     "unmatched": {
@@ -496,7 +472,7 @@
       "copySelectedCheck": "复制只读检查请求",
       "copiedSelected": "已复制",
       "reviewSelectedRequest": "查看请求内容",
-      "declarationRange": "每条线代表一条声明 · {total} 条中的 {from}–{to}",
+      "lineLegend": "每条线代表一条声明",
       "previousDeclarations": "上一组声明",
       "nextDeclarations": "下一组声明",
       "selectionMissing": "此文件夹中没有保存的选择。这里显示当前记录的概览。",
@@ -506,7 +482,8 @@
         "dated": "已比较源码日期，含义未验证",
         "unknown": "尚未检查源码当前状态"
       },
-      "declarationCompact": "{count} 条声明",
+      "declarationsInView": "此图中 {count} 条声明",
+      "declarationPage": "{from}–{to} / {total}",
       "documentTitle": "分析 · Ontology Atlas",
       "findConnection": "查找关系",
       "findCapability": "查找能力",
