@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { stubDirectoryPicker } from "../vault-picker-stub";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { HARNESS_SOURCE_ROOT, installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
+import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
 
 /**
  * **The brief reports the folder a person actually opened.**
@@ -117,7 +117,7 @@ test("while the app is still reading instructions, the headline shows no partial
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 949 });
   await installHarnessRuntime(page);
-  await page.addInitScript((sourceRoot: string) => {
+  await page.addInitScript((sourceCommands: readonly string[]) => {
     const internals = (window as unknown as {
       __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
     }).__TAURI_INTERNALS__;
@@ -128,8 +128,8 @@ test("while the app is still reading instructions, the headline shows no partial
     });
     (window as unknown as { __releaseGuidanceScan: () => void }).__releaseGuidanceScan = () => release();
     internals.invoke = (command, args = {}) =>
-      (args as { rootPath?: unknown }).rootPath === sourceRoot ? gate.then(() => inner(command, args)) : inner(command, args);
-  }, HARNESS_SOURCE_ROOT);
+      sourceCommands.includes(command) ? gate.then(() => inner(command, args)) : inner(command, args);
+  }, HARNESS_SOURCE_COMMANDS);
   await mountHarnessVault(page);
 
   await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });

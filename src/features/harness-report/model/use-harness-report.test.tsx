@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   scan: vi.fn(),
+  port: vi.fn(),
 }));
+
+vi.mock('./bridge-port', () => ({ bridgePort: mocks.port }));
 
 vi.mock('@/shared/lib/project-source/project-source-store', () => ({
   createVaultFileProjectSourceStore: (handle: FileSystemDirectoryHandle) => ({
@@ -86,11 +89,31 @@ describe('useHarnessReport request identity', () => {
 
   it('carries a refused read to the screen as a failure with its code', async () => {
     mocks.list.mockResolvedValue(binding('/repo'));
-    mocks.scan.mockRejectedValue(codedFailure('vault-root-not-granted', '.: vault-root-not-granted'));
+    mocks.scan.mockRejectedValue(codedFailure('source-root-not-granted', '.: source-root-not-granted'));
     const vault = handle('/repo/docs');
     const { result } = renderHook(() => useHarnessReport(vault, ['project'], true, []));
     await waitFor(() => expect(result.current.status).toBe('failed'));
-    expect(result.current).toMatchObject({ sourceRoot: '/repo', code: 'vault-root-not-granted' });
+    expect(result.current).toMatchObject({ sourceRoot: '/repo', code: 'source-root-not-granted' });
+  });
+
+  it('scans through the project binding, never a raw path', async () => {
+    mocks.list.mockImplementation(async (_handle: FileSystemDirectoryHandle, slug: string) =>
+      slug === 'two' ? binding('/repo') : { status: 'ok', bindings: [{ rootPath: '/repo' }, { rootPath: '/repo' }] },
+    );
+    mocks.scan.mockResolvedValue({ files: [] });
+    const vault = handle('/repo/docs');
+    const { result } = renderHook(() => useHarnessReport(vault, ['one', 'two'], true, []));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(mocks.port).toHaveBeenCalledWith({ vaultRoot: '/repo/docs', projectSlug: 'two' });
+    expect(JSON.stringify(mocks.port.mock.calls)).not.toContain('"/repo"');
+  });
+
+  it('resolves to no source when no project has exactly one binding on the root', async () => {
+    mocks.list.mockResolvedValue({ status: 'ok', bindings: [{ rootPath: '/repo' }, { rootPath: '/repo' }] });
+    const vault = handle('/repo/docs');
+    const { result } = renderHook(() => useHarnessReport(vault, ['one'], true, []));
+    await waitFor(() => expect(result.current.status).toBe('no-source'));
+    expect(mocks.scan).not.toHaveBeenCalled();
   });
 
   it('keeps disabled and browser requests unsupported', () => {

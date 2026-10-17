@@ -30,7 +30,7 @@ pub(crate) struct Registry {
     vaults: HashSet<PathBuf>,
     /// Repository roots discovered from a granted vault, for project-source
     /// inspection only (it may climb to the repo the vault lives in). Never widens
-    /// what the content commands can read.
+    /// what the content commands can read; `harness_source` reads its allowlist under one.
     sources: HashSet<PathBuf>,
     selected_sources: HashSet<PathBuf>,
     /// Where granted vault roots persist across launches; `None` in tests.

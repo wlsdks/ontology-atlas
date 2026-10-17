@@ -30,12 +30,14 @@ export interface HookConfigFacts {
 export function hookScriptPath(command: string): string | null {
   const match = command.match(/[\w./${}:@-]*\.(?:sh|mjs|cjs|js|py)\b/);
   if (!match) return null;
+  if (match.index! > 0 && command[match.index! - 1] === '~') return null;
   const raw = match[0]
     .replace(/^\$\{CLAUDE_PROJECT_DIR:-\.\}\//, '')
     .replace(/^\$CLAUDE_PROJECT_DIR\//, '')
     .replace(/^\.\//, '');
   // An unexpanded variable cannot be tested against the filesystem.
-  return raw.includes('$') || raw.length === 0 ? null : raw;
+  if (raw.includes('$') || raw.length === 0) return null;
+  return raw.startsWith('/') || raw.startsWith('~') || raw.split('/').includes('..') ? null : raw;
 }
 
 /** Claude `settings.json` and Codex `hooks.json` nest alike; callers dedupe by script. */

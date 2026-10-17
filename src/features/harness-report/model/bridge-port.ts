@@ -1,38 +1,57 @@
 import type { HarnessScanPort } from '@/entities/agent-files';
 import { parseNativeError } from '@/shared/lib/desktop-shell/native-error';
 import { toErrorMessage } from '@/shared/lib/failures/error-message';
-import { codedFailure, failureCodeOf } from '@/shared/lib/failures/failure-code';
+import { codedFailure } from '@/shared/lib/failures/failure-code';
 import {
-  listTauriVaultEntries,
-  readTauriVaultTextFile,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+  harnessSourcePathExists,
+  listHarnessSourceDirectory,
+  readHarnessSourceText,
+} from '@/shared/lib/project-source/tauri-harness-source';
 
-const NOT_A_DIRECTORY = /not a directory|os error 20\)/i;
-/* A directory or a binary file where text was asked is not a guide, so it reads as no text. */
-const NOT_TEXT = /is a directory|os error 21\)|valid utf-8/i;
+const ABSENT_AS_DIRECTORY = new Set(['harness-path-missing', 'harness-not-a-directory']);
+const ABSENT_AS_TEXT = new Set([
+  'harness-path-missing',
+  'harness-not-a-file',
+  'harness-not-text',
+  'harness-file-too-large',
+]);
 
-function absentOrThrow(error: unknown, relativePath: string, notText = false): null {
+function refuse(error: unknown, relativePath: string): never {
   const raw = toErrorMessage(error) ?? String(error);
-  if (failureCodeOf(raw) === 'target-missing' || NOT_A_DIRECTORY.test(raw)) return null;
-  if (notText && NOT_TEXT.test(raw)) return null;
-  const code = parseNativeError(raw).code ?? failureCodeOf(raw) ?? 'harness-read-failed';
-  throw codedFailure(code, `${relativePath || '.'}: ${raw}`);
+  throw codedFailure(
+    parseNativeError(error).code ?? 'harness-read-failed',
+    `${relativePath || '.'}: ${raw}`,
+  );
 }
 
-export function bridgePort(sourceRoot: string): HarnessScanPort {
+function absentOrThrow(error: unknown, relativePath: string, absent: ReadonlySet<string>): null {
+  const code = parseNativeError(error).code;
+  if (code && absent.has(code)) return null;
+  return refuse(error, relativePath);
+}
+
+export function bridgePort(source: { vaultRoot: string; projectSlug: string }): HarnessScanPort {
+  const { vaultRoot, projectSlug } = source;
   return {
     async listDir(relativePath) {
       try {
-        return await listTauriVaultEntries(sourceRoot, relativePath);
+        return await listHarnessSourceDirectory(vaultRoot, projectSlug, relativePath);
       } catch (error) {
-        return absentOrThrow(error, relativePath);
+        return absentOrThrow(error, relativePath, ABSENT_AS_DIRECTORY);
       }
     },
     async readText(relativePath) {
       try {
-        return await readTauriVaultTextFile(sourceRoot, relativePath);
+        return await readHarnessSourceText(vaultRoot, projectSlug, relativePath);
       } catch (error) {
-        return absentOrThrow(error, relativePath, true);
+        return absentOrThrow(error, relativePath, ABSENT_AS_TEXT);
+      }
+    },
+    async pathExists(relativePath) {
+      try {
+        return await harnessSourcePathExists(vaultRoot, projectSlug, relativePath);
+      } catch (error) {
+        return refuse(error, relativePath);
       }
     },
   };

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { buildCoverageMatrix, scanHarness, type HarnessScanPort } from "@/entities/agent-files";
+import { isReadableHarnessPath } from "@/entities/agent-files/model/harness-read-scope";
 import { groupMirroredDeclarations } from "@/views/architecture/ui/HarnessCoverageView";
 import { deriveCoverageAreas, type CoverageVaultDoc } from "@/features/harness-report";
 import { buildExcerpt, parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
@@ -167,16 +168,14 @@ describe("the coverage matrix over this repository", () => {
      */
     const port = fsPort();
     const read = port.readText.bind(port);
-    let readingCitations = false;
-    let citationReads = 0;
+    const strayReads: string[] = [];
     port.readText = async (path) => {
-      if (readingCitations) citationReads += 1;
+      if (!isReadableHarnessPath(path)) strayReads.push(path);
       return read(path);
     };
     const report = await scanHarness(port, {
       capabilityPaths: [],
       excludedFolders: ["docs/ontology"],
-      onProgress: (progress) => { readingCitations = progress.stage === "citations"; },
     });
     const reach = report.documentReach;
 
@@ -198,11 +197,7 @@ describe("the coverage matrix over this repository", () => {
     expect(reach.guides).toBeGreaterThan(0);
     expect(reach.named).toBeGreaterThan(0);
     expect(reach.unnamed).toBeGreaterThan(0);
-    expect(citationReads).toBeGreaterThan(0);
-    expect(citationReads).toBeLessThanOrEqual(800);
-    const alreadyRead = [...report.contents.keys()].filter((path) => /\.mdc?$/.test(path)).length;
-    const unread = reach.total - alreadyRead - citationReads;
-    if (unread > 0) expect(reach.truncated).toBe(true);
+    expect(strayReads).toEqual([]);
   });
 
   it("does not let a longer path's citation mark a shorter one as reached", async () => {

@@ -1,0 +1,1 @@
+{ "gate": "resident-context-bytes", "raise": 14, "why": "The owner chose on 2026-10-17 that Harness reads a connected repository's allowlisted harness files; the resident security rule must name that second read-only exception, or it states one exception where there are two." }

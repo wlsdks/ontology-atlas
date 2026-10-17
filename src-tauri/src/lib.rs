@@ -17,6 +17,7 @@ mod git;
 mod gray_area;
 mod gray_area_rpc;
 mod gray_area_scope;
+mod harness_source;
 mod jev;
 mod library;
 mod llm;
@@ -242,6 +243,9 @@ pub fn run() {
             source_access::pick_source_directory,
             local_construction::preview_local_construction_source,
             local_construction::read_local_construction_source,
+            harness_source::list_harness_source_directory,
+            harness_source::read_harness_source_text,
+            harness_source::harness_source_path_exists,
             project_source::inspect_project_source,
             project_source::inspect_project_source_continuity,
             vault::walk::list_vault_directory,

@@ -302,16 +302,14 @@ describe('the segmented control', () => {
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
-      progress: { stage: 'citations', done: 40, total: 401 },
+      progress: { stage: 'citation-hops', done: 3, total: null },
     };
     vi.useFakeTimers();
     mount();
     waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
-    expect(panel).toHaveTextContent('문서 사이의 인용');
-    /* `done` is what finished, not what started. */
-    expect(panel).toHaveTextContent('401개 중 40개');
-    expect(panel.querySelector('[data-harness-stage="citations"]')).toHaveAttribute(
+    expect(panel).toHaveTextContent('인용을 따라가는 중');
+    expect(panel.querySelector('[data-harness-stage="citation-hops"]')).toHaveAttribute(
       'data-harness-stage-state',
       'running',
     );
@@ -424,12 +422,12 @@ describe('honest degradation', () => {
   });
 
   it('says the source could not be read, in words, instead of counting an empty harness', () => {
-    state.report = { status: 'failed', sourceRoot: '/repo', code: 'vault-root-not-granted', message: '.: vault-root-not-granted' };
+    state.report = { status: 'failed', sourceRoot: '/repo', code: 'source-root-not-granted', message: '.: source-root-not-granted' };
     mount();
     const reason = screen.getByTestId('harness-failed-reason');
     expect(reason).toHaveTextContent('/repo');
-    expect(reason.textContent).not.toMatch(/vault-root-not-granted/);
-    expect(reason).toHaveAttribute('data-failure-code', 'vault-root-not-granted');
+    expect(reason.textContent).not.toMatch(/source-root-not-granted/);
+    expect(reason).toHaveAttribute('data-failure-code', 'source-root-not-granted');
     expect(screen.queryByTestId('harness-structure-sentence')).toBeNull();
     expect(screen.getByTestId('harness-retry')).toBeInTheDocument();
   });

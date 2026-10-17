@@ -39,6 +39,7 @@ never a parallel router or surface fork.
 | Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | degradation card |
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | degradation card; local folder confirmation and secure bounded reads are macOS-only |
 | Source-folder read grant | `pickTauriSourceDirectory` in `src/shared/lib/vault-folder/tauri-vault-fs.ts`, `src-tauri/src/source_access.rs` | unavailable; native picker grants read-only source access, not vault write access |
+| Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | unavailable; a browser cannot see dot directories, so Harness names what it cannot reach |
 | Jev evidence check (experimental) | `src/shared/lib/llm-connection/tauri-jev.ts`, `src-tauri/src/jev.rs` | covered by the models tab's degradation card |
 | LLM call | `src/shared/lib/llm-connection/tauri-llm.ts` | action not rendered |
 | Agent setup | `src/shared/lib/desktop-shell/tauri-agent-setup.ts` | degradation card; no absolute path to write a config |
@@ -53,7 +54,7 @@ never a parallel router or surface fork.
 
 ### Reading the person's agent config files
 
-The one written exception to `local-first.md`'s rule against reads outside the
+The first written exception to `local-first.md`'s rule against reads outside the
 vault:
 
 | | |
@@ -70,6 +71,21 @@ A fifth file, or any value, needs a new decision record.
 no name from the caller, and executes nothing
 (`the_runtime_allow_list_is_fixed_and_small`). Connector tokens live only in the
 OS keychain.
+
+### Reading a connected repository's harness files
+
+The second written exception, for Harness only:
+
+| | |
+|---|---|
+| Files | root guides (`AGENTS.md`, `CLAUDE.md`, the Gemini, Cursor and GitHub Copilot guide files, the agent ignore files, `.gitignore`), one-level `<dir>/AGENTS.md`, files under `.claude/{rules,hooks,skills,agents}`, `.agents/{skills,agents}`, `.cursor/rules`, `.codex/hooks`, one-level `.githooks/*`, `.github/workflows/*.y(a)ml` |
+| Returned | those files' text; from `.mcp.json`, `.claude/settings.json`, `.codex/hooks.json`, `.codex/config.toml` and the root `package.json` only server names, hook commands, permission counts, MCP headers and scripts; every other file's name, never its text |
+| Never returned | any other file's text, an env or header value, settings beyond hook commands and permission counts, any secret-named path |
+| Root | the opened vault's one recorded binding, inside the existing source grant; never a path the page sends |
+| Direction | read only |
+| Gate | `the_shared_read_scope_table_holds` and the `harness_source` tests over `tests/fixtures/harness-read-scope-cases.json` |
+
+A new path, or any value, needs a new decision record.
 
 ### Folder watch is latency, not degradation
 

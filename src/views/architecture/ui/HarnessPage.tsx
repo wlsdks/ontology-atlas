@@ -56,7 +56,7 @@ const subscribeNever = () => () => {};
 const readHarnessSurfaceOnServer = () => false;
 
 function failedReasonKey(code: string | null) {
-  if (code === 'vault-root-not-granted') return 'failedNotGranted';
+  if (code === 'source-root-not-granted') return 'failedNotGranted';
   if (code === 'harness-source-missing') return 'failedMissing';
   return 'failedBody';
 }
