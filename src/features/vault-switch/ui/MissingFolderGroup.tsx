@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, FolderX } from 'lucide-react';
+import { ChevronDown, FolderSearch, FolderX } from 'lucide-react';
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import type { useTranslations } from 'next-intl';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -184,7 +184,7 @@ export function MissingFolderGroup({
           open={open && count > 0}
           onClose={() => setOpen(false)}
           labelledBy={titleId}
-          size="sm"
+          size="md"
           // The first control would be a forget: focus the dialog, not a removal.
           initialFocus="container"
           testId="recent-vault-missing-review"
@@ -195,7 +195,7 @@ export function MissingFolderGroup({
           >
             {t('missing.summary', { count })}
           </h2>
-          <div className="mt-3 grid gap-4">
+          <div className="mt-2 grid gap-4">
             <MissingFolderReview
               rows={rows}
               wide
@@ -209,13 +209,14 @@ export function MissingFolderGroup({
           <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
             {locate ? (
               <Button
-                variant="ghost"
+                variant="outline"
                 data-testid="recent-vault-locate"
                 aria-label={t('missing.locateLabel')}
                 onClick={locate}
                 disabled={busy}
-                className="atlas-touch-floor mr-auto"
+                className="atlas-touch-floor mr-auto gap-2"
               >
+                <FolderSearch size={ICON_SIZE.sm} aria-hidden />
                 {t('missing.locate')}
               </Button>
             ) : null}
@@ -228,7 +229,7 @@ export function MissingFolderGroup({
                 data-testid="recent-vault-forget-missing"
                 onClick={forgetAll}
                 disabled={busy}
-                className="atlas-touch-floor"
+                className="atlas-touch-floor max-sm:order-first max-sm:w-full"
               >
                 {t('missing.forgetAll', { count })}
               </Button>
@@ -261,7 +262,12 @@ function MissingFolderReview({
       <p className="text-label leading-body text-[color:var(--color-text-tertiary)]">
         {t('missing.body')}
       </p>
-      <ul className="grid">
+      <ul
+        className={cn(
+          'grid',
+          wide && 'rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+        )}
+      >
         {rows.map((row) => (
           <MissingFolderRow
             key={row.key}
@@ -300,16 +306,17 @@ function MissingFolderRow({
       data-testid="recent-vault-row"
       data-reachability={row.reachability}
       data-current={row.isCurrent ? 'true' : 'false'}
-      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-t border-[color:var(--color-border-soft)] py-2.5 first:border-t-0 first:pt-0 last:pb-0"
+      className={cn(
+        'grid items-center gap-3 border-t border-[color:var(--color-border-soft)] first:border-t-0',
+        wide ? 'grid-cols-[16px_minmax(0,1fr)_auto] py-2.5 pl-3.5 pr-2' : 'grid-cols-[minmax(0,1fr)_auto] py-2.5 first:pt-0 last:pb-0',
+      )}
     >
+      {wide ? <FolderX size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" /> : null}
       <div className="min-w-0">
-        <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+        <p className="flex min-w-0 items-baseline gap-x-1.5">
           <span
             data-testid="recent-vault-name"
-            className={cn(
-              'min-w-0 text-[color:var(--color-text-secondary)]',
-              wide ? 'break-all text-body' : 'truncate text-label',
-            )}
+            className={cn('min-w-0 truncate text-[color:var(--color-text-secondary)]', wide ? 'text-body' : 'text-label')}
           >
             {row.name}
           </span>
@@ -324,7 +331,7 @@ function MissingFolderRow({
         </p>
         {row.path ? (
           /* The whole path, wrapped after slashes, tells two missing folders of one name apart. */
-          <p className="mt-0.5 break-words font-mono text-label leading-body text-[color:var(--color-text-quaternary)]">
+          <p className="mt-0.5 break-words text-label leading-body text-[color:var(--color-text-quaternary)]">
             {row.path.split('/').map((segment, index, segments) => (
               <Fragment key={index}>
                 {index < segments.length - 1 ? `${segment}/` : segment}
@@ -334,17 +341,31 @@ function MissingFolderRow({
           </p>
         ) : null}
       </div>
-      <Chip
-        size={wide ? 'md' : 'xs'}
-        tone="muted"
-        data-testid="recent-vault-forget"
-        onClick={() => onForget(row.record)}
-        disabled={busy}
-        aria-label={[t('forgetFolder', { name: row.name }), row.path].filter(Boolean).join(' · ')}
-        className="atlas-touch-floor-wide justify-center rounded-micro"
-      >
-        {t('forget')}
-      </Chip>
+      {wide ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          data-testid="recent-vault-forget"
+          onClick={() => onForget(row.record)}
+          disabled={busy}
+          aria-label={[t('forgetFolder', { name: row.name }), row.path].filter(Boolean).join(' · ')}
+          className="atlas-touch-floor text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {t('forget')}
+        </Button>
+      ) : (
+        <Chip
+          size="xs"
+          tone="muted"
+          data-testid="recent-vault-forget"
+          onClick={() => onForget(row.record)}
+          disabled={busy}
+          aria-label={[t('forgetFolder', { name: row.name }), row.path].filter(Boolean).join(' · ')}
+          className="atlas-touch-floor-wide justify-center rounded-micro"
+        >
+          {t('forget')}
+        </Chip>
+      )}
     </li>
   );
 }
