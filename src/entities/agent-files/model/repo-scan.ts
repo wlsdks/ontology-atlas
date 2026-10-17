@@ -9,18 +9,18 @@ import {
 } from './coverage-collect';
 import type { ScopeDeclaration } from './coverage-scopes';
 import { buildDocumentReach, type DocumentReach } from './document-reach';
+import { harnessReadClass, isReadableHarnessPath } from './harness-read-scope';
 
-/**
- * Feeds `analyzeAgentFiles` through a file port that can see dot directories, which the File
- * System Access API cannot. The scanned set must stay identical to `cli/src/lib`'s.
- */
+/** Feeds `analyzeAgentFiles` through a file port that can see dot directories, which the File System Access API cannot. */
 
 type DirEntries = readonly { name: string; kind: 'file' | 'directory' }[];
 
 /** `null` means the path does not exist; a read that fails throws, so it never counts as absence. */
 export interface HarnessScanPort {
   listDir(relativePath: string): Promise<DirEntries | null>;
-  readText(relativePath: string): Promise<{ text: string; lastModified: number | null } | null>;
+  readText(
+    relativePath: string,
+  ): Promise<{ text: string; lastModified: number | null; bytes?: number } | null>;
   /** Optional; without it the fallback costs two round trips (`listDir`, then `readText`). */
   pathExists?(relativePath: string): Promise<boolean>;
 }
@@ -66,8 +66,6 @@ const SCAN_MAX_DEPTH = 4;
 /** Markdown census bounds; a hit bound is reported as `DocumentReach.truncated`, never trimmed silently. */
 const MARKDOWN_MAX_DEPTH = 8;
 const MARKDOWN_MAX_DIRECTORIES = 3000;
-/** Room above the ~600 authored records; past it the walk reports truncation. */
-const MARKDOWN_MAX_READS = 800;
 
 /** The hook configs this scan knows how to read, and whether the tool gates execution on approval. */
 const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Object.freeze([
@@ -171,9 +169,10 @@ async function walk(
       await walk(port, path, depth + 1, out, times);
       continue;
     }
+    if (!isReadableHarnessPath(path)) continue;
     const file = await port.readText(path);
     if (!file) continue;
-    out.push({ path, content: file.text });
+    out.push({ path, content: file.text, bytes: file.bytes });
     times.push({ path, lastModified: file.lastModified });
   }
 }
@@ -194,9 +193,10 @@ async function nestedAgentsFiles(
     if (SKIPPED_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
     folders.push(entry.name);
     const path = `${entry.name}/AGENTS.md`;
+    if (!isReadableHarnessPath(path)) continue;
     const file = await port.readText(path);
     if (!file) continue;
-    out.push({ path, content: file.text });
+    out.push({ path, content: file.text, bytes: file.bytes });
     times.push({ path, lastModified: file.lastModified });
   }
 }
@@ -252,7 +252,6 @@ export interface HarnessScanProgress {
     | 'agent-directories'
     | 'hooks'
     | 'documents'
-    | 'citations'
     | 'citation-hops'
     | 'coverage';
   done: number;
@@ -343,7 +342,7 @@ export async function scanHarness(
     /* Reported after the unit: `done` counts finished units. */
     report({ stage: 'roots', done: index + 1, total: ROOT_FILES.length });
     if (!file) continue;
-    files.push({ path, content: file.text });
+    files.push({ path, content: file.text, bytes: file.bytes });
     times.push({ path, lastModified: file.lastModified });
   }
   report({ stage: 'nested', done: 0, total: null });
@@ -360,6 +359,8 @@ export async function scanHarness(
   const contentByPath = new Map(files.map((file) => [file.path, file.content ?? '']));
   const scriptExists = async (path: string) => {
     if (contentByPath.has(path)) return true;
+    if (harnessReadClass(path) === 'invalid') return false;
+    if (port.pathExists) return port.pathExists(path);
     return (await port.readText(path)) !== null;
   };
   const hookGroups: HookConfigFacts[] = [];
@@ -394,6 +395,7 @@ export async function scanHarness(
         }),
         capabilityPaths,
         async (relativePath) => {
+          if (harnessReadClass(relativePath) === 'invalid') return false;
           if (port.pathExists) return port.pathExists(relativePath);
           if ((await port.listDir(relativePath)) !== null) return true;
           return (await port.readText(relativePath)) !== null;
@@ -424,24 +426,10 @@ export async function scanHarness(
   truncated =
     (await walkMarkdown(port, '.github', 1, excludedFolders, markdownPaths, testFiles, budget)) ||
     truncated;
-  /* Reads authored Markdown for the transitive citation walk up to a bound, then reports truncation. */
   const uniqueMarkdown = [...new Set(markdownPaths)].sort();
-  const reachContents = new Map(contentByPath);
-  let budgetLeft = MARKDOWN_MAX_READS;
-  for (const [index, path] of uniqueMarkdown.entries()) {
-    report({ stage: 'citations', done: index + 1, total: uniqueMarkdown.length });
-    if (reachContents.has(path)) continue;
-    if (budgetLeft <= 0) {
-      truncated = true;
-      break;
-    }
-    budgetLeft -= 1;
-    const file = await port.readText(path);
-    reachContents.set(path, file?.text ?? '');
-  }
   const documentReach = await buildDocumentReach({
     markdownPaths: uniqueMarkdown,
-    contents: reachContents,
+    contents: contentByPath,
     excluded: excludedFolders,
     truncated,
     onHop: async (hop) => {

@@ -69,7 +69,7 @@ Add only these keys under `grayArea` in `messages/en/grayArea.json` and `message
 
 - Zero or multiple bindings remain existing refusals; exactly one valid binding is required. First run has no source to recover. Hangul names and canonical path aliases follow the existing native picker.
 - Cancel, rejected location, missing/moved folder, identity mismatch, and concurrent binding/selection changes leave evidence unmeasured. A native picker choice is the sole new grant event; a renderer-supplied path or CLI sidecar cannot grant access.
-- Offline recovery stays local. Reopening a granted folder may reuse the existing persisted grant. A source's inferred parent-repository inventory grant does not authorize its content reads.
+- Offline recovery stays local. Reopening a granted folder may reuse the existing persisted grant. A source's inferred parent-repository inventory grant does not authorize its content reads, except Harness's allowlist (`docs/records/decisions/2026-10-17-harness-reads-connected-repository-files-e35a25fe-d1ca-45bd-bdfc-bdf0e0092b12.md`).
 
 ## Out of scope
 

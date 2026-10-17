@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-tauri", "raise": 784, "why": "The harness source commands state why the read allowlist, the secret-name refusal and the link-target re-check sit where they do, so a later change cannot quietly widen what the WebView can read." }

@@ -162,8 +162,10 @@ screen that needs no ontology.
 three counts keep the display step because they are this block's answer, and they give up the
 surface, because two identical strips cannot both be the screen's subject and the numeral cannot
 say which is (2026-09-13). Every authored Markdown file falls into exactly one
-of three states: a **guide** (read without being asked), a document **a guide names** by path
-(reached when needed), or a document **nothing names** (present, and the agent will not open it).
+of three states: a **guide** (read without being asked), a document **a guide names** by path,
+directly or through a harness file a guide names (reached when needed), or a document **neither
+names**. Atlas reads harness files only, so a document only another document names is counted in
+the third row too.
 Measured by citation and never by glob: a rule's `paths:` says when to load that rule, not which
 documents to read, and reading it the other way makes `documentation.md`'s `docs/**` mark every
 document reached. Excluded and named on screen are the ontology folder and the folders the
@@ -179,8 +181,9 @@ over five thousand documents still gets its stages. The read was never slowed to
 happens on every visit regardless of speed is the **arrival**: the result rises into place and the
 six numerals count up from zero.
 
-The whole reading goes through the installed app's bridge (`entities/agent-files`, the same
-classifier the docs sidebar and `ontology-atlas agent-files` use — one store, not a second). A
+The whole reading goes through the installed app's read-only harness commands
+(`src-tauri/src/harness_source/`), classified by `entities/agent-files`, the classifier the docs
+sidebar uses — one store, not a second. A
 browser's folder permission cannot see a dot entry at all, so on the web these views name what they
 cannot reach instead of drawing a shorter list and calling it the inventory — and the destination
 opens on the blueprint there rather than on a card about what this browser cannot read.
@@ -188,9 +191,11 @@ opens on the blueprint there rather than on a card about what this browser canno
 **A refused read is never an empty harness** (2026-10-17). Only a path that is not there reads as
 absent. Any other refusal fails the whole reading, and the screen says why instead of printing
 zero of thirteen places. That includes the bridge refusing the source root, or the root itself
-being gone. The app's file commands read only inside a folder opened in it, so an ontology folder
-kept inside its own repository currently ends on that refusal: the bound repository root lies
-outside the opened folder.
+being gone. The harness commands take the opened folder and a project, never a path: they read
+that project's one recorded code folder, and only when the app already holds its read grant (the
+repository containing the opened folder, or a folder picked in the app since it last opened). Inside it they return the
+allowlisted harness files' text, configuration reduced to names, hooks and scripts, and every
+other file's name only (`.claude/rules/surfaces.md`). The binding they read is macOS-only today, so on Windows the reading fails and says so.
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps

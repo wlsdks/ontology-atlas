@@ -1,5 +1,7 @@
 import type { Page } from "@playwright/test";
 
+import { harnessListClass, harnessReadClass } from "../../src/entities/agent-files/model/harness-read-scope";
+
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
@@ -23,6 +25,13 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 export const HARNESS_VAULT_ROOT = "/Users/probe/atlas-vault";
 export const HARNESS_SOURCE_ROOT = "/Users/probe/storefront";
+export const HARNESS_PROJECT_SLUG = "projects/storefront";
+
+export const HARNESS_SOURCE_COMMANDS = [
+  "list_harness_source_directory",
+  "read_harness_source_text",
+  "harness_source_path_exists",
+] as const;
 
 function domainDoc(slug: string, title: string, capability: string, purpose: string): string {
   return ['---', `uid: ${fixtureUid(slug)}`, `slug: ${slug}`, 'kind: domain', `title: ${title}`, `capabilities: [${capability}]`, '---', '', '## Definition', purpose, ''].join('\n');
@@ -166,7 +175,7 @@ const VAULT_FILES: Record<string, string> = {
     contractVersion: 1,
     bindings: [
       {
-        projectSlug: "projects/storefront",
+        projectSlug: HARNESS_PROJECT_SLUG,
         sourceId: "src-1",
         rootPath: HARNESS_SOURCE_ROOT,
         kind: "folder",
@@ -263,6 +272,8 @@ const SOURCE_FILES: Record<string, string> = {
   }),
 };
 
+const scopedPages = new WeakSet<Page>();
+
 /**
  * Installs the runtime before any application script runs. Everything lives inside the init
  * script's own scope: `addInitScript` serializes the function, so a module-level reference here
@@ -270,14 +281,22 @@ const SOURCE_FILES: Record<string, string> = {
  */
 export async function installHarnessRuntime(page: Page, options: { includeOverflowDomains?: boolean } = {}): Promise<void> {
   await seedFirstRunSeen(page);
+  if (!scopedPages.has(page)) {
+    scopedPages.add(page);
+    await page.exposeFunction("__harnessScope", (path: string) => ({
+      read: harnessReadClass(path),
+      list: harnessListClass(path),
+    }));
+  }
   await page.addInitScript(
     (input: {
       vaultRoot: string;
       sourceRoot: string;
       vaultFiles: Record<string, string>;
       sourceFiles: Record<string, string>;
+      projectSlug: string;
     }) => {
-      const { vaultRoot, sourceRoot, vaultFiles, sourceFiles } = input;
+      const { vaultRoot, sourceRoot, vaultFiles, sourceFiles, projectSlug } = input;
       const mtime = Date.UTC(2026, 8, 10, 12, 0, 0);
       const callbacks = new Map<number, (event: { event: string; payload: unknown }) => void>();
       let nextCallback = 1;
@@ -292,8 +311,52 @@ export async function installHarnessRuntime(page: Page, options: { includeOverfl
         return null;
       };
 
+      const sourceFolder = (path: string): boolean =>
+        path === "" || Object.keys(sourceFiles).some((file) => file.startsWith(`${path}/`));
+
+      const classify = (window as unknown as {
+        __harnessScope(path: string): Promise<{ read: string; list: string }>;
+      }).__harnessScope;
+
+      const answerSource = async (command: string, args: Record<string, unknown>): Promise<unknown> => {
+        if (args.vaultPath !== vaultRoot || args.projectSlug !== projectSlug) {
+          throw "harness-binding-ambiguous";
+        }
+        const path = trim(args.relativePath);
+        const scope = await classify(path);
+        const isRead = command === "read_harness_source_text";
+        const kind = isRead ? scope.read : scope.list;
+        if (scope.read === "invalid") throw "harness-path-invalid";
+        const isFile = path in sourceFiles;
+        if (command === "harness_source_path_exists") {
+          return scope.read !== "denied" && (isFile || sourceFolder(path));
+        }
+        if (kind === "denied") throw "harness-path-denied";
+        if (isRead ? kind === "not-allowed" : kind !== "listable") throw `harness-path-not-allowed: ${path}`;
+        if (isRead) {
+          if (!isFile) throw sourceFolder(path) ? "harness-not-a-file" : "harness-path-missing";
+          const text = sourceFiles[path]!;
+          return { text, lastModified: mtime, bytes: new TextEncoder().encode(text).length };
+        }
+        if (isFile) throw "harness-not-a-directory";
+        if (!sourceFolder(path)) throw "harness-path-missing";
+        const prefix = path ? `${path}/` : "";
+        const entries = new Map<string, "file" | "directory">();
+        for (const file of Object.keys(sourceFiles)) {
+          if (!file.startsWith(prefix)) continue;
+          const [name, child] = file.slice(prefix.length).split("/");
+          if ((await classify(`${prefix}${name}`)).list === "denied") continue;
+          entries.set(name!, child ? "directory" : "file");
+        }
+        return [...entries].map(([name, kind]) => ({ name, kind }));
+      };
+
       const answer = (command: string, args: Record<string, unknown>): Promise<unknown> | null => {
         switch (command) {
+          case "list_harness_source_directory":
+          case "read_harness_source_text":
+          case "harness_source_path_exists":
+            return answerSource(command, args);
           case "list_vault_directory": {
             const files = treeFor(args.rootPath);
             if (!files) return Promise.reject(new Error("unknown root"));
@@ -405,6 +468,7 @@ export async function installHarnessRuntime(page: Page, options: { includeOverfl
       sourceRoot: HARNESS_SOURCE_ROOT,
       vaultFiles: options.includeOverflowDomains ? { ...VAULT_FILES, ...OVERFLOW_VAULT_FILES } : VAULT_FILES,
       sourceFiles: SOURCE_FILES,
+      projectSlug: HARNESS_PROJECT_SLUG,
     },
   );
 }

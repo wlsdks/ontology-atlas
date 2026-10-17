@@ -13,7 +13,6 @@ const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
   'agent-directories': 'loadingStageAgentDirectories',
   hooks: 'loadingStageHooks',
   documents: 'loadingStageDocuments',
-  citations: 'loadingStageCitations',
   'citation-hops': 'loadingStageCitationHops',
   coverage: 'loadingStageCoverage',
 };
@@ -25,7 +24,6 @@ const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
   'hooks',
   'coverage',
   'documents',
-  'citations',
   'citation-hops',
 ];
 

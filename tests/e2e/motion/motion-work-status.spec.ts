@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { HARNESS_SOURCE_ROOT, installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
+import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
 
 async function holdSourceReads(page: Page) {
-  await page.addInitScript((sourceRoot: string) => {
+  await page.addInitScript((sourceCommands: readonly string[]) => {
     const internals = (window as unknown as {
       __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
     }).__TAURI_INTERNALS__;
@@ -23,14 +23,14 @@ async function holdSourceReads(page: Page) {
       return batch.length;
     };
     internals.invoke = (command, args = {}) => {
-      if (!holding() || String((args as { rootPath?: unknown }).rootPath ?? "") !== sourceRoot) {
+      if (!holding() || !sourceCommands.includes(command)) {
         return inner(command, args);
       }
       return new Promise((resolve, reject) => {
         held.push(() => inner(command, args).then(resolve, reject));
       });
     };
-  }, HARNESS_SOURCE_ROOT);
+  }, HARNESS_SOURCE_COMMANDS);
 }
 
 async function watchStageShifts(page: Page) {

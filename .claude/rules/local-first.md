@@ -40,8 +40,8 @@
 ## Security
 
 - Never scan password, credential, or key files from the user's disk.
-  `permissions.deny` in `.claude/settings.json` enforces the read side. One
-  written exception (`surfaces.md` table): agent config files, read-only, names
-  not values.
+  `permissions.deny` in `.claude/settings.json` enforces the read side. Two
+  read-only exceptions (`surfaces.md`): agent config names, and the connected
+  repository's harness files.
 - Skip dotfiles and system directories such as `.env.local` and `.git/` while
   reading a vault.

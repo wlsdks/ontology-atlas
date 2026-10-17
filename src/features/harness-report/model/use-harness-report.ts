@@ -30,20 +30,28 @@ interface HarnessReportSnapshot {
   state: HarnessReportState;
 }
 
+interface SourceBinding {
+  projectSlug: string;
+  rootPath: string;
+}
+
 /** The one project source bound to this folder; several distinct roots return `null`, not a guess. */
-async function resolveSourceRoot(
+async function resolveSourceBinding(
   handle: FileSystemDirectoryHandle,
   projectSlugs: readonly string[],
-): Promise<string | null> {
+): Promise<SourceBinding | null> {
   const store = createVaultFileProjectSourceStore(handle);
-  const roots = new Set<string>();
-  for (const slug of projectSlugs) {
-    const result = await store.list(slug);
+  const bound: Array<{ projectSlug: string; roots: string[] }> = [];
+  for (const projectSlug of projectSlugs) {
+    const result = await store.list(projectSlug);
     if (result.status !== 'ok') continue;
-    for (const binding of result.bindings) roots.add(binding.rootPath);
+    bound.push({ projectSlug, roots: result.bindings.map((binding) => binding.rootPath) });
   }
-  const distinct = [...roots];
-  return distinct.length === 1 ? distinct[0]! : null;
+  const distinct = [...new Set(bound.flatMap((entry) => entry.roots))];
+  if (distinct.length !== 1) return null;
+  const rootPath = distinct[0]!;
+  const single = bound.find((entry) => entry.roots.length === 1);
+  return single ? { projectSlug: single.projectSlug, rootPath } : null;
 }
 
 export function useHarnessReport(
@@ -70,20 +78,21 @@ export function useHarnessReport(
     void (async () => {
       let sourceRoot = '';
       try {
-        sourceRoot = (await resolveSourceRoot(handle, slugKey ? slugKey.split('\0') : [])) ?? '';
+        const binding = await resolveSourceBinding(handle, slugKey ? slugKey.split('\0') : []);
+        sourceRoot = binding?.rootPath ?? '';
         if (cancelled) return;
-        if (!sourceRoot) {
+        if (!binding) {
           commit({ status: 'no-source' });
           return;
         }
         commit({ status: 'loading', sourceRoot, progress: null });
         /* An in-checkout ontology folder is excluded from the document census. */
-        const vaultRoot = getTauriVaultRootPath(handle);
+        const vaultRoot = getTauriVaultRootPath(handle) ?? '';
         const excludedFolders =
-          vaultRoot && vaultRoot.startsWith(`${sourceRoot}/`)
+          vaultRoot.startsWith(`${sourceRoot}/`)
             ? [vaultRoot.slice(sourceRoot.length + 1)]
             : [];
-        const report = await scanHarness(bridgePort(sourceRoot), {
+        const report = await scanHarness(bridgePort({ vaultRoot, projectSlug: binding.projectSlug }), {
           capabilityPaths: capabilityKey ? capabilityKey.split('\0') : [],
           excludedFolders,
           /* Straight through to state; each report already lands on its own task. */

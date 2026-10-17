@@ -209,7 +209,7 @@ crosses the ontology's own domains with the path scopes this repository's guides
 gates and checks declare, so a domain nothing names is stated rather than inferred. Beside them
 `?view=guides` reads the same repository's guide files — which tool
 reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
-files only, through the installed app's bridge (`entities/agent-files`); the browser cannot see a
+files only, through the installed app's read-only harness commands (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness files; the browser cannot see a
 dot directory at all and says so instead of drawing a shorter list.
 
 `HarnessAnatomyView` offers diagram and text presentations of the same `buildHarnessAnatomy`
@@ -289,6 +289,7 @@ ability. The canonical roster is the bridge table in
 | Vault absolute path | `src/shared/lib/vault-folder/tauri-vault-fs.ts` | FSA handle instead (no path) |
 | Git | `src/shared/lib/git/tauri-git.ts` | Cannot run → degraded card |
 | Gray-area evidence | `src/shared/lib/project-source/tauri-gray-area.ts`, `src-tauri/src/gray_area.rs` | Cannot inspect the bound code root → degraded card |
+| Harness source read | `src/shared/lib/project-source/tauri-harness-source.ts`, `src-tauri/src/harness_source/` | Cannot see dot directories → Harness names what it cannot reach |
 | Keychain | `src/shared/lib/llm-connection/tauri-secrets.ts` | Impossible by design → degraded card |
 | LLM calls | `src/shared/lib/llm-connection/tauri-llm.ts` | Impossible by design → action not rendered |
 | In-app agent runtime (ACP) | `src/shared/lib/agent-chat/tauri-acp.ts` | A browser cannot spawn a process → one row states why and where |
