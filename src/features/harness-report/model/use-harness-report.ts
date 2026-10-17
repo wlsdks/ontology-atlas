@@ -2,18 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import {
-  scanHarness,
-  type HarnessReport,
-  type HarnessScanPort,
-  type HarnessScanProgress,
-} from '@/entities/agent-files';
+import { scanHarness, type HarnessReport, type HarnessScanProgress } from '@/entities/agent-files';
+import { failureCodeOf, failureDetailOf } from '@/shared/lib/failures/failure-code';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source/project-source-store';
-import {
-  getTauriVaultRootPath,
-  listTauriVaultEntries,
-  readTauriVaultTextFile,
-} from '@/shared/lib/vault-folder/tauri-vault-fs';
+import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
+
+import { bridgePort } from './bridge-port';
 
 /**
  * Reads only through the installed app's bridge: the browser's File System Access API cannot
@@ -26,7 +20,7 @@ export type HarnessReportState =
   | { status: 'no-source' }
   | { status: 'loading'; sourceRoot: string; progress: HarnessScanProgress | null }
   | { status: 'ready'; sourceRoot: string; report: HarnessReport }
-  | { status: 'failed'; sourceRoot: string; message: string };
+  | { status: 'failed'; sourceRoot: string; code: string | null; message: string };
 
 interface HarnessReportSnapshot {
   handle: FileSystemDirectoryHandle;
@@ -34,28 +28,6 @@ interface HarnessReportSnapshot {
   capabilityKey: string;
   reloadNonce: number;
   state: HarnessReportState;
-}
-
-function bridgePort(sourceRoot: string): HarnessScanPort {
-  return {
-    async listDir(relativePath) {
-      try {
-        const entries = await listTauriVaultEntries(sourceRoot, relativePath);
-        return entries;
-      } catch {
-        /* A missing path makes the bridge throw, and most repositories have no `.cursor/rules`.
-           That is an ordinary absence, not a failure, so it reads as "nothing here". */
-        return null;
-      }
-    },
-    async readText(relativePath) {
-      try {
-        return await readTauriVaultTextFile(sourceRoot, relativePath);
-      } catch {
-        return null;
-      }
-    },
-  };
 }
 
 /** The one project source bound to this folder; several distinct roots return `null`, not a guess. */
@@ -124,7 +96,8 @@ export function useHarnessReport(
         commit({
           status: 'failed',
           sourceRoot,
-          message: error instanceof Error ? error.message : String(error),
+          code: failureCodeOf(error),
+          message: failureDetailOf(error) ?? String(error),
         });
       }
     })();

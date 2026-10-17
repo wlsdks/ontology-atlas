@@ -14,6 +14,8 @@ const state = {
     sourceRoot?: string;
     report?: HarnessReport;
     progress?: { stage: string; done: number; total: number | null } | null;
+    code?: string | null;
+    message?: string;
   },
 };
 
@@ -419,6 +421,17 @@ describe('honest degradation', () => {
     state.report = { status: 'no-source' };
     mount();
     expect(screen.getByText('연결된 저장소가 없어요')).toBeInTheDocument();
+  });
+
+  it('says the source could not be read, in words, instead of counting an empty harness', () => {
+    state.report = { status: 'failed', sourceRoot: '/repo', code: 'vault-root-not-granted', message: '.: vault-root-not-granted' };
+    mount();
+    const reason = screen.getByTestId('harness-failed-reason');
+    expect(reason).toHaveTextContent('/repo');
+    expect(reason.textContent).not.toMatch(/vault-root-not-granted/);
+    expect(reason).toHaveAttribute('data-failure-code', 'vault-root-not-granted');
+    expect(screen.queryByTestId('harness-structure-sentence')).toBeNull();
+    expect(screen.getByTestId('harness-retry')).toBeInTheDocument();
   });
 });
 

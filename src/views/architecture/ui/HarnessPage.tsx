@@ -55,6 +55,12 @@ const subscribeNever = () => () => {};
 /** The server's answer is the browser's: a static export is built with no desktop bridge. */
 const readHarnessSurfaceOnServer = () => false;
 
+function failedReasonKey(code: string | null) {
+  if (code === 'vault-root-not-granted') return 'failedNotGranted';
+  if (code === 'harness-source-missing') return 'failedMissing';
+  return 'failedBody';
+}
+
 const EMPTY_DOCS: Array<{
   slug: string;
   title: string;
@@ -348,7 +354,11 @@ function HarnessPageInner() {
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
               <EmptyState
                 title={t('failed')}
-                description={reportState.message}
+                description={
+                  <span data-testid="harness-failed-reason" data-failure-code={reportState.code ?? ''} data-failure-detail={reportState.message}>
+                    {t(failedReasonKey(reportState.code), { path: reportState.sourceRoot })}
+                  </span>
+                }
                 action={
                   <Chip data-testid="harness-retry" onClick={() => setReloadNonce((n) => n + 1)}>
                     {t('retry')}

@@ -185,6 +185,13 @@ browser's folder permission cannot see a dot entry at all, so on the web these v
 cannot reach instead of drawing a shorter list and calling it the inventory — and the destination
 opens on the blueprint there rather than on a card about what this browser cannot read.
 
+**A refused read is never an empty harness** (2026-10-17). Only a path that is not there reads as
+absent. Any other refusal fails the whole reading, and the screen says why instead of printing
+zero of thirteen places. That includes the bridge refusing the source root, or the root itself
+being gone. The app's file commands read only inside a folder opened in it, so an ontology folder
+kept inside its own repository currently ends on that refusal: the bound repository root lies
+outside the opened folder.
+
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
   reviewed pattern axes, scopes, roles, paths, evidence, and allowed dependency

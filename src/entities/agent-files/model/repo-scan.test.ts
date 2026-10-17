@@ -109,6 +109,12 @@ describe('scanHarness — which tool reads which file', () => {
   });
 });
 
+describe('scanHarness — a source root that is not there', () => {
+  it('fails instead of reporting a harness with nothing in it', async () => {
+    await expect(scanHarness(fixturePort({}))).rejects.toMatchObject({ code: 'harness-source-missing' });
+  });
+});
+
 describe('scanHarness — the size cap', () => {
   it('measures the merged root + worst nested document, which is what Codex truncates', async () => {
     const big = 'x'.repeat(20_000);

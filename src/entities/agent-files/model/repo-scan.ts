@@ -1,3 +1,5 @@
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+
 import { analyzeAgentFiles, type AgentFileEntry, type AgentFilesAnalysis } from './agent-files';
 
 import { collectHookFacts, wiredHookCount, type HookConfigFacts } from './hook-wiring';
@@ -13,10 +15,11 @@ import { buildDocumentReach, type DocumentReach } from './document-reach';
  * System Access API cannot. The scanned set must stay identical to `cli/src/lib`'s.
  */
 
+type DirEntries = readonly { name: string; kind: 'file' | 'directory' }[];
+
+/** `null` means the path does not exist; a read that fails throws, so it never counts as absence. */
 export interface HarnessScanPort {
-  /** Directory entries at a repo-relative path, or `null` when the path does not exist. */
-  listDir(relativePath: string): Promise<readonly { name: string; kind: 'file' | 'directory' }[] | null>;
-  /** File text plus its modification time, or `null` when the file does not exist. */
+  listDir(relativePath: string): Promise<DirEntries | null>;
   readText(relativePath: string): Promise<{ text: string; lastModified: number | null } | null>;
   /** Optional; without it the fallback costs two round trips (`listDir`, then `readText`). */
   pathExists?(relativePath: string): Promise<boolean>;
@@ -181,12 +184,11 @@ async function walk(
  */
 async function nestedAgentsFiles(
   port: HarnessScanPort,
+  entries: DirEntries,
   out: AgentFileEntry[],
   times: HarnessFileTime[],
   folders: string[],
 ): Promise<void> {
-  const entries = await port.listDir('');
-  if (!entries) return;
   for (const entry of entries) {
     if (entry.kind !== 'directory') continue;
     if (SKIPPED_DIRS.has(entry.name) || entry.name.startsWith('.')) continue;
@@ -332,6 +334,9 @@ export async function scanHarness(
   const files: AgentFileEntry[] = [];
   const times: HarnessFileTime[] = [];
   const report = options.onProgress ?? (() => {});
+  const rootEntries = await port.listDir('');
+  /* A missing source root is a failed read, not an empty harness. */
+  if (!rootEntries) throw codedFailure('harness-source-missing');
 
   for (const [index, path] of ROOT_FILES.entries()) {
     const file = await port.readText(path);
@@ -343,7 +348,7 @@ export async function scanHarness(
   }
   report({ stage: 'nested', done: 0, total: null });
   const rootFolders: string[] = [];
-  await nestedAgentsFiles(port, files, times, rootFolders);
+  await nestedAgentsFiles(port, rootEntries, files, times, rootFolders);
   for (const [index, dir] of SCAN_DIRS.entries()) {
     await walk(port, dir, 0, files, times);
     report({ stage: 'agent-directories', done: index + 1, total: SCAN_DIRS.length });

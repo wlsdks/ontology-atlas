@@ -20,6 +20,8 @@ vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({
 
 vi.mock('@/entities/agent-files', () => ({ scanHarness: mocks.scan }));
 
+import { codedFailure } from '@/shared/lib/failures/failure-code';
+
 import { useHarnessReport } from './use-harness-report';
 
 function deferred<T>() {
@@ -80,6 +82,15 @@ describe('useHarnessReport request identity', () => {
 
     await act(async () => oldBinding.resolve(binding('/old-repo')));
     expect(result.current.status === 'ready' && result.current.sourceRoot).toBe('/new-repo');
+  });
+
+  it('carries a refused read to the screen as a failure with its code', async () => {
+    mocks.list.mockResolvedValue(binding('/repo'));
+    mocks.scan.mockRejectedValue(codedFailure('vault-root-not-granted', '.: vault-root-not-granted'));
+    const vault = handle('/repo/docs');
+    const { result } = renderHook(() => useHarnessReport(vault, ['project'], true, []));
+    await waitFor(() => expect(result.current.status).toBe('failed'));
+    expect(result.current).toMatchObject({ sourceRoot: '/repo', code: 'vault-root-not-granted' });
   });
 
   it('keeps disabled and browser requests unsupported', () => {
