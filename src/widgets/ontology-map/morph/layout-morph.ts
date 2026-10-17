@@ -6,12 +6,11 @@ import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, 
 
 export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
 
-const OVERLAY_VIEWS: ReadonlySet<MapLayoutView> = new Set(["territories", "hex"]);
+const OVERLAY_VIEWS: ReadonlySet<MapLayoutView> = new Set(["hex"]);
 
 export const ARRIVAL_GLIDE_CONCEPT_CEILING = 2000;
 
 const GHOST_TARGET_CONCEPT_CEILING: Readonly<Record<MapLayoutView, number>> = {
-  territories: Number.POSITIVE_INFINITY,
   hex: Number.POSITIVE_INFINITY,
   flat: 6500,
     structure: 0,

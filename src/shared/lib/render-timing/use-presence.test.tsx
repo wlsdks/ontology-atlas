@@ -30,14 +30,14 @@ describe('useSurfaceSwap', () => {
     const mounts: string[] = [];
     const onMount = (view: string) => mounts.push(view);
     const { queryByTestId, rerender } = render(<SwapFrames view="flat" onMount={onMount} />);
-    rerender(<SwapFrames view="territories" onMount={onMount} />);
+    rerender(<SwapFrames view="hex" onMount={onMount} />);
     expect(queryByTestId('frame-flat')).toHaveAttribute('data-leaving', 'true');
-    expect(queryByTestId('frame-territories')).toHaveAttribute('data-leaving', 'false');
+    expect(queryByTestId('frame-hex')).toHaveAttribute('data-leaving', 'false');
     act(() => {
       vi.advanceTimersByTime(EXIT_WINDOW_MS);
     });
     expect(queryByTestId('frame-flat')).toBeNull();
-    expect(mounts).toEqual(['flat', 'territories']);
+    expect(mounts).toEqual(['flat', 'hex']);
     vi.useRealTimers();
   });
 });

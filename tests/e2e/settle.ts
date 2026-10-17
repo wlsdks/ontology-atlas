@@ -307,55 +307,13 @@ export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS):
 }
 
 /**
- * Resolve once the Territories view has drawn {@link STILL_FRAMES} consecutive frames
- * with the same camera and has finished arriving and dimming.
- *
- * Territories paints its own canvas (`OntologyTerritoriesMap.tsx`) and has no
- * `__atlasMap` probe; each painted frame writes its state to the canvas's
- * `data-frame` (`TerritoryFrameStats`: offset, arrival, dim, focus). The screen
- * positions on the mirror list are written on the frame that stops moving, so
- * they are current once this resolves. Pass `focus` when a selection was just
- * made, so frames drawn before the selection reached the canvas do not count.
- */
-export async function waitForTerritoriesStill(
-  page: Page,
-  options: { focus?: string | null; frames?: number; timeout?: number } = {},
-): Promise<void> {
-  const { focus, frames = STILL_FRAMES, timeout = HANG_TIMEOUT_MS } = options;
-  const key = `territories-${(stillKeySeed += 1)}`;
-  await page.waitForFunction(
-    (argument: { focus: string | null | undefined; frames: number; key: string }) => {
-      const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="territories-map"] canvas');
-      const raw = canvas?.dataset.frame;
-      if (!raw) return false;
-      const frame = JSON.parse(raw) as { arrivalT: number; dimT: number; focus: string | null };
-      if (frame.arrivalT < 1 || (frame.dimT !== 0 && frame.dimT !== 1)) return false;
-      if (argument.focus !== undefined && frame.focus !== argument.focus) return false;
-      const box = canvas!.getBoundingClientRect();
-      const signature = `${raw}|${Math.round(box.width)},${Math.round(box.height)}`;
-      const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
-        .__atlasStill ??= {});
-      const seen = store[argument.key];
-      if (!seen || seen.signature !== signature) {
-        store[argument.key] = { signature, count: 1 };
-        return false;
-      }
-      seen.count += 1;
-      return seen.count >= argument.frames;
-    },
-    { focus, frames, key },
-    { polling: "raf", timeout },
-  );
-}
-
-/**
  * Resolve once nothing has been added to, removed from or re-texted in the document for
  * {@link STILL_FRAMES} consecutive frames.
  *
  * For the moment a freshly loaded route has finished filling in — hydration swapping the
  * server's markup, a sample or vault read landing, a list growing — where no single
  * element or animation marks the end. Attribute changes are ignored on purpose: a canvas
- * that writes its frame stats to a `data-*` attribute every frame (Territories) would
+ * that writes its frame stats to a `data-*` attribute every frame would
  * otherwise never read as quiet, and those writes change no structure or text.
  */
 export async function waitForDomQuiet(

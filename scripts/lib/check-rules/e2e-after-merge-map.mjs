@@ -269,16 +269,6 @@ export const rules = [
     ],
   },
   {
-    order: 5030,
-    command: 'pnpm exec playwright test tests/e2e/map/map-territories-view.spec.ts',
-    reason: "the Territories view changed",
-    matches: [
-      /^src\/widgets\/ontology-map\/ui\/OntologyTerritoriesMap\.tsx$/,
-      /^src\/widgets\/ontology-map\/render\/territories\.ts$/,
-      /^src\/widgets\/ontology-map\/model\/layout\/territories-layout\.ts$/,
-    ],
-  },
-  {
     order: 5031,
     command: 'pnpm exec playwright test tests/e2e/map/chrome/map-toolbar-balance.spec.ts',
     reason: "the top toolbar lane balance changed",

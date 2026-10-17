@@ -10,11 +10,15 @@ describe("map view address sync", () => {
 
   it("adopts an address that names a view, on arrival or later", () => {
     expect(decideMapViewSync("arrival", null, "hex")).toEqual({ adopt: "hex", write: undefined });
-    expect(decideMapViewSync("address-changed", "territories", "hex")).toEqual({ adopt: "hex", write: undefined });
+    expect(decideMapViewSync("address-changed", "strata", "hex")).toEqual({ adopt: "hex", write: undefined });
   });
 
   it("writes a stored view once on arrival", () => {
     expect(decideMapViewSync("arrival", "hex", null)).toEqual({ adopt: null, write: "hex" });
+  });
+
+  it("writes nothing on arrival when Flat is stored and the address names no view it knows", () => {
+    expect(decideMapViewSync("arrival", null, null)).toEqual({ adopt: null, write: undefined });
   });
 
   it("never answers another writer's bare address with a write — 20 of them write nothing", () => {

@@ -252,6 +252,7 @@ export function useView3d(): boolean {
 
 const STRUCTURE_KEY = "atlas.appearance.structure";
 const RETIRED_VIEW_KEY = "atlas.appearance.galaxy";
+const RETIRED_TERRITORIES_KEY = "atlas.appearance.territories";
 
 function readDomainStructure(): boolean {
   if (typeof window === "undefined") return false;
@@ -263,26 +264,6 @@ function readDomainStructure(): boolean {
 
 export function useDomainStructure(): boolean {
   return useSyncExternalStore(subscribe, readDomainStructure, () => false);
-}
-
-/* ── Territories (2D map, nothing folded) ───────────────────────────────── */
-
-/**
- * Whether the flat map is drawn as Territories: every capability named, gathered in its domain's
- * slice, with no expansion step. The home route mirrors this flag into `?view=territories`.
- */
-const TERRITORIES_KEY = "atlas.appearance.territories";
-
-const DEFAULT_TERRITORIES = false;
-
-function readTerritories(): boolean {
-  return readOnOff(TERRITORIES_KEY, DEFAULT_TERRITORIES);
-}
-
-export function useTerritories(): boolean {
-  const getSnapshot = useCallback(() => readTerritories(), []);
-  const getServerSnapshot = useCallback(() => DEFAULT_TERRITORIES, []);
-  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 /* ── Hex board (2D map, one tile per capability) ─────────────────────────── */
@@ -305,9 +286,8 @@ export function useHexBoard(): boolean {
 export function useFlatMapView(): boolean {
   const view3d = useView3d();
   const structure = useDomainStructure();
-  const territories = useTerritories();
   const hexBoard = useHexBoard();
-  return !view3d && !structure && !territories && !hexBoard;
+  return !view3d && !structure && !hexBoard;
 }
 
 const HEX_RELIEF_KEY = "atlas.appearance.hex-relief";
@@ -373,7 +353,6 @@ export function writeMapView(view: MapLayoutView): void {
   if (typeof window === "undefined") return;
   const dome = view === "strata" || view === "coupling";
   const writes: Array<[string, string]> = [
-    [TERRITORIES_KEY, view === "territories" ? "on" : "off"],
     [HEX_BOARD_KEY, view === "hex" ? "on" : "off"],
     [STRUCTURE_KEY, view === "structure" ? "on" : "off"],
     ...(dome ? [[MAP_ARRANGEMENT_KEY, view] as [string, string]] : []),
@@ -391,6 +370,7 @@ export function writeMapView(view: MapLayoutView): void {
     }
   }
   try { window.localStorage.removeItem(RETIRED_VIEW_KEY); } catch {}
+  try { window.localStorage.removeItem(RETIRED_TERRITORIES_KEY); } catch {}
   notifyPreferenceChange();
 }
 

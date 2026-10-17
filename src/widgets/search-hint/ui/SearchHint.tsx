@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
-import { useDomainStructure, useHexBoard, useMapArrangement, useTerritories, useView3d } from '@/shared/lib/preferences/appearance-preferences';
+import { useDomainStructure, useHexBoard, useMapArrangement, useView3d } from '@/shared/lib/preferences/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {
@@ -69,10 +69,9 @@ export function SearchHint({
   // Every stored view fact, so the chip names the view the canvas is drawing.
   const view3d = useView3d();
   const structure = useDomainStructure();
-  const territories = useTerritories();
   const hexBoard = useHexBoard();
   const arrangement = useMapArrangement();
-  const currentView = view3d ? arrangement : hexBoard ? 'hex' : territories ? 'territories' : structure ? 'structure' : 'flat';
+  const currentView = view3d ? arrangement : hexBoard ? 'hex' : structure ? 'structure' : 'flat';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
   const view3dChipRef = useRef<HTMLButtonElement | null>(null);

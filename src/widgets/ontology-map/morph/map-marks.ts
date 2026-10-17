@@ -30,7 +30,6 @@ import {
 } from "../ui/world/topology-world";
 import { predictHexMarks } from "./hex-marks";
 import type { MapLayoutTarget } from "./MapLayoutMorphOverlay";
-import { predictTerritoryTarget } from "./territories-marks";
 
 const FLAT_SHAPE: Readonly<Record<WorldNodeKind, MapLayoutMarkShape>> = {
   project: "hex",
@@ -227,11 +226,7 @@ function predictOntologyMapMarks({
 export interface MapLayoutTargetInput {
   nodes: readonly OntologyMapNode[];
   edges: readonly OntologyMapEdge[];
-  territoryStats: (domain: { capabilityCount: number; elementCount: number; staleCount: number | null;
-    }) => {
-        text: string;
-    };
-    hexPlacement: HexPlacementRecord | null;
+  hexPlacement: HexPlacementRecord | null;
   hexRelief?: boolean;
   expandStructure: ExpandStructure;
   overviewFit: "spine" | "full";
@@ -248,16 +243,6 @@ export function predictMapLayoutTarget(view: MapLayoutView, input: MapLayoutTarg
     const hexTokens = readHexBoardTokensOrNull();
     const marks = hexTokens ? predictHexMarks({ nodes, edges, prior: input.hexPlacement, host, tokens: hexTokens, relief: input.hexRelief }) : null;
     return marks && hexTokens ? { marks, ground: hexTokens.ground } : null;
-  }
-  if (view === "territories") {
-    const target = predictTerritoryTarget({
-      nodes,
-      edges,
-      domainStats: ({ capabilityCount, elementCount }) => input.territoryStats({ capabilityCount, elementCount, staleCount: null }).text,
-      host,
-      tokens,
-    });
-    return target ? { ...target, ground: tokens.canvasBgNear } : null;
   }
     const marks = view === "flat" ? predictOntologyMapMarks({ ...input, host, tokens }) : null;
   return marks ? { marks, ground: tokens.canvasBgNear } : null;

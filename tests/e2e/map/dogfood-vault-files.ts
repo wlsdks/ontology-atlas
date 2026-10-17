@@ -7,7 +7,7 @@ import path from "node:path";
  *
  * Files only: no Git answers, so evidence reads as "not readable here" — the state a person
  * sees when the app cannot walk the history. Specs that measure evidence build their own map
- * with `gitPathChanges` (`map-territories-view.spec.ts`).
+ * with `gitPathChanges` (`map-hex-board.spec.ts`).
  */
 const VAULT = path.resolve(__dirname, "../../../docs/ontology");
 

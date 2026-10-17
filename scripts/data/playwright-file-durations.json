@@ -816,10 +816,6 @@
       "seconds": 8.517,
       "tests": 4
     },
-    "map/map-territories-view.spec.ts": {
-      "seconds": 4.212,
-      "tests": 1
-    },
     "map/panels/index-panel-tidy.spec.ts": {
       "seconds": 2.397,
       "tests": 1

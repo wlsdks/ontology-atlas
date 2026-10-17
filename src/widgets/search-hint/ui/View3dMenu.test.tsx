@@ -70,6 +70,20 @@ describe("View3dMenu view picker", () => {
     }
   });
 
+  it("offers exactly flat, hex, structure, strata and coupling, in that order", () => {
+    mount();
+    const ids = screen.getAllByRole("radio").map((row) => row.getAttribute("data-testid"));
+    expect(ids).toEqual(
+      ["flat", "hex", "structure", "strata", "coupling"].map((view) => `topology-view-3d-choice-${view}`),
+    );
+  });
+
+  it("moves from flat to hex on ArrowDown", () => {
+    mount();
+    fireEvent.keyDown(screen.getByTestId("topology-view-3d-choice-flat"), { key: "ArrowDown" });
+    expect(screen.getByTestId("topology-view-3d-choice-hex")).toHaveAttribute("aria-checked", "true");
+  });
+
   it("checks flat by default, since 3D is opt-in", () => {
     mount();
     expect(screen.getByTestId("topology-view-3d-choice-flat")).toHaveAttribute("aria-checked", "true");
@@ -86,12 +100,12 @@ describe("View3dMenu view picker", () => {
     mount();
     const observed: Array<Array<string | null>> = [];
     const read = () => observed.push([
-      "territories", "hex-board", "structure", "map-arrangement", "view3d",
+      "hex-board", "structure", "map-arrangement", "view3d",
     ].map((key) => window.localStorage.getItem(`atlas.appearance.${key}`)));
     window.addEventListener("ontology-atlas:appearance-preference-change", read);
     try {
       fireEvent.click(screen.getByTestId("topology-view-3d-choice-coupling"));
-      expect(observed).toEqual([["off", "off", "off", "coupling", "on"]]);
+      expect(observed).toEqual([["off", "off", "coupling", "on"]]);
     } finally {
       window.removeEventListener("ontology-atlas:appearance-preference-change", read);
     }

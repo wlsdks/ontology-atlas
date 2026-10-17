@@ -61,13 +61,14 @@ describe("parseHomeRouteState", () => {
   });
 
   it("round-trips every map view the picker offers, and drops any other value", () => {
-    for (const view of ["territories", "structure", "strata", "coupling"] as const) {
+    for (const view of ["hex", "structure", "strata", "coupling"] as const) {
       const state = parseHomeRouteState(new URLSearchParams(`view=${view}`));
       expect(state.mapView).toBe(view);
       expect(applyHomeRouteState(new URLSearchParams(), state).get("view")).toBe(view);
     }
     expect(parseHomeRouteState(new URLSearchParams("view=flat")).mapView).toBeNull();
     expect(parseHomeRouteState(new URLSearchParams("view=cone")).mapView).toBeNull();
+    expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBeNull();
   });
 
   it("round-trips the contextual editor and legacy create workbench intents", () => {
@@ -1022,8 +1023,7 @@ describe("business-flow ask value", () => {
 });
 
 describe("map view in the address", () => {
-  it("names Territories and the hex board, and drops anything else", () => {
-    expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBe("territories");
+  it("names the hex board, and drops anything else", () => {
     expect(parseHomeRouteState(new URLSearchParams("view=hex")).mapView).toBe("hex");
     expect(parseHomeRouteState(new URLSearchParams("view=honeycomb")).mapView).toBeNull();
     const params = applyHomeRouteState(new URLSearchParams(), { ...DEFAULT_HOME_ROUTE_STATE, mapView: "hex" });

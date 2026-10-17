@@ -5,7 +5,6 @@ import {
   useDomainStructure,
   useHexBoard,
   useMapArrangement,
-  useTerritories,
   useView3d,
   writeMapView,
 } from '@/shared/lib/preferences/appearance-preferences';
@@ -47,7 +46,6 @@ export function useMapViewSync(
     options?: HomeRouteStateUpdateOptions,
   ) => void,
 ): void {
-  const territories = useTerritories();
   const hexBoard = useHexBoard();
   const structure = useDomainStructure();
   const view3d = useView3d();
@@ -57,11 +55,9 @@ export function useMapViewSync(
     ? arrangement
     : hexBoard
       ? 'hex'
-      : territories
-        ? 'territories'
-        : structure
-          ? 'structure'
-          : null;
+      : structure
+        ? 'structure'
+        : null;
   const lastRef = useRef<{ stored: HomeMapView | null; address: HomeMapView | null } | null>(null);
   useEffect(() => {
     const last = lastRef.current;

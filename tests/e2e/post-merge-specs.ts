@@ -86,7 +86,6 @@ export const POST_MERGE_SPECS = [
   // Map free-area and label placement
   "map/camera/map-overview-centre.spec.ts",
   "map/selection/map-constellation-popover-bounds.spec.ts",
-  "map/map-territories-view.spec.ts",
   "map/chrome/map-toolbar-balance.spec.ts",
   "map/camera/map-path-pick-frame.spec.ts",
   "map/camera/map-path-lens-frame.spec.ts",

@@ -212,7 +212,6 @@
     "collapseAllLabel": "すべて折りたたむ",
     "view3dChoice": {
       "flat": "フラット",
-      "territories": "領域",
       "hex": "ヘックスボード",
       "strata": "地層",
       "coupling": "神経網",
@@ -220,7 +219,6 @@
     },
     "view3dChoiceHint": {
       "flat": "ふつうの2Dマップ",
-      "territories": "すべてのケイパビリティに名前が付き、ドメインの周りに集まる",
       "hex": "ケイパビリティ1つにつきタイル1枚、ドメイン1つにつきリージョン1つ",
       "strata": "包含つながりを、明るい層ごとに読む",
       "coupling": "何が何とつながりするかでまとめる",

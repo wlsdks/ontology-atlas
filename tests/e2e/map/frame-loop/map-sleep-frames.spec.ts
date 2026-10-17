@@ -30,7 +30,6 @@ test("a layout morph stops its own frames once the new view has landed", async (
     test.setTimeout(120000);
     await countFrames(page);
     await page.addInitScript(() => {
-        window.localStorage.setItem("atlas.appearance.territories", "off");
         window.localStorage.setItem("atlas.appearance.hex-board", "off");
         window.localStorage.setItem("atlas.appearance.structure", "off");
         window.localStorage.setItem("atlas.appearance.view3d", "off");

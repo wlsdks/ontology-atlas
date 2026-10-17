@@ -39,7 +39,6 @@ import { useMapLayoutMorph } from "../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { DomainStructureMap } from "@/widgets/ontology-map";
 import { TopologyLightLegend } from "./TopologyLightLegend";
-import { TopologyTerritoriesSurface, useTerritoryDomainStats } from "./TopologyTerritoriesSurface";
 
 export interface TopologyMapRendererProps {
   localGraphRoot: string | null;
@@ -66,7 +65,6 @@ export interface TopologyMapRendererProps {
     | "t"
     | "tTopologyKeyboardWalk"
     | "structure"
-    | "territories"
     | "hexBoard"
     | "reducedMotion"
     | "audiencePlain"
@@ -140,7 +138,7 @@ export function TopologyMapRenderer({
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
   topologyIndexPresentation, topologyCreateIntent, impactLensActive,
 }: TopologyMapRendererProps) {
-  const { t, tTopologyKeyboardWalk, structure, territories, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
+  const { t, tTopologyKeyboardWalk, structure, hexBoard, reducedMotion, audiencePlain, glyphSet, canvasBackground, view3d, mapArrangement, footprint, expand, navigationSpeed } = topologyPreferences;
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { deeplinkSourceReady, vaultIdentity, spotlightFitToken, selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const arrivingDocuments = vault.partialTotal;
@@ -175,9 +173,8 @@ export function TopologyMapRenderer({
   const labelFontAdopted = useBodyLabelFont();
   const dialLabelsInFont = useMemo(() => (labelFontAdopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFontAdopted]);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
-  const territoryStats = useTerritoryDomainStats();
   const [hexFailed, setHexFailed] = useState(false);
-  const layoutView: MapLayoutView = territories ? "territories" : hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : structure ? "structure" : "flat";
+  const layoutView: MapLayoutView = hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : structure ? "structure" : "flat";
   const expandedParents =
     pathExpandedParents ?? (expandAllActive ? allExpandedParentIds : null) ?? spotlightExpandedParents ?? expandedParentSet;
   const overviewFit = expandAllActive ? "full" : "spine";
@@ -195,7 +192,7 @@ export function TopologyMapRenderer({
     targetFor: (to) => (host) =>
       predictMapLayoutTarget(
         to,
-        { nodes, edges, territoryStats, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), expandStructure: expand.structure, overviewFit, expandedParents, dialLabels, dialMemory: flatRingMemory.current() },
+        { nodes, edges, hexPlacement: readHexPlacement(vaultIdentity), hexRelief: readHexRelief(), expandStructure: expand.structure, overviewFit, expandedParents, dialLabels, dialMemory: flatRingMemory.current() },
         host,
       ),
     frameRef,
@@ -235,22 +232,7 @@ export function TopologyMapRenderer({
     >
       {morph.surface ? (
         <div key={morph.surface} ref={frameRef} data-testid="topology-map-view" data-map-view={morph.surface} className="absolute inset-0">
-          {morph.surface === "territories" ? (
-            <TopologyTerritoriesSurface
-              nodes={nodes}
-              edges={edges}
-              insightNodes={ontologyInsight?.nodes}
-              selectedId={canvasSelectedSlug}
-              onSelect={select}
-              onPaneClick={clear}
-              onDrawnCountChange={onDrawnCountChange}
-              reducedMotion={reducedMotion}
-              inspectorOpen={nodePanelMounted}
-              indexExpanded={renderedIndexState === "expanded"}
-              arrivedByMorph={morph.arrivedByMorph}
-              navigationSpeed={navigationSpeed}
-            />
-          ) : morph.surface === "hex" ? (
+          {morph.surface === "hex" ? (
             <ErrorBoundary onError={() => setHexFailed(true)} fallback={() => null}>
             <TopologyHexBoardSurface
               nodes={nodes}

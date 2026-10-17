@@ -77,7 +77,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   via: { scope: "global", note: "insights return marker: a tab name (independent of the vault)" },
   review: { scope: "global", note: "insights queue row id; the queue is derived each time, so it is not a vault name" },
   ask: { scope: "global", note: "enumeration of intent kinds" },
-  view: { scope: "global", note: "map view enumeration whose only value is territories" },
+  view: { scope: "global", note: "map view enumeration: hex, structure, strata, coupling" },
 };
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.view3d", kind: "storage", scope: "global", note: "3D view (map dome view) preference, off (2D) by default" },
   { key: "atlas.appearance.structure", kind: "storage", scope: "global", note: "Domain structure preference" },
     { key: "atlas.appearance.galaxy", kind: "storage", scope: "global", note: "Retired view preference, read only for migration" },
-  { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "territories view (a flat map spreading every capability by domain) preference, off by default" },
+  { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },
   { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D arrangement basis: ownership (dome, default) / coupling (force cloud)" },

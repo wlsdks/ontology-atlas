@@ -30,24 +30,6 @@
     "evidenceUnreadable": "无法读取 Git 历史，依据未知",
     "evidenceNoPaths": "没有能力引用代码路径，依据未知"
   },
-  "territories": {
-    "canvasAriaLabel": "领地地图：每个能力都标有名称，聚集在所属领域周围。可用键盘操作左侧的 INDEX 列表。",
-    "listLabel": "领地地图上的能力",
-    "domainStats": "{capabilities} 个能力 · {elements} 个元素",
-    "domainStale": "{stale} 个过时",
-    "legendCurrent": "最新",
-    "legendStaleShort": "过时",
-    "legendUnknownShort": "未知",
-    "legendStale": "过时 · 引用的代码在文档之后有改动或已不存在",
-    "legendUnknown": "未知 · 尚未读取依据",
-    "legendSize": "大小 = 元素数",
-    "legendRollup": "数字 = 领域间依赖数",
-    "evidenceMeasured": "来自 Git：{total} 个能力中 {stale} 个过时",
-    "evidenceReading": "正在读取 Git 历史",
-    "evidenceAppOnly": "桌面应用会从 Git 读取依据 · 在这里所有状态均为未知",
-    "evidenceUnreadable": "无法读取 Git 历史，所有依据状态未知",
-    "evidenceNoPaths": "没有能力引用代码路径，所有依据状态未知"
-  },
   "widgetError": {
     "mapTitle": "无法绘制地图。",
     "panelTitle": "无法打开此面板。",

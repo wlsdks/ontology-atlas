@@ -5,7 +5,7 @@ import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
-const VIEWS: readonly MapLayoutView[] = ["flat", "territories", "hex", "strata", "coupling"];
+const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "strata", "coupling"];
 
 const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = {}): MapLayoutMark => ({
   id,
@@ -37,7 +37,7 @@ describe("chooseLayoutSwitch", () => {
     expect(chooseLayoutSwitch({ ...base, armed: false, from: "flat", to: "hex" })).toBe("cut");
   });
 
-  it("crossfades all thirty directions under reduced motion", () => {
+  it("crossfades all twelve directions under reduced motion", () => {
     for (const from of VIEWS) {
       for (const to of VIEWS) {
         if (from !== to) expect(chooseLayoutSwitch({ ...base, reducedMotion: true, from, to })).toBe("fade");
@@ -55,11 +55,11 @@ describe("chooseLayoutSwitch", () => {
 
   it("crossfades into and out of Coupling, and into the map's views past their measured ceilings", () => {
     expect(chooseLayoutSwitch({ ...base, from: "hex", to: "coupling" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, from: "coupling", to: "territories" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "flat" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "structure" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "territories", to: "strata" })).toBe("fade");
-    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "territories" })).toBe("ghost");
+    expect(chooseLayoutSwitch({ ...base, from: "coupling", to: "hex" })).toBe("fade");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "flat" })).toBe("fade");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "structure" })).toBe("fade");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "hex", to: "strata" })).toBe("fade");
+    expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "flat", to: "hex" })).toBe("ghost");
     expect(chooseLayoutSwitch({ ...base, conceptCount: 10000, from: "structure", to: "hex" })).toBe("fade");
   });
 

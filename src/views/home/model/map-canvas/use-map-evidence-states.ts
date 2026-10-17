@@ -28,8 +28,7 @@ const NO_PATHS: ReadonlyMap<string, string> = new Map();
 
 /**
  * Same rule and Git walk as the insights brief and MCP (`shared/lib/git/evidence-states.ts` over
- * `shared/lib/git/evidence-result.mjs`). `enabled` is Territories being drawn, the only view that
- * reads it.
+ * `shared/lib/git/evidence-verdict.mjs`). `enabled` is a view that draws evidence: every view but Domain structure.
  */
 export function useMapEvidenceStates({
   nodes,

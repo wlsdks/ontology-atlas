@@ -110,7 +110,7 @@ export interface EvidenceSourceDoc {
 /**
  * Where each concept's evidence lives, from the vault alone: its own `path:` and the `path:` of
  * every element it lists. One builder for every screen that asks the Git walk, so the insights
- * brief and the map's Territories view send the same paths and judge the same concepts.
+ * brief and the map send the same paths and judge the same concepts.
  */
 export function buildEvidenceConcepts(
   docs: readonly EvidenceSourceDoc[],

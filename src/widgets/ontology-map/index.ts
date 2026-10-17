@@ -1,5 +1,4 @@
 export { OntologyMap } from './ui/OntologyMap';
-export { OntologyTerritoriesMap } from './ui/OntologyTerritoriesMap';
 export { OntologyHexBoardMap } from './ui/OntologyHexBoardMap';
 export { MapLayoutMorphOverlay, installMapLayoutMorphProbe } from './morph/MapLayoutMorphOverlay';
 export type { MapLayoutMorphJob } from './morph/MapLayoutMorphOverlay';

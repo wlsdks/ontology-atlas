@@ -12,10 +12,10 @@ routes: [/topology]
 
 The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
-- **Click node** → on the Flat map the selection is made in place: the camera keeps its scale and slides sideways only when the panel would cover the node, INDEX stays open from 1024 px wide (below that, and in every other view, it folds for the selection), the chrome under the panel fades where it stands (in Territories and Hex too, which keep their two-press Escape), and the right-side panel opens. Clicking the selected node again keeps it; a background click or Escape deselects. A selection from any other source (double-click, Enter, search, INDEX, a panel link, a deep link, an arrow key) frames the node. One Escape clears a Flat selection and returns the camera the selection moved from, unless the reader has panned or zoomed since: a moved view is never taken back (2026-10-16). The panel: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
+- **Click node** → on the Flat map the selection is made in place: the camera keeps its scale and slides sideways only when the panel would cover the node, INDEX stays open from 1024 px wide (below that, and in every other view, it folds for the selection), the chrome under the panel fades where it stands (in Hex too, which keeps its two-press Escape), and the right-side panel opens. Clicking the selected node again keeps it; a background click or Escape deselects. A selection from any other source (double-click, Enter, search, INDEX, a panel link, a deep link, an arrow key) frames the node. One Escape clears a Flat selection and returns the camera the selection moved from, unless the reader has panned or zoomed since: a moved view is never taken back (2026-10-16). The panel: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
-- **Drag empty canvas** → the map moves with the pointer in every view; in Strata and Neural a drag that starts on the structure turns it instead, and one that starts beside it pans. Panning in Strata or Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Strata every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex and Territories do not glide.
-- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, Strata, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers. Territories never zooms; scrolling pans it.
+- **Drag empty canvas** → the map moves with the pointer in every view; in Strata and Neural a drag that starts on the structure turns it instead, and one that starts beside it pans. Panning in Strata or Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Strata every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
+- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, Strata, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
 - **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or Strata's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
 - **Double-click node** (or **Enter** on the focused map) → on the Flat overview, selects and zooms in to the node, never toggling a selected one off; one Escape returns the camera to where it was before the selection (2026-10-15); inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
@@ -162,28 +162,14 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Six map views, chosen in one picker** — the current-view chip in the top tool
-  lane opens **Flat** (the ordinary 2D map, default), **Territories**, **Hex board**,
-  **Domain structure**, **Strata**, and **Neural**. Territories is the flat plane with nothing
-  folded: every capability is drawn and named on open shelves fanning out from its
-  domain's mark, each domain in its own angular territory around the project, with
-  no hull around any of them. A capability's disc grows with its element count;
-  elements are drawn only when their capability is selected. The ring states the
-  evidence with the same rule the analysis brief uses (the app dates cited code
-  against the document in one Git walk): solid is current, amber is stale, broken
-  is unknown, and the web says every state is unknown rather than guess. Each
-  domain's title carries its capability, element and stale counts, and rolled-up
-  strokes with a count join domains whose capabilities depend on each other.
-  Selecting uses the flat map's inspector; the selected capability shows its
-  elements and its own dependency arrows. The view survives in the address as
-  `?view=territories`, pans but never zooms, and past about ten domains or seven
-  shelves per territory draws discs only, naming them on hover and in focus.
-  The **Hex board** gives every capability one hexagonal tile: a domain is a
+- **Five map views, chosen in one picker** — the current-view chip in the top tool
+  lane opens **Flat** (the ordinary 2D map, default), **Hex board**,
+  **Domain structure**, **Strata**, and **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
   contiguous region of tiles around its title tile, the project sits at the centre,
   and empty cells between regions keep them apart. A tile's brightness and its row
   of dots count its elements (a gold dot is a stale element); a gold rim is stale
   and a dashed, hatched tile is unknown, by the same rule and Git walk as
-  Territories. Placement is append-only per folder: a new capability takes a free
+  the analysis brief; the web says every state is unknown rather than guess. Placement is append-only per folder: a new capability takes a free
   cell of its region and a new domain the next free slot, so nothing already placed
   moves; only a region that outgrows its room re-seeds the board, and the board says
   so. In the far band, strokes between regions grow thicker with
@@ -197,7 +183,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the tiles (8–96 px): names appear once every name fits its face, dots and title
   names from 28 px, and below that each region is one nameplate; "⬡ Region names
   only" holds that band. The address carries `?view=hex`.
-  A pick that leaves or enters Territories or the Hex board carries each concept
+  A pick that leaves or enters the Hex board carries each concept
   from where the old view drew it to where the new one draws it on the canvas
   spring: the selected concept (else the project) moves first, the rest follow
   their containment parents 35 ms per step, and hubs travel slower; every concept

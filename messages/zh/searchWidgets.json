@@ -212,7 +212,6 @@
     "collapseAllLabel": "全部收起",
     "view3dChoice": {
       "flat": "平面",
-      "territories": "领地",
       "hex": "六边形盘",
       "strata": "分层",
       "coupling": "神经",
@@ -220,7 +219,6 @@
     },
     "view3dChoiceHint": {
       "flat": "普通的 2D 地图",
-      "territories": "每项能力都有名称，聚集在所属领域周围",
       "hex": "每项能力一块瓦片，每个领域一片区域",
       "strata": "包含关系，逐层点亮来读",
       "coupling": "按彼此的关联聚成簇",

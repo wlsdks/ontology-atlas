@@ -43,7 +43,7 @@ document.body.append(host);
 
 function domainSequence(memory: DialMemory | null): string[] {
   const target = predictMapLayoutTarget("flat", {
-    nodes, edges, territoryStats: () => ({ text: "" }), hexPlacement: null, expandStructure: "disc", overviewFit: "spine", expandedParents: new Set(), dialMemory: memory,
+    nodes, edges, hexPlacement: null, expandStructure: "disc", overviewFit: "spine", expandedParents: new Set(), dialMemory: memory,
   }, host)!;
   const hub = target.marks.find((m) => m.id === "p")!;
   return target.marks

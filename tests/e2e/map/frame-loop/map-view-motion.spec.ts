@@ -47,7 +47,7 @@ test.beforeEach(async ({ page }) => {
     await waitForMapStill(page);
 });
 test("a view switch never shows a frame without a picture of the map", async ({ page }) => {
-    for (const [from, to] of [["map", "territories"], ["territories", "map"]] as const) {
+    for (const [from, to] of [["map", "hex"], ["hex", "map"]] as const) {
         const frames = await chooseView(page, to === "map" ? "flat" : to, to);
         const bare = frames.filter((frame) => frame.views.length === 0 && !(frame.overlay && frame.overlay > 0));
         expect(bare, `${from} → ${to}: frames with neither a view nor the overlay`).toEqual([]);

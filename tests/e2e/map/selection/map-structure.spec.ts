@@ -48,8 +48,8 @@ test('migrates the retired view and retains the other picker modes', async ({ pa
   await expect(page.getByTestId('domain-structure-map')).toBeVisible();
   await page.getByTestId('topology-view-3d').click();
   const menu = page.getByTestId('topology-view-3d-menu');
-  await expect(menu.getByRole('radio')).toHaveCount(6);
-  for (const view of ['flat', 'territories', 'hex', 'structure', 'strata', 'coupling']) await expect(page.getByTestId(`topology-view-3d-choice-${view}`)).toBeVisible();
+  await expect(menu.getByRole('radio')).toHaveCount(5);
+  for (const view of ['flat', 'hex', 'structure', 'strata', 'coupling']) await expect(page.getByTestId(`topology-view-3d-choice-${view}`)).toBeVisible();
   await page.getByTestId('topology-view-3d-choice-flat').click();
   await expect(page.getByTestId('ontology-map-canvas')).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem('atlas.appearance.galaxy'))).toBeNull();

@@ -5,7 +5,6 @@ import {
   waitForBoxStill,
   waitForDomeEntered,
   waitForMapStill,
-  waitForTerritoriesStill,
   waitFrames } from "../settle";
 
 /**
@@ -101,66 +100,6 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         if (await note.count())
             await expect(note).toHaveCSS("word-break", "keep-all");
         await capture(page, "mc05-strata-1040");
-    });
-    test("MC-03/MC-16: Territories keeps the legend, the selected name and the domain title clear", async ({ page }) => {
-        await arrive(page, { width: 1280, height: 800 });
-        await page.getByTestId("topology-view-3d").click();
-        await page.getByTestId("topology-view-3d-choice-territories").click();
-        const map = page.getByTestId("territories-map");
-        await expect(map).toHaveAttribute("data-territories-ready", "true", { timeout: 60000 });
-        // The capability with the most elements — its list is the tallest callout.
-        const target = await page.evaluate(() => {
-            const caps = [...document.querySelectorAll<HTMLElement>('[data-territory-kind="capability"]')];
-            const named = caps.find((c) => c.textContent?.includes("라이브러리 작업대"));
-            const el = named ?? caps[0]!;
-            const [x, y, w, h] = (el.dataset.labelBox ?? "").split(",").map(Number);
-            return { id: el.dataset.territoryId!, domain: el.dataset.territoryDomain!, x: x! + w! / 2, y: y! + h! / 2 };
-        });
-        const canvas = (await rectOf(page, "territories-map"))!;
-        await page.mouse.click(canvas.x + target.x, canvas.y + target.y);
-        const panel = page.getByTestId("map-detail-panel");
-        await expect(panel).toBeVisible();
-        await waitForBoxStill(panel);
-        await waitForTerritoriesStill(page, { focus: target.id });
-        const panelBox = (await rectOf(page, "map-detail-panel"))!;
-        const legendPill = await page.evaluate(() => {
-            const p = document.querySelector('[data-testid="territories-legend"] > p')!.getBoundingClientRect();
-            return { x: p.x, y: p.y, w: p.width, h: p.height };
-        });
-        expect(intersects(legendPill, panelBox), `legend ${JSON.stringify(legendPill)} under the panel ${JSON.stringify(panelBox)}`).toBe(false);
-        const drawn = await page.evaluate((ids) => {
-            const read = (id: string) => {
-                const el = document.querySelector<HTMLElement>(`[data-territory-id="${id}"]`)!;
-                const [x, y, w, h] = (el.dataset.labelBox ?? "").split(",").map(Number);
-                return { x: x!, y: y!, w: w!, h: h! };
-            };
-            const frame = JSON.parse(document.querySelector<HTMLCanvasElement>('[data-testid="territories-map"] canvas')!.dataset.frame ?? "{}");
-            return { label: read(ids.id), domain: read(ids.domain), callout: frame.callout as [
-                    number,
-                    number,
-                    number,
-                    number
-                ] | null };
-        }, target);
-        const toPage = (b: Box) => ({ x: b.x + canvas.x, y: b.y + canvas.y, w: b.w, h: b.h });
-        // The selected name is in the free map, not cut by the panel's edge.
-        expect(toPage(drawn.label).x + drawn.label.w, "selected name runs under the panel").toBeLessThanOrEqual(panelBox.x);
-        // The element list leaves its domain's title and counts readable.
-        if (drawn.callout) {
-            const [x, y, w, h] = drawn.callout;
-            expect(intersects({ x, y, w, h }, drawn.domain), "element list over its domain title").toBe(false);
-        }
-        await capture(page, "mc03-territories-select-1280");
-        // At 1040 the evidence note is shown whole, however many lines it takes.
-        await page.keyboard.press("Escape");
-        await page.setViewportSize({ width: 1040, height: 720 });
-        await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-        const note = page.getByTestId("territories-evidence-note");
-        await expect(note).toBeVisible();
-        await waitForBoxStill(note);
-        const clipped = await note.evaluate((el) => el.scrollWidth > el.clientWidth + 1 || getComputedStyle(el).textOverflow === "ellipsis");
-        expect(clipped, "the evidence note is cut off").toBe(false);
-        await capture(page, "mc16-territories-1040");
     });
     test("MC-07/MC-12/MC-13: one action grammar across the node and edge panels", async ({ page }) => {
         await arrive(page, { width: 1512, height: 949 });
@@ -331,132 +270,6 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         }
         await expect(page.getByTestId("guided-tour-overlay")).toHaveCount(0);
         await expect.poll(() => activeTestId(page)).toBe("topology-tour-button");
-    });
-    for (const viewport of [
-        { width: 1040, height: 720 },
-        { width: 1512, height: 949 }
-    ]) {
-        test(`MC-02: every name Territories shows at rest is readable at ${viewport.width}`, async ({ page }) => {
-            await arrive(page, viewport);
-            await page.getByTestId("topology-view-3d").click();
-            await page.getByTestId("topology-view-3d-choice-territories").click();
-            await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60000 });
-            await waitForTerritoriesStill(page, { focus: null });
-            // Each name drawn at rest, probed at its four corners and its centre: the canvas must be
-            // what is there — not INDEX, a tile, the legend, or the edge of the window.
-            const hidden = await page.evaluate(() => {
-                const wrap = document.querySelector<HTMLElement>('[data-testid="territories-map"]')!;
-                const c = wrap.getBoundingClientRect();
-                const out: string[] = [];
-                let shown = 0;
-                for (const el of document.querySelectorAll<HTMLElement>("[data-territory-id]")) {
-                    if (!el.dataset.labelBox || el.dataset.labelShown === "on-focus")
-                        continue;
-                    shown += 1;
-                    const [x, y, w, h] = el.dataset.labelBox.split(",").map(Number) as [
-                        number,
-                        number,
-                        number,
-                        number
-                    ];
-                    const points = [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2], [x + w / 2, y + h / 2]];
-                    for (const [px, py] of points as [
-                        number,
-                        number
-                    ][]) {
-                        const X = c.x + px;
-                        const Y = c.y + py;
-                        const onScreen = X >= 0 && Y >= 0 && X <= innerWidth && Y <= innerHeight;
-                        const hit = onScreen ? document.elementFromPoint(X, Y) : null;
-                        if (!hit || hit.tagName !== "CANVAS") {
-                            const by = hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? (onScreen ? hit?.tagName : "off-screen");
-                            out.push(`${el.textContent} at ${Math.round(X)},${Math.round(Y)} under ${by}`);
-                            break;
-                        }
-                    }
-                }
-                return { shown, hidden: out };
-            });
-            expect(hidden.shown, "names drawn at rest").toBeGreaterThan(10);
-            expect(hidden.hidden, "names drawn under chrome or off the window").toEqual([]);
-        });
-    }
-    /*
-     * After Escape closes the inspector and INDEX unfolds, the map must re-measure:
-     * legend between the panels and no drawn name under INDEX.
-     */
-    test("MC-02/MC-03 round 2: Territories measures again when the chrome moves", async ({ page }) => {
-        await arrive(page, { width: 1040, height: 720 });
-        await page.getByTestId("topology-view-3d").click();
-        await page.getByTestId("topology-view-3d-choice-territories").click();
-        await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60000 });
-        await waitForTerritoriesStill(page, { focus: null });
-        const legendAtRest = await page.evaluate(() => {
-            const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
-            return { x: r.x, y: r.y, w: r.width, h: r.height };
-        });
-        /** Names drawn (always shown, or lit under the selection) that are not the canvas at a corner. */
-        const unreadable = (litOnly: boolean) => page.evaluate((onlyLit) => {
-            const wrap = document.querySelector<HTMLElement>('[data-testid="territories-map"]')!;
-            const c = wrap.getBoundingClientRect();
-            const out: string[] = [];
-            for (const el of document.querySelectorAll<HTMLElement>("[data-territory-id]")) {
-                if (!el.dataset.labelBox)
-                    continue;
-                const lit = el.dataset.lit === "true";
-                if (onlyLit ? !lit : el.dataset.labelShown === "on-focus" && !lit)
-                    continue;
-                const [x, y, w, h] = el.dataset.labelBox.split(",").map(Number) as [
-                    number,
-                    number,
-                    number,
-                    number
-                ];
-                for (const [px, py] of [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2]] as [
-                    number,
-                    number
-                ][]) {
-                    const X = c.x + px;
-                    const Y = c.y + py;
-                    const hit = X >= c.x && Y >= c.y && X <= c.right && Y <= c.bottom ? document.elementFromPoint(X, Y) : null;
-                    if (!hit || hit.tagName !== "CANVAS") {
-                        out.push(`${el.textContent} at ${Math.round(X)},${Math.round(Y)} under ${hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? "the canvas edge"}`);
-                        break;
-                    }
-                }
-            }
-            return out;
-        }, litOnly);
-        const target = await page.evaluate(() => {
-            const el = [...document.querySelectorAll<HTMLElement>('[data-territory-kind="capability"]')].find((c) => c.textContent?.includes("라이브러리 작업대"))!;
-            const [x, y, w, h] = (el.dataset.labelBox ?? "").split(",").map(Number);
-            const c = document.querySelector('[data-testid="territories-map"]')!.getBoundingClientRect();
-            return { id: el.dataset.territoryId!, x: c.x + x! + w! / 2, y: c.y + y! + h! / 2 };
-        });
-        await page.mouse.click(target.x, target.y);
-        await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-        await waitForBoxStill(page.getByTestId("map-detail-panel"));
-        await waitForTerritoriesStill(page, { focus: target.id });
-        expect(await unreadable(true), "a lit name cut by the canvas edge or chrome").toEqual([]);
-        await capture(page, "mc02-r2-territories-selected-1040");
-        await page.keyboard.press("Escape");
-        await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-        // Escape keeps the selection; INDEX unfolds again and the camera returns to the room.
-        const indexPanel = page.getByTestId("topology-index-panel");
-        if (await indexPanel.count())
-            await waitForBoxStill(indexPanel);
-        await waitForTerritoriesStill(page, { focus: target.id });
-        expect(await unreadable(false), "a drawn name under INDEX after Escape").toEqual([]);
-        const legendAfter = await page.evaluate(() => {
-            const r = document.querySelector("[data-territories-legend-pill]")!.getBoundingClientRect();
-            return { x: r.x, y: r.y, w: r.width, h: r.height };
-        });
-        expect(Math.abs(legendAfter.w - legendAtRest.w), `legend ${JSON.stringify(legendAfter)} vs rest ${JSON.stringify(legendAtRest)}`).toBeLessThanOrEqual(1);
-        expect(Math.abs(legendAfter.x - legendAtRest.x)).toBeLessThanOrEqual(1);
-        const index = await rectOf(page, "topology-index-panel");
-        if (index)
-            expect(legendAfter.x, "legend under INDEX").toBeGreaterThanOrEqual(index.x + index.w);
-        await capture(page, "mc02-r2-territories-escape-1040");
     });
     test("MC-06: in Strata the selected domain's lit neighbourhood stays clear of its panel", async ({ page }) => {
         await arrive(page, { width: 1040, height: 720 });

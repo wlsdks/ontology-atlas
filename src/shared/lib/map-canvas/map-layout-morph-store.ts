@@ -1,4 +1,4 @@
-export type MapLayoutView = "flat" | "structure" | "strata" | "coupling" | "territories" | "hex";
+export type MapLayoutView = "flat" | "structure" | "strata" | "coupling" | "hex";
 
 export type MapLayoutMarkShape = "disc" | "square" | "hex";
 

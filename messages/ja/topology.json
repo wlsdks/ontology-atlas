@@ -30,24 +30,6 @@
     "evidenceUnreadable": "Gitの履歴を読み取れなかったため、根拠は不明です",
     "evidenceNoPaths": "コードのパスを示すケイパビリティがないため、根拠は不明です"
   },
-  "territories": {
-    "canvasAriaLabel": "テリトリーマップ：すべてのケイパビリティが名前付きで、ドメインの周りに集まっています。キーボードでは左側のINDEXリストを使います。",
-    "listLabel": "テリトリーマップ上のケイパビリティ",
-    "domainStats": "ケイパビリティ{capabilities}件 · 要素{elements}件",
-    "domainStale": "古い{stale}",
-    "legendCurrent": "最新",
-    "legendStaleShort": "古い",
-    "legendUnknownShort": "不明",
-    "legendStale": "古い · 引用したコードが文書より後に変わった、またはなくなった",
-    "legendUnknown": "不明 · 根拠をまだ読んでいない",
-    "legendSize": "大きさ＝要素数",
-    "legendRollup": "数字＝ドメイン間の依存数",
-    "evidenceMeasured": "Gitより：ケイパビリティ{total}件中{stale}件が古い",
-    "evidenceReading": "Gitの履歴を読み取り中",
-    "evidenceAppOnly": "デスクトップアプリがGitから根拠を読み取ります · ここではすべて不明です",
-    "evidenceUnreadable": "Gitの履歴を読み取れなかったため、根拠はすべて不明です",
-    "evidenceNoPaths": "コードのパスを示すケイパビリティがないため、根拠はすべて不明です"
-  },
   "widgetError": {
     "mapTitle": "マップを描画できませんでした。",
     "panelTitle": "このパネルを開けませんでした。",

@@ -3,9 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 import { SPRING, springVisualMs } from "../../../../src/shared/motion/spring";
 import { MOTION, STAGGER } from "../../../../src/shared/motion/tokens";
 import { seedFirstRunSeen } from "../../first-run-seed";
-import { waitForAnimationsDone, waitForDomeEntered, waitForMapSettled, waitForTerritoriesStill } from "../../settle";
+import { waitForAnimationsDone, waitForDomeEntered, waitForMapSettled } from "../../settle";
 
-type View = "flat" | "territories" | "hex" | "strata" | "coupling";
+type View = "flat" | "hex" | "strata" | "coupling";
 
 interface Frame {
   t: number;
@@ -76,7 +76,8 @@ const NINETY_BY_MS = 540;
 const SETTLED_BY_MS = 950;
 const SETTLE_BAND = 0.005;
 const TURN_REACH_PX = 400;
-const TURN_AFTER_MS = 150;
+// Past the deepest concept's staggered start, so every concept is already travelling when it turns.
+const TURN_AFTER_MS = 350;
 
 async function installSampler(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -214,7 +215,6 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
     }) => {
         const flag = (key: string, on: boolean) => window.localStorage.setItem(`atlas.appearance.${key}`, on ? "on" : "off");
         flag("hex-relief", tilted);
-        flag("territories", initial === "territories");
         flag("hex-board", initial === "hex");
         flag("structure", false);
         flag("view3d", initial === "strata" || initial === "coupling");
@@ -226,8 +226,7 @@ async function openAt(page: Page, view: View, reduced = false, synth: number | n
 }
 
 async function settled(page: Page, view: View): Promise<void> {
-  if (view === "territories") await waitForTerritoriesStill(page);
-  else if (view === "hex") await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
+  if (view === "hex") await expect(page.getByTestId("hex-board-map")).toHaveAttribute("data-hex-ready", "true");
   else if (view === "strata" || view === "coupling")
         await waitForDomeEntered(page);
     else
@@ -281,8 +280,7 @@ test.describe("map layout morph", () => {
         boolean?
     ]> = [
         ["flat", "hex"],
-        ["hex", "territories"],
-        ["strata", "territories"],
+        ["strata", "hex"],
         ["hex", "flat"],
         ["flat", "hex", true]
     ];
@@ -324,7 +322,7 @@ test.describe("map layout morph", () => {
             const floor = INK_FLOOR * Math.min(startInk, endInk);
             const dips = frames.slice(start).filter((f) => f.ink! < floor).map((f) => `${Math.round(f.t - run.travelStartMs)} ms: ${f.ink} (${f.phase})`);
             expect(dips, `ink fell under ${Math.round(floor)} (start ${startInk}, end ${endInk})`).toEqual([]);
-            const arrival = to === "territories" || to === "hex" ? to : "map";
+            const arrival = to === "hex" ? to : "map";
             const handoff = frames.findIndex((f, i) => i > start && f.views.includes(arrival) && f.camera !== null);
             expect(handoff, "the incoming view never drew").toBeGreaterThan(start);
             expect([...new Set(frames.slice(handoff).map((f) => f.camera))], "the incoming camera moved after the handoff").toHaveLength(1);
@@ -434,7 +432,7 @@ test.describe("map layout morph", () => {
         await openAt(page, "flat");
         await page.evaluate((stallMs) => {
             const observer = new MutationObserver(() => {
-                if (!document.querySelector('[data-testid="territories-map"]'))
+                if (!document.querySelector('[data-testid="hex-board-map"]'))
                     return;
                 observer.disconnect();
                 const until = performance.now() + stallMs;
@@ -447,7 +445,7 @@ test.describe("map layout morph", () => {
             observer.observe(document.body, { childList: true, subtree: true });
         }, INCOMING_STALL_MS);
         const before = await startRecording(page, false);
-        await pick(page, "territories");
+        await pick(page, "hex");
         const run = await morphDone(page, before);
         const frames = await stopRecording(page);
         expect(await page.evaluate(() => (window as unknown as {
@@ -471,7 +469,7 @@ test.describe("map layout morph", () => {
     test("reduced motion crossfades every pick on the fast clock and moves nothing", async ({ page }) => {
         test.setTimeout(180000);
         await openAt(page, "flat", true);
-        for (const view of ["territories", "hex", "strata", "coupling", "flat"] as const) {
+        for (const view of ["hex", "strata", "coupling", "flat"] as const) {
             const before = await startRecording(page, false);
             await pick(page, view);
             const run = await morphDone(page, before);
@@ -492,11 +490,10 @@ test.describe("map layout morph", () => {
             return { publishes: probe.publishes(), records: probe.records().length };
         });
         await page.evaluate(() => {
-            window.localStorage.setItem("atlas.appearance.territories", "on");
-            window.dispatchEvent(new StorageEvent("storage", { key: "atlas.appearance.territories", newValue: "on" }));
+            window.localStorage.setItem("atlas.appearance.hex-board", "on");
+            window.dispatchEvent(new StorageEvent("storage", { key: "atlas.appearance.hex-board", newValue: "on" }));
         });
-        await expect(page.getByTestId("territories-map")).toBeVisible();
-        await waitForTerritoriesStill(page);
+        await settled(page, "hex");
         const after = await page.evaluate(() => {
             const probe = (window as unknown as SamplerWindow).__atlasMapMorph!;
             return { publishes: probe.publishes(), records: probe.records().length };
@@ -553,7 +550,7 @@ test.describe("map layout morph", () => {
                 ]]));
             return { from: at(0), to: at(probe.live()!.durationMs) };
         });
-        await page.keyboard.press("ArrowDown");
+        await page.keyboard.press("ArrowUp");
         await page.waitForFunction((count) => ((window as unknown as SamplerWindow).__atlasMapMorph?.records().length ?? 0) >= count + 2, before, { polling: "raf" });
         const restart = await page.evaluate(() => Object.fromEntries((window as unknown as SamplerWindow).__atlasMapMorph!.marks(0).map((m) => [m.id, [m.x, m.y] as [
                 number,

@@ -212,7 +212,6 @@
     "collapseAllLabel": "Collapse all",
     "view3dChoice": {
       "flat": "Flat",
-      "territories": "Territories",
       "hex": "Hex board",
       "strata": "Strata",
       "coupling": "Neural",
@@ -220,7 +219,6 @@
     },
     "view3dChoiceHint": {
       "flat": "the ordinary 2D map",
-      "territories": "every capability named, gathered around its domain",
       "hex": "one tile per capability, one region per domain",
       "strata": "containment, read level by lit level",
       "coupling": "clustered by what relates to what",

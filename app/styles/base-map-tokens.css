@@ -99,19 +99,6 @@
     --map-node-sheen-tint: #232329;
     --map-node-sheen-blend: 0.6;
     /*
-     * Territories view (`render/territories.ts`): every value points at an existing ramp so the view
-     * reads one name per role. rollup-alpha keeps rolled-up strokes under the data; glow-alpha is
-     * ambient light, never a boundary.
-     */
-    --map-territory-title: var(--color-text-secondary);
-    --map-territory-count: var(--map-panel-text-tertiary);
-    --map-territory-stale: var(--color-status-warning);
-    --map-territory-stale-fill: var(--color-amber-source-a12);
-    --map-territory-rim-light: var(--color-overlay-3);
-    --map-territory-rollup-alpha: 0.55;
-    --map-territory-glow-alpha: 0.12;
-    --map-territory-arrival: var(--motion-settle);
-    /*
      * Project hexagon inner hairline and pincushion tick: the hue of `--map-amber-hub` at a lower alpha;
      * the outer stroke reuses `--map-amber-hub`.
      */

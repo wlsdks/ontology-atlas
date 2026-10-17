@@ -261,7 +261,7 @@ async function freeMap(page: Page) {
     const rail = railIds
       .map((id) => shown(document.querySelector(`[data-testid="${id}"]`)))
       .filter((box): box is DOMRect => box !== null);
-    const canvas = document.querySelector('[data-testid="ontology-map-canvas"], [data-testid="territories-map"]')!.getBoundingClientRect();
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     return {
       left: (index ?? tab)?.right ?? canvas.left,
       right: rail.length > 0 ? Math.min(...rail.map((box) => box.left)) : canvas.right,
@@ -276,10 +276,10 @@ async function chooseView(page: Page, view: string) {
 }
 
 /**
- * Territories and Neural rest in the middle of the free map, measured with INDEX open.
+ * Neural rests in the middle of the free map, measured with INDEX open.
  * Reduced motion so the 3D view rests at its fitted pose.
  */
-test("Territories and Neural rest in the middle of the free map", async ({ page }) => {
+test("Neural rests in the middle of the free map", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1512, height: 949 });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -289,30 +289,7 @@ test("Territories and Neural rest in the middle of the free map", async ({ page 
   await waitForMapSettled(page);
   const failures: string[] = [];
 
-  await chooseView(page, "territories");
-  await expect(page.getByTestId("territories-map")).toHaveAttribute("data-territories-ready", "true", { timeout: 60_000 });
-  await waitForBoxStill(page.getByTestId("territories-map"));
-  const territories = await page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="territories-map"] canvas')!.getBoundingClientRect();
-    const xs: number[] = [];
-    for (const el of document.querySelectorAll<HTMLElement>("[data-territory-id]")) {
-      const mark = el.dataset.mark?.split(",").map(Number);
-      if (mark && mark.length === 3) xs.push(canvas.left + mark[0]! - mark[2]!, canvas.left + mark[0]! + mark[2]!);
-      // Names drawn at rest belong to the drawing; a folded name waits for hover.
-      const box = el.dataset.labelBox?.split(",").map(Number);
-      if (box && box.length === 4 && el.dataset.labelShown !== "on-focus") xs.push(canvas.left + box[0]!, canvas.left + box[0]! + box[2]!);
-    }
-    return { left: Math.min(...xs), right: Math.max(...xs), count: xs.length };
-  });
-  const free = await freeMap(page);
-  const territoriesOffset = (territories.left + territories.right) / 2 - (free.left + free.right) / 2;
-  console.log(`[centre] territories drawn=[${Math.round(territories.left)}, ${Math.round(territories.right)}] free=[${Math.round(free.left)}, ${Math.round(free.right)}] offset=${territoriesOffset.toFixed(1)}`);
-  if (territories.count < 10) failures.push(`territories: ${territories.count / 2} marks measured, nothing to centre`);
-  else if (Math.abs(territoriesOffset) > TOLERANCE) failures.push(`territories: the drawing's centre is ${territoriesOffset.toFixed(1)}px from the free map's centre`);
-
   // Straight from the flat map, so Neural is framed on entry rather than handed another view's camera.
-  await chooseView(page, "flat");
-  await waitForMapSettled(page);
   await chooseView(page, "coupling");
   await waitForDomeEntered(page, 60_000);
   await waitForMapStill(page);

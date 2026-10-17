@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
+import { dogfoodVaultFiles } from "./dogfood-vault-files";
 import { activeTestId, arrive, capture, pickDomain, rectOf } from "./map-canvas-interaction-harness";
-import { waitForAnimationsDone, waitFrames } from "../settle";
+import { waitForAnimationsDone, waitForMapStill, waitFrames } from "../settle";
 
 test.describe("map canvas focus on the dogfood vault", () => {
     test.setTimeout(150000);
@@ -75,7 +77,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
     });
     test("MC-17: every picker view is kept in the address", async ({ page }) => {
         await arrive(page, { width: 1512, height: 949 });
-        for (const view of ["strata", "coupling", "hex", "territories"] as const) {
+        for (const view of ["strata", "coupling", "hex"] as const) {
             await page.getByTestId("topology-view-3d").click();
             await page.getByTestId(`topology-view-3d-choice-${view}`).click();
             await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view);
@@ -84,4 +86,40 @@ test.describe("map canvas focus on the dogfood vault", () => {
         await page.getByTestId("topology-view-3d-choice-flat").click();
         await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBeNull();
     });
+    for (const setup of [
+        { name: "a stored Territories pick", stored: "territories", query: "", opens: "map" },
+        { name: "?view=territories with nothing stored", stored: null, query: "&view=territories", opens: "map" },
+        { name: "?view=territories with Hex stored", stored: "hex-board", query: "&view=territories", opens: "hex" }
+    ] as const) {
+        test(`MC-18: a retired Territories pick or address opens a working map (${setup.name})`, async ({ page }) => {
+            await page.addInitScript((stored) => {
+                for (const key of ["hex-board", "structure", "view3d", "territories"])
+                    window.localStorage.setItem(`atlas.appearance.${key}`, key === stored ? "on" : "off");
+            }, setup.stored);
+            await page.setViewportSize({ width: 1512, height: 949 });
+            await page.emulateMedia({ reducedMotion: "reduce" });
+            await installDesktopRailRuntime(page, dogfoodVaultFiles(), undefined, { replaceFixture: true });
+            await page.goto(`/ko/?guides=off&e2e=1${setup.query}`, { waitUntil: "domcontentloaded" });
+            await page.getByTestId("first-run-open").click();
+            await expect(page.getByTestId("topology-map-view")).toHaveAttribute("data-map-view", setup.opens);
+            await expect(page.getByTestId("widget-error-fallback")).toHaveCount(0);
+            await expect(page.getByTestId("topology-view-3d")).toContainText(setup.opens === "hex" ? "육각" : "평면");
+            if (setup.query && setup.opens === "map") expect(new URL(page.url()).searchParams.get("view"), "arrival rewrote the address").toBe("territories");
+            if (setup.opens === "hex") {
+                await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe("hex");
+                expect(await page.evaluate(() => window.localStorage.getItem("atlas.appearance.hex-board"))).toBe("on");
+                return;
+            }
+            const history = await page.evaluate(() => window.history.length);
+            await waitForMapStill(page);
+            expect(await page.evaluate(() => window.history.length), "arrival added a history entry").toBe(history);
+            const domain = await pickDomain(page);
+            await page.mouse.click(domain.x, domain.y);
+            await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+            await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBeNull();
+            await page.getByTestId("topology-view-3d").click();
+            await page.getByTestId("topology-view-3d-choice-strata").click();
+            await expect.poll(() => page.evaluate(() => window.localStorage.getItem("atlas.appearance.territories"))).toBeNull();
+        });
+    }
 });

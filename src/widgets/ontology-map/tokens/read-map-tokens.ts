@@ -36,7 +36,7 @@ export interface OntologyMapTokens {
   kindRgbDomain: string;
   kindRgbCapability: string;
   kindRgbElement: string;
-  /** The product's one warning hue — a stale node's evidence ring (the same ink Territories uses). */
+  /** The product's one warning hue — a stale node's evidence ring. */
   statusWarning: string;
   numeralShadow: string;
   numeralFace: string;

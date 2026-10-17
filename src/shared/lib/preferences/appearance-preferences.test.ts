@@ -18,6 +18,7 @@ import {
   readHexRelief,
   resolveMapSpeed,
   useCanvasBackground,
+  useFlatMapView,
   useGlyphSet,
   useHexRelief,
   useMapDragSpeed,
@@ -96,6 +97,13 @@ describe("appearance-preferences", () => {
     writeMapView("flat");
     expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBe("coupling");
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
+  });
+
+  it("never reads a retired Territories pick, and the next pick removes it", () => {
+    window.localStorage.setItem("atlas.appearance.territories", "on");
+    expect(renderHook(() => useFlatMapView()).result.current).toBe(true);
+    writeMapView("hex");
+    expect(window.localStorage.getItem("atlas.appearance.territories")).toBeNull();
   });
 
   it("still attempts the map writes when storage reads are unavailable", () => {
