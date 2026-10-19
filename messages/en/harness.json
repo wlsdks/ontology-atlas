@@ -39,7 +39,6 @@
   "pairCompared": "{count, plural, one {# reference pair compared} other {# reference pairs compared}}",
   "pairMatchesTwin": "Same content",
   "pairNotMeasured": "tool-specific differences are not errors",
-  "pairNotApplicable": "Not applicable",
   "pairHint": "Compares same-named Codex and Claude guidance for reference. Tool-specific instructions may differ; a content difference is not an error or a requirement to synchronize them.",
   "driftTitle": "{count, plural, one {# content difference} other {# content differences}}",
   "driftOneSided": "No twin",

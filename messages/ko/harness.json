@@ -39,7 +39,6 @@
   "pairCompared": "참고용 {count}쌍 비교",
   "pairMatchesTwin": "내용 같음",
   "pairNotMeasured": "도구별 차이는 오류가 아님",
-  "pairNotApplicable": "해당 없음",
   "pairHint": "같은 이름의 Codex·Claude 지침을 참고용으로 비교해요. 도구별 지침은 서로 달라도 되며, 내용 차이가 오류나 동기화 의무를 뜻하지는 않아요.",
   "driftTitle": "내용 차이 {count}",
   "driftOneSided": "짝 없음",

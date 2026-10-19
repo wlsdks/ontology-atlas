@@ -47,19 +47,23 @@ are merely uncounted, which no static read of a repository can claim. It stands 
 and points at the sensors view.
 
 **Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
-guide file or directory found (path, file count, size, the tools that read it, and how many files
-differ from their declared twin), then one row per hook config; the detail on the right holds the
+guide file or directory found (path, file count, size, how many files differ from an existing
+twin, and whether any file has no twin at all), then one row per hook config, which says wired only
+when every script it names is on disk and says so when a command names no script file
+(`harness.hookUnresolved`); the detail on the right holds the
 selected row's facts, and each pane scrolls on its own, so the page itself does not scroll at
 1512x900. Below a 68rem frame the list stacks over the detail. A guide's detail names which tools
 read it, each claim carrying the document it came from and the date a person last opened it (a
 claim we cannot cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows);
 size against a documented cap, where the Codex bar measures the **merged** root + worst-nested
 `AGENTS.md`, because that is what Codex truncates and a per-file bar reads green while the merge is
-already being cut; the reference comparison with its declared twin; the file's modification time on
+already being cut; the reference comparison with its declared twin, shown only where a twin was
+compared; the file's modification time on
 this disk, labelled as that rather than as a commit date; and, for a directory, its files. A
-directory with differing files unfolds them as indented rows, and choosing one shows both complete
-files side by side with the lines the other file lacks marked (`harness.driftLineMark`); the view
-opens on the first such file. Comparison counts do not claim that the pairs match, and
+directory with differing files unfolds them as indented rows. Choosing a file that has a twin
+shows both complete files side by side with the lines the other file lacks marked
+(`harness.driftLineMark`); choosing a file with no twin shows its one copy and names the folder it is
+only in (`harness.driftOnlyIn`). The view opens on the first such file. Comparison counts do not claim that the pairs match, and
 tool-specific differences are informational rather than a synchronization requirement. A hook
 config's detail lists it by script: wired (`harness.hookWired`) means the script the config names
 exists on disk, never that it runs — a script the config names and the disk does not have is

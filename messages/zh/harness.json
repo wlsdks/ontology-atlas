@@ -39,7 +39,6 @@
   "pairCompared": "已比较 {count} 组引用配对",
   "pairMatchesTwin": "内容相同",
   "pairNotMeasured": "工具特有的差异不算错误",
-  "pairNotApplicable": "不适用",
   "pairHint": "仅作参考，比较同名的 Codex 与 Claude 指引。针对特定工具的说明可以不同；内容不同不是错误，也不要求把两者同步。",
   "driftTitle": "{count} 处内容差异",
   "driftOneSided": "无配对",

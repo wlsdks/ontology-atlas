@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { AGENT_TOOL_LABELS, CITATIONS_REVIEWED, type HarnessReport } from '@/entities/agent-files';
+import { CITATIONS_REVIEWED, type HarnessReport, type HookConfigFacts } from '@/entities/agent-files';
 import { ChevronRight } from 'lucide-react';
 
 import { EmptyState, RowDisclosure } from '@/shared/ui';
@@ -14,7 +14,7 @@ import { useSurfaceSwap, useSwapHeight } from '@/shared/lib/render-timing/use-pr
 import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
 import { cn } from '@/shared/lib/cn';
 import { GuideSelectionDetail, PAIR_DRIFT_BADGE, WARNING_BADGE } from './HarnessGuideDetail';
-import { buildRows, formatBytes, mergedShare, type GuideRow, type Selection } from './harness-guide-rows';
+import { buildRows, differingCount, formatBytes, mergedShare, type GuideRow, type Selection } from './harness-guide-rows';
 
 /**
  * The guide inventory with each fact's limits said out loud: measured here or read from a tool's docs
@@ -22,7 +22,14 @@ import { buildRows, formatBytes, mergedShare, type GuideRow, type Selection } fr
  * date is a filesystem mtime, not a commit date.
  */
 
-const ROW_CLASS = 'min-w-0 flex-1 flex-col items-stretch gap-0 py-1.5';
+const ROW_CLASS = 'min-w-0 flex-1 gap-2';
+
+function hookRowStatus(group: HookConfigFacts) {
+  const missing = group.hooks.some((hook) => hook.status === 'missing');
+  const unresolved = group.hooks.some((hook) => hook.status === 'unresolved');
+  const wired = group.hooks.length > 0 && group.hooks.every((hook) => hook.status === 'wired');
+  return { missing, unresolved, wired };
+}
 
 export function HarnessGuidesView({
   report,
@@ -174,6 +181,7 @@ export function HarnessGuidesView({
         )}
       >
         <div
+          data-testid="harness-guide-list-pane"
           className={cn(
             'min-w-0 border-b border-[color:var(--color-border-soft)] p-2 overscroll-contain',
             '@min-[68rem]/harness:min-h-0 @min-[68rem]/harness:overflow-y-auto @min-[68rem]/harness:border-b-0 @min-[68rem]/harness:border-r',
@@ -199,6 +207,7 @@ export function HarnessGuidesView({
               <ul className="flex flex-col gap-0.5">
                 {rows.map((row) => {
                   const share = mergedShare(row, report);
+                  const differing = differingCount(row);
                   const open = !collapsed.has(row.key);
                   const childrenId = `harness-guide-files-${row.key}`;
                   return (
@@ -234,38 +243,38 @@ export function HarnessGuidesView({
                         {rowButton(
                           row.key,
                           <>
-                            <span className="flex min-w-0 items-baseline gap-2">
-                              <span
-                                className={cn(
-                                  'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
-                                  row.ruleId !== 'nested-agents-md' && 'font-mono',
-                                )}
-                              >
-                                {row.label}
+                            <span
+                              className={cn(
+                                'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
+                                row.ruleId !== 'nested-agents-md' && 'font-mono',
+                              )}
+                            >
+                              {row.label}
+                            </span>
+                            {row.fileCount > 1 ? (
+                              <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                                {t('fileCount', { count: row.fileCount })}
                               </span>
-                              {row.fileCount > 1 ? (
-                                <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-                                  {t('fileCount', { count: row.fileCount })}
+                            ) : null}
+                            <span className="ml-auto flex shrink-0 items-center gap-2">
+                              {differing > 0 ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('driftTitle', { count: differing })}
+                                </span>
+                              ) : null}
+                              {row.driftFiles.length > differing ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('driftOneSided')}
                                 </span>
                               ) : null}
                               <span
                                 className={cn(
-                                  'ml-auto shrink-0 text-label tabular-nums',
+                                  'text-label tabular-nums',
                                   share?.over ? 'text-[color:var(--color-amber-source-a90)]' : 'text-[color:var(--color-text-tertiary)]',
                                 )}
                               >
                                 {share ? `${formatBytes(share.used)} · ${share.percent}%` : formatBytes(row.bytes)}
                               </span>
-                            </span>
-                            <span className="flex min-w-0 items-center gap-2">
-                              <span className="min-w-0 truncate text-label text-[color:var(--color-text-tertiary)]">
-                                {row.tools.map((tool) => AGENT_TOOL_LABELS[tool] ?? tool).join(', ')}
-                              </span>
-                              {row.driftFiles.length > 0 ? (
-                                <span className={badgeClass({ shape: 'tag', className: cn('ml-auto shrink-0 whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
-                                  {t('driftTitle', { count: row.driftFiles.length })}
-                                </span>
-                              ) : null}
                             </span>
                           </>,
                           'md',
@@ -284,7 +293,7 @@ export function HarnessGuidesView({
                                       <span className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
                                         {file.label}
                                       </span>
-                                      {file.finding?.detail?.presentIn ? (
+                                      {!file.twin ? (
                                         <span className="ml-auto shrink-0 text-label text-[color:var(--color-text-tertiary)]">
                                           {t('driftOneSided')}
                                         </span>
@@ -316,7 +325,7 @@ export function HarnessGuidesView({
                 <ul className="flex flex-col gap-0.5">
                   {report.hookGroups.map((group) => {
                     const key = `hooks:${group.configPath}`;
-                    const missing = group.hooks.some((hook) => hook.status === 'missing');
+                    const status = hookRowStatus(group);
                     return (
                       <li key={key}>
                         <div ref={itemRef(key)} className="relative flex items-stretch">
@@ -324,17 +333,22 @@ export function HarnessGuidesView({
                           {rowButton(
                             key,
                             <>
-                              <span className="flex min-w-0 items-baseline gap-2">
-                                <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
-                                  {group.configPath}
-                                </span>
-                                <span className="ml-auto shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-                                  {t('hookScripts', { count: group.hooks.length })}
-                                </span>
+                              <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
+                                {group.configPath}
                               </span>
-                              <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-                                {missing ? (
+                              <span className="ml-auto flex shrink-0 items-center gap-2" data-testid="harness-hook-row-status">
+                                {status.missing ? (
                                   <span className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}>{t('hookMissing')}</span>
+                                ) : null}
+                                {status.unresolved ? (
+                                  <span
+                                    className={badgeClass({
+                                      shape: 'tag',
+                                      className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]',
+                                    })}
+                                  >
+                                    {t('hookUnresolved')}
+                                  </span>
                                 ) : null}
                                 {group.approvalGate ? (
                                   /* Never green: Codex refuses a new or changed hook until a person trusts it in /hooks, session state in no file. */
@@ -346,9 +360,12 @@ export function HarnessGuidesView({
                                     {t('hookApprovalGate')}
                                   </span>
                                 ) : null}
-                                {!missing && !group.approvalGate ? (
+                                {status.wired && !group.approvalGate ? (
                                   <span className="text-label text-[color:var(--color-text-tertiary)]">{t('hookWired')}</span>
                                 ) : null}
+                                <span className="text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                                  {t('hookScripts', { count: group.hooks.length })}
+                                </span>
                               </span>
                             </>,
                             'md',
@@ -365,8 +382,14 @@ export function HarnessGuidesView({
 
         <section
           ref={paneRef}
+          tabIndex={0}
+          role="region"
           aria-labelledby="harness-guide-detail-title"
-          className={cn('@container/guide-detail min-w-0 overscroll-contain', '@min-[68rem]/harness:min-h-0 @min-[68rem]/harness:overflow-y-auto')}
+          data-testid="harness-guide-detail-pane"
+          className={cn(
+            '@container/guide-detail min-w-0 overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+            '@min-[68rem]/harness:min-h-0 @min-[68rem]/harness:overflow-y-auto',
+          )}
         >
           <div ref={hostRef} className="grid px-5 py-4 md:px-6 md:py-5">
             {leaving !== null && selections.has(leaving) ? (

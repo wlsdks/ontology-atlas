@@ -13,6 +13,7 @@ export interface DriftFile {
   path: string;
   label: string;
   finding: AgentDriftFinding | null;
+  twin: boolean;
 }
 
 export interface GuideFile {
@@ -109,6 +110,7 @@ export function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[
         path: record.path,
         label,
         finding: pairFindings.find((finding) => finding.path === label && codes.includes(finding.code)) ?? null,
+        twin: codes.some((code) => code.endsWith('-diverged')),
       });
     }
   }
@@ -135,4 +137,14 @@ export function mergedShare(row: GuideRow, report: HarnessReport) {
   /* "0%" for 157 B of 32 KB would read as "empty"; under one percent says what is true. */
   const percent = percentValue < 1 && cap.worstCaseBytes > 0 ? '<1' : String(percentValue);
   return { used: cap.worstCaseBytes, cap: cap.capBytes, ratio, percentValue, percent, over: cap.status === 'drift' };
+}
+
+export function differingCount(row: GuideRow): number {
+  return row.driftFiles.filter((file) => file.twin).length;
+}
+
+export function comparedTwin(row: GuideRow, report: HarnessReport): string | null {
+  const { skillCopy, agentCopy } = report.analysis.checks;
+  const check = row.ruleId.endsWith('-skills') ? skillCopy : row.ruleId.endsWith('-agents') ? agentCopy : null;
+  return check && check.status !== 'not-applicable' ? row.declaredPair : null;
 }

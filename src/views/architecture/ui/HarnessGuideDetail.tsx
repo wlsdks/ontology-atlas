@@ -10,6 +10,8 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 import {
+  comparedTwin,
+  differingCount,
   formatBytes,
   formatWhen,
   insideFolder,
@@ -131,21 +133,24 @@ function SizeFact({ row, report, t }: { row: GuideRow; report: HarnessReport; t:
   );
 }
 
-function PairFact({ row, t }: { row: GuideRow; t: TranslateFn }) {
-  /* The named reference comparison only, never a demand that tool guidance be identical. */
-  if (row.declaredPair === null) {
-    return <p className="text-body text-[color:var(--color-text-quaternary)]">{t('pairNotApplicable')}</p>;
-  }
+/** The named reference comparison only, never a demand that tool guidance be identical. */
+function PairFact({ row, twin, t }: { row: GuideRow; twin: string; t: TranslateFn }) {
+  const differing = differingCount(row);
+  const oneSided = row.driftFiles.length - differing;
   return (
     <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      {row.driftFiles.length > 0 ? (
+      {differing > 0 ? (
         <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
-          {t('driftTitle', { count: row.driftFiles.length })}
+          {t('driftTitle', { count: differing })}
         </span>
-      ) : (
+      ) : null}
+      {oneSided > 0 ? (
+        <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>{t('driftOneSided')}</span>
+      ) : null}
+      {row.driftFiles.length === 0 ? (
         <span className="text-body text-[color:var(--color-text-secondary)]">{t('pairMatchesTwin')}</span>
-      )}
-      <span className="font-mono text-label text-[color:var(--color-text-tertiary)]">{row.declaredPair}/</span>
+      ) : null}
+      <span className="font-mono text-label text-[color:var(--color-text-tertiary)]">{twin}/</span>
     </p>
   );
 }
@@ -179,12 +184,12 @@ function DetailHead({
     <header className="flex flex-col gap-1 pb-2">
       {folder ? <p className="font-mono text-label text-[color:var(--color-text-tertiary)]">{folder}</p> : null}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h3
+        <h2
           id={id}
           className={cn('break-all text-body-lg text-[color:var(--color-text-primary)]', titleIsPath && 'font-mono')}
         >
           {title}
-        </h3>
+        </h2>
         {aside}
       </div>
     </header>
@@ -205,6 +210,7 @@ function GuideDetail({
   t: TranslateFn;
 }) {
   const folder = TREE_RULES[row.ruleId];
+  const twin = comparedTwin(row, report);
   return (
     <>
       <DetailHead
@@ -226,9 +232,11 @@ function GuideDetail({
         <Fact label={t('columnSize')}>
           <SizeFact row={row} report={report} t={t} />
         </Fact>
-        <Fact label={t('columnPair')} hint={t('pairHint')}>
-          <PairFact row={row} t={t} />
-        </Fact>
+        {twin !== null ? (
+          <Fact label={t('columnPair')} hint={t('pairHint')}>
+            <PairFact row={row} twin={twin} t={t} />
+          </Fact>
+        ) : null}
         <Fact label={t('columnChanged')} hint={t('columnChangedHint')}>
           <p className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
             {formatWhen(row.lastModified, locale)}
@@ -278,7 +286,7 @@ function DriftDetail({
   const detail = file.finding?.detail;
   const left = typeof detail?.claudePath === 'string' ? detail.claudePath : null;
   const right = typeof detail?.agentsPath === 'string' ? detail.agentsPath : null;
-  const sides = left && right ? [left, right] : [file.path];
+  const sides = file.twin && left && right ? [left, right] : [file.path];
   const presentIn = typeof detail?.presentIn === 'string' ? detail.presentIn : null;
   const texts = sides.map((path) => (contentByPath.get(path) ?? '').replace(/\n$/, ''));
   const lineSets = sides.length === 2 ? texts.map((text) => new Set(text.split('\n'))) : null;
@@ -289,16 +297,12 @@ function DriftDetail({
         folder={row.label}
         title={file.label}
         aside={
-          left && right ? (
-            <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
-              {t('driftTitle', { count: 1 })}
-            </span>
-          ) : (
-            <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>{t('driftOneSided')}</span>
-          )
+          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+            {file.twin ? t('driftTitle', { count: 1 }) : t('driftOneSided')}
+          </span>
         }
       />
-      {presentIn && !(left && right) ? (
+      {presentIn && !file.twin ? (
         <p className="pb-2 text-body text-[color:var(--color-text-tertiary)]">
           {t('driftOnlyIn', { dir: `${presentIn}/` })}
         </p>

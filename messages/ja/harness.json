@@ -39,7 +39,6 @@
   "pairCompared": "{count}組の参照ペアを比較",
   "pairMatchesTwin": "内容は同じ",
   "pairNotMeasured": "ツール固有の違いはエラーではありません",
-  "pairNotApplicable": "対象外",
   "pairHint": "同名のCodex向けとClaude向けのガイドを参考として比較します。ツール固有の指示は異なって構いません。内容の違いはエラーではなく、両者を同期する必要もありません。",
   "driftTitle": "内容の違い{count}件",
   "driftOneSided": "ペアなし",

@@ -272,6 +272,39 @@ const SOURCE_FILES: Record<string, string> = {
   }),
 };
 
+export const UNRESOLVED_HOOK_SOURCE: Record<string, string> = {
+  ".claude/settings.json": JSON.stringify({
+    hooks: { PostToolUse: [{ matcher: "Edit", hooks: [{ type: "command", command: "npx prettier --write ." }] }] },
+  }),
+};
+
+export const HOOKLESS_SOURCE: Record<string, string> = {
+  ".claude/settings.json": JSON.stringify({ permissions: { deny: ["Read(./.env*)"] } }),
+};
+
+const CROWDED_SKILLS = Array.from({ length: 10 }, (_, index) => `skill-${String(index + 1).padStart(2, "0")}`);
+const CROWDED_HOOKS = Array.from({ length: 20 }, (_, index) => `.claude/hooks/guard-${String(index + 1).padStart(2, "0")}.sh`);
+
+export const CROWDED_SOURCE: Record<string, string> = {
+  ...Object.fromEntries(
+    CROWDED_SKILLS.flatMap((name) => [
+      [`.claude/skills/${name}/SKILL.md`, `# ${name}\n`],
+      [`.agents/skills/${name}/SKILL.md`, `# ${name}\n\nAdapted for Codex.\n`],
+    ]),
+  ),
+  ...Object.fromEntries(CROWDED_HOOKS.map((path) => [path, "#!/bin/sh\nexit 0\n"])),
+  ".claude/settings.json": JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        {
+          matcher: "Bash",
+          hooks: CROWDED_HOOKS.map((path) => ({ type: "command", command: `"\${CLAUDE_PROJECT_DIR:-.}/${path}"` })),
+        },
+      ],
+    },
+  }),
+};
+
 const scopedPages = new WeakSet<Page>();
 
 /**
@@ -279,7 +312,10 @@ const scopedPages = new WeakSet<Page>();
  * script's own scope: `addInitScript` serializes the function, so a module-level reference here
  * would be `undefined` in the page.
  */
-export async function installHarnessRuntime(page: Page, options: { includeOverflowDomains?: boolean } = {}): Promise<void> {
+export async function installHarnessRuntime(
+  page: Page,
+  options: { includeOverflowDomains?: boolean; sourceOverrides?: Record<string, string> } = {},
+): Promise<void> {
   await seedFirstRunSeen(page);
   if (!scopedPages.has(page)) {
     scopedPages.add(page);
@@ -467,7 +503,7 @@ export async function installHarnessRuntime(page: Page, options: { includeOverfl
       vaultRoot: HARNESS_VAULT_ROOT,
       sourceRoot: HARNESS_SOURCE_ROOT,
       vaultFiles: options.includeOverflowDomains ? { ...VAULT_FILES, ...OVERFLOW_VAULT_FILES } : VAULT_FILES,
-      sourceFiles: SOURCE_FILES,
+      sourceFiles: { ...SOURCE_FILES, ...options.sourceOverrides },
       projectSlug: HARNESS_PROJECT_SLUG,
     },
   );
