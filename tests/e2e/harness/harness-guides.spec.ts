@@ -3,16 +3,18 @@ import { expect, test, type Page } from "@playwright/test";
 import {
   CROWDED_SOURCE,
   HOOKLESS_SOURCE,
+  MISSING_CODEX_HOOK_SOURCE,
+  ONE_SIDED_BRIEF_SOURCE,
   UNRESOLVED_HOOK_SOURCE,
   installHarnessRuntime,
   mountHarnessVault,
 } from "../harness-tab-fixture";
 
-async function openGuides(page: Page, sourceOverrides?: Record<string, string>) {
+async function openGuides(page: Page, sourceOverrides?: Record<string, string>, locale = "ko") {
   await page.setViewportSize({ width: 1512, height: 900 });
   await installHarnessRuntime(page, { sourceOverrides });
   await mountHarnessVault(page);
-  await page.goto("/ko/architecture/?view=guides");
+  await page.goto(`/${locale}/architecture/?view=guides`);
   await expect(page.getByTestId("harness-guide-detail")).toBeVisible({ timeout: 30_000 });
 }
 
@@ -32,6 +34,29 @@ test.describe("harness guides workbench", () => {
     await openGuides(page, HOOKLESS_SOURCE);
     const status = claudeHookRow(page).getByTestId("harness-hook-row-status");
     await expect(status).toHaveText("스크립트 0개");
+  });
+
+  test("a hook row's status tags wrap below the config path instead of truncating it", async ({ page }) => {
+    await openGuides(page, MISSING_CODEX_HOOK_SOURCE, "en");
+    const row = page.getByTestId("harness-guide-list-pane").getByRole("button", { name: /\.codex\/hooks\.json/ });
+    await expect(row).toContainText("Script missing");
+    await expect(row).toContainText("Needs approval inside the tool");
+    const name = row.getByText(".codex/hooks.json", { exact: true });
+    const clipped = await name.evaluate((node) => node.scrollWidth - node.clientWidth);
+    expect(clipped, "the config path is truncated by its status tags").toBeLessThanOrEqual(0);
+  });
+
+  test("a folder whose twin has a file it lacks does not claim the same content", async ({ page }) => {
+    await openGuides(page, ONE_SIDED_BRIEF_SOURCE, "en");
+    const row = page.getByTestId("harness-guide-row-agents-agents");
+    await expect(row.locator("[data-guide-item]").first()).toContainText("No twin");
+    await row.locator("[data-guide-item]").first().click();
+    const detail = page.getByTestId("harness-guide-detail");
+    await expect(detail).not.toContainText("Same content");
+    await expect(detail).toContainText("No twin");
+
+    await row.locator("[data-guide-item]", { hasText: "scout.md" }).click();
+    await expect(page.getByTestId("harness-drift")).toContainText("Only in .claude/agents/");
   });
 
   test("the list and the detail each scroll on their own while the page stays put", async ({ page }) => {

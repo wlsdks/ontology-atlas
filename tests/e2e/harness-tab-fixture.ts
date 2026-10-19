@@ -282,6 +282,21 @@ export const HOOKLESS_SOURCE: Record<string, string> = {
   ".claude/settings.json": JSON.stringify({ permissions: { deny: ["Read(./.env*)"] } }),
 };
 
+export const ONE_SIDED_BRIEF_SOURCE: Record<string, string> = {
+  ".claude/agents/scout.md": "# scout\n",
+};
+
+export const MISSING_CODEX_HOOK_SOURCE: Record<string, string> = {
+  ".codex/hooks.json": JSON.stringify({
+    hooks: {
+      PreToolUse: [
+        { matcher: "Bash", hooks: [{ type: "command", command: "bash .codex/hooks/block-unsafe-git.sh" }] },
+        { matcher: "Bash", hooks: [{ type: "command", command: "bash .codex/hooks/block-npm-publish.sh" }] },
+      ],
+    },
+  }),
+};
+
 const CROWDED_SKILLS = Array.from({ length: 10 }, (_, index) => `skill-${String(index + 1).padStart(2, "0")}`);
 const CROWDED_HOOKS = Array.from({ length: 20 }, (_, index) => `.claude/hooks/guard-${String(index + 1).padStart(2, "0")}.sh`);
 

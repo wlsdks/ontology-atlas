@@ -22,7 +22,9 @@ import { buildRows, differingCount, formatBytes, mergedShare, type GuideRow, typ
  * date is a filesystem mtime, not a commit date.
  */
 
-const ROW_CLASS = 'min-w-0 flex-1 gap-2';
+const ROW_CLASS = 'min-w-0 flex-1 flex-wrap gap-x-2 gap-y-1';
+const ROW_NAME = 'flex min-w-0 max-w-full items-baseline gap-2';
+const ROW_STATUS = 'ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2';
 
 function hookRowStatus(group: HookConfigFacts) {
   const missing = group.hooks.some((hook) => hook.status === 'missing');
@@ -243,20 +245,22 @@ export function HarnessGuidesView({
                         {rowButton(
                           row.key,
                           <>
-                            <span
-                              className={cn(
-                                'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
-                                row.ruleId !== 'nested-agents-md' && 'font-mono',
-                              )}
-                            >
-                              {row.label}
-                            </span>
-                            {row.fileCount > 1 ? (
-                              <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-                                {t('fileCount', { count: row.fileCount })}
+                            <span className={ROW_NAME}>
+                              <span
+                                className={cn(
+                                  'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
+                                  row.ruleId !== 'nested-agents-md' && 'font-mono',
+                                )}
+                              >
+                                {row.label}
                               </span>
-                            ) : null}
-                            <span className="ml-auto flex shrink-0 items-center gap-2">
+                              {row.fileCount > 1 ? (
+                                <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                                  {t('fileCount', { count: row.fileCount })}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className={ROW_STATUS}>
                               {differing > 0 ? (
                                 <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
                                   {t('driftTitle', { count: differing })}
@@ -333,10 +337,12 @@ export function HarnessGuidesView({
                           {rowButton(
                             key,
                             <>
-                              <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
-                                {group.configPath}
+                              <span className={ROW_NAME}>
+                                <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
+                                  {group.configPath}
+                                </span>
                               </span>
-                              <span className="ml-auto flex shrink-0 items-center gap-2" data-testid="harness-hook-row-status">
+                              <span className={ROW_STATUS} data-testid="harness-hook-row-status">
                                 {status.missing ? (
                                   <span className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}>{t('hookMissing')}</span>
                                 ) : null}

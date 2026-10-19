@@ -287,7 +287,6 @@ function DriftDetail({
   const left = typeof detail?.claudePath === 'string' ? detail.claudePath : null;
   const right = typeof detail?.agentsPath === 'string' ? detail.agentsPath : null;
   const sides = file.twin && left && right ? [left, right] : [file.path];
-  const presentIn = typeof detail?.presentIn === 'string' ? detail.presentIn : null;
   const texts = sides.map((path) => (contentByPath.get(path) ?? '').replace(/\n$/, ''));
   const lineSets = sides.length === 2 ? texts.map((text) => new Set(text.split('\n'))) : null;
   return (
@@ -302,9 +301,9 @@ function DriftDetail({
           </span>
         }
       />
-      {presentIn && !file.twin ? (
+      {file.onlyIn ? (
         <p className="pb-2 text-body text-[color:var(--color-text-tertiary)]">
-          {t('driftOnlyIn', { dir: `${presentIn}/` })}
+          {t('driftOnlyIn', { dir: file.onlyIn })}
         </p>
       ) : null}
       {lineSets ? <p className="pb-1 text-label text-[color:var(--color-text-tertiary)]">{t('driftLineMark')}</p> : null}

@@ -48,11 +48,13 @@ and points at the sensors view.
 
 **Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
 guide file or directory found (path, file count, size, how many files differ from an existing
-twin, and whether any file has no twin at all), then one row per hook config, which says wired only
-when every script it names is on disk and says so when a command names no script file
-(`harness.hookUnresolved`); the detail on the right holds the
-selected row's facts, and each pane scrolls on its own, so the page itself does not scroll at
-1512x900. Below a 68rem frame the list stacks over the detail. A guide's detail names which tools
+twin, and whether a file is on one side only, counted from both folders, so a file only the twin has
+is listed too), then one row per hook config, which says wired only when every script it names is
+on disk and says so when a command names no script file (`harness.hookUnresolved`). A row's status
+tags wrap below its name rather than truncate it. The detail on the right holds the selected
+row's facts, and each pane scrolls on its own, so the page itself does not scroll at 1512x900. A
+folder says it has the same content as its twin (`harness.pairMatchesTwin`) only when both file sets
+are equal and every pair matches. Below a 68rem frame the list stacks over the detail. A guide's detail names which tools
 read it, each claim carrying the document it came from and the date a person last opened it (a
 claim we cannot cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows);
 size against a documented cap, where the Codex bar measures the **merged** root + worst-nested

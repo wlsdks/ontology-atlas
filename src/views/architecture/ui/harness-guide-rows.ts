@@ -14,6 +14,7 @@ export interface DriftFile {
   label: string;
   finding: AgentDriftFinding | null;
   twin: boolean;
+  onlyIn: string | null;
 }
 
 export interface GuideFile {
@@ -111,6 +112,7 @@ export function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[
         label,
         finding: pairFindings.find((finding) => finding.path === label && codes.includes(finding.code)) ?? null,
         twin: codes.some((code) => code.endsWith('-diverged')),
+        onlyIn: codes.some((code) => code.endsWith('-diverged')) ? null : (TREE_RULES[record.ruleId] ?? null),
       });
     }
   }
@@ -121,10 +123,41 @@ export function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[
     (a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label),
   );
   for (const row of rows) {
+    listOneSided(row, rows, report);
     row.files.sort((a, b) => a.path.localeCompare(b.path));
     row.driftFiles.sort((a, b) => a.label.localeCompare(b.label));
   }
   return rows;
+}
+
+/* "Same content" needs equal file sets, so a file only the twin has is listed here as well. */
+function listOneSided(row: GuideRow, rows: readonly GuideRow[], report: HarnessReport) {
+  const folder = TREE_RULES[row.ruleId];
+  if (!folder || comparedTwin(row, report) === null) return;
+  const twinFolder = `${row.declaredPair}/`;
+  const twinRow = rows.find((other) => TREE_RULES[other.ruleId] === twinFolder);
+  const here = new Set(row.files.map((file) => insideFolder(file.path, folder)));
+  const there = new Set(twinRow?.files.map((file) => insideFolder(file.path, twinFolder)) ?? []);
+  const listed = new Set(row.driftFiles.map((file) => file.label));
+  for (const file of row.files) {
+    const label = insideFolder(file.path, folder);
+    if (there.has(label)) continue;
+    file.drifting = true;
+    if (!listed.has(label)) {
+      row.driftFiles.push({ key: `drift:${file.path}`, path: file.path, label, finding: null, twin: false, onlyIn: folder });
+    }
+  }
+  for (const label of there) {
+    if (here.has(label)) continue;
+    row.driftFiles.push({
+      key: `missing:${row.key}:${label}`,
+      path: `${twinFolder}${label}`,
+      label,
+      finding: null,
+      twin: false,
+      onlyIn: twinFolder,
+    });
+  }
 }
 
 export function mergedShare(row: GuideRow, report: HarnessReport) {
