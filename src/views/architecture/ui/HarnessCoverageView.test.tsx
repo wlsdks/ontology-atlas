@@ -117,7 +117,7 @@ function report(): HarnessReport {
     coverage,
     testFiles: [],
     documentReach: {
-      total: 10, guides: 4, mirroredGuides: 2, named: 3, namedDirect: 2, unnamed: 3,
+      total: 10, guides: 4, named: 3, namedDirect: 2, unnamed: 3,
       unnamedByFolder: [{ folder: 'docs', count: 3 }], excluded: [], truncated: false,
     },
     guideDocumentCount: 4,

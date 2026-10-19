@@ -97,7 +97,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
     hookGroups: [],
     coverage: [],
     documentReach: {
-      total: 0, guides: 0, mirroredGuides: 0, named: 0, namedDirect: 0, unnamed: 0,
+      total: 0, guides: 0, named: 0, namedDirect: 0, unnamed: 0,
       unnamedByFolder: [], excluded: [], truncated: false,
     },
     testFiles: [],
