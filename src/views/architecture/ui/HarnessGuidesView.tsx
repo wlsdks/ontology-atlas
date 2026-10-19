@@ -1,403 +1,46 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
-import {
-  AGENT_TOOL_LABELS,
-  CITATIONS_REVIEWED,
-  declaredPairFor,
-  guideCitation,
-  isGuideRecord,
-  isPairDrift,
-  type AgentDriftFinding,
-  type AgentTool,
-  type HarnessReport,
-  type HookConfigFacts,
-} from '@/entities/agent-files';
+import { CITATIONS_REVIEWED, type HarnessReport, type HookConfigFacts } from '@/entities/agent-files';
 import { ChevronRight } from 'lucide-react';
 
-import { Chip, EmptyState } from '@/shared/ui';
-import { PlacedInfoHint } from './PlacedInfoHint';
+import { EmptyState, RowDisclosure } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
+import { useSurfaceSwap, useSwapHeight } from '@/shared/lib/render-timing/use-presence';
+import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
 import { cn } from '@/shared/lib/cn';
-
-/** The amber pair every unresolved-state badge on this screen wears. */
-const WARNING_BADGE =
-  'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
+import { GuideSelectionDetail, PAIR_DRIFT_BADGE, WARNING_BADGE } from './HarnessGuideDetail';
+import { buildRows, differingCount, formatBytes, mergedShare, type GuideRow, type Selection } from './harness-guide-rows';
 
 /**
- * The guide inventory with each column's limits said out loud: a cell is measured here or read from a
- * tool's docs (source URL and date, or their absence). No invented conformance, no verified hooks, and
- * the change column is a filesystem mtime, not a commit date.
+ * The guide inventory with each fact's limits said out loud: measured here or read from a tool's docs
+ * (source URL and date, or their absence). No invented conformance, no verified hooks, and the change
+ * date is a filesystem mtime, not a commit date.
  */
 
-/** Only a difference wears a tag; "same content" is plain text and "not applicable" is the dash. */
-const PAIR_DRIFT_BADGE =
-  'border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]';
+const ROW_CLASS = 'min-w-0 flex-1 flex-wrap gap-x-2 gap-y-1';
+const ROW_NAME = 'flex min-w-0 max-w-full items-baseline gap-2';
+const ROW_STATUS = 'ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2';
 
-type TranslateFn = ReturnType<typeof useTranslations<'harness'>>;
-
-/** A rendered row: one guide path, or one directory's worth of them. */
-interface GuideRow {
-  key: string;
-  /** What the person reads as the file's name. A tree row shows its directory. */
-  label: string;
-  tools: readonly AgentTool[];
-  ruleId: string;
-  bytes: number;
-  fileCount: number;
-  lastModified: number | null;
-  /** Byte differences inside a declared pair only. Every other finding belongs elsewhere. */
-  pairDrift: readonly string[];
-  /** The twin this row is declared byte-identical to, or `null` when it has no declared pair. */
-  declaredPair: string | null;
-}
-
-/** Directory slots labelled by the path a person would type; only nested `AGENTS.md` needs words, from the catalogue. */
-const TREE_RULES: Readonly<Record<string, string>> = Object.freeze({
-  'claude-rules': '.claude/rules/',
-  'claude-skills': '.claude/skills/',
-  'claude-agents': '.claude/agents/',
-  'agents-skills': '.agents/skills/',
-  'agents-agents': '.agents/agents/',
-  'cursor-rules': '.cursor/rules/',
-});
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  return `${(bytes / 1024).toFixed(1)} KB`;
-}
-
-function formatWhen(value: number | null, locale: string): string {
-  if (value == null) return '—';
-  return new Date(value).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-}
-
-function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[] {
-  const byRule = new Map<string, GuideRow>();
-  const mtimeByPath = new Map(report.times.map((time) => [time.path, time.lastModified]));
-
-  for (const record of report.analysis.records) {
-    /* Guides only, the same predicate the sentence's first number counts, so table and number agree. */
-    if (!isGuideRecord(record)) continue;
-    const treeLabel = record.ruleId === 'nested-agents-md' ? nestedLabel : TREE_RULES[record.ruleId];
-    const key = treeLabel ? record.ruleId : record.path;
-    const existing = byRule.get(key);
-    const lastModified = mtimeByPath.get(record.path) ?? null;
-    if (existing) {
-      existing.bytes += record.bytes;
-      existing.fileCount += 1;
-      existing.pairDrift = [
-        ...new Set([...existing.pairDrift, ...record.drift.filter(isPairDrift)]),
-      ];
-      if (lastModified != null && (existing.lastModified == null || lastModified > existing.lastModified)) {
-        existing.lastModified = lastModified;
-      }
-      continue;
-    }
-    byRule.set(key, {
-      key,
-      label: treeLabel ?? record.path,
-      tools: record.tools,
-      ruleId: record.ruleId,
-      bytes: record.bytes,
-      fileCount: 1,
-      lastModified,
-      pairDrift: [...new Set(record.drift.filter(isPairDrift))],
-      declaredPair: declaredPairFor(record.ruleId),
-    });
-  }
-
-  /* Root instruction files first, then trees, alphabetical within each, independent of walk order. */
-  const rank = (row: GuideRow) => (TREE_RULES[row.ruleId] || row.ruleId === 'nested-agents-md' ? 1 : 0);
-  return [...byRule.values()].sort(
-    (a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label),
-  );
-}
-
-function ToolsCell({ row, t }: { row: GuideRow; t: TranslateFn }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-      {row.tools.map((tool) => {
-        const citation = guideCitation(row.ruleId, tool);
-        const condition = citation?.condition
-          ? citation.condition === 'coding-agent'
-            ? t('conditionCodingAgent')
-            : t('conditionSettingsContext')
-          : null;
-        return (
-          <span key={tool} className="inline-flex items-baseline gap-1">
-            <span className="text-body text-[color:var(--color-text-secondary)]">
-              {AGENT_TOOL_LABELS[tool] ?? tool}
-            </span>
-            {condition ? (
-              <span className="text-label text-[color:var(--color-text-quaternary)]">
-                {condition}
-              </span>
-            ) : null}
-            {citation ? (
-              /* The screen's one arrow: ↗ prefixes an external destination. */
-              <a
-                href={citation.source}
-                target="_blank"
-                rel="noreferrer"
-                title={citation.source}
-                /* Names whose document it is and where it lives: a WKWebView has no status bar to show the destination. */
-                aria-label={t('toolsSourceFor', {
-                  tool: AGENT_TOOL_LABELS[tool] ?? tool,
-                  host: new URL(citation.source).host,
-                })}
-                className={controlClass({
-                  shape: 'link',
-                  hoverInk: 'secondary',
-                  className:
-                    'text-label text-[color:var(--color-text-quaternary)] underline decoration-dotted underline-offset-2',
-                })}
-              >
-                ↗{t('toolsSource')}
-              </a>
-            ) : (
-              <span
-                title={t('toolsUncitedHint')}
-                className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}
-              >
-                {t('toolsUncited')}
-              </span>
-            )}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
-
-function SizeCell({
-  row,
-  report,
-  t,
-}: {
-  row: GuideRow;
-  report: HarnessReport;
-  t: TranslateFn;
-}) {
-  const cap = report.analysis.checks.codexSizeCap;
-  /* The bar is the merged Codex document's, not a file's: only the rows Codex merges carry it, all with the merged number. */
-  const merged = row.ruleId === 'agents-md' || row.ruleId === 'nested-agents-md';
-  if (!merged || cap.worstCaseBytes == null) {
-    return (
-      <div className="flex flex-col gap-0.5">
-        <span className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
-          {formatBytes(row.bytes)}
-        </span>
-        <span className="text-label text-[color:var(--color-text-quaternary)]">
-          {t('capNone')}
-        </span>
-      </div>
-    );
-  }
-  const ratio = Math.min(1, cap.worstCaseBytes / cap.capBytes);
-  const percentValue = Math.round(ratio * 100);
-  /* "0%" for 157 B of 32 KB would read as "empty"; under one percent says what is true. */
-  const percent = percentValue < 1 && cap.worstCaseBytes > 0 ? '<1' : String(percentValue);
-  const over = cap.status === 'drift';
-  /* Value over caption, one row height; the bar draws only from 5%, the caption carries the percent in words. */
-  return (
-    <div className="flex flex-col gap-0.5" title={t('capMerged')}>
-      <span className="text-body tabular-nums text-[color:var(--color-text-secondary)]">
-        {formatBytes(cap.worstCaseBytes)}
-      </span>
-      <span
-        className={cn(
-          'text-label tabular-nums',
-          over
-            ? 'text-[color:var(--color-amber-source-a90)]'
-            : 'text-[color:var(--color-text-quaternary)]',
-        )}
-      >
-        {over
-          ? `${t('capOver')} · ${t('capMergedShare', { percent, cap: formatBytes(cap.capBytes) })}`
-          : t('capMergedShare', { percent, cap: formatBytes(cap.capBytes) })}
-      </span>
-      {ratio >= 0.05 ? (
-        <div
-          className="mt-0.5 h-1 w-full max-w-[140px] overflow-hidden rounded-micro bg-[color:var(--color-overlay-2)]"
-          role="img"
-          aria-label={t('capMergedValue', {
-            used: formatBytes(cap.worstCaseBytes),
-            cap: formatBytes(cap.capBytes),
-          })}
-        >
-          <div
-            className={cn(
-              'h-full rounded-micro',
-              over
-                ? 'bg-[color:var(--color-amber-source-a90)]'
-                : 'bg-[color:var(--color-indigo-a60)]',
-            )}
-            style={{ width: `${percentValue}%` }}
-          />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function HookGroup({ group, t }: { group: HookConfigFacts; t: TranslateFn }) {
-  return (
-    <div className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-body text-[color:var(--color-text-primary)]">
-          {group.configPath}
-        </span>
-        {group.approvalGate ? (
-          /* Never green: Codex refuses a new or changed hook until a person trusts it in /hooks, session state in no file. */
-          <span
-            title={t('hookApprovalGateHint')}
-            data-testid="harness-hook-approval-gate"
-            className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}
-          >
-            {t('hookApprovalGate')}
-          </span>
-        ) : null}
-      </div>
-      <ul className="mt-2 flex flex-col gap-1">
-        {group.hooks.map((hook) => (
-          <li
-            key={hook.ref.path ?? hook.ref.command}
-            className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
-          >
-            <span className="font-mono text-body text-[color:var(--color-text-secondary)]">
-              {hook.ref.path ?? hook.ref.command}
-            </span>
-            <span className="text-label text-[color:var(--color-text-quaternary)]">
-              {hook.events}
-            </span>
-            <span
-              title={t(
-                hook.status === 'wired'
-                  ? 'hookWiredHint'
-                  : hook.status === 'missing'
-                    ? 'hookMissingHint'
-                    : 'hookUnresolvedHint',
-              )}
-              data-harness-hook-status={hook.status}
-              className={badgeClass({
-                shape: 'tag',
-                className: cn(
-                  hook.status === 'missing'
-                    ? WARNING_BADGE
-                    : 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]',
-                ),
-              })}
-            >
-              {t(
-                hook.status === 'wired'
-                  ? 'hookWired'
-                  : hook.status === 'missing'
-                    ? 'hookMissing'
-                    : 'hookUnresolved',
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function DriftList({
-  drift,
-  contentByPath,
-  t,
-}: {
-  drift: readonly AgentDriftFinding[];
-  contentByPath: ReadonlyMap<string, string>;
-  t: TranslateFn;
-}) {
-  const [open, setOpen] = useState<string | null>(null);
-  const pairChecks = drift.filter(
-    (finding) => finding.check === 'skill-copy' || finding.check === 'agent-copy',
-  );
-  if (pairChecks.length === 0) return null;
-  return (
-    <section className="mt-4" data-testid="harness-drift">
-      <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-        {t('driftTitle', { count: pairChecks.length })}
-      </h3>
-      <ul className="mt-2 flex flex-col gap-2">
-        {pairChecks.map((finding) => {
-          const left = typeof finding.detail?.claudePath === 'string' ? finding.detail.claudePath : null;
-          const right = typeof finding.detail?.agentsPath === 'string' ? finding.detail.agentsPath : null;
-          const isOpen = open === finding.path;
-          return (
-            <li
-              key={`${finding.check}:${finding.path}`}
-              className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono text-body text-[color:var(--color-text-primary)]">
-                  {finding.path}
-                </span>
-                {left && right ? (
-                  /* A disclosure: `aria-expanded` carries the state, so the label does not also flip. */
-                  <Chip
-                    data-testid={`harness-drift-open-${finding.path}`}
-                    active={isOpen}
-                    aria-expanded={isOpen}
-                    aria-controls={`harness-drift-diff-${finding.path}`}
-                    onClick={() => setOpen(isOpen ? null : finding.path)}
-                  >
-                    <ChevronRight
-                      size={ICON_SIZE.sm}
-                      aria-hidden
-                      className={cn('transition-transform', isOpen && 'rotate-90')}
-                    />
-                    {t('driftOpen')}
-                  </Chip>
-                ) : null}
-              </div>
-              {isOpen && left && right ? (
-                /* The diff opens in the reading column beneath its row, two complete texts side by side. */
-                <div
-                  className="mt-3 grid gap-3 md:grid-cols-2"
-                  id={`harness-drift-diff-${finding.path}`}
-                  data-testid="harness-drift-diff"
-                >
-                  {[left, right].map((path) => (
-                    <div key={path} className="min-w-0">
-                      <p className="font-mono text-label text-[color:var(--color-text-tertiary)]">
-                        {path}
-                      </p>
-                      {/* Focusable and named: a bare `<pre>` is not in a WKWebView's tab order. */}
-                      <pre
-                        tabIndex={0}
-                        role="group"
-                        aria-label={path}
-                        className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] p-2 font-mono text-label text-[color:var(--color-text-secondary)]"
-                      >
-                        {contentByPath.get(path) ?? ''}
-                      </pre>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
+function hookRowStatus(group: HookConfigFacts) {
+  const missing = group.hooks.some((hook) => hook.status === 'missing');
+  const unresolved = group.hooks.some((hook) => hook.status === 'unresolved');
+  const wired = group.hooks.length > 0 && group.hooks.every((hook) => hook.status === 'wired');
+  return { missing, unresolved, wired };
 }
 
 export function HarnessGuidesView({
   report,
   locale,
+  sourceRoot,
 }: {
   report: HarnessReport;
   locale: string;
+  sourceRoot: string;
 }) {
   const t = useTranslations('harness');
   const rows = useMemo(() => buildRows(report, t('nestedLabel')), [report, t]);
@@ -406,122 +49,391 @@ export function HarnessGuidesView({
     (check) => check.status !== 'not-applicable',
   ).length;
 
+  const selections = useMemo(() => {
+    const map = new Map<string, Selection>();
+    for (const row of rows) {
+      map.set(row.key, { kind: 'guide', row });
+      for (const file of row.driftFiles) map.set(file.key, { kind: 'drift', row, file });
+    }
+    for (const group of report.hookGroups) map.set(`hooks:${group.configPath}`, { kind: 'hooks', group });
+    return map;
+  }, [rows, report.hookGroups]);
+  /* The first difference is the likeliest question; with none, the first file. */
+  const listed = rows.flatMap((row) => row.driftFiles);
+  const firstKey = listed.find((file) => file.twin)?.key ?? listed[0]?.key ?? rows[0]?.key ?? '';
+
+  const [chosen, setChosen] = useState<string | null>(null);
+  const selectedKey = chosen !== null && selections.has(chosen) ? chosen : firstKey;
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+
+  const { leaving } = useSurfaceSwap(selectedKey);
+  const { hostRef, capture } = useSwapHeight(selectedKey);
+  const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(selectedKey, 'surface-y');
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const paneRef = useRef<HTMLElement | null>(null);
+  const setList = useCallback(
+    (node: HTMLDivElement | null) => {
+      listRef.current = node;
+      containerRef(node);
+    },
+    [containerRef],
+  );
+
+  const select = useCallback(
+    (key: string, reveal: boolean) => {
+      if (key === selectedKey) return;
+      capture();
+      setChosen(key);
+      const pane = paneRef.current;
+      if (!pane) return;
+      pane.scrollTop = 0;
+      /* Stacked, the detail sits below the list; a click there must show what it changed. */
+      if (reveal && pane.getBoundingClientRect().top > window.innerHeight * 0.6) {
+        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        pane.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+      }
+    },
+    [capture, selectedKey],
+  );
+
+  const setOpen = useCallback(
+    (row: GuideRow, open: boolean) => {
+      setCollapsed((current) => {
+        const next = new Set(current);
+        if (open) next.delete(row.key);
+        else next.add(row.key);
+        return next;
+      });
+      /* A collapsed folder hides its files, so a selection inside it moves up to the folder. */
+      if (!open && row.driftFiles.some((file) => file.key === selectedKey)) select(row.key, false);
+    },
+    [select, selectedKey],
+  );
+
+  const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    const key = target.dataset.guideItem;
+    const list = listRef.current;
+    if (!key || !list) return;
+    const items = [...list.querySelectorAll<HTMLButtonElement>('[data-guide-item]')].filter(
+      (item) => !item.closest('[inert]'),
+    );
+    const index = items.indexOf(target as HTMLButtonElement);
+    const selection = selections.get(key);
+    let next: HTMLButtonElement | undefined;
+    if (event.key === 'ArrowDown') next = items[index + 1];
+    else if (event.key === 'ArrowUp') next = items[index - 1];
+    else if (event.key === 'Home') next = items[0];
+    else if (event.key === 'End') next = items[items.length - 1];
+    else if (event.key === 'ArrowRight' && selection?.kind === 'guide' && selection.row.driftFiles.length > 0) {
+      if (collapsed.has(selection.row.key)) setOpen(selection.row, true);
+      else next = items[index + 1];
+    } else if (event.key === 'ArrowLeft' && selection?.kind === 'drift') {
+      next = items.find((item) => item.dataset.guideItem === selection.row.key);
+    } else if (event.key === 'ArrowLeft' && selection?.kind === 'guide' && !collapsed.has(selection.row.key)) {
+      if (selection.row.driftFiles.length > 0) setOpen(selection.row, false);
+    } else return;
+    event.preventDefault();
+    if (!next) return;
+    next.focus();
+    select(next.dataset.guideItem!, false);
+  };
+
   if (rows.length === 0) {
     return <EmptyState title={t('empty')} description={t('emptyBody')} />;
   }
 
-  return (
-    <div className="flex flex-col gap-4" data-testid="harness-guides">
-      <header>
-        {/* A section head on the same step as the two below; the thesis above is the only step over body. */}
-        <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t('guidesTitle')}
-        </h2>
-        <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
-          {t('guidesCaption')}
-        </p>
-      </header>
+  const renderDetail = (key: string, current: boolean) => {
+    const selection = selections.get(key);
+    return selection ? (
+      <GuideSelectionDetail selection={selection} report={report} locale={locale} current={current} t={t} />
+    ) : null;
+  };
 
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left">
-          <thead>
-            <tr className="border-b border-[color:var(--color-border-soft)]">
-              {([
-                ['columnFile', null],
-                ['columnTools', null],
-                ['columnSize', null],
-                ['columnPair', 'pairHint'],
-                ['columnChanged', 'columnChangedHint'],
-              ] as const).map(([key, hint]) => (
-                <th
-                  key={key}
-                  scope="col"
-                  /* `scope="col"` names every cell below with this text, so the label is the column name; the hint keeps its own button. */
-                  aria-label={t(key)}
-                  className="whitespace-nowrap pb-2 pr-4 text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
+  const rowButton = (key: string, children: ReactNode, size: 'md' | 'sm', ref?: (node: HTMLElement | null) => void) => {
+    const selected = key === selectedKey;
+    return (
+      <button
+        ref={ref}
+        type="button"
+        data-guide-item={key}
+        aria-pressed={selected}
+        onClick={() => select(key, true)}
+        className={controlClass({
+          shape: 'row',
+          size,
+          hoverSurface: 'lift',
+          active: selected,
+          className: cn(ROW_CLASS, 'bg-transparent', size === 'sm' && 'min-h-8 py-1'),
+        })}
+      >
+        {children}
+      </button>
+    );
+  };
+
+  const hooksHeading = 'harness-guide-hooks-heading';
+  const guidesHeading = 'harness-guide-files-heading';
+
+  return (
+    <div className={cn('flex flex-1 flex-col gap-3', '@min-[48rem]/harness:min-h-0')} data-testid="harness-guides">
+      <div
+        className={cn(
+          'grid flex-1 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]',
+          '@min-[48rem]/harness:min-h-80 @min-[48rem]/harness:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)] @min-[48rem]/harness:grid-rows-[minmax(0,1fr)]',
+          '@min-[68rem]/harness:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]',
+        )}
+      >
+        <div
+          data-testid="harness-guide-list-pane"
+          className={cn(
+            'min-w-0 border-b border-[color:var(--color-border-soft)] p-2 overscroll-contain',
+            '@min-[48rem]/harness:min-h-0 @min-[48rem]/harness:overflow-y-auto @min-[48rem]/harness:border-b-0 @min-[48rem]/harness:border-r',
+          )}
+        >
+          <div ref={setList} className="relative flex flex-col gap-4" onKeyDown={onListKeyDown}>
+            <span
+              aria-hidden
+              data-selection-indicator="surface-y"
+              data-placed={placed ? 'true' : 'false'}
+              data-animated={animated ? 'true' : 'false'}
+              className="motion-indicator z-0 rounded-chip bg-[color:var(--color-indigo-a14)]"
+              style={indicatorStyle ?? { opacity: 0 }}
+            />
+            <section aria-labelledby={guidesHeading}>
+              <header className="px-2.5 pb-2 pt-1.5">
+                {/* A section head on the same step as the one below; the thesis above is the only step over body. */}
+                <h2 id={guidesHeading} className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                  {t('guidesTitle')}
+                </h2>
+                <p className="mt-0.5 text-label text-[color:var(--color-text-tertiary)]">{t('guidesCaption')}</p>
+              </header>
+              <ul className="flex flex-col gap-0.5">
+                {rows.map((row) => {
+                  const share = mergedShare(row, report);
+                  const differing = differingCount(row);
+                  const open = !collapsed.has(row.key);
+                  const childrenId = `harness-guide-files-${row.key}`;
+                  return (
+                    <li key={row.key} data-testid={`harness-guide-row-${row.ruleId}`}>
+                      <div ref={itemRef(row.key)} className="relative flex items-stretch">
+                        {row.driftFiles.length > 0 ? (
+                          <button
+                            type="button"
+                            aria-expanded={open}
+                            aria-controls={childrenId}
+                            aria-label={t('driftFilesIn', { path: row.label })}
+                            onClick={() => setOpen(row, !open)}
+                            className={controlClass({
+                              shape: 'icon',
+                              size: 'sm',
+                              tone: 'muted',
+                              hoverInk: 'strong',
+                              className: 'shrink-0 self-center',
+                            })}
+                          >
+                            <ChevronRight
+                              size={ICON_SIZE.sm}
+                              aria-hidden
+                              className={cn(
+                                'transition-[rotate] duration-[var(--motion-fast)] ease-[var(--motion-ease)] motion-reduce:transition-none',
+                                open && 'rotate-90',
+                              )}
+                            />
+                          </button>
+                        ) : (
+                          <span aria-hidden className="w-6 shrink-0" />
+                        )}
+                        {rowButton(
+                          row.key,
+                          <>
+                            <span className={ROW_NAME}>
+                              <span
+                                className={cn(
+                                  'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
+                                  row.ruleId !== 'nested-agents-md' && 'font-mono',
+                                )}
+                              >
+                                {row.label}
+                              </span>
+                              {row.fileCount > 1 ? (
+                                <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                                  {t('fileCount', { count: row.fileCount })}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className={ROW_STATUS}>
+                              {differing > 0 ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('driftTitle', { count: differing })}
+                                </span>
+                              ) : null}
+                              {row.driftFiles.length > differing ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('pairFilesNoTwin', { count: row.driftFiles.length - differing })}
+                                </span>
+                              ) : null}
+                              {row.missingFiles.length > 0 ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('pairFilesMissing', { count: row.missingFiles.length })}
+                                </span>
+                              ) : null}
+                              <span
+                                className={cn(
+                                  'text-label tabular-nums',
+                                  share?.over ? 'text-[color:var(--color-amber-source-a90)]' : 'text-[color:var(--color-text-tertiary)]',
+                                )}
+                              >
+                                {share ? `${formatBytes(share.used)} · ${share.percent}%` : formatBytes(row.bytes)}
+                              </span>
+                            </span>
+                          </>,
+                          'md',
+                        )}
+                      </div>
+                      {row.driftFiles.length > 0 ? (
+                        <RowDisclosure open={open} id={childrenId}>
+                          <ul className="flex flex-col gap-0.5 pt-0.5">
+                            {row.driftFiles.map((file) => (
+                              <li key={file.key}>
+                                <div className="relative flex items-stretch pl-6">
+                                  <span aria-hidden className="ml-2 w-2.5 shrink-0 border-l border-[color:var(--color-border-soft)]" />
+                                  {rowButton(
+                                    file.key,
+                                    <span className="flex min-w-0 items-center gap-2">
+                                      <span title={file.path} className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
+                                        {file.label}
+                                      </span>
+                                      {!file.twin ? (
+                                        <span className="ml-auto shrink-0 text-label text-[color:var(--color-text-tertiary)]">
+                                          {t('driftOneSided')}
+                                        </span>
+                                      ) : null}
+                                    </span>,
+                                    'sm',
+                                    itemRef(file.key),
+                                  )}
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        </RowDisclosure>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            {report.hookGroups.length > 0 ? (
+              <section aria-labelledby={hooksHeading}>
+                <h2
+                  id={hooksHeading}
+                  className="px-2.5 pb-2 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {t(key)}
-                    {hint ? <PlacedInfoHint label={t(key)}>{t(hint)}</PlacedInfoHint> : null}
-                  </span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.key}
-                data-testid={`harness-guide-row-${row.ruleId}`}
-                className="h-14 border-b border-[color:var(--color-overlay-1)] align-top"
+                  {t('hooksTitle')}
+                </h2>
+                <ul className="flex flex-col gap-0.5">
+                  {report.hookGroups.map((group) => {
+                    const key = `hooks:${group.configPath}`;
+                    const status = hookRowStatus(group);
+                    return (
+                      <li key={key}>
+                        <div ref={itemRef(key)} className="relative flex items-stretch">
+                          <span aria-hidden className="w-6 shrink-0" />
+                          {rowButton(
+                            key,
+                            <>
+                              <span className={ROW_NAME}>
+                                <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
+                                  {group.configPath}
+                                </span>
+                              </span>
+                              <span className={ROW_STATUS} data-testid="harness-hook-row-status">
+                                {status.missing ? (
+                                  <span className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}>{t('hookMissing')}</span>
+                                ) : null}
+                                {status.unresolved ? (
+                                  <span
+                                    className={badgeClass({
+                                      shape: 'tag',
+                                      className: 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)]',
+                                    })}
+                                  >
+                                    {t('hookUnresolved')}
+                                  </span>
+                                ) : null}
+                                {group.approvalGate ? (
+                                  /* Never green: Codex refuses a new or changed hook until a person trusts it in /hooks, session state in no file. */
+                                  <span
+                                    title={t('hookApprovalGateHint')}
+                                    data-testid="harness-hook-approval-gate"
+                                    className={badgeClass({ shape: 'tag', className: WARNING_BADGE })}
+                                  >
+                                    {t('hookApprovalGate')}
+                                  </span>
+                                ) : null}
+                                {status.wired && !group.approvalGate ? (
+                                  <span className="text-label text-[color:var(--color-text-tertiary)]">{t('hookWired')}</span>
+                                ) : null}
+                                <span className="text-label tabular-nums text-[color:var(--color-text-tertiary)]">
+                                  {t('hookScripts', { count: group.hooks.length })}
+                                </span>
+                              </span>
+                            </>,
+                            'md',
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+          </div>
+        </div>
+
+        <section
+          ref={paneRef}
+          tabIndex={0}
+          role="region"
+          aria-labelledby="harness-guide-detail-title"
+          data-testid="harness-guide-detail-pane"
+          className={cn(
+            '@container/guide-detail min-w-0 overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
+            '@min-[48rem]/harness:min-h-0 @min-[48rem]/harness:overflow-y-auto',
+          )}
+        >
+          <div ref={hostRef} className="grid px-5 py-4 md:px-6 md:py-5">
+            {leaving !== null && selections.has(leaving) ? (
+              <div
+                key={`out:${leaving}`}
+                aria-hidden
+                inert
+                className="motion-swap-out pointer-events-none col-start-1 row-start-1 min-w-0"
               >
-                <td className="py-2 pr-4">
-                  <span className="font-mono text-body text-[color:var(--color-text-primary)]">
-                    {row.label}
-                  </span>
-                  {row.fileCount > 1 ? (
-                    <span className="ml-2 text-label tabular-nums text-[color:var(--color-text-quaternary)]">
-                      {t('fileCount', { count: row.fileCount })}
-                    </span>
-                  ) : null}
-                </td>
-                <td className="py-2 pr-4">
-                  <ToolsCell row={row} t={t} />
-                </td>
-                <td className="py-2 pr-4">
-                  <SizeCell row={row} report={report} t={t} />
-                </td>
-                <td className="py-2 pr-4">
-                  {/* The named reference comparison only, never a demand that tool guidance be identical; no reference reads "not applicable". */}
-                  {row.declaredPair === null ? (
-                    <span
-                      title={t('pairNotApplicable')}
-                      className="text-body text-[color:var(--color-text-quaternary)]"
-                    >
-                      <span aria-hidden>—</span>
-                      <span className="sr-only">{t('pairNotApplicable')}</span>
-                    </span>
-                  ) : row.pairDrift.length > 0 ? (
-                    <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
-                      {t('driftTitle', { count: row.pairDrift.length })}
-                    </span>
-                  ) : (
-                    <span
-                      className="whitespace-nowrap text-label text-[color:var(--color-text-tertiary)]"
-                      title={row.declaredPair}
-                    >
-                      {t('pairMatchesTwin')}
-                    </span>
-                  )}
-                </td>
-                <td className="whitespace-nowrap py-2 pr-4 text-body tabular-nums text-[color:var(--color-text-tertiary)]">
-                  {formatWhen(row.lastModified, locale)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                {renderDetail(leaving, false)}
+              </div>
+            ) : null}
+            <div
+              key={selectedKey}
+              data-testid="harness-guide-detail"
+              className={cn('col-start-1 row-start-1 min-w-0', leaving !== null && 'motion-swap-in')}
+            >
+              {renderDetail(selectedKey, true)}
+            </div>
+          </div>
+        </section>
       </div>
 
       {/* Never a bare zero: the declared pairs match and nothing else was compared, said together. */}
-      <p className="text-label text-[color:var(--color-text-quaternary)]">
-        {t('pairCompared', { count: comparedPairs })} · {t('pairNotMeasured')} ·{' '}
-        {t('reviewedOn', { date: CITATIONS_REVIEWED })}
-      </p>
-
-      <DriftList drift={report.analysis.drift} contentByPath={report.contents} t={t} />
-
-      <section className="mt-2">
-        <h3 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-          {t('hooksTitle')}
-        </h3>
-        <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{t('hooksCaption')}</p>
-        <div className="mt-2 grid gap-3 md:grid-cols-2">
-          {report.hookGroups.map((group) => (
-            <HookGroup key={group.configPath} group={group} t={t} />
-          ))}
-        </div>
-      </section>
+      <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-label text-[color:var(--color-text-quaternary)]">
+        <p>
+          {t('pairCompared', { count: comparedPairs })} · {t('pairNotMeasured')} ·{' '}
+          {t('reviewedOn', { date: CITATIONS_REVIEWED })}
+        </p>
+        <p>{t('sourceRoot', { path: sourceRoot })}</p>
+      </div>
     </div>
   );
 }

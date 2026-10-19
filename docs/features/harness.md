@@ -46,20 +46,38 @@ sitting inside a sentence whose other slots are numbers asserts that unguarded d
 are merely uncounted, which no static read of a repository can claim. It stands on its own line
 and points at the sensors view.
 
-**Guides (`harness.views.guides`)** — one row per guide file or directory found, with: which tools read it, each
-claim carrying the document it came from and the date a person last opened it (a claim we cannot
-cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows); size against a
-documented cap, where the Codex bar measures the **merged** root + worst-nested `AGENTS.md`,
-because that is what Codex truncates and a per-file bar reads green while the merge is already
-being cut; reference byte comparisons between same-named tool guides, with a difference
-door (`harness.driftOpen`) that opens both complete files side by side under the row; and the file's modification time
-on this disk, labelled as that rather than as a commit date. Comparison counts do not claim that the pairs match, and tool-specific differences are informational rather than a synchronization requirement. Below the table the hook configs are
-listed by script: wired (`harness.hookWired`) means the script the config names exists on disk, never that it runs
-— a script the config names and the disk does not have is called out, because that failure
-produces no error at all, and the Codex group carries its approval requirement (`harness.hookApprovalGate`) as a standing
-fact instead of a green, since `/hooks` trust lives in no file. Measured on this repository:
+**Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
+guide file or directory found (path, file count, size, how many files differ from an existing
+twin, how many have no twin (`harness.pairFilesNoTwin`; the file's own row says `harness.driftOneSided`),
+and how many files the twin has that the folder lacks (`harness.pairFilesMissing`)), then one row per hook config, which says wired only when every script it names is
+on disk and says so when a command names no script file (`harness.hookUnresolved`). A row's status
+tags wrap below its name rather than truncate it. The detail on the right holds the selected
+row's facts, and each pane scrolls on its own, so the page itself does not scroll at 1512x900. A
+folder says it has the same content as its twin (`harness.pairMatchesTwin`) only when both file sets
+are equal and every pair matches; a folder that lacks files names them and the folder they are in.
+From a 48rem frame the list and the detail sit side by side, with a narrower list below 68rem;
+below 48rem the list stacks over the detail. A guide's detail names which tools
+read it, each claim carrying the document it came from and the date a person last opened it (a
+claim we cannot cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows);
+size against a documented cap, where the Codex bar measures the **merged** root + worst-nested
+`AGENTS.md`, because that is what Codex truncates and a per-file bar reads green while the merge is
+already being cut; the reference comparison with its declared twin, shown only where a twin was
+compared; the file's modification time on
+this disk, labelled as that rather than as a commit date; and, for a directory, its files. A
+directory with differing files unfolds them as indented rows, and a file on one side only is listed
+once, under the folder that holds it. Choosing a file that has a twin shows both complete files
+side by side, one above the other in a narrow detail, with the lines the other file lacks marked
+(`harness.driftLineMark`); choosing a file with no twin shows its one copy and names the folder it is
+only in (`harness.driftOnlyIn`). The view opens on the first file that differs from its twin. Comparison counts do not claim that the pairs match, and
+tool-specific differences are informational rather than a synchronization requirement. A hook
+config's detail lists it by script: wired (`harness.hookWired`) means the script the config names
+exists on disk, never that it runs — a script the config names and the disk does not have is
+called out, because that failure produces no error at all, and the Codex row carries its approval
+requirement (`harness.hookApprovalGate`) as a standing fact instead of a green, since `/hooks` trust
+lives in no file. Arrow keys move the selection through the list, and Right and Left open and
+close a directory. Measured on this repository:
 98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
-13,090 of 32,768, both declared pairs matching, 20 of 20 hook scripts wired.
+13,090 of 32,768, 20 of 20 hook scripts wired.
 
 **Structure (`harness.views.structure`)** — the harness's own anatomy, read from this repository's
 files (2026-09-19). Its three bands are the coverage matrix's three columns — **Told**, **Gated**,
