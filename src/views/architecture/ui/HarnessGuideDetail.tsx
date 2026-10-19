@@ -137,21 +137,45 @@ function SizeFact({ row, report, t }: { row: GuideRow; report: HarnessReport; t:
 function PairFact({ row, twin, t }: { row: GuideRow; twin: string; t: TranslateFn }) {
   const differing = differingCount(row);
   const oneSided = row.driftFiles.length - differing;
+  const missing = row.missingFiles.length;
   return (
-    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      {differing > 0 ? (
-        <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
-          {t('driftTitle', { count: differing })}
-        </span>
+    <div className="flex flex-col gap-2">
+      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {differing > 0 ? (
+          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+            {t('driftTitle', { count: differing })}
+          </span>
+        ) : null}
+        {oneSided > 0 ? (
+          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>{t('driftOneSided')}</span>
+        ) : null}
+        {missing > 0 ? (
+          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+            {t('pairFilesMissing', { count: missing })}
+          </span>
+        ) : null}
+        {row.driftFiles.length === 0 && missing === 0 ? (
+          <span className="text-body text-[color:var(--color-text-secondary)]">{t('pairMatchesTwin')}</span>
+        ) : null}
+        <span className="font-mono text-label text-[color:var(--color-text-tertiary)]">{twin}/</span>
+      </p>
+      {missing > 0 ? (
+        <div data-testid="harness-pair-missing">
+          <p className="text-label text-[color:var(--color-text-tertiary)]">{t('pairMissingList', { dir: `${twin}/` })}</p>
+          <ul className="mt-1 flex flex-col">
+            {row.missingFiles.map((label) => (
+              <li
+                key={label}
+                title={`${twin}/${label}`}
+                className="flex min-h-6 items-center truncate font-mono text-label text-[color:var(--color-text-secondary)]"
+              >
+                {label}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
-      {oneSided > 0 ? (
-        <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>{t('driftOneSided')}</span>
-      ) : null}
-      {row.driftFiles.length === 0 ? (
-        <span className="text-body text-[color:var(--color-text-secondary)]">{t('pairMatchesTwin')}</span>
-      ) : null}
-      <span className="font-mono text-label text-[color:var(--color-text-tertiary)]">{twin}/</span>
-    </p>
+    </div>
   );
 }
 
@@ -308,7 +332,7 @@ function DriftDetail({
       ) : null}
       {lineSets ? <p className="pb-1 text-label text-[color:var(--color-text-tertiary)]">{t('driftLineMark')}</p> : null}
       <div
-        className={cn('mt-2 grid gap-3', sides.length === 2 && '@min-[36rem]/guide-detail:grid-cols-2')}
+        className={cn('mt-2 grid gap-3', sides.length === 2 && '@min-[40rem]/guide-detail:grid-cols-2')}
         data-testid={current ? 'harness-drift-diff' : undefined}
       >
         {sides.map((path, side) => (
@@ -323,7 +347,7 @@ function DriftDetail({
               aria-label={path}
               className={cn(
                 'mt-1 max-h-96 flex-1 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] py-3 font-mono text-label text-[color:var(--color-text-secondary)]',
-                '@min-[68rem]/harness:max-h-none',
+                '@min-[48rem]/harness:max-h-none',
               )}
             >
               {texts[side]!.split('\n').map((line, index) => (

@@ -35,6 +35,7 @@ export interface GuideRow {
   lastModified: number | null;
   files: GuideFile[];
   driftFiles: DriftFile[];
+  missingFiles: string[];
   /** The twin this row is declared byte-identical to, or `null` when it has no declared pair. */
   declaredPair: string | null;
 }
@@ -95,6 +96,7 @@ export function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[
           lastModified: null,
           files: [],
           driftFiles: [],
+          missingFiles: [],
           declaredPair: declaredPairFor(record.ruleId),
         })
         .get(key)!;
@@ -126,11 +128,12 @@ export function buildRows(report: HarnessReport, nestedLabel: string): GuideRow[
     listOneSided(row, rows, report);
     row.files.sort((a, b) => a.path.localeCompare(b.path));
     row.driftFiles.sort((a, b) => a.label.localeCompare(b.label));
+    row.missingFiles.sort((a, b) => a.localeCompare(b));
   }
   return rows;
 }
 
-/* "Same content" needs equal file sets, so a file only the twin has is listed here as well. */
+/* "Same content" needs equal file sets, so a file only the twin has is counted here as missing. */
 function listOneSided(row: GuideRow, rows: readonly GuideRow[], report: HarnessReport) {
   const folder = TREE_RULES[row.ruleId];
   if (!folder || comparedTwin(row, report) === null) return;
@@ -148,15 +151,7 @@ function listOneSided(row: GuideRow, rows: readonly GuideRow[], report: HarnessR
     }
   }
   for (const label of there) {
-    if (here.has(label)) continue;
-    row.driftFiles.push({
-      key: `missing:${row.key}:${label}`,
-      path: `${twinFolder}${label}`,
-      label,
-      finding: null,
-      twin: false,
-      onlyIn: twinFolder,
-    });
+    if (!here.has(label)) row.missingFiles.push(label);
   }
 }
 

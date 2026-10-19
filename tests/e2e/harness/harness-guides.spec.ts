@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
+import { waitForFiniteAnimations } from "../visual-ready";
 
 import {
+  CODEX_ONLY_BRIEF_SOURCE,
   CROWDED_SOURCE,
   HOOKLESS_SOURCE,
   MISSING_CODEX_HOOK_SOURCE,
@@ -10,10 +12,13 @@ import {
   mountHarnessVault,
 } from "../harness-tab-fixture";
 
-async function openGuides(page: Page, sourceOverrides?: Record<string, string>, locale = "ko") {
+type GuidesOptions = { source?: Record<string, string>; locale?: string; viewport?: { width: number; height: number } };
+
+async function openGuides(page: Page, { source, locale = "ko", viewport }: GuidesOptions = {}) {
   await page.setViewportSize({ width: 1512, height: 900 });
-  await installHarnessRuntime(page, { sourceOverrides });
+  await installHarnessRuntime(page, { sourceOverrides: source });
   await mountHarnessVault(page);
+  if (viewport) await page.setViewportSize(viewport);
   await page.goto(`/${locale}/architecture/?view=guides`);
   await expect(page.getByTestId("harness-guide-detail")).toBeVisible({ timeout: 30_000 });
 }
@@ -23,7 +28,7 @@ const claudeHookRow = (page: Page) =>
 
 test.describe("harness guides workbench", () => {
   test("a hook whose command names no script file is unresolved, not wired", async ({ page }) => {
-    await openGuides(page, UNRESOLVED_HOOK_SOURCE);
+    await openGuides(page, { source: UNRESOLVED_HOOK_SOURCE });
     const status = claudeHookRow(page).getByTestId("harness-hook-row-status");
     await expect(status).toContainText("경로 확인 안 됨");
     await expect(status).toContainText("스크립트 1개");
@@ -31,13 +36,13 @@ test.describe("harness guides workbench", () => {
   });
 
   test("a config with permissions and no hooks claims nothing is wired", async ({ page }) => {
-    await openGuides(page, HOOKLESS_SOURCE);
+    await openGuides(page, { source: HOOKLESS_SOURCE });
     const status = claudeHookRow(page).getByTestId("harness-hook-row-status");
     await expect(status).toHaveText("스크립트 0개");
   });
 
   test("a hook row's status tags wrap below the config path instead of truncating it", async ({ page }) => {
-    await openGuides(page, MISSING_CODEX_HOOK_SOURCE, "en");
+    await openGuides(page, { source: MISSING_CODEX_HOOK_SOURCE, locale: "en" });
     const row = page.getByTestId("harness-guide-list-pane").getByRole("button", { name: /\.codex\/hooks\.json/ });
     await expect(row).toContainText("Script missing");
     await expect(row).toContainText("Needs approval inside the tool");
@@ -46,21 +51,63 @@ test.describe("harness guides workbench", () => {
     expect(clipped, "the config path is truncated by its status tags").toBeLessThanOrEqual(0);
   });
 
-  test("a folder whose twin has a file it lacks does not claim the same content", async ({ page }) => {
-    await openGuides(page, ONE_SIDED_BRIEF_SOURCE, "en");
-    const row = page.getByTestId("harness-guide-row-agents-agents");
-    await expect(row.locator("[data-guide-item]").first()).toContainText("No twin");
-    await row.locator("[data-guide-item]").first().click();
+  test("a file on one side only is listed once, and the folder lacking it counts it as missing", async ({ page }) => {
+    await openGuides(page, { source: ONE_SIDED_BRIEF_SOURCE, locale: "en" });
+    const list = page.getByTestId("harness-guide-list-pane");
+    await expect(list.locator("[data-guide-item]", { hasText: "scout.md" })).toHaveCount(1);
+    await expect(
+      page.getByTestId("harness-guide-row-claude-agents").locator("[data-guide-item]", { hasText: "scout.md" }),
+    ).toContainText("No twin");
+
+    const lacking = page.getByTestId("harness-guide-row-agents-agents").locator("[data-guide-item]");
+    await expect(lacking).toContainText("1 file missing");
+    await expect(lacking).not.toContainText("No twin");
+    await lacking.click();
     const detail = page.getByTestId("harness-guide-detail");
     await expect(detail).not.toContainText("Same content");
-    await expect(detail).toContainText("No twin");
+    await expect(detail).not.toContainText("No twin");
+    await expect(detail.getByTestId("harness-pair-missing")).toContainText("present in .claude/agents/");
+    await expect(detail.getByTestId("harness-pair-missing")).toContainText("scout.md");
+  });
 
-    await row.locator("[data-guide-item]", { hasText: "scout.md" }).click();
-    await expect(page.getByTestId("harness-drift")).toContainText("Only in .claude/agents/");
+  test("the view opens on a file that differs from its twin, past a folder of one-sided files", async ({ page }) => {
+    await openGuides(page, { source: CODEX_ONLY_BRIEF_SOURCE });
+    await expect(
+      page.getByTestId("harness-guide-row-agents-agents").locator("[data-guide-item]", { hasText: "lookout.md" }),
+    ).toBeVisible();
+    const diff = page.getByTestId("harness-drift-diff");
+    await expect(diff.locator("pre")).toHaveCount(2);
+    await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");
+  });
+
+  test("at 1040 the list and the detail stay side by side, with the diff on screen", async ({ page }) => {
+    await openGuides(page, { viewport: { width: 1040, height: 720 } });
+    await waitForFiniteAnimations(page);
+    const list = await page.getByTestId("harness-guide-list-pane").boundingBox();
+    const detail = await page.getByTestId("harness-guide-detail-pane").boundingBox();
+    expect(Math.abs(detail!.y - list!.y), "the detail stacks under the list").toBeLessThan(1);
+    expect(detail!.x).toBeGreaterThanOrEqual(list!.x + list!.width - 1);
+    await expect(page.getByTestId("harness-drift-diff")).toBeInViewport({ ratio: 1 });
+  });
+
+  test("the headline's hint stays on the line of its last word in every locale", async ({ page }) => {
+    await openGuides(page);
+    for (const locale of ["en", "ko", "ja", "zh"]) {
+      await page.goto(`/${locale}/architecture/?view=guides`);
+      await expect(page.getByTestId("harness-guide-detail")).toBeVisible({ timeout: 30_000 });
+      const offset = await page.getByTestId("harness-sentence").evaluate((root) => {
+        const line = root.firstElementChild!;
+        const rects = line.firstElementChild!.getClientRects();
+        const last = rects[rects.length - 1]!;
+        const hint = line.querySelector("button")!.getBoundingClientRect();
+        return Math.abs((hint.top + hint.bottom) / 2 - (last.top + last.bottom) / 2);
+      });
+      expect(offset, `${locale}: the hint wrapped onto a line of its own`).toBeLessThan(8);
+    }
   });
 
   test("the list and the detail each scroll on their own while the page stays put", async ({ page }) => {
-    await openGuides(page, CROWDED_SOURCE);
+    await openGuides(page, { source: CROWDED_SOURCE });
     await expect(claudeHookRow(page)).toContainText("연결됨");
     await claudeHookRow(page).click();
     const pane = page.getByTestId("harness-guide-detail-pane");

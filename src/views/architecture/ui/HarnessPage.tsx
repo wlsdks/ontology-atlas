@@ -50,7 +50,7 @@ import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 const PROGRESS_REVEAL_MS = 1000;
 
 /** The guides workbench owns the panel's height where its two panes sit side by side, and scrolls with the page below that. */
-const GUIDES_FILL = 'flex flex-1 flex-col @min-[68rem]/harness:min-h-0';
+const GUIDES_FILL = 'flex flex-1 flex-col @min-[48rem]/harness:min-h-0';
 
 /** The read never changes within a session, so nothing has to be watched. */
 const subscribeNever = () => () => {};
@@ -214,17 +214,20 @@ function HarnessPageInner() {
   const sentence = report ? (
     <div data-testid="harness-sentence" className="architecture-result-arrive relative z-10">
       {/* The thesis takes the one step above body, at regular weight, still lighter than the cards' numerals. */}
-      <div className="flex max-w-prose flex-wrap items-center gap-x-1 text-title text-[color:var(--color-text-primary)]">
+      <div className="max-w-prose text-pretty text-title text-[color:var(--color-text-primary)]">
         <span className="tabular-nums">
           {t('sentence', {
             documents: report.guideDocumentCount,
             checks: report.checks.total,
           })}
         </span>
-        {/* Hangs from its own button and flips to the edge that fits at every width. */}
-        <PlacedInfoHint preferred="left" label={t('checksBreakdownLabel')}>
-          {t('checksHint')}
-        </PlacedInfoHint>
+        {/* No-break space in a nowrap run: the hint never wraps away from the last word. */}
+        <span className="whitespace-nowrap">
+          {'\u00a0'}
+          <PlacedInfoHint preferred="left" className="align-middle" label={t('checksBreakdownLabel')}>
+            {t('checksHint')}
+          </PlacedInfoHint>
+        </span>
       </div>
       <p className="mt-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
         {t('checksBreakdown', {

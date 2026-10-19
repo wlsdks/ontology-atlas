@@ -59,7 +59,8 @@ export function HarnessGuidesView({
     return map;
   }, [rows, report.hookGroups]);
   /* The first difference is the likeliest question; with none, the first file. */
-  const firstKey = rows.find((row) => row.driftFiles.length > 0)?.driftFiles[0]?.key ?? rows[0]?.key ?? '';
+  const listed = rows.flatMap((row) => row.driftFiles);
+  const firstKey = listed.find((file) => file.twin)?.key ?? listed[0]?.key ?? rows[0]?.key ?? '';
 
   const [chosen, setChosen] = useState<string | null>(null);
   const selectedKey = chosen !== null && selections.has(chosen) ? chosen : firstKey;
@@ -175,18 +176,19 @@ export function HarnessGuidesView({
   const guidesHeading = 'harness-guide-files-heading';
 
   return (
-    <div className={cn('flex flex-1 flex-col gap-3', '@min-[68rem]/harness:min-h-0')} data-testid="harness-guides">
+    <div className={cn('flex flex-1 flex-col gap-3', '@min-[48rem]/harness:min-h-0')} data-testid="harness-guides">
       <div
         className={cn(
           'grid flex-1 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]',
-          '@min-[68rem]/harness:min-h-80 @min-[68rem]/harness:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)] @min-[68rem]/harness:grid-rows-[minmax(0,1fr)]',
+          '@min-[48rem]/harness:min-h-80 @min-[48rem]/harness:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)] @min-[48rem]/harness:grid-rows-[minmax(0,1fr)]',
+          '@min-[68rem]/harness:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]',
         )}
       >
         <div
           data-testid="harness-guide-list-pane"
           className={cn(
             'min-w-0 border-b border-[color:var(--color-border-soft)] p-2 overscroll-contain',
-            '@min-[68rem]/harness:min-h-0 @min-[68rem]/harness:overflow-y-auto @min-[68rem]/harness:border-b-0 @min-[68rem]/harness:border-r',
+            '@min-[48rem]/harness:min-h-0 @min-[48rem]/harness:overflow-y-auto @min-[48rem]/harness:border-b-0 @min-[48rem]/harness:border-r',
           )}
         >
           <div ref={setList} className="relative flex flex-col gap-4" onKeyDown={onListKeyDown}>
@@ -269,6 +271,11 @@ export function HarnessGuidesView({
                               {row.driftFiles.length > differing ? (
                                 <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
                                   {t('driftOneSided')}
+                                </span>
+                              ) : null}
+                              {row.missingFiles.length > 0 ? (
+                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                  {t('pairFilesMissing', { count: row.missingFiles.length })}
                                 </span>
                               ) : null}
                               <span
@@ -394,7 +401,7 @@ export function HarnessGuidesView({
           data-testid="harness-guide-detail-pane"
           className={cn(
             '@container/guide-detail min-w-0 overscroll-contain focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]',
-            '@min-[68rem]/harness:min-h-0 @min-[68rem]/harness:overflow-y-auto',
+            '@min-[48rem]/harness:min-h-0 @min-[48rem]/harness:overflow-y-auto',
           )}
         >
           <div ref={hostRef} className="grid px-5 py-4 md:px-6 md:py-5">

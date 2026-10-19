@@ -286,6 +286,10 @@ export const ONE_SIDED_BRIEF_SOURCE: Record<string, string> = {
   ".claude/agents/scout.md": "# scout\n",
 };
 
+export const CODEX_ONLY_BRIEF_SOURCE: Record<string, string> = {
+  ".agents/agents/lookout.md": "# lookout\n",
+};
+
 export const MISSING_CODEX_HOOK_SOURCE: Record<string, string> = {
   ".codex/hooks.json": JSON.stringify({
     hooks: {
