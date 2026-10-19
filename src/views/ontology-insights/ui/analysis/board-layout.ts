@@ -16,27 +16,32 @@ function sides(from: CardBox, to: CardBox): [BoardSide, BoardSide] {
 
 const centre = (box: CardBox, axis: 'x' | 'y') => axis === 'x' ? (box.left + box.right) / 2 : (box.top + box.bottom) / 2;
 
-/** One line per declaration between measured boxes; lines sharing a side spread along it, ordered by where their far end sits. O(L log L). */
+// O(L log L)
 export function boardLines(links: readonly BoardEnds[], boxes: ReadonlyMap<string, CardBox>): BoardLine[] {
   const placed = links.flatMap(link => {
     const from = boxes.get(link.from), to = boxes.get(link.to);
     return from && to && link.from !== link.to ? [{ link, from, to, sides: sides(from, to) }] : [];
   });
-  const groups = new Map<string, { far: number; index: number }[]>();
+  const groups = new Map<string, { far: number; index: number; end: 0 | 1 }[]>();
   placed.forEach((row, index) => {
     for (const end of [0, 1] as const) {
       const side = row.sides[end], spread = side === 'left' || side === 'right' ? 'y' : 'x';
       const key = `${end ? row.link.to : row.link.from}\0${side}`;
-      groups.set(key, [...groups.get(key) ?? [], { far: centre(end ? row.from : row.to, spread), index }]);
+      const group = groups.get(key) ?? [];
+      group.push({ far: centre(end ? row.from : row.to, spread), index, end });
+      groups.set(key, group);
     }
   });
-  for (const group of groups.values()) group.sort((a, b) => a.far - b.far || a.index - b.index);
+  const slots = placed.map(() => [0, 0]);
+  for (const group of groups.values()) {
+    group.sort((a, b) => a.far - b.far || a.index - b.index);
+    group.forEach((entry, rank) => { slots[entry.index]![entry.end] = rank - (group.length - 1) / 2; });
+  }
   const port = (index: number, end: 0 | 1) => {
     const row = placed[index]!, box = end ? row.to : row.from, side = row.sides[end];
     const along = side === 'left' || side === 'right' ? 'y' : 'x';
-    const group = groups.get(`${end ? row.link.to : row.link.from}\0${side}`)!;
     const half = (along === 'y' ? box.bottom - box.top : box.right - box.left) / 2 - PORT_INSET;
-    const offset = (group.findIndex(entry => entry.index === index) - (group.length - 1) / 2) * PORT_GAP;
+    const offset = slots[index]![end]! * PORT_GAP;
     const slide = centre(box, along) + Math.max(-half, Math.min(half, offset));
     const edge = side === 'left' ? box.left : side === 'right' ? box.right : side === 'top' ? box.top : box.bottom;
     return along === 'y' ? { x: edge, y: slide } : { x: slide, y: edge };

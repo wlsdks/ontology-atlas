@@ -32,7 +32,7 @@ const flowCost = (order: readonly number[], pairs: readonly LanePair[]) => {
   return pairs.reduce((sum, { a, b, weight }) => sum + weight * (Math.abs(position[a]! - position[b]!) + (position[a]! > position[b]! ? 0.5 : 0)), 0);
 };
 
-/** Lane order with the least weighted lane distance, a backward line costing half a lane more: exact over all D! orders for D ≤ 8, else single-lane moves and segment reversals until none improves, O(passes × D² × (D + P)). */
+// Exact up to 8 lanes, else local moves: O(passes * D^2 * (D + P))
 export function orderLanesByFlow(domainIds: readonly string[], weights: ReadonlyMap<string, ReadonlyMap<string, number>>): string[] {
   const pairs = domainIds.flatMap((from, a) => domainIds.flatMap((to, b) => { const weight = weights.get(from)?.get(to) ?? 0; return weight ? [{ a, b, weight }] : []; }));
   let best = domainIds.map((_, index) => index), bestCost = flowCost(best, pairs);

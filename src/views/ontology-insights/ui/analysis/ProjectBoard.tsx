@@ -32,7 +32,6 @@ function useLeaving<T>(value: T) {
   return state.leaving;
 }
 
-/** Responsibilities as rows, capabilities as cards, and each cross-responsibility declaration as one measured line. */
 export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers, matches, onlyGaps, vaultKey, onSelectEdge, onSelectClaim }: {
   board: AnalysisBoard; mode: Question; selectedEdge: string | null; selectedClaim: string | null;
   markers: ReadonlyMap<string, BoardMarker>; matches: ReadonlySet<string> | null; onlyGaps: boolean; vaultKey: string;
