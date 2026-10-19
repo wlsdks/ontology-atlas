@@ -94,8 +94,7 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(root, "src/views/ontology-insights/ui/OntologyInsightsPage.tsx", '<main data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence" role="tabpanel"><TabBar /><AnalysisWorkspace /></main>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref</aside>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/DependencyDiagram.tsx", '<div data-testid="analysis-dependency-diagram" />');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/PairRail.tsx", '<button data-testid="analysis-pair" />');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", '<div data-testid="analysis-board"><path data-testid="analysis-witness" /></div>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", '<InsightsAgentDock /> planInsightsAgentPrompt');
   writeFixture(root, "src/views/ontology-insights/ui/tabs/FlowTab.tsx", '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} /><CopyControl text={request} testId="flow-copy" />');
   writeFixture(
@@ -277,8 +276,7 @@ test("ontology design surface does not accept a workbench marker that survives o
 for (const [file, missing] of [
   ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", /relationship-analysis/],
   ["src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", /analysis-evidence/],
-  ["src/views/ontology-insights/ui/analysis/DependencyDiagram.tsx", /analysis-dependency-diagram/],
-  ["src/views/ontology-insights/ui/analysis/PairRail.tsx", /analysis-pair/],
+  ["src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", /analysis-board|analysis-witness/],
   ["src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", /InsightsAgentDock/],
   ["src/views/ontology-insights/ui/tabs/FlowTab.tsx", /onPrefill/],
 ]) {

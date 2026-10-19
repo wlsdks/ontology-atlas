@@ -165,7 +165,7 @@ const STATES: readonly VaultState[] = [
   {
     name: "Analysis declared responsibility pair",
     url: "/ko/ontology/insights/?tab=connections",
-    evidence: '[data-testid="analysis-dependency-diagram"]',
+    evidence: '[data-testid="analysis-board"]',
     async verify(page) {
       expect(await page.getByTestId('analysis-witness').count()).toBeGreaterThan(0);
       await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeVisible();

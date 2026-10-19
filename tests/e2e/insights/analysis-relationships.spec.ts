@@ -5,6 +5,9 @@ test('a relationship leads to its implementation claim and exact declaring docum
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto('/ko/ontology/insights/?guides=off');
   await expect(page.getByTestId('analysis-evidence')).toBeVisible();
+  await page.locator('[data-analysis-claim-id="capability:order-cancel"]').click();
+  await expect(page.locator('[data-endpoint="from"]')).toHaveAttribute('data-analysis-claim-id', 'capability:order-cancel');
+  await expect(page.locator('[data-swapping="true"]')).toHaveCount(0);
   const first = await page.getByTestId('analysis-evidence').getByRole('link').first().getAttribute('href');
   await page.getByTestId('analysis-open-implementation').click();
   const selected = page.locator('[data-analysis-claim-id="capability:order-cancel"]');

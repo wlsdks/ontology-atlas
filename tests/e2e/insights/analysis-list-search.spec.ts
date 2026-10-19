@@ -1,78 +1,60 @@
 import { expect, test } from '@playwright/test';
 
-test('connection search narrows choices without changing the selected fact or scope', async ({ page }) => {
+const dimmed = '[data-dimmed] [data-testid="analysis-claim"]';
+
+test('capability search marks matches on the board without hiding the project or changing the fact', async ({ page }) => {
   await page.goto('/ko/ontology/insights/?guides=off');
-  const search = page.getByTestId('analysis-pair-search');
+  const search = page.getByTestId('analysis-claim-search');
   const heading = page.getByTestId('analysis-finding-heading');
   const documentLink = page.getByTestId('analysis-evidence').getByRole('link').first();
-  await expect(search).toBeVisible();
-  const before = { heading: await heading.textContent(), href: await documentLink.getAttribute('href'), count: await page.getByTestId('analysis-workspace').getAttribute('data-analysis-cross-count') };
-  await search.fill('회원 주문');
-  await expect(page.getByTestId('analysis-pair')).toHaveCount(2);
+  const cards = page.getByTestId('analysis-claim');
+  await expect(cards.first()).toBeVisible();
+  const total = await cards.count();
+  const before = { heading: await heading.textContent(), href: await documentLink.getAttribute('href') };
+  await search.fill('주문');
+  await expect(page.locator(dimmed)).not.toHaveCount(0);
+  await expect(cards).toHaveCount(total);
+  const lit = await page.locator('li:not([data-dimmed]) > [data-testid="analysis-claim"]:not([aria-pressed="true"])').allTextContents();
+  expect(lit.length).toBeGreaterThan(0);
+  for (const name of lit) expect(name).toContain('주문');
   await expect(heading).toHaveText(before.heading!);
   await expect(documentLink).toHaveAttribute('href', before.href!);
-  await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', before.count!);
-  await search.fill('no-such-responsibility');
-  await expect(page.getByTestId('analysis-pair')).toHaveCount(0);
+  await search.fill('no-such-capability');
+  const pressed = await page.locator('[data-testid="analysis-claim"][aria-pressed="true"]').count();
+  expect(pressed).toBeGreaterThan(0);
+  await expect(page.locator(dimmed)).toHaveCount(total - pressed);
+  await expect(page.locator('[data-dimmed] [aria-pressed="true"]')).toHaveCount(0);
   await expect(search).not.toHaveAttribute('aria-invalid', 'true');
-  await expect(documentLink).toHaveAttribute('href', before.href!);
   await search.press('Escape');
   await expect(search).toHaveValue('');
   await expect(search).toBeFocused();
-  await expect(page.getByTestId('analysis-pair')).toHaveCount(6);
-  await search.fill('회원 주문');
-  await page.getByTestId('analysis-pair').first().click();
-  await expect(heading).not.toHaveText(before.heading!);
-  await page.getByTestId('analysis-pair-search-clear').click();
-  await expect(search).toBeFocused();
-  await expect(page.locator('[data-testid="analysis-pair"][aria-pressed="true"]')).toContainText('회원');
+  await expect(page.locator(dimmed)).toHaveCount(0);
 });
 
-test('a capability beyond the first six remains selected after clearing its search', async ({ page }) => {
+test('a searched capability stays selected after its search is cleared', async ({ page }) => {
   await page.goto('/ko/ontology/insights/?tab=do-next&guides=off');
   const filter = page.getByRole('radiogroup', { name: '역량 표시 범위' });
   await filter.getByRole('radio', { name: /^전체 \d+$/ }).click();
   const search = page.getByTestId('analysis-claim-search');
-  await expect(page.getByTestId('analysis-claim').filter({ hasText: '환불 처리' })).toHaveCount(0);
   await search.fill('환불 처리');
-  await expect(page.getByTestId('analysis-claim')).toHaveCount(1);
-  await page.getByTestId('analysis-claim').click();
-  const selectedId = await page.getByTestId('analysis-claim').getAttribute('data-analysis-claim-id');
+  const match = page.getByTestId('analysis-claim').filter({ hasText: '환불 처리' });
+  await expect(match).toHaveCount(1);
+  await expect(page.locator('li:not([data-dimmed]) > [data-testid="analysis-claim"]:not([aria-pressed="true"])')).toHaveText([/환불 처리/]);
+  await match.click();
+  const selectedId = await match.getAttribute('data-analysis-claim-id');
   const documentLink = page.getByTestId('analysis-evidence').getByRole('link').first();
   const href = await documentLink.getAttribute('href');
   await page.getByTestId('analysis-claim-search-clear').click();
   await expect(search).toBeFocused();
-  await expect(page.getByTestId('analysis-claim')).toHaveCount(6);
-  await expect(page.locator('[data-testid="analysis-claim"][aria-pressed="true"]')).toHaveAttribute('data-analysis-claim-id', selectedId!);
+  const selected = page.locator('[data-testid="analysis-claim"][aria-pressed="true"]');
+  await expect(selected).toHaveAttribute('data-analysis-claim-id', selectedId!);
   await expect(documentLink).toHaveAttribute('href', href!);
   await search.fill('no-such-capability');
-  await expect(page.getByTestId('analysis-claim')).toHaveCount(0);
+  await expect(selected).toHaveAttribute('data-analysis-claim-id', selectedId!);
   await expect(documentLink).toHaveAttribute('href', href!);
   await search.press('Escape');
   await expect(search).toBeFocused();
-  await expect(page.locator('[data-testid="analysis-claim"][aria-pressed="true"]')).toHaveAttribute('data-analysis-claim-id', selectedId!);
-});
-
-test('expanding and collapsing choices keeps focus in a bounded list and the fact unchanged', async ({ page }) => {
-  await page.setViewportSize({ width: 1512, height: 900 });
-  await page.goto('/ko/ontology/insights/?guides=off');
-  const pairs = page.getByTestId('analysis-pair');
-  const heading = page.getByTestId('analysis-finding-heading');
-  await expect(pairs).toHaveCount(6);
-  const selected = await heading.textContent();
-  const list = pairs.first().locator('..');
-  await page.getByTestId('analysis-pairs-more').click();
-  await expect(pairs).toHaveCount(12);
-  await expect(pairs.nth(6)).toBeFocused();
-  await expect(pairs.nth(6)).toBeInViewport({ ratio: 1 });
-  expect(await list.evaluate(node => node.scrollHeight > node.clientHeight)).toBe(true);
-  await expect(heading).toHaveText(selected!);
-  await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeInViewport({ ratio: 1 });
-  await page.getByRole('button', { name: '접기', exact: true }).click();
-  await expect(pairs).toHaveCount(6);
-  await expect(pairs.first()).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(pairs.nth(1)).toBeFocused();
+  await expect(selected).toHaveAttribute('data-analysis-claim-id', selectedId!);
 });
 
 test('the capability filter supports an immediate arrow and tab sequence with normal motion', async ({ page }) => {
@@ -86,5 +68,15 @@ test('the capability filter supports an immediate arrow and tab sequence with no
   await page.keyboard.press('Tab');
   await expect(gaps).toHaveAttribute('aria-checked', 'true');
   await expect(all).toHaveAttribute('aria-checked', 'false');
-  await expect(page.getByTestId('analysis-claim-search')).toBeFocused();
+  const stop = page.locator('[data-testid="analysis-claim"][tabindex="0"]');
+  await expect(stop).toHaveCount(1);
+  await expect(stop).toBeFocused();
+  const first = await stop.getAttribute('data-analysis-claim-id');
+  await page.keyboard.press('ArrowRight');
+  await expect(stop).not.toHaveAttribute('data-analysis-claim-id', first!);
+  await expect(stop).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(stop).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('[data-testid="analysis-claim"]:focus')).toHaveCount(0);
 });

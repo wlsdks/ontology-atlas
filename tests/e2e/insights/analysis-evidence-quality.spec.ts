@@ -4,6 +4,7 @@ import { stubDirectoryPicker } from '../vault-picker-stub';
 import { openFolderFromFirstRun } from '../open-folder';
 import { FIXTURE_VAULT } from '../fixture-vault';
 import { installLibraryWorkHarness } from '../library-work-harness';
+import { waitForAnimationsDone } from '../settle';
 
 const uid = (n: number) => `f0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fixtureDocument = (kind: string, slug: string, title: string, n: number, fields: string) => `---\nuid: ${uid(n)}\nkind: ${kind}\nslug: ${slug}\ntitle: ${title}\n${fields}\n---\n${title} performs its recorded responsibility in this example.\n`;
@@ -28,30 +29,91 @@ test('multi-project scope and expanded declarations remain explicit and bounded'
   await expect(page.getByTestId('analysis-scope')).toContainText('2 projects');
   await expect(page.getByTestId('analysis-scope')).not.toContainText('Project A');
   await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', '96');
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(4);
-  expect(await page.locator('[data-dependency-node]').count()).toBeLessThanOrEqual(8);
+  const orders = page.getByRole('region', { name: 'Orders', exact: true });
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
+  await expect.poll(() => page.evaluate(() => {
+    const more = document.querySelector('[data-board-node="more:lane:domain:orders"]')!.getBoundingClientRect();
+    return [...document.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')].filter(path => {
+      const start = new DOMPoint(path.getPointAtLength(0).x, path.getPointAtLength(0).y).matrixTransform(path.getScreenCTM()!);
+      return start.x >= more.left - 1 && start.x <= more.right + 1 && Math.abs(start.y - more.bottom) <= 1;
+    }).length;
+  })).toBe(1);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
-  for (let press = 0; press < 4; press++) await next.click();
-  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 5 of 96');
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(4);
+  for (let press = 0; press < 13; press++) await next.click();
+  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 14 of 96');
   await expect(next).toBeFocused();
-  expect(await page.locator('[data-dependency-node]').count()).toBeLessThanOrEqual(8);
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
+  await expect(orders.locator('[data-endpoint="from"]')).toBeVisible();
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
+  const more = orders.getByRole('button', { name: 'Show 84 more', exact: true });
+  await more.click();
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(96);
+  await expect(orders.getByRole('button', { name: 'Show less', exact: true })).toBeFocused();
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(96);
 });
 
 test('a saved declaration reopens with focus on its source', async ({ page }) => {
   await page.goto('/en/ontology/insights/?guides=off');
-  await page.getByTestId('analysis-pair').nth(1).click();
-  const edge = await page.getByTestId('analysis-witness').last().getAttribute('data-edge');
+  const edge = await page.getByTestId('analysis-witness').nth(3).getAttribute('data-edge');
   await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
-  await expect(page.locator('[data-dependency-node^="from:"][aria-pressed="true"]')).toBeFocused();
+  await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge!);
+  await expect(page.locator('[data-endpoint="from"][aria-pressed="true"]')).toBeFocused();
+});
+
+test('a saved declaration from a whole responsibility settles focus once on its heading', async ({ page }) => {
+  const files = {
+    'p.md': fixtureDocument('project', 'p', 'Project', 1, 'domains: [domains/orders, domains/stock]'),
+    'domains/orders.md': fixtureDocument('domain', 'domains/orders', 'Orders', 2, 'capabilities: [capabilities/a, capabilities/b]\ndepends_on: [capabilities/stock]'),
+    'domains/stock.md': fixtureDocument('domain', 'domains/stock', 'Inventory', 3, 'capabilities: [capabilities/stock]'),
+    'capabilities/a.md': fixtureDocument('capability', 'capabilities/a', 'Alpha', 4, 'domain: domains/orders\ndepends_on: [capabilities/stock]'),
+    'capabilities/b.md': fixtureDocument('capability', 'capabilities/b', 'Beta', 5, 'domain: domains/orders\ndepends_on: [capabilities/stock]'),
+    'capabilities/stock.md': fixtureDocument('capability', 'capabilities/stock', 'Stock check', 6, 'domain: domains/stock'),
+  };
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, files);
+  await page.goto('/en/topology/?guides=off');
+  await page.getByTestId('first-run-starter-open').click();
+  await page.getByTestId('vault-guide-pick-existing').click();
+  await expect(page.getByTestId('topology-index-panel')).toContainText('Project');
+  const edge = 'domain:orders--depends_on-->capability:stock';
+  await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
+  await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge);
+  await expect(page.locator('[data-endpoint="from"]')).toHaveCount(0);
+  await expect(page.getByTestId('analysis-finding-heading')).toBeFocused();
+  const step = page.getByTestId('analysis-declaration-step');
+  const before = await step.textContent();
+  const next = page.getByRole('button', { name: 'Next declaration', exact: true });
+  const stepper = await next.getAttribute('aria-disabled') === 'true' ? page.getByRole('button', { name: 'Previous declaration', exact: true }) : next;
+  await stepper.focus();
+  await page.keyboard.press('Enter');
+  await expect(step).not.toHaveText(before!);
+  await expect(stepper).toBeFocused();
+});
+
+test('the selected line meets both cards after the entrance under normal motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/en/ontology/insights/?guides=off');
+  await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  await waitForAnimationsDone(page.getByTestId('analysis-board'));
+  await expect.poll(() => page.evaluate(() => {
+    const group = document.querySelector('[data-connection="selected"] [data-edge]')!;
+    const path = group.querySelector('path')!, arrow = group.querySelector('polygon')!, matrix = path.getScreenCTM()!;
+    const start = new DOMPoint(path.getPointAtLength(0).x, path.getPointAtLength(0).y).matrixTransform(matrix);
+    const tip = new DOMPoint(arrow.points.getItem(1).x, arrow.points.getItem(1).y).matrixTransform(matrix);
+    const gap = (point: DOMPoint, box: DOMRect) => Math.hypot(Math.max(box.left - point.x, 0, point.x - box.right), Math.max(box.top - point.y, 0, point.y - box.bottom))
+      + Math.min(Math.abs(point.x - box.left), Math.abs(point.x - box.right), Math.abs(point.y - box.top), Math.abs(point.y - box.bottom));
+    return Math.max(gap(start, document.querySelector('[data-endpoint="from"]')!.getBoundingClientRect()), gap(tip, document.querySelector('[data-endpoint="to"]')!.getBoundingClientRect()));
+  })).toBeLessThanOrEqual(1);
 });
 
 test('two-hundred-percent text keeps nodes, evidence and controls inside the reading width', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   await page.goto('/en/ontology/insights/');
-  await expect(page.locator('[data-dependency-node]').first()).toBeVisible();
+  await expect(page.getByTestId('analysis-witness').first()).toBeAttached();
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
   await expect.poll(() => page.locator('main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+  await expect.poll(() => page.getByTestId('analysis-claim').evaluateAll(cards => Math.max(...cards.map(card => card.scrollHeight - card.clientHeight)))).toBeLessThanOrEqual(1);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
   await next.focus(); await page.keyboard.press('Enter');
   await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 2 of');
@@ -74,23 +136,29 @@ for (const tab of ['connections', 'do-next']) {
   });
 }
 
-test('the rendered node text and selected arrow meet contrast on their actual surfaces', async ({ page }, testInfo) => {
+test('the rendered node text and the selected, paired and hovered lines meet contrast on their actual surfaces', async ({ page }, testInfo) => {
   await page.goto('/en/ontology/insights/');
-  await expect(page.locator('[data-dependency-node]').first()).toBeVisible();
-  const result = await page.evaluate(() => {
+  await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  const measure = (lineSelector: string) => page.evaluate(selector => {
     const rgba = (value: string): number[] => { const v = value.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0]; return [v[0], v[1], v[2], v[3] ?? 1]; };
     const over = (fg: number[], bg: number[]) => [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3])).concat(1);
     const background = (element: Element) => { const parents: Element[] = []; for (let node: Element | null = element; node; node = node.parentElement) parents.unshift(node); return parents.reduce((color, node) => over(rgba(getComputedStyle(node).backgroundColor), color), [255, 255, 255, 1]); };
     const luminance = (c: number[]) => c.slice(0, 3).map(v => { const x = v / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
     const contrast = (a: number[], b: number[]) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-    const text = [...document.querySelectorAll('[data-dependency-node] .text-title')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).color), bg), bg); });
-    const lines = [...document.querySelectorAll('[data-testid="analysis-dependency-diagram"] svg g > path')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).stroke), bg), bg); });
+    const text = [...document.querySelectorAll('[data-testid="analysis-claim"] > span:first-child, [data-board-lane] > p')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).color), bg), bg); });
+    const lines = [...document.querySelectorAll(selector)].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).stroke), bg), bg); });
     return { text, lines };
-  });
-  expect(result.text.length).toBeGreaterThan(0); expect(result.lines.length).toBeGreaterThan(0);
-  expect(Math.min(...result.text)).toBeGreaterThanOrEqual(4.5);
-  expect(Math.min(...result.lines)).toBeGreaterThanOrEqual(3);
-  await testInfo.attach('rendered-analysis-contrast', { body: JSON.stringify(result), contentType: 'application/json' });
+  }, lineSelector);
+  const resting = await measure('[data-connection="selected"] path, [data-tone="pair"] > path');
+  expect(resting.text.length).toBeGreaterThan(0); expect(resting.lines.length).toBeGreaterThan(0);
+  expect(Math.min(...resting.text)).toBeGreaterThanOrEqual(4.5);
+  expect(Math.min(...resting.lines)).toBeGreaterThanOrEqual(3);
+  const hotLines = async () => { const { lines } = await measure('[data-tone="hot"] > path'); return lines.length ? Math.min(...lines) : 0; };
+  await page.locator('[data-endpoint="to"]').focus();
+  await expect.poll(hotLines).toBeGreaterThanOrEqual(3);
+  await page.locator('[data-endpoint="from"]').hover();
+  await expect.poll(hotLines).toBeGreaterThanOrEqual(3);
+  await testInfo.attach('rendered-analysis-contrast', { body: JSON.stringify(resting), contentType: 'application/json' });
 });
 
 test('sample inspection copies facts without querying a connected vault', async ({ page }) => {

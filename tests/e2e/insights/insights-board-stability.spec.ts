@@ -9,8 +9,9 @@ for (const [width, height] of [[1512, 900], [1040, 720]]) {
       const evidence = page.getByTestId('analysis-evidence');
       await expect(evidence).toBeVisible();
       await expect(evidence.getByRole('link').first()).toBeInViewport({ ratio: 1 });
-      await expect(page.locator('[data-dependency-node][aria-pressed="true"]').first()).toBeInViewport({ ratio: 1 });
-      await expect(page.getByTestId('analysis-dependency-diagram')).toBeInViewport();
+      await expect(page.locator('[data-endpoint="from"][aria-pressed="true"]')).toBeInViewport({ ratio: 1 });
+      await expect(page.locator('[data-endpoint="to"][aria-pressed="true"]')).toBeInViewport({ ratio: 1 });
+      await expect(page.locator('[data-connection="selected"]')).toBeInViewport();
       await expect(page.locator('main canvas, main select')).toHaveCount(0);
       const widthFits = await page.locator('main').evaluate(node => node.scrollWidth <= node.clientWidth);
       expect(widthFits).toBe(true);
