@@ -569,46 +569,72 @@ test.describe("harness tab", () => {
     await expect(rule).toBeVisible();
   });
 
-  test("the instruction table shows which file each tool reads", async ({ page }) => {
+  test("the detail names which tools read a guide file, and cites each claim", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=guides");
-    const table = page.getByTestId("harness-guides");
-    await expect(table).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
 
     // The walker question: which file does Codex read that Claude Code does not?
     const nested = page.getByTestId("harness-guide-row-nested-agents-md");
-    await expect(nested).toContainText("Codex");
-    await expect(nested).not.toContainText("Claude Code");
-    await expect(page.getByTestId("harness-guide-row-claude-md")).toContainText("Claude Code");
+    const detail = page.getByTestId("harness-guide-detail");
+    await expect(nested).not.toContainText("Codex");
+    await nested.locator("[data-guide-item]").click();
+    await expect(nested.locator("[data-guide-item]")).toHaveAttribute("aria-pressed", "true");
+    await expect(detail).toContainText("Codex");
+    await expect(detail).not.toContainText("Claude Code");
 
     // Every tool claim carries the document it came from.
-    await expect(nested.getByRole("link", { name: /출처/ }).first()).toHaveAttribute(
-      "href",
-      /^https:\/\//,
-    );
+    await expect(detail.getByRole("link", { name: /출처/ }).first()).toHaveAttribute("href", /^https:\/\//);
     await expect(page.getByText(`읽은 곳 ${HARNESS_SOURCE_ROOT}`)).toBeVisible();
+
+    await page.getByTestId("harness-guide-row-claude-md").locator("[data-guide-item]").click();
+    await expect(detail).toContainText("Claude Code");
   });
 
-  test("counts mismatched pairs, and the diff view opens both files side by side", async ({ page }) => {
+  test("counts mismatched pairs, and opens on the first difference with both files side by side", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=guides");
     const drift = page.getByTestId("harness-drift");
     await expect(drift).toBeVisible({ timeout: 30_000 });
-    await expect(drift).toContainText("내용 차이");
+    await expect(page.getByTestId("harness-guide-row-claude-skills")).toContainText("내용 차이 1");
     await expect(page.getByTestId("harness-guides")).toContainText("참고용 2쌍 비교");
 
-    await drift.getByText("차이 보기").first().click();
     const diff = page.getByTestId("harness-drift-diff");
     await expect(diff).toBeVisible();
     await expect(diff).toContainText(".claude/skills/po-pass/SKILL.md");
     await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");
-    await expect(diff).toContainText("Diverged line.");
+    await expect(diff.locator('[data-harness-drift-line="only-here"]')).toHaveText(["Diverged line."]);
+  });
+
+  test("the guides workbench fits 1512x900 without a page scroll and keeps focus in the list on a swap", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 900 });
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=guides");
+    await expect(page.getByTestId("harness-drift")).toBeVisible({ timeout: 30_000 });
+    const panel = page.locator('[role="tabpanel"]');
+    const overflow = await panel.evaluate((node) => node.scrollHeight - node.clientHeight);
+    expect(overflow, "the tab panel scrolls although both panes scroll on their own").toBeLessThanOrEqual(0);
+
+    const rules = page.getByTestId("harness-guide-row-claude-rules").locator("[data-guide-item]");
+    await rules.click();
+    await page.keyboard.press("ArrowDown");
+    const skills = page.getByTestId("harness-guide-row-claude-skills").locator("[data-guide-item]").first();
+    await expect(skills).toBeFocused();
+    await expect(skills).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("harness-guide-detail")).toContainText(".claude/skills/");
+    await expect(page.getByTestId("harness-guide-detail-pane").locator("[inert]")).toHaveCount(0);
+    await expect(skills).toBeFocused();
   });
 
   test("hooks distinguish connected from absent, and Codex gets needs-approval instead of green", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=guides");
     await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
+    const claudeRow = page.getByRole("button", { name: /\.claude\/settings\.json/ });
+    await expect(claudeRow).toContainText("스크립트 없음");
+    await expect(claudeRow).not.toContainText("연결됨");
+    await expect(page.getByRole("button", { name: /\.codex\/hooks\.json/ })).not.toContainText("연결됨");
+    await claudeRow.click();
 
     // The script on disk is wired; the one only the config knows about is missing, and a missing
     // guard produces no error at all — which is exactly why it has to be on the screen.

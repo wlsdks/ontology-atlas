@@ -217,17 +217,21 @@ test.describe('Harness hints stay whole', () => {
     await mountHarnessVault(page);
   });
 
-  test('the Guides header hints wrap inside their panel and stay in the window', async ({ page }) => {
+  test('the Guides detail hints wrap inside their panel and stay in the window', async ({ page }) => {
     for (const [width, height] of [[1512, 949], [1040, 720]] as const) {
       await page.setViewportSize({ width, height });
       await page.goto('/ko/architecture/?view=guides&guides=off');
+      await page.locator('[data-guide-item="agents-skills"]').click();
       for (const name of ['짝', '바뀜']) {
-        const button = page.getByRole('button', { name, exact: true }).first();
+        const button = page.getByTestId('harness-guide-detail').getByRole('button', { name, exact: true });
         await expect(button).toBeVisible({ timeout: 30_000 });
         await button.scrollIntoViewIfNeeded();
         await button.hover();
-        await expect(await hintPanel(page, button)).toHaveCSS('opacity', '1');
+        const panel = await hintPanel(page, button);
+        await expect(panel).toHaveCSS('opacity', '1');
         expectInside(await hintPlacement(page, button), `${width} ${name}`);
+        await page.mouse.move(0, 0);
+        await expect(panel).toHaveCSS('opacity', '0');
       }
     }
   });
