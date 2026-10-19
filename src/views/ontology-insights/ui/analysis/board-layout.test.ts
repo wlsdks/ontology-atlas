@@ -23,6 +23,15 @@ describe('project board layout', () => {
     for (const line of lines) expect(line.x1).toBeLessThan(200);
   });
 
+  it('lands every arrival on one side at one point and keeps departures apart from it', () => {
+    const boxes = new Map([['a', box(100, 200)], ['left', box(-300, 0)], ['over', box(120, 0)], ['right', box(400, 0)]]);
+    const lines = boardLines([{ id: 'in1', from: 'left', to: 'a' }, { id: 'in2', from: 'right', to: 'a' }, { id: 'out', from: 'a', to: 'over' }], boxes);
+    const [in1, in2, out] = lines;
+    expect(in1).toMatchObject({ x2: in2!.x2, y2: 200 });
+    expect(out!.y1).toBe(200);
+    expect(out!.x1).not.toBe(in1!.x2);
+  });
+
   it('draws nothing for an endpoint that is not on the board', () => {
     expect(boardLines([{ id: 'x', from: 'a', to: 'gone' }], new Map([['a', box(0, 0)]]))).toEqual([]);
   });

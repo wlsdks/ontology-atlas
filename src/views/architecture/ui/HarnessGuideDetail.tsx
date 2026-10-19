@@ -349,7 +349,7 @@ function DriftDetail({
               role="group"
               aria-label={path}
               className={cn(
-                'mt-1 max-h-96 flex-1 overflow-auto whitespace-pre-wrap break-all rounded-chip bg-[color:var(--color-overlay-1)] py-3 font-mono text-label text-[color:var(--color-text-secondary)]',
+                'mt-1 max-h-96 flex-1 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] rounded-chip bg-[color:var(--color-overlay-1)] py-3 font-mono text-label text-[color:var(--color-text-secondary)]',
                 '@min-[48rem]/harness:max-h-none',
               )}
             >
