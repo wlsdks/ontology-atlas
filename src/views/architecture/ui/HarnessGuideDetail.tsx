@@ -321,9 +321,11 @@ function DriftDetail({
         folder={row.label}
         title={file.label}
         aside={
-          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
-            {file.twin ? t('driftTitle', { count: 1 }) : t('driftOneSided')}
-          </span>
+          file.twin || !file.onlyIn ? (
+            <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+              {file.twin ? t('driftTitle', { count: 1 }) : t('driftOneSided')}
+            </span>
+          ) : undefined
         }
       />
       {file.onlyIn ? (

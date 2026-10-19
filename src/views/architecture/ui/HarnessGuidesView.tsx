@@ -301,7 +301,7 @@ export function HarnessGuidesView({
                                   {rowButton(
                                     file.key,
                                     <span className="flex min-w-0 items-center gap-2">
-                                      <span className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
+                                      <span title={file.path} className="min-w-0 truncate font-mono text-label text-[color:var(--color-text-secondary)]">
                                         {file.label}
                                       </span>
                                       {!file.twin ? (
