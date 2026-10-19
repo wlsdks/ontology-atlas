@@ -28,28 +28,35 @@ test('multi-project scope and expanded declarations remain explicit and bounded'
   await expect(page.getByTestId('analysis-scope')).toContainText('2 projects');
   await expect(page.getByTestId('analysis-scope')).not.toContainText('Project A');
   await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', '96');
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(4);
-  expect(await page.locator('[data-dependency-node]').count()).toBeLessThanOrEqual(8);
+  const orders = page.getByRole('region', { name: 'Orders', exact: true });
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
+  expect(await page.getByTestId('analysis-witness').count()).toBeLessThanOrEqual(13);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
-  for (let press = 0; press < 4; press++) await next.click();
-  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 5 of 96');
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(4);
+  for (let press = 0; press < 13; press++) await next.click();
+  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 14 of 96');
   await expect(next).toBeFocused();
-  expect(await page.locator('[data-dependency-node]').count()).toBeLessThanOrEqual(8);
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
+  await expect(orders.locator('[data-endpoint="from"]')).toBeVisible();
+  expect(await page.getByTestId('analysis-witness').count()).toBeLessThanOrEqual(13);
+  const more = orders.getByRole('button', { name: 'Show 84 more', exact: true });
+  await more.click();
+  await expect(orders.getByTestId('analysis-claim')).toHaveCount(96);
+  await expect(orders.getByRole('button', { name: 'Show less', exact: true })).toBeFocused();
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(96);
 });
 
 test('a saved declaration reopens with focus on its source', async ({ page }) => {
   await page.goto('/en/ontology/insights/?guides=off');
-  await page.getByTestId('analysis-pair').nth(1).click();
-  const edge = await page.getByTestId('analysis-witness').last().getAttribute('data-edge');
+  const edge = await page.getByTestId('analysis-witness').nth(3).getAttribute('data-edge');
   await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
-  await expect(page.locator('[data-dependency-node^="from:"][aria-pressed="true"]')).toBeFocused();
+  await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge!);
+  await expect(page.locator('[data-endpoint="from"][aria-pressed="true"]')).toBeFocused();
 });
 
 test('two-hundred-percent text keeps nodes, evidence and controls inside the reading width', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   await page.goto('/en/ontology/insights/');
-  await expect(page.locator('[data-dependency-node]').first()).toBeVisible();
+  await expect(page.getByTestId('analysis-witness').first()).toBeAttached();
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
   await expect.poll(() => page.locator('main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
@@ -74,23 +81,26 @@ for (const tab of ['connections', 'do-next']) {
   });
 }
 
-test('the rendered node text and selected arrow meet contrast on their actual surfaces', async ({ page }, testInfo) => {
+test('the rendered node text and the selected, paired and hovered lines meet contrast on their actual surfaces', async ({ page }, testInfo) => {
   await page.goto('/en/ontology/insights/');
-  await expect(page.locator('[data-dependency-node]').first()).toBeVisible();
-  const result = await page.evaluate(() => {
+  await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  const measure = (lineSelector: string) => page.evaluate(selector => {
     const rgba = (value: string): number[] => { const v = value.match(/[\d.]+/g)?.map(Number) ?? [0, 0, 0]; return [v[0], v[1], v[2], v[3] ?? 1]; };
     const over = (fg: number[], bg: number[]) => [0, 1, 2].map(i => fg[i] * fg[3] + bg[i] * (1 - fg[3])).concat(1);
     const background = (element: Element) => { const parents: Element[] = []; for (let node: Element | null = element; node; node = node.parentElement) parents.unshift(node); return parents.reduce((color, node) => over(rgba(getComputedStyle(node).backgroundColor), color), [255, 255, 255, 1]); };
     const luminance = (c: number[]) => c.slice(0, 3).map(v => { const x = v / 255; return x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }).reduce((sum, v, i) => sum + v * [0.2126, 0.7152, 0.0722][i], 0);
     const contrast = (a: number[], b: number[]) => { const x = luminance(a), y = luminance(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
-    const text = [...document.querySelectorAll('[data-dependency-node] .text-title')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).color), bg), bg); });
-    const lines = [...document.querySelectorAll('[data-testid="analysis-dependency-diagram"] svg g > path')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).stroke), bg), bg); });
+    const text = [...document.querySelectorAll('[data-testid="analysis-claim"] > span:first-child, [data-board-lane] > p')].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).color), bg), bg); });
+    const lines = [...document.querySelectorAll(selector)].map(node => { const bg = background(node); return contrast(over(rgba(getComputedStyle(node).stroke), bg), bg); });
     return { text, lines };
-  });
-  expect(result.text.length).toBeGreaterThan(0); expect(result.lines.length).toBeGreaterThan(0);
-  expect(Math.min(...result.text)).toBeGreaterThanOrEqual(4.5);
-  expect(Math.min(...result.lines)).toBeGreaterThanOrEqual(3);
-  await testInfo.attach('rendered-analysis-contrast', { body: JSON.stringify(result), contentType: 'application/json' });
+  }, lineSelector);
+  const resting = await measure('[data-connection="selected"] path, [data-tone="pair"] > path');
+  expect(resting.text.length).toBeGreaterThan(0); expect(resting.lines.length).toBeGreaterThan(0);
+  expect(Math.min(...resting.text)).toBeGreaterThanOrEqual(4.5);
+  expect(Math.min(...resting.lines)).toBeGreaterThanOrEqual(3);
+  await page.locator('[data-endpoint="to"]').hover();
+  await expect.poll(async () => { const { lines } = await measure('[data-tone="hot"] > path'); return lines.length ? Math.min(...lines) : 0; }).toBeGreaterThanOrEqual(3);
+  await testInfo.attach('rendered-analysis-contrast', { body: JSON.stringify(resting), contentType: 'application/json' });
 });
 
 test('sample inspection copies facts without querying a connected vault', async ({ page }) => {

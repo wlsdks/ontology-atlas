@@ -14,7 +14,7 @@ export function AnalysisListSearch({ value, onChange, label, matches, total, sel
   const input = useRef<HTMLInputElement>(null);
   function clear() { onChange(''); input.current?.focus(); }
   return <div className={styles.listSearch}>
-    <Input ref={input} type="search" label={label} value={value} placeholder={t('searchByName')} data-testid={testId}
+    <Input ref={input} type="search" aria-label={label} value={value} placeholder={label} data-testid={testId}
       onChange={event => onChange(event.target.value)}
       onKeyDown={event => { if (event.key === 'Escape' && value) { event.preventDefault(); event.stopPropagation(); clear(); } }} />
     <div className={styles.listSearchStatus}>

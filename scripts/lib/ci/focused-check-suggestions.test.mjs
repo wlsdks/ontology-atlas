@@ -1297,12 +1297,13 @@ describe('focused check suggestions', () => {
     assert.deepEqual(matches[0].paths, paths);
   });
 
-  it('suggests the insights count E2E for the analysis model, page, workspace, and pair rail', () => {
+  it('suggests the insights count E2E for the analysis model, board model, page, workspace, and board', () => {
     const paths = [
       'src/views/ontology-insights/lib/analysis-model.ts',
+      'src/views/ontology-insights/lib/analysis-board.ts',
       'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
       'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx',
-      'src/views/ontology-insights/ui/analysis/PairRail.tsx',
+      'src/views/ontology-insights/ui/analysis/ProjectBoard.tsx',
     ];
     const command = 'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts';
     const result = suggestFocusedChecks(paths);

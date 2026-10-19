@@ -388,7 +388,6 @@
       "crossCount": "跨职责的依赖声明",
       "evidenceQuestion": "哪些主张需要进一步检查？",
       "noDependencies": "尚未记录跨职责的依赖关系。此范围内有 {count} 条依赖声明，但这不能证明各部分相互独立。",
-      "choosePair": "选择职责关系",
       "countBasis": "统计依据与范围",
       "countDetails": "去重后的 {total} 条依赖声明中，跨职责 {cross} 条，同一职责内 {internal} 条，职责缺失或不明确 {unassigned} 条。不包含包含关系或一般关联，也不凭猜测分配职责。",
       "implementation": "已记录的实现",
@@ -434,9 +433,6 @@
       },
       "nodeDeclarations": "此图显示的 {count} 条依赖声明",
       "chooseDeclaration": "选择依赖声明",
-      "pairRailTitle": "{count} 组关系",
-      "capabilityEvidence": "能力的实现依据",
-      "chooseCapability": "选择待查看的能力",
       "gapsFilter": "缺项 {count}",
       "allFilter": "全部 {count}",
       "responsibilityMissing": "尚未记录所属职责",
@@ -448,7 +444,6 @@
       "scopeAll": "全部已记录项目",
       "scopeCount": "此文件夹中的 {count} 个项目",
       "moreRoles": "另有 {count} 个实现角色",
-      "selectNodeDeclaration": "选择 {name} 的第一条显示声明",
       "inspectSelected": "用代理检查此主张",
       "copySampleFact": "复制示例事实",
       "copySelectedCheck": "复制只读检查请求",
@@ -462,9 +457,7 @@
         "unknown": "尚未检查源码当前状态"
       },
       "documentTitle": "分析 · Ontology Atlas",
-      "findConnection": "查找关系",
       "findCapability": "查找能力",
-      "searchByName": "按名称搜索",
       "clearSearch": "清除",
       "searchMatches": "共 {total} 项，匹配 {count} 项",
       "noSearchResults": "没有匹配的名称。请尝试其他关键词。",
@@ -487,7 +480,11 @@
       "declarationStep": "声明 {index} / {total}",
       "pathChanged": "{date} 已更改",
       "pathGone": "未找到",
-      "pathUndated": "日期未核对"
+      "pathUndated": "日期未核对",
+      "board": "项目看板",
+      "laneEmpty": "未记录能力",
+      "cardGaps": "{count} 处记录缺项",
+      "markerGap": "名称旁的数字是记录缺项数"
     }
   }
 }

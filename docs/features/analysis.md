@@ -16,27 +16,27 @@ The bundled example is explicitly labeled.
 
 ## Relationships and evidence
 
-The selected responsibility pair owns the headline. A visible comparison rail
-starts with six named pairs, ordered by their distinct declaration counts, with
-a selected pair retained even when it falls outside that initial set. Its
-heading counts every pair, not only the visible choices. Search appears once
-there are more pairs than the first six and matches the displayed or canonical
-names at either end without changing the selected graph or evidence. Additional pairs reveal six at a time in a bounded list; the action
-names the actual next batch and moves focus to its first new choice. Collapse
-returns to six choices while retaining the selection.
+The project board owns the screen. Each recorded responsibility is one row,
+ordered so that the most-declared pairs sit next to each other and point
+forward (exact over every order up to eight rows, local moves beyond); concepts
+with missing or ambiguous responsibility share a last row. Each row lists its
+capabilities as cards, connected cards first; twelve show at once, the selected
+endpoint always among them, and a named remainder action opens the rest. Every
+thin directed line is one declared cross-responsibility `depends_on` edge;
+containment and loose associations are excluded, and an endpoint hidden behind
+a row's remainder joins that action, one line per hidden pair. Lines follow
+measured DOM geometry when labels wrap or text grows.
 
-The graph expands the selected pair into its actual concept endpoints, named
-once: the headline names the two responsibilities, each card names one concept,
-and the inspector names the selected declaration. Every thin directed line is
-one declared `depends_on` edge; containment and loose associations are
-excluded. Ports follow measured DOM geometry when labels wrap or text grows.
-Four declarations are drawn at a time. Pressing a line or a card selects its
-declaration; a "Declaration n of N" stepper reaches every declaration by
-keyboard and turns to the next four when the selection crosses them, without
-mounting an unbounded graph. Each declaration leaves and enters its cards at
-its own port. The selected declaration and its declaring document are visible
-together at the minimum app viewport. A missing structured
-relationship note does not prove that the Markdown body has no explanation.
+The selected declaration draws in indigo beneath the cards, its pair's lines
+lift, and the rest stay a quiet texture. Hovering or focusing a card, or
+hovering a row's name, picks out only that card's or row's lines and their
+partner cards. Pressing a line selects its declaration; pressing a card steps
+through its declarations, outgoing first. A "Declaration n of N" stepper beside
+the inspector heading reaches every declaration by keyboard. The headline names
+the two responsibilities, each card names one concept, and the inspector names
+the selected declaration and its declaring document, which are visible together
+at the minimum app viewport. A missing structured relationship note does not
+prove that the Markdown body has no explanation.
 
 Ownership follows recorded containment to the nearest domain on each parent
 path. A dependency whose endpoint has missing or ambiguous responsibility is
@@ -46,39 +46,34 @@ computed before the display limit. Zero recorded cross-domain dependencies is
 not a claim of independence: the same workspace offers recorded capability
 evidence and gaps instead.
 
-The evidence question lets the reader select named capabilities directly. The
-selected capability remains in the bounded set, including a dependency-to-
-implementation continuation; focus moves to that capability when its trigger
-disappears. A project title is used only for exactly one recorded project; a
-multi-project graph identifies the entire folder. A
+The evidence question keeps the same board and selects capabilities directly.
+Each card shows its record-gap count and, in a local folder, a moved or missing
+source mark; the legend names both. A project title is used only for exactly
+one recorded project; a multi-project graph identifies the entire folder. A
 recorded implementation anchor is a source `path` or a normalized containment
 relation to a real element document. A reference-only element or reverse
 containment does not count. An implementation role without a source path remains
 an anchor in the ontology; it is not checked code. Document, anchor, definition,
 boundary and uncertainty gaps are distinct facts. A document without an available
-`meaningFindings` array is unchecked, not clean. Capability search narrows the
-All or Recorded gaps scope without replacing the selected evidence. A zero-result
-search preserves that evidence and offers a clear action; clearing or pressing
-Escape returns focus to the search field. Selecting a result is explicit, and
-that selection remains in the first six when the query is cleared. The scope
-filter is an exclusive keyboard-operable control that names each scope's count.
-Each shortened set has a named remainder action. The share of capabilities with
-an anchor lives under the count-basis disclosure.
+`meaningFindings` array is unchecked, not clean. Capability search dims the
+cards that do not match without hiding the project, changing the selected
+evidence or the counts; clearing or pressing Escape returns focus to the search
+field, and a selection made from a match stays selected. The All or Recorded
+gaps scope is an exclusive keyboard-operable control that names each scope's
+count and dims the cards outside it. The share of capabilities with an anchor
+lives under the count-basis disclosure.
 
 The selected claim links to its declaring document. A local, documented claim
 also links to the existing Map meaning editor and its typed review boundary.
 Analysis does not accept meaning or write proposed corrections itself.
 
-The implementation diagram frames the selected capability and connects it to
-each recorded element document with a branching composition line. Each element
-opens its own document and returns to the same capability. The drawing follows
-the measured card boundaries when names wrap or the layout stacks on narrow
-screens; the lines are recorded composition, not runtime execution order.
-Six elements appear initially, with explicit continuation and focus on the first
-new element. Missing element links have an unconnected empty state; source paths
-without element documents remain paths, not invented graph nodes. The global
-document-inspection count lives under the count-basis disclosure, outside this
-selected-capability diagram.
+The inspector lists the selected capability's recorded element documents. Each
+element opens its own document and returns to the same capability; the list is
+recorded composition, not runtime execution order. Six elements appear
+initially, with explicit continuation and focus on the first new element.
+Missing element links have an empty state; source paths without element
+documents remain paths, not invented concepts. The global document-inspection
+count lives under the count-basis disclosure.
 
 ## Source currentness
 

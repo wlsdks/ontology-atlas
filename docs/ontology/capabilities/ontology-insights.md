@@ -16,7 +16,7 @@ relates: [capabilities/vault-graph-query]
 A workbench where a person compares declared product relationships with their declaring documents, recorded implementation, and remaining evidence gaps.
 
 ## Includes
-- A bounded directional comparison between responsibility pairs. Each arrow names one declared relationship between real concepts; selecting a declaration keeps its source document and recorded rationale alongside it.
+- A project board: each recorded responsibility is a row, its capabilities are cards, and each arrow names one declared cross-responsibility dependency between real concepts. Selecting a declaration keeps its source document and recorded rationale alongside it.
 - Inspection of a selected capability's recorded implementation roles or path, documentary findings, and source state. Missing evidence is not proof that implementation is absent.
 - Exact document and correction entries that return to the selected claim, with visible keyboard focus.
 - Supporting review notices, Wiki evidence, guidance, and saved explanations. Scope distinguishes the bundled example, a single project, and a folder containing multiple projects.
@@ -30,11 +30,11 @@ A workbench where a person compares declared product relationships with their de
 
 ## Evidence
 - `src/views/ontology-insights/ui/OntologyInsightsPage.tsx` owns the five sections and legacy URL entry.
-- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `DependencyDiagram.tsx`, and `lib/analysis-model.ts` build the comparison and exact evidence continuation.
+- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `ProjectBoard.tsx`, `lib/analysis-board.ts`, and `lib/analysis-model.ts` build the board and exact evidence continuation.
 - `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx` exposes stored canonical references and relationship notes in the declaring document.
 - `src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx` keeps explanation archives and explicit agent requests separate from the graph.
 
 ## Uncertainty
-- Re-read against the 2026-10-10 redesign and inspected in a local browser. The focused tests and recordings establish the observed fixture interactions, not the business meaning of arbitrary records.
-- The redesigned installed Atlas app and an actual external agent explanation run were not exercised in this bounded sync. Native request behavior has fixture coverage.
+- Re-read against the 2026-10-20 project board and inspected in a local browser. The focused tests and recordings establish the observed fixture interactions, not the business meaning of arbitrary records.
+- An actual external agent explanation run was not exercised in this bounded sync. Native request behavior has fixture coverage.
 - Legacy repair helpers remain in the repository and their tests. The current page does not import them; removing the former containment and import-derived dependency claims does not delete or qualify those concepts.

@@ -388,7 +388,6 @@
       "crossCount": "declared cross-responsibility dependencies",
       "evidenceQuestion": "Which claims need a closer look?",
       "noDependencies": "No cross-responsibility dependencies are recorded. There are {count} declared dependencies in this scope; this does not establish independence.",
-      "choosePair": "Choose a responsibility connection",
       "countBasis": "What these counts mean",
       "countDetails": "{total} distinct dependency declarations: {cross} cross responsibilities, {internal} within one responsibility, {unassigned} with missing or ambiguous responsibility. Containment and loose associations are excluded. Unknown ownership is not assigned by guesswork.",
       "implementation": "RECORDED IMPLEMENTATION",
@@ -434,9 +433,6 @@
       },
       "nodeDeclarations": "{count} dependency declarations shown in this graph",
       "chooseDeclaration": "Choose a declaration",
-      "pairRailTitle": "{count, plural, one {# connection} other {# connections}}",
-      "capabilityEvidence": "IMPLEMENTATION CLAIM",
-      "chooseCapability": "Choose a capability to inspect",
       "gapsFilter": "Gaps {count}",
       "allFilter": "All {count}",
       "responsibilityMissing": "Responsibility not recorded",
@@ -448,7 +444,6 @@
       "scopeAll": "All recorded projects",
       "scopeCount": "{count} projects in this folder",
       "moreRoles": "{count} additional implementation roles",
-      "selectNodeDeclaration": "Select the first shown declaration for {name}",
       "inspectSelected": "Inspect this claim with an agent",
       "copySampleFact": "Copy example fact",
       "copySelectedCheck": "Copy read-only check",
@@ -462,9 +457,7 @@
         "unknown": "Source currentness not checked"
       },
       "documentTitle": "Analysis · Ontology Atlas",
-      "findConnection": "Search connections",
       "findCapability": "Search capabilities",
-      "searchByName": "Search by name",
       "clearSearch": "Clear",
       "searchMatches": "{count} of {total} match",
       "noSearchResults": "No matching names. Try another search.",
@@ -487,7 +480,11 @@
       "declarationStep": "Declaration {index} of {total}",
       "pathChanged": "changed {date}",
       "pathGone": "not found",
-      "pathUndated": "date not checked"
+      "pathUndated": "date not checked",
+      "board": "Project board",
+      "laneEmpty": "No capability recorded",
+      "cardGaps": "{count, plural, one {# record gap} other {# record gaps}}",
+      "markerGap": "The number beside a name counts its record gaps"
     }
   }
 }

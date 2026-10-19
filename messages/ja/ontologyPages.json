@@ -388,7 +388,6 @@
       "crossCount": "責務をまたぐ依存の宣言",
       "evidenceQuestion": "どの主張を詳しく確認しますか？",
       "noDependencies": "責務をまたぐ依存関係は記録されていません。この範囲には依存の宣言が{count}件ありますが、独立性を証明するものではありません。",
-      "choosePair": "責務間の関係を選択",
       "countBasis": "集計の基準と範囲",
       "countDetails": "重複を除いた依存の宣言{total}件のうち、責務間が{cross}件、同じ責務内が{internal}件、責務が不明または複数の関係が{unassigned}件です。包含や緩い関連は含めず、不明な責務を推測で割り当てません。",
       "implementation": "記録された実装",
@@ -434,9 +433,6 @@
       },
       "nodeDeclarations": "この図に表示された依存の宣言{count}件",
       "chooseDeclaration": "依存の宣言を選択",
-      "pairRailTitle": "関係{count}件",
-      "capabilityEvidence": "能力の実装根拠",
-      "chooseCapability": "確認する能力を選択",
       "gapsFilter": "不足{count}",
       "allFilter": "すべて{count}",
       "responsibilityMissing": "責務が未記録です",
@@ -448,7 +444,6 @@
       "scopeAll": "記録された全プロジェクト",
       "scopeCount": "このフォルダのプロジェクト{count}件",
       "moreRoles": "他に実装の役割{count}件",
-      "selectNodeDeclaration": "{name}の最初の表示宣言を選択",
       "inspectSelected": "エージェントでこの主張を確認",
       "copySampleFact": "例の事実をコピー",
       "copySelectedCheck": "読み取り専用の確認依頼をコピー",
@@ -462,9 +457,7 @@
         "unknown": "ソースの現在の状態は未確認"
       },
       "documentTitle": "分析 · Ontology Atlas",
-      "findConnection": "関係を検索",
       "findCapability": "能力を検索",
-      "searchByName": "名前で検索",
       "clearSearch": "クリア",
       "searchMatches": "{total}件中{count}件が一致",
       "noSearchResults": "一致する名前がありません。検索語を変えてください。",
@@ -487,7 +480,11 @@
       "declarationStep": "宣言{index} / {total}",
       "pathChanged": "{date}に変更",
       "pathGone": "見つかりません",
-      "pathUndated": "日付未確認"
+      "pathUndated": "日付未確認",
+      "board": "プロジェクトボード",
+      "laneEmpty": "記録された機能なし",
+      "cardGaps": "記録の不足{count}件",
+      "markerGap": "名前の横の数字は記録の不足数"
     }
   }
 }
