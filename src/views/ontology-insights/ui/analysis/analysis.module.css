@@ -2,7 +2,7 @@
 .scopeBar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.25rem; }
 .layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(19rem,24rem); gap: 2rem; align-items: start; }
 .stage { min-width: 0; }
-.listSearch { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.listSearch { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; min-width: 0; }
 .listSearch > :first-child { width: min(100%, 16rem); }
 .listSearchStatus { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: var(--control-h-sm); }
 .listSearchStatus:has(> p:empty:only-child) { min-height: 0; }
@@ -26,14 +26,14 @@
 .boardLane[data-active] { border-color: var(--color-indigo-line-a42); }
 .boardLaneTitle { display: flex; align-items: center; min-width: 0; min-height: var(--control-h-sm); padding: 0 0.5rem; color: var(--color-text-secondary); transition: color var(--motion-fast) var(--motion-ease); }
 .boardLane:is([data-active], [data-hot]) .boardLaneTitle { color: var(--color-text-primary); }
-.boardCards { display: flex; flex-wrap: wrap; gap: 0.375rem; min-width: 0; }
-.boardCards > li { position: relative; z-index: 1; }
+.boardCards { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; min-width: 0; }
+.boardCards > li { position: relative; z-index: 1; display: flex; }
 .boardCardSlot { max-width: 100%; border-radius: var(--radius-card); background: var(--color-panel); transition: opacity var(--motion-base) var(--motion-ease); }
-.boardCard { max-width: 15rem; height: var(--control-h-sm); min-height: 0; padding-block: 0; white-space: nowrap; }
-@media (any-pointer: coarse) { .boardCard { height: var(--touch-target-min); } }
+.boardCard { max-width: 15rem; height: auto; min-height: var(--control-h-sm); padding-block: 0; white-space: nowrap; }
+@media (any-pointer: coarse) { .boardCard { min-height: var(--touch-target-min); } }
 .boardCardSlot[data-quiet] .boardCard { color: var(--color-text-quaternary); }
 .boardCardSlot[data-related] .boardCard { border-color: var(--color-border-strong); color: var(--color-text-primary); }
-.boardCardSlot[data-dimmed] { opacity: 0.35; }
+.boardCardSlot[data-dimmed] .boardCard { border-color: transparent; color: var(--color-text-quaternary); }
 .boardMarkers { display: flex; flex: none; align-items: center; gap: 0.25rem; }
 .boardMarker { display: inline-block; width: 0.4375rem; height: 0.4375rem; border-radius: 50%; opacity: 0; transition: opacity var(--motion-base) var(--motion-ease); }
 .boardMarker[data-marker="moved"] { background: var(--color-status-warning); }

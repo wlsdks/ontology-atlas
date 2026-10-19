@@ -44,6 +44,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const [claimId, setClaimId] = useState<string | null>(initialClaim ?? null);
   const [claimQuery, setClaimQuery] = useState('');
   const graphStage = useRef<HTMLDivElement>(null);
+  const findingHeading = useRef<HTMLHeadingElement>(null);
   const pendingClaimFocus = useRef<string | null>(initialClaim && model.claims.some(item => item.node.id === initialClaim) ? initialClaim : null);
   const pendingEdgeFocus = useRef(Boolean(initialEdge && board.links.some(link => link.edge.id === initialEdge)));
   const [onlyGaps, setOnlyGaps] = useState(initialQuestion === 'evidence' && !initialClaim);
@@ -84,8 +85,8 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   useLayoutEffect(() => {
     const stage = graphStage.current;
     if (!evidenceQuestion && pendingEdgeFocus.current) {
-      const selected = stage?.querySelector<HTMLButtonElement>('[data-endpoint="from"]');
-      if (selected) { selected.focus(); selected.scrollIntoView({ block: 'nearest', inline: 'nearest' }); pendingEdgeFocus.current = false; }
+      const selected = stage?.querySelector<HTMLElement>('[data-endpoint="from"]') ?? findingHeading.current;
+      selected?.focus(); selected?.scrollIntoView({ block: 'nearest', inline: 'nearest' }); pendingEdgeFocus.current = false;
     }
     if (!pendingClaimFocus.current || !evidenceQuestion) return;
     const target = [...stage?.querySelectorAll<HTMLButtonElement>('[data-analysis-claim-id]') ?? []].find(node => node.dataset.analysisClaimId === pendingClaimFocus.current);
@@ -114,7 +115,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     <div className={styles.layout} data-testid="analysis-layout">
       <div ref={graphStage} className={styles.stage}>
         <div className={styles.boardToolbar}>
-          <AnalysisListSearch value={claimQuery} onChange={setClaimQuery} label={t('findCapability')} matches={matches?.size ?? 0} total={model.claims.length} selectionHidden={false} testId="analysis-claim-search" />
+          <AnalysisListSearch value={claimQuery} onChange={setClaimQuery} label={t('findCapability')} matches={matches?.size ?? 0} total={model.claims.length} testId="analysis-claim-search" />
           {evidenceQuestion ? <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <div className={styles.boardLegend} aria-hidden="true">
               {mode === 'local' ? <><span><span className={styles.boardMarker} data-marker="moved" />{t('sourceShort.moved')}</span><span><span className={styles.boardMarker} data-marker="missing" />{t('sourceShort.missing')}</span></> : null}
@@ -129,7 +130,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
       </div>
       <aside className={styles.inspector} data-testid="analysis-evidence">
         <div className={styles.inspectorHeading}>
-          <h2 data-testid="analysis-finding-heading" className="min-w-0 text-title font-[var(--font-weight-strong)]">{!evidenceQuestion && pair ? <>{name(pair.from)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(pair.to)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
+          <h2 ref={findingHeading} tabIndex={-1} data-testid="analysis-finding-heading" className="min-w-0 text-title outline-none font-[var(--font-weight-strong)]">{!evidenceQuestion && pair ? <>{name(pair.from)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(pair.to)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
           {!evidenceQuestion && board.links.length > 1 && edge ? <div role="group" aria-label={t('chooseDeclaration')} className="flex shrink-0 items-center">
             {stepButton(-1, t('previousDeclaration'), <ChevronLeft size={ICON_SIZE.lg} aria-hidden />)}
             <span data-testid="analysis-declaration-step" aria-live="polite" className="text-label tabular-nums text-[color:var(--color-text-tertiary)]">{t('declarationStep', { index: stepIndex + 1, total: board.links.length })}<span className="sr-only"> · {name(model.byId.get(edge.from)!)} → {name(model.byId.get(edge.to)!)}</span></span>

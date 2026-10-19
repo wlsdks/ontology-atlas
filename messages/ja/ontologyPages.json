@@ -435,7 +435,7 @@
       "chooseDeclaration": "依存の宣言を選択",
       "gapsFilter": "不足{count}",
       "allFilter": "すべて{count}",
-      "responsibilityMissing": "責務が未記録です",
+      "laneUnassigned": "責務なし、または複数",
       "recordingNotImplementation": "記録がないことは実装の不在を意味しません。",
       "anchorSummary": "能力{total}件のうち{anchored}件にソースのパスか実装の役割があります。",
       "rationaleShort": "この関係のメモは未記録です。",
@@ -461,7 +461,6 @@
       "clearSearch": "クリア",
       "searchMatches": "{total}件中{count}件が一致",
       "noSearchResults": "一致する名前がありません。検索語を変えてください。",
-      "selectionKept": "現在の選択内容は引き続き表示されます。",
       "showMoreItems": "さらに{count}件を表示",
       "showLessItems": "折りたたむ",
       "capabilityFilter": "能力の表示範囲",
@@ -482,7 +481,7 @@
       "pathGone": "見つかりません",
       "pathUndated": "日付未確認",
       "board": "プロジェクトボード",
-      "laneEmpty": "記録された機能なし",
+      "laneEmpty": "記録された能力なし",
       "cardGaps": "記録の不足{count}件",
       "markerGap": "名前の横の数字は記録の不足数"
     }

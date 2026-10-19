@@ -64,5 +64,15 @@ test('the capability filter supports an immediate arrow and tab sequence with no
   await page.keyboard.press('Tab');
   await expect(gaps).toHaveAttribute('aria-checked', 'true');
   await expect(all).toHaveAttribute('aria-checked', 'false');
-  await expect(page.getByTestId('analysis-claim').first()).toBeFocused();
+  const stop = page.locator('[data-testid="analysis-claim"][tabindex="0"]');
+  await expect(stop).toHaveCount(1);
+  await expect(stop).toBeFocused();
+  const first = await stop.getAttribute('data-analysis-claim-id');
+  await page.keyboard.press('ArrowRight');
+  await expect(stop).not.toHaveAttribute('data-analysis-claim-id', first!);
+  await expect(stop).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(stop).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.locator('[data-testid="analysis-claim"]:focus')).toHaveCount(0);
 });

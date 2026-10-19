@@ -18,8 +18,9 @@ The bundled example is explicitly labeled.
 
 The project board owns the screen. Each recorded responsibility is one row,
 ordered so that the most-declared pairs sit next to each other and point
-forward (exact over every order up to eight rows, local moves beyond); concepts
-with missing or ambiguous responsibility share a last row. Each row lists its
+forward (exact over every order up to eight rows, bounded local moves up to 64,
+the recorded order beyond); capabilities with no responsibility or more than
+one share a last row named for both cases. Each row lists its
 capabilities as cards, connected cards first; twelve show at once, the selected
 endpoint always among them, and a named remainder action opens the rest. Every
 thin directed line is one declared cross-responsibility `depends_on` edge;
@@ -31,8 +32,12 @@ The selected declaration draws in indigo beneath the cards, its pair's lines
 lift, and the rest stay a quiet texture. Hovering or focusing a card, or
 hovering a row's name, picks out only that card's or row's lines and their
 partner cards. Pressing a line selects its declaration; pressing a card steps
-through its declarations, outgoing first. A "Declaration n of N" stepper beside
-the inspector heading reaches every declaration by keyboard. The headline names
+through its declarations, outgoing first. The board is one Tab stop: arrow keys
+move between cards in a row and to the nearest card in the row above or below,
+and Home or End reach the ends. A "Declaration n of N" stepper beside the
+inspector heading reaches every declaration by keyboard. A saved declaration
+reopens with focus on its source card, or on the inspector heading when its
+source is a whole responsibility. The headline names
 the two responsibilities, each card names one concept, and the inspector names
 the selected declaration and its declaring document, which are visible together
 at the minimum app viewport. A missing structured relationship note does not
@@ -55,8 +60,9 @@ relation to a real element document. A reference-only element or reverse
 containment does not count. An implementation role without a source path remains
 an anchor in the ontology; it is not checked code. Document, anchor, definition,
 boundary and uncertainty gaps are distinct facts. A document without an available
-`meaningFindings` array is unchecked, not clean. Capability search dims the
-cards that do not match without hiding the project, changing the selected
+`meaningFindings` array is unchecked, not clean. Capability search quiets the
+cards that do not match, in an ink that stays readable, without hiding the
+project, changing the selected
 evidence or the counts; clearing or pressing Escape returns focus to the search
 field, and a selection made from a match stays selected. The All or Recorded
 gaps scope is an exclusive keyboard-operable control that names each scope's

@@ -30,14 +30,21 @@ test('multi-project scope and expanded declarations remain explicit and bounded'
   await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', '96');
   const orders = page.getByRole('region', { name: 'Orders', exact: true });
   await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
-  expect(await page.getByTestId('analysis-witness').count()).toBeLessThanOrEqual(13);
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
+  await expect.poll(() => page.evaluate(() => {
+    const more = document.querySelector('[data-board-node="more:lane:domain:orders"]')!.getBoundingClientRect();
+    return [...document.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')].filter(path => {
+      const start = new DOMPoint(path.getPointAtLength(0).x, path.getPointAtLength(0).y).matrixTransform(path.getScreenCTM()!);
+      return start.x >= more.left - 1 && start.x <= more.right + 1 && Math.abs(start.y - more.bottom) <= 1;
+    }).length;
+  })).toBe(1);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
   for (let press = 0; press < 13; press++) await next.click();
   await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 14 of 96');
   await expect(next).toBeFocused();
   await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
   await expect(orders.locator('[data-endpoint="from"]')).toBeVisible();
-  expect(await page.getByTestId('analysis-witness').count()).toBeLessThanOrEqual(13);
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
   const more = orders.getByRole('button', { name: 'Show 84 more', exact: true });
   await more.click();
   await expect(orders.getByTestId('analysis-claim')).toHaveCount(96);
@@ -53,12 +60,58 @@ test('a saved declaration reopens with focus on its source', async ({ page }) =>
   await expect(page.locator('[data-endpoint="from"][aria-pressed="true"]')).toBeFocused();
 });
 
+test('a saved declaration from a whole responsibility settles focus once on its heading', async ({ page }) => {
+  const files = {
+    'p.md': fixtureDocument('project', 'p', 'Project', 1, 'domains: [domains/orders, domains/stock]'),
+    'domains/orders.md': fixtureDocument('domain', 'domains/orders', 'Orders', 2, 'capabilities: [capabilities/a, capabilities/b]\ndepends_on: [capabilities/stock]'),
+    'domains/stock.md': fixtureDocument('domain', 'domains/stock', 'Inventory', 3, 'capabilities: [capabilities/stock]'),
+    'capabilities/a.md': fixtureDocument('capability', 'capabilities/a', 'Alpha', 4, 'domain: domains/orders\ndepends_on: [capabilities/stock]'),
+    'capabilities/b.md': fixtureDocument('capability', 'capabilities/b', 'Beta', 5, 'domain: domains/orders\ndepends_on: [capabilities/stock]'),
+    'capabilities/stock.md': fixtureDocument('capability', 'capabilities/stock', 'Stock check', 6, 'domain: domains/stock'),
+  };
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, files);
+  await page.goto('/en/topology/?guides=off');
+  await page.getByTestId('first-run-starter-open').click();
+  await page.getByTestId('vault-guide-pick-existing').click();
+  await expect(page.getByTestId('topology-index-panel')).toContainText('Project');
+  const edge = 'domain:orders--depends_on-->capability:stock';
+  await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
+  await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge);
+  await expect(page.locator('[data-endpoint="from"]')).toHaveCount(0);
+  await expect(page.getByTestId('analysis-finding-heading')).toBeFocused();
+  const step = page.getByTestId('analysis-declaration-step');
+  const before = await step.textContent();
+  const next = page.getByRole('button', { name: 'Next declaration', exact: true });
+  const stepper = await next.getAttribute('aria-disabled') === 'true' ? page.getByRole('button', { name: 'Previous declaration', exact: true }) : next;
+  await stepper.focus();
+  await page.keyboard.press('Enter');
+  await expect(step).not.toHaveText(before!);
+  await expect(stepper).toBeFocused();
+});
+
+test('the selected line meets both cards after the entrance under normal motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/en/ontology/insights/?guides=off');
+  await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  await expect.poll(() => page.evaluate(() => {
+    const group = document.querySelector('[data-connection="selected"] [data-edge]')!;
+    const path = group.querySelector('path')!, arrow = group.querySelector('polygon')!, matrix = path.getScreenCTM()!;
+    const start = new DOMPoint(path.getPointAtLength(0).x, path.getPointAtLength(0).y).matrixTransform(matrix);
+    const tip = new DOMPoint(arrow.points.getItem(1).x, arrow.points.getItem(1).y).matrixTransform(matrix);
+    const gap = (point: DOMPoint, box: DOMRect) => Math.hypot(Math.max(box.left - point.x, 0, point.x - box.right), Math.max(box.top - point.y, 0, point.y - box.bottom))
+      + Math.min(Math.abs(point.x - box.left), Math.abs(point.x - box.right), Math.abs(point.y - box.top), Math.abs(point.y - box.bottom));
+    return Math.max(gap(start, document.querySelector('[data-endpoint="from"]')!.getBoundingClientRect()), gap(tip, document.querySelector('[data-endpoint="to"]')!.getBoundingClientRect()));
+  })).toBeLessThanOrEqual(1);
+});
+
 test('two-hundred-percent text keeps nodes, evidence and controls inside the reading width', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   await page.goto('/en/ontology/insights/');
   await expect(page.getByTestId('analysis-witness').first()).toBeAttached();
   await page.evaluate(() => { document.documentElement.style.fontSize = '32px'; });
   await expect.poll(() => page.locator('main').evaluate(node => node.scrollWidth - node.clientWidth)).toBeLessThanOrEqual(1);
+  await expect.poll(() => page.getByTestId('analysis-claim').evaluateAll(cards => Math.max(...cards.map(card => card.scrollHeight - card.clientHeight)))).toBeLessThanOrEqual(1);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
   await next.focus(); await page.keyboard.press('Enter');
   await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 2 of');
@@ -98,8 +151,11 @@ test('the rendered node text and the selected, paired and hovered lines meet con
   expect(resting.text.length).toBeGreaterThan(0); expect(resting.lines.length).toBeGreaterThan(0);
   expect(Math.min(...resting.text)).toBeGreaterThanOrEqual(4.5);
   expect(Math.min(...resting.lines)).toBeGreaterThanOrEqual(3);
-  await page.locator('[data-endpoint="to"]').hover();
-  await expect.poll(async () => { const { lines } = await measure('[data-tone="hot"] > path'); return lines.length ? Math.min(...lines) : 0; }).toBeGreaterThanOrEqual(3);
+  const hotLines = async () => { const { lines } = await measure('[data-tone="hot"] > path'); return lines.length ? Math.min(...lines) : 0; };
+  await page.locator('[data-endpoint="to"]').focus();
+  await expect.poll(hotLines).toBeGreaterThanOrEqual(3);
+  await page.locator('[data-endpoint="from"]').hover();
+  await expect.poll(hotLines).toBeGreaterThanOrEqual(3);
   await testInfo.attach('rendered-analysis-contrast', { body: JSON.stringify(resting), contentType: 'application/json' });
 });
 

@@ -10,6 +10,8 @@ export interface AnalysisBoard { lanes: BoardLane[]; links: BoardLink[] }
 export const UNASSIGNED_LANE = 'lane:unassigned';
 export const laneAnchor = (domainId: string) => `lane:${domainId}`;
 const EXACT_LANE_SEARCH = 8;
+const LOCAL_LANE_SEARCH = 64;
+const LOCAL_PASSES = 16;
 
 function* lexicographicPermutations(size: number): Generator<number[]> {
   const order = Array.from({ length: size }, (_, index) => index);
@@ -32,7 +34,7 @@ const flowCost = (order: readonly number[], pairs: readonly LanePair[]) => {
   return pairs.reduce((sum, { a, b, weight }) => sum + weight * (Math.abs(position[a]! - position[b]!) + (position[a]! > position[b]! ? 0.5 : 0)), 0);
 };
 
-// Exact up to 8 lanes, else local moves: O(passes * D^2 * (D + P))
+// Exact to 8 lanes, else 16 local passes to 64: O(D^2 (D + P))
 export function orderLanesByFlow(domainIds: readonly string[], weights: ReadonlyMap<string, ReadonlyMap<string, number>>): string[] {
   const pairs = domainIds.flatMap((from, a) => domainIds.flatMap((to, b) => { const weight = weights.get(from)?.get(to) ?? 0; return weight ? [{ a, b, weight }] : []; }));
   let best = domainIds.map((_, index) => index), bestCost = flowCost(best, pairs);
@@ -41,8 +43,8 @@ export function orderLanesByFlow(domainIds: readonly string[], weights: Readonly
       const cost = flowCost(order, pairs);
       if (cost < bestCost) { bestCost = cost; best = order; }
     }
-  } else {
-    for (let improved = true; improved;) {
+  } else if (domainIds.length <= LOCAL_LANE_SEARCH) {
+    for (let pass = 0, improved = true; improved && pass < LOCAL_PASSES; pass++) {
       improved = false;
       for (let from = 0; from < best.length; from++) for (let to = 0; to < best.length; to++) {
         if (from === to) continue;
@@ -59,6 +61,7 @@ export function orderLanesByFlow(domainIds: readonly string[], weights: Readonly
   return best.map(index => domainIds[index]!);
 }
 
+// O(C * R + E log E)
 export function buildAnalysisBoard(model: AnalysisModel): AnalysisBoard {
   const claimById = new Map(model.claims.map(claim => [claim.node.id, claim]));
   const laneClaims = new Map<string, AnalysisClaim[]>(model.domains.map(domain => [domain.id, []]));
@@ -68,10 +71,12 @@ export function buildAnalysisBoard(model: AnalysisModel): AnalysisBoard {
     const only = domains?.size === 1 ? [...domains][0]! : null;
     (only && laneClaims.get(only) || unassigned).push(claim);
   }
-  const ownerIn = (nodeId: string, domainId: string) => {
-    if (claimById.has(nodeId)) return nodeId;
-    return laneClaims.get(domainId)?.find(claim => claim.roles.some(role => role.id === nodeId))?.node.id ?? laneAnchor(domainId);
-  };
+  const roleOwners = new Map([...laneClaims].map(([domainId, claims]) => {
+    const owners = new Map<string, string>();
+    for (const claim of claims) for (const role of claim.roles) if (!owners.has(role.id)) owners.set(role.id, claim.node.id);
+    return [domainId, owners] as const;
+  }));
+  const ownerIn = (nodeId: string, domainId: string) => claimById.has(nodeId) ? nodeId : roleOwners.get(domainId)?.get(nodeId) ?? laneAnchor(domainId);
   const weights = new Map<string, Map<string, number>>();
   const raw = model.pairs.flatMap(pair => {
     const row = weights.get(pair.from.id) ?? new Map<string, number>();

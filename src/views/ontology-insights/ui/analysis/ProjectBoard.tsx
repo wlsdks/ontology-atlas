@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { Button, OntologyMapKindGlyph } from '@/shared/ui';
@@ -9,7 +9,6 @@ import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { useStaggerOnce } from '@/shared/motion/stagger';
 import type { AnalysisBoard, BoardLink } from '../../lib/analysis-board';
 import type { AnalysisClaim } from '../../lib/analysis-model';
-import { visibleAnalysisItems } from '../../lib/analysis-selection';
 import { boardArrow, boardCurve, boardLines, type BoardLine, type CardBox } from './board-layout';
 import styles from './analysis.module.css';
 
@@ -42,6 +41,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   const relationships = mode === 'relationships';
   const [lines, setLines] = useState<BoardLine[]>([]);
   const [hover, setHover] = useState<string | null>(null);
+  const [roving, setRoving] = useState<string | null>(null);
   const [openLanes, setOpenLanes] = useState<ReadonlySet<string>>(() => new Set());
   const leavingMode = useLeaving(mode);
   const leavingEdge = useLeaving(relationships ? selectedEdge : null);
@@ -55,8 +55,12 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   }, [board.links]);
   const shown = board.lanes.map(lane => {
     const pinned = relationships ? lane.claims.find(claim => claim.node.id === selected?.from || claim.node.id === selected?.to)?.node.id ?? null : selectedClaim;
-    return matches || openLanes.has(lane.id) ? lane.claims : visibleAnalysisItems(lane.claims, LANE_LIMIT, pinned, claim => claim.node.id);
+    if (matches || openLanes.has(lane.id) || lane.claims.length <= LANE_LIMIT) return lane.claims;
+    const first = lane.claims.slice(0, LANE_LIMIT), kept = lane.claims.find(claim => claim.node.id === pinned);
+    return !kept || first.includes(kept) ? first : [...first.slice(0, LANE_LIMIT - 1), kept];
   });
+  const liveIds = new Set(shown.flat().flatMap(claim => !relationships || linksOf.has(claim.node.id) ? [claim.node.id] : []));
+  const tabStop = [roving, relationships ? selected?.from : selectedClaim].find(id => id && liveIds.has(id)) ?? liveIds.values().next().value ?? null;
   const laneOf = new Map(board.lanes.flatMap(lane => lane.claims.map(claim => [claim.node.id, lane.id] as const)));
   const onBoard = new Set(shown.flat().map(claim => claim.node.id));
   const anchor = (id: string) => onBoard.has(id) || !laneOf.has(id) ? id : `more:${laneOf.get(id)}`;
@@ -74,10 +78,10 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     if (!element || !relationships) return;
     const ends = JSON.parse(endsKey) as { id: string; from: string; to: string }[];
     const measure = () => {
-      const origin = element.getBoundingClientRect();
       const boxes = new Map<string, CardBox>([...element.querySelectorAll<HTMLElement>('[data-board-node]')].map(node => {
-        const box = node.getBoundingClientRect();
-        return [node.dataset.boardNode!, { top: box.top - origin.top, bottom: box.bottom - origin.top, left: box.left - origin.left, right: box.right - origin.left }];
+        const lane = node.closest<HTMLElement>('[data-board-lane]')!, frame = lane.getBoundingClientRect(), box = node.getBoundingClientRect();
+        const top = box.top - frame.top + lane.offsetTop, left = box.left - frame.left + lane.offsetLeft;
+        return [node.dataset.boardNode!, { top, bottom: top + box.height, left, right: left + box.width }];
       }));
       const next = boardLines(ends, boxes);
       setLines(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
@@ -85,7 +89,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
-    element.querySelectorAll('[data-board-lane]').forEach(node => observer.observe(node));
+    element.querySelectorAll('[data-board-lane], [data-board-node]').forEach(node => observer.observe(node));
     return () => observer.disconnect();
   }, [endsKey, relationships]);
 
@@ -112,6 +116,24 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     if (next) onSelectEdge(next.edge.id);
   }
 
+  function moveFocus(event: KeyboardEvent<HTMLButtonElement>) {
+    const from = event.currentTarget, cards = [...host.current?.querySelectorAll<HTMLElement>('[data-testid="analysis-claim"]:not([aria-disabled])') ?? []];
+    const index = cards.indexOf(from), centre = (node: HTMLElement) => { const box = node.getBoundingClientRect(); return box.left + box.width / 2; };
+    let next: HTMLElement | undefined;
+    if (event.key === 'ArrowRight') next = cards[index + 1];
+    else if (event.key === 'ArrowLeft') next = cards[index - 1];
+    else if (event.key === 'Home') next = cards[0];
+    else if (event.key === 'End') next = cards.at(-1);
+    else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const lanes = [...host.current?.querySelectorAll<HTMLElement>('[data-board-lane]') ?? []], step = event.key === 'ArrowDown' ? 1 : -1, x = centre(from);
+      for (let lane = lanes.indexOf(from.closest<HTMLElement>('[data-board-lane]')!) + step; !next && lane >= 0 && lane < lanes.length; lane += step) {
+        next = cards.filter(node => lanes[lane]!.contains(node)).sort((a, b) => Math.abs(centre(a) - x) - Math.abs(centre(b) - x))[0];
+      }
+    } else return;
+    event.preventDefault();
+    next?.focus();
+  }
+
   function card(claim: AnalysisClaim) {
     const id = claim.node.id, links = linksOf.get(id) ?? [];
     const endpoint = selected?.from === id ? 'from' : selected?.to === id ? 'to' : null;
@@ -123,8 +145,9 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     const dimmed = !relationships && onlyGaps && !claim.gaps.length || Boolean(matches && !matches.has(id));
     return <li key={id} className={styles.boardCardSlot} data-quiet={relationships && !links.length || undefined} data-related={!pressed && related.has(id) || undefined} data-dimmed={dimmed || undefined}>
       <button type="button" data-board-node={id} data-testid="analysis-claim" data-analysis-claim-id={id} data-endpoint={endpoint ?? undefined}
-        aria-pressed={live ? pressed : undefined} aria-disabled={live ? undefined : true} tabIndex={live ? undefined : -1} aria-label={label} title={name(claim.node)}
+        aria-pressed={live ? pressed : undefined} aria-disabled={live ? undefined : true} tabIndex={id === tabStop ? 0 : -1} aria-label={label} title={name(claim.node)}
         onClick={live ? relationships ? () => selectFromCard(id) : () => onSelectClaim(id) : undefined} {...(relationships && live ? hoverProps(id) : {})}
+        onFocus={live ? () => { setRoving(id); if (relationships) setHover(id); } : undefined} onKeyDown={live ? moveFocus : undefined}
         className={controlClass({ shape: 'card', size: 'md', tone: pressed ? 'accentOnTint' : 'secondary', active: pressed, hoverSurface: live ? 'lift' : undefined, hoverBorder: live ? 'strong' : undefined, className: `${styles.boardCard}${endpoint === 'to' ? ' structure-link-arrival' : ''}` })}>
         <span className="min-w-0 truncate">{name(claim.node)}</span>
         {marker || claim.gaps.length ? <span className={styles.boardMarkers} aria-hidden="true">
@@ -150,7 +173,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
       return <section key={lane.id} data-board-lane={lane.id} data-active={activeLanes.has(index) || undefined} data-hot={hoveredRow === index || undefined} aria-labelledby={`board-lane-${index}`} className={`${styles.boardLane} ${motion.className ?? ''}`} style={motion.style}>
         <p id={`board-lane-${index}`} className={`${styles.boardLaneTitle} text-body font-[var(--font-weight-strong)]`}
           {...(relationships ? { onPointerEnter: () => setHover(`${ROW_HOVER}${index}`), onPointerLeave: () => setHover(null) } : {})}>
-          <span data-board-node={lane.id} className="flex min-w-0 items-center gap-2">{lane.domain ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}<span className="min-w-0 truncate">{lane.domain ? name(lane.domain) : t('responsibilityMissing')}</span></span>
+          <span data-board-node={lane.id} className="flex min-w-0 items-center gap-2">{lane.domain ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}<span className="min-w-0 truncate">{lane.domain ? name(lane.domain) : t('laneUnassigned')}</span></span>
         </p>
         <ul className={styles.boardCards}>
           {cards.map(card)}
