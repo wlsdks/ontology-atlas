@@ -35,6 +35,6 @@ A workbench where a person compares declared product relationships with their de
 - `src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx` keeps explanation archives and explicit agent requests separate from the graph.
 
 ## Uncertainty
-- Re-read against the 2026-10-20 project board and inspected in a local browser. The focused tests and recordings establish the observed fixture interactions, not the business meaning of arbitrary records.
-- The project board was not exercised in the installed Atlas app, whose WebView did not render while the display was locked, and an actual external agent explanation run was not exercised. Native request behavior has fixture coverage.
+- Re-read against the 2026-10-20 project board and inspected in a local browser and a local build of the macOS app. The focused tests and recordings establish the observed fixture interactions, not the business meaning of arbitrary records.
+- An actual external agent explanation run was not exercised. Native request behavior has fixture coverage.
 - Legacy repair helpers remain in the repository and their tests. The current page does not import them; removing the former containment and import-derived dependency claims does not delete or qualify those concepts.

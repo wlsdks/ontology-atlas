@@ -107,6 +107,18 @@ test('the selected line meets both cards after the entrance under normal motion'
   })).toBeLessThanOrEqual(1);
 });
 
+test('every line layer clips against card cut-outs defined in its own svg', async ({ page }) => {
+  await page.goto('/en/ontology/insights/?guides=off');
+  await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  await expect.poll(() => page.getByTestId('analysis-board').evaluate(board => {
+    const clipped = [...board.querySelectorAll<SVGGElement>('[clip-path]')];
+    return board.querySelectorAll(':scope > svg').length === 1 && clipped.length > 0 && clipped.every(group => {
+      const clip = document.getElementById(group.getAttribute('clip-path')!.match(/#([^)]+)/)?.[1] ?? '');
+      return clip instanceof SVGClipPathElement && clip.ownerSVGElement === group.ownerSVGElement;
+    });
+  })).toBe(true);
+});
+
 test('two-hundred-percent text keeps nodes, evidence and controls inside the reading width', async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   await page.goto('/en/ontology/insights/');

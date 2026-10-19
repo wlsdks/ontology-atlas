@@ -9,7 +9,7 @@ import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { useStaggerOnce } from '@/shared/motion/stagger';
 import type { AnalysisBoard, BoardLink } from '../../lib/analysis-board';
 import type { AnalysisClaim } from '../../lib/analysis-model';
-import { boardArrow, boardCurve, boardLines, type BoardLine, type CardBox } from './board-layout';
+import { boardArrow, boardCurve, boardCutout, boardLines, type BoardLine, type CardBox } from './board-layout';
 import styles from './analysis.module.css';
 
 export type BoardMarker = 'moved' | 'missing';
@@ -41,7 +41,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   const relationships = mode === 'relationships';
   const [lines, setLines] = useState<BoardLine[]>([]);
   const [holes, setHoles] = useState<CardBox[]>([]);
-  const mask = `board-mask-${useId().replace(/[^\w-]/g, '')}`;
+  const clip = `board-clip-${useId().replace(/[^\w-]/g, '')}`;
   const [hover, setHover] = useState<string | null>(null);
   const [roving, setRoving] = useState<string | null>(null);
   const [openLanes, setOpenLanes] = useState<ReadonlySet<string>>(() => new Set());
@@ -164,20 +164,17 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
 
   return <div ref={host} className={styles.board} data-testid="analysis-board" data-mode={mode} role="group" aria-label={t('board')}>
     <svg className={styles.boardLines} data-hovering={hovered.length ? true : undefined} aria-hidden="true">
-      <defs><mask id={mask} maskUnits="userSpaceOnUse">
-        <rect width="100%" height="100%" fill="white" />
-        {holes.map((box, index) => <rect key={index} x={box.left} y={box.top} width={box.right - box.left} height={box.bottom - box.top} fill="black" />)}
-      </mask></defs>
-      <g mask={`url(#${mask})`} className={styles.lineGroups}>
+      <defs><clipPath id={clip}><path clipRule="evenodd" d={boardCutout(holes)} /></clipPath></defs>
+      <g clipPath={`url(#${clip})`} className={styles.lineGroups}>
         {relationships ? board.links.map(link => { const line = lineById.get(link.edge.id); return line ? connection(line, TONE_CLASS[tone(link)], true, tone(link)) : null; }) : null}
         {!relationships && leavingMode === 'relationships' ? <g className="structure-link-out">{lines.map(line => connection(line, styles.connection, false))}</g> : null}
       </g>
       {relationships ? lines.map(line => <path key={`hit:${line.id}`} data-testid="analysis-witness" data-edge={line.id} className={styles.lineHit} d={boardCurve(line)} onClick={() => onSelectEdge(line.id)} {...hoverProps(line.id)} />) : null}
+      <g clipPath={`url(#${clip})`}>
+        {leaving ? <g key={`out:${leaving.id}`} className={`structure-link-out ${styles.selectedConnection}`}>{connection(leaving, '', false)}</g> : null}
+        {active ? <g key={`on:${active.id}`} data-connection="selected" className={styles.selectedConnection}>{connection(active, '', true)}</g> : null}
+      </g>
     </svg>
-    <svg className={styles.boardLight} aria-hidden="true"><g mask={`url(#${mask})`}>
-      {leaving ? <g key={`out:${leaving.id}`} className={`structure-link-out ${styles.selectedConnection}`}>{connection(leaving, '', false)}</g> : null}
-      {active ? <g key={`on:${active.id}`} data-connection="selected" className={styles.selectedConnection}>{connection(active, '', true)}</g> : null}
-    </g></svg>
     {board.lanes.map((lane, index) => {
       const motion = stagger(lane.id, index), cards = shown[index]!, hidden = lane.claims.length - cards.length;
       return <section key={lane.id} data-board-lane={lane.id} data-active={activeLanes.has(index) || undefined} data-hot={hoveredRow === index || undefined} aria-labelledby={`board-lane-${index}`} className={`${styles.boardLane} ${motion.className ?? ''}`} style={motion.style}>
