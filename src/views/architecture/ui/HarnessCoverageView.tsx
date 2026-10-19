@@ -377,9 +377,6 @@ function DocumentReachBlock({
           label={t('reachGuides')}
         >
           <CensusBigNumber scale="section" value={reach.guides} testId="harness-reach-number" />
-          {reach.mirroredGuides > 0 ? (
-            <CensusSubStat label={t('reachMirroredLabel')} value={reach.mirroredGuides} />
-          ) : null}
         </CensusTile>
 
         <CensusTile

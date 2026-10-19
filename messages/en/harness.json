@@ -142,7 +142,6 @@
   "coverageGapGated": "domains no gate names",
   "coverageGapWatched": "domains no check names",
   "coverageEverywhereStat": "reaches every domain",
-  "reachMirroredLabel": "the Codex copy of a declared pair",
   "reachNamedDirectLabel": "named by a guide directly",
   "anatomyTitle": "Harness structure",
   "anatomyCaption": "Guidance, gates and checks found in the repository's files, placed by how they relate to an agent's work. Counts are recorded parts, not runs or scores.",

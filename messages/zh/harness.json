@@ -142,7 +142,6 @@
   "coverageGapGated": "没有拦截规则提到的领域",
   "coverageGapWatched": "没有检查提到的领域",
   "coverageEverywhereStat": "覆盖所有领域",
-  "reachMirroredLabel": "已声明配对的 Codex 副本",
   "reachNamedDirectLabel": "被指南直接提到",
   "anatomyTitle": "Harness 结构",
   "anatomyCaption": "在仓库文件中找到的指引、拦截和检查，按它们与智能体工作的关系排列。数字是已记录的部分，不是运行次数或评分。",
