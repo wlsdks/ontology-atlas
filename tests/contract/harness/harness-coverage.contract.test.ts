@@ -185,7 +185,7 @@ describe("the coverage matrix over this repository", () => {
         printTo,
         [
           `\n— authored Markdown: ${reach.total} (excluding ${reach.excluded.join(", ") || "nothing"}${reach.truncated ? ", walk truncated" : ""})`,
-          `  guides: ${reach.guides} (${reach.mirroredGuides} of them the Codex mirror of a declared pair)`,
+          `  guides: ${reach.guides}`,
           `  named by a guide: ${reach.named}`,
           `  named by nothing: ${reach.unnamed}`,
           `  where: ${reach.unnamedByFolder.slice(0, 12).map((row) => `${row.folder} ${row.count}`).join(" · ")}`,

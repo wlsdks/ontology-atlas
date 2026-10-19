@@ -142,7 +142,6 @@
   "coverageGapGated": "ゲートが挙げていないドメイン",
   "coverageGapWatched": "チェックが挙げていないドメイン",
   "coverageEverywhereStat": "すべてのドメインに及ぶ",
-  "reachMirroredLabel": "宣言済みペアのCodex側コピー",
   "reachNamedDirectLabel": "ガイドが直接挙げている",
   "anatomyTitle": "ハーネスの構造",
   "anatomyCaption": "リポジトリのファイルから見つかったガイダンス、ゲート、チェックを、エージェントの作業との関わりで並べています。数えているのは記録されたパーツで、実行回数やスコアではありません。",

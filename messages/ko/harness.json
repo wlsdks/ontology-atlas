@@ -142,7 +142,6 @@
   "coverageGapGated": "어떤 차단도 부르지 않는 도메인",
   "coverageGapWatched": "어떤 검사도 부르지 않는 도메인",
   "coverageEverywhereStat": "모든 도메인에 닿는 것",
-  "reachMirroredLabel": "선언된 짝의 Codex 사본",
   "reachNamedDirectLabel": "지침이 직접 부른 것",
   "anatomyTitle": "하네스 구조",
   "anatomyCaption": "저장소 파일에서 찾은 지침·차단·검사를 에이전트 작업과의 관계에 따라 놓았어요. 숫자는 찾은 근거의 수이고, 실행 기록이나 점수가 아니에요.",

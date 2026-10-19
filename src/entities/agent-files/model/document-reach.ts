@@ -14,8 +14,6 @@ export interface DocumentReach {
   guides: number;
   /** Documents a guide names directly. */
   namedDirect: number;
-  /** Codex copies of declared byte-identical skills, so they are not counted as distinct guides. */
-  mirroredGuides: number;
   named: number;
   unnamed: number;
   /** Unnamed documents by folder, most first. */
@@ -116,7 +114,6 @@ export async function buildDocumentReach({
     total: markdownPaths.length,
     guides: guides.length,
     namedDirect,
-    mirroredGuides: guides.filter((path) => path.startsWith('.agents/skills/')).length,
     named: named.length,
     unnamed: unnamed.length,
     unnamedByFolder: [...byFolder]
