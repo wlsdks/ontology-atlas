@@ -197,7 +197,7 @@ test("desktop smoke chunks prove current route meaning", () => {
     "/ontology/insights": [
       "relationship-analysis",
       "claim-evidence",
-      "analysis-dependency-diagram",
+      "analysis-board",
     ],
   });
 
@@ -346,7 +346,7 @@ test("desktop smoke detects a missing current component marker", () => {
   const outDir = makeCurrentOut();
   const chunkPath = routeChunkPath("ko", "/ontology/insights");
   const chunk = fs.readFileSync(path.join(outDir, chunkPath), "utf8");
-  write(outDir, chunkPath, chunk.replace("analysis-dependency-diagram", ""));
+  write(outDir, chunkPath, chunk.replace("analysis-board", ""));
 
   const report = evaluateDesktopSmoke({
     outDir,

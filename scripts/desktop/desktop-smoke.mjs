@@ -147,7 +147,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/ontology/insights": [
     "relationship-analysis",
     "claim-evidence",
-    "analysis-dependency-diagram",
+    "analysis-board",
   ],
 };
 
