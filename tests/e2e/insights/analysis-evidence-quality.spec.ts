@@ -4,6 +4,7 @@ import { stubDirectoryPicker } from '../vault-picker-stub';
 import { openFolderFromFirstRun } from '../open-folder';
 import { FIXTURE_VAULT } from '../fixture-vault';
 import { installLibraryWorkHarness } from '../library-work-harness';
+import { waitForAnimationsDone } from '../settle';
 
 const uid = (n: number) => `f0000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 const fixtureDocument = (kind: string, slug: string, title: string, n: number, fields: string) => `---\nuid: ${uid(n)}\nkind: ${kind}\nslug: ${slug}\ntitle: ${title}\n${fields}\n---\n${title} performs its recorded responsibility in this example.\n`;
@@ -94,6 +95,7 @@ test('the selected line meets both cards after the entrance under normal motion'
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/en/ontology/insights/?guides=off');
   await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  await waitForAnimationsDone(page.getByTestId('analysis-board'));
   await expect.poll(() => page.evaluate(() => {
     const group = document.querySelector('[data-connection="selected"] [data-edge]')!;
     const path = group.querySelector('path')!, arrow = group.querySelector('polygon')!, matrix = path.getScreenCTM()!;

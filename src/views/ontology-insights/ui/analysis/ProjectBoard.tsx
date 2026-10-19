@@ -117,6 +117,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   }
 
   function moveFocus(event: KeyboardEvent<HTMLButtonElement>) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     const from = event.currentTarget, cards = [...host.current?.querySelectorAll<HTMLElement>('[data-testid="analysis-claim"]:not([aria-disabled])') ?? []];
     const index = cards.indexOf(from), centre = (node: HTMLElement) => { const box = node.getBoundingClientRect(); return box.left + box.width / 2; };
     let next: HTMLElement | undefined;
@@ -143,7 +144,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     const state = [marker ? t(`sourceShort.${marker}`) : null, claim.gaps.length ? t('cardGaps', { count: claim.gaps.length }) : null].filter(Boolean).join(' · ');
     const label = relationships ? links.length ? `${name(claim.node)} · ${t('nodeDeclarations', { count: links.length })}` : name(claim.node) : [name(claim.node), state].filter(Boolean).join(' · ');
     const dimmed = !relationships && onlyGaps && !claim.gaps.length || Boolean(matches && !matches.has(id));
-    return <li key={id} className={styles.boardCardSlot} data-quiet={relationships && !links.length || undefined} data-related={!pressed && related.has(id) || undefined} data-dimmed={dimmed || undefined}>
+    return <li key={id} className={styles.boardCardSlot} data-quiet={relationships && !links.length || undefined} data-related={!pressed && related.has(id) || undefined} data-dimmed={dimmed && !pressed || undefined}>
       <button type="button" data-board-node={id} data-testid="analysis-claim" data-analysis-claim-id={id} data-endpoint={endpoint ?? undefined}
         aria-pressed={live ? pressed : undefined} aria-disabled={live ? undefined : true} tabIndex={id === tabStop ? 0 : -1} aria-label={label} title={name(claim.node)}
         onClick={live ? relationships ? () => selectFromCard(id) : () => onSelectClaim(id) : undefined} {...(relationships && live ? hoverProps(id) : {})}
