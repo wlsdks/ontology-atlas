@@ -48,8 +48,8 @@ and points at the sensors view.
 
 **Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
 guide file or directory found (path, file count, size, how many files differ from an existing
-twin, whether a file has no twin, and how many files the twin has that the folder lacks
-(`harness.pairFilesMissing`)), then one row per hook config, which says wired only when every script it names is
+twin, how many have no twin (`harness.pairFilesNoTwin`; the file's own row says `harness.driftOneSided`),
+and how many files the twin has that the folder lacks (`harness.pairFilesMissing`)), then one row per hook config, which says wired only when every script it names is
 on disk and says so when a command names no script file (`harness.hookUnresolved`). A row's status
 tags wrap below its name rather than truncate it. The detail on the right holds the selected
 row's facts, and each pane scrolls on its own, so the page itself does not scroll at 1512x900. A

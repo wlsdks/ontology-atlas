@@ -55,9 +55,9 @@ test.describe("harness guides workbench", () => {
     await openGuides(page, { source: ONE_SIDED_BRIEF_SOURCE, locale: "en" });
     const list = page.getByTestId("harness-guide-list-pane");
     await expect(list.locator("[data-guide-item]", { hasText: "scout.md" })).toHaveCount(1);
-    await expect(
-      page.getByTestId("harness-guide-row-claude-agents").locator("[data-guide-item]", { hasText: "scout.md" }),
-    ).toContainText("No twin");
+    const holding = page.getByTestId("harness-guide-row-claude-agents").locator("[data-guide-item]");
+    await expect(holding.first()).toContainText("1 file has no twin");
+    await expect(holding.filter({ hasText: "scout.md" })).toContainText("No twin");
 
     const lacking = page.getByTestId("harness-guide-row-agents-agents").locator("[data-guide-item]");
     await expect(lacking).toContainText("1 file missing");
@@ -66,8 +66,9 @@ test.describe("harness guides workbench", () => {
     const detail = page.getByTestId("harness-guide-detail");
     await expect(detail).not.toContainText("Same content");
     await expect(detail).not.toContainText("No twin");
-    await expect(detail.getByTestId("harness-pair-missing")).toContainText("present in .claude/agents/");
-    await expect(detail.getByTestId("harness-pair-missing")).toContainText("scout.md");
+    await expect(detail.getByTestId("harness-pair-missing")).toHaveText("scout.md");
+    const pair = detail.locator("dd").filter({ has: page.getByTestId("harness-pair-missing") });
+    expect((await pair.innerText()).split(".claude/agents/").length - 1, "the twin folder is named twice").toBe(1);
   });
 
   test("the view opens on a file that differs from its twin, past a folder of one-sided files", async ({ page }) => {

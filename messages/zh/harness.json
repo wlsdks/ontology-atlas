@@ -44,7 +44,7 @@
   "driftOneSided": "无配对",
   "driftOnlyIn": "只在 {dir} 中，配对文件夹里没有。",
   "pairFilesMissing": "缺少 {count} 个文件",
-  "pairMissingList": "{dir} 中有、这里没有的文件：",
+  "pairFilesNoTwin": "{count} 个文件无配对",
   "driftFilesIn": "{path} 中有差异的文件",
   "driftLineMark": "另一个文件中没有的行会高亮显示。",
   "hookScripts": "{count} 个脚本",

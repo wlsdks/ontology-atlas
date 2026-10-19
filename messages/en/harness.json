@@ -44,7 +44,7 @@
   "driftOneSided": "No twin",
   "driftOnlyIn": "Only in {dir}; the twin folder has no copy.",
   "pairFilesMissing": "{count, plural, one {# file missing} other {# files missing}}",
-  "pairMissingList": "Missing here, present in {dir}:",
+  "pairFilesNoTwin": "{count, plural, one {# file has no twin} other {# files have no twin}}",
   "driftFilesIn": "Differing files in {path}",
   "driftLineMark": "Lines the other file does not have are highlighted.",
   "hookScripts": "{count, plural, one {# script} other {# scripts}}",

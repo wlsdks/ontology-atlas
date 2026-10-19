@@ -44,7 +44,7 @@
   "driftOneSided": "ペアなし",
   "driftOnlyIn": "{dir}にだけあり、ペアのフォルダーにはありません。",
   "pairFilesMissing": "欠けているファイル{count}件",
-  "pairMissingList": "{dir}にはあり、ここにはないファイル：",
+  "pairFilesNoTwin": "ペアのないファイル{count}件",
   "driftFilesIn": "{path}内の違いのあるファイル",
   "driftLineMark": "もう一方のファイルにない行を明るく表示します。",
   "hookScripts": "スクリプト{count}件",

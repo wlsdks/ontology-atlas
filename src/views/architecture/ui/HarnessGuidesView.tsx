@@ -270,7 +270,7 @@ export function HarnessGuidesView({
                               ) : null}
                               {row.driftFiles.length > differing ? (
                                 <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
-                                  {t('driftOneSided')}
+                                  {t('pairFilesNoTwin', { count: row.driftFiles.length - differing })}
                                 </span>
                               ) : null}
                               {row.missingFiles.length > 0 ? (

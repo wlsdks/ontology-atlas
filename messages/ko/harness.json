@@ -44,7 +44,7 @@
   "driftOneSided": "짝 없음",
   "driftOnlyIn": "{dir}에만 있고 짝 폴더에는 없어요.",
   "pairFilesMissing": "빠진 파일 {count}개",
-  "pairMissingList": "{dir}에는 있고 여기에는 없는 파일:",
+  "pairFilesNoTwin": "짝 없는 파일 {count}개",
   "driftFilesIn": "{path} 안의 차이 파일",
   "driftLineMark": "다른 쪽 파일에 없는 줄은 밝게 표시해요.",
   "hookScripts": "스크립트 {count}개",

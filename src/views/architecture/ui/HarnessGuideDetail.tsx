@@ -147,7 +147,9 @@ function PairFact({ row, twin, t }: { row: GuideRow; twin: string; t: TranslateF
           </span>
         ) : null}
         {oneSided > 0 ? (
-          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>{t('driftOneSided')}</span>
+          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+            {t('pairFilesNoTwin', { count: oneSided })}
+          </span>
         ) : null}
         {missing > 0 ? (
           <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
@@ -161,8 +163,7 @@ function PairFact({ row, twin, t }: { row: GuideRow; twin: string; t: TranslateF
       </p>
       {missing > 0 ? (
         <div data-testid="harness-pair-missing">
-          <p className="text-label text-[color:var(--color-text-tertiary)]">{t('pairMissingList', { dir: `${twin}/` })}</p>
-          <ul className="mt-1 flex flex-col">
+          <ul className="flex flex-col">
             {row.missingFiles.map((label) => (
               <li
                 key={label}
