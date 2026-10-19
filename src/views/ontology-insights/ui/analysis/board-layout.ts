@@ -34,8 +34,11 @@ export function boardLines(links: readonly BoardEnds[], boxes: ReadonlyMap<strin
   });
   const slots = placed.map(() => [0, 0]);
   for (const group of groups.values()) {
-    group.sort((a, b) => a.far - b.far || a.index - b.index);
-    group.forEach((entry, rank) => { slots[entry.index]![entry.end] = rank - (group.length - 1) / 2; });
+    const arrivals = group.filter(entry => entry.end === 1);
+    const seats = group.filter(entry => entry.end === 0).map(entry => ({ far: entry.far, index: entry.index, entries: [entry] }));
+    if (arrivals.length) seats.push({ far: arrivals.reduce((sum, entry) => sum + entry.far, 0) / arrivals.length, index: arrivals[0]!.index, entries: arrivals });
+    seats.sort((a, b) => a.far - b.far || a.index - b.index);
+    seats.forEach((seat, rank) => { for (const entry of seat.entries) slots[entry.index]![entry.end] = rank - (seats.length - 1) / 2; });
   }
   const port = (index: number, end: 0 | 1) => {
     const row = placed[index]!, box = end ? row.to : row.from, side = row.sides[end];
@@ -53,6 +56,12 @@ export function boardLines(links: readonly BoardEnds[], boxes: ReadonlyMap<strin
 }
 
 const round = (value: number) => Math.round(value * 10) / 10;
+const CUTOUT_REACH = 1e5;
+
+export function boardCutout(holes: readonly CardBox[]) {
+  const outline = (box: CardBox) => `M ${round(box.left)} ${round(box.top)} H ${round(box.right)} V ${round(box.bottom)} H ${round(box.left)} Z`;
+  return [outline({ left: -CUTOUT_REACH, top: -CUTOUT_REACH, right: CUTOUT_REACH, bottom: CUTOUT_REACH }), ...holes.map(outline)].join(' ');
+}
 
 export function boardCurve(line: BoardLine) {
   if (line.axis === 'x') {

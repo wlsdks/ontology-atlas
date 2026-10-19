@@ -11,10 +11,10 @@
 .boardToolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; margin-bottom: 1.25rem; }
 .boardLegend { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
 .boardLegend > span { display: inline-flex; align-items: center; gap: 0.375rem; }
-.board { position: relative; display: flex; flex-direction: column; gap: 1.25rem; }
-.boardLines, .boardLight { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.boardLines path, .boardLight path { fill: none; stroke: var(--line-ink); stroke-width: var(--line-width); transition: stroke var(--motion-fast) var(--motion-ease); }
-.boardLines polygon, .boardLight polygon { fill: var(--line-ink); stroke: none; transition: fill var(--motion-fast) var(--motion-ease); }
+.board { position: relative; display: flex; flex-direction: column; gap: 2rem; }
+.boardLines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.boardLines path { fill: none; stroke: var(--line-ink); stroke-width: var(--line-width); transition: stroke var(--motion-fast) var(--motion-ease); }
+.boardLines polygon { fill: var(--line-ink); stroke: none; transition: fill var(--motion-fast) var(--motion-ease); }
 .lineGroups > g { transition: opacity var(--motion-fast) var(--motion-ease); }
 .boardLines[data-hovering] .lineGroups > g:not(.hotConnection) { opacity: 0.3; }
 .boardLines .lineHit { stroke: transparent; stroke-width: 14; pointer-events: stroke; cursor: pointer; }
@@ -22,10 +22,10 @@
 .pairConnection { --line-ink: var(--color-text-tertiary); --line-width: 1.25; }
 .hotConnection { --line-ink: var(--color-text-secondary); --line-width: 1.5; }
 .selectedConnection { --line-ink: var(--color-indigo-line-a90); --line-width: 2.5; }
-.boardLane { display: grid; grid-template-columns: 8.5rem minmax(0,1fr); gap: 0.75rem; align-items: start; padding: 0.375rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-card); background: var(--color-overlay-1); }
+.boardLane { display: grid; grid-template-columns: 8.5rem minmax(0,1fr); gap: 0.75rem; align-items: start; padding: 0.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-card); background: var(--color-overlay-1); }
 .boardLaneTitle { display: flex; align-items: center; min-width: 0; min-height: var(--control-h-sm); padding: 0 0.5rem; color: var(--color-text-secondary); transition: color var(--motion-fast) var(--motion-ease); }
 .boardLane:is([data-active], [data-hot]) .boardLaneTitle { color: var(--color-text-primary); }
-.boardCards { display: flex; flex-wrap: wrap; align-items: center; gap: 0.375rem; min-width: 0; }
+.boardCards { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; }
 .boardCards > li { position: relative; z-index: 1; display: flex; }
 .boardCardSlot { max-width: 100%; }
 .boardCard { max-width: 15rem; height: auto; min-height: var(--control-h-sm); padding-block: 0; white-space: nowrap; }
