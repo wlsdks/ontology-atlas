@@ -280,25 +280,6 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
 ];
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
-/**
- * **Figures that outrank the title on purpose — one route, named elements, measured.**
- *
- * Narrower than `TITLE_EXEMPT`: the rule still runs on the route and still demands a
- * painted h1, and only the listed elements may sit at or above it. Everything else
- * on the screen is measured as usual. The `titleGuard` below proves the figures are
- * still there and still larger, so a redesign that shrinks them turns this red first
- * and sends a person back to this list.
- */
-const TITLE_FIGURES: ReadonlyArray<{ route: string; testids: readonly string[]; why: string }> = [
-  {
-    route: "/ko/ontology/insights/",
-    testids: ["analysis-finding-heading"],
-    why:
-      "Decision 488f9b25 makes the selected responsibility pair the analytical finding. " +
-      "Its named hero may outrank the navigation title; the nonempty figure guard below remains active.",
-  },
-];
-const TITLE_FIGURE_IDS = new Map(TITLE_FIGURES.map((f) => [f.route, new Set(f.testids)]));
 
 /**
  * **Exceptions to ② — same discipline.**
@@ -354,9 +335,7 @@ test.describe("screen hierarchy: every audited route", () => {
       ).toBeGreaterThan(0);
       routesWithTitle += 1;
 
-      const figures = TITLE_FIGURE_IDS.get(route);
       for (const o of m.offenders) {
-        if (figures && o.testid && figures.has(o.testid)) continue;
         titleViolations.push(`${route} → "${o.text}" ${o.px}px ≥ title ${m.titlePx}px (${o.testid ?? "-"})`);
       }
     }
@@ -397,26 +376,6 @@ test.describe("screen hierarchy: every audited route", () => {
         `${route}: a drawn title now exists; remove this line from TITLE_EXEMPT and turn the rule on`,
       ).toBe(0);
       expect(m.titlePx, `${route}: a baseline now exists, so the exception is stale`).toBe(0);
-    }
-  });
-
-  /**
-   * The figure exception pays the same way: the numerals must still be painted,
-   * still be the listed elements, and still stand above the title. If the census
-   * strip is redesigned below 23px the row in `TITLE_FIGURES` is dead weight and
-   * this turns red first.
-   */
-  test("the selected Analysis finding remains larger than its navigation title", async ({ page }) => {
-    for (const figure of TITLE_FIGURES) {
-      const m = await measureRoute(page, figure.route);
-      expect(m.titlePx, `${figure.route}: no drawn h1; a numeric exception needs a title to hold`).toBeGreaterThan(0);
-      const seen = new Set(m.offenders.map((o) => o.testid));
-      for (const id of figure.testids) {
-        expect(
-          seen.has(id),
-          `${figure.route}: ${id} is not larger than the title; remove this line from TITLE_FIGURES and turn the rule on`,
-        ).toBe(true);
-      }
     }
   });
 

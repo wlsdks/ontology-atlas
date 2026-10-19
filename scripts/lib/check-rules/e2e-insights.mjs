@@ -38,6 +38,8 @@ export const rules = [
     matches: [
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/AnalysisWorkspace\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/ProjectBoard\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/analysis\.module\.css$/,
       /^src\/shared\/ui\/fields\/segmented-control\.tsx$/,
     ],
   },
@@ -49,7 +51,9 @@ export const rules = [
       /^src\/views\/ontology-insights\/lib\/analysis-model\.ts$/,
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/AnalysisWorkspace\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/analysis\/PairRail\.tsx$/,
+      /^src\/views\/ontology-insights\/lib\/analysis-board\.ts$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/ProjectBoard\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/board-layout\.ts$/,
     ],
   },
 ];

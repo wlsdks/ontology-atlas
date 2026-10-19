@@ -6,22 +6,20 @@ import { Button } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import styles from './analysis.module.css';
 
-export function AnalysisListSearch({ value, onChange, label, matches, total, selectionHidden, testId }: {
+export function AnalysisListSearch({ value, onChange, label, matches, total, testId }: {
   value: string; onChange: (value: string) => void; label: string;
-  matches: number; total: number; selectionHidden: boolean; testId: string;
+  matches: number; total: number; testId: string;
 }) {
   const t = useTranslations('ontologyPages.insights.analysis');
   const input = useRef<HTMLInputElement>(null);
   function clear() { onChange(''); input.current?.focus(); }
   return <div className={styles.listSearch}>
-    <Input ref={input} type="search" label={label} value={value} placeholder={t('searchByName')} data-testid={testId}
+    <Input ref={input} type="search" aria-label={label} value={value} placeholder={label} data-testid={testId}
       onChange={event => onChange(event.target.value)}
       onKeyDown={event => { if (event.key === 'Escape' && value) { event.preventDefault(); event.stopPropagation(); clear(); } }} />
     <div className={styles.listSearchStatus}>
-      <p role="status" aria-atomic="true" className="text-label text-[color:var(--color-text-secondary)]">{value.trim() ? t('searchMatches', { count: matches, total }) : null}</p>
+      <p role="status" aria-atomic="true" className="text-label text-[color:var(--color-text-secondary)]">{!value.trim() ? null : matches ? t('searchMatches', { count: matches, total }) : t('noSearchResults')}</p>
       {value ? <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={clear} data-testid={`${testId}-clear`}>{t('clearSearch')}</Button> : null}
     </div>
-    {value.trim() && !matches ? <p className="text-body text-[color:var(--color-text-secondary)]">{t('noSearchResults')}</p> : null}
-    {selectionHidden ? <p className="text-label text-[color:var(--color-text-tertiary)]">{t('selectionKept')}</p> : null}
   </div>;
 }
