@@ -37,7 +37,7 @@
   }
 
   .motion-swap-out {
-    animation: overlayFadeOut var(--motion-fast) var(--motion-ease) both;
+    animation: overlayFadeOut var(--motion-fast) var(--motion-ease-exit) both;
   }
 
   .motion-work-fill {
