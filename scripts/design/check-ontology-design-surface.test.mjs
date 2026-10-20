@@ -93,10 +93,9 @@ function writeCleanWorkbenchFixtures(root) {
     "const ontologyWrite = atlasMode === 'write';",
   );
   writeFixture(root, "src/views/ontology-insights/ui/OntologyInsightsPage.tsx", '<main data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence" role="tabpanel"><TabBar /><AnalysisWorkspace /></main>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref</aside>');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref<button data-testid="analysis-inspect-selected" onClick={() => onInspect(inspection.text)} /><CopyControl testId="analysis-copy-selected" /></aside>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", '<div data-testid="analysis-board"><path data-testid="analysis-witness" /></div>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", '<InsightsAgentDock /> planInsightsAgentPrompt');
-  writeFixture(root, "src/views/ontology-insights/ui/tabs/FlowTab.tsx", '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} /><CopyControl text={request} testId="flow-copy" />');
   writeFixture(
     root,
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
@@ -278,7 +277,6 @@ for (const [file, missing] of [
   ["src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", /analysis-evidence/],
   ["src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", /analysis-board|analysis-witness/],
   ["src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", /InsightsAgentDock/],
-  ["src/views/ontology-insights/ui/tabs/FlowTab.tsx", /onPrefill/],
 ]) {
   test(`ontology design surface rejects missing relationship or authority subject: ${file}`, () => {
     const root = makeFixture();

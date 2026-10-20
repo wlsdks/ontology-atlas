@@ -4,44 +4,16 @@
 export const INSIGHTS_TABS = [
   "brief",
   "library",
-  "harness",
   "do-next",
   "unmatched",
   "composition",
   "connections",
   "boundaries",
   "growth",
-  "flow",
 ] as const;
 
 /** Sections rendered by Analysis; old ontology tab names remain compatible URL intents. */
-export const INSIGHTS_SECTIONS = ["connections", "brief", "library", "harness", "flow"] as const;
-
-export const INSIGHTS_CORES = ["brief", "ontology", "library", "harness"] as const;
-
-export type InsightsCore = (typeof INSIGHTS_CORES)[number];
-
-/** The ontology's questions in reading order, for the second row. */
-export const ONTOLOGY_TABS = [
-  "do-next",
-  "unmatched",
-  "composition",
-  "connections",
-  "boundaries",
-  "growth",
-  "flow",
-] as const satisfies readonly InsightsTab[];
-
-/** Every ontology question answers to `ontology`. */
-export function coreOfTab(tab: InsightsTab): InsightsCore {
-  if (tab === "brief" || tab === "library" || tab === "harness") return tab;
-  return "ontology";
-}
-
-/** The tab a subject opens; the ontology lands on its first question, which the address then carries. */
-export function tabOfCore(core: InsightsCore): InsightsTab {
-  return core === "ontology" ? ONTOLOGY_TABS[0] : core;
-}
+export const INSIGHTS_SECTIONS = ["connections", "brief", "library"] as const;
 
 export type InsightsTab = (typeof INSIGHTS_TABS)[number];
 
@@ -77,6 +49,17 @@ const LEGACY_TAB_ALIASES: Record<string, InsightsTab> = {
   // The former freshness tab, now growth, with the file-date answer as its supporting detail.
   freshness: "growth",
 };
+
+/** Where `?tab=harness` goes: Harness At a glance, which replaced the Guidance section. */
+export const HARNESS_OVERVIEW_PATH = "/architecture/";
+
+/** The address `?tab=harness` replaces itself with; every other flag stays and `tab` drops. */
+export function harnessOverviewHref(search: string): string {
+  const query = new URLSearchParams(search);
+  query.delete("tab");
+  query.set("view", "overview");
+  return `${HARNESS_OVERVIEW_PATH}?${query.toString()}`;
+}
 
 /** The raw `?tab=` value to a valid tab; unknown or missing gives the default. */
 export function parseInsightsTab(raw: string | null | undefined): InsightsTab {

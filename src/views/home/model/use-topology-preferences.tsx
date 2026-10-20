@@ -12,7 +12,6 @@ export function useTopologyPreferences() {
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
-  // The same key the insights flow tab shows, so the sentence lives in one place.
   const businessFlowRequestText = useTranslations('ontologyPages.insights.flow')('request');
   // For the create composer's per-locale name inputs.
   const activeLocale = useLocale();

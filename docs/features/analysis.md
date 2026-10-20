@@ -112,23 +112,17 @@ evidence to reread a claim, never semantic validation or proof of causality.
 
 ## Supporting records and agent authority
 
-Five visible section tabs select System relationships, Review summary, Wiki,
-Guidance and Written explanations. Each supporting section names the actual
+Three visible section tabs select System relationships, Review summary and Wiki.
+Each supporting section names the actual
 folder or bundled-example scope above its records. Review summary retains its visit anchor,
-evidence details and explicit agent request. Wiki and Guidance use their existing
-read models. Written explanations retain dated saved versions and their
-source-hidden presentation boundary. One ACP conversation remains mounted across
+evidence details and explicit agent request. Wiki uses its existing
+read model. Guidance moved to Harness At a glance and Written explanations is no
+longer a section; explanations saved earlier stay as files in
+`.ontology-atlas/analyses/`, which the agent panel's Findings & history, MCP
+`analysis_history` and `analysis_record`, and the CLI still read. One ACP conversation remains mounted across
 section changes. Switching sections does not start a turn or replace a draft.
 An explicit request prefills the conversation; the person sends it, and an
 existing draft still requires the existing replacement action.
-
-The bundled example has an explicit empty explanation state and an entry to
-open a folder; it has no generic connected-vault request or launch action.
-Local explanation requests check the exact `connection_info` root and recorded
-identity anchors before reading. A browser's unknown absolute root stops the
-request until the folder is established. The Atlas-only read tools, twelve
-full-concept limit including identity reads, citations, explicit Send and saved
-explanation contracts remain; Flow never offers a shell or CLI fallback.
 
 The selected-fact action is attached to its evidence. Native inspection prefills
 a read-only question in the existing ACP session only when the selected local
@@ -145,8 +139,10 @@ is inspectable before copying or sending.
 The route is unchanged. Missing/unknown `tab` values and `connections`,
 `composition`, `boundaries`, `growth`, `overview`, `structure`, `relations`, and
 `freshness` open the relationship workspace. `do-next` and `unmatched` open its
-evidence question. `brief`, `library`, `harness` and `flow` open their supporting
-records. Orthogonal query flags are preserved. Selected claim and relationship document links carry
+evidence question. `brief` and `library` open their supporting records.
+`harness` replaces itself with `/architecture/?view=overview` and adds no history
+entry; `flow` opens the relationship workspace with a notice that Written
+explanations is no longer a section. Orthogonal query flags are preserved. Selected claim and relationship document links carry
 `review=analysis:<id>` or `review=relation:<id>` so the return restores that evidence. Saved ontology links no longer
 open a separate census board.
 

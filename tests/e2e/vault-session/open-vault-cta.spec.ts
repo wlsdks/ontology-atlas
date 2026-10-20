@@ -170,7 +170,6 @@ test.describe("no dead-end CTA: every place that tells you to open a folder", ()
    */
   test("that way really invokes the folder picker", async ({ page, context }) => {
     const SITES = [
-      { route: "/ko/ontology/insights/?tab=flow", testId: "flow-open-vault" },
       { route: "/ko/project/storefront/", testId: "project-detail-open-vault" },
       { route: "/ko/project/new/", testId: "project-write-disabled-open-folder" },
     ];
@@ -252,11 +251,11 @@ test.describe("no dead-end CTA: every place that tells you to open a folder", ()
     await context.addInitScript(() => {
       delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
     });
-    await page.goto("/ko/ontology/insights/?guides=off&tab=flow", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/project/storefront/?guides=off", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
     // The assertion below waits on its own.
 
-    const cta = paintedTestId(page, "flow-open-vault");
+    const cta = paintedTestId(page, "project-detail-open-vault");
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute("data-open-vault-cta", "download");
     // The destination must really open — zero buttons that go nowhere when pressed.

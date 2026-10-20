@@ -1,7 +1,0 @@
-{
-  "file": "src/views/ontology-insights/ui/tabs/HarnessTab.tsx",
-  "count": 2,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The Guidance preview footer links, \"Open Harness\" (primary sm) and \"Get the app\" (outline sm), match the 32px buttons of the Analysis views. They navigate, so they are `<Link>` through `buttonVariants`."
-}

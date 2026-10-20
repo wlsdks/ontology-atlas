@@ -80,7 +80,7 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
 
 const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
   /Insights|Analysis|분석/i,
-  /Brief|Wiki|Guidance|브리핑|위키|지침/i,
+  /Review summary|Wiki|검토 요약|위키/i,
 ];
 
 /**

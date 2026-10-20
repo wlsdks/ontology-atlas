@@ -364,10 +364,6 @@
       "seconds": 7.482,
       "tests": 2
     },
-    "insights/insights-flow-scroll.spec.ts": {
-      "seconds": 6.311,
-      "tests": 3
-    },
     "insights/insights-loading.spec.ts": {
       "seconds": 1.99,
       "tests": 2
