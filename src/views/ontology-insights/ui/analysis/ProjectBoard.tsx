@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { Button, OntologyMapKindGlyph } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { EXIT_WINDOW_MS } from '@/shared/lib/render-timing/use-presence';
 import { useStaggerOnce } from '@/shared/motion/stagger';
-import type { AnalysisBoard, BoardLink } from '../../lib/analysis-board';
+import { busiestInOrder, type AnalysisBoard, type BoardLink } from '../../lib/analysis-board';
 import type { AnalysisClaim } from '../../lib/analysis-model';
 import { boardArrow, boardCurve, boardCutout, boardLines, type BoardLine, type CardBox } from './board-layout';
 import styles from './analysis.module.css';
@@ -17,8 +17,12 @@ type Question = 'relationships' | 'evidence';
 type Tone = 'context' | 'pair' | 'hot';
 const TONE_CLASS: Record<Tone, string> = { context: styles.connection, pair: styles.pairConnection, hot: styles.hotConnection };
 const LANE_LIMIT = 12;
+const BOARD_GAP_REM = 2;
+const BOARD_GAP_MAX_REM = 6;
+const LABEL_HALO_PX = 3;
 const ROW_HOVER = 'row:';
 const name = (node: KnowledgeGraphNode) => node.display ?? node.title;
+const passKey = (lane: number, pass: number) => `${lane}:${pass}`;
 
 function useLeaving<T>(value: T) {
   const [state, setState] = useState({ value, leaving: null as T | null });
@@ -58,43 +62,73 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   const shown = board.lanes.map(lane => {
     const pinned = relationships ? lane.claims.find(claim => claim.node.id === selected?.from || claim.node.id === selected?.to)?.node.id ?? null : selectedClaim;
     if (matches || openLanes.has(lane.id) || lane.claims.length <= LANE_LIMIT) return lane.claims;
-    const first = lane.claims.slice(0, LANE_LIMIT), kept = lane.claims.find(claim => claim.node.id === pinned);
-    return !kept || first.includes(kept) ? first : [...first.slice(0, LANE_LIMIT - 1), kept];
+    return busiestInOrder(lane.claims, claim => linksOf.get(claim.node.id)?.length ?? 0, lane.claims.find(claim => claim.node.id === pinned) ?? null, LANE_LIMIT);
   });
+  const shownKey = shown.map(claims => claims.map(claim => claim.node.id).join()).join('|');
   const liveIds = new Set(shown.flat().flatMap(claim => !relationships || linksOf.has(claim.node.id) ? [claim.node.id] : []));
   const tabStop = [roving, relationships ? selected?.from : selectedClaim].find(id => id && liveIds.has(id)) ?? liveIds.values().next().value ?? null;
   const laneOf = new Map(board.lanes.flatMap(lane => lane.claims.map(claim => [claim.node.id, lane.id] as const)));
   const onBoard = new Set(shown.flat().map(claim => claim.node.id));
   const anchor = (id: string) => onBoard.has(id) || !laneOf.has(id) ? id : `more:${laneOf.get(id)}`;
   const folded = new Set<string>();
+  const passesOf = new Map<string, { key: string; rank: number; count: number }[]>();
+  board.lanes.forEach((lane, laneIndex) => lane.passes.forEach((pass, index) => pass.edges.forEach((edgeId, rank) => passesOf.set(edgeId, [...passesOf.get(edgeId) ?? [], { key: passKey(laneIndex, index), rank, count: pass.edges.length }]))));
   const endsKey = JSON.stringify(board.links.flatMap(link => {
     const from = anchor(link.from), to = anchor(link.to), pair = `${from}\0${to}`;
-    if (from === link.from && to === link.to) return [{ id: link.edge.id, from, to }];
+    const via = link.toLane < link.fromLane ? [...passesOf.get(link.edge.id) ?? []].reverse() : passesOf.get(link.edge.id) ?? [];
+    const down = link.toLane > link.fromLane;
+    if (from === link.from && to === link.to) return [{ id: link.edge.id, from, to, via, down }];
     if (folded.has(pair)) return [];
     folded.add(pair);
-    return [{ id: link.edge.id, from, to }];
+    return [{ id: link.edge.id, from, to, via, down }];
   }));
 
   useLayoutEffect(() => {
-    const element = host.current;
-    if (!element || !relationships) return;
-    const ends = JSON.parse(endsKey) as { id: string; from: string; to: string }[];
+    const element = host.current, scroller = element?.closest('main');
+    if (!element || !scroller) return;
+    const ends = JSON.parse(endsKey) as { id: string; from: string; to: string; down: boolean; via: { key: string; rank: number; count: number }[] }[];
+    const fit = () => {
+      const lanes = [...element.querySelectorAll<HTMLElement>(':scope > [data-board-lane]')];
+      const layout = element.closest('[data-testid="analysis-layout"]');
+      if (lanes.length < 2 || !layout || getComputedStyle(layout).gridTemplateColumns.split(' ').length < 2) { element.style.removeProperty('--board-gap'); return; }
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      const frame = scroller.getBoundingClientRect(), box = element.getBoundingClientRect();
+      const below = element.parentElement!.getBoundingClientRect().bottom - box.bottom + parseFloat(getComputedStyle(scroller).paddingBottom);
+      const natural = lanes.reduce((sum, lane) => sum + lane.offsetHeight, 0) + BOARD_GAP_REM * rem * (lanes.length - 1);
+      const spare = scroller.clientHeight - (box.top - frame.top + scroller.scrollTop) - natural - below;
+      element.style.setProperty('--board-gap', `${Math.floor(Math.min(BOARD_GAP_MAX_REM * rem, BOARD_GAP_REM * rem + Math.max(0, spare) / (lanes.length - 1)))}px`);
+    };
     const measure = () => {
-      const boxes = new Map<string, CardBox>([...element.querySelectorAll<HTMLElement>('[data-board-node]')].map(node => {
+      const place = (node: HTMLElement): CardBox => {
         const lane = node.closest<HTMLElement>('[data-board-lane]')!, frame = lane.getBoundingClientRect(), box = node.getBoundingClientRect();
         const top = box.top - frame.top + lane.offsetTop, left = box.left - frame.left + lane.offsetLeft;
-        return [node.dataset.boardNode!, { top, bottom: top + box.height, left, right: left + box.width }];
+        return { top, bottom: top + box.height, left, right: left + box.width };
+      };
+      const boxes = new Map([...element.querySelectorAll<HTMLElement>('[data-board-node]')].map(node => [node.dataset.boardNode!, place(node)]));
+      const channels = new Map([...element.querySelectorAll<HTMLElement>('[data-board-pass]')].map(node => {
+        const lane = node.closest<HTMLElement>('[data-board-lane]')!, { left, right } = place(node);
+        return [node.dataset.boardPass!, { left, right, top: lane.offsetTop, bottom: lane.offsetTop + lane.offsetHeight }];
       }));
-      const next = boardLines(ends, boxes), nextHoles = [...boxes.values()];
+      const crossing = (end: (typeof ends)[number]) => end.via.flatMap(({ key, rank, count }) => {
+        const channel = channels.get(key);
+        return channel ? [{ x: channel.left + (channel.right - channel.left) * (rank + 1) / (count + 1), enter: end.down ? channel.top : channel.bottom, exit: end.down ? channel.bottom : channel.top }] : [];
+      });
+      const nextHoles = [...element.querySelectorAll<HTMLElement>('[data-board-node]')].map(node => {
+        if (!node.closest('[data-quiet]')) return boxes.get(node.dataset.boardNode!)!;
+        const label = place(node.firstElementChild as HTMLElement);
+        return { top: label.top - LABEL_HALO_PX, bottom: label.bottom + LABEL_HALO_PX, left: label.left - LABEL_HALO_PX, right: label.right + LABEL_HALO_PX };
+      });
+      const next = boardLines(ends.map(end => ({ ...end, via: crossing(end) })), boxes);
       setLines(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
       setHoles(previous => JSON.stringify(previous) === JSON.stringify(nextHoles) ? previous : nextHoles);
     };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
+    const layOut = () => { fit(); if (relationships) measure(); };
+    layOut();
+    const observer = new ResizeObserver(layOut);
+    observer.observe(scroller);
     element.querySelectorAll('[data-board-lane], [data-board-node]').forEach(node => observer.observe(node));
     return () => observer.disconnect();
-  }, [endsKey, relationships]);
+  }, [endsKey, relationships, shownKey]);
 
   const lineById = new Map(lines.map(line => [line.id, line]));
   const linkById = new Map(board.links.map(link => [link.edge.id, link]));
@@ -176,14 +210,16 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
       </g>
     </svg>
     {board.lanes.map((lane, index) => {
-      const motion = stagger(lane.id, index), cards = shown[index]!, hidden = lane.claims.length - cards.length;
+      const motion = stagger(lane.id, index), cards = shown[index]!, hidden = lane.claims.length - cards.length, visible = new Set(cards);
+      const passesBefore = (before: number) => lane.passes.flatMap((pass, at) => pass.before === before ? [<li key={`pass:${at}`} aria-hidden="true" data-board-pass={passKey(index, at)} className={styles.boardPass} style={{ '--board-pass-lines': pass.edges.length } as CSSProperties} />] : []);
       return <section key={lane.id} data-board-lane={lane.id} data-active={activeLanes.has(index) || undefined} data-hot={hoveredRow === index || undefined} aria-labelledby={`board-lane-${index}`} className={`${styles.boardLane} ${motion.className ?? ''}`} style={motion.style}>
         <p id={`board-lane-${index}`} className={`${styles.boardLaneTitle} text-body font-[var(--font-weight-strong)]`}
           {...(relationships ? { onPointerEnter: () => setHover(`${ROW_HOVER}${index}`), onPointerLeave: () => setHover(null) } : {})}>
           <span data-board-node={lane.id} className="flex min-w-0 items-center gap-2">{lane.domain ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}<span className="min-w-0 break-words">{lane.domain ? name(lane.domain) : t('laneUnassigned')}</span></span>
         </p>
         <ul className={styles.boardCards}>
-          {cards.map(card)}
+          {lane.claims.flatMap((claim, at) => [...passesBefore(at), ...visible.has(claim) ? [card(claim)] : []])}
+          {passesBefore(lane.claims.length)}
           {!cards.length ? <li className="self-center px-1 text-label text-[color:var(--color-text-tertiary)]">{t('laneEmpty')}</li> : null}
           {hidden > 0 || openLanes.has(lane.id) && lane.claims.length > LANE_LIMIT && !matches ? <li><Button variant="ghost" size="sm" data-board-node={`more:${lane.id}`} className="atlas-touch-floor"
             onClick={() => setOpenLanes(current => { const next = new Set(current); if (!next.delete(lane.id)) next.add(lane.id); return next; })}>

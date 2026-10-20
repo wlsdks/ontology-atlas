@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { KnowledgeGraphNode, KnowledgeGraphEdge } from '@/entities/knowledge-graph';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { buildAnalysisModel } from './analysis-model';
-import { buildAnalysisBoard, laneAnchor, orderLanesByFlow, UNASSIGNED_LANE } from './analysis-board';
+import { buildAnalysisBoard, busiestInOrder, laneAnchor, orderCardsByNeighbours, orderLanesByFlow, UNASSIGNED_LANE } from './analysis-board';
 
 const node = (id: string, kind: string) => ({ id, title: id, kind, evidenceIds: [id] } as KnowledgeGraphNode);
 const edge = (from: string, to: string, type = 'contains') => ({ id: `${from}:${type}:${to}`, from, to, type, evidenceIds: [from] } as KnowledgeGraphEdge);
@@ -58,5 +58,39 @@ describe('Analysis project board', () => {
     const spans = board.links.map(link => [Math.min(link.fromLane, link.toLane), Math.max(link.fromLane, link.toLane)]);
     expect(spans).toEqual([...spans].sort((a, b) => a[0]! - b[0]! || a[1]! - b[1]!));
     expect(board.links).toHaveLength(model.crossCount);
+  });
+
+  it('folds a long lane to its most connected cards and keeps them in board order', () => {
+    const lane = ['a', 'b', 'c', 'hub', 'd'], links = new Map([['hub', 5], ['c', 2], ['a', 1]]);
+    expect(busiestInOrder(lane, id => links.get(id) ?? 0, null, 3)).toEqual(['a', 'c', 'hub']);
+    expect(busiestInOrder(lane, id => links.get(id) ?? 0, 'd', 3)).toEqual(['c', 'hub', 'd']);
+  });
+
+  it('seats connected cards under their neighbours so parallel declarations stop crossing', () => {
+    const links = [{ from: 'a1', to: 'b3' }, { from: 'a2', to: 'b2' }, { from: 'a3', to: 'b1' }, { from: 'c1', to: 'b1' }];
+    const [top, middle, bottom] = orderCardsByNeighbours([['a1', 'a2', 'a3'], ['b1', 'b2', 'b3', 'quiet'], ['c1']], links);
+    const at = (lane: string[], id: string) => lane.indexOf(id);
+    const inverted = links.filter(({ from }) => from.startsWith('a')).some((link, _index, rows) => rows.some(other => (at(top!, link.from) - at(top!, other.from)) * (at(middle!, link.to) - at(middle!, other.to)) < 0));
+    expect(inverted).toBe(false);
+    expect(middle!.at(-1)).toBe('quiet');
+    expect(bottom).toEqual(['c1']);
+  });
+
+  it('pulls a card that depends on a lane title to the front of its lane', () => {
+    const [lane] = orderCardsByNeighbours([['x', 'y', 'z'], ['w']], [{ from: 'z', to: laneAnchor('other') }, { from: 'x', to: 'w' }, { from: 'y', to: 'w' }]);
+    expect(lane![0]).toBe('z');
+  });
+
+  it('opens a channel in every lane a declaration skips and nowhere else', () => {
+    const nodes = [node('a', 'domain'), node('b', 'domain'), node('c', 'domain'), ...['top', 'left', 'right', 'bottom'].map(id => node(id, 'capability'))];
+    const edges = [edge('a', 'top'), edge('b', 'left'), edge('b', 'right'), edge('c', 'bottom'), edge('top', 'left', 'depends_on'), edge('left', 'bottom', 'depends_on'), edge('top', 'bottom', 'depends_on'), edge('bottom', 'right', 'depends_on'), edge('right', 'top', 'depends_on')];
+    const board = buildAnalysisBoard(buildAnalysisModel(nodes, edges, []));
+    const skip = board.links.filter(link => Math.abs(link.fromLane - link.toLane) > 1);
+    expect(skip.length).toBeGreaterThan(0);
+    for (const link of skip) {
+      const crossed = board.lanes.filter((_, index) => index > Math.min(link.fromLane, link.toLane) && index < Math.max(link.fromLane, link.toLane));
+      for (const lane of crossed) expect(lane.passes.flatMap(pass => pass.edges)).toContain(link.edge.id);
+    }
+    expect(board.lanes.flatMap(lane => lane.passes.flatMap(pass => pass.edges))).toHaveLength(skip.length);
   });
 });

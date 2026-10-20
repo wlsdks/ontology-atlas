@@ -107,6 +107,33 @@ test('the selected line meets both cards after the entrance under normal motion'
   })).toBeLessThanOrEqual(1);
 });
 
+test('a line that skips a one-row lane crosses it in a channel, never over a card', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 916 });
+  await page.goto('/en/ontology/insights/?guides=off');
+  await expect(page.locator('[data-board-pass]').first()).toBeAttached();
+  await waitForAnimationsDone(page.getByTestId('analysis-board'));
+  await expect.poll(() => page.getByTestId('analysis-board').evaluate(board => {
+    const inside = (x: number, y: number, box: DOMRect) => x > box.left && x < box.right && y > box.top && y < box.bottom;
+    const lanes = [...board.querySelectorAll<HTMLElement>('[data-board-lane]')].map(lane => {
+      const cards = [...lane.querySelectorAll('[data-board-node]')].map(node => node.getBoundingClientRect());
+      const claimTops = [...lane.querySelectorAll('[data-testid="analysis-claim"]')].map(node => Math.round(node.getBoundingClientRect().top));
+      return { box: lane.getBoundingClientRect(), cards, oneRow: new Set(claimTops).size === 1 };
+    });
+    let skipped = 0, covered = 0;
+    for (const hit of board.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')) {
+      const matrix = hit.getScreenCTM()!, length = hit.getTotalLength();
+      const points = Array.from({ length: 97 }, (_, i) => new DOMPoint(hit.getPointAtLength(length * i / 96).x, hit.getPointAtLength(length * i / 96).y).matrixTransform(matrix));
+      const ends = new Set([points[0]!, points.at(-1)!].map(point => lanes.findIndex(lane => inside(point.x, point.y, lane.box))));
+      lanes.forEach((lane, index) => {
+        if (ends.has(index) || !lane.oneRow || !points.some(point => inside(point.x, point.y, lane.box))) return;
+        skipped++;
+        if (points.some(point => lane.cards.some(card => inside(point.x, point.y, card)))) covered++;
+      });
+    }
+    return { skipped: skipped > 0, covered };
+  })).toEqual({ skipped: true, covered: 0 });
+});
+
 test('every line layer clips against card cut-outs defined in its own svg', async ({ page }) => {
   await page.goto('/en/ontology/insights/?guides=off');
   await expect(page.locator('[data-connection="selected"]')).toBeAttached();
