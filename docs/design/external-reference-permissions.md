@@ -47,7 +47,6 @@ badge or GitHub's automatic license label.
 
 | Source | Atlas translation | Verifier |
 |---|---|---|
-| web.dev's focus guidance | The exact Flow request has one named keyboard scroll target; its overflow fade cannot obscure the surrounding focus frame. | `FlowTab.test.tsx` covers the request before and after a saved answer; `insights-flow-scroll.spec.ts` checks Tab, End, the focus frame and exit to the handoff. Actual-window captures confirm the rendered state. |
 | UI Playbook's component documentation | Use its state questions when inspecting an existing Atlas button or field, while retaining Atlas's primitives and scale. | A future slice must reproduce the missing or confusing state in the rendered Atlas component before changing it. No component code was imported by this review. |
 | Impeccable's critique material | Ask whether the main fact and its supporting evidence belong to this product and whether an observed defect warrants a change. | Use the existing Atlas product/design route and measured render loop. This review installs no skill or detector and claims no Impeccable audit result. |
 

@@ -14,8 +14,8 @@ area: architecture
 > and AI coding agents read and write that same folder. Round 10 permanently
 > removed every login and cloud-data screen. In today's route model, reading and
 > contextual writing happen together on Topology, ACP writes pause in the same
-> conversation for human review, and Analysis uses a five-section relationship/evidence workspace:
-> relationships, review summary, Wiki, Guidance and saved explanations. The old `/ontology/studio` and
+> conversation for human review, and Analysis uses a three-section relationship/evidence workspace:
+> relationships, review summary and Wiki. The old `/ontology/studio` and
 > `/ontology/edit` URLs only translate old links.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
@@ -211,14 +211,9 @@ files — which tool reads which, size against a documented cap, declared mirror
 hook wiring — from files only, through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
 files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.
-Measured Insights Guidance uses `projectHarnessCoverageEvidence` to retain the existing
-coverage matrix members and add only the capability paths reached by canonical `scopeReaches`.
-`HarnessCoverageOverview` presents Diagram/Text from that same projection and the actual
-finding rows. One local scroll owner contains the overview and all domains; one desktop
-anchored Surface or narrow Dialog presents role, separate, outside-mapping, unreached-entrypoint
-and finding evidence. Mode changes and clipped anchors dismiss the old selection without stale
-focus restoration. The measured/null availability contract, scanner, join, and write authority
-remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
+`/ontology/insights?tab=harness` replaces itself with `/architecture/?view=overview`, keeping the other
+flags and adding no history entry. The measured/null availability contract, scanner, join, and write
+authority remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
 The `relationship-preview` widget supplies explicitly
 labelled Wiki/Guidance examples and their real next action, shared with unavailable Harness
 states. Its decorative motion pauses offscreen and under reduced motion; it never creates data.
@@ -722,7 +717,7 @@ until a local manifest, or the first part of one, exists.
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
-/ontology/insights         five-section relationship/evidence workspace; exact declarations,
+/ontology/insights         three-section relationship/evidence workspace; exact declarations,
                            capability endpoints and supporting records; old tab URLs map
                            to the corresponding relationship, evidence or record question
 /git                       local vault git history / snapshot workbench; remains a
@@ -864,7 +859,7 @@ to an agent.
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
-| `tab` | `/ontology/insights` | section or compatible question intent | `connections` (default), `brief`, `library`, `harness`, `flow`; `do-next`/`unmatched` open evidence; other legacy ontology names open relationships |
+| `tab` | `/ontology/insights` | section or compatible question intent | `connections` (default), `brief`, `library`; `do-next`/`unmatched` open evidence; `harness` replaces itself with `/architecture/?view=overview`; `flow` opens relationships with a retired-section notice; other legacy ontology names open relationships |
 
 ### One place builds node ids, one place reads them
 
