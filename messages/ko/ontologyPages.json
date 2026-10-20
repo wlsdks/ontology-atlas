@@ -5,7 +5,6 @@
     "tab": {
       "brief": "브리핑",
       "library": "자료실",
-      "harness": "하네스",
       "do-next": "고칠 것",
       "unmatched": "빠진 개념",
       "composition": "구성",
@@ -13,8 +12,7 @@
       "boundaries": "도메인 경계",
       "growth": "축적",
       "freshness": "최근 변화",
-      "structure": "구조",
-      "flow": "제품 흐름"
+      "structure": "구조"
     },
     "brief": {
       "sinceSeen": "{days, plural, =0 {오늘 본 뒤로} other {# 일 전 본 뒤로}}",
@@ -126,35 +124,7 @@
     "stale": "한동안 그대로",
     "older": "오래됨",
     "flow": {
-      "title": "제품 흐름",
-      "lead": "이 폴더에 적힌 것만 읽고, 제품이 무엇이고 어떻게 도는지 에이전트가 글로 써요. 소스 코드는 읽지 않아요.",
-      "action": "에이전트로 흐름 설명하기",
-      "actionHint": "이 분석 화면 옆 대화에 요청을 넣어요. 보내는 것은 직접 하세요.",
-      "checking": "이 컴퓨터에서 사용할 수 있는 에이전트를 확인하고 있어요.",
-      "requestLabel": "에이전트에게 보낼 요청",
-      "unavailableTitle": "앱에서만 돼요",
-      "unavailableBody": "브라우저는 에이전트를 실행하거나 이 폴더의 절대 경로를 확인할 수 없습니다. 복사한 요청은 정확한 폴더를 확인할 때까지 연결 확인 단계에서 멈춥니다.",
-      "copy": "요청 복사",
-      "copied": "복사했어요",
-      "noVaultTitle": "먼저 폴더를 여세요",
-      "noVaultBody": "설명할 온톨로지가 아직 없어요.",
-      "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 개념을 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 개념 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마.",
-      "writtenAt": "{when} · {writer}가 쓴 설명",
-      "standingCurrent": "확인한 근거가 분석 당시와 같아요",
-      "standingStale": "분석 뒤에 근거가 바뀌었어요",
-      "standingUnknown": "근거 일부를 다시 확인하지 못했어요",
-      "ungrounded": "읽은 근거를 증명하지 못한 답이에요",
-      "changedTitle": "지난 설명과 달라진 곳",
-      "changeAdded": "새로 생김",
-      "changeRemoved": "없어짐",
-      "changeRewritten": "다시 씀",
-      "noVersionTitle": "아직 쓴 설명이 없어요",
-      "noVersionBody": "에이전트가 이 폴더만 읽고 제품이 무엇이고 어떻게 도는지 한 번 써 두면, 여기에 그 설명이 남고 다음에 다시 쓸 때 무엇이 달라졌는지 함께 보여드려요.",
-      "rewrite": "다시 쓰게 하기",
-      "versionsLabel": "{count, number}개 남아 있어요.",
-      "sampleBody": "내 폴더를 열면 저장된 제품 설명과 이전 기록을 여기서 읽을 수 있어요.",
-      "sampleTitle": "아직 저장된 제품 설명이 없어요",
-      "exploreConnections": "제품 연결 둘러보기"
+      "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 개념을 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 개념 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마."
     },
     "core": {
       "brief": "브리핑",
@@ -251,78 +221,6 @@
       }
     },
     "harnessTab": {
-      "open": "하네스에서 구조 보기",
-      "getApp": "앱 받기",
-      "visual": {
-        "title": "도메인 {count, number}곳의 선언된 지침 범위",
-        "fieldLabel": "도메인별 선언된 지침 범위",
-        "mode": {
-          "label": "지침 읽기 방식",
-          "diagram": "도표",
-          "text": "텍스트"
-        },
-        "collection": {
-          "eyebrow": "지침 근거",
-          "none": "이 묶음에는 항목이 없어요.",
-          "separate": {
-            "action": "별도 {role}",
-            "title": "별도로 집계한 {role}",
-            "description": "경로 범위를 추출하지 못했거나 기록된 모든 도메인에 범위가 닿는 선언을 별도로 집계해요. 도메인의 경로 한정 개수에는 넣지 않아요."
-          },
-          "outside": {
-            "action": "도메인 매핑 밖",
-            "title": "도메인 매핑 밖 선언",
-            "description": "이 경로 한정 선언은 온톨로지에 기록된 도메인 진입점과 일치하지 않아요. 코드가 깨졌거나 범위가 보편적이거나 파일이 없다는 뜻은 아니에요."
-          },
-          "unreached": {
-            "action": "닿지 않은 진입점",
-            "title": "지침이 닿지 않은 capability 진입점",
-            "description": "이 capability 진입점에는 경로 한정 작업 지침 선언이 닿지 않아요. 별도로 집계한 작업 지침은 존재할 수 있어요. capability 수와 매핑 밖 선언 수는 서로 다른 단위예요."
-          },
-          "findings": {
-            "action": "점검 항목",
-            "title": "하네스 점검 항목 전체",
-            "description": "점검 항목의 원래 경로와 메시지를 그대로 보여 줘요. 뒷받침하는 연결 근거 없이 도메인에 귀속하지 않아요.",
-            "independence": "Codex와 Claude 지침 트리의 차이는 정보일 수 있어요. 독립된 하네스를 같게 만들라는 뜻이 아니에요."
-          }
-        },
-        "inventoryCaption": "지침 파일 {guides, number}개 · 검사 항목 {checks, number}개.",
-        "diagramCaption": "도표의 숫자는 도메인에 귀속된 경로 한정 선언 수예요. 실행 결과를 뜻하지 않아요.",
-        "findingSummary": "하네스에서 보기",
-        "coverage": "{role} {covered, number}/{total, number}곳",
-        "role": {
-          "told": "작업 지침",
-          "gated": "훅",
-          "watched": "검사·워크플로"
-        },
-        "emptyRoleLabel": "{domain}: 경로가 연결된 {role} 없음",
-        "filledRoleLabel": "{domain}: {role} 선언 {count, number}개",
-        "popupLabel": "{domain} · {role} 근거",
-        "popupFallbackLabel": "지침 범위 근거",
-        "close": "닫기",
-        "zeroScoped": "이 도메인에 귀속된 경로 한정 {role} 선언을 찾지 못했어요.",
-        "exactCount": "이 도메인에 경로 한정 선언 {count, number}개가 귀속됐어요.",
-        "extractedScope": "추출된 범위",
-        "noExtractedScope": "추출된 경로 범위 없음. 이 스캔으로는 경로 필터를 확인하지 못했으며, 실행 범위가 제한 없다는 뜻은 아니에요.",
-        "matchedEntrypoints": "일치한 capability 진입점",
-        "tools": "읽는 도구",
-        "sourceId": "소스 식별자",
-        "sourceLabel": "소스 이름",
-        "globalCount": "별도로 집계한 {count, number}개 보기",
-        "globalExplanation": "경로 범위를 추출하지 못했거나 기록된 모든 도메인에 범위가 닿는 항목은 별도로 집계해요. 이 도메인의 경로 한정 개수에는 넣지 않아요.",
-        "globalNone": "이 역할에 해당하는 전역 선언은 없어요.",
-        "discoveredTests": "기록된 capability 경로 아래에서 테스트 파일 {count, number}개를 찾았어요. 파일 발견은 자동 검사의 선언 범위와 다른 근거예요.",
-        "limit": "귀속은 선언된 경로 접두사 범위를 사용해요. 경로가 지금도 맞는지, 훅이 설치되거나 실행됐는지, 검사·워크플로가 통과했는지는 증명하지 않아요."
-      },
-      "more": "도메인 {count, number}곳 더",
-      "reading": "지금 폴더를 읽고 있어요.",
-      "unreadable": "지침 파일을 읽지 못했어요. 폴더를 다시 열면 다시 시도해요.",
-      "noSource": "분석할 코드 저장소를 확인해 주세요. 연결된 저장소를 하나로 확인할 수 있어야 지침과 검사 범위를 읽을 수 있어요.",
-      "drift": {
-        "title": "지침·설정 점검 항목 {count, number}건",
-        "caption": "파일 차이와 참조·설정 점검 결과예요. 에이전트별 지침을 똑같이 맞추라는 뜻은 아니에요.",
-        "none": "현재 표시할 점검 항목이 없어요."
-      },
       "preview": {
         "title": "코드 경로별 지침과 검사",
         "body": "어느 코드 경로에 작업 지침, 차단 규칙, 자동 검사가 연결되는지 살펴봐요.",
@@ -353,24 +251,6 @@
             "setup": "테스트·린트 같은 자동 검사의 대상 경로를 확인해 주세요. 검사 파일이 있어도 실제 실행 여부나 통과 결과를 뜻하지는 않아요."
           }
         }
-      },
-      "availability": {
-        "app-only": {
-          "title": "앱에서 폴더를 열어 주세요",
-          "description": "브라우저는 숨김 폴더를 읽지 못해 지침 범위는 앱에서 확인할 수 있어요."
-        },
-        "no-source": {
-          "title": "코드 저장소를 확인해 주세요",
-          "description": "분석할 코드 저장소를 확인해 주세요. 연결된 저장소를 하나로 확인할 수 있어야 지침과 검사 범위를 읽을 수 있어요."
-        },
-        "reading": {
-          "title": "작업 지침을 읽고 있어요",
-          "description": "연결된 저장소에서 작업 지침과 자동 검사를 확인하고 있어요."
-        },
-        "unreadable": {
-          "title": "작업 지침을 읽지 못했어요",
-          "description": "폴더를 다시 열어 작업 지침과 자동 검사를 확인해 주세요."
-        }
       }
     },
     "analysis": {
@@ -379,8 +259,6 @@
       "system": "제품 연결",
       "records": "검토 요약",
       "wiki": "위키",
-      "guidance": "지침",
-      "explanations": "기록된 설명",
       "example": "내장 예제",
       "question": "분석 질문",
       "relationships": "책임 사이의 연결",
@@ -417,6 +295,7 @@
       },
       "empty": "온톨로지 폴더를 열면 기록된 연결을 분석할 수 있어요.",
       "legacy": "저장된 링크에 해당하는 질문을 새 분석 화면에서 열었어요.",
+      "flowRetired": "{history, select, available {글로 풀어쓴 설명은 이제 이 화면의 구역이 아니에요. 전에 저장한 설명은 .ontology-atlas/analyses/ 에 파일로 남아 있어요. 에이전트 패널의 '이슈·기록'에서 읽거나 코딩 에이전트에게 MCP로 읽어 달라고 하세요.} other {글로 풀어쓴 설명은 이제 이 화면의 구역이 아니에요. 전에 저장한 설명은 .ontology-atlas/analyses/ 에 파일로 남아 있어요. 코딩 에이전트에게 MCP로 읽어 달라고 하세요.}}",
       "sourceStatus": {
         "example": "소스 · 예제에서 미확인",
         "reading": "소스 · 확인 중",

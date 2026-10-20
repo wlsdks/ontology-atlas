@@ -3,13 +3,15 @@ import { withAnswerLanguage } from '@/i18n/answer-language';
 
 import type { InsightsTab } from './insights-tab-state';
 
+type InsightsAgentKind = InsightsTab | 'flow';
+
 export interface InsightsAgentRuntime {
   id: string;
   label: string;
 }
 
 export interface InsightsAgentPrefill {
-  kind: InsightsTab;
+  kind: InsightsAgentKind;
   text: string;
   nonce: number;
 }
@@ -32,7 +34,7 @@ export function planInsightsAgentPrompt({
 }: {
   current: InsightsAgentPrefill | null;
   draftPresent: boolean;
-  kind: InsightsTab;
+  kind: InsightsAgentKind;
   text: string;
 }): InsightsAgentPromptPlan {
   if (current?.kind === kind && current.text === text) {
@@ -56,7 +58,7 @@ export function buildInsightsAgentPrompt({
   flowRequest,
 }: {
   locale: string;
-  kind: InsightsTab;
+  kind: InsightsAgentKind;
   handoff: string;
   flowRequest: string;
 }): string {

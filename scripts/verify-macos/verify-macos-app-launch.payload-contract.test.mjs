@@ -116,14 +116,14 @@ test("Insights accepts both localized subject previews without map or brand body
   for (const locale of locales) {
     const messages = JSON.parse(readFileSync(new URL(`../../messages/${locale}.json`, import.meta.url), "utf8"));
     const insights = messages.ontologyPages.insights;
-    const markers = webviewWorkbenchMarkersForPath(`/${locale}/ontology/insights/?tab=harness`);
+    const markers = webviewWorkbenchMarkersForPath(`/${locale}/ontology/insights/?tab=library`);
     assert.equal(markers.length, 2, "both destination and subject content must be checked");
-    for (const subject of ["library", "harness"]) {
-      const body = `${insights.title}\n${insights.core[subject]}`;
+    for (const subject of ["records", "wiki"]) {
+      const body = `${insights.title}\n${insights.analysis[subject]}`;
       assert.equal(markers.every((marker) => marker.test(body)), true, `${locale} ${subject}`);
     }
     assert.equal(markers.every((marker) => marker.test(insights.title)), false);
-    assert.equal(markers.every((marker) => marker.test(insights.core.harness)), false);
+    assert.equal(markers.every((marker) => marker.test(insights.analysis.system)), false);
     assert.equal(markers.every((marker) => marker.test("Atlas\nMap\nINDEX")), false);
     assert.equal(markers.every((marker) => marker.test("")), false);
   }
@@ -416,11 +416,11 @@ function insightsPayload(markerOverrides) {
     markers: {
       insightsMaintenanceBoard: true,
       insightsQuestionModel: "claim-evidence",
-      insightsSubjectCount: 5,
+      insightsSubjectCount: 3,
       insightsSelectedSubject: "insights-core-brief",
       insightsSelectedPanelKey: "brief",
       insightsSelectedPanelVisible: true,
-      insightsTabCount: 5,
+      insightsTabCount: 3,
       insightsSelectedTabCount: 1,
       ...markerOverrides,
     },
@@ -440,7 +440,7 @@ test("payload contract · relationship analysis needs its selected section and v
 
 test("payload contract · a vanished insights subject or panel fails", () => {
   assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ insightsSubjectCount: 3 })),
+    validateWebviewVerifyPayload(insightsPayload({ insightsSubjectCount: 5 })),
     /subject count/,
   );
   assert.match(

@@ -140,7 +140,6 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/harness/harness-auto-insights-layout.spec.ts',
     reason: 'placement and overlap on the harness and architecture panels changed',
     matches: [
-      /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
       /^src\/views\/architecture\/ui\/HarnessOverview(?:View|Panel)\.tsx$/,
     ],
   },
@@ -149,7 +148,6 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/harness/harness-tab-layout.spec.ts',
     reason: "the harness tab's fitted diagram and role popup changed",
     matches: [
-      /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
       /^src\/views\/architecture\/ui\/HarnessOverview(?:View|Panel)\.tsx$/,
     ],
   },
@@ -158,7 +156,6 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/insights/insights-previews.spec.ts',
     reason: 'the insights library and harness tab previews changed',
     matches: [
-      /^src\/views\/ontology-insights\/ui\/tabs\/HarnessTab\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/tabs\/LibraryTab\.tsx$/,
     ],
   },

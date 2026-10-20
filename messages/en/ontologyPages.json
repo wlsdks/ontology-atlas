@@ -5,7 +5,6 @@
     "tab": {
       "brief": "Brief",
       "library": "Library",
-      "harness": "Harness",
       "do-next": "To fix",
       "unmatched": "Missing concepts",
       "composition": "Inventory",
@@ -13,8 +12,7 @@
       "boundaries": "Domain boundaries",
       "growth": "Accumulation",
       "freshness": "Recent changes",
-      "structure": "Structure",
-      "flow": "Product flow"
+      "structure": "Structure"
     },
     "brief": {
       "sinceSeen": "{days, plural, =0 {Since you looked today} one {Since you looked # day ago} other {Since you looked # days ago}}",
@@ -126,35 +124,7 @@
     "stale": "stale",
     "older": "Older",
     "flow": {
-      "title": "Product flow",
-      "lead": "An agent reads only what this folder records and writes what the product is and how it moves. It does not read the source.",
-      "action": "Explain the flow with ACP",
-      "actionHint": "Puts this request in the conversation beside Analysis. You send it.",
-      "checking": "Checking which local agent can open here.",
-      "requestLabel": "The request that goes to the agent",
-      "unavailableTitle": "The app does this",
-      "unavailableBody": "A browser cannot start an agent or establish this folder’s absolute path. The copied request stops at the connection check until you confirm the exact folder.",
-      "copy": "Copy request",
-      "copied": "Copied",
-      "noVaultTitle": "Open a folder first",
-      "noVaultBody": "There is no vault to explain yet.",
-      "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every concept.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full concept slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge.",
-      "writtenAt": "{when} · written by {writer}",
-      "standingCurrent": "checked evidence matches this analysis",
-      "standingStale": "evidence changed since this analysis",
-      "standingUnknown": "some evidence could not be rechecked",
-      "ungrounded": "the reads behind this answer could not be proven",
-      "changedTitle": "What changed since the last one",
-      "changeAdded": "new",
-      "changeRemoved": "gone",
-      "changeRewritten": "rewritten",
-      "noVersionTitle": "Nothing has been written yet",
-      "noVersionBody": "Ask an agent to read this folder once and say what the product is and how it moves. The answer stays here, and the next writing shows what changed.",
-      "rewrite": "Write it again",
-      "versionsLabel": "{count, number} kept.",
-      "sampleBody": "Open your folder to read its saved product explanations and earlier versions here.",
-      "sampleTitle": "No saved product explanations yet",
-      "exploreConnections": "Explore connections"
+      "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every concept.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full concept slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge."
     },
     "core": {
       "brief": "Brief",
@@ -251,78 +221,6 @@
       }
     },
     "harnessTab": {
-      "open": "Explore the harness",
-      "getApp": "Get the app",
-      "visual": {
-        "title": "Declared guidance across {count, number} domains",
-        "fieldLabel": "Declared guidance by domain",
-        "mode": {
-          "label": "Guidance reading mode",
-          "diagram": "Diagram",
-          "text": "Text"
-        },
-        "collection": {
-          "eyebrow": "Guidance evidence",
-          "none": "No entries in this group.",
-          "separate": {
-            "action": "Separate {role}",
-            "title": "Separately counted {role}",
-            "description": "These declarations are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to a domain's scoped count."
-          },
-          "outside": {
-            "action": "Outside mapping",
-            "title": "Outside the domain mapping",
-            "description": "These scoped declarations do not match the ontology's recorded domain entrypoints. That does not establish broken code, universal scope, or an absent file."
-          },
-          "unreached": {
-            "action": "Unreached entrypoints",
-            "title": "Unreached capability entrypoints",
-            "description": "These capability entrypoints are not reached by a path-scoped instruction declaration. Separately counted instructions may still exist. This capability count is not an outside-declaration count."
-          },
-          "findings": {
-            "action": "Findings",
-            "title": "All harness findings",
-            "description": "These findings retain their original paths and messages. They are not attributed to a domain without a supporting join.",
-            "independence": "Differences between Codex and Claude instruction trees can be informational; this list is not an instruction to make independent harnesses identical."
-          }
-        },
-        "inventoryCaption": "{guides, number} guide files · {checks, number} check items.",
-        "diagramCaption": "Diagram numbers count scoped declarations attributed to each domain; they do not show execution results.",
-        "findingSummary": "Open in Harness",
-        "coverage": "{role} in {covered, number} of {total, number}",
-        "role": {
-          "told": "Instructions",
-          "gated": "Hooks",
-          "watched": "Checks & workflows"
-        },
-        "emptyRoleLabel": "{domain}: no scoped {role}",
-        "filledRoleLabel": "{domain}: {role}, {count, number} declarations",
-        "popupLabel": "{domain} · {role} evidence",
-        "popupFallbackLabel": "Guidance evidence",
-        "close": "Close",
-        "zeroScoped": "No scoped {role} declaration was attributed to this domain.",
-        "exactCount": "{count, number} scoped declarations were attributed to this domain.",
-        "extractedScope": "Extracted scope",
-        "noExtractedScope": "No path scope extracted. This scan did not establish a path filter; it does not prove unrestricted runtime scope.",
-        "matchedEntrypoints": "Matching capability entrypoints",
-        "tools": "Read by",
-        "sourceId": "Source identity",
-        "sourceLabel": "Source label",
-        "globalCount": "Show {count, number} separate entries",
-        "globalExplanation": "These entries are counted separately because no path scope was extracted, or their scope matches every recorded domain. They are not added to this domain's scoped count.",
-        "globalNone": "No global declarations in this role.",
-        "discoveredTests": "{count, number} test files were discovered under recorded capability paths. Discovery is separate from a declared check scope.",
-        "limit": "Attribution uses declared path-prefix reach. It does not prove the path is current, a hook is installed or ran, or a check or workflow passed."
-      },
-      "more": "{count, number} more domains",
-      "reading": "Reading the folder.",
-      "unreadable": "The guide files could not be read. Reopening the folder tries again.",
-      "noSource": "Check the code repository for this folder. Guidance can be measured when one bound repository can be identified.",
-      "drift": {
-        "title": "{count, number} guidance and configuration findings",
-        "caption": "File differences and reference or configuration findings. Agent-specific instructions do not need to be identical.",
-        "none": "No findings to show."
-      },
       "preview": {
         "title": "Guidance and checks by code area",
         "body": "See which areas have instructions, rules that block changes, and automated checks.",
@@ -353,24 +251,6 @@
             "setup": "Review the target paths of automated checks such as tests and lint. A check file does not prove that the check ran or passed."
           }
         }
-      },
-      "availability": {
-        "app-only": {
-          "title": "Open this folder in the app",
-          "description": "The browser cannot read hidden folders, so guidance coverage is measured in the app."
-        },
-        "no-source": {
-          "title": "Check the code repository",
-          "description": "Check the code repository for this folder. Guidance can be measured when one bound repository can be identified."
-        },
-        "reading": {
-          "title": "Reading guidance",
-          "description": "Atlas is reading guidance and checks from the connected repository."
-        },
-        "unreadable": {
-          "title": "Guidance could not be read",
-          "description": "Reopen the folder to try reading its guidance and checks again."
-        }
       }
     },
     "analysis": {
@@ -379,8 +259,6 @@
       "system": "System relationships",
       "records": "Review summary",
       "wiki": "Wiki",
-      "guidance": "Guidance",
-      "explanations": "Written explanations",
       "example": "BUNDLED EXAMPLE",
       "question": "Analysis question",
       "relationships": "Relationships",
@@ -417,6 +295,7 @@
       },
       "empty": "Open an ontology folder to inspect its recorded relationships.",
       "legacy": "This saved link now opens the corresponding question in Analysis.",
+      "flowRetired": "{history, select, available {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Open the agent panel's Findings & history to read them, or ask your coding agent through MCP.} other {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Ask your coding agent to read them through MCP.}}",
       "sourceStatus": {
         "example": "Source · not checked in this example",
         "reading": "Source · checking",

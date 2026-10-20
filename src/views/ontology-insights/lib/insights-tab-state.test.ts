@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_INSIGHTS_TAB,
-  INSIGHTS_CORES,
+  INSIGHTS_SECTIONS,
   INSIGHTS_TABS,
-  ONTOLOGY_TABS,
   buildInsightsTabHref,
-  coreOfTab,
+  harnessOverviewHref,
   parseInsightsTab,
   parseInsightsTabHref,
-  tabOfCore,
 } from "./insights-tab-state";
 
 describe("parseInsightsTab", () => {
@@ -20,19 +18,14 @@ describe("parseInsightsTab", () => {
 
   it("accepts every question tab", () => {
     expect(INSIGHTS_TABS).toEqual([
-      // What in this reader's understanding has to change, across all three cores.
       "brief",
-      // The two cores that answer for themselves; the rest are the ontology's questions.
       "library",
-      "harness",
       "do-next",
       "unmatched",
       "composition",
       "connections",
       "boundaries",
       "growth",
-      // The one tab written by an agent: prose on what this product is and how it moves.
-      "flow",
     ]);
     for (const tab of INSIGHTS_TABS) {
       expect(parseInsightsTab(tab)).toBe(tab);
@@ -46,6 +39,11 @@ describe("parseInsightsTab", () => {
 
   it("maps a legacy structure tab link to composition", () => {
     expect(parseInsightsTab("structure")).toBe("composition");
+  });
+
+  it("falls back to the default tab for the retired Guidance and Written explanations links", () => {
+    expect(parseInsightsTab("harness")).toBe(DEFAULT_INSIGHTS_TAB);
+    expect(parseInsightsTab("flow")).toBe(DEFAULT_INSIGHTS_TAB);
   });
 
   it("falls back to the default tab for unknown values (old reader-intent tabs included)", () => {
@@ -62,21 +60,18 @@ describe("the freshness rename", () => {
   });
 });
 
-describe("the first row names the thing a tab is about", () => {
-  it("puts every ontology question under the ontology, and the other three under themselves", () => {
-    expect(INSIGHTS_CORES).toEqual(["brief", "ontology", "library", "harness"]);
-    for (const tab of ONTOLOGY_TABS) expect(coreOfTab(tab)).toBe("ontology");
-    expect(coreOfTab("brief")).toBe("brief");
-    expect(coreOfTab("library")).toBe("library");
-    expect(coreOfTab("harness")).toBe("harness");
+describe("the section bar", () => {
+  it("holds System relationships, Review summary and Wiki, in that order", () => {
+    expect(INSIGHTS_SECTIONS).toEqual(["connections", "brief", "library"]);
+    for (const section of INSIGHTS_SECTIONS) expect(INSIGHTS_TABS).toContain(section);
   });
+});
 
-  it("opens the ontology on its first question rather than on an empty shelf", () => {
-    expect(tabOfCore("ontology")).toBe("do-next");
-    expect(tabOfCore("brief")).toBe("brief");
-    expect(tabOfCore("library")).toBe("library");
-    // Every core lands on a real tab, so the address always names something drawable.
-    for (const core of INSIGHTS_CORES) expect(INSIGHTS_TABS).toContain(tabOfCore(core));
+describe("harnessOverviewHref", () => {
+  it("opens At a glance and keeps every other flag", () => {
+    expect(harnessOverviewHref("?tab=harness")).toBe("/architecture/?view=overview");
+    expect(harnessOverviewHref("?tab=harness&guides=off")).toBe("/architecture/?guides=off&view=overview");
+    expect(harnessOverviewHref("?guides=off&tab=harness&via=x")).toBe("/architecture/?guides=off&via=x&view=overview");
   });
 });
 
@@ -121,8 +116,8 @@ describe("switching tabs keeps the rest of the address", () => {
   });
 
   it("replaces a stale tab rather than appending a second one", () => {
-    expect(buildInsightsTabHref("flow", "/ontology/insights/", "?tab=growth")).toBe(
-      "/ontology/insights/?tab=flow",
+    expect(buildInsightsTabHref("brief", "/ontology/insights/", "?tab=growth")).toBe(
+      "/ontology/insights/?tab=brief",
     );
   });
 });
