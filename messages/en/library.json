@@ -736,6 +736,7 @@
   },
   "workspace": {
     "aria": "Library view",
+    "title": "Library",
     "sources": "Sources",
     "sourcesCount": "Raw source files",
     "wiki": "Wiki",

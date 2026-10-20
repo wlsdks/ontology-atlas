@@ -30,6 +30,7 @@ export function PageHeaderBar({
   actions,
   tabsTestId,
   titleClassName,
+  titleAs: Title = 'h1',
   className,
 }: {
   frame: PageHeaderFrame;
@@ -38,14 +39,16 @@ export function PageHeaderBar({
   tabs?: ReactNode;
   actions?: ReactNode;
   tabsTestId?: string;
-  /** For a page whose tabs need the whole row at a narrow width, e.g. `max-md:hidden`. */
+  /** For a page whose tabs need the whole row at a narrow width, e.g. `max-md:sr-only`. */
   titleClassName?: string;
+  /** `p` where the pane below already owns the page's one h1. */
+  titleAs?: 'h1' | 'p';
   className?: string;
 }) {
   return (
-    <div className={cn('h-15 shrink-0 border-b border-[color:var(--color-divider)]', className)}>
-      <div className={cn('flex h-full items-center gap-5', FRAMES[frame])}>
-        <h1 className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', titleClassName)}>{title}</h1>
+    <div className={cn('sticky top-0 z-20 h-15 shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]', className)}>
+      <div data-page-header-row className={cn('flex h-full items-center gap-5', FRAMES[frame])}>
+        <Title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', titleClassName)}>{title}</Title>
         {tabs ? (
           <div data-testid={tabsTestId} className="min-w-0">
             {tabs}

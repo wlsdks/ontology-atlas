@@ -59,13 +59,14 @@ describe('agents destination', () => {
     expect(screen.getByTestId('acp-runtimes')).toHaveAttribute('data-embedded', 'true');
   });
 
-  it('keeps the lede outside the header so it is not pushed to the far end of the title row', () => {
+  it('keeps the lede out of the header bar: it is the first line of the body', () => {
     renderPage();
     const heading = screen.getByRole('heading', { level: 1 });
     const lede = screen.getByText(ko.agents.lede);
-    const header = heading.closest('header');
-    expect(header).not.toBeNull();
-    expect(header!.contains(lede)).toBe(false);
+    const row = heading.closest('[data-page-header-row]');
+    expect(row).not.toBeNull();
+    expect(row!.contains(lede)).toBe(false);
+    expect(heading.compareDocumentPosition(lede) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('says one lede sentence with no folded paragraph or pointer sentence', () => {

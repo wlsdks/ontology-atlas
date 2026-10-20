@@ -5,14 +5,15 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-menu';
-import { TabBar } from '@/shared/ui';
+import { PageHeaderBar, TabBar } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent';
 import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { cn } from '@/shared/lib/cn';
 import { useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { TermHint } from '@/shared/ui/hints/term-hint';
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME_FORM, PAGE_LEDE } from '@/shared/ui/tokens/page-frame';
 
 import { AGENTS_TAB_PARAM, buildAgentsTabHref, parseAgentsTab, type AgentsTab } from '../lib/agents-tab-state';
 
@@ -86,19 +87,38 @@ export function AgentsPage({
       tabIndex={-1}
       data-testid="agents-page"
       data-agents-tab={tab}
-      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
-      {/* The lede stays outside: `PAGE_HEADER_ROW` is `justify-between` and would push it right. */}
-      <header className={PAGE_HEADER_ROW}>
-        <div className={PAGE_TITLE_ROW}>
-          <h1 className={PAGE_TITLE}>
-            {t('title')}
-          </h1>
-        </div>
-      </header>
+      <PageHeaderBar
+        frame="form"
+        title={t('title')}
+        tabs={
+          <nav data-testid="agents-tabs">
+            <TabBar
+              variant="segmented"
+              idPrefix="agents"
+              ariaLabel={t('workspace.aria')}
+              activeKey={tab}
+              onSelect={selectTab}
+              items={[
+                { key: 'agents', label: t('workspace.agents'), testId: 'agents-tab-agents' },
+                { key: 'models', label: t('workspace.models'), testId: 'agents-tab-models' },
+                {
+                  key: 'mcp',
+                  label: t('workspace.mcp'),
+                  testId: 'agents-tab-mcp',
+                  /* Enabled connectors; omitted until the store answers, so 0 never means "not read". */
+                  count: mcpCount,
+                  countTitle: t('workspace.mcpCount'),
+                },
+              ]}
+            />
+          </nav>
+        }
+      />
+      <div className={cn(PAGE_FRAME_FORM, 'pt-6 md:pt-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]')}>
       <p
         data-testid="agents-lede"
-        className={`mt-2 max-w-2xl ${PAGE_LEDE}`}
+        className={`max-w-2xl ${PAGE_LEDE}`}
       >
         {/* On the web the card below says a browser cannot start programs, so the app is the subject. */}
         {tab === 'mcp'
@@ -109,28 +129,6 @@ export function AgentsPage({
               ? t('lede')
               : t('ledeWeb')}
       </p>
-
-      <nav className="mt-5 border-b border-[color:var(--color-divider)]" data-testid="agents-tabs">
-        <TabBar
-          idPrefix="agents"
-          placement="header"
-          ariaLabel={t('workspace.aria')}
-          activeKey={tab}
-          onSelect={selectTab}
-          items={[
-            { key: 'agents', label: t('workspace.agents'), testId: 'agents-tab-agents' },
-            { key: 'models', label: t('workspace.models'), testId: 'agents-tab-models' },
-            {
-              key: 'mcp',
-              label: t('workspace.mcp'),
-              testId: 'agents-tab-mcp',
-              /* Enabled connectors; omitted until the store answers, so 0 never means "not read". */
-              count: mcpCount,
-              countTitle: t('workspace.mcpCount'),
-            },
-          ]}
-        />
-      </nav>
 
       {/* Only the selected tab mounts, so the panel's id and aria-labelledby follow the tab. */}
       <div
@@ -153,6 +151,7 @@ export function AgentsPage({
         ) : (
           children
         )}
+      </div>
       </div>
     </main>
   );

@@ -736,6 +736,7 @@
   },
   "workspace": {
     "aria": "자료실 보기",
+    "title": "자료실",
     "sources": "원문",
     "sourcesCount": "원문 파일",
     "wiki": "위키",

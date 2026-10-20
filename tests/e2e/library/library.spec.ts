@@ -737,7 +737,7 @@ test.describe("the Library pane", () => {
       };
       const header = document.querySelector('[data-testid="library-header"]')!;
       const tools = document.querySelector('[data-testid="library-strip-tools"]')!;
-      const strip = tools.closest("header")!;
+      const strip = tools.closest("[data-page-header-row]")!;
       const tab = document.querySelector('[data-testid="library-workspace-sources"]')!;
       const info = document.querySelector('[data-testid="library-lede-info"]')!;
       const fold = document.querySelector('[data-testid="library-index-collapse"]')!;
@@ -745,7 +745,7 @@ test.describe("the Library pane", () => {
         inStrip: tools.contains(header),
         visibleTitles: [...header.querySelectorAll("p")].filter((p) => p.getBoundingClientRect().width > 1).length,
         strip: box(strip),
-        stripPaddingRight: parseFloat(getComputedStyle(tools).paddingRight),
+        stripPaddingRight: parseFloat(getComputedStyle(strip).paddingRight),
         tab: box(tab),
         info: box(info),
         fold: box(fold),
