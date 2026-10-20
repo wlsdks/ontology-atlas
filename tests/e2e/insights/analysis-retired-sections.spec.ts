@@ -6,6 +6,7 @@ import { openFolderFromFirstRun } from '../open-folder';
 import { analysisRecordFileName, serializeAnalysisRecord } from '../../../src/entities/analysis-record/model/analysis-record.mts';
 
 const ARCHIVE = '.ontology-atlas/analyses';
+const PROJECT_UID = /^uid: (\S+)$/m.exec(FIXTURE_VAULT['storefront.md'])![1];
 const HASH = `sha256:${'a'.repeat(64)}`;
 
 function savedRun(n: number) {
@@ -15,7 +16,7 @@ function savedRun(n: number) {
     id: `95f4ba81-41f7-483b-a617-2a4be815be3${n}`,
     createdAt: `2026-09-0${n}T08:00:00.000Z`,
     mode: 'meaning' as const,
-    scope: { projectSlug: 'storefront', projectUid: null, targetSlugs: [], profileSlug: null },
+    scope: { projectSlug: 'storefront', projectUid: PROJECT_UID, targetSlugs: [], profileSlug: null },
     request: { id: `user-${n}`, text: `Explain the business flow, run ${n}.`, parentRunId: null },
     origin: { surface: 'analysis' as const, runtimeId: 'test', sessionId: `session-${n}`, userEventId: `user-${n}`, answerEventId: `agent-${n}`, startedAt: `2026-09-0${n}T07:59:00.000Z`, stopReason: 'end_turn', outcome: 'completed' as const },
     basis: { graphHash: HASH, sourceFingerprint: null, profileHash: null, documents: [] },
@@ -55,12 +56,14 @@ test.describe('the retired Guidance and Written explanations addresses', () => {
     await expect(page.getByRole('tab', { name: 'At a glance' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('?tab=flow opens System relationships with the retired notice, not the legacy one', async ({ page }) => {
+  test('?tab=flow opens System relationships with the one-sentence notice, then clears its own address', async ({ page }) => {
     await page.goto('/ko/ontology/insights/?tab=flow&guides=off');
-    await expect(page.getByTestId('analysis-flow-retired')).toContainText('.ontology-atlas/analyses/');
-    await expect(page.getByTestId('analysis-flow-retired')).not.toContainText('에이전트 패널');
+    await expect(page.getByTestId('analysis-flow-retired')).toContainText("'기록된 설명' 탭은 없어졌어요.");
+    await expect(page.getByTestId('analysis-flow-retired-count')).toHaveCount(0);
+    await expect(page.getByTestId('analysis-flow-open-history')).toHaveCount(0);
     await expect(page.getByTestId('insights-core-ontology')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('analysis-board')).toBeVisible();
+    await expect.poll(() => page.url()).toMatch(/\/ko\/ontology\/insights\/\?guides=off$/);
     await page.getByTestId('insights-core-brief').click();
     await expect(page.getByTestId('analysis-flow-retired')).toHaveCount(0);
   });
@@ -109,8 +112,17 @@ test('visiting every section and the retired Flow address leaves saved explanati
     await expect(page.locator('#main [role="alert"], [data-testid="analysis-workbench-error"]')).toHaveCount(0);
   }
   await page.goto('/en/ontology/insights/?tab=flow&guides=off');
-  await expect(page.getByTestId('analysis-flow-retired')).toContainText("Findings & history");
+  await expect(page.getByTestId('analysis-flow-retired-count')).toContainText('The 3 explanations saved in this folder stay');
+  await expect.poll(() => page.url()).toMatch(/\/en\/ontology\/insights\/\?guides=off$/);
   await expect(page.locator('#main [role="alert"], [data-testid="analysis-workbench-error"]')).toHaveCount(0);
+  await page.getByTestId('analysis-flow-open-history').click();
+  await expect(page.getByRole('tab', { name: 'Findings & history' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('analysis-history-empty')).toHaveCount(0);
+  await page.getByRole('combobox', { name: /version/i }).click();
+  await expect(page.getByRole('option')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+  await page.getByTestId('analysis-workbench-close').click();
+  await expect(page.getByTestId('insights-agent-dock-frame')).toHaveAttribute('data-dock-state', 'put-away');
 
   const opener = page.getByTestId('analysis-inspect-selected');
   await opener.click();
@@ -118,12 +130,6 @@ test('visiting every section and the retired Flow address leaves saved explanati
   await expect(chat).toHaveAttribute('data-acp-status', 'ready');
   const draft = 'Keep this unsent request after the sections changed';
   await chat.getByRole('textbox').fill(draft);
-  await page.getByRole('tab', { name: 'Findings & history' }).click();
-  await expect(page.getByTestId('analysis-history-empty')).toHaveCount(0);
-  await page.getByRole('combobox', { name: /version/i }).click();
-  await expect(page.getByRole('option')).toHaveCount(3);
-  await page.keyboard.press('Escape');
-
   await page.getByTestId('analysis-workbench-close').click();
   await expect(page.getByTestId('insights-agent-dock-frame')).toHaveAttribute('data-dock-state', 'put-away');
   await opener.click();

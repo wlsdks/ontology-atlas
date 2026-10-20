@@ -228,7 +228,6 @@
         "pauseAnimation": "예시 애니메이션 일시 정지",
         "resumeAnimation": "예시 애니메이션 다시 재생",
         "instruction": "궁금한 역할을 눌러 연결 방법을 확인하세요.",
-        "openHarness": "하네스에서 지침 보기",
         "area": {
           "title": "결제"
         },
@@ -295,7 +294,12 @@
       },
       "empty": "온톨로지 폴더를 열면 기록된 연결을 분석할 수 있어요.",
       "legacy": "저장된 링크에 해당하는 질문을 새 분석 화면에서 열었어요.",
-      "flowRetired": "{history, select, available {'기록된 설명' 탭은 없어졌어요. 전에 저장한 설명은 .ontology-atlas/analyses/ 폴더에 그대로 있어요. 에이전트 패널의 '이슈·기록'에서 읽거나, 코딩 에이전트에게 MCP로 읽어 달라고 하세요.} other {'기록된 설명' 탭은 없어졌어요. 전에 저장한 설명은 .ontology-atlas/analyses/ 폴더에 그대로 있어요. 코딩 에이전트에게 MCP로 읽어 달라고 하세요.}}",
+      "flowRetired": {
+        "first": "'기록된 설명' 탭은 없어졌어요.",
+        "count": "이 폴더에 저장해 둔 설명 {count}개는 .ontology-atlas/analyses/ 폴더에 그대로 있어요.",
+        "open": "이슈·기록에서 보기",
+        "web": "코딩 에이전트에게 MCP로 읽어 달라고 하세요."
+      },
       "sourceStatus": {
         "example": "소스 · 예제에서 미확인",
         "reading": "소스 · 확인 중",

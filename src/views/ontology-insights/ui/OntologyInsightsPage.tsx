@@ -15,6 +15,7 @@ import { PAGE_FRAME } from '@/shared/ui/tokens/page-frame';
 import { type KnowledgeGraphNode, type KnowledgeGraphEdge } from '@/entities/knowledge-graph';
 import { useRouter } from '@/i18n/navigation';
 import { parseInsightsTab, buildInsightsTabHref, harnessOverviewHref, INSIGHTS_SECTIONS, type InsightsTab } from '../lib/insights-tab-state';
+import { InsightsLoadingView } from './InsightsLoadingView';
 import { AnalysisWorkspace } from './analysis/AnalysisWorkspace';
 import { AnalysisRecords } from './analysis/AnalysisRecords';
 
@@ -52,6 +53,9 @@ export function OntologyInsightsPage() {
     window.addEventListener('popstate', sync);
     return () => window.removeEventListener('popstate', sync);
   }, [router, search]);
+  useEffect(() => {
+    if (flowRetired) window.history.replaceState(null, '', buildInsightsTabHref('connections', window.location.pathname));
+  }, [flowRetired]);
   const review = search.get('review');
   const initialClaim = review?.startsWith('analysis:') ? review.slice(9) : undefined;
   const initialEdge = review?.startsWith('relation:') ? review.slice(9) : undefined;
@@ -60,6 +64,7 @@ export function OntologyInsightsPage() {
   const [dockHost, setDockHost] = useState<HTMLDivElement | null>(null);
   const record = RECORDS.has(tab);
   const evidence = tab === 'do-next' || tab === 'unmatched';
+  if (search.get('tab') === 'harness') return <InsightsLoadingView />;
   return <VaultSourceHydrationBoundary><div className="relative flex min-h-0 min-w-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+1px)] lg:pb-0">
     <main id="main" tabIndex={-1} className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto" data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence">
       <PageHeaderBar
@@ -81,10 +86,9 @@ export function OntologyInsightsPage() {
       <section id={`insights-tabpanel-${record ? tab : 'connections'}`} role="tabpanel" aria-labelledby={`insights-tab-${record ? tab : 'connections'}`} data-insights-panel={record ? tab : 'analysis'}>
       {error ? <p role="alert" className="text-body text-[color:var(--color-status-danger)]">{error.message}</p> : null}
       {!insight ? <p role="status" className="text-body">{t('loading')}</p> : nodes.length === 0 ? <div className="flex flex-col gap-4"><p className="text-body">{t('analysis.empty')}</p><OpenVaultCta testId="analysis-open-vault" /></div> : <>
-        <AnalysisRecords dockHost={dockHost} inspectRequest={inspectRequest} onAgentReady={setAgentReady} active={record} tab={tab} onTab={setTab} nodes={nodes} edges={edges} />
+        <AnalysisRecords dockHost={dockHost} inspectRequest={inspectRequest} onAgentReady={setAgentReady} flowRetired={flowRetired} active={record} tab={tab} onTab={setTab} nodes={nodes} edges={edges} />
         <div hidden={record}>
-          {flowRetired ? <p data-testid="analysis-flow-retired" className="mb-3 text-label text-[color:var(--color-text-tertiary)]">{t('analysis.flowRetired', { history: agentReady ? 'available' : 'other' })}</p>
-            : search.get('tab') && !['connections', 'do-next'].includes(search.get('tab')!) ? <p className="mb-3 text-label text-[color:var(--color-text-tertiary)]">{t('analysis.legacy')}</p> : null}
+          {!flowRetired && search.get('tab') && !['connections', 'do-next'].includes(search.get('tab')!) ? <p className="mb-3 text-label text-[color:var(--color-text-tertiary)]">{t('analysis.legacy')}</p> : null}
           <AnalysisWorkspace agentReady={agentReady} onInspect={text => setInspectRequest(previous => ({ text, scope: identity, nonce: (previous?.nonce ?? 0) + 1 }))} active={!record} key={`${identity}:${evidence}`} nodes={nodes} edges={edges} docs={docs} mode={mode} initialQuestion={evidence ? 'evidence' : 'relationships'} initialClaim={initialClaim} initialEdge={initialEdge} />
         </div>
       </>}

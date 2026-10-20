@@ -28,6 +28,7 @@ export function InsightsAgentDock({
   vaultRoot,
   mcpServers,
   prefillRequest,
+  sectionRequest,
   contextLabel,
   knownSlugs,
   knownRelations,
@@ -45,6 +46,7 @@ export function InsightsAgentDock({
   vaultRoot: string;
   mcpServers: unknown[];
   prefillRequest: InsightsAgentPrefill | null;
+  sectionRequest?: { tab: 'history'; nonce: number } | null;
   contextLabel: string;
   knownSlugs: ReadonlySet<string>;
   knownRelations: ReadonlySet<string>;
@@ -58,8 +60,8 @@ export function InsightsAgentDock({
   const chatWidth = useChatWidth();
   const reducedMotion = usePrefersReducedMotion();
   const presence = usePanelPresence(open);
-  const [standing, setStanding] = useState(open && prefillRequest !== null);
-  if (open && prefillRequest && !standing) setStanding(true);
+  const [standing, setStanding] = useState(open && (prefillRequest !== null || !!sectionRequest));
+  if (open && (prefillRequest || sectionRequest) && !standing) setStanding(true);
   const [openingRequest, setOpeningRequest] = useState<{ text: string; nonce: number; scopeKey: string } | null>(null);
   const [parentRunId, setParentRunId] = useState<string | null>(null);
   const [parentRequestText, setParentRequestText] = useState<string | null>(null);
@@ -116,14 +118,14 @@ export function InsightsAgentDock({
           : 'pointer-events-none w-0 lg:w-0',
       )}
     >
-      {standing && prefillRequest ? (
+      {standing && (prefillRequest || sectionRequest) ? (
         <Surface
           open={standing}
           as="aside"
           motion="overlay"
           data-testid="insights-agent-dock"
           data-agent-dock-surface="inset"
-          data-agent-request-kind={prefillRequest.kind}
+          data-agent-request-kind={prefillRequest?.kind}
           className={cn(
             `${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 lg:left-auto lg:w-[calc(var(--insights-agent-chat-width)-var(--chrome-inset))]`,
             !open && 'map-overlay-out',
@@ -143,7 +145,8 @@ export function InsightsAgentDock({
             capture={capture}
             open={open}
             initialTab="conversation"
-            requestNonce={prefillRequest.nonce}
+            requestNonce={prefillRequest?.nonce}
+            sectionRequest={sectionRequest ?? undefined}
             onClose={onClose}
             onEvidence={onEvidence}
             onRequest={(text, parentId) => { setParentRunId(parentId); setParentRequestText(parentId ? text : null); setOpeningRequest({ text, nonce: ++requestSerial.current, scopeKey: JSON.stringify([vaultRoot, 'meaning']) }); }}
@@ -156,7 +159,7 @@ export function InsightsAgentDock({
             vaultRoot={vaultRoot}
             mcpServers={mcpServers}
             sessionEnabled={
-              open && enabledRequestNonce === prefillRequest.nonce
+              open && enabledRequestNonce === (prefillRequest?.nonce ?? null)
             }
             putAway={!open}
             prefillRequest={prefillRequest}

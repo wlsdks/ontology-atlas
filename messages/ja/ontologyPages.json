@@ -228,7 +228,6 @@
         "pauseAnimation": "サンプルのアニメーションを一時停止",
         "resumeAnimation": "サンプルのアニメーションを再開",
         "instruction": "役割を選ぶと、つなぎ方が表示されます。",
-        "openHarness": "ハーネスで案内を見る",
         "area": {
           "title": "決済"
         },
@@ -295,7 +294,12 @@
       },
       "empty": "オントロジーフォルダを開くと、記録された関係を確認できます。",
       "legacy": "保存されたリンクに対応する問いを新しい分析画面で開きました。",
-      "flowRetired": "{history, select, available {「保存された説明」タブはなくなりました。以前に保存した説明は「.ontology-atlas/analyses/」にそのまま残っています。エージェントパネルの「指摘と履歴」で読むか、コーディングエージェントにMCP経由で読ませてください。} other {「保存された説明」タブはなくなりました。以前に保存した説明は「.ontology-atlas/analyses/」にそのまま残っています。コーディングエージェントにMCP経由で読ませてください。}}",
+      "flowRetired": {
+        "first": "「保存された説明」タブはなくなりました。",
+        "count": "このフォルダーに保存した説明{count}件は「.ontology-atlas/analyses/」にそのまま残っています。",
+        "open": "指摘と履歴で見る",
+        "web": "コーディングエージェントにMCPで読むよう頼んでください。"
+      },
       "sourceStatus": {
         "example": "ソース · この例では未確認",
         "reading": "ソース · 確認中",

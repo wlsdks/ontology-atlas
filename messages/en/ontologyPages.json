@@ -228,7 +228,6 @@
         "pauseAnimation": "Pause example animation",
         "resumeAnimation": "Resume example animation",
         "instruction": "Select a role to see how to connect it.",
-        "openHarness": "View guidance in Harness",
         "area": {
           "title": "Payments"
         },
@@ -295,7 +294,12 @@
       },
       "empty": "Open an ontology folder to inspect its recorded relationships.",
       "legacy": "This saved link now opens the corresponding question in Analysis.",
-      "flowRetired": "{history, select, available {The Written explanations tab is gone. Explanations saved earlier stay in .ontology-atlas/analyses/. Read them in the agent panel's Findings & history, or ask your coding agent to read them through MCP.} other {The Written explanations tab is gone. Explanations saved earlier stay in .ontology-atlas/analyses/. Ask your coding agent to read them through MCP.}}",
+      "flowRetired": {
+        "first": "The Written explanations tab is gone.",
+        "count": "{count, plural, one {The # explanation saved in this folder stays} other {The # explanations saved in this folder stay}} in .ontology-atlas/analyses/.",
+        "open": "Open in Findings & history",
+        "web": "Ask your coding agent to read them through MCP."
+      },
       "sourceStatus": {
         "example": "Source · not checked in this example",
         "reading": "Source · checking",

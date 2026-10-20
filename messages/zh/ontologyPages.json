@@ -228,7 +228,6 @@
         "pauseAnimation": "暂停示例动画",
         "resumeAnimation": "继续示例动画",
         "instruction": "选择一个角色，查看如何接入。",
-        "openHarness": "在 Harness 中查看指引",
         "area": {
           "title": "支付"
         },
@@ -295,7 +294,12 @@
       },
       "empty": "打开本体文件夹以检查其记录的关系。",
       "legacy": "已在新分析界面中打开保存链接对应的问题。",
-      "flowRetired": "{history, select, available {“已保存的说明”标签页已移除。之前保存的说明仍保留在 .ontology-atlas/analyses/ 中。可在代理面板的“发现与历史”中阅读，或让你的编码代理通过 MCP 读取。} other {“已保存的说明”标签页已移除。之前保存的说明仍保留在 .ontology-atlas/analyses/ 中。请让你的编码代理通过 MCP 读取。}}",
+      "flowRetired": {
+        "first": "“已保存的说明”标签页已移除。",
+        "count": "此文件夹中保存的 {count} 条说明仍在 .ontology-atlas/analyses/ 中。",
+        "open": "在“发现与历史”中查看",
+        "web": "请让编码代理通过 MCP 读取。"
+      },
       "sourceStatus": {
         "example": "源码 · 此示例中未检查",
         "reading": "源码 · 检查中",
