@@ -38,6 +38,7 @@ export const POST_MERGE_SPECS = [
   "design-audits/responsive-overflow-audit.spec.ts",
   "design-audits/screen-hierarchy.spec.ts",
   "design-audits/scroll-end-gap.spec.ts",
+  "wait-stage-placement.spec.ts",
   "design-audits/surface-vocabulary-ratchet.spec.ts",
   // Motion curves and frame samples on shared building blocks
   "motion/motion-checkbox.spec.ts",

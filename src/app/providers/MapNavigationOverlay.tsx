@@ -32,13 +32,18 @@ export function MapNavigationOverlay() {
       data-map-navigation-scene={sceneVisible ? 'shown' : 'held'}
       className="fixed inset-y-0 left-0 right-0 z-30 flex flex-col items-center justify-center bg-[color:var(--color-canvas)] px-6 pb-[var(--topology-mobile-bottom-tab-reserve)] lg:left-[var(--app-nav-rail-width)] lg:pb-0">
       {sceneVisible ? (
-        <div className="map-overlay-in flex flex-col items-center gap-8">
-          <MapEntryLoadingScene title={t('mapComing')} description={pending?.phase === 'stalled' ? t('takingLonger') : t('loadingDetail')} />
-          <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => {
-            const from = pending?.from;
-            cancelMapNavigation();
-            if (from) router.replace(from);
-          }}>{t('returnToPrevious')}</Button>
+        <div className="relative w-full flex-1">
+          <MapEntryLoadingScene
+            title={t('mapComing')}
+            description={pending?.phase === 'stalled' ? t('takingLonger') : t('loadingDetail')}
+            action={
+              <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => {
+                const from = pending?.from;
+                cancelMapNavigation();
+                if (from) router.replace(from);
+              }}>{t('returnToPrevious')}</Button>
+            }
+          />
         </div>
       ) : null}
     </Surface>

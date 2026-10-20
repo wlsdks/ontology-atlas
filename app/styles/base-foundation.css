@@ -148,13 +148,17 @@
     zoom: calc(1 / var(--topology-ui-scale-factor));
   }
 
+  .atlas-waiting-mark-2x {
+    zoom: 2;
+  }
+
   .atlas-waiting-mark[data-waiting-motion='running'] {
     animation-play-state: running;
   }
 
   /* The full-screen route's existing delay hides the whole status group. Its
      child pose clock waits the same delay, so hidden character frames do no work. */
-  .route-loading-in > .atlas-waiting-mark {
+  .route-loading-in .atlas-waiting-mark {
     animation-delay: inherit;
   }
 

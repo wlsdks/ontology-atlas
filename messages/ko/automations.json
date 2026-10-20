@@ -39,7 +39,7 @@
   "appRequiredTitle": "자동화는 데스크톱 앱에서만 실행돼요",
   "appRequiredDescription": "앱에서 폴더를 열면 이 화면에서 바로 예약을 만들 수 있어요.",
   "getApp": "앱 받기",
-  "loadingTitle": "이 폴더의 예약을 읽는 중",
+  "loadingTitle": "자동 점검을 불러오는 중",
   "malformedTitle": "예약 파일을 확인해야 해요",
   "malformedDescription": "로컬 예약 파일을 읽지 못해 그대로 두었어요. 고친 뒤 다시 읽어 주세요.",
   "unavailableTitle": "이 폴더의 예약을 읽지 못했어요",

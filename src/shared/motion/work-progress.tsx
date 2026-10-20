@@ -1,5 +1,5 @@
 import { cn } from "@/shared/lib/cn";
-import type { WorkPhase } from "./work-status";
+import type { WorkPhase } from "./work-glyph";
 
 export function WorkProgress({
   phase,

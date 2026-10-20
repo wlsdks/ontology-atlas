@@ -17,7 +17,7 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, PageHeaderBar, TabBar, useToast } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -158,12 +158,12 @@ export function AutomationsPage({
           data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
           <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
         </Button> : null} />
-      <div className={cn(PAGE_FRAME_FORM, "flex flex-1 flex-col gap-6 pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
+      <div className={cn(PAGE_FRAME_FORM, "relative flex flex-1 flex-col gap-6 pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
         <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
           {state === "loading" ? (
-            <div role="status" aria-busy="true"><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
+            <WaitStage mark="mascot" title={t("loadingTitle")} data-testid="automations-loading" aria-busy="true" delayed />
           ) : state === "malformed" || state === "unavailable" ? (
             <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
