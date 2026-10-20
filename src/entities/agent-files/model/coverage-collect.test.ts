@@ -110,6 +110,7 @@ describe('candidateScopeDeclarations — root guides, permissions and exclusions
       column: 'gated',
       denyAndAskRuleCount: 3,
       declaresPath: false,
+      tools: ['claude-code'],
     });
 
     const allowOnly = candidateScopeDeclarations(
@@ -128,5 +129,38 @@ describe('candidateScopeDeclarations — root guides, permissions and exclusions
     ).filter((entry) => entry.origin === 'exclusion');
     expect(exclusions).toHaveLength(1);
     expect(exclusions[0]).toMatchObject({ column: 'gated', declaresPath: false, scopes: [] });
+  });
+});
+
+describe('candidateScopeDeclarations — a glob with no literal prefix reaches the root', () => {
+  it('declares no path for a rule whose only glob starts with a wildcard', () => {
+    const rule = '---\npaths:\n  - "**/*.tsx"\n---\n';
+    const [entry] = candidateScopeDeclarations(
+      input({ contents: new Map([['.claude/rules/tsx.md', rule]]) }),
+    );
+    expect(entry).toMatchObject({ declaresPath: false, scopes: [] });
+  });
+
+  it('declares no path for a workflow with any root-reaching filter', () => {
+    const flat = ['on:', '  push:', '    paths:', "      - '**.ts'", '      - package.json', 'jobs:'].join('\n');
+    const braces = ['on:', '  push:', '    paths:', "      - '{src,app}/**'", 'jobs:'].join('\n');
+    const entries = candidateScopeDeclarations(
+      input({
+        workflows: new Map([
+          ['.github/workflows/a.yml', flat],
+          ['.github/workflows/b.yml', braces],
+        ]),
+      }),
+    );
+    expect(entries.map((entry) => entry.declaresPath)).toEqual([false, false]);
+  });
+});
+
+describe('candidateScopeDeclarations — only files that tell or gate count', () => {
+  it('leaves out .cursorrules and .cursorindexingignore', () => {
+    const entries = candidateScopeDeclarations(
+      input({ contents: new Map([['.cursorrules', ''], ['.cursorindexingignore', '']]) }),
+    );
+    expect(entries).toEqual([]);
   });
 });
