@@ -13,10 +13,9 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
-import { Button, buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
+import { Button, buttonVariants, Chip, EmptyState, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { PAGE_TITLE } from '@/shared/ui/tokens/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -246,30 +245,26 @@ function HarnessPageInner() {
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
-      {/* The name, the one tab set and the page's one action share a 60px line, so the title never moves and tabs stay under the pointer. */}
-      <div
-        className={cn(
-          'flex h-15 shrink-0 items-center gap-5 border-b border-[color:var(--color-divider)]',
-          HARNESS_GUTTER_X,
-        )}
-      >
-        <h1 className={PAGE_TITLE}>{t('title')}</h1>
-        <div data-testid="harness-views" className="min-w-0">
-          {switcher}
-        </div>
-        {overviewFills ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            data-testid="harness-overview-retry"
-            className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)]"
-            onClick={rereadHarness}
-          >
-            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
-            <span className="max-sm:sr-only">{t('overviewReread')}</span>
-          </Button>
-        ) : null}
-      </div>
+      <PageHeaderBar
+        frame="harness"
+        title={t('title')}
+        tabsTestId="harness-views"
+        tabs={switcher}
+        actions={
+          overviewFills ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="harness-overview-retry"
+              className="border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)]"
+              onClick={rereadHarness}
+            >
+              <RefreshCw size={ICON_SIZE.sm} aria-hidden />
+              <span className="max-sm:sr-only">{t('overviewReread')}</span>
+            </Button>
+          ) : null
+        }
+      />
 
       {view === 'architecture' ? (
         <ArchitecturePage

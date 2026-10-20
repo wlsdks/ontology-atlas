@@ -228,7 +228,7 @@ export function TabBar({
             vertical
               ? "motion-indicator rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
               : segmented
-                ? "motion-indicator rounded-chip bg-[color:var(--color-elevated)] shadow-[inset_0_0_0_1px_var(--color-border-soft),0_1px_1px_var(--color-surface-deep-a80)]"
+                ? "motion-indicator rounded-chip bg-[color:var(--color-elevated)] shadow-[inset_0_0_0_1px_var(--color-border-soft),inset_0_1px_0_var(--color-overlay-3)]"
                 : "motion-indicator h-[length:var(--tabbar-underline)] bg-[color:var(--color-indigo-accent)]"
           }
           style={indicatorStyle}
