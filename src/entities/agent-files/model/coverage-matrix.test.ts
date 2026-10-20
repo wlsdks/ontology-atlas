@@ -136,3 +136,29 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
     expect(matrix.unreachedCapabilities).toHaveLength(0);
   });
 });
+
+describe('discovered tests for a file path', () => {
+  const fileArea: CoverageAreaInput[] = [
+    {
+      slug: 'domains/cart',
+      title: 'Cart',
+      purpose: 'Holds items.',
+      capabilities: [{ slug: 'capabilities/cart', title: 'Cart', path: 'src/shop/cart.tsx' }],
+    },
+  ];
+
+  it('counts a sibling test of the same stem and no other stem in that folder', () => {
+    const matrix = buildCoverageMatrix([], fileArea, [
+      'src/shop/cart.test.tsx',
+      'src/shop/__tests__/cart.spec.ts',
+      'src/shop/checkout.test.tsx',
+      'src/shop/cartography.test.ts',
+    ]);
+    expect(matrix.areas[0]!.discoveredTests).toBe(2);
+  });
+
+  it('still counts files under a folder path', () => {
+    const matrix = buildCoverageMatrix([], areas, ['src/widgets/ontology-map/a.test.ts']);
+    expect(matrix.areas[0]!.discoveredTests).toBe(1);
+  });
+});

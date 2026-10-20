@@ -58,6 +58,22 @@ function declarationReachesArea(entry: ScopeDeclaration, area: CoverageAreaInput
   );
 }
 
+function testCoversPath(file: string, path: string): boolean {
+  if (file === path || file.startsWith(`${path}/`)) return true;
+  const slash = path.lastIndexOf('/');
+  const base = path.slice(slash + 1);
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0) return false;
+  const dir = path.slice(0, slash + 1);
+  const name = file.slice(file.lastIndexOf('/') + 1);
+  const folder = file.slice(0, file.length - name.length);
+  return (
+    (folder === dir || folder === `${dir}__tests__/`) &&
+    name.startsWith(`${base.slice(0, dot)}.`) &&
+    /\.(test|spec)\./.test(name)
+  );
+}
+
 /** The only place the join rule lives. */
 export function buildCoverageMatrix(
   declarations: readonly ScopeDeclaration[],
@@ -87,9 +103,7 @@ export function buildCoverageMatrix(
     }
     for (const column of COLUMNS) sortDeclarations(buckets[column]);
     const discoveredTests = testFiles.filter((file) =>
-      area.capabilities.some(
-        (capability) => file === capability.path || file.startsWith(`${capability.path}/`),
-      ),
+      area.capabilities.some((capability) => testCoversPath(file, capability.path)),
     ).length;
     return {
       ...area,
