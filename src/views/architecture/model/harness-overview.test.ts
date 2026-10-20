@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { CoverageAreaInput, HarnessReport, ScopeDeclaration } from '@/entities/agent-files';
 
-import { buildHarnessOverview, EVERYWHERE_ROW, overviewCellKey } from './harness-overview';
+import { buildHarnessOverview, EVERYWHERE_ROW, originCounts, overviewCellKey } from './harness-overview';
 
 function declaration(
   overrides: Partial<ScopeDeclaration> & Pick<ScopeDeclaration, 'id'>,
@@ -135,5 +135,24 @@ describe('buildHarnessOverview', () => {
     );
     expect(overview.missingHookScripts).toEqual(['block-npm-publish.sh']);
     expect([...overview.trustGatedConfigs]).toEqual(['.codex/hooks.json']);
+  });
+});
+
+describe('originCounts', () => {
+  it('orders origins by count, then by the fixed order', () => {
+    const entries = [
+      declaration({ id: '1', origin: 'workflow' }),
+      declaration({ id: '2', origin: 'rule' }),
+      declaration({ id: '3', origin: 'hook' }),
+      declaration({ id: '4', origin: 'rule' }),
+      declaration({ id: '5', origin: 'nested-agents' }),
+    ];
+    expect(originCounts(entries)).toEqual([
+      { origin: 'rule', count: 2 },
+      { origin: 'nested-agents', count: 1 },
+      { origin: 'hook', count: 1 },
+      { origin: 'workflow', count: 1 },
+    ]);
+    expect(originCounts([])).toEqual([]);
   });
 });

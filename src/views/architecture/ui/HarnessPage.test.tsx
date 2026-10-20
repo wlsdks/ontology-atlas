@@ -640,7 +640,9 @@ describe('the at-a-glance table', () => {
     mount();
     expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '0');
     expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
-    expect(screen.queryByTestId('harness-overview-panel')).toBeNull();
+    expect(screen.getByTestId('harness-overview-panel-empty')).toHaveTextContent(
+      koMessages.harness.overviewPanelEmpty,
+    );
   });
 });
 

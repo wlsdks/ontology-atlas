@@ -49,6 +49,30 @@ export interface HarnessOverview {
   unreachedPaths: readonly string[];
 }
 
+/** The fixed order origins fall back to when two of them are equally common in a cell. */
+export const ORIGIN_ORDER: readonly ScopeDeclaration['origin'][] = [
+  'root',
+  'rule',
+  'nested-agents',
+  'hook',
+  'git-hook',
+  'permissions',
+  'exclusion',
+  'script',
+  'workflow',
+];
+
+/** What a cell is made of: origins by count, most common first, ties in the fixed order. */
+export function originCounts(
+  entries: readonly ScopeDeclaration[],
+): Array<{ origin: ScopeDeclaration['origin']; count: number }> {
+  const counts = new Map<ScopeDeclaration['origin'], number>();
+  for (const entry of entries) counts.set(entry.origin, (counts.get(entry.origin) ?? 0) + 1);
+  return [...counts]
+    .map(([origin, count]) => ({ origin, count }))
+    .sort((a, b) => b.count - a.count || ORIGIN_ORDER.indexOf(a.origin) - ORIGIN_ORDER.indexOf(b.origin));
+}
+
 function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort();
 }

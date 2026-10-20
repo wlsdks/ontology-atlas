@@ -462,7 +462,7 @@ test.describe("Harness tab layout", () => {
     console.info('GUIDANCE_GEOMETRY_MATRIX', JSON.stringify(measurements));
   });
 
-  test('At a glance fits the window: only its table scrolls, under fixed column heads', async ({ page }) => {
+  test('At a glance fits the window: the page never scrolls and the column heads pin over the rows', async ({ page }) => {
     await installHarnessRuntime(page, { includeOverflowDomains: true });
     await mountHarnessVault(page);
     await page.setViewportSize({ width: 1040, height: 720 });
@@ -476,11 +476,10 @@ test.describe("Harness tab layout", () => {
     const gap = () =>
       page.evaluate(() => {
         const top = document.querySelector('[data-testid="harness-overview-scroll"]')!.getBoundingClientRect().top;
-        const th = document.querySelector('[data-testid="harness-overview-table"] th')!.getBoundingClientRect().top;
-        return Math.round(th - top);
+        const head = document.querySelector('[data-harness-head]')!.getBoundingClientRect().top;
+        return Math.round(head - top);
       });
     await expect.poll(gap).toBe(0);
-    await expect(page.getByTestId('harness-overview-gaps')).toBeInViewport();
     expect(await page.evaluate(() => ({ x: scrollX, y: scrollY, overflow: document.documentElement.scrollWidth - innerWidth }))).toEqual({ x: 0, y: 0, overflow: 0 });
   });
 

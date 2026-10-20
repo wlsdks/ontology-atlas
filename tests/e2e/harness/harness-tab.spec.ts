@@ -388,8 +388,9 @@ test.describe("harness tab", () => {
     await expect(page.getByTestId("harness-overview-gaps")).toHaveAttribute("data-gap-count", String(gapCells));
     await expect(page.getByTestId("harness-overview-silent")).toContainText("block-npm-publish");
 
-    /* The vault's own sentence is in the panel, never in a row, and no score, grade or percentage exists. */
-    await expect(page.locator('[data-harness-area="domains/shop-front"]')).not.toContainText("What a shopper touches");
+    /* A row says what its domain is for in one truncated line, with the whole sentence in `title`; no score, grade or percentage exists. */
+    const purpose = page.locator('[data-harness-area="domains/shop-front"] [role="rowheader"] [title]');
+    await expect(purpose).toHaveAttribute("title", /What a shopper touches/);
     expect(await overview.textContent()).not.toMatch(/%|점수|등급|성숙도/);
   });
 
@@ -403,6 +404,7 @@ test.describe("harness tab", () => {
     const panel = page.getByTestId("harness-overview-panel");
     await expect(panel).toBeVisible();
     await expect(panel).toHaveAttribute("data-panel-placement", "beside");
+    await expect(panel).toHaveAttribute("data-panel-cell", "domains/shop-front|told");
     await waitForFiniteAnimations(page);
 
     const tableBox = (await page.getByTestId("harness-overview-table").boundingBox())!;
@@ -428,11 +430,13 @@ test.describe("harness tab", () => {
 
     await page.keyboard.press("Escape");
     await expect(cell).toBeFocused();
-    await expect(panel).toHaveCount(0);
+    /* The panel never leaves a void: closed, it invites a pick instead of going blank. */
+    await expect(panel).toHaveAttribute("data-panel-cell", "");
+    await expect(panel.getByTestId("harness-overview-panel-empty")).toBeVisible();
 
     /* The focus never left the cell, so the key that opened it opens it again at once. */
     await page.keyboard.press("Enter");
-    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-panel-cell", "domains/shop-front|told");
   });
 
   test("on arrival the first gap's panel is already open beside the table, and Tab moves between cell and panel", async ({ page }) => {
@@ -442,7 +446,7 @@ test.describe("harness tab", () => {
 
     const gap = page.locator('[data-harness-cell-state="gap"]').first();
     const expected = await gap.evaluate((cell) => {
-      const row = cell.closest("tr")!.getAttribute("data-harness-area");
+      const row = cell.closest('[role="row"]')!.getAttribute("data-harness-area");
       return `${row}|${cell.getAttribute("data-harness-cell")}`;
     });
     const panel = page.getByTestId("harness-overview-panel");
@@ -504,15 +508,15 @@ test.describe("harness tab", () => {
     await page.goto("/ko/architecture/?view=overview&guides=off");
     await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
 
-    const row = page.locator("tbody tr[data-harness-area]").first();
+    const row = page.locator('[role="row"][data-harness-area]').first();
     await row.locator('[data-harness-cell="watched"]').click();
     await expect(page.getByTestId("harness-overview-panel")).toHaveAttribute("data-panel-placement", "below");
     await waitForFiniteAnimations(page);
     await expect
       .poll(() =>
         page.evaluate(() => {
-          const rowEl = document.querySelector("tbody tr[data-harness-area]")!;
-          const headBottom = document.querySelector('[data-testid="harness-overview-table"] th')!.getBoundingClientRect().bottom;
+          const rowEl = document.querySelector('[role="row"][data-harness-area]')!;
+          const headBottom = document.querySelector("[data-harness-head]")!.getBoundingClientRect().bottom;
           const rowBox = rowEl.getBoundingClientRect();
           const panelBox = document.querySelector('[data-testid="harness-overview-panel"]')!.getBoundingClientRect();
           return rowBox.top >= headBottom - 1 && rowBox.bottom <= panelBox.top + 1;

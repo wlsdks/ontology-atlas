@@ -242,6 +242,7 @@ function HarnessPageInner() {
   ) : null;
 
   const fillsPanel = view === 'guides' && reportState.status === 'ready';
+  const overviewFills = view === 'overview' && reportState.status === 'ready';
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
@@ -256,7 +257,7 @@ function HarnessPageInner() {
         <div data-testid="harness-views" className="min-w-0">
           {switcher}
         </div>
-        {view === 'overview' && reportState.status === 'ready' ? (
+        {overviewFills ? (
           <Button
             variant="ghost"
             size="sm"
@@ -293,20 +294,22 @@ function HarnessPageInner() {
           tabIndex={-1}
           ref={tabpanelRef}
           /* Tab-bar reserve plus breath, the calc `globals.css` uses for the download band below `lg`. */
-          /* `pt-4`: the header row ends in a rule, not padding. */
-          className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
+          /* The header row ends in a rule, not padding, so the body brings its own top inset. */
+          className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
             HARNESS_GUTTER_X,
-            view === 'overview' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
+            overviewFills ? 'flex flex-col overflow-hidden pt-6' : 'overflow-y-auto pt-4',
             fillsPanel && 'flex flex-col')}
         >
-          <div className={cn('w-full', view === 'overview' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
+          <div className={cn('w-full', overviewFills && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
             {/* One lead: the explainer and the census are a paragraph and its measurement, so they share a block. */}
-            <div className="mb-3 flex shrink-0 flex-col gap-1">
-              <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
-                {t('explainer')}
-              </p>
-              {view === 'guides' ? sentence : null}
-            </div>
+            {overviewFills ? null : (
+              <div className="mb-3 flex shrink-0 flex-col gap-1">
+                <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
+                  {t('explainer')}
+                </p>
+                {view === 'guides' ? sentence : null}
+              </div>
+            )}
             {reportState.status === 'ready' ? (
               <div className={cn('architecture-result-arrive', view === 'overview' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
                 {view === 'overview' ? (

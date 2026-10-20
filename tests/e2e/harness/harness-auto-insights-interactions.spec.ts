@@ -113,9 +113,9 @@ test.describe('Harness hints stay whole', () => {
     await page.keyboard.press('Escape');
     await expect(panel).toHaveCSS('opacity', '0');
     /* Both closed on one press before. */
-    await expect(detail, 'one Escape closed the hint and the panel').toHaveCount(1);
+    await expect(detail, 'one Escape closed the hint and the panel').not.toHaveAttribute('data-panel-cell', '');
     await page.keyboard.press('Escape');
-    await expect(detail).toHaveCount(0);
+    await expect(detail).toHaveAttribute('data-panel-cell', '');
   });
 
   test('a hint dismissed with Escape comes back when the pointer returns', async ({ page }) => {
