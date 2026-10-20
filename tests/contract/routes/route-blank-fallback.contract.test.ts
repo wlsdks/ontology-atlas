@@ -76,7 +76,7 @@ describe("blank-screen gate on route entry", () => {
     const shell = readFileSync("src/views/ontology-insights/ui/InsightsLoadingView.tsx", "utf8");
     expect(shell).toContain('<h1');
     expect(shell).toContain('aria-busy="true"');
-    expect(shell).toContain('role="status"');
+    expect(shell).toContain('<WaitStage');
     expect(shell).toContain('data-route-loading="true"');
   });
 
