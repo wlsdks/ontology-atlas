@@ -17,7 +17,9 @@ async function contentArea(page: Page) {
     document.body.append(probe);
     const rail = probe.getBoundingClientRect().width;
     probe.remove();
-    return { x: rail, y: 0, width: window.innerWidth - rail, height: window.innerHeight };
+    const bar = document.querySelector("[data-page-header-row]")?.parentElement?.getBoundingClientRect();
+    const top = bar ? bar.bottom : 0;
+    return { x: rail, y: top, width: window.innerWidth - rail, height: window.innerHeight - top };
   });
 }
 
