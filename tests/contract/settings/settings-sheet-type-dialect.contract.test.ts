@@ -272,27 +272,26 @@ describe("the LNB does not borrow chrome dimensions", () => {
      * The horizontal inset lives unconditionally in the shared part; assert the inset and gap, not the
      * whole class string, since the row layout is not this gate subject.
      */
-    expect(primitives).toMatch(/\bflex\b[^"']*\bpx-3\b/);
+    expect(primitives).toMatch(/\bflex\b[^"']*\bpx-4\b/);
     expect(primitives).toMatch(/\bgap(?:-x)?-3\b/);
     // An ordinary row's vertical dimension is unchanged.
-    expect(primitives).toMatch(/\bmin-h-12 py-2\b/);
+    expect(primitives).toMatch(/\bmin-h-14 py-3\b/);
   });
 
   /* There are two row heights: the taller one is decided by the presence of a mark, not a free axis. */
   it("the only tall rows are rows with a mark, and height is not an axis to choose", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     expect(primitives, "if the large dimension is gone, it is time to delete this contract").toMatch(
-      /\bmin-h-16 py-2\.5\b/,
+      /\bmin-h-16 py-3\b/,
     );
     // The condition selecting the larger dimension must be **whether a mark slot exists**.
-    expect(primitives).toMatch(/hasMarkSlot \? 'min-h-16 py-2\.5' : 'min-h-12 py-2'/);
+    expect(primitives).toMatch(/hasMarkSlot \? 'min-h-16 py-3' : 'min-h-14 py-3'/);
   });
 });
 
 describe("the panel does not eat its own gutter inside the minimum window", () => {
   /**
-   * The panel height is derived: the minimum window height 720 minus the overlay gutter `p-3`,
-   * less one more gutter (696 - 24 = 672).
+   * The panel is at most the minimum window height, and its max-height clamp keeps the overlay gutter.
    */
   it("the panel height does not exceed the minimum window minus two overlay gutters", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
@@ -303,9 +302,9 @@ describe("the panel does not eat its own gutter inside the minimum window", () =
 
     const tauri = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
     const minHeight: number = tauri.app.windows[0].minHeight;
-    const OVERLAY_GUTTER = 12; // The overlay's `p-3`
     expect(minHeight, "the minimum window height contract is gone").toBeGreaterThan(0);
-    expect(height).toBeLessThanOrEqual(minHeight - OVERLAY_GUTTER * 4);
+    expect(menu, "the panel can outgrow the window: its max-height clamp is gone").toMatch(/max-h-\[calc\(100dvh-1\.5rem\)\]/);
+    expect(height).toBeLessThanOrEqual(minHeight);
     // And it must exceed the previous value (640), or this change has been reverted.
     expect(height).toBeGreaterThan(640);
   });
