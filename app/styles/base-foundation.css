@@ -200,19 +200,6 @@
     }
   }
 
-  @keyframes harnessScanSweep {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(300%); }
-  }
-
-  /*
-   * `linear`, not `--motion-ease`: an entry curve decelerates, so a never-arriving loop would burst
-   * and crawl. Same curve and period as `.architecture-observation-scan`.
-   */
-  .harness-scan-sweep {
-    animation: harnessScanSweep calc(var(--motion-settle) * 4) linear infinite;
-  }
-
   /*
    * Reduced motion is not handled here: the global kill rule is `!important` in the same layer, so a
    * local override loses. The bar rests at a third of the track, registered in `INTENTIONALLY_STILL`
@@ -238,7 +225,7 @@
   }
 
   /*
-   * `linear`, at twice the `.harness-scan-sweep` period: the band crosses words being read and a
+   * `linear`, at twice the period of the other work sweeps: the band crosses words being read and a
    * shorter period flickered. `src/widgets/acp-chat-panel/ui/working-ink.ts` owns which states wear
    * it.
    */

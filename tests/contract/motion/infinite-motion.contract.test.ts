@@ -10,7 +10,6 @@ const PAINT_LICENSED: Record<string, string> = {
 };
 
 const RUNS_ONLY_DURING_WORK: Record<string, string> = {
-  "harness-scan-sweep": "harness scan band, mounted by a consumer only while a scan runs; no consumer is mounted today",
   "agent-pending-dot": "agent transcript pending dot, mounted only while the turn is running or sending",
   "acp-working-shimmer": "working ink on the brief and chat counters, applied only while work is still arriving",
   "architecture-observation-scan": "architecture evidence plane and rail scan line, mounted only while observation is active",
