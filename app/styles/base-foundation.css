@@ -200,12 +200,6 @@
     }
   }
 
-  /*
-   * Reduced motion is not handled here: the global kill rule is `!important` in the same layer, so a
-   * local override loses. The bar rests at a third of the track, registered in `INTENTIONALLY_STILL`
-   * beside `.architecture-observation-scan`.
-   */
-
   /* Agent panel waiting dot — reuses same heartbeat syntax (slow low-contrast cycle).
      Only opacity moves, not glow, and this is **not fake progress**:
      turns on only while actual round-trip runs, and the fact of progress is told by the tool row below. prefers-reduced-motion automatically stops it via base layer global rule below — dot remains visible and "thinking · N sec" text beside it continues telling same fact, so information does not decrease at all. */

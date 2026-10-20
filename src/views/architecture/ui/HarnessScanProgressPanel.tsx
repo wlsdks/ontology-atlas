@@ -27,7 +27,7 @@ const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
   'citation-hops',
 ];
 
-const WIDEST_COUNT = 999;
+const WIDEST_COUNT = 99;
 
 export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanProgress | null }) {
   const t = useTranslations('harness');
@@ -57,13 +57,11 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
           <span className="grid justify-items-start text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
             <span
               className={cn('col-start-1 row-start-1', determinate && 'invisible')}
-              aria-hidden={determinate || undefined}
             >
               {t('loadingCounting')}
             </span>
             <span
               className={cn('col-start-1 row-start-1', !determinate && 'invisible')}
-              aria-hidden={!determinate || undefined}
             >
               {t('loadingCounted', { done: progress?.done ?? 0, total: progress?.total ?? 0 })}
             </span>
