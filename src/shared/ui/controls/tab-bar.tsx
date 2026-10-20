@@ -267,7 +267,7 @@ export function TabBar({
              */
             className={
               segmented
-                ? "relative inline-flex h-[var(--control-h-sm)] shrink-0 items-center whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                ? "relative inline-flex h-[var(--control-h-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
                   (selfPainted
                     ? "bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
                     : active
@@ -299,7 +299,7 @@ export function TabBar({
               // reading.
               <span
                 aria-hidden
-                className="font-mono text-label leading-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-secondary)]"
+                className={"font-mono text-label leading-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums " + (segmented ? "text-[color:var(--color-text-quaternary)]" : "text-[color:var(--color-text-secondary)]")}
               >
                 {item.count}
               </span>
