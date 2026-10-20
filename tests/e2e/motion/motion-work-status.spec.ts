@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 
 async function holdSourceReads(page: Page) {
   await page.addInitScript((sourceCommands: readonly string[]) => {
@@ -66,6 +67,7 @@ test.describe("WorkStatus in the harness scan", () => {
     const item = panel.locator('[data-harness-stage="hooks"]');
     await expect(item).toHaveAttribute("data-harness-stage-state", "ahead");
     await watchStageShifts(page);
+    await startSmoothness(page);
     await item.locator("[data-work-glyph]").evaluate((element) => {
       (element as unknown as { __probe: boolean }).__probe = true;
     });
@@ -96,6 +98,7 @@ test.describe("WorkStatus in the harness scan", () => {
     test.info().annotations.push({ type: "work-status", description: JSON.stringify({ ...settled, seen: [...seen] }) });
     expect(seen.has("running")).toBe(true);
     expect(settled).toEqual({ sameGlyph: true, drawn: "draw", live: 0, shifts: 0 });
+    expectSmoothMotion(await stopSmoothness(page));
   });
 
   test("the scan bar moves on transform, never on width", async ({ page }) => {

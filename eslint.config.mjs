@@ -460,25 +460,25 @@ export const arbitrarySizeSelectors = [
     message:
       'Design charter: no hex inside a Tailwind arbitrary value (template literal). Reference --color-* tokens via var().',
   },
-  // Motion budget is set by frequency: hover/focus surfaces are met dozens of times a day, so use a
-  // fast token. Matches only when both coexist in one className string, all an AST rule can see. No
-  // literal utility syntax in messages: the Tailwind v4 scanner reads this file.
+  // Hover and focus answer within the settle step; the longer steps are for travel and entrances.
+  // Matches only when both coexist in one className string. No literal utility syntax in
+  // messages: the Tailwind v4 scanner reads this file.
   {
     selector:
-      'Literal[value=/(?:hover|focus-within|focus-visible):[^"]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^"]*(?:hover|focus-within|focus-visible):/]',
+      'Literal[value=/(?:hover|focus|focus-within|focus-visible):[^"]*duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))|duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))[^"]*(?:hover|focus|focus-within|focus-visible):/]',
     message:
-      'Motion budget: do not spend the move (base) or settle budget on high-frequency surfaces triggered by hover/focus. Demote to a fast ramp token, or record in the eslint-disable comment why the surface is not high-frequency.',
+      'Motion budget: hover and focus answer within the settle step; the slow, expressive and choreography steps are for travel and entrances. Use a shorter --motion-* step, or record in the eslint-disable comment why this surface is not a hover or focus answer.',
   },
   {
     selector:
-      'TemplateElement[value.raw=/(?:hover|focus-within|focus-visible):[^`]*duration-\\[var\\(--motion-(?:base|settle)\\)\\]|duration-\\[var\\(--motion-(?:base|settle)\\)\\][^`]*(?:hover|focus-within|focus-visible):/]',
+      'TemplateElement[value.raw=/(?:hover|focus|focus-within|focus-visible):[^`]*duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))|duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))[^`]*(?:hover|focus|focus-within|focus-visible):/]',
     message:
-      'Motion budget: no move/settle budget on high-frequency hover/focus surfaces (template literal). Demote to the fast ramp.',
+      'Motion budget (template literal): hover and focus answer within the settle step; use a shorter --motion-* step.',
   },
   {
     selector: 'Literal[value=/(?:^|[^-\\w])duration-\\d/]',
     message:
-      'No hard-coded motion duration. For the default (--motion-fast) omit the duration class; reference --motion-base for surface moves and --motion-settle for confirmations via var() inside the duration utility.',
+      'No hard-coded motion duration. For the default (--motion-fast) omit the duration class; otherwise reference a --motion-* ramp step via var() inside the duration utility (pnpm design:tokens -- --prefix=--motion-).',
   },
   // Duration also hides in keyframe animation shorthand; token references start with `var(`, not a
   // digit, so they do not match. No literal utility syntax in messages: the Tailwind v4 scanner
@@ -486,7 +486,7 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
     message:
-      'No hard-coded motion duration: times inside the animation shorthand follow the ramp too. Reference --motion-fast/base/settle and --motion-ease via var().',
+      'No hard-coded motion duration: times inside the animation shorthand follow the ramp too. Reference a --motion-* ramp step and --motion-ease via var().',
   },
   {
     selector: 'TemplateElement[value.raw=/animate-\\[[^\\]]*_[0-9.]+m?s/]',
@@ -498,7 +498,7 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'Literal[value=/duration-\\[[0-9.]+m?s\\]/]',
     message:
-      'No hard-coded motion duration: times inside brackets follow the ramp too. Reference --motion-fast/base/settle via var().',
+      'No hard-coded motion duration: times inside brackets follow the ramp too. Reference a --motion-* ramp step via var().',
   },
   {
     selector: 'TemplateElement[value.raw=/duration-\\[[0-9.]+m?s\\]/]',
@@ -520,7 +520,7 @@ export const arbitrarySizeSelectors = [
   {
     selector: 'TemplateElement[value.raw=/(?:^|[^-\\w])duration-\\d/]',
     message:
-      'No hard-coded motion duration (template literal). Use --motion-fast/base/settle tokens.',
+      'No hard-coded motion duration (template literal). Use a --motion-* ramp step.',
   },
   // Arbitrary line heights only: ramp steps use no brackets, and named leading utilities are covered
   // by the typography axis selectors. No literal utility syntax in messages: the Tailwind v4 scanner
@@ -575,7 +575,7 @@ export const arbitrarySizeSelectors = [
     selector:
       'JSXAttribute[name.name="style"] Property[key.name=/^(animation|transition)$/] Literal[value=/(^|[^-\\w(])[0-9.]+m?s([^-\\w]|$)/]',
     message:
-      'No hard-coded motion time: literal times inside an animation/transition shorthand in a JSX style follow the ramp too. Reference --motion-fast/base/settle and --motion-ease via var().',
+      'No hard-coded motion time: literal times inside an animation/transition shorthand in a JSX style follow the ramp too. Reference a --motion-* ramp step and --motion-ease via var().',
   },
 ];
 

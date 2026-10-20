@@ -536,12 +536,12 @@
      */
     --agent-panel-reflow-duration: 260ms;
 
-    /* Motion syntax (Phase 3, 2026-07-25) — single duration/easing family for "confirming meaning" usability motion in workshop/insight. Charter compliance: transform/opacity only, no glow/bounce-loops, ≤240ms; prefers-reduced-motion auto-disabled by global base layer rule below (animation/transition-duration 0.01ms). Three steps: fast (chip/crossfade etc. immediate response) · base (panel/picker appearance) ·
-       settle (rearrangement/settling etc. one beat longer confirmation). Docs: DESIGN-SYSTEM.md
-       "Motion Syntax". */
     --motion-fast: 120ms;
     --motion-base: 180ms;
     --motion-settle: 240ms;
+    --motion-slow: 360ms;
+    --motion-expressive: 600ms;
+    --motion-choreography: 1200ms;
     /* How far a surface that has declared itself supporting recedes while a lens is open.
        0.46 rather than a token step because it is measured, not chosen: the detail panel was
        beating the constellation it sits beside 5.3:1 for attention, and 66.9% of the first
