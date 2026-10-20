@@ -124,41 +124,6 @@ test.describe('Harness overview panel', () => {
   }
 });
 
-test.describe('Analysis', () => {
-  test('the guidance evidence popup stays inside its field at 1040×720', async ({ page }) => {
-    await page.setViewportSize({ width: 1040, height: 720 });
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-    await page.goto('/ko/ontology/insights/?tab=harness&guides=off');
-    const overview = page.getByTestId('harness-coverage-overview');
-    await expect(overview).toBeVisible({ timeout: 30_000 });
-    const field = overview.locator(':scope > div').first();
-    const fieldRect = await box(field);
-    /* The reported case: the second row's Shop Front instructions port scrolled to y≈408, where
-       the room below is shorter than the popup and the room above runs to the window's top. */
-    const target = overview
-      .locator('[data-testid^="harness-domain-"]', { hasText: 'Shop Front' })
-      .locator('[data-role="told"]')
-      .first();
-    await expect(target).toBeAttached();
-    const portY = (await box(target)).y;
-    await field.evaluate((element, delta) => { element.scrollTop += delta; }, portY - 408);
-    await waitForBoxStill(target);
-    const settled = (await box(target)).y;
-    expect(Math.abs(settled - 408), `port did not reach y≈408 (at ${settled.toFixed(0)})`).toBeLessThanOrEqual(60);
-    await target.click();
-    const popup = page.getByTestId('harness-role-popup');
-    await expect(popup).toBeVisible();
-    await waitForAnimationsDone(popup);
-    await waitForBoxStill(popup);
-    const rect = await box(popup);
-    const title = await box(page.getByRole('heading', { level: 1 }).first());
-    /* Before: [138,16,503,400], over the page title and the tab switch. */
-    expect(rect.y, 'the popup rose over the page title').toBeGreaterThanOrEqual(title.y + title.height);
-    expect(rect.y, 'the popup rose above its field').toBeGreaterThanOrEqual(fieldRect.y);
-  });
-});
-
 /**
  * Where a hint panel may sit: in the window, inside the page scroller (what lies outside it is
  * chrome), readable on one pass, and on top at its own corners.

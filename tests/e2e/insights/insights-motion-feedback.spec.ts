@@ -12,13 +12,13 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('the insights copy control interpolates press travel and draws its result', async ({ page }) => {
-  await page.goto('/en/ontology/insights/?tab=flow&guides=off');
-  const button = page.getByTestId('flow-copy');
+  await page.goto('/en/ontology/insights/?guides=off');
+  const button = page.getByTestId('analysis-copy-selected');
   await button.scrollIntoViewIfNeeded();
   const box = (await button.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await waitFrames(page, 5);
-  await startSampling(page, { tracks: [{ name: 'copy', selector: '[data-testid="flow-copy"]' }] });
+  await startSampling(page, { tracks: [{ name: 'copy', selector: '[data-testid="analysis-copy-selected"]' }] });
   await waitFrames(page, 2);
   const t0 = await page.evaluate(() => performance.now());
   await page.mouse.down();

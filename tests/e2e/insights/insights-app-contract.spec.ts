@@ -55,19 +55,19 @@ test.describe("Analysis agrees with the installed app probe", () => {
       await expect(page.locator('[data-insights-panel]')).toBeVisible();
       const markers = await collectMarkers(page);
       expect(markers.insightsMaintenanceBoard).toBe(true);
-      expect(markers.insightsSubjectCount).toBe(5);
+      expect(markers.insightsSubjectCount).toBe(3);
       expect(markers.insightsSelectedSubject).toBe(`insights-core-${subject}`);
-      expect(markers.insightsTabCount).toBe(5);
+      expect(markers.insightsTabCount).toBe(3);
       expect(markers.insightsSelectedPanelKey).toBe(panel);
       expect(validateWebviewVerifyPayload(asAppPayload(markers, '/ko/ontology/insights/'))).toBeNull();
     });
   }
   test("removing a real section fails the installed app contract", async ({ page }) => {
     await page.goto('/ko/ontology/insights/');
-    await expect(page.getByTestId('insights-core-harness')).toBeVisible();
-    await page.getByTestId('insights-core-harness').evaluate(node => node.remove());
+    await expect(page.getByTestId('insights-core-library')).toBeVisible();
+    await page.getByTestId('insights-core-library').evaluate(node => node.remove());
     const markers = await collectMarkers(page);
-    expect(markers.insightsSubjectCount).toBe(4);
+    expect(markers.insightsSubjectCount).toBe(2);
     expect(validateWebviewVerifyPayload(asAppPayload(markers, '/ko/ontology/insights/'))).toContain('subject count');
   });
 });
