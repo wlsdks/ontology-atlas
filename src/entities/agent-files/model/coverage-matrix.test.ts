@@ -31,6 +31,34 @@ const areas: CoverageAreaInput[] = [
   },
 ];
 
+describe('buildCoverageMatrix — universality is judged over pathed areas', () => {
+  const pathed = (slug: string, path: string): CoverageAreaInput => ({
+    slug,
+    title: slug,
+    purpose: '',
+    capabilities: [{ slug: `capabilities/${slug}`, title: slug, path }],
+  });
+  const pathless: CoverageAreaInput = { slug: 'd', title: 'd', purpose: '', capabilities: [] };
+
+  it('sends a scope reaching all three pathed areas everywhere, despite a pathless fourth', () => {
+    const matrix = buildCoverageMatrix(
+      [declaration({ id: '.claude/rules/src.md', scopes: ['src'] })],
+      [pathed('a', 'src/a'), pathed('b', 'src/b'), pathed('c', 'src/c'), pathless],
+    );
+    expect(matrix.everywhere.told.map((entry) => entry.id)).toEqual(['.claude/rules/src.md']);
+    expect(matrix.areas.every((row) => row.told.length === 0)).toBe(true);
+  });
+
+  it('promotes nothing scoped when only one area has a path', () => {
+    const matrix = buildCoverageMatrix(
+      [declaration({ id: 'src/AGENTS.md', origin: 'nested-agents', scopes: ['src'] })],
+      [pathed('a', 'src/a'), pathless],
+    );
+    expect(matrix.everywhere.told).toHaveLength(0);
+    expect(matrix.areas[0]!.told.map((entry) => entry.id)).toEqual(['src/AGENTS.md']);
+  });
+});
+
 describe('buildCoverageMatrix — a declaration lands where its declared path reaches', () => {
   it('puts a scoped guide in the area its path reaches, and nowhere else', () => {
     const matrix = buildCoverageMatrix(

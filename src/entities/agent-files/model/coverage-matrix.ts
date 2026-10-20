@@ -64,9 +64,10 @@ export function buildCoverageMatrix(
   areas: readonly CoverageAreaInput[],
   testFiles: readonly string[] = [],
 ): CoverageMatrix {
-  /* A scope reaching every area is universal in fact and goes to the strip, not every row. */
+  /* O(declarations x capabilities x scopes); reaching every pathed area means universal. */
+  const pathedAreas = areas.filter((area) => area.capabilities.length > 0);
   const reachesEveryArea = (entry: ScopeDeclaration) =>
-    areas.length > 1 && areas.every((area) => declarationReachesArea(entry, area));
+    pathedAreas.length > 1 && pathedAreas.every((area) => declarationReachesArea(entry, area));
   const scoped = declarations.filter(
     (entry) => entry.declaresPath && entry.scopes.length > 0 && !reachesEveryArea(entry),
   );
