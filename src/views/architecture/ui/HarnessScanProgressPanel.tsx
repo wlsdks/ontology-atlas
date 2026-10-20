@@ -41,6 +41,10 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
     },
   }));
 
+  const count = determinate
+    ? t('loadingCounted', { done: progress?.done ?? 0, total: progress?.total ?? 0 })
+    : t('loadingCounting');
+
   return (
     <WaitStage
       data-testid="harness-scan-progress"
@@ -57,9 +61,7 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
               {t('loadingCounted', { done: WIDEST_COUNT, total: WIDEST_COUNT })}
             </span>
             <span className="absolute inset-0 text-right">
-              {determinate
-                ? t('loadingCounted', { done: progress?.done ?? 0, total: progress?.total ?? 0 })
-                : t('loadingCounting')}
+              <span key={count}>{count}</span>
             </span>
           </span>
         ),
