@@ -51,10 +51,10 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
 
       <div className="w-full max-w-[26rem]">
         <div className="flex items-baseline justify-between gap-3" aria-hidden>
-          <span className="text-body text-[color:var(--color-text-secondary)]">
+          <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
             {progress ? t(STAGE_LABEL[progress.stage]) : t('loadingStageRoots')}
           </span>
-          <span className="grid justify-items-start text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+          <span className="grid shrink-0 justify-items-start whitespace-nowrap text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
             <span
               className={cn('col-start-1 row-start-1', determinate && 'invisible')}
             >

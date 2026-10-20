@@ -212,7 +212,7 @@ export type SmoothnessReport = {
   chromium: boolean;
   layoutShiftObserved: boolean;
   within: string | null;
-  layoutShifts: { value: number; recent: boolean; inside: boolean }[];
+  layoutShifts: { value: number; recent: boolean; inside: boolean; sources: string[] }[];
   animated: { target: string; property: string; infinite: boolean; inside: boolean }[];
 };
 
@@ -224,7 +224,7 @@ function smoothnessSource() {
   const w = window as SmoothnessWindow;
   if (w.__smoothness) return;
   type Raw = Omit<SmoothnessReport, "within" | "layoutShifts" | "animated"> & {
-    shifts: { value: number; recent: boolean; nodes: (Node | null)[] }[];
+    shifts: { value: number; recent: boolean; nodes: (Node | null)[]; sources: string[] }[];
     animations: { target: string; property: string; infinite: boolean; element: Element | null }[];
   };
   let raw: Raw | null = null;
@@ -258,8 +258,25 @@ function smoothnessSource() {
   };
 
   const takeShift = (entry: PerformanceEntry) => {
-    const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean; sources?: { node: Node | null }[] };
-    raw!.shifts.push({ value: shift.value, recent: shift.hadRecentInput, nodes: (shift.sources ?? []).map((source) => source.node) });
+    const shift = entry as PerformanceEntry & {
+      value: number;
+      hadRecentInput: boolean;
+      sources?: { node: Node | null; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[];
+    };
+    const describe = (source: { node: Node | null; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }) => {
+      const element = source.node instanceof Element ? source.node : source.node?.parentElement ?? null;
+      const name = element
+        ? `${element.tagName.toLowerCase()}${element.classList[0] ? `.${element.classList[0]}` : ""}${element.closest("[data-testid]") ? `#${element.closest("[data-testid]")!.getAttribute("data-testid")}` : ""}`
+        : "(none)";
+      const rect = (r: DOMRectReadOnly) => `${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
+      return `${name} ${rect(source.previousRect)} -> ${rect(source.currentRect)}`;
+    };
+    raw!.shifts.push({
+      value: shift.value,
+      recent: shift.hadRecentInput,
+      nodes: (shift.sources ?? []).map((source) => source.node),
+      sources: (shift.sources ?? []).map(describe),
+    });
   };
 
   const tick = (t: number) => {
@@ -321,6 +338,7 @@ function smoothnessSource() {
           value: shift.value,
           recent: shift.recent,
           inside: shift.nodes.length > 0 && shift.nodes.every(inside),
+          sources: shift.sources,
         })),
         animated: animations.map(({ element, ...entry }) => ({ ...entry, inside: inside(element) })),
       };
@@ -355,7 +373,7 @@ export function smoothnessViolations(report: SmoothnessReport, opts: SmoothnessO
   for (const shift of report.layoutShifts) {
     if (shift.recent) continue;
     if (reflow.length > 0 && shift.inside) continue;
-    out.push(`layout shift ${shift.value} without recent input`);
+    out.push(`layout shift ${shift.value} without recent input: ${shift.sources.join("; ")}`);
   }
   return out;
 }
