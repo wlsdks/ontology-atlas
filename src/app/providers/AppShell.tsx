@@ -7,7 +7,7 @@ import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canva
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
 import { useToast } from "@/shared/ui";
-import { BrandWaitingMark } from "@/shared/ui/marks/brand-waiting-mark";
+import { WaitStage } from "@/shared/ui/status/wait-stage";
 import { useTranslations } from "next-intl";
 import {
   AppNavRail,
@@ -214,7 +214,13 @@ function VaultRouteIdentityBoundary({
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
   if (localLoadPending) {
-    return <VaultOpeningPane name={vault.status === "loading" ? (vault.handle?.name ?? null) : null} />;
+    return (
+      <VaultOpeningPane
+        name={vault.status === "loading" ? (vault.handle?.name ?? null) : null}
+        reserveRail={!vault.manifest && !vault.partialTotal}
+        map={resolveActiveNavDestination(pathname) === "map"}
+      />
+    );
   }
   if (desktopWithoutVault) {
     return (
@@ -236,22 +242,28 @@ function VaultRouteIdentityBoundary({
  * It enters on `RouteLoadingFallback`'s 400ms anti-flash delay (`route-loading-in`), and it is
  * not `<main>`, so `RouteFocusManager` does not send focus into a pane about to be replaced.
  */
-function VaultOpeningPane({ name }: { name: string | null }) {
+function VaultOpeningPane({ name, reserveRail, map }: { name: string | null; reserveRail: boolean; map: boolean }) {
   const t = useTranslations("vaultSwitch");
+  const tMapEntry = useTranslations("mapEntry");
   return (
     <div
       data-testid="vault-route-identity-pending"
       aria-busy="true"
-      className="flex min-h-full flex-1 items-center justify-center bg-[color:var(--color-canvas)] p-6"
+      className="flex min-h-full flex-1 bg-[color:var(--color-canvas)]"
     >
-      <div
-        role="status"
-        className="route-loading-in flex flex-col items-center gap-3 text-label text-[color:var(--color-text-quaternary)]"
-      >
-        <BrandWaitingMark active initialVisibility="visible" />
-        <p data-testid="vault-opening-caption" className="max-w-[min(32rem,80vw)] truncate">
-          {name ? t("openingNamed", { name }) : t("openingUnnamed")}
-        </p>
+      {reserveRail ? (
+        <div
+          aria-hidden
+          data-testid="vault-opening-rail-reserve"
+          className="hidden w-[var(--app-nav-rail-width)] shrink-0 border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] lg:block"
+        />
+      ) : null}
+      <div className="relative min-w-0 flex-1">
+        {map ? (
+          <WaitStage mark="orbit" title={tMapEntry("mapComing")} detail={tMapEntry("loadingDetail")} delayed />
+        ) : (
+          <WaitStage mark="mascot" title={name ? t("openingNamed", { name }) : t("openingUnnamed")} delayed />
+        )}
       </div>
     </div>
   );

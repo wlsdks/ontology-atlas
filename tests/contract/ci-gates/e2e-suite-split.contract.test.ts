@@ -139,6 +139,7 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'map/selection/datasheet-hover-map-brush.spec.ts',
   'typography/cjk-locale-sweep.spec.ts',
   'typography/korean-word-break.spec.ts',
+  'wait-stage-placement.spec.ts',
 ];
 
 describe('post-merge specs reach the pull requests that change their owner', () => {

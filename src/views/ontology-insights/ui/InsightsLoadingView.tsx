@@ -1,10 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { BrandWaitingMark } from '@/shared/ui/marks/brand-waiting-mark';
 import { PageHeaderBar } from '@/shared/ui/layout/page-header-bar';
-import { cn } from '@/shared/lib/cn';
 import { PAGE_FRAME } from '@/shared/ui/tokens/page-frame';
+import { WaitStage } from '@/shared/ui/status/wait-stage';
 
 /** This shell must not subscribe to graph derivation or import analysis widgets. */
 export function InsightsLoadingView() {
@@ -17,14 +16,11 @@ export function InsightsLoadingView() {
         data-route-loading="true"
         data-testid="insights-loading"
         aria-busy="true"
-        className="flex min-h-full flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]"
+        className="flex min-h-full flex-col"
       >
         <PageHeaderBar frame="page" title={t('analysis.title')} />
-        <div className={cn(PAGE_FRAME, 'flex flex-1 flex-col pt-8 md:pt-10')}>
-          <div role="status" className="route-loading-in flex flex-1 flex-col items-center justify-center gap-3 py-12 text-body text-[color:var(--color-text-secondary)]">
-            <BrandWaitingMark active initialVisibility="visible" />
-            <p>{t('loading')}</p>
-          </div>
+        <div className={`${PAGE_FRAME} relative flex-1`}>
+          <WaitStage mark="mascot" title={t('loading')} delayed />
         </div>
       </main>
     </div>

@@ -94,6 +94,40 @@ describe("AppShell rail utility tier", () => {
   });
 });
 
+describe("a folder that is opening", () => {
+  const opening = () => {
+    shellMocks.desktop = true;
+    shellMocks.vault.status = "opening";
+    render(
+      <AppShell>
+        <div>page</div>
+      </AppShell>,
+    );
+  };
+
+  it("holds the rail column and shows the mascot on a workbench destination", () => {
+    shellMocks.pathname = "/ko/projects";
+    opening();
+    expect(screen.getByTestId("vault-opening-rail-reserve")).toBeInTheDocument();
+    expect(screen.getByTestId("brand-waiting-mark")).toBeInTheDocument();
+    expect(screen.queryByTestId("map-wait-cluster")).not.toBeInTheDocument();
+  });
+
+  it("shows the map's orbit on the map, so both phases of its first load look alike", () => {
+    shellMocks.pathname = "/ko/topology";
+    opening();
+    expect(screen.getByTestId("map-wait-cluster")).toBeInTheDocument();
+    expect(screen.queryByTestId("brand-waiting-mark")).not.toBeInTheDocument();
+  });
+
+  it("draws no second column when the rail is already on screen", () => {
+    shellMocks.pathname = "/ko/projects";
+    shellMocks.vault.manifest = { docs: [] };
+    opening();
+    expect(screen.queryByTestId("vault-opening-rail-reserve")).not.toBeInTheDocument();
+  });
+});
+
 describe("shell column owns the viewport", () => {
   it("hides the rail and bundled destinations in the installed app without a vault", () => {
     shellMocks.desktop = true;

@@ -11,15 +11,17 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 export function BrandWaitingMark({
   active,
   initialVisibility = 'observed',
+  scale = 1,
 }: {
   active: boolean;
   /** Only full-screen pending fallbacks can know they are visible before hydration. */
   initialVisibility?: 'observed' | 'visible';
+  scale?: 1 | 2;
 }) {
-  return active ? <ActiveWaitingMark initialVisibility={initialVisibility} /> : null;
+  return active ? <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} /> : null;
 }
 
-function ActiveWaitingMark({ initialVisibility }: { initialVisibility: 'observed' | 'visible' }) {
+function ActiveWaitingMark({ initialVisibility, scale }: { initialVisibility: 'observed' | 'visible'; scale: 1 | 2 }) {
   const ref = useRef<HTMLSpanElement>(null);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -50,7 +52,7 @@ function ActiveWaitingMark({ initialVisibility }: { initialVisibility: 'observed
     };
   }, [initialVisibility, reducedMotion]);
 
-  return (
+  const mark = (
     <span
       ref={ref}
       aria-hidden="true"
@@ -60,4 +62,5 @@ function ActiveWaitingMark({ initialVisibility }: { initialVisibility: 'observed
       style={{ backgroundImage: `url(${withBasePath('/brand/mascot-walk-row.png')})` }}
     />
   );
+  return scale === 2 ? <span className="atlas-waiting-mark-2x inline-block shrink-0">{mark}</span> : mark;
 }
