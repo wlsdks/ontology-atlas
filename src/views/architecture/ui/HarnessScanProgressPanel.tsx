@@ -51,7 +51,6 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
       mark="mascot"
       title={t('loadingTitle')}
       detail={t('loadingDetail')}
-      /* Stage name only: counts queued a message per file. */
       announce={progress ? t('loadingAria', { stage: t(STAGE_LABEL[progress.stage]) }) : t('loadingTitle')}
       progress={{
         stage: progress ? t(STAGE_LABEL[progress.stage]) : t('loadingStageRoots'),

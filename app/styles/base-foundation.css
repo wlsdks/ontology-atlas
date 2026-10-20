@@ -148,7 +148,6 @@
     zoom: calc(1 / var(--topology-ui-scale-factor));
   }
 
-  /* The large mark is the same 64px sprite under a 2x layout zoom: whole-number pixels, so it stays crisp. */
   .atlas-waiting-mark-2x {
     zoom: 2;
   }
