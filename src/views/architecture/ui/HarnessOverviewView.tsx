@@ -382,7 +382,7 @@ export function HarnessOverviewView({
         )}
       >
         <div className="flex min-h-0 flex-col gap-3">
-          <div data-testid="harness-overview-scroll" className="min-h-0 overflow-y-auto overscroll-contain">
+          <div data-testid="harness-overview-scroll" className="min-h-0 overflow-y-auto overscroll-contain pb-3">
             <table data-testid="harness-overview-table" className="w-full table-fixed border-separate border-spacing-0 text-left">
               <caption className="sr-only">{t('coverageTableCaption')}</caption>
               <colgroup>
