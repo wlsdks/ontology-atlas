@@ -280,7 +280,7 @@ function HarnessPageInner() {
           */
         <main
           id="main"
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
+          className="relative flex min-h-0 flex-1 flex-col overflow-hidden"
         >
         <div
           role="tabpanel"
@@ -329,7 +329,6 @@ function HarnessPageInner() {
               <Surface
                 open={waitedPastThreshold}
                 motion="overlay"
-                className="flex flex-1 flex-col"
               >
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>

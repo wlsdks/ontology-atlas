@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { BrandWaitingMark } from '../marks/brand-waiting-mark';
+import { WaitStage } from '../status/wait-stage';
 
 /**
  * States one fact: the screen has not arrived. Static export bakes the nearest Suspense
@@ -21,15 +21,9 @@ export function RouteLoadingFallback({embedded=false}:{embedded?:boolean}={}) {
       data-testid="route-loading-fallback"
       aria-busy="true"
       // Viewport height belongs to the shell; a page root only fills its slot.
-      className="flex h-full min-h-full flex-1 items-center justify-center bg-[color:var(--color-canvas)] p-6"
+      className="relative h-full min-h-full flex-1 bg-[color:var(--color-canvas)]"
     >
-      <div
-        role="status"
-        className="route-loading-in flex flex-col items-center gap-3 text-label text-[color:var(--color-text-quaternary)]"
-      >
-        <BrandWaitingMark active initialVisibility="visible" />
-        <p>{t('surfaceLoading')}</p>
-      </div>
+      <WaitStage mark="mascot" title={t('surfaceLoading')} delayed />
     </Container>
   );
 }

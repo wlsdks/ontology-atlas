@@ -77,7 +77,7 @@ describe("blank-screen gate on route entry", () => {
     expect(shell).toContain('<PageHeaderBar');
     expect(shell, 'the loading view names the page, so its title is the h1').not.toContain('titleAs=');
     expect(shell).toContain('aria-busy="true"');
-    expect(shell).toContain('role="status"');
+    expect(shell).toContain('<WaitStage');
     expect(shell).toContain('data-route-loading="true"');
   });
 

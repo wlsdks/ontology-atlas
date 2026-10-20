@@ -105,6 +105,7 @@
   "coverageProvenance": "How this page counts",
   "coverageDiscoveredTests": "{count, plural, =0 {No test file sits under its recorded paths either.} one {# test file sits under its recorded paths and runs under the repository-wide lanes.} other {# test files sit under its recorded paths and run under the repository-wide lanes.}}",
   "loadingTitle": "Reading this repository",
+  "loadingDetail": "Reads only agent guides, hooks and check files; nothing else is opened.",
   "loadingStageRoots": "Root guides",
   "loadingStageNested": "Nested AGENTS.md",
   "loadingStageAgentDirectories": "Agent directories",
