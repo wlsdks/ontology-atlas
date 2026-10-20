@@ -53,7 +53,7 @@ function sortedUnique(values: readonly string[]): string[] {
   return [...new Set(values)].sort();
 }
 
-/** O(areas x 3) over `buildCoverageMatrix`, the only place the join rule lives. */
+/** O(A x C log C + H + D x S): A areas, C paths per area, H hooks, D outside declarations, S scopes. */
 export function buildHarnessOverview(
   report: Pick<HarnessReport, 'coverage' | 'testFiles' | 'hookGroups'>,
   areas: readonly CoverageAreaInput[],
@@ -125,7 +125,7 @@ export function buildHarnessOverview(
     targets,
     missingHookScripts: sortedUnique(missing),
     trustGatedConfigs: trustGated,
-    outsideCount: matrix.outsideAreas.length,
+    outsideCount: new Set(matrix.outsideAreas.map((entry) => entry.id)).size,
     outsideFolders: sortedUnique(
       matrix.outsideAreas.flatMap((entry) =>
         entry.scopes.map((scope) => scope.split('/')[0]!).filter(Boolean),

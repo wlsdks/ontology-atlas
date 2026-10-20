@@ -31,7 +31,7 @@ const areas: CoverageAreaInput[] = [
   },
 ];
 
-describe('buildCoverageMatrix — universality is judged over pathed areas', () => {
+describe('buildCoverageMatrix — only a path-less declaration reaches every area', () => {
   const pathed = (slug: string, path: string): CoverageAreaInput => ({
     slug,
     title: slug,
@@ -40,13 +40,14 @@ describe('buildCoverageMatrix — universality is judged over pathed areas', () 
   });
   const pathless: CoverageAreaInput = { slug: 'd', title: 'd', purpose: '', capabilities: [] };
 
-  it('sends a scope reaching all three pathed areas everywhere, despite a pathless fourth', () => {
+  it('fills each row a scope reaches, even when it reaches them all', () => {
     const matrix = buildCoverageMatrix(
       [declaration({ id: '.claude/rules/src.md', scopes: ['src'] })],
       [pathed('a', 'src/a'), pathed('b', 'src/b'), pathed('c', 'src/c'), pathless],
     );
-    expect(matrix.everywhere.told.map((entry) => entry.id)).toEqual(['.claude/rules/src.md']);
-    expect(matrix.areas.every((row) => row.told.length === 0)).toBe(true);
+    expect(matrix.everywhere.told).toHaveLength(0);
+    expect(matrix.areas.slice(0, 3).every((row) => row.told.length === 1)).toBe(true);
+    expect(matrix.areas[3]!.told).toHaveLength(0);
   });
 
   it('promotes nothing scoped when only one area has a path', () => {

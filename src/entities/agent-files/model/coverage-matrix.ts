@@ -64,20 +64,15 @@ export function buildCoverageMatrix(
   areas: readonly CoverageAreaInput[],
   testFiles: readonly string[] = [],
 ): CoverageMatrix {
-  /* O(declarations x capabilities x scopes); reaching every pathed area means universal. */
-  const pathedAreas = areas.filter((area) => area.capabilities.length > 0);
-  const reachesEveryArea = (entry: ScopeDeclaration) =>
-    pathedAreas.length > 1 && pathedAreas.every((area) => declarationReachesArea(entry, area));
-  const scoped = declarations.filter(
-    (entry) => entry.declaresPath && entry.scopes.length > 0 && !reachesEveryArea(entry),
-  );
+  /* O(areas x (declarations x capabilities x scopes + testFiles x capabilities)). */
+  const scoped = declarations.filter((entry) => entry.declaresPath && entry.scopes.length > 0);
   const everywhere: Record<CoverageColumn, ScopeDeclaration[]> = {
     told: [],
     gated: [],
     watched: [],
   };
   for (const entry of declarations) {
-    if (!entry.declaresPath || reachesEveryArea(entry)) everywhere[entry.column].push(entry);
+    if (!entry.declaresPath) everywhere[entry.column].push(entry);
   }
   for (const column of COLUMNS) sortDeclarations(everywhere[column]);
 

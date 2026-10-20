@@ -2,6 +2,7 @@ import { isAfter, type BriefCore, type BriefLine } from './brief-model';
 
 /** One coverage row: a vault domain and what reaches its recorded paths. */
 interface HarnessBriefArea {
+  capabilities?: readonly unknown[];
   told: readonly unknown[];
   gated: readonly unknown[];
   watched: readonly unknown[];
@@ -46,9 +47,10 @@ export function buildHarnessBrief(input: HarnessBriefInput): BriefCore {
       lines: state === 'browser' ? [{ id: 'harness-app-only', count: 0, state: 'unknown' }] : [],
     };
   }
-  const untold = input.areas.filter((area) => area.told.length === 0).length;
-  const ungated = input.areas.filter((area) => area.gated.length === 0).length;
-  const unwatched = input.areas.filter((area) => area.watched.length === 0).length;
+  const pathed = input.areas.filter((area) => area.capabilities === undefined || area.capabilities.length > 0);
+  const untold = pathed.filter((area) => area.told.length === 0).length;
+  const ungated = pathed.filter((area) => area.gated.length === 0).length;
+  const unwatched = pathed.filter((area) => area.watched.length === 0).length;
   const changedSince = (input.fileTimes ?? []).filter((time) => isAfter(time.mtimeMs, input.anchorMs)).length;
   const lines: BriefLine[] = [
     { id: 'harness-untold-areas', count: untold, state: 'unknown' },
@@ -61,9 +63,9 @@ export function buildHarnessBrief(input: HarnessBriefInput): BriefCore {
     core: 'harness',
     availability: input.areas.length === 0 ? 'no-data' : 'measured',
     headline: input.guideFileCount,
-    current: input.areas.length - untold,
-    stale: input.areas.length - ungated,
-    unknown: input.areas.length - unwatched,
+    current: pathed.length - untold,
+    stale: pathed.length - ungated,
+    unknown: pathed.length - unwatched,
     lines,
   };
 }

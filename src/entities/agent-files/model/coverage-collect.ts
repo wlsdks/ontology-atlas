@@ -46,7 +46,6 @@ const ROOT_GUIDE_RULES = new Set([
   'claude-md',
   'agents-md',
   'gemini-md',
-  'cursorrules',
   'copilot-instructions',
 ]);
 
@@ -111,27 +110,30 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
     const rule = AGENT_FILE_RULES.find((candidate) => candidate.pattern.test(path));
     if (!rule) continue;
     if (ROOT_GUIDE_RULES.has(rule.id)) out.push(pathless('told', 'root', path));
-    else if (rule.kind === 'exclusion') out.push(pathless('gated', 'exclusion', path));
+    else if (rule.kind === 'exclusion' && rule.id !== 'cursor-indexing-ignore') out.push(pathless('gated', 'exclusion', path));
   }
   const permissionRules = denyAndAskRuleCount(input.contents.get('.claude/settings.json'));
   if (permissionRules > 0) {
     out.push({
       ...pathless('gated', 'permissions', '.claude/settings.json#permissions'),
       label: '.claude/settings.json',
+      tools: agentToolsForPath('.claude/settings.json'),
       denyAndAskRuleCount: permissionRules,
     });
   }
   for (const [path, text] of input.contents) {
     if (!path.startsWith(RULE_PREFIX) || !path.endsWith('.md')) continue;
     const globs = ruleGlobs(text);
+    const scopes = globs.map(literalPrefix);
+    const rooted = scopes.some((scope) => !scope);
     out.push({
       column: 'told',
       id: path,
       label: ruleLabel(path),
       origin: 'rule',
       declaration: globs.length > 0 ? `paths: ${globs.join(' · ')}` : '',
-      declaresPath: globs.length > 0,
-      scopes: globs.map(literalPrefix).filter(Boolean),
+      declaresPath: globs.length > 0 && !rooted,
+      scopes: rooted ? [] : scopes,
       tools: agentToolsForPath(path),
     });
   }
@@ -187,14 +189,16 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
   }
   for (const [path, text] of input.workflows) {
     const filters = workflowPathFilters(text);
+    const scopes = filters.map(literalPrefix);
+    const rooted = scopes.some((scope) => !scope);
     out.push({
       column: 'watched',
       id: path,
       label: path.split('/').pop() ?? path,
       origin: 'workflow',
       declaration: filters.length > 0 ? `paths: ${filters.join(' · ')}` : '',
-      declaresPath: filters.length > 0,
-      scopes: filters.map(literalPrefix).filter(Boolean),
+      declaresPath: filters.length > 0 && !rooted,
+      scopes: rooted ? [] : scopes,
       tools: [],
     });
   }

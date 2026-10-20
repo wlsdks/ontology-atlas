@@ -38,14 +38,19 @@ function report(
 const areas = [area('a', 'src/a'), area('b', 'src/b'), area('c', 'src/c'), area('d', null)];
 
 describe('buildHarnessOverview', () => {
-  it('puts a rule reaching the other pathed domains in everywhere, and leaves a pathless row uncounted', () => {
+  it('fills the Told cells a rule reaches, keeps everywhere for pathless files, and leaves a pathless row uncounted', () => {
     const overview = buildHarnessOverview(
-      report([declaration({ id: '.claude/rules/src.md', scopes: ['src'] })]),
+      report([
+        declaration({ id: '.claude/rules/src.md', scopes: ['src'] }),
+        declaration({ id: 'AGENTS.md', origin: 'root', declaresPath: false }),
+      ]),
       areas,
     );
-    expect(overview.everywhere[0]!.entries.map((entry) => entry.id)).toEqual([
-      '.claude/rules/src.md',
-    ]);
+    expect(overview.everywhere[0]!.entries.map((entry) => entry.id)).toEqual(['AGENTS.md']);
+    for (const row of overview.rows.slice(0, 3)) {
+      expect(row.cells![0]!.entries.map((entry) => entry.id)).toEqual(['.claude/rules/src.md']);
+    }
+    expect(overview.gaps).toHaveLength(6);
     const pathless = overview.rows.find((row) => row.slug === 'd')!;
     expect(pathless.cells).toBeNull();
     expect(overview.gaps.some((gap) => gap.slug === 'd')).toBe(false);
@@ -64,7 +69,8 @@ describe('buildHarnessOverview', () => {
     const marked = overview.rows
       .flatMap((row) => row.cells ?? [])
       .filter((cell) => cell.gap).length;
-    expect(overview.gaps).toHaveLength(marked);
+    expect(marked).toBe(7);
+    expect(overview.gaps).toHaveLength(7);
     expect(overview.gaps.map((gap) => `${gap.slug}:${gap.column}`)).toEqual([
       'a:gated',
       'a:watched',
@@ -88,6 +94,19 @@ describe('buildHarnessOverview', () => {
     const overview = buildHarnessOverview(report(filled), areas);
     expect(overview.gaps).toEqual([]);
     expect(overview.pathedDomainCount).toBe(3);
+  });
+
+  it('counts a script wired for pre and post that reaches no domain once', () => {
+    const script = declaration({ id: '.claude/hooks/x.sh', origin: 'hook', scopes: ['elsewhere'] });
+    const overview = buildHarnessOverview(
+      report([
+        { ...script, column: 'gated' },
+        { ...script, column: 'watched' },
+      ]),
+      areas,
+    );
+    expect(overview.outsideCount).toBe(1);
+    expect(overview.outsideFolders).toEqual(['elsewhere']);
   });
 
   it('lists a mirrored missing script once and names trust-gated configs', () => {
