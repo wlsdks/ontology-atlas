@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { MOTION } from "./tokens";
 import { SPRING, springEasing, springSettleMs, springState, springVisualMs, type Spring } from "./spring";
 
 function rk4(spring: Spring, tSec: number, x0: number, v0: number, mass: number): number {
@@ -24,9 +25,9 @@ function rk4(spring: Spring, tSec: number, x0: number, v0: number, mass: number)
 }
 
 const TABLE = {
-  control: { visual: 148, settle: 239 },
-  surface: { visual: 242, settle: 391 },
-  canvas: { visual: 354, settle: 571 },
+  control: { visual: 148, settle: 239, overshoot: 1.0063 },
+  surface: { visual: 242, settle: 391, overshoot: 1.0063 },
+  canvas: { visual: 354, settle: 571, overshoot: 1.0063 },
 } as const;
 
 describe("house springs", () => {
@@ -40,12 +41,16 @@ describe("house springs", () => {
     }
   });
 
-  it.each(Object.keys(SPRING) as (keyof typeof SPRING)[])("%s overshoots 0.63% and keeps the table's times", (name) => {
+  it.each(Object.keys(SPRING) as (keyof typeof SPRING)[])("%s keeps the table's overshoot and times", (name) => {
     let peak = 0;
     for (let t = 0; t < 1; t += 1e-4) peak = Math.max(peak, springState(SPRING[name], t).x);
-    expect(Math.abs(peak - 1.0063)).toBeLessThanOrEqual(0.0002);
+    expect(Math.abs(peak - TABLE[name].overshoot)).toBeLessThanOrEqual(0.0002);
     expect(Math.abs(springVisualMs(SPRING[name]) - TABLE[name].visual)).toBeLessThanOrEqual(2);
     expect(Math.abs(springSettleMs(SPRING[name]) - TABLE[name].settle)).toBeLessThanOrEqual(2);
+  });
+
+  it.each(Object.keys(SPRING) as (keyof typeof SPRING)[])("%s settles within the choreography step", (name) => {
+    expect(springSettleMs(SPRING[name])).toBeLessThanOrEqual(MOTION.choreography.duration * 1000);
   });
 
   it("slows a heavy concept without changing its overshoot", () => {

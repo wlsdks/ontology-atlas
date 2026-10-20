@@ -67,6 +67,7 @@ interface TopologyCommandChromeProps {
   handleClearPastWalks: () => void;
   agentDockTouchedRef: React.RefObject<boolean>;
   sampleModeSettled: boolean;
+  sampleModeKnown: boolean;
   requestVaultOpen: () => void;
   v2DatasheetModel: NodeDatasheetDerivation["v2DatasheetModel"];
   topologyAgentActivity: Pick<ReturnType<typeof useTopologyAgentActivity>, "acpLiveWork">;
@@ -128,7 +129,7 @@ export function TopologyCommandChrome({
   expandAllActive, insightsReturnTab, insightsReturnReviewId, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
   handleFootprintLens, handleFootprintBrush, pastWalkRows, pastTrailNotice, handleDeletePastWalk,
-  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, requestVaultOpen, v2DatasheetModel,
+  handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen, v2DatasheetModel,
   topologyPreferences, topologyInspectorState, topologyAuthoring, topologyCanvasFocus,
   topologyVaultReadModel, topologyGraphProjection, topologyAgentOrchestration, topologySceneControls,
   topologyRouteControls, topologyNavigationActions, homeWorkbenchController, topologyAgentActivity,
@@ -450,10 +451,10 @@ export function TopologyCommandChrome({
               ) : undefined
             }
           />
-          <div data-toolbar-right-column className="flex shrink-0 flex-col items-end gap-4 transition-none xl:ml-auto">
+          <div data-toolbar-right-column className={cn("flex shrink-0 flex-col items-end gap-4 transition-none xl:ml-auto", !sampleModeKnown && "invisible")}>
               <div
                 inert={inspectorOwnsRightRail}
-                className={`${rightChromeMotion("topology-chrome-in")} shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
+                className={`${rightChromeMotion(sampleModeKnown ? "topology-chrome-in" : "")} shrink-0 flex-col items-end gap-2 xl:ml-auto ${renderedIndexState === "expanded" ? "hidden md:flex" : "flex"}`}
                 data-phone-sheet-utility-contract={
                   renderedIndexState === "expanded"
                     ? "hidden-below-md-while-index-sheet-owns-surface"

@@ -6,7 +6,6 @@
 
 import { easeInOutCubic } from "../camera/camera-easing";
 
-/** The design charter's 240 ms ceiling. */
 export const WARDING_REFIT_MS = 240;
 /** World units, so micro-jitter cannot restart the tween. */
 const REFIT_EPSILON = 0.5;
