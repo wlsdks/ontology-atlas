@@ -38,7 +38,6 @@ export const rules = [
     command: 'pnpm exec playwright test tests/e2e/insights/insights-motion-feedback.spec.ts',
     reason: 'insights copy feedback and fill motion changed',
     matches: [
-      /^src\/views\/ontology-insights\/ui\/tabs\/FlowTab\.tsx$/,
       /^src\/shared\/motion\/feedback-glyph\.tsx$/,
       /^app\/styles\/motion-feedback\.css$/,
     ],

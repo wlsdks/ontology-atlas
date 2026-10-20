@@ -216,7 +216,7 @@ export function validateWebviewVerifyPayload(payload, {
   );
   const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
   // One section tab row; the selected analytical question remains inside its section.
-  const INSIGHTS_SUBJECT_COUNT = 5;
+  const INSIGHTS_SUBJECT_COUNT = 3;
   if (webviewPath.includes("/ontology/insights")) {
     if (payload.markers.insightsMaintenanceBoard !== true) {
       return "WebView did not report the insights relationship analysis marker";

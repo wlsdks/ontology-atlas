@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { box, hintPanel } from './harness-auto-insights-harness';
-import { waitForAnimationsDone, waitForBoxStill } from '../settle';
+import { waitForAnimationsDone } from '../settle';
 import { installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
 
 test.describe('Harness hints', () => {
@@ -122,41 +122,6 @@ test.describe('Harness overview panel', () => {
       await expect(first).toHaveAttribute('aria-controls', /.+/);
     });
   }
-});
-
-test.describe('Analysis', () => {
-  test('the guidance evidence popup stays inside its field at 1040×720', async ({ page }) => {
-    await page.setViewportSize({ width: 1040, height: 720 });
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-    await page.goto('/ko/ontology/insights/?tab=harness&guides=off');
-    const overview = page.getByTestId('harness-coverage-overview');
-    await expect(overview).toBeVisible({ timeout: 30_000 });
-    const field = overview.locator(':scope > div').first();
-    const fieldRect = await box(field);
-    /* The reported case: the second row's Shop Front instructions port scrolled to y≈408, where
-       the room below is shorter than the popup and the room above runs to the window's top. */
-    const target = overview
-      .locator('[data-testid^="harness-domain-"]', { hasText: 'Shop Front' })
-      .locator('[data-role="told"]')
-      .first();
-    await expect(target).toBeAttached();
-    const portY = (await box(target)).y;
-    await field.evaluate((element, delta) => { element.scrollTop += delta; }, portY - 408);
-    await waitForBoxStill(target);
-    const settled = (await box(target)).y;
-    expect(Math.abs(settled - 408), `port did not reach y≈408 (at ${settled.toFixed(0)})`).toBeLessThanOrEqual(60);
-    await target.click();
-    const popup = page.getByTestId('harness-role-popup');
-    await expect(popup).toBeVisible();
-    await waitForAnimationsDone(popup);
-    await waitForBoxStill(popup);
-    const rect = await box(popup);
-    const title = await box(page.getByRole('heading', { level: 1 }).first());
-    /* Before: [138,16,503,400], over the page title and the tab switch. */
-    expect(rect.y, 'the popup rose over the page title').toBeGreaterThanOrEqual(title.y + title.height);
-    expect(rect.y, 'the popup rose above its field').toBeGreaterThanOrEqual(fieldRect.y);
-  });
 });
 
 /**

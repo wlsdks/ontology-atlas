@@ -18,10 +18,9 @@ export {
 export {
   buildCoverageMatrix,
   type CoverageAreaInput,
-  type CoverageAreaRow,
   type CoverageCapability,
 } from './model/coverage-matrix';
-export { scopeReaches, type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
+export { type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
 export {
   declaredPairFor,
   isGuideRecord,

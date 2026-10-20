@@ -48,19 +48,16 @@ export function planInsightsAgentPrompt({
     : { action: 'seat', request };
 }
 
-/** Flow owns a stricter presentation contract; the other tabs share one read-only frame. */
+/** Every tab shares one read-only frame. */
 export function buildInsightsAgentPrompt({
   locale,
   kind,
   handoff,
-  flowRequest,
 }: {
   locale: string;
   kind: InsightsTab;
   handoff: string;
-  flowRequest: string;
 }): string {
-  if (kind === 'flow') return withAnswerLanguage(flowRequest, locale);
   const readHandoff = kind === 'unmatched'
     ? 'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → explain the unresolved names and one-sided placements with evidence; do not change the vault'
     : handoff;

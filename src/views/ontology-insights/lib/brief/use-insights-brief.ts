@@ -40,10 +40,6 @@ import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
-import {
-  projectHarnessCoverageEvidence,
-  type HarnessCoverageEvidence,
-} from './harness-detail';
 
 export interface InsightsBrief {
   anchor: BriefAnchor;
@@ -98,23 +94,7 @@ export interface InsightsBrief {
     unmeasured: number;
     passes: { endedAt: string; outcome: string; checked: number; written: number; summary: string }[];
   };
-  /** The coverage table's rows and the mirror findings. */
-  harnessDetail: HarnessDetail;
 }
-
-interface HarnessDetailBase {
-  areas: { slug: string; title: string; told: number; gated: number; watched: number }[];
-  everywhere: { told: number; gated: number; watched: number };
-  drift: { path: string; message: string }[];
-  guideFiles: number;
-  checks: number;
-}
-
-type HarnessUnavailableAvailability = 'app-only' | 'no-source' | 'reading' | 'unreadable';
-
-type HarnessDetail =
-  | (HarnessDetailBase & { availability: 'measured'; evidence: HarnessCoverageEvidence })
-  | (HarnessDetailBase & { availability: HarnessUnavailableAvailability; evidence: null });
 
 const EMPTY_DOCS: readonly VaultDoc[] = [];
 const EMPTY_LEDGER: readonly RoundPassEntry[] = [];
@@ -356,48 +336,6 @@ export function useInsightsBrief({
     });
   }, [harnessReport, harnessState.status, coverage.areas, anchor.anchorMs]);
 
-  const harnessDetail = useMemo(() => {
-    if (!harnessReport) {
-      const availability: HarnessUnavailableAvailability = harnessState.status === 'loading'
-        ? 'reading'
-        : harnessState.status === 'failed'
-          ? 'unreadable'
-          : harnessState.status === 'no-source'
-            ? 'no-source'
-            : 'app-only';
-      return {
-        availability,
-        areas: [],
-        everywhere: { told: 0, gated: 0, watched: 0 },
-        drift: [],
-        guideFiles: 0,
-        checks: 0,
-        evidence: null,
-      };
-    }
-    const matrix = buildCoverageMatrix(harnessReport.coverage, coverage.areas, harnessReport.testFiles);
-    const evidence = projectHarnessCoverageEvidence(matrix);
-    return {
-      availability: 'measured' as const,
-      areas: evidence.areas.map((area) => ({
-        slug: area.slug,
-        title: area.title,
-        told: area.roles.told.declarations.length,
-        gated: area.roles.gated.declarations.length,
-        watched: area.roles.watched.declarations.length,
-      })),
-      everywhere: {
-        told: evidence.everywhere.told.length,
-        gated: evidence.everywhere.gated.length,
-        watched: evidence.everywhere.watched.length,
-      },
-      drift: harnessReport.analysis.drift.map((finding) => ({ path: finding.path, message: finding.message })),
-      guideFiles: harnessReport.guideDocumentCount,
-      checks: harnessReport.checks.total,
-      evidence,
-    };
-  }, [harnessReport, harnessState.status, coverage.areas]);
-
   const agent = useMemo(
     () =>
       buildAgentBrief({
@@ -470,7 +408,6 @@ export function useInsightsBrief({
     sinceKind: since?.soleKind ?? null,
     details,
     library: libraryDetail,
-    harnessDetail,
   };
 }
 

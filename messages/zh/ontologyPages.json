@@ -5,7 +5,6 @@
     "tab": {
       "brief": "简报",
       "library": "资料库",
-      "harness": "Harness 页",
       "do-next": "待修复",
       "unmatched": "缺失概念",
       "composition": "清单",
@@ -13,8 +12,7 @@
       "boundaries": "领域边界",
       "growth": "积累",
       "freshness": "近期变更",
-      "structure": "结构",
-      "flow": "产品流程"
+      "structure": "结构"
     },
     "brief": {
       "sinceSeen": "{days, plural, =0 {自你今天查看以来} other {自你 # 天前查看以来}}",
@@ -126,35 +124,7 @@
     "stale": "过时",
     "older": "更早",
     "flow": {
-      "title": "产品流程",
-      "lead": "智能体只读取此文件夹中记录的内容，并写出产品是什么、如何运转。它不读取源码。",
-      "action": "用 ACP 讲解流程",
-      "actionHint": "把这条请求放进分析旁的对话中，由你发送。",
-      "checking": "正在检查哪个本地智能体可以在此打开。",
-      "requestLabel": "发给智能体的请求",
-      "unavailableTitle": "需在应用中进行",
-      "unavailableBody": "浏览器无法启动代理或确定此文件夹的绝对路径。复制的请求会停在连接检查，直到确认准确的文件夹。",
-      "copy": "复制请求",
-      "copied": "已复制",
-      "noVaultTitle": "请先打开文件夹",
-      "noVaultBody": "还没有可讲解的库。",
-      "request": "仅使用 Atlas MCP 的读取工具来说明这份本体的业务流程。不要调用 shell、文件、源码、网页或其他工具。\n\n严格返回六个 ### 标题，每个标题下写一段：\n1) 这个产品为何存在。\n2) 各领域分别负责什么。\n3) 主要能力如何构成业务流程。\n4) 这些能力如何体现在元素或路径中。\n5) 哪些已声明的依赖可以说明影响范围，哪些仍然未知。\n6) 必须保留哪些部分、可见缺口、过时或未验证的限制。\n\n规则：\n- 先查看项目地图，选一条从语义到实现的代表性链路；不要罗列每个概念。\n- 最多用 get_concept(body: full) 或 get_concepts(body: full) 读取 12 个概念。\n- 每段都要写出本轮已读完整正文的完整概念 slug。\n- 仅当当前本体中确实存在时，才写出 from → type → to 形式的关系。\n- 始终保留“部分”“可见缺口”“未知”这些限定。\n- 某个能力的排除项只约束该能力，不要扩大到整个项目。\n- 如果本体无法回答，就说明原因，不要用其他知识填补空缺。",
-      "writtenAt": "{when} · 由 {writer} 撰写",
-      "standingCurrent": "已检查的依据与分析时一致",
-      "standingStale": "分析后依据已发生变化",
-      "standingUnknown": "部分依据无法重新核实",
-      "ungrounded": "这份回答所依据的读取无法证实",
-      "changedTitle": "与上一版相比的变化",
-      "changeAdded": "新增",
-      "changeRemoved": "已移除",
-      "changeRewritten": "已重写",
-      "noVersionTitle": "还没有写成的内容",
-      "noVersionBody": "让智能体读一遍这个文件夹，说明产品是什么、如何运转。回答会留在这里，下次再写时会显示有哪些变化。",
-      "rewrite": "重新撰写",
-      "versionsLabel": "已保留 {count, number} 个版本。",
-      "sampleBody": "打开自己的文件夹，即可在这里阅读已保存的产品说明和历史版本。",
-      "sampleTitle": "还没有保存的产品说明",
-      "exploreConnections": "查看产品关联"
+      "request": "仅使用 Atlas MCP 的读取工具来说明这份本体的业务流程。不要调用 shell、文件、源码、网页或其他工具。\n\n严格返回六个 ### 标题，每个标题下写一段：\n1) 这个产品为何存在。\n2) 各领域分别负责什么。\n3) 主要能力如何构成业务流程。\n4) 这些能力如何体现在元素或路径中。\n5) 哪些已声明的依赖可以说明影响范围，哪些仍然未知。\n6) 必须保留哪些部分、可见缺口、过时或未验证的限制。\n\n规则：\n- 先查看项目地图，选一条从语义到实现的代表性链路；不要罗列每个概念。\n- 最多用 get_concept(body: full) 或 get_concepts(body: full) 读取 12 个概念。\n- 每段都要写出本轮已读完整正文的完整概念 slug。\n- 仅当当前本体中确实存在时，才写出 from → type → to 形式的关系。\n- 始终保留“部分”“可见缺口”“未知”这些限定。\n- 某个能力的排除项只约束该能力，不要扩大到整个项目。\n- 如果本体无法回答，就说明原因，不要用其他知识填补空缺。"
     },
     "core": {
       "brief": "简报",
@@ -251,78 +221,6 @@
       }
     },
     "harnessTab": {
-      "open": "查看 Harness",
-      "getApp": "获取应用",
-      "visual": {
-        "title": "{count, number} 个领域的已声明指引",
-        "fieldLabel": "按领域划分的已声明指引",
-        "mode": {
-          "label": "指引阅读模式",
-          "diagram": "图示",
-          "text": "文字"
-        },
-        "collection": {
-          "eyebrow": "指引依据",
-          "none": "此分组没有条目。",
-          "separate": {
-            "action": "单独计数的 {role}",
-            "title": "单独计数的 {role}",
-            "description": "这些声明单独计数，原因是没有提取到路径范围，或其范围匹配所有已记录的领域。它们不会加入某个领域的范围内计数。"
-          },
-          "outside": {
-            "action": "映射之外",
-            "title": "领域映射之外",
-            "description": "这些带范围的声明与本体记录的领域入口不匹配。这并不说明代码有问题、范围适用于全部，或文件不存在。"
-          },
-          "unreached": {
-            "action": "未覆盖的入口",
-            "title": "未被覆盖的能力入口",
-            "description": "这些能力入口没有被带路径范围的指令声明覆盖。单独计数的指令仍可能存在。此处的能力数量不是映射之外的声明数量。"
-          },
-          "findings": {
-            "action": "发现",
-            "title": "全部 Harness 发现",
-            "description": "这些发现保留原有的路径和消息。没有可靠的关联时，不会归到某个领域。",
-            "independence": "Codex 与 Claude 的指令目录可以有差异，这只是提示信息；此列表并不要求让相互独立的 Harness 保持一致。"
-          }
-        },
-        "inventoryCaption": "{guides, number} 个指南文件 · {checks, number} 个检查项。",
-        "diagramCaption": "图中的数字统计归属于各领域的带范围声明，不代表执行结果。",
-        "findingSummary": "在 Harness 中打开",
-        "coverage": "{total, number} 个中有 {covered, number} 个有 {role}",
-        "role": {
-          "told": "指令",
-          "gated": "钩子",
-          "watched": "检查与工作流"
-        },
-        "emptyRoleLabel": "{domain}：没有带范围的 {role}",
-        "filledRoleLabel": "{domain}：{role}，{count, number} 条声明",
-        "popupLabel": "{domain} · {role} 依据",
-        "popupFallbackLabel": "指引依据",
-        "close": "关闭",
-        "zeroScoped": "没有带范围的 {role} 声明归属于此领域。",
-        "exactCount": "有 {count, number} 条带范围的声明归属于此领域。",
-        "extractedScope": "提取的范围",
-        "noExtractedScope": "未提取到路径范围。此次扫描没有确定路径过滤条件，不能证明运行时没有范围限制。",
-        "matchedEntrypoints": "匹配的能力入口",
-        "tools": "读取方",
-        "sourceId": "来源标识",
-        "sourceLabel": "来源标签",
-        "globalCount": "显示 {count, number} 个单独条目",
-        "globalExplanation": "这些条目单独计数，原因是没有提取到路径范围，或其范围匹配所有已记录的领域。它们不会加入此领域的范围内计数。",
-        "globalNone": "此角色没有全局声明。",
-        "discoveredTests": "在已记录的能力路径下发现了 {count, number} 个测试文件。发现与已声明的检查范围是两回事。",
-        "limit": "归属依据的是声明的路径前缀覆盖范围。它不能证明路径仍然有效、钩子已安装或运行过，也不能证明检查或工作流已通过。"
-      },
-      "more": "另有 {count, number} 个领域",
-      "reading": "正在读取文件夹。",
-      "unreadable": "无法读取指南文件。重新打开文件夹即可重试。",
-      "noSource": "请检查此文件夹对应的代码仓库。能确定唯一一个已绑定的仓库时，才能统计指引。",
-      "drift": {
-        "title": "{count, number} 项指引与配置发现",
-        "caption": "文件差异，以及引用或配置方面的发现。不同智能体的指令不必完全一致。",
-        "none": "没有可显示的发现。"
-      },
       "preview": {
         "title": "按代码区域查看指引与检查",
         "body": "查看哪些区域有指令、会拦截变更的规则和自动检查。",
@@ -330,7 +228,6 @@
         "pauseAnimation": "暂停示例动画",
         "resumeAnimation": "继续示例动画",
         "instruction": "选择一个角色，查看如何接入。",
-        "openHarness": "在 Harness 中查看指引",
         "area": {
           "title": "支付"
         },
@@ -353,24 +250,6 @@
             "setup": "查看测试、lint 等自动检查的目标路径。检查文件并不能证明检查运行过或已通过。"
           }
         }
-      },
-      "availability": {
-        "app-only": {
-          "title": "请在应用中打开此文件夹",
-          "description": "浏览器无法读取隐藏文件夹，因此指引覆盖情况需在应用中统计。"
-        },
-        "no-source": {
-          "title": "请检查代码仓库",
-          "description": "请检查此文件夹对应的代码仓库。能确定唯一一个已绑定的仓库时，才能统计指引。"
-        },
-        "reading": {
-          "title": "正在读取指引",
-          "description": "Atlas 正在从已连接的仓库读取指引和检查。"
-        },
-        "unreadable": {
-          "title": "无法读取指引",
-          "description": "重新打开文件夹，再次尝试读取其指引和检查。"
-        }
       }
     },
     "analysis": {
@@ -379,8 +258,6 @@
       "system": "产品关系",
       "records": "检查摘要",
       "wiki": "Wiki",
-      "guidance": "指导",
-      "explanations": "已保存的说明",
       "example": "内置示例",
       "question": "分析问题",
       "relationships": "职责之间的关系",
@@ -417,6 +294,12 @@
       },
       "empty": "打开本体文件夹以检查其记录的关系。",
       "legacy": "已在新分析界面中打开保存链接对应的问题。",
+      "flowRetired": {
+        "first": "“已保存的说明”标签页已移除。",
+        "count": "此文件夹中保存的 {count} 条说明仍在 .ontology-atlas/analyses/ 中。",
+        "open": "在“发现与历史”中查看",
+        "web": "请让编码代理通过 MCP 读取。"
+      },
       "sourceStatus": {
         "example": "源码 · 此示例中未检查",
         "reading": "源码 · 检查中",

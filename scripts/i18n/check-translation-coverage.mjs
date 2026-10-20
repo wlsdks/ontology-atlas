@@ -113,7 +113,6 @@ export const ACCEPTED = {
       'firstRun.subtitle': 'the Korean text uses the short product name Atlas',
       'gatewayNav.readFullSource': 'the Korean text says repository where English names GitHub',
       'metadata.descriptions.guide': 'the Korean text uses the short product name Atlas',
-      'ontologyPages.insights.flow.action': 'the Korean text says agent where English says ACP',
       'ontologyPages.insights.flow.request': 'the Korean request says Atlas tools where English says MCP',
     },
   },

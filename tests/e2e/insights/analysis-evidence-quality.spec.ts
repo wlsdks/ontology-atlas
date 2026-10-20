@@ -257,33 +257,9 @@ test('local correction returns to the same visible focused claim without writing
   await expect(page.locator('[data-testid="analysis-claim"][aria-pressed="true"]')).toBeInViewport({ ratio: 1 });
 });
 
-test('supporting sample records name their scope and cannot copy or launch a connected-vault explanation', async ({ page }) => {
-  await page.goto('/en/ontology/insights/?tab=brief');
-  await expect(page.getByTestId('analysis-records-scope')).toContainText(/example/i);
-  await page.getByTestId('insights-core-flow').click();
-  await expect(page.getByTestId('analysis-records-scope')).toContainText(/example/i);
-  await expect(page.getByTestId('flow-no-version')).toBeVisible();
-  await expect(page.getByTestId('flow-copy')).toHaveCount(0);
-  await expect(page.getByTestId('flow-prefill')).toHaveCount(0);
-  await expect(page.getByTestId('flow-request')).toHaveCount(0);
-  await expect(page.getByTestId('flow-open-vault')).toBeVisible();
-});
-
-test('a local explanation keeps root and identity checks in the unsent request', async ({ page }) => {
-  const harness = await installLibraryWorkHarness(page, { files: FIXTURE_VAULT, runtimeId: 'claude-acp' });
-  await openFolderFromFirstRun(page, 'en');
-  await page.goto('/en/ontology/insights/?tab=flow');
-  await page.getByTestId('flow-prefill').click();
-  const composer = page.getByTestId('acp-chat-panel').getByRole('textbox');
-  await expect(composer).toHaveValue(/connection_info/);
-  await expect(composer).toHaveValue(/immutable UIDs/);
-  await expect(composer).toHaveValue(/12 full concepts/);
-  expect((await harness.snapshot(page)).calls.filter(call => call.method === 'session/prompt')).toHaveLength(0);
-});
-
 test.describe('supporting records at the touch viewport', () => {
   test.use({ viewport: { width: 600, height: 900 }, hasTouch: true });
-  for (const tab of ['library', 'harness', 'brief']) {
+  for (const tab of ['library', 'brief']) {
     test(`${tab} keeps its last action above the bottom navigation with a full touch target`, async ({ page }) => {
       await page.goto(`/en/ontology/insights/?tab=${tab}&guides=off`);
       const last = tab === 'brief' ? page.locator('[data-testid="brief-lines"] a').last() : page.getByTestId('preview-primary-action');

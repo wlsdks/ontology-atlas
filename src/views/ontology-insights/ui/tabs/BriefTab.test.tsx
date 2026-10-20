@@ -78,15 +78,6 @@ function briefFixture(overrides: Partial<InsightsBrief>): Omit<InsightsBrief, "c
       unmeasured: 0,
       passes: [],
     },
-    harnessDetail: {
-      availability: "app-only",
-      areas: [],
-      everywhere: { told: 0, gated: 0, watched: 0 },
-      drift: [],
-      guideFiles: 0,
-      checks: 0,
-      evidence: null,
-    },
     details: new Map([
       [
         "ontology-evidence-moved",

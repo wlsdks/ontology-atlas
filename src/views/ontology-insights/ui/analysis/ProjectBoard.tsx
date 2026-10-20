@@ -90,7 +90,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
     const fit = () => {
       const lanes = [...element.querySelectorAll<HTMLElement>(':scope > [data-board-lane]')];
       const layout = element.closest('[data-testid="analysis-layout"]');
-      if (lanes.length < 2 || !layout || getComputedStyle(layout).gridTemplateColumns.split(' ').length < 2) { element.style.removeProperty('--board-gap'); return; }
+      if (lanes.length < 2 || !ends.length || !layout || getComputedStyle(layout).gridTemplateColumns.split(' ').length < 2) { element.style.removeProperty('--board-gap'); return; }
       const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
       const frame = scroller.getBoundingClientRect(), box = element.getBoundingClientRect();
       const below = element.parentElement!.getBoundingClientRect().bottom - box.bottom + parseFloat(getComputedStyle(scroller).paddingBottom);
