@@ -26,8 +26,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "agent-pending-dot":"an endless pulse, and stopping exactly that is what reduced motion means; the state is told by the adjacent text.",
   "architecture-observation-scan":
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
-  "harness-scan-sweep":
-    "Infinite travel shown only while a scan pass whose length is unknown is running. Reduced motion stops it and the bar rests left-anchored at a third of the track, claiming no scale; the stage name, its running count and the seven-stage route list all keep changing from state and carry the same fact.",
   "motion-work-spin":
     "Infinite arc rotation shown only while a WorkStatus step of unknown length runs. Reduced motion stops the arc in place; the step's label and the consumer's live region carry the same fact.",
   "motion-work-sweep":

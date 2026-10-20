@@ -28,7 +28,7 @@ import { TopologyUtilityOverlays } from "./TopologyUtilityOverlays";
 
 import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
 import { useChatSuggestions } from "@/features/acp-session";
-import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
+import { useFirstRunSampleModeKnown, useFirstRunSampleModeSettled } from "@/features/first-run-starter";
 import { useProjects } from "@/features/project-data-source";
 import { useRouter } from "@/i18n/navigation";
 import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
@@ -268,6 +268,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   // In sample mode a quiet "switch to my data ⌘O" pill stays in the top row until a real vault
   // connects.
   const sampleModeSettled = useFirstRunSampleModeSettled();
+  const sampleModeKnown = useFirstRunSampleModeKnown();
   // Without File System Access the pill and ⌘O open the same sheet in its unsupported mode,
   // instead of silently doing nothing.
   const fsaUnsupported = vaultStatus === "unsupported";
@@ -586,6 +587,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               handleClearPastWalks={handleClearPastWalks}
               agentDockTouchedRef={agentDockTouchedRef}
               sampleModeSettled={sampleModeSettled}
+              sampleModeKnown={sampleModeKnown}
               requestVaultOpen={requestVaultOpen}
               v2DatasheetModel={v2DatasheetModel}
               topologyPreferences={topologyPreferences}
