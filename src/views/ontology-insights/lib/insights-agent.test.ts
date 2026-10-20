@@ -16,28 +16,21 @@ describe('Analysis shared ACP planner', () => {
   it('keeps the new unmatched tab explanation free of write handoff commands', () => {
     const prompt = buildInsightsAgentPrompt({
       locale: 'en', kind: 'unmatched',
-      handoff: 'add_concept({}) → add_relation({})', flowRequest: '',
+      handoff: 'add_concept({}) → add_relation({})',
     });
     expect(prompt).toContain('maintenance_plan');
     expect(prompt).not.toContain('add_concept');
     expect(prompt).not.toContain('add_relation');
   });
-  it('frames measured tabs as Atlas-only reads while Flow keeps its exact request', () => {
+  it('frames measured tabs as Atlas-only reads', () => {
     const framed = buildInsightsAgentPrompt({
       locale: 'en',
       kind: 'connections',
       handoff: 'query_ontology({operation:"centrality"})',
-      flowRequest: 'exact flow request',
     });
     expect(framed).toContain('Use only Atlas MCP read tools');
     expect(framed).toContain('Do not call write tools');
     expect(framed).toContain('query_ontology({operation:"centrality"})');
-    expect(buildInsightsAgentPrompt({
-      locale: 'ko',
-      kind: 'flow',
-      handoff: 'short flow handoff',
-      flowRequest: 'exact flow request',
-    })).toBe('exact flow request');
   });
 
   it('keeps the current request when the same tab action is pressed again', () => {

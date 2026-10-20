@@ -295,7 +295,7 @@ export function createAnalysisTurnObserver(
 }
 
 /**
- * **The read-only frame every non-Flow Analysis request opens with**, in each language.
+ * **The read-only frame every Analysis request opens with**, in each language.
  *
  * It lives here rather than beside the screen that writes it because two places need the exact
  * same bytes: `buildInsightsAgentPrompt`, which composes the request, and `request-parts.ts`,

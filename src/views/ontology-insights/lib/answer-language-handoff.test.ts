@@ -32,8 +32,8 @@ describe("insights handoffs name the answer language", () => {
   });
 
   it("insights agent prompt, every tab", () => {
-    for (const kind of ["brief", "flow"] as const) {
-      const args = { kind, handoff: "h", flowRequest: "f" };
+    for (const kind of ["brief", "connections"] as const) {
+      const args = { kind, handoff: "h" };
       const en = buildInsightsAgentPrompt({ ...args, locale: "en" });
       expect(en).not.toContain("Answer in ");
       for (const [locale, language] of [["ja", "Japanese"], ["zh", "Simplified Chinese"]] as const) {

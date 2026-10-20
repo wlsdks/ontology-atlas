@@ -3,15 +3,13 @@ import { withAnswerLanguage } from '@/i18n/answer-language';
 
 import type { InsightsTab } from './insights-tab-state';
 
-type InsightsAgentKind = InsightsTab | 'flow';
-
 export interface InsightsAgentRuntime {
   id: string;
   label: string;
 }
 
 export interface InsightsAgentPrefill {
-  kind: InsightsAgentKind;
+  kind: InsightsTab;
   text: string;
   nonce: number;
 }
@@ -34,7 +32,7 @@ export function planInsightsAgentPrompt({
 }: {
   current: InsightsAgentPrefill | null;
   draftPresent: boolean;
-  kind: InsightsAgentKind;
+  kind: InsightsTab;
   text: string;
 }): InsightsAgentPromptPlan {
   if (current?.kind === kind && current.text === text) {
@@ -50,19 +48,16 @@ export function planInsightsAgentPrompt({
     : { action: 'seat', request };
 }
 
-/** Flow owns a stricter presentation contract; the other tabs share one read-only frame. */
+/** Every tab shares one read-only frame. */
 export function buildInsightsAgentPrompt({
   locale,
   kind,
   handoff,
-  flowRequest,
 }: {
   locale: string;
-  kind: InsightsAgentKind;
+  kind: InsightsTab;
   handoff: string;
-  flowRequest: string;
 }): string {
-  if (kind === 'flow') return withAnswerLanguage(flowRequest, locale);
   const readHandoff = kind === 'unmatched'
     ? 'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → explain the unresolved names and one-sided placements with evidence; do not change the vault'
     : handoff;

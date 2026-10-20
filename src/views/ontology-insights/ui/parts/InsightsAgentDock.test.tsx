@@ -37,8 +37,8 @@ const baseProps = {
   onRuntimeChange: vi.fn(),
   vaultRoot: '/repo/atlas',
   mcpServers: [{ name: 'atlas-vault' }],
-  prefillRequest: { kind: 'flow' as const, text: 'Explain this flow', nonce: 1 },
-  contextLabel: 'Analysis · Flow',
+  prefillRequest: { kind: 'connections' as const, text: 'Explain these connections', nonce: 1 },
+  contextLabel: 'Analysis · Connections',
   knownSlugs: new Set(['ontology-atlas']),
   knownRelations: new Set<string>(),
   onDraftPresenceChange: vi.fn(),
@@ -101,11 +101,10 @@ describe('InsightsAgentDock', () => {
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-session-enabled', 'false');
     expect(chat.props).toHaveBeenLastCalledWith(expect.objectContaining({
       prefillRequest: baseProps.prefillRequest,
-      presentationIntent: 'business-flow',
       runtimeId: 'claude-acp',
     }));
     // The workbench owns the origin label and the one close button, so the chat panel receives neither.
-    expect(screen.getByTestId('mock-workbench')).toHaveAttribute('data-workbench-context', 'Analysis · Flow');
+    expect(screen.getByTestId('mock-workbench')).toHaveAttribute('data-workbench-context', 'Analysis · Connections');
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-close', 'absent');
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-context', 'undefined');
 

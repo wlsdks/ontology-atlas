@@ -165,8 +165,6 @@ export function InsightsAgentDock({
             onOpeningRequestSent={(nonce) => setOpeningRequest((current) => current?.nonce === nonce ? null : current)}
             knownSlugs={knownSlugs}
             knownRelations={knownRelations}
-            presentationIntent={prefillRequest.kind === 'flow' ? 'business-flow' : null}
-            presentationRequest={prefillRequest.kind === 'flow' ? prefillRequest.text : null}
             onDraftPresenceChange={onDraftPresenceChange}
             onPresentationOpenMap={onPresentationOpenMap}
             onTurnActivityChange={onTurnActivityChange}
