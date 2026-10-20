@@ -148,6 +148,7 @@
   "overviewRecordedCount": "{count}개",
   "overviewPathsMore": "{count}개 더 보기",
   "overviewPathsLess": "접기",
-  "overviewFillsHeading": "이 칸을 채우는 파일",
-  "overviewPanelEmpty": "칸을 고르면 그 칸을 만드는 파일이 여기 열려요"
+  "overviewPanelEmpty": "칸을 고르면 그 칸을 만드는 파일이 여기 열려요",
+  "overviewFillsHeadingGap": "이 칸을 채울 수 있는 파일",
+  "overviewSilentOpenGuides": "지침에서 보기"
 }

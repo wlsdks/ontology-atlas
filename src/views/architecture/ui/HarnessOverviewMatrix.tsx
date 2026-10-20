@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 
 import type { CoverageColumn } from '@/entities/agent-files';
@@ -25,7 +25,9 @@ const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>>
   watched: 'right',
 };
 
-const GRID = 'grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))] max-sm:grid-cols-3';
+const GRID = 'grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))] @max-[47.5rem]/table:grid-cols-3';
+
+const ROW_MIN = 'min-h-[5.5rem] @max-[47.5rem]/table:min-h-0';
 
 const DIVIDER = 'border-b border-[color:var(--color-divider)]';
 
@@ -33,7 +35,7 @@ const AMBER_INK = 'text-[color:var(--color-amber-source-text-a95)]';
 
 /** A value tile is a bordered box so every state shares one footprint, and a column's text keeps one start line. */
 const TILE_BASE =
-  'h-13.5 min-h-0 gap-3 rounded-card border border-transparent px-3.5 py-0 text-left max-sm:px-2.5'
+  'h-13.5 min-h-0 gap-3 rounded-card border border-transparent px-3.5 py-0 text-left @max-[47.5rem]/table:px-2.5'
 
 /** Hover is a fill: neutral on a count, amber on a gap, so a gap stays calm until it is reached for. */
 const HOVER_FILL = 'hover:bg-[color:var(--color-overlay-2)]';
@@ -63,12 +65,10 @@ export function HarnessOverviewMatrix({
   const tile = (cell: OverviewCell, state: CellState, label: string) => {
     const open = openKey === cell.key;
     const count = cell.entries.length;
-    const kinds = originCounts(cell.entries)
-      .map(({ origin, count: n }) => `${t(ORIGIN_LABEL[origin])} ${n}`)
-      .join(' · ');
+    const kinds = originCounts(cell.entries).map(({ origin, count: n }) => `${t(ORIGIN_LABEL[origin])} ${n}`);
     return (
-      <div key={cell.column} role="cell" className="flex min-w-0 items-center px-3 py-3 max-sm:flex-col max-sm:items-stretch max-sm:gap-1 max-sm:pt-0">
-        <span aria-hidden className="hidden px-1 text-label text-[color:var(--color-text-quaternary)] max-sm:block">
+      <div key={cell.column} role="cell" className="flex min-w-0 items-center px-3 py-2.5 @max-[47.5rem]/table:flex-col @max-[47.5rem]/table:items-stretch @max-[47.5rem]/table:gap-1 @max-[47.5rem]/table:pt-0">
+        <span aria-hidden className="hidden px-1 text-label text-[color:var(--color-text-quaternary)] @max-[47.5rem]/table:block">
           {t(COLUMN_KEYS[cell.column].head)}
         </span>
         <button
@@ -118,7 +118,12 @@ export function HarnessOverviewMatrix({
                 {count}
               </span>
               <span className="line-clamp-2 min-w-0 text-label text-[color:var(--color-text-tertiary)]">
-                {kinds}
+                {kinds.map((kind, at) => (
+                  <Fragment key={kind}>
+                    {at > 0 ? ' · ' : null}
+                    <span className="whitespace-nowrap">{kind}</span>
+                  </Fragment>
+                ))}
               </span>
             </>
           )}
@@ -128,12 +133,12 @@ export function HarnessOverviewMatrix({
   };
 
   const domainCell = (title: string, meta: string | null, line: string, titleClass: string) => (
-    <div role="rowheader" className="flex min-w-0 flex-col justify-center gap-1 px-5 py-3 text-left max-sm:col-span-3">
-      <span className="flex min-w-0 items-baseline gap-2">
-        <span className={cn('min-w-0 line-clamp-2 max-sm:line-clamp-none', titleClass)}>{title}</span>
-        {meta ? <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-quaternary)]">{meta}</span> : null}
+    <div role="rowheader" className="flex min-w-0 flex-col justify-center gap-1 px-5 py-2.5 text-left @max-[47.5rem]/table:col-span-3">
+      <span title={title} className={cn('min-w-0 line-clamp-2', titleClass)}>
+        {title}
       </span>
       <span title={line} className="truncate text-body text-[color:var(--color-text-tertiary)]">
+        {meta ? <span className="tabular-nums text-[color:var(--color-text-quaternary)]">{meta} · </span> : null}
         {line}
       </span>
     </div>
@@ -142,7 +147,7 @@ export function HarnessOverviewMatrix({
   const renderRow = (row: OverviewRow) => {
     const pathKey = overviewCellKey(row.slug, 'path');
     return [
-      <div key={row.slug} role="row" data-harness-area={row.slug} className={cn(GRID, 'min-h-20', DIVIDER)}>
+      <div key={row.slug} role="row" data-harness-area={row.slug} className={cn(GRID, ROW_MIN, DIVIDER)}>
         {domainCell(
           row.title,
           t('coveragePathCount', { count: row.paths.length }),
@@ -150,7 +155,7 @@ export function HarnessOverviewMatrix({
           'text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]',
         )}
         {row.cells === null ? (
-          <div role="cell" className="col-span-3 flex min-w-0 items-center px-3 py-3 max-sm:pt-0">
+          <div role="cell" className="col-span-3 flex min-w-0 items-center px-3 py-2.5 @max-[47.5rem]/table:pt-0">
             <button
               type="button"
               ref={(node) => registerCell(pathKey, node)}
@@ -186,25 +191,25 @@ export function HarnessOverviewMatrix({
       role="table"
       aria-label={t('coverageTableCaption')}
       data-testid="harness-overview-table"
-      className="shrink-0 overflow-clip rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
+      className="@container/table shrink-0 overflow-clip rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
-      <div role="rowgroup" data-harness-head className={cn('sticky top-0 z-10 bg-[color:var(--color-panel)] max-sm:hidden', DIVIDER)}>
+      <div role="rowgroup" data-harness-head className={cn('sticky top-0 z-10 bg-[color:var(--color-panel)] @max-[47.5rem]/table:hidden', DIVIDER)}>
         <div role="row" className={cn(GRID, 'bg-[color:var(--color-overlay-1)]')}>
-          <div role="columnheader" className="flex h-14 items-center px-5 text-body text-[color:var(--color-text-quaternary)]">
+          <div role="columnheader" className="flex min-h-14 items-center px-5 text-body text-[color:var(--color-text-quaternary)]">
             {t('coverageColumnArea')}
           </div>
           {OVERVIEW_COLUMNS.map((column) => {
             const head = t(COLUMN_KEYS[column].head);
             return (
-              <div key={column} role="columnheader" aria-label={head} className="flex h-14 items-center px-3">
-                <div className="flex min-w-0 flex-col justify-center gap-0.5 border border-transparent px-3.5 max-sm:px-2.5">
+              <div key={column} role="columnheader" aria-label={head} className="flex min-h-14 items-center px-3 py-2">
+                <div className="flex min-w-0 flex-col justify-center gap-0.5 border border-transparent px-3.5">
                   <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
                     <span aria-hidden>{head}</span>
                     <PlacedInfoHint preferred={HINT_ANCHOR[column]} label={head}>
                       {t(COLUMN_KEYS[column].hint)}
                     </PlacedInfoHint>
                   </span>
-                  <span aria-hidden className="truncate text-label text-[color:var(--color-text-quaternary)] max-sm:hidden">
+                  <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)] @max-[56rem]/table:hidden">
                     {t(COLUMN_KEYS[column].gloss)}
                   </span>
                 </div>
@@ -215,7 +220,7 @@ export function HarnessOverviewMatrix({
       </div>
       <div role="rowgroup">
         {overview.rows.flatMap(renderRow)}
-        <div role="row" data-harness-area={EVERYWHERE_ROW} className={cn(GRID, 'min-h-16 bg-[color:var(--color-overlay-1)]')}>
+        <div role="row" data-harness-area={EVERYWHERE_ROW} className={cn(GRID, ROW_MIN, 'bg-[color:var(--color-overlay-1)]')}>
           {domainCell(
             t('coverageEverywhereTitle'),
             null,

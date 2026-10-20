@@ -77,7 +77,7 @@ export function OntologyInsightsPage() {
           />
         </nav>}
       />
-      <div className={cn(PAGE_FRAME, 'relative min-w-0 flex-1 pt-6 md:pt-6 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)]')}>
+      <div className={cn(PAGE_FRAME, 'relative min-w-0 flex-1 pt-8 md:pt-10 pb-[var(--page-bottom-breath)] scroll-pb-[var(--page-bottom-breath)]')}>
       <section id={`insights-tabpanel-${record ? tab : 'connections'}`} role="tabpanel" aria-labelledby={`insights-tab-${record ? tab : 'connections'}`} data-insights-panel={record ? tab : 'analysis'}>
       {error ? <p role="alert" className="text-body text-[color:var(--color-status-danger)]">{error.message}</p> : null}
       {!insight ? <p role="status" className="text-body">{t('loading')}</p> : nodes.length === 0 ? <div className="flex flex-col gap-4"><p className="text-body">{t('analysis.empty')}</p><OpenVaultCta testId="analysis-open-vault" /></div> : <>

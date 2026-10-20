@@ -155,7 +155,7 @@ test.describe("harness tab", () => {
     expect(covered, `the explanation bubble was covered by the body below: ${covered.join(" | ")}`).toEqual([]);
   });
 
-  test("the gap line counts the amber cells, and a missing hook script is named under the table", async ({ page }) => {
+  test("the gap line counts the amber cells; a missing hook script is a calm note under the table with a way to the guides", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=overview&guides=off");
     const overview = page.getByTestId("harness-overview");
@@ -165,11 +165,31 @@ test.describe("harness tab", () => {
     expect(gapCells).toBeGreaterThan(0);
     await expect(page.getByTestId("harness-overview-gaps")).toHaveAttribute("data-gap-count", String(gapCells));
     await expect(page.getByTestId("harness-overview-silent")).toContainText("block-npm-publish");
+    const silentBelowTable = await page.evaluate(() => {
+      const table = document.querySelector('[data-testid="harness-overview-table"]')!.getBoundingClientRect();
+      const note = document.querySelector('[data-testid="harness-overview-silent"]')!.getBoundingClientRect();
+      return note.top >= table.bottom - 1;
+    });
+    expect(silentBelowTable, "the note sits under the table, not above it").toBe(true);
 
     /* A row says what its domain is for in one truncated line, with the whole sentence in `title`; no score, grade or percentage exists. */
-    const purpose = page.locator('[data-harness-area="domains/shop-front"] [role="rowheader"] [title]');
+    const purpose = page.locator(`[data-harness-area="domains/shop-front"] [role="rowheader"] [title*="What a shopper touches"]`);
     await expect(purpose).toHaveAttribute("title", /What a shopper touches/);
     expect(await overview.textContent()).not.toMatch(/%|점수|등급|성숙도/);
+  });
+
+  test("the missing-script note opens the guides, and Escape on the request button leaves the panel open", async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
+    const panel = page.getByTestId("harness-overview-panel");
+    const open = await panel.getAttribute("data-panel-cell");
+    expect(open).toBeTruthy();
+    await page.getByTestId("harness-overview-request-toggle").focus();
+    await page.keyboard.press("Escape");
+    await expect(panel).toHaveAttribute("data-panel-cell", open!);
+    await page.getByTestId("harness-overview-silent-guides").click();
+    await expect(page.getByRole("tab", { name: "지침" })).toHaveAttribute("aria-selected", "true");
   });
 
   test("a pressed cell opens its files beside the table, and Escape gives the focus back", async ({ page }) => {
@@ -239,6 +259,21 @@ test.describe("harness tab", () => {
     await expect(aside).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(gap).toBeFocused();
+
+    /* Tab leaves the panel for the next cell in reading order, so the rest of the table is reachable while a panel is open. */
+    await page.keyboard.press("Tab");
+    await expect(aside).toBeFocused();
+    const afterPanel = await gap.evaluate((cell) => {
+      const cells = [...document.querySelectorAll('[data-testid="harness-overview-table"] [data-harness-cell]')];
+      return cells.indexOf(cell) + 1;
+    });
+    const stops = await aside.evaluate((node) => node.querySelectorAll("button, a[href], [tabindex]:not([tabindex='-1'])").length);
+    for (let i = 0; i <= stops; i += 1) await page.keyboard.press("Tab");
+    const landed = await page.evaluate(() => {
+      const cells = [...document.querySelectorAll('[data-testid="harness-overview-table"] [data-harness-cell]')];
+      return cells.indexOf(document.activeElement as Element);
+    });
+    expect(landed, "Tab from the panel's last control lands on the next cell after the open one").toBe(afterPanel);
   });
 
   test("a hook only Codex runs after trust wears the trust mark in the every-domain row", async ({ page }) => {

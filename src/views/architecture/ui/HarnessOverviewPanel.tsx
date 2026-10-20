@@ -16,7 +16,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { WARNING_BADGE } from './HarnessGuideDetail';
 import { COLUMN_KEYS, ORIGIN_LABEL, type TranslateFn } from './harness-overview-labels';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { ORIGIN_ORDER, OVERVIEW_COLUMNS, type HarnessOverview, type OverviewTarget } from '../model/harness-overview';
+import { ORIGIN_ORDER, type HarnessOverview, type OverviewTarget } from '../model/harness-overview';
 
 const EPOCH_SEPARATOR = '~';
 
@@ -171,7 +171,7 @@ function GapBody({
       </div>
       <RecordedPaths paths={row.paths} t={t} />
       <section className="flex flex-col gap-2">
-        <h3 className={SECTION_HEADING}>{t('overviewFillsHeading')}</h3>
+        <h3 className={SECTION_HEADING}>{t('overviewFillsHeadingGap')}</h3>
         <p className="text-body text-[color:var(--color-text-tertiary)]">
           {t(COLUMN_KEYS[cell.column].hint)}
         </p>
@@ -258,24 +258,17 @@ export function HarnessOverviewPanel({
     const target = overview.targets.get(key);
     if (!target) {
       return (
-        <div data-testid="harness-overview-panel-empty" className="flex flex-col items-start gap-4 px-6 py-6">
+        <div
+          data-testid="harness-overview-panel-empty"
+          className="flex h-full min-h-48 flex-col items-center justify-center gap-3 px-8 py-8 text-center"
+        >
           <span
             aria-hidden
             className="grid size-8 place-items-center rounded-card bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]"
           >
             <MousePointerClick size={ICON_SIZE.md} />
           </span>
-          <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('overviewPanelEmpty')}</p>
-          <ul className="flex flex-col gap-2.5">
-            {OVERVIEW_COLUMNS.map((column) => (
-              <li key={column} className="flex flex-col">
-                <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
-                  {t(COLUMN_KEYS[column].head)}
-                </span>
-                <span className="text-label text-[color:var(--color-text-quaternary)]">{t(COLUMN_KEYS[column].gloss)}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="max-w-64 text-body-lg text-[color:var(--color-text-secondary)]">{t('overviewPanelEmpty')}</p>
         </div>
       );
     }
@@ -345,7 +338,7 @@ export function HarnessOverviewPanel({
       ) : null}
       <div
         key={targetKey}
-        className={cn('col-start-1 row-start-1 min-w-0', leavingKey !== null && 'motion-swap-in')}
+        className={cn('col-start-1 row-start-1 min-w-0', beside && 'h-full', leavingKey !== null && 'motion-swap-in')}
       >
         {renderContent(targetKey, true)}
       </div>
