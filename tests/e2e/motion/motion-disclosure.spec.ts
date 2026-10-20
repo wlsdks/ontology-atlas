@@ -88,7 +88,7 @@ test.describe("Disclosure motion", () => {
     expect(closing.inertAtFirstFrame).toBe(true);
     expect(closing.height.at(-1)!).toBeLessThan(closing.height[0]!);
     expect(maxStepShare(closing.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
-    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-coverage"]'), { reflow: ["height"] });
+    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-overview"]'), { reflow: ["height"] });
   });
 
   test("an immediate second key press reverses the disclosure", async ({ page }) => {
