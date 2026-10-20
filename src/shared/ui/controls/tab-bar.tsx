@@ -267,7 +267,7 @@ export function TabBar({
              */
             className={
               segmented
-                ? "relative inline-flex h-[var(--control-h-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                ? "relative inline-flex min-h-[var(--control-h-sm)] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
                   (selfPainted
                     ? "bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
                     : active

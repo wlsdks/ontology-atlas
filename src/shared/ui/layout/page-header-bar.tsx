@@ -12,13 +12,13 @@ export const HARNESS_GUTTER_X =
  * starts. `page` and `form` pay `PAGE_FRAME`'s and `PAGE_FRAME_FORM`'s column cap as a gutter, so the bar
  * spans the pane and its divider meets both edges.
  */
-const FRAMES = {
+export const PAGE_HEADER_FRAMES = {
   harness: HARNESS_GUTTER_X,
   page: 'px-5 md:px-[max(2.5rem,calc((100%_-_var(--page-max))/2_+_2.5rem))]',
   form: 'px-5 md:px-[max(2.5rem,calc((100%_-_960px)/2_+_2.5rem))]',
 } as const;
 
-export type PageHeaderFrame = keyof typeof FRAMES;
+export type PageHeaderFrame = keyof typeof PAGE_HEADER_FRAMES;
 
 /**
  * One 60px row for a workbench page: the title, an optional segmented view switcher right after it,
@@ -48,8 +48,8 @@ export function PageHeaderBar({
 }) {
   return (
     <div className={cn('sticky top-0 z-20 h-15 shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]', className)}>
-      <div data-page-header-row className={cn('flex h-full items-center gap-5', FRAMES[frame])}>
-        <Title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', titleClassName)}>{title}</Title>
+      <div data-page-header-row className={cn('flex h-full items-center gap-5', PAGE_HEADER_FRAMES[frame])}>
+        <Title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', tabs && 'max-sm:sr-only', titleClassName)}>{title}</Title>
         {tabs ? (
           <div data-testid={tabsTestId} className="min-w-0">
             {tabs}
