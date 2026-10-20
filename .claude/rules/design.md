@@ -186,31 +186,40 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
 
 ## Motion
 
-- Motion goes through the thirteen primitives in `docs/DESIGN-SYSTEM.md`
-  "Motion primitives"; each owns one `app/styles/motion-*.css` part.
-- Prefer colour and opacity transitions over transform.
-- Durations: `--motion-fast` 120ms for feedback (the Tailwind default; omit the
-  class), `--motion-base` 180ms to move a surface, `--motion-settle` 240ms for a
-  completed change. Camera and drag values of 420/720ms are canvas-only.
-  Duration and easing move as one family.
-- Overshoot, bounce and spring settle need a named token and a stated meaning.
-- Spatial travel uses the house springs (`SPRING` in `src/shared/motion/spring.ts`);
-  opacity, colour and light stay on the `--motion-*` ramp. DOM gets
-  `springEasing()` at runtime; never type a `linear()` by hand.
+- Motion is allowed broadly: slow, expressive, ambient, travelling and staggered
+  motion, and hover that lifts, scales, tilts or glows. Three rules bind, in
+  order: smoothness, reduced motion, named values (`docs/DESIGN-SYSTEM.md`,
+  "Motion").
+- Smooth means no frame interval above 50 ms while it runs; loops animate only
+  `transform`, `translate`, `scale`, `rotate`, `opacity`, `filter` or
+  `clip-path`; a layout property animates only as a one-shot reflow per input;
+  the next input settles or retargets any motion; the map draws no frame at
+  rest; ambient and infinite motion pauses when hidden or offscreen
+  (`infinite-motion` contract).
+- A primitive owns an `app/styles/motion-*.css` part or a `src/shared/motion`
+  module, a reduced equivalent, a line in "Motion primitives", and an e2e spec
+  calling `expectSmoothMotion` (`motion-primitive-smoothness` contract). It
+  needs no decision record.
+- Durations are the `--motion-*` ramp (`pnpm design:tokens -- --prefix=--motion-`;
+  JS `MOTION`); `--motion-fast` is the Tailwind default (omit the class). Hover
+  and focus stay at or below `--motion-settle` (lint). Camera and drag timings
+  are canvas-only. Duration and easing move as one family.
+- A new duration, easing or spring is a named token or `SPRING` entry with a
+  line in `docs/DESIGN-SYSTEM.md`. DOM gets `springEasing()` at runtime; never
+  type a `linear()` by hand (`motion-token-mirror`).
 - Exits accelerate on `--motion-ease-exit` (JS `EXIT_TRANSITION`) under their own
   animation name; entries keep `--motion-ease`. Only `-out` /
   `[data-state="closed"]` rules on a `*Out` keyframe may use the exit token,
   never a `transition:`, and only `src/shared/motion` imports
   `MOTION_EASE_EXIT` (`motion-token-mirror`, `exit-motion-restart` contracts).
-- The attention winner moves first; never hard-cut the protagonist while the
-  background eases.
-- One input is one event: related transitions start in the same frame; a gap
-  longer than `--motion-fast` reads as a second event unless causality needs it.
 - Reduced-motion alternatives live in the global override's cascade layer
-  (`reduced-motion-equivalent` contract).
+  (`reduced-motion-equivalent` contract); ambient motion stands still.
 - Surface swaps keep both frames briefly (`usePanelPresence`, `useSurfaceSwap`,
   `useSwapHeight`); exiting content is inert and pointer-disabled for one
   `EXIT_WINDOW_MS`.
-- Frequent hover and focus motion ends by `--motion-fast`. User-initiated zoom,
-  pan and scroll keep their duration (WCAG 2.2 §2.3.3); only programmatic travel
-  becomes immediate.
+- A route view transition holds input while it runs, so it stays within
+  `--motion-base` (`route-transition-input.spec.ts`).
+- User-initiated zoom, pan and scroll keep their duration (WCAG 2.2 §2.3.3);
+  only programmatic travel becomes immediate.
+- Guidance, not gates: the attention winner moves first, one input reads as one
+  event, and the loudest motion goes where it is rarest.
