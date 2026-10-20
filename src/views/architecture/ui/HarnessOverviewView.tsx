@@ -53,14 +53,12 @@ export function HarnessOverviewView({
   areas,
   pathlessCapabilities,
   sourceRoot,
-  onReread,
   onOpenGuides,
 }: {
   report: HarnessReport;
   areas: readonly CoverageAreaInput[];
   pathlessCapabilities: number;
   sourceRoot: string | null;
-  onReread: () => void;
   onOpenGuides: () => void;
 }) {
   const t = useTranslations('harness');
@@ -376,17 +374,6 @@ export function HarnessOverviewView({
               {t('overviewHandoff')}
             </Button>
           ) : null}
-          <Chip
-            data-testid="harness-overview-retry"
-            onClick={() => {
-              setTouched(false);
-              setPressedKey(null);
-              setPressedLast(null);
-              onReread();
-            }}
-          >
-            {t('overviewReread')}
-          </Chip>
         </div>
         {gapCount > 0 ? (
           <>

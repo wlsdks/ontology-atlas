@@ -612,7 +612,10 @@ describe('the at-a-glance table', () => {
     act(() => {
       fireEvent.click(screen.getByTestId('harness-overview-retry'));
     });
-    expect(cell).toHaveAttribute('aria-expanded', 'false');
+    const again = document.querySelector<HTMLButtonElement>(
+      '[data-harness-area="shop"] [data-harness-cell="gated"]',
+    )!;
+    expect(again).toHaveAttribute('aria-expanded', 'false');
     expect(screen.getByRole('tabpanel')).toHaveFocus();
   });
 

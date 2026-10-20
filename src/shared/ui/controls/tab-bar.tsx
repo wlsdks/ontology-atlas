@@ -26,6 +26,7 @@ export function TabBar({
   testId,
   placement = 'default',
   orientation = 'horizontal',
+  variant = 'underline',
 }: {
   items: readonly TabBarItem[];
   activeKey: string;
@@ -46,14 +47,20 @@ export function TabBar({
    * surface, because a selection stripe is a Don't (`docs/DESIGN-SYSTEM.md`).
    */
   orientation?: 'horizontal' | 'vertical';
+  /**
+   * `segmented` seats the tabs in a recessed well under one sliding raised thumb, for a page
+   * header that holds a few sibling views. Horizontal only.
+   */
+  variant?: 'underline' | 'segmented';
 }) {
   const vertical = orientation === 'vertical';
+  const segmented = variant === 'segmented' && !vertical;
   const tabRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusKey = useRef<string | null>(null);
   const stripRef = useRef<HTMLDivElement | null>(null);
   const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(
     activeKey,
-    vertical ? 'surface-y' : 'underline-x',
+    vertical ? 'surface-y' : segmented ? 'surface-x' : 'underline-x',
   );
   const attachStrip = useCallback(
     (el: HTMLDivElement | null) => {
@@ -204,7 +211,9 @@ export function TabBar({
       className={
         vertical
           ? "relative flex flex-col gap-0.5"
-          : placement === 'header'
+          : segmented
+            ? "relative inline-flex max-w-full gap-0.5 overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
+            : placement === 'header'
             ? "relative flex h-full items-end gap-3 overflow-x-auto"
             : "relative -ml-3 flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
@@ -213,12 +222,14 @@ export function TabBar({
       {placed ? (
         <span
           aria-hidden
-          data-selection-indicator={vertical ? 'surface-y' : 'underline-x'}
+          data-selection-indicator={vertical ? 'surface-y' : segmented ? 'surface-x' : 'underline-x'}
           data-animated={animated ? 'true' : 'false'}
           className={
             vertical
               ? "motion-indicator rounded-card bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"
-              : "motion-indicator h-[length:var(--tabbar-underline)] bg-[color:var(--color-indigo-accent)]"
+              : segmented
+                ? "motion-indicator rounded-chip bg-[color:var(--color-elevated)] shadow-[inset_0_0_0_1px_var(--color-border-soft),0_1px_1px_var(--color-surface-deep-a80)]"
+                : "motion-indicator h-[length:var(--tabbar-underline)] bg-[color:var(--color-indigo-accent)]"
           }
           style={indicatorStyle}
         />
@@ -255,7 +266,14 @@ export function TabBar({
              * classes (`app/globals.css`) are real min-heights, so tabs never share phantom targets.
              */
             className={
-              vertical
+              segmented
+                ? "relative inline-flex h-[var(--control-h-sm)] shrink-0 items-center whitespace-nowrap rounded-chip bg-transparent px-3.5 font-[var(--font-weight-emphasis)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+                  (selfPainted
+                    ? "bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]"
+                    : active
+                      ? "text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]")
+                : vertical
                 ? "atlas-touch-floor relative inline-flex min-h-[var(--control-h-lg)] w-full items-center gap-2 rounded-card px-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
                   (selfPainted
                     ? "bg-[color:var(--color-indigo-a14)] font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)] shadow-[inset_0_0_0_1px_var(--color-indigo-line-a22)]"

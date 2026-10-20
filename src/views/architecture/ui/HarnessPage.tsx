@@ -11,9 +11,12 @@ import {
   VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
+import { RefreshCw } from 'lucide-react';
+
+import { Button, buttonVariants, Chip, EmptyState, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
-import { PAGE_TITLE, PAGE_TOP_PAD } from '@/shared/ui/tokens/page-frame';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PAGE_TITLE } from '@/shared/ui/tokens/page-frame';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -194,6 +197,7 @@ function HarnessPageInner() {
     /* A tab set, not a radiogroup: the labels swap whole panels (APG), and specs assert no `radio` role on this route. */
     <TabBar
       ariaLabel={t('viewsAria')}
+      variant="segmented"
       idPrefix="harness"
       activeKey={view}
       onSelect={(key) => setView(parseHarnessView(key))}
@@ -241,21 +245,29 @@ function HarnessPageInner() {
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
-      {/* The name and the one tab set share a line, so the title never moves and tabs stay under the pointer. */}
+      {/* The name, the one tab set and the page's one action share a 60px line, so the title never moves and tabs stay under the pointer. */}
       <div
-        /*
-         * The rail makes these read as tabs: `border-b` on the row, `items-end` and `-mb-px` so the
-         * tab strip's border lands on it. A separate tab row would cost 36px the blueprint does not
-         * have at 1280x800 (`architecture-workbench.spec.ts`).
-         */
-        className={cn('flex shrink-0 flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-[color:var(--color-divider)] pb-0', HARNESS_GUTTER_X, PAGE_TOP_PAD)}
+        className={cn(
+          'flex h-15 shrink-0 items-center gap-5 border-b border-[color:var(--color-divider)]',
+          HARNESS_GUTTER_X,
+        )}
       >
-        <h1 className={cn('pb-3', PAGE_TITLE)}>
-          {t('title')}
-        </h1>
-        <div data-testid="harness-views" className="-mb-px min-w-0">
+        <h1 className={PAGE_TITLE}>{t('title')}</h1>
+        <div data-testid="harness-views" className="min-w-0">
           {switcher}
         </div>
+        {view === 'overview' && reportState.status === 'ready' ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            data-testid="harness-overview-retry"
+            className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)]"
+            onClick={rereadHarness}
+          >
+            <RefreshCw size={ICON_SIZE.sm} aria-hidden />
+            <span className="max-sm:sr-only">{t('overviewReread')}</span>
+          </Button>
+        ) : null}
       </div>
 
       {view === 'architecture' ? (
@@ -299,11 +311,11 @@ function HarnessPageInner() {
               <div className={cn('architecture-result-arrive', view === 'overview' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
                 {view === 'overview' ? (
                   <HarnessOverviewView
+                    key={reloadNonce}
                     report={reportState.report}
                     areas={coverage.areas}
                     pathlessCapabilities={coverage.pathlessCapabilities}
                     sourceRoot={reportState.sourceRoot}
-                    onReread={rereadHarness}
                     onOpenGuides={() => setView('guides')}
                   />
                 ) : (
