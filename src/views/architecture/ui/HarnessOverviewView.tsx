@@ -32,9 +32,6 @@ const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>>
   watched: 'right',
 };
 
-const HEAD_CLASS =
-  'sticky top-0 z-10 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 pb-2 pt-1 text-left text-label font-normal uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]';
-
 const AMBER = 'text-[color:var(--color-amber-source-a90)]';
 
 function rowSlugOf(target: OverviewTarget | undefined): string | null {
@@ -102,6 +99,22 @@ export function HarnessOverviewView({
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [openKey, closePanel]);
 
+  const hostRow = openKey ? rowSlugOf(overview.targets.get(openKey)) : null;
+  useEffect(() => {
+    if (!below || hostRow === null) return;
+    const host = document.getElementById(`${baseId}-panel-${hostSuffix(hostRow)}`);
+    if (!host) return;
+    const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    const reveal = () => host.scrollIntoView({ block: 'nearest', behavior });
+    const observer = new ResizeObserver(reveal);
+    observer.observe(host);
+    const stop = window.setTimeout(() => observer.disconnect(), 500);
+    return () => {
+      window.clearTimeout(stop);
+      observer.disconnect();
+    };
+  }, [below, hostRow, openKey, baseId]);
+
   const requestText = useMemo(() => {
     const [told, gated, watched] = overview.everywhere.map((cell) => cell.entries.length);
     return t('overviewRequest', {
@@ -152,6 +165,27 @@ export function HarnessOverviewView({
   const panelHostId = (slug: string) => `${baseId}-panel-${below ? hostSuffix(slug) : 'beside'}`;
   const titleId = (slug: string) => `${baseId}-title-${below ? hostSuffix(slug) : 'beside'}`;
   const openRow = openKey ? rowSlugOf(overview.targets.get(openKey)) : null;
+
+  const footer = (
+    <div className={cn('flex flex-col gap-2', below ? 'mt-3' : 'max-h-48 shrink-0 overflow-y-auto')}>
+      <p className="text-label text-[color:var(--color-text-quaternary)]">{t('overviewCellHint')}</p>
+      {overview.missingHookScripts.length > 0 ? (
+        <div
+          data-testid="harness-overview-silent"
+          className="flex items-start gap-2.5 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] p-[var(--card-pad)] text-body text-[color:var(--color-amber-source-a90)]"
+        >
+          <TriangleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
+          <span className="min-w-0 break-keep">
+            {t('anatomySilentGuards', {
+              count: overview.missingHookScripts.length,
+              scripts: overview.missingHookScripts.join(' · '),
+            })}
+          </span>
+        </div>
+      ) : null}
+      <ProvenanceNotes overview={overview} pathlessCapabilities={pathlessCapabilities} t={t} />
+    </div>
+  );
 
   const renderCellButton = (cell: OverviewCell, state: 'filled' | 'gap' | 'everywhere', label: string) => {
     const open = openKey === cell.key;
@@ -392,26 +426,9 @@ export function HarnessOverviewView({
                 {below ? panelRow(EVERYWHERE_ROW) : null}
               </tbody>
             </table>
+            {below ? footer : null}
           </div>
-
-          <div className="flex max-h-48 shrink-0 flex-col gap-2 overflow-y-auto">
-            <p className="text-label text-[color:var(--color-text-quaternary)]">{t('overviewCellHint')}</p>
-            {overview.missingHookScripts.length > 0 ? (
-              <div
-                data-testid="harness-overview-silent"
-                className="flex items-start gap-2.5 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-[var(--card-pad)] py-2.5 text-body text-[color:var(--color-amber-source-a90)]"
-              >
-                <TriangleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
-                <span className="min-w-0 break-keep">
-                  {t('anatomySilentGuards', {
-                    count: overview.missingHookScripts.length,
-                    scripts: overview.missingHookScripts.join(' · '),
-                  })}
-                </span>
-              </div>
-            ) : null}
-            <ProvenanceNotes overview={overview} pathlessCapabilities={pathlessCapabilities} t={t} />
-          </div>
+          {below ? null : footer}
         </div>
 
         {below ? null : (
@@ -424,16 +441,14 @@ export function HarnessOverviewView({
             tabIndex={0}
             className="min-h-0 max-h-full self-start overflow-y-auto overscroll-contain"
           >
-            {lastKey ? (
-              <HarnessOverviewPanel
-                overview={overview}
-                targetKey={lastKey}
-                epoch={epoch}
-                placement="beside"
-                onClose={closePanel}
-                titleId={titleId('')}
-              />
-            ) : null}
+            <HarnessOverviewPanel
+              overview={overview}
+              targetKey={lastKey ?? ''}
+              epoch={epoch}
+              placement="beside"
+              onClose={closePanel}
+              titleId={titleId('')}
+            />
           </Surface>
         )}
       </div>
@@ -479,3 +494,6 @@ function ProvenanceNotes({
     </Disclosure>
   );
 }
+
+const HEAD_CLASS =
+  'sticky top-0 z-10 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 pb-2 pt-1 text-left text-label font-normal uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]';

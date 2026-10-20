@@ -409,6 +409,18 @@ test.describe("harness tab", () => {
     const panelBox = (await panel.boundingBox())!;
     expect(panelBox.x).toBeGreaterThanOrEqual(tableBox.x + tableBox.width);
 
+    if (!(await page.evaluate(() => "axe" in window))) await page.addScriptTag({ path: AXE_PATH });
+    const audit = await page.evaluate(async (tags) => {
+      type Run = { violations: Array<{ id: string; nodes: unknown[] }>; passes: unknown[] };
+      const run = await (window as unknown as { axe: { run: (context: Document, options: unknown) => Promise<Run> } }).axe.run(document, {
+        runOnly: { type: "tag", values: tags },
+        resultTypes: ["violations", "passes"],
+      });
+      return { rulesPassed: run.passes.length, violations: run.violations.map((violation) => ({ id: violation.id, count: violation.nodes.length })) };
+    }, WCAG_TAGS);
+    expect(audit.rulesPassed, "overview axe collection was empty").toBeGreaterThanOrEqual(MIN_AXE_RULES_PASSED);
+    expect(audit.violations, "the open overview panel introduced WCAG violations").toEqual([]);
+
     await expect(panel).toContainText("What a shopper touches");
     const rule = panel.locator('[data-entry-id=".claude/rules/cart.md"]');
     await expect(rule).toContainText("src/features/**");
@@ -453,6 +465,15 @@ test.describe("harness tab", () => {
     const nextBox = (await row.locator("xpath=following-sibling::tr[2]").boundingBox())!;
     expect(panelBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height - 1);
     expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(nextBox.y + 1);
+
+    /* The scroller follows the opening row, so the whole panel ends inside it. */
+    const scrollerBox = (await page.getByTestId("harness-overview-scroll").boundingBox())!;
+    await expect
+      .poll(async () => {
+        const box = (await panel.boundingBox())!;
+        return box.y + box.height <= scrollerBox.y + scrollerBox.height + 1;
+      })
+      .toBe(true);
   });
 
   test("the counting method lives in a collapsed spot, not in a sentence", async ({ page }) => {
