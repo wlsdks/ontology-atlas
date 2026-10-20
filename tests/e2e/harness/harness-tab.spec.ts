@@ -12,24 +12,6 @@ const AXE_PATH = require.resolve('axe-core/axe.min.js');
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 const MIN_AXE_RULES_PASSED = 15;
 
-async function auditGuidanceSurface(page: import('@playwright/test').Page, testId: string, role: 'dialog') {
-  const surface = page.getByTestId(testId);
-  await expect(surface).toBeVisible();
-  await expect(surface).toHaveRole(role);
-  await waitForFiniteAnimations(page);
-  if (!(await page.evaluate(() => 'axe' in window))) await page.addScriptTag({ path: AXE_PATH });
-  const result = await page.evaluate(async (tags) => {
-    type Run = { violations: Array<{ id: string; nodes: unknown[] }>; passes: unknown[] };
-    const run = await (window as unknown as { axe: { run: (context: Document, options: unknown) => Promise<Run> } }).axe.run(document, {
-      runOnly: { type: 'tag', values: tags },
-      resultTypes: ['violations', 'passes'],
-    });
-    return { rulesPassed: run.passes.length, violations: run.violations.map((violation) => ({ id: violation.id, count: violation.nodes.length })) };
-  }, WCAG_TAGS);
-  expect(result.rulesPassed, `${testId} axe collection was empty`).toBeGreaterThanOrEqual(MIN_AXE_RULES_PASSED);
-  expect(result.violations, `${testId} introduced WCAG violations`).toEqual([]);
-}
-
 /**
  * **The Harness tab, read on a repository that actually has a harness.**
  *

@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { box, hintPanel } from './harness-auto-insights-harness';
-import { waitForAnimationsDone, waitForBoxStill } from '../settle';
+import { waitForAnimationsDone } from '../settle';
 import { installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
 
 test.describe('Harness hints', () => {
