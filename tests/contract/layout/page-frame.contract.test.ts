@@ -14,6 +14,7 @@ import {
   PAGE_TOP_PAD,
 } from "@/shared/ui/tokens/page-frame";
 import * as pageFrame from "@/shared/ui/tokens/page-frame";
+import { PAGE_HEADER_FRAMES } from "@/shared/ui/layout/page-header-bar";
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 import { blankComments } from '../../../scripts/quality/source-language/inventory.mjs';
 
@@ -119,6 +120,7 @@ describe("page frame spec", () => {
     for (const member of MEMBERS) {
       const source = read(member);
       expect(source, `${member} does not use PAGE_FRAME`).toContain("PAGE_FRAME");
+      if (/<PageHeaderBar\b/.test(source)) continue;
       expect(source, `${member} does not use PAGE_HEADER_ROW`).toContain("PAGE_HEADER_ROW");
       expect(source, `${member} does not use PAGE_TITLE_ROW`).toContain("PAGE_TITLE_ROW");
     }
@@ -170,6 +172,19 @@ describe("page frame — second column and top margin (2026-08-11)", () => {
       "",
     );
     expect(width(PAGE_COLUMN_FORM), "could not read the width from the row column").toBe(width(PAGE_FRAME_FORM));
+  });
+
+  it("the header bar pays each frame's own width and inset as its gutter, so they cannot drift apart", () => {
+    const gutter = (width: string, inset: string) =>
+      `px-5 md:px-[max(${inset},calc((100%_-_${width})/2_+_${inset}))]`;
+    const widthOf = (spec: string) => spec.match(/max-w-\[([^\]]+)\]/)?.[1] ?? "";
+    const insetOf = (spec: string) => `${Number(spec.match(/md:px-(\d+)/)?.[1]) / 4}rem`;
+    for (const [frame, spec] of [["page", PAGE_FRAME], ["form", PAGE_FRAME_FORM]] as const) {
+      expect(widthOf(spec), `could not read the ${frame} frame width — this test idles`).not.toBe("");
+      expect(PAGE_HEADER_FRAMES[frame], `the bar's ${frame} gutter no longer matches the body frame`).toBe(
+        gutter(widthOf(spec), insetOf(spec)),
+      );
+    }
   });
 
   it("the form column is narrow and decides the width in one place only", () => {
@@ -236,9 +251,6 @@ describe("the reading column is owned by the document library (ruling of 2026-08
 });
 
 const TITLE_MEMBERS = [
-  "src/views/agents/ui/AgentsPage.tsx",
-  "src/views/automations/ui/AutomationsPage.tsx",
-  "src/views/architecture/ui/HarnessPage.tsx",
   "src/views/project-detail/ui/ProjectDetailPage.tsx",
   "src/views/project-editor/ui/ProjectEditorPage.tsx",
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
@@ -248,8 +260,6 @@ const TITLE_MEMBERS = [
   "src/views/library/ui/LibraryRounds.tsx",
   "src/views/library/ui/LibraryConstellations.tsx",
   "src/views/library/ui/library-page/LibraryNoFolderStage.tsx",
-  "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-  "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
 ] as const;
 
 function openingTagAt(source: string, from: number): string {
@@ -291,6 +301,29 @@ describe("page title and lede", () => {
       const step = typeStep(spec);
       expect(step, `${spec} names no type step`).toBeDefined();
       expect(leadingStep(spec), `${spec} pairs ${step} with another step's leading`).toBe(step);
+    }
+  });
+
+  it("the page header bar's title wears PAGE_TITLE, so a page using it needs no h1 of its own", () => {
+    const bar = blankComments("bar", read("src/shared/ui/layout/page-header-bar.tsx"));
+    expect(bar).toContain("PAGE_TITLE");
+    expect(bar).not.toMatch(/(?:^|[\s"'`])(?:text-(?:caption|label|body|body-lg|title|display|hero)|leading-[a-z-]+|tracking-)/);
+  });
+
+  it("a page that migrated onto the bar carries no raw h1 unless it wears PAGE_TITLE", () => {
+    for (const member of [
+      "src/views/agents/ui/AgentsPage.tsx",
+      "src/views/automations/ui/AutomationsPage.tsx",
+      "src/views/architecture/ui/HarnessPage.tsx",
+      "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+      "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
+      "src/app/library-workspace/index.tsx",
+    ]) {
+      const source = blankComments(member, read(member));
+      expect(source, `${member} no longer uses the header bar`).toMatch(/<PageHeaderBar\b/);
+      for (const tag of headingTags(source)) {
+        expect(tag, `${member}: a raw h1 beside the bar must wear PAGE_TITLE`).toContain("PAGE_TITLE");
+      }
     }
   });
 

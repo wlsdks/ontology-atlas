@@ -31,6 +31,35 @@ const areas: CoverageAreaInput[] = [
   },
 ];
 
+describe('buildCoverageMatrix — only a path-less declaration reaches every area', () => {
+  const pathed = (slug: string, path: string): CoverageAreaInput => ({
+    slug,
+    title: slug,
+    purpose: '',
+    capabilities: [{ slug: `capabilities/${slug}`, title: slug, path }],
+  });
+  const pathless: CoverageAreaInput = { slug: 'd', title: 'd', purpose: '', capabilities: [] };
+
+  it('fills each row a scope reaches, even when it reaches them all', () => {
+    const matrix = buildCoverageMatrix(
+      [declaration({ id: '.claude/rules/src.md', scopes: ['src'] })],
+      [pathed('a', 'src/a'), pathed('b', 'src/b'), pathed('c', 'src/c'), pathless],
+    );
+    expect(matrix.everywhere.told).toHaveLength(0);
+    expect(matrix.areas.slice(0, 3).every((row) => row.told.length === 1)).toBe(true);
+    expect(matrix.areas[3]!.told).toHaveLength(0);
+  });
+
+  it('promotes nothing scoped when only one area has a path', () => {
+    const matrix = buildCoverageMatrix(
+      [declaration({ id: 'src/AGENTS.md', origin: 'nested-agents', scopes: ['src'] })],
+      [pathed('a', 'src/a'), pathless],
+    );
+    expect(matrix.everywhere.told).toHaveLength(0);
+    expect(matrix.areas[0]!.told.map((entry) => entry.id)).toEqual(['src/AGENTS.md']);
+  });
+});
+
 describe('buildCoverageMatrix — a declaration lands where its declared path reaches', () => {
   it('puts a scoped guide in the area its path reaches, and nowhere else', () => {
     const matrix = buildCoverageMatrix(
@@ -105,5 +134,31 @@ describe('buildCoverageMatrix — a declaration lands where its declared path re
     expect(matrix.areas).toHaveLength(0);
     expect(matrix.unwatchedAreas).toHaveLength(0);
     expect(matrix.unreachedCapabilities).toHaveLength(0);
+  });
+});
+
+describe('discovered tests for a file path', () => {
+  const fileArea: CoverageAreaInput[] = [
+    {
+      slug: 'domains/cart',
+      title: 'Cart',
+      purpose: 'Holds items.',
+      capabilities: [{ slug: 'capabilities/cart', title: 'Cart', path: 'src/shop/cart.tsx' }],
+    },
+  ];
+
+  it('counts a sibling test of the same stem and no other stem in that folder', () => {
+    const matrix = buildCoverageMatrix([], fileArea, [
+      'src/shop/cart.test.tsx',
+      'src/shop/__tests__/cart.spec.ts',
+      'src/shop/checkout.test.tsx',
+      'src/shop/cartography.test.ts',
+    ]);
+    expect(matrix.areas[0]!.discoveredTests).toBe(2);
+  });
+
+  it('still counts files under a folder path', () => {
+    const matrix = buildCoverageMatrix([], areas, ['src/widgets/ontology-map/a.test.ts']);
+    expect(matrix.areas[0]!.discoveredTests).toBe(1);
   });
 });

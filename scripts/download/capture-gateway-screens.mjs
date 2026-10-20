@@ -534,7 +534,7 @@ const SCREENS = [
   },
   {
     name: "harness",
-    route: "/architecture/?view=structure",
+    route: "/architecture/?view=overview",
     async prepare(page) {
       await page.waitForTimeout(6000);
     },

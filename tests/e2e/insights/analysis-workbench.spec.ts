@@ -107,7 +107,9 @@ test.describe('keyboard review at the app minimum window', () => {
     test(`${route}: review takes visible focus and restores its opener`, async ({ page }) => {
       await page.goto(`/en/${route}/?e2e=1&guides=off&index=collapsed`);
       const opener = page.getByTestId(route === 'topology' ? 'topology-meaning-workbench-toggle' : 'architecture-review-open');
+      await expect(opener).toBeVisible();
       await opener.focus();
+      await expect(opener).toBeFocused();
       await page.keyboard.press('Enter');
       const panel = page.getByTestId('analysis-workbench');
       await expect(panel.getByRole('button', { name: en.analysisWorkbench.close })).toBeFocused();
