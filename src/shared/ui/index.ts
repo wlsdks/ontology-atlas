@@ -19,7 +19,7 @@ export { LiveAnnouncer } from './status/live-announcer';
 export { InfoHint } from './hints/info-hint';
 export { ToastProvider, useToast, useToastAnchor } from './toast/toast';
 export { EmptyState } from './status/empty-state';
-export { WaitStage, type WaitStageProps, type WaitStep } from './status/wait-stage';
+export { WaitStage } from './status/wait-stage';
 export { Select } from './fields/select';
 export { InlineEditable } from './fields/inline-editable';
 /* A new primitive ships with consumers and a gate: `docs/DECISIONS.md`, two dead primitives. */
