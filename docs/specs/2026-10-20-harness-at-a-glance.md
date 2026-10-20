@@ -138,13 +138,13 @@ agent-written gap file as unneeded. Keeps `8a2effcf` (evidence beside the work),
 | Failed | Out of scope — no reading in a browser | `harness.failed` and its reason with the path; next: `harness.retry` |
 | No domains, or none with a path | Out of scope — no reading in a browser | `harness.coverageNoAreasTitle`, `harness.coverageNoAreasBody`; next: the Guides tab |
 | No harness files | Out of scope — no reading in a browser | Every cell a gap, gap line, `harness.emptyBody`; next: `harness.overviewHandoff` |
-| Partial | Out of scope — no reading in a browser | `harness.overviewGapCount`, `harness.overviewGapMeaning`, `harness.overviewCellHint`; next: a cell, `harness.overviewHandoff` with `harness.overviewHandoffHint`, `harness.retry` |
+| Partial | Out of scope — no reading in a browser | `harness.overviewGapCount`, `harness.overviewVerdictOne` or `harness.overviewVerdictMany`, `harness.overviewCellHint`; next: a cell, `harness.overviewHandoff` with `harness.overviewVerdictCaption`, `harness.retry` |
 | All filled | Out of scope — no reading in a browser | `harness.overviewNoGaps`, no copy action; next: a cell or `harness.retry` |
 | Domain without path | Out of scope — no reading in a browser | Row `harness.overviewNoPath`, panel `harness.overviewNoPathBody`; next: open the domain on the map |
 | Cell open | Out of scope — no reading in a browser | `harness.overviewPanelTitle`, files (`.codex` hooks with `harness.hookApprovalGate`) or `harness.coverageEmpty{Told,Gated,Watched}` with `harness.overviewEverywhereApplies`; next: `harness.coverageCloseNames` or Escape |
 | Request copied | Out of scope — no reading in a browser | `harness.overviewHandoffCopied`; next: paste into his agent, or `harness.overviewRequestShow` |
 | Copy refused | Out of scope — no reading in a browser | `harness.overviewHandoffCopyFailed`, the action stays; next: `harness.overviewRequestShow` |
-| Missing hook script | Out of scope — no reading in a browser | Amber `harness.anatomySilentGuards` under the table; next: Guides |
+| Missing hook script | Out of scope — no reading in a browser | Calm `harness.anatomySilentGuards` note under the table; next: `harness.overviewSilentOpenGuides` switches to Guides |
 | Largest measured vault (8 domains) | Out of scope — no reading in a browser | Rows scroll in the work area under fixed column heads; the gap line stays above |
 
 ## Copy
@@ -158,14 +158,17 @@ which the message parser reads as a tag.
 |---|---|---|
 | `views.overview` | Tab | At a glance |
 | `overviewGapCount` | Gap line, title size | {count, plural, one {# gap} other {# gaps}} |
-| `overviewGapMeaning` | Under it | A gap is a cell where no file names that domain's paths. What reaches every domain still applies there. |
+| `overviewVerdictOne` | Under it, one gap | {domain} has nothing {column}. What reaches every domain still applies. |
+| `overviewVerdictMany` | Under it, several gaps | {domain} · {column} and {rest} more {rest, plural, one {is} other {are}} empty. What reaches every domain still applies to them. |
 | `overviewNoGaps` | Gap line when none | No gaps: each of the {domains, plural, one {# domain} other {# domains}} with a recorded path has a file in all three columns. |
 | `overviewHandoff` | Action | Copy the request for your agent |
-| `overviewHandoffHint` | Under the action | Copies a request to judge and fill these gaps. Paste it into the coding agent you run in this repository; Atlas sends nothing. |
+| `overviewVerdictCaption` | Under the action | The request goes to your clipboard only · Atlas sends nothing |
 | `overviewHandoffCopied` | After copying | Copied. Paste it into your coding agent's chat in this repository. |
 | `overviewHandoffCopyFailed` | Clipboard refused | Could not copy. Open "See the request" and copy the text by hand. |
 | `overviewRequestShow` | Disclosure under the action | See the request |
-| `overviewCellHint` | Under the table | Press a cell to open the files that make it beside the table. |
+| `overviewCellHint` | Under the table, only where the panel opens under a row; beside the table the empty panel says it | Press a cell to open the files that make it. |
+| `overviewSilentOpenGuides` | Action in the missing-script note | See in Guides |
+| `overviewFillsHeadingGap` | Panel section over a gap | Files that could fill this cell |
 | `overviewNoPath` | Row without a path | No recorded path |
 | `overviewNoPathBody` | Its panel | No capability in this domain records an implementation path, so no file can name it. It is not counted as a gap. |
 | `overviewPanelTitle` | Panel head | {domain} · {column} |

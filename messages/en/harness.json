@@ -148,6 +148,7 @@
   "overviewRecordedCount": "{count}",
   "overviewPathsMore": "Show {count} more",
   "overviewPathsLess": "Show fewer",
-  "overviewFillsHeading": "Files that fill this cell",
-  "overviewPanelEmpty": "Pick a cell and the files that make it open here"
+  "overviewPanelEmpty": "Pick a cell and the files that make it open here",
+  "overviewFillsHeadingGap": "Files that could fill this cell",
+  "overviewSilentOpenGuides": "See in Guides"
 }

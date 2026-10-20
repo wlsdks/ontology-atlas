@@ -148,6 +148,7 @@
   "overviewRecordedCount": "{count} 个",
   "overviewPathsMore": "再显示 {count} 个",
   "overviewPathsLess": "收起",
-  "overviewFillsHeading": "填充此格的文件",
-  "overviewPanelEmpty": "选择一个格子，构成它的文件会在这里打开"
+  "overviewPanelEmpty": "选择一个格子，构成它的文件会在这里打开",
+  "overviewFillsHeadingGap": "可以填充此格的文件",
+  "overviewSilentOpenGuides": "在指南中查看"
 }

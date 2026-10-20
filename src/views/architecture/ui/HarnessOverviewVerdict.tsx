@@ -18,12 +18,10 @@ const AMBER_INK = 'text-[color:var(--color-amber-source-text-a95)]';
 export function HarnessOverviewVerdict({
   overview,
   sourceRoot,
-  below,
   readingIsEmpty,
 }: {
   overview: HarnessOverview;
   sourceRoot: string | null;
-  below: boolean;
   readingIsEmpty: boolean;
 }) {
   const t = useTranslations('harness');
@@ -74,7 +72,7 @@ export function HarnessOverviewVerdict({
       data-gap-count={gapCount}
       className="shrink-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
-      <div className={cn('flex px-6 py-5', below ? 'flex-col gap-4' : 'items-center gap-6')}>
+      <div className="flex flex-col gap-4 px-6 py-5 @[44rem]/slot:flex-row @[44rem]/slot:items-center @[44rem]/slot:gap-6">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           {first ? (
             <>
@@ -112,8 +110,8 @@ export function HarnessOverviewVerdict({
           ) : null}
         </div>
         {first ? (
-          <div className={cn(below ? 'grid grid-cols-2 gap-2' : 'flex flex-col items-end gap-2')}>
-            <div className={below ? 'contents' : 'flex gap-2'}>
+          <div className="grid grid-cols-2 gap-2 @[44rem]/slot:flex @[44rem]/slot:flex-col @[44rem]/slot:items-end">
+            <div className="contents @[44rem]/slot:flex @[44rem]/slot:gap-2">
               <Button
                 variant="outline"
                 size="md"
@@ -132,8 +130,7 @@ export function HarnessOverviewVerdict({
               role="status"
               data-testid="harness-overview-handoff-status"
               className={cn(
-                'text-label',
-                below && 'col-span-2',
+                'col-span-2 text-label @[44rem]/slot:col-auto',
                 copyRefused ? AMBER_INK : 'text-[color:var(--color-text-quaternary)]',
               )}
             >
@@ -157,23 +154,34 @@ export function HarnessOverviewVerdict({
   );
 }
 
-/** One quiet line above the table: a script a config names that is not on disk is a guard that never runs. */
-export function HarnessOverviewSilent({ overview }: { overview: HarnessOverview }) {
+/** A calm note under the table: a script a config names that is not on disk is a guard that never runs. */
+export function HarnessOverviewSilent({
+  overview,
+  onOpenGuides,
+}: {
+  overview: HarnessOverview;
+  onOpenGuides: () => void;
+}) {
   const t = useTranslations('harness');
   if (overview.missingHookScripts.length === 0) return null;
   return (
     <div
       data-testid="harness-overview-silent"
-      className="shrink-0 rounded-panel border border-[color:var(--color-amber-signal-a28)] bg-[color:var(--color-amber-signal-a07)]"
+      className="shrink-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
     >
-      <div className="flex items-start gap-2.5 px-4 py-3 text-body text-[color:var(--color-text-secondary)]">
-        <TriangleAlert size={ICON_SIZE.sm} aria-hidden className={cn('mt-0.5 shrink-0', AMBER_INK)} />
-        <span className="min-w-0 break-keep">
-          {t('anatomySilentGuards', {
-            count: overview.missingHookScripts.length,
-            scripts: overview.missingHookScripts.join(' · '),
-          })}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-body text-[color:var(--color-text-secondary)]">
+        <span className="flex min-w-0 flex-1 basis-80 items-start gap-2.5">
+          <TriangleAlert size={ICON_SIZE.sm} aria-hidden className={cn('mt-0.5 shrink-0', AMBER_INK)} />
+          <span className="min-w-0">
+            {t('anatomySilentGuards', {
+              count: overview.missingHookScripts.length,
+              scripts: overview.missingHookScripts.join(' · '),
+            })}
+          </span>
         </span>
+        <Button variant="outline" size="sm" data-testid="harness-overview-silent-guides" onClick={onOpenGuides}>
+          {t('overviewSilentOpenGuides')}
+        </Button>
       </div>
     </div>
   );

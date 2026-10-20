@@ -148,6 +148,7 @@
   "overviewRecordedCount": "{count}件",
   "overviewPathsMore": "さらに{count}件を表示",
   "overviewPathsLess": "閉じる",
-  "overviewFillsHeading": "このセルを埋めるファイル",
-  "overviewPanelEmpty": "セルを選ぶと、そのセルをつくるファイルがここに開きます"
+  "overviewPanelEmpty": "セルを選ぶと、そのセルをつくるファイルがここに開きます",
+  "overviewFillsHeadingGap": "このセルを埋められるファイル",
+  "overviewSilentOpenGuides": "ガイドで見る"
 }

@@ -518,11 +518,15 @@ describe('the at-a-glance table', () => {
     act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
+    expect(cell, 'Escape from outside the table and panel leaves it open').toHaveAttribute('aria-expanded', 'true');
+    act(() => {
+      fireEvent.keyDown(cell, { key: 'Escape' });
+    });
     expect(cell).toHaveAttribute('aria-expanded', 'false');
     expect(cell).toHaveFocus();
   });
 
-  it('opens the first gap on arrival without moving focus, and nothing when there is no gap', () => {
+  it('opens the first gap on arrival without moving focus', () => {
     ready();
     mount();
     const first = document.querySelector<HTMLButtonElement>('[data-harness-area="shop"] [data-harness-cell="told"]')!;
@@ -642,7 +646,9 @@ describe('the at-a-glance table', () => {
     expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
     expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', '#everywhere|told');
     act(() => {
-      fireEvent.keyDown(window, { key: 'Escape' });
+      fireEvent.keyDown(document.querySelector('[data-harness-area="#everywhere"] [data-harness-cell="told"]')!, {
+        key: 'Escape',
+      });
     });
     expect(screen.getByTestId('harness-overview-panel-empty')).toHaveTextContent(
       koMessages.harness.overviewPanelEmpty,

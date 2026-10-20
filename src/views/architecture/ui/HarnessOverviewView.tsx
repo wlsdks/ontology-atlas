@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { ChevronRight } from 'lucide-react';
 
 import type { CoverageAreaInput, HarnessReport } from '@/entities/agent-files';
 import { cn } from '@/shared/lib/cn';
-import { useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { Chip, EmptyState, RowDisclosure, Surface } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -23,7 +22,26 @@ import { HarnessOverviewPanel } from './HarnessOverviewPanel';
 import { HarnessOverviewSilent, HarnessOverviewVerdict } from './HarnessOverviewVerdict';
 import type { TranslateFn } from './harness-overview-labels';
 
-const PANEL_BESIDE_FROM_PX = 1280;
+/** The slot must hold the table and the 25rem panel side by side; rem, so zoomed text drops to the disclosure layout. */
+const PANEL_BESIDE_FROM_REM = 70;
+
+const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), pre[tabindex]';
+
+function useBelowSlot(slot: HTMLElement | null): boolean {
+  const [below, setBelow] = useState(false);
+  useLayoutEffect(() => {
+    if (!slot) return;
+    const measure = () => {
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      setBelow(slot.clientWidth > 0 && slot.clientWidth < PANEL_BESIDE_FROM_REM * rem);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(slot);
+    return () => observer.disconnect();
+  }, [slot]);
+  return below;
+}
 
 function rowSlugOf(target: OverviewTarget | undefined): string | null {
   if (!target) return null;
@@ -51,7 +69,8 @@ export function HarnessOverviewView({
 }) {
   const t = useTranslations('harness');
   const baseId = useId();
-  const below = useViewportBelow(PANEL_BESIDE_FROM_PX);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  const below = useBelowSlot(slot);
   const overview = useMemo(() => buildHarnessOverview(report, areas), [report, areas]);
 
   const [touched, setTouched] = useState(false);
@@ -98,6 +117,10 @@ export function HarnessOverviewView({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.defaultPrevented) return;
       if (document.querySelector('[aria-modal="true"]')) return;
+      const inside = (event.target as Element | null)?.closest?.(
+        '[data-testid="harness-overview-table"], [data-testid="harness-overview-aside"]',
+      );
+      if (!inside) return;
       closePanel();
     };
     window.addEventListener('keydown', onKeyDown);
@@ -157,12 +180,22 @@ export function HarnessOverviewView({
     if (below || event.key !== 'Tab' || openKey === null) return;
     const target = event.target as HTMLElement;
     const host = document.getElementById(panelHostId(''));
-    if (!event.shiftKey && target.getAttribute('aria-expanded') === 'true' && host) {
+    if (!host) return;
+    if (!event.shiftKey && target.getAttribute('aria-expanded') === 'true' && target.hasAttribute('data-harness-cell')) {
       event.preventDefault();
       host.focus();
     } else if (event.shiftKey && target === host) {
       event.preventDefault();
       cellRefs.current.get(openKey)?.focus();
+    } else if (!event.shiftKey && host.contains(target)) {
+      const stops = [...host.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((node) => node.checkVisibility());
+      const last = stops[stops.length - 1];
+      if (target !== last) return;
+      event.preventDefault();
+      const cells = [...document.querySelectorAll<HTMLElement>('[data-testid="harness-overview-table"] [data-harness-cell]')];
+      const at = cells.indexOf(cellRefs.current.get(openKey) as HTMLElement);
+      const next = cells[at + 1] ?? document.querySelector<HTMLElement>('[data-testid="harness-overview-provenance"]');
+      next?.focus();
     }
   };
 
@@ -192,7 +225,7 @@ export function HarnessOverviewView({
   };
 
   return (
-    <section data-testid="harness-overview" className="flex min-h-0 flex-1 flex-col">
+    <section ref={setSlot} data-testid="harness-overview" className="flex min-h-0 flex-1 flex-col">
       <div
         onKeyDown={onTabHandoff}
         className={cn(
@@ -202,15 +235,13 @@ export function HarnessOverviewView({
       >
         <div
           data-testid="harness-overview-scroll"
-          className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain"
+          className="@container/slot flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain"
         >
           <HarnessOverviewVerdict
             overview={overview}
             sourceRoot={sourceRoot}
-            below={below}
             readingIsEmpty={report.coverage.length === 0}
           />
-          <HarnessOverviewSilent overview={overview} />
           <HarnessOverviewMatrix
             overview={overview}
             openKey={openKey}
@@ -223,9 +254,10 @@ export function HarnessOverviewView({
             panelHostId={panelHostId}
             renderPanelRow={renderPanelRow}
           />
+          <HarnessOverviewSilent overview={overview} onOpenGuides={onOpenGuides} />
           <div className="flex shrink-0 flex-col gap-2 px-1">
             <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-label text-[color:var(--color-text-quaternary)]">
-              <span>{t('overviewCellHint')}</span>
+              {below ? <span>{t('overviewCellHint')}</span> : null}
               <button
                 type="button"
                 data-testid="harness-overview-provenance"
@@ -254,8 +286,9 @@ export function HarnessOverviewView({
             motion="overlay"
             open
             id={panelHostId('')}
+            data-testid="harness-overview-aside"
             aria-labelledby={titleId('')}
-            tabIndex={0}
+            tabIndex={openKey ? 0 : undefined}
             className="min-h-0 overflow-y-auto overscroll-contain rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
           >
             <HarnessOverviewPanel
