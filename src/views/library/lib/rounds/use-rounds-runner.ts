@@ -751,8 +751,10 @@ export function useRoundsRunner(): RoundsRunnerValue {
     [connectorIsOnHere, connectors.connectors],
   );
 
+  const shownStoreStatus: RoundsStoreStatus = store && storeStatus === "no-vault" ? "loading" : storeStatus;
+
   return {
-    storeStatus,
+    storeStatus: shownStoreStatus,
     state,
     rounds,
     ledger: entries,

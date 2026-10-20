@@ -39,7 +39,7 @@
   "appRequiredTitle": "Automations run in the desktop app",
   "appRequiredDescription": "Open your folder in the app to create schedules right on this screen.",
   "getApp": "Get the app",
-  "loadingTitle": "Reading this folder's schedules",
+  "loadingTitle": "Loading automations",
   "malformedTitle": "The schedules file needs attention",
   "malformedDescription": "Atlas could not read the local schedule file and left it unchanged. Fix it, then read again.",
   "unavailableTitle": "Atlas could not read this folder's schedules",

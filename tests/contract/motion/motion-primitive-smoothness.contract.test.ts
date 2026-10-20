@@ -20,7 +20,6 @@ const SPEC_OF: Record<string, string> = {
   "app/styles/motion-work.css": "motion/motion-work-status.spec.ts",
   "src/shared/motion/work-glyph.tsx": "motion/motion-work-status.spec.ts",
   "src/shared/motion/work-progress.tsx": "motion/motion-work-status.spec.ts",
-  "src/shared/motion/work-status.tsx": "motion/motion-work-status.spec.ts",
 };
 
 const PRIMITIVES_OUTSIDE_THE_LIBRARY = ["motion/motion-press.spec.ts", "motion/motion-disclosure.spec.ts"];
