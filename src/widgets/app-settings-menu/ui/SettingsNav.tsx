@@ -82,10 +82,10 @@ export function SettingsNav({
       ref={navRef}
       aria-label={t('title')}
       data-testid="app-settings-nav"
-      className="flex w-full shrink-0 flex-col gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] p-2 sm:w-[11.25rem] sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r"
+      className="flex w-full shrink-0 flex-col gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] p-2 sm:w-[11.25rem] sm:pt-6 sm:pb-1 sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r"
     >
       {heading}
-      <div className="pt-1">{searchField}</div>
+      <div>{searchField}</div>
       <div className="flex gap-1 sm:block">
         {SETTINGS_NAV_GROUPS.map((group) => (
           <div

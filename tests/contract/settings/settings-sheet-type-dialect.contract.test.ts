@@ -291,7 +291,7 @@ describe("the LNB does not borrow chrome dimensions", () => {
 
 describe("the panel does not eat its own gutter inside the minimum window", () => {
   /**
-   * The panel is at most the minimum window height, and its max-height clamp keeps the overlay gutter.
+   * The panel is at most the minimum window height, and at `sm` its clamp keeps the overlay's `sm:p-6` on both sides.
    */
   it("the panel height does not exceed the minimum window minus two overlay gutters", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
@@ -303,7 +303,8 @@ describe("the panel does not eat its own gutter inside the minimum window", () =
     const tauri = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
     const minHeight: number = tauri.app.windows[0].minHeight;
     expect(minHeight, "the minimum window height contract is gone").toBeGreaterThan(0);
-    expect(menu, "the panel can outgrow the window: its max-height clamp is gone").toMatch(/max-h-\[calc\(100dvh-1\.5rem\)\]/);
+    expect(menu, "the panel can outgrow the window: its max-height clamp is gone").toMatch(/max-h-\[calc\(100dvh-1\.5rem\)\] sm:max-h-\[calc\(100dvh-3rem\)\]/);
+    expect(menu, "the overlay gutter the clamp assumes is gone").toMatch(/p-3 sm:p-6/);
     expect(height).toBeLessThanOrEqual(minHeight);
     // And it must exceed the previous value (640), or this change has been reverted.
     expect(height).toBeGreaterThan(640);

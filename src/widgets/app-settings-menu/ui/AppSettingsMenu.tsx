@@ -340,14 +340,14 @@ export function AppSettingsMenu({
                 aria-labelledby={titleId}
                 data-surface-role="settings-dock"
                 tabIndex={-1}
-                className={`${settingsPresence.exiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[var(--dialog-h-lg)] max-h-[calc(100dvh-1.5rem)] w-[var(--dialog-w-lg)] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
+                className={`${settingsPresence.exiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} relative flex h-[var(--dialog-h-lg)] max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] w-[var(--dialog-w-lg)] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
                 data-testid="app-settings-popover"
               >
                 <div className="flex min-h-0 flex-1 flex-col sm:flex-row" data-testid="app-settings-body">
                   <SettingsNav
                     navRef={navRef}
                     heading={
-                      <div className="sticky left-0 flex min-w-0 items-center gap-2 px-1 pb-3">
+                      <div className="sticky left-0 flex min-h-8 min-w-0 items-center gap-2 px-1 sm:min-h-6 sm:pb-1">
                         <Settings size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-indigo-accent)]" />
                         <h2
                           id={titleId}
@@ -375,12 +375,12 @@ export function AppSettingsMenu({
                     }
                   />
 
-                  <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                   <div
                     ref={paneRef}
                     key={searching ? 'search' : section}
                     className={cn(
-                      'grid min-h-0 min-w-0 flex-1 content-start gap-6 overflow-y-auto p-4 sm:px-8 sm:pt-7 sm:pb-8',
+                      'grid min-h-0 min-w-0 flex-1 content-start gap-6 overflow-y-auto p-4 sm:px-8 sm:pt-6 sm:pb-8',
                       animateSection && 'settings-section-in',
                     )}
                     onAnimationEnd={(event) => {
@@ -430,10 +430,10 @@ export function AppSettingsMenu({
                       </>
                     )}
                   </div>
-                  <div className="absolute right-3 top-3">
-                    <CloseButton label={t('closeLabel')} onClick={() => closePanel()} />
                   </div>
-                  </div>
+                </div>
+                <div className="absolute right-2 top-2 sm:right-8 sm:top-5">
+                  <CloseButton label={t('closeLabel')} onClick={() => closePanel()} />
                 </div>
               </div>
             </div>,
