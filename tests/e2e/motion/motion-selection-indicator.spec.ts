@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { SPRING, springEasing, springSettleMs } from "../../../src/shared/motion/spring";
 
 const TABS = "/en/agents/?guides=off";
@@ -76,7 +77,9 @@ test.describe("selection indicator", () => {
     expect(timing.actual).toBe(timing.expected);
     expect(timing.duration).toBe(`${springSettleMs(SPRING.control) / 1000}s`);
 
+    await startSmoothness(page);
     const measured = await switchAndSample(page);
+    expectSmoothMotion(await stopSmoothness(page, "main"), { reflow: ["width", "height"] });
     test.info().annotations.push({ type: "indicator", description: JSON.stringify(measured) });
     expect(measured.travel).toBeGreaterThan(0);
     expect(measured.moving).toBeGreaterThan(1);
