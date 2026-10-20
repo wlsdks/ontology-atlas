@@ -123,7 +123,19 @@ export function HarnessOverviewView({
     const host = document.getElementById(`${baseId}-panel-${hostSuffix(hostRow)}`);
     if (!host) return;
     const behavior = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-    const reveal = () => host.scrollIntoView({ block: 'nearest', behavior });
+    const scroller = host.closest<HTMLElement>('[data-testid="harness-overview-scroll"]');
+    const rowElement = host.closest('tr')?.previousElementSibling;
+    const head = scroller?.querySelector('thead th');
+    if (!scroller || !rowElement || !head) return;
+    const reveal = () => {
+      const frame = scroller.getBoundingClientRect();
+      const fromTop = (rect: DOMRect) => rect.top - frame.top + scroller.scrollTop;
+      const rowTop = fromTop(rowElement.getBoundingClientRect()) - head.getBoundingClientRect().height;
+      const panelBottom = fromTop(host.getBoundingClientRect()) + host.getBoundingClientRect().height;
+      const needed = panelBottom - scroller.clientHeight;
+      const top = needed <= rowTop ? Math.min(Math.max(scroller.scrollTop, needed), rowTop) : rowTop;
+      scroller.scrollTo({ top, behavior });
+    };
     const observer = new ResizeObserver(reveal);
     observer.observe(host);
     const stop = window.setTimeout(() => observer.disconnect(), 500);

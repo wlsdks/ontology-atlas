@@ -496,14 +496,28 @@ test.describe("harness tab", () => {
         }),
       )
       .toBe(true);
+  });
 
-    /* The scroller follows the opening row, so the whole panel ends inside it. */
-    const scrollerBox = (await page.getByTestId("harness-overview-scroll").boundingBox())!;
+  test("below 1280px the opened row stays in view under the sticky head with its panel right after it", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
+
+    const row = page.locator("tbody tr[data-harness-area]").first();
+    await row.locator('[data-harness-cell="watched"]').click();
+    await expect(page.getByTestId("harness-overview-panel")).toHaveAttribute("data-panel-placement", "below");
+    await waitForFiniteAnimations(page);
     await expect
-      .poll(async () => {
-        const box = (await panel.boundingBox())!;
-        return box.y + box.height <= scrollerBox.y + scrollerBox.height + 1;
-      })
+      .poll(() =>
+        page.evaluate(() => {
+          const rowEl = document.querySelector("tbody tr[data-harness-area]")!;
+          const headBottom = document.querySelector('[data-testid="harness-overview-table"] th')!.getBoundingClientRect().bottom;
+          const rowBox = rowEl.getBoundingClientRect();
+          const panelBox = document.querySelector('[data-testid="harness-overview-panel"]')!.getBoundingClientRect();
+          return rowBox.top >= headBottom - 1 && rowBox.bottom <= panelBox.top + 1;
+        }),
+      )
       .toBe(true);
   });
 
