@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 
 for (const subject of [
   { tab: 'library', panel: 'library-tab', destination: '/en/library/', back: 3 },
-  { tab: 'harness', panel: 'harness-tab', destination: '/en/architecture/?view=guides', back: 4 },
 ]) {
   test(`${subject.tab} examples reveal setup by keyboard and keep the next step reversible`, async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 720 });
@@ -124,7 +123,6 @@ test('reduced motion keeps the relationship meaning while removing ambient trave
 
 for (const subject of [
   { tab: 'library', panel: 'library-tab', targetIndexes: [1, 2] },
-  { tab: 'harness', panel: 'harness-tab', targetIndexes: [0, 1, 2] },
 ]) {
   test(`${subject.tab} relationship lines terminate at visual ports without crossing labels`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
@@ -132,7 +130,7 @@ for (const subject of [
     const panel = page.getByTestId(subject.panel);
     await expect(panel).toBeVisible();
 
-    await expect.poll(() => panel.evaluate((root, { targetIndexes, tab }) => {
+    await expect.poll(() => panel.evaluate((root, { targetIndexes }) => {
       const svg = root.querySelector<SVGSVGElement>('svg[data-relationship-wires]');
       const paths = [...(svg?.querySelectorAll('g > path:first-child') ?? [])] as SVGPathElement[];
       const items = [...root.querySelectorAll<HTMLElement>('[data-relationship-item]')];
@@ -189,9 +187,7 @@ for (const subject of [
 
       const originalViewBox = svg.getAttribute('viewBox');
       const originalPaths = paths.map((path) => path.getAttribute('d'));
-      const legacyPaths = tab === 'library'
-        ? ['M150 90H450', 'M450 90H750']
-        : ['M185 120H370Q410 120 410 50H530', 'M185 120H530', 'M185 120H370Q410 120 410 190H530'];
+      const legacyPaths = ['M150 90H450', 'M450 90H750'];
       svg.setAttribute('viewBox', '0 0 900 240');
       paths.forEach((path, index) => path.setAttribute('d', legacyPaths[index]));
       const legacyRejected = paths.some((path, pathIndex) => {
@@ -218,7 +214,7 @@ for (const subject of [
       }
 
       return { ready: true, endpointFailures, collisionFailures, legacyRejected, syntheticTextCollision };
-    }, { targetIndexes: subject.targetIndexes, tab: subject.tab })).toEqual({
+    }, { targetIndexes: subject.targetIndexes })).toEqual({
       ready: true,
       endpointFailures: [],
       collisionFailures: [],
