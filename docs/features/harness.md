@@ -104,15 +104,16 @@ to paste into the coding agent that runs in that repository: each gap with its d
 paths, what already reaches every domain, an instruction to judge each gap first, propose the
 smallest file and wait for a yes before writing, and the rule a file must meet to fill the cell.
 Atlas sends nothing and writes nothing; `harness.overviewRequestShow` shows the same text and is
-where a refused copy points, and "Read it again" re-reads the files after the agent writes. **No
+where a refused copy points, and "Read the files again" re-reads them after the agent writes. **No
 score, grade, level or percentage is rendered**: the count is of cells a reader can count
 (`docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
 
-**A cell opens its files beside the table** from 1280px, in a column reserved while closed so no
-cell moves under the pointer, and below its row under that. The panel quotes the domain's purpose
+**A cell opens its files beside the table** from 1280px, in a reserved column so no cell moves
+under the pointer, and below its row under that. Beside the table the first gap's panel is open on
+arrival without taking focus, as Guides opens on its first difference; with no gap nothing opens. The panel quotes the domain's purpose
 as the ontology wrote it, then each file by kind with its path, declaring text and the tools that
 read it; a gap shows the empty sentence, the domain's recorded paths, how many files reach every
-domain and, for Watched, the test files discovered under those paths. Escape or Close returns focus
+domain and, for Watched, the test files discovered under or beside those paths. Escape or Close returns focus
 to the cell. Under the table a missing hook script is called out (`harness.anatomySilentGuards`),
 because a config naming a script the disk lacks fails with no error at all, and "How this screen
 counts" holds the counting rule, the paths nothing reaches, the files that reach no domain, the

@@ -105,9 +105,11 @@ agent-written gap file as unneeded. Keeps `8a2effcf` (evidence beside the work),
 ## Flow
 
 1. When the owner opens Harness in the app with one connected source, Atlas reads its harness
-   files and opens At a glance: gap line, the copy action and "Read it again" above a table of
+   files and opens At a glance: gap line, the copy action and "Read the files again" above a table of
    the vault's domains (display names) by Told, Gated, Watched; each cell a count or an amber dot
-   with "None"; the last row "Reaches every domain" holds the files that declare no path.
+   with "None"; the last row "Reaches every domain" holds the files that declare no path. From
+   1280px the first gap's panel is already open beside the table, without taking focus (review,
+   2026-10-20: a closed arrival left the reserved column and a third of the window empty).
 2. When he presses a cell, Atlas opens its panel beside the table (after the row below 1280px): the
    domain's description, then each file making the cell by kind, with path, declaring text and the
    tools that read it, a `.codex` hook marked as running only once a person trusts it; a gap shows
@@ -118,12 +120,12 @@ agent-written gap file as unneeded. Keeps `8a2effcf` (evidence beside the work),
    coding agent he runs in this repository; "See the request" shows the same text. Nothing leaves.
 4. When his agent works, it shows each file and wiring edit and waits for his yes, as the request
    asks. When it is wrong (a `paths:` that misses the domain, a block nobody needs), he declines; if
-   he allowed it, after "Read it again" the cell still reads None beside the domain's recorded paths.
-5. When he presses "Read it again", Atlas reads the source again; the open panel closes and the gap
+   he allowed it, after "Read the files again" the cell still reads None beside the domain's recorded paths.
+5. When he presses "Read the files again", Atlas reads the source again; the open panel closes and the gap
    line and cells update.
 6. When the clipboard refuses, Atlas says so and points to "See the request" to copy by hand.
 7. When a domain records no path, its row reads "No recorded path" and is no gap; when the reading
-   fails, Atlas says why with "Read it again", never zeros. `?view=overview` is the address;
+   fails, Atlas says why with "Read the files again", never zeros. `?view=overview` is the address;
    `?view=structure`, `?view=coverage` and `?view=sensors` are rewritten to it.
 
 ## States
@@ -200,7 +202,7 @@ For each gap, first decide whether this domain needs its own guide, block or che
 - **Hangul**: rows use `display_ko`; the panel quotes the domain's description as the vault wrote it
   (English here); the request carries slugs and paths only; a Hangul source path is copied
   verbatim. The screen has no text input.
-- **Moved, renamed or unreadable source**: Failed with its reason; "Read it again" recovers once
+- **Moved, renamed or unreadable source**: Failed with its reason; "Read the files again" recovers once
   the folder is back. **Offline**: reading and copying are local.
 - **Two edits at once**: reading while his agent writes shows the disk at that moment; read again
   later. A vault edit that changes domains re-reads by itself (`use-harness-report.ts:116`).
@@ -261,7 +263,7 @@ For each gap, first decide whether this domain needs its own guide, block or che
    the folder rule, a first proposal after at most one read card, and a card for every write, hook
    wiring included. Widening the scope with a `systemPromptAppendix` needs its own decision record.
 3. Count a mirrored hook once in a cell; next when a walk records a mirrored pair read as two guards.
-4. Keep the open cell across "Read it again"; next when walk 6 records him reopening the same cell.
+4. Keep the open cell across "Read the files again"; next when walk 6 records him reopening the same cell.
 5. Guides list: fewer status tags per folder; next if his walk after 1 still says complex.
 6. Read again when harness files change on disk; next when walk 6 records a stale table.
 7. Reach strip (74 / 19 / 833) as a Guides line; next when a walk records a look for unnamed documents.

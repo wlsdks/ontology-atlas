@@ -200,7 +200,7 @@ analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved
 address on 2026-09-19: the layer ladder is the product's architecture, which a harness *regulates*
 (maintainability · architecture fitness · behaviour), and not a part of the harness itself.
 
-The default `?view=overview` (At a glance, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`) crosses the ontology's own domains with
+In the installed app the default `?view=overview` (At a glance, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`) crosses the ontology's own domains with
 the path scopes this repository's guides, gates and checks declare, by Told, Gated and Watched; a
 file that declares no path sits in one last row, a domain cell no file fills is a counted gap, and
 one action copies a request for the person's own coding agent. `buildHarnessOverview`
