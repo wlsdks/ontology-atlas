@@ -736,6 +736,7 @@
   },
   "workspace": {
     "aria": "资料库视图",
+    "title": "资料库",
     "sources": "来源",
     "sourcesCount": "原始来源文件",
     "wiki": "Wiki 页面",

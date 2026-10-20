@@ -71,6 +71,21 @@ async function measureHeader(page: Page, route: string) {
   return page.evaluate(() => {
     const main = document.querySelector("main")!;
     const h1 = main.querySelector("h1")!;
+    const bar = h1.closest<HTMLElement>("[data-page-header-row]");
+    if (bar) {
+      // On the shared header bar the title sits in a 60px row; the inset is how far the title starts
+      // from the left edge of the body frame below it, which must be that frame's own padding.
+      const frame = [...main.querySelectorAll<HTMLElement>("*")].find(
+        (node) => !bar.contains(node) && getComputedStyle(node).maxWidth !== "none" && node.checkVisibility(),
+      );
+      return {
+        group: "bar",
+        titleY: Math.round(h1.getBoundingClientRect().top - bar.parentElement!.getBoundingClientRect().top),
+        padLeft: frame
+          ? `${Math.round(h1.getBoundingClientRect().left - frame.getBoundingClientRect().left)}px`
+          : null,
+      };
+    }
     // The frame is the ancestor carrying the maximum width; on some screens `main` itself is it.
     let column: HTMLElement | null = null;
     for (let node: HTMLElement | null = h1.parentElement; node; node = node.parentElement) {
@@ -82,6 +97,7 @@ async function measureHeader(page: Page, route: string) {
     }
     const cs = column ? getComputedStyle(column) : null;
     return {
+      group: "frame",
       titleY: column
         ? Math.round(h1.getBoundingClientRect().top - column.getBoundingClientRect().top)
         : null,
@@ -189,10 +205,10 @@ test.describe("rail destinations", () => {
     await seedFirstRunSeen(page);
     for (const width of [1280, 1040]) {
       await page.setViewportSize({ width, height: 900 });
-      const measured: { title: string; titleY: number | null; padLeft: string | null }[] = [];
+      const measured: { title: string; group: string; titleY: number | null; padLeft: string | null }[] = [];
       for (const member of FRAME_MEMBERS) {
         const m = await measureHeader(page, member.route);
-        measured.push({ title: member.title, titleY: m.titleY, padLeft: m.padLeft });
+        measured.push({ title: member.title, group: m.group, titleY: m.titleY, padLeft: m.padLeft });
       }
       expect(FRAME_MEMBERS.length, "an empty member list makes this test idle").toBeGreaterThan(2);
       expect(measured.length, "no route measured").toBe(FRAME_MEMBERS.length);
@@ -201,12 +217,14 @@ test.describe("rail destinations", () => {
         "a route without a frame element must not count as a pass",
       ).toEqual([]);
 
-      const ys = new Set(measured.map((m) => m.titleY));
-      expect(
-        ys.size,
-        `At ${width}px the title y differs: ` +
-          measured.map((m) => `${m.title} ${m.titleY}`).join(" / "),
-      ).toBe(1);
+      for (const group of ["bar", "frame"]) {
+        const members = measured.filter((m) => m.group === group);
+        expect(members.length, `no ${group} member measured: the split would pass on nothing`).toBeGreaterThan(0);
+        expect(
+          new Set(members.map((m) => m.titleY)).size,
+          `At ${width}px the ${group} titles differ in y: ` + members.map((m) => `${m.title} ${m.titleY}`).join(" / "),
+        ).toBe(1);
+      }
       const lefts = new Set(measured.map((m) => m.padLeft));
       expect(
         lefts.size,

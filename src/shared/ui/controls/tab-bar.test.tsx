@@ -117,6 +117,18 @@ describe('TabBar', () => {
     expect(freshness.className).not.toMatch(/border-b-|border-l-/);
   });
 
+  it('a segmented strip keeps the tab roles and slides one raised thumb, with no underline', () => {
+    render(
+      <TabBar items={ITEMS} activeKey="relations" onSelect={() => {}} ariaLabel="탭" variant="segmented" />,
+    );
+    const list = screen.getByRole('tablist');
+    expect(list).toHaveAttribute('aria-orientation', 'horizontal');
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    const thumb = list.querySelector('[data-selection-indicator]');
+    if (thumb) expect(thumb).toHaveAttribute('data-selection-indicator', 'surface-x');
+    expect(screen.getByRole('tab', { name: /관계/ }).className).not.toMatch(/border-b-/);
+  });
+
   it('moves focus and activates tabs with horizontal arrow keys, wrapping at both ends', () => {
     const onSelect = vi.fn();
     render(<InteractiveTabBar initialKey="overview" onSelect={onSelect} />);

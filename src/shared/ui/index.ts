@@ -27,6 +27,7 @@ export { StaggeredFadeIn } from './surfaces/staggered-fade-in';
 export { HighlightedText } from './status/highlighted-text';
 export { OntologyMapKindGlyph } from './ontology-node/map-kind-glyph';
 export { TabBar } from './controls/tab-bar';
+export { PageHeaderBar } from './layout/page-header-bar';
 export { ChromeTile } from './controls/chrome-tile';
 export { ChromeChip, CHROME_STATUS_CHIP_CLASS, CHROME_CHIP_COMPACT_BELOW_XL } from './controls/chrome-chip';
 export { GithubMark } from './marks/github-mark';

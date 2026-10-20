@@ -215,7 +215,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
       return <section key={lane.id} data-board-lane={lane.id} data-active={activeLanes.has(index) || undefined} data-hot={hoveredRow === index || undefined} aria-labelledby={`board-lane-${index}`} className={`${styles.boardLane} ${motion.className ?? ''}`} style={motion.style}>
         <p id={`board-lane-${index}`} className={`${styles.boardLaneTitle} text-body font-[var(--font-weight-strong)]`}
           {...(relationships ? { onPointerEnter: () => setHover(`${ROW_HOVER}${index}`), onPointerLeave: () => setHover(null) } : {})}>
-          <span data-board-node={lane.id} className="flex min-w-0 items-center gap-2">{lane.domain ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}<span className="min-w-0 break-words">{lane.domain ? name(lane.domain) : t('laneUnassigned')}</span></span>
+          <span data-board-node={lane.id} className="flex min-w-0 items-center gap-2">{lane.domain ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}<span className="line-clamp-2 min-w-0 break-words" title={lane.domain ? name(lane.domain) : t('laneUnassigned')}>{lane.domain ? name(lane.domain) : t('laneUnassigned')}</span></span>
         </p>
         <ul className={styles.boardCards}>
           {lane.claims.flatMap((claim, at) => [...passesBefore(at), ...visible.has(claim) ? [card(claim)] : []])}

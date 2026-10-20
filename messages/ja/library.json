@@ -736,6 +736,7 @@
   },
   "workspace": {
     "aria": "資料室の表示",
+    "title": "資料室",
     "sources": "ソース",
     "sourcesCount": "元のソースファイル",
     "wiki": "Wiki",

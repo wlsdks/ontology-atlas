@@ -1,0 +1,5 @@
+{
+  "gate": "appearing-surfaces",
+  "raise": 1,
+  "why": "HarnessOverviewView adds the cell panel beside the table. tests/e2e/harness/harness-tab.spec.ts opens it from a pressed cell through the installed-app bridge fixture and applies the same nonempty WCAG axe floor and zero-violation requirement as a11y-open-surfaces.spec.ts; the fixture-specific opener is measured separately from its generic OPENERS."
+}
