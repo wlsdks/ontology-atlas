@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { MousePointerClick } from 'lucide-react';
 
 import { AGENT_TOOL_LABELS, type ScopeDeclaration } from '@/entities/agent-files';
 import { getTopologyFocusHref } from '@/entities/project';
@@ -14,7 +15,8 @@ import { controlClass } from '@/shared/ui/control-class';
 
 import { WARNING_BADGE } from './HarnessGuideDetail';
 import { COLUMN_KEYS, ORIGIN_LABEL, type TranslateFn } from './harness-overview-labels';
-import { ORIGIN_ORDER, type HarnessOverview, type OverviewTarget } from '../model/harness-overview';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { ORIGIN_ORDER, OVERVIEW_COLUMNS, type HarnessOverview, type OverviewTarget } from '../model/harness-overview';
 
 const EPOCH_SEPARATOR = '~';
 
@@ -256,12 +258,25 @@ export function HarnessOverviewPanel({
     const target = overview.targets.get(key);
     if (!target) {
       return (
-        <p
-          data-testid="harness-overview-panel-empty"
-          className="flex h-full min-h-48 items-center justify-center px-6 py-10 text-center text-body text-[color:var(--color-text-tertiary)]"
-        >
-          {t('overviewPanelEmpty')}
-        </p>
+        <div data-testid="harness-overview-panel-empty" className="flex flex-col items-start gap-4 px-6 py-6">
+          <span
+            aria-hidden
+            className="grid size-8 place-items-center rounded-card bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]"
+          >
+            <MousePointerClick size={ICON_SIZE.md} />
+          </span>
+          <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('overviewPanelEmpty')}</p>
+          <ul className="flex flex-col gap-2.5">
+            {OVERVIEW_COLUMNS.map((column) => (
+              <li key={column} className="flex flex-col">
+                <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+                  {t(COLUMN_KEYS[column].head)}
+                </span>
+                <span className="text-label text-[color:var(--color-text-quaternary)]">{t(COLUMN_KEYS[column].gloss)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       );
     }
     const head = panelHead(target, t);

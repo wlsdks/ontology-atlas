@@ -25,7 +25,7 @@ const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>>
   watched: 'right',
 };
 
-const GRID = 'grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))]';
+const GRID = 'grid grid-cols-[minmax(0,1.7fr)_repeat(3,minmax(0,1fr))] max-sm:grid-cols-3';
 
 const DIVIDER = 'border-b border-[color:var(--color-divider)]';
 
@@ -33,7 +33,11 @@ const AMBER_INK = 'text-[color:var(--color-amber-source-text-a95)]';
 
 /** A value tile is a bordered box so every state shares one footprint, and a column's text keeps one start line. */
 const TILE_BASE =
-  'h-13.5 min-h-0 gap-3 rounded-card border border-transparent px-3.5 py-0 text-left hover:bg-[color:var(--color-overlay-2)] max-sm:px-2.5';
+  'h-13.5 min-h-0 gap-3 rounded-card border border-transparent px-3.5 py-0 text-left max-sm:px-2.5'
+
+/** Hover is a fill: neutral on a count, amber on a gap, so a gap stays calm until it is reached for. */
+const HOVER_FILL = 'hover:bg-[color:var(--color-overlay-2)]';
+const HOVER_GAP = 'hover:bg-[color:var(--color-amber-signal-a07)]';
 
 type CellState = 'filled' | 'gap' | 'everywhere';
 
@@ -63,7 +67,10 @@ export function HarnessOverviewMatrix({
       .map(({ origin, count: n }) => `${t(ORIGIN_LABEL[origin])} ${n}`)
       .join(' · ');
     return (
-      <div key={cell.column} role="cell" className="flex min-w-0 items-center px-3 py-3">
+      <div key={cell.column} role="cell" className="flex min-w-0 items-center px-3 py-3 max-sm:flex-col max-sm:items-stretch max-sm:gap-1 max-sm:pt-0">
+        <span aria-hidden className="hidden px-1 text-label text-[color:var(--color-text-quaternary)] max-sm:block">
+          {t(COLUMN_KEYS[cell.column].head)}
+        </span>
         <button
           type="button"
           ref={(node) => registerCell(cell.key, node)}
@@ -77,20 +84,21 @@ export function HarnessOverviewMatrix({
           })}
           data-harness-cell={cell.column}
           data-harness-cell-state={state}
-          className={controlClass({
-            shape: 'row',
-            size: 'md',
-            hoverSurface: 'lift',
-            active: open,
-            className: cn(
-              TILE_BASE,
-              state === 'gap'
-                ? 'border-dashed border-[color:var(--color-amber-source-a45)] bg-[color:var(--color-amber-signal-a07)]'
-                : null,
-              open && state !== 'gap' && 'bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-accent-a50)]',
-              open && state === 'gap' && 'border-transparent bg-[color:var(--color-amber-signal-a16)] shadow-[inset_0_0_0_1px_var(--color-amber-source-a90)]',
-            ),
-          })}
+          className={cn(
+            controlClass({
+              shape: 'row',
+              size: 'md',
+              hoverSurface: 'lift',
+              active: open,
+              className: cn(
+                TILE_BASE,
+                state === 'gap' ? 'border-dashed border-[color:var(--color-amber-source-a45)] bg-transparent' : null,
+                open && state !== 'gap' && 'bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-accent-a50)]',
+                open && state === 'gap' && 'border-transparent bg-[color:var(--color-amber-signal-a16)] shadow-[inset_0_0_0_1px_var(--color-amber-source-a90)]',
+              ),
+            }),
+            !open && (state === 'gap' ? HOVER_GAP : HOVER_FILL),
+          )}
         >
           {state === 'gap' ? (
             <>
@@ -109,7 +117,7 @@ export function HarnessOverviewMatrix({
               >
                 {count}
               </span>
-              <span className="line-clamp-2 min-w-0 text-label text-[color:var(--color-text-tertiary)] max-sm:hidden">
+              <span className="line-clamp-2 min-w-0 text-label text-[color:var(--color-text-tertiary)]">
                 {kinds}
               </span>
             </>
@@ -120,9 +128,9 @@ export function HarnessOverviewMatrix({
   };
 
   const domainCell = (title: string, meta: string | null, line: string, titleClass: string) => (
-    <div role="rowheader" className="flex min-w-0 flex-col justify-center gap-1 px-5 py-3 text-left">
+    <div role="rowheader" className="flex min-w-0 flex-col justify-center gap-1 px-5 py-3 text-left max-sm:col-span-3">
       <span className="flex min-w-0 items-baseline gap-2">
-        <span className={cn('min-w-0 truncate', titleClass)}>{title}</span>
+        <span className={cn('min-w-0 line-clamp-2 max-sm:line-clamp-none', titleClass)}>{title}</span>
         {meta ? <span className="shrink-0 text-label tabular-nums text-[color:var(--color-text-quaternary)]">{meta}</span> : null}
       </span>
       <span title={line} className="truncate text-body text-[color:var(--color-text-tertiary)]">
@@ -142,7 +150,7 @@ export function HarnessOverviewMatrix({
           'text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]',
         )}
         {row.cells === null ? (
-          <div role="cell" className="col-span-3 flex min-w-0 items-center px-3 py-3">
+          <div role="cell" className="col-span-3 flex min-w-0 items-center px-3 py-3 max-sm:pt-0">
             <button
               type="button"
               ref={(node) => registerCell(pathKey, node)}
@@ -151,13 +159,16 @@ export function HarnessOverviewMatrix({
               aria-controls={openKey === pathKey ? panelHostId(row.slug) : undefined}
               data-harness-cell="path"
               data-harness-cell-state="no-path"
-              className={controlClass({
-                shape: 'row',
-                size: 'md',
-                hoverSurface: 'lift',
-                active: openKey === pathKey,
-                className: cn(TILE_BASE, 'text-body text-[color:var(--color-text-tertiary)]'),
-              })}
+              className={cn(
+                controlClass({
+                  shape: 'row',
+                  size: 'md',
+                  hoverSurface: 'lift',
+                  active: openKey === pathKey,
+                  className: cn(TILE_BASE, 'text-body text-[color:var(--color-text-tertiary)]'),
+                }),
+                openKey !== pathKey && HOVER_FILL,
+              )}
             >
               {t('overviewNoPath')}
             </button>
@@ -177,7 +188,7 @@ export function HarnessOverviewMatrix({
       data-testid="harness-overview-table"
       className="shrink-0 overflow-clip rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]"
     >
-      <div role="rowgroup" data-harness-head className={cn('sticky top-0 z-10 bg-[color:var(--color-panel)]', DIVIDER)}>
+      <div role="rowgroup" data-harness-head className={cn('sticky top-0 z-10 bg-[color:var(--color-panel)] max-sm:hidden', DIVIDER)}>
         <div role="row" className={cn(GRID, 'bg-[color:var(--color-overlay-1)]')}>
           <div role="columnheader" className="flex h-14 items-center px-5 text-body text-[color:var(--color-text-quaternary)]">
             {t('coverageColumnArea')}

@@ -57,7 +57,11 @@ export function HarnessOverviewView({
   const [touched, setTouched] = useState(false);
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const firstGap = overview.gaps[0];
-  const arrivalKey = !below && firstGap ? overviewCellKey(firstGap.slug, firstGap.column) : null;
+  const arrivalKey = below
+    ? null
+    : firstGap
+      ? overviewCellKey(firstGap.slug, firstGap.column)
+      : (overview.everywhere[0]?.key ?? null);
   const openKey = touched ? pressedKey : arrivalKey;
   const [lastByRow, setLastByRow] = useState<Readonly<Record<string, string>>>({});
   const [epoch, setEpoch] = useState(0);

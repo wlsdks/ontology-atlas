@@ -640,6 +640,10 @@ describe('the at-a-glance table', () => {
     mount();
     expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '0');
     expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
+    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', '#everywhere|told');
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
     expect(screen.getByTestId('harness-overview-panel-empty')).toHaveTextContent(
       koMessages.harness.overviewPanelEmpty,
     );
