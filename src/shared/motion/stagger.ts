@@ -7,6 +7,8 @@ export const STAGGER_MAX_STEPS = 3;
 
 const ENTRANCE_WINDOW_MS = (STAGGER_MAX_STEPS * STAGGER + MOTION.base.duration) * 1000;
 
+const SETTLING_INPUTS = ['pointerdown', 'keydown', 'wheel'] as const;
+
 type StaggerRole = 'rise' | 'fade';
 
 interface StaggerEntry {
@@ -56,12 +58,20 @@ export function useStaggerOnce({ vaultKey, listKey, ids, role = 'rise' }: Stagge
     const entry = existing ?? { owner: owner.current, ids: new Set(idsRef.current), done: false };
     seen.set(key, entry);
     setEntering(entry.ids);
-    const timer = window.setTimeout(() => {
+    let timer = 0;
+    const stop = () => {
+      window.clearTimeout(timer);
+      for (const type of SETTLING_INPUTS) window.removeEventListener(type, settle, true);
+    };
+    const settle = () => {
+      stop();
       entry.done = true;
       setEntering(null);
-    }, ENTRANCE_WINDOW_MS);
+    };
+    timer = window.setTimeout(settle, ENTRANCE_WINDOW_MS);
+    for (const type of SETTLING_INPUTS) window.addEventListener(type, settle, { capture: true, passive: true });
     return () => {
-      window.clearTimeout(timer);
+      stop();
       setEntering(null);
     };
   }, [key, hasIds]);

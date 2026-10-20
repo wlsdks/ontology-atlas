@@ -17,17 +17,17 @@ Divide the app into two areas and apply different motion disciplines:
 
 | Area | Discipline | Rationale |
 |---|---|---|
-| **Chrome (panels·buttons·popovers·lists)** | Maintain existing charter: focus on `transition-colors`/`opacity`, <200ms, minimal transform | Linear calmness — if chrome jumps, data dies |
+| **Chrome (panels·buttons·popovers·lists)** | Shared `--motion-*` ramp and `SPRING`: any motion that stays smooth, interruptible and off the canvas clock (`DESIGN-SYSTEM.md`, "Motion") | If chrome jumps, data dies: smoothness, not stillness, keeps chrome calm |
 | **Canvas (topology map·camera·drag)** | **Fully apply fluid principles**: spring·1:1 tracking·interruptible·velocity transfer | This is where "Obsidian-like tactility" lives — core to owner preference |
 
-This boundary prevents the situation where "they overlap weirdly and stutter": chrome stays quiet, canvas stays alive. Do not mix the two disciplines on one surface.
+This boundary prevents the situation where "they overlap weirdly and stutter": chrome runs on the shared ramp, the canvas on its physics. Do not mix the two clocks on one surface.
 
 ## 1. Canvas Fluid Discipline (ontology-map)
 
 - **Respond on pointer-down**: immediate visual feedback on node press (selection ring). No feedback waiting for click(up). Click=commit contract — down is only feedback, commit (focus switch) happens on up, cancellable via drag escape (~10px hysteresis).
 - **1:1 tracking**: during drag, a grabbed node sticks to the pointer at every drag speed, and the camera does at 1× (the drag speed setting scales a pan). Respect offset of grab point (no center snap). Use `setPointerCapture`, calculate release velocity from position/visual history of last few frames.
 - **Interruptibility (First Principle)**: never lock input during camera movement·focus switch·expand animation. New target starts **from current displayed value** (never restart from target value — causes jump). No CSS `@keyframes` for gesture-based motion.
-- **Spring defaults**: damping 1.0 (no overshoot) / response 0.3~0.4. No bounce on menu/popover appearance, and none at the end of a thrown glide either: a free glide decelerates like friction.
+- **Spring defaults**: spatial travel uses the house springs (`SPRING` in `src/shared/motion/spring.ts`; `DESIGN-SYSTEM.md`, "Signature motion"), and a named spring may set its own damping. A thrown glide ends without bounce: it decelerates like friction.
 - **Velocity transfer**: pass release velocity to spring initial velocity at drag→animation seam. After pan release the camera glides `v · τ` with τ = `--motion-base` (180 ms) on a critically damped spring of the same time constant, so it leaves at the hand's speed and stops without overshoot (`model/motion-physics.ts#MOMENTUM_SPRING`, decision 645411dd).
 - **Zoom steps**: a wheel notch or a `+`/`-` step eases with a first-order approach (τ = `--motion-fast`/3, 95% within 120 ms) about the pointer, which stays over the same world point; a trackpad pinch applies the finger spread at once. Drag and zoom speed are the reader's settings (Settings → Map).
 - **Boundaries are rubber bands**: no hard stops at canvas pan limits — gradual resistance then return.
@@ -38,8 +38,8 @@ This boundary prevents the situation where "they overlap weirdly and stutter": c
 | Apple Principle | Resolution | Reason |
 |---|---|---|
 | Translucent materials·backdrop-blur (§materials) | **Rejected — Charter wins** | glassmorphism is a prohibited pattern. Depth expressed via elevation tokens (surface step + border + shadow) |
-| Springs for all UI | **Adopted for canvas only** | Chrome maintains Linear calmness (§0 boundary) |
-| Scale press feedback (`:active scale`) | **Reject relaxation → Alternative** | Same family as `hover:scale-*` prohibited pattern. Press feedback via color/border token changes |
+| Springs for all UI | **Adopted** | Chrome takes the house springs through `springEasing()`; the canvas keeps its own physics |
+| Scale press feedback (`:active scale`) | **Allowed** | Through a named token, moving no neighbour; detached controls keep the 1px `translate` press by default |
 | Dim scrim (modal focus) | **Conditional adoption** | DOM scrim alpha allowed (WebGL low-alpha defect is canvas-internal issue). But **WebGL internal dim still only hidden/transparent tokens** |
 | Sound·haptics | **Deferred** | Overkill for web/desktop tools — not adopted per utility principle |
 | System font priority | **Adopted (already compliant)** | |
@@ -64,7 +64,7 @@ This boundary prevents the situation where "they overlap weirdly and stutter": c
 2. If user intervenes during camera transition, does it continue from current value? (Interrupt test: drag during transition).
 3. Is velocity transfer present on pan release? (Seam visual inspection + slow-mo frame review — Apple process principle).
 4. Does popover grow from node and shrink via same path?
-5. Did spring/bounce leak into chrome? (Boundary violation check).
+5. Does chrome motion stay on the shared ramp and springs, interruptible and within the frame budget? (Boundary check: no canvas timing in chrome).
 6. No low-alpha in WebGL internals (existing unit test) + didn't confuse with DOM scrim.
 7. Does reduced-motion have alternative paths for all above items?
 

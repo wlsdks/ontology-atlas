@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "../first-run-seed";
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
+import { waitForAnimationsDone } from "../settle";
 
 test.beforeEach(async ({ page }) => {
   await seedFirstRunSeen(page);
@@ -71,7 +73,10 @@ test("the check draws on the fast clock and the box border holds 3:1 against its
     const [light, dark] = [luminance(mixed), luminance(ground)].sort((a, b) => b - a);
     return (light + 0.05) / (dark + 0.05);
   });
+  await waitForAnimationsDone(page.locator("html"));
+  await startSmoothness(page);
   const frames = await sampleCheckOffsets(page, box);
+  expectSmoothMotion(await stopSmoothness(page));
   const measured = shares(frames);
   test.info().annotations.push({ type: "check", description: JSON.stringify({ contrast: contrast.toFixed(2), ...measured }) });
   expect(contrast).toBeGreaterThanOrEqual(3);

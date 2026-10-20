@@ -30,10 +30,11 @@ describe('useStaggerOnce', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('caps the delay at three steps', () => {
+  it('caps the delay at the step limit, inside the expressive window', () => {
     expect(staggerDelaySeconds(0)).toBe(0);
     expect(staggerDelaySeconds(2)).toBeCloseTo(2 * STAGGER, 6);
     expect(staggerDelaySeconds(9)).toBeCloseTo(STAGGER_MAX_STEPS * STAGGER, 6);
+    expect(STAGGER_MAX_STEPS * STAGGER + MOTION.base.duration).toBeLessThanOrEqual(MOTION.expressive.duration);
   });
 
   it('staggers the first arrival and drops the class after the window', () => {
@@ -42,6 +43,17 @@ describe('useStaggerOnce', () => {
     expect(screen.getByTestId('b').style.getPropertyValue('--motion-stagger-index')).toBe('1');
     expect(screen.getByTestId('e').style.getPropertyValue('--motion-stagger-index')).toBe(String(STAGGER_MAX_STEPS));
     act(() => vi.advanceTimersByTime(WINDOW_MS));
+    expect(screen.getByTestId('a').className).toBe('');
+  });
+
+  it.each(['pointerdown', 'keydown', 'wheel'])('settles on the first %s inside the window', (type) => {
+    const { rerender } = render(<List ids={IDS} />);
+    expect(screen.getByTestId('a').className).toBe('motion-stagger-in');
+    act(() => {
+      window.dispatchEvent(new Event(type));
+    });
+    expect(screen.getByTestId('a').className).toBe('');
+    rerender(<List ids={[...IDS]} />);
     expect(screen.getByTestId('a').className).toBe('');
   });
 
