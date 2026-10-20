@@ -74,7 +74,7 @@ describe("blank-screen gate on route entry", () => {
 
   it("analysis has a named, busy destination while its implementation loads", () => {
     const shell = readFileSync("src/views/ontology-insights/ui/InsightsLoadingView.tsx", "utf8");
-    expect(shell).toContain('<h1');
+    expect(shell).toContain('<PageHeaderBar');
     expect(shell).toContain('aria-busy="true"');
     expect(shell).toContain('role="status"');
     expect(shell).toContain('data-route-loading="true"');

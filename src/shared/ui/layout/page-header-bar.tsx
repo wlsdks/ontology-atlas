@@ -9,12 +9,13 @@ export const HARNESS_GUTTER_X =
 
 /**
  * The horizontal frame each page body uses, so the title starts where the first line of the body
- * starts. `page` and `form` mirror `PAGE_FRAME` and `PAGE_FRAME_FORM` without their top inset.
+ * starts. `page` and `form` pay `PAGE_FRAME`'s and `PAGE_FRAME_FORM`'s column cap as a gutter, so the bar
+ * spans the pane and its divider meets both edges.
  */
 const FRAMES = {
   harness: HARNESS_GUTTER_X,
-  page: 'mx-auto w-full max-w-[var(--page-max)] px-5 md:px-10',
-  form: 'mx-auto w-full max-w-[960px] px-5 md:px-10',
+  page: 'px-5 md:px-[max(2.5rem,calc((100%_-_var(--page-max))/2_+_2.5rem))]',
+  form: 'px-5 md:px-[max(2.5rem,calc((100%_-_960px)/2_+_2.5rem))]',
 } as const;
 
 export type PageHeaderFrame = keyof typeof FRAMES;

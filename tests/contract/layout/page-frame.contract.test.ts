@@ -119,6 +119,7 @@ describe("page frame spec", () => {
     for (const member of MEMBERS) {
       const source = read(member);
       expect(source, `${member} does not use PAGE_FRAME`).toContain("PAGE_FRAME");
+      if (source.includes("PageHeaderBar")) continue;
       expect(source, `${member} does not use PAGE_HEADER_ROW`).toContain("PAGE_HEADER_ROW");
       expect(source, `${member} does not use PAGE_TITLE_ROW`).toContain("PAGE_TITLE_ROW");
     }
@@ -236,9 +237,6 @@ describe("the reading column is owned by the document library (ruling of 2026-08
 });
 
 const TITLE_MEMBERS = [
-  "src/views/agents/ui/AgentsPage.tsx",
-  "src/views/automations/ui/AutomationsPage.tsx",
-  "src/views/architecture/ui/HarnessPage.tsx",
   "src/views/project-detail/ui/ProjectDetailPage.tsx",
   "src/views/project-editor/ui/ProjectEditorPage.tsx",
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
@@ -248,8 +246,6 @@ const TITLE_MEMBERS = [
   "src/views/library/ui/LibraryRounds.tsx",
   "src/views/library/ui/LibraryConstellations.tsx",
   "src/views/library/ui/library-page/LibraryNoFolderStage.tsx",
-  "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-  "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
 ] as const;
 
 function openingTagAt(source: string, from: number): string {
@@ -292,6 +288,12 @@ describe("page title and lede", () => {
       expect(step, `${spec} names no type step`).toBeDefined();
       expect(leadingStep(spec), `${spec} pairs ${step} with another step's leading`).toBe(step);
     }
+  });
+
+  it("the page header bar's title wears PAGE_TITLE, so a page using it needs no h1 of its own", () => {
+    const bar = blankComments("bar", read("src/shared/ui/layout/page-header-bar.tsx"));
+    expect(bar).toContain("PAGE_TITLE");
+    expect(bar).not.toMatch(/(?:^|[\s"'`])(?:text-(?:caption|label|body|body-lg|title|display|hero)|leading-[a-z-]+|tracking-)/);
   });
 
   it("every page h1 in a member file wears PAGE_TITLE and restates none of it", () => {

@@ -115,7 +115,7 @@ export function AgentsPage({
           </nav>
         }
       />
-      <div className={cn(PAGE_FRAME_FORM, 'pt-6 md:pt-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]')}>
+      <div className={cn(PAGE_FRAME_FORM, 'pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]')}>
       <p
         data-testid="agents-lede"
         className={`max-w-2xl ${PAGE_LEDE}`}

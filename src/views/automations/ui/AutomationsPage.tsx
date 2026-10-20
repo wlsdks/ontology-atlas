@@ -158,7 +158,7 @@ export function AutomationsPage({
           data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
           <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
         </Button> : null} />
-      <div className={cn(PAGE_FRAME_FORM, "flex flex-1 flex-col gap-6 pt-6 md:pt-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
+      <div className={cn(PAGE_FRAME_FORM, "flex flex-1 flex-col gap-6 pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
         <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">

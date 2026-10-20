@@ -25,9 +25,9 @@ describe('PageHeaderBar', () => {
   it('maps each frame to the body inset it shares', () => {
     const { rerender } = render(<PageHeaderBar frame="page" title="A" />);
     const row = () => screen.getByRole('heading').parentElement!;
-    expect(row().className).toContain('max-w-[var(--page-max)]');
+    expect(row().className).toContain('var(--page-max)');
     rerender(<PageHeaderBar frame="form" title="A" />);
-    expect(row().className).toContain('max-w-[960px]');
+    expect(row().className).toContain('960px');
     rerender(<PageHeaderBar frame="harness" title="A" />);
     expect(row().className).toContain('100cqw');
   });
