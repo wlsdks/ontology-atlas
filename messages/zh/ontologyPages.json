@@ -295,7 +295,7 @@
       },
       "empty": "打开本体文件夹以检查其记录的关系。",
       "legacy": "已在新分析界面中打开保存链接对应的问题。",
-      "flowRetired": "{history, select, available {文字说明不再是此页面的一个分区。之前保存的说明仍以文件形式保留在 .ontology-atlas/analyses/ 中。可在代理面板的“发现与历史”中阅读，或让你的编码代理通过 MCP 读取。} other {文字说明不再是此页面的一个分区。之前保存的说明仍以文件形式保留在 .ontology-atlas/analyses/ 中。请让你的编码代理通过 MCP 读取。}}",
+      "flowRetired": "{history, select, available {“已保存的说明”标签页已移除。之前保存的说明仍保留在 .ontology-atlas/analyses/ 中。可在代理面板的“发现与历史”中阅读，或让你的编码代理通过 MCP 读取。} other {“已保存的说明”标签页已移除。之前保存的说明仍保留在 .ontology-atlas/analyses/ 中。请让你的编码代理通过 MCP 读取。}}",
       "sourceStatus": {
         "example": "源码 · 此示例中未检查",
         "reading": "源码 · 检查中",

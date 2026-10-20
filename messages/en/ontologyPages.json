@@ -295,7 +295,7 @@
       },
       "empty": "Open an ontology folder to inspect its recorded relationships.",
       "legacy": "This saved link now opens the corresponding question in Analysis.",
-      "flowRetired": "{history, select, available {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Open the agent panel's Findings & history to read them, or ask your coding agent through MCP.} other {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Ask your coding agent to read them through MCP.}}",
+      "flowRetired": "{history, select, available {The Written explanations tab is gone. Explanations saved earlier stay in .ontology-atlas/analyses/. Read them in the agent panel's Findings & history, or ask your coding agent to read them through MCP.} other {The Written explanations tab is gone. Explanations saved earlier stay in .ontology-atlas/analyses/. Ask your coding agent to read them through MCP.}}",
       "sourceStatus": {
         "example": "Source · not checked in this example",
         "reading": "Source · checking",
