@@ -141,8 +141,7 @@ export const rules = [
     reason: 'placement and overlap on the harness and architecture panels changed',
     matches: [
       /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
-      /^src\/views\/architecture\/ui\/HarnessAnatomyView\.tsx$/,
-      /^src\/views\/architecture\/ui\/HarnessCoverageView\.tsx$/,
+      /^src\/views\/architecture\/ui\/HarnessOverview(?:View|Panel)\.tsx$/,
     ],
   },
   {
@@ -151,8 +150,7 @@ export const rules = [
     reason: "the harness tab's fitted diagram and role popup changed",
     matches: [
       /^src\/views\/ontology-insights\/ui\/tabs\/HarnessCoverageOverview\.tsx$/,
-      /^src\/views\/architecture\/ui\/HarnessStructureDiagram\.tsx$/,
-      /^src\/views\/architecture\/ui\/HarnessAnatomyView\.tsx$/,
+      /^src\/views\/architecture\/ui\/HarnessOverview(?:View|Panel)\.tsx$/,
     ],
   },
   {

@@ -22,8 +22,8 @@
 .pairConnection { --line-ink: var(--color-text-tertiary); --line-width: 1.25; }
 .hotConnection { --line-ink: var(--color-text-secondary); --line-width: 1.5; }
 .selectedConnection { --line-ink: var(--color-indigo-line-a90); --line-width: 2.5; }
-.boardLane { display: grid; grid-template-columns: 8.5rem minmax(0,1fr); gap: 0.75rem; align-items: start; padding: 0.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-card); background: var(--color-overlay-1); }
-.boardLaneTitle { display: flex; align-items: center; min-width: 0; min-height: var(--control-h-sm); padding: 0 0.5rem; color: var(--color-text-secondary); transition: color var(--motion-fast) var(--motion-ease); }
+.boardLane { display: grid; grid-template-columns: clamp(11rem, 22%, 16rem) minmax(0,1fr); gap: 0.75rem; align-items: center; min-height: calc(2 * var(--leading-body) + 1rem + 2px); padding: 0.5rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-card); background: var(--color-overlay-1); }
+.boardLaneTitle { display: flex; align-self: stretch; align-items: center; min-width: 0; min-height: var(--control-h-sm); padding: 0 0.5rem; color: var(--color-text-secondary); transition: color var(--motion-fast) var(--motion-ease); }
 .boardLane:is([data-active], [data-hot]) .boardLaneTitle { color: var(--color-text-primary); }
 .boardCards { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; min-width: 0; }
 .boardCards > li { position: relative; z-index: 1; display: flex; }
@@ -65,5 +65,5 @@
  .inspector { border-left: 0; border-top: 1px solid var(--color-divider); padding: 1.25rem 0 0; }
 }
 @container (max-width: 34rem) {
- .boardLane { grid-template-columns: minmax(0,1fr); gap: 0.25rem; }
+ .boardLane { grid-template-columns: minmax(0,1fr); gap: 0.25rem; min-height: 0; }
 }

@@ -126,6 +126,11 @@ describe('workflowPathFilters — only the trigger block is a path filter', () =
     ]);
   });
 
+  it('does not read paths-ignore as a path scope', () => {
+    const yaml = ['on:', '  push:', '    paths-ignore:', '      - "docs/**"', '', 'jobs:', '  a:'].join('\n');
+    expect(workflowPathFilters(yaml)).toEqual([]);
+  });
+
   it('does not read a job step as a path filter', () => {
     /* An unfiltered workflow runs for every change; its steps are not mined for paths. */
     const yaml = ['on:', '  pull_request:', '', 'jobs:', '  a:', '    steps:', '      - run: vitest run src/views'].join('\n');

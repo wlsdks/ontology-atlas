@@ -12,7 +12,7 @@ for (const [width, height] of [[390, 844], [1040, 720], [1920, 1080]]) {
     const panelBox = (await panel.boundingBox())!;
     const folderBox = (await folder.boundingBox())!;
     const areaBox = (await page.getByTestId('flow-tab').boundingBox())!;
-    const readingEnd = await page.locator('main').evaluate(node => node.getBoundingClientRect().bottom - parseFloat(getComputedStyle(node).paddingBottom));
+    const readingEnd = await page.locator('main > div').last().evaluate(node => node.getBoundingClientRect().bottom - parseFloat(getComputedStyle(node).paddingBottom));
     expect(Math.abs(panelBox.x + panelBox.width / 2 - mainBox.x - mainBox.width / 2)).toBeLessThanOrEqual(1);
     expect(Math.abs(areaBox.y + areaBox.height - readingEnd)).toBeLessThanOrEqual(1);
     expect(Math.abs(panelBox.y + panelBox.height / 2 - areaBox.y - areaBox.height / 2)).toBeLessThanOrEqual(1);
