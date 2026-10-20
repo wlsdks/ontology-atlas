@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { seedFirstRunSeen } from "../first-run-seed";
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "../settle";
+
+const VIEW_TRANSITION_PSEUDOS_ARE_SKIPPED = true;
 
 type Frame = {
   t: number;
@@ -81,6 +84,7 @@ test.describe("shared-element morph: concept popover to full detail", () => {
   test("the title travels as one object on the surface spring and focus lands inside full detail", async ({ page }) => {
     const name = await openPopover(page, "no-preference");
     await page.getByTestId("map-detail-panel-open-full-detail").focus();
+    await startSmoothness(page);
     const frames = await sampleWhile(page, name, () => page.keyboard.press("Enter"));
 
     const pseudos = new Set(frames.flatMap((f) => f.pseudos));
@@ -99,6 +103,7 @@ test.describe("shared-element morph: concept popover to full detail", () => {
 
     const fullDetail = page.getByTestId("full-detail-a1");
     await expect(fullDetail).toBeVisible();
+    expectSmoothMotion(await stopSmoothness(page), { still: VIEW_TRANSITION_PSEUDOS_ARE_SKIPPED });
     await waitFrames(page, 2);
     expect(await page.evaluate(() => document.querySelectorAll('[style*="view-transition-name"]').length)).toBe(0);
     expect(await page.evaluate(() => document.documentElement.classList.contains("morph-transition"))).toBe(false);

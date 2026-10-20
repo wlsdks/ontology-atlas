@@ -12,8 +12,7 @@ import {
 
 /**
  * A surface's starting place is a name, not a number: scans tracked source for a framer `initial`,
- * `animate` or `exit` prop with its own `y:` offset and requires the module's constants. Two grammars
- * are named; a third is a new motion decision argued here, not typed.
+ * `animate` or `exit` prop with its own `y:` offset and requires the module's constants.
  */
 const ROOT = path.join(import.meta.dirname, "..", "..", "..");
 

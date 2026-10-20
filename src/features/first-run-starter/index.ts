@@ -1,4 +1,4 @@
-export { useFirstRunSampleModeSettled } from './model/use-first-run-sample-mode-settled';
+export { useFirstRunSampleModeKnown, useFirstRunSampleModeSettled } from './model/use-first-run-sample-mode-settled';
 export {
   readFirstRunStarterDismissed,
   writeFirstRunStarterDismissed,

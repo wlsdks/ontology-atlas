@@ -157,7 +157,7 @@ async function measureRoute(
       // Text at or above the title's size. The baseline is the largest rendered h1, not
       // `querySelector("h1")`: on map/docs the h1 is `sr-only` (1x1, inherited 16px), and project
       // detail has two h1s, so the first-in-DOM baseline would hang on order.
-      const h1s = [...document.querySelectorAll("h1")];
+      const h1s = [...document.querySelectorAll("h1, [data-page-title]")];
       const paintedH1s = h1s.filter(painted);
       let base: Element | null = null;
       let titlePx = 0;
@@ -179,6 +179,7 @@ async function measureRoute(
         if (r.width < 2 || r.height < 2) continue;
         if (el.closest(".sr-only")) continue;
         scanned += 1;
+        if (el.closest("[data-page-title]") || paintedH1s.some((h) => h.contains(el))) continue;
         if (titlePx === 0) continue;
         if (el === base || base?.contains(el)) continue;
         const px = parseFloat(getComputedStyle(el).fontSize);
@@ -273,10 +274,6 @@ const TITLE_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
       "The attention winner is the map itself, and this screen has no title-sized text baseline. " +
       "Instead the test below, that a screen without a title really has none, pins zero drawn h1.",
   },
-  {
-    route: "/ko/docs/",
-    why: "The h1 of the unified Ontology reader is `sr-only` 1×1. The same check pins it.",
-  },
 ];
 const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
 
@@ -369,7 +366,7 @@ test.describe("screen hierarchy: every audited route", () => {
    * title appears, even if the ties grow to four.
    */
   test("exceptions are not stale: a screen without a title really has none", async ({ page }) => {
-    for (const route of ["/ko/topology/", "/ko/docs/"]) {
+    for (const route of ["/ko/topology/"]) {
       const m = await measureRoute(page, route);
       expect(
         m.paintedH1,

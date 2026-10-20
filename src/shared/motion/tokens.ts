@@ -5,10 +5,9 @@
  * leaves the ramp. Every JS duration goes through this file, because the Tailwind lint only
  * reads class strings.
  *
- * Names describe use, as in `.claude/rules/design.md`:
- * - `fast` (120ms) acknowledges a state that already changed (hover, focus, colour).
- * - `base` (180ms) moves a surface into or out of place (panels, sheets, cards).
- * - `settle` (240ms) confirms that something finished (FLIP re-layout, commit).
+ * Names describe use (`docs/DESIGN-SYSTEM.md`, "Ramp and defaults"): `fast` acknowledges, `base`
+ * moves a surface, `settle` confirms, `slow` travels far, `expressive` stages an entrance, and
+ * `choreography` bounds a rare multi-part entrance.
  */
 
 /** Value copy of `--motion-ease` (cubic-bezier(0.25, 0.1, 0.25, 1)) — the entry family. */
@@ -23,12 +22,12 @@ export const MOTION_EASE = [0.25, 0.1, 0.25, 1] as const;
 export const MOTION_EASE_EXIT = [0.4, 0, 1, 1] as const;
 
 export const MOTION = {
-  /** Acknowledge — hover, focus, colour. `--motion-fast`. */
   fast: { duration: 0.12, ease: MOTION_EASE },
-  /** Move — a surface changes place. `--motion-base`. */
   base: { duration: 0.18, ease: MOTION_EASE },
-  /** Confirm — the signature that something finished. `--motion-settle`. */
   settle: { duration: 0.24, ease: MOTION_EASE },
+  slow: { duration: 0.36, ease: MOTION_EASE },
+  expressive: { duration: 0.6, ease: MOTION_EASE },
+  choreography: { duration: 1.2, ease: MOTION_EASE },
 } as const;
 
 /**
@@ -40,8 +39,7 @@ export const STAGGER = 0.035;
 /**
  * Critically damped spring for the DOM overlays, mirroring `--overlay-spring-response` (0.30)
  * and `--overlay-spring-damping` (1.0) in `app/globals.css`: `duration` is the response in
- * seconds and `bounce: 0` is damping 1.0. It is the only DOM spring; a spring that overshoots
- * needs its own `bounce > 0` token with the product reason.
+ * seconds and `bounce: 0` is damping 1.0.
  */
 export const OVERLAY_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 
