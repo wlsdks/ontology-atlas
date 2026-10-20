@@ -19,9 +19,11 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
       data-route-loading="true"
       data-testid="gateway-entry-fallback"
       aria-busy="true"
-      className="flex h-full min-h-full flex-1 flex-col justify-center gap-6 bg-[color:var(--color-canvas)] px-6 py-10 md:px-12"
+      className="flex h-full min-h-full flex-1 flex-col justify-center bg-[color:var(--color-canvas)] px-6 py-10 md:px-12"
     >
-      <div className="max-w-2xl">
+      {/* The block is centred on the page; its text stays left-aligned inside. */}
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <div>
         <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {t('eyebrow')}
         </p>
@@ -50,6 +52,7 @@ export async function GatewayEntryFallback({ locale }: { locale: string }) {
           {t('webCta')}
         </a>
       </p>
+      </div>
     </main>
   );
 }

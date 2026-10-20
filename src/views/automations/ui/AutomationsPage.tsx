@@ -17,7 +17,7 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, TabBar, useToast } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, TabBar, useToast, WaitStage } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -146,7 +146,7 @@ export function AutomationsPage({
 
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
-      className="atlas-scroll-quiet min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+      className="atlas-scroll-quiet relative min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
         <header className={PAGE_HEADER_ROW}>
           <div className="min-w-0">
@@ -170,7 +170,7 @@ export function AutomationsPage({
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
           {state === "loading" ? (
-            <div role="status" aria-busy="true"><EmptyState title={t("loadingTitle")} skeleton tone="solid" /></div>
+            <WaitStage mark="mascot" title={t("loadingTitle")} data-testid="automations-loading" aria-busy="true" delayed />
           ) : state === "malformed" || state === "unavailable" ? (
             <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
               action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />

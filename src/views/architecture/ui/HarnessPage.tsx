@@ -259,7 +259,7 @@ function HarnessPageInner() {
   const fillsPanel = view === 'guides' && reportState.status === 'ready';
 
   return (
-    <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
+    <div className={cn('relative flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
       {/* The name and the one tab set share a line, so the title never moves and tabs stay under the pointer. */}
       <div
         /*
@@ -341,7 +341,6 @@ function HarnessPageInner() {
               <Surface
                 open={waitedPastThreshold}
                 motion="overlay"
-                className="flex flex-1 flex-col"
               >
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>

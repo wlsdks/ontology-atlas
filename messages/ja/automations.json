@@ -39,7 +39,7 @@
   "appRequiredTitle": "自動化はデスクトップアプリで実行されます",
   "appRequiredDescription": "アプリでフォルダを開くと、この画面でそのままスケジュールを作れます。",
   "getApp": "アプリを入手",
-  "loadingTitle": "このフォルダのスケジュールを読み込み中です",
+  "loadingTitle": "自動点検を読み込み中",
   "malformedTitle": "スケジュールファイルの確認が必要です",
   "malformedDescription": "Atlasはローカルのスケジュールファイルを読み込めず、そのままにしました。修正してから、もう一度読み込んでください。",
   "unavailableTitle": "このフォルダのスケジュールを読み込めませんでした",

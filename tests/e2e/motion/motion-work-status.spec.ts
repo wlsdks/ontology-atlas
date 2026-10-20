@@ -61,16 +61,13 @@ async function openHeldScan(page: Page) {
 const release = (page: Page, count: number) =>
   page.evaluate((n) => (window as unknown as { __releaseSource(count: number): number }).__releaseSource(n), count);
 
-test.describe("WorkStatus in the harness scan", () => {
-  test("a stage moves waiting to running to done in one glyph with no layout shift", async ({ page }) => {
+test.describe("WaitStage in the harness scan", () => {
+  test("a stage moves ahead to running to done with no layout shift", async ({ page }) => {
     const panel = await openHeldScan(page);
     const item = panel.locator('[data-harness-stage="hooks"]');
     await expect(item).toHaveAttribute("data-harness-stage-state", "ahead");
     await watchStageShifts(page);
     await startSmoothness(page);
-    await item.locator("[data-work-glyph]").evaluate((element) => {
-      (element as unknown as { __probe: boolean }).__probe = true;
-    });
 
     const seen = new Set<string>();
     await expect
@@ -78,8 +75,7 @@ test.describe("WorkStatus in the harness scan", () => {
         async () => {
           await release(page, 1);
           const state = (await item.getAttribute("data-harness-stage-state")) ?? "gone";
-          const phase = (await item.locator("[data-work-phase]").getAttribute("data-work-phase")) ?? "gone";
-          seen.add(phase);
+          seen.add(state);
           return state;
         },
         { timeout: 20_000, intervals: [50] },
@@ -87,17 +83,14 @@ test.describe("WorkStatus in the harness scan", () => {
       .toBe("done");
 
     const settled = await item.evaluate((element) => {
-      const glyph = element.querySelector("[data-work-glyph]") as unknown as { __probe?: boolean } | null;
       return {
-        sameGlyph: glyph?.__probe === true,
-        drawn: element.querySelector("[data-drawn]")?.getAttribute("data-drawn") ?? null,
         live: element.querySelectorAll("[role], [aria-live]").length,
         shifts: (window as unknown as { __stageShifts: number }).__stageShifts,
       };
     });
     test.info().annotations.push({ type: "work-status", description: JSON.stringify({ ...settled, seen: [...seen] }) });
     expect(seen.has("running")).toBe(true);
-    expect(settled).toEqual({ sameGlyph: true, drawn: "draw", live: 0, shifts: 0 });
+    expect(settled).toEqual({ live: 0, shifts: 0 });
     expectSmoothMotion(await stopSmoothness(page));
   });
 
@@ -152,8 +145,8 @@ test.describe("WorkStatus in the harness scan", () => {
   });
 });
 
-test.describe("WorkStatus under reduced motion", () => {
-  test("the spin and the sweep stand still", async ({ page }) => {
+test.describe("WaitStage under reduced motion", () => {
+  test("the sweep stands still", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     const panel = await openHeldScan(page);
     const sweep = await panel.locator(".motion-work-sweep").evaluate((element) => {
@@ -161,14 +154,5 @@ test.describe("WorkStatus under reduced motion", () => {
       return { name: style.animationName, transform: style.transform };
     });
     expect(sweep).toEqual({ name: "none", transform: "none" });
-    await expect.poll(() => release(page, 1).then(() => panel.locator(".motion-work-spin").count()), { timeout: 20_000, intervals: [50] }).toBeGreaterThan(0);
-    const still = await panel.evaluate((root) =>
-      [...root.querySelectorAll(".motion-work-spin, .motion-work-sweep")].map((element) => {
-        const style = getComputedStyle(element);
-        return { name: style.animationName, transform: style.transform };
-      }),
-    );
-    expect(still.length).toBeGreaterThan(0);
-    for (const entry of still) expect(entry).toEqual({ name: "none", transform: "none" });
   });
 });

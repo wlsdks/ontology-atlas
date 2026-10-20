@@ -127,6 +127,7 @@
   "reachSourceRoot": "读取自 {path}",
   "coverageDiscoveredTests": "{count, plural, =0 {其记录的路径下也没有测试文件。} other {其记录的路径下有 # 个测试文件，由全仓库范围的测试通道运行。}}",
   "loadingTitle": "正在读取此仓库",
+  "loadingDetail": "只读取智能体指南、钩子和检查文件，不会打开其他文件。",
   "loadingStageRoots": "根目录指南",
   "loadingStageNested": "嵌套 AGENTS.md",
   "loadingStageAgentDirectories": "智能体目录",

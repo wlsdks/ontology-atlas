@@ -127,6 +127,7 @@
   "reachSourceRoot": "読み込み元：{path}",
   "coverageDiscoveredTests": "{count, plural, =0 {記録されたパスの下にもテストファイルはありません。} other {記録されたパスの下にテストファイルが{count}件あり、リポジトリ全体のレーンで実行されます。}}",
   "loadingTitle": "このリポジトリを読み込み中",
+  "loadingDetail": "エージェント向けのガイド、フック、チェックのファイルだけを読み込みます。ほかのファイルは開きません。",
   "loadingStageRoots": "ルートのガイド",
   "loadingStageNested": "ネストしたAGENTS.md",
   "loadingStageAgentDirectories": "エージェントのディレクトリ",

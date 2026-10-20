@@ -39,7 +39,7 @@
   "appRequiredTitle": "自动化在桌面应用中运行",
   "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
   "getApp": "获取应用",
-  "loadingTitle": "正在读取此文件夹的计划",
+  "loadingTitle": "正在加载自动检查",
   "malformedTitle": "计划文件需要处理",
   "malformedDescription": "Atlas 无法读取本地计划文件，已保持原样。请修复后重新读取。",
   "unavailableTitle": "Atlas 无法读取此文件夹的计划",

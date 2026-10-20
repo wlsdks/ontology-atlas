@@ -751,8 +751,11 @@ export function useRoundsRunner(): RoundsRunnerValue {
     [connectorIsOnHere, connectors.connectors],
   );
 
+  /* A store exists but nothing has been read from it: that is "loading", not "no folder". */
+  const shownStoreStatus: RoundsStoreStatus = store && storeStatus === "no-vault" ? "loading" : storeStatus;
+
   return {
-    storeStatus,
+    storeStatus: shownStoreStatus,
     state,
     rounds,
     ledger: entries,

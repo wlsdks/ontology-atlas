@@ -127,6 +127,7 @@
   "reachSourceRoot": "읽은 곳 {path}",
   "coverageDiscoveredTests": "{count, plural, =0 {기록된 경로 아래에 테스트 파일도 없어요.} other {기록된 경로 아래에 테스트 파일 #개가 있고, 저장소 전체 레인에서 돌아요.}}",
   "loadingTitle": "이 저장소를 읽는 중",
+  "loadingDetail": "에이전트 지침과 훅, 검사 파일만 읽어요. 다른 파일은 열지 않아요.",
   "loadingStageRoots": "최상위 지침",
   "loadingStageNested": "하위 AGENTS.md",
   "loadingStageAgentDirectories": "에이전트 폴더",
