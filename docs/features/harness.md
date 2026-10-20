@@ -8,43 +8,41 @@ routes: [/architecture]
 
 # Harness
 
-### `/architecture` — Harness: structure, coverage, guides, architecture
+### `/architecture` — Harness: at a glance, guides, architecture
 
 **The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
 (2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
 already held one half of the answer (the reviewed structure) and nothing at all of the other
 (what the agents were told, and what catches them). Under the title one line says what the tab
-is for, and a tab set picks one of **four** views on `?view=`.
+is for, and a tab set picks one of three views on `?view=`.
 
 **The layer ladder became its own tab on 2026-09-19** (owner). It had been living under the name
 Structure inside a destination called Harness, and it is the product's **architecture** — which,
 in the vocabulary this tab borrows, is one of the three things a harness *regulates*
 (maintainability · architecture fitness · behaviour) rather than a part of the harness itself. So
-`?view=architecture` holds the ladder under its own name and `?view=structure` holds the harness's
-own anatomy. Nothing redirects between them: an old `?view=structure` link opens a real view of the
-same repository, one press from the ladder, where mapping it across would leave the tab a person
-presses and the tab a link opens disagreeing forever.
+`?view=architecture` holds the ladder under its own name. **Structure and Coverage became one view on
+2026-10-20** (owner, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`): they asked the same three questions, one by harness part and one
+by domain, filed a hook in different columns and offered no next step. `?view=structure`,
+`?view=coverage` and `?view=sensors` are rewritten in place to `?view=overview`, so an old link and
+the tab a person presses agree.
 
 **The arrival depends on the surface, because one of the views cannot answer on the web.** Almost
 the whole harness lives in dot directories and a browser's folder permission cannot see a dot entry
-at all, so the installed app arrives on the harness structure and a browser arrives on the
-blueprint, which is built from the bundled profile and answers there. Both surfaces keep all four
-tabs, and an address that names a view always wins. Three addresses keep their meaning: `?view=sensors`
-— the view that named exactly this question and said it was not built — opens the matrix that
-answers it, and `?role=` or `?stage=` with no `?view=` opens the ladder, the only view with either.
+at all, so the installed app arrives on At a glance and a browser arrives on the blueprint, which is built
+from the bundled profile and answers there. Without a reading the tabs are At a glance and
+Architecture, and an address that names a view always wins; `?role=` or `?stage=` with no `?view=`
+opens the ladder, the only view with either.
 The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
 link: keying the carve-out on it made one rail click open the ladder and left the default
 unreachable from the rail (measured in the installed app, 2026-09-13).
 
-**One sentence at the top, computed from files only**: how many guide documents this repository
+**On Guides, one sentence at the top, computed from files only**: how many guide documents this repository
 speaks to agents through, and how many checks it has in place. Both numbers print their working
 — the check number shows its three parts (hook scripts wired · files under `.githooks/` ·
 `package.json` lint/typecheck/test scripts) and a caption states the counting rule — because a
 bare count invites a reader to hear "N things are protecting you" where what was measured is "N
-things are declared". The unguarded-domain question is **not** in that sentence: a deferral
-sitting inside a sentence whose other slots are numbers asserts that unguarded domains exist and
-are merely uncounted, which no static read of a repository can claim. It stands on its own line
-and points at the sensors view.
+things are declared". The unguarded-domain question is **not** in that sentence: At a glance
+answers it per domain.
 
 **Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
 guide file or directory found (path, file count, size, how many files differ from an existing
@@ -79,125 +77,61 @@ close a directory. Measured on this repository:
 98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
 13,090 of 32,768, 20 of 20 hook scripts wired.
 
-**Structure (`harness.views.structure`)** — the harness's own anatomy, read from this repository's
-files (2026-09-19). Its three bands are the coverage matrix's three columns — **Told**, **Gated**,
-**Watched** — deliberately, so one destination teaches one vocabulary: the matrix asks those
-questions of each **area** of the product, this asks them of each **part** of the harness. Told
-holds what is read every turn, what attaches by path, the skills and the sub-agent briefs, and the
-servers wired over the agent connection; Gated holds the hooks that can refuse a tool call, the
-`permissions.deny`/`ask` rules — the only gate that cannot be talked around, and one this product
-had never shown anywhere — and the files under `.githooks/`; Watched holds the hooks that only
-record, the check scripts a command names, the test files a runner discovers by itself, and the
-workflows that run after a push.
+**At a glance (`harness.views.overview`)** — the arrival (2026-10-20, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`). One
+table: rows are the domains the ontology records for this repository, columns are **Told**,
+**Gated** and **Watched**. A file counts in a domain's cell when a path **it declares** reaches a
+path the ontology records there — a nested `AGENTS.md`'s folder, a rule's `paths:`, a hook
+script's anchored filter, a check command's file arguments, a workflow's trigger `paths:`
+(`paths-ignore:` is no path) — never because of where the file itself lives, and every entry carries
+the text that put it there. A file whose paths reach every domain fills each of their cells. The
+last row, **Reaches every domain**, holds what declares no path: the root guides, the
+`permissions` deny and ask rules, the exclusion files, hooks and scripts that name no path, and a
+glob with no literal folder such as `**/*.tsx`.
 
-Structure starts as a connected diagram of this measured repository composition, with a Text
-alternative over the same model. Selecting a part reveals its evidence immediately below that
-part. The page header and presentation switch stay fixed. The compact overview fits a desktop
-viewport; expanded evidence, larger text and smaller windows scroll only within the work area.
-Connections are composition, not proof of runtime execution; missing parts and tool-owned
-state keep their distinct meanings. Unbound and browser-only states show a labelled illustrative
-scene with a source-connection or app-download action, respectively.
+Told holds the root guides, rules, nested guides and the context hooks (SessionStart,
+UserPromptSubmit); Gated holds the hooks that run before a tool call, the files under `.githooks/`,
+the deny and ask rules and the exclusion files; Watched holds every other hook event, the check
+scripts a command names and the workflows. A script wired for both a pre- and a post-tool event
+appears in both columns. Mirrored hooks under `.claude/hooks/` and `.codex/hooks/` list as two
+files, each naming its own tool, and a `.codex` hook carries `harness.hookApprovalGate` because it
+runs only after a person trusts it in `/hooks`.
+
+**A gap is named, counted and handed over.** A gap is a cell of a domain with a recorded path that
+no file fills: an amber dot and `harness.coverageNone`, counted in one sentence above the table
+(`harness.overviewGapCount`). A domain with no recorded path reads `harness.overviewNoPath` and is
+not a gap, because no file could name it. One action, `harness.overviewHandoff`, copies a request
+to paste into the coding agent that runs in that repository: each gap with its domain slug and
+paths, what already reaches every domain, an instruction to judge each gap first, propose the
+smallest file and wait for a yes before writing, and the rule a file must meet to fill the cell.
+Atlas sends nothing and writes nothing; `harness.overviewRequestShow` shows the same text and is
+where a refused copy points, and "Read it again" re-reads the files after the agent writes. **No
+score, grade, level or percentage is rendered**: the count is of cells a reader can count
+(`docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
+
+**A cell opens its files beside the table** from 1280px, in a column reserved while closed so no
+cell moves under the pointer, and below its row under that. The panel quotes the domain's purpose
+as the ontology wrote it, then each file by kind with its path, declaring text and the tools that
+read it; a gap shows the empty sentence, the domain's recorded paths, how many files reach every
+domain and, for Watched, the test files discovered under those paths. Escape or Close returns focus
+to the cell. Under the table a missing hook script is called out (`harness.anatomySilentGuards`),
+because a config naming a script the disk lacks fails with no error at all, and "How this screen
+counts" holds the counting rule, the paths nothing reaches, the files that reach no domain, the
+domains without a path, and the agent loop and model, which files cannot show.
 
 **What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
-files, and the row prints the name each product actually uses rather than one word for all of them:
-`.cursorignore` and `.cursorindexingignore` (Cursor), `.codeiumignore` (Windsurf, not
-`.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini **CLI** — a
-different file for a different product), `.aiignore` (JetBrains AI, which also honours the first
-three at a repository root). Two names are deliberately absent: `.claudeignore` does not exist —
-Claude Code uses `.gitignore` for discovery and `permissions.deny` for the rest, which this view
-already prints — and `.agentignore` is a proposal rather than a standard. The row also carries the
-limit the hook rows carry: a repository can write the file, and whether the tool honours it is the
-tool's business. An exclusion file is **not** counted among the documents the census sentence says
-the repository speaks through, because a file saying what an agent may not see is the opposite of a
-thing the repository says.
-
-A fourth band under those three holds **the agent loop and the model**, which every public account
-of a harness puts at its centre and no checkout can answer: what is read first, when to stop, what
-to drop when the context fills, which model runs. It carries words rather than a zero, because a
-count there would be a lie with a number on it. The part names come from four public sources —
-Fowler and Böckeler's guides and sensors, arXiv 2609.00006 (CC BY 4.0) on harness anatomy, OpenAI's
-instruction chain, Anthropic on long-running harnesses — and the screen prints that provenance
-behind a hint rather than asserting the taxonomy as its own.
-
-**What a turn costs, beside the count that cannot say it.** The always-read row prints the sum of
-its files' bytes: three 2 KB documents and three 40 KB documents are both "3", and that difference
-is the subject — those files are read before the agent has seen a line of code, on every turn, in
-every session, whatever the tool. Conditional guides are excluded on purpose; they are paid by the
-turns that touch their folder. Measured on this repository: 25.6 KB read every turn across 5
-documents, 14 more attached by path, 18 skills, 15 briefs, 2 servers, 5 hooks that can refuse
-(the mirrored Claude and Codex copies of one guard counted **once**, as the coverage view already
-counts them), 10 denied permissions, 6 files under `.githooks/`, 6 hooks that watch, 60 check
-scripts, 1,471 discovered test files and 7 workflows.
-
-**An empty part says where one would live.** A row with nothing in it carries the conventional
-address for that part — `.mcp.json`, `hooks.PostToolUse`, `.github/workflows/checks.yml` — copyable,
-taken from each tool's own documentation. It is an address and never advice: plenty of repositories
-rightly have no sub-agents and no MCP servers, and a screen that turns every blank into a to-do is
-the maturity score this destination refuses, wearing a different hat. Atlas writes nothing into a
-source repository; the person pasting the path into their editor is the step where they decide. Two
-rows get no address at all — the agent loop, which is not the repository's to hold, and where a test
-file should live, which has no one answer worth a screen asserting.
-
-**Coverage (`harness.views.coverage`)** — the tab's spine and its default view
-(2026-09-13, `docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
-Rows are the domains the ontology records for this repository; columns are **Told**, **Gated** and
-**Watched**. A file appears in a domain when a path **it declares** reaches a path the ontology
-records for that domain — a nested `AGENTS.md`'s own folder, a `.claude` rule's frontmatter `paths:`,
-a hook script's anchored lane filter, a check command's file arguments, a workflow's trigger
-`paths:` — and never because of where the agent file itself lives: all 122 of this repository's sit
-at the root and say nothing about which code they govern. A scope is kept only if it resolves on
-disk, and every entry carries the declaration it came from, so an attribution can be checked rather
-than trusted.
-
-**Every mark says one thing** (2026-09-13). The square in a cell is a container: **filled** when
-something names that domain for that question, **drawn and empty** when nothing does — two states,
-separated by fill as well as by hue, and nothing else. The number beside it carries how many, as a
-number. Above each column stands a card with **one large number: how many domains that column has
-no answer for**, over a denominator printed beside it — and that number is literally the count of
-empty squares below it, so a reader can settle the claim by counting rather than by trusting. The
-card uses the same census grammar as `/ontology/insights` (`shared/ui/status/census-tile`), reused rather
-than re-invented. No length encoding survives: with counts of 0–12 across eight rows, a bar drawn
-against an invisible per-column maximum made a Gated `2` and a Watched `12` the same mark.
-
-Anything declaring no path reaches every domain and is **counted on the card of the column it
-qualifies**, opening beneath it rather than repeated down eight rows: `forbidden`, `git` and
-`local-first`, twenty hook and Git-hook scripts, and `lint`, `test`, `test:run` and the six CI
-workflows with no trigger filter. That count is what makes the empty cells readable — "no check
-**names** this domain" is what the files support, while "nothing runs over it" is not. A guard
-mirrored across `.claude/hooks/` and `.codex/hooks/` — nine of this repository's are — appears
-**once**, with the tools that read it, because the repetition destroyed exactly the distinction the
-two files carry.
-
-**An empty cell is the product.** It is a mark that reads down the column at a glance, and opening it shows the ontology's
-own record of what the domain is for beside the paths nothing reaches — the sentence a file-only
-scanner cannot write, because it does not know what a part of a repository is *for*. **No score, no
-grade, no maturity level and no percentage is rendered anywhere**: that is what every comparable
-tool ships, and a number asserts a judgement files cannot support. A repository with agent files and
-no ontology gets a stated empty state rather than a blank grid, and still gets the half of the
-screen that needs no ontology.
-
-**What an agent can reach** — beneath the matrix, in the same census grammar with **no card**: the
-three counts keep the display step because they are this block's answer, and they give up the
-surface, because two identical strips cannot both be the screen's subject and the numeral cannot
-say which is (2026-09-13). Every authored Markdown file falls into exactly one
-of three states: a **guide** (read without being asked), a document **a guide names** by path,
-directly or through a harness file a guide names (reached when needed), or a document **neither
-names**. Atlas reads harness files only, so a document only another document names is counted in
-the third row too.
-Measured by citation and never by glob: a rule's `paths:` says when to load that rule, not which
-documents to read, and reading it the other way makes `documentation.md`'s `docs/**` mark every
-document reached. Excluded and named on screen are the ontology folder and the folders the
-repository's own `.gitignore` marks as generated; nothing else is filtered, because a sample vault,
-an archive and a brief addressed by name rather than by path all belong in the third row for
-different and mostly fine reasons, and which of those should be unreferenced is the reader's
-judgement. A document naming a design file is a reference, never proof the agent saw the design.
+files under the name each product actually uses: `.cursorignore` (Cursor), `.codeiumignore`
+(Windsurf, not `.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini
+**CLI**), `.aiignore` (JetBrains AI). `.claudeignore` does not exist — Claude Code uses `.gitignore`
+for discovery and `permissions.deny` for the rest — and `.agentignore` is a proposal rather than a
+standard. Two files are not counted: `.cursorindexingignore` only keeps files out of the index, and
+`.cursorrules` is ignored in Cursor's agent mode. A repository can write an exclusion file; whether
+the tool honours it is the tool's business.
 
 **The wait screen is held back, never the read.** The scan reports each pass it runs and fills a
 bar only where the denominator was known before the pass started — but it appears only once a read
 has taken longer than a second, so a read that finishes in 0.6s shows no wait screen at all and one
 over five thousand documents still gets its stages. The read was never slowed to display it. What
-happens on every visit regardless of speed is the **arrival**: the result rises into place and the
-six numerals count up from zero.
+happens on every visit regardless of speed is the **arrival**: the result rises into place.
 
 The whole reading goes through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), classified by `entities/agent-files`, the classifier the docs
@@ -207,8 +141,8 @@ cannot reach instead of drawing a shorter list and calling it the inventory — 
 opens on the blueprint there rather than on a card about what this browser cannot read.
 
 **A refused read is never an empty harness** (2026-10-17). Only a path that is not there reads as
-absent. Any other refusal fails the whole reading, and the screen says why instead of printing
-zero of thirteen places. That includes the bridge refusing the source root, or the root itself
+absent. Any other refusal fails the whole reading, and the screen says why instead of drawing
+an empty table. That includes the bridge refusing the source root, or the root itself
 being gone. The harness commands take the opened folder and a project, never a path: they read
 that project's one recorded code folder, and only when the app already holds its read grant (the
 repository containing the opened folder, or a folder picked in the app since it last opened). Inside it they return the

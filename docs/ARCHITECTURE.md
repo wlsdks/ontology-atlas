@@ -29,8 +29,8 @@ area: architecture
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
 │ ├─ /topology               map + contextual write     │
-│ ├─ /architecture           harness: coverage · guides │
-│ │                          · structure (?view=)        │
+│ ├─ /architecture           harness: at a glance ·     │
+│ │                          guides · architecture       │
 │ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
 │ │                          + collections + rounds      │
@@ -200,22 +200,17 @@ analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved
 address on 2026-09-19: the layer ladder is the product's architecture, which a harness *regulates*
 (maintainability · architecture fitness · behaviour), and not a part of the harness itself.
 
-The default `?view=structure` is the **harness's own anatomy**: what this repository tells an agent
-(always-read guides, path-scoped guides, skills and briefs, MCP servers), what gates it (blocking
-hooks, `permissions.deny`/`ask`, `.githooks/`), what watches it (after-the-fact hooks, check
-scripts, tests a runner discovers), and one band for what a checkout cannot answer at all — the
-agent loop and the model, which belong to the tool. `?view=coverage`
-crosses the ontology's own domains with the path scopes this repository's guides,
-gates and checks declare, so a domain nothing names is stated rather than inferred. Beside them
-`?view=guides` reads the same repository's guide files — which tool
-reads which, size against a documented cap, declared mirror-pair drift, and hook wiring — from
-files only, through the installed app's read-only harness commands (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness files; the browser cannot see a
-dot directory at all and says so instead of drawing a shorter list.
-
-`HarnessAnatomyView` offers diagram and text presentations of the same `buildHarnessAnatomy`
-result. Its header and presentation switch stay fixed; only the bounded work area scrolls
-when evidence expands or the viewport cannot contain the content. `HarnessStructureDiagram`
-renders composition edges and inline evidence disclosures; it does not infer an execution graph.
+The default `?view=overview` (At a glance, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`) crosses the ontology's own domains with
+the path scopes this repository's guides, gates and checks declare, by Told, Gated and Watched; a
+file that declares no path sits in one last row, a domain cell no file fills is a counted gap, and
+one action copies a request for the person's own coding agent. `buildHarnessOverview`
+(`src/views/architecture/model/harness-overview.ts`) is the only place gaps are counted;
+`HarnessOverviewView` and `HarnessOverviewPanel` render it. `?view=structure`, `?view=coverage` and
+`?view=sensors` are rewritten to it. Beside it `?view=guides` reads the same repository's guide
+files — which tool reads which, size against a documented cap, declared mirror-pair drift, and
+hook wiring — from files only, through the installed app's read-only harness commands
+(`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
+files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.
 Measured Insights Guidance uses `projectHarnessCoverageEvidence` to retain the existing
 coverage matrix members and add only the capability paths reached by canonical `scopeReaches`.
 `HarnessCoverageOverview` presents Diagram/Text from that same projection and the actual
@@ -710,21 +705,19 @@ until a local manifest, or the first part of one, exists.
                            tests/contract/routes/map-destination-route.contract.test.ts)
 /architecture              the Harness destination (relabelled from Architecture since
                            2026-09-13; route unchanged). Three views on ?view=:
-                           coverage (the default) — the ontology's domains crossed with the
-                           path scopes the repository's guides, gates and checks declare,
-                           where an empty cell is a mark beside the domain's recorded
-                           purpose, anything declaring no path stands once outside the row
-                           rhythm, and no score, grade or percentage is rendered; beside it,
-                           authored Markdown split by whether a guide names it;
-                           guides — the agent guide files this repository carries, which
-                           tool reads each (a static table citing its source per row), size
-                           against the Codex 32 KiB merged cap, declared mirror-pair byte
-                           status with a diff door, and hook wiring; structure — reviewed
-                           architecture profiles, the stable role blueprint, and the typed
-                           MCP/CLI planning + verification handoff, where every ?role= deep
-                           link still lands. ?view=sensors, the view that named the coverage
-                           question and said it was not built, opens the matrix that answers
-                           it. Never an ontology map
+                           overview (At a glance, the default) — the ontology's
+                           domains by Told, Gated and Watched, each cell the files
+                           whose declared path reaches the domain, one last row for
+                           files that declare no path, gaps counted and handed to
+                           the person's own agent as a copied request, and no score,
+                           grade or percentage; guides — the agent guide files this
+                           repository carries, which tool reads each, size against
+                           the Codex 32 KiB merged cap, mirror-pair status and hook
+                           wiring; architecture — reviewed architecture profiles,
+                           the stable role blueprint, and the typed MCP/CLI handoff,
+                           where every ?role= deep link still lands. ?view=structure,
+                           ?view=coverage and ?view=sensors rewrite to overview.
+                           Never an ontology map
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
