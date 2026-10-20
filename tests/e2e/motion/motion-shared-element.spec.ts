@@ -3,6 +3,8 @@ import { seedFirstRunSeen } from "../first-run-seed";
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { waitForAnimationsDone, waitForBoxStill, waitForMapStill, waitFrames } from "../settle";
 
+const VIEW_TRANSITION_PSEUDOS_ARE_SKIPPED = true;
+
 type Frame = {
   t: number;
   pseudos: string[];
@@ -101,7 +103,7 @@ test.describe("shared-element morph: concept popover to full detail", () => {
 
     const fullDetail = page.getByTestId("full-detail-a1");
     await expect(fullDetail).toBeVisible();
-    expectSmoothMotion(await stopSmoothness(page));
+    expectSmoothMotion(await stopSmoothness(page), { still: VIEW_TRANSITION_PSEUDOS_ARE_SKIPPED });
     await waitFrames(page, 2);
     expect(await page.evaluate(() => document.querySelectorAll('[style*="view-transition-name"]').length)).toBe(0);
     expect(await page.evaluate(() => document.documentElement.classList.contains("morph-transition"))).toBe(false);

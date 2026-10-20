@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import {
   FRAME_INTERVAL_BUDGET_MS,
+  expectSmoothMotion,
   installMotionSampler,
   motionShares,
   smoothnessViolations,
@@ -131,9 +132,49 @@ test.describe("motion sampler self-test", () => {
     await frames(page, 3);
     await page.evaluate(() => document.getElementById("grow")!.classList.add("wide"));
     await frames(page, 30);
-    const report = await stopSmoothness(page);
+    const report = await stopSmoothness(page, "#grow");
     expect(smoothnessViolations(report)).toEqual(["div.box: width animates outside a declared reflow"]);
     expect(smoothnessViolations(report, { reflow: ["width"] })).toEqual([]);
+    expect(smoothnessViolations({ ...report, animated: report.animated.map((a) => ({ ...a, inside: false })) }, { reflow: ["width"] })).toEqual([
+      "div.box: width animates outside a declared reflow",
+    ]);
+  });
+
+  test("a shift with no input is a violation and a declared reflow waives only its own element", async ({ page }) => {
+    const shiftLater = (id: string) =>
+      page.evaluate(
+        (elementId) =>
+          new Promise<void>((done) => {
+            setTimeout(() => {
+              const el = document.createElement("div");
+              el.id = elementId;
+              el.style.height = "120px";
+              document.body.prepend(el);
+              done();
+            }, 800);
+          }),
+        id,
+      );
+    await startSmoothness(page);
+    await shiftLater("late");
+    await frames(page, 10);
+    const report = await stopSmoothness(page, "body");
+    expect(report.layoutShifts.length).toBeGreaterThan(0);
+    expect(smoothnessViolations(report).some((v) => v.startsWith("layout shift"))).toBe(true);
+    expect(smoothnessViolations(report, { reflow: ["height"] })).toEqual([]);
+    await startSmoothness(page);
+    await shiftLater("later");
+    await frames(page, 10);
+    const other = await stopSmoothness(page, "#grow");
+    expect(smoothnessViolations(other, { reflow: ["height"] }).some((v) => v.startsWith("layout shift"))).toBe(true);
+  });
+
+  test("a recording that saw no animation fails unless it says it is still", async ({ page }) => {
+    await startSmoothness(page);
+    await frames(page, 8);
+    const report = await stopSmoothness(page);
+    expect(() => expectSmoothMotion(report)).toThrow();
+    expect(() => expectSmoothMotion(report, { still: true })).not.toThrow();
   });
 
   test("a translate-only move has no smoothness violation", async ({ page }) => {

@@ -79,7 +79,7 @@ test.describe("selection indicator", () => {
 
     await startSmoothness(page);
     const measured = await switchAndSample(page);
-    expectSmoothMotion(await stopSmoothness(page), { reflow: ["width", "height"] });
+    expectSmoothMotion(await stopSmoothness(page, "main"), { reflow: ["width", "height"] });
     test.info().annotations.push({ type: "indicator", description: JSON.stringify(measured) });
     expect(measured.travel).toBeGreaterThan(0);
     expect(measured.moving).toBeGreaterThan(1);

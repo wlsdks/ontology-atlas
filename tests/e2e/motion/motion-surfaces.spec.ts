@@ -81,7 +81,7 @@ test.describe('tooltip fades in and out', () => {
       await expect(page.getByTestId('topology-fit-control')).toBeVisible();
       await startSmoothness(page);
       const { enter, exit } = await measureTooltip(page);
-      expectSmoothMotion(await stopSmoothness(page));
+      expectSmoothMotion(await stopSmoothness(page), { still: reducedMotion === 'reduce' });
       test.info().annotations.push({ type: 'motion', description: JSON.stringify({ reducedMotion, enter, exit }) });
 
       expect(enter.between, 'entering frames between hidden and shown').toBeGreaterThanOrEqual(1);
