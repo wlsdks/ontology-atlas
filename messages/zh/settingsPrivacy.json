@@ -8,18 +8,17 @@
     "recordedIn": "记录在 {file}",
     "notRecorded": "未记录",
     "unseen": "Atlas 看不到",
-    "recordedNote": "已记录：每次发送都会写入此文件夹中的 <file>{file}</file>。"
+    "recordedNote": "已记录：每次发送都会写入此文件夹中的 <file>{file}</file>。",
+    "groups": {
+      "sends-content": "可能发送文件夹内容的",
+      "agent-sends": "由智能体直接发送的",
+      "no-content": "不含文件夹内容的连接"
+    }
   },
   "trigger": {
     "automatic": "自动",
     "press": "按下时",
     "agent-use": "智能体使用时"
-  },
-  "carries": {
-    "no-folder-content": "不含文件夹内容",
-    "what-you-send": "你发送的内容",
-    "provider-owned": "工具与服务商之间",
-    "agent-sends": "智能体发送的内容"
   },
   "destinations": {
     "your-runner-address": "你填写的运行器地址",

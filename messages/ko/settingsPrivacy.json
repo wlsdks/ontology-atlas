@@ -8,18 +8,17 @@
     "recordedIn": "{file}에 기록",
     "notRecorded": "기록 안 함",
     "unseen": "Atlas는 볼 수 없음",
-    "recordedNote": "기록함: 보낼 때마다 이 폴더의 <file>{file}</file>에 남아요."
+    "recordedNote": "기록함: 보낼 때마다 이 폴더의 <file>{file}</file>에 남아요.",
+    "groups": {
+      "sends-content": "폴더 내용을 보낼 수 있는 것",
+      "agent-sends": "에이전트가 직접 보내는 것",
+      "no-content": "폴더 내용 없이 연결하는 것"
+    }
   },
   "trigger": {
     "automatic": "자동",
     "press": "누를 때",
     "agent-use": "에이전트가 쓸 때"
-  },
-  "carries": {
-    "no-folder-content": "폴더 내용 없음",
-    "what-you-send": "보내는 내용",
-    "provider-owned": "도구와 제공자 사이",
-    "agent-sends": "에이전트가 보내는 것"
   },
   "destinations": {
     "your-runner-address": "입력한 러너 주소",

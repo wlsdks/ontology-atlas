@@ -47,24 +47,23 @@ beforeEach(() => {
 });
 
 describe('Privacy · data says what can leave and what this computer remembers', () => {
-  it('lists every desktop path with its trigger, cargo, record and every destination', () => {
+  it('lists every desktop path under what it carries, with its trigger, record and every destination', () => {
     mount();
+    const groupOf = { 'what-you-send': 'sends-content', 'agent-sends': 'agent-sends', 'provider-owned': 'agent-sends', 'no-folder-content': 'no-content' } as const;
     for (const path of OUTBOUND_PATHS) {
       const row = screen.getByTestId(`app-settings-outbound-${path.id}`);
       expect(row.getAttribute('data-setting-id')).toBe('outbound');
+      expect(row.closest('section')?.getAttribute('data-testid'), path.id).toBe(`app-settings-privacy-outbound-${groupOf[path.carries]}`);
       expect(row.querySelector(`[data-trigger="${path.trigger}"]`), path.id).not.toBeNull();
-      expect(row.querySelector(`[data-carries="${path.carries}"]`), path.id).not.toBeNull();
-      expect(row.querySelector(`[data-recorded="${path.recordedIn ? 'yes' : 'no'}"]`), path.id).not.toBeNull();
+      expect(row.getAttribute('data-recorded'), path.id).toBe(path.recordedIn ? 'yes' : 'no');
       expect([...row.querySelectorAll('[data-host]')].map((chip) => chip.getAttribute('data-host'))).toEqual(path.hosts);
     }
     expect(screen.getByTestId('app-settings-outbound-model-providers').textContent).toContain(
       'Recorded in .ontology-atlas/llm-audit.jsonl',
     );
+    expect(screen.getByTestId('app-settings-outbound-git-remote').textContent).toContain('Not recorded');
     expect(screen.getByTestId('app-settings-outbound-record-note').textContent).toContain('.ontology-atlas/llm-audit.jsonl');
     expect(screen.getByTestId('app-settings-outbound-coding-tools').textContent).toContain('Atlas does not see it');
-    const cargo = (id: string, carries: string) =>
-      screen.getByTestId(`app-settings-outbound-${id}`).querySelector(`[data-carries="${carries}"]`)!.className;
-    expect(cargo('update-check', 'no-folder-content')).not.toBe(cargo('model-providers', 'what-you-send'));
     for (const locale of [enMessages, koMessages] as const) {
       const words = locale.settingsPrivacy.destinations as Record<string, string>;
       for (const placeholder of OUTBOUND_DESTINATION_PLACEHOLDERS) expect(words[placeholder]?.length).toBeGreaterThan(0);
@@ -140,7 +139,7 @@ describe('Privacy · data says what can leave and what this computer remembers',
 
   it('draws in Korean', () => {
     mount('ko');
-    expect(screen.getByTestId('app-settings-privacy-outbound').textContent).toContain('이 컴퓨터');
+    expect(screen.getByTestId('app-settings-privacy-outbound-sends-content').textContent).toContain('폴더 내용을 보낼 수 있는 것');
     expect(screen.getByTestId('app-settings-outbound-git-remote').textContent).toContain('Git 원격 저장소');
   });
 

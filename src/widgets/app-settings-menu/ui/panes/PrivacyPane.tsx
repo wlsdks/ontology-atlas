@@ -12,7 +12,6 @@ import {
   type MachineApprovalItem,
 } from '@/shared/lib/connectors/machine-approvals';
 import { cn } from '@/shared/lib/cn';
-import { badgeClass } from '@/shared/ui/badge-class';
 import { Chip } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { SettingsSectionId } from '../../model/catalog/types';
@@ -47,20 +46,13 @@ function byFolder(items: readonly MachineApprovalItem[]): FolderAllowances[] {
 
 const folderName = (path: string) => path.split(/[\\/]/).filter(Boolean).pop() ?? path;
 
-const CELL = 'justify-self-start whitespace-nowrap text-label leading-label';
-const WHEN_TAG = badgeClass({
-  shape: 'tag',
-  className: cn(CELL, 'border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]'),
-});
-const CARRIES_CONTENT = badgeClass({
-  shape: 'tag',
-  className: cn(CELL, 'bg-[color:var(--color-overlay-3)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'),
-});
-const CARRIES_NOTHING = cn(CELL, 'text-[color:var(--color-text-tertiary)]');
-const HOST_CHIP = badgeClass({
-  shape: 'tag',
-  className: 'max-w-full bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]',
-});
+const OUTBOUND_GROUPS = [
+  { id: 'sends-content', carries: ['what-you-send'] },
+  { id: 'agent-sends', carries: ['agent-sends', 'provider-owned'] },
+  { id: 'no-content', carries: ['no-folder-content'] },
+] as const satisfies readonly { id: string; carries: readonly OutboundPath['carries'][] }[];
+
+const STATUS = 'inline-flex shrink-0 items-center gap-1 text-label leading-label';
 
 export function PrivacyLead() {
   const t = useTranslations('settingsPrivacy');
@@ -77,54 +69,40 @@ export function PrivacyLead() {
 
 function OutboundRow({ path, control }: { path: OutboundPath; control?: ReactNode }) {
   const t = useTranslations('settingsPrivacy');
+  const sendsContent = path.carries === 'what-you-send';
   const unseen = path.carries === 'agent-sends' || path.carries === 'provider-owned';
   return (
     <li
       data-setting-id="outbound"
       data-testid={`app-settings-outbound-${path.id}`}
-      className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 @lg:col-span-full @lg:grid @lg:grid-cols-subgrid"
+      data-carries={path.carries}
+      data-recorded={path.recordedIn ? 'yes' : 'no'}
+      className="flex min-h-12 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2"
     >
-      <p className="min-w-0 basis-full text-body text-[color:var(--color-text-primary)] @lg:basis-auto">
-        {t(`paths.${path.id}`)}
-      </p>
-      <span data-trigger={path.trigger} className={WHEN_TAG}>
-        {t(`trigger.${path.trigger}`)}
-      </span>
-      <span
-        data-carries={path.carries}
-        className={path.carries === 'no-folder-content' ? CARRIES_NOTHING : CARRIES_CONTENT}
-      >
-        {t(`carries.${path.carries}`)}
-      </span>
+      <div className="min-w-0 flex-1 basis-56">
+        <p className="text-body text-[color:var(--color-text-primary)]">{t(`paths.${path.id}`)}</p>
+        <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
+          <span data-trigger={path.trigger}>{t(`trigger.${path.trigger}`)}</span>
+          {path.hosts.map((host) => (
+            <span key={host} data-host={host}>
+              {' · '}
+              {isPlaceholder(host) ? t(`destinations.${host}`) : host}
+            </span>
+          ))}
+        </p>
+      </div>
       {path.recordedIn ? (
-        <span
-          data-recorded="yes"
-          title={t('outbound.recordedIn', { file: path.recordedIn })}
-          className={cn(CELL, 'inline-flex items-center gap-1 text-[color:var(--color-text-secondary)]')}
-        >
+        <span title={t('outbound.recordedIn', { file: path.recordedIn })} className={cn(STATUS, 'text-[color:var(--color-text-secondary)]')}>
           <FileText size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
           {t('outbound.recorded')}
           <span className="sr-only"> · {t('outbound.recordedIn', { file: path.recordedIn })}</span>
         </span>
-      ) : (
-        <span data-recorded="no" className={cn(CELL, 'text-[color:var(--color-text-tertiary)]')}>
+      ) : sendsContent || unseen ? (
+        <span className={cn(STATUS, 'text-[color:var(--color-text-tertiary)]')}>
           {unseen ? t('outbound.unseen') : t('outbound.notRecorded')}
         </span>
-      )}
-      <div className="flex min-w-0 basis-full flex-wrap items-center gap-1.5 @lg:col-span-full">
-        {path.hosts.map((host) =>
-          isPlaceholder(host) ? (
-            <span key={host} data-host={host} className={HOST_CHIP}>
-              {t(`destinations.${host}`)}
-            </span>
-          ) : (
-            <span key={host} data-host={host} className={cn(HOST_CHIP, 'font-mono')}>
-              {host}
-            </span>
-          ),
-        )}
-        {control ? <div className="ml-auto flex shrink-0 items-center gap-2">{control}</div> : null}
-      </div>
+      ) : null}
+      {control ? <div className="ml-auto flex shrink-0 items-center gap-2">{control}</div> : null}
     </li>
   );
 }
@@ -148,53 +126,54 @@ export function PrivacyPane({
 
   return (
     <div className="@container grid min-w-0 gap-4" data-testid="app-settings-privacy-pane">
-      <div className="grid min-w-0 gap-1.5">
-        <SettingsGroup
-          label={t('outbound.title')}
-          testId="app-settings-privacy-outbound"
-          as="ul"
-          cardClassName="@lg:grid @lg:grid-cols-[minmax(0,1fr)_auto_auto_auto] @lg:gap-x-3"
-        >
-          {paths.map((path) => (
-            <OutboundRow
-              key={path.id}
-              path={path}
-              control={
-                path.id === 'update-check' ? (
-                  <>
-                    <span
-                      className="text-label leading-label text-[color:var(--color-text-tertiary)]"
-                      data-testid="app-settings-outbound-update-state"
-                    >
-                      {autoCheck === 'on' ? t('updateOn') : t('updateOff')}
-                    </span>
-                    <Chip
-                      size="lg"
-                      tone="secondary"
-                      data-testid="app-settings-outbound-update-change"
-                      aria-label={t('updateChangeAria')}
-                      onClick={() => onShowSection('about')}
-                      className={DETAIL_TOGGLE_CHIP}
-                    >
-                      {t('updateChange')}
-                    </Chip>
-                  </>
-                ) : undefined
-              }
-            />
-          ))}
-        </SettingsGroup>
-        {recordLog ? (
-          <p
-            className="text-label leading-label text-[color:var(--color-text-tertiary)]"
-            data-testid="app-settings-outbound-record-note"
-          >
-            {t.rich('outbound.recordedNote', {
-              file: () => <span className="font-mono">{recordLog}</span>,
-            })}
-          </p>
-        ) : null}
-      </div>
+      {OUTBOUND_GROUPS.map((group) => {
+        const members = paths.filter((path) => (group.carries as readonly string[]).includes(path.carries));
+        if (members.length === 0) return null;
+        return (
+          <div key={group.id} className="grid min-w-0 gap-1.5">
+            <SettingsGroup label={t(`outbound.groups.${group.id}`)} testId={`app-settings-privacy-outbound-${group.id}`} as="ul">
+              {members.map((path) => (
+                <OutboundRow
+                  key={path.id}
+                  path={path}
+                  control={
+                    path.id === 'update-check' ? (
+                      <>
+                        <span
+                          className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                          data-testid="app-settings-outbound-update-state"
+                        >
+                          {autoCheck === 'on' ? t('updateOn') : t('updateOff')}
+                        </span>
+                        <Chip
+                          size="lg"
+                          tone="secondary"
+                          data-testid="app-settings-outbound-update-change"
+                          aria-label={t('updateChangeAria')}
+                          onClick={() => onShowSection('about')}
+                          className={DETAIL_TOGGLE_CHIP}
+                        >
+                          {t('updateChange')}
+                        </Chip>
+                      </>
+                    ) : undefined
+                  }
+                />
+              ))}
+            </SettingsGroup>
+            {group.id === 'sends-content' && recordLog ? (
+              <p
+                className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                data-testid="app-settings-outbound-record-note"
+              >
+                {t.rich('outbound.recordedNote', {
+                  file: () => <span className="font-mono">{recordLog}</span>,
+                })}
+              </p>
+            ) : null}
+          </div>
+        );
+      })}
 
       {desktop ? (
         <SettingsGroup label={t('allowances.title')} testId="app-settings-privacy-allowances">
