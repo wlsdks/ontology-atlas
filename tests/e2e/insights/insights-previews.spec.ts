@@ -1,12 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 for (const subject of [
-  { tab: 'library', panel: 'library-tab', destination: '/en/library/', back: 3 },
+  { tab: 'library', url: '/en/ontology/insights/?tab=library&guides=off', panel: 'library-tab', destination: '/en/library/', back: 3, forward: 0 },
+  { tab: 'harness', url: '/en/architecture/?view=overview&guides=off', panel: 'main', destination: '/en/download/', back: 0, forward: 2 },
 ]) {
   test(`${subject.tab} examples reveal setup by keyboard and keep the next step reversible`, async ({ page }) => {
     await page.setViewportSize({ width: 1040, height: 720 });
-    await page.goto(`/en/ontology/insights/?tab=${subject.tab}&guides=off`);
-    const panel = page.getByTestId(subject.panel);
+    await page.goto(subject.url);
+    const panel = subject.panel === 'main' ? page.getByRole('main') : page.getByTestId(subject.panel);
     await expect(panel).toBeVisible();
     await expect(panel.getByText('Example · not data from your folder', { exact: true })).toBeVisible();
     const stages = panel.locator('button[aria-expanded][aria-controls]');
@@ -17,7 +18,7 @@ for (const subject of [
     await expect(selected).toHaveAttribute('aria-expanded', 'true');
     const controlledId = await selected.getAttribute('aria-controls');
     const explanation = page.locator(`[id="${controlledId}"]`);
-    const next = panel.getByTestId('preview-primary-action');
+    const next = subject.tab === 'harness' ? panel.getByRole('link', { name: 'Get the app' }) : panel.getByTestId('preview-primary-action');
     await expect(next).toHaveAttribute('href', subject.destination);
     await expect(next).toBeVisible();
 
@@ -32,6 +33,7 @@ for (const subject of [
     await expect(selected).toHaveAttribute('aria-expanded', 'true');
     await expect(next).toBeVisible();
     for (let step = 0; step < subject.back; step += 1) await page.keyboard.press('Shift+Tab');
+    for (let step = 0; step < subject.forward; step += 1) await page.keyboard.press('Tab');
     await expect(next).toBeFocused();
     await page.keyboard.press('Enter');
     await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe(subject.destination);
@@ -122,15 +124,16 @@ test('reduced motion keeps the relationship meaning while removing ambient trave
 });
 
 for (const subject of [
-  { tab: 'library', panel: 'library-tab', targetIndexes: [1, 2] },
+  { tab: 'library', url: '/en/ontology/insights/?tab=library&guides=off', panel: 'library-tab', targetIndexes: [1, 2] },
+  { tab: 'harness', url: '/en/architecture/?view=overview&guides=off', panel: 'main', targetIndexes: [0, 1, 2] },
 ]) {
   test(`${subject.tab} relationship lines terminate at visual ports without crossing labels`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.goto(`/en/ontology/insights/?tab=${subject.tab}&guides=off`);
-    const panel = page.getByTestId(subject.panel);
+    await page.goto(subject.url);
+    const panel = subject.panel === 'main' ? page.getByRole('main') : page.getByTestId(subject.panel);
     await expect(panel).toBeVisible();
 
-    await expect.poll(() => panel.evaluate((root, { targetIndexes }) => {
+    await expect.poll(() => panel.evaluate((root, { targetIndexes, tab }) => {
       const svg = root.querySelector<SVGSVGElement>('svg[data-relationship-wires]');
       const paths = [...(svg?.querySelectorAll('g > path:first-child') ?? [])] as SVGPathElement[];
       const items = [...root.querySelectorAll<HTMLElement>('[data-relationship-item]')];
@@ -187,7 +190,9 @@ for (const subject of [
 
       const originalViewBox = svg.getAttribute('viewBox');
       const originalPaths = paths.map((path) => path.getAttribute('d'));
-      const legacyPaths = ['M150 90H450', 'M450 90H750'];
+      const legacyPaths = tab === 'library'
+        ? ['M150 90H450', 'M450 90H750']
+        : ['M185 120H370Q410 120 410 50H530', 'M185 120H530', 'M185 120H370Q410 120 410 190H530'];
       svg.setAttribute('viewBox', '0 0 900 240');
       paths.forEach((path, index) => path.setAttribute('d', legacyPaths[index]));
       const legacyRejected = paths.some((path, pathIndex) => {
@@ -214,7 +219,7 @@ for (const subject of [
       }
 
       return { ready: true, endpointFailures, collisionFailures, legacyRejected, syntheticTextCollision };
-    }, { targetIndexes: subject.targetIndexes })).toEqual({
+    }, { targetIndexes: subject.targetIndexes, tab: subject.tab })).toEqual({
       ready: true,
       endpointFailures: [],
       collisionFailures: [],
