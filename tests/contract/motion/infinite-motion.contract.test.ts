@@ -1,3 +1,6 @@
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { readGlobalCss } from "../../../scripts/lib/design/global-css.mjs";
@@ -43,7 +46,7 @@ function keyframeProperties(css: string): Map<string, Set<string>> {
     const open = m.index! + m[0].length - 1;
     const body = css.slice(open + 1, matchBrace(css, open));
     const props = out.get(m[1]!) ?? new Set<string>();
-    for (const p of body.matchAll(/(?:^|[{;\s])(-?[a-z][a-z-]*)\s*:/g)) {
+    for (const p of body.matchAll(/(?:^|[{;\s])(-{0,2}[a-z][a-z-]*)\s*:/g)) {
       if (p[1] !== "animation-timing-function") props.add(p[1]!);
     }
     out.set(m[1]!, props);
@@ -92,9 +95,13 @@ type Loop = { name: string; subject: string; selector: string };
 function infiniteLoops(rules: Rule[]): Loop[] {
   const loops: Loop[] = [];
   for (const rule of rules) {
-    const animation = rule.body.match(/animation\s*:([^;]*)/)?.[1];
-    if (!animation || !/\binfinite\b/.test(animation)) continue;
     const subject = rule.selector.match(/\.([\w-]+)/)?.[1] ?? rule.selector;
+    const longhandName = rule.body.match(/animation-name\s*:\s*([\w-]+)/)?.[1];
+    if (longhandName && /animation-iteration-count\s*:[^;]*\binfinite\b/.test(rule.body)) {
+      loops.push({ name: longhandName, subject, selector: rule.selector });
+    }
+    const animation = rule.body.match(/(?:^|[;\s])animation\s*:([^;]*)/)?.[1];
+    if (!animation || !/\binfinite\b/.test(animation)) continue;
     for (const segment of topLevelCommas(animation)) {
       if (!/\binfinite\b/.test(segment)) continue;
       loops.push({ name: animationName(segment) ?? "(no keyframe)", subject, selector: rule.selector });
@@ -138,7 +145,26 @@ function offendersOf(css: string): string[] {
   return offenders;
 }
 
-const CSS = readGlobalCss();
+const REPO = path.join(import.meta.dirname, "..", "..", "..");
+
+function trackedFiles(pattern: RegExp): string[] {
+  return execFileSync("git", ["ls-files", "src", "app"], { cwd: REPO, encoding: "utf8" })
+    .split("\n")
+    .filter((file) => pattern.test(file));
+}
+
+const SOURCE_LOOP = /\brepeat\s*:\s*Infinity\b|\biterations\s*:\s*Infinity\b|animate-\[[^\]]*infinite/;
+
+const SCRIPTED_LOOPS: Record<string, string> = {};
+
+function scriptedLoops(files: readonly string[], read: (file: string) => string): string[] {
+  return files.filter((file) => SOURCE_LOOP.test(read(file)) && !(file in SCRIPTED_LOOPS));
+}
+
+const CSS = [
+  readGlobalCss(),
+  ...trackedFiles(/\.module\.css$/).map((file) => readFileSync(path.join(REPO, file), "utf8")),
+].join("\n");
 
 describe("infinite motion: loops are compositor-only, defined, and paused or tied to work", () => {
   it("every infinite CSS animation in the stylesheet passes", () => {
@@ -168,5 +194,27 @@ describe("infinite motion: loops are compositor-only, defined, and paused or tie
 
   it("an undefined keyframe is refused", () => {
     expect(offendersOf(".r{animation:missing var(--motion-base) steps(1) infinite}")).toHaveLength(1);
+  });
+
+  it("a custom-property keyframe in a paused loop is refused", () => {
+    const css =
+      ".g{animation:gSpin var(--motion-expressive) linear infinite;animation-play-state:paused}" +
+      ".h[data-g-motion='running'] .g{animation-play-state:running}" +
+      "@keyframes gSpin{to{--glow-angle:360deg}}";
+    expect(offendersOf(css)).toHaveLength(1);
+  });
+
+  it("a longhand infinite loop is read and refused when it paints", () => {
+    const css =
+      ".l{animation-name:lPulse;animation-iteration-count:infinite;animation-duration:var(--motion-slow)}" +
+      "@keyframes lPulse{50%{box-shadow:0 0 8px red}}";
+    expect(offendersOf(css)).toHaveLength(2);
+  });
+
+  it("scripted and utility infinite loops in source are listed or absent", () => {
+    const files = trackedFiles(/\.tsx?$/).filter((file) => !/\.(?:test|spec)\.tsx?$/.test(file));
+    expect(files.length).toBeGreaterThan(100);
+    expect(scriptedLoops(files, (file) => readFileSync(path.join(REPO, file), "utf8"))).toEqual([]);
+    expect(scriptedLoops(["a.ts", "b.tsx", "c.ts"], (file) => ({ "a.ts": "x({ repeat: Infinity })", "b.tsx": "<i className=\"animate-[spin_1s_linear_infinite]\" />", "c.ts": "const repeat = 1" })[file]!)).toEqual(["a.ts", "b.tsx"]);
   });
 });

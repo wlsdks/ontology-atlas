@@ -465,13 +465,13 @@ export const arbitrarySizeSelectors = [
   // messages: the Tailwind v4 scanner reads this file.
   {
     selector:
-      'Literal[value=/(?:hover|focus-within|focus-visible):[^"]*duration-\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|duration-\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\][^"]*(?:hover|focus-within|focus-visible):/]',
+      'Literal[value=/(?:hover|focus|focus-within|focus-visible):[^"]*duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))|duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))[^"]*(?:hover|focus|focus-within|focus-visible):/]',
     message:
       'Motion budget: hover and focus answer within the settle step; the slow, expressive and choreography steps are for travel and entrances. Use a shorter --motion-* step, or record in the eslint-disable comment why this surface is not a hover or focus answer.',
   },
   {
     selector:
-      'TemplateElement[value.raw=/(?:hover|focus-within|focus-visible):[^`]*duration-\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|duration-\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\][^`]*(?:hover|focus-within|focus-visible):/]',
+      'TemplateElement[value.raw=/(?:hover|focus|focus-within|focus-visible):[^`]*duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))|duration-(?:\\[var\\(--motion-(?:slow|expressive|choreography)\\)\\]|\\(--motion-(?:slow|expressive|choreography)\\))[^`]*(?:hover|focus|focus-within|focus-visible):/]',
     message:
       'Motion budget (template literal): hover and focus answer within the settle step; use a shorter --motion-* step.',
   },
