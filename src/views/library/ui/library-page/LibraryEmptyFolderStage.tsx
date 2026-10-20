@@ -30,7 +30,7 @@ export function LibraryEmptyFolderStage({
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-canvas)_0%,var(--color-canvas-a70)_30%,transparent_56%,var(--color-canvas-a70)_88%,var(--color-canvas)_100%)]"
       />
-      {/* `mb-14` is the workspace header's height (`h-14`): the card centres on the whole area, not only the panel under that header. */}
+      {/* mb-14: the workspace header's height. */}
       <div className="relative mb-14">
       <LibraryStartStage
         vaultLabel={nativeVaultRootPath ?? handle.name}

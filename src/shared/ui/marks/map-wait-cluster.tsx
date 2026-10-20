@@ -12,7 +12,6 @@ const WAIT_POINTS = [
   [145, 43, 1.05],
 ] as const;
 
-/** The map's loading orbit: an indeterminate field that assembles around a stable core. */
 export function MapWaitCluster() {
   const ref = useRef<HTMLDivElement>(null);
   const glowId = useId();

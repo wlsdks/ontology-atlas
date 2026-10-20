@@ -10,7 +10,6 @@ export interface MapEntryLoadingVisualProps {
   lede?: string;
 }
 
-/** One orbit-and-title wait for every phase of the map's first load, centred in the map area. */
 export function MapEntryLoadingVisual({
   title,
   description,

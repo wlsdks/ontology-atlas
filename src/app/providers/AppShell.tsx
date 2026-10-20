@@ -251,10 +251,6 @@ function VaultOpeningPane({ name, reserveRail, map }: { name: string | null; res
       aria-busy="true"
       className="flex min-h-full flex-1 bg-[color:var(--color-canvas)]"
     >
-      {/*
-        The rail is hidden until a folder is known. Its column is held here, with the rail's own width,
-        fill and rule, so the area beside it does not move when the rail arrives.
-      */}
       {reserveRail ? (
         <div
           aria-hidden

@@ -3,11 +3,6 @@ import { expect, test, type Page } from "@playwright/test";
 import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } from "./harness-tab-fixture";
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "./motion-sampler";
 
-/**
- * A page-level wait sits at the centre of the whole content area, whatever the page header's
- * height, at both common window sizes. The area is the window minus the 64px rail column; the rail
- * is drawn, or held as an empty column while a folder opens, in every state measured here.
- */
 const SIZES = [
   { width: 1512, height: 900 },
   { width: 1920, height: 1080 },

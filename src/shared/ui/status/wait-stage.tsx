@@ -12,17 +12,13 @@ export interface WaitStep {
   id: string;
   label: string;
   state: WaitStepState;
-  /** Data attributes for the item, for callers whose tests address a step by name. */
   attributes?: Readonly<Record<`data-${string}`, string>>;
 }
 
 export interface WaitStageProgress {
-  /** The pass running now, left of the bar. */
   stage: string;
-  /** The count, right of the bar; the caller owns its width and wording. */
   counter: ReactNode;
   done: number;
-  /** `null` while the denominator is unknown: the bar then sweeps instead of filling. */
   total: number | null;
   label: string;
 }
@@ -33,23 +29,12 @@ export interface WaitStageProps {
   detail?: string;
   progress?: WaitStageProgress;
   steps?: readonly WaitStep[];
-  /**
-   * Live text, announced when it changes. Leave it out and the block itself is the status; give it
-   * when the visible text changes faster than a screen reader should repeat it.
-   */
   announce?: string;
-  /** Holds the block back 400ms so a fast arrival never flashes it (`route-loading-in`). */
   delayed?: boolean;
   className?: string;
   [dataAttribute: `data-${string}`]: unknown;
   [ariaAttribute: `aria-${string}`]: unknown;
 }
-
-/**
- * The one page-level wait. It covers its positioned ancestor and centres a single block on both
- * axes, so it sits at the middle of the whole content area whatever the page header's height. The
- * overlay lets pointer events through, so the header above stays clickable.
- */
 export function WaitStage({
   mark,
   title,

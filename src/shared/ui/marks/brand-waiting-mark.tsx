@@ -16,7 +16,6 @@ export function BrandWaitingMark({
   active: boolean;
   /** Only full-screen pending fallbacks can know they are visible before hydration. */
   initialVisibility?: 'observed' | 'visible';
-  /** An exact integer multiple of the 64px sprite, so the pixels stay square. */
   scale?: 1 | 2;
 }) {
   return active ? <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} /> : null;
