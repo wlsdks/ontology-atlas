@@ -523,7 +523,7 @@ function CollectionEvidence({ selection, evidence, drift, contentId, onClose }: 
         {selection.kind === 'findings' ? <p className="mt-2 text-label text-[color:var(--color-text-tertiary)]">{t('collection.findings.independence')}</p> : null}
         {declarations.length > 0 ? (
           <ul className="mt-3 divide-y divide-[color:var(--color-divider)] border-y border-[color:var(--color-divider)]">
-            {declarations.map((declaration) => <SourceEvidenceRow key={declaration.id} id={`${selection.kind}-${declaration.id}`} kind={selection.kind === 'outside' ? 'outside' : 'global'} declaration={declaration} open={expanded === declaration.id} onToggle={() => setExpanded((current) => current === declaration.id ? null : declaration.id)} detail={<>
+            {declarations.map((declaration) => <SourceEvidenceRow key={`${declaration.column}:${declaration.id}`} id={`${selection.kind}-${declaration.column}:${declaration.id}`} kind={selection.kind === 'outside' ? 'outside' : 'global'} declaration={declaration} open={expanded === `${declaration.column}:${declaration.id}`} onToggle={() => setExpanded((current) => current === `${declaration.column}:${declaration.id}` ? null : `${declaration.column}:${declaration.id}`)} detail={<>
               <EvidenceLine label={t('sourceId')}><code className="break-all">{declaration.id}</code></EvidenceLine>
               <EvidenceLine label={t('sourceLabel')}>{declaration.label}</EvidenceLine>
               <DeclarationScope declaration={declaration} />

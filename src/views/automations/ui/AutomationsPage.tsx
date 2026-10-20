@@ -17,9 +17,9 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
-import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/tokens/page-frame";
+import { PAGE_FRAME_FORM, PAGE_LEDE } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
 import { AutomationGhostRow, AutomationLaneFacts, AutomationLaneIntro, AutomationListPanel } from "./AutomationListFrame";
 import listStyles from "./automation-list-frame.module.css";
@@ -146,27 +146,20 @@ export function AutomationsPage({
 
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
-      className="atlas-scroll-quiet relative min-h-0 flex-1 overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      <div className={`${PAGE_FRAME_FORM} flex min-h-full flex-col gap-6 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}>
-        <header className={PAGE_HEADER_ROW}>
-          <div className="min-w-0">
-            <div className={PAGE_TITLE_ROW}><h1 className={PAGE_TITLE}>{t("title")}</h1></div>
-            <p className={`mt-2 max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
-          </div>
-        </header>
-
-        <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[color:var(--color-divider)]">
-          <TabBar ariaLabel={t("tabsAria")} activeKey={lane} onSelect={(key) => selectLane(key as AutomationLane)}
-            idPrefix="automations" testId="automations-tabs" placement="header"
-            items={[
-              { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
-              { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
-            ]} />
-          {ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={add} disabled={lanePending}
-            data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide mb-2">
-            <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
-          </Button> : null}
-        </div>
+      className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+      <PageHeaderBar frame="form" title={t("title")}
+        tabs={<TabBar variant="segmented" ariaLabel={t("tabsAria")} activeKey={lane} onSelect={(key) => selectLane(key as AutomationLane)}
+          idPrefix="automations" testId="automations-tabs"
+          items={[
+            { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
+            { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
+          ]} />}
+        actions={ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={add} disabled={lanePending}
+          data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
+          <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
+        </Button> : null} />
+      <div className={cn(PAGE_FRAME_FORM, "relative flex flex-1 flex-col gap-6 pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
+        <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
 
         <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
           {state === "loading" ? (

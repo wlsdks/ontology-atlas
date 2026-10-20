@@ -8,7 +8,7 @@ import { seedFirstRunSeen } from "../first-run-seed";
 const DOORS: readonly { name: string; url: string; door: (page: Page) => Locator }[] = [
   {
     name: "Harness",
-    url: "/ko/architecture/?view=structure&guides=off",
+    url: "/ko/architecture/?view=overview&guides=off",
     door: (page) => page.locator('main a[href$="/download/"]').first(),
   },
   {

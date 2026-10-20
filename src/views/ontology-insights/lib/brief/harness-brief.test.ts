@@ -21,6 +21,17 @@ describe('buildHarnessBrief', () => {
     expect(buildHarnessBrief({ areas: null, state: 'no-source', driftCount: null, fileTimes: null, guideFileCount: null, anchorMs }).availability).toBe('no-source');
   });
 
+  it('adds no gap for a domain with no recorded path', () => {
+    const brief = buildHarnessBrief({
+      areas: [{ capabilities: [], told: [], gated: [], watched: [] }],
+      driftCount: 0,
+      guideFileCount: 1,
+      fileTimes: [],
+      anchorMs,
+    });
+    expect({ told: brief.current, gated: brief.stale, watched: brief.unknown }).toEqual({ told: 0, gated: 0, watched: 0 });
+  });
+
   it('counts the empty cells per column and rule files changed since the anchor', () => {
     const brief = buildHarnessBrief({
       areas: [

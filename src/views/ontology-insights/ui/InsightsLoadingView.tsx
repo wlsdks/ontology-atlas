@@ -1,8 +1,8 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { PageHeaderBar } from '@/shared/ui/layout/page-header-bar';
 import { WaitStage } from '@/shared/ui/status/wait-stage';
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE, PAGE_TITLE_ROW } from '@/shared/ui/tokens/page-frame';
 
 /** This shell must not subscribe to graph derivation or import analysis widgets. */
 export function InsightsLoadingView() {
@@ -15,18 +15,12 @@ export function InsightsLoadingView() {
         data-route-loading="true"
         data-testid="insights-loading"
         aria-busy="true"
-        className="relative flex min-h-full flex-col"
+        className="flex min-h-full flex-col"
       >
-        <div className={PAGE_FRAME}>
-          <header className={PAGE_HEADER_ROW}>
-            <div className={PAGE_TITLE_ROW}>
-              <h1 className={PAGE_TITLE}>
-                {t('analysis.title')}
-              </h1>
-            </div>
-          </header>
+        <PageHeaderBar frame="page" title={t('analysis.title')} />
+        <div className="relative flex-1">
+          <WaitStage mark="mascot" title={t('loading')} delayed />
         </div>
-        <WaitStage mark="mascot" title={t('loading')} delayed />
       </main>
     </div>
   );

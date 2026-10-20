@@ -462,25 +462,36 @@ test.describe("Harness tab layout", () => {
     console.info('GUIDANCE_GEOMETRY_MATRIX', JSON.stringify(measurements));
   });
 
-  test('structure fits a desktop viewport and confines long evidence to its work area', async ({ page }) => {
+  test('At a glance fits the window: the page never scrolls and the column heads pin over the rows', async ({ page }) => {
+    await installHarnessRuntime(page, { includeOverflowDomains: true });
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/ko/architecture/?view=structure&guides=off');
-    const work = page.getByTestId('harness-structure-scroll');
-    await expect(page.getByTestId('harness-structure-diagram')).toBeVisible();
-    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
-
-    const panel = page.locator('#harness-tabpanel-structure');
-    const panelTop = await panel.evaluate(el => el.getBoundingClientRect().top);
     await page.setViewportSize({ width: 1040, height: 720 });
-    await page.getByTestId('harness-diagram-node-always').click();
-    await expect(page.getByTestId('harness-anatomy-slot-always')).toBeVisible();
-    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
-    await work.evaluate(el => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
-    await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBe(0);
-    expect(await panel.evaluate(el => el.getBoundingClientRect().top)).toBe(panelTop);
-    await expect(page.getByTestId('harness-view-diagram')).toBeInViewport();
-    await expect(page.getByTestId('harness-view-text')).toBeInViewport();
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    const scroller = page.getByTestId('harness-overview-scroll');
+    await expect(scroller).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => scroller.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0);
+
+    await scroller.evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
+    const gap = () =>
+      page.evaluate(() => {
+        const top = document.querySelector('[data-testid="harness-overview-scroll"]')!.getBoundingClientRect().top;
+        const head = document.querySelector('[data-harness-head]')!.getBoundingClientRect().top;
+        return Math.round(head - top);
+      });
+    await expect.poll(gap).toBe(0);
     expect(await page.evaluate(() => ({ x: scrollX, y: scrollY, overflow: document.documentElement.scrollWidth - innerWidth }))).toEqual({ x: 0, y: 0, overflow: 0 });
+  });
+
+  test('At a glance has no horizontal overflow at 600px', async ({ page }) => {
+    await installHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 600, height: 900 });
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    await expect(page.getByTestId('harness-overview-scroll')).toBeVisible({ timeout: 30_000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect(
+      await page.getByTestId('harness-overview-scroll').evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(0);
   });
 });
