@@ -281,7 +281,7 @@ export function AcpRuntimeSettings({
         {!embedded || showGuardNote ? (
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             {embedded ? null : (
-              <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+              <p className="break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
                 {t('intro')}
               </p>
             )}
@@ -303,7 +303,7 @@ export function AcpRuntimeSettings({
               <p
                 data-testid="app-settings-runtimes-guard-note"
                 data-guarded-count={guardedNames.length}
-                className="break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
+                className="break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
               >
                 {guardedNames.length > 0
                   ? t('guardedExplainer', { names: guardedNames.join(' · ') })
@@ -405,7 +405,7 @@ export function AcpRuntimeSettings({
               />
               <p
                 data-testid="app-settings-runtimes-unknown-shelf-note"
-                className="text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                className="text-body leading-prose text-[color:var(--color-text-tertiary)]"
               >
                 {t('unknownShelfNote')}
               </p>
@@ -485,7 +485,7 @@ function OtherRuntimesDialog({
       {matches.some((runtime) => runtime.state === 'cli-unknown') ? (
         <p
           data-testid="app-settings-runtimes-unknown-note"
-          className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          className="mt-1 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
         >
           {t('unknownExplainer')}
         </p>
@@ -505,7 +505,7 @@ function OtherRuntimesDialog({
       {matches.length === 0 ? (
         <p
           data-testid="app-settings-runtimes-others-empty"
-          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          className="mt-3 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
         >
           {t('othersNoneForSearch', { query: query.trim() })}
         </p>
@@ -624,7 +624,7 @@ function ShelfTile({
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-body">{runtime.label}</span>
-          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+          <span className="mt-0.5 block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t(`state.${runtime.state}`)}
           </span>
         </span>
@@ -786,7 +786,7 @@ function RuntimeRow({
       />
       {/* Through `Surface` for the ramp's enter/exit, and only when there is a result. */}
       {showDoctor ? (
-        <Surface open={Boolean(doctor.result)} className="min-w-0 px-3 pb-2.5">
+        <Surface open={Boolean(doctor.result)} className="min-w-0 px-4 pb-3">
           {doctor.result}
         </Surface>
       ) : null}

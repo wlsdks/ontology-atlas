@@ -67,11 +67,13 @@ export function SettingsNav({
   shownSection,
   onSelect,
   searchField,
+  heading,
   navRef,
 }: {
   shownSection: SettingsSectionId | null;
   onSelect: (section: SettingsSectionId) => void;
   searchField: ReactNode;
+  heading: ReactNode;
   navRef: Ref<HTMLElement>;
 }) {
   const t = useTranslations('nav.settingsMenu');
@@ -82,7 +84,8 @@ export function SettingsNav({
       data-testid="app-settings-nav"
       className="flex w-full shrink-0 flex-col gap-2 overflow-x-auto border-b border-[color:var(--color-border-soft)] p-2 sm:w-[11.25rem] sm:overflow-x-hidden sm:overflow-y-auto sm:border-b-0 sm:border-r"
     >
-      {searchField}
+      {heading}
+      <div className="pt-1">{searchField}</div>
       <div className="flex gap-1 sm:block">
         {SETTINGS_NAV_GROUPS.map((group) => (
           <div
@@ -92,7 +95,7 @@ export function SettingsNav({
             data-testid={`app-settings-nav-group-${group.scope}`}
             className="flex w-max shrink-0 gap-1 sm:mt-1.5 sm:block sm:w-auto sm:border-t sm:border-[color:var(--color-divider)] sm:pt-1.5 sm:first:mt-0 sm:first:border-t-0 sm:first:pt-0"
           >
-            <p className="hidden px-3 pb-1 font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)] sm:block">
+            <p className="hidden px-3 pb-1 font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)] sm:block">
               {t(`scope.${group.scope}`)}
             </p>
             {group.sections.map((item) => {

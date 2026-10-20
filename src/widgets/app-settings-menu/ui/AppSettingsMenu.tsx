@@ -317,7 +317,7 @@ export function AppSettingsMenu({
         ? createPortal(
             <div
               ref={overlayRef}
-              className={`${settingsPresence.exiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-medium)] p-3 sm:p-6`}
+              className={`${settingsPresence.exiting ? 'app-settings-scrim-out' : 'app-settings-scrim-in'} fixed inset-0 z-40 flex items-center justify-center overflow-hidden bg-[color:var(--color-backdrop-strong)] p-3 sm:p-6`}
               aria-hidden={settingsPresence.exiting || undefined}
               inert={settingsPresence.exiting || undefined}
               {...transientSurface('sheet')}
@@ -343,22 +343,20 @@ export function AppSettingsMenu({
                 className={`${settingsPresence.exiting ? 'app-settings-panel-out' : 'app-settings-panel-in'} flex h-[var(--dialog-h-lg)] max-h-[calc(100dvh-1.5rem)] w-[var(--dialog-w-lg)] focus:outline-none max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] text-body shadow-[var(--shadow-elevation-3)]`}
                 data-testid="app-settings-popover"
               >
-                <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <Settings size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-indigo-accent)]" />
-                    <h2
-                      id={titleId}
-                      className="truncate text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-                    >
-                      {t('title')}
-                    </h2>
-                  </div>
-                  <CloseButton label={t('closeLabel')} onClick={() => closePanel()} />
-                </div>
-
                 <div className="flex min-h-0 flex-1 flex-col sm:flex-row" data-testid="app-settings-body">
                   <SettingsNav
                     navRef={navRef}
+                    heading={
+                      <div className="sticky left-0 flex min-w-0 items-center gap-2 px-1 pb-3">
+                        <Settings size={ICON_SIZE.md} aria-hidden className="shrink-0 text-[color:var(--color-indigo-accent)]" />
+                        <h2
+                          id={titleId}
+                          className="truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+                        >
+                          {t('title')}
+                        </h2>
+                      </div>
+                    }
                     shownSection={searching ? null : section}
                     onSelect={showSection}
                     searchField={
@@ -377,11 +375,12 @@ export function AppSettingsMenu({
                     }
                   />
 
+                  <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
                   <div
                     ref={paneRef}
                     key={searching ? 'search' : section}
                     className={cn(
-                      'grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-y-auto p-3 sm:p-5',
+                      'grid min-h-0 min-w-0 flex-1 content-start gap-6 overflow-y-auto p-4 sm:px-8 sm:pt-7 sm:pb-8',
                       animateSection && 'settings-section-in',
                     )}
                     onAnimationEnd={(event) => {
@@ -430,6 +429,10 @@ export function AppSettingsMenu({
                         )}
                       </>
                     )}
+                  </div>
+                  <div className="absolute right-3 top-3">
+                    <CloseButton label={t('closeLabel')} onClick={() => closePanel()} />
+                  </div>
                   </div>
                 </div>
               </div>

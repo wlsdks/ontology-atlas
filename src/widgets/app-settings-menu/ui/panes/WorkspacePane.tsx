@@ -431,7 +431,7 @@ export function WorkspacePane({
           />
         </SettingsGroup>
         <p
-          className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+          className="text-body leading-body text-[color:var(--color-text-tertiary)]"
           data-testid="app-settings-folder-kept-caption"
         >
           {t('kept.caption')}

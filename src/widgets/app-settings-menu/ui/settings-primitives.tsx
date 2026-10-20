@@ -16,7 +16,7 @@ export const DETAIL_TOGGLE_CHIP =
 export const RESET_LINK_INK = 'justify-self-start hover:text-[color:var(--color-text-primary)]';
 
 export const SETTINGS_SECTION_LABEL =
-  'font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
+  'font-mono text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-tertiary)]';
 
 export function SettingsPaneHead({
   title,
@@ -30,11 +30,11 @@ export function SettingsPaneHead({
   testId?: string;
 }) {
   return (
-    <header className="grid min-w-0 gap-1" data-testid={testId}>
+    <header className="grid min-w-0 gap-1.5" data-testid={testId}>
       <h3 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
         {title}
       </h3>
-      <p className="max-w-[var(--git-setup-measure)] text-body leading-body text-balance text-[color:var(--color-text-tertiary)]">
+      <p className="max-w-[var(--measure-stage-column)] text-body leading-body text-pretty text-[color:var(--color-text-secondary)]">
         {description}
       </p>
       {note}
@@ -52,7 +52,7 @@ export function SettingsGroupHeading({
   id?: string;
 }) {
   return (
-    <div className="flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+    <div className="flex min-h-6 flex-wrap items-center justify-between gap-x-3 gap-y-1">
       <h3 id={id} className={SETTINGS_SECTION_LABEL}>
         {label}
       </h3>
@@ -81,8 +81,8 @@ export function SettingsGroup({
       {label ? <SettingsGroupHeading label={label} trailing={trailing} /> : null}
       <Card
         className={cn(
-          label && 'mt-1.5',
-          'divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]',
+          label && 'mt-2',
+          'divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]',
           cardClassName,
         )}
       >
@@ -153,19 +153,19 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3',
-        hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
+        'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4',
+        hasMarkSlot ? 'min-h-16 py-3' : 'min-h-14 py-3',
       )}
       data-testid={testId}
       data-setting-id={settingId}
     >
       {hasMarkSlot ? <ProductMark icon={icon} ink={iconInk} monogram={monogram} /> : null}
       <div className="min-w-0 flex-1 basis-40">
-        <p className="text-body text-[color:var(--color-text-primary)]">{label}</p>
+        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{label}</p>
         {caption ? (
           <p
             className={cn(
-              'mt-0.5 break-keep text-label leading-label [overflow-wrap:anywhere]',
+              'mt-0.5 break-keep text-body leading-body [overflow-wrap:anywhere]',
               captionTone === 'danger'
                 ? 'text-[color:var(--color-status-danger)]'
                 : captionTone === 'warning'
@@ -318,14 +318,14 @@ export function SettingsDoorRow({
         tone: 'muted',
         hoverInk: 'strong',
         hoverSurface: 'lift',
-        className: 'min-h-12 gap-3 px-3 py-2',
+        className: 'min-h-14 gap-3 px-4 py-3',
       })}
     >
       {Icon ? <Icon size={16} aria-hidden className="shrink-0" /> : null}
       <span className="min-w-0 flex-1 text-left">
         <span className="block text-body text-[color:var(--color-text-primary)]">{label}</span>
         {caption ? (
-          <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
+          <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
             {caption}
           </span>
         ) : null}
