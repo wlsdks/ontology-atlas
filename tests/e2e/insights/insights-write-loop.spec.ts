@@ -44,6 +44,7 @@ test('Analysis correction reviews one typed relation before writing its exact do
   await page.getByTestId('vault-guide-pick-existing').click();
   await expect(page.getByTestId('topology-index-panel')).toContainText('Insight Shop');
   await page.goto('/en/ontology/insights/?tab=do-next&guides=off');
+  await expect(page.getByRole('main')).toContainText('Insight Shop');
   const claim = page.getByTestId('analysis-claim').filter({ hasText: 'Pay' });
   await claim.click();
   const claimId = await claim.getAttribute('data-analysis-claim-id');
