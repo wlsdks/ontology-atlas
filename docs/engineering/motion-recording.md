@@ -29,6 +29,14 @@ proof for temporal output, not an optional craft review.
 - Capture the same app/window/state through the computer-use capability so the accessibility
   owner and screenshot bind the recording to the reviewed surface.
 
+## Frame-interval bar
+
+CI cannot enforce the 50 ms frame bar. Run the headed bar on the static export
+before approving a primitive: `MAP_PERF_BARS=1 PLAYWRIGHT_STATIC=1 pnpm exec
+playwright test --project=post-merge --headed tests/e2e/motion` (add
+`map-flat-dial-motion.spec.ts` for the map). Put every printed `[smoothness]`
+line in the pull request.
+
 ## 1. Prepare a deterministic state
 
 Set the exact URL, zoom, and state. The map sleeps while idle, so confirm the

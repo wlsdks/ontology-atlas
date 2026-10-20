@@ -194,8 +194,11 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
   `transform`, `translate`, `scale`, `rotate`, `opacity`, `filter` or
   `clip-path`; a layout property animates only as a one-shot reflow per input;
   the next input settles or retargets any motion; the map draws no frame at
-  rest; ambient and infinite motion pauses when hidden or offscreen
-  (`infinite-motion` contract).
+  rest; ambient and infinite motion pauses when hidden or offscreen, except
+  loops that show running work, which the `infinite-motion` contract lists and
+  which stop with the work. Ambient motion that starts by itself stops within
+  5 s and rests, or sits beside a visible pause; loops that show running work
+  are exempt (WCAG 2.2.2).
 - A primitive owns an `app/styles/motion-*.css` part or a `src/shared/motion`
   module, a reduced equivalent, a line in "Motion primitives", and an e2e spec
   calling `expectSmoothMotion` (`motion-primitive-smoothness` contract). It
