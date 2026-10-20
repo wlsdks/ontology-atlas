@@ -20,7 +20,7 @@ vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOrig
   useDataSourceMode: () => mocks.mode,
 }));
 
-import { useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
+import { useFirstRunSampleModeKnown, useFirstRunSampleModeSettled } from './use-first-run-sample-mode-settled';
 
 describe('useFirstRunSampleModeSettled', () => {
   it('is true once restore has settled and no vault is active (static mode)', () => {
@@ -51,5 +51,28 @@ describe('useFirstRunSampleModeSettled', () => {
     mocks.mode = 'local';
     const { result } = renderHook(() => useFirstRunSampleModeSettled());
     expect(result.current).toBe(false);
+  });
+});
+
+describe('useFirstRunSampleModeKnown', () => {
+  it('is unknown while the restore is pending for someone with no folder history', () => {
+    mocks.restoreAttempted = false;
+    mocks.recentVaults = [];
+    const { result } = renderHook(() => useFirstRunSampleModeKnown());
+    expect(result.current).toBe(false);
+  });
+
+  it('is known before the restore ends once a folder history exists', () => {
+    mocks.restoreAttempted = false;
+    mocks.recentVaults = [{ id: 'previously-opened' }];
+    const { result } = renderHook(() => useFirstRunSampleModeKnown());
+    expect(result.current).toBe(true);
+  });
+
+  it('is known once the restore has been attempted', () => {
+    mocks.restoreAttempted = true;
+    mocks.recentVaults = [];
+    const { result } = renderHook(() => useFirstRunSampleModeKnown());
+    expect(result.current).toBe(true);
   });
 });

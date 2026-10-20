@@ -16,3 +16,8 @@ export function useFirstRunSampleModeSettled(): boolean {
   const neverConnected = vault.recentVaults.length === 0;
   return vault.restoreAttempted && mode === 'static' && neverConnected && !vault.partialTotal;
 }
+
+export function useFirstRunSampleModeKnown(): boolean {
+  const vault = useLocalVault();
+  return vault.restoreAttempted || vault.recentVaults.length > 0;
+}
