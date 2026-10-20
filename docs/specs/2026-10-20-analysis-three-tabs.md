@@ -97,8 +97,10 @@ reference difference called stale, zero rows. Restyling keeps all of it on top.
 **Slice A: removals.** The tab bar holds `connections, brief, library`. `?tab=harness` replaces itself
 with `/architecture/?view=overview`, keeping other flags and adding no history entry; the harness gap
 lines (`BriefTab.tsx:44-46`) point there too. `?tab=flow` opens System relationships with
-`analysis.flowRetired` instead of `analysis.legacy`, `history=available` when the agent panel is
-present. Other aliases and `review=` behave as today. Nothing under `.ontology-atlas/` is written,
+`analysis.flowRetired` instead of `analysis.legacy`: the first sentence alone for a folder with no
+saved run (and the example), plus the count of runs the old tab listed when there are some, then a
+button to Findings & history when the agent panel is present or the MCP sentence when not. The
+notice replaces its own address with the default one so a reload does not show it again. Other aliases and `review=` behave as today. Nothing under `.ontology-atlas/` is written,
 moved or deleted. The installed-app check expects three sections.
 
 **Slice A: tests.** Delete with their code `FlowTab.test.tsx`, `HarnessTab.test.tsx`,
@@ -145,9 +147,10 @@ counts those reporting nothing: lines at 0, no-data and quiet rows. `mix` is `no
 The tour's `insights-headline` step anchors on the top rows with the changed copy;
 `insights-brief.spec.ts:101` and `:136-138` move off `brief-headline`.
 
-**Records to overturn** (the lead files one fragment): 2026-09-04 Flow (`docs/DECISIONS.md:5549`),
-entry removed, runs kept (A); 2026-09-22 e26f2d5b, Guidance leaves Analysis (A); 2026-10-10
-488f9b25, supporting records narrow to two (A); 2026-09-19 683f0641, heading sums removed (B);
+**Records to overturn** (filed as `2026-10-21-analysis-three-sections`): 2026-09-04 Flow
+(`docs/DECISIONS.md:5549`), entry removed, runs kept (A); 2026-09-22 e26f2d5b, the measured Guidance
+presentation, whose code is deleted (A); 2026-10-10 488f9b25, supporting records narrow from four to
+two (A); 2026-09-19 683f0641, heading sums removed (B);
 2026-09-23 7a5e5264, one list becomes top rows and a fold (B); 2026-09-19 3030afde is narrowed:
 moved code still ranks and names five concepts, but the remainder loses its door (B).
 `docs/DESIGN-SYSTEM.md:215` and `docs/features/analysis.md:115-123`, `:145-151` name three sections.
@@ -180,7 +183,8 @@ moved code still ranks and names five concepts, but the remainder loses its door
 | State | Web | macOS app |
 |---|---|---|
 | (A) Any folder or the example | Tabs System relationships, Review summary, Wiki | Same |
-| (A) `?tab=flow` | System relationships, `analysis.flowRetired` with `history=other`; next: any tab | Same, `history=available` when the agent panel is present; also after relaunch to a remembered `?tab=flow` |
+| (A) `?tab=flow`, no saved run | System relationships, `analysis.flowRetired.first` only; next: any tab | Same |
+| (A) `?tab=flow`, saved runs | System relationships, `first` and `count`, then `web`; next: any tab | Same, with `open` in place of `web` when the agent panel is present, opening Findings & history with no request seated |
 | (A) `?tab=harness` | Harness At a glance in its browser state (sibling spec `:133`); next: `harness.browserAction` | At a glance, measured; next: a cell |
 | Bundled example | `top.since` (`window=default`), rows such as `ontology-repair`, `top.exampleLimit` with `openVaultCta.label`, `top.more` | Same, while no folder is open |
 | Own folder, candidates | At most two rows (Library, System relationships; code and guides count in the app only), `brief.appOnly` with `brief.getApp`, `top.more` | Up to three rows, `top.more`; no app-only row |
@@ -204,7 +208,10 @@ file, not this English document. Korean counters come from each line's own key.
 
 | Key | Where it appears | English |
 |---|---|---|
-| `analysis.flowRetired` (A) | Notice on `?tab=flow` | `{history, select, available {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Open the agent panel's Findings & history to read them, or ask your coding agent through MCP.} other {Written explanations is no longer a section here. Explanations saved earlier stay as files in .ontology-atlas/analyses/. Ask your coding agent to read them through MCP.}}` |
+| `analysis.flowRetired.first` (A) | Notice on `?tab=flow` | The Written explanations tab is gone. |
+| `analysis.flowRetired.count` (A) | Notice, when the folder holds runs | `{count, plural, one {The # explanation saved in this folder stays} other {The # explanations saved in this folder stay}} in .ontology-atlas/analyses/.` |
+| `analysis.flowRetired.open` (A) | Notice button, app with an agent | Open in Findings & history |
+| `analysis.flowRetired.web` (A) | Notice, web or no agent | Ask your coding agent to read them through MCP. |
 | `brief.top.since` | Heading | `{window, select, default {The last 7 days} other {{days, plural, =0 {Since you looked today} one {# day since you last looked} other {# days since you last looked}}}}` |
 | `brief.top.listLabel` | Accessible name of the rows | Needs you now |
 | `brief.top.nothing` | In place of rows | `{count, plural, =0 {No fix is waiting here.} one {No fix is waiting here. # concept an agent wrote still has no reviewer.} other {No fix is waiting here. # concepts an agent wrote still have no reviewer.}}` |
@@ -256,13 +263,13 @@ Slice A:
 2. **Given** `/ko/ontology/insights/?tab=harness&guides=off` after the At a glance merge, **when** it
    opens, **then** the address is `/ko/architecture/?view=overview&guides=off` with At a glance
    selected, `history.length` is unchanged and Back leaves; `?tab=flow` draws System relationships
-   with `analysis.flowRetired` and no `analysis.legacy`; `?tab=do-next&review=analysis:<id>`
+   with `analysis.flowRetired` and no `analysis.legacy`, and the address is replaced by the default one; `?tab=do-next&review=analysis:<id>`
    reselects that claim; a return chip with `via=insights:harness` lands on At a glance. Check: new
    `tests/e2e/insights/analysis-retired-sections.spec.ts`, `insights-tab-state.test.ts`.
 3. **Given** a picker-stub folder with an agent runtime and three runs under
    `.ontology-atlas/analyses/`, **when** the person visits every tab and `?tab=flow`, **then** each
    file's hash is unchanged, no read error shows, the agent panel's Findings & history lists the
-   runs, and reopening the panel from `analysis-inspect-selected` keeps an unsent draft. Check:
+   runs, the notice counts the three runs and its button opens Findings & history, and reopening the panel from `analysis-inspect-selected` keeps an unsent draft. Check:
    `analysis-retired-sections.spec.ts`, `insights-agent-retention.spec.ts`; the unchanged
    `mcp/src/analysis-history/analysis-records.test.mjs`.
 
