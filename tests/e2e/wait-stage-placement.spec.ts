@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } from "./harness-tab-fixture";
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "./motion-sampler";
+import { waitForAnimationsDone, waitForBoxStill } from "./settle";
 
 const SIZES = [
   { width: 1512, height: 900 },
@@ -20,9 +21,15 @@ async function contentArea(page: Page) {
   });
 }
 
-async function expectCentred(page: Page, selector = "[data-wait-stage]") {
+async function expectCentred(page: Page, scripted = true, selector = "[data-wait-stage]") {
   const block = page.locator(selector).first();
   await expect(block).toBeVisible();
+  if (scripted) {
+    await waitForAnimationsDone(block);
+    await waitForBoxStill(block);
+  } else {
+    await expect.poll(() => block.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+  }
   const [area, box] = await Promise.all([contentArea(page), block.boundingBox()]);
   expect(box, "the wait block has a box").not.toBeNull();
   const dx = box!.x + box!.width / 2 - (area.x + area.width / 2);
@@ -84,8 +91,7 @@ for (const size of SIZES) {
       const page = await context.newPage();
       try {
         await page.goto("/en/automations/");
-        await page.waitForTimeout(1_200);
-        await expectCentred(page);
+        await expectCentred(page, false);
       } finally {
         await context.close();
       }
@@ -100,7 +106,6 @@ for (const size of SIZES) {
       await setHold(page, true);
       await page.getByTestId("first-run-open").click();
       await expect(page.getByTestId("vault-route-identity-pending")).toBeVisible({ timeout: 20_000 });
-      await page.waitForTimeout(1_200);
       const reserve = await page.getByTestId("vault-opening-rail-reserve").boundingBox();
       const area = await contentArea(page);
       expect(reserve?.width).toBe(area.x);
@@ -128,7 +133,6 @@ for (const size of SIZES) {
         await page.getByTestId("app-nav-rail-item-insights").click();
         await requested;
         await expect(page.getByTestId("insights-loading")).toBeVisible();
-        await page.waitForTimeout(1_200);
         await expect(page.getByTestId("insights-loading").getByRole("heading", { level: 1 })).toBeVisible();
         await expectCentred(page);
       } finally {
@@ -139,7 +143,6 @@ for (const size of SIZES) {
 
     test("the harness wait is centred and its steps line up with its bar", async ({ page }) => {
       const panel = await openHarnessWait(page, size);
-      await page.waitForTimeout(1_000);
       await expectCentred(page);
       const edges = await panel.evaluate((block) => {
         const left = (element: Element | null) => element?.getBoundingClientRect().left ?? Number.NaN;
