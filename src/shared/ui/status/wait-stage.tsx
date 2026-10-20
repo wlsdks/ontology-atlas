@@ -31,6 +31,7 @@ export interface WaitStageProps {
   steps?: readonly WaitStep[];
   announce?: string;
   delayed?: boolean;
+  action?: ReactNode;
   className?: string;
   [dataAttribute: `data-${string}`]: unknown;
   [ariaAttribute: `aria-${string}`]: unknown;
@@ -43,6 +44,7 @@ export function WaitStage({
   steps,
   announce,
   delayed = false,
+  action,
   className,
   ...rest
 }: WaitStageProps) {
@@ -131,6 +133,7 @@ export function WaitStage({
             ))}
           </ol>
         ) : null}
+        {action ? <div className="mt-8">{action}</div> : null}
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { WaitStage } from '../status/wait-stage';
 
 export interface MapEntryLoadingVisualProps {
@@ -35,6 +37,10 @@ export function MapEntryLoadingVisual({
   );
 }
 
-export function MapEntryLoadingScene({ title, description }: Pick<MapEntryLoadingVisualProps, "title" | "description">) {
-  return <WaitStage mark="orbit" title={title} detail={description} data-map-loading-layout="centered" />;
+export function MapEntryLoadingScene({
+  title,
+  description,
+  action,
+}: Pick<MapEntryLoadingVisualProps, "title" | "description"> & { action?: ReactNode }) {
+  return <WaitStage mark="orbit" title={title} detail={description} action={action} data-map-loading-layout="centered" />;
 }
