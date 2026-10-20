@@ -165,13 +165,17 @@ for rejection.
 | Radius | micro/chip/card/panel/sheet |
 | Shadow | elevation-1/2/3, dock, or control-press |
 | Colour | `--color-*`; a new hue is a new system |
-| Duration | fast feedback, base movement, settle completion |
+| Duration | the `--motion-*` ramp: fast feedback, base movement, settle completion, slow travel, expressive entrance, choreography ceiling |
 
 ## 4. Motion
 
 - One input is one event; related stages begin in one frame.
 - The user-invoked surface moves first, not only its background.
-- Hover and focus complete by `--motion-fast`.
+- Smoothness first: animate compositor properties, keep every frame interval
+  under 50 ms, let the next input settle the motion, and call
+  `expectSmoothMotion` in the primitive's spec (`docs/DESIGN-SYSTEM.md`,
+  "Smoothness first"). Run it headed with `MAP_PERF_BARS=1` for the 50 ms bar
+  (`docs/engineering/motion-recording.md`).
 - Global CSS already handles reduced motion; do not create a conflicting local
   `!important` branch.
 

@@ -3,7 +3,17 @@ import { expect, test, type Page } from "@playwright/test";
 import { buttonVariants } from "@/shared/ui/controls/button";
 import { controlClass } from "@/shared/ui/control-class";
 
-import { colorDistance, motionShares, rotationDegrees, startSampling, stopSampling, translateY } from "../motion-sampler";
+import {
+  colorDistance,
+  expectSmoothMotion,
+  motionShares,
+  rotationDegrees,
+  startSampling,
+  startSmoothness,
+  stopSampling,
+  stopSmoothness,
+  translateY,
+} from "../motion-sampler";
 import { waitFrames } from "../settle";
 
 const DETACHED = {
@@ -69,6 +79,7 @@ test.describe("press and hover motion", () => {
   test("detached controls travel 1px on the translate clock and return", async ({ page }) => {
     await mountProbes(page);
     const fast = await fastMs(page);
+    await startSmoothness(page);
     for (const name of Object.keys(DETACHED)) {
       const { rec, t0, values } = await press(page, name);
       const ys = values.map((v) => translateY(v.translate));
@@ -81,6 +92,7 @@ test.describe("press and hover motion", () => {
       expect(shares.mfs, name).toBeLessThanOrEqual(0.35);
       expect(rec.layoutShifts, name).toHaveLength(0);
     }
+    expectSmoothMotion(await stopSmoothness(page));
   });
 
   test("flush controls answer with a surface step in the first frame and no travel", async ({ page }) => {
