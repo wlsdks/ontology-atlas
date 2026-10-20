@@ -49,7 +49,7 @@ export function PageHeaderBar({
   return (
     <div className={cn('sticky top-0 z-20 h-15 shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]', className)}>
       <div data-page-header-row className={cn('flex h-full items-center gap-5', PAGE_HEADER_FRAMES[frame])}>
-        <Title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', tabs && 'max-sm:sr-only', titleClassName)}>{title}</Title>
+        <Title data-page-title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', tabs && 'max-sm:sr-only', titleClassName)}>{title}</Title>
         {tabs ? (
           <div data-testid={tabsTestId} className="min-w-0">
             {tabs}
