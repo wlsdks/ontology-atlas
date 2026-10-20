@@ -27,6 +27,8 @@ const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
   'citation-hops',
 ];
 
+const WIDEST_COUNT = 99;
+
 export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanProgress | null }) {
   const t = useTranslations('harness');
   const activeIndex = progress ? STAGE_ORDER.indexOf(progress.stage) : -1;
@@ -49,13 +51,23 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
 
       <div className="w-full max-w-[26rem]">
         <div className="flex items-baseline justify-between gap-3" aria-hidden>
-          <span className="text-body text-[color:var(--color-text-secondary)]">
+          <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
             {progress ? t(STAGE_LABEL[progress.stage]) : t('loadingStageRoots')}
           </span>
-          <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-            {determinate
-              ? t('loadingCounted', { done: progress!.done, total: progress!.total! })
-              : t('loadingCounting')}
+          <span className="grid shrink-0 justify-items-start whitespace-nowrap text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+            <span
+              className={cn('col-start-1 row-start-1', determinate && 'invisible')}
+            >
+              {t('loadingCounting')}
+            </span>
+            <span
+              className={cn('col-start-1 row-start-1', !determinate && 'invisible')}
+            >
+              {t('loadingCounted', { done: progress?.done ?? 0, total: progress?.total ?? 0 })}
+            </span>
+            <span className="invisible col-start-1 row-start-1" aria-hidden>
+              {t('loadingCounted', { done: WIDEST_COUNT, total: WIDEST_COUNT })}
+            </span>
           </span>
         </div>
         <div className="mt-2" aria-hidden>

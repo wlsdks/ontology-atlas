@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { STAGGER_MAX_STEPS } from '../../../src/shared/motion/stagger';
 import { seedFirstRunSeen } from '../first-run-seed';
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from '../motion-sampler';
 import { useDogfoodSample } from '../sample-source';
 
 test.use({ viewport: { width: 1512, height: 945 } });
@@ -64,33 +66,36 @@ const toMs = (value: string) => parseFloat(value) * (value.endsWith('ms') ? 1 : 
 const cssMs = (page: Page, name: string) =>
   page.evaluate((token) => getComputedStyle(document.documentElement).getPropertyValue(token).trim(), name).then(toMs);
 
-async function openRole(page: Page) {
+async function openRole(page: Page, beforeOpen?: () => Promise<void>) {
   await recordStaggerClasses(page);
   await page.goto('/en/architecture/?view=architecture&guides=off');
   await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 30_000 });
   const box = page.getByTestId('architecture-graph-box-widgets');
+  await beforeOpen?.();
   await box.click();
   await expect(page.locator('[data-concept-slug]').first()).toBeVisible();
   return box;
 }
 
-test('a list staggers once on its first arrival, capped at three steps, and never replays', async ({ page }) => {
+test('a list staggers once on its first arrival, within its step limit and the expressive window, and never replays', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
-  const box = await openRole(page);
+  const box = await openRole(page, () => startSmoothness(page));
   const step = await cssMs(page, '--motion-stagger');
   const base = await cssMs(page, '--motion-base');
 
   await expect(page.locator('.motion-stagger-in, .motion-stagger-fade')).toHaveCount(0);
+  expectSmoothMotion(await stopSmoothness(page));
   const first = (await events(page)).filter((event) => event.slug !== null);
   const added = first.filter((event) => event.added);
   expect(added.length, 'the first arrival carries the stagger class').toBeGreaterThan(1);
   const delays = added.map((event) => toMs(event.delay));
   expect(delays[0]).toBe(0);
   for (let i = 1; i < delays.length; i += 1) expect(delays[i]).toBeGreaterThanOrEqual(delays[i - 1]);
-  expect(Math.max(...delays)).toBeLessThanOrEqual(3 * step);
+  expect(Math.max(...delays)).toBeLessThanOrEqual(STAGGER_MAX_STEPS * step);
+  expect(Math.max(...delays) + base).toBeLessThanOrEqual(await cssMs(page, '--motion-expressive'));
   const window = Math.max(...first.map((event) => event.at)) - Math.min(...added.map((event) => event.at));
-  expect(window, 'the class leaves after the entrance window').toBeLessThanOrEqual(3 * step + base + 250);
+  expect(window, 'the class leaves after the entrance window').toBeLessThanOrEqual(STAGGER_MAX_STEPS * step + base + 250);
 
   await box.click();
   await expect(page.locator('[data-concept-slug]')).toHaveCount(0);

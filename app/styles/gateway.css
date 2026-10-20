@@ -223,10 +223,9 @@
   width: 0.055em;
   height: 0.74em;
   /* `currentColor` so the caret is the ink of the line it is writing — the two lines sit one
-   * step apart. A fixed token would be wrong on one of them, and indigo would put a second,
-   * blinking protagonist above the fold beside the CTA that already owns that colour. */
+   * step apart. A fixed token would be wrong on one of them, and indigo would put a second
+   * protagonist above the fold beside the CTA that already owns that colour. */
   background: currentColor;
-  animation: gatewayCaretBlink 1.06s steps(1) infinite;
 }
 
 /* Hero object stage — no entrance of its own: the object assembles as the headline is typed

@@ -222,7 +222,7 @@ export function ArchitectureSketch({
     layoutLeadRoom,
   });
 
-  /* A receipt landing on a ladder that showed "not inspected" arrives (tier 3); one read on opening does not. Any input settles it. */
+  /* A receipt landing on a ladder that showed "not inspected" arrives; one read on opening does not. Any input settles it. */
   const hasObservation =
     graph.boxes.some((box) => ledgers[box.id] !== undefined) ||
     graph.edges.some((edge) => edge.kind === 'traffic');

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -18,6 +19,22 @@ import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
  * second easing family, reachable in CSS only from leaving rules and in JS only via `EXIT_TRANSITION`.
  */
 
+const RAMP = {
+  fast: "--motion-fast",
+  base: "--motion-base",
+  settle: "--motion-settle",
+  slow: "--motion-slow",
+  expressive: "--motion-expressive",
+  choreography: "--motion-choreography",
+} as const;
+
+const SUPPORTS_PROBE = /CSS\.supports\(\s*(['"])transition-timing-function\1\s*,\s*(['"])linear\(0, 1\)\2\s*\)/g;
+const HAND_TYPED_LINEAR = /\blinear\(\s*-?\d/;
+
+function writesLinearCurve(text: string): boolean {
+  return HAND_TYPED_LINEAR.test(text.replace(/\/\*[\s\S]*?\*\//g, "").replace(SUPPORTS_PROBE, ""));
+}
+
 const CSS = readGlobalCss();
 
 /** Reads the first `--name: value;` declaration, wherever it is declared. */
@@ -36,24 +53,21 @@ function msTokenToSeconds(name: string): number {
 }
 
 describe("motion token mirror: CSS ramp and JS copy", () => {
-  it("the 3 duration steps equal the CSS ramp exactly", () => {
-    expect(MOTION.fast.duration).toBeCloseTo(msTokenToSeconds("--motion-fast"), 6);
-    expect(MOTION.base.duration).toBeCloseTo(msTokenToSeconds("--motion-base"), 6);
-    expect(MOTION.settle.duration).toBeCloseTo(msTokenToSeconds("--motion-settle"), 6);
+  it("every ramp step equals its CSS token and the steps ascend", () => {
+    for (const [name, token] of Object.entries(RAMP)) {
+      expect(MOTION[name as keyof typeof MOTION].duration, token).toBeCloseTo(msTokenToSeconds(token), 6);
+    }
+    const ordered = Object.values(RAMP).map(msTokenToSeconds);
+    expect(ordered).toEqual([...ordered].sort((x, y) => x - y));
+    expect(new Set(ordered).size).toBe(ordered.length);
   });
 
-  /**
-   * This prevents the exact drift from recurring — more names means more values, and
-   * the added values are off-ramp. A genuinely new usage must be registered on the CSS
-   * ramp first and then widened here. That order is what "the spec comes first"
-   * means.
-   */
   it("--motion-stagger mirrors STAGGER", () => {
     expect(STAGGER).toBeCloseTo(msTokenToSeconds("--motion-stagger"), 6);
   });
 
-  it("the name set stays within the 3 ramp steps, blocking a medium/slow revival", () => {
-    expect(Object.keys(MOTION).sort()).toEqual(["base", "fast", "settle"]);
+  it("the MOTION keys are the RAMP keys", () => {
+    expect(Object.keys(MOTION)).toEqual(Object.keys(RAMP));
   });
 
   it("the easing is a value copy of `--motion-ease`", () => {
@@ -63,10 +77,7 @@ describe("motion token mirror: CSS ramp and JS copy", () => {
     expect([...MOTION_EASE]).toEqual(nums);
   });
 
-  // An element receiving a ramp duration also takes the family's easing — swapping
-  // only the duration keeps half of the family definition, "one shared easing across
-  // the three" (design.md).
-  it("the three steps ride the same easing family", () => {
+  it("every ramp step rides the same easing family", () => {
     const eases = Object.values(MOTION).map((m) => JSON.stringify(m.ease));
     expect(new Set(eases).size).toBe(1);
   });
@@ -90,7 +101,7 @@ describe("motion token mirror: CSS ramp and JS copy", () => {
     expect(JSON.stringify(MOTION_EASE_EXIT)).not.toBe(JSON.stringify(MOTION_EASE));
   });
 
-  it("the three ramp steps ride the entrance family, and the exit family rides only EXIT_TRANSITION", () => {
+  it("every ramp step rides the entrance family, and the exit family rides only EXIT_TRANSITION", () => {
     for (const [name, step] of Object.entries(MOTION)) {
       expect(JSON.stringify(step.ease), `MOTION.${name} rides the exit curve`).toBe(
         JSON.stringify(MOTION_EASE),
@@ -183,5 +194,18 @@ describe("motion token mirror: CSS ramp and JS copy", () => {
 
   it("the reduced-motion equivalent takes the same time as fast, keeping the information axis and removing only the movement axis", () => {
     expect(OVERLAY_SPRING_REDUCED.duration).toBeCloseTo(MOTION.fast.duration, 6);
+  });
+
+  it("only springEasing() writes a linear() curve, in CSS and in source", () => {
+    expect(writesLinearCurve("a{transition-timing-function:linear(0, 0.5, 1)}")).toBe(true);
+    expect(writesLinearCurve("CSS.supports('transition-timing-function', 'linear(0, 1)')")).toBe(false);
+    expect(writesLinearCurve(CSS), "a stylesheet rule types a linear() curve").toBe(false);
+    const files = execFileSync("git", ["ls-files", "src", "app"], { cwd: process.cwd(), encoding: "utf8" })
+      .split("\n")
+      .filter((file) => /\.tsx?$/.test(file))
+      .filter((file) => !/\.(?:test|spec)\.tsx?$/.test(file) && file !== "src/shared/motion/spring.ts");
+    expect(files.length, "the source walk found nothing").toBeGreaterThan(100);
+    const offenders = files.filter((file) => writesLinearCurve(readFileSync(path.join(process.cwd(), file), "utf8")));
+    expect(offenders, `a hand-typed linear() curve in:\n${offenders.join("\n")}`).toEqual([]);
   });
 });
