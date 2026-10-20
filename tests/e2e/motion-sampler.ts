@@ -1,4 +1,4 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export type MotionTrack = { name: string; selector: string };
 
@@ -200,4 +200,141 @@ export function motionShares(values: number[], frames: number[], fromTime: numbe
     if (progress > 0.02 && progress < 0.98) intermediate += 1;
   }
   return { ffs: Math.max(ffs, 0), mfs, settleMs: frames[last] - fromTime, changed: true, intermediate };
+}
+
+export const FRAME_INTERVAL_BUDGET_MS = 50;
+export const PERF_BARS = process.env.MAP_PERF_BARS === "1";
+
+export type SmoothnessReport = {
+  frames: number;
+  maxIntervalMs: number;
+  longTasks: number;
+  layoutShifts: { value: number; recent: boolean }[];
+  animated: { target: string; property: string; infinite: boolean }[];
+};
+
+type SmoothnessWindow = Window & {
+  __smoothness?: { start(): void; stop(): SmoothnessReport };
+};
+
+function smoothnessSource() {
+  const w = window as SmoothnessWindow;
+  if (w.__smoothness) return;
+  let report: SmoothnessReport | null = null;
+  let raf = 0;
+  let last = 0;
+  const seenAnimations = new WeakSet<Animation>();
+  const observers: PerformanceObserver[] = [];
+  const IGNORED = new Set(["offset", "computedOffset", "easing", "composite"]);
+  const kebab = (name: string) => name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+
+  const inspect = () => {
+    for (const animation of document.getAnimations()) {
+      if (animation.playState !== "running" || seenAnimations.has(animation)) continue;
+      seenAnimations.add(animation);
+      const effect = animation.effect as KeyframeEffect | null;
+      if (!effect) continue;
+      if ((effect.pseudoElement ?? "").startsWith("::view-transition")) continue;
+      const properties =
+        animation instanceof CSSTransition
+          ? [animation.transitionProperty]
+          : Object.keys(effect.getKeyframes()[0] ?? {})
+              .concat(...effect.getKeyframes().slice(1).map((frame) => Object.keys(frame)))
+              .filter((key) => !IGNORED.has(key))
+              .map(kebab);
+      const element = effect.target as Element | null;
+      const target = element ? `${element.tagName.toLowerCase()}${element.classList[0] ? `.${element.classList[0]}` : ""}` : "(none)";
+      const infinite = effect.getTiming().iterations === Infinity;
+      for (const property of new Set(properties)) report!.animated.push({ target, property, infinite });
+    }
+  };
+
+  const tick = (t: number) => {
+    if (!report) return;
+    report.frames += 1;
+    if (last) report.maxIntervalMs = Math.max(report.maxIntervalMs, t - last);
+    last = t;
+    inspect();
+    raf = requestAnimationFrame(tick);
+  };
+
+  w.__smoothness = {
+    start() {
+      report = { frames: 0, maxIntervalMs: 0, longTasks: 0, layoutShifts: [], animated: [] };
+      last = 0;
+      const current = report;
+      for (const type of ["longtask", "layout-shift"] as const) {
+        try {
+          const observer = new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              if (type === "longtask") current.longTasks += 1;
+              else {
+                const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
+                current.layoutShifts.push({ value: shift.value, recent: shift.hadRecentInput });
+              }
+            }
+          });
+          observer.observe({ type, buffered: false });
+          observers.push(observer);
+        } catch {
+          continue;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    },
+    stop() {
+      cancelAnimationFrame(raf);
+      inspect();
+      for (const observer of observers.splice(0)) {
+        for (const entry of observer.takeRecords()) {
+          if (entry.entryType === "longtask") report!.longTasks += 1;
+          else {
+            const shift = entry as PerformanceEntry & { value: number; hadRecentInput: boolean };
+            report!.layoutShifts.push({ value: shift.value, recent: shift.hadRecentInput });
+          }
+        }
+        observer.disconnect();
+      }
+      const out = report!;
+      report = null;
+      return out;
+    },
+  };
+}
+
+export async function startSmoothness(page: Page): Promise<void> {
+  await page.evaluate(smoothnessSource);
+  await page.evaluate(() => (window as SmoothnessWindow).__smoothness!.start());
+}
+
+export async function stopSmoothness(page: Page): Promise<SmoothnessReport> {
+  return page.evaluate(() => (window as SmoothnessWindow).__smoothness!.stop());
+}
+
+const LAYOUT =
+  /^(?:(?:min-|max-)?(?:width|height)|top|right|bottom|left|inset(?:-.+)?|margin(?:-.+)?|padding(?:-.+)?|border(?:-(?:top|right|bottom|left))?-width|font-size|line-height|letter-spacing|flex-basis|grid-template-(?:rows|columns)|(?:row-|column-)?gap)$/;
+
+export function smoothnessViolations(report: SmoothnessReport, opts: { reflow?: readonly string[] } = {}): string[] {
+  const reflow = opts.reflow ?? [];
+  const out: string[] = [];
+  for (const { target, property, infinite } of report.animated) {
+    if (!LAYOUT.test(property)) continue;
+    if (infinite) out.push(`${target}: ${property} animates in a loop`);
+    else if (!reflow.includes(property)) out.push(`${target}: ${property} animates outside a declared reflow`);
+  }
+  if (reflow.length === 0) {
+    for (const shift of report.layoutShifts) {
+      if (!shift.recent) out.push(`layout shift ${shift.value} without recent input`);
+    }
+  }
+  return out;
+}
+
+export function expectSmoothMotion(report: SmoothnessReport, opts: { reflow?: readonly string[] } = {}): void {
+  console.log(
+    `[smoothness] ${JSON.stringify({ frames: report.frames, maxIntervalMs: Math.round(report.maxIntervalMs), longTasks: report.longTasks })}`,
+  );
+  expect(report.frames, "the page drew no frames while the motion ran").toBeGreaterThan(5);
+  expect(smoothnessViolations(report, opts)).toEqual([]);
+  if (PERF_BARS) expect(report.maxIntervalMs).toBeLessThanOrEqual(FRAME_INTERVAL_BUDGET_MS);
 }

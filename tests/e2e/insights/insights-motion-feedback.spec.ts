@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
-import { motionShares, startSampling, stopSampling, translateY } from '../motion-sampler';
+import { expectSmoothMotion, motionShares, startSampling, startSmoothness, stopSampling, stopSmoothness, translateY } from '../motion-sampler';
 import { waitFrames } from '../settle';
 
 test.beforeEach(async ({ page }) => {
@@ -18,6 +18,7 @@ test('the insights copy control interpolates press travel and draws its result',
   const box = (await button.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await waitFrames(page, 5);
+  await startSmoothness(page);
   await startSampling(page, { tracks: [{ name: 'copy', selector: '[data-testid="flow-copy"]' }] });
   await waitFrames(page, 2);
   const t0 = await page.evaluate(() => performance.now());
@@ -32,4 +33,5 @@ test('the insights copy control interpolates press travel and draws its result',
   await expect(button.locator('[data-feedback-glyph="copied"] [data-drawn="draw"]')).toHaveCount(1);
   const settled = await button.boundingBox();
   expect(settled!.width).toBe(box.width);
+  expectSmoothMotion(await stopSmoothness(page));
 });

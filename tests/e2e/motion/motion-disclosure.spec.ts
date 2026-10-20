@@ -2,6 +2,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import { seedFirstRunSeen } from "../first-run-seed";
 import { installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
+import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
+import { waitForAnimationsDone } from "../settle";
 import { installDesktopBridge, openRounds } from "../rounds-desktop-bridge";
 
 type Track = { height: number[]; opacity: number[]; inertAtFirstFrame: boolean };
@@ -70,6 +72,8 @@ async function openProvenance(page: Page) {
 test.describe("Disclosure motion", () => {
   test("provenance opens and closes on the row curve with no height jump", async ({ page }) => {
     const { trigger, box } = await openProvenance(page);
+    await waitForAnimationsDone(page.locator("html"));
+    await startSmoothness(page);
 
     const animation = await page.context().newCDPSession(page);
     await animation.send("Animation.enable");
@@ -84,6 +88,7 @@ test.describe("Disclosure motion", () => {
     expect(closing.inertAtFirstFrame).toBe(true);
     expect(closing.height.at(-1)!).toBeLessThan(closing.height[0]!);
     expect(maxStepShare(closing.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
+    expectSmoothMotion(await stopSmoothness(page), { reflow: ["height"] });
   });
 
   test("an immediate second key press reverses the disclosure", async ({ page }) => {

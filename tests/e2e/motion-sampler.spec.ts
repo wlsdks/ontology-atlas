@@ -1,6 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
 
-import { installMotionSampler, motionShares, startSampling, stopSampling, translateY } from "./motion-sampler";
+import {
+  FRAME_INTERVAL_BUDGET_MS,
+  installMotionSampler,
+  motionShares,
+  smoothnessViolations,
+  startSampling,
+  startSmoothness,
+  stopSampling,
+  stopSmoothness,
+  translateY,
+} from "./motion-sampler";
 
 const PROBE = `<!doctype html><html><head><style>
   body { margin: 0; background: #000; }
@@ -13,11 +23,14 @@ const PROBE = `<!doctype html><html><head><style>
   #press-ok:active { translate: 0 1px; }
   #press-bad { left: 320px; transition: transform 180ms ease; }
   #press-bad:active { translate: 0 1px; }
+  #grow { left: 420px; transition: width 180ms ease; }
+  #grow.wide { width: 160px; }
   #shift { position: static; margin-top: 200px; }
   canvas { position: absolute; top: 300px; left: 20px; width: 64px; height: 64px; }
 </style></head><body>
   <div class="box" id="cut"></div><div class="box" id="ease"></div>
   <div class="box" id="press-ok"></div><div class="box" id="press-bad"></div>
+  <div class="box" id="grow"></div>
   <div class="box" id="shift"></div>
   <canvas width="64" height="64"></canvas>
 </body></html>`;
@@ -111,5 +124,43 @@ test.describe("motion sampler self-test", () => {
     expect(rec.ink.at(-1)).toBe(0);
     expect(falling).toBe(true);
     expect(new Set(rec.ink).size).toBeGreaterThan(4);
+  });
+
+  test("a width transition is a smoothness violation", async ({ page }) => {
+    await startSmoothness(page);
+    await frames(page, 3);
+    await page.evaluate(() => document.getElementById("grow")!.classList.add("wide"));
+    await frames(page, 30);
+    const report = await stopSmoothness(page);
+    expect(smoothnessViolations(report)).toEqual(["div.box: width animates outside a declared reflow"]);
+    expect(smoothnessViolations(report, { reflow: ["width"] })).toEqual([]);
+  });
+
+  test("a translate-only move has no smoothness violation", async ({ page }) => {
+    await startSmoothness(page);
+    await frames(page, 3);
+    await page.evaluate(() => document.getElementById("ease")!.classList.add("moved"));
+    await frames(page, 30);
+    const report = await stopSmoothness(page);
+    expect(report.animated.map((a) => a.property)).toContain("translate");
+    expect(smoothnessViolations(report)).toEqual([]);
+  });
+
+  test("a blocked frame reads above the frame-interval budget", async ({ page }) => {
+    await startSmoothness(page);
+    await frames(page, 3);
+    await page.evaluate(
+      (blockMs) => new Promise<void>((done) => {
+        requestAnimationFrame(() => {
+          const end = performance.now() + blockMs;
+          while (performance.now() < end);
+          done();
+        });
+      }),
+      FRAME_INTERVAL_BUDGET_MS * 2,
+    );
+    await frames(page, 4);
+    const report = await stopSmoothness(page);
+    expect(report.maxIntervalMs).toBeGreaterThan(FRAME_INTERVAL_BUDGET_MS);
   });
 });
