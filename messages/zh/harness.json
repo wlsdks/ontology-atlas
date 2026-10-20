@@ -124,17 +124,18 @@
   "overviewHandoffCopied": "已复制。请粘贴到你在此仓库中使用的编码智能体对话里。",
   "overviewHandoffCopyFailed": "复制失败。请展开“查看请求”，手动复制文字。",
   "overviewRequestShow": "查看请求",
-  "overviewCellHint": "按下格子，构成它的文件会在旁边打开。",
+  "overviewCellHint": "按下格子，会打开构成它的文件。",
   "overviewNoPath": "没有记录的路径",
   "overviewNoPathBody": "此领域没有记录实现路径的能力，因此没有文件能指向它。不计为空缺。",
   "overviewPanelTitle": "{domain} · {column}",
   "overviewEverywhereApplies": "覆盖所有领域的 {count} 项在这里同样适用。",
   "overviewPermissions": "{config} 中的禁止和询问规则 {count} 条",
   "overviewLoopNote": "运行哪个模型、先读什么、何时停止，由智能体工具决定，仓库文件无法显示。",
-  "overviewRequestGapLine": "- {slug} · {column}：无 · 路径：{paths}",
+  "overviewRequestGapLine": "- 领域 {slug} · {column}：无 · 路径：{paths}",
   "overviewRequestEverywhere": "已告知 {told} 项 · 已拦截 {gated} 项 · 已监测 {watched} 项",
-  "overviewRequest": "请查看 Ontology Atlas 在此仓库的智能体 harness 中找到的 {count} 处空缺，只补需要补的地方。写任何文件之前，先给我看路径和全文，等我同意。\nFolder: {folder}\n空缺是指没有任何 harness 文件声明该领域内的路径。这并不表示那里什么都不运行：覆盖所有领域的内容（{everywhere}）依然适用。\n{gaps}\n对每处空缺，先判断这个领域是否需要自己的指南、拦截或检查。如果不需要，用一句话说明原因，不要写任何文件。如果需要，提出一个只指向该领域路径的最小文件：已告知用带 paths: 的 .claude/rules/NAME.md 或 FOLDER/AGENTS.md；已拦截用按这些路径过滤的 PreToolUse 钩子脚本或 .githooks/ 脚本；已监测用接收这些路径的 package.json 检查或带 paths: 的工作流。新的钩子脚本还需要在 .claude/settings.json 的 hooks 或 .codex/hooks.json 中登记，请一并给我看这处修改，不要改动 `permissions`。Codex 钩子要等我在 /hooks 中信任后才会运行，添加时请告诉我。只有当声明的路径包含上面列出的路径或位于其中时，格子才会被填上；paths-ignore 不算。在 .codex/ 或 .agents/ 下放副本之前先问我。",
+  "overviewRequest": "请查看 Ontology Atlas 在此仓库的智能体 harness 中找到的 {count} 处空缺，只补需要补的地方。写任何文件之前，先给我看路径和全文，等我同意。\nFolder: {folder}\n空缺是指没有任何 harness 文件声明该领域内的路径。这并不表示那里什么都不运行：覆盖所有领域的内容（{everywhere}）依然适用。\n{gaps}\n对每处空缺，先判断这个领域是否需要自己的指南、拦截或检查。如果不需要，用一句话说明原因，不要写任何文件。如果需要，提出一个只指向该领域路径的最小文件：已告知用带 paths: 的 .claude/rules/NAME.md 或 FOLDER/AGENTS.md；已拦截用按这些路径过滤的 PreToolUse 钩子脚本或 .githooks/ 脚本；已监测用接收这些路径的 package.json 检查或带 paths: 的工作流。新的钩子脚本还需要在 .claude/settings.json 的 hooks 或 .codex/hooks.json 中登记，请一并给我看这处修改，不要改动 `permissions`。Codex 钩子要等我在 /hooks 中信任后才会运行，添加时请告诉我。只有当声明的路径包含上面列出的路径或位于其中时，格子才会被填上；paths-ignore 不算。Atlas 只读取以下形式：名称为 test、lint 或 typecheck，或为 test:NAME、lint:NAME、typecheck:NAME 的 package.json 脚本，且其命令写出了形如 src/features/x 的两级及以上路径；顶层文件夹正下方的 AGENTS.md；每行一个路径的 YAML 列表形式的 paths:；以及钩子脚本里用引号写出的路径字面量，如 \"src/features/x/\"。在 .codex/ 或 .agents/ 下放副本之前先问我。",
   "coverageKindRoot": "每次都读",
   "coverageKindPermissions": "完全不允许",
-  "coverageKindExclusion": "不让智能体看到"
+  "coverageKindExclusion": "不让智能体看到",
+  "overviewReread": "重新读取文件"
 }

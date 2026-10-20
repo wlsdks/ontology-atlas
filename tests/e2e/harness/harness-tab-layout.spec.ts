@@ -483,4 +483,16 @@ test.describe("Harness tab layout", () => {
     await expect(page.getByTestId('harness-overview-gaps')).toBeInViewport();
     expect(await page.evaluate(() => ({ x: scrollX, y: scrollY, overflow: document.documentElement.scrollWidth - innerWidth }))).toEqual({ x: 0, y: 0, overflow: 0 });
   });
+
+  test('At a glance has no horizontal overflow at 600px', async ({ page }) => {
+    await installHarnessRuntime(page);
+    await mountHarnessVault(page);
+    await page.setViewportSize({ width: 600, height: 900 });
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    await expect(page.getByTestId('harness-overview-scroll')).toBeVisible({ timeout: 30_000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+    expect(
+      await page.getByTestId('harness-overview-scroll').evaluate((el) => el.scrollWidth - el.clientWidth),
+    ).toBeLessThanOrEqual(0);
+  });
 });

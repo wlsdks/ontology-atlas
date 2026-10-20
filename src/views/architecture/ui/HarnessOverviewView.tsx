@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { TriangleAlert } from 'lucide-react';
 
 import type { CoverageAreaInput, CoverageColumn, HarnessReport } from '@/entities/agent-files';
@@ -31,6 +32,8 @@ const HINT_ANCHOR: Readonly<Record<CoverageColumn, 'left' | 'center' | 'right'>>
   gated: 'center',
   watched: 'right',
 };
+
+const RULE = 'border-t border-[color:var(--color-border-soft)]';
 
 const AMBER = 'text-[color:var(--color-amber-source-a90)]';
 
@@ -65,35 +68,50 @@ export function HarnessOverviewView({
   const below = useViewportBelow(PANEL_BESIDE_FROM_PX);
   const overview = useMemo(() => buildHarnessOverview(report, areas), [report, areas]);
 
-  const [openKey, setOpenKey] = useState<string | null>(null);
-  const [lastKey, setLastKey] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const [pressedKey, setPressedKey] = useState<string | null>(null);
+  const [pressedLast, setPressedLast] = useState<string | null>(null);
+  const firstGap = overview.gaps[0];
+  const arrivalKey = !below && firstGap ? overviewCellKey(firstGap.slug, firstGap.column) : null;
+  const openKey = touched ? pressedKey : arrivalKey;
+  const lastKey = touched ? pressedLast : arrivalKey;
   const [lastByRow, setLastByRow] = useState<Readonly<Record<string, string>>>({});
   const [epoch, setEpoch] = useState(0);
   const cellRefs = useRef(new Map<string, HTMLButtonElement>());
 
+  const settle = useCallback(() => {
+    if (touched) return;
+    setTouched(true);
+    setPressedLast(lastKey);
+  }, [touched, lastKey]);
+
   const closePanel = useCallback(() => {
+    settle();
     if (openKey) cellRefs.current.get(openKey)?.focus();
-    setOpenKey(null);
-  }, [openKey]);
+    setPressedKey(null);
+  }, [openKey, settle]);
 
   const pressCell = (key: string) => {
+    settle();
     if (openKey === key) {
-      setOpenKey(null);
+      setPressedKey(null);
       return;
     }
     const row = rowSlugOf(overview.targets.get(key));
     if (row === null) return;
     const previousRow = openKey ? rowSlugOf(overview.targets.get(openKey)) : null;
     if (below ? previousRow !== row : openKey === null) setEpoch((value) => value + 1);
-    setOpenKey(key);
-    setLastKey(key);
+    setPressedKey(key);
+    setPressedLast(key);
     setLastByRow((current) => ({ ...current, [row]: key }));
   };
 
   useEffect(() => {
     if (openKey === null) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closePanel();
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      closePanel();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -166,32 +184,36 @@ export function HarnessOverviewView({
   const titleId = (slug: string) => `${baseId}-title-${below ? hostSuffix(slug) : 'beside'}`;
   const openRow = openKey ? rowSlugOf(overview.targets.get(openKey)) : null;
 
+  const onTabHandoff = (event: ReactKeyboardEvent<HTMLElement>) => {
+    if (below || event.key !== 'Tab' || openKey === null) return;
+    const target = event.target as HTMLElement;
+    const host = document.getElementById(panelHostId(''));
+    if (!event.shiftKey && target.getAttribute('aria-expanded') === 'true' && host) {
+      event.preventDefault();
+      host.focus();
+    } else if (event.shiftKey && target === host) {
+      event.preventDefault();
+      cellRefs.current.get(openKey)?.focus();
+    }
+  };
+
   const footer = (
-    <div className={cn('flex flex-col gap-2', below ? 'mt-3' : 'max-h-48 shrink-0 overflow-y-auto')}>
+    <div className={cn('flex flex-col gap-2', below ? 'mt-3 px-3' : 'max-h-48 shrink-0 overflow-y-auto')}>
       <p className="text-label text-[color:var(--color-text-quaternary)]">{t('overviewCellHint')}</p>
-      {overview.missingHookScripts.length > 0 ? (
-        <div
-          data-testid="harness-overview-silent"
-          className="flex items-start gap-2.5 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] p-[var(--card-pad)] text-body text-[color:var(--color-amber-source-a90)]"
-        >
-          <TriangleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
-          <span className="min-w-0 break-keep">
-            {t('anatomySilentGuards', {
-              count: overview.missingHookScripts.length,
-              scripts: overview.missingHookScripts.join(' · '),
-            })}
-          </span>
-        </div>
-      ) : null}
       <ProvenanceNotes overview={overview} pathlessCapabilities={pathlessCapabilities} t={t} />
     </div>
   );
 
-  const renderCellButton = (cell: OverviewCell, state: 'filled' | 'gap' | 'everywhere', label: string) => {
+  const renderCellButton = (
+    cell: OverviewCell,
+    state: 'filled' | 'gap' | 'everywhere',
+    label: string,
+    ruled: boolean,
+  ) => {
     const open = openKey === cell.key;
     const count = cell.entries.length;
     return (
-      <td key={cell.column} className="h-px p-0 align-middle">
+      <td key={cell.column} className={cn('h-px p-0 align-middle', ruled && RULE)}>
         <button
           type="button"
           ref={(node) => {
@@ -263,11 +285,12 @@ export function HarnessOverviewView({
     );
   };
 
-  const renderRow = (row: OverviewRow) => {
+  const renderRow = (row: OverviewRow, index: number) => {
+    const ruled = index > 0;
     const pathKey = overviewCellKey(row.slug, 'path');
     return [
       <tr key={row.slug} data-harness-area={row.slug}>
-        <th scope="row" className="border-t border-[color:var(--color-border-soft)] px-3 py-3 text-left align-middle font-normal">
+        <th scope="row" className={cn('px-3 py-3 text-left align-middle font-normal', ruled && RULE)}>
           <span className="flex flex-wrap items-baseline gap-x-2">
             <span className="min-w-0 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {row.title}
@@ -278,7 +301,7 @@ export function HarnessOverviewView({
           </span>
         </th>
         {row.cells === null ? (
-          <td colSpan={3} className="h-px border-t border-[color:var(--color-border-soft)] p-0 align-middle">
+          <td colSpan={3} className={cn('h-px p-0 align-middle', ruled && RULE)}>
             <button
               type="button"
               ref={(node) => {
@@ -302,7 +325,7 @@ export function HarnessOverviewView({
             </button>
           </td>
         ) : (
-          row.cells.map((cell) => renderCellButton(cell, cell.gap ? 'gap' : 'filled', row.title))
+          row.cells.map((cell) => renderCellButton(cell, cell.gap ? 'gap' : 'filled', row.title, ruled))
         )}
       </tr>,
       below ? panelRow(row.slug) : null,
@@ -344,11 +367,13 @@ export function HarnessOverviewView({
           <Chip
             data-testid="harness-overview-retry"
             onClick={() => {
-              setOpenKey(null);
+              setTouched(false);
+              setPressedKey(null);
+              setPressedLast(null);
               onReread();
             }}
           >
-            {t('retry')}
+            {t('overviewReread')}
           </Chip>
         </div>
         {gapCount > 0 ? (
@@ -373,7 +398,23 @@ export function HarnessOverviewView({
         ) : null}
       </div>
 
+      {overview.missingHookScripts.length > 0 ? (
+        <div
+          data-testid="harness-overview-silent"
+          className="flex shrink-0 items-start gap-2.5 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] p-[var(--card-pad)] text-body text-[color:var(--color-amber-source-a90)]"
+        >
+          <TriangleAlert size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
+          <span className="min-w-0 break-keep">
+            {t('anatomySilentGuards', {
+              count: overview.missingHookScripts.length,
+              scripts: overview.missingHookScripts.join(' · '),
+            })}
+          </span>
+        </div>
+      ) : null}
+
       <div
+        onKeyDown={onTabHandoff}
         className={cn(
           'grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)]',
           below
@@ -382,7 +423,7 @@ export function HarnessOverviewView({
         )}
       >
         <div className="flex min-h-0 flex-col gap-3">
-          <div data-testid="harness-overview-scroll" className="min-h-0 overflow-y-auto overscroll-contain pb-3">
+          <div data-testid="harness-overview-scroll" className="-mx-3 min-h-0 overflow-y-auto overscroll-contain pb-3">
             <table data-testid="harness-overview-table" className="w-full table-fixed border-separate border-spacing-0 text-left">
               <caption className="sr-only">{t('coverageTableCaption')}</caption>
               <colgroup>
@@ -414,13 +455,13 @@ export function HarnessOverviewView({
               <tbody>
                 {overview.rows.flatMap(renderRow)}
                 <tr data-harness-area={EVERYWHERE_ROW}>
-                  <th scope="row" className="border-t border-[color:var(--color-border-soft)] px-3 py-3 text-left align-middle font-normal">
+                  <th scope="row" className={cn('px-3 py-3 text-left align-middle font-normal', RULE)}>
                     <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
                       {t('coverageEverywhereTitle')}
                     </span>
                   </th>
                   {overview.everywhere.map((cell) =>
-                    renderCellButton(cell, 'everywhere', t('coverageEverywhereTitle')),
+                    renderCellButton(cell, 'everywhere', t('coverageEverywhereTitle'), true),
                   )}
                 </tr>
                 {below ? panelRow(EVERYWHERE_ROW) : null}
@@ -439,7 +480,7 @@ export function HarnessOverviewView({
             id={panelHostId('')}
             aria-labelledby={titleId('')}
             tabIndex={0}
-            className="min-h-0 max-h-full self-start overflow-y-auto overscroll-contain"
+            className="max-h-full min-h-0 self-start overflow-y-auto overscroll-contain rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-1)]"
           >
             <HarnessOverviewPanel
               overview={overview}

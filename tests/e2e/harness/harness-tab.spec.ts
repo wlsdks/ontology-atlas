@@ -435,6 +435,30 @@ test.describe("harness tab", () => {
     await expect(panel).toBeVisible();
   });
 
+  test("on arrival the first gap's panel is already open beside the table, and Tab moves between cell and panel", async ({ page }) => {
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
+
+    const gap = page.locator('[data-harness-cell-state="gap"]').first();
+    const expected = await gap.evaluate((cell) => {
+      const row = cell.closest("tr")!.getAttribute("data-harness-area");
+      return `${row}|${cell.getAttribute("data-harness-cell")}`;
+    });
+    const panel = page.getByTestId("harness-overview-panel");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-panel-cell", expected);
+    await expect(gap).toHaveAttribute("aria-expanded", "true");
+    expect(await panel.evaluate((element) => element.contains(document.activeElement))).toBe(false);
+
+    await gap.focus();
+    const aside = page.locator("aside[data-surface-state]");
+    await page.keyboard.press("Tab");
+    await expect(aside).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(gap).toBeFocused();
+  });
+
   test("a hook only Codex runs after trust wears the trust mark in the every-domain row", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=overview&guides=off");
@@ -460,11 +484,18 @@ test.describe("harness tab", () => {
     await expect(panel).toHaveAttribute("data-panel-placement", "below");
     await waitForFiniteAnimations(page);
 
-    const rowBox = (await row.boundingBox())!;
-    const panelBox = (await panel.boundingBox())!;
-    const nextBox = (await row.locator("xpath=following-sibling::tr[2]").boundingBox())!;
-    expect(panelBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height - 1);
-    expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(nextBox.y + 1);
+    /* One in-page read, so a scroll still settling cannot skew the three boxes against each other. */
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const rowEl = document.querySelector('[data-harness-area="domains/shop-front"]')!;
+          const rowBox = rowEl.getBoundingClientRect();
+          const panelBox = document.querySelector('[data-testid="harness-overview-panel"]')!.getBoundingClientRect();
+          const nextBox = rowEl.nextElementSibling!.nextElementSibling!.getBoundingClientRect();
+          return panelBox.top >= rowBox.bottom - 1 && panelBox.bottom <= nextBox.top + 1;
+        }),
+      )
+      .toBe(true);
 
     /* The scroller follows the opening row, so the whole panel ends inside it. */
     const scrollerBox = (await page.getByTestId("harness-overview-scroll").boundingBox())!;

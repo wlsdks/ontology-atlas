@@ -248,7 +248,12 @@ export function HarnessOverviewPanel({
     if (!target) return null;
     return (
       <>
-        <div className="flex items-start justify-between gap-3">
+        <div
+          className={cn(
+            'flex items-start justify-between gap-3',
+            placement === 'beside' && 'sticky top-0 z-10 bg-[color:var(--color-elevated)] pb-3 pt-[var(--card-pad)]',
+          )}
+        >
           <h2
             id={live ? titleId : undefined}
             className="min-w-0 text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
@@ -259,7 +264,7 @@ export function HarnessOverviewPanel({
             {t('coverageCloseNames')}
           </Button>
         </div>
-        <div className="mt-3">
+        <div className={placement === 'below' ? 'mt-3' : undefined}>
           <PanelBody target={target} overview={overview} t={t} />
         </div>
       </>
@@ -272,7 +277,10 @@ export function HarnessOverviewPanel({
       data-panel-placement={placement}
       data-panel-cell={targetKey}
       className={cn(
-        'grid w-full rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-1)]',
+        'grid w-full',
+        placement === 'below'
+          ? 'rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-[var(--shadow-elevation-1)]'
+          : 'px-[var(--card-pad)] pb-[var(--card-pad)]',
       )}
     >
       {leavingKey !== null && overview.targets.has(leavingKey) ? (

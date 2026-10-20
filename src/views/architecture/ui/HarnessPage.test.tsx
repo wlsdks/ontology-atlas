@@ -508,18 +508,47 @@ describe('the at-a-glance table', () => {
     ready();
     mount();
     const cell = document.querySelector<HTMLButtonElement>(
-      '[data-harness-area="shop"] [data-harness-cell="told"]',
+      '[data-harness-area="shop"] [data-harness-cell="watched"]',
     )!;
     act(() => {
       fireEvent.click(cell);
     });
     expect(cell).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|told');
+    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|watched');
     act(() => {
       fireEvent.keyDown(window, { key: 'Escape' });
     });
     expect(cell).toHaveAttribute('aria-expanded', 'false');
     expect(cell).toHaveFocus();
+  });
+
+  it('opens the first gap on arrival without moving focus, and nothing when there is no gap', () => {
+    ready();
+    mount();
+    const first = document.querySelector<HTMLButtonElement>('[data-harness-area="shop"] [data-harness-cell="told"]')!;
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|told');
+    expect(document.body).toHaveFocus();
+  });
+
+  it('leaves the panel open when Escape was already handled or a modal is open', () => {
+    ready();
+    mount();
+    const cell = document.querySelector<HTMLButtonElement>('[data-harness-area="shop"] [data-harness-cell="told"]')!;
+    const modal = document.createElement('div');
+    modal.setAttribute('aria-modal', 'true');
+    document.body.appendChild(modal);
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'true');
+    modal.remove();
+    act(() => {
+      const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      event.preventDefault();
+      window.dispatchEvent(event);
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('copies a request that carries slugs and paths, never a display name, and sends nothing', async () => {
@@ -608,6 +637,7 @@ describe('the at-a-glance table', () => {
     mount();
     expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '0');
     expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
+    expect(screen.queryByTestId('harness-overview-panel')).toBeNull();
   });
 });
 
