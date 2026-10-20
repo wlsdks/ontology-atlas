@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 
 import { buildCoverageMatrix, scanHarness, type HarnessScanPort } from "@/entities/agent-files";
 import { isReadableHarnessPath } from "@/entities/agent-files/model/harness-read-scope";
-import { groupMirroredDeclarations } from "@/views/architecture/ui/HarnessCoverageView";
 import { deriveCoverageAreas, type CoverageVaultDoc } from "@/features/harness-report";
 import { buildExcerpt, parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
 
@@ -130,11 +129,7 @@ describe("the coverage matrix over this repository", () => {
     for (const area of matrix.areas) expect(area.purpose.length).toBeGreaterThan(0);
   });
 
-  it("prints a mirrored guard once, with both tools, instead of its bare name twice", async () => {
-    /*
-     * Pins the shape of the repair: each mirrored hook pair collapses to one row naming more than
-     * one tool, with both files still present.
-     */
+  it("lists each mirrored hook as its own file naming its own tool", async () => {
     /* The real capability paths, because a candidate that touches none of them is dropped before
        the disk is consulted — with an empty list the scan has no hooks to mirror. */
     const { capabilityPaths } = deriveCoverageAreas(await vaultDocs());
@@ -142,22 +137,18 @@ describe("the coverage matrix over this repository", () => {
     const hooks = report.coverage.filter((entry) => entry.origin === "hook");
     expect(hooks.length).toBeGreaterThan(0);
 
-    const groups = groupMirroredDeclarations(hooks);
-    /* One row per name, and the rows are distinct. */
-    expect(new Set(groups.map((group) => group.label)).size).toBe(groups.length);
-    /* Nothing was thrown away: the files still add up. */
-    expect(groups.reduce((sum, group) => sum + group.entries.length, 0)).toBe(hooks.length);
+    const byLabel = new Map<string, typeof hooks>();
+    for (const hook of hooks) byLabel.set(hook.label, [...(byLabel.get(hook.label) ?? []), hook]);
 
-    const mirrored = groups.filter((group) => group.entries.length > 1);
+    const mirrored = [...byLabel.values()].filter((files) => files.length > 1);
     expect(
       mirrored.length,
       "this repository mirrors hook scripts across .claude/hooks and .codex/hooks; if that stopped being true, this gate has no subject and must be re-aimed rather than deleted",
     ).toBeGreaterThan(0);
-    for (const group of mirrored) {
-      /* The tool is the fact the bare name destroyed, so a mirrored row must carry both. */
-      expect(group.tools.length, `${group.label} names only ${group.tools.join(", ")}`).toBeGreaterThan(1);
-      /* And they really are separate files, not one file counted twice. */
-      expect(new Set(group.entries.map((entry) => entry.id)).size).toBe(group.entries.length);
+    for (const files of mirrored) {
+      expect(new Set(files.map((file) => file.id)).size).toBe(files.length);
+      const tools = new Set(files.flatMap((file) => file.tools));
+      expect(tools.size, `${files[0]!.label} names only ${[...tools].join(", ")}`).toBeGreaterThan(1);
     }
   });
 
@@ -215,6 +206,7 @@ describe("the coverage matrix over this repository", () => {
     const matrix = buildCoverageMatrix(report.coverage, areas);
 
     const universal = matrix.everywhere.told.map((entry) => entry.id);
+    expect(universal).toContain("AGENTS.md");
     expect(universal).toContain(".claude/rules/forbidden.md");
     expect(universal).toContain(".claude/rules/git.md");
     expect(universal).toContain(".claude/rules/local-first.md");

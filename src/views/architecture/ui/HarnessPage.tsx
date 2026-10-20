@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
@@ -24,23 +24,18 @@ import {
   HARNESS_VIEW_ORDER,
   parseHarnessView,
   resolveAddressView,
+  rewriteRetiredView,
   type HarnessView,
 } from '../lib/harness-view-state';
 import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
-import { buildHarnessAnatomy } from '../model/harness-anatomy';
-import { HarnessAnatomyView } from './HarnessAnatomyView';
-import { HarnessCoverageView } from './HarnessCoverageView';
 import { HarnessGuidesView } from './HarnessGuidesView';
+import { HarnessOverviewView } from './HarnessOverviewView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
-/**
- * The Harness destination; its spine is the coverage matrix (`?view=sensors` resolves there,
- * `harness-view-state.ts`). One chrome row holds the `h1` and the single tab set, so the ladder keeps
- * its height (`architecture-workbench.spec.ts`); the census prints its working, not a bare number.
- */
+/** The Harness destination. One chrome row holds the `h1` and the single tab set, so the ladder keeps its height. */
 
 /**
  * How long a read may take before the progress screen is shown. 1000ms is the response-time limit
@@ -94,6 +89,11 @@ function HarnessPageInner() {
     readHarnessSurfaceOnServer,
   );
   const [reloadNonce, setReloadNonce] = useState(0);
+  const tabpanelRef = useRef<HTMLDivElement>(null);
+  const rereadHarness = useCallback(() => {
+    tabpanelRef.current?.focus({ preventScroll: true });
+    setReloadNonce((n) => n + 1);
+  }, []);
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
   const { manifest: staticManifest } = useStaticVaultSource();
@@ -111,6 +111,13 @@ function HarnessPageInner() {
         .filter((slug): slug is string => typeof slug === 'string'),
     [docs],
   );
+
+  useEffect(() => {
+    const rewritten = rewriteRetiredView(window.location.search);
+    if (rewritten === null) return;
+    const { pathname, hash } = window.location;
+    window.history.replaceState(window.history.state, '', pathname + rewritten + hash);
+  }, [searchParams]);
 
   useEffect(() => {
     /* Back and forward move the view too, so the address and the screen never disagree. */
@@ -148,7 +155,7 @@ function HarnessPageInner() {
   const requestedView = viewOverride ?? addressView;
   /* Before a reading exists the three harness views draw the same example, so they collapse into one tab until a reading arrives. */
   const view: HarnessView =
-    harnessUnavailable && requestedView !== 'architecture' ? 'structure' : requestedView;
+    harnessUnavailable && requestedView !== 'architecture' ? 'overview' : requestedView;
 
   const setView = useCallback(
     (next: HarnessView) => {
@@ -193,22 +200,13 @@ function HarnessPageInner() {
       items={
         harnessUnavailable
           ? [
-              { key: 'structure', label: t('views.structure') },
+              { key: 'overview', label: t('views.overview') },
               { key: 'architecture', label: t('views.architecture') },
             ]
           : HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))
       }
     />
   );
-
-  const structureCount = useMemo(() => {
-    if (!report) return null;
-    const places = buildHarnessAnatomy(report).slots.filter((slot) => slot.band !== 'tool');
-    return {
-      total: places.length,
-      filled: places.filter((slot) => slot.status === 'present').length,
-    };
-  }, [report]);
 
   /* `relative z-10` on the wrapper keeps this block's hint panel above the later results block; the panel's own `z-30` only orders it among siblings. */
   const sentence = report ? (
@@ -236,23 +234,6 @@ function HarnessPageInner() {
           scripts: report.checks.scripts.length,
         })}
       </p>
-    </div>
-  ) : null;
-
-  /* The structure view's thesis in its own unit: how many harness places this repository fills, the split every row prints. */
-  /* `relative z-10`: the same stacking reason as `sentence` above. */
-  const structureSentence = structureCount ? (
-    <div data-testid="harness-structure-sentence" className="architecture-result-arrive relative z-10">
-      <p className="max-w-prose text-title tabular-nums text-[color:var(--color-text-primary)]">
-        {t('structureSentence', structureCount)}
-      </p>
-      {/* Inline flow, not flex, and not held to the prose measure, so the hint stays on the caption's line. */}
-      <div className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
-        <span>{t('anatomyCaption')} </span>
-        <PlacedInfoHint preferred="left" className="align-middle" label={t('anatomyProvenanceLabel')}>
-          {t('anatomyProvenance')}
-        </PlacedInfoHint>
-      </div>
     </div>
   ) : null;
 
@@ -298,35 +279,32 @@ function HarnessPageInner() {
           id={`harness-tabpanel-${view}`}
           aria-labelledby={`harness-tab-${view}`}
           tabIndex={-1}
+          ref={tabpanelRef}
           /* Tab-bar reserve plus breath, the calc `globals.css` uses for the download band below `lg`. */
           /* `pt-4`: the header row ends in a rule, not padding. */
           className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] pt-4 lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
             HARNESS_GUTTER_X,
-            view === 'structure' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
+            view === 'overview' && reportState.status === 'ready' ? 'flex flex-col overflow-hidden' : 'overflow-y-auto',
             fillsPanel && 'flex flex-col')}
         >
-          <div className={cn('w-full', view === 'structure' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
+          <div className={cn('w-full', view === 'overview' && reportState.status === 'ready' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
             {/* One lead: the explainer and the census are a paragraph and its measurement, so they share a block. */}
             <div className="mb-3 flex shrink-0 flex-col gap-1">
               <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
                 {t('explainer')}
               </p>
-              {/* Not on the structure view: the census counts a mirrored guard twice, the bands below once, so both would argue. The matrix and table share its rule. */}
-              {view === 'structure' ? structureSentence : sentence}
+              {view === 'guides' ? sentence : null}
             </div>
             {reportState.status === 'ready' ? (
-              <div className={cn('architecture-result-arrive', view === 'structure' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
-                {view === 'structure' ? (
-                  <HarnessAnatomyView
-                    report={reportState.report}
-                    sourceRoot={reportState.sourceRoot}
-                  />
-                ) : view === 'coverage' ? (
-                  <HarnessCoverageView
+              <div className={cn('architecture-result-arrive', view === 'overview' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
+                {view === 'overview' ? (
+                  <HarnessOverviewView
                     report={reportState.report}
                     areas={coverage.areas}
                     pathlessCapabilities={coverage.pathlessCapabilities}
                     sourceRoot={reportState.sourceRoot}
+                    onReread={rereadHarness}
+                    onOpenGuides={() => setView('guides')}
                   />
                 ) : (
                   <HarnessGuidesView report={reportState.report} locale={locale} sourceRoot={reportState.sourceRoot} />

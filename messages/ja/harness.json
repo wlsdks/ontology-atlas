@@ -4,13 +4,11 @@
   "explainer": "このリポジトリでエージェントが働くための準備の状態",
   "viewsAria": "ハーネスの表示",
   "views": {
+    "overview": "ひと目で",
     "guides": "ガイド",
-    "structure": "構造",
-    "coverage": "カバレッジ",
     "architecture": "アーキテクチャ"
   },
   "sentence": "このリポジトリは文書{documents}件でエージェントに指示を伝え、チェック{checks}件を備えています。",
-  "structureSentence": "ハーネスの{total}か所のうち、このリポジトリは{filled}か所が埋まっています。",
   "checksBreakdown": "フックスクリプト{hooks}件 · .githooks/内のファイル{gitHooks}件 · package.jsonのスクリプト{scripts}件",
   "checksHint": "「チェック」は宣言の数であり、独立したガードの数ではありません。Claude CodeとCodexの両方に置いたフックは、ガード1つに対してスクリプト2つと数えます。.githooks/にはフックのほかに補助モジュールも入っています。スクリプト一覧には、ウォッチモードや1回の実行が再実行するレーンも含まれます。数えているのは、設定が指すフックスクリプトのうちディスク上に存在するもの、.githooks/内のファイル、package.jsonのlint、typecheck、testスクリプトです。実際に動いているか、何かを止めたことがあるかは、ファイルからは分かりません。",
   "retry": "もう一度読み込む",
@@ -63,14 +61,6 @@
   "noSource": "リポジトリが接続されていません",
   "connectSourceAction": "ソースフォルダを接続",
   "browserAction": "アプリを入手",
-  "structurePresentation": "ハーネス構造の表示方法",
-  "diagramView": "図",
-  "textView": "テキスト",
-  "diagramRoot": "リポジトリのハーネス",
-  "diagramParts": "{count}個のパーツ",
-  "diagramEvidence": "ファイルの根拠",
-  "diagramSelectPart": "パーツを選ぶと出典をたどれます",
-  "diagramHint": "パーツを選ぶと、その元になっているファイルを開きます。",
   "noSourceBody": "ハーネスは、エージェントが実際に編集するリポジトリのものです。プロジェクトにソースフォルダを接続すると、この一覧が埋まります。複数のフォルダが接続されている場合、どのハーネスかは自動では選びません。",
   "failed": "読み込めませんでした",
   "failedNotGranted": "Atlasが読むのは、開いたフォルダーを含むリポジトリか、アプリを開いてからこのアプリで選んだフォルダーだけです。{path}はどちらでもないため、ファイルを一つも読んでおらず、ここでは何も数えていません。",
@@ -86,9 +76,9 @@
   "coverageColumnTold": "伝える",
   "coverageColumnGated": "止める",
   "coverageColumnWatched": "見守る",
-  "coverageColumnToldHint": "宣言されたパス範囲が、オントロジーに記録されたこのドメインのパスに届くガイドです。たとえば、そのフォルダを管轄するネストしたAGENTS.mdや、`paths:` が一致する `.claude` のルールです。ここに載るのはグロブが届くからであり、ツールがおそらく読むからではありません。",
-  "coverageColumnGatedHint": "設定が指すフックスクリプトのうちディスク上にあるものと、.githooks/内のファイルで、本文にこのドメインのパスを挙げているものです。スクリプトがあることは分かりますが、実際に動いているか、何かを止めたことがあるかは、ファイルからは読み取れません。",
-  "coverageColumnWatchedHint": "package.jsonのlint、typecheck、testスクリプトと、パスフィルターにこのドメインのパスを挙げているCIジョブです。一度も何も検出していないチェックは、コードが安全なのか、チェックが見えていないのかを教えてくれません。",
+  "coverageColumnToldHint": "宣言したパスが、オントロジーに記録されたこのドメインのパスに届くガイドです。そのフォルダのネストした AGENTS.md、paths: が一致する .claude のルール、セッション開始時や依頼送信時に文脈を加えるフックのうちスクリプトがそのパスを書いているものです。ここに載るのは宣言したパスが届くからであり、ツールがおそらく読むからではありません。",
+  "coverageColumnGatedHint": "ツールを使う直前に動くフックスクリプトと .githooks/ のファイルのうち、本文がこのドメインのパスを書いているものです。スクリプトがあるという意味で、何かを止めたことがあるかはファイルからはわかりません。",
+  "coverageColumnWatchedHint": "ツールを使った後やその他のタイミングで動くフック、package.json の lint・typecheck・test スクリプト、paths: フィルターがこのドメインのパスを書いている CI ジョブです。paths-ignore はパスとして数えません。一度も失敗したことのないチェックは、コードが安全なのかチェックが見えていないのかを区別できません。",
   "coverageEmptyTold": "このドメインを挙げるガイドはありません",
   "coverageEmptyGated": "このドメインを挙げるゲートはありません",
   "coverageEmptyWatched": "このドメインを挙げるチェックはありません",
@@ -100,16 +90,6 @@
   "coveragePathless": "実装パスが記録されていないケイパビリティが{count}件あり、ここからは届きません。",
   "coverageNoAreasTitle": "このリポジトリにはエージェント向けファイルがありますが、オントロジーはまだありません",
   "coverageNoAreasBody": "この表の行には、このリポジトリ自身のドメインが並びます。ドメインはオントロジー由来で、人が定義したドメインと、各ケイパビリティが指す実装パスから成ります。これらがないと、伝える、止める、見守るの対象がありません。ガイドの文書は{documents}件見つかっており、ガイド表示にすべて一覧されています。実装パスを持つケイパビリティを含むドメインを定義すると、行が表示されます。",
-  "reachTitle": "エージェントが届く範囲",
-  "reachTotal": "{total}件の手書きMarkdownファイル · {excluded, plural, =0 {除外なし} other {除外フォルダ{excluded}件}}",
-  "reachGuides": "ガイド",
-  "reachGuidesBody": "頼まなくても読まれます。",
-  "reachNamed": "ガイド経由で届く",
-  "reachNamedBody": "ガイドがこのパスを挙げているか、ガイドが挙げるハーネスファイルが挙げています。必要になったときに届きます。",
-  "reachUnnamed": "どのガイドも挙げていない",
-  "reachUnnamedBody": "ディスク上にはありますが、どのガイドもハーネスファイルも挙げていません。Atlasはハーネスファイルだけを読むため、ほかの文書だけが挙げる文書もここに数えます。",
-  "reachRule": "数えているのはグロブではなく参照です。ルールの`paths:` は、そのルールをいつ読み込むかを示すもので、どの文書を読むかではありません。除外するのは、オントロジーフォルダと、このリポジトリの `.gitignore` が生成物として示すフォルダです。それ以外は絞り込みません。サンプルのオントロジーフォルダやアーカイブは3行目に入ります。それらを参照なしにしてよいかは、あなたが判断してください。設計ファイルが挙げられていても参照にすぎず、エージェントがその設計を見た証拠にはなりません。",
-  "reachTruncated": "走査が上限で止まったため、この数は合計ではなく下限です。",
   "coverageNone": "なし",
   "coverageOpenNames": "{area}の{column}: {count, plural, =0 {このドメインを挙げるものはありません} other {宣言{count}件}}",
   "coverageCloseNames": "閉じる",
@@ -123,8 +103,6 @@
   "coverageEverywhereTitle": "すべてのドメインに及ぶ",
   "coverageEverywhereBody": "パスを宣言していないため、どこにでも適用されます。{areas}行すべてに並べず、ここに1回だけ載せています。上のセルが「何も動いていません」ではなく「このドメインを挙げるものはありません」と表示されるのも、このためです。",
   "coverageProvenance": "このページの数え方",
-  "reachBreakdownOpen": "所在",
-  "reachSourceRoot": "読み込み元：{path}",
   "coverageDiscoveredTests": "{count, plural, =0 {記録されたパスの下にもテストファイルはありません。} other {記録されたパスの下にテストファイルが{count}件あり、リポジトリ全体のレーンで実行されます。}}",
   "loadingTitle": "このリポジトリを読み込み中",
   "loadingStageRoots": "ルートのガイド",
@@ -137,113 +115,26 @@
   "loadingCounting": "集計中",
   "loadingAria": "このリポジトリを読み込み中：{stage}",
   "loadingStageCitationHops": "参照をたどっています",
-  "coverageOfAreas": "/ {areas}",
-  "coverageGapTold": "ガイドが挙げていないドメイン",
-  "coverageGapGated": "ゲートが挙げていないドメイン",
-  "coverageGapWatched": "チェックが挙げていないドメイン",
-  "coverageEverywhereStat": "すべてのドメインに及ぶ",
-  "reachNamedDirectLabel": "ガイドが直接挙げている",
-  "anatomyTitle": "ハーネスの構造",
-  "anatomyCaption": "リポジトリのファイルから見つかったガイダンス、ゲート、チェックを、エージェントの作業との関わりで並べています。数えているのは記録されたパーツで、実行回数やスコアではありません。",
-  "anatomyProvenanceLabel": "このパーツの出どころ",
-  "anatomyProvenance": "公開されている4つの出典が、ほぼ同じパーツを挙げています。FowlerとBöckelerの「Harness engineering for coding agent users」は、ガイドとセンサーに分けています。arXiv 2609.00006「Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents」（CC BY 4.0）は、エージェントループ、モデル統合、ツール、メモリとコンテキスト、安全性と権限、オーケストレーション、拡張性の7つのサブシステムを数えています。OpenAIの「Harness engineering」とCodexのAGENTS.mdガイドは、ルートから順に結合される指示の連鎖を説明し、Anthropicの「Effective harnesses for long-running agents」は、コンテキストウィンドウをまたいで作業を引き継ぐ仕組みを説明しています。7つのうち5つは、チェックアウトから数えられます。ループとモデルは数えられません。",
-  "anatomyTellsCaption": "何かに触れる前に、エージェントが読むもの、または渡されるものです。",
-  "anatomyGatesCaption": "お願いするのではなく、実際に止めるものです。",
-  "anatomyWatchesCaption": "あとから動くもの。止めるものはありません。",
-  "anatomyToolBand": "このリポジトリでは決まらない部分",
-  "anatomyToolCaption": "ハーネスの中心ですが、このフォルダからは読み取れません。答えが別の場所にあるため空欄にしていて、何もないという意味ではありません。",
-  "anatomyAbsent": "まだありません",
-  "anatomyMore": "ほか{count}件",
-  "anatomyPermissionSplit": "許可{allow}件 · 確認{ask}件 · 拒否{deny}件",
-  "anatomyApprovalGate": "{config}のフックは、ツール内で人が信頼するまで実行されません。この承認はどのファイルにも残らないため、ここでは読み取れません。",
-  "anatomySlots": {
-    "always": {
-      "title": "毎回読む",
-      "body": "エージェントが作業を始める前に読むガイドです。ここにないものは、自分で探しに行く必要があります。"
-    },
-    "scoped": {
-      "title": "パスで付く",
-      "body": "そのフォルダのファイルに触れたときだけ加わるガイドです。毎回読むものを短く保てるのは、この仕組みのおかげです。"
-    },
-    "tools": {
-      "title": "届くツール",
-      "body": "このリポジトリがMCPでつないでいるサーバです。エージェントが届く範囲を表します。"
-    },
-    "toolGates": {
-      "title": "ツール呼び出しを拒否",
-      "body": "ツール呼び出しの直前に動き、拒否できるフックです。スクリプトがディスク上にあることは分かりますが、実際に何かを止めたかどうかは、ファイルからは読み取れません。"
-    },
-    "permissions": {
-      "title": "そもそも許可しない",
-      "body": "設定の拒否ルールと確認ルールです。パスが解決される前から効き、どのフックよりも優先されます。"
-    },
-    "gitGates": {
-      "title": "コミットやプッシュで検出",
-      "body": ".githooks/内のファイルです。コミットを入力したのが人でもエージェントでも、同じゲートが働きます。"
-    },
-    "watchers": {
-      "title": "事後に見守る",
-      "body": "ツール呼び出しの後やターンの終わりに動くフックです。記録や警告をしますが、止めることはありません。"
-    },
-    "checks": {
-      "title": "コマンドで走らせるチェック",
-      "body": "package.jsonのlint、typecheck、testスクリプトです。数えているのは宣言であり、実行の観測ではありません。"
-    },
-    "discoveredTests": {
-      "title": "名前で見つかるテスト",
-      "body": "どのコマンドにも挙げられていないものの、ランナーが見つけて実行するテストファイルです。"
-    },
-    "loop": {
-      "title": "エージェントループとモデル",
-      "body": "最初に何を読むか、いつ止めるか、コンテキストがいっぱいになったら何を捨てるか、どのモデルで動くか。すべてツールが決めます。このリポジトリをどれだけ読んでも分からず、同じガイドでもツールが違えば結果も変わります。"
-    },
-    "pipeline": {
-      "title": "プッシュ後に実行",
-      "body": ".github/workflows/内のファイルです。コードがこのマシンを離れたあとに動くため、ローカルの実行をすり抜けたものを捕まえます。"
-    },
-    "skills": {
-      "title": "呼ばれたときに取得するスキル",
-      "body": "必要になるまで名前だけが残っている、作業の手順書です。毎回読むものを浅くせずに短く保てるのは、このためです。"
-    },
-    "subagents": {
-      "title": "送り出すサブエージェント",
-      "body": "自分のコンテキストで動くワーカーへの指示書です。同じ名前のCodex用とClaude用は1つと数えます。"
-    },
-    "blind": {
-      "title": "エージェントの視界から外すもの",
-      "body": "エージェントに見せないものを示すファイルです。リポジトリに書くことはできますが、ツールが従うかどうかはツール次第です。",
-      "hintLabel": "製品ごとにファイル名が異なります",
-      "hint": "Cursorは`.cursorignore`と`.cursorindexingignore`、Windsurfは`.codeiumignore`、Gemini Code Assistは`.aiexclude`、Gemini CLIは`.geminiignore`、JetBrainsは`.aiignore`を読みます。JetBrainsは、リポジトリのルートにある最初の3つにも従います。`.claudeignore`はありません。Claude Codeは探索に`.gitignore`を使い、それ以外は設定の拒否リストで制御します。`.agentignore`は提案であり、標準ではありません。"
-    }
-  },
-  "anatomyUnits": {
-    "always": "{count}件の文書",
-    "scoped": "{count}件の文書",
-    "tools": "{count}件のサーバ",
-    "toolGates": "{count}件のフック",
-    "permissions": "{count}件のルール",
-    "gitGates": "{count}件のファイル",
-    "watchers": "{count}件のフック",
-    "checks": "{count}件のスクリプト",
-    "discoveredTests": "{count}件のファイル",
-    "loop": "{count}",
-    "pipeline": "{count}件のワークフロー",
-    "skills": "{count}件のスキル",
-    "subagents": "{count}件の指示書",
-    "blind": "{count}件のファイル"
-  },
-  "anatomyFillHere": "これらの置き場所の例",
-  "anatomyFillCopy": "パスをコピー",
-  "anatomyFillCopied": "コピーしました",
-  "anatomyFillCopyAria": "パスをコピー：{path}",
-  "anatomyAlwaysWeight": "毎ターン読む量：{size}",
-  "anatomyAlwaysWeightLabel": "このサイズが重要な理由",
-  "anatomyAlwaysWeightHint": "これらのファイルは、エージェントがコードを1行も見る前に、毎ターン、すべてのセッションで、ツールを問わず読まれます。件数では表せません。2 KBの文書3件と40 KBの文書3件はどちらも「3」ですが、問題はその差です。CodexはルートのAGENTS.mdと作業パス上のネストしたファイルを結合し、上限を超えた分を通知なく切り捨てます。ファイルごとのサイズと上限の比較は、ガイド表示にあります。",
   "anatomySilentGuards": "{count}件のスクリプトが設定で指定されていますが、ディスク上にありません：{scripts}。エラーも停止も起きず、ガードが無くなっているだけです。",
-  "anatomyChainWeight": "最も深い連鎖{path}は、1ターンあたり{total}のうち{size}を加えます",
-  "anatomyChainWeightLabel": "連鎖の結合方法",
-  "anatomyChainWeightHint": "コーディングエージェントは、リポジトリのルートから作業中のフォルダまで、出会ったAGENTS.mdを連結します。1ディレクトリにつき最大1つで、近いファイルが手前の内容を上書きします。つまり、1ターンのコストはリポジトリで1つではなく、常に読むものに、そのフォルダが加えるものを足した量です。ここに示すのは最も深い連鎖で、最もコストが高い場合です。浅いフォルダでの作業は、これより安く済みます。",
-  "anatomyBrief": "エージェントに渡す",
-  "anatomyBriefCopied": "コピーしました",
-  "anatomyBriefAria": "この読み取り結果を、エージェント向けのテキストとしてコピー"
+  "overviewGapCount": "空き {count} か所",
+  "overviewGapMeaning": "空きとは、そのドメインのパスを指すファイルがないセルです。すべてのドメインに及ぶものは、空きにも適用されます。",
+  "overviewNoGaps": "空きはありません。パスが記録された {domains} 個のドメインすべてで、3 つの列にファイルがあります。",
+  "overviewHandoff": "エージェントに任せる依頼文をコピー",
+  "overviewHandoffHint": "空きを判断して埋める依頼文をコピーします。このリポジトリで使っているコーディングエージェントに貼り付けてください。Atlas からは何も送りません。",
+  "overviewHandoffCopied": "コピーしました。このリポジトリで使っているコーディングエージェントのチャットに貼り付けてください。",
+  "overviewHandoffCopyFailed": "コピーできませんでした。「依頼文を見る」を開いて手でコピーしてください。",
+  "overviewRequestShow": "依頼文を見る",
+  "overviewCellHint": "セルを押すと、そのセルをつくるファイルが横に開きます。",
+  "overviewNoPath": "記録されたパスなし",
+  "overviewNoPathBody": "このドメインには実装パスを記録した機能がないため、どのファイルもこのドメインを指せません。空きには数えません。",
+  "overviewPanelTitle": "{domain} · {column}",
+  "overviewEverywhereApplies": "すべてのドメインに及ぶ {count} 件も、ここに適用されます。",
+  "overviewPermissions": "{config} の禁止・確認項目 {count} 件",
+  "overviewLoopNote": "どのモデルが動き、何を先に読み、いつ止まるかはエージェントのツールが決めるため、リポジトリのファイルからはわかりません。",
+  "overviewRequestGapLine": "- {slug} · {column}: なし · パス: {paths}",
+  "overviewRequestEverywhere": "伝える {told} 件 · 止める {gated} 件 · 見守る {watched} 件",
+  "overviewRequest": "Ontology Atlas がこのリポジトリのエージェントハーネスで見つけた空き {count} か所を見て、埋める必要があるところだけ埋めてください。ファイルを書く前に、パスと全文を見せて、私が了承するまで待ってください。\nFolder: {folder}\n空きとは、そのドメイン内のパスを宣言したハーネスファイルがないという意味です。そこで何も動いていないという意味ではなく、すべてのドメインに及ぶもの（{everywhere}）はそのまま適用されます。\n{gaps}\n空きごとに、まずこのドメインに専用の指示・ブロック・チェックが必要か判断してください。不要なら理由を一行で書き、何も書き込まないでください。必要なら、そのドメインのパスだけを指す最小のファイルを一つ提案してください。伝えるなら paths: のある .claude/rules/NAME.md か FOLDER/AGENTS.md、止めるならそのパスで絞る PreToolUse フックスクリプトか .githooks/ スクリプト、見守るならそのパスを受け取る package.json のチェックか paths: のあるワークフローです。新しいフックスクリプトには .claude/settings.json の hooks か .codex/hooks.json への登録も必要なので、その変更も見せてください。`permissions` は変えないでください。Codex のフックは私が /hooks で信頼して初めて動くので、追加したら知らせてください。宣言したパスが上のパスを含むか、その中にあるときだけセルが埋まり、paths-ignore は数えません。.codex/ や .agents/ に写しを置くかは先に聞いてください。",
+  "coverageKindRoot": "毎回読む",
+  "coverageKindPermissions": "そもそも許可しない",
+  "coverageKindExclusion": "エージェントの視界から外すもの"
 }

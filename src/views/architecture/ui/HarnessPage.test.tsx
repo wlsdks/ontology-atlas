@@ -7,8 +7,15 @@ import type { HarnessReport } from '@/entities/agent-files';
 
 const state = {
   mode: 'local' as 'local' | 'static',
-  /* Only a desktop bridge can read the dot directories the structure view is about. */
+  /* Only a desktop bridge can read the dot directories the overview is about. */
   bridge: true,
+  docs: [] as Array<{
+    slug: string;
+    title: string;
+    excerpt: string;
+    description?: string;
+    frontmatter: Record<string, unknown>;
+  }>,
   report: null as null | {
     status: string;
     sourceRoot?: string;
@@ -21,7 +28,7 @@ const state = {
 
 vi.mock('@/entities/vault-session', () => ({
   useDataSourceMode: () => state.mode,
-  useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: [] } }),
+  useLocalVault: () => ({ status: 'loaded', handle: {}, manifest: { docs: state.docs } }),
   useStaticVaultSource: () => ({ manifest: { docs: [] } }),
   VaultSourceHydrationBoundary: ({ children }: { children: React.ReactNode }) => children,
 }));
@@ -116,6 +123,7 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
 beforeEach(() => {
   state.mode = 'local';
   state.bridge = true;
+  state.docs = [];
   state.report = null;
   /* Only the wait-screen tests fake timers; they must not leak into the arrival's count-up. */
   vi.useRealTimers();
@@ -144,19 +152,19 @@ describe('the destination identity', () => {
     ).toBeNull();
   });
 
-  it('opens on the harness structure, which is what the destination is named after', () => {
+  it('opens on At a glance, which is what the destination is named after', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
     expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
 
   it('arrives on the blueprint in a browser, which is the view a browser can answer', () => {
-    /* The File System Access API cannot see dot directories, so the structure view is empty on the web. */
+    /* The File System Access API cannot see dot directories, so the overview is empty on the web. */
     state.bridge = false;
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
+    expect(screen.queryByTestId('harness-overview')).toBeNull();
   });
 
   it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
@@ -165,14 +173,14 @@ describe('the destination identity', () => {
     state.report = { status: 'no-source' };
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-anatomy')).toBeNull();
+    expect(screen.queryByTestId('harness-overview')).toBeNull();
   });
 
-  it('still opens the structure view when an address names it, source or not', () => {
+  it('still opens the overview when an address names it, source or not', () => {
     /* A shared link opens what it says; the fallback moves the arrival, never the address. */
     state.bridge = true;
     state.report = { status: 'no-source' };
-    window.history.replaceState(null, '', '/ko/architecture/?view=structure');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     mount();
     expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
@@ -181,7 +189,7 @@ describe('the destination identity', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?focus=main');
     mount();
-    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
@@ -191,7 +199,7 @@ describe('the destination identity', () => {
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
     expect(screen.getAllByRole('tablist')).toHaveLength(1);
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(3);
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
@@ -204,19 +212,42 @@ describe('the destination identity', () => {
     const tabs = screen.getAllByRole('tab');
     expect(tabs).toHaveLength(2);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'harness-tabpanel-structure');
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'harness-tabpanel-overview');
   });
+
+  it('offers At a glance, Guides and Architecture with a reading, and arrives on the first', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+    mount();
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent)).toEqual([
+      koMessages.harness.views.overview,
+      koMessages.harness.views.guides,
+      koMessages.harness.views.architecture,
+    ]);
+    expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it.each(['structure', 'coverage', 'sensors'])(
+    'rewrites the retired ?view=%s address to the overview and opens it',
+    (retired) => {
+      state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+      window.history.replaceState(null, '', `/ko/architecture/?view=${retired}&guides=off`);
+      mount();
+      expect(window.location.search).toBe('?view=overview&guides=off');
+      expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    },
+  );
 });
 
 describe('the segmented control', () => {
-  it('moves between the four views and writes the view into the address', () => {
+  it('moves between the three views and writes the view into the address', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-coverage')!);
+      fireEvent.click(document.querySelector('#harness-tab-guides')!);
     });
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
-    expect(window.location.search).toBe('?view=coverage');
+    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
+    expect(window.location.search).toBe('?view=guides');
 
     act(() => {
       fireEvent.click(document.querySelector('#harness-tab-architecture')!);
@@ -225,20 +256,20 @@ describe('the segmented control', () => {
     expect(window.location.search).toBe('?view=architecture');
 
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+      fireEvent.click(document.querySelector('#harness-tab-overview')!);
     });
-    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
     expect(window.location.search).toBe('');
   });
 
-  it('writes the structure view into a browser address, where the plain one means the blueprint', () => {
-    /* On the web the plain address means the blueprint, so the structure tab must write `?view=` or a refresh reopens the ladder. */
+  it('writes the overview into a browser address, where the plain one means the blueprint', () => {
+    /* On the web the plain address means the blueprint, so the overview tab must write `?view=` or a refresh reopens the ladder. */
     state.bridge = false;
     const view = mount();
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-structure')!);
+      fireEvent.click(document.querySelector('#harness-tab-overview')!);
     });
-    expect(window.location.search).toBe('?view=structure');
+    expect(window.location.search).toBe('?view=overview');
 
     view.unmount();
     mount();
@@ -253,30 +284,29 @@ describe('the segmented control', () => {
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-anatomy')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
     act(() => {
-      window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+      window.history.replaceState(null, '', '/ko/architecture/?view=guides');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     // The address and the screen must name the same view; that is what putting it in the URL is for.
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
   });
 
   it('opens the view the address names', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
   });
 
-  it('keeps the census off the structure view, where the bands count differently', () => {
-    /* The sentence and the bands count mirrored guards differently, so printing both argued with itself. */
+  it('keeps the census on Guides only', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     expect(screen.queryByTestId('harness-sentence')).toBeNull();
 
     act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-coverage')!);
+      fireEvent.click(document.querySelector('#harness-tab-guides')!);
     });
     expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
   });
@@ -289,16 +319,9 @@ describe('the segmented control', () => {
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
-  it('sends the retired sensors address to the view that answers it', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=sensors');
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
-  });
-
   it('shows the passes it is actually running rather than a word on a black screen', () => {
     /* The wait names each pass and fills a bar only with a known denominator; the checkout walk sweeps. */
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
@@ -322,7 +345,7 @@ describe('the segmented control', () => {
   it('shows no wait screen at all for a read that finishes inside the threshold', () => {
     /* A fast read flashes nothing: the panel is held back for a second. This assertion is the gate on that threshold. */
     vi.useFakeTimers();
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
@@ -342,7 +365,7 @@ describe('the segmented control', () => {
   it('swaps the panel for the result in one commit when a read lands just past the threshold', () => {
     /* A read finishing near the threshold shows an unfinished entrance and is removed: deliberate, since holding the panel would delay the answer. */
     vi.useFakeTimers();
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
@@ -361,11 +384,11 @@ describe('the segmented control', () => {
       );
     });
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
-    expect(screen.getByTestId('harness-coverage')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
   });
 
   it('never invents a denominator for a pass whose length it cannot know', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
@@ -428,8 +451,7 @@ describe('honest degradation', () => {
     expect(reason).toHaveTextContent('/repo');
     expect(reason.textContent).not.toMatch(/source-root-not-granted/);
     expect(reason).toHaveAttribute('data-failure-code', 'source-root-not-granted');
-    expect(screen.queryByTestId('harness-structure-sentence')).toBeNull();
-    expect(screen.getByTestId('harness-retry')).toBeInTheDocument();
+        expect(screen.getByTestId('harness-retry')).toBeInTheDocument();
   });
 
   it('names the platform when the app cannot read a connected folder on it', () => {
@@ -439,23 +461,153 @@ describe('honest degradation', () => {
   });
 });
 
-describe('the coverage matrix', () => {
-  it('says what it cannot show when the ontology records no domain, and still answers the half that needs none', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
-    /* With agent files and no ontology the grid would print headers over nothing; the document census still runs. */
+describe('the at-a-glance table', () => {
+  const shopDocs = () => [
+    {
+      slug: 'shop',
+      title: 'Shop',
+      excerpt: 'Sells things.',
+      frontmatter: { kind: 'domain', slug: 'shop', display_ko: '가게 영역' },
+    },
+    {
+      slug: 'cart',
+      title: 'Cart',
+      excerpt: 'Holds items.',
+      frontmatter: { kind: 'capability', slug: 'cart', domain: 'shop', path: 'src/shop/cart.ts' },
+    },
+    {
+      slug: 'notes',
+      title: 'Notes',
+      excerpt: 'Keeps notes.',
+      frontmatter: { kind: 'domain', slug: 'notes' },
+    },
+  ];
+
+  const ready = () => {
+    state.docs = shopDocs();
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+  };
+
+  it('shows an amber gap in every column of a domain no file names, and counts only those', () => {
+    ready();
     mount();
-    expect(screen.getByText('이 저장소에는 에이전트 파일은 있고 온톨로지는 아직 없어요')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).toBeNull();
-    expect(screen.getByTestId('harness-reach')).toBeInTheDocument();
+    const row = document.querySelector('[data-harness-area="shop"]')!;
+    const gaps = row.querySelectorAll('[data-harness-cell-state="gap"]');
+    expect(gaps).toHaveLength(3);
+    for (const cell of gaps) expect(cell).toHaveTextContent(koMessages.harness.coverageNone);
+
+    const pathless = document.querySelector('[data-harness-area="notes"]')!;
+    expect(pathless.querySelector('[data-harness-cell="path"]')).toHaveTextContent(
+      koMessages.harness.overviewNoPath,
+    );
+    expect(pathless.querySelectorAll('[data-harness-cell-state="gap"]')).toHaveLength(0);
+    expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '3');
   });
 
-  it('never renders a score, a grade or a percentage', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=coverage');
-    /* No score: files cannot support a judgement of a repository. */
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
+  it('opens a cell in a panel and closes it with Escape, returning focus to the cell', () => {
+    ready();
     mount();
-    const text = screen.getByTestId('harness-coverage').textContent ?? '';
-    expect(text).not.toMatch(/%|\bA\+|\b[0-9]+\s*\/\s*10\b|점수|등급|성숙도/);
+    const cell = document.querySelector<HTMLButtonElement>(
+      '[data-harness-area="shop"] [data-harness-cell="told"]',
+    )!;
+    act(() => {
+      fireEvent.click(cell);
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|told');
+    act(() => {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'false');
+    expect(cell).toHaveFocus();
+  });
+
+  it('copies a request that carries slugs and paths, never a display name, and sends nothing', async () => {
+    ready();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    mount();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
+    });
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const text = writeText.mock.calls[0]![0] as string;
+    expect(text).toContain('shop');
+    expect(text).toContain('src/shop/cart.ts');
+    expect(text).toContain('/repo');
+    expect(text).toContain('.claude/settings.json');
+    expect(text).toContain('`permissions`');
+    expect(text).not.toContain('가게 영역');
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(screen.getByTestId('harness-overview-handoff-status')).toHaveTextContent(
+      koMessages.harness.overviewHandoffCopied,
+    );
+    fetchSpy.mockRestore();
+  });
+
+  it('says the clipboard refused and shows the same text to copy by hand', async () => {
+    ready();
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    Object.defineProperty(document, 'execCommand', { value: vi.fn(() => false), configurable: true });
+    mount();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
+    });
+    expect(screen.getByTestId('harness-overview-handoff-status')).toHaveTextContent(
+      koMessages.harness.overviewHandoffCopyFailed,
+    );
+    act(() => {
+      fireEvent.click(screen.getByTestId('harness-overview-request-toggle'));
+    });
+    const shown = screen.getByTestId('harness-overview-request').textContent;
+
+    writeText.mockResolvedValue(undefined);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
+    });
+    expect(writeText).toHaveBeenLastCalledWith(shown);
+  });
+
+  it('closes the panel and puts focus on the tab panel when the reading is asked for again', () => {
+    ready();
+    mount();
+    const cell = document.querySelector<HTMLButtonElement>(
+      '[data-harness-area="shop"] [data-harness-cell="gated"]',
+    )!;
+    act(() => {
+      fireEvent.click(cell);
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'true');
+    act(() => {
+      fireEvent.click(screen.getByTestId('harness-overview-retry'));
+    });
+    expect(cell).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('tabpanel')).toHaveFocus();
+  });
+
+  it('says no gaps and offers no copy action when every column has a file', () => {
+    state.docs = shopDocs().slice(0, 2);
+    state.report = {
+      status: 'ready',
+      sourceRoot: '/repo',
+      report: fakeReport({
+        coverage: (['told', 'gated', 'watched'] as const).map((column) => ({
+          column,
+          id: `src/${column}.sh`,
+          label: `src/${column}.sh`,
+          origin: 'script' as const,
+          declaration: 'src/shop',
+          declaresPath: true,
+          scopes: ['src/shop'],
+          tools: [],
+        })),
+      }),
+    };
+    mount();
+    expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '0');
+    expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
   });
 });
+
