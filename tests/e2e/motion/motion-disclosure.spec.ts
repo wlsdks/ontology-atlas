@@ -62,9 +62,9 @@ function firstStepShare(values: number[]): number {
 async function openProvenance(page: Page) {
   await installHarnessRuntime(page);
   await mountHarnessVault(page);
-  await page.goto("/en/architecture/?view=coverage");
-  await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
-  const trigger = page.getByTestId("harness-coverage-provenance");
+  await page.goto("/en/architecture/?view=overview");
+  await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
+  const trigger = page.getByTestId("harness-overview-provenance");
   const box = page.locator(`#${(await trigger.getAttribute("aria-controls"))!.replace(/:/g, "\\:")}`);
   return { trigger, box };
 }
@@ -88,7 +88,7 @@ test.describe("Disclosure motion", () => {
     expect(closing.inertAtFirstFrame).toBe(true);
     expect(closing.height.at(-1)!).toBeLessThan(closing.height[0]!);
     expect(maxStepShare(closing.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
-    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-coverage"]'), { reflow: ["height"] });
+    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-overview"]'), { reflow: ["height"] });
   });
 
   test("an immediate second key press reverses the disclosure", async ({ page }) => {

@@ -31,6 +31,6 @@ export {
   type HarnessScanPort,
   type HarnessScanProgress,
 } from './model/repo-scan';
-export { citesPath, type DocumentReach } from './model/document-reach';
+export { citesPath } from './model/document-reach';
 export { type HookConfigFacts } from './model/hook-wiring';
 export { guideCitation, CITATIONS_REVIEWED } from './model/guide-citations';

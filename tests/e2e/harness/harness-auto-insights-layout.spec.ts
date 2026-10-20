@@ -11,11 +11,10 @@ test.describe('Harness hints', () => {
     await mountHarnessVault(page);
   });
 
-  test('the loop card hint opens a readable panel, not a one-syllable column', async ({ page }) => {
-    await page.goto('/ko/architecture/?guides=off');
-    const core = page.getByTestId('harness-anatomy-band-tool');
-    await expect(core).toBeVisible({ timeout: 30_000 });
-    const button = core.getByRole('button');
+  test('a column head hint opens a readable panel, not a one-syllable column', async ({ page }) => {
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    const button = page.getByRole('button', { name: '지켜보는 것', exact: true });
+    await expect(button).toBeVisible({ timeout: 30_000 });
     await button.hover();
     const panel = await hintPanel(page, button);
     await expect(panel).toHaveCSS('opacity', '1');
@@ -28,8 +27,8 @@ test.describe('Harness hints', () => {
 
   test('hint panels hang from the button that opened them', async ({ page }) => {
     for (const [route, name] of [
-      ['/ko/architecture/?guides=off', '이 구분은 어디서 왔나'],
-      ['/ko/architecture/?view=coverage&guides=off', '검사를 세는 방법'],
+      ['/ko/architecture/?guides=off', '말해둔 것'],
+      ['/ko/architecture/?view=guides&guides=off', '검사를 세는 방법'],
     ] as const) {
       await page.goto(route);
       const button = page.getByRole('button', { name, exact: true }).first();
@@ -91,35 +90,38 @@ test.describe('Architecture toolbar', () => {
   });
 });
 
-test.describe('Harness coverage detail', () => {
-  test('an open cell detail pushes the rows below instead of covering their cells', async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-    await page.goto('/ko/architecture/?view=coverage&guides=off');
-    const first = page.locator('[data-harness-cell="told"]').first();
-    await expect(first).toBeVisible({ timeout: 30_000 });
-    await first.click();
-    await expect(page.getByTestId('harness-coverage-detail')).toBeVisible();
-    const covered = await page.evaluate(() => {
-      const cells = [...document.querySelectorAll<HTMLElement>('[data-harness-cell]')];
-      const view = document.querySelector('[role="tabpanel"]')!.getBoundingClientRect();
-      const out: string[] = [];
-      for (const cell of cells) {
-        const rect = cell.getBoundingClientRect();
-        const y = rect.top + rect.height / 2;
-        /* Only cells whose centre the scroller shows; a clipped cell is not an overlap. */
-        if (y < view.top || y > Math.min(view.bottom, window.innerHeight)) continue;
-        const hit = document.elementFromPoint(rect.left + rect.width / 2, y);
-        if (!hit || !cell.contains(hit)) {
-          out.push(`${cell.getAttribute('aria-label')} → ${hit ? `${hit.tagName}.${String(hit.className).slice(0, 50)}` : 'null'}`);
+test.describe('Harness overview panel', () => {
+  for (const [width, height] of [[1512, 949], [1024, 768]] as const) {
+    test(`the open panel covers no cell at ${width}`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await installHarnessRuntime(page);
+      await mountHarnessVault(page);
+      await page.goto('/ko/architecture/?view=overview&guides=off');
+      const first = page.locator('[data-harness-cell="told"]').first();
+      await expect(first).toBeVisible({ timeout: 30_000 });
+      await first.click();
+      await expect(page.getByTestId('harness-overview-panel')).toBeVisible();
+      await waitForAnimationsDone(page.getByTestId('harness-overview-panel'));
+      const covered = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll<HTMLElement>('[data-harness-cell]')];
+        const view = document.querySelector('[data-testid="harness-overview-scroll"]')!.getBoundingClientRect();
+        const out: string[] = [];
+        for (const cell of cells) {
+          const rect = cell.getBoundingClientRect();
+          const y = rect.top + rect.height / 2;
+          /* Only cells whose centre the scroller shows; a clipped cell is not an overlap. */
+          if (y < view.top || y > Math.min(view.bottom, window.innerHeight)) continue;
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, y);
+          if (!hit || !cell.contains(hit)) {
+            out.push(`${cell.getAttribute('aria-label')} → ${hit ? `${hit.tagName}.${String(hit.className).slice(0, 50)}` : 'null'}`);
+          }
         }
-      }
-      return out;
+        return out;
+      });
+      expect(covered, 'cells covered by the open panel').toEqual([]);
+      await expect(first).toHaveAttribute('aria-controls', /.+/);
     });
-    expect(covered, 'cells covered by the open detail').toEqual([]);
-    await expect(first).toHaveAttribute('aria-controls', /harness-coverage-detail-/);
-  });
+  }
 });
 
 test.describe('Analysis', () => {

@@ -15,7 +15,10 @@ type CoverageOrigin =
   | 'hook'
   | 'git-hook'
   | 'script'
-  | 'workflow';
+  | 'workflow'
+  | 'root'
+  | 'permissions'
+  | 'exclusion';
 
 /** One file, or one `package.json` script, and the path scope it declares. */
 export interface ScopeDeclaration {
@@ -35,6 +38,7 @@ export interface ScopeDeclaration {
   namedBy?: string;
   /** Agent tools reading this file, so mirrored `.claude` and `.codex` hooks are told apart. */
   tools: readonly AgentTool[];
+  denyAndAskRuleCount?: number;
 }
 
 /**
@@ -113,7 +117,7 @@ export function commandPathScopes(command: string): string[] {
 export function workflowPathFilters(yaml: string): string[] {
   const head = String(yaml ?? '').split(/\njobs:/)[0];
   const out: string[] = [];
-  const block = /^[ \t]+paths(?:-ignore)?:[ \t]*\n((?:[ \t]+-[ \t]*.*\n?)+)/gm;
+  const block = /^[ \t]+paths:[ \t]*\n((?:[ \t]+-[ \t]*.*\n?)+)/gm;
   let match: RegExpExecArray | null;
   while ((match = block.exec(head)) !== null) {
     for (const line of match[1].split('\n')) {

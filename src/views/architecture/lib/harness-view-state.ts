@@ -1,18 +1,17 @@
 /**
  * `/architecture` view state. `?view=` is the source of truth (refresh, shared link, agent handoff),
- * with the same grammar as `/mcp`'s `?tab=`. `structure` opens the harness anatomy and the layer
- * ladder is `architecture`; old `structure` links are not redirected. `?view=sensors` opens coverage.
+ * with the same grammar as `/mcp`'s `?tab=`. Retired names resolve to `overview`.
  */
-const HARNESS_VIEWS = ['structure', 'coverage', 'guides', 'architecture'] as const;
+const HARNESS_VIEWS = ['overview', 'guides', 'architecture'] as const;
 
 export type HarnessView = (typeof HARNESS_VIEWS)[number];
 
-/** The anatomy is the arrival: a destination named Harness must not open on the architecture ladder. */
-export const DEFAULT_HARNESS_VIEW: HarnessView = 'structure';
+export const DEFAULT_HARNESS_VIEW: HarnessView = 'overview';
 
-/** Addresses that named a view this slice replaced, and what they resolve to now. */
 const RETIRED_VIEWS: Readonly<Record<string, HarnessView>> = Object.freeze({
-  sensors: 'coverage',
+  sensors: 'overview',
+  structure: 'overview',
+  coverage: 'overview',
 });
 
 function isHarnessView(value: string): value is HarnessView {
@@ -34,7 +33,7 @@ const BLUEPRINT_ONLY_PARAMS = ['role', 'stage'] as const;
 /** The view an address names, directly or by a blueprint-only parameter; `?view=` always wins. */
 export function resolveAddressView(
   params: URLSearchParams | null | undefined,
-  /** Whether this surface can read the dot directories the structure view is about. */
+  /** Whether this surface can read the dot directories the overview is about. */
   canReadHarness = true,
 ): HarnessView {
   const raw = params?.get('view');
@@ -43,10 +42,7 @@ export function resolveAddressView(
   return defaultViewForSurface(canReadHarness);
 }
 
-/**
- * The browser cannot see dot directories, so the structure view would be empty there: the app
- * arrives on structure, the browser on the blueprint. An address that names a view always wins.
- */
+/** The browser cannot see dot directories: the app arrives on the overview, the browser on the blueprint. */
 export function defaultViewForSurface(canReadHarness: boolean): HarnessView {
   return canReadHarness ? DEFAULT_HARNESS_VIEW : 'architecture';
 }
@@ -71,3 +67,13 @@ export function buildHarnessViewHref(
 }
 
 export const HARNESS_VIEW_ORDER: readonly HarnessView[] = HARNESS_VIEWS;
+
+/** The query with a retired `view=` set to its current name in place, or null when nothing is retired. */
+export function rewriteRetiredView(search: string): string | null {
+  const params = new URLSearchParams(search);
+  const raw = params.get('view');
+  const next = raw ? RETIRED_VIEWS[raw] : undefined;
+  if (!next) return null;
+  params.set('view', next);
+  return `?${params.toString()}`;
+}

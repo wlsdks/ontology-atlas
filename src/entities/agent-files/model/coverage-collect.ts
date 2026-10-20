@@ -5,9 +5,10 @@ import {
   scopeReaches,
   scriptPathScopes,
   workflowPathFilters,
+  type CoverageColumn,
   type ScopeDeclaration,
 } from './coverage-scopes';
-import { agentToolsForPath } from './agent-files';
+import { AGENT_FILE_RULES, agentToolsForPath } from './agent-files';
 import type { HookConfigFacts } from './hook-wiring';
 
 /**
@@ -41,6 +42,51 @@ function hookLabel(path: string): string {
   return (path.split('/').pop() ?? path).replace(/\.(sh|mjs|cjs|js|py)$/, '');
 }
 
+const ROOT_GUIDE_RULES = new Set([
+  'claude-md',
+  'agents-md',
+  'gemini-md',
+  'copilot-instructions',
+]);
+
+function hookEventColumn(event: string): CoverageColumn {
+  if (/\bpre[-_]?tool|\bbefore[-_]?tool/i.test(event)) return 'gated';
+  if (/^(session[-_]?start|user[-_]?prompt[-_]?submit)$/i.test(event)) return 'told';
+  return 'watched';
+}
+
+function denyAndAskRuleCount(text: string | undefined): number {
+  if (!text) return 0;
+  try {
+    const permissions = (JSON.parse(text) as { permissions?: unknown } | null)?.permissions;
+    if (!permissions || typeof permissions !== 'object') return 0;
+    const read = (key: 'deny' | 'ask'): number => {
+      const value = (permissions as Record<string, unknown>)[key];
+      return Array.isArray(value) ? value.length : 0;
+    };
+    return read('deny') + read('ask');
+  } catch {
+    return 0;
+  }
+}
+
+function pathless(
+  column: CoverageColumn,
+  origin: ScopeDeclaration['origin'],
+  path: string,
+): ScopeDeclaration {
+  return {
+    column,
+    id: path,
+    label: path,
+    origin,
+    declaration: '',
+    declaresPath: false,
+    scopes: [],
+    tools: agentToolsForPath(path),
+  };
+}
+
 /** Candidates before the disk is consulted; exported for tests. */
 export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDeclaration[] {
   const out: ScopeDeclaration[] = [];
@@ -60,38 +106,58 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
       tools: agentToolsForPath(path),
     });
   }
+  for (const path of input.contents.keys()) {
+    const rule = AGENT_FILE_RULES.find((candidate) => candidate.pattern.test(path));
+    if (!rule) continue;
+    if (ROOT_GUIDE_RULES.has(rule.id)) out.push(pathless('told', 'root', path));
+    else if (rule.kind === 'exclusion' && rule.id !== 'cursor-indexing-ignore') out.push(pathless('gated', 'exclusion', path));
+  }
+  const permissionRules = denyAndAskRuleCount(input.contents.get('.claude/settings.json'));
+  if (permissionRules > 0) {
+    out.push({
+      ...pathless('gated', 'permissions', '.claude/settings.json#permissions'),
+      label: '.claude/settings.json',
+      tools: agentToolsForPath('.claude/settings.json'),
+      denyAndAskRuleCount: permissionRules,
+    });
+  }
   for (const [path, text] of input.contents) {
     if (!path.startsWith(RULE_PREFIX) || !path.endsWith('.md')) continue;
     const globs = ruleGlobs(text);
+    const scopes = globs.map(literalPrefix);
+    const rooted = scopes.some((scope) => !scope);
     out.push({
       column: 'told',
       id: path,
       label: ruleLabel(path),
       origin: 'rule',
       declaration: globs.length > 0 ? `paths: ${globs.join(' · ')}` : '',
-      declaresPath: globs.length > 0,
-      scopes: globs.map(literalPrefix).filter(Boolean),
+      declaresPath: globs.length > 0 && !rooted,
+      scopes: rooted ? [] : scopes,
       tools: agentToolsForPath(path),
     });
   }
 
   for (const group of input.hookGroups) {
     for (const hook of group.hooks) {
-      /* Only hooks whose script exists; an unresolved config entry cannot gate anything. */
+      /* Only hooks whose script exists; an unresolved entry runs nothing. */
       if (hook.status !== 'wired' || !hook.ref.path) continue;
       const body = input.contents.get(hook.ref.path) ?? '';
       const scopes = scriptPathScopes(body);
-      out.push({
-        column: 'gated',
-        id: hook.ref.path,
-        label: hookLabel(hook.ref.path),
-        origin: 'hook',
-        declaration: scopes.join(' · '),
-        declaresPath: scopes.length > 0,
-        scopes,
-        namedBy: group.configPath,
-        tools: agentToolsForPath(hook.ref.path),
-      });
+      const columns = new Set(hook.events.split(' · ').map(hookEventColumn));
+      for (const column of columns) {
+        out.push({
+          column,
+          id: hook.ref.path,
+          label: hookLabel(hook.ref.path),
+          origin: 'hook',
+          declaration: scopes.join(' · '),
+          declaresPath: scopes.length > 0,
+          scopes,
+          namedBy: group.configPath,
+          tools: agentToolsForPath(hook.ref.path),
+        });
+      }
     }
   }
   for (const [name, body] of input.gitHooks) {
@@ -123,14 +189,16 @@ export function candidateScopeDeclarations(input: CoverageScanInput): ScopeDecla
   }
   for (const [path, text] of input.workflows) {
     const filters = workflowPathFilters(text);
+    const scopes = filters.map(literalPrefix);
+    const rooted = scopes.some((scope) => !scope);
     out.push({
       column: 'watched',
       id: path,
       label: path.split('/').pop() ?? path,
       origin: 'workflow',
       declaration: filters.length > 0 ? `paths: ${filters.join(' · ')}` : '',
-      declaresPath: filters.length > 0,
-      scopes: filters.map(literalPrefix).filter(Boolean),
+      declaresPath: filters.length > 0 && !rooted,
+      scopes: rooted ? [] : scopes,
       tools: [],
     });
   }

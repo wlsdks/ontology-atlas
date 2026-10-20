@@ -58,25 +58,37 @@ function declarationReachesArea(entry: ScopeDeclaration, area: CoverageAreaInput
   );
 }
 
+function testCoversPath(file: string, path: string): boolean {
+  if (file === path || file.startsWith(`${path}/`)) return true;
+  const slash = path.lastIndexOf('/');
+  const base = path.slice(slash + 1);
+  const dot = base.lastIndexOf('.');
+  if (dot <= 0) return false;
+  const dir = path.slice(0, slash + 1);
+  const name = file.slice(file.lastIndexOf('/') + 1);
+  const folder = file.slice(0, file.length - name.length);
+  return (
+    (folder === dir || folder === `${dir}__tests__/`) &&
+    name.startsWith(`${base.slice(0, dot)}.`) &&
+    /\.(test|spec)\./.test(name)
+  );
+}
+
 /** The only place the join rule lives. */
 export function buildCoverageMatrix(
   declarations: readonly ScopeDeclaration[],
   areas: readonly CoverageAreaInput[],
   testFiles: readonly string[] = [],
 ): CoverageMatrix {
-  /* A scope reaching every area is universal in fact and goes to the strip, not every row. */
-  const reachesEveryArea = (entry: ScopeDeclaration) =>
-    areas.length > 1 && areas.every((area) => declarationReachesArea(entry, area));
-  const scoped = declarations.filter(
-    (entry) => entry.declaresPath && entry.scopes.length > 0 && !reachesEveryArea(entry),
-  );
+  /* O(areas x (declarations x capabilities x scopes + testFiles x capabilities)). */
+  const scoped = declarations.filter((entry) => entry.declaresPath && entry.scopes.length > 0);
   const everywhere: Record<CoverageColumn, ScopeDeclaration[]> = {
     told: [],
     gated: [],
     watched: [],
   };
   for (const entry of declarations) {
-    if (!entry.declaresPath || reachesEveryArea(entry)) everywhere[entry.column].push(entry);
+    if (!entry.declaresPath) everywhere[entry.column].push(entry);
   }
   for (const column of COLUMNS) sortDeclarations(everywhere[column]);
 
@@ -91,9 +103,7 @@ export function buildCoverageMatrix(
     }
     for (const column of COLUMNS) sortDeclarations(buckets[column]);
     const discoveredTests = testFiles.filter((file) =>
-      area.capabilities.some(
-        (capability) => file === capability.path || file.startsWith(`${capability.path}/`),
-      ),
+      area.capabilities.some((capability) => testCoversPath(file, capability.path)),
     ).length;
     return {
       ...area,
