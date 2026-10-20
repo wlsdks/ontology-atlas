@@ -60,9 +60,9 @@ function firstStepShare(values: number[]): number {
 async function openProvenance(page: Page) {
   await installHarnessRuntime(page);
   await mountHarnessVault(page);
-  await page.goto("/en/architecture/?view=coverage");
-  await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
-  const trigger = page.getByTestId("harness-coverage-provenance");
+  await page.goto("/en/architecture/?view=overview");
+  await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
+  const trigger = page.getByTestId("harness-overview-provenance");
   const box = page.locator(`#${(await trigger.getAttribute("aria-controls"))!.replace(/:/g, "\\:")}`);
   return { trigger, box };
 }

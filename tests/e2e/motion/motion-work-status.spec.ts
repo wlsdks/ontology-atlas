@@ -51,7 +51,7 @@ async function openHeldScan(page: Page) {
   await holdSourceReads(page);
   await mountHarnessVault(page);
   await page.evaluate(() => sessionStorage.setItem("motion-hold-source", "1"));
-  await page.goto("/ko/architecture/?view=coverage&guides=off");
+  await page.goto("/ko/architecture/?view=overview&guides=off");
   const panel = page.getByTestId("harness-scan-progress");
   await expect(panel).toBeVisible({ timeout: 15_000 });
   return panel;

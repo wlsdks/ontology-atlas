@@ -462,25 +462,25 @@ test.describe("Harness tab layout", () => {
     console.info('GUIDANCE_GEOMETRY_MATRIX', JSON.stringify(measurements));
   });
 
-  test('structure fits a desktop viewport and confines long evidence to its work area', async ({ page }) => {
+  test('At a glance fits the window: only its table scrolls, under fixed column heads', async ({ page }) => {
+    await installHarnessRuntime(page, { includeOverflowDomains: true });
     await mountHarnessVault(page);
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/ko/architecture/?view=structure&guides=off');
-    const work = page.getByTestId('harness-structure-scroll');
-    await expect(page.getByTestId('harness-structure-diagram')).toBeVisible();
-    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
-
-    const panel = page.locator('#harness-tabpanel-structure');
-    const panelTop = await panel.evaluate(el => el.getBoundingClientRect().top);
     await page.setViewportSize({ width: 1040, height: 720 });
-    await page.getByTestId('harness-diagram-node-always').click();
-    await expect(page.getByTestId('harness-anatomy-slot-always')).toBeVisible();
-    await expect.poll(() => work.evaluate(el => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
-    await work.evaluate(el => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
-    await expect.poll(() => panel.evaluate(el => el.scrollTop)).toBe(0);
-    expect(await panel.evaluate(el => el.getBoundingClientRect().top)).toBe(panelTop);
-    await expect(page.getByTestId('harness-view-diagram')).toBeInViewport();
-    await expect(page.getByTestId('harness-view-text')).toBeInViewport();
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    const scroller = page.getByTestId('harness-overview-scroll');
+    await expect(scroller).toBeVisible({ timeout: 30_000 });
+    await expect.poll(() => scroller.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => document.documentElement.scrollHeight - innerHeight)).toBeLessThanOrEqual(0);
+
+    await scroller.evaluate((el) => el.scrollTo({ top: el.scrollHeight, behavior: 'instant' }));
+    const gap = () =>
+      page.evaluate(() => {
+        const top = document.querySelector('[data-testid="harness-overview-scroll"]')!.getBoundingClientRect().top;
+        const th = document.querySelector('[data-testid="harness-overview-table"] th')!.getBoundingClientRect().top;
+        return Math.round(th - top);
+      });
+    await expect.poll(gap).toBe(0);
+    await expect(page.getByTestId('harness-overview-gaps')).toBeInViewport();
     expect(await page.evaluate(() => ({ x: scrollX, y: scrollY, overflow: document.documentElement.scrollWidth - innerWidth }))).toEqual({ x: 0, y: 0, overflow: 0 });
   });
 });

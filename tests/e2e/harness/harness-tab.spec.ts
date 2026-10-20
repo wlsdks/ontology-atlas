@@ -267,60 +267,72 @@ test.describe("harness tab", () => {
     console.info('GUIDANCE_BRIEF_SCROLL_RESTORE', JSON.stringify({ briefBefore, briefAfter }));
   });
 
-  test("the default view is the harness structure, and the segment writes the view into the address", async ({ page }) => {
+  test("the default view is At a glance, the tabs write the view, and a reload keeps it", async ({ page }) => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/");
-    await expect(page.getByTestId("harness-anatomy")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("#harness-tab-overview")).toHaveAttribute("aria-selected", "true");
 
     await page.locator("#harness-tab-guides").click();
     await expect(page).toHaveURL(/\?view=guides$/);
-    await page.locator("#harness-tab-coverage").click();
-    await expect(page).toHaveURL(/\?view=coverage$/);
-    await expect(page.getByTestId("harness-coverage")).toBeVisible();
+    await expect(page.getByTestId("harness-guides")).toBeVisible();
 
     /*
-     * The address is rewritten in place, not pushed — switching view inside one destination is not
-     * a place a person navigated to, and pushing would make Back walk the segmented control instead
-     * of leaving the screen (the grammar `/mcp` already uses for its tabs). What the URL owes is a
-     * refresh and a shared link landing on the same view.
+     * The address is rewritten in place, not pushed: switching view inside one destination is not a
+     * place a person navigated to, and pushing would make Back walk the tabs instead of leaving.
      */
     await page.reload();
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
-    await expect(page).toHaveURL(/\?view=coverage$/);
+    await expect(page.getByTestId("harness-guides")).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/\?view=guides$/);
+
+    await page.locator("#harness-tab-overview").click();
+    await expect(page.getByTestId("harness-overview")).toBeVisible();
+    expect(new URL(page.url()).search).toBe("");
   });
 
-  test('reduced motion keeps the selected evidence fade without travel', async ({page}) => {
-    await page.emulateMedia({reducedMotion:'reduce'});
+  test('reduced motion keeps the panel an opacity fade without travel, and a swap on the short fade', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await mountHarnessVault(page);
-    await page.goto('/ko/architecture/?view=structure&guides=off');
-    await page.getByTestId('harness-diagram-node-scoped').click();
-    const evidence=page.getByTestId('harness-anatomy-slot-scoped');
-    await expect(evidence).toBeVisible();
-    const motion=await evidence.evaluate(el=>{
-      const detail=el.closest('ul')!.parentElement!;
-      const style=getComputedStyle(detail);
-      return {name:style.animationName,duration:style.animationDuration,transform:style.transform};
+    await page.goto('/ko/architecture/?view=overview&guides=off');
+    const front = page.locator('[data-harness-area="domains/shop-front"]');
+    await front.locator('[data-harness-cell="told"]').click();
+    const surface = page.locator('aside[data-surface-state]');
+    await expect(surface).toBeVisible();
+    const entering = await surface.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { name: style.animationName, transform: style.transform };
     });
-    expect(motion.name).toContain('detailFade');
-    expect(motion.duration).toBe('0.12s');
-    expect(motion.transform).toBe('none');
+    expect(entering.name).toContain('panelCrossfadeIn');
+    expect(entering.transform).toBe('none');
+
+    await waitForFiniteAnimations(page);
+    /* Pressed inside the page so the read lands in the frame the swap exists, which lasts about 120ms. */
+    const swap = await page.evaluate(async () => {
+      const next = document.querySelector<HTMLElement>(
+        '[data-harness-area="domains/shop-front"] [data-harness-cell="gated"]',
+      )!;
+      next.click();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const incoming = document.querySelector<HTMLElement>('[data-testid="harness-overview-panel"] .motion-swap-in');
+      return incoming ? { duration: getComputedStyle(incoming).animationDuration } : null;
+    });
+    expect(swap).toEqual({ duration: '0.12s' });
   });
 
-  test("the retired sensors address goes to the view that answers that question", async ({ page }) => {
-    /*
-     * `?focus=main` names no view, so it opens the destination's own arrival screen:
-     * the harness structure.
-     */
+  test("the retired addresses go to At a glance, keeping the rest of the address", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=sensors");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    for (const retired of ["sensors", "structure", "coverage"]) {
+      await page.goto(`/ko/architecture/?view=${retired}&guides=off`);
+      await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
+      await expect(page).toHaveURL(/\?view=overview&guides=off$/);
+    }
 
+    /* `?focus=main` names no view, so it opens the destination's own arrival screen. */
     await page.goto("/ko/architecture/?focus=main");
-    await expect(page.getByTestId("harness-anatomy")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
 
     /* A blueprint deep link keeps working with no `?view=` on it: `?role=` and `?stage=` exist on
-       no other view, so an address carrying one names the blueprint by itself. Every link written
-       while the blueprint was the default would otherwise land on a screen with no roles. */
+       no other view, so an address carrying one names the blueprint by itself. */
     await page.goto("/ko/architecture/?role=widgets");
     await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
   });
@@ -365,207 +377,91 @@ test.describe("harness tab", () => {
     expect(covered, `the explanation bubble was covered by the body below: ${covered.join(" | ")}`).toEqual([]);
   });
 
-  test("the structure view counts what the repository informs, blocks and watches per component, and does not count tool-owned slots as numbers", async ({ page }) => {
-    /*
-     * The console is part of the assertion: an `InfoHint` inside a `<p>` is a hydration error
-     * that the rendered screen does not show.
-     */
-    const consoleErrors: string[] = [];
-    page.on("console", (message) => {
-      if (message.type() === "error") consoleErrors.push(message.text());
-    });
-    page.on("pageerror", (error) => consoleErrors.push(error.message));
-
+  test("the gap line counts the amber cells, and a missing hook script is named under the table", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/");
-    const anatomy = page.getByTestId("harness-anatomy");
-    await expect(anatomy).toBeVisible({ timeout: 30_000 });
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    const overview = page.getByTestId("harness-overview");
+    await expect(overview).toBeVisible({ timeout: 30_000 });
 
-    // Same three words as the coverage matrix: one destination, one vocabulary.
-    await expect(page.getByTestId("harness-anatomy-band-tells")).toContainText("말해둔 것");
-    await expect(page.getByTestId("harness-anatomy-band-gates")).toContainText("막는 것");
-    await expect(page.getByTestId("harness-anatomy-band-watches")).toContainText("지켜보는 것");
+    const gapCells = await page.locator('[data-harness-cell-state="gap"]').count();
+    expect(gapCells).toBeGreaterThan(0);
+    await expect(page.getByTestId("harness-overview-gaps")).toHaveAttribute("data-gap-count", String(gapCells));
+    await expect(page.getByTestId("harness-overview-silent")).toContainText("block-npm-publish");
 
-    await expect(page.getByTestId('harness-structure-diagram')).toBeVisible();
-    await page.getByTestId('harness-diagram-node-always').click();
-    await expect(page.getByTestId('harness-anatomy-slot-always')).toContainText('.claude/rules/forbidden.md');
-    await page.getByTestId('harness-view-text').click();
-    await expect(page.getByTestId('harness-structure-diagram')).toHaveCount(0);
-
-    // A rule with no `paths:` is read every time; one with `paths:` joins only for its folder.
-    await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText(
-      ".claude/rules/forbidden.md",
-    );
-    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText(
-      ".claude/rules/cart.md",
-    );
-    // Nested AGENTS.md files attach by path, which is the whole reason they exist.
-    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("src/AGENTS.md");
-
-    // A hook that can refuse is not the same fact as a hook that only records, and the fixture's
-    // Claude and Codex copies of one guard are one name: the script's own.
-    await expect(page.getByTestId("harness-anatomy-slot-toolGates")).toContainText(
-      "block-unsafe-git.sh",
-    );
-    await expect(page.getByTestId("harness-anatomy-count-toolGates")).toHaveText("훅 1개");
-    await expect(page.getByTestId("harness-anatomy-slot-permissions")).toContainText(
-      "허용 1 · 물어봄 0 · 금지 2",
-    );
-
-    // The pipeline phase has its own row, so a repository guarded only by CI is not drawn as
-    // having nothing watching it. This fixture has no workflows, which the row states.
-    await expect(page.getByTestId("harness-anatomy-count-pipeline")).toHaveText("아직 없음");
-
-    // An empty part is visible *and addable*: the conventional address, copyable, never advice.
-    const emptyTools = page.getByTestId("harness-anatomy-slot-tools");
-    await expect(emptyTools).toContainText("이런 것이 사는 자리");
-    await expect(emptyTools).toContainText(".mcp.json");
-    // And a part that is there is not told where it could have been.
-    await expect(page.getByTestId("harness-anatomy-slot-always")).not.toContainText(
-      "이런 것이 사는 자리",
-    );
-
-    // Nothing here is a mark out of ten, and an absent part says so in words.
-    await expect(page.getByTestId("harness-anatomy-count-tools")).toHaveText("아직 없음");
-    const loop = page.getByTestId("harness-anatomy-slot-loop");
-    await expect(loop).toHaveAttribute("data-status", "tool-owned");
-    await expect(loop).not.toContainText("아직 없음");
-    await expect(anatomy).not.toContainText("%");
-
-    // The half the rows cannot do: handing the reading to an agent without retyping it.
-    await expect(page.getByTestId("harness-anatomy-brief")).toBeVisible();
-
-    // The chain: a turn inside a governed folder pays the always-read set plus that folder's file,
-    // which is the mechanic the tool documents and a flat per-repository number cannot express.
-    await expect(page.getByTestId("harness-anatomy-slot-scoped")).toContainText("가장 깊은 사슬");
-
-    // ⚠️ The fixture's config names `block-npm-publish.sh` and the disk does not have it. Every
-    // count on this screen stays healthy while that guard is absent, so the absence is said out
-    // loud — the one warning this view draws.
-    await expect(page.getByTestId("harness-anatomy-silent")).toContainText("block-npm-publish.sh");
-
-    // What the repository keeps out of sight is a gate, not a guide, and it keeps each product's
-    // own file name.
-    const blind = page.getByTestId("harness-anatomy-slot-blind");
-    await expect(blind).toContainText(".cursorignore");
-    await expect(blind).toContainText(".geminiignore");
-    await expect(page.getByTestId("harness-anatomy-count-blind")).toHaveText("파일 2개");
-    // And it is not counted among the documents the repository speaks through — read on the
-    // coverage view, because the census sentence and these bands count by different rules and
-    // this view does not print both.
-    await expect(page.getByTestId("harness-sentence")).toHaveCount(0);
-
-    // What every turn costs, beside the count that cannot say it.
-    await expect(page.getByTestId("harness-anatomy-slot-always")).toContainText("매 턴 읽는 분량");
-
-    expect(consoleErrors, "the structure view logged to the console").toEqual([]);
-
-    // And the ladder is one press away, under its own name.
-    await page.getByRole("tab", { name: "아키텍처" }).click();
-    await expect(page.getByTestId("architecture-flow-panel")).toBeVisible({ timeout: 30_000 });
-    await expect(page).toHaveURL(/\?view=architecture$/);
+    /* The vault's own sentence is in the panel, never in a row, and no score, grade or percentage exists. */
+    await expect(page.locator('[data-harness-area="domains/shop-front"]')).not.toContainText("What a shopper touches");
+    expect(await overview.textContent()).not.toMatch(/%|점수|등급|성숙도/);
   });
 
-  test("the coverage table states what is informed, blocked and watched per area, and speaks empty cells as sentences", async ({ page }) => {
+  test("a pressed cell opens its files beside the table, and Escape gives the focus back", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=coverage");
-    const matrix = page.getByTestId("harness-coverage");
-    await expect(matrix).toBeVisible({ timeout: 30_000 });
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
 
-    // Each column gets a card: the count of areas it has no answer for, over a denominator the
-    // reader can see. This replaced a headline sentence that could only ever speak for Watched.
-    const watchedCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="watched"]');
-    await expect(watchedCard).toContainText("어떤 검사도 부르지 않는 도메인");
+    const cell = page.locator('[data-harness-area="domains/shop-front"] [data-harness-cell="told"]');
+    await cell.click();
+    const panel = page.getByTestId("harness-overview-panel");
+    await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("data-panel-placement", "beside");
+    await waitForFiniteAnimations(page);
 
-    // ⚠️ The card's number is not a derived statistic — it is the count of empty marks in the
-    // column below it, so a reader can settle it by counting. If the two ever disagree the screen
-    // is worse than the undecodable bar this replaced, so the agreement is the assertion.
-    const declaredGap = await watchedCard.locator("[data-harness-column-gap]").getAttribute("data-harness-column-gap");
-    const emptyMarks = await page.locator('[data-harness-cell="watched"][data-harness-cell-empty="true"]').count();
-    expect(Number(declaredGap)).toBe(emptyMarks);
+    const tableBox = (await page.getByTestId("harness-overview-table").boundingBox())!;
+    const panelBox = (await panel.boundingBox())!;
+    expect(panelBox.x).toBeGreaterThanOrEqual(tableBox.x + tableBox.width);
 
-    // The always-loaded lanes are counted on the card of the column they qualify and open beneath
-    // it. As a separate section below the table they were three flat runs of monospace names — the
-    // disease that had just been removed from the table — furthest from the cells they explain.
-    await expect(page.getByTestId("harness-coverage-everywhere")).toHaveCount(0);
-    await watchedCard.getByTestId("harness-everywhere-toggle").click();
-    const everywhere = page.getByTestId("harness-coverage-everywhere");
-    await expect(everywhere).toContainText("lint");
+    await expect(panel).toContainText("What a shopper touches");
+    const rule = panel.locator('[data-entry-id=".claude/rules/cart.md"]');
+    await expect(rule).toContainText("src/features/**");
+    await expect(rule).toContainText("Claude Code");
 
-    // ⚠️ Nine of this repository's hook names exist in both .claude/hooks/ and .codex/hooks/ as
-    // real mirrored files, and the first build printed the bare name twice — which reads as a
-    // rendering fault rather than as the mirror it is. Each name appears once now, and the tools
-    // that read it carry the distinction the repetition destroyed.
-    const toldCard = page.locator('[data-testid="harness-coverage-column-card"][data-census-row="told"]');
-    await toldCard.getByTestId("harness-everywhere-toggle").click();
-    const told = page.getByTestId("harness-coverage-everywhere");
-    await expect(told).toContainText("forbidden");
-    expect((await told.textContent())!.match(/forbidden/g)!).toHaveLength(1);
+    await page.keyboard.press("Escape");
+    await expect(cell).toBeFocused();
+    await expect(panel).toHaveCount(0);
 
-    // Every row carries the vault's purpose sentence, which is the whole reason the rows are areas
-    // rather than folders: without it an empty cell can only say "a file is absent".
-    const front = page.locator('[data-harness-area="domains/shop-front"]');
-    const api = page.locator('[data-harness-area="domains/shop-api"]');
-    await expect(front).toContainText("What a shopper touches");
-    await expect(api).toContainText("The order service every storefront screen reads");
-
-    // The shop front is watched by a check that names its path; the API is watched by nothing, and
-    // the gap is a mark rather than a sentence so it can be compared down the column at a glance.
-    await expect(front.locator('[data-harness-cell="watched"]')).toHaveAttribute(
-      "data-harness-cell-empty",
-      "false",
-    );
-    await expect(api.locator('[data-harness-cell="watched"]')).toHaveAttribute(
-      "data-harness-cell-empty",
-      "true",
-    );
-
-    // The names are one press away, beside the cell — never a full-screen detail.
-    await front.locator('[data-harness-cell="watched"]').click();
-    await expect(page.getByTestId("harness-coverage-detail")).toContainText("test:cart");
-
-    // The empty cell opens the vault's own record of what the area is for — the sentence a
-    // file-only scanner cannot write — beside the paths nothing names.
-    await api.locator('[data-harness-cell="watched"]').click();
-    const detail = page.getByTestId("harness-coverage-detail");
-    await expect(detail).toContainText("The order service every storefront screen reads");
-    await expect(detail).toContainText("api/orders");
-
-    // No score, no grade, no percentage: the thing every competitor ships and this may not.
-    expect(await matrix.textContent()).not.toMatch(/%|점수|등급|성숙도/);
+    /* The focus never left the cell, so the key that opened it opens it again at once. */
+    await page.keyboard.press("Enter");
+    await expect(panel).toBeVisible();
   });
 
-  test("documents split three ways: instruction, named by an instruction, or called by no one", async ({ page }) => {
-    /*
-     * The harness's most common silent failure: a document that exists and no guide points at. The
-     * fixture source tree carries one of each under its own `docs/` folder — one that the fixture's
-     * AGENTS.md names by path, and one that nothing names.
-     */
+  test("a hook only Codex runs after trust wears the trust mark in the every-domain row", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=coverage");
-    const reach = page.getByTestId("harness-reach");
-    await expect(reach).toBeVisible({ timeout: 30_000 });
-    await expect(reach.locator('[data-census-row="guides"]')).toContainText("지침");
-    await expect(reach.locator('[data-census-row="named"]')).toContainText("1");
-    /* Three: the fixture's unnamed document, plus both agent briefs. A brief is addressed by name
-       rather than by path, so it lands here for a reason that is fine — which is exactly why the
-       folders are printed beside the count instead of the rows being filtered. */
-    await expect(reach.locator('[data-census-row="unnamed"]')).toContainText("3");
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
 
-    // The breakdown of where the unnamed documents are opens on a press. Spilled permanently, the
-    // most important number on the screen was the one followed by the most text on the screen.
-    await expect(page.getByTestId("harness-reach-breakdown")).toHaveCount(0);
-    await page.getByTestId("harness-reach-breakdown-toggle").click();
-    await expect(page.getByTestId("harness-reach-breakdown")).toContainText("docs");
+    await page.locator('[data-harness-area="#everywhere"] [data-harness-cell="gated"]').click();
+    const panel = page.getByTestId("harness-overview-panel");
+    const hook = panel.locator('[data-entry-id=".codex/hooks/block-unsafe-git.sh"]');
+    await expect(hook).toBeVisible();
+    await expect(hook.getByTestId("harness-overview-trust")).toBeVisible();
+    await expect(panel.locator('[data-entry-id=".claude/hooks/block-unsafe-git.sh"]').getByTestId("harness-overview-trust")).toHaveCount(0);
+  });
+
+  test("below 1280px the panel follows the row it belongs to", async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await mountHarnessVault(page);
+    await page.goto("/ko/architecture/?view=overview&guides=off");
+    await expect(page.getByTestId("harness-overview-table")).toBeVisible({ timeout: 30_000 });
+
+    const row = page.locator('[data-harness-area="domains/shop-front"]');
+    await row.locator('[data-harness-cell="told"]').click();
+    const panel = page.getByTestId("harness-overview-panel");
+    await expect(panel).toHaveAttribute("data-panel-placement", "below");
+    await waitForFiniteAnimations(page);
+
+    const rowBox = (await row.boundingBox())!;
+    const panelBox = (await panel.boundingBox())!;
+    const nextBox = (await row.locator("xpath=following-sibling::tr[2]").boundingBox())!;
+    expect(panelBox.y).toBeGreaterThanOrEqual(rowBox.y + rowBox.height - 1);
+    expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(nextBox.y + 1);
   });
 
   test("the counting method lives in a collapsed spot, not in a sentence", async ({ page }) => {
     await mountHarnessVault(page);
-    await page.goto("/ko/architecture/?view=coverage");
-    await expect(page.getByTestId("harness-coverage")).toBeVisible({ timeout: 30_000 });
+    await page.goto("/ko/architecture/?view=overview");
+    await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
     const rule = page.getByText("어떤 파일이 선언한 경로가", { exact: false });
     await expect(rule).toBeHidden();
-    await page.getByTestId("harness-coverage-provenance").click();
+    await page.getByTestId("harness-overview-provenance").click();
     await expect(rule).toBeVisible();
   });
 
@@ -656,7 +552,7 @@ test.describe("harness tab", () => {
     /* ⚠️ The fixture holds two exclusion files (`.cursorignore`, `.geminiignore`), and this number
        must not move for them: a file that says what an agent may not see is the opposite of a
        document the repository speaks through. The outside-mapping fixture adds one valid Claude
-       guide; the exact total is eleven. The structure view proves the rows; this proves the
+       guide; the exact total is eleven. The overview proves the rows; this proves the
        census the exclusions are kept out of. */
     await expect(sentence).toContainText("문서 11개");
     /* The two numbers here are file counts. The coverage claim has its own denominator and its own
@@ -671,7 +567,7 @@ test.describe("harness tab", () => {
     await mountHarnessVault(page);
     await page.goto("/ko/architecture/?view=architecture");
     await expect(page.getByRole("tablist")).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("tab")).toHaveCount(4);
+    await expect(page.getByRole("tab")).toHaveCount(3);
     // And the tab the open panel names actually exists, so `aria-labelledby` does not dangle.
     const labelledBy = await page
       .locator('[role="tabpanel"]')
