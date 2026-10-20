@@ -8,18 +8,17 @@
     "recordedIn": "Recorded in {file}",
     "notRecorded": "Not recorded",
     "unseen": "Atlas does not see it",
-    "recordedNote": "Recorded: each send is written to <file>{file}</file> in this folder."
+    "recordedNote": "Recorded: each send is written to <file>{file}</file> in this folder.",
+    "groups": {
+      "sends-content": "Can carry folder content",
+      "agent-sends": "Sent by your agent directly",
+      "no-content": "Connects without folder content"
+    }
   },
   "trigger": {
     "automatic": "Automatic",
     "press": "When you press",
     "agent-use": "When an agent uses it"
-  },
-  "carries": {
-    "no-folder-content": "No folder content",
-    "what-you-send": "What you send",
-    "provider-owned": "Between tool and provider",
-    "agent-sends": "What the agent sends"
   },
   "destinations": {
     "your-runner-address": "Runner address you entered",

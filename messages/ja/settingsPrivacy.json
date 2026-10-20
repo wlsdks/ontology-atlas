@@ -8,18 +8,17 @@
     "recordedIn": "「{file}」に記録されます",
     "notRecorded": "記録なし",
     "unseen": "Atlasからは見えません",
-    "recordedNote": "記録あり：送信のたびに、このフォルダの「<file>{file}</file>」に残ります。"
+    "recordedNote": "記録あり：送信のたびに、このフォルダの「<file>{file}</file>」に残ります。",
+    "groups": {
+      "sends-content": "フォルダの内容を送ることがあるもの",
+      "agent-sends": "エージェントが直接送るもの",
+      "no-content": "フォルダの内容なしで接続するもの"
+    }
   },
   "trigger": {
     "automatic": "自動",
     "press": "押したとき",
     "agent-use": "エージェントが使うとき"
-  },
-  "carries": {
-    "no-folder-content": "フォルダの内容なし",
-    "what-you-send": "送信した内容",
-    "provider-owned": "ツールとプロバイダの間",
-    "agent-sends": "エージェントが送る内容"
   },
   "destinations": {
     "your-runner-address": "入力したランナーのアドレス",
