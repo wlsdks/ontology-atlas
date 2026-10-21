@@ -206,7 +206,8 @@ describe("BriefTab", () => {
     const headline = screen.getByTestId("brief-headline");
     expect(headline.querySelector('[data-brief-headline-part="stale"]')).toHaveTextContent("새로 알아야 할 것 69개");
     expect(headline.querySelector('[data-brief-headline-part="unknown"]')).toHaveTextContent("확인 못 한 것 3개");
-    const repair = container.querySelector('[data-brief-line="ontology-repair"] [aria-hidden="true"] > span');
+    const repair = container.querySelector('[data-brief-line="ontology-repair"] [aria-hidden="true"].w-2\\.5 > span');
+    expect(repair).not.toBeNull();
     expect(repair?.className ?? "").toBe("");
   });
 
