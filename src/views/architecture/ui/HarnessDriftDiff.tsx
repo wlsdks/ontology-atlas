@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react';
 import { AGENT_TOOL_LABELS } from '@/entities/agent-files';
 import { cn } from '@/shared/lib/cn';
 
-import { alignLines, type AlignedLine, type AlignedRow } from '../lib/align-lines';
+import { alignLinesQuadratic, type AlignedLine, type AlignedRow } from '../lib/align-lines';
 import type { TranslateFn } from './HarnessGuideDetail';
 
 const MARKED_TEXT = 'text-[color:var(--color-text-primary)]';
@@ -144,7 +144,6 @@ function AlignedDiff({
   );
 }
 
-/** One file, or a twin pair: aligned row by row when the pair is small enough to align, else marked by line set. */
 export function HarnessDriftDiff({
   paths,
   texts,
@@ -159,7 +158,7 @@ export function HarnessDriftDiff({
   t: TranslateFn;
 }) {
   const lines = texts.map((text) => text.split('\n'));
-  const rows = twin ? alignLines(lines[0]!, lines[1]!) : null;
+  const rows = twin ? alignLinesQuadratic(lines[0]!, lines[1]!) : null;
   if (rows) return <AlignedDiff paths={[paths[0]!, paths[1]!]} rows={rows} current={current} t={t} />;
   const sets = twin ? lines.map((side) => new Set(side)) : null;
   return (

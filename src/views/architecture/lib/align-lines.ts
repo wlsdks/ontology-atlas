@@ -8,8 +8,7 @@ export type AlignedRow = {
 
 export const ALIGN_CELL_CAP = 1_000_000;
 
-/** Longest-common-subsequence alignment: O(n·m) time and memory, so it gives up above the cap. */
-export function alignLines(left: readonly string[], right: readonly string[]): AlignedRow[] | null {
+export function alignLinesQuadratic(left: readonly string[], right: readonly string[]): AlignedRow[] | null {
   const n = left.length;
   const m = right.length;
   if (n * m > ALIGN_CELL_CAP) return null;
