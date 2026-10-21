@@ -623,8 +623,8 @@ function ShelfTile({
           <ProductMark icon={mark.icon} ink={mark.ink} monogram={runtime.label} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-body">{runtime.label}</span>
-          <span className="mt-0.5 block truncate text-body leading-body text-[color:var(--color-text-tertiary)]">
+          <span className="block truncate text-body font-[var(--font-weight-signature)]">{runtime.label}</span>
+          <span className="mt-0.5 block truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
             {t(`state.${runtime.state}`)}
           </span>
         </span>

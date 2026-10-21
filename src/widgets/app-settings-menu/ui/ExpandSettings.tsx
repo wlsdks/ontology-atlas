@@ -39,7 +39,7 @@ export function ExpandSettings() {
 
   return (
     <div className="grid min-w-0 gap-3" data-testid="app-settings-expand">
-      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-1)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-2)] p-2">
         <Choice
           settingId="expand-affordance"
           label={t('affordanceLabel')}
@@ -51,13 +51,13 @@ export function ExpandSettings() {
         />
         <p
           data-testid="app-settings-expand-affordance-hint"
-          className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]"
+          className="px-2 pb-1 text-body text-[color:var(--color-text-tertiary)]"
         >
           {t(`affordanceHint.${pref.affordance}`)}
         </p>
       </div>
 
-      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-1)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-2)] p-2">
         <Choice
           settingId="expand-structure"
           label={t('structureLabel')}
@@ -69,7 +69,7 @@ export function ExpandSettings() {
         />
         <p
           data-testid="app-settings-expand-structure-hint"
-          className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]"
+          className="px-2 pb-1 text-body text-[color:var(--color-text-tertiary)]"
         >
           {t(`structureHint.${pref.structure}`)}
         </p>
@@ -106,7 +106,7 @@ export function ExpandSettings() {
       </div>
 
       <RowDisclosure open={detailOpen} id={detailId} className="pt-3">
-      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-1)] p-2">
+      <div className="grid min-w-0 gap-0.5 rounded-card bg-[color:var(--color-overlay-2)] p-2">
         <Slider
           label={t('batchLabel')}
           testId="app-settings-expand-batch"
@@ -115,7 +115,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(batchSize) => set({ batchSize })}
         />
-        <p className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]">
+        <p className="px-2 pb-1 text-body text-[color:var(--color-text-tertiary)]">
           {t('batchHint')}
         </p>
         <Slider
@@ -126,7 +126,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(labelAttempts) => set({ labelAttempts })}
         />
-        <p className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]">
+        <p className="px-2 pb-1 text-body text-[color:var(--color-text-tertiary)]">
           {t('labelAttemptsHint')}
         </p>
         <Slider
@@ -137,7 +137,7 @@ export function ExpandSettings() {
           format={(v) => String(v)}
           onChange={(maxOpenParents) => set({ maxOpenParents })}
         />
-        <p className="px-1 pb-1 text-body text-[color:var(--color-text-tertiary)]">
+        <p className="px-2 pb-1 text-body text-[color:var(--color-text-tertiary)]">
           {t('maxOpenHint')}
         </p>
       </div>

@@ -164,7 +164,7 @@ export function useAgentClientControls({
               <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {t("serverUnavailableTitle")}
               </p>
-              <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
+              <p className="mt-1 text-body leading-prose text-[color:var(--color-text-tertiary)]">
                 {t("serverUnavailableDesc")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -344,7 +344,7 @@ export function useAgentClientControls({
       antigravity: clientRenderers.antigravity(),
     },
     manualPathNote: needsManualPath ? (
-      <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
+      <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">
         {t("deeplinkWebNote")}{" "}
         <Link
           href="/download/"

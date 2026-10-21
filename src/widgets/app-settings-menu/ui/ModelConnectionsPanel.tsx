@@ -334,7 +334,7 @@ function ModelGroup({
           hint ? <span className="text-label text-[color:var(--color-text-tertiary)]">{hint}</span> : undefined
         }
       />
-      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]">
+      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-2)]">
         {children}
       </div>
     </section>
@@ -374,7 +374,7 @@ function ModelRow({
     <div data-testid={testId}>
       <div className="flex min-h-14 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
         <div className="min-w-0 flex-1 basis-44">
-          <p className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-primary)]">
+          <p className="flex flex-wrap items-baseline gap-x-2 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {name}
             {badge}
           </p>

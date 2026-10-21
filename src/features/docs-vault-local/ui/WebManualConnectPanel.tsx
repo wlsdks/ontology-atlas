@@ -58,7 +58,7 @@ function PathField({
         {label}
       </label>
       {hint ? (
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">{hint}</p>
+        <p className="text-body leading-body text-[color:var(--color-text-quaternary)]">{hint}</p>
       ) : null}
       <input
         id={id}
@@ -226,7 +226,7 @@ export function WebManualConnectPanel({
       {/* Separates what the browser confirmed from what it could not. */}
       <p
         data-testid={`${testIdPrefix}-shape-only`}
-        className="text-label leading-label text-[color:var(--color-text-quaternary)]"
+        className="text-body leading-body text-[color:var(--color-text-quaternary)]"
       >
         {t('manualShapeOnlyNote')}
       </p>
@@ -264,7 +264,7 @@ export function WebManualConnectPanel({
           <p className="font-mono text-body text-[color:var(--color-text-quaternary)]">
             {config.file}
           </p>
-          <p className="mt-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('manualFileHint', { file: config.file })}
           </p>
           <pre
@@ -298,7 +298,7 @@ export function WebManualConnectPanel({
           {/* The web has no restart step, so what to do after saving is said here. */}
           <p
             data-testid={ready ? `${testIdPrefix}-restart` : `${testIdPrefix}-not-ready`}
-            className="mt-1.5 text-label leading-label text-[color:var(--color-text-quaternary)]"
+            className="mt-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]"
           >
             {ready ? t('manualRestartNote') : t('manualNotReadyNote')}
           </p>

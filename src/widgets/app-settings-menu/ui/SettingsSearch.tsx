@@ -137,7 +137,7 @@ export function SettingsSearchResults({
           <p className={`flex min-h-8 items-center ${SETTINGS_SECTION_LABEL}`} aria-hidden>
             {group.sectionLabel}
           </p>
-          <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]">
+          <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-2)]">
             {group.items.map((item) => (
               <div
                 key={item.id}
@@ -159,7 +159,7 @@ export function SettingsSearchResults({
               >
                 <span className="min-w-0 flex-1 text-left">
                   <span className="block text-body text-[color:var(--color-text-primary)]">{item.label}</span>
-                  <span className="mt-0.5 block text-label leading-label text-[color:var(--color-text-tertiary)]">
+                  <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)]">
                     {item.opensLabel
                       ? t('opens', { place: item.opensLabel })
                       : t('where', { section: item.sectionLabel, scope: item.scopeLabel })}
