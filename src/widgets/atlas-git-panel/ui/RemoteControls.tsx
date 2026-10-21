@@ -115,6 +115,7 @@ export function LocationLine({
       */}
       <span
         data-testid="atlas-git-location-ref"
+        title={upstream ? `${detachedAt ?? branch} → ${upstream}` : (detachedAt ?? branch)}
         className={badgeClass({
           shape: 'tag',
           className:
@@ -129,7 +130,7 @@ export function LocationLine({
             <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
               →
             </span>
-            <span className="shrink-[2] truncate text-[color:var(--color-text-quaternary)]">
+            <span className="truncate text-[color:var(--color-text-quaternary)]">
               {upstream}
             </span>
           </>

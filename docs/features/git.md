@@ -46,7 +46,7 @@ The screen layout splits into two stages. First, **is this screen even in a stat
 
 #### State where work cannot start yet (`web` · `no-vault` · `not-initialized` · `loading` · `error`)
 - These states (`web` · `no-vault` · `not-initialized` · `error`) are drawn at the same size and position (`--git-setup-measure`, one 520px cell), centred in the window under the header bar. `loading` is the centred wait every page uses, since the state after it is usually the workbench
-- The header bar names the destination; from 1024px the workbench's location line stands at the bar's right, and below that it opens the workbench
+- The header bar names the destination; from 1024px the workbench's location line stands at the bar's right; below that it is the workbench's first row. A branch too long for the bar truncates, and hovering it shows the whole branch and upstream
 - Shows what to do in one line: Open app → select folder → start recording.
   Registering a remote repository is optional so it's not included in this line. No additional menus or decorative links here
 - In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary
