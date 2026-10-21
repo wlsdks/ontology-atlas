@@ -779,7 +779,7 @@ export function VaultAgentSetupPanel({
               <InfoHint label={t('agentSetup.serverHintLabel')} align="right">
                 <p
                   data-testid="agent-connect-server-line"
-                  className="break-keep text-label leading-prose text-[color:var(--color-text-secondary)]"
+                  className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]"
                 >
                   {tc('serverLine')}
                 </p>
@@ -918,7 +918,7 @@ export function VaultAgentSetupPanel({
                     {nextMissingAgentConfig ? (
                       <p
                         data-testid="agent-setup-status-next"
-                        className="mt-0.5 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+                        className="mt-0.5 break-keep text-body leading-prose text-[color:var(--color-amber-source-text-a95)]"
                       >
                         {agentStatus[nextMissingAgentConfig.key]
                           ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
@@ -1108,10 +1108,10 @@ export function VaultAgentSetupPanel({
                   {validationGateStatus}
                 </span>
               </span>
-              <span className="mt-0.5 block text-label text-[color:var(--color-text-secondary)]">
+              <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-secondary)]">
                 {validationGateSummary}
               </span>
-              <span className="mt-0.5 block break-keep text-label text-[color:var(--color-text-tertiary)]">
+              <span className="mt-0.5 block break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
                 {validationGateDesc}
               </span>
             </span>
@@ -1176,7 +1176,7 @@ export function VaultAgentSetupPanel({
 
         <div className="flex flex-col gap-2">
           <SectionLabel>{t('agentSetup.groupHowAgentsUse')}</SectionLabel>
-          <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-label text-[color:var(--color-text-tertiary)]">
+          <p className="break-keep rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)] px-2 py-1.5 text-body leading-body text-[color:var(--color-text-tertiary)]">
             <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.boundaryTitle')}
             </span>{' '}

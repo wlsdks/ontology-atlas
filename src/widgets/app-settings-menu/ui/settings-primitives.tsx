@@ -82,7 +82,7 @@ export function SettingsGroup({
       <Card
         className={cn(
           label && 'mt-2',
-          'divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]',
+          'divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-2)]',
           cardClassName,
         )}
       >
@@ -201,8 +201,8 @@ export function Slider({
 }) {
   const filled = ((value - range.min) / (range.max - range.min)) * 100;
   return (
-    <label className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-1 py-2 sm:flex" data-setting-id={settingId}>
-      <span className="col-span-2 shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
+    <label className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-2 py-2 sm:flex" data-setting-id={settingId}>
+      <span className="col-span-2 shrink-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
       <input
         type="range"
         data-testid={testId}
@@ -241,8 +241,8 @@ export function Choice<T extends string | boolean>({
   settingId?: SettingId;
 }) {
   return (
-    <div className="flex min-h-11 flex-col items-stretch gap-3 px-1 py-2 sm:flex-row sm:items-center" data-setting-id={settingId}>
-      <span className="shrink-0 text-body text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
+    <div className="flex min-h-11 flex-col items-stretch gap-3 px-2 py-2 sm:flex-row sm:items-center" data-setting-id={settingId}>
+      <span className="shrink-0 text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] sm:w-28">{label}</span>
       <SegmentedControl
         ariaLabel={label}
         value={value}
@@ -323,7 +323,7 @@ export function SettingsDoorRow({
     >
       {Icon ? <Icon size={16} aria-hidden className="shrink-0" /> : null}
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-body text-[color:var(--color-text-primary)]">{label}</span>
+        <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{label}</span>
         {caption ? (
           <span className="mt-0.5 block text-body leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
             {caption}
