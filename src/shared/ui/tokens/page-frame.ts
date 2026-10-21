@@ -11,6 +11,12 @@ export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
 
 export const PAGE_TOP_PAD = "pt-6 md:pt-12" as const;
 
+// Bottom pad = top pad + the 60px header bar (+ the tab bar reserve below lg), so a `my-auto` stage centres on the shell slot.
+export const PAGE_STAGE_FILL =
+  "flex flex-1 flex-col pt-8 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+5.75rem)] md:pt-10 md:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+6.25rem)] lg:pb-25" as const;
+
+export const PAGE_WAIT_LIFT = "mb-15 max-lg:mb-[calc(var(--topology-mobile-bottom-tab-reserve)+3.75rem)]" as const;
+
 export const PAGE_HEADER_ROW =
   "flex flex-wrap items-start justify-between gap-x-4 gap-y-2" as const;
 

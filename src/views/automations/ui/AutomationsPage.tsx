@@ -147,7 +147,7 @@ export function AutomationsPage({
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
       className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col overflow-y-auto bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-      <PageHeaderBar frame="form" title={t("title")}
+      <PageHeaderBar frame="page" title={t("title")}
         tabs={<TabBar variant="segmented" ariaLabel={t("tabsAria")} activeKey={lane} onSelect={(key) => selectLane(key as AutomationLane)}
           idPrefix="automations" testId="automations-tabs"
           items={[

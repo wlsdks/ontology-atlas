@@ -89,7 +89,7 @@ export function AgentsPage({
       data-agents-tab={tab}
     >
       <PageHeaderBar
-        frame="form"
+        frame="page"
         title={t('title')}
         tabs={
           <nav data-testid="agents-tabs">
