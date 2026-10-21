@@ -13,6 +13,7 @@ const SIZES = [
   { width: 1512, height: 900 },
   { width: 1920, height: 1080 },
   { width: 1024, height: 768 },
+  { width: 800, height: 900 },
   { width: 390, height: 844 },
 ] as const;
 const ROUTES = ["/ko/agents/", "/ko/agents/?tab=models", "/ko/automations/", "/ko/git/", "/ko/projects/"] as const;
@@ -40,6 +41,7 @@ async function measure(page: Page, placement: "stage" | "list") {
       height: box.height,
       centreX: box.left + box.width / 2,
       centreY: box.top + box.height / 2,
+      frameBottom: parentBox.bottom,
       contentTop: parentBox.top + parseFloat(style.paddingTop),
       contentHeight: parentBox.height - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom),
     };
@@ -47,6 +49,7 @@ async function measure(page: Page, placement: "stage" | "list") {
 }
 
 function expectPlaced(label: string, m: Awaited<ReturnType<typeof measure>>) {
+  expect(m.frameBottom, `${label}: the stage's frame ends at ${m.frameBottom}, above the slot bottom ${m.bottom}`).toBeGreaterThanOrEqual(m.bottom - 1);
   if (m.height + 1 < m.contentHeight) {
     expect(Math.abs(m.centreY - m.bottom / 2), `${label}: vertical centre ${m.centreY} vs ${m.bottom / 2}`).toBeLessThanOrEqual(TOLERANCE);
     const centre = m.rail + (m.innerWidth - m.rail) / 2;
