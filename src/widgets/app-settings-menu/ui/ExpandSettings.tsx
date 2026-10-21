@@ -76,7 +76,7 @@ export function ExpandSettings() {
       </div>
 
       <div className="min-w-0" data-setting-id="expand-counts">
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+      <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 px-0.5">
       <Chip
         size="lg"
         tone="secondary"
