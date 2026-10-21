@@ -53,21 +53,18 @@ export function BriefTodo({
           const { line, core, total } = row;
           const href = briefRowHref(row, false);
           const lineDetails = details.get(line.id) ?? EMPTY_DETAILS;
-          const sentenceClass = 'min-w-0 break-keep text-body-lg text-[color:var(--color-text-primary)] sm:max-w-[var(--measure-doc-column)]';
+          const sentenceClass = 'min-w-0 text-body-lg text-[color:var(--color-text-primary)] sm:max-w-[var(--measure-doc-column)]';
           return (
             <li key={line.id} data-brief-todo={line.id} data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core} className="grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-x-4 gap-y-3 py-4 sm:flex">
-              <span
-                aria-hidden="true"
-                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-overlay-2)] text-label tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
-              >
-                {index + 1}
+              <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[color:var(--color-overlay-2)]">
+                <span className="text-label tabular-nums font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{index + 1}</span>
               </span>
               <div className="flex min-w-0 flex-col gap-1 sm:flex-1">
                 <div className="flex items-center gap-2 text-label text-[color:var(--color-text-tertiary)]">
                   <span aria-hidden="true" className="flex w-2.5 shrink-0 justify-center [&>span]:mt-0">
                     <span className={STATE_MARK[line.state]} />
                   </span>
-                  <span className="break-keep">{t(`core.${core}`)}</span>
+                  <span>{t(`core.${core}`)}</span>
                   {total !== undefined ? (
                     <span className="tabular-nums" data-brief-numeral="">
                       {line.count} / {total}

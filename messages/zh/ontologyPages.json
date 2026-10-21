@@ -111,7 +111,7 @@
       "todoAction": {
         "check": "去确认",
         "compare": "打开对比",
-        "view": "在{place}查看"
+        "view": "在 {place} 查看"
       }
     },
     "unmatched": {

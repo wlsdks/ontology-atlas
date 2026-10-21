@@ -196,7 +196,7 @@ export function BriefTab({
                 className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: 'gap-1.5 self-start text-left' })}
               >
                 <ChevronRight size={ICON_SIZE.sm} aria-hidden className={cn('shrink-0 transition-transform', restOpen && 'rotate-90')} />
-                <span className="break-keep">
+                <span>
                   {restOpen ? t('restHide') : t('restShow', { count: rest.length })}
                   {!restOpen && zeroCount > 0 ? (
                     <span className="ml-1.5 text-[color:var(--color-text-tertiary)]" data-testid="brief-rest-zero">
