@@ -92,6 +92,7 @@ test.describe("harness guides workbench", () => {
     });
     const diff = page.getByTestId("harness-drift-diff");
     await expect(diff).toBeVisible();
+    await waitForFiniteAnimations(page);
     const yOf = (text: string) =>
       diff.getByText(text, { exact: true }).evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().y)));
     const routeYs = await yOf("Route the work.");
