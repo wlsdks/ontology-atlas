@@ -3,7 +3,9 @@
 import type { CSSProperties } from 'react';
 
 import { AGENT_TOOL_LABELS } from '@/entities/agent-files';
+import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import { cn } from '@/shared/lib/cn';
+import { VendorMark } from '@/shared/ui/marks/vendor-mark';
 
 import { alignLinesQuadratic, type AlignedLine, type AlignedRow } from '../lib/align-lines';
 import type { TranslateFn } from './HarnessGuideDetail';
@@ -51,7 +53,11 @@ function Cell({ line, marked, divided }: { line: AlignedLine | null; marked: boo
       <div
         aria-hidden
         data-harness-drift-gap
-        className={cn('hidden bg-[color:var(--color-overlay-1)]', '@min-[40rem]/guide-detail:block', edge)}
+        className={cn(
+          'hidden bg-[repeating-linear-gradient(135deg,var(--color-overlay-2)_0_1px,transparent_1px_6px)]',
+          '@min-[40rem]/guide-detail:block',
+          edge,
+        )}
       />
     );
   }
@@ -59,14 +65,14 @@ function Cell({ line, marked, divided }: { line: AlignedLine | null; marked: boo
     <div
       className={cn(
         'grid grid-cols-[2.5rem_1ch_minmax(0,1fr)] gap-x-2 px-2 font-mono text-label',
-        marked && 'bg-[color:var(--color-indigo-a10)]',
+        marked && 'bg-[color:var(--color-overlay-3)]',
         edge,
       )}
     >
       <span aria-hidden className="select-none text-right tabular-nums text-[color:var(--color-text-quaternary)]">
         {line.no}
       </span>
-      <span aria-hidden className="select-none text-[color:var(--color-indigo-text-soft)]">
+      <span aria-hidden className={cn('select-none', MARKED_TEXT)}>
         {marked ? '+' : ''}
       </span>
       <span
@@ -79,23 +85,42 @@ function Cell({ line, marked, divided }: { line: AlignedLine | null; marked: boo
   );
 }
 
-function SideHeader({ tool, path, count, t }: { tool: string; path: string; count: number; t: TranslateFn }) {
+function SideHeader({
+  tool,
+  path,
+  count,
+  stacked,
+  t,
+}: {
+  tool: AgentClientId;
+  path: string;
+  count: number;
+  stacked: boolean;
+  t: TranslateFn;
+}) {
+  const client = AGENT_CLIENTS.find((entry) => entry.id === tool);
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-col gap-0.5 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2',
+        'flex min-w-0 items-center gap-3 border-b border-[color:var(--color-overlay-2)] bg-[color:var(--color-panel)] px-3 py-2.5',
+        stacked && 'border-t @min-[40rem]/guide-detail:border-t-0',
         '@min-[40rem]/guide-detail:sticky @min-[40rem]/guide-detail:top-0 @min-[40rem]/guide-detail:z-10',
       )}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{tool}</span>
-        <span className="shrink-0 text-label text-[color:var(--color-text-secondary)]">
-          {count > 0 ? t('driftSideMarked', { count }) : t('driftSideShared')}
-        </span>
+      <VendorMark src={client?.icon ?? null} ink={client?.brandInk ?? null} />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {AGENT_TOOL_LABELS[tool]}
+          </span>
+          <span className="shrink-0 text-label text-[color:var(--color-text-secondary)]">
+            {count > 0 ? t('driftSideMarked', { count }) : t('driftSideShared')}
+          </span>
+        </div>
+        <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]" title={path}>
+          {path}
+        </p>
       </div>
-      <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]" title={path}>
-        {path}
-      </p>
     </div>
   );
 }
@@ -112,8 +137,8 @@ function AlignedDiff({
   t: TranslateFn;
 }) {
   const sides = [
-    { path: paths[0], tool: AGENT_TOOL_LABELS['claude-code'], cells: rows.map((row) => row.left) },
-    { path: paths[1], tool: AGENT_TOOL_LABELS.codex, cells: rows.map((row) => row.right) },
+    { path: paths[0], tool: 'claude-code' as const, cells: rows.map((row) => row.left) },
+    { path: paths[1], tool: 'codex' as const, cells: rows.map((row) => row.right) },
   ];
   return (
     <div
@@ -133,7 +158,13 @@ function AlignedDiff({
         const marked = rows.map((row, at) => row.kind !== 'same' && side.cells[at] !== null);
         return (
           <div key={side.path} className={cn('flex min-w-0 flex-col', '@min-[40rem]/guide-detail:contents')}>
-            <SideHeader tool={side.tool} path={side.path} count={marked.filter(Boolean).length} t={t} />
+            <SideHeader
+              tool={side.tool}
+              path={side.path}
+              count={marked.filter(Boolean).length}
+              stacked={index === 1}
+              t={t}
+            />
             {rows.map((row, at) => (
               <Cell key={at} line={side.cells[at]!} marked={marked[at]!} divided={index === 1} />
             ))}
