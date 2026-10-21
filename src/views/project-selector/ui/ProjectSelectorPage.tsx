@@ -91,14 +91,16 @@ export function ProjectSelectorPage() {
             frame="page"
             title={t("headerTitle")}
             meta={
-              <span
-                data-testid="project-selector-count"
-                className="text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)] max-sm:sr-only"
-              >
-                {dataSourceMode === "static"
-                  ? t("projectCountSample", { count: projects.length })
-                  : t("projectCount", { count: projects.length })}
-              </span>
+              loading ? null : (
+                <span
+                  data-testid="project-selector-count"
+                  className="text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)] max-sm:sr-only"
+                >
+                  {dataSourceMode === "static"
+                    ? t("projectCountSample", { count: projects.length })
+                    : t("projectCount", { count: projects.length })}
+                </span>
+              )
             }
             actions={
               <>

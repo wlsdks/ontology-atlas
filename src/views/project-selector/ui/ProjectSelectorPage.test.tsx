@@ -146,6 +146,7 @@ describe("ProjectSelectorPage", () => {
     renderPage();
     expect(screen.getByTestId("project-selector-loading")).toHaveTextContent("my-notes");
     expect(screen.queryByTestId("project-selector-next-slot")).toBeNull();
+    expect(screen.queryByTestId("project-selector-count"), "the previous folder's count stays during the switch").toBeNull();
   });
 
   it("keeps settings but shows no live indicator here", () => {
