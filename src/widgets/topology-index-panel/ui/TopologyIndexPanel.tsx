@@ -644,7 +644,7 @@ export function TopologyIndexPanel({
         role={recentChanges ? "tabpanel" : undefined}
         id={recentChanges ? `${tabsId}-tabpanel-${activeTab}` : undefined}
         aria-labelledby={recentChanges ? `${tabsId}-tab-${activeTab}` : undefined}
-        className="min-h-0 shrink overflow-y-auto"
+        className="flex min-h-0 shrink flex-col"
       >
       <div
         role="tree"
