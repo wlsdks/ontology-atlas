@@ -83,16 +83,25 @@ test.describe("harness guides workbench", () => {
   });
 
   test("a line both files share sits on one y, and a line only one file has faces an empty cell", async ({ page }) => {
-    await openGuides(page);
+    const wrapped = `Wraps on the claude side only. ${"word ".repeat(60)}`;
+    await openGuides(page, {
+      source: {
+        ".claude/skills/po-pass/SKILL.md": ["# po-pass", "", "Route the work.", wrapped, "Second shared line.", ""].join("\n"),
+        ".agents/skills/po-pass/SKILL.md": ["# po-pass", "", "Inserted before the shared line.", "Route the work.", "Wraps on the claude side only.", "Second shared line.", ""].join("\n"),
+      },
+    });
     const diff = page.getByTestId("harness-drift-diff");
     await expect(diff).toBeVisible();
-    const sameYs = await diff.getByText("Route the work.", { exact: true }).evaluateAll((nodes) =>
-      nodes.map((node) => Math.round(node.getBoundingClientRect().y)),
-    );
-    expect(sameYs).toHaveLength(2);
-    expect(sameYs[0]).toBe(sameYs[1]);
+    const yOf = (text: string) =>
+      diff.getByText(text, { exact: true }).evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().y)));
+    const routeYs = await yOf("Route the work.");
+    expect(routeYs).toHaveLength(2);
+    expect(routeYs[0]).toBe(routeYs[1]);
+    const secondYs = await yOf("Second shared line.");
+    expect(secondYs).toHaveLength(2);
+    expect(secondYs[0]).toBe(secondYs[1]);
 
-    const only = diff.locator('[data-harness-drift-line="only-here"]', { hasText: "Diverged line." });
+    const only = diff.locator('[data-harness-drift-line="only-here"]', { hasText: "Inserted before the shared line." });
     await expect(only).toHaveCount(1);
     const onlyY = Math.round((await only.boundingBox())!.y);
     const gap = await diff.locator("[data-harness-drift-gap]").evaluateAll((nodes) =>

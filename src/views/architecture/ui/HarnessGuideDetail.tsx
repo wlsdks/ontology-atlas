@@ -313,7 +313,7 @@ function DriftDetail({
   const left = typeof detail?.claudePath === 'string' ? detail.claudePath : null;
   const right = typeof detail?.agentsPath === 'string' ? detail.agentsPath : null;
   const sides = file.twin && left && right ? [left, right] : [file.path];
-  const texts = sides.map((path) => (contentByPath.get(path) ?? '').replace(/\n$/, ''));
+  const texts = sides.map((path) => contentByPath.get(path) ?? '');
   return (
     <div data-testid={current ? 'harness-drift' : undefined}>
       <DetailHead
@@ -333,8 +333,7 @@ function DriftDetail({
           {t('driftOnlyIn', { dir: file.onlyIn })}
         </p>
       ) : null}
-      {sides.length === 2 ? <p className="pb-1 text-label text-[color:var(--color-text-tertiary)]">{t('driftLineMark')}</p> : null}
-      <HarnessDriftDiff paths={sides} texts={texts} twin={sides.length === 2} current={current} t={t} />
+      <HarnessDriftDiff paths={sides} texts={texts} current={current} t={t} />
     </div>
   );
 }

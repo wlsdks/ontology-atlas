@@ -66,8 +66,13 @@ directory with differing files unfolds them as indented rows, and a file on one 
 once, under the folder that holds it. Choosing a file that has a twin shows both complete files
 side by side on shared rows (one above the other in a narrow detail), so a line and its counterpart
 sit on the same y; each side is headed by the mark and name of the tool that reads it (Claude Code, Codex) and the
-count of its lines only it has, and such a line carries a `+` (`harness.driftLineMark`), facing a
-hatched empty cell. A pair too large to align falls back to marking by line set; choosing a file with no twin shows its one copy and names the folder it is
+count of its lines with no match in the other tool's file, and such a line carries a `+`
+(`harness.driftLineMark`), facing a hatched empty cell. When the texts differ only in line endings,
+trailing spaces or the final newline, one line says so in place of the caption
+(`harness.driftInvisibleOnly`). Trimming the equal head and tail first, a pair is aligned when the
+differing middle fits a cell cap and the two files together fit a row cap; a larger pair is not
+aligned, says so (`harness.driftLineMarkUnaligned`), and marks lines by line set under the same
+tool-headed sides. Choosing a file with no twin shows its one copy and names the folder it is
 only in (`harness.driftOnlyIn`). The view opens on the first file that differs from its twin. Comparison counts do not claim that the pairs match, and
 tool-specific differences are informational rather than a synchronization requirement. A hook
 config's detail lists it by script: wired (`harness.hookWired`) means the script the config names

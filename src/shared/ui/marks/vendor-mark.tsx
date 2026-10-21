@@ -9,7 +9,7 @@ import { cn } from '@/shared/lib/cn';
 const BUNDLED_MARK = /^\/acp-icons\/[a-z0-9-]+\.svg$/;
 
 /**
- * One other product's mark, shared by the agent settings list and the start checklist. Drawn as
+ * One other product's mark. Drawn as
  * a mask because the registry SVGs are `fill="currentColor"`, which renders black
  * through `<img>`; masking also runs nothing from the file. We paint the vendor's brand colour
  * or neutral, on a light plate because most marks are drawn for light backgrounds.
