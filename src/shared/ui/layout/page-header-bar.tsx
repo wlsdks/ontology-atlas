@@ -8,14 +8,12 @@ export const HARNESS_GUTTER_X =
   'px-5 md:px-[max(2.5rem,calc((100cqw_-_var(--page-max))/2_+_2.5rem))]' as const;
 
 /**
- * The horizontal frame each page body uses, so the title starts where the first line of the body
- * starts. `page` and `form` pay `PAGE_FRAME`'s and `PAGE_FRAME_FORM`'s column cap as a gutter, so the bar
- * spans the pane and its divider meets both edges.
+ * `page` pays `PAGE_FRAME`'s column cap as a gutter, so the title starts at one x on every destination
+ * and the divider meets both edges; a narrower body centres beneath it.
  */
 export const PAGE_HEADER_FRAMES = {
   harness: HARNESS_GUTTER_X,
   page: 'px-5 md:px-[max(2.5rem,calc((100%_-_var(--page-max))/2_+_2.5rem))]',
-  form: 'px-5 md:px-[max(2.5rem,calc((100%_-_960px)/2_+_2.5rem))]',
 } as const;
 
 export type PageHeaderFrame = keyof typeof PAGE_HEADER_FRAMES;
@@ -28,6 +26,7 @@ export function PageHeaderBar({
   frame,
   title,
   tabs,
+  meta,
   actions,
   tabsTestId,
   titleClassName,
@@ -38,6 +37,8 @@ export function PageHeaderBar({
   title: string;
   /** A `TabBar variant="segmented"`. */
   tabs?: ReactNode;
+  /** A fact on the title's baseline, styled by the caller. */
+  meta?: ReactNode;
   actions?: ReactNode;
   tabsTestId?: string;
   /** For a page whose tabs need the whole row at a narrow width, e.g. `max-md:sr-only`. */
@@ -46,10 +47,20 @@ export function PageHeaderBar({
   titleAs?: 'h1' | 'p';
   className?: string;
 }) {
+  const heading = (
+    <Title data-page-title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', tabs && 'max-sm:sr-only', titleClassName)}>{title}</Title>
+  );
   return (
     <div className={cn('sticky top-0 z-20 h-15 shrink-0 border-b border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]', className)}>
       <div data-page-header-row className={cn('flex h-full items-center gap-5', PAGE_HEADER_FRAMES[frame])}>
-        <Title data-page-title className={cn(PAGE_TITLE, 'shrink-0 whitespace-nowrap', tabs && 'max-sm:sr-only', titleClassName)}>{title}</Title>
+        {meta ? (
+          <div className="flex shrink-0 items-baseline gap-3">
+            {heading}
+            {meta}
+          </div>
+        ) : (
+          heading
+        )}
         {tabs ? (
           <div data-testid={tabsTestId} className="min-w-0">
             {tabs}

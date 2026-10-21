@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 
 import type { HarnessScanProgress } from '@/entities/agent-files';
+import { PAGE_WAIT_LIFT } from '@/shared/ui/tokens/page-frame';
 import { WaitStage, type WaitStep } from '@/shared/ui/status/wait-stage';
 
 const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
@@ -48,6 +49,7 @@ export function HarnessScanProgressPanel({ progress }: { progress: HarnessScanPr
   return (
     <WaitStage
       data-testid="harness-scan-progress"
+      className={PAGE_WAIT_LIFT}
       mark="mascot"
       title={t('loadingTitle')}
       detail={t('loadingDetail')}

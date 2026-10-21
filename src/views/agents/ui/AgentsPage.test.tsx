@@ -69,6 +69,21 @@ describe('agents destination', () => {
     expect(heading.compareDocumentPosition(lede) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('is a stage on the web agents and models tabs and a list on mcp and in the app', () => {
+    bridge = false;
+    const { container, unmount } = renderPage();
+    const placement = () => container.querySelector('[data-placement]')?.getAttribute('data-placement');
+    expect(placement()).toBe('stage');
+    fireEvent.click(screen.getByTestId('agents-tab-models'));
+    expect(placement()).toBe('stage');
+    fireEvent.click(screen.getByTestId('agents-tab-mcp'));
+    expect(placement()).toBe('list');
+    unmount();
+    bridge = true;
+    const app = renderPage();
+    expect(app.container.querySelector('[data-placement]')).toHaveAttribute('data-placement', 'list');
+  });
+
   it('says one lede sentence with no folded paragraph or pointer sentence', () => {
     renderPage();
     expect(screen.queryByText('이 화면이 하는 일')).toBeNull();

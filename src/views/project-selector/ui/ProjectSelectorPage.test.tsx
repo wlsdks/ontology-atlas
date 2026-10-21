@@ -1,9 +1,14 @@
 import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectSelectorPage } from "./ProjectSelectorPage";
+
+const page = vi.hoisted(() => ({
+  mode: "static" as "static" | "local",
+  vault: { agentActivityStatus: undefined } as Record<string, unknown>,
+}));
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({
@@ -79,11 +84,11 @@ vi.mock("@/features/vault-ontology", () => ({
 
 vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
-  useLocalVault: () => ({ agentActivityStatus: undefined }),
+  useLocalVault: () => page.vault,
 }));
 vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
-  useDataSourceMode: () => "static",
+  useDataSourceMode: () => page.mode,
 }));
 vi.mock("@/entities/vault-session/ui/VaultSourceHydrationBoundary", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/entities/vault-session/ui/VaultSourceHydrationBoundary")>()),
@@ -124,7 +129,26 @@ function renderPage() {
   );
 }
 
+afterEach(() => {
+  page.mode = "static";
+  page.vault = { agentActivityStatus: undefined };
+});
+
 describe("ProjectSelectorPage", () => {
+  it("with at most one project the page is a stage", () => {
+    renderPage();
+    expect(document.querySelector("[data-placement]")).toHaveAttribute("data-placement", "stage");
+  });
+
+  it("while a local folder opens it shows a centred wait, not the empty tile", () => {
+    page.mode = "local";
+    page.vault = { agentActivityStatus: undefined, status: "opening", handle: { name: "my-notes" } };
+    renderPage();
+    expect(screen.getByTestId("project-selector-loading")).toHaveTextContent("my-notes");
+    expect(screen.queryByTestId("project-selector-next-slot")).toBeNull();
+    expect(screen.queryByTestId("project-selector-count"), "the previous folder's count stays during the switch").toBeNull();
+  });
+
   it("keeps settings but shows no live indicator here", () => {
     /* "Live · N changes" belongs to the map, where changes are drawn onto nodes. */
     renderPage();

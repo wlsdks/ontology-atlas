@@ -26,6 +26,9 @@ const NOT_SETTLED = [
   '[data-testid="gateway-entry-fallback"]',
   '[data-testid="atlas-git-setup-preview"]',
   '[data-testid="app-settings-runtimes-loading"]',
+  '[data-testid="atlas-git-loading"]',
+  '[data-testid="automations-loading"]',
+  '[data-testid="project-selector-loading"]',
   "[data-empty-skeleton]",
 ] as const;
 

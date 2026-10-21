@@ -15,8 +15,7 @@ export function GitPage() {
       // Takes the shell's height and scrolls inside, or short content collapses the canvas.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"
     >
-      {/* No width cap: the panel narrows itself; with its 20px inset the title meets `PAGE_FRAME`'s. */}
-      <div className="mx-auto flex w-full min-h-0 flex-1 flex-col overflow-hidden pt-1 md:px-5 md:pt-7">
+      <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         <AtlasGitPanel
           vaultPath={vaultPath}
           sessionChangeset={changeset}

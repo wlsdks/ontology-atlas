@@ -667,15 +667,25 @@ describe("AtlasGitPanel setup mode", () => {
       },
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    // loading → not yet recording. Loading uses the same frame (so the screen does
-    // not jump as state changes), which is why this waits on the state attribute
-    // rather than a testid.
+    // loading is a centred wait; the setup frame only appears once the answer is known.
     await waitFor(() =>
       expect(screen.getByTestId("atlas-git-setup")).toHaveAttribute(
         "data-setup-state",
         "not-initialized",
       ),
     );
+  });
+
+  it("loading is a centred wait", async () => {
+    installDesktopGit();
+    tauriApiMock.invoke.mockImplementation(async (command: string) => {
+      if (command === "git_probe") return { installed: true, version: "git version 2.49.0" };
+      return new Promise(() => {});
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+
+    expect(await screen.findByTestId("atlas-git-loading")).toHaveAttribute("role", "status");
+    expect(screen.queryByTestId("atlas-git-setup")).not.toBeInTheDocument();
   });
 
   it("sends a folderless app user to the folder picker, not the download", async () => {

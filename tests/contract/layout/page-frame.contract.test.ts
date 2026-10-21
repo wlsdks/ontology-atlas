@@ -174,12 +174,12 @@ describe("page frame — second column and top margin (2026-08-11)", () => {
     expect(width(PAGE_COLUMN_FORM), "could not read the width from the row column").toBe(width(PAGE_FRAME_FORM));
   });
 
-  it("the header bar pays each frame's own width and inset as its gutter, so they cannot drift apart", () => {
+  it("the header bar pays the page frame's width and inset as its gutter, so they cannot drift apart", () => {
     const gutter = (width: string, inset: string) =>
       `px-5 md:px-[max(${inset},calc((100%_-_${width})/2_+_${inset}))]`;
     const widthOf = (spec: string) => spec.match(/max-w-\[([^\]]+)\]/)?.[1] ?? "";
     const insetOf = (spec: string) => `${Number(spec.match(/md:px-(\d+)/)?.[1]) / 4}rem`;
-    for (const [frame, spec] of [["page", PAGE_FRAME], ["form", PAGE_FRAME_FORM]] as const) {
+    for (const [frame, spec] of [["page", PAGE_FRAME]] as const) {
       expect(widthOf(spec), `could not read the ${frame} frame width — this test idles`).not.toBe("");
       expect(PAGE_HEADER_FRAMES[frame], `the bar's ${frame} gutter no longer matches the body frame`).toBe(
         gutter(widthOf(spec), insetOf(spec)),
@@ -253,9 +253,7 @@ describe("the reading column is owned by the document library (ruling of 2026-08
 const TITLE_MEMBERS = [
   "src/views/project-detail/ui/ProjectDetailPage.tsx",
   "src/views/project-editor/ui/ProjectEditorPage.tsx",
-  "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
-  "src/widgets/atlas-git-panel/ui/DesktopBody.tsx",
   "src/views/library/ui/parts/first-run/LibraryStartStage.tsx",
   "src/views/library/ui/LibraryRounds.tsx",
   "src/views/library/ui/LibraryConstellations.tsx",
@@ -318,6 +316,8 @@ describe("page title and lede", () => {
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
       "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
       "src/app/library-workspace/index.tsx",
+      "src/views/project-selector/ui/ProjectSelectorPage.tsx",
+      "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
     ]) {
       const source = blankComments(member, read(member));
       expect(source, `${member} no longer uses the header bar`).toMatch(/<PageHeaderBar\b/);
@@ -343,5 +343,25 @@ describe("page title and lede", () => {
       }
     }
     expect(measured, "the heading scan read nothing").toBeGreaterThan(TITLE_MEMBERS.length);
+  });
+});
+
+describe("a wait under the header bar", () => {
+  it("a wait under the header bar centres on the slot", () => {
+    const members = [
+      "src/views/automations/ui/AutomationsPage.tsx",
+      "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+      "src/views/project-selector/ui/ProjectSelectorPage.tsx",
+      "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
+      "src/views/architecture/ui/HarnessScanProgressPanel.tsx",
+    ];
+    for (const member of members) {
+      const source = blankComments(member, read(member));
+      const tags = [...source.matchAll(/<WaitStage\b/g)].map((hit) => openingTagAt(source, hit.index!));
+      expect(tags.length, `${member} has no WaitStage to judge`).toBeGreaterThan(0);
+      for (const tag of tags) {
+        expect(tag, `${member}: a WaitStage under the bar lacks PAGE_WAIT_LIFT`).toContain("PAGE_WAIT_LIFT");
+      }
+    }
   });
 });

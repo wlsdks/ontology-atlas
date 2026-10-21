@@ -23,8 +23,13 @@ import { useGitWorkspace } from "../model/use-git-workspace";
 import { useWorkbenchSelection } from "../model/use-workbench-selection";
 import type { ChangedDocument } from "./PendingDocumentPane";
 import { DesktopBody, type GitStage } from "./DesktopBody";
+import { LocationLine } from "./RemoteControls";
 import { NoVaultSetup, WebSetup } from "./SetupMode";
 import { cn } from "@/shared/lib/cn";
+import { useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { PageHeaderBar, WaitStage } from "@/shared/ui";
+import { PAGE_HEADER_FRAMES } from "@/shared/ui/layout/page-header-bar";
+import { PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 
 /**
  * Atlas Git, the body of the history destination: setup mode until the screen can record,
@@ -285,6 +290,25 @@ export function AtlasGitPanel({
     followBusy: snapshotting || initRunning || remoteRunning || remoteBusy !== null || restoreBusy,
   });
 
+  const narrow = useViewportBelow(1024);
+  const locationLine = (
+    <LocationLine
+      t={t}
+      branch={status?.branch ?? null}
+      upstream={status?.upstream ?? null}
+      remoteState={remoteState}
+      headShortHash={status?.headShortHash ?? null}
+      ahead={status?.ahead ?? null}
+      behind={status?.behind ?? null}
+      remoteOpen={remoteOpen}
+      setRemoteOpen={setRemoteOpen}
+      remoteBusy={remoteBusy}
+      onRemoteAction={(kind) => void runRemote(kind)}
+      pendingCount={hasChanges ? changes.length : 0}
+      className={narrow ? undefined : "flex-nowrap max-w-[50vw]"}
+    />
+  );
+
   return (
     <section
       aria-label={t("title")}
@@ -293,24 +317,35 @@ export function AtlasGitPanel({
       // No border or background: GitPage owns the frame, so a card shell here would double it.
       className={cn("flex w-full min-h-0 flex-col", className)}
     >
-      {/* Setup centres with `m-auto` (not `justify-center`, which clips the top of tall content).
-          From `xl` each workbench column scrolls on its own so the commit dock stays in view;
-          below `xl` the columns stack and the page scrolls. */}
+      <PageHeaderBar
+        frame="page"
+        title={t("title")}
+        titleAs={stage === "workbench" ? "h1" : "p"}
+        actions={stage === "workbench" && !narrow ? locationLine : null}
+      />
       <div
         className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-y-auto px-5",
+          "relative flex min-h-0 flex-1 flex-col overflow-y-auto",
+          PAGE_HEADER_FRAMES.page,
           stage === "workbench"
             ? // Below `lg` the bottom tab bar overlays the page, so the last surface reserves
               // its height (design.md touch contract).
               "py-5 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)] xl:overflow-hidden"
-            : "py-6",
+            : PAGE_STAGE_FILL,
         )}
       >
-        {stage === "workbench" ||
-        stage === "not-initialized" ||
-        stage === "loading" ||
-        stage === "error" ? (
+        {stage === "loading" ? (
+          <WaitStage
+            mark="mascot"
+            title={t("loading")}
+            detail={t("scopeNotice")}
+            delayed
+            data-testid="atlas-git-loading"
+            className={PAGE_WAIT_LIFT}
+          />
+        ) : stage === "workbench" || stage === "not-initialized" || stage === "error" ? (
           <DesktopBody
+            locationLine={narrow ? locationLine : null}
             snapshotMessage={snapshotMessage}
             setSnapshotMessage={setSnapshotMessage}
             hostPlatformHint={

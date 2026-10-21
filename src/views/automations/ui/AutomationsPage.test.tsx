@@ -194,6 +194,23 @@ describe('Automations manager', () => {
     }
   });
 
+  it('an empty lane is a stage and a lane with a schedule is a list', () => {
+    const round: RoundRecord = { id: 'first', kind: 'ontology', name: 'Morning review', enabled: true,
+      cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
+    const view = renderPage(runner({ storeStatus: 'missing' }));
+    expect(document.querySelector('[data-placement]')).toHaveAttribute('data-placement', 'stage');
+    view.unmount();
+    renderPage(runner({ rounds: [round], state: { v: 1, rounds: [round] } }));
+    expect(document.querySelector('[data-placement]')).toHaveAttribute('data-placement', 'list');
+  });
+
+  it('loading shows only the wait, without the lede', () => {
+    renderPage(runner({ storeStatus: 'loading' }));
+    expect(screen.getByTestId('automations-loading')).toBeInTheDocument();
+    expect(screen.queryByText(en.automations.lede)).toBeNull();
+    expect(document.querySelector('[data-placement]')).toBeNull();
+  });
+
   it('keeps the document lane as a real tabpanel and opens the existing document round sheet', () => {
     search = 'kind=documents';
     const openDocumentSchedule = vi.fn();

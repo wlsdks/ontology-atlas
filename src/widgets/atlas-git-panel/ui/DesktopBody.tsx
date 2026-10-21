@@ -21,11 +21,10 @@ import type { ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
 import { cn } from "@/shared/lib/cn";
-import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import type { Translator } from "../lib/translator";
 import type { WorkbenchSelection } from "../model/use-workbench-selection";
 import { SETUP_ACTION_PLACEMENT, SetupFrame, SessionChangeSummary } from "./SetupMode";
-import { LocationLine, RemoteResultLine, RemoteSetup } from "./RemoteControls";
+import { RemoteResultLine, RemoteSetup } from "./RemoteControls";
 import { StepList, StepListScroller } from "./StepList";
 import { ActionDock, DiscardDock } from "./ActionDock";
 
@@ -34,14 +33,6 @@ import { ActionDock, DiscardDock } from "./ActionDock";
  * since waiting or re-checking is all the user can do.
  */
 export type GitStage = "web" | "no-vault" | "loading" | "not-installed" | "error" | "not-initialized" | "workbench";
-
-function PageHeader({ t }: { t: Translator }) {
-  return (
-    <header className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1.5 pb-1">
-      <h1 className={PAGE_TITLE}>{t("title")}</h1>
-    </header>
-  );
-}
 
 export function DesktopBody({
   t,
@@ -110,7 +101,9 @@ export function DesktopBody({
   focusedConceptId,
   setFocusedConceptId,
   vaultPath,
+  locationLine,
 }: {
+  locationLine: React.ReactNode;
   snapshotMessage: string;
   setSnapshotMessage: (v: string) => void;
   /** The connected vault is the exact scope of each selected commit's lazy patch read. */
@@ -120,7 +113,7 @@ export function DesktopBody({
   /** Re-checks for git, so someone who just installed it need not restart the app. */
   onRecheckGit: () => void;
   t: Translator;
-  stage: Extract<GitStage, "loading" | "not-installed" | "error" | "not-initialized" | "workbench">;
+  stage: Extract<GitStage, "not-installed" | "error" | "not-initialized" | "workbench">;
   loadErrorText: string | null;
   status: GitStatusResult | null;
   documents: ChangedDocument[];
@@ -200,17 +193,6 @@ export function DesktopBody({
    */
   const settledHash = snapshotResult?.commitHash ?? null;
 
-  if (stage === "loading") {
-    return (
-      <SetupFrame
-        t={t}
-        step={null}
-        state="loading"
-        title={t("loading")}
-        note={t("scopeNotice")}
-      />
-    );
-  }
   if (stage === "not-installed") {
     /*
      * The degradation card (`surfaces.md`): why (`install.title`, `install.body`), where
@@ -371,23 +353,6 @@ export function DesktopBody({
     diffFiles.map((file) => [file.path, { added: file.added, removed: file.removed }]),
   );
 
-  const locationLine = (
-    <LocationLine
-      t={t}
-      branch={branch}
-      upstream={upstream}
-      remoteState={remoteState}
-      headShortHash={status?.headShortHash ?? null}
-      ahead={status?.ahead ?? null}
-      behind={status?.behind ?? null}
-      remoteOpen={remoteOpen}
-      setRemoteOpen={setRemoteOpen}
-      remoteBusy={remoteBusy}
-      onRemoteAction={onRemoteAction}
-      pendingCount={hasChanges ? changeCount : 0}
-    />
-  );
-
   /*
    * A step named by what it changed, for a document's history rows: its concepts, then the
    * documents an automatic subject names, then the person's sentence without its code.
@@ -471,10 +436,11 @@ export function DesktopBody({
         No card shell: the workbench is the whole surface, fills the viewport and scrolls inside,
         under one top bar (title, location, actions) and a divider.
       */}
-      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] pb-3">
-        <PageHeader t={t} />
-        <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
-      </div>
+      {locationLine ? (
+        <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b border-[color:var(--color-divider)] pb-3">
+          <div className="ml-auto flex min-w-0 items-center gap-3">{locationLine}</div>
+        </div>
+      ) : null}
       <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
       <RemoteResultLine kind="restore" notice={restoreNotice} error={restoreError} />
 

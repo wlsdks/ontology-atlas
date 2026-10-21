@@ -7,7 +7,7 @@ describe('PageHeaderBar', () => {
   it('holds the title, the switcher and the actions in one 60px row', () => {
     render(
       <PageHeaderBar
-        frame="form"
+        frame="page"
         title="Agents"
         tabsTestId="tabs-slot"
         tabs={<div role="tablist" aria-label="Views" />}
@@ -26,9 +26,14 @@ describe('PageHeaderBar', () => {
     const { rerender } = render(<PageHeaderBar frame="page" title="A" />);
     const row = () => screen.getByRole('heading').parentElement!;
     expect(row().className).toContain('var(--page-max)');
-    rerender(<PageHeaderBar frame="form" title="A" />);
-    expect(row().className).toContain('960px');
     rerender(<PageHeaderBar frame="harness" title="A" />);
     expect(row().className).toContain('100cqw');
+  });
+
+  it('sets a meta fact on the title baseline right after the title', () => {
+    render(<PageHeaderBar frame="page" title="Projects" meta={<span data-testid="count">3</span>} />);
+    const meta = screen.getByTestId('count');
+    expect(meta.previousElementSibling).toBe(screen.getByRole('heading', { level: 1, name: 'Projects' }));
+    expect(meta.parentElement!.className).toContain('items-baseline');
   });
 });

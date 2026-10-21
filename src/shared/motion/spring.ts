@@ -11,6 +11,14 @@ export const SPRING = {
   canvas: { stiffness: 140, dampingRatio: HOUSE_DAMPING_RATIO },
 } as const satisfies Record<string, Spring>;
 
+export function framerSpring(spring: Spring) {
+  return {
+    type: 'spring' as const,
+    stiffness: spring.stiffness,
+    damping: 2 * spring.dampingRatio * Math.sqrt(spring.stiffness),
+  };
+}
+
 const EASING_STOPS = 33;
 const VISUAL_BAND = 0.02;
 const SETTLE_BAND = 0.005;
