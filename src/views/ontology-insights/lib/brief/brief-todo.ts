@@ -45,7 +45,6 @@ export function lineHref(lineId: string, availability: BriefCore['availability']
   return href;
 }
 
-/** The destination a row opens, or `undefined` for a row that is not a counted line with somewhere to go. */
 export function briefRowHref(row: BriefRow, appRowPresent: boolean): string | undefined {
   if (row.kind !== 'line' || row.line.count === 0) return undefined;
   return lineHref(row.line.id, row.availability, appRowPresent);
@@ -53,10 +52,6 @@ export function briefRowHref(row: BriefRow, appRowPresent: boolean): string | un
 
 export const BRIEF_TODO_LIMIT = 3;
 
-/**
- * The first three counted lines with a destination, in list order, are the reader's to-do; every other row stays in
- * the list behind a toggle. `zeroCount` is how many of those rows a reader sees as zero.
- */
 export function splitBriefTodo(
   rows: readonly BriefRow[],
   hrefOf: (row: BriefRow) => string | undefined,

@@ -46,7 +46,6 @@ export function DestinationLink({
 }: {
   href: string;
   className?: string;
-  /** Wear `className` alone, for a door drawn as a button rather than an inline link. */
   button?: boolean;
   onOpenTab?: (tab: InsightsTab) => void;
   children: React.ReactNode;
@@ -75,7 +74,6 @@ export function DestinationLink({
 }
 
 
-/** A line's sentence as a chevron disclosure over the named rows it was counted from, with the drift handoff and the overflow count. */
 export function LineDisclosure({
   line,
   details,

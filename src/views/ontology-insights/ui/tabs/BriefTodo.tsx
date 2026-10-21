@@ -17,7 +17,6 @@ const PLACE_KEY: Record<string, 'map' | 'architecture' | 'library' | 'agents' | 
   '/git/': 'git',
 };
 
-/** The three lines worth doing first, in list order; the rest of the list waits behind a toggle. */
 export function BriefTodo({
   rows,
   details,

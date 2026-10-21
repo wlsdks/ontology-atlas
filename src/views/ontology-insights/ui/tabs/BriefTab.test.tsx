@@ -98,7 +98,6 @@ const mount = (value: InsightsBrief) =>
     </NextIntlClientProvider>,
   );
 
-/** Rows past the first three counted lines sit behind one toggle; a test that reads them opens it first. */
 function openRest() {
   const toggle = screen.queryByTestId("brief-rest-toggle");
   if (toggle && toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
@@ -115,7 +114,6 @@ describe("BriefTab", () => {
   it("draws only nonzero lines in one list, stale before unknown before what happened", () => {
     mount(brief());
     openRest();
-    // The first three counted lines are the to-do block; the list below carries the rest.
     const list = document.body;
     const lines = list.querySelectorAll("[data-brief-line]");
     // No "agent-calls-since" line: the since card names those calls one by one.
@@ -141,10 +139,8 @@ describe("BriefTab", () => {
 
   it("ends each sentence with its door, and makes each changed name its own door", () => {
     mount(brief());
-    // A to-do line's door is a button beside its sentence, labelled by where it goes.
     const repair = screen.getByTestId("brief-todo").querySelector('[data-brief-todo="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
     expect(repair).toHaveTextContent("확인하러 가기");
-    // Past the to-do block the door sits in the sentence's flow, right after the last word.
     openRest();
     const wikiDoor = screen.getByTestId("brief-core-empty-wiki").querySelector('a[href="/library/"]');
     expect(wikiDoor?.parentElement?.tagName).toBe("SPAN");

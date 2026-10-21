@@ -14,7 +14,6 @@ import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } fro
  * app", and a screen quietly reporting `current` would be the defect this tab exists to end.
  */
 
-/** Rows past the first three counted lines sit behind one toggle; a spec that reads them opens it first. */
 async function openRest(page: import("@playwright/test").Page) {
   const toggle = page.getByTestId("brief-rest-toggle");
   await expect(toggle).toBeVisible({ timeout: 30_000 });
