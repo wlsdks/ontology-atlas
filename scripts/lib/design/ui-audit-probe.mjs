@@ -21,7 +21,7 @@ function uiAuditProbe({ rampNames, interactive }) {
     const boundary = (node, style) => node instanceof HTMLElement && ["absolute", "fixed"].includes(style.position)
       ? node.offsetParent ?? document.documentElement : null;
     let containingBlock = boundary(el, c);
-    let ok = b.width >= 1 && b.height >= 1 && c.visibility !== "hidden" && c.display !== "none" && Number(c.opacity) >= 0.05;
+    let ok = !el.hasAttribute("inert") && b.width >= 1 && b.height >= 1 && c.visibility !== "hidden" && c.display !== "none" && Number(c.opacity) >= 0.05;
     if (ok && el.closest("details:not([open])")) ok = false;
     for (let n = el.parentElement; ok && n && n !== document.body; n = n.parentElement) {
       const nc = getComputedStyle(n);
@@ -96,7 +96,9 @@ function uiAuditProbe({ rampNames, interactive }) {
     const cx = (area.left + area.right) / 2;
     const cy = (area.top + area.bottom) / 2;
     const hit = document.elementFromPoint(cx, cy);
-    if (!hit || (hit !== el && !el.contains(hit))) {
+    const canvasReachable = el.tagName === "CANVAS" && [0.1, 0.5, 0.9].some((x) =>
+      [0.1, 0.5, 0.9].some((y) => document.elementFromPoint(area.left + width * x, area.top + height * y) === el));
+    if (!canvasReachable && (!hit || (hit !== el && !el.contains(hit)))) {
       occluded.push({ selector: chain(el), by: hit ? chain(hit).slice(0, 1) : "nothing", at: `${Math.round(cx)},${Math.round(cy)}` });
     }
   }
