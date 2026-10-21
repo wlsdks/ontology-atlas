@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { LibraryBig, Plus, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -15,11 +16,11 @@ import { cn } from "@/shared/lib/cn";
 import { usePanelPresence, useSwapHeight } from "@/shared/lib/render-timing/use-presence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { MOTION } from "@/shared/motion";
-import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
+import { framerSpring, SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, buttonVariants, EmptyState, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
-import { PAGE_FRAME_FORM, PAGE_LEDE } from "@/shared/ui/tokens/page-frame";
+import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
 import { AutomationGhostRow, AutomationLaneFacts, AutomationLaneIntro, AutomationListPanel } from "./AutomationListFrame";
 import listStyles from "./automation-list-frame.module.css";
@@ -132,6 +133,8 @@ export function AutomationsPage({
     };
   };
 
+  const loading = state === "loading";
+  const staged = !loading && empty;
   const canHoldSchedules = state === "ready";
   const introCopy = state === "app-required"
     ? { title: t("appRequiredTitle"), description: t("appRequiredDescription"),
@@ -158,51 +161,58 @@ export function AutomationsPage({
           data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
           <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
         </Button> : null} />
-      <div className={cn(PAGE_FRAME_FORM, "relative flex flex-1 flex-col gap-6 pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
-        <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
+      <div className={cn(PAGE_FRAME_FORM, "relative", staged || loading ? PAGE_STAGE_FILL : "flex flex-1 flex-col pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]")}>
+        {loading ? (
+          <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col">
+            <WaitStage mark="mascot" title={t("loadingTitle")} data-testid="automations-loading" aria-busy="true" delayed className={PAGE_WAIT_LIFT} />
+          </section>
+        ) : (
+          <motion.div data-placement={staged ? "stage" : "list"} layout={reduced ? false : "position"} layoutDependency={staged}
+            transition={framerSpring(SPRING.surface)} className={cn("flex min-w-0 flex-col gap-6", staged ? "my-auto" : "flex-1")}>
+            <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
 
-        <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
-          {state === "loading" ? (
-            <WaitStage mark="mascot" title={t("loadingTitle")} data-testid="automations-loading" aria-busy="true" delayed />
-          ) : state === "malformed" || state === "unavailable" ? (
-            <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
-              action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
-          ) : (
-            <div className="grid min-w-0 gap-8">
-              <div className="flex min-w-0 flex-col">
-                <div ref={introHostRef} className="relative min-w-0 overflow-hidden">
-                  {intro.mounted ? <div inert={intro.exiting} aria-hidden={intro.exiting || undefined}
-                    className={cn(intro.exiting && "motion-swap-out pointer-events-none absolute inset-x-0 top-0")}>
-                    <AutomationLaneIntro {...introCopy} />
-                  </div> : null}
+            <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
+              {state === "malformed" || state === "unavailable" ? (
+                <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
+                  action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
+              ) : (
+                <div className="grid min-w-0 gap-8">
+                  <div className="flex min-w-0 flex-col">
+                    <div ref={introHostRef} className="relative min-w-0 overflow-hidden">
+                      {intro.mounted ? <div inert={intro.exiting} aria-hidden={intro.exiting || undefined}
+                        className={cn(intro.exiting && "motion-swap-out pointer-events-none absolute inset-x-0 top-0")}>
+                        <AutomationLaneIntro {...introCopy} />
+                      </div> : null}
+                    </div>
+                    <AutomationListPanel title={t(`${lane}.preview.title`)} count={canHoldSchedules ? rounds.length : null}
+                      columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
+                      trailing={runner && canHoldSchedules ? <>
+                        {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
+                        {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
+                        {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
+                          <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
+                        </Link> : null}
+                      </> : null}>
+                      {empty || !runner ? ghostRow() : <div className="relative">
+                        <ul data-testid="automations-list" className="flex flex-col">
+                          {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
+                            expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
+                            onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
+                        </ul>
+                        {ghost.mounted && seen.arrived ? ghostRow("motion-swap-out pointer-events-none absolute inset-x-0 top-0") : null}
+                      </div>}
+                    </AutomationListPanel>
+                  </div>
+                  <AutomationLaneFacts facts={[
+                    { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
+                    { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
+                    { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
+                  ]} />
                 </div>
-                <AutomationListPanel title={t(`${lane}.preview.title`)} count={canHoldSchedules ? rounds.length : null}
-                  columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
-                  trailing={runner && canHoldSchedules ? <>
-                    {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                    {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
-                    {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
-                      <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
-                    </Link> : null}
-                  </> : null}>
-                  {empty || !runner ? ghostRow() : <div className="relative">
-                    <ul data-testid="automations-list" className="flex flex-col">
-                      {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
-                        expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
-                        onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
-                    </ul>
-                    {ghost.mounted && seen.arrived ? ghostRow("motion-swap-out pointer-events-none absolute inset-x-0 top-0") : null}
-                  </div>}
-                </AutomationListPanel>
-              </div>
-              <AutomationLaneFacts facts={[
-                { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
-                { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
-                { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
-              ]} />
-            </div>
-          )}
-        </section>
+              )}
+            </section>
+          </motion.div>
+        )}
         <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology}
           round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true} />
       </div>
