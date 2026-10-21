@@ -140,6 +140,32 @@ function run(o: RunOptions = {}) {
 }
 
 describe("buildDialMarks", () => {
+  it("makes a hovered domain the brightest group while keeping partner positions stable", () => {
+    const rest = run();
+    const hover = run({ hoverId: "d0" });
+    const subject = hover.out.glyphs.find((g) => g.id === "d0")!;
+    const partnerId = [...hover.input.inkAttention.partnerDomains][0]!;
+    const partner = hover.out.glyphs.find((g) => g.id === partnerId)!;
+    const before = rest.out.glyphs.find((g) => g.id === partnerId)!;
+    expect(subject.stroke).toBe(MAP.indigoBright);
+    expect(partner.stroke).not.toBe(before.stroke);
+    expect({ x: partner.x, y: partner.y, r: partner.r }).toEqual({ x: before.x, y: before.y, r: before.r });
+    expect(hover.out.glyphs.find((g) => g.id === "p")?.egoState).toBe("dim");
+  });
+
+  it("draws ownership only between visible real members, and never adds dependency picks", () => {
+    const { out, model, result } = run();
+    expect(out.branches.length).toBeGreaterThan(0);
+    for (const branch of out.branches) {
+      const capability = model.capabilityById.get(branch.target);
+      if (capability) expect(capability.domainId).toBe(branch.source);
+      else expect(model.capabilityById.get(branch.source)?.elementIds).toContain(branch.target);
+      expect(Math.hypot(branch.b.x - branch.a.x, branch.b.y - branch.a.y)).toBeGreaterThan(0);
+    }
+    expect(result.picks.every((p) => !p.id.includes("::"))).toBe(true);
+    expect(run({ disclosure: { capAlpha: 0 } }).out.branches).toHaveLength(0);
+  });
+
   it("names a domain where it rests while another domain still travels across that spot", () => {
     const nameOf = (r: ReturnType<typeof run>) => r.out.texts.find((t) => t.id === "d0" && t.role === "domain")!.box;
     const rest = nameOf(run());
@@ -179,8 +205,8 @@ describe("buildDialMarks", () => {
     expect(dialDiscRadiusPx(TOKENS, 1, 9)).toBeCloseTo(Math.min(34 * 0.32, 6.8 * 1.4));
     expect(dialDiscRadiusPx(TOKENS, 4, 100)).toBeCloseTo(Math.min(136 * 0.32, 7 * 1.4));
     expect(dialChipRadiusPx(TOKENS, 4, 16)).toBeCloseTo(8 + 9 * 0.5);
-    expect(dialHubRadiusPx(TOKENS, MAP, 0.1)).toBe(14);
-    expect(dialHubRadiusPx(TOKENS, MAP, 10)).toBe(34);
+    expect(dialHubRadiusPx(TOKENS, MAP, 0.1)).toBe(TOKENS.hubMinPx);
+    expect(dialHubRadiusPx(TOKENS, MAP, 10)).toBe(TOKENS.hubMaxPx);
 
     const full = run().out.discs[0]!;
     const half = run({ disclosure: { capAlpha: 0.5 } }).out.discs[0]!;
@@ -349,10 +375,10 @@ describe("buildDialMarks", () => {
     const unknown = run({ evidence: new Map() });
     expect(unknown.out.discs.length).toBeGreaterThan(0);
     expect(unknown.out.discs.every((d) => d.dashed)).toBe(true);
-    const measured = run({ evidence: states });
+    const measured = run({ evidence: states, hoverId: "d2" });
     expect(rimOf(measured, "d2c0")).toBe(mixOver(INKS.stale, INKS.bg, 1));
     expect(measured.out.discs.find((d) => d.id === "d2c1")!.dashed).toBe(true);
-    expect(rimOf(measured, "d5c0")).toBe(rimOf(unmeasured, "d5c0"));
+    expect(rimOf(run({ evidence: states }), "d2c0")).toBe(rimOf(unmeasured, "d2c0"));
   });
 
   it("registers picks in paint order, so a click on a chip's edge over a disc selects the chip", () => {

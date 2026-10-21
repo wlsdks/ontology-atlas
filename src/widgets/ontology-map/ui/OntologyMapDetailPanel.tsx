@@ -22,7 +22,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
-import { Button, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { Button, Disclosure, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
@@ -290,22 +290,20 @@ export function OntologyMapDetailPanel({
         onKeyDown={handleKeyDown}
         // The viewport cap keeps the footer in reach. `--map-inspector-max-height` is this surface's alias:
         // below `lg` it is a bottom sheet the meaning editor sharing this anchor must not inherit.
-        // Zones carry their own padding, so `zdiv` and the sticky footer need no negative margins.
+        // The reading body scrolls; the footer stays outside its clipping boundary.
         className={[
           // Width is decided by the outer `Surface` (including the consumer
           // className's responsive width override) — here it only fills that width
           // and carries the remaining material.
           "flex w-full flex-col",
-          "max-h-[var(--map-inspector-max-height)] overflow-y-auto",
+          "max-h-[var(--map-inspector-max-height)] overflow-hidden",
           "rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)]",
           "bg-[color:var(--map-panel-surface)]",
           "shadow-[var(--map-panel-shadow)]",
         ].join(" ")}
       >
-        {/* ZONE 1 · IDENTITY — a balanced header: the name hero (left) plus the kind
-            badge and close (right), and below, freshness (left) plus the domain chip
-            (right). Both sides carry mass, so no gap opens on the right and it holds
-            up for long names too. */}
+        <div data-testid="map-detail-panel-body" className="min-h-0 overflow-y-auto pb-2">
+        {/* Identity precedes source state and actions. */}
         <IdentityZone
           nodeId={nodeId}
           title={title}
@@ -373,7 +371,7 @@ export function OntologyMapDetailPanel({
               {labels.sourceHeading ? (
                 <span
                   data-testid="map-project-source-heading"
-                  className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-secondary)]"
+                  className="sr-only"
                 >
                   {labels.sourceHeading}
                 </span>
@@ -385,16 +383,9 @@ export function OntologyMapDetailPanel({
                   <div className="ai-row-swap flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-secondary)]">
                     <ProjectSourceStatusIcon status={projectSource.status} />
                     <span className="truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
-                    {labels.sourceKind ? (
-                      <span className="ml-auto shrink-0 font-mono text-label text-[color:var(--map-panel-text-quaternary)]">
-                        {labels.sourceKind}
-                      </span>
-                    ) : null}
+
                   </div>
-                  <div className="ai-row-swap flex items-center justify-between gap-3">
-                    <span>{labels.sourceMeasuredAt}</span>
-                    <span className="shrink-0">{labels.sourceCurrentness}</span>
-                  </div>
+
                 </Fragment>
               ) : (
                 <ProjectSourcePendingRows key="pending" label={labels.sourcePending} />
@@ -416,7 +407,7 @@ export function OntologyMapDetailPanel({
                         className="text-[color:var(--map-panel-text-secondary)]"
                       >
                         {labels.sourceGapLabel ? (
-                          <span className="font-[var(--font-weight-signature)]">{labels.sourceGapLabel}: </span>
+                          <span className="sr-only">{labels.sourceGapLabel}: </span>
                         ) : null}
                         {heldSourceGap}
                       </p>
@@ -439,7 +430,7 @@ export function OntologyMapDetailPanel({
                      */
                     <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
                       <ProjectSourceRemedy
-                        why={labels.sourceWhy}
+                        why={projectSource?.nextAction.id === "remeasure_source" ? undefined : labels.sourceWhy}
                         actionLabel={labels.sourceAction}
                         busyLabel={labels.sourceBusy}
                         busy={projectSourceBusy}
@@ -463,6 +454,14 @@ export function OntologyMapDetailPanel({
                   {projectSourceError}
                 </span>
               ) : null}
+              {showProjectSource ? (
+                <Disclosure summary={labels.sourceRecord ?? labels.sourceHeading} summaryTestId="map-project-source-record">
+                  <div className="flex flex-col gap-1 pb-2 text-label text-[color:var(--map-panel-text-tertiary)]">
+                    <span>{labels.sourceMeasuredAt}</span>
+                    <span>{labels.sourceKind} · {labels.sourceCurrentness}</span>
+                  </div>
+                </Disclosure>
+              ) : null}
             </div>
           ) : null}
 
@@ -477,7 +476,7 @@ export function OntologyMapDetailPanel({
               : "flex items-center gap-1.5"}
           >
             {!suppressPrimaryAction && meaningReview ? (
-              <Button size="sm" onClick={meaningReview.onOpen} data-testid="map-detail-panel-action-meaning" data-action-role="primary" className={PRIMARY_ACTION_CLASS}>
+              <Button variant={projectLayout && showSourceRemedy ? "ghost" : "primary"} size="sm" onClick={meaningReview.onOpen} data-testid="map-detail-panel-action-meaning" data-action-role={projectLayout && showSourceRemedy ? "secondary" : "primary"} className={PRIMARY_ACTION_CLASS}>
                 <ScanSearch size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{meaningReview.label}</span>
               </Button>
@@ -558,6 +557,7 @@ export function OntologyMapDetailPanel({
             only emphasis). The root is an unpadded scroll container, so it anchors
             with `sticky bottom-0` and no negative margins — it stays inside the
             viewport even when the content overflows (P3-③). */}
+        </div>
         <PanelFooter
           slug={slug}
           labels={labels}

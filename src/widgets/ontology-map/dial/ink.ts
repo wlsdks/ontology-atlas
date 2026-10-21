@@ -19,7 +19,6 @@ export interface DialInks {
   railReceded: string;
   domainFill: string;
   domainRim: string;
-  ring: string;
   capabilityFill: string;
   capabilityRim: string;
   capabilityReceded: string;
@@ -75,8 +74,8 @@ export function resolveDialInks(map: OntologyMapTokens, dial: DialTokens): DialI
   const opaque = (c: string) => mixOver(c, bg);
   const inks: DialInks = {
     bg,
-    flow: opaque(map.edgeDepends),
-    flowReceded: recede(map.edgeDepends),
+    flow: opaque(dial.strokeElement),
+    flowReceded: recede(dial.strokeElement),
     needs: opaque(map.indigoBright),
     usedBy: opaque(map.edgeSelected),
     relates: opaque(map.edgeDepends),
@@ -86,12 +85,11 @@ export function resolveDialInks(map: OntologyMapTokens, dial: DialTokens): DialI
     domainLabelAttended: opaque(dial.attendedNameInk),
     units: opaque(map.labelElement),
     capabilityLabel: opaque(map.labelCapability),
-    projectLabel: opaque(map.labelProject),
+    projectLabel: opaque(dial.attendedNameInk),
     rail: opaque(map.edgeContainsL2),
     railReceded: recede(map.edgeContainsL2),
     domainFill: opaque(dial.fillDomain),
     domainRim: opaque(dial.strokeDomain),
-    ring: opaque(dial.ring),
     capabilityFill: opaque(dial.fillCapability),
     capabilityRim: opaque(dial.strokeCapability),
     capabilityReceded: recede(dial.strokeCapability),

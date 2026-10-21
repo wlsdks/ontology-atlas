@@ -24,7 +24,7 @@ export function PanelFooter({
   return (
     <div
       data-testid="map-detail-panel-footer"
-      className="sticky bottom-0 flex items-center gap-2.5 rounded-b-[var(--map-panel-radius)] border-t border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-[var(--map-panel-pad)] py-[11px]"
+      className="flex shrink-0 items-center gap-2.5 rounded-b-[var(--map-panel-radius)] border-t border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-[var(--map-panel-pad)] py-[11px]"
     >
       {!projectLayout ? (
         <span

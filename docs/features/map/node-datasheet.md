@@ -12,7 +12,7 @@ routes: [/topology]
 - **Project node click** → the same right-side datasheet shell, with a project-only
   **code-evidence receipt** in place of the generic stats row. The receipt reports
   a categorical state, measurement time, currentness, the first evidence gap, and
-  one next action; it is not a numeric confidence score or a claim that the whole
+  one next action. Measurement time, source kind and currentness are available under **Check record**; a stale remeasurement diagnosis is not repeated in a second explanation. The kind is a quiet header label rather than a framed badge. The receipt is not a numeric confidence score or a claim that the whole
   repository is correct. In the installed app, **Connect code folder** binds one
   Git worktree or ordinary folder and measures declared capability/element code
   paths. The receipt labels the detected source honestly as **Git repository** or

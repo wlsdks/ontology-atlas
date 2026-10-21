@@ -3,21 +3,7 @@ import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle
 import { controlClass } from "@/shared/ui";
 import type { OntologyMapDetailPanelProps } from "./types";
 
-/**
- * **The prescription, right under the diagnosis.** One sentence of "why this is
- * needed" plus one thing to press right there.
- *
- * The box around this position is not decoration but **binding** — the three
- * status lines above are facts, and inside this box is "so what do I do now".
- * The condition for the box appearing *is* "there is something to fix" (the call
- * site's `showSourceRemedy`), so the box itself carries one typed fact
- * (`topGap !== null`).
- *
- * Every value is an existing token — the background and border are the
- * `--map-panel-action-*` the action strip directly below uses, and the
- * button is the same skin as the previous footer action, **not one character
- * changed**. Zero new tokens.
- */
+/** One remedy after the status; a proposed folder keeps its explicit confirmation. */
 export function ProjectSourceRemedy({
   why,
   actionLabel,
@@ -53,7 +39,7 @@ export function ProjectSourceRemedy({
       // `keep-all`: Korean breaks at any character and these sentences wrap at the panel's narrow width.
       // No top margin: in a `RowDisclosure` a child's margin collapses out of the measured body, so the
       // pinned height comes up 2px short and clips this box's bottom border.
-      className="flex flex-col gap-2 rounded-chip border border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] px-2.5 py-2 [word-break:keep-all]"
+      className="flex flex-col gap-2 py-1 [word-break:keep-all]"
     >
       {why ? (
         <p

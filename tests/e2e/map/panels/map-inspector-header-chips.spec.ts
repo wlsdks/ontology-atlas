@@ -2,13 +2,8 @@ import { expect, test } from "@playwright/test";
 import { installDesktopRailRuntime, mountDesktopVault } from "../../desktop-rail-arrival-harness";
 import { waitForBoxStill } from "../../settle";
 
-/**
- * The kind chip and domain chip share height, radius and type size; the close button matches
- * that height, rows end on one right edge, and the title stays the largest type.
- */
-
 for (const width of [1512] as const) {
-  test(`inspector header chips share one grammar at ${width}`, async ({ page }) => {
+  test(`inspector identity stays readable beside its close control at ${width}`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: 900 });
     await page.emulateMedia({ reducedMotion: "reduce" });
@@ -40,13 +35,11 @@ for (const width of [1512] as const) {
     expect(title && kind && close && domain && updated, "a header part is not drawn").toBeTruthy();
     if (!title || !kind || !close || !domain || !updated) return;
 
-    expect(Math.abs(kind.height - domain.height), "kind and domain chip heights differ").toBeLessThanOrEqual(0.5);
-    expect(kind.radius, "kind and domain chip radii differ").toBe(domain.radius);
     expect(kind.font, "kind and domain chip type sizes differ").toBe(domain.font);
-    expect(Math.abs(close.height - kind.height), "close button is not the chips' height").toBeLessThanOrEqual(0.5);
+    expect(close.height, "the close control remains reachable").toBeGreaterThanOrEqual(32);
     expect(Math.abs(close.right - domain.right), "the two rows end on different right edges").toBeLessThanOrEqual(0.5);
     expect(Math.abs(kind.centre - close.centre), "row 1 controls are not centred on one line").toBeLessThanOrEqual(0.5);
-    expect(Math.abs(title.centre - kind.centre), "the title is off row 1's centre").toBeLessThanOrEqual(1);
+    expect(title.centre, "the name follows the quiet kind label").toBeGreaterThan(kind.centre + kind.height / 2);
     expect(Math.abs(updated.centre - domain.centre), "row 2 is not centred on one line").toBeLessThanOrEqual(1);
     expect(title.font, "the title must stay the header's largest type").toBeGreaterThan(Math.max(kind.font, domain.font, updated.font));
   });
