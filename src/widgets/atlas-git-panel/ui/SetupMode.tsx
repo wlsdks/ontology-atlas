@@ -6,7 +6,6 @@ import {
   Check,
   Download,
   FolderOpen,
-  History as HistoryIcon,
   ShieldCheck,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
@@ -250,15 +249,11 @@ export function SetupFrame({
     <div
       data-testid="atlas-git-setup"
       data-setup-state={state}
-      className="topology-chrome-in grid w-full flex-1 grid-cols-1 content-center items-center gap-9 py-[var(--git-setup-top)] lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
+      data-placement="stage"
+      className="topology-chrome-in grid my-auto w-full grid-cols-1 items-center gap-9 lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
     >
       {/* Capped at the prose measure at every width, or below `lg` the divider and CLI line stretch. */}
       <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
-        {/* The destination name is an eyebrow; the h1 is the task at hand. */}
-        <p className="flex items-center gap-2 text-label text-[color:var(--color-text-quaternary)]">
-          <HistoryIcon size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-indigo-text-soft)]" />
-          {t("title")}
-        </p>
         <div className="flex flex-col gap-2">
           <h1 className={PAGE_TITLE}>
             {title}

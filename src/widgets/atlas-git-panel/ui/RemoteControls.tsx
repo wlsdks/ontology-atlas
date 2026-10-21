@@ -77,8 +77,10 @@ export function LocationLine({
   remoteBusy,
   onRemoteAction,
   pendingCount,
+  className,
 }: {
   t: Translator;
+  className?: string;
   /** Uncommitted changes. Above zero, Push opens the commit confirm step first. */
   pendingCount: number;
   branch: string | null;
@@ -102,7 +104,7 @@ export function LocationLine({
   return (
     <div
       data-testid="atlas-git-location"
-      className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]"
+      className={cn("flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]", className)}
     >
       {/*
         Branch and remote names are the user's own, untranslated. Ahead and behind counts sit on
@@ -116,7 +118,7 @@ export function LocationLine({
         className={badgeClass({
           shape: 'tag',
           className:
-            'flex min-w-0 items-center gap-1.5 border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] font-mono',
+            'flex min-w-0 flex-initial items-center gap-1.5 border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] font-mono',
         })}
       >
         {/* A detached HEAD has no branch name; git's `HEAD` says nothing, the commit does. */}
@@ -127,7 +129,7 @@ export function LocationLine({
             <span aria-hidden className="shrink-0 text-[color:var(--color-text-quaternary)]">
               →
             </span>
-            <span className="truncate text-[color:var(--color-text-quaternary)]">
+            <span className="shrink-[2] truncate text-[color:var(--color-text-quaternary)]">
               {upstream}
             </span>
           </>
