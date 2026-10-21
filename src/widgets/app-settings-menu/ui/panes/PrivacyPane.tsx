@@ -77,11 +77,11 @@ function OutboundRow({ path, control }: { path: OutboundPath; control?: ReactNod
       data-testid={`app-settings-outbound-${path.id}`}
       data-carries={path.carries}
       data-recorded={path.recordedIn ? 'yes' : 'no'}
-      className="flex min-h-12 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2"
+      className="flex min-h-14 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3"
     >
       <div className="min-w-0 flex-1 basis-56">
-        <p className="text-body text-[color:var(--color-text-primary)]">{t(`paths.${path.id}`)}</p>
-        <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
+        <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t(`paths.${path.id}`)}</p>
+        <p className="mt-0.5 text-body leading-body text-[color:var(--color-text-tertiary)] [overflow-wrap:anywhere]">
           <span data-trigger={path.trigger}>{t(`trigger.${path.trigger}`)}</span>
           {path.hosts.map((host) => (
             <span key={host} data-host={host}>
@@ -140,7 +140,7 @@ export function PrivacyPane({
                     path.id === 'update-check' ? (
                       <>
                         <span
-                          className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                          className="text-body leading-body text-[color:var(--color-text-tertiary)]"
                           data-testid="app-settings-outbound-update-state"
                         >
                           {autoCheck === 'on' ? t('updateOn') : t('updateOff')}
@@ -163,7 +163,7 @@ export function PrivacyPane({
             </SettingsGroup>
             {group.id === 'sends-content' && recordLog ? (
               <p
-                className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                className="text-body leading-body text-[color:var(--color-text-tertiary)]"
                 data-testid="app-settings-outbound-record-note"
               >
                 {t.rich('outbound.recordedNote', {

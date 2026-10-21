@@ -33,7 +33,7 @@ function paneColumnStarts(): { what: string; left: number }[] {
   const isCard = (el: Element) => {
     const style = getComputedStyle(el);
     return (
-      parseFloat(style.borderLeftWidth) > 0 &&
+      (parseFloat(style.borderLeftWidth) > 0 || style.backgroundColor !== 'rgba(0, 0, 0, 0)') &&
       parseFloat(style.borderTopLeftRadius) > 0 &&
       el.getBoundingClientRect().width > pane.clientWidth / 2
     );

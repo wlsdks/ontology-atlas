@@ -307,7 +307,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     const panel = screen.getByTestId('app-settings-popover');
 
     // What is behind really does darken — which is what makes the blocking claim true.
-    expect(overlay.className).toContain('backdrop-medium');
+    expect(overlay.className).toContain('backdrop-strong');
     // The dim must receive pointer events for the outside to be genuinely blocked.
     // With `pointer-events-none` the screen is merely dark and clicks pass through,
     // so what is seen and what happens disagree.

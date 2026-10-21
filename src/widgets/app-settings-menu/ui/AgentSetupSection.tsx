@@ -48,7 +48,7 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
           {t('agentStatusNoVault')}
         </p>
-        <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+        <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
           {t('agentNoVaultHint')}
         </p>
         <div className="mt-3">
@@ -64,13 +64,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             <TermHint term="cli">{t('agentTerminalTitle')}</TermHint>
           </p>
-          <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+          <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t('agentTerminalBody')}
           </p>
           <pre className="mt-2 overflow-x-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 font-mono text-label leading-prose text-[color:var(--color-text-secondary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
             {CLI_TERMINAL_SETUP}
           </pre>
-          <p className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          <p className="mt-2 text-body leading-prose text-[color:var(--color-text-quaternary)]">
             {t('cliPlaceholderHint')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">

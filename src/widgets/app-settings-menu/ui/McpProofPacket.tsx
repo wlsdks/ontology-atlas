@@ -83,7 +83,7 @@ export function McpProofPacket({
       <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
         {t('mcpProofTitle')}
       </p>
-      <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+      <p className="mt-1 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
         {t('mcpProofBody')}
       </p>
       {/* No `font-mono`: the label is prose, and monospace has no Hangul metrics. */}

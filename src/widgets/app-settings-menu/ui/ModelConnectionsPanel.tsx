@@ -334,7 +334,7 @@ function ModelGroup({
           hint ? <span className="text-label text-[color:var(--color-text-tertiary)]">{hint}</span> : undefined
         }
       />
-      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+      <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]">
         {children}
       </div>
     </section>
@@ -372,7 +372,7 @@ function ModelRow({
   const { mounted, boxRef, contentRef } = useRowDisclosure(detailOpen);
   return (
     <div data-testid={testId}>
-      <div className="flex min-h-14 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2">
+      <div className="flex min-h-14 min-w-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
         <div className="min-w-0 flex-1 basis-44">
           <p className="flex flex-wrap items-baseline gap-x-2 text-body text-[color:var(--color-text-primary)]">
             {name}
@@ -381,7 +381,7 @@ function ModelRow({
           {caption ? (
             <p
               className={cn(
-                'mt-0.5 text-label leading-label [overflow-wrap:anywhere]',
+                'mt-0.5 text-body leading-body [overflow-wrap:anywhere]',
                 captionTone === 'danger'
                   ? 'text-[color:var(--color-danger-text)]'
                   : 'text-[color:var(--color-text-tertiary)]',
@@ -405,7 +405,7 @@ function ModelRow({
         inert={!detailOpen}
       >
         {mounted ? (
-          <div ref={contentRef} className="ai-row-disclosure-body grid gap-2 px-3 pb-3">
+          <div ref={contentRef} className="ai-row-disclosure-body grid gap-2 px-4 pb-3">
             {detail}
           </div>
         ) : null}
@@ -800,7 +800,7 @@ function KeyDraftForm({
 function DraftFoot({ note, clear }: { note: string; clear: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-2">
-      <p className="min-w-0 flex-1 basis-60 text-label leading-label text-[color:var(--color-text-tertiary)]">
+      <p className="min-w-0 flex-1 basis-60 text-body leading-body text-[color:var(--color-text-tertiary)]">
         {note}
       </p>
       {clear}
@@ -1097,7 +1097,7 @@ function LocalRunnerRow({
           {otherActive ? (
             <p
               data-testid="ai-local-one-at-a-time"
-              className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+              className="text-body leading-body text-[color:var(--color-text-tertiary)]"
             >
               {t('localOneAtATime', {
                 current: t(LOCAL_RUNNERS.find((candidate) => candidate.id === activeRunner)?.labelKey ?? 'runnerCustom'),
@@ -1126,7 +1126,7 @@ function LocalCaption({
   const t = useTranslations('agents.models');
   if (!vaultKnown) {
     return (
-      <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+      <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
         {t('verifyNeedsVault')}
       </p>
     );
@@ -1159,7 +1159,7 @@ function LocalCaption({
     );
   }
   return (
-    <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+    <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
       {isLoopbackHost(host) ? t('localScopeLoopback', { host }) : t('localScopeRemote', { host })}
     </p>
   );
@@ -1403,7 +1403,7 @@ function AuditSection({
           </ol>
         ) : null}
         {vaultRootPath ? (
-          <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+          <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             <span className="font-mono">{LLM_AUDIT_LOG_RELATIVE_PATH}</span>
             {' · '}
             {t('auditPathNote')}
