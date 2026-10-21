@@ -15,7 +15,6 @@ const sameRow = (text: string, leftIndex: number, rightIndex: number): AlignedRo
   right: { no: rightIndex + 1, text },
 });
 
-/** Equal leading and trailing lines pair off outside the table; the cell cap counts the middle only. */
 export function alignLinesQuadratic(left: readonly string[], right: readonly string[]): AlignedRow[] | null {
   if (left.length + right.length > ALIGN_ROW_CAP) return null;
   let head = 0;
@@ -101,7 +100,6 @@ const visibleForm = (text: string) =>
     .join('\n')
     .replace(/\n$/, '');
 
-/** True when the texts differ, but only in line endings, trailing spaces or the final newline. */
 export function differsOnlyInvisibly(a: string, b: string): boolean {
   return a !== b && visibleForm(a) === visibleForm(b);
 }

@@ -48,7 +48,6 @@ function LegacyFile({
           {path}
         </p>
       )}
-      {/* Focusable and named: a bare `<pre>` is not in a WKWebView's tab order. */}
       <pre
         tabIndex={0}
         role="group"
