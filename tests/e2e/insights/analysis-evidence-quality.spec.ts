@@ -262,7 +262,7 @@ test.describe('supporting records at the touch viewport', () => {
   for (const tab of ['library', 'brief']) {
     test(`${tab} keeps its last action above the bottom navigation with a full touch target`, async ({ page }) => {
       await page.goto(`/en/ontology/insights/?tab=${tab}&guides=off`);
-      const last = tab === 'brief' ? page.locator('[data-testid="brief-lines"] a').last() : page.getByTestId('preview-primary-action');
+      const last = tab === 'brief' ? page.locator('[data-testid="brief-todo"] a').last() : page.getByTestId('preview-primary-action');
       await expect(last).toBeVisible();
       await last.scrollIntoViewIfNeeded();
       const nav = await page.getByRole('navigation', { name: 'Primary menu', exact: true }).boundingBox();

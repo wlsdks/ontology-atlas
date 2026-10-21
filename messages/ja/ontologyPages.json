@@ -103,7 +103,16 @@
       "evidenceUnreadable": "リンク先のコードを確認できませんでした。フォルダを開き直して再試行してください。",
       "evidenceNoSource": "概念がコードと今も合っているかは、まだ確認していません。マップでコードリポジトリを接続すると、ここで集計します。",
       "noSourceShared": "概念がコードと今も合っているか、ガイドがどこまで届いているかは、まだ集計していません。マップでコードリポジトリを接続すると、どちらもここで集計します。",
-      "coreJoin": " · "
+      "coreJoin": " · ",
+      "todoTitle": "まず見るもの",
+      "restShow": "残りの{count}行をすべて見る",
+      "restZero": "（0件の行が{count}行）",
+      "restHide": "残りを閉じる",
+      "todoAction": {
+        "check": "確認しに行く",
+        "compare": "比較を開く",
+        "view": "{place}で見る"
+      }
     },
     "unmatched": {
       "emptyTitle": "すべての名前が解決済みです",

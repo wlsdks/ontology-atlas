@@ -14,6 +14,13 @@ import { HARNESS_SOURCE_COMMANDS, installHarnessRuntime, mountHarnessVault } fro
  * app", and a screen quietly reporting `current` would be the defect this tab exists to end.
  */
 
+async function openRest(page: import("@playwright/test").Page) {
+  const toggle = page.getByTestId("brief-rest-toggle");
+  await expect(toggle).toBeVisible({ timeout: 30_000 });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+}
+
 const FRONT = (lines: string[]) => ["---", ...lines, "---", ""].join("\n");
 
 const SOURCE_BODY = "2026 3분기 계획\n환불은 승인 뒤 7일 안에 처리한다.\n";
@@ -82,14 +89,15 @@ test("the brief names the open folder's wiki and agents, and says so for what it
   await expect(brief).toBeVisible({ timeout: 30_000 });
 
   await expect(page.locator('[data-brief-core="wiki"][data-brief-line="wiki-stale-pages"]')).toHaveText(/1/, { timeout: 30_000 });
+  await openRest(page);
 
   // The list does not count the calls a second time; the since card names them one by one.
-  const agent = page.getByTestId("brief-lines");
+  const agent = brief;
   await expect(agent.locator('[data-brief-core="agent"][data-brief-line="agent-writes-since"]')).toHaveText(/1/);
   await expect(agent.locator('[data-brief-line="agent-calls-since"]')).toHaveCount(0);
 
   // A concept an agent wrote that nobody has reviewed is named as unknown, not as fine.
-  const ontology = page.getByTestId("brief-lines");
+  const ontology = brief;
   await expect(ontology.locator('[data-brief-core="ontology"][data-brief-line="ontology-agent-unreviewed"]')).toHaveText(/1/);
   await expect(
     ontology.locator('[data-brief-line="ontology-evidence-moved"]'),
@@ -134,6 +142,7 @@ test("while the app is still reading instructions, the headline shows no partial
 
   await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });
   const headline = page.getByTestId("brief-headline");
+  await openRest(page);
   await expect(page.getByTestId("brief-core-reading-harness")).toBeVisible({ timeout: 30_000 });
   await expect(headline).toHaveAttribute("data-brief-headline-state", "counting");
   await expect(headline).toHaveAttribute("aria-busy", "true");
@@ -152,4 +161,37 @@ test("while the app is still reading instructions, the headline shows no partial
   // One hero line in both states: nothing under it moves when the numbers land.
   expect(settled?.height).toBe(counting?.height);
   expect(settled?.y).toBe(counting?.y);
+});
+
+test("the brief puts the first three counted lines on top and the rest behind one toggle that names how many and how many are zero", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await installHarnessRuntime(page);
+  await mountHarnessVault(page);
+
+  await page.goto("/ko/ontology/insights/?tab=brief&guides=off", { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("brief-headline")).toHaveAttribute("data-brief-headline-state", "settled", { timeout: 60_000 });
+
+  const todo = page.getByTestId("brief-todo").locator(":scope > li");
+  await expect(todo).toHaveCount(3);
+  const todoIds = await todo.evaluateAll((items) => items.map((item) => (item as HTMLElement).dataset.briefTodo));
+  expect(todoIds).toEqual(["harness-mirror-drift", "ontology-evidence-unchecked", "harness-ungated-areas"]);
+  for (const item of await todo.all()) {
+    await expect(item.locator("a")).toHaveCount(1);
+  }
+
+  const toggle = page.getByTestId("brief-rest-toggle");
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(toggle).toContainText("나머지 6줄 모두 보기");
+  await expect(toggle).toContainText("0개 3줄 포함");
+  await expect(page.getByTestId("brief-lines")).toHaveCount(0);
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  const rest = page.getByTestId("brief-lines").locator(":scope > li");
+  await expect(rest).toHaveCount(6);
+  await expect(page.getByTestId("brief-lines").locator('[data-brief-line="harness-unwatched-areas"]')).toBeVisible();
+  for (const id of todoIds) {
+    await expect(page.getByTestId("brief-lines").locator(`[data-brief-line="${id}"]`)).toHaveCount(0);
+  }
 });
