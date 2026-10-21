@@ -77,8 +77,28 @@ test.describe("harness guides workbench", () => {
       page.getByTestId("harness-guide-row-agents-agents").locator("[data-guide-item]", { hasText: "lookout.md" }),
     ).toBeVisible();
     const diff = page.getByTestId("harness-drift-diff");
-    await expect(diff.locator("pre")).toHaveCount(2);
+    await expect(diff).toContainText("Claude Code");
+    await expect(diff).toContainText("Codex");
     await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");
+  });
+
+  test("a line both files share sits on one y, and a line only one file has faces an empty cell", async ({ page }) => {
+    await openGuides(page);
+    const diff = page.getByTestId("harness-drift-diff");
+    await expect(diff).toBeVisible();
+    const sameYs = await diff.getByText("Route the work.", { exact: true }).evaluateAll((nodes) =>
+      nodes.map((node) => Math.round(node.getBoundingClientRect().y)),
+    );
+    expect(sameYs).toHaveLength(2);
+    expect(sameYs[0]).toBe(sameYs[1]);
+
+    const only = diff.locator('[data-harness-drift-line="only-here"]', { hasText: "Diverged line." });
+    await expect(only).toHaveCount(1);
+    const onlyY = Math.round((await only.boundingBox())!.y);
+    const gap = await diff.locator("[data-harness-drift-gap]").evaluateAll((nodes) =>
+      nodes.map((node) => ({ y: Math.round(node.getBoundingClientRect().y), text: node.textContent })),
+    );
+    expect(gap.filter((cell) => cell.y === onlyY)).toEqual([{ y: onlyY, text: "" }]);
   });
 
   test("at 1040 the list and the detail stay side by side, with the diff on screen", async ({ page }) => {
