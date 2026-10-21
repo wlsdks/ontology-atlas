@@ -18,8 +18,9 @@ documents can be scanned by name and authored purpose. There is currently no
 in-page filtering.
 
 #### Header
-- H1 + project-only count + "New project" CTA
+- The shared header bar: the title, the project count on its baseline (hidden below 640px, kept for screen readers) and, for the bundled sample, the open-folder action; adding a project lives only in the closing tile
 - The bundled example state is labelled as a loaded sample rather than presented as the user's folder
+- With at most one project the lede and the cards are one stage centred in the window; from two the grid starts under the bar. While a browser folder opens, a centred wait names it
 
 #### Rows (one `<article>` per project, sorted by `updatedAt` desc)
 - Project name linked to its detail page. The name is the locale's `display_<locale>` when the document carries one, the canonical `title`/`name` otherwise (`projectDisplayName`, 2026-09-19, decision "A project is drawn by its locale display name on every screen"): the map, the INDEX and the Library already drew the project by that word, and the list and the page said the canonical title beside them
