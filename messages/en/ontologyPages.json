@@ -103,7 +103,16 @@
       "evidenceUnreadable": "The linked code could not be checked. Reopen the folder to try again.",
       "evidenceNoSource": "Whether concepts still match their code is not checked yet. Connect a code repository on the map and it is counted here.",
       "noSourceShared": "Whether concepts still match their code, and where the guides reach, is not counted yet. Connect a code repository on the map and both are counted here.",
-      "coreJoin": " · "
+      "coreJoin": " · ",
+      "todoTitle": "Look at these first",
+      "restShow": "{count, plural, one {Show the other line} other {Show the other # lines}}",
+      "restZero": "({count} at zero)",
+      "restHide": "Hide the other lines",
+      "todoAction": {
+        "check": "Go check",
+        "compare": "Open the comparison",
+        "view": "View in {place}"
+      }
     },
     "unmatched": {
       "emptyTitle": "Every name here resolves",

@@ -103,7 +103,16 @@
       "evidenceUnreadable": "无法检查链接的代码。重新打开文件夹即可重试。",
       "evidenceNoSource": "尚未检查概念是否仍与代码一致。在地图上连接代码仓库后，这里会统计。",
       "noSourceShared": "尚未统计概念是否仍与代码一致，以及指南覆盖的范围。在地图上连接代码仓库后，两者都会在这里统计。",
-      "coreJoin": " · "
+      "coreJoin": " · ",
+      "todoTitle": "先看这些",
+      "restShow": "查看其余 {count} 行",
+      "restZero": "（含 {count} 行为 0）",
+      "restHide": "收起其余",
+      "todoAction": {
+        "check": "去确认",
+        "compare": "打开对比",
+        "view": "在{place}查看"
+      }
     },
     "unmatched": {
       "emptyTitle": "这里的名称都能对应上",

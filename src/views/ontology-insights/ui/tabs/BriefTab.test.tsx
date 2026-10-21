@@ -98,6 +98,12 @@ const mount = (value: InsightsBrief) =>
     </NextIntlClientProvider>,
   );
 
+/** Rows past the first three counted lines sit behind one toggle; a test that reads them opens it first. */
+function openRest() {
+  const toggle = screen.queryByTestId("brief-rest-toggle");
+  if (toggle && toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
+}
+
 describe("BriefTab", () => {
   it("heads with the two sums of stale and unknown lines, never a score", () => {
     mount(brief());
@@ -108,7 +114,9 @@ describe("BriefTab", () => {
 
   it("draws only nonzero lines in one list, stale before unknown before what happened", () => {
     mount(brief());
-    const list = screen.getByTestId("brief-lines");
+    openRest();
+    // The first three counted lines are the to-do block; the list below carries the rest.
+    const list = document.body;
     const lines = list.querySelectorAll("[data-brief-line]");
     // No "agent-calls-since" line: the since card names those calls one by one.
     expect([...lines].map((line) => line.getAttribute("data-brief-line"))).toEqual([
@@ -133,10 +141,13 @@ describe("BriefTab", () => {
 
   it("ends each sentence with its door, and makes each changed name its own door", () => {
     mount(brief());
-    // The door sits in the sentence's flow, right after the last word.
-    const repair = screen.getByTestId("brief-lines").querySelector('[data-brief-line="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
-    expect(repair?.parentElement).toHaveTextContent(/58|\d+개/);
-    expect(repair?.parentElement?.tagName).toBe("SPAN");
+    // A to-do line's door is a button beside its sentence, labelled by where it goes.
+    const repair = screen.getByTestId("brief-todo").querySelector('[data-brief-todo="ontology-repair"] a[href="/ontology/insights/?tab=do-next"]');
+    expect(repair).toHaveTextContent("확인하러 가기");
+    // Past the to-do block the door sits in the sentence's flow, right after the last word.
+    openRest();
+    const wikiDoor = screen.getByTestId("brief-core-empty-wiki").querySelector('a[href="/library/"]');
+    expect(wikiDoor?.parentElement?.tagName).toBe("SPAN");
     // A changed row is one link carrying its name; there is no separate "open" word per row.
     const since = screen.getByTestId("brief-since");
     for (const row of since.querySelectorAll("li[data-since-core]")) {
@@ -168,6 +179,7 @@ describe("BriefTab", () => {
 
   it("says where a core cannot be measured instead of showing zeros as fine", () => {
     mount(brief());
+    openRest();
     expect(screen.queryByTestId("brief-band")).toBeNull();
     // The list says why and where to go, one row per core.
     const wiki = screen.getByTestId("brief-core-empty-wiki");
@@ -189,6 +201,7 @@ describe("BriefTab", () => {
 
   it("gives a measured core with nothing new one quiet row, not an empty card", () => {
     mount(brief({ agent: core({ core: "agent", headline: null, lines: [] }) }));
+    openRest();
     expect(screen.getByTestId("brief-core-quiet-agent")).toHaveTextContent("그 뒤로 새로 알아야 할 것이 없어요");
   });
 
@@ -313,6 +326,7 @@ describe("a marked visit folds what it cleared", () => {
           <BriefTab brief={first} />
         </NextIntlClientProvider>,
       );
+      openRest();
       expect(document.querySelector('[data-brief-line="agent-calls-since"]')).not.toBeNull();
       rerender(
         <NextIntlClientProvider locale="ko" messages={ko}>
@@ -428,6 +442,7 @@ describe("no repository", () => {
       </NextIntlClientProvider>,
     );
     expect(container.querySelector('[data-brief-line="ontology-evidence-unchecked"]')).toBeNull();
+    openRest();
     const rows = [...container.querySelectorAll('[data-testid="brief-lines"] > li')];
     const connect = screen.getByTestId("brief-core-no-source-ontology");
     expect(rows[0]).toBe(connect);
