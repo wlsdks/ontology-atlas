@@ -253,7 +253,6 @@ describe("the reading column is owned by the document library (ruling of 2026-08
 const TITLE_MEMBERS = [
   "src/views/project-detail/ui/ProjectDetailPage.tsx",
   "src/views/project-editor/ui/ProjectEditorPage.tsx",
-  "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
   "src/views/library/ui/parts/first-run/LibraryStartStage.tsx",
   "src/views/library/ui/LibraryRounds.tsx",
@@ -317,6 +316,8 @@ describe("page title and lede", () => {
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
       "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
       "src/app/library-workspace/index.tsx",
+      "src/views/project-selector/ui/ProjectSelectorPage.tsx",
+      "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
     ]) {
       const source = blankComments(member, read(member));
       expect(source, `${member} no longer uses the header bar`).toMatch(/<PageHeaderBar\b/);
@@ -342,5 +343,25 @@ describe("page title and lede", () => {
       }
     }
     expect(measured, "the heading scan read nothing").toBeGreaterThan(TITLE_MEMBERS.length);
+  });
+});
+
+describe("a wait under the header bar", () => {
+  it("a wait under the header bar centres on the slot", () => {
+    const members = [
+      "src/views/automations/ui/AutomationsPage.tsx",
+      "src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx",
+      "src/views/project-selector/ui/ProjectSelectorPage.tsx",
+      "src/views/ontology-insights/ui/InsightsLoadingView.tsx",
+      "src/views/architecture/ui/HarnessScanProgressPanel.tsx",
+    ];
+    for (const member of members) {
+      const source = blankComments(member, read(member));
+      const tags = [...source.matchAll(/<WaitStage\b/g)].map((hit) => openingTagAt(source, hit.index!));
+      expect(tags.length, `${member} has no WaitStage to judge`).toBeGreaterThan(0);
+      for (const tag of tags) {
+        expect(tag, `${member}: a WaitStage under the bar lacks PAGE_WAIT_LIFT`).toContain("PAGE_WAIT_LIFT");
+      }
+    }
   });
 });

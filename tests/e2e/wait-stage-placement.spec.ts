@@ -17,9 +17,9 @@ async function contentArea(page: Page) {
     document.body.append(probe);
     const rail = probe.getBoundingClientRect().width;
     probe.remove();
-    const bar = document.querySelector("[data-page-header-row]")?.parentElement?.getBoundingClientRect();
-    const top = bar ? bar.bottom : 0;
-    return { x: rail, y: top, width: window.innerWidth - rail, height: window.innerHeight - top };
+    const tabbar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
+    const visible = tabbar && tabbar.checkVisibility() ? tabbar.getBoundingClientRect().top : window.innerHeight;
+    return { x: rail, y: 0, width: window.innerWidth - rail, height: visible };
   });
 }
 
@@ -114,7 +114,7 @@ for (const size of SIZES) {
       await expectCentred(page);
     });
 
-    test("the analysis loading is centred under a visible header", async ({ page }) => {
+    test("the analysis loading is centred on the window under a visible header", async ({ page }) => {
       await page.setViewportSize(size);
       await page.goto("/en/automations/?guides=off");
       await expect(page.getByTestId("automations")).toBeVisible();
