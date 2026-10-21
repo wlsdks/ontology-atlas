@@ -7,7 +7,13 @@ import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import { cn } from '@/shared/lib/cn';
 import { VendorMark } from '@/shared/ui/marks/vendor-mark';
 
-import { alignLinesQuadratic, differsOnlyInvisibly, type AlignedLine, type AlignedRow } from '../lib/align-lines';
+import {
+  alignLinesQuadratic,
+  differsOnlyInvisibly,
+  visibleLines,
+  type AlignedLine,
+  type AlignedRow,
+} from '../lib/align-lines';
 import type { TranslateFn } from './HarnessGuideDetail';
 
 const MARKED_TEXT = 'text-[color:var(--color-text-primary)]';
@@ -219,7 +225,7 @@ export function HarnessDriftDiff({
   const second = texts[1] ?? '';
   const aligned = useMemo(() => {
     if (!twin) return null;
-    return alignLinesQuadratic(trimFinalNewline(first).split('\n'), trimFinalNewline(second).split('\n'));
+    return alignLinesQuadratic(visibleLines(first), visibleLines(second));
   }, [twin, first, second]);
   const invisible = twin && differsOnlyInvisibly(first, second);
   const caption = invisible ? t('driftInvisibleOnly') : aligned ? t('driftLineMark') : t('driftLineMarkUnaligned');
@@ -231,7 +237,7 @@ export function HarnessDriftDiff({
       </>
     );
   }
-  const lines = texts.map((text) => trimFinalNewline(text).split('\n'));
+  const lines = texts.map(visibleLines);
   const sets = twin ? lines.map((side) => new Set(side)) : null;
   const tools = ['claude-code', 'codex'] as const;
   return (
@@ -261,4 +267,3 @@ function Caption({ children }: { children: string }) {
   return <p className="pb-1 text-label text-[color:var(--color-text-tertiary)]">{children}</p>;
 }
 
-const trimFinalNewline = (text: string) => text.replace(/\n$/, '');

@@ -92,14 +92,12 @@ function alignRange(
   return rows;
 }
 
-const visibleForm = (text: string) =>
+export const visibleLines = (text: string): string[] =>
   text
-    .replace(/\r\n/g, '\n')
+    .replace(/\r?\n$/, '')
     .split('\n')
-    .map((line) => line.replace(/\s+$/, ''))
-    .join('\n')
-    .replace(/\n$/, '');
+    .map((line) => line.replace(/\s+$/, ''));
 
 export function differsOnlyInvisibly(a: string, b: string): boolean {
-  return a !== b && visibleForm(a) === visibleForm(b);
+  return a !== b && visibleLines(a).join('\n') === visibleLines(b).join('\n');
 }

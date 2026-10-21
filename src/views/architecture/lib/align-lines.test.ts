@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ALIGN_CELL_CAP, ALIGN_ROW_CAP, alignLinesQuadratic, differsOnlyInvisibly } from './align-lines';
+import { ALIGN_CELL_CAP, ALIGN_ROW_CAP, alignLinesQuadratic, differsOnlyInvisibly, visibleLines } from './align-lines';
 
 const kinds = (left: string[], right: string[]) => alignLinesQuadratic(left, right)!.map((row) => row.kind);
 
@@ -109,5 +109,10 @@ describe('differsOnlyInvisibly', () => {
     expect(differsOnlyInvisibly('a\nb', 'a\nc')).toBe(false);
     expect(differsOnlyInvisibly(' a', 'a')).toBe(false);
     expect(differsOnlyInvisibly('a\n\n', 'a')).toBe(false);
+  });
+
+  it('aligns a CRLF copy with trailing spaces as the same lines', () => {
+    const rows = alignLinesQuadratic(visibleLines('a\r\nb  \r\n'), visibleLines('a\nb\n'));
+    expect(rows?.map((row) => row.kind)).toEqual(['same', 'same']);
   });
 });
