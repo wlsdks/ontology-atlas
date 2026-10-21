@@ -45,8 +45,8 @@ change-review, snapshot, and history links.
 The screen layout splits into two stages. First, **is this screen even in a state to do work** (`data-stage`) — if the browser can't run git or the vault hasn't been selected yet, it stops here. If it can work, it then splits by **whether there is something to decide now** (`data-shape`).
 
 #### State where work cannot start yet (`web` · `no-vault` · `not-initialized` · `loading` · `error`)
-- These states are all drawn in **the same size, same position** (`--git-setup-measure`
-  one 520px cell, centered on screen). If the width changes per stage, users feel like they're jumping to different pages every time
+- These states (`web` · `no-vault` · `not-initialized` · `error`) are drawn at the same size and position (`--git-setup-measure`, one 520px cell), centred in the window under the header bar. `loading` is the centred wait every page uses, since the state after it is usually the workbench
+- The header bar names the destination; from 1024px the workbench's location line stands at the bar's right, and below that it opens the workbench
 - Shows what to do in one line: Open app → select folder → start recording.
   Registering a remote repository is optional so it's not included in this line. No additional menus or decorative links here
 - In the browser, `Get App` is the primary button, and copying CLI commands for terminal use is secondary

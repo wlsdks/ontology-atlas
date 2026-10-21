@@ -77,8 +77,10 @@ export function LocationLine({
   remoteBusy,
   onRemoteAction,
   pendingCount,
+  className,
 }: {
   t: Translator;
+  className?: string;
   /** Uncommitted changes. Above zero, Push opens the commit confirm step first. */
   pendingCount: number;
   branch: string | null;
@@ -102,7 +104,7 @@ export function LocationLine({
   return (
     <div
       data-testid="atlas-git-location"
-      className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]"
+      className={cn("flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-label text-[color:var(--color-text-quaternary)]", className)}
     >
       {/*
         Branch and remote names are the user's own, untranslated. Ahead and behind counts sit on

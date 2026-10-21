@@ -442,9 +442,6 @@
    * holds 45 to 55 characters at 12.5px without clipping the CLI line. Consumers use `w-full
    * max-w-[var(--git-setup-measure)]`; unit tests check `data-testid="atlas-git-setup"`.
    */
-  /* Vertical margins for the setup stage. As screen size increases, margins decrease slightly; on narrow screens, they collapse.
-     Values fall between standard spacing ramp steps (24–72px), avoiding a new ladder. */
-  --git-setup-top: clamp(24px, 7vh, 72px);
 
   /*
    * This token measures only the left (speaking) column of the stage; the right `1fr` shows a preview,
