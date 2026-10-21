@@ -137,7 +137,7 @@ export function SettingsSearchResults({
           <p className={`flex min-h-8 items-center ${SETTINGS_SECTION_LABEL}`} aria-hidden>
             {group.sectionLabel}
           </p>
-          <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]">
+          <div className="mt-1.5 divide-y divide-[color:var(--color-divider)] overflow-hidden rounded-card bg-[color:var(--color-overlay-1)]">
             {group.items.map((item) => (
               <div
                 key={item.id}
@@ -154,7 +154,7 @@ export function SettingsSearchResults({
                   active: item.id === activeId,
                   hoverInk: 'strong',
                   hoverSurface: 'lift',
-                  className: 'min-h-12 cursor-pointer gap-3 px-3 py-2',
+                  className: 'min-h-14 cursor-pointer gap-3 px-4 py-3',
                 })}
               >
                 <span className="min-w-0 flex-1 text-left">

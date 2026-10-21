@@ -104,9 +104,9 @@ export function CanvasBackgroundPicker({ settingId }: { settingId?: SettingId } 
     onChange: writeCanvasBackground,
   });
   return (
-    <div className="border-x border-transparent px-3 py-2.5" data-testid="app-settings-canvas-background" data-setting-id={settingId}>
-      <p className="text-body text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
+    <div className="border-x border-transparent px-4 py-3" data-testid="app-settings-canvas-background" data-setting-id={settingId}>
+      <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('canvasBgLabel')}</p>
+      <p className="mt-0.5 break-keep text-body text-[color:var(--color-text-tertiary)]">
         {t('canvasBgCaption')}
       </p>
       <div {...group.groupProps} aria-label={t('canvasBgLabel')} className="mt-2 grid grid-cols-3 gap-2">
@@ -143,9 +143,9 @@ export function GlyphSetPicker({ settingId }: { settingId?: SettingId } = {}) {
   const value = useGlyphSet();
   const group = useRovingRadioGroup({ value, values: GLYPH_SETS, onChange: writeGlyphSet });
   return (
-    <div className="px-3 py-2.5" data-testid="app-settings-glyph-set" data-setting-id={settingId}>
-      <p className="text-body text-[color:var(--color-text-primary)]">{t('glyphSetLabel')}</p>
-      <p className="mt-0.5 break-keep text-label text-[color:var(--color-text-tertiary)]">
+    <div className="px-4 py-3" data-testid="app-settings-glyph-set" data-setting-id={settingId}>
+      <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('glyphSetLabel')}</p>
+      <p className="mt-0.5 break-keep text-body text-[color:var(--color-text-tertiary)]">
         {t('glyphSetCaption')}
       </p>
       <div {...group.groupProps} aria-label={t('glyphSetLabel')} className="mt-2 grid grid-cols-2 gap-2">

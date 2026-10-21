@@ -760,7 +760,7 @@ export function VaultAgentSetupPanel({
         <p
           role="status"
           data-testid="agent-setup-server-reason"
-          className="mb-3 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+          className="mb-3 break-keep text-body leading-prose text-[color:var(--color-amber-source-text-a95)]"
         >
           {t('agentSetup.serverMissingReason', { reason: serverAvailability.reason })}
         </p>
@@ -783,7 +783,7 @@ export function VaultAgentSetupPanel({
                 >
                   {tc('serverLine')}
                 </p>
-                <p className="mt-2 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+                <p className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
                   {agentSetupReady
                     ? t('agentSetup.rootSummaryReady')
                     : t('agentSetup.rootSummaryMissing')}
@@ -878,7 +878,7 @@ export function VaultAgentSetupPanel({
             <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {tc('step2Title')}
             </h3>
-            <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
               {tc('step2Desc')}
             </p>
           </section>
@@ -1055,7 +1055,7 @@ export function VaultAgentSetupPanel({
               {t('agentSetup.invalidRepairHint')}
             </p>
           ) : null}
-          <p className="break-keep text-label text-[color:var(--color-text-quaternary)]">
+          <p className="break-keep text-body text-[color:var(--color-text-quaternary)]">
             {t('agentSetup.connectionHint')}
           </p>
 
@@ -1348,7 +1348,7 @@ export function VaultAgentSetupPanel({
             <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               {t('agentSetup.syncAfterChangeTitle')}
             </p>
-            <p className="mt-1 break-keep text-label text-[color:var(--color-text-tertiary)]">
+            <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
               {t('agentSetup.syncAfterChangeDesc')}
             </p>
             <Chip

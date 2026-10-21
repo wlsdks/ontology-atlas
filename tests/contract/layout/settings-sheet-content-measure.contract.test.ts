@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
 
 /**
- * Prose in the settings sheet keeps the reading measure (`--git-setup-measure`) on the one head every
+ * Prose in the settings sheet keeps the reading measure (`--measure-stage-column`) on the one head every
  * pane opens with (`docs/DESIGN-SYSTEM.md`).
  */
 
@@ -17,10 +17,10 @@ const CSS = readGlobalCss();
 
 describe('settings sheet — prose keeps a readable measure', () => {
   it('the window lead sentence uses the prose measure', () => {
-    expect(CSS).toMatch(/--git-setup-measure:\s*\d+px/);
+    expect(CSS).toMatch(/--measure-stage-column:\s*\d+px/);
     const head = PRIMITIVES.slice(PRIMITIVES.indexOf('export function SettingsPaneHead'));
     expect(
-      (head.slice(0, head.indexOf('\n}\n')).match(/max-w-\[var\(--git-setup-measure\)\]/g) ?? []).length,
+      (head.slice(0, head.indexOf('\n}\n')).match(/max-w-\[var\(--measure-stage-column\)\]/g) ?? []).length,
       'the window lead sentence does not use the prose measure',
     ).toBe(1);
   });

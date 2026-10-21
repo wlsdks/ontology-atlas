@@ -272,8 +272,8 @@
     --icon-lg: 1rem;
     --dialog-w-sm: 420px;
     --dialog-w-md: 560px;
-    --dialog-w-lg: 880px;
-    --dialog-h-lg: 672px;
+    --dialog-w-lg: 960px;
+    --dialog-h-lg: 720px;
     /*
      * How tall a dialog may grow before its own body scrolls. Added 2026-09-05 (design council):
      * the add-a-connector dialog carried `max-h-[min(80vh,44rem)]`, the only height clamp in the

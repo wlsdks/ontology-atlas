@@ -59,9 +59,9 @@ export function AgentActivitySettings() {
         }
       />
       {notificationsOn ? (
-        <div data-testid="app-settings-agent-notification-kinds" data-setting-id="notification-kinds" className="min-w-0 px-3 py-2">
-          <p className="text-body text-[color:var(--color-text-secondary)]">{t('agentNotificationKindsLabel')}</p>
-          <p className="mt-0.5 text-label leading-label text-[color:var(--color-text-quaternary)]">{t('agentNotificationKindsCaption')}</p>
+        <div data-testid="app-settings-agent-notification-kinds" data-setting-id="notification-kinds" className="min-w-0 px-4 py-3">
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('agentNotificationKindsLabel')}</p>
+          <p className="mt-0.5 text-body leading-body text-[color:var(--color-text-tertiary)]">{t('agentNotificationKindsCaption')}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
               {AGENT_NOTIFICATION_KINDS.map((kind) => {
                 const on = !muted.has(kind);
