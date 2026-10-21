@@ -48,9 +48,10 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
 - Text that inherits the 16px root has escaped the ramp.
 - Gateway chrome (`GatewayNav`) is outside the 36px/20px workbench contract;
   create a gateway token only once a second real consumer exists.
-- Settings sheets and their drill-ins: row labels and interactive text use
-  `text-body`, descriptions and values `text-label`, and `text-caption` (9.5px)
-  only for one uppercase eyebrow. LNB rows use `px-3 py-2` and `text-body`.
+- Settings sheets and their drill-ins: row labels, interactive text and
+  explanatory captions use `text-body`; values, chips and badges `text-label`;
+  `text-caption` (9.5px) only for one uppercase eyebrow. Setting rows use
+  `px-4 py-3`, LNB rows `px-3 py-2`.
   Gate: `tests/contract/settings/settings-sheet-type-dialect.contract.test.ts`.
 
 ## Design charter
