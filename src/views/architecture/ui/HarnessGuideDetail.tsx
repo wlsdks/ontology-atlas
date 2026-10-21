@@ -5,6 +5,7 @@ import type { useTranslations } from 'next-intl';
 
 import { AGENT_TOOL_LABELS, guideCitation, type HarnessReport, type HookConfigFacts } from '@/entities/agent-files';
 
+import { HarnessDriftDiff } from './HarnessDriftDiff';
 import { PlacedInfoHint } from './PlacedInfoHint';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
@@ -312,8 +313,7 @@ function DriftDetail({
   const left = typeof detail?.claudePath === 'string' ? detail.claudePath : null;
   const right = typeof detail?.agentsPath === 'string' ? detail.agentsPath : null;
   const sides = file.twin && left && right ? [left, right] : [file.path];
-  const texts = sides.map((path) => (contentByPath.get(path) ?? '').replace(/\n$/, ''));
-  const lineSets = sides.length === 2 ? texts.map((text) => new Set(text.split('\n'))) : null;
+  const texts = sides.map((path) => contentByPath.get(path) ?? '');
   return (
     <div data-testid={current ? 'harness-drift' : undefined}>
       <DetailHead
@@ -333,42 +333,7 @@ function DriftDetail({
           {t('driftOnlyIn', { dir: file.onlyIn })}
         </p>
       ) : null}
-      {lineSets ? <p className="pb-1 text-label text-[color:var(--color-text-tertiary)]">{t('driftLineMark')}</p> : null}
-      <div
-        className={cn('mt-2 grid gap-3', sides.length === 2 && '@min-[40rem]/guide-detail:grid-cols-2')}
-        data-testid={current ? 'harness-drift-diff' : undefined}
-      >
-        {sides.map((path, side) => (
-          <div key={path} className="flex min-w-0 flex-col">
-            <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]" title={path}>
-              {path}
-            </p>
-            {/* Focusable and named: a bare `<pre>` is not in a WKWebView's tab order. */}
-            <pre
-              tabIndex={0}
-              role="group"
-              aria-label={path}
-              className={cn(
-                'mt-1 max-h-96 flex-1 overflow-auto whitespace-pre-wrap [overflow-wrap:anywhere] rounded-chip bg-[color:var(--color-overlay-1)] py-3 font-mono text-label text-[color:var(--color-text-secondary)]',
-                '@min-[48rem]/harness:max-h-none',
-              )}
-            >
-              {texts[side]!.split('\n').map((line, index) => (
-                <span
-                  key={index}
-                  data-harness-drift-line={lineSets && !lineSets[1 - side]!.has(line) ? 'only-here' : undefined}
-                  className={cn(
-                    'block px-3',
-                    lineSets && !lineSets[1 - side]!.has(line) && 'bg-[color:var(--color-overlay-3)] text-[color:var(--color-text-primary)]',
-                  )}
-                >
-                  {line === '' ? '\u00a0' : line}
-                </span>
-              ))}
-            </pre>
-          </div>
-        ))}
-      </div>
+      <HarnessDriftDiff paths={sides} texts={texts} current={current} t={t} />
     </div>
   );
 }
