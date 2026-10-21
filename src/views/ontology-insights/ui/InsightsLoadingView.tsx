@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { PageHeaderBar } from '@/shared/ui/layout/page-header-bar';
-import { PAGE_FRAME } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME, PAGE_WAIT_LIFT } from '@/shared/ui/tokens/page-frame';
 import { WaitStage } from '@/shared/ui/status/wait-stage';
 
 /** This shell must not subscribe to graph derivation or import analysis widgets. */
@@ -20,7 +20,7 @@ export function InsightsLoadingView() {
       >
         <PageHeaderBar frame="page" title={t('analysis.title')} />
         <div className={`${PAGE_FRAME} relative flex-1`}>
-          <WaitStage mark="mascot" title={t('loading')} delayed />
+          <WaitStage mark="mascot" title={t('loading')} delayed className={PAGE_WAIT_LIFT} />
         </div>
       </main>
     </div>

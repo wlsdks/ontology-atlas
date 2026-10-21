@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { findProjectDocInList } from "@/entities/docs-vault";
 import { MOTION, OVERLAY_RISE, OVERLAY_RISE_REDUCED, OVERLAY_SETTLED } from "@/shared/motion";
-import { SPRING } from "@/shared/motion/spring";
+import { framerSpring, SPRING } from "@/shared/motion/spring";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { getProjectRuntimeDetailHref, getTopologyProjectNodeHref, projectDisplayName, type Project } from "@/entities/project";
 import { OpenVaultCta } from "@/features/docs-vault-local";
@@ -18,7 +18,10 @@ import { OntologyMapKindGlyph } from "@/shared/ui";
 import { MAP_KIND_GLYPH_SIZE } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_LEDE, PAGE_TITLE, PAGE_TITLE_ROW } from "@/shared/ui/tokens/page-frame";
+import { PAGE_FRAME, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
+import { PageHeaderBar } from "@/shared/ui/layout/page-header-bar";
+import { WaitStage } from "@/shared/ui/status/wait-stage";
+import { cn } from "@/shared/lib/cn";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
 import { resolveAuthoredDescription } from "../lib/authored-description";
@@ -36,11 +39,7 @@ function formatAgo(ago: RecentActivityAgo, t: SelectorTranslator) {
 
 let lastShown: ShownProjects | null = null;
 
-const TILE_SPRING = {
-  type: "spring",
-  stiffness: SPRING.surface.stiffness,
-  damping: 2 * SPRING.surface.dampingRatio * Math.sqrt(SPRING.surface.stiffness),
-} as const;
+const TILE_SPRING = framerSpring(SPRING.surface);
 
 /** Shared by the project cards and the next-project tile. */
 const TILE_SURFACE =
@@ -51,7 +50,8 @@ export function ProjectSelectorPage() {
   useDocumentTitle(t("documentTitle"));
   const { projects, loaded } = useProjects();
   const docs = useVaultDocs();
-  useLocalVault();
+  const vault = useLocalVault();
+  const tSwitch = useTranslations("vaultSwitch");
   const dataSourceMode = useDataSourceMode();
   const navRailSettingsSlot = useMemo(
     () => <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />,
@@ -59,6 +59,9 @@ export function ProjectSelectorPage() {
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
   const reducedMotion = usePrefersReducedMotion();
+  const staged = projects.length <= 1;
+  const loading = dataSourceMode === "local" && (vault.status === "opening" || vault.status === "loading");
+  const openingName = vault.handle?.name;
   const ready = loaded && dataSourceMode === "local";
   const scope = useVaultIdentityScope();
   const [baseline, setBaseline] = useState<ShownProjects | null>(null);
@@ -76,28 +79,53 @@ export function ProjectSelectorPage() {
   return (
     <VaultSourceHydrationBoundary>
       <div className="flex min-h-full w-full">
-        <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
-          <div className="flex items-center justify-end gap-2 px-4 pt-3 md:px-6 lg:hidden">
-            <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
-          </div>
-          <div className={`${PAGE_FRAME} pb-6 md:pb-10`}>
-            {/* The count names its scope; adding a project lives only in the closing tile. */}
-            <header className={PAGE_HEADER_ROW}>
-              <div className={PAGE_TITLE_ROW}>
-                <h1 className={PAGE_TITLE}>
-                  {t("headerTitle")}
-                </h1>
-                <span
-                  data-testid="project-selector-count"
-                  className="pb-[3px] text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)]"
-                >
-                  {dataSourceMode === "static"
-                    ? t("projectCountSample", { count: projects.length })
-                    : t("projectCount", { count: projects.length })}
-                </span>
-              </div>
-              {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
-            </header>
+        <main
+          id="main"
+          tabIndex={-1}
+          className={cn(
+            "flex min-w-0 flex-1 flex-col bg-[color:var(--color-canvas)]",
+            !(staged || loading) && "max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]",
+          )}
+        >
+          <PageHeaderBar
+            frame="page"
+            title={t("headerTitle")}
+            meta={
+              <span
+                data-testid="project-selector-count"
+                className="text-label tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-tertiary)] max-sm:sr-only"
+              >
+                {dataSourceMode === "static"
+                  ? t("projectCountSample", { count: projects.length })
+                  : t("projectCount", { count: projects.length })}
+              </span>
+            }
+            actions={
+              <>
+                {dataSourceMode === "static" ? <OpenVaultCta testId="project-selector-open-vault" /> : null}
+                <div className="lg:hidden">
+                  <AppSettingsMenu mode={dataSourceMode} triggerVariant="chrome-tile" />
+                </div>
+              </>
+            }
+          />
+          <div className={cn(PAGE_FRAME, "relative", staged || loading ? PAGE_STAGE_FILL : "pt-8 md:pt-10 pb-6 md:pb-10")}>
+            {loading ? (
+              <WaitStage
+                mark="mascot"
+                delayed
+                data-testid="project-selector-loading"
+                className={PAGE_WAIT_LIFT}
+                title={openingName ? tSwitch("openingNamed", { name: openingName }) : tSwitch("openingUnnamed")}
+              />
+            ) : (
+            <motion.div
+              data-placement={staged ? "stage" : "list"}
+              className={cn("min-w-0", staged && "my-auto")}
+              layout={reducedMotion ? false : "position"}
+              layoutDependency={staged}
+              transition={TILE_SPRING}
+            >
             <p className={`mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] ${PAGE_LEDE}`}>
               {t("lede")}
             </p>
@@ -139,6 +167,8 @@ export function ProjectSelectorPage() {
               <div className="mt-7 flex">
                 <NextProjectTile t={t} description={t("emptyStateDesc")} hasProjects={false} />
               </div>
+            )}
+            </motion.div>
             )}
           </div>
         </main>
