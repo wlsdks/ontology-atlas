@@ -382,7 +382,7 @@ test.describe("harness tab", () => {
     await expect(diff).toBeVisible();
     await expect(diff).toContainText(".claude/skills/po-pass/SKILL.md");
     await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");
-    await expect(diff.locator('[data-harness-drift-line="only-here"]')).toHaveText(["Diverged line."]);
+    await expect(diff.locator('[data-harness-drift-line="only-here"]')).toHaveText(["", "Diverged line."]);
   });
 
   test("the guides workbench fits 1512x900 without a page scroll and keeps focus in the list on a swap", async ({ page }) => {
