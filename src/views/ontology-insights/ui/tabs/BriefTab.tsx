@@ -2,57 +2,26 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
-import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { controlClass } from '@/shared/ui/control-class';
 import { Button } from '@/shared/ui';
 import { RowDisclosure } from '@/shared/ui/controls/row-disclosure';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { CopyAgentTextButton } from '../parts/CopyAgentTextButton';
-import { buildDriftHandoff } from '../../lib/brief/drift-handoff';
 import { HiddenCountLine } from '@/shared/ui/status/hidden-count-line';
 import type { SinceRow } from '../../lib/brief/since-list';
 import { cn } from '@/shared/lib/cn';
 import { useDelayedVisible } from '@/shared/lib/render-timing/use-presence';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { parseInsightsTabHref, type InsightsTab } from '../../lib/insights-tab-state';
-import type { BriefCore, BriefLine, BriefLineDetail, BriefState } from '../../lib/brief/brief-model';
+import type { InsightsTab } from '../../lib/insights-tab-state';
+import type { BriefCore, BriefLine, BriefLineDetail } from '../../lib/brief/brief-model';
 import { briefRows, type BriefRow } from '../../lib/brief/brief-rows';
+import { briefRowHref, lineHref, splitBriefTodo } from '../../lib/brief/brief-todo';
+import { DestinationLink, EMPTY_DETAILS, LineDisclosure, STATE_MARK, destinationLabel } from './BriefLineParts';
+import { BriefTodo } from './BriefTodo';
 import type { InsightsBrief } from '../../lib/brief/use-insights-brief';
 import { INSIGHTS_HEADLINE } from './insights-headline';
 import { BRIEF_TWO_COLUMN, INSIGHTS_LIST_ROW, insightsTwoColumnCell } from '../parts/insights-list';
-
-/** Where each line opens: the screen that lists the named things, never a second copy of that list here. */
-const LINE_HREF: Record<string, string> = {
-  'ontology-evidence-moved': '/ontology/insights/?tab=growth',
-  'ontology-evidence-missing': '/ontology/insights/?tab=do-next',
-  'ontology-evidence-folder-only': '/topology/',
-  // Where it goes depends on why it cannot be checked. See `lineHref`.
-  'ontology-evidence-unchecked': '/download/',
-  'ontology-agent-unreviewed': '/topology/',
-  'ontology-changed-since': '/ontology/insights/?tab=growth',
-  'ontology-repair': '/ontology/insights/?tab=do-next',
-  'ontology-unmatched': '/ontology/insights/?tab=unmatched',
-  'wiki-stale-pages': '/library/',
-  'wiki-disagreements': '/library/',
-  'wiki-sources-unwritten': '/library/',
-  'wiki-orphan-pages': '/library/',
-  'wiki-dangling-links': '/library/',
-  'wiki-written-since': '/library/',
-  'wiki-redrafted-since': '/library/?tab=rounds',
-  'wiki-passes-troubled-since': '/library/?tab=rounds',
-  'harness-untold-areas': '/architecture/?view=overview',
-  'harness-ungated-areas': '/architecture/?view=overview',
-  'harness-unwatched-areas': '/architecture/?view=overview',
-  'harness-mirror-drift': '/architecture/?view=guides',
-  'harness-changed-since': '/architecture/?view=guides',
-  'agent-writes-waiting': '/agents/',
-  'agent-writes-failed': '/git/',
-  'agent-writes-refused': '/git/',
-  'agent-calls-since': '/agents/',
-  'agent-writes-since': '/git/',
-  'agent-distinct-since': '/agents/',
-};
 
 /** Where a core that cannot be counted sends the reader; every state on this tab owes a sentence and a next step. */
 const CORE_NEXT_HREF: Record<BriefCore['core'], string> = {
@@ -60,16 +29,6 @@ const CORE_NEXT_HREF: Record<BriefCore['core'], string> = {
   wiki: '/library/',
   harness: '/architecture/',
   agent: '/agents/',
-};
-
-/**
- * One shape per state, so marks read without colour: a filled dot is something to learn, a hollow ring something
- * nobody checked. Only the two states the headline counts wear a mark, and the headline is their key.
- */
-const STATE_MARK: Record<BriefState, string> = {
-  current: '',
-  stale: 'mt-[7px] size-2 rounded-full bg-[color:var(--color-amber-source-a90)]',
-  unknown: 'mt-[7px] size-2 rounded-full border border-[color:var(--color-text-tertiary)] bg-transparent',
 };
 
 /** The headline's key marks: the list's dot and ring, centred on the hero line's x-height. */
@@ -162,6 +121,15 @@ export function BriefTab({
   // The visit mark confirms itself in a live region, since the anchor change alone is one 12px eyebrow. The button
   // stays enabled because pressing again re-anchors to now. Seeded from the folder, so undo outlives this mount.
   const [seenMarked, setSeenMarked] = useState(brief.canUndoSeen);
+  const [restOpen, setRestOpen] = useState(false);
+  const restId = useId();
+  const rows = briefRows(cores, { namedSince: brief.since.map((row) => row.kind), sinceCounting: brief.sinceTotal === null });
+  const appRowPresent = rows.some((row) => row.kind === 'app-only');
+  const { todo, rest, zeroCount } = splitBriefTodo(rows, (row) => briefRowHref(row, appRowPresent));
+  const gloss = <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>;
+  const list = (
+    <BriefLineList rows={rest} details={brief.details} nowMs={brief.nowMs} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
+  );
   return (
     <section data-testid="brief-tab" className="flex flex-col gap-[var(--section-gap)]">
       <div className="flex min-w-0 flex-col">
@@ -210,15 +178,43 @@ export function BriefTab({
           </Button>
         </div>
         </div>
-        <p className="mt-2 text-body text-[color:var(--color-text-tertiary)]">{t('sinceGloss')}</p>
+        {todo.length === 0 ? gloss : null}
       </div>
-      <BriefLineList
-        rows={briefRows(cores, { namedSince: brief.since.map((row) => row.kind), sinceCounting: brief.sinceTotal === null })}
-        details={brief.details}
-        nowMs={brief.nowMs}
-        onAskAgent={onAskAgent}
-        onOpenTab={onOpenTab}
-      />
+      {todo.length === 0 ? (
+        list
+      ) : (
+        <>
+          <BriefTodo rows={todo} details={brief.details} nowMs={brief.nowMs} counting={counting} onAskAgent={onAskAgent} onOpenTab={onOpenTab} />
+          {rest.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                aria-expanded={restOpen}
+                aria-controls={restId}
+                data-testid="brief-rest-toggle"
+                onClick={() => setRestOpen((value) => !value)}
+                className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: 'gap-1.5 self-start text-left' })}
+              >
+                <ChevronRight size={ICON_SIZE.sm} aria-hidden className={cn('shrink-0 transition-transform', restOpen && 'rotate-90')} />
+                <span>
+                  {restOpen ? t('restHide') : t('restShow', { count: rest.length })}
+                  {!restOpen && zeroCount > 0 ? (
+                    <span className="ml-1.5 text-[color:var(--color-text-tertiary)]" data-testid="brief-rest-zero">
+                      {t('restZero', { count: zeroCount })}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+              <RowDisclosure open={restOpen} id={restId}>
+                <div className="flex flex-col gap-[var(--section-gap)]">
+                  <div className="-mt-2">{gloss}</div>
+                  {list}
+                </div>
+              </RowDisclosure>
+            </div>
+          ) : null}
+        </>
+      )}
       {/* Not drawn until its first count lands: a partial list re-sorts under the reader when the guide files arrive. */}
       {brief.sinceTotal !== null ? (
         <BriefSinceList rows={brief.since} total={brief.sinceTotal} soleKind={brief.sinceKind} nowMs={brief.nowMs} counting={counting} />
@@ -446,26 +442,6 @@ function Numeral({ count, total }: { count?: number; total?: number }) {
 /** A fixed slot so a ring, a dot and a dash all leave the sentence on one line. */
 const MARK_SLOT = 'flex w-2.5 shrink-0 justify-center';
 
-const EMPTY_DETAILS: readonly BriefLineDetail[] = [];
-const DETAIL_ROWS = 5;
-
-/** "Get the app" for the download page, "open" elsewhere: two identical labels with different outcomes cost a navigation. */
-function destinationLabel(href: string, t: (key: string) => string): string {
-  return href === '/download/' ? t('getApp') : t('open');
-}
-
-/**
- * In a browser the unchecked-evidence line sends the reader to the download page; inside the app the line means
- * concepts citing no path, so it must not offer the app to someone already in it.
- */
-function lineHref(lineId: string, availability: BriefCore['availability'], appRowPresent = false): string | undefined {
-  if (lineId === 'ontology-evidence-unchecked' && availability !== 'app-only') return '/topology/';
-  const href = LINE_HREF[lineId];
-  // The app row at the foot of the list carries the one "Get the app"; a second copy here would duplicate it.
-  if (href === '/download/' && appRowPresent) return undefined;
-  return href;
-}
-
 /**
  * A door inside a sentence, after `DOOR_GAP`, with no side margin: a margin would indent a door wrapped onto its own
  * line. It has real width and height, not a transparent hit area, since two sit 12px apart and overlapping phantom hit
@@ -475,115 +451,27 @@ const LINE_LINK = 'atlas-touch-floor atlas-touch-floor-wide whitespace-nowrap al
 /** One em space: unlike a margin it stays at the end of the line when the door wraps. */
 const DOOR_GAP = '\u2003';
 
-/**
- * Half of these lines open another question on this board, which keeps its tab in component state, so a
- * plain `<Link>` would change the address and leave the screen. It stays a real link; the plain click is answered in place.
- */
-function DestinationLink({
-  href,
-  className,
-  onOpenTab,
-  children,
-}: {
-  href: string;
-  className?: string;
-  onOpenTab?: (tab: InsightsTab) => void;
-  children: React.ReactNode;
-}) {
-  const sameBoard = onOpenTab ? parseInsightsTabHref(href) : null;
-  return (
-    <Link
-      href={href}
-      // `hoverInk: 'strong'` is the registered answer for this shape; without it rest and hover are the same pixel.
-      className={controlClass({ shape: 'link', hoverInk: 'strong', className: cn('min-w-6 justify-center', className) })}
-      data-brief-destination={sameBoard ?? 'away'}
-      onClick={
-        sameBoard
-          ? (event) => {
-              // A modified click asks for a second window; leave it alone.
-              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
-              event.preventDefault();
-              onOpenTab?.(sameBoard);
-            }
-          : undefined
-      }
-    >
-      {children}
-    </Link>
-  );
-}
-
 /** One brief line; when its calculation produced named rows it expands in place to show concept, path and the two dates. */
 function BriefLineRow({ total, line, core, availability, appRowPresent, details, nowMs, onAskAgent, onOpenTab, className }: { total?: number; className?: string; line: BriefLine; core: BriefCore['core']; availability: BriefCore['availability']; appRowPresent: boolean; details: readonly BriefLineDetail[]; nowMs: number; onAskAgent?: (request: string) => void; onOpenTab?: (tab: InsightsTab) => void }) {
-  const [open, setOpen] = useState(false);
-  const detailId = useId();
   const t = useTranslations('ontologyPages.insights.brief');
-  const format = useFormatter();
-  const locale = useLocale();
   const href = line.count === 0 ? undefined : lineHref(line.id, availability, appRowPresent);
   const sentence = t(`line.${line.id}`, { count: line.count });
-  const shown = details.slice(0, DETAIL_ROWS);
-  // Judging drift is reading work for the coding agent: the request names the rows' concepts, files and dates
-  // and asks for a judgement and a proposal, never a write.
-  const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
   return (
     <li className={cn('py-3 text-body', line.count === 0 ? 'text-[color:var(--color-text-tertiary)]' : 'text-[color:var(--color-text-primary)]', className)} data-brief-line={line.id} data-brief-state={line.state} data-brief-core={core}>
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1 sm:flex-nowrap">
         <span aria-hidden="true" className={MARK_SLOT}><span className={STATE_MARK[line.state]} /></span>
         <span className={CORE_LABEL}>{t(`core.${core}`)}</span>
         <Numeral count={line.count} total={total} />
-        {shown.length > 0 ? (
-          <div className={SENTENCE}>
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls={detailId}
-              data-testid={`brief-line-open-${line.id}`}
-              onClick={() => setOpen((value) => !value)}
-              className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'gap-1.5 text-left' })}
-            >
-              <ChevronRight size={ICON_SIZE.sm} aria-hidden className={cn('mt-1 shrink-0 self-start transition-transform', open && 'rotate-90')} />
-              <span className="min-w-0 break-keep">{sentence}</span>
-            </button>
-            <RowDisclosure open={open} id={detailId} className="pt-2">
-              <ul className="flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
-                {shown.map((row, index) => (
-                  <li key={`${row.name}-${row.path}-${index}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
-                      {row.name}
-                    </Link>
-                    <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code>
-                    <span className="text-label text-[color:var(--color-text-quaternary)]">
-                      {row.at
-                        ? t('detailMoved', {
-                            moved: format.relativeTime(new Date(row.at), nowMs),
-                            doc: row.docAt ? format.relativeTime(new Date(row.docAt), nowMs) : t('detailDocUnknown'),
-                          })
-                        : t('detailGone')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {handoff ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2 pl-3" data-testid={`brief-line-handoff-${line.id}`}>
-                  {onAskAgent ? (
-                    <Button variant="outline" size="sm" onClick={() => onAskAgent(handoff)} data-testid="brief-ask-agent">
-                      {t('askAgent')}
-                    </Button>
-                  ) : null}
-                  <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} compact />
-                </div>
-              ) : null}
-              <HiddenCountLine
-                total={details.length}
-                shown={shown.length}
-                label={(hidden) => t('detailHidden', { count: hidden })}
-                route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
-                className="mt-2 pl-3"
-                data-testid={`brief-line-hidden-${line.id}`}
-              />
-            </RowDisclosure>
-          </div>
+        {details.length > 0 ? (
+          <LineDisclosure
+            line={line}
+            details={details}
+            href={href}
+            nowMs={nowMs}
+            onAskAgent={onAskAgent}
+            onOpenTab={onOpenTab}
+            className={SENTENCE}
+          />
         ) : (
           <span className={SENTENCE}>
             {sentence}

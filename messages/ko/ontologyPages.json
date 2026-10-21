@@ -103,7 +103,16 @@
       "evidenceUnreadable": "연결된 코드를 확인하지 못했어요. 폴더를 다시 열면 다시 시도해요.",
       "evidenceNoSource": "개념이 지금 코드와 맞는지 아직 확인하지 못했어요. 지도에서 코드 저장소를 연결하면 여기서 세요.",
       "noSourceShared": "개념이 지금 코드와 맞는지, 지침이 어디에 닿는지 아직 세지 못했어요. 지도에서 코드 저장소를 연결하면 여기서 세요.",
-      "coreJoin": " · "
+      "coreJoin": " · ",
+      "todoTitle": "먼저 볼 것",
+      "restShow": "나머지 {count}줄 모두 보기",
+      "restZero": "(0개 {count}줄 포함)",
+      "restHide": "나머지 접기",
+      "todoAction": {
+        "check": "확인하러 가기",
+        "compare": "비교 열기",
+        "view": "{place}에서 보기"
+      }
     },
     "unmatched": {
       "emptyTitle": "모든 이름이 문서로 이어져요",
