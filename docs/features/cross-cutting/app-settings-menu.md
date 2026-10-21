@@ -9,7 +9,7 @@ routes: []
 # AppSettingsMenu
 
 ### `AppSettingsMenu` (app shell + contextual page headers)
-- One 880×672 modal sheet (`src/widgets/app-settings-menu`); there is no `/settings` route.
+- One 960×720 modal sheet, clamped to the window minus the overlay gutter, with the title at the head of the nav column (`src/widgets/app-settings-menu`); there is no `/settings` route.
   The left list holds places only, grouped by **where each value lives** (2026-10-02):
 
   | Group | Panes |

@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { readGlobalCss } from "../../../scripts/lib/design/global-css.mjs";
 
 /**
- * The settings sheet has one type dialect: labels and pressable text use `text-body`, descriptions
- * and readouts use `text-label`, and `text-caption` (9.5px) is not used in the root sheet or
- * its drill-ins. The exemption is narrow, not the reach.
+ * The settings sheet has one type dialect: labels and captions are 12.5px (`text-body`), values,
+ * chips and badges are 11px (`text-label`), and 9.5px (`text-caption`) is only an uppercase
+ * eyebrow, so it is not used in the root sheet or its drill-ins.
  */
 
 const UI = "src/widgets/app-settings-menu/ui";
@@ -67,9 +67,9 @@ describe("settings root sheet: there is one type dialect", () => {
     });
     expect(
       offenders,
-      `9.5px is the step for micro labels, legends and timestamps. A settings row's label, description and ` +
-        `button text are none of those: descriptions are text-label (11px) and pressable text is ` +
-        `text-body (12.5px).`,
+      `9.5px is the step for an uppercase eyebrow. A settings row's label, caption and button text ` +
+        `are none of those: labels and captions are text-body (12.5px), values, chips and badges ` +
+        `are text-label (11px).`,
     ).toEqual([]);
   });
 
@@ -85,8 +85,8 @@ describe("settings root sheet: there is one type dialect", () => {
     );
     expect(
       offenders,
-      "The drill-in pane became one step smaller than the root sheet. Names are text-body (12.5), " +
-        "descriptions, values and paths are text-label (11). Section names use SETTINGS_SECTION_LABEL.",
+      "The drill-in pane became one step smaller than the root sheet. Names and captions are text-body (12.5), " +
+        "values, chips, badges and paths are text-label (11). Section names use SETTINGS_SECTION_LABEL.",
     ).toEqual([]);
   });
 
@@ -211,14 +211,14 @@ describe("\"pick one value\" inside one sheet has one spec", () => {
 
 describe("the LNB does not borrow chrome dimensions", () => {
   /**
-   * The LNB takes its dimensions from this sheet (the same padding as `SettingsRow`, `px-3 py-2`), not
-   * from the nav-rail tile. No new token is created: a single consumer does not need one.
+   * The LNB takes its dimensions from this sheet, not from the nav-rail tile: it is `px-3 py-2`
+   * while setting rows are `px-4 py-3`. No new token is created: a single consumer does not need one.
    */
   /**
    * Do not pin the class string as one block: the value layer splits it, so the inset and type step
    * are checked value by value.
    */
-  it("LNB items use the same inset as the rows of the right-hand section and one step larger text", () => {
+  it("LNB items are inset `px-3 py-2` (tighter than the `px-4 py-3` setting rows) at the row label step", () => {
     const nav = sourceWithoutComments("SettingsNav.tsx");
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
     /*
@@ -245,7 +245,7 @@ describe("the LNB does not borrow chrome dimensions", () => {
     const lnb = nav.slice(from, to);
     expect(lnb.length, "could not find the opening tag of an LNB item, so this check spins idle").toBeGreaterThan(40);
 
-    // Inset — must equal the `px-3 py-2` used by the right pane's row (`SettingsRow`).
+    // Inset — `px-3 py-2`, one step tighter than the setting rows.
     expect(lnb, "the LNB inset went back to the chrome dimensions (px-2.5 py-1.5)").toMatch(/\bpx-3 py-2\b/);
     /* Type uses the row label step (`text-body`) so the nav stays a quiet index below each pane head. */
     expect(lnb, "LNB text is not at the row title step (text-body)").toMatch(/\btext-body\b(?!-)/);
@@ -265,8 +265,8 @@ describe("the LNB does not borrow chrome dimensions", () => {
     expect(nav).toMatch(/<Icon size=\{16\}/);
   });
 
-  /** `SettingsRow` is the single source for the inset — change it and the contract above loses its basis. */
-  it("the inset of the right-hand section rows is the value the LNB aligned to", () => {
+  /** `SettingsRow` is the single source for the setting-row inset. */
+  it("setting rows keep the `px-4 py-3` inset that the LNB sits one step inside of", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     /*
      * The horizontal inset lives unconditionally in the shared part; assert the inset and gap, not the
@@ -290,12 +290,9 @@ describe("the LNB does not borrow chrome dimensions", () => {
 });
 
 describe("the panel does not eat its own gutter inside the minimum window", () => {
-  /**
-   * The panel is at most the minimum window height, and at `sm` its clamp keeps the overlay's `sm:p-6` on both sides.
-   */
-  it("the panel height does not exceed the minimum window minus two overlay gutters", () => {
+  it("the panel height fits the minimum window and its clamp equals twice the overlay gutter", () => {
     const menu = sourceWithoutComments("AppSettingsMenu.tsx");
-    const token = /h-\[var\((--[a-z0-9-]+)\)\] max-h-\[calc\(100dvh-1\.5rem\)\]/.exec(menu)?.[1];
+    const token = /\bh-\[var\((--dialog-h-[a-z0-9-]+)\)\]/.exec(menu)?.[1];
     expect(token, "the panel's fixed height is not a token").toBeDefined();
     const height = Number(new RegExp(`${token}:\\s*(\\d+)px;`).exec(readGlobalCss())?.[1]);
     expect(Number.isFinite(height), `${token} has no px value in app/styles`).toBe(true);
@@ -303,10 +300,13 @@ describe("the panel does not eat its own gutter inside the minimum window", () =
     const tauri = JSON.parse(readFileSync("src-tauri/tauri.conf.json", "utf8"));
     const minHeight: number = tauri.app.windows[0].minHeight;
     expect(minHeight, "the minimum window height contract is gone").toBeGreaterThan(0);
-    expect(menu, "the panel can outgrow the window: its max-height clamp is gone").toMatch(/max-h-\[calc\(100dvh-1\.5rem\)\] sm:max-h-\[calc\(100dvh-3rem\)\]/);
-    expect(menu, "the overlay gutter the clamp assumes is gone").toMatch(/p-3 sm:p-6/);
+
+    const clampRem = Number(/sm:max-h-\[calc\(100dvh-([\d.]+)rem\)\]/.exec(menu)?.[1]);
+    const gutterStep = Number(/\bsm:p-(\d+)\b/.exec(menu)?.[1]);
+    expect(Number.isFinite(clampRem), "the panel's sm max-height clamp is gone").toBe(true);
+    expect(Number.isFinite(gutterStep), "the overlay's sm padding is gone").toBe(true);
+    expect(clampRem, "the clamp must leave the overlay gutter on both sides").toBe(2 * gutterStep * 0.25);
     expect(height).toBeLessThanOrEqual(minHeight);
-    // And it must exceed the previous value (640), or this change has been reverted.
     expect(height).toBeGreaterThan(640);
   });
 });
