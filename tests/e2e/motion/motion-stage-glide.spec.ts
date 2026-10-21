@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { installDesktopBridge } from "../rounds-desktop-bridge";
+import { waitForAnimationsDone } from "../settle";
 
 const WINDOW_MS = 700;
 const MAX_STEP_SHARE = 0.35;
@@ -14,8 +15,10 @@ async function openEmptyLane(page: Page) {
   await expect(page.getByTestId("app-nav-rail")).toBeVisible();
   await page.goto("/en/automations/?guides=off&kind=documents");
   await expect(page.locator('[data-placement="stage"]')).toBeVisible();
+  await waitForAnimationsDone(page.locator("main"));
   await page.getByTestId("automations-new").click();
   await expect(page.getByTestId("library-rounds-allow")).toBeVisible();
+  await waitForAnimationsDone(page.locator("main"));
 }
 
 async function saveAndSample(page: Page) {
@@ -55,8 +58,7 @@ test.describe("Automations stage glide", () => {
     expect(placement).toBe("list");
     expect(tops[tops.length - 1]!).toBeLessThan(tops[0]!);
     expect(maxStepShare(tops)).toBeLessThanOrEqual(MAX_STEP_SHARE);
-    const report = await stopSmoothness(page, "main");
-    expectSmoothMotion({ ...report, animated: report.animated.filter((entry) => !entry.target.includes("motion-indicator")) }, { reflow: ["height"] });
+    expectSmoothMotion(await stopSmoothness(page, "main"), { reflow: ["height"] });
   });
 
   test("under reduced motion the lane moves in one step", async ({ page }) => {
