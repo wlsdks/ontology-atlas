@@ -66,18 +66,25 @@ test("no map utility tile is left visible under an open panel", async ({ page })
   const box = (await page.locator("canvas").first().boundingBox())!;
   const point = await page.evaluate(() => {
     const m = (window as unknown as { __atlasMap?: Record<string, (...a: unknown[]) => unknown> }).__atlasMap!;
-    const alpha = new Map((m.nodes() as Array<{ id: string; alpha: number }>).map((n) => [n.id, n.alpha]));
+    const nodes = m.nodes() as Array<{ id: string; alpha: number; hidden: boolean; x: number; y: number; radius: number }>;
+    const alpha = new Map(nodes.map((n) => [n.id, n.alpha]));
     const insets = (m.obstacleInsets?.() as { left: number; right: number }) ?? { left: 0, right: 0 };
-    const rect = document.querySelector("canvas")!.getBoundingClientRect();
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!;
+    const rect = canvas.getBoundingClientRect();
     for (const e of m.edges!() as Array<{ sourceId: string; targetId: string; visible: boolean; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number }>) {
       if (!e.visible) continue;
       if ((alpha.get(e.sourceId) ?? 0) < 0.5 || (alpha.get(e.targetId) ?? 0) < 0.5) continue;
-      // The drawn quadratic's midpoint, so the click lands on the curve, not its chord.
-      const x = 0.25 * e.ax + 0.5 * e.controlX + 0.25 * e.bx;
-      const y = 0.25 * e.ay + 0.5 * e.controlY + 0.25 * e.by;
-      if (x < insets.left + 20 || x > rect.width - insets.right - 20 || y < 20 || y > rect.height - 20) continue;
-      if (!m.edgeAt?.(x, y)) continue;
-      return { x: Math.round(x), y: Math.round(y) };
+      for (const t of [0.5, 0.25, 0.75]) {
+        const x = (1 - t) ** 2 * e.ax + 2 * (1 - t) * t * e.controlX + t ** 2 * e.bx;
+        const y = (1 - t) ** 2 * e.ay + 2 * (1 - t) * t * e.controlY + t ** 2 * e.by;
+        if (x < insets.left + 20 || x > rect.width - insets.right - 20 || y < 20 || y > rect.height - 20) continue;
+        // A real click gives nodes priority; an edge-only probe also reports curves behind them.
+        if (nodes.some((n) => !n.hidden && Math.hypot(n.x - x, n.y - y) < n.radius + 14)) continue;
+        if (document.elementFromPoint(rect.x + x, rect.y + y) !== canvas) continue;
+        const hit = m.edgeAt?.(x, y) as { sourceId: string; targetId: string } | null;
+        if (hit?.sourceId !== e.sourceId || hit.targetId !== e.targetId) continue;
+        return { x, y };
+      }
     }
     return null;
   });

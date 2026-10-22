@@ -1,6 +1,5 @@
 import { morphName, morphTargetProps } from "@/shared/motion/shared-element";
 import { CloseButton, controlClass } from "@/shared/ui";
-import { badgeClass } from "@/shared/ui/badge-class";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import type { OntologyMapDetailPanelLabels, OntologyMapDetailPanelProps } from "./types";
 
@@ -38,22 +37,7 @@ export function IdentityZone({
   return (
     <div className="px-[var(--map-panel-pad)] pt-[15px] pb-4">
       <div className="mb-[11px] flex items-center gap-2.5">
-        <h2 className="min-w-0 flex-1 text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
-          <span {...morphTargetProps(morphName("concept", nodeId))} className="block w-fit max-w-full truncate">
-            {title}
-          </span>
-        </h2>
-        {/* Kind is a badge you read (glyph plus word), the counterweight on the right. One chip grammar
-           with the domain chip: both are the chip `md` step (32px, `rounded-chip`, `text-label`), the
-           close button is the 32px icon step. Gate: `tests/e2e/map/panels/map-inspector-header-chips.spec.ts`. */}
-        <span
-          data-testid="map-detail-panel-kind"
-          className={badgeClass({
-            shape: "tag",
-            className:
-              "min-h-8 shrink-0 gap-1.5 border border-[color:var(--map-panel-kind-badge-border)] bg-[color:var(--map-panel-kind-badge-surface)] px-2.5 font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] text-[color:var(--map-panel-text-secondary)]",
-          })}
-        >
+        <span data-testid="map-detail-panel-kind" className="inline-flex flex-1 items-center gap-1.5 text-label text-[color:var(--map-panel-text-tertiary)]">
           <OntologyMapKindGlyph kind={kind} size={12} />
           {labels.kindLabel}
         </span>
@@ -65,10 +49,15 @@ export function IdentityZone({
           className="text-[color:var(--map-panel-text-tertiary)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-secondary)] active:bg-[color:var(--map-panel-row-active)]"
         />
       </div>
+        <h2 className="mb-2 min-w-0 text-title font-[var(--font-weight-strong)] leading-title tracking-title text-[color:var(--map-panel-text-primary)]">
+          <span {...morphTargetProps(morphName("concept", nodeId))} className="block w-fit max-w-full break-words">
+            {title}
+          </span>
+        </h2>
       {showSourcePath && sourceTitle && sourceTitle !== title ? (
         <div
           data-testid="map-detail-panel-source-path"
-          className="mb-2 font-mono text-label text-[color:var(--map-panel-text-quaternary)] break-all"
+          className="mb-2 text-label text-[color:var(--map-panel-text-tertiary)] break-all"
         >
           {sourceTitle}
         </div>

@@ -214,7 +214,7 @@ export function TabBar({
           : segmented
             ? "relative inline-flex max-w-full gap-0.5 overflow-x-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[3px]"
             : placement === 'header'
-            ? "relative flex h-full items-end gap-3 overflow-x-auto"
+            ? "relative flex h-full items-end gap-3 overflow-x-auto overflow-y-hidden"
             : "relative -ml-3 flex gap-3 overflow-x-auto border-b border-[color:var(--color-divider)]"
       }
       style={maskImage ? { maskImage, WebkitMaskImage: maskImage } : undefined}

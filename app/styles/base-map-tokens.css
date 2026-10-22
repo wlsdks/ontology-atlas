@@ -5,7 +5,7 @@
    */
   :root {
     /* 2.1 Node surface (fill/stroke tier by kind) */
-    --map-node-fill-project: #1c1c22;
+    --map-node-fill-project: #27283c;
     --map-node-fill-domain: #191920;
     --map-node-fill-capability: #17171d;
     --map-node-fill-element: #15151a;
@@ -531,8 +531,6 @@ still recedes compared to primary. Guardian follow-up #2. */
     /* Full-bleed zone divider — major structural separation (reuse panel divider) */
     --map-panel-zone-divider: var(--map-panel-divider);
     /* Kind badge field — quiet elevated surface + thin border */
-    --map-panel-kind-badge-surface: rgba(255, 255, 255, 0.04);
-    --map-panel-kind-badge-border: rgba(255, 255, 255, 0.07);
     /* Domain chip — single indigo low-chroma tint (navigation affordance) */
     --map-panel-domain-surface: var(--color-indigo-a08);
     --map-panel-domain-surface-hover: var(--color-indigo-a12);

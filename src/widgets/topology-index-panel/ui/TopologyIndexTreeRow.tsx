@@ -9,7 +9,6 @@ import type { DomainCensusRow, OntologyTreeNode } from "@/entities/knowledge-gra
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import { HighlightedText } from "@/shared/ui";
 import {
-  computeCapacityRatio,
   computeDomainSubcounts,
 } from "../lib/domain-subcounts";
 
@@ -67,8 +66,7 @@ export interface TopologyIndexTreeRowProps {
 /**
  * One INDEX tree row and its children, recursive by depth. Row click selects
  * (`docs/prototypes/hub-b3-immersive.html`); the caret is a separate target. Four-column grid
- * (caret, glyph, label, count) with the capacity meter inside the label cell
- * (`docs/prototypes/index-panel-v2-full.html`).
+ * (caret, glyph, label, count). Selection and disclosure remain separate actions.
  */
 export function TopologyIndexTreeRow({
   entry,
@@ -107,9 +105,6 @@ export function TopologyIndexTreeRow({
         }
       : computeDomainSubcounts(entry)
     : null;
-  const capacityRatio = subcounts
-    ? computeCapacityRatio(subcounts.descendantCount, maxDomainDescendantCount)
-    : 0;
   const projectCensus = node.kind === "project" && projectCount !== null;
   const count = projectCensus ? projectCount : censusRow ? censusRow.total : isDomain && subcounts ? subcounts.descendantCount : hasChildren ? children.length : null;
   // The expansion lifetime uses the shared list-row disclosure hook.
@@ -151,11 +146,8 @@ export function TopologyIndexTreeRow({
         tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
         data-testid="topology-index-row"
-        // A row with children selects and expands in one click; collapsing is the chevron's job.
-        onClick={() => {
-          onSelect(node.id);
-          if (hasChildren && !open) onToggleOpen(node.id);
-        }}
+        // Selection preserves the tree; the caret and arrow keys control disclosure.
+        onClick={() => onSelect(node.id)}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
         // `min-h-9` (36), a step of the control ladder
@@ -201,12 +193,12 @@ export function TopologyIndexTreeRow({
             {fresh ? (
               <span
                 title={labels.freshTitle}
-                className="h-[5px] w-[5px] shrink-0 rounded-full bg-[color:var(--map-panel-power-on)]"
-              />
+                className="sr-only"
+              >{labels.freshTitle}</span>
             ) : null}
           </div>
           {isDomain && subcounts ? (
-            <div className="mt-[3.5px] flex items-center gap-1.5">
+            <div className="sr-only">
               <span
                 title={labels.subcountsTitle}
                 data-testid="topology-index-subcounts"
@@ -216,16 +208,6 @@ export function TopologyIndexTreeRow({
               >
                 {labels.capabilitiesShort} {subcounts.capabilityCount} · {labels.elementsShort}{" "}
                 {subcounts.elementCount}
-              </span>
-              {/* Inset capacity meter: a recessed track under the label, indigo ink .45 unselected, .8 selected. */}
-              {/* eslint-disable-next-line no-restricted-syntax -- the 1px hairline radius of a 2px-tall capacity meter track is an exception outside chip(6px). */}
-              <span className="h-[2px] max-w-[76px] flex-1 overflow-hidden rounded-[1px] bg-[var(--color-overlay-recessed-a45)] shadow-[inset_0_1px_1px_var(--color-shadow-a50)]">
-                <span
-                  // eslint-disable-next-line no-restricted-syntax -- the fill paired with the meter track above, same 1px hairline radius.
-                  className="block h-full rounded-[1px] bg-[var(--color-indigo-line-a45)] data-[selected=true]:bg-[var(--color-indigo-line-a90)]"
-                  data-selected={selected}
-                  style={{ width: `${Math.round(capacityRatio * 100)}%` }}
-                />
               </span>
             </div>
           ) : null}
@@ -248,7 +230,7 @@ export function TopologyIndexTreeRow({
                   ? `${labels.subtotalTitle} ${count}`
                   : undefined
             }
-            className="justify-self-end font-mono text-label text-[color:var(--map-numeral-face)] [text-shadow:0_1px_0_var(--map-numeral-shadow)]"
+            className="justify-self-end text-label tabular-nums text-[color:var(--map-panel-text-tertiary)]"
           >
             {count}
           </span>

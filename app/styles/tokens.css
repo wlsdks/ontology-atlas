@@ -596,11 +596,9 @@
   /* Drop shadow alphas snap to an 8-step canon scale, siblings of a22/a42/a46. */
   --color-shadow-a12: rgba(0, 0, 0, 0.12);
   --color-shadow-a35: rgba(0, 0, 0, 0.35);
-  --color-shadow-a50: rgba(0, 0, 0, 0.5);
 
   /* overlay-recessed (darkening inset surface) alpha extension — existing
      base(0.16)/a12/a14/a20 siblings. */
-  --color-overlay-recessed-a45: rgba(0, 0, 0, 0.45);
 
   /* modal/sheet background scrim — existing a54/a56 siblings. */
   --color-scrim-a50: rgba(0, 0, 0, 0.5);

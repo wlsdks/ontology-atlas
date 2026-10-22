@@ -39,8 +39,8 @@ test("every row of the INDEX tree states its own level", async ({ page }) => {
   }
 
   // Expanding a domain must not flatten its children into the same level.
-  await page.locator('[data-testid="topology-index-tree"] [role="treeitem"]').nth(1).click();
-  await expect.poll(async () => (await read()).length, { timeout: 10_000 }).toBeGreaterThan(roots.length);
+  await page.locator('[data-testid="topology-index-tree"] [role="treeitem"]').nth(1).press("ArrowRight");
+  await expect.poll(async () => (await read()).length).toBeGreaterThan(roots.length);
   const expanded = await read();
   expect(expanded.filter((r) => r.level === null), "rows that lost their level after expanding").toEqual([]);
   expect(expanded.some((r) => r.level === "3"), "an expanded child reads as the same level as its parent").toBe(true);

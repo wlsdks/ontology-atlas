@@ -93,6 +93,7 @@
     "updated_weeksAgo": "{count}週間前に変更",
     "updated_monthsAgo": "{count}か月前に変更",
     "sourceHeading": "コードの根拠",
+    "sourceRecord": "確認記録",
     "sourcePending": "分析レシートを読み取り中",
     "sourceKind_git": "Gitリポジトリ",
     "sourceKind_folder": "ローカルフォルダ",
@@ -287,11 +288,11 @@
     "impact": "{count, plural, =0 {強い依存をたどっても、変更が及ぶ先はありません} other {依存をたどると、変更は最大{count}か所に波及する可能性があります}}"
   },
   "index": {
-    "label": "インデックス",
+    "label": "概念を探す",
     "fold": "折りたたむ",
-    "foldAria": "INDEXを折りたたむ",
-    "expandAria": "INDEXを展開",
-    "searchPlaceholder": "概念を検索",
+    "foldAria": "概念一覧を閉じる",
+    "expandAria": "概念一覧を開く",
+    "searchPlaceholder": "名前で検索",
     "censusConcepts": "概念",
     "sourceDocuments": "文書",
     "sourceDocumentsPartialTitle": "フォルダが一度に読み取れる量を超えているため、ほかにも文書がある可能性があります。",

@@ -1,6 +1,6 @@
 import type { DialTokens } from "./types";
 
-type InkKey = "fillDomain" | "fillCapability" | "strokeDomain" | "strokeCapability" | "strokeElement" | "ring";
+type InkKey = "fillDomain" | "fillCapability" | "strokeDomain" | "strokeCapability" | "strokeElement";
 type NumericKey = Exclude<keyof DialTokens, "attendedNameInk" | InkKey>;
 
 export const DIAL_TOKEN_SPECS: readonly { key: NumericKey; cssVar: string }[] = [
@@ -76,7 +76,6 @@ export const DIAL_INK_SPECS: readonly { key: InkKey; cssVar: string }[] = [
   { key: "strokeDomain", cssVar: "--map-dial-stroke-domain" },
   { key: "strokeCapability", cssVar: "--map-dial-stroke-capability" },
   { key: "strokeElement", cssVar: "--map-dial-stroke-element" },
-  { key: "ring", cssVar: "--map-dial-ring" },
 ];
 
 const ATTENDED_NAME_INK = "--map-panel-text-primary";

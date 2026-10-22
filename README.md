@@ -54,6 +54,8 @@ reject each change as a Markdown diff.
 </tr>
 </table>
 
+The Flat map distinguishes the project from neutral domain groups. Hover highlights a group and its connections; selecting reveals relationship direction and counts. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
+
 ## Quick start
 
 1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/), or open the [browser version](https://ontologyatlas.com/en/topology/).
