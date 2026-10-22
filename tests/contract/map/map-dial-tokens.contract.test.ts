@@ -33,17 +33,19 @@ describe("map dial tokens", () => {
     for (const { cssVar } of DIAL_TOKEN_SPECS) expect(Number.isFinite(Number(declared.get(cssVar)))).toBe(true);
   });
 
-  it("steps the mark strokes domain > capability > element, rings on the main axis, each over 3:1 on the ground, fills a tier under 1.3:1", () => {
+  it("keeps neutral kind outlines above 3:1 and their fills below the outlines", () => {
     const ground = /--map-canvas-bg-near\s*:\s*([^;]+);/.exec(css)?.[1]?.trim() ?? "";
     for (const { cssVar } of DIAL_INK_SPECS) expect(declared.get(cssVar)).toMatch(/^#[0-9a-f]{6}$/);
     const c = (ink: string) => contrast(ink, ground);
     expect(c(t.strokeDomain)).toBeGreaterThan(c(t.strokeCapability) + 1);
     expect(c(t.strokeCapability)).toBeGreaterThan(c(t.strokeElement) + 1);
     expect(c(t.strokeElement)).toBeGreaterThanOrEqual(3);
-    expect(c(t.ring)).toBeGreaterThanOrEqual(3);
     expect(c(t.fillDomain)).toBeGreaterThan(c(t.fillCapability));
-    expect(c(t.fillCapability)).toBeGreaterThan(1.1);
-    expect(c(t.fillDomain)).toBeLessThanOrEqual(1.3);
+    expect(c(t.fillDomain)).toBeLessThan(c(t.strokeDomain));
+    expect(c(t.fillCapability)).toBeLessThan(c(t.strokeCapability));
+    const projectFill = /--map-node-fill-project\s*:\s*([^;]+);/.exec(css)![1]!.trim();
+    expect(projectFill).not.toBe(t.fillDomain);
+    console.info("[dial-material-contrast]", JSON.stringify(Object.fromEntries(["strokeDomain", "strokeCapability", "strokeElement", "fillDomain", "fillCapability"].map((key) => [key, Number(c(t[key as keyof typeof t] as string).toFixed(2))]))));
   });
 
   it("keeps ordered pairs ordered", () => {

@@ -14,6 +14,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useRovingRadioGroup } from "@/shared/lib/keyboard/use-roving-radio-group";
 import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
+import { TabBar } from "@/shared/ui/controls/tab-bar";
 import {
   filterTreeByNodeIds,
   filterTreeByQuery,
@@ -48,10 +49,10 @@ const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
 /** One row grammar for every tidy row: a fact on the left, one indigo action word on the right. */
 const TIDY_ROW_CLASS = controlClass({
-  shape: "card",
+  shape: "row",
   size: "sm",
   className:
-    "atlas-touch-floor w-full text-left border-[color:var(--map-panel-border)] hover:bg-[color:var(--map-panel-row-hover)]",
+    "atlas-touch-floor w-full text-left border-transparent hover:bg-[color:var(--map-panel-row-hover)]",
 });
 
 interface TopologyIndexPanelLabels {
@@ -436,6 +437,8 @@ export function TopologyIndexPanel({
     });
   }
   const tidyHeadingId = useId();
+  const tabsId = useId();
+  const activeTab = lensActive ? "recent" : "all";
   const projectRoots = treeResult.roots.filter((root) => root.node.kind === "project").length;
   const projectCount = projectRoots === 1 ? totalConcepts : null;
   return (
@@ -491,7 +494,7 @@ export function TopologyIndexPanel({
         data-testid="topology-index-fold"
         className={controlClass({ shape: "row", className: "group -mx-2 mb-3 w-auto gap-1.5 rounded-[var(--chrome-radius-inner)] px-2 max-md:pr-12 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset" })}
       >
-        <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-secondary)]">
+        <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--map-panel-text-primary)]">
           {labels.label}
         </span>
         {/* No visible count here; the terrain HUD shows it and the sr-only census stays. */}
@@ -577,42 +580,18 @@ export function TopologyIndexPanel({
       </div>
 
       {recentChanges ? (
-        <div
-          role="tablist"
-          aria-label={labels.segmentRecentAria}
-          className="mb-3 grid shrink-0 grid-cols-2 gap-1 rounded-[var(--chrome-radius-inner)] border border-[color:var(--map-panel-border)] bg-[color:var(--color-overlay-1)] p-1"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!lensActive}
-            data-testid="topology-index-segment-all"
-            onClick={() => setLens("all")}
-            className={controlClass({
-              shape: "segment",
-              scope: "panel",
-              active: !lensActive,
-              className: "min-w-0 hover:text-[color:var(--map-panel-text-primary)]",
-            })}
-          >
-            {labels.segmentAll}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={lensActive}
-            data-testid="topology-index-segment-recent"
-            onClick={() => setLens("recent")}
-            className={controlClass({
-              shape: "segment",
-              scope: "panel",
-              truncate: true,
-              active: lensActive,
-              className: "min-w-0 hover:text-[color:var(--map-panel-text-primary)]",
-            })}
-          >
-            {labels.segmentRecent}
-          </button>
+        <div className="mb-3 shrink-0 border-b border-[color:var(--map-panel-zone-divider)]">
+          <TabBar
+            items={[
+              { key: "all", label: labels.segmentAll, testId: "topology-index-segment-all" },
+              { key: "recent", label: labels.segmentRecent, testId: "topology-index-segment-recent" },
+            ]}
+            placement="header"
+            activeKey={activeTab}
+            onSelect={(key) => setLens(key === "recent" ? "recent" : "all")}
+            ariaLabel={labels.segmentRecentAria}
+            idPrefix={tabsId}
+          />
         </div>
       ) : null}
 
@@ -661,6 +640,12 @@ export function TopologyIndexPanel({
         </p>
       ) : null}
 
+      <div
+        role={recentChanges ? "tabpanel" : undefined}
+        id={recentChanges ? `${tabsId}-tabpanel-${activeTab}` : undefined}
+        aria-labelledby={recentChanges ? `${tabsId}-tab-${activeTab}` : undefined}
+        className="flex min-h-0 shrink flex-col"
+      >
       <div
         role="tree"
         aria-label={labels.label}
@@ -711,15 +696,17 @@ export function TopologyIndexPanel({
         )}
       </div>
 
+      </div>
+
       {/*
        * One titled list of things to tidy, directly under the tree; each row exists only while its
        * condition holds.
        */}
       {tidyRows.length > 0 ? (
-        <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0">
+        <section data-testid="topology-index-tidy" aria-labelledby={tidyHeadingId} className="mt-3 shrink-0 border-t border-[color:var(--map-panel-zone-divider)] pt-2">
           <p
             id={tidyHeadingId}
-            className="mb-1 font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--map-panel-text-secondary)]"
+            className="sr-only"
           >
             {labels.tidyHeading}
           </p>

@@ -11,7 +11,7 @@ area: map
 
 `/topology` renders `HomePage`; `/` renders it after a vault is loaded (`/` = home/back-link target, `/topology` = explicit deep-link namespace). Without a vault, `/` follows the gateway/desktop first-run branches above.
 
-The Flat overview, a dial of counted domain dependencies: [`flat-dial.md`](flat-dial.md).
+The Flat overview, grouped concepts and counted domain dependencies: [`flat-dial.md`](flat-dial.md).
 Relation light on focus and path: [`light.md`](light.md).
 Domain structure uses recorded direct membership and named breadcrumbs.
 

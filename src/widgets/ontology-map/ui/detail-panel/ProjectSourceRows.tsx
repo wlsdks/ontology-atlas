@@ -1,18 +1,17 @@
 import { AlertCircle, CheckCircle2, CircleDashed, CircleHelp } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { controlClass } from "@/shared/ui";
 import type { ProjectSourceStatus } from "@/shared/lib/project-source/project-source-receipt";
 import { useDelayedVisible } from "@/shared/lib/render-timing/use-presence";
 
 /**
- * **The receipt's place while it is read** — its two standing rows (status, then when it
- * was measured) on the same lines and at the same heights the answer will take, so the
+ * The pending status and Check record placeholder have the answer's heights, so the
  * answer changes words, not layout.
  *
  * The line says so only once the read outlives `SKELETON_DELAY_MS`: an unbound project's
  * record answers in a few milliseconds, and a "reading" line flashed for one frame would
  * announce a wait that never happened. Until then the rows keep their height and show
- * nothing. The measured row has no honest content before the answer, so it only holds
- * its line.
+ * nothing. Check record has no content yet, so its placeholder only holds its height.
  */
 export function ProjectSourcePendingRows({ label }: { label?: string }) {
   const announced = useDelayedVisible(true);
@@ -31,7 +30,7 @@ export function ProjectSourcePendingRows({ label }: { label?: string }) {
         </span>
         <span className="truncate">{label}</span>
       </div>
-      <div aria-hidden="true" className="invisible flex items-center justify-between gap-3">
+      <div aria-hidden="true" className={controlClass({ shape: "link", size: "md", hoverInk: "strong", className: "invisible" })}>
         <span>&nbsp;</span>
       </div>
     </>

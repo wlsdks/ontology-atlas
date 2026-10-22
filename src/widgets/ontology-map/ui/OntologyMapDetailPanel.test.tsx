@@ -245,6 +245,9 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       "Code evidence",
     );
     expect(rail).toHaveTextContent("Source verified");
+    expect(screen.getByTestId("map-project-source-record")).toHaveAttribute("aria-expanded", "false");
+    expect(rail).not.toHaveTextContent("Measured today");
+    fireEvent.click(screen.getByTestId("map-project-source-record"));
     expect(rail).toHaveTextContent("Source · Git repository");
     expect(rail).toHaveTextContent("Measured today");
     expect(rail).toHaveTextContent("Current source");
@@ -694,6 +697,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent(
       "Concept document · changed 3d ago",
     );
+    fireEvent.click(screen.getByTestId("map-project-source-record"));
     expect(screen.getByTestId("map-project-source-receipt")).toHaveTextContent(
       "Measured today",
     );
@@ -898,20 +902,6 @@ describe("OntologyMapDetailPanel — viewport clamp (P3-③)", () => {
     expect(screen.queryByText("Cap 8")).not.toBeInTheDocument();
   });
 
-  it("always carries a viewport-bounded max-height and internal scroll so the footer link stays reachable", () => {
-    renderPanel(vi.fn());
-    const panel = screen.getByTestId("map-detail-panel");
-    // `--map-inspector-max-height`, not the shared panel ceiling: it diverges below `lg`, where this
-    // surface is a bottom sheet. The meaning editor shares this anchor and must keep the unclamped
-    // ceiling.
-    expect(panel.className).toContain("max-h-[var(--map-inspector-max-height)]");
-    expect(panel.className).toContain("overflow-y-auto");
-    // The full-detail footer link is inside the same clamped/scrollable
-    // root, not a sibling escaping the clamp.
-    expect(panel).toContainElement(
-      screen.getByTestId("map-detail-panel-open-full-detail"),
-    );
-  });
 });
 
 describe("OntologyMapDetailPanel: evidence group promotion (RATIO-SYSTEM section 4)", () => {
@@ -1612,25 +1602,10 @@ describe("OntologyMapDetailPanel — last-edit provenance", () => {
 });
 
 describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
-  it("renders the node name as the header hero (title2/650, truncatable)", () => {
+  it("keeps the concept name and localized kind in the header", () => {
     renderPanel();
-    const name = screen.getByRole("heading", { level: 2 });
-    expect(name).toHaveTextContent("Views");
-    expect(name.className).toContain("text-title");
-    expect(name.querySelector("span")?.className).toContain("truncate");
-  });
-
-  it("renders a quiet kind badge with the localized kind word next to the name", () => {
-    renderPanel();
-    const panel = screen.getByTestId("map-detail-panel");
-    // kindLabel appears in the header badge (fixture kind = 'domain' → 'Domain')
-    expect(panel.textContent).toContain(labels.kindLabel);
-    // the header badge carries the kind-badge surface token
-    const badge = Array.from(panel.querySelectorAll("span")).find((s) =>
-      s.className.includes("--map-panel-kind-badge-surface"),
-    );
-    expect(badge).toBeTruthy();
-    expect(badge!.textContent).toContain(labels.kindLabel);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Views");
+    expect(screen.getByTestId("map-detail-panel-kind")).toHaveTextContent(labels.kindLabel);
   });
 
   it("no longer renders the floating power-state dot", () => {

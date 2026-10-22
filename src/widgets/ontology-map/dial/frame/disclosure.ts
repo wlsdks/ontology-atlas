@@ -73,6 +73,11 @@ function ownLinks(model: DialModel, domainId: string): number {
 }
 
 function enteredOf(scene: DialScene, camera: DialCamera, free: Box, attention: DialAttention, capsDrawn: boolean): string | null {
+  if (attention.domainId === null && scene.clusters.every((c) => {
+    const p = camera.toScreen(c.chip.x, c.chip.y);
+    const r = c.footprint * camera.scale;
+    return p.x - r >= free.minX && p.x + r <= free.maxX && p.y - r >= free.minY && p.y + r <= free.maxY;
+  })) return null;
   const W = camera.viewportWidth;
   const H = camera.viewportHeight;
   const fc = { x: (free.minX + free.maxX) / 2, y: (free.minY + free.maxY) / 2 };

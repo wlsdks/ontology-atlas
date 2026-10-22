@@ -93,6 +93,7 @@
     "updated_weeksAgo": "{count}주 전 바뀜",
     "updated_monthsAgo": "{count}달 전 바뀜",
     "sourceHeading": "연결된 코드",
+    "sourceRecord": "확인 기록",
     "sourcePending": "코드 확인 기록을 읽는 중",
     "sourceKind_git": "Git 저장소",
     "sourceKind_folder": "로컬 폴더",
@@ -287,11 +288,11 @@
     "impact": "{count, plural, =0 {의존 관계 기준으로는 바꿔도 영향받는 곳이 없어요} other {의존 관계를 따라가면 최대 {count}곳까지 영향이 번질 수 있어요}}"
   },
   "index": {
-    "label": "INDEX",
+    "label": "개념 탐색",
     "fold": "접기",
-    "foldAria": "INDEX 접기",
-    "expandAria": "INDEX 펼치기",
-    "searchPlaceholder": "개념 검색",
+    "foldAria": "개념 탐색 접기",
+    "expandAria": "개념 탐색 펼치기",
+    "searchPlaceholder": "이름으로 찾기",
     "censusConcepts": "개념",
     "sourceDocuments": "문서",
     "sourceDocumentsPartialTitle": "한 번에 다 읽기에는 폴더가 커서, 문서가 더 있을 수 있어요.",

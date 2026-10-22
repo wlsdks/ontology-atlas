@@ -191,6 +191,26 @@ describe("count crossfade", () => {
 });
 
 describe("focus on a new world", () => {
+    it("previews a different hovered domain and restores the selection without moving marks or counts", () => {
+        const input = frameInput(modelOf(), { focusedNodeId: "d1", reducedMotion: true });
+        const snapshot = (hoveredNodeId: string | null) => {
+            const { marks } = paintDialFrame({ ...input, hoveredNodeId });
+            return {
+                glyphs: marks.glyphs.map(({ id, x, y, stroke }) => ({ id, x, y, stroke })),
+                counts: marks.numerals.map(({ text, x, y }) => ({ text, x, y })),
+                names: marks.texts.map(({ text, x, y }) => ({ text, x, y })),
+            };
+        };
+        const selected = snapshot(null);
+        const hovered = snapshot("d3");
+        expect(hovered.glyphs.find((g) => g.id === "d3")!.stroke).toBe(MAP.indigoBright);
+        expect(hovered.glyphs.find((g) => g.id === "d1")!.stroke).not.toBe(MAP.indigoBright);
+        expect(hovered.glyphs.map(({ id, x, y }) => ({ id, x, y }))).toEqual(selected.glyphs.map(({ id, x, y }) => ({ id, x, y })));
+        expect(hovered.counts).toEqual(selected.counts);
+        expect(hovered.names).toEqual(selected.names);
+        expect(snapshot(null)).toEqual(selected);
+        expect(snapshot("d1")).toEqual(selected);
+    });
     it("keeps an unchanged focus settled: the ink stays mixed and nothing crossfades", () => {
         const model = modelOf();
         const first = frameInput(model, { focusedNodeId: "d1", now: 0, worldKey: {} });

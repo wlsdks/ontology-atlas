@@ -93,6 +93,7 @@
     "updated_weeksAgo": "changed {count}w ago",
     "updated_monthsAgo": "changed {count}mo ago",
     "sourceHeading": "Code evidence",
+    "sourceRecord": "Check record",
     "sourcePending": "Reading the analysis receipt",
     "sourceKind_git": "Git repository",
     "sourceKind_folder": "Local folder",
@@ -287,11 +288,11 @@
     "impact": "{count, plural, =0 {Following hard dependencies, changing it affects nothing} other {Following dependencies, a change can ripple to up to {count} places}}"
   },
   "index": {
-    "label": "Index",
+    "label": "Concepts",
     "fold": "Collapse",
-    "foldAria": "Collapse INDEX",
-    "expandAria": "Expand INDEX",
-    "searchPlaceholder": "Search concepts",
+    "foldAria": "Collapse concepts",
+    "expandAria": "Expand concepts",
+    "searchPlaceholder": "Find by name",
     "censusConcepts": "concepts",
     "sourceDocuments": "documents",
     "sourceDocumentsPartialTitle": "The folder is larger than one read covers, so more documents may be there.",

@@ -37,7 +37,7 @@ test("the project row's badge counts the drawn concepts it holds", async ({ page
     );
     if (collapsed.length === 0) break;
     for (const id of collapsed) {
-      await page.locator(`[data-index-row="${id}"]`).first().click();
+      await page.locator(`[data-index-row="${id}"]`).first().press("ArrowRight");
       await expect(page.locator(`[data-index-row="${id}"]`).first()).toHaveAttribute("aria-expanded", "true");
     }
   }
