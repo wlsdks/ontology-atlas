@@ -108,9 +108,9 @@ const BASE: [string, string][] = [
 
 describe("buildFlowMarks", () => {
   it("ramps width by log share of the strongest drawn link", () => {
-    expect(restFlowWidth(TOKENS, 3)).toBeCloseTo(0.9 + 1.15 * 2);
-    expect(rampedRestWidth(TOKENS, 3, 3)).toBeCloseTo(Math.min(restFlowWidth(TOKENS, 3), 4.6));
-    expect(rampedRestWidth(TOKENS, 1, 1000)).toBeCloseTo(0.9 + 3.7 * (1 / Math.log2(1001)));
+    expect(restFlowWidth(TOKENS, 3)).toBeCloseTo(TOKENS.flowRestBase + TOKENS.flowRestGain * 2);
+    expect(rampedRestWidth(TOKENS, 3, 3)).toBeCloseTo(Math.min(restFlowWidth(TOKENS, 3), TOKENS.flowRestMax));
+    expect(rampedRestWidth(TOKENS, 1, 1000)).toBeCloseTo(TOKENS.flowRestBase + (TOKENS.flowRestMax - TOKENS.flowRestBase) * (1 / Math.log2(1001)));
     expect(rampedFocusWidth(TOKENS, 1000, 1000)).toBe(6);
     expect(focusFlowWidth(TOKENS, 1)).toBeCloseTo(2.5);
     expect(flowHeadSize(TOKENS, 2, 1)).toBeCloseTo(4.2 + 1.2);
@@ -122,10 +122,13 @@ describe("buildFlowMarks", () => {
     expect(weak.w1).toBeCloseTo(weak.w0 * TOKENS.flowTaper);
   });
 
-  it("draws a two-way pair as one strip with two heads", () => {
+  it("keeps the overview pair quiet and reveals both directions when attended", () => {
     const { out } = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]));
     expect(out.strips).toHaveLength(1);
-    expect(out.strips[0]).toMatchObject({ headStart: true, headEnd: true });
+    expect(out.strips[0]).toMatchObject({ headStart: false, headEnd: false });
+    const focused = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]), { focusId: "d0" });
+    expect(focused.out.strips).toHaveLength(2);
+    expect(focused.out.strips.every((s) => s.headStart || s.headEnd)).toBe(true);
   });
 
   it("splits an attended pair: needs leaves the attended domain, used by arrives at it", () => {
@@ -200,12 +203,10 @@ describe("buildFlowMarks", () => {
     expect(keys(new Set())).toEqual(["d0\0d3"]);
   });
 
-  it("keeps rest numbers within clamp(0.6 × domains on screen, 4, 9), counts ≥ 2, off occupied boxes", () => {
+  it("reserves counts for attention and keeps the overview free of numeral labels", () => {
     const model = modelOf(BASE);
-    const { out } = run(model);
-    expect(out.numerals.length).toBeGreaterThan(0);
-    expect(out.numerals.length).toBeLessThanOrEqual(Math.max(4, Math.min(9, Math.round(0.6 * DOMAINS))));
-    for (const n of out.numerals) expect(Number(n.text)).toBeGreaterThanOrEqual(2);
+    expect(run(model).out.numerals).toHaveLength(0);
+    expect(run(model).out.strips.length).toBeGreaterThan(0);
     expect(run(model, { occupied: [WIDE] }).out.numerals).toHaveLength(0);
   });
 
@@ -375,6 +376,6 @@ describe("buildFlowMarks", () => {
         for (const ink of out.inks) expect(allowed.has(ink)).toBe(true);
       }
     }
-    expect(inks.flowReceded).toBe(mixOver(MAP.edgeDepends, inks.bg, MAP.egoRestAlpha));
+    expect(inks.flowReceded).toBe(mixOver(TOKENS.strokeElement, inks.bg, MAP.egoRestAlpha));
   });
 });

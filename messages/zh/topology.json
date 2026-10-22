@@ -93,6 +93,7 @@
     "updated_weeksAgo": "{count} 周前改动",
     "updated_monthsAgo": "{count} 个月前改动",
     "sourceHeading": "代码依据",
+    "sourceRecord": "检查记录",
     "sourcePending": "正在读取分析回执",
     "sourceKind_git": "Git 仓库",
     "sourceKind_folder": "本地文件夹",
@@ -287,11 +288,11 @@
     "impact": "{count, plural, =0 {沿强依赖追溯，改动不会影响任何地方} other {沿依赖追溯，改动最多可波及 {count} 处}}"
   },
   "index": {
-    "label": "索引",
+    "label": "查找概念",
     "fold": "收起",
-    "foldAria": "收起 INDEX",
-    "expandAria": "展开 INDEX",
-    "searchPlaceholder": "搜索概念",
+    "foldAria": "收起概念列表",
+    "expandAria": "展开概念列表",
+    "searchPlaceholder": "按名称查找",
     "censusConcepts": "概念",
     "sourceDocuments": "文档",
     "sourceDocumentsPartialTitle": "文件夹超出了一次读取的范围，可能还有更多文档。",

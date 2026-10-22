@@ -49,7 +49,7 @@ const results = [];
 try {
   for (const route of opts.routes) {
     for (const width of opts.widths) {
-      const context = await browser.newContext({ viewport: { width, height: opts.height } });
+      const context = await browser.newContext({ viewport: { width, height: opts.height }, reducedMotion: "reduce", isMobile: width <= 768, hasTouch: width <= 768 });
       const page = await context.newPage();
       await page.goto(`${opts.url}${route}`, { waitUntil: "networkidle" });
       if (opts.wait) await page.waitForSelector(opts.wait);

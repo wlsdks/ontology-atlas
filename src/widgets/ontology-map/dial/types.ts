@@ -56,7 +56,6 @@ export interface DialTokens {
   strokeDomain: string;
   strokeCapability: string;
   strokeElement: string;
-  ring: string;
   spiralC: number;
   spiralK0: number;
   elementRoom: number;

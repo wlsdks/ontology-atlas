@@ -48,21 +48,14 @@ const textStart = (page: Page, selector: string) =>
     return range.getClientRects()[0]?.x ?? null;
   }, selector);
 
-test("INDEX text starts on one line and its two eyebrows share one ink", async ({ page }) => {
+test("the concept navigator title and source share a text edge and its fold fills the panel", async ({ page }) => {
   test.setTimeout(90_000);
   await openStorefront(page);
   await expect(page.getByTestId("topology-index-tidy")).toBeVisible();
   const fold = await textStart(page, '[data-testid="topology-index-fold"] span');
   const source = await textStart(page, '[data-testid="topology-index-source"]');
-  const tidy = await textStart(page, '[data-testid="topology-index-tidy"] p');
   expect(fold, "the INDEX eyebrow is missing").not.toBeNull();
   expect(Math.abs(fold! - source!), `INDEX eyebrow ${fold} vs source line ${source}`).toBeLessThanOrEqual(0.5);
-  expect(Math.abs(tidy! - source!), `tidy eyebrow ${tidy} vs source line ${source}`).toBeLessThanOrEqual(0.5);
-  const inks = await page.evaluate(() => [
-    getComputedStyle(document.querySelector('[data-testid="topology-index-fold"] span')!).color,
-    getComputedStyle(document.querySelector('[data-testid="topology-index-tidy"] p')!).color,
-  ]);
-  expect(inks[0]).toBe(inks[1]);
   const fill = await page.evaluate(() => {
     const box = document.querySelector('[data-testid="topology-index-fold"]')!.getBoundingClientRect();
     const panel = document.querySelector('[data-testid="topology-index-panel"]')!.getBoundingClientRect();

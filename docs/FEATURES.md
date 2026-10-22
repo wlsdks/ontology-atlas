@@ -43,6 +43,12 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
+The Flat map uses a distinct project centre, outward member groups for small maps,
+and restrained relationships that reveal direction and counts on attention. Concepts
+navigation separates selection from tree disclosure. Project inspectors show one
+source status and remedy, with dated measurement details under Check record; these
+presentation changes do not accept meaning or update source receipts.
+
 ## Surfaces
 
 | Surface | Entry | Reference |

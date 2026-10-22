@@ -43,6 +43,22 @@ const FIXTURE = `<!doctype html><html><head><style>
 
 const RAMP_NAMES = { text: ["--text-body"], leading: ["--leading-body"], radius: ["--radius-card"], shadow: [] };
 
+test("inert controls are excluded and a canvas remains reachable outside its centre overlay", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.setContent(`<style>
+    body { margin:0 } .stage { position:relative; width:300px; height:200px }
+    canvas { width:300px; height:200px } .cover { position:absolute; inset:0; background:white }
+    .partial { inset:50px 100px } button { width:48px; height:48px }
+  </style>
+  <div class="stage"><canvas id="reachable" tabindex="0"></canvas><div class="cover partial"></div></div>
+  <div class="stage"><canvas id="blocked" tabindex="0"></canvas><div class="cover"></div></div>
+  <div class="stage"><button id="inert-self" inert></button><div inert><button id="inert-parent"></button></div><div class="cover"></div></div>`);
+  const { findings } = await auditPage(page, { width: 390, rampNames: RAMP_NAMES });
+  expect(findings.occluded).toHaveLength(1);
+  expect(findings.occluded[0].selector).toContain("#blocked");
+  expect(findings.overlap).toHaveLength(0);
+});
+
 test("ui-audit probe finds each planted defect and none of its clean counterparts", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await page.setContent(FIXTURE);

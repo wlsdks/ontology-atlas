@@ -89,6 +89,7 @@ export interface OntologyMapDetailPanelLabels {
   summaryHistoryUnavailable?: string;
   /** Project-only source receipt copy, preformatted by the caller. */
   sourceHeading?: string;
+  sourceRecord?: string;
   /** The status line while the receipt is still being read (`projectSourceLoading`). */
   sourcePending?: string;
   sourceKind?: string;

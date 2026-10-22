@@ -9,8 +9,7 @@ routes: [/topology]
 # Node detail actions
 
 #### Node detail actions
-- The detail panel has one primary outcome: **Ask the agent** in the installed app,
-  or **Copy handoff** on the web. Relation editing and linked-node creation live
+- The detail panel leads with **Meaning review** when available, otherwise **Ask the agent** in the installed app or **Copy handoff** on the web. A project with a source remedy gives that remedy visual precedence and demotes meaning review. Relation editing and linked-node creation live
   under **Edit**; document, fallback handoff, and realm actions live under
   **More**. Explore overlooked areas is also in More for a resolvable concept scope. Typed relation and evidence totals remain on their own group headers,
   rather than being repeated as a second aggregate line.

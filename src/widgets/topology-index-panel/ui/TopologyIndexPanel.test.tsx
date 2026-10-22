@@ -1251,9 +1251,9 @@ describe("TopologyIndexPanel", () => {
   });
 });
 
-// A row with children selects and expands in one click.
-describe('TopologyIndexPanel row click expands', () => {
-  it('opens children and selects when a row with children is clicked', () => {
+// Disclosure is independent from selecting a concept.
+describe('TopologyIndexPanel selection and disclosure', () => {
+  it('selects a closed domain without opening it, then opens it with the caret', () => {
     const onSelect = vi.fn();
     render(
       <TopologyIndexPanel
@@ -1269,11 +1269,14 @@ describe('TopologyIndexPanel row click expands', () => {
       />,
     );
 
-    const root = screen.getAllByTestId("topology-index-row")[0];
-    fireEvent.click(root);
-
-    expect(onSelect).toHaveBeenCalled();
-    expect(root).toHaveAttribute("aria-expanded", "true");
+    const row = document.querySelector('[data-index-row="domain:onboarding"]')!;
+    expect(row).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(row);
+    expect(onSelect).toHaveBeenCalledWith("domain:onboarding");
+    expect(row).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(row.querySelector("button")!);
+    expect(row).toHaveAttribute("aria-expanded", "true");
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it('does not collapse an expanded row on a second click', () => {

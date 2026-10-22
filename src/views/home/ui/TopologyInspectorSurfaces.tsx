@@ -319,6 +319,7 @@ export function TopologyInspectorSurfaces({
                 actionAskAgentTip: t("nodeDatasheet.actionAskAgentTip"),
                 // Named before the receipt is read.
                 sourceHeading: t("nodeDatasheet.sourceHeading"),
+                sourceRecord: t("nodeDatasheet.sourceRecord"),
                 sourcePending: t("nodeDatasheet.sourcePending"),
                 sourceKind: projectSourceLabels?.sourceKind,
                 sourceStatus: projectSourceLabels?.status,
