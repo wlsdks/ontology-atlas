@@ -1,5 +1,4 @@
 import { ringPlan } from "./rings";
-import { clusterFanPoint, FAN_CAPACITY, FAN_DOMAIN_LIMIT } from "./layout/cluster-fan";
 import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
 
 type LayoutTokens = Pick<
@@ -17,17 +16,12 @@ const AXIS_BIAS = 8;
 const PACKING = 0.9069;
 const ROOM_FILL = 0.92;
 const MAX_STEP = 5;
-const BALANCED_DOMAIN_LIMIT = 6;
 
 function spiralRadius(k: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0">): number {
   return tokens.spiralC * tokens.pitch * Math.sqrt(k + tokens.spiralK0);
 }
 
-function footprintOf(items: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0" | "elementRoom">, fan: boolean): number {
-  if (fan && items > 0 && items <= FAN_CAPACITY) {
-    const p = clusterFanPoint(items - 1, 0, tokens.pitch);
-    return Math.hypot(p.x, p.y) + tokens.elementRoom * tokens.pitch;
-  }
+function footprintOf(items: number, tokens: Pick<DialTokens, "pitch" | "spiralC" | "spiralK0" | "elementRoom">): number {
   return spiralRadius(Math.max(0, items - 1), tokens) + tokens.elementRoom * tokens.pitch;
 }
 
@@ -76,12 +70,8 @@ export function layoutDial(model: DialModel, order: readonly string[], tokens: L
   const P = tokens.pitch;
   const gap = tokens.angularGap * P;
   const directId = (domainId: string) => `${domainId}::direct`;
-  const smallMap = order.length <= FAN_DOMAIN_LIMIT;
-  const itemsOf = (id: string) => {
-    const d = model.domainById.get(id)!;
-    return d.capabilityIds.length + (smallMap ? Number(d.directElementIds.length > 0) : 1);
-  };
-  const footprint = new Map(order.map((id) => [id, footprintOf(itemsOf(id), tokens, smallMap)]));
+  const itemsOf = (id: string) => model.domainById.get(id)!.capabilityIds.length + 1;
+  const footprint = new Map(order.map((id) => [id, footprintOf(itemsOf(id), tokens)]));
 
   const weights = order.map((id) => 2 * footprint.get(id)! + gap);
   const totalWeight = weights.reduce((s, w) => s + w, 0) || 1;
@@ -116,19 +106,6 @@ export function layoutDial(model: DialModel, order: readonly string[], tokens: L
     previousMax = maxF;
   }
 
-  // A small map reads as neighbouring groups; usage stays in the domain caption.
-  if (order.length > 0 && order.length <= BALANCED_DOMAIN_LIMIT) {
-    let radius = tokens.hubClearance + Math.max(...footprint.values());
-    const need = (id: string) => 2 * Math.asin(Math.min(1, (footprint.get(id)! + gap / 2) / radius));
-    while (order.reduce((sum, id) => sum + need(id), 0) > Math.PI * 2 * FILL) radius *= GROWTH;
-    const remembered = [...(memory?.radiusByStep.values() ?? [])];
-    if (remembered.length && Math.max(...remembered) - Math.min(...remembered) < 1e-6) radius = Math.max(radius, ...remembered);
-    const members = order.map((id) => ({ id, angle: placed.get(id)!.angle, need: need(id) }));
-    relaxRing(members);
-    for (const member of members) placed.set(member.id, { ...placed.get(member.id)!, angle: member.angle, radius });
-    for (const ring of rings) ring.radius = radius;
-  }
-
   const positions = new Map<string, Point>();
   const clusters: DialCluster[] = [];
   const itemById = new Map<string, DialItem>();
@@ -149,9 +126,8 @@ export function layoutDial(model: DialModel, order: readonly string[], tokens: L
     const items: DialItem[] = sequence.map((itemId, k) => {
       const direct = itemId === directId(id);
       const elementIds = direct ? d.directElementIds : model.capabilityById.get(itemId)!.elementIds;
-      const fan = smallMap && sequence.length <= FAN_CAPACITY ? clusterFanPoint(k, at.angle, P) : null;
-      const phi = fan ? Math.atan2(fan.y, fan.x) : at.angle + k * GOLDEN;
-      const r = fan ? Math.hypot(fan.x, fan.y) : spiralRadius(k, tokens);
+      const r = spiralRadius(k, tokens);
+      const phi = at.angle + k * GOLDEN;
       const x = chip.x + Math.cos(phi) * r;
       const y = chip.y + Math.sin(phi) * r;
       const m = elementIds.length;

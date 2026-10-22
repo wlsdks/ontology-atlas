@@ -42,8 +42,8 @@ const LABELS: DialLabels = {
 const DRAW_CALLS = new Set(["fill", "stroke", "fillText", "strokeText", "fillRect", "strokeRect", "drawImage"]);
 
 function recordingContext() {
-  const calls: { name: string; args: unknown[]; font: string; composite: string; strokeStyle: string; clipped: boolean }[] = [];
-  const state: Record<string, unknown> = { globalCompositeOperation: "source-over", globalAlpha: 1, font: "10px sans-serif", lineWidth: 1, clipped: false };
+  const calls: { name: string; args: unknown[]; font: string; composite: string; strokeStyle: string }[] = [];
+  const state: Record<string, unknown> = { globalCompositeOperation: "source-over", globalAlpha: 1, font: "10px sans-serif", lineWidth: 1 };
   const stack: Record<string, unknown>[] = [];
   const methods: Record<string, (...args: unknown[]) => unknown> = {
     save: () => stack.push({ ...state }),
@@ -58,8 +58,7 @@ function recordingContext() {
       if (key in methods) return methods[key];
       if (key in target) return target[key];
       return (...args: unknown[]) => {
-        if (key === "clip") target.clipped = true;
-        calls.push({ name: key, args, font: String(target.font), composite: String(target.globalCompositeOperation), strokeStyle: String(target.strokeStyle), clipped: Boolean(target.clipped) });
+        calls.push({ name: key, args, font: String(target.font), composite: String(target.globalCompositeOperation), strokeStyle: String(target.strokeStyle) });
       };
     },
     set(target, key: string, value) {
@@ -147,7 +146,7 @@ describe("paintDialMarks", () => {
     expect(draws).toBeLessThanOrEqual(40 + 14 * D);
   });
 
-  it("batches distant domain plates without drawing overview axes", () => {
+  it("paints every plate as one path under the rings", () => {
     const { calls, marks } = frame(big, null);
     expect(marks.plates.length).toBeGreaterThan(1);
     const arcs = calls.findIndex((c) => c.name === "arc");
@@ -157,7 +156,8 @@ describe("paintDialMarks", () => {
     expect(plateArcs).toBe(marks.plates.length);
     expect(calls.slice(0, firstFill).filter((c) => c.name === "beginPath")).toHaveLength(1);
     expect(firstStroke).toBe(firstFill + 1);
-    expect(marks.rails).toHaveLength(0);
+    const ringArc = calls.findIndex((c, i) => i > firstStroke && c.name === "arc");
+    expect(ringArc).toBeGreaterThan(firstStroke);
   });
 
   it("knocks overlapping and repeated boxes out once, so no overlap is drawn back in", () => {
@@ -174,31 +174,22 @@ describe("paintDialMarks", () => {
     }
   });
 
-  it("keeps the project indigo and centres its count while all labels clear their ground", () => {
-    const { calls, marks } = frame(big, null, 1);
-    const project = marks.glyphs.find((g) => g.kind === "project")!;
-    expect(project.stroke).toBe(MAP.indigoBright);
-    expect(project.fill).toBe(MAP.nodeFillProject);
-    expect(marks.glyphs.filter((g) => g.kind === "domain").length).toBeGreaterThan(1);
-    expect(marks.rails).toHaveLength(0);
-    expect(calls.some((c) => c.name === "fillText" && c.args[0] === project.count && c.args[1] === project.x && c.args[2] === project.y)).toBe(true);
+  it("stops the rings at every name and count box, and strokes every name in the ground", () => {
+    const { calls, marks } = frame(big, "d0", 1);
+    const clip = calls.findIndex((c) => c.name === "clip");
+    expect(calls[clip]!.args).toEqual(["evenodd"]);
+    const opened = calls.slice(0, clip).findLastIndex((c) => c.name === "beginPath");
+    const rects = calls.slice(opened, clip).filter((c) => c.name === "rect").slice(1).map((c) => c.args as number[]);
+    for (const m of [...marks.texts, ...marks.extraTexts, ...marks.numerals]) {
+      const cx = (m.box.minX + m.box.maxX) / 2;
+      const cy = (m.box.minY + m.box.maxY) / 2;
+      expect(rects.filter(([x, y, w, h]) => cx >= x! && cx < x! + w! && cy >= y! && cy < y! + h!)).toHaveLength(1);
+    }
+    expect(calls.findIndex((c, i) => i > clip && c.name === "arc")).toBeGreaterThan(clip);
     const ground = mixOver(MAP.canvasBgNear, MAP.canvasBgNear);
     for (const t of marks.texts.filter((m) => m.parts === null)) {
       expect(calls.some((c) => c.name === "strokeText" && c.args[0] === t.text && c.strokeStyle === ground)).toBe(true);
     }
-  });
-
-  it("cuts ownership and dependency strokes out of label ground without clipping the labels", () => {
-    const { calls, marks } = frame(overviewModel(4, 12, 2), null, 1);
-    expect(marks.branches.length).toBeGreaterThan(0);
-    expect(marks.strips.length).toBeGreaterThan(0);
-    const firstDisc = calls.findIndex((c) => c.name === "arc");
-    const paths = calls.slice(0, firstDisc).filter((c) => c.name === "stroke" || c.name === "fill");
-    expect(paths.length).toBeGreaterThan(0);
-    expect(paths.every((c) => c.clipped)).toBe(true);
-    const text = calls.filter((c) => c.name === "fillText");
-    expect(text.length).toBeGreaterThan(0);
-    expect(text.every((c) => !c.clipped)).toBe(true);
   });
 
   it("batches element squares per alpha step", () => {

@@ -1,4 +1,5 @@
-import { scaledLabelFont, TABULAR_DIGITS } from "../../render/labels";
+import { lerpColorHex } from "../../render/grid";
+import { TABULAR_DIGITS } from "../../render/labels";
 import { draw as drawNodeShape, type NodeShapeTokens } from "../../render/node-shapes";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { mixOver } from "../ink";
@@ -142,19 +143,12 @@ function paintGlyph(ctx: CanvasRenderingContext2D, g: GlyphMark, map: OntologyMa
     {
       kind: g.kind, screenX: g.x, screenY: g.y, screenRadius: g.r, farT: 0, egoState: g.egoState,
       fill, stroke: g.stroke ?? kindStroke(g.kind, map), lineWidth: LINE_WIDTH[g.kind], dash: [], hub: false,
-      sheenTop: fill, countLabel: g.kind === "project" ? null : g.count, decorations: false,
+      sheenTop: lerpColorHex(fill, map.nodeSheenTint, map.nodeSheenBlend), countLabel: g.count,
       isHovered: g.hovered, hoverEmphasis: 1, selectionPulse: g.selectionPulse, agentFocus: g.agentFocus,
       spotlightRing: null, now: o.now, reducedMotion: o.reducedMotion, glyphStyle: "fill",
     },
     tokens,
   );
-  if (g.kind === "project" && g.count !== null) {
-    ctx.font = scaledLabelFont("project", 1);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillStyle = g.egoState === "dim" ? mixOver(map.numeralFace, map.canvasBgNear, map.egoRestAlpha) : map.numeralFace;
-    ctx.fillText(g.count, g.x, g.y);
-  }
   if (g.stalePip) {
     ctx.beginPath();
     ctx.arc(g.x + g.r * 0.75, g.y - g.r * 0.75, Math.max(2, g.r * 0.22), 0, Math.PI * 2);
@@ -233,14 +227,10 @@ export function knockoutRects(boxes: readonly Box[]): { x: number; y: number; w:
   return out;
 }
 
-export function dialTextGround(marks: DialFrameMarks): Box[] {
-  return marks.clipTextGround ? [...marks.texts, ...marks.extraTexts, ...marks.numerals].map((m) => m.box) : [];
-}
-
 function knockout(ctx: CanvasRenderingContext2D, marks: DialFrameMarks): void {
   ctx.beginPath();
   ctx.rect(-1e5, -1e5, 2e5, 2e5);
-  for (const r of knockoutRects(dialTextGround(marks))) ctx.rect(r.x, r.y, r.w, r.h);
+  for (const r of knockoutRects([...marks.texts, ...marks.extraTexts, ...marks.numerals].map((m) => m.box))) ctx.rect(r.x, r.y, r.w, r.h);
   ctx.clip("evenodd");
 }
 
@@ -260,23 +250,6 @@ export function paintDialMarks(ctx: CanvasRenderingContext2D, marks: DialFrameMa
     ctx.lineWidth = 1;
     ctx.strokeStyle = inks[plates[0]!.rim]!;
     ctx.stroke();
-  }
-
-  if (marks.clipTextGround) {
-    ctx.save();
-    knockout(ctx, marks);
-  }
-  if (marks.branches.length > 0) {
-    ctx.lineWidth = 1;
-    for (const list of groupBy(marks.branches, (b) => String(b.ink)).values()) {
-      ctx.beginPath();
-      for (const b of list) {
-        ctx.moveTo(b.a.x, b.a.y);
-        ctx.quadraticCurveTo(b.c.x, b.c.y, b.b.x, b.b.y);
-      }
-      ctx.strokeStyle = inks[list[0]!.ink]!;
-      ctx.stroke();
-    }
   }
 
   if (marks.rails.length > 0) {
@@ -317,7 +290,6 @@ export function paintDialMarks(ctx: CanvasRenderingContext2D, marks: DialFrameMa
     ctx.fillStyle = inks[list[0]!.ink]!;
     ctx.fill();
   }
-  if (marks.clipTextGround) ctx.restore();
 
   for (const list of groupBy(marks.discs, (d) => `${d.fill}|${d.rim}|${d.dashed ? 1 : 0}|${d.lineWidth}`).values()) {
     ctx.beginPath();

@@ -4,8 +4,8 @@
     --map-dial-hub-clearance: 78;
     --map-dial-orphan-pitch: 0.5;
     --map-dial-flow-rest-base: 0.9;
-    --map-dial-flow-rest-gain: 0.12;
-    --map-dial-flow-rest-max: 1.5;
+    --map-dial-flow-rest-gain: 1.15;
+    --map-dial-flow-rest-max: 4.6;
     --map-dial-flow-focus-base: 1;
     --map-dial-flow-focus-gain: 1.5;
     --map-dial-flow-focus-max: 6;
@@ -18,8 +18,8 @@
     --map-dial-numeral-halo-px: 4;
     --map-dial-numeral-gap-px: 5;
     --map-dial-rest-numbers-share: 0.6;
-    --map-dial-rest-numbers-min: 0;
-    --map-dial-rest-numbers-max: 0;
+    --map-dial-rest-numbers-min: 4;
+    --map-dial-rest-numbers-max: 9;
     --map-dial-rest-number-min-count: 2;
     --map-dial-pin-min-px: 6;
     --map-dial-pins-max: 12;
@@ -34,8 +34,8 @@
     --map-dial-disc-glyph-px: 7.5;
     --map-dial-chip-min-px: 8;
     --map-dial-chip-max-px: 17;
-    --map-dial-hub-min-px: 28;
-    --map-dial-hub-max-px: 40;
+    --map-dial-hub-min-px: 14;
+    --map-dial-hub-max-px: 34;
     --map-dial-name-max-px: 160;
     --map-dial-ledger-row-px: 14;
     --map-dial-ledger-gap-px: 24;
@@ -64,10 +64,11 @@
     --map-dial-per-end-cap-ends: 12;
     --map-dial-stub-free-share: 0.16;
     --map-dial-label-scale: 1;
-    --map-dial-fill-domain: #26292f;
-    --map-dial-fill-capability: #101215;
-    --map-dial-stroke-domain: #b3b7bf;
-    --map-dial-stroke-capability: #9399a3;
-    --map-dial-stroke-element: #737b86;
+    --map-dial-fill-domain: #22222c;
+    --map-dial-fill-capability: #1d1d26;
+    --map-dial-stroke-domain: #a2a2ae;
+    --map-dial-stroke-capability: #84848c;
+    --map-dial-stroke-element: #666672;
+    --map-dial-ring: #666672;
   }
 }

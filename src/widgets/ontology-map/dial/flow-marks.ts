@@ -3,7 +3,6 @@ import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
-import { FAN_DOMAIN_LIMIT } from "./layout/cluster-fan";
 import { aggregateLinks, domainOfEnd, restBudget, type CrossingGuard, type DialLink } from "./links";
 import type { Box, DialAttention, DialChordLight, DialMarks, DialModel, DialScene, DialTokens, Point, StripMark } from "./types";
 
@@ -553,7 +552,7 @@ function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Poin
   const dv = domainOfEnd(model, l.v);
   const pivotCluster = du === dv ? scene.clusterByDomain.get(du) : undefined;
   const pivot = pivotCluster ? input.nodeScreen(du) ?? input.toScreen(pivotCluster.chip.x, pivotCluster.chip.y) : null;
-  const sameRing = scene.clusters.length > FAN_DOMAIN_LIMIT && du !== dv && scene.clusterByDomain.get(du)?.step === scene.clusterByDomain.get(dv)?.step;
+  const sameRing = du !== dv && scene.clusterByDomain.get(du)?.step === scene.clusterByDomain.get(dv)?.step;
   return routeControl(a.p, b.p, hub, pivot, sameRing);
 }
 
@@ -630,7 +629,7 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
   const w = rampedRestWidth(tokens, l.total, maxTotal);
   emit(input, out, {
     key: l.key, role: "chord", p0: rest.p0, c: C, p1: rest.p1, w0: w, w1: rest.twoWay ? w : w * tokens.flowTaper, ink: ink(rest.from, false),
-    headStart: Boolean(attn.domainId) && rest.twoWay, headEnd: Boolean(attn.domainId), trimStart: rest.trimStart, trimEnd: rest.trimEnd,
+    headStart: rest.twoWay, headEnd: true, trimStart: rest.trimStart, trimEnd: rest.trimEnd,
     dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(rest.from, true), slots: REST_SLOTS,
   });
 }
