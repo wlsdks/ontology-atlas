@@ -192,7 +192,6 @@ export interface NodeShapeDrawState {
      * `"fill"`.
      */
     glyphStyle?: "fill" | "line";
-    decorations?: boolean;
     /**
      * 3D view — **depth shading** strength, 0..1. At 0 (the default) not a single
      * extra stroke is issued.
@@ -705,7 +704,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // Domain chip-leg pin ticks — circuit-only detail, fades out with altitude
     // (prototype: `s > 6 && farT < 0.9`, alpha `1 - smoothstep(0.55,0.9,farT)`).
     // Far-side detail factor also folds the tick alpha on the rear hemisphere, continuously.
-    if (state.decorations !== false && kind === "domain" && egoState !== "dim" && detail > 0.01) {
+    if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
         const s = r * DOMAIN_HALF_EXTENT_RATIO;
         if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
             ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT)) * detail;
@@ -757,7 +756,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     // `ui/frame-draw/node-visual.ts#resolveNodeVisual` for kind==="project", not
     // here) — this block only adds the inner offset hairline + the 4-direction
     // chassis pin ticks, both fading out toward far field like domain's pins.
-    if (state.decorations !== false && kind === "project" && egoState !== "dim") {
+    if (kind === "project" && egoState !== "dim") {
         if (r > PROJECT_DECOR_MIN_RADIUS && farT < PROJECT_DECOR_MAX_FAR_T) {
             const decorAlpha = 1 - smoothstep(0.55, 0.9, farT);
             strokeKindOutline(ctx, "project", x, y, r * PROJECT_HAIRLINE_INNER_RATIO, farT, tokens.projectHairlineInner, 1, decorAlpha);

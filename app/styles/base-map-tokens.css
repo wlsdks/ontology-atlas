@@ -5,7 +5,7 @@
    */
   :root {
     /* 2.1 Node surface (fill/stroke tier by kind) */
-    --map-node-fill-project: #27283c;
+    --map-node-fill-project: #1c1c22;
     --map-node-fill-domain: #191920;
     --map-node-fill-capability: #17171d;
     --map-node-fill-element: #15151a;

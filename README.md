@@ -54,7 +54,7 @@ reject each change as a Markdown diff.
 </tr>
 </table>
 
-The Flat map distinguishes the project from neutral domain groups. Hover highlights a group and its connections; selecting reveals relationship direction and counts. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
+The Flat map places domains on usage rings around the project and shows counted dependencies at rest. Hover highlights connections; selecting reveals needs and used-by relationships. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
 
 ## Quick start
 

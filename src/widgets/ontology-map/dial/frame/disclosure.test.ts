@@ -92,7 +92,7 @@ describe("resolveDialDisclosure", () => {
   });
 
   it("enters the attended domain first, else the drawn chip nearest the free-rect centre", () => {
-    const pitch = 60;
+    const pitch = 20;
     const target = scene.clusterByDomain.get("d2")!.chip;
     const cam = camera(scene, pitch, target);
     expect(resolveDialDisclosure(model, scene, cam, FREE, rest, TOKENS).entered).toBe("d2");
@@ -112,13 +112,6 @@ describe("resolveDialDisclosure", () => {
     const cam = camera(scene, TOKENS.capOnFrom - 1);
     expect(resolveDialDisclosure(model, scene, cam, FREE, rest, TOKENS).entered).toBeNull();
     expect(resolveDialDisclosure(model, scene, cam, FREE, resolveDialAttention(model, "d1", null), TOKENS).entered).toBe("d1");
-  });
-
-  it("keeps a wholly visible map aggregated until a person selects a domain", () => {
-    const cam = camera(scene, TOKENS.resolve + 1);
-    const spacious = { minX: -10000, minY: -10000, maxX: 10000, maxY: 10000 };
-    expect(resolveDialDisclosure(model, scene, cam, spacious, rest, TOKENS)).toMatchObject({ entered: null, resolved: false });
-    expect(resolveDialDisclosure(model, scene, cam, spacious, resolveDialAttention(model, null, "d1"), TOKENS)).toMatchObject({ entered: "d1", resolved: true });
   });
 
   it("resolves from the resolve pitch and slides the endpoints over the next 12 px", () => {

@@ -235,22 +235,22 @@ function layoutLedger(
     if (!swapped) break;
   }
 
-  const rowBox = (width: number, k: number): Box => {
+  const rowBox = (width: number, y: number): Box => {
     const x0 = side === "right" ? colX : colX - width;
-    return { minX: x0, maxX: x0 + width, minY: top + rowPx * k, maxY: top + rowPx * (k + 1) };
+    return { minX: x0, maxX: x0 + width, minY: y - rowPx / 2, maxY: y + rowPx / 2 };
   };
   const rows: LedgerRow[] = [];
   const leaders: LedgerLeader[] = [];
   order.forEach((disc, k) => {
     const y = slotY(k);
-    rows.push({ id: disc.id, text: disc.label, x: colX, y, box: rowBox(widths.get(disc.id)!, k) });
+    rows.push({ id: disc.id, text: disc.label, x: colX, y, box: rowBox(widths.get(disc.id)!, y) });
     const dx = anchorX - disc.x;
     const dy = y - disc.y;
     const len = Math.hypot(dx, dy) || 1;
     leaders.push({ id: disc.id, x0: disc.x + (dx / len) * disc.r, y0: disc.y + (dy / len) * disc.r, x1: anchorX, y1: y });
   });
   const moreRow = moreText
-    ? { count: more, row: { id: input.domainId, text: moreText, x: colX, y: slotY(order.length), box: rowBox(input.measureText(moreText, input.font), order.length) } }
+    ? { count: more, row: { id: input.domainId, text: moreText, x: colX, y: slotY(order.length), box: rowBox(input.measureText(moreText, input.font), slotY(order.length)) } }
     : null;
   return { domainId: input.domainId, side, align, rows, leaders, more: moreRow, total: input.discs.length };
 }

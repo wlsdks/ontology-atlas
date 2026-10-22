@@ -61,7 +61,7 @@ function run({ names = ["Payments", "Catalog", "Shipping", "Accounts"], caps = 0
   for (const c of scene.clusters) for (const it of c.items) discs.set(it.id, { ...toScreen(it.x, it.y), r: 4 });
   const input: LabelMarksInput = {
     model, scene, labels: LABELS, evidence: null, attention: REST, tokens: TOKENS,
-    inks: { project: "#1", domain: "#2", domainReceded: "#3", domainAttended: "#4", units: "#5", stale: "#6", capability: "#7", needs: "#8", usedBy: "#9", orphans: "#a", element: "#c", halo: "#d" },
+    inks: { project: "#1", domain: "#2", domainReceded: "#3", domainAttended: "#4", units: "#5", stale: "#6", capability: "#7", needs: "#8", usedBy: "#9", orphans: "#a", ring: "#b", element: "#c", halo: "#d" },
     ink: (c) => { const i = inks.indexOf(c); return i >= 0 ? i : inks.push(c) - 1; },
     measureText: measure, scale: 1, toScreen,
     hub: { x: 0, y: 0, r: 20 }, chips, discs, capAlpha: caps > 0 ? 1 : 0, lines: [], occupied: [], freeRect: WIDE, ledgerIds: new Set(),
@@ -237,23 +237,27 @@ describe("buildLabelMarks", () => {
     expect(all.some((t) => t.role === "units" || t.role === "ring")).toBe(false);
   });
 
-  it("attaches the usage band to each domain, below its counts and clear of names", () => {
-    const { texts, extraTexts } = run();
-    const usage = extraTexts.filter((t) => t.role === "ring");
-    expect(usage).toHaveLength(4);
-    for (const line of usage) {
-      const units = texts.find((t) => t.id === line.id && t.role === "units")!;
-      expect(line.text).toBe("used by 2–3");
-      expect(line.x).toBe(units.x);
-      expect(line.box.minY).toBeGreaterThan(units.box.maxY);
-      expect(texts.some((t) => overlaps(t.box, line.box))).toBe(false);
-    }
+  it("labels a ring near its axis with a halo, clear of names", () => {
+    const { extraTexts } = run();
+    const ring = extraTexts.find((t) => t.role === "ring");
+    expect(ring?.text).toBe("used by 2–3");
+    expect(ring?.halo).not.toBeNull();
+    expect(Math.abs(Math.atan2(ring!.y, ring!.x) - -Math.PI / 4)).toBeLessThan(1);
   });
 
-  it("omits a usage caption when its domain has no free caption space", () => {
+  it("leaves the ring label out when every slot on its circle crosses a line", () => {
     const lines: Point[][] = [];
     for (let y = -600; y <= 600; y += 5) lines.push([{ x: -600, y }, { x: 600, y }]);
     expect(run({ lines }).extraTexts.some((t) => t.role === "ring")).toBe(false);
+  });
+
+  it("moves the ring label around its circle when every slot on its axis crosses a line", () => {
+    const lines: Point[][] = [];
+    for (let y = -600; y <= 120; y += 5) lines.push([{ x: -600, y }, { x: 600, y }]);
+    const ring = run({ lines }).extraTexts.find((t) => t.role === "ring");
+    expect(ring?.text).toBe("used by 2–3");
+    expect(ring!.box.minY).toBeGreaterThan(120);
+    expect(Math.abs(Math.hypot(ring!.x, ring!.y + 11 * 0.9) - 300)).toBeLessThan(40);
   });
 
   it("names capabilities only from cap-name px of pitch, skipping the ledger", () => {
