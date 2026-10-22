@@ -1,5 +1,4 @@
 import { tierNameAlpha } from "../morph/tier-assembly";
-import { FAN_CAPACITY, FAN_DOMAIN_LIMIT } from "./layout/cluster-fan";
 import { scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { mixOver } from "./ink";
 import { dialChipRadiusPx, dialDiscRadiusPx } from "./tokens";
@@ -18,6 +17,7 @@ export interface LabelInks {
   needs: string;
   usedBy: string;
   orphans: string;
+  ring: string;
   element: string;
   halo: string;
 }
@@ -78,7 +78,12 @@ const HUB_CLEAR_PX = 14;
 const NAME_STEPS_PX = [0, 9, 18];
 const HUB_NAME_STEPS_PX = [...NAME_STEPS_PX, 27, 36];
 const REST_REACH_PX = 48;
-
+const RING_OFFSETS = [0, 0.18, -0.18, 0.36, -0.36, 0.6, -0.6, 0.9, -0.9];
+const CIRCLE_SLOTS = 36;
+const RING_TRIES = [
+  ...RING_OFFSETS,
+  ...Array.from({ length: CIRCLE_SLOTS }, (_, i) => ((i + 1) * 2 * Math.PI) / CIRCLE_SLOTS - Math.PI).sort((a, b) => Math.abs(a) - Math.abs(b) || a - b),
+];
 
 export function overlaps(a: Box, b: Box): boolean {
   return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
@@ -391,7 +396,6 @@ function clusterOrder(input: LabelMarksInput): DialCluster[] {
 
 function nameReach(ctx: Ctx, cluster: DialCluster, chip: Circle): number {
   let reach = chip.r + NAME_GAP_PX;
-  if (ctx.input.scene.clusters.length <= FAN_DOMAIN_LIMIT && cluster.items.length <= FAN_CAPACITY) return reach;
   if (ctx.input.capAlpha <= 0.3) return reach;
   for (const item of cluster.items) {
     const d = ctx.rest.discs.get(item.id);
@@ -409,12 +413,8 @@ function domainNames(ctx: Ctx): void {
     if (ctx.rest.away.has(id)) continue;
     const chip = ctx.rest.chips.get(id)!;
     const block = domainLabelBlock(id, input.model, input.labels, input.evidence, input.measureText, input.tokens);
-    const fan = input.scene.clusters.length <= FAN_DOMAIN_LIMIT && cluster.items.length > 0 && cluster.items.length <= FAN_CAPACITY;
     const reach = nameReach(ctx, cluster, chip);
-    const outward = Math.atan2(chip.y - centre.y, chip.x - centre.x);
-    const angles = input.scene.clusters.length <= FAN_DOMAIN_LIMIT && cluster.items.length <= FAN_CAPACITY
-      ? nameCandidates(Math.sin(outward) > 0.6 ? 0 : Math.PI / 2)
-      : nameCandidates(outward);
+    const angles = nameCandidates(Math.atan2(chip.y - centre.y, chip.x - centre.x));
     const chipInside = inside({ minX: chip.x - chip.r, minY: chip.y - chip.r, maxX: chip.x + chip.r, maxY: chip.y + chip.r }, input.freeRect);
     const around = (as: readonly number[]) => NAME_STEPS_PX.flatMap((step) => as.map((a) => placeBlock(block, a, chip.x + Math.cos(a) * (reach + step), chip.y + Math.sin(a) * (reach + step))));
     const tries = [
@@ -426,9 +426,6 @@ function domainNames(ctx: Ctx): void {
       pick = pickOnce(ctx, `domain:${id}`, tries, (t) =>
         pass === 0 ? t.units && t.plan.unitsBox !== null && free(ctx, t.plan.box) && !crossesBox(input.lines, t.plan.box)
         : !t.units && (pass === 1 || !t.between) && free(ctx, t.plan.nameBox) && (pass === 2 || !crossesBox(input.lines, t.plan.nameBox)));
-      if (pass === 0 && pick < 0 && fan && chipInside) {
-        pick = pickOnce(ctx, `domain:${id}`, tries, (t) => t.units && t.plan.unitsBox !== null && free(ctx, t.plan.box));
-      }
     }
     if (pick < 0) continue;
     const { plan, units } = tries[pick]!;
@@ -453,21 +450,32 @@ function domainNames(ctx: Ctx): void {
   }
 }
 
-function domainUsageLabels(ctx: Ctx): void {
+function ringLabels(ctx: Ctx): void {
   const { input } = ctx;
-  if (!input.labels) return;
-  const font = scaledLabelFont("element", input.tokens.labelScale);
-  const size = scaledLabelFontSize("element", input.tokens.labelScale);
-  for (const cluster of input.scene.clusters) {
-    const anchor = ctx.out.texts.find((t) => t.id === cluster.domainId && t.role === "units");
-    const band = input.scene.rings.find((r) => r.step === cluster.step);
-    if (!anchor || !band) continue;
-    const text = input.labels.ring(band.min, band.max);
-    const y = anchor.y + size * 2;
-    const box = textBox(input.measureText(text, font), anchor.x, y, anchor.align, size, 2);
-    const fan = input.scene.clusters.length <= FAN_DOMAIN_LIMIT && cluster.items.length > 0 && cluster.items.length <= FAN_CAPACITY;
-    if (!free(ctx, box) || (!fan && crossesBox(input.lines, box))) continue;
-    ctx.out.extraTexts.push({ id: cluster.domainId, role: "ring", text, x: anchor.x, y, align: anchor.align, font, ink: anchor.ink, box, parts: null, halo: input.ink(input.inks.halo) });
+  const { labels, scene } = input;
+  if (!labels || scene.rings.length === 0) return;
+  const ls = input.tokens.labelScale;
+  const font = scaledLabelFont("element", ls);
+  const fontPx = scaledLabelFontSize("element", ls);
+  const centre = input.toScreen(0, 0);
+  for (const ring of scene.rings) {
+    const text = labels.ring(ring.min, ring.max);
+    const width = input.measureText(text, font);
+    const tries = RING_TRIES.map((da) => {
+      const a = scene.axisAngle + da;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      const align: CanvasTextAlign = ca < -0.3 ? "right" : ca > 0.3 ? "left" : "center";
+      const x = centre.x + ca * ring.radius * input.scale + (align === "right" ? -4 : align === "left" ? 4 : 0);
+      const y = centre.y + sa * ring.radius * input.scale - fontPx * 0.9;
+      return { x, y, align, box: textBox(width, x, y, align, fontPx, 2) };
+    });
+    const key = `ring:${ring.step}`;
+    const pick = pickOnce(ctx, key, tries, (t) => free(ctx, t.box) && !crossesBox(input.lines, t.box));
+    if (pick < 0) continue;
+    const { x, y, align, box } = tries[pick]!;
+    ctx.out.extraTexts.push({ id: null, role: "ring", text, x, y, align, font, ink: input.ink(input.inks.ring), box, parts: null, halo: input.ink(input.inks.halo) });
+    ctx.held.set(key, pick);
     claim(ctx, box);
   }
 }
@@ -577,7 +585,7 @@ export function buildLabelMarks(input: LabelMarksInput, out: LabelMarksOut): voi
   projectName(ctx);
   if (input.hub) marks.push(circleBox(input.hub, HUB_CLEAR_PX));
   domainNames(ctx);
-  domainUsageLabels(ctx);
+  ringLabels(ctx);
   orphanCaption(ctx);
   capabilityNames(ctx);
   elementNames(ctx);

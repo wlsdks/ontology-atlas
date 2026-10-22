@@ -12,8 +12,8 @@ const values = (): Map<string, string> => {
 describe("resolveDialTokens", () => {
   it("fills every key and borrows the attended name ink", () => {
     const tokens = resolveDialTokens((v) => values().get(v) ?? "");
-    expect(Object.keys(tokens)).toHaveLength(DIAL_TOKEN_SPECS.length + DIAL_INK_SPECS.length + 1);
-    expect(tokens.strokeElement).toBe("#666672");
+    expect(Object.keys(tokens)).toHaveLength(71);
+    expect(tokens.ring).toBe("#666672");
     expect(tokens.pitch).toBe(1);
     expect(tokens.labelScale).toBe(64);
     expect(tokens.attendedNameInk).toBe("#ececf0");
@@ -36,8 +36,8 @@ describe("resolveDialTokens", () => {
     expect(() => resolveDialTokens((v) => bad.get(v) ?? "")).toThrow(/--map-dial-pitch/);
     const ink = values();
     ink.delete("--map-panel-text-primary");
-    ink.delete("--map-dial-stroke-element");
-    expect(() => resolveDialTokens((v) => ink.get(v) ?? "")).toThrow(/--map-dial-stroke-element, --map-panel-text-primary/);
+    ink.delete("--map-dial-ring");
+    expect(() => resolveDialTokens((v) => ink.get(v) ?? "")).toThrow(/--map-dial-ring, --map-panel-text-primary/);
   });
 });
 

@@ -6,7 +6,7 @@ import { createMeasureText } from "../fit";
 import { inkIndex, resolveDialInks, type DialInks } from "../ink";
 import { dialPlacementLine, dialPlacementOf, type DialPlacementState } from "../placement";
 import { buildDialMarks, emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "./marks";
-import { dialTextGround, paintDialMarks } from "./paint";
+import { paintDialMarks } from "./paint";
 import type {
   Box,
   DialAttention,
@@ -129,7 +129,6 @@ function resetMarks(m: DialFrameMarks): void {
   m.numerals.length = 0;
   m.leaders.length = 0;
   m.plates.length = 0;
-  m.branches.length = 0;
   m.extraTexts.length = 0;
 }
 
@@ -153,8 +152,7 @@ function evidenceOf(model: DialModel, evidence: ReadonlyMap<string, DialEvidence
 export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   const { model, scene } = input.dial;
   const attention = resolveDialAttention(model, null, input.focusedNodeId);
-  const inkAttention = input.hoveredNodeId === null || input.hoveredNodeId === input.focusedNodeId
-    ? attention : resolveDialAttention(model, input.hoveredNodeId, null);
+  const inkAttention = input.hoveredNodeId === null ? attention : resolveDialAttention(model, input.hoveredNodeId, input.focusedNodeId);
   const { inkMix, previous } = focusInkMix(input.worldKey, inkAttention, input.now, input.reducedMotion);
   const chordPresence = dialChordPresence(input.dialTokens, input.domainAppear);
   const camera = { scale: input.scale, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight, toScreen: input.toScreen };
@@ -366,14 +364,13 @@ function segmentEntersBox(a: Point, b: Point, box: Box): boolean {
 export function namesCrossed(lines: readonly (readonly Point[])[], texts: readonly {
     text: string;
     box: Box;
-}[], ground: ReadonlySet<Box> = new Set()): {
+}[]): {
     count: number;
     names: string[];
 } {
     const { segs, grid } = bucket(lines);
     const crossed = new Set<string>();
     for (const t of texts) {
-        if (ground.has(t.box)) continue;
         const box = { minX: t.box.minX + NAME_INSET_PX, maxX: t.box.maxX - NAME_INSET_PX, minY: t.box.minY + NAME_INSET_PX, maxY: t.box.maxY - NAME_INSET_PX };
         const cand = new Set<number>();
         for (let gx = Math.floor(box.minX / CELL); gx <= Math.floor(box.maxX / CELL); gx += 1) {
@@ -451,7 +448,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
         strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),
         ledger,
         crossings: countCrossings(lines, viewportWidth, viewportHeight),
-        namesCrossed: namesCrossed(lines, allTexts, new Set(dialTextGround(marks))).count,
+        namesCrossed: namesCrossed(lines, allTexts).count,
         textOverlaps: countTextOverlaps(allTexts),
     };
 }

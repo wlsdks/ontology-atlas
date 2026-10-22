@@ -1,6 +1,4 @@
 import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
-import { clusterBranches, type BranchMark } from "./branches";
-import { FAN_DOMAIN_LIMIT } from "../layout/cluster-fan";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildFlowMarks, type FlowMarksInput, type FlowMarksResult } from "../flow-marks";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "../ink";
@@ -28,7 +26,7 @@ import type {
 
 interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
 
-export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[]; branches: BranchMark[]; clipTextGround: boolean }
+export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[] }
 
 export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
 
@@ -92,7 +90,7 @@ const LINE_SAMPLES = 12;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
 export function emptyDialFrameMarks(): DialFrameMarks {
-  return { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [], plates: [], extraTexts: [], branches: [], clipTextGround: false };
+  return { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [], plates: [], extraTexts: [] };
 }
 
 export function dialHubRadiusPx(tokens: DialTokens, mapTokens: Pick<OntologyMapTokens, "radiusProject">, scale: number): number {
@@ -122,6 +120,7 @@ function labelInks(inks: DialInks): LabelInks {
     needs: inks.needs,
     usedBy: inks.usedBy,
     orphans: inks.units,
+    ring: inks.units,
     element: inks.units,
     halo: inks.bg,
   };
@@ -179,8 +178,7 @@ function clusterNamesFit(input: DialMarksInput, cluster: DialCluster, font: stri
 }
 
 const NAMED_ROLES = new Set<TextMark["role"]>(["domain", "capability", "ledger"]);
-const REINKED_ROLES = new Set<TextMark["role"]>(["project", "domain", "units", "ring", "capability", "ledger"]);
-const PARTNER_INK_SHARE = 0.62;
+const REINKED_ROLES = new Set<TextMark["role"]>(["domain", "units", "capability", "ledger"]);
 
 function unionBox(a: Box, b: Box): Box {
   return { minX: Math.min(a.minX, b.minX), minY: Math.min(a.minY, b.minY), maxX: Math.max(a.maxX, b.maxX), maxY: Math.max(a.maxY, b.maxY) };
@@ -192,11 +190,9 @@ function hoverOf(input: DialMarksInput, attention: DialAttention | null): DialAt
 
 function hoverInk(input: DialMarksInput, a: DialAttention, role: TextMark["role"], id: string): string {
   const { inks, model } = input;
-  if (role === "project") return a.domainId === null ? inks.projectLabel : inks.domainLabelReceded;
-  if (role === "domain" || role === "units" || role === "ring") {
+  if (role === "domain" || role === "units") {
     if (receded(a, id)) return inks.domainLabelReceded;
-    if (a.domainId !== null && a.domainId !== id) return mixOver(role !== "domain" ? inks.units : inks.domainLabel, inks.bg, PARTNER_INK_SHARE);
-    if (role !== "domain") return inks.units;
+    if (role === "units") return inks.units;
     return a.domainId === id ? inks.domainLabelAttended : inks.domainLabel;
   }
   if (id === a.capabilityId) return inks.domainLabel;
@@ -215,7 +211,7 @@ function reinkForHover(input: DialMarksInput, out: DialFrameMarks, ink: (color: 
     if (part === 1) return receded(a, id) ? input.inks.domainLabelReceded : input.inks.stale;
     return hoverInk(input, a, role, id);
   };
-  for (const t of [...out.texts, ...out.extraTexts]) {
+  for (const t of out.texts) {
     if (t.id === null || !REINKED_ROLES.has(t.role)) continue;
     const id = t.id;
     const mix = (rest: number, part: number) => ink(crossfadeInk(shift(was, t.role, id, out.inks[rest]!, part), shift(now, t.role, id, out.inks[rest]!, part), input.inkMix));
@@ -316,7 +312,6 @@ function restingObstacles(
 
 export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): DialMarksResult {
   const { model, scene, tokens, mapTokens: map, inks, attention: attn, inkAttention: hov, disclosure } = input;
-  out.clipTextGround = scene.clusters.length <= FAN_DOMAIN_LIMIT;
   const W = input.viewportWidth;
   const H = input.viewportHeight;
   const s = input.scale;
@@ -371,6 +366,12 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     }
   }
 
+  if (scene.rings.length > 0) {
+    const centre = input.toScreen(0, 0);
+    const ringInk = ink(inks.ring);
+    for (const ring of scene.rings) out.rails.push({ ink: ringInk, cx: centre.x, cy: centre.y, r: ring.radius * s, a0: 0, a1: Math.PI * 2 });
+  }
+
   const occupied: Box[] = [];
   if (hub) occupied.push(circleBox(hub, 3));
   for (const c of chips.values()) occupied.push(circleBox(c, 2));
@@ -391,7 +392,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
 
   const entered = disclosure.entered;
   const labelInput = {
-    model, scene, labels: input.labels, evidence: input.evidence, attention: attn, tokens, inks: { ...labelInks(inks), project: attn.domainId === null ? inks.projectLabel : inks.domainLabelReceded }, ink, measureText: input.measureText,
+    model, scene, labels: input.labels, evidence: input.evidence, attention: attn, tokens, inks: labelInks(inks), ink, measureText: input.measureText,
     scale: s, toScreen: input.toScreen, hub, chips, discs, capAlpha, lines: resting.lines, freeRect: input.freeRect, elementLabel: input.elementLabel,
     hubRest, hubLines: input.hubLines,
   };
@@ -522,7 +523,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
         else if (isUser) rim = inks.usedBy;
         else if (evidence && !dimmed) {
           const state = evidence.stateOf(it.id);
-          if (state === "stale" && hov.domainId !== null) rim = mixOver(inks.stale, inks.bg, capAlpha);
+          if (state === "stale") rim = mixOver(inks.stale, inks.bg, capAlpha);
           else if (state === "unknown") {
             rim = mixOver(inks.unknownRim, inks.bg, capAlpha);
             dashed = true;
@@ -583,8 +584,8 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   const pulseOf = (id: string) => (input.selectionPulse && input.selectionPulse.nodeId === id ? { scaleFactor: input.selectionPulse.scaleFactor, alpha: input.selectionPulse.alpha } : null);
   if (hub && model.projectId) {
     out.glyphs.push({
-      id: model.projectId, kind: "project", x: hub.x, y: hub.y, r: hub.r, egoState: hov.domainId === null ? "normal" : "dim",
-      fill: map.nodeFillProject, stroke: hov.domainId === null ? map.indigoBright : mixOver(map.indigoBright, inks.bg, restAlpha), hovered: input.hoveredNodeId === model.projectId, agentFocus: input.agentFocusNodeId === model.projectId,
+      id: model.projectId, kind: "project", x: hub.x, y: hub.y, r: hub.r, egoState: "normal",
+      fill: null, stroke: null, hovered: input.hoveredNodeId === model.projectId, agentFocus: input.agentFocusNodeId === model.projectId,
       selectionPulse: pulseOf(model.projectId), count: input.hubCount, stalePip: false,
     });
     picks.push({ id: model.projectId, x: hub.x, y: hub.y, r: hub.r });
@@ -602,7 +603,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
     out.glyphs.push({
       id: c.domainId, kind: "domain", x: chip.x, y: chip.y, r: chip.r,
       egoState: attended && hov.selected && hov.capabilityId === null ? "center" : dimmed ? "dim" : "normal",
-      fill: dimmed ? map.nodeFillDim : inks.domainFill, stroke: dimmed ? map.nodeStrokeDim : attended ? map.indigoBright : hov.domainId === null ? inks.domainRim : mixOver(inks.domainRim, inks.bg, PARTNER_INK_SHARE),
+      fill: dimmed ? map.nodeFillDim : inks.domainFill, stroke: dimmed ? map.nodeStrokeDim : attended ? map.indigoBright : inks.domainRim,
       hovered: input.hoveredNodeId === c.domainId, agentFocus: input.agentFocusNodeId === c.domainId,
       selectionPulse: pulseOf(c.domainId), count: null, stalePip: stale > 0,
     });
@@ -624,11 +625,6 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   if (hov.capabilityId) capabilityGlyph(hov.capabilityId, hov.selected ? "center" : "normal", null);
   if (brushed) capabilityGlyph(brushed, "normal", hov.needsCaps.has(brushed) ? inks.needs : hov.usedByCaps.has(brushed) ? inks.usedBy : null);
   for (const id of model.orphanIds) if (!alphas.has(id)) alphas.set(id, 0);
-
-  if (capAlpha > DRAWN_ALPHA) {
-    const elements = new Map(out.squares.filter((q) => q.id !== null).map((q) => [q.id!, { x: q.x, y: q.y, r: q.half }]));
-    out.branches.push(...clusterBranches(scene, chips, discs, elements, (id) => ink(mixOver(inks.element, inks.bg, capAlpha * (hov.domainId === null || hov.domainId === id ? 1 : restAlpha)))));
-  }
 
   const discsDrawn = capAlpha > DRAWN_ALPHA ? [...discs.keys()].filter((id) => model.capabilityById.has(id)).length : 0;
   const drawnCount = (hub ? 1 : 0) + chips.size + discsDrawn + drawnElements;

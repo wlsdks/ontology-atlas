@@ -531,7 +531,7 @@ test("zoom ramps are functions of camera scale, whatever the path to it", async 
       await waitForMapStill(page, { what: "camera" });
     }
   };
-  await wheel(-60, 5);
+  await wheel(-60, 8);
   const direct = await read();
   await wheel(-60, 3);
   await wheel(60, 3);
