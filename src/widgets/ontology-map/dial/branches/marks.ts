@@ -26,7 +26,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const boxes = new Map<string, Box>();
   const radii = new Map<string, number>();
   const nameBoxes = new Map<string, Box>();
-  const activeIds = new Set([input.focusedNodeId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId].filter((id): id is string => !!id));
+  const activeIds = new Set([...(input.requiredBranchIds ?? []), input.focusedNodeId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId].filter((id): id is string => !!id));
   const activeElementCount = [...activeIds].filter((id) => id !== model.projectId && !model.domainById.has(id) && !model.capabilityById.has(id) && scene.positions.has(id)).length;
   let ordinaryElements = 0;
   const takeElement = (active: boolean) => {
@@ -50,16 +50,21 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const ink = (color: string) => inkIndex(out, color);
   const position = (id: string, p: Point) => input.nodeScreen(id) ?? input.toScreen(p.x, p.y);
   const visible = (p: Point, room: number) => p.x + room >= 0 && p.x - room <= input.viewportWidth && p.y + room >= 0 && p.y - room <= input.viewportHeight;
-  const colorFor = (a: DialAttention | null, id: string, kind: DialKind, rest: string): string => {
-    if (input.contextAlphas) return mixOver(rest, inks.bg, input.contextAlphas.get(id) ?? map.egoRestAlpha);
-    if (!a?.domainId) return rest;
+  const inkAlphaFor = (a: DialAttention | null, id: string, kind: DialKind): number => {
+    if (input.contextAlphas) return input.contextInkAlphas?.get(id) ?? input.contextAlphas.get(id) ?? map.egoRestAlpha;
+    if (!a?.domainId) return 1;
     const domain = model.domainOf.get(id);
     const own = a.domainId === id || (domain === a.domainId && (a.capabilityId === null || a.capabilityId === id));
     const partner = a.needsCaps.has(id) || a.usedByCaps.has(id) || a.relatesCaps.has(id);
-    if (own || partner) return rest;
-    if (kind === "domain" && a.partnerDomains.has(id)) return rest;
-    return mixOver(rest, inks.bg, map.egoRestAlpha);
+    if (own || partner || (kind === "domain" && a.partnerDomains.has(id))) return 1;
+    return map.egoRestAlpha;
   };
+  const inkAlpha = (id: string, kind: DialKind) => {
+    const before = inkAlphaFor(input.previous ?? input.inkAttention, id, kind);
+    const after = inkAlphaFor(input.inkAttention, id, kind);
+    return before + (after - before) * Math.min(1, Math.max(0, input.inkMix));
+  };
+  const colorFor = (a: DialAttention | null, id: string, kind: DialKind, rest: string) => mixOver(rest, inks.bg, inkAlphaFor(a, id, kind));
   const color = (id: string, kind: DialKind, rest: string) => crossfadeInk(
     colorFor(input.previous ?? input.inkAttention, id, kind, rest),
     colorFor(input.inkAttention, id, kind, rest), input.inkMix,
@@ -90,7 +95,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     out.glyphs.push(g);
     const alpha = input.contextAlphas?.get(id) ?? 1;
     if (alpha >= 0.05) picks.push({ id, ...p, r: kind === "element" ? Math.max(tokens.chipMinPx * 1.5, r) : r });
-    alphas.set(id, alpha);
+    alphas.set(id, kind === "element" || kind === "project" || selected(id) ? alpha : inkAlpha(id, kind));
   };
   const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
   const detail = smoothstep(tokens.ledgerGapPx, tokens.ledgerGapPx + tokens.chipMinPx, rowPx);
@@ -166,7 +171,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
           out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
           if (presence > 0.5) picks.push({ id: item.id, ...q, r: radius });
         }
-        alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
+        alphas.set(item.id, selected(item.id) ? presence : presence * inkAlpha(item.id, "capability"));
         if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
         if (namesVisible || expanded || memberIndex >= previewRows || active || partners.has(item.id)) {
           const label = model.capabilityById.get(item.id)!.label;

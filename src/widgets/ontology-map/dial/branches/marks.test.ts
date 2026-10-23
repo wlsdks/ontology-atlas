@@ -5,7 +5,7 @@ import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildDialModel, dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { resolveDialDisclosure } from "../frame/disclosure";
 import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "../frame/marks";
-import { resolveDialInks } from "../ink";
+import { mixOver, resolveDialInks } from "../ink";
 import { layoutDial } from "../layout";
 import { resolveDialTokens } from "../tokens";
 import { applyBranchMemberAction } from "./member-disclosure";
@@ -155,6 +155,38 @@ describe("implementation branches", () => {
     expect(children.find((square) => square.id === "d0c0e0")).toMatchObject(input.nodeScreen("d0c0e0")!);
   });
 
+  it("keeps comparison endpoints drawn and named below ordinary implementation disclosure", () => {
+    const { input } = frame(null, 0.08, false, 1, 1, undefined, 2);
+    const ids = ["d0c0e0", "d0c0e1"];
+    Object.assign(input, { requiredBranchIds: new Set(ids) });
+    input.disclosure = { ...input.disclosure, elementsAlpha: 0, elementAlphaFor: () => 0 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    for (const id of ids) {
+      expect(out.glyphs.find((mark) => mark.id === id)).toMatchObject({ kind: "element" });
+      expect(out.texts.some((text) => text.id === id && text.role === "element")).toBe(true);
+      expect(result.picks.some((pick) => pick.id === id)).toBe(true);
+      expect(result.rows.some((row) => row.id === id)).toBe(true);
+      expect(result.alphas.get(id)).toBe(1);
+    }
+  });
+
+  it("keeps comparison endpoints inspectable when no collision-free name placement exists", () => {
+    const { input } = frame(null, 0.08, false, 1, 1, undefined, 2);
+    const ids = ["d0c0e0", "d0c0e1"];
+    input.requiredBranchIds = new Set(ids);
+    input.disclosure = { ...input.disclosure, elementsAlpha: 0, elementAlphaFor: () => 0 };
+    const out = emptyDialFrameMarks();
+    out.blocks = [{ id: "unrelated", box: { ...input.freeRect }, fill: 0, rim: 0, alpha: 1 }];
+    const result = buildDialMarks(input, out);
+    for (const id of ids) {
+      expect(out.glyphs.find((mark) => mark.id === id)).toMatchObject({ kind: "element" });
+      expect(out.texts.some((text) => text.id === id)).toBe(false);
+      expect(result.picks.some((pick) => pick.id === id)).toBe(true);
+      expect(result.rows.some((row) => row.id === id)).toBe(false);
+    }
+  });
+
   it("withholds an ordinary unnamed implementation together with its target", () => {
     const { input } = frame("d0c0", 2, false, 1, 1, undefined, 2);
     input.elementLabel = () => null;
@@ -168,6 +200,30 @@ describe("implementation branches", () => {
 });
 
 describe("branch reading", () => {
+  it("reports the receded ink alpha while retaining full ink for selected and cross-domain neighbors", () => {
+    const { input, out, result } = frame("d0c0");
+    const receded = out.discs.find((disc) => disc.id === "d0c1")!;
+    expect(out.inks[receded.rim]).toBe(mixOver(input.inks.capabilityRim, input.inks.bg, map.egoRestAlpha));
+    expect(result.alphas.get("d0c1")).toBe(map.egoRestAlpha);
+    expect(result.alphas.get("d0c0")).toBe(1);
+    expect(result.alphas.get("d1c0")).toBe(1);
+    expect(result.alphas.get("p")).toBe(1);
+    expect(result.picks.some((pick) => pick.id === "d0c1")).toBe(true);
+  });
+
+  it("dims context ink without hiding or disabling its visible branch member", () => {
+    const { input } = frame(null);
+    input.contextAlphas = new Map([["d0c0", 1]]);
+    input.contextInkAlphas = new Map([["d0c0", 0.16]]);
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    const glyph = out.glyphs.find((mark) => mark.id === "d0c0")!;
+    expect(glyph).toBeDefined();
+    expect(glyph.stroke).toBe(mixOver(input.inks.stale, input.inks.bg, 0.16));
+    expect(result.alphas.get("d0c0")).toBe(0.16);
+    expect(result.picks.some((pick) => pick.id === "d0c0")).toBe(true);
+  });
+
   it("bounds long visible names while preserving the full concept title", () => {
     const { input, out } = frame(null, 1, true);
     const names = out.texts.filter((t) => t.role === "capability");
