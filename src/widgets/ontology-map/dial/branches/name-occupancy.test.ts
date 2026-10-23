@@ -100,4 +100,17 @@ describe("branch name placement near occupied geometry", () => {
       expect(test.out.texts).toContain(test.text);
     });
   }
+  it("removes auxiliary labels and action picks that lie outside the free canvas", () => {
+    const test = setup();
+    for (const role of ["units", "more", "status"] as const) {
+      const auxiliary = { ...test.text, role, box: { minX: 990, maxX: 1100, minY: 100, maxY: 120 } };
+      test.out.texts.push(auxiliary);
+      if (role === "more") test.rows.push({ id: "active", box: auxiliary.box, action: { type: "branch-members", domainId: "active", direction: "more" } });
+    }
+    test.settle();
+    expect(test.out.texts.some((text) => text.role === "units" || text.role === "more" || text.role === "status")).toBe(false);
+    expect(test.rows.some((row) => row.action)).toBe(false);
+    expect(test.names.has("active")).toBe(true);
+  });
+
 });

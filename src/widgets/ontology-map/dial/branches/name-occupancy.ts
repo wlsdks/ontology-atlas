@@ -92,6 +92,7 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
   }
   out.texts = out.texts.filter((text) => {
     if (isName(text)) return accepted.has(text);
+    if ((text.role === "units" || text.role === "more" || text.role === "status") && !inside(text.box)) return false;
     if (text.role === "units" || text.role === "more") return !names.some((name) => accepted.has(name) && name.id !== text.id && overlaps(name.box, text.box));
     return true;
   });

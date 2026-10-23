@@ -16,14 +16,15 @@ import {
   type TreeInputNode,
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
-import { buildFlowMarks, type FlowMarksInput } from "@/widgets/ontology-map/dial/flow-marks";
+import { type FlowMarksInput } from "@/widgets/ontology-map/dial/flow-marks";
+import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/frame/marks";
 import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { aggregateLinks, domainOfEnd, type DialLink } from "@/widgets/ontology-map/dial/links";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
-import type { DialMarks, DialMemory, DialModel, DialScene, DialTokens } from "@/widgets/ontology-map/dial/types";
+import type { DialMemory, DialModel, DialScene, DialTokens } from "@/widgets/ontology-map/dial/types";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
 
 import { synthesizeVaultGraph } from "./synth-vault";
@@ -117,7 +118,7 @@ const MAP = {
   nodeStrokeDim: "#44465a", egoRestAlpha: 0.32,
 } as unknown as OntologyMapTokens;
 
-function overview(model: DialModel) {
+function overview(model: DialModel, focus: string | null = null) {
   const scene = (layoutDial as unknown as RingLayout)(model, circularDomainOrder(model, null).order, TOKENS, null);
   const W = 1512;
   const H = 982;
@@ -128,17 +129,20 @@ function overview(model: DialModel) {
   const cy = (e.minY + e.maxY) / 2;
   const toScreen = (x: number, y: number) => ({ x: (free.minX + free.maxX) / 2 + (x - cx) * scale, y: (free.minY + free.maxY) / 2 + (y - cy) * scale });
   const input: FlowMarksInput = {
-    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention: resolveDialAttention(model, null, null), inkAttention: resolveDialAttention(model, null, null), previous: null,
+    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention: resolveDialAttention(model, null, focus), inkAttention: resolveDialAttention(model, null, focus), previous: null,
     inkMix: 1, chordPresence: 1, scale, viewportWidth: W, viewportHeight: H, freeRect: free,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
     endRadiusPx: () => 10, appearOf: () => 1, measureText: (t) => t.length * 6.5, occupied: [], chords: [],
     resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, resolveDialAttention(model, null, null), TOKENS),
   };
-  const out: DialMarks = { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [] };
-  return buildFlowMarks(input, out);
+  const out = emptyDialFrameMarks();
+  return buildDialMarks({ ...input, mapTokens: MAP, labels: null, evidence: null, zoomRatio: 1,
+    focusedNodeId: focus, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
+    elementLabel: () => null, disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, input.attention, TOKENS),
+  }, out).flows;
 }
 
-describe("link budget on the ring layout", () => {
+describe("link budget on the production branch layout", () => {
   it.skipIf(!layoutReady)("layered 10,000 overview: at most 40 lines, at most 6 per end", () => {
     const { model } = VAULTS["layered 10,000"]();
     const result = overview(model);
@@ -149,11 +153,20 @@ describe("link budget on the ring layout", () => {
     expect(Math.max(...per.values())).toBeLessThanOrEqual(6);
   });
 
-  it.skipIf(!layoutReady)("storefront overview: all 17 counted pairs and all 4 relates-only drawn", () => {
+  it.skipIf(!layoutReady)("storefront overview: keeps all counts and reveals omitted rest pairs when selected", () => {
     const { model } = VAULTS.storefront();
     const result = overview(model);
     const drawn = new Set(result.drawn);
-    expect(result.links.filter((l) => !l.relatesOnly && drawn.has(l.key))).toHaveLength(17);
+    const counted = result.links.filter((link) => !link.relatesOnly);
+    expect(counted).toHaveLength(17);
+    expect(result.budget.total).toBe(17);
+    const shown = counted.filter((link) => drawn.has(link.key));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown.length).toBeLessThanOrEqual(17);
+    for (const domain of new Set(counted.filter((link) => !drawn.has(link.key)).flatMap((link) => [link.u, link.v]))) {
+      const selected = overview(model, domain);
+      for (const link of selected.links.filter((link) => link.attended)) expect(selected.drawn, link.key).toContain(link.key);
+    }
     expect(result.links.filter((l) => l.relatesOnly && drawn.has(l.key))).toHaveLength(4);
   });
 });
