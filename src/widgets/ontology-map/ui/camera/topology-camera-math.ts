@@ -274,6 +274,7 @@ function readSafeInsets(
   viewportWidth?: number,
   viewportHeight?: number,
   pad?: OverviewFitOptions["padPx"],
+  labelBottomAllowance = OVERVIEW_LABEL_BOTTOM_ALLOWANCE,
 ): SafeInsets {
   const raw = {
     left: (tokens.safeInsetLeft ?? 0) + (pad?.left ?? 0),
@@ -284,7 +285,7 @@ function readSafeInsets(
     bottom:
       tokens.safeInsetBottom == null
         ? pad?.bottom ?? 0
-        : tokens.safeInsetBottom + OVERVIEW_LABEL_BOTTOM_ALLOWANCE + (pad?.bottom ?? 0),
+        : tokens.safeInsetBottom + labelBottomAllowance + (pad?.bottom ?? 0),
   };
   // The chrome may not eat the map (`MAX_FIT_CHROME_SHARE`). Callers without a
   // viewport — the pan leash — keep the raw numbers.
@@ -314,6 +315,8 @@ const SMALL_GRAPH_NODE_MAX = 5;
 export interface OverviewFitOptions {
   padPx?: { left: number; right: number; top: number; bottom: number };
   scaleFloor?: number;
+  /** Zero when a branch scene already reserves its own screen-space label pad. */
+  labelBottomAllowance?: number;
 }
 
 export function computeOverviewFitScale(
@@ -329,7 +332,7 @@ export function computeOverviewFitScale(
   nodeCount?: number,
   fit?: OverviewFitOptions,
 ): number {
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx, fit?.labelBottomAllowance);
   const effW = Math.max(1, viewportWidth - insets.left - insets.right);
   const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
   const maxScale =
@@ -357,7 +360,7 @@ export function computeOverviewCameraTarget(
   nodeCount?: number,
   fit?: OverviewFitOptions,
 ): CameraTarget {
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx);
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx, fit?.labelBottomAllowance);
   const fitScale = computeOverviewFitScale(bounds, viewportWidth, viewportHeight, tokens, nodeCount, fit);
   const tscale = Math.min(tokens.cameraScaleMax, Math.max(fit?.scaleFloor ?? tokens.cameraScaleMin, fitScale * tokens.overviewEntryRatio));
   const centerX = (bounds.minX + bounds.maxX) / 2;

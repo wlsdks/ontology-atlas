@@ -197,9 +197,9 @@ type DialBearing = { dial?: DialWorld | null;
 
 const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
 
-export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number;
+export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number; labelBottomAllowance?: number;
 } | undefined {
-  return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR } : undefined;
+  return world.dial ? { padPx: world.dial.overviewPadPx, scaleFloor: DIAL_OVERVIEW_SCALE_FLOOR, ...(world.dial.scene.branches ? { labelBottomAllowance: 0 } : {}) } : undefined;
 }
 
 export interface DialFocusFrame {
