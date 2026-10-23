@@ -311,6 +311,22 @@ describe("buildFlowMarks", () => {
     expect(namesCrossed(sampleStrips(out.strips), out.texts)).toEqual({ count: 0, names: [] });
   });
 
+  it("keeps recovered outgoing arrowheads beyond their full-card source and leaves room for each head", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d2c0"]]);
+    const origin = { x: 500, y: 150 };
+    const positions = new Map([["d0", origin], ["d1", { x: 500, y: -850 }], ["d2", { x: 500, y: 1150 }]]);
+    const { out } = run(model, { focusId: "d0", freeRect: { minX: 350, minY: 0, maxX: 650, maxY: 300 }, endRadiusPx: () => 32,
+      nodeScreen: (id) => positions.get(id) ?? null, occupied: [{ minX: 396, minY: 118, maxX: 604, maxY: 182 }, { minX: 499, minY: 207, maxX: 501, maxY: 208 }],
+    });
+    const strips = out.strips.filter((strip) => strip.role === "stub");
+    expect(strips).toHaveLength(2);
+    for (const strip of strips) {
+      const start = Math.hypot(strip.ax - origin.x, strip.ay - origin.y);
+      const end = Math.hypot(strip.bx - origin.x, strip.by - origin.y);
+      expect(end - start).toBeGreaterThanOrEqual(strip.headSize);
+    }
+  });
+
   it("fans stubs at least stub-gap-deg apart", () => {
     const fanned = fanAngles([0.1, 0.12, 0.13, 2], TOKENS.stubGapDeg);
     const sorted = [...fanned].sort((a, b) => a - b);

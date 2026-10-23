@@ -33,6 +33,10 @@ function stubLength(tokens: DialTokens, free: Box): number {
   return Math.max(tokens.stubMinPx, Math.min(tokens.stubMaxPx, tokens.stubFreeShare * Math.min(free.maxX - free.minX, free.maxY - free.minY)));
 }
 
+function minimumReach(tokens: DialTokens, st: Stub): number {
+  return st.near.r + 4 + tokens.flowHeadBasePx + tokens.flowHeadGain * tokens.flowFocusMax;
+}
+
 export function fanAngles(angles: readonly number[], gapDeg: number): number[] {
   const order = angles.map((a, i) => ({ a, i })).sort((x, y) => x.a - y.a || x.i - y.i);
   const minGap = (gapDeg * Math.PI) / 180;
@@ -56,7 +60,7 @@ export function planStubs(input: FlowMarksInput, stubs: Stub[], nameFont: string
     list.sort((x, y) => x.angle - y.angle || (x.farId < y.farId ? -1 : 1));
     const angles = fanAngles(list.map((s) => s.angle), tokens.stubGapDeg);
     list.forEach((st, k) => {
-      const reach = length * (k % 2 === 0 ? 1 : STUB_SHORT);
+      const reach = Math.max(minimumReach(tokens, st), length * (k % 2 === 0 ? 1 : STUB_SHORT));
       const cos = Math.cos(angles[k]!);
       const sin = Math.sin(angles[k]!);
       const start = { x: st.near.p.x + cos * (st.near.r + 4), y: st.near.p.y + sin * (st.near.r + 4) };
@@ -93,7 +97,8 @@ export function* stubCandidates(input: FlowMarksInput, original: StubPlan): Gene
     const cos = Math.cos(angle + degrees * Math.PI / 180);
     const sin = Math.sin(angle + degrees * Math.PI / 180);
     const start = { x: origin.x + cos * (original.st.near.r + 4), y: origin.y + sin * (original.st.near.r + 4) };
-    const end = { x: origin.x + cos * reach * factor, y: origin.y + sin * reach * factor };
+    const distance = Math.max(minimumReach(input.tokens, original.st), reach * factor);
+    const end = { x: origin.x + cos * distance, y: origin.y + sin * distance };
     const tx = end.x + cos * 8;
     const ty = end.y + sin * 10;
     const left = cos > 0.25 ? tx - 2 : cos < -0.25 ? tx - width + 2 : tx - width / 2;
