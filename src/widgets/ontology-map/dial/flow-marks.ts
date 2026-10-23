@@ -1,5 +1,5 @@
 import { quadAt, quadLength, trimmedPiece, overlaps, inside } from "./flow/geometry";
-import { branchPortFraction } from "./branches/ports";
+import { createBranchRouter, type BranchRouter } from "./branches/routes";
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
 import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
@@ -115,6 +115,7 @@ function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameR
 }
 
 interface Stroke {
+  piece?: readonly [Point, Point, Point];
   key: string;
   role: StripMark["role"];
   p0: Point;
@@ -135,7 +136,7 @@ interface Stroke {
 
 
 function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: Point; b: Point } | null {
-  const piece = trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
+  const piece = s.piece ?? trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
   if (!piece) return null;
   const [a, c, b] = piece;
   const trimmed = quadLength(a, c, b);
@@ -443,10 +444,13 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     ends.add(l.v);
   }
   const within = (p: Point) => p.x >= free.minX - FREE_SLACK_PX && p.x <= free.maxX + FREE_SLACK_PX && p.y >= free.minY - FREE_SLACK_PX && p.y <= free.maxY + FREE_SLACK_PX;
+  const branchRoutes = createBranchRouter(input, (l, a, b) => controlOf(input, l, a, b, hub));
   const restLine = ({ l, a, b }: { l: DialLink; a: End; b: End }) => {
     if (!within(a.p) || !within(b.p)) return null;
+    if (scene.branches) return branchRoutes(l, a, b).map((curve) => curve.line);
     const s = restStroke(tokens, l, a, b);
-    return sampledPiece(trimmedPiece(s.p0, controlOf(input, l, a, b, hub), s.p1, s.trimStart, s.trimEnd));
+    const line = sampledPiece(trimmedPiece(s.p0, controlOf(input, l, a, b, hub), s.p1, s.trimStart, s.trimEnd));
+    return line ? [line] : [];
   };
   const drawableByKey = new Map(drawable.map((d) => [d.l.key, d] as const));
   const guard = restCrossingGuard(
@@ -454,12 +458,15 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
       const d = drawableByKey.get(l.key);
       return d ? restLine(d) : null;
     },
-    drawable.filter((d) => d.l.relatesOnly).map(restLine).filter((pts): pts is Point[] => pts !== null),
+    drawable.filter((d) => d.l.relatesOnly).flatMap((d) => restLine(d) ?? []),
     W,
     H,
   );
   const counted = drawable.filter((d) => !d.l.relatesOnly).map((d) => d.l);
-  const budget = restBudget(counted, ends.size, tokens, guard);
+  const budget = restBudget(counted, ends.size, tokens, scene.branches ? {
+    crosses: (link) => branchRoutes(link, drawableByKey.get(link.key)!.a, drawableByKey.get(link.key)!.b).some((curve) => input.avoidTexts?.some((box) => crossesBox([curve.line], box))) || guard.crosses(link),
+    add: (link) => guard.add(link),
+  } : guard, !!scene.branches);
   result.budget = { shown: 0, total: budget.total, perEndCap: budget.perEndCap };
   const maxTotal = Math.max(1, ...counted.filter((l) => budget.keep.has(l.key) || l.attended).map((l) => l.total));
   const numberLimit = Math.max(tokens.restNumbersMin, Math.min(tokens.restNumbersMax, Math.round(tokens.restNumbersShare * onScreen)));
@@ -485,16 +492,17 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     toDraw.push({ l, a, b, presence });
   }
 
-  const chordLines = toDraw.map(({ l, a, b }) => {
+  const chordLines = toDraw.flatMap(({ l, a, b }) => {
+    if (scene.branches) return branchRoutes(l, a, b).map((curve) => curve.line);
     const c = controlOf(input, l, a, b, hub);
-    return Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES));
+    return [Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES))];
   });
   toDraw.sort((x, y) => Number(x.l.attended) - Number(y.l.attended) || x.l.total - y.l.total || (x.l.key < y.l.key ? -1 : 1));
   if (!scene.branches) placeFarNumerals(input, out, farCounts(input, toDraw));
   const focusChip = attn.domainId ? endOf(attn.domainId) : null;
   paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
   for (const { l, a, b, presence } of toDraw) {
-    drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key));
+    drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key), branchRoutes);
     result.drawn.push(l.key);
   }
   for (const st of result.stubs) if (!result.drawn.includes(st.flowKey)) result.drawn.push(st.flowKey);
@@ -505,7 +513,10 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
       if (!l.attended || l.relatesOnly || shown.has(l.key)) continue;
       const a = endOf(l.u);
       const b = endOf(l.v);
-      if (a && b && within(a.p) && within(b.p)) drawFanLink(input, out, fanAttn, l, a, b, share * presenceOf(l), hub);
+      if (a && b && within(a.p) && within(b.p)) {
+        if (scene.branches) drawBranchLink(input, out, l, a, b, share * presenceOf(l), branchRoutes);
+        else drawFanLink(input, out, fanAttn, l, a, b, share * presenceOf(l), hub);
+      }
     }
   };
   fan(input.inkAttention, input.inkMix);
@@ -581,9 +592,9 @@ function farCounts(input: FlowMarksInput, toDraw: readonly { l: DialLink; a: End
   return far;
 }
 
-function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean): void {
+function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean, routes: BranchRouter): void {
   if (input.scene.branches) {
-    drawBranchLink(input, out, l, a, b, presence, hub);
+    drawBranchLink(input, out, l, a, b, presence, routes);
     return;
   }
   const { tokens, model, attention: attn, inks } = input;
@@ -635,71 +646,18 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
 }
 
 
-function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
-  const base = controlOf(input, l, a, b, hub);
-  const boundary = (id: string, other: string, end: End, toward: Point): Point => {
-    const box = input.endBox?.(id);
-    const cluster = input.scene.clusterByDomain.get(id);
-    const otherCluster = input.scene.clusterByDomain.get(domainOfEnd(input.model, other));
-    if (box && cluster && cluster.branchPair === otherCluster?.branchPair) {
-      const fraction = branchPortFraction(input, id, other);
-      return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y: box.minY + (box.maxY - box.minY) * fraction };
-    }
-    const dx = toward.x - end.p.x;
-    const dy = toward.y - end.p.y;
-    const t = box ? Math.min((box.maxX - box.minX) / 2 / Math.max(1e-6, Math.abs(dx)), (box.maxY - box.minY) / 2 / Math.max(1e-6, Math.abs(dy))) : end.r / Math.max(1, Math.hypot(dx, dy));
-    return { x: end.p.x + dx * t, y: end.p.y + dy * t };
-  };
-  const run = (from: string, to: string, start: End, end: End, count: number, offset: number) => {
-    const dx = end.p.x - start.p.x;
-    const dy = end.p.y - start.p.y;
-    const len = Math.max(1, Math.hypot(dx, dy));
-    let c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
-    if (input.scene.clusters.length > 4 && input.avoidTexts?.length) {
-      const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
-      const free = input.freeRect;
-      const candidates = [c,
-        { x: c.x, y: free.minY + 8 }, { x: c.x, y: free.maxY - 8 },
-        { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
-        { x: mid.x, y: free.minY + 8 }, { x: mid.x, y: free.maxY - 8 },
-      ];
-      const hits = (control: Point, ceiling = Infinity) => {
-        const piece = trimmedPiece(boundary(from, to, start, control), control, boundary(to, from, end, control), input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
-        const line = sampledPiece(piece);
-        if (!line) return Infinity;
-        let count = 0;
-        for (const box of input.avoidTexts!) {
-          if (crossesBox([line], box)) count += 1;
-          if (count >= ceiling) break;
-        }
-        return count;
-      };
-      let best = hits(c);
-      for (const candidate of candidates.slice(1)) {
-        if (best === 0) break;
-        const fromCluster = input.scene.clusterByDomain.get(from);
-        const toCluster = input.scene.clusterByDomain.get(to);
-        if (fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair
-          && [fromCluster, toCluster].some((cluster) => (candidate.x - (input.nodeScreen(cluster.domainId) ?? input.toScreen(cluster.chip.x, cluster.chip.y)).x) * (cluster.branchSide ?? 1) >= 0)) continue;
-        const count = hits(candidate, best);
-        if (count < best) { best = count; c = candidate; }
-      }
-    }
-    const p0 = boundary(from, to, start, c);
-    const p1 = boundary(to, from, end, c);
+function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, routes: BranchRouter): void {
+  for (const { from, to, count, p0, c, p1, piece } of routes(l, a, b)) {
     const width = l.attended ? input.tokens.flowFocusBase + 0.3 : input.tokens.flowRestBase;
     const curve = emit(input, out, {
-      key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, w0: width, w1: width,
+      key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, piece, w0: width, w1: width,
       ink: linkInk(input, l, from, false, presence), headStart: false, headEnd: !l.relatesOnly,
       trimStart: input.tokens.flowTrimStartPx, trimEnd: input.tokens.flowTrimEndPx,
       dashed: l.relatesOnly, numeral: l.attended && count > 1 ? String(count) : null,
       numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
     });
     if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: 0, arrivalBloom: false });
-  };
-  const offset = l.uv > 0 && l.vu > 0 ? input.tokens.flowSplitPx * 3 : 0;
-  if (l.uv > 0 || l.relatesOnly) run(l.u, l.v, a, b, l.uv, offset);
-  if (l.vu > 0) run(l.v, l.u, b, a, l.vu, offset);
+  }
 }
 
 function drawFanLink(input: FlowMarksInput, out: FlowMarks, attn: DialAttention, l: DialLink, a: End, b: End, share: number, hub: Point): void {
@@ -729,7 +687,7 @@ const GUARD_SAMPLES = 16;
 const GUARD_END_CLEAR_PX = 16;
 const GUARD_CELL_PX = 48;
 
-function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obstacles: readonly (readonly Point[])[], width: number, height: number): CrossingGuard {
+function restCrossingGuard(lineOf: (l: DialLink) => readonly (readonly Point[])[] | null, obstacles: readonly (readonly Point[])[], width: number, height: number): CrossingGuard {
   const lines: (readonly Point[])[] = [];
   const segs: { line: number; k: number }[] = [];
   const grid = new Map<number, number[]>();
@@ -753,8 +711,8 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
   };
   const nearEnd = (p: Point, pts: readonly Point[]) =>
     Math.hypot(p.x - pts[0]!.x, p.y - pts[0]!.y) < GUARD_END_CLEAR_PX || Math.hypot(p.x - pts[pts.length - 1]!.x, p.y - pts[pts.length - 1]!.y) < GUARD_END_CLEAR_PX;
-  const memo = new Map<string, readonly Point[] | null>();
-  const lineFor = (link: DialLink): readonly Point[] | null => {
+  const memo = new Map<string, readonly (readonly Point[])[] | null>();
+  const lineFor = (link: DialLink): readonly (readonly Point[])[] | null => {
     const hit = memo.get(link.key);
     if (hit !== undefined) return hit;
     const pts = lineOf(link);
@@ -764,9 +722,9 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
   for (const o of obstacles) insert(o);
   return {
     crosses(link) {
-      const pts = lineFor(link);
-      if (!pts) return false;
-      for (let k = 0; k < pts.length - 1; k += 1) {
+      const candidates = lineFor(link);
+      if (!candidates) return false;
+      for (const pts of candidates) for (let k = 0; k < pts.length - 1; k += 1) {
         let hit = false;
         cells(pts[k]!, pts[k + 1]!, (key) => {
           if (hit) return;
@@ -784,8 +742,7 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
       return false;
     },
     add(link) {
-      const pts = lineFor(link);
-      if (pts) insert(pts);
+      for (const pts of lineFor(link) ?? []) insert(pts);
     },
   };
 }

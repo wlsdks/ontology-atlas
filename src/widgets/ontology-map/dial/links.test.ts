@@ -187,6 +187,11 @@ describe("restBudget", () => {
       expect([...b.keep].every((k) => free.keep.has(k))).toBe(true);
     });
 
+    it("can apply the branch crossing guard even below the minimum rest count", () => {
+      const few = [link("a", "b", 3), link("c", "d", 2), link("f", "g", 1)];
+      expect(restBudget(few, 6, TOKENS, guard(), true).keep.size).toBe(1);
+    });
+
     it("keeps every line, crossing or not, while the budget does not choose", () => {
       const few = [link("a", "b", 3), link("c", "d", 2), link("f", "g", 1)];
       expect(restBudget(few, 6, TOKENS, guard()).keep.size).toBe(3);

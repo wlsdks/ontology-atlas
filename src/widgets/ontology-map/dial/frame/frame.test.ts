@@ -296,14 +296,29 @@ describe("frame registry", () => {
         const model = modelOf(false);
         const labels = { ...LABELS, evidenceUnmeasured: () => "Evidence not measured" };
         const caption = (appear: number) => {
-            const freeRect = { minX: W / 2 - 60, maxX: W / 2 + 60, minY: 8, maxY: H - 8 };
+            const freeRect = { minX: W / 2 - 160, maxX: W / 2 + 160, minY: 8, maxY: H - 8 };
             const r = paintDialFrame(frameInput(model, { labels, evidence: new Map(), freeRect, appearOf: (id) => (id.startsWith("d") && !id.includes("c") ? appear : 1) }));
-            return { y: r.marks.texts.find((t) => t.text === "Evidence not measured")!.y, named: r.marks.texts.some((t) => t.role === "project") };
+            const text = r.marks.texts.find((t) => t.text === "Evidence not measured")!;
+            return { y: text.y, box: text.box, freeRect, named: r.marks.texts.some((t) => t.role === "project") };
         };
         const before = caption(0.05);
         const after = caption(1);
         expect([before.named, after.named]).toEqual([true, true]);
         expect(before.y).toBe(after.y);
+        for (const frame of [before, after]) {
+            expect(frame.box.minX).toBeGreaterThanOrEqual(frame.freeRect.minX);
+            expect(frame.box.maxX).toBeLessThanOrEqual(frame.freeRect.maxX);
+            expect(frame.box.minY).toBeGreaterThanOrEqual(frame.freeRect.minY);
+            expect(frame.box.maxY).toBeLessThanOrEqual(frame.freeRect.maxY);
+        }
+    });
+    it("hides an overwide evidence caption in a narrow free rect while retaining the project name", () => {
+        const model = modelOf(false);
+        const labels = { ...LABELS, evidenceUnmeasured: () => "Evidence not measured" };
+        const freeRect = { minX: W / 2 - 60, maxX: W / 2 + 60, minY: 8, maxY: H - 8 };
+        const result = paintDialFrame(frameInput(model, { labels, evidence: new Map(), freeRect }));
+        expect(result.marks.texts.some((text) => text.text === "Evidence not measured")).toBe(false);
+        expect(result.marks.texts.some((text) => text.role === "project")).toBe(true);
     });
     it("describes the last frame with rings, disclosure, budget and placement", () => {
         const model = modelOf();
