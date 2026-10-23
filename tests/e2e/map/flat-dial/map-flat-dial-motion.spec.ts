@@ -516,7 +516,9 @@ test("a domain focus crossfades neutral inks in 120 ms, emits directional light,
   for (const numeral of focused.numerals) {
     const [key, value] = numeral.split("|");
     const flow = drawnFlows.find(flow => flow.key === key)!;
-    expect.soft([flow.ab, flow.ba], "the count is a recorded directional weight").toContain(Number(value));
+    const counts = [...value!.matchAll(/\d[\d,]*/g)].map(match => Number(match[0].replaceAll(",", "")));
+    expect.soft(counts, "the caption names exactly one directional count").toHaveLength(1);
+    expect.soft([flow.ab, flow.ba], "the count is a recorded directional weight").toContain(counts[0]);
   }
   expect.soft(signals.length, "lights launched = attended direction strokes").toBe(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!) && s.split("|")[2] !== "relates").length : -1);
   expect.soft(earlyLights, "lights departing before the ink mix reaches 1").toBe(0);
