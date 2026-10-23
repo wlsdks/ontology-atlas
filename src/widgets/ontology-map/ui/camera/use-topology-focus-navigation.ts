@@ -11,7 +11,6 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
-  SELECTION_NUDGE_MARGIN_PX,
   selectionNudgeTarget,
   type SelectionCamera,
   type SelectionSource
@@ -32,7 +31,8 @@ import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "..
 import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
-import { branchPreviewRows } from "../../dial/branches/layout";
+import { branchSelectionMargin } from "./branch-frame/selection-margin";
+import { branchFocusTarget } from "./branch-frame/target";
 
 export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialFocusFrame | undefined {
   if (lastDialFrame() === null) return undefined;
@@ -126,25 +126,33 @@ export function useTopologyFocusNavigation({
 
   /** The flat map's zoom gesture (double-click, Enter): frame the node and its neighbours. */
   const flyToNode = useCallback((slug: string) => {
-    if (view3dRef.current || realmTransitionRef.current.phase !== "idle") return;
+    const phase = realmTransitionRef.current.phase;
+    const realm = phase === "active" ? realmDataRef.current : null;
+    if (view3dRef.current || (phase !== "idle" && !realm?.flat)) return;
     const raw = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
     if (!raw || !world || width <= 0 || height <= 0 || !world.nodeById.has(slug)) return;
     const tokens = cameraTokens(raw);
-    const target = computeFocusCameraTarget(
+    const activeDial = realm?.dial ?? world.dial;
+    const target = branchFocusTarget(world, activeDial, slug, tokens, width, height) ?? computeFocusCameraTarget(
       world, tokens, width, height, slug,
       overviewScaleRef.current * raw.overviewEntryRatio,
-      null,
-      overviewBoundsFor(overviewFitRef.current, world, raw, expandedParentsRef.current, clusteredIdsRef.current),
-      liveDialFocusFrame(world, slug));
+      realm?.memberIds ?? null,
+      realm?.bounds ?? overviewBoundsFor(overviewFitRef.current, world, raw, expandedParentsRef.current, clusteredIdsRef.current),
+      activeDial ? dialFocusFrame({ dial: activeDial }, slug, readDialTokens()) : liveDialFocusFrame(world, slug));
     if (!target) return;
     selectionCameraRef.current = recordSelectionCamera(selectionCameraRef.current, {
       slug, framed: true, current: cameraTargetRef.current, landed: target, gesture: cameraGestureRevisionRef.current,
     });
-    focusLeashPxRef.current = leashFor(width, height, tokens);
+    const leash = leashFor(width, height, tokens);
+    const node = world.nodeById.get(slug)!;
+    focusLeashPxRef.current = {
+      x: Math.max(leash.x, Math.abs(node.x - target.tx) * target.tscale + 1),
+      y: Math.max(leash.y, Math.abs(node.y - target.ty) * target.tscale + 1),
+    };
     moveCamera(target, raw);
-  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
+  }, [cameraGestureRevisionRef, cameraTargetRef, cameraTokens, clusteredIdsRef, expandedParentsRef, selectionCameraRef, focusLeashPxRef, moveCamera, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, view3dRef, viewportRef, worldRef]);
 
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug) return;
@@ -184,6 +192,8 @@ export function useTopologyFocusNavigation({
     const source = focusedSlug !== null && pending?.slug === focusedSlug ? pending.source : null;
     // The panel this selection opens enters the DOM after this effect, so it is measured a frame later.
     const raf = requestAnimationFrame(() => {
+      const phase = realmTransitionRef.current.phase;
+      if (phase === "exiting" || (phase === "entering" && focusedSlug === null)) return;
       const tokens = readOntologyMapTokensOrNull() ?? effectTokens;
       const memory = selectionCameraRef.current;
       const gesture = cameraGestureRevisionRef.current;
@@ -207,27 +217,14 @@ export function useTopologyFocusNavigation({
         if (back.kind !== "overview") return;
       }
       // A double-click already framed this node.
-      if (!realmActive && focusedSlug !== null && memory?.slug === focusedSlug && memory.framed) return;
+      if ((!realmActive || realmData?.flat) && focusedSlug !== null && memory?.slug === focusedSlug && memory.framed) return;
 
-      if (!realmActive && source === "canvas-click" && !pathPick && focusedSlug !== null) {
+      if ((!realmActive || realmData?.flat) && source === "canvas-click" && !pathPick && focusedSlug !== null) {
         const node = world.nodeById.get(focusedSlug);
         const measured = cameraTokens(tokens);
         const current = cameraTargetRef.current;
-        const branch = world.dial?.scene.branches ? world.dial.scene.clusterByDomain.get(world.dial.model.domainOf.get(focusedSlug) ?? focusedSlug) : null;
-        const frame = world.dial?.scene.branches ? lastDialFrame() : null;
-        const ids = new Set([focusedSlug, branch?.domainId, ...(branch?.items.slice(0, branchPreviewRows(world.dial!.scene.clusters.length)).map((it) => it.id) ?? [])]);
-        let names = frame?.labelBoxes.filter((box) => ids.has(box.nodeId)) ?? [];
-        const seen = cameraRef.current;
-        const sx = node ? (node.x - seen.x.value) * seen.scale.value + width / 2 : 0;
-        const freeWidth = width - measured.safeInsetLeft - measured.safeInsetRight;
-        if (names.length && Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement)
-          + Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement) >= freeWidth) {
-          names = names.filter((box) => box.nodeId === focusedSlug);
-        }
-        const margin = names.length ? {
-          left: Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement),
-          right: Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement),
-        } : SELECTION_NUDGE_MARGIN_PX;
+        const activeDial = realmData?.dial ?? world.dial;
+        const margin = branchSelectionMargin(world, activeDial, focusedSlug, current.tscale, width - measured.safeInsetLeft - measured.safeInsetRight);
         const nudge = node ? selectionNudgeTarget(current, node, width, { left: measured.safeInsetLeft, right: measured.safeInsetRight }, margin) : null;
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
@@ -247,7 +244,7 @@ export function useTopologyFocusNavigation({
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
           tokens);
-        target = realmCameraTarget(bounds, tokens, width, height);
+        target = realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       } else {
         const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
         const measured = cameraTokens(tokens);

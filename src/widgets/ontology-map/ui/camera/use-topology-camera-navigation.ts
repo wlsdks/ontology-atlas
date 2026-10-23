@@ -1,3 +1,5 @@
+import { branchFocusTarget } from "./branch-frame/target";
+import { branchSelectionMargin } from "./branch-frame/selection-margin";
 "use client";
 
 import {
@@ -329,11 +331,11 @@ export function useTopologyCameraNavigation({
     }
 
     const memory = selectionCameraRef.current;
-    if (mode === "focus" && focused !== null && !realmActive && memory?.slug === focused && !memory.framed) {
+    if (mode === "focus" && focused !== null && (!realmActive || realmDataRef.current?.flat) && memory?.slug === focused && !memory.framed) {
       // A click only selected, so a new viewport only re-checks that the panel does not cover the node.
       const node = world.nodeById.get(focused);
       const current = cameraTargetRef.current;
-      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight });
+      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight }, branchSelectionMargin(world, realmDataRef.current?.dial ?? world.dial, focused, current.tscale, width - tokens.safeInsetLeft - tokens.safeInsetRight));
       if (nudge === null) return false;
       selectionCameraRef.current = recordSelectionCamera(memory, { slug: focused, framed: false, current, landed: nudge, gesture: cameraGestureRevisionRef.current });
       cameraTargetRef.current = nudge;
@@ -356,7 +358,8 @@ export function useTopologyCameraNavigation({
         dialFit);
     } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
-      target = computeFocusCameraTarget(
+      const dial = realmActive ? realmData?.dial : world.dial;
+      target = branchFocusTarget(world, dial, focused, tokens, width, height) ?? computeFocusCameraTarget(
         world,
         tokens,
         width,
@@ -374,7 +377,7 @@ export function useTopologyCameraNavigation({
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
           tokens);
-        target = realmCameraTarget(bounds, tokens, width, height);
+        target = realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       }
     } else if (mode === "spotlight") {
       // Recent changes/path/full expand already own a single node-set fit in one place.

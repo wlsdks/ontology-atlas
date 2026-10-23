@@ -23,8 +23,14 @@ import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from "./topology-realm-runtime";
 import { dialOverviewFit, type TopologyWorld } from "./topology-world";
+import { readDialTokens } from "../../dial/tokens";
+import { createMeasureText } from "../../dial/fit";
+import type { DialLabels } from "../../dial/types";
 
 interface Dependencies {
+  view3d?: boolean;
+  cameraTokens?: <T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T) => T;
+  dialLabels?: DialLabels | null;
   realmRootId: string | null;
   prevRealmRootIdRef: RefObject<string | null>;
   lastActiveMsRef: RefObject<number>;
@@ -59,6 +65,7 @@ interface Dependencies {
 
 /** Coordinate realm entry, root switches, and return to overview. */
 export function useTopologyRealmTransition({
+  view3d = false, cameraTokens, dialLabels,
   realmRootId,
   prevRealmRootIdRef,
   lastActiveMsRef,
@@ -99,7 +106,9 @@ export function useTopologyRealmTransition({
   // fits the camera to the overview. The only new motion contract is
   // realm-transition's FLIP and fling; the exit rides the proven homing path.
   useEffect(() => {
-    if (realmRootId === prevRealmRootIdRef.current) return;
+    const sameRoot = realmRootId === prevRealmRootIdRef.current;
+    if (sameRoot && (realmRootId === null || realmDataRef.current?.flat === !view3d)) return;
+    const savedEntry = sameRoot ? realmDataRef.current?.entryCamera : null;
     prevRealmRootIdRef.current = realmRootId;
     lastActiveMsRef.current = performance.now();
 
@@ -130,6 +139,7 @@ export function useTopologyRealmTransition({
         realmRootId,
         tokens,
         new Set([...expandedParentsRef.current, realmRootId]),
+        !view3d ? { tokens: readDialTokens(), labels: dialLabels ?? null, measureText: createMeasureText(), rememberOrder: false, memory: null } : undefined,
       );
       if (!data) return;
       realmDataRef.current = data;
@@ -151,12 +161,12 @@ export function useTopologyRealmTransition({
         // Save "where the user was looking" as the keyframe to return to on
         // exit, taken from the camera just before entry. Only when the camera
         // has initialized — a deep-link mount keeps this null.
-        data.entryCamera = {
+        data.entryCamera = savedEntry ?? {
           tx: cameraRef.current.x.value,
           ty: cameraRef.current.y.value,
           tscale: cameraRef.current.scale.value,
         };
-        const target = realmCameraTarget(data.bounds, tokens, width, height);
+        const target = realmCameraTarget(data.bounds, cameraTokens?.(tokens) ?? tokens, width, height, data.dial?.overviewPadPx);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
@@ -228,6 +238,6 @@ export function useTopologyRealmTransition({
         beginCameraTween(target, 750);
       }
     }
-  }, [realmRootId, beginCameraTween, prevRealmRootIdRef, lastActiveMsRef, worldRef, viewportRef, reducedMotionRef, nodeDragRef, heatRef, dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, realmActiveHandedOffRef, expandedParentsRef, realmDataRef, wardingFitRef, realmTransitionRef, homingActiveRef, homeSpringsRef, homeTargetOverrideRef, hasInitializedRef, cameraRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef, simRef, overviewFitRef, clusteredIdsRef, overviewScaleRef]);
+  }, [realmRootId, view3d = false, cameraTokens, dialLabels, beginCameraTween, prevRealmRootIdRef, lastActiveMsRef, worldRef, viewportRef, reducedMotionRef, nodeDragRef, heatRef, dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, realmActiveHandedOffRef, expandedParentsRef, realmDataRef, wardingFitRef, realmTransitionRef, homingActiveRef, homeSpringsRef, homeTargetOverrideRef, hasInitializedRef, cameraRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef, simRef, overviewFitRef, clusteredIdsRef, overviewScaleRef]);
 
 }

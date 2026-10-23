@@ -545,7 +545,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectionSourceRef,
   });
   useTopologyRealmTransition({
-    realmRootId,
+    view3d, cameraTokens, dialLabels, realmRootId,
     prevRealmRootIdRef,
     lastActiveMsRef,
     worldRef,

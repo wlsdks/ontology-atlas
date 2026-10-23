@@ -152,6 +152,15 @@ describe("useTopologyFocusNavigation", () => {
     return { deps, hook, select };
   }
 
+  it("does not replace the saved return camera when realm exit restores the selected root", () => {
+    const { deps, select } = setup();
+    deps.cameraTargetRef.current = { tx: 130, ty: -75, tscale: 0.7 };
+    deps.realmTransitionRef.current = { phase: "exiting", rootId: "f", startMs: 0, durationMs: 800 };
+    select("f");
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 130, ty: -75, tscale: 0.7 });
+  });
+
   it("a click selects without moving the camera when the node already sits in the free map", () => {
     const { deps, select } = setup();
     select("p", { click: true });

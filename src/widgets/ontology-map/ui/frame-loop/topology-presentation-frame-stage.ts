@@ -1,3 +1,4 @@
+import type { DialWorld } from '../../dial/types';
 import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
@@ -275,7 +276,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
     } | null, realmDepthById: ReadonlyMap<string, number> | null, realmDepthParallax: {
         depth2: DepthParallaxOffset;
         depth3: DepthParallaxOffset;
-    } | null, realmDustParallax: number, realmOutsideReturnAlphaById: Map<string, number> | null, captionGateFold: ReadonlySet<string> | null = null) {
+    } | null, realmDustParallax: number, realmOutsideReturnAlphaById: Map<string, number> | null, captionGateFold: ReadonlySet<string> | null = null, realmDial: DialWorld | null = null) {
         const modeShowsEveryNode = (domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0);
         clusterChipsRef.current = modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips;
         // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
@@ -437,7 +438,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             hoveredClusterId: hoveredClusterIdRef.current,
             wardingRing: realmWarding,
             realmTierKinds,
-            realmDepthById,
+            realmDial, realmDepthById,
             realmDepthParallax,
             realmDustParallax,
             realmOutsideReturnAlphaById,

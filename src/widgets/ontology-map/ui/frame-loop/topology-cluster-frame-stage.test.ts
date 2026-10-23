@@ -153,3 +153,12 @@ describe("cluster frame stage", () => {
     expect(createClusterFrameStage(inRealm)(1000, worldTokens, dialWorld).captionFoldedIds).toBeNull();
   });
 });
+
+
+it("does not offer a collapse control for the scope root that must remain expanded", () => {
+  const sources = stageSources();
+  sources.realmDataRef.current = { rootId: "d0", memberIds: new Set(["d0"]) } as unknown as RealmRuntimeData;
+  const frame = createClusterFrameStage(sources)(0, worldTokens, crowdedWorld());
+  expect(frame.effectiveExpanded.has("d0")).toBe(true);
+  expect(frame.frameChips.some(chip => chip.parentId === "d0")).toBe(false);
+});

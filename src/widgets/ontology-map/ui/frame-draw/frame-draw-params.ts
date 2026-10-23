@@ -1,3 +1,4 @@
+import type { DialWorld } from '../../dial/types';
 import type { CameraAxes } from "../../engine/camera";
 import type { EdgePairFocus } from "../../model/visibility/focus-state";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
@@ -87,6 +88,7 @@ export interface FrameDrawParams {
   } | null;
   realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null;
   expandRevealById?: ReadonlyMap<string, number> | null;
+  realmDial?: DialWorld | null;
   realmDepthById: ReadonlyMap<string, number> | null;
   realmDepthParallax: {
     depth2: {

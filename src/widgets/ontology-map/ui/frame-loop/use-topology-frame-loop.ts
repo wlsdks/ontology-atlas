@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
-import { clearDialFrame } from "../../dial/frame/frame";
+import { clearDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { CameraAxes } from "../../engine/camera";
 import { createLightFrameStage } from "../../light/light-frame-stage";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
@@ -150,7 +150,8 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         frameChips,
         batchAppearVisible);
       light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
-      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds);
+      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds, realmFrame.realmDial);
+      if (lastDialFrame()?.branchMembersAnimating) lastActiveMsRef.current = now;
       light.afterPaint();
       stillFocusId = focusedNodeId;
       return true;

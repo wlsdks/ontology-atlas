@@ -92,7 +92,7 @@ export function useTopologyOverviewNavigation({
         realmData,
         new Set([...expandedParentsRef.current, realmData.rootId]),
         tokens);
-      const target = realmCameraTarget(bounds, tokens, width, height);
+      const target = realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       cameraTargetRef.current = target;
       userDrivenCameraRef.current = false;
       dampingRef.current = tokens.cameraDampingDefault;
