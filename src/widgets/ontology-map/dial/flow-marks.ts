@@ -1,5 +1,7 @@
 import { planStubs, stubCandidates, type Stub, type StubPlan } from "./flow/stubs";
 export { fanAngles } from "./flow/stubs";
+import { flowHeadSize } from "./flow/arrow-size";
+export { flowHeadSize } from "./flow/arrow-size";
 import { quadAt, quadLength, trimmedPiece, overlaps, inside } from "./flow/geometry";
 import { createBranchRouter, type BranchRouter } from "./branches/routes";
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
@@ -36,6 +38,7 @@ export interface FlowMarksInput {
   resolution: DialResolution;
   named?: ReadonlySet<string>;
   nameBoxes?: ReadonlyMap<string, Box>;
+  connectionCount?(count: number): string;
 }
 
 export interface FlowMarksResult {
@@ -75,16 +78,6 @@ export function rampedRestWidth(tokens: DialTokens, count: number, maxTotal: num
 export function rampedFocusWidth(tokens: DialTokens, count: number, maxTotal: number): number {
   return Math.min(focusFlowWidth(tokens, count), tokens.flowFocusBase + (tokens.flowFocusMax - tokens.flowFocusBase) * logShare(count, maxTotal));
 }
-
-export function flowHeadSize(tokens: DialTokens, w0: number, w1: number): number {
-  return tokens.flowHeadBasePx + tokens.flowHeadGain * Math.max(w0, w1);
-}
-
-
-
-
-
-
 function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameRing: boolean): Point {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
@@ -151,7 +144,7 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
     for (const t of s.slots) {
       const q = quadAt(a, c, b, t);
       const box = boxAt(q.x, q.y);
-      if (input.occupied.some((o) => overlaps(o, box))) continue;
+      if (!inside(box, input.freeRect) || input.occupied.some((o) => overlaps(o, box))) continue;
       const half = (textW / 2 + input.tokens.numeralGapPx) / Math.max(1, trimmed);
       gapT0 = Math.max(0, t - half);
       gapT1 = Math.min(1, t + half);
@@ -163,7 +156,7 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
   out.strips.push({
     flowKey: s.key, role: s.role, ink: inkIndex(out, s.ink),
     ax: a.x, ay: a.y, cx: c.x, cy: c.y, bx: b.x, by: b.y, w0: s.w0, w1: s.w1, gapT0, gapT1,
-    dashed: s.dashed, headStart: s.headStart, headEnd: s.headEnd, headSize: s.dashed ? 0 : flowHeadSize(input.tokens, s.w0, s.w1),
+    dashed: s.dashed, headStart: s.headStart, headEnd: s.headEnd, headSize: s.dashed ? 0 : flowHeadSize(input.tokens, s.w0, s.w1, input.scene.branches),
   });
   return { a, c, b };
 }
@@ -586,7 +579,7 @@ function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: E
       key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, piece, w0: width, w1: width,
       ink: linkInk(input, l, from, false, presence), headStart: false, headEnd: !l.relatesOnly,
       trimStart: input.tokens.flowTrimStartPx, trimEnd: input.tokens.flowTrimEndPx,
-      dashed: l.relatesOnly, numeral: l.attended && count > 1 ? String(count) : null,
+      dashed: l.relatesOnly, numeral: l.attended && count > 1 ? input.connectionCount?.(count) ?? null : null,
       numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
     });
     if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: 0, arrivalBloom: false });

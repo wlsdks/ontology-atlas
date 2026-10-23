@@ -3,6 +3,7 @@ import { crossesBox } from "../label-marks";
 import { domainOfEnd, type DialLink } from "../links";
 import type { Point } from "../types";
 import { quadAt, trimmedPiece } from "../flow/geometry";
+import { localRelationControl } from "../flow/local-control";
 import { branchPortFraction } from "./ports";
 
 export interface BranchEnd { p: Point; r: number }
@@ -31,7 +32,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const box = input.endBox?.(id);
       const cluster = input.scene.clusterByDomain.get(id);
       const otherCluster = input.scene.clusterByDomain.get(domainOfEnd(input.model, other));
-      if (box && cluster && cluster.branchPair === otherCluster?.branchPair) {
+      if (box && cluster && cluster.domainId !== otherCluster?.domainId && cluster.branchPair === otherCluster?.branchPair) {
         const fraction = branchPortFraction(input, id, other);
         const y = turn && toward.y < box.minY ? box.minY : turn && toward.y > box.maxY ? box.maxY : box.minY + (box.maxY - box.minY) * fraction;
         return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y };
@@ -45,7 +46,9 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const dx = end.p.x - start.p.x;
       const dy = end.p.y - start.p.y;
       const len = Math.max(1, Math.hypot(dx, dy));
-      let c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+      const original = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+      const local = localRelationControl(start.p, end.p, base);
+      let c = { x: local.x - dy / len * offset, y: local.y + dx / len * offset };
       let turn = false;
       if (input.avoidTexts?.length) {
         const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
@@ -59,7 +62,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
         const endX = turnX(to, from, end);
         const above = Math.min(start.p.y, end.p.y) - input.tokens.ledgerGapPx * 3;
         const below = Math.max(start.p.y, end.p.y) + input.tokens.ledgerGapPx * 3;
-        const basic = [
+        const basic = [original,
           { x: c.x, y: free.minY + 8 }, { x: c.x, y: free.maxY - 8 },
           { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
           { x: mid.x, y: free.minY + 8 }, { x: mid.x, y: free.maxY - 8 },

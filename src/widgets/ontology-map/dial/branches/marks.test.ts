@@ -365,12 +365,13 @@ describe("dense branch disclosure", () => {
     const to = input.nodeScreen("d0")!;
     expect(Math.hypot(strip.ax - from.x, strip.ay - from.y)).toBeLessThan(60);
     expect(Math.hypot(strip.bx - to.x, strip.by - to.y)).toBeLessThan(60);
-    expect(strip.cy < Math.min(from.y, to.y) || strip.cy > Math.max(from.y, to.y)).toBe(true);
     const curve = Array.from({ length: 65 }, (_, i) => {
       const t = i / 64;
       const u = 1 - t;
       return { x: u * u * strip.ax + 2 * u * t * strip.cx + t * t * strip.bx, y: u * u * strip.ay + 2 * u * t * strip.cy + t * t * strip.by };
     });
+    const progress = curve.map(point => (point.x - strip.ax) * (strip.bx - strip.ax) + (point.y - strip.ay) * (strip.by - strip.ay));
+    expect(progress.slice(1).every((value, index) => value >= progress[index]!)).toBe(true);
     for (const name of out.texts) expect(crossesBox([curve], name.box), name.text).toBe(false);
   });
 
