@@ -104,6 +104,45 @@ describe("branch reading", () => {
 
 
 describe("dense branch disclosure", () => {
+  it("reveals an appended capability after a remembered direct-element item without changing item order", () => {
+    const modelOf = (count: number) => {
+      const nodes: TreeInputNode[] = [
+        { id: "p", label: "Project", kind: "project" }, { id: "d", label: "Domain", kind: "domain" },
+        { id: "e", label: "Direct element", kind: "element" },
+        ...Array.from({ length: count }, (_, i) => ({ id: `c${i}`, label: `Capability ${i}`, kind: "capability" as const })),
+      ];
+      const edges: TreeInputEdge[] = [["p", "d"], ["d", "e"], ...Array.from({ length: count }, (_, i) => ["d", `c${i}`])]
+        .map(([source, target]) => ({ source: source!, target: target!, kind: "contains", relationType: "contains" }));
+      return buildDialModel({ tree: readContainmentTree(nodes, edges), dependencies: [], flows: [], elementIds: ["e"] });
+    };
+    const before = layoutDial(modelOf(6), ["d"], tokens, null);
+    const model = modelOf(7);
+    const scene = layoutDial(model, ["d"], tokens, before.memory);
+    const order = scene.clusters[0]!.items.map((item) => item.id);
+    expect(order.indexOf("d::direct")).toBeLessThan(order.indexOf("c6"));
+    const { input } = frame(null, 1, false, 1, 7);
+    input.model = model;
+    input.scene = scene;
+    input.reducedMotion = true;
+    input.now = 100;
+    input.nodeScreen = (id) => { const point = scene.positions.get(id); return point ? input.toScreen(point.x, point.y) : null; };
+    const render = () => {
+      const out = emptyDialFrameMarks();
+      return { out, result: buildDialMarks(input, out) };
+    };
+    expect(render().out.texts.some((text) => text.id === "c6")).toBe(false);
+    applyBranchMemberAction(scene, { type: "branch-members", domainId: "d", direction: "more" }, 100);
+    const expanded = render();
+    expect(expanded.out.texts.some((text) => text.id === "c6" && text.role === "capability")).toBe(true);
+    expect(expanded.result.picks.some((pick) => pick.id === "c6")).toBe(true);
+    const collapse = expanded.out.texts.find((text) => text.id === "d" && text.role === "more")!;
+    const last = scene.itemById.get("c6")!;
+    expect(collapse.y).toBe(input.toScreen(last.x, last.y + tokens.pitch * 2).y);
+    applyBranchMemberAction(scene, { type: "branch-members", domainId: "d", direction: "less" }, 100);
+    expect(render().out.texts.some((text) => text.id === "c6")).toBe(false);
+    expect(scene.clusters[0]!.items.map((item) => item.id)).toEqual(order);
+  });
+
   it("draws newly disclosed members and restores the preview after collapse", () => {
     const { input } = frame(null, 1, false, 3, 8);
     const rebuild = () => {

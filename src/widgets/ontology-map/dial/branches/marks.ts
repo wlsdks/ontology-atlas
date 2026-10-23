@@ -133,11 +133,14 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const now = input.now ?? performance.now();
     const disclosureAlpha = branchMemberAlpha(scene, id, previewRows, now, input.reducedMotion);
     const explicitDisclosure = expanded || disclosureAlpha > 0;
-    for (const [itemIndex, item] of cluster.items.entries()) {
+    const members = cluster.items.filter((item) => !item.direct);
+    let ordinal = 0;
+    for (const item of cluster.items) {
+      const memberIndex = item.direct ? -1 : ordinal++;
       const activeElements = activeChildren.get(item.direct ? id : item.id);
       const active = input.attention.capabilityId === item.id || activeCaps.has(item.id) || !!activeElements || (input.contextAlphas?.get(item.id) ?? 0) >= 0.5;
-      const memberAlpha = item.direct ? 0 : branchMemberAlpha(scene, id, itemIndex, now, input.reducedMotion);
-      const presence = active || partners.has(item.id) ? 1 : (item.direct ? disclosure.elementsAlpha : memberAlpha * (itemIndex >= previewRows ? 1 : detail + (1 - detail) * disclosureAlpha));
+      const memberAlpha = item.direct ? 0 : branchMemberAlpha(scene, id, memberIndex, now, input.reducedMotion);
+      const presence = active || partners.has(item.id) ? 1 : (item.direct ? disclosure.elementsAlpha : memberAlpha * (memberIndex >= previewRows ? 1 : detail + (1 - detail) * disclosureAlpha));
       if (presence <= 0.01 || (input.contextAlphas && (input.contextAlphas.get(item.id) ?? 0) < 0.05)) { if (!item.direct) alphas.set(item.id, 0); continue; }
       const q = item.direct ? input.toScreen(item.x, item.y) : position(item.id, item);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
@@ -158,7 +161,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
           }
           alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
           if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
-          if (namesVisible || expanded || itemIndex >= previewRows || active || partners.has(item.id)) {
+          if (namesVisible || expanded || memberIndex >= previewRows || active || partners.has(item.id)) {
             const label = model.capabilityById.get(item.id)!.label;
             const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel), presence);
             if (presence > 0.5) rows.push({ id: item.id, box: name });
@@ -190,7 +193,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     }
     const more = domain.capabilityIds.length - shownMembers;
     if (!input.contextAlphas && (more > 0 || expanded) && (namesVisible || expanded)) {
-      const last = cluster.items[Math.min(shownMembers, cluster.items.length) - 1]!;
+      const last = members[Math.min(shownMembers, members.length) - 1]!;
       const point = input.toScreen(last.x, last.y + tokens.pitch * BRANCH_ROW_PITCH);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
       const controls: { direction: "more" | "less"; label: string }[] = [];
