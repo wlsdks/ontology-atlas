@@ -41,6 +41,7 @@ type SelectionContext = {
   structure:boolean;
   setExpandAllActive:Options['setExpandAllActive'];
   setHoverEdge:Options['topologyAuthoring']['setHoverEdge'];
+  setSelectedEdge:Options['topologyAuthoring']['setSelectedEdge'];
   setFullDetailSlug:Options['topologyCanvasFocus']['setFullDetailSlug'];
   setSelectedRelationActive:Options['topologyCanvasFocus']['setSelectedRelationActive'];
   setNodePopoverDismissed:Options['topologyCanvasFocus']['setNodePopoverDismissed'];
@@ -53,6 +54,7 @@ function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug
   current.interactionSelectedSlugRef.current=slug;
   if(!current.structure)current.setExpandAllActive(false);
   current.setHoverEdge(null);
+  current.setSelectedEdge(null);
   current.setFullDetailSlug(null);
   current.setSelectedRelationActive(false);
   current.setNodePopoverDismissed(false);
@@ -80,7 +82,7 @@ export function useTopologyNavigationActions({
   const { panelDatasheetModel } = topologyInspectorState;
 
 
-  const selectionContext=useLatestRef({interactionSelectedSlugRef,structure,setExpandAllActive,setHoverEdge,
+  const selectionContext=useLatestRef({interactionSelectedSlugRef,structure,setExpandAllActive,setHoverEdge,setSelectedEdge,
     setFullDetailSlug,setSelectedRelationActive,setNodePopoverDismissed,projectBySlug,setRouteState,beginExpandedIndexSelection});
   // Renderers may cache this callback across equally shaped folders. It resolves
   // only the current committed selection context, without pinning an old index.
@@ -166,7 +168,6 @@ function useAcpMapIntent({
         if (!nodeId) return;
         setMeaningEditorState(null);
         setExpandAllActive(false);
-        setSelectedEdge(null);
         handleSelect(nodeId);
         return;
       }
