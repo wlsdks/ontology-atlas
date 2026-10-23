@@ -1,7 +1,7 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
 import { lastDialFrame } from "../../dial/frame/frame";
-import { pickDial } from "../../dial/pick";
+import { pickDial, pickDialAction } from "../../dial/pick";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { CameraAxes } from "../../engine/camera";
@@ -343,5 +343,6 @@ export function createPointerHitTests(ctx: PointerContext) {
     return candidates;
   };
 
-  return { hitTestClusterChip, hitVisibleNode, buildEdgeCandidates };
+  const hitDialAction = (x: number, y: number) => pickDialAction(lastDialFrame()?.rows ?? [], x, y);
+  return { hitDialAction, hitTestClusterChip, hitVisibleNode, buildEdgeCandidates };
 }

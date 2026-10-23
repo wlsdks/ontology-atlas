@@ -27,7 +27,7 @@ import {
   paintDialFrame,
   sampleStrips } from "./frame";
 import { layoutDial } from "../layout";
-import { pickDial } from "../pick";
+import { pickDial, pickDialAction } from "../pick";
 import { emptyDialFrameMarks, type DialFrameMarks } from "./marks";
 import { circularDomainOrder } from "../order";
 import { resolveDialTokens } from "../tokens";
@@ -243,12 +243,13 @@ describe("frame registry", () => {
         expect(first.alphas.get("d1c7")).toBe(0);
         const more = first.marks.texts.find((t) => t.id === "d1" && t.role === "more")!;
         expect(more).toBeDefined();
-        expect(pickDial(first.picks, first.rows, (more.box.minX + more.box.maxX) / 2, more.y, 0)).toBe("d1");
+        expect(pickDial(first.picks, first.rows, (more.box.minX + more.box.maxX) / 2, more.y, 0)).toBeNull();
+        expect(pickDialAction(first.rows, (more.box.minX + more.box.maxX) / 2, more.y)).toEqual({ type: "branch-members", domainId: "d1", direction: "more" });
         const agentOnly = paintDialFrame({ ...input, agentFocusNodeId: "d1c7" });
         expect(agentOnly.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", agentFocus: true }));
         expect(agentOnly.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
         const next = paintDialFrame({ ...input, focusedNodeId: "d1c7", agentFocusNodeId: "d1c7", selectionPulse: { nodeId: "d1c7", scaleFactor: 1.1, alpha: 1 } });
-        expect(next.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", kind: "capability", egoState: "normal", agentFocus: true, selectionPulse: null }));
+        expect(next.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", kind: "capability", egoState: "center", agentFocus: true, selectionPulse: null }));
         expect(next.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
     });
 

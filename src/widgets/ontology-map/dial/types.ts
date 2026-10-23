@@ -8,7 +8,7 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number;
 }
 export interface Pad { left: number; right: number; top: number; bottom: number;
 }
-export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
+export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; lessMembers?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
 }
 export interface DialTokens {
   pitch: number;
@@ -135,7 +135,7 @@ interface TickMark { ink: number; x0: number; y0: number; x1: number; y1: number
 }
 interface RailMark { ink: number; cx: number; cy: number; r: number; a0: number; a1: number;
 }
-export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number;
+export interface GlyphMark { selectionInk?: string; id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number;
     } | null;
     count: string | null;
     stalePip: boolean;
@@ -152,7 +152,9 @@ export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMar
 }
 export interface DialPick { id: string; x: number; y: number; r: number;
 }
+export interface DialRowAction { type: "branch-members"; domainId: string; direction: "more" | "less" }
 export interface DialRowPick {
+    action?: DialRowAction;
     id: string;
     box: Box;
 }
@@ -175,6 +177,7 @@ export interface DialFrameInput {
   now: number; reducedMotion: boolean; domainAppear: number;
 }
 export interface DialFrameResult {
+  branchScene?: DialScene; branchMembersAnimating?: boolean;
   contextOnly?: boolean;
   drawnCount: number; tier: "circuit" | "element"; alphas: ReadonlyMap<string, number>; picks: DialPick[]; rows: DialRowPick[];
   labelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number;

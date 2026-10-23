@@ -7,6 +7,7 @@ import type { Box, DialAttention, DialKind, GlyphMark, Point, TextMark } from ".
 import { branchPreviewRows, BRANCH_ROW_PITCH } from "./layout";
 import { capabilityNameTries, overlaps } from "../label-marks";
 import { branchNameLines, branchTextStyle } from "./text";
+import { branchMemberAlpha, branchMemberCount } from "./member-disclosure";
 import { settleBranchNames } from "./name-occupancy";
 
 export interface BranchBlock { id: string; box: Box; fill: number; rim: number; alpha: number }
@@ -36,6 +37,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const activeCaps = new Set([...activeIds].map((id) => model.capabilityOf.get(id) ?? id));
   const partners = new Set([...input.attention.needsCaps, ...input.attention.usedByCaps, ...input.attention.relatesCaps]);
   const activeDomains = new Set([...activeIds, ...partners].map((id) => model.domainOf.get(id)));
+  const selected = (id: string) => input.focusedNodeId === id || (input.focusedNodeId === undefined && input.attention.selected && (input.attention.capabilityId ?? input.attention.domainId) === id);
   const ink = (color: string) => inkIndex(out, color);
   const position = (id: string, p: Point) => input.nodeScreen(id) ?? input.toScreen(p.x, p.y);
   const visible = (p: Point, room: number) => p.x + room >= 0 && p.x - room <= input.viewportWidth && p.y + room >= 0 && p.y - room <= input.viewportHeight;
@@ -54,6 +56,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     colorFor(input.inkAttention, id, kind, rest), input.inkMix,
   );
   const text = (id: string, role: TextMark["role"], value: string, p: Point, align: CanvasTextAlign, kind: DialKind, tint: string, presence = 1) => {
+    if (selected(id) && (role === "capability" || role === "element")) tint = inks.domainLabelAttended;
     const { font, height } = branchTextStyle(role, kind, tokens.labelScale);
     const lines = (role === "capability" || role === "domain") ? branchNameLines(value, font, tokens.nameMaxPx, input.measureText) : [value];
     const width = Math.max(...lines.map((line) => input.measureText(line, font)));
@@ -68,8 +71,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   };
   const glyph = (id: string, kind: DialKind, p: Point, r: number, stroke: string, fill: string, stalePip = false) => {
     const g: GlyphMark = {
-      id, kind, ...p, r, stroke, fill,
-      egoState: "normal",
+      id, kind, ...p, r, stroke: selected(id) ? inks.domainLabelAttended : stroke, fill: selected(id) ? mixOver(inks.domainLabelAttended, fill, 0.12) : fill,
+      egoState: selected(id) ? "center" : "normal",
+      selectionInk: selected(id) ? inks.domainLabelAttended : undefined,
       count: null, stalePip,
       hovered: false, agentFocus: input.agentFocusNodeId === id,
       selectionPulse: null,
@@ -124,23 +128,28 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const title = text(id, "domain", domain.label, { x: textX, y: p.y - (tokens.chipMinPx + titleExtraHeight / 2) * detail }, "left", "domain", color(id, "domain", inks.domainLabelAttended));
     if (namesVisible) text(id, "units", units, { x: textX, y: p.y + (tokens.ledgerGapPx + titleExtraHeight) / 2 }, "left", "element", color(id, "domain", inks.units), detail);
     if (detail <= 0.5) rows.push({ id, box: title });
+    const shownMembers = branchMemberCount(scene, id);
+    const expanded = shownMembers > previewRows;
+    const now = input.now ?? performance.now();
+    const disclosureAlpha = branchMemberAlpha(scene, id, previewRows, now, input.reducedMotion);
+    const explicitDisclosure = expanded || disclosureAlpha > 0;
     for (const [itemIndex, item] of cluster.items.entries()) {
       const activeElements = activeChildren.get(item.direct ? id : item.id);
       const active = input.attention.capabilityId === item.id || activeCaps.has(item.id) || !!activeElements || (input.contextAlphas?.get(item.id) ?? 0) >= 0.5;
-      const preview = !item.direct && itemIndex < previewRows;
-      const presence = active || partners.has(item.id) ? 1 : (item.direct ? disclosure.elementsAlpha : preview ? detail : 0);
+      const memberAlpha = item.direct ? 0 : branchMemberAlpha(scene, id, itemIndex, now, input.reducedMotion);
+      const presence = active || partners.has(item.id) ? 1 : (item.direct ? disclosure.elementsAlpha : memberAlpha * (itemIndex >= previewRows ? 1 : detail + (1 - detail) * disclosureAlpha));
       if (presence <= 0.01 || (input.contextAlphas && (input.contextAlphas.get(item.id) ?? 0) < 0.05)) { if (!item.direct) alphas.set(item.id, 0); continue; }
       const q = item.direct ? input.toScreen(item.x, item.y) : position(item.id, item);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
       radii.set(item.id, radius);
       const itemVisible = visible(q, tokens.nameMaxPx);
-      if ((!active && !partners.has(item.id) && capAlpha <= 0.02) || (!itemVisible && !activeElements)) continue;
+      if ((!active && !partners.has(item.id) && !explicitDisclosure && capAlpha <= 0.02) || (!itemVisible && !activeElements)) continue;
       if (itemVisible) {
         const state = input.evidence?.stateOf(item.id);
         const tint = mixOver(color(item.id, "capability", state === "stale" ? inks.stale : inks.capabilityRim), inks.bg, presence);
         const root = { x: p.x + side * width / 2 * detail, y: p.y };
         stems.push({ a: root, c: { x: (root.x + q.x) / 2, y: q.y }, b: { x: q.x - side * radius, y: q.y }, ink: ink(mixOver(color(item.id, "capability", inks.element), inks.bg, presence)) });
-        if (item.direct) out.squares.push({ id: null, ...q, half: radius, fill: ink(inks.elementFill), rim: ink(inks.element) });
+        if (item.direct) out.squares.push({ id: null, ...q, half: radius, fill: ink(mixOver(inks.elementFill, inks.bg, presence)), rim: ink(mixOver(inks.element, inks.bg, presence)) });
         else {
           if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg);
           else {
@@ -149,7 +158,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
           }
           alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
           if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
-          if (namesVisible || active || partners.has(item.id)) {
+          if (namesVisible || expanded || itemIndex >= previewRows || active || partners.has(item.id)) {
             const label = model.capabilityById.get(item.id)!.label;
             const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel), presence);
             if (presence > 0.5) rows.push({ id: item.id, box: name });
@@ -179,13 +188,19 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         }
       }
     }
-    const more = domain.capabilityIds.length - previewRows;
-    if (!input.contextAlphas && more > 0 && disclosure.elementsAlpha < 0.99 && namesVisible) {
-      const last = cluster.items[previewRows - 1]!;
+    const more = domain.capabilityIds.length - shownMembers;
+    if (!input.contextAlphas && (more > 0 || expanded) && (namesVisible || expanded)) {
+      const last = cluster.items[Math.min(shownMembers, cluster.items.length) - 1]!;
       const point = input.toScreen(last.x, last.y + tokens.pitch * BRANCH_ROW_PITCH);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
-      const label = text(id, "more", input.labels?.moreMembers?.(more) ?? input.labels?.more(more) ?? `+${more}`, { x: point.x + side * (radius + tokens.chipMinPx), y: point.y }, side > 0 ? "left" : "right", "capability", color(id, "domain", inks.units), detail * (1 - disclosure.elementsAlpha));
-      if (detail > 0.5 && disclosure.elementsAlpha < 0.5) rows.push({ id, box: label });
+      const controls: { direction: "more" | "less"; label: string }[] = [];
+      const nextBatch = Math.min(more, previewRows);
+      if (more > 0) controls.push({ direction: "more", label: input.labels?.moreMembers?.(nextBatch) ?? input.labels?.more(nextBatch) ?? `+${nextBatch}` });
+      if (expanded) controls.push({ direction: "less", label: input.labels?.lessMembers?.(shownMembers - previewRows) ?? `−${shownMembers - previewRows}` });
+      controls.forEach((control, index) => {
+        const label = text(id, "more", control.label, { x: point.x + side * (radius + tokens.chipMinPx), y: point.y + index * tokens.ledgerGapPx }, side > 0 ? "left" : "right", "capability", color(id, "domain", inks.units), expanded ? 1 : detail);
+        rows.push({ id, box: label, action: { type: "branch-members", domainId: id, direction: control.direction } });
+      });
     }
   }
   for (const id of scene.orphans.ids) {

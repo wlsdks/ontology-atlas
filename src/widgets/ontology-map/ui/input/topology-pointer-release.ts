@@ -1,4 +1,6 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { applyBranchMemberAction } from "../../dial/branches/member-disclosure";
+import { pickDialAction } from "../../dial/pick";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { clampPointToPanBounds } from "../../engine/camera";
 import { MOMENTUM_SPRING, MOMENTUM_TAU_MS, springAngularFrequency } from "../../model/motion-physics";
@@ -167,6 +169,19 @@ export function createPointerReleaseHandlers(
       dampingRef.current = MOMENTUM_SPRING.damping;
       cameraAngularFreqRef.current = springAngularFrequency(MOMENTUM_SPRING);
       return;
+    }
+    if (commitClick && clickPoint) {
+      const frame = lastDialFrame();
+      const action = frame?.branchScene ? pickDialAction(frame.rows, clickPoint.x, clickPoint.y) : null;
+      if (action && frame?.branchScene) {
+        if (lastTapRef) lastTapRef.current = null;
+        if (applyBranchMemberAction(frame.branchScene, action, performance.now())) {
+          onSelect?.(action.domainId, "canvas-dblclick");
+          onFlyToNode?.(action.domainId);
+        }
+        clearClusterHover();
+        return;
+      }
     }
     // A double-click on a node opens its children and keeps it selected. A second
     // quick tap on a leaf keeps the selection too: a repeated click is never an undo.

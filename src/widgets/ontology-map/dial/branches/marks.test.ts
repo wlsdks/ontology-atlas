@@ -8,6 +8,7 @@ import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "../fra
 import { resolveDialInks } from "../ink";
 import { layoutDial } from "../layout";
 import { resolveDialTokens } from "../tokens";
+import { applyBranchMemberAction } from "./member-disclosure";
 import { overlaps } from "../label-marks";
 import { dialOverviewBounds, dialOverviewPad } from "../fit";
 import { computeOverviewCameraTarget } from "../../ui/camera/topology-camera-math";
@@ -103,6 +104,51 @@ describe("branch reading", () => {
 
 
 describe("dense branch disclosure", () => {
+  it("draws newly disclosed members and restores the preview after collapse", () => {
+    const { input } = frame(null, 1, false, 3, 8);
+    const rebuild = () => {
+      const out = emptyDialFrameMarks();
+      const result = buildDialMarks({ ...input, reducedMotion: true, now: 100 }, out);
+      return { out, result };
+    };
+    expect(rebuild().out.texts.some((text) => text.id === "d0c7")).toBe(false);
+    applyBranchMemberAction(input.scene, { type: "branch-members", domainId: "d0", direction: "more" }, 100);
+    const expanded = rebuild();
+    expect(expanded.out.texts.some((text) => text.id === "d0c7" && text.role === "capability")).toBe(true);
+    expect(expanded.result.picks.some((pick) => pick.id === "d0c7")).toBe(true);
+    expect(expanded.result.rows.some((row) => row.action?.direction === "less")).toBe(true);
+    applyBranchMemberAction(input.scene, { type: "branch-members", domainId: "d0", direction: "less" }, 100);
+    expect(rebuild().out.texts.some((text) => text.id === "d0c7")).toBe(false);
+  });
+
+  it("fades the direct-member square with its actual disclosure presence", () => {
+    const { input } = frame(null, 1);
+    input.disclosure = { ...input.disclosure, elementsAlpha: 0.03 };
+    const cluster = input.scene.clusters[0]!;
+    cluster.items.push({ ...cluster.items[0]!, id: "direct", direct: true, elementIds: [] });
+    const out = emptyDialFrameMarks();
+    buildDialMarks(input, out);
+    const direct = out.squares.find((square) => square.id === null)!;
+    expect(direct).toBeDefined();
+    expect(out.inks[direct.rim]).not.toBe(input.inks.element);
+    expect(out.inks[direct.fill]).not.toBe(input.inks.elementFill);
+  });
+
+  it("gives the more-members row an explicit disclosure action", () => {
+    const { out, result } = frame(null, 1, false, 3, 8);
+    const more = out.texts.find((text) => text.id === "d0" && text.role === "more")!;
+    expect(more).toBeDefined();
+    expect(result.rows.find((row) => row.box === more.box)?.action).toEqual({ type: "branch-members", domainId: "d0", direction: "more" });
+  });
+
+  it("keeps static selected feedback distinct from an ordinary capability without hover or pulse", () => {
+    const { input, out } = frame("d0c7", 1, false, 3, 8);
+    expect(input.hoveredNodeId).toBeNull();
+    expect(input.selectionPulse).toBeNull();
+    expect(out.glyphs.find((glyph) => glyph.id === "d0c7")).toMatchObject({ egoState: "center", stroke: input.inks.domainLabelAttended, selectionPulse: null });
+    const name = out.texts.find((text) => text.id === "d0c7" && text.role === "capability")!;
+    expect(out.inks[name.ink]).toBe(input.inks.domainLabelAttended);
+  });
   for (const domains of [9, 20, 50]) for (const width of [1040, 1920]) {
     it(`${domains} domains at ${width}px: keeps visible names apart`, () => {
       const { out } = frame(null, 1, true, domains, 8, width);

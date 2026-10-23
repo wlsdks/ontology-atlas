@@ -46,7 +46,8 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
   });
   nameBoxes.clear();
   for (const text of accepted) if (text.id) nameBoxes.set(text.id, text.box);
-  const kept = rows.filter((row) => !oldBoxes.has(row.box));
+  const actions = rows.filter((row) => row.action && out.texts.some((text) => text.box === row.box));
+  const kept = rows.filter((row) => !row.action && !oldBoxes.has(row.box));
   for (const text of accepted) if (text.id) kept.push({ id: text.id, box: text.box });
-  rows.splice(0, rows.length, ...kept);
+  rows.splice(0, rows.length, ...kept, ...actions);
 }

@@ -8,6 +8,10 @@ const disc = (id: string, x: number, y: number, r: number): DialPick => ({ id, x
 const row = (id: string, minX: number, minY: number, maxX: number, maxY: number): DialRowPick => ({ id, box: { minX, minY, maxX, maxY } });
 
 describe("pickDial", () => {
+  it("keeps a disclosure action from selecting or dragging the domain below it", () => {
+    const more = { ...row("domain", 5, 5, 40, 15), action: { type: "branch-members" as const, domainId: "domain", direction: "more" as const } };
+    expect(pickDial([disc("domain", 10, 10, 6)], [more], 10, 10, HIT_TOUCH_SLACK_PX)).toBeNull();
+  });
   it("lets a row beat a disc under the same point", () => {
     expect(pickDial([disc("cap", 10, 10, 6)], [row("ledger-cap", 5, 5, 40, 15)], 10, 10, HIT_TOUCH_SLACK_PX)).toBe("ledger-cap");
   });
