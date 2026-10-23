@@ -33,6 +33,7 @@ export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTe
 export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementsAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
 
 export interface DialMarksInput {
+  contextAlphas?: ReadonlyMap<string, number>;
   model: DialModel;
   scene: DialScene;
   tokens: DialTokens;

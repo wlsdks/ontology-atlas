@@ -6,6 +6,8 @@ import type { WorldEdge } from "../world/topology-world";
 import { EMPTY_NEIGHBOR_SET, passState, litSectorIdsReused, lodHoverEgoReused } from "./frame-state";
 import { resetNodeVisualCacheFor } from "./node-visual";
 import type { FrameInputs } from "./frame-begin";
+import { lastDialFrame } from "../../dial/frame/frame";
+import { clipBranchRelation } from "../../dial/branches/relation-ports";
 
 // Shared scratch: use the result before the next call and never keep it.
 const edgePointsScratch = {
@@ -46,7 +48,7 @@ export function prepareFocus(frame: FrameInputs) {
       out.b.y = (edge.by - camY) * camScale + halfH;
       out.control.x = (edge.controlX - camX) * camScale + halfW;
       out.control.y = (edge.controlY - camY) * camScale + halfH;
-      return out;
+      return clipBranchRelation(lastDialFrame(), edge.sourceId, edge.targetId, out);
     }
     const offA = knownOffA ?? domeFrameFor(edge.sourceId);
     const offB = knownOffB ?? domeFrameFor(edge.targetId);

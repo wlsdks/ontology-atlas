@@ -213,12 +213,17 @@ export function useTopologyFocusNavigation({
         const node = world.nodeById.get(focusedSlug);
         const measured = cameraTokens(tokens);
         const current = cameraTargetRef.current;
-        const branch = world.dial?.scene.branches ? world.dial.scene.clusterByDomain.get(focusedSlug) : null;
+        const branch = world.dial?.scene.branches ? world.dial.scene.clusterByDomain.get(world.dial.model.domainOf.get(focusedSlug) ?? focusedSlug) : null;
         const frame = world.dial?.scene.branches ? lastDialFrame() : null;
-        const ids = new Set([focusedSlug, ...(branch?.items.slice(0, branchPreviewRows(world.dial!.scene.clusters.length)).map((it) => it.id) ?? [])]);
-        const names = frame?.labelBoxes.filter((box) => ids.has(box.nodeId)) ?? [];
+        const ids = new Set([focusedSlug, branch?.domainId, ...(branch?.items.slice(0, branchPreviewRows(world.dial!.scene.clusters.length)).map((it) => it.id) ?? [])]);
+        let names = frame?.labelBoxes.filter((box) => ids.has(box.nodeId)) ?? [];
         const seen = cameraRef.current;
         const sx = node ? (node.x - seen.x.value) * seen.scale.value + width / 2 : 0;
+        const freeWidth = width - measured.safeInsetLeft - measured.safeInsetRight;
+        if (names.length && Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement)
+          + Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement) >= freeWidth) {
+          names = names.filter((box) => box.nodeId === focusedSlug);
+        }
         const margin = names.length ? {
           left: Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement),
           right: Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement),

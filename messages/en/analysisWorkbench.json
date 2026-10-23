@@ -186,5 +186,9 @@
       "missing": "Missing",
       "unknown": "Unknown"
     }
-  }
+  },
+  "reviewPurpose": "Check whether the recorded roles, boundaries and connections match what the product is meant to do.",
+  "definitionEyebrow": "Role and scope",
+  "recordedDefinition": "Recorded description · original",
+  "recordedReason": "Recorded connection reason · original"
 }

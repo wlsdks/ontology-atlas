@@ -8,14 +8,14 @@
   "reviewFailed": "검토를 저장하지 못했어요",
   "errorDetails": "자세한 내용",
   "section": "검토할 내용",
-  "meaning": "의미",
+  "meaning": "기록 살펴보기",
   "history": "이슈·기록",
   "conversation": "대화",
   "retrySave": "저장 재시도",
   "export": "Markdown 내보내기",
   "diagnosticOnly": "AI의 지적은 검토할 가설이에요. 온톨로지를 바꾸거나 코드 수정을 승인하지 않아요.",
   "architectureCriteria": "유지보수성은 책임 분리, 의존 규칙, 그 규칙과 다른 연결, 분석하지 못한 범위와 개선 근거로 판단해요. 기준 없는 백분율은 측정값이 아니에요.",
-  "analyze": "AI로 분석하기",
+  "analyze": "AI에게 검토 요청",
   "agentUnavailable": "데스크톱 앱에서 지원 에이전트를 연결하면 분석할 수 있어요. 저장된 Markdown 기록은 여기서도 읽을 수 있어요.",
   "agentUnavailableWithDecisions": "데스크톱 앱에서 지원 에이전트를 연결하면 분석하고, 의미 판단 기록도 볼 수 있어요. 저장된 Markdown 분석 기록은 여기서도 읽을 수 있어요.",
   "refresh": "기록 새로고침",
@@ -47,7 +47,7 @@
   "followUp": "이 버전에서 추가 분석",
   "loadOlder": "이전 기록 더 보기",
   "recordProblems": "읽지 못한 기록 {count}개",
-  "definitionMissing": "정의 요약을 바로 표시할 수 없어요.",
+  "definitionMissing": "짧은 요약이 없어요. 원문에서 역할과 범위를 확인할 수 있어요.",
   "openDefinition": "정의와 경계 읽기",
   "kindCriteria": "각 종류에는 무엇을 담나요?",
   "relations": "이 연결은 어떤 뜻인가요?",
@@ -186,5 +186,9 @@
       "missing": "누락",
       "unknown": "미확인"
     }
-  }
+  },
+  "reviewPurpose": "개념이 맡은 역할과 범위, 연결된 이유가 실제 제품과 맞는지 확인해요.",
+  "definitionEyebrow": "역할과 범위",
+  "recordedDefinition": "문서에 적힌 설명 · 원문",
+  "recordedReason": "기록된 연결 이유 · 원문"
 }

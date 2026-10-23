@@ -6,7 +6,6 @@ import { FileText } from 'lucide-react';
 import { Checkbox, Chip, Disclosure, IconButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { badgeClass } from '@/shared/ui/badge-class';
 
 /** Sans, not mono caps; identical to the workbench's section label in `AnalysisWorkbench.tsx`. */
 const SECTION_LABEL = 'text-caption font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]';
@@ -41,16 +40,18 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
   const reasonLine = missingReasons > 0 && (!reasonsAction || mixedReasons);
   return <div className="flex flex-col gap-4">
     {node ? <section className="space-y-2" aria-label={node.title}>
-      <p className="whitespace-pre-wrap text-body-lg leading-body-lg">{node.summary?.trim() || t('definitionMissing')}</p>
+      <p className={SECTION_LABEL}>{t('definitionEyebrow')}</p>
       <p className="text-body leading-body text-[color:var(--color-text-secondary)]">{glossary(`criteria.${selectedKind}`)}</p>
+      {node.summary?.trim() ? <Disclosure summary={t('recordedDefinition')}><p className="mt-2 whitespace-pre-wrap text-body leading-body text-[color:var(--color-text-secondary)]">{node.summary}</p></Disclosure> : <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('definitionMissing')}</p>}
       <div className="pt-1"><Chip size="lg" onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip></div>
-    </section> : <p>{t('selectNode')}</p>}
+    </section> : relations.length === 0 ? <p>{t('selectNode')}</p> : null}
     {node || relations.length ? <section className={cn('space-y-3', node && divided)}>
       <div className="space-y-1">
         <p className={SECTION_LABEL}>{t('relationsEyebrow')}{relations.length ? <span className="tabular-nums"> · {relations.length}</span> : null}</p>
         {reasonLine ? <p data-testid="meaning-relations-missing-reasons" className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('rationaleMissingGroup', { count: missingReasons })}</p> : null}
       </div>
-      {relations.length ? <ul data-testid="meaning-relations" className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] divide-y divide-[color:var(--color-divider)]">{relations.map((relation) => <li key={relation.id} data-testid="meaning-relation" className="flex items-center">
+      {relations.length ? <ul data-testid="meaning-relations" className="divide-y divide-[color:var(--color-divider)]">{relations.map((relation) => <li key={relation.id} data-testid="meaning-relation" className="py-2">
+        <div className="flex items-center">
         <button
           type="button"
           data-control="row"
@@ -58,14 +59,15 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
           onClick={() => onSelectRelation(relation.id)}
           className={controlClass({ shape: 'row', size: 'md', stacked: true, hoverSurface: 'lift', className: 'min-w-0 flex-1 flex-col items-start gap-1.5 px-[var(--card-pad)] py-3' })}
         >
-          <span className="flex flex-wrap items-center gap-2">
-            <span data-testid="meaning-relation-type" className={badgeClass({ shape: 'tag', className: 'border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]' })}>{relation.typeLabel}</span>
+          <span className="flex flex-wrap items-center gap-2 text-caption text-[color:var(--color-text-tertiary)]">
+            <span data-testid="meaning-relation-type">{relation.typeLabel}</span>
             {mixedReasons && !relation.why ? <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">{t('rationaleMissingShort')}</span> : null}
           </span>
           <span className="block text-body leading-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{relation.sentence}</span>
-          {relation.why ? <span className="block text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</span> : null}
         </button>
         {relation.declaredBy ? <IconButton size="lg" hoverInk="strong" hoverSurface="lift" label={t('declaringDocument')} className="mr-2 shrink-0" onClick={() => onEvidence(relation.declaredBy!)}><FileText size={ICON_SIZE.sm} aria-hidden /></IconButton> : null}
+        </div>
+        {relation.why ? <div className="px-[var(--card-pad)] pb-2"><Disclosure summary={t('recordedReason')}><p className="mt-2 whitespace-pre-wrap text-body leading-body text-[color:var(--color-text-secondary)]">{relation.why}</p></Disclosure></div> : null}
       </li>)}</ul> : <p className="text-label leading-label text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>}
     </section> : null}
     <div className={cn('space-y-3', trailing)}>

@@ -1,4 +1,6 @@
 import type { RefObject } from "react";
+import { lastDialFrame } from "../dial/frame/frame";
+import type { DialFrameMarks } from "../dial/frame/marks";
 
 import type { CameraAxes } from "../engine/camera";
 import { edgeRevealProgress, type Point } from "../expressive/edge-reveal";
@@ -332,7 +334,8 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
       let drew = false;
       if (state === "ready" && layer && batch) {
         if (batch.signalCount + batch.bloomCount > 0) {
-          layer.draw(frameWidth, frameHeight, batch);
+          const cards = (lastDialFrame()?.marks as DialFrameMarks | undefined)?.blocks?.filter((block) => block.alpha > 0.5).map((block) => block.box);
+          layer.draw(frameWidth, frameHeight, batch, cards);
           drewLast = true;
           drew = true;
         } else if (drewLast) {

@@ -2,6 +2,7 @@ import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial } from "../../dial/pick";
+import { clipBranchRelation } from "../../dial/branches/relation-ports";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { CameraAxes } from "../../engine/camera";
 import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable } from "../../model/visibility/tier-visibility";
@@ -249,7 +250,8 @@ export function createPointerHitTests(ctx: PointerContext) {
   /** Shared by P3b/P3c — screen projections of edges whose ends are both hittable at the current tier. */
   const buildEdgeCandidates = (): EdgeHitCandidate[] => {
     const world = worldRef.current;
-    if (!world || lastDialFrame()) return [];
+    const dial = lastDialFrame();
+    if (!world || (dial && !dial.contextOnly)) return [];
     const tokens = readOntologyMapTokensOrNull();
     if (!tokens) return [];
     const { width, height } = viewportRef.current;
@@ -279,6 +281,7 @@ export function createPointerHitTests(ctx: PointerContext) {
       selectedEdge ? `${selectedEdge.sourceId}>${selectedEdge.targetId}` : "",
       pathIds ? [...pathIds].sort().join(",") : "",
       visited.join(","),
+      dial?.contextOnly ?? false,
       domeEpoch
     ].join("|");
     // Sets and maps are compared **by reference** — comparing only sizes lets a
@@ -327,9 +330,11 @@ export function createPointerHitTests(ctx: PointerContext) {
       const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
       candidates.push({
         edge,
-        a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
-        b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
-        control: worldToScreen(cam, width, height, control.x, control.y),
+        ...clipBranchRelation(dial, edge.sourceId, edge.targetId, {
+          a: worldToScreen(cam, width, height, edge.ax + offA.dx, edge.ay + offA.dy),
+          b: worldToScreen(cam, width, height, edge.bx + offB.dx, edge.by + offB.dy),
+          control: worldToScreen(cam, width, height, control.x, control.y),
+        }),
         aRadius: bodyRadius(edge.sourceId),
         bRadius: bodyRadius(edge.targetId),
       });

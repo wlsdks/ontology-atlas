@@ -27,7 +27,7 @@ export interface LightBatch {
 
 export interface LightLayer {
   readonly canvas: HTMLCanvasElement;
-  draw(width: number, height: number, batch: LightBatch): void;
+  draw(width: number, height: number, batch: LightBatch, exclusions?: readonly { minX: number; minY: number; maxX: number; maxY: number }[]): void;
   clear(width: number, height: number): void;
   read(left: number, top: number, width: number, height: number): Uint8Array;
   isLost(): boolean;
@@ -230,13 +230,26 @@ export function createLightLayer(host: HTMLCanvasElement, options: LightLayerOpt
 
   return {
     canvas,
-    draw(width, height, batch) {
+    draw(width, height, batch, exclusions) {
       if (lost || disposed) return;
       fit(width, height);
       gl.clear(gl.COLOR_BUFFER_BIT);
       run(signal, batch.signals, SIGNAL_STRIDE, Math.min(batch.signalCount, SIGNAL_CAPACITY), SIGNAL_VERTICES, width, height, batch);
       run(bloom, batch.blooms, BLOOM_STRIDE, Math.min(batch.bloomCount, BLOOM_CAPACITY), BLOOM_VERTICES, width, height, batch);
       gl.bindVertexArray(null);
+      if (exclusions?.length) {
+        gl.enable(gl.SCISSOR_TEST);
+        for (const box of exclusions) {
+          const x = Math.max(0, Math.floor(box.minX));
+          const y = Math.max(0, Math.floor(box.minY));
+          const right = Math.min(canvas.width, Math.ceil(box.maxX));
+          const bottom = Math.min(canvas.height, Math.ceil(box.maxY));
+          if (right <= x || bottom <= y) continue;
+          gl.scissor(x, canvas.height - bottom, right - x, bottom - y);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        gl.disable(gl.SCISSOR_TEST);
+      }
       show(true);
     },
     clear(width, height) {

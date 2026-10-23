@@ -10,6 +10,7 @@ describe('meaning definition evidence action', () => {
     const onEvidence = vi.fn();
     const props = { node: { id: 'capability:retry', title: 'Retry', kind: 'capability', summary: 'Retries but never persists.' as string | undefined }, relations: [], onSelectRelation: vi.fn(), onEvidence };
     const view = render(<NextIntlClientProvider locale={locale} messages={messages}><MeaningContext {...props} /></NextIntlClientProvider>);
+    fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.recordedDefinition }));
     expect(screen.getByText(props.node.summary!)).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: messages.analysisWorkbench.openDefinition }));
     expect(onEvidence).toHaveBeenLastCalledWith(props.node.id);
@@ -19,4 +20,16 @@ describe('meaning definition evidence action', () => {
     expect(onEvidence).toHaveBeenCalledTimes(2);
     expect(onEvidence).toHaveBeenLastCalledWith(props.node.id);
   });
+});
+
+it('keeps a recorded rationale exact and separate from selecting its relation', () => {
+  const why = 'Recorded reason with a constraint: never retry after cancellation.';
+  const onSelectRelation = vi.fn();
+  render(<NextIntlClientProvider locale="ko" messages={ko}><MeaningContext node={null} relations={[{ id: 'edge', sentence: 'A uses B', typeLabel: 'Depends on', why, declaredBy: 'a' }]} onSelectRelation={onSelectRelation} onEvidence={vi.fn()} /></NextIntlClientProvider>);
+  expect(screen.queryByText(why)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: ko.analysisWorkbench.recordedReason }));
+  expect(screen.getByText(why)).toBeVisible();
+  expect(onSelectRelation).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: `${ko.analysisWorkbench.showConnection}: A uses B` }));
+  expect(onSelectRelation).toHaveBeenCalledWith('edge');
 });

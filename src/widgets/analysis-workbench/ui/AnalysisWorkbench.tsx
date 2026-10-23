@@ -215,7 +215,9 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     const instruction = context.mode === 'architecture' ? t('architecturePrompt') : t('meaningPrompt');
     const scope = JSON.stringify(context.scope);
     const previous = parent ? `\nContinue analysis ${parent.id}. Read it with query_ontology(operation: "analysis_record", recordId: "${parent.id}"). Recheck its evidence. Preserve disputed and unresolved questions.` : '';
-    onRequest?.(`${instruction}\nScope: ${scope}.${previous}\n${ANALYSIS_FINDINGS_INSTRUCTION}`, parent?.id ?? null);
+    const language = new Intl.DisplayNames(['en'], { type: 'language' }).of(locale) ?? locale;
+    const responseLanguage = `Write the answer, finding titles, explanations and suggested next steps in ${language} (${locale}). Keep schema keys, enum values, identifiers, paths and exact source quotations unchanged. Explain quoted evidence in ${language}.`;
+    onRequest?.(`${instruction}\nScope: ${scope}.${previous}\n${ANALYSIS_FINDINGS_INSTRUCTION}\n${responseLanguage}`, parent?.id ?? null);
     setTab('conversation');
   }
   async function review(findingId: string, disposition: 'retain' | 'dismiss') {
@@ -261,6 +263,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
     {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
       <div className="flex flex-col gap-2">
+        <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t(context.mode === 'meaning' ? 'reviewPurpose' : 'architectureCriteria')}</p>
         {/*
          * The primary is the same chip box in filled indigo, so only the fill separates it from its
          * neighbour.

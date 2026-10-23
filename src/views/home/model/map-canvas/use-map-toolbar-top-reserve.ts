@@ -4,12 +4,9 @@ import { useEffect } from "react";
 import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
 
 const TOP_RESERVE_VAR = "--map-safe-inset-top";
+const RAIL_TOP_VAR = "--topology-floating-control-desktop-top";
 
-/**
- * `--map-safe-inset-top` in `app/globals.css` is fixed, but the toolbar grows when its lanes wrap,
- * and fit, culling and free-area reads trust the token. When the toolbar reaches past it, the
- * larger value is written on the root. Width-only resizes cost one comparison.
- */
+/** Keep map fits and the utility rail below a wrapping toolbar, including its status chip. */
 export function useMapToolbarTopReserve(toolbar: HTMLElement | null): void {
   useEffect(() => {
     if (!toolbar || typeof ResizeObserver === "undefined") return;
@@ -31,6 +28,11 @@ export function useMapToolbarTopReserve(toolbar: HTMLElement | null): void {
       if (Number.isFinite(stylesheet) && bottom > stylesheet) {
         root.style.setProperty(TOP_RESERVE_VAR, String(bottom));
       }
+      root.style.removeProperty(RAIL_TOP_VAR);
+      const railTop = Number.parseFloat(getComputedStyle(root).getPropertyValue(RAIL_TOP_VAR));
+      if (Number.isFinite(railTop) && bottom + 8 > railTop) {
+        root.style.setProperty(RAIL_TOP_VAR, `${bottom + 8}px`);
+      }
       if (root.style.getPropertyValue(TOP_RESERVE_VAR) !== previous) refreshIndexDependentTokens(root);
     };
     const schedule = () => {
@@ -45,6 +47,7 @@ export function useMapToolbarTopReserve(toolbar: HTMLElement | null): void {
       observer.disconnect();
       window.removeEventListener("resize", schedule);
       if (frame !== 0) window.cancelAnimationFrame(frame);
+      root.style.removeProperty(RAIL_TOP_VAR);
       if (root.style.getPropertyValue(TOP_RESERVE_VAR) !== "") {
         root.style.removeProperty(TOP_RESERVE_VAR);
         refreshIndexDependentTokens(root);

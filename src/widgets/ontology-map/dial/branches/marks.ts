@@ -8,7 +8,7 @@ import { branchPreviewRows, BRANCH_ROW_PITCH } from "./layout";
 import { capabilityNameTries, overlaps } from "../label-marks";
 import { branchNameLines, branchTextStyle } from "./text";
 
-export interface BranchBlock { box: Box; fill: number; rim: number; alpha: number }
+export interface BranchBlock { id: string; box: Box; fill: number; rim: number; alpha: number }
 export interface BranchStem { a: Point; c: Point; b: Point; ink: number }
 
 export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): DialMarksResult {
@@ -28,6 +28,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const position = (id: string, p: Point) => input.nodeScreen(id) ?? input.toScreen(p.x, p.y);
   const visible = (p: Point, room: number) => p.x + room >= 0 && p.x - room <= input.viewportWidth && p.y + room >= 0 && p.y - room <= input.viewportHeight;
   const colorFor = (a: DialAttention | null, id: string, kind: DialKind, rest: string): string => {
+    if (input.contextAlphas) return mixOver(rest, inks.bg, input.contextAlphas.get(id) ?? map.egoRestAlpha);
     if (!a?.domainId) return rest;
     const domain = model.domainOf.get(id);
     const own = a.domainId === id || (domain === a.domainId && (a.capabilityId === null || a.capabilityId === id));
@@ -62,8 +63,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       selectionPulse: null,
     };
     out.glyphs.push(g);
-    picks.push({ id, ...p, r });
-    alphas.set(id, 1);
+    const alpha = input.contextAlphas?.get(id) ?? 1;
+    if (alpha >= 0.05) picks.push({ id, ...p, r });
+    alphas.set(id, alpha);
   };
   const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
   const detail = smoothstep(tokens.ledgerGapPx, tokens.ledgerGapPx + tokens.chipMinPx, rowPx);
@@ -94,7 +96,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       const before = input.previous ?? input.inkAttention;
       const fill = (a: DialAttention | null) => mixOver(inks.domainFill, inks.bg, a?.domainId === id ? 1 : 0.5);
       const rim = (a: DialAttention | null) => a?.domainId === id ? inks.domainLabelAttended : colorFor(a, id, "domain", inks.domainRim);
-      blocks.push({ box, fill: ink(crossfadeInk(fill(before), fill(input.inkAttention), input.inkMix)), rim: ink(crossfadeInk(rim(before), rim(input.inkAttention), input.inkMix)), alpha: arrival * detail });
+      blocks.push({ id, box, fill: ink(crossfadeInk(fill(before), fill(input.inkAttention), input.inkMix)), rim: ink(crossfadeInk(rim(before), rim(input.inkAttention), input.inkMix)), alpha: arrival * detail });
       if (detail > 0.5) rows.push({ id, box });
     }
     radii.set(id, portHeight);
@@ -106,10 +108,10 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     if (namesVisible) text(id, "units", units, { x: textX, y: p.y + tokens.ledgerGapPx / 2 }, "left", "element", color(id, "domain", inks.units), detail);
     if (detail <= 0.5) rows.push({ id, box: title });
     for (const [itemIndex, item] of cluster.items.entries()) {
-      const active = input.attention.capabilityId === item.id || input.hoveredNodeId === item.id || input.agentFocusNodeId === item.id || input.selectionPulse?.nodeId === item.id;
+      const active = input.attention.capabilityId === item.id || input.hoveredNodeId === item.id || input.agentFocusNodeId === item.id || input.selectionPulse?.nodeId === item.id || (input.contextAlphas?.get(item.id) ?? 0) >= 0.5;
       const preview = !item.direct && itemIndex < previewRows;
       const presence = active || partners.has(item.id) ? 1 : Math.max(preview ? detail : 0, disclosure.elementsAlpha);
-      if (presence <= 0.01) { if (!item.direct) alphas.set(item.id, 0); continue; }
+      if (presence <= 0.01 || (input.contextAlphas && (input.contextAlphas.get(item.id) ?? 0) < 0.05)) { if (!item.direct) alphas.set(item.id, 0); continue; }
       const q = item.direct ? input.toScreen(item.x, item.y) : position(item.id, item);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
       radii.set(item.id, radius);
@@ -125,7 +127,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
           out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
           if (presence > 0.5) picks.push({ id: item.id, ...q, r: radius });
         }
-        alphas.set(item.id, presence);
+        alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
         if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
         if (namesVisible || active || partners.has(item.id)) {
           const label = model.capabilityById.get(item.id)!.label;
@@ -134,8 +136,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         }
       }
       const a = disclosure.elementAlphaFor(item);
-      if (a <= 0.5 || (disclosure.entered !== id && input.attention.capabilityId !== item.id)) continue;
+      if (!input.contextAlphas && (a <= 0.5 || (disclosure.entered !== id && input.attention.capabilityId !== item.id))) continue;
       for (const el of item.elementIds) {
+        if (input.contextAlphas && (input.contextAlphas.get(el) ?? 0) < 0.5) continue;
         const at = scene.positions.get(el)!;
         const e = position(el, at);
         if (!visible(e, tokens.chipMinPx)) continue;
@@ -153,7 +156,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       }
     }
     const more = domain.capabilityIds.length - previewRows;
-    if (more > 0 && disclosure.elementsAlpha < 0.99 && namesVisible) {
+    if (!input.contextAlphas && more > 0 && disclosure.elementsAlpha < 0.99 && namesVisible) {
       const last = cluster.items[previewRows - 1]!;
       const point = input.toScreen(last.x, last.y + tokens.pitch * BRANCH_ROW_PITCH);
       const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
@@ -179,7 +182,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       input.hubLines?.forEach((line, i) => { if (line) text(id, "units", line, { x: p.x, y: titleY + (i + 1) * tokens.ledgerRowPx }, "center", "element", inks.units); });
     }
   }
-  const flows = buildFlowMarks({
+  const flows = input.contextAlphas ? { links: [], drawn: [], entered: disclosure.entered, resolved: disclosure.resolved, budget: { shown: 0, total: 0, perEndCap: Infinity }, stubs: [] } : buildFlowMarks({
     model, scene, tokens, inks, attention: input.attention, inkAttention: input.inkAttention, previous: input.previous,
     inkMix: input.inkMix, chordPresence: input.chordPresence, scale: input.scale,
     viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight, freeRect: input.freeRect,
@@ -188,6 +191,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     occupied: [...boxes.values(), ...out.texts.map((t) => t.box)], avoidTexts: out.texts.map((t) => t.box), chords,
     resolution: disclosure, named: new Set(nameBoxes.keys()), nameBoxes,
   }, out);
+  if (input.contextAlphas) stems.length = 0;
   const elementSquares = out.squares.filter((q) => q.id !== null).length;
   return { drawnCount: [...alphas.values()].filter((a) => a > 0.5).length, tier: elementSquares ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger: null, elementSquares };
 }

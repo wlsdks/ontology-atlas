@@ -71,9 +71,17 @@ Project source-path repair opens the exact affected concept and its recorded
 relative path. Missing, stale or out-of-project targets require remeasurement;
 copied handoffs keep that target without disclosing the private source root.
 
-Meaning review previews a nonblank authored description or a complete opening
-prose paragraph within 320 characters. The full-document action exposes the
-remaining sections and boundaries, including when no preview is eligible.
+Meaning review explains the roles, boundaries and connections to examine before
+offering AI analysis. Original descriptions and connection rationales expand in
+place; previews retain a nonblank authored description or a complete opening
+paragraph within 320 characters. The full-document action retains the remaining
+sections and boundaries. Selecting a relation keeps its details in the review
+panel instead of opening a duplicate inspector alongside it.
+Analysis requests use the interface language for explanatory prose and findings,
+while keeping identifiers, structured fields and exact quotations unchanged.
+Small Flat maps keep their branch forms during meaning and relation inspection;
+relation captions still describe the recorded edges. Light is masked from card
+interiors so travelling signals cannot wash out their text.
 
 The optional companion game and related personal-record screens are retired.
 Existing local saves remain untouched; no replacement viewer or export is provided.
