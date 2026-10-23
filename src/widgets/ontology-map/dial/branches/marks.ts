@@ -26,6 +26,14 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const radii = new Map<string, number>();
   const nameBoxes = new Map<string, Box>();
   const activeIds = new Set([input.focusedNodeId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId].filter((id): id is string => !!id));
+  const activeElementCount = [...activeIds].filter((id) => id !== model.projectId && !model.domainById.has(id) && !model.capabilityById.has(id) && scene.positions.has(id)).length;
+  let ordinaryElements = 0;
+  const takeElement = (active: boolean) => {
+    if (active) return true;
+    if (ordinaryElements >= 1000 - activeElementCount) return false;
+    ordinaryElements += 1;
+    return true;
+  };
   const activeChildren = new Map<string, string[]>();
   for (const id of activeIds) {
     const parent = model.capabilityOf.get(id) ?? (!model.capabilityById.has(id) && !model.domainById.has(id) ? model.domainOf.get(id) : null);
@@ -80,7 +88,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     };
     out.glyphs.push(g);
     const alpha = input.contextAlphas?.get(id) ?? 1;
-    if (alpha >= 0.05) picks.push({ id, ...p, r });
+    if (alpha >= 0.05) picks.push({ id, ...p, r: kind === "element" ? Math.max(4, r) : r });
     alphas.set(id, alpha);
   };
   const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
@@ -152,8 +160,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         const tint = mixOver(color(item.id, "capability", state === "stale" ? inks.stale : inks.capabilityRim), inks.bg, presence);
         const root = { x: p.x + side * width / 2 * detail, y: p.y };
         stems.push({ a: root, c: { x: (root.x + q.x) / 2, y: q.y }, b: { x: q.x - side * radius, y: q.y }, ink: ink(mixOver(color(item.id, "capability", inks.element), inks.bg, presence)) });
-        if (item.direct) out.squares.push({ id: null, ...q, half: radius, fill: ink(mixOver(inks.elementFill, inks.bg, presence)), rim: ink(mixOver(inks.element, inks.bg, presence)) });
-        else {
+        if (item.direct) {
+          if (takeElement(false)) out.squares.push({ id: null, ...q, half: radius, fill: ink(mixOver(inks.elementFill, inks.bg, presence)), rim: ink(mixOver(inks.element, inks.bg, presence)) });
+        } else {
           if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg);
           else {
             out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
@@ -176,10 +185,13 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         if (input.contextAlphas && (input.contextAlphas.get(el) ?? 0) < 0.5) continue;
         const at = scene.positions.get(el)!;
         const e = position(el, at);
-        if (!visible(e, tokens.chipMinPx)) continue;
-        out.squares.push({ id: el, ...e, half: Math.min(3.2, Math.max(1.2, item.elementPitch * input.scale * 0.22)), fill: ink(inks.elementFill), rim: ink(inks.element) });
-        picks.push({ id: el, ...e, r: 4 });
-        alphas.set(el, 1);
+        if (!visible(e, tokens.chipMinPx) || !takeElement(activeElement)) continue;
+        if (activeElement) glyph(el, "element", e, tokens.discMinPx, inks.element, inks.elementFill);
+        else {
+          out.squares.push({ id: el, ...e, half: Math.min(3.2, Math.max(1.2, item.elementPitch * input.scale * 0.22)), fill: ink(inks.elementFill), rim: ink(inks.element) });
+          picks.push({ id: el, ...e, r: 4 });
+          alphas.set(el, 1);
+        }
         const label = input.elementLabel(el);
         if (label && (activeElement || item.elementPitch * input.scale >= tokens.elementName)) {
           const font = scaledLabelFont("element", tokens.labelScale);
@@ -210,7 +222,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const active = activeIds.has(id);
     if (!active && disclosure.orphanAlpha <= 0.5) { alphas.set(id, 0); continue; }
     const p = position(id, scene.positions.get(id)!);
-    if (!visible(p, tokens.chipMinPx)) continue;
+    if (!visible(p, tokens.chipMinPx) || !takeElement(active)) continue;
     glyph(id, "element", p, tokens.discMinPx, inks.element, inks.elementFill);
     const label = active ? input.elementLabel(id) : null;
     if (label) text(id, "element", label, { x: p.x + tokens.chipMinPx, y: p.y }, "left", "element", inks.domainLabelAttended);

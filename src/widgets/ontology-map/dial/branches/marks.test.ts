@@ -259,6 +259,47 @@ describe("dense branch disclosure", () => {
     expect(result.picks.some((pick) => pick.id === "d0c0e999")).toBe(true);
   });
 
+  it("keeps a hidden selected element distinct and reachable when ordinary element marks exceed the budget", () => {
+    const id = "d0c0e9999";
+    const { input } = frame(id, 0.0001, false, 1, 1, undefined, 10000);
+    input.disclosure = { ...input.disclosure, entered: "d0", elementsAlpha: 1, elementAlphaFor: () => 1 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    expect(out.glyphs.find((mark) => mark.id === id)).toMatchObject({ kind: "element", egoState: "center", selectionPulse: null });
+    expect(out.texts.some((text) => text.id === id && text.role === "element")).toBe(true);
+    expect(result.picks.some((pick) => pick.id === id)).toBe(true);
+    expect(result.rows.some((row) => row.id === id)).toBe(true);
+    expect(out.squares.length + out.glyphs.filter((mark) => mark.kind === "element").length).toBeLessThanOrEqual(1000);
+  });
+
+  for (const focus of ["contained", "direct", "free"]) {
+    it(`${focus}: preserves a selected element's actual kind, mark, name and pick below disclosure`, () => {
+      const nodes: TreeInputNode[] = [
+        { id: "p", label: "Project", kind: "project" }, { id: "d", label: "Domain", kind: "domain" },
+        { id: "c", label: "Capability", kind: "capability" },
+        ...["contained", "direct", "free"].map((id) => ({ id, label: id, kind: "element" as const })),
+      ];
+      const edges: TreeInputEdge[] = [["p", "d"], ["d", "c"], ["c", "contained"], ["d", "direct"]]
+        .map(([source, target]) => ({ source: source!, target: target!, kind: "contains", relationType: "contains" }));
+      const model = buildDialModel({ tree: readContainmentTree(nodes, edges), dependencies: [], flows: [], elementIds: ["contained", "direct", "free"] });
+      const scene = layoutDial(model, ["d"], tokens, null);
+      const { input } = frame(null, 0.08);
+      const toScreen = (x: number, y: number) => ({ x: 1800 + x * input.scale, y: 900 + y * input.scale });
+      const attention = resolveDialAttention(model, null, focus);
+      Object.assign(input, { model, scene, toScreen, attention, inkAttention: attention, focusedNodeId: focus,
+        nodeScreen: (id: string) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; },
+        elementLabel: (id: string) => id,
+        disclosure: { ...input.disclosure, elementsAlpha: 0, orphanAlpha: 0, elementAlphaFor: () => 0 },
+      });
+      const out = emptyDialFrameMarks();
+      const result = buildDialMarks(input, out);
+      expect(out.glyphs.find((mark) => mark.id === focus)).toMatchObject({ kind: "element", egoState: "center" });
+      expect(out.texts.some((text) => text.id === focus && text.role === "element")).toBe(true);
+      expect(result.picks.find((pick) => pick.id === focus)?.r).toBeGreaterThanOrEqual(4);
+      expect(result.rows.some((row) => row.id === focus)).toBe(true);
+    });
+  }
+
   it("names a selected orphan below the ordinary orphan disclosure ramp", () => {
     const { input } = frame(null, 0.08);
     const positions = new Map(input.scene.positions);
