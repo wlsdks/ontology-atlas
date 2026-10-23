@@ -1,6 +1,6 @@
 interface HeadingGroup {
-  rows: readonly { kind: string; relationType?: string }[];
-  allRows?: readonly { kind: string; relationType?: string }[];
+  rows: readonly { kind: string; relationTypes?: readonly string[] }[];
+  allRows?: readonly { kind: string; relationTypes?: readonly string[] }[];
   total: number;
 }
 
@@ -24,7 +24,9 @@ export function relationHeadingKeys(
   const childKind = completeGroupKind(groups.contains);
   const parentKind = completeGroupKind(groups.belongsTo);
   const allDependencies = (group: HeadingGroup) => completeGroupRows(group)?.every(
-    (row) => row.relationType === "depends_on" || row.relationType === "dependencies",
+    (row) => row.relationTypes !== undefined && row.relationTypes.length > 0 && row.relationTypes.every(
+      (type) => type === "depends_on" || type === "dependencies",
+    ),
   ) ?? false;
   const dependsOn = allDependencies(groups.dependsOn);
   const usedBy = allDependencies(groups.usedBy);

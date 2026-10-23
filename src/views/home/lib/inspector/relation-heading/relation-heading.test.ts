@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { buildV2ConnectionGroups } from "@/widgets/ontology-map";
 import { relationHeadingKeys } from "./relation-heading";
 
 const group = (...kinds: string[]) => ({
   rows: kinds.map((kind) => ({ kind })),
   total: kinds.length,
 });
+const typedRow = (relationType: string) => ({ kind: "element", relationType, relationTypes: [relationType] });
 const headings = (
   kind: string,
   groups: Partial<Parameters<typeof relationHeadingKeys>[1]>,
@@ -13,26 +15,45 @@ const headings = (
 });
 
 describe("relation headings", () => {
+  it.each([
+    ["depends_on", "uses"],
+    ["uses", "depends_on"],
+  ])("keeps same-neighbor mixed relations neutral in order %s then %s", (...types) => {
+    for (const direction of ["incoming", "outgoing"] as const) {
+      const groups = buildV2ConnectionGroups(types.map((relationType) => Object.freeze({
+        id: "element:shared", title: "Shared", kind: "element", relationType, direction,
+      })));
+      const result = relationHeadingKeys("capability", groups);
+      const view = groups[direction === "incoming" ? "usedBy" : "dependsOn"];
+      expect(view.total).toBe(1);
+      expect(view.rows[0].relationType).toBe(types[0]);
+      expect(view.allRows![0].relationTypes).toEqual(expect.arrayContaining(types));
+      expect(result.dependsOn).toBe("nodeDatasheet.metricConnectedTo");
+      expect(result.usedBy).toBe("nodeDatasheet.metricConnectedFrom");
+    }
+  });
+
   it("specializes only complete dependency groups in either direction", () => {
-    const dependencies = { rows: [
-      { kind: "element", relationType: "dependencies" },
-      { kind: "capability", relationType: "depends_on" },
-    ], total: 2 };
-    const result = headings("capability", { dependsOn: dependencies, usedBy: dependencies });
+    const groups = buildV2ConnectionGroups(["dependencies", "depends_on"].flatMap((relationType) =>
+      (["incoming", "outgoing"] as const).map((direction) => ({
+        id: "element:shared", title: "Shared", kind: "element", relationType, direction,
+      })),
+    ));
+    const result = relationHeadingKeys("capability", groups);
     expect(result.dependsOn).toBe("nodeDatasheet.metricDependsOn");
     expect(result.usedBy).toBe("nodeDatasheet.metricUsedBy");
   });
 
   it("keeps mixed and other directed relations neutral even beyond the preview", () => {
-    const rows = [{ kind: "element", relationType: "depends_on" }];
+    const rows = [typedRow("depends_on")];
     for (const relationType of ["uses", "implements", "describes", "is_a", "unknown"]) {
-      const mixed = { rows, total: 2, allRows: [...rows, { kind: "element", relationType }] };
+      const mixed = { rows, total: 2, allRows: [...rows, typedRow(relationType)] };
       const result = headings("capability", { dependsOn: mixed, usedBy: mixed });
       expect(result.dependsOn).toBe("nodeDatasheet.metricConnectedTo");
       expect(result.usedBy).toBe("nodeDatasheet.metricConnectedFrom");
       expect(result.dependsOnHelp).toBe("nodeDatasheet.metricConnectedToHelp");
       expect(result.usedByHelp).toBe("nodeDatasheet.metricConnectedFromHelp");
-      const other = { rows: [{ kind: "element", relationType }], total: 1 };
+      const other = { rows: [typedRow(relationType)], total: 1 };
       expect(headings("capability", { dependsOn: other }).dependsOn)
         .toBe("nodeDatasheet.metricConnectedTo");
     }
@@ -41,7 +62,8 @@ describe("relation headings", () => {
   it("does not claim dependency from incomplete or untyped groups", () => {
     for (const incomplete of [
       group(), group("element"),
-      { rows: [{ kind: "element", relationType: "depends_on" }], total: 2 },
+      { rows: [{ kind: "element", relationType: "depends_on" }], total: 1 },
+      { rows: [typedRow("depends_on")], total: 2 },
     ]) {
       const result = headings("capability", { dependsOn: incomplete, usedBy: incomplete });
       expect(result.dependsOn).toBe("nodeDatasheet.metricConnectedTo");
