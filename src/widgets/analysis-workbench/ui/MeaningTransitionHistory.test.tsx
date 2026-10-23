@@ -2,8 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MeaningTransitionV2 } from '@/shared/lib/meaning-transition/meaning-transition-v2';
 
-const archive = vi.hoisted(() => ({ available: true, history: vi.fn(), observe: vi.fn(), read: vi.fn() }));
-vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string, values?: { count?: number }) => values?.count === undefined ? key : `${key}:${values.count}` }));
+const archive = vi.hoisted(() => ({ available: true, history: vi.fn(), observe: vi.fn(), read: vi.fn(), translate: (key: string, values?: { count?: number }) => values?.count === undefined ? key : `${key}:${values.count}` }));
+vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => archive.translate }));
 vi.mock('@/entities/meaning-transition', () => ({ readMeaningTransitionHistory: archive.history }));
 vi.mock('@/shared/lib/vault-folder/tauri-vault-fs', () => ({ getTauriVaultRootPath: (handle: { root?: string }) => handle.root ?? null }));
 vi.mock('@/shared/lib/meaning-transition/tauri-meaning-transition-archive', () => ({
@@ -101,13 +101,86 @@ describe('MeaningTransitionHistory', () => {
     await waitFor(() => expect(archive.history).toHaveBeenCalledTimes(2));
   });
 
-  it('stops saying artifacts are loading after a verified read fails', async () => {
+  it('shows a localized artifact failure and folds the technical detail', async () => {
     const fixture = await record();
     archive.history.mockResolvedValue({ records: [fixture.value], problems: [], totalMembers: 1, scanned: 1, nextOffset: null });
     archive.read.mockRejectedValue(new Error('artifact read failed'));
     render(<MeaningTransitionHistory handle={handle('/vault')} open />);
-    expect(await screen.findByText('artifact read failed')).toBeInTheDocument();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('artifactReadFailed');
+    expect(alert).not.toHaveTextContent('artifact read failed');
+    expect(screen.queryByText('artifact read failed')).toBeNull();
     expect(screen.getByText('artifactsUnavailable')).toBeInTheDocument();
     expect(screen.queryByText('loadingArtifacts')).toBeNull();
+    fireEvent.click(screen.getByText('errorDetails'));
+    expect(screen.getByText('artifact read failed')).toBeInTheDocument();
+  });
+
+  it('clears an artifact failure while another selected record is loading', async () => {
+    const fixture = await record();
+    const second = { ...fixture.value, eventId: 'second', task: { ...fixture.value.task, label: 'Second intact record' } };
+    let release!: (value: string) => void;
+    archive.history.mockResolvedValue({ records: [fixture.value, second], problems: [], nextOffset: null });
+    archive.read.mockRejectedValueOnce(new Error('first record unavailable'))
+      .mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }))
+      .mockImplementation(async (_root, _identity, value) => fixture.artifacts.get(value));
+    const onStateChange = vi.fn();
+    render(<MeaningTransitionHistory handle={handle('/vault')} open onStateChange={onStateChange} />);
+    await screen.findByRole('alert');
+    fireEvent.click(screen.getByText('Second intact record'));
+    await waitFor(() => expect(archive.read).toHaveBeenCalledTimes(2));
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('loadingArtifacts')).toBeInTheDocument();
+    expect(onStateChange).toHaveBeenLastCalledWith('records');
+    await act(async () => release('BEFORE EXACT'));
+    await screen.findByText('artifactRoles.before');
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it.each(['resolve', 'reject'] as const)('ignores a late artifact %s after selecting another record', async (settlement) => {
+    const fixture = await record();
+    const second = { ...fixture.value, eventId: 'second', task: { ...fixture.value.task, label: 'Second intact record' } };
+    let resolve!: (value: string) => void;
+    let reject!: (reason: Error) => void;
+    archive.history.mockResolvedValue({ records: [fixture.value, second], problems: [], nextOffset: null });
+    archive.read.mockImplementationOnce(() => new Promise((resolveRead, rejectRead) => { resolve = resolveRead; reject = rejectRead; }))
+      .mockImplementation(async (_root, _identity, value) => fixture.artifacts.get(value));
+    render(<MeaningTransitionHistory handle={handle('/vault')} open />);
+    await waitFor(() => expect(archive.read).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByText('Second intact record'));
+    await screen.findByText('artifactRoles.before');
+    await act(async () => {
+      if (settlement === 'resolve') resolve('UNVERIFIED STALE BYTES');
+      else reject(new Error('stale record unavailable'));
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+    fireEvent.click(screen.getByText('artifactRoles.before'));
+    expect(screen.getByText('BEFORE EXACT')).toBeInTheDocument();
+    expect(screen.queryByText('UNVERIFIED STALE BYTES')).toBeNull();
+  });
+
+  it('keeps list failures independent of artifact loading and record selection', async () => {
+    const fixture = await record();
+    const second = { ...fixture.value, eventId: 'second', task: { ...fixture.value.task, label: 'Second intact record' } };
+    let release!: (value: string) => void;
+    archive.history.mockResolvedValueOnce({ records: [fixture.value, second], problems: [], nextOffset: 2 })
+      .mockRejectedValueOnce(new Error('older history unavailable'));
+    archive.read.mockImplementationOnce(() => new Promise((resolve) => { release = resolve; }))
+      .mockImplementation(async (_root, _identity, value) => fixture.artifacts.get(value));
+    render(<MeaningTransitionHistory handle={handle('/vault')} open />);
+    await waitFor(() => expect(archive.read).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByText('loadOlder'));
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('readFailed');
+    expect(alert).not.toHaveTextContent('older history unavailable');
+    expect(screen.getByText('loadingArtifacts')).toBeInTheDocument();
+    expect(screen.queryByText('artifactsUnavailable')).toBeNull();
+    await act(async () => release('BEFORE EXACT'));
+    await screen.findByText('artifactRoles.before');
+    fireEvent.click(screen.getByText('Second intact record'));
+    await screen.findByText('artifactRoles.before');
+    expect(screen.getByRole('alert')).toHaveTextContent('readFailed');
+    fireEvent.click(screen.getByText('errorDetails'));
+    expect(screen.getByText('older history unavailable')).toBeInTheDocument();
   });
 });
