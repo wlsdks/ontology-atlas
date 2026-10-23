@@ -24,11 +24,13 @@ import type {
   TextMark,
 } from "../types";
 
+import { buildBranchMarks, type BranchBlock, type BranchStem } from "../branches/marks";
+
 interface PlateMark { x: number; y: number; r: number; fill: number; rim: number }
 
-export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[] }
+export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTexts: ExtraTextMark[]; blocks?: BranchBlock[]; stems?: BranchStem[] }
 
-export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
+export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementsAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
 
 export interface DialMarksInput {
   model: DialModel;
@@ -311,6 +313,7 @@ function restingObstacles(
 }
 
 export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): DialMarksResult {
+  if (input.scene.branches) return buildBranchMarks(input, out);
   const { model, scene, tokens, mapTokens: map, inks, attention: attn, inkAttention: hov, disclosure } = input;
   const W = input.viewportWidth;
   const H = input.viewportHeight;
@@ -486,8 +489,6 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   hoveredNames(input, out, [...(hub ? [[model.projectId, hub] as const] : []), ...chips, ...discs], ink);
 
   const evidence = input.evidence;
-  // A hover the attention does not follow: under a focus the only hover is a panel
-  // row brushing the map, and the dial points at that capability with its glyph.
   const brushed = input.hoveredNodeId !== null && input.hoveredNodeId !== hov.capabilityId && model.capabilityById.has(input.hoveredNodeId)
     ? input.hoveredNodeId
     : null;

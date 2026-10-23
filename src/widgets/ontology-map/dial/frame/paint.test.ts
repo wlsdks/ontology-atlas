@@ -13,7 +13,7 @@ import {
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { buildDialModel, resolveDialAttention } from "../dial-model";
 import { mixOver, resolveDialInks } from "../ink";
-import { layoutDial } from "../layout";
+import { layoutPackedDial } from "../layout";
 import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "./marks";
 import { circularDomainOrder } from "../order";
 import { knockoutRects, paintDialMarks } from "./paint";
@@ -110,7 +110,7 @@ const W = 1512;
 const H = 900;
 
 function frame(model: DialModel, focusId: string | null, zoom = 1) {
-  const scene = layoutDial(model, circularDomainOrder(model, null).order, TOKENS, null);
+  const scene = layoutPackedDial(model, circularDomainOrder(model, null).order, TOKENS, null);
   const e = scene.extent;
   const scale = Math.min(W / (e.maxX - e.minX), H / (e.maxY - e.minY)) * 0.9 * zoom;
   const cx = (e.minX + e.maxX) / 2;

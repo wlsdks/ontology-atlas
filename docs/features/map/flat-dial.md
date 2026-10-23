@@ -8,6 +8,34 @@ routes: [/topology]
 
 # Flat dial
 
+## Readable branch overview
+
+Small maps use domain label blocks with outward capability rows. The overview
+shows up to six capabilities per domain and an explicit remaining-members action
+that opens the domain inspector. Detailed zoom reveals continuation columns;
+selected capabilities and their partners remain named even outside the preview. Short undirected
+branches encode membership; thin arrows encode dependencies in their actual
+directions, including separate arrows for reciprocal dependencies. Dashed
+`relates` links retain their distinct meaning. The project is a compact context
+label above the drawing. Hover changes ink on the whole domain, its members and
+its relationships without moving any label. Domain blocks and member names are
+whole pick targets; dragging still moves the real concept.
+
+This presentation applies through six domains, 24 rows in any domain and 48 rows
+overall. It retains every concept, reserves a direct-element slot while a folder
+loads, and uses the same zoom-driven element disclosure and evidence states as
+the packed dial. At smaller scales, domain blocks collapse to square marks and
+whole names, and membership previews wait until their rows have enough room.
+Selection, search and the navigator remain available at every scale. Domain
+type uses the title step, member type the body-lg step, and metadata the label step.
+Counts remain available on selected relationships and in the inspector.
+
+The owner approved this direction after the earlier rollback; decision
+`d170c030-35e9-4a0d-82b4-fcc00683c76b` records the boundary. The following ring and
+ledger rules describe the retained dense presentation.
+
+## Packed overview
+
 At the overview, Flat is a dial (`src/widgets/ontology-map/dial/`). The project sits at the centre. Each domain stands on a ring by how many other domains depend on it: 32 or more, 16–31, 8–15, 4–7, 2–3 and 0–1, innermost the most depended on. A ring's range is written on its circle wherever a slot clear of lines and names is left. Around a ring, coupled domains are neighbours. A domain is drawn as its area; its capabilities appear around its chip once they have room on screen, and their elements after them. Names are whole or absent, never cut with "…", drawn in the page's typeface once every weight has loaded, on the type ramp (project 16, domain 12.5, capability 11, element and ring captions 9.5, counts 11 with tabular figures; `map-dial-tokens.contract.test.ts` holds each kind on the ramp at the shipped `--map-dial-label-scale`), and every name and count stands on a cut-out of the ground, so rings and lines stop at its edge. A domain name takes a side of its chip that no line crosses, between the lines if it must, before it lets one cross it. The project name does the same around the hub, between strands up to 36 px out, and is left off only when every one of those slots is crossed or taken. The decision is record `88b537fc` (2026-10-02).
 
 The bottom corner has one passive scope line, without a generic legend or click invitation.

@@ -23,6 +23,7 @@ export interface FlowMarksInput {
   nodeScreen(id: string): Point | null;
   toScreen(x: number, y: number): Point;
   endRadiusPx(id: string): number;
+  endBox?(id: string): Box | null;
   appearOf(id: string): number;
   measureText(text: string, font: string): number;
   occupied: Box[];
@@ -522,7 +523,7 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     return Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES));
   });
   toDraw.sort((x, y) => Number(x.l.attended) - Number(y.l.attended) || x.l.total - y.l.total || (x.l.key < y.l.key ? -1 : 1));
-  placeFarNumerals(input, out, farCounts(input, toDraw));
+  if (!scene.branches) placeFarNumerals(input, out, farCounts(input, toDraw));
   const focusChip = attn.domainId ? endOf(attn.domainId) : null;
   paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
   for (const { l, a, b, presence } of toDraw) {
@@ -547,6 +548,11 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
 }
 
 function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Point): Point {
+  if (input.scene.branches) {
+    const dx = b.p.x - a.p.x;
+    const dy = b.p.y - a.p.y;
+    return { x: (a.p.x + b.p.x) / 2 - dy * 0.08, y: (a.p.y + b.p.y) / 2 + dx * 0.08 };
+  }
   const { model, scene } = input;
   const du = domainOfEnd(model, l.u);
   const dv = domainOfEnd(model, l.v);
@@ -586,6 +592,10 @@ function farCounts(input: FlowMarksInput, toDraw: readonly { l: DialLink; a: End
 }
 
 function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean): void {
+  if (input.scene.branches) {
+    drawBranchLink(input, out, l, a, b, presence, hub);
+    return;
+  }
   const { tokens, model, attention: attn, inks } = input;
   const C = controlOf(input, l, a, b, hub);
   const ink = (from: string, numeral: boolean) => linkInk(input, l, from, numeral, presence);
@@ -632,6 +642,37 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
     headStart: rest.twoWay, headEnd: true, trimStart: rest.trimStart, trimEnd: rest.trimEnd,
     dashed: false, numeral: !attn.domainId && numberAtRest ? String(l.total) : null, numeralInk: ink(rest.from, true), slots: REST_SLOTS,
   });
+}
+
+function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
+  const base = controlOf(input, l, a, b, hub);
+  const boundary = (id: string, end: End, toward: Point): Point => {
+    const box = input.endBox?.(id);
+    const dx = toward.x - end.p.x;
+    const dy = toward.y - end.p.y;
+    const t = box ? Math.min((box.maxX - box.minX) / 2 / Math.max(1e-6, Math.abs(dx)), (box.maxY - box.minY) / 2 / Math.max(1e-6, Math.abs(dy))) : end.r / Math.max(1, Math.hypot(dx, dy));
+    return { x: end.p.x + dx * t, y: end.p.y + dy * t };
+  };
+  const run = (from: string, to: string, start: End, end: End, count: number, offset: number) => {
+    const dx = end.p.x - start.p.x;
+    const dy = end.p.y - start.p.y;
+    const len = Math.max(1, Math.hypot(dx, dy));
+    const c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+    const p0 = boundary(from, start, c);
+    const p1 = boundary(to, end, c);
+    const width = l.attended ? input.tokens.flowFocusBase + 0.3 : input.tokens.flowRestBase;
+    const curve = emit(input, out, {
+      key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, w0: width, w1: width,
+      ink: linkInk(input, l, from, false, presence), headStart: false, headEnd: !l.relatesOnly,
+      trimStart: input.tokens.flowTrimStartPx, trimEnd: input.tokens.flowTrimEndPx,
+      dashed: l.relatesOnly, numeral: l.attended && count > 0 ? String(count) : null,
+      numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
+    });
+    if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: end.r });
+  };
+  const offset = l.uv > 0 && l.vu > 0 ? input.tokens.flowSplitPx * 3 : 0;
+  if (l.uv > 0 || l.relatesOnly) run(l.u, l.v, a, b, l.uv, offset);
+  if (l.vu > 0) run(l.v, l.u, b, a, l.vu, offset);
 }
 
 function drawFanLink(input: FlowMarksInput, out: FlowMarks, attn: DialAttention, l: DialLink, a: End, b: End, share: number, hub: Point): void {

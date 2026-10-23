@@ -1,4 +1,5 @@
 import { ringPlan } from "./rings";
+import { branchLayout } from "./branches/layout";
 import type { Box, DialCluster, DialItem, DialMemory, DialModel, DialRing, DialScene, DialTokens, Point } from "./types";
 
 type LayoutTokens = Pick<
@@ -67,6 +68,11 @@ function itemOrderOf(domainId: string, entries: readonly string[], remembered: r
 }
 
 export function layoutDial(model: DialModel, order: readonly string[], tokens: LayoutTokens, memory: DialMemory | null): DialScene {
+  const scene = layoutPackedDial(model, order, tokens, memory);
+  return branchLayout(model, scene, tokens.pitch);
+}
+
+export function layoutPackedDial(model: DialModel, order: readonly string[], tokens: LayoutTokens, memory: DialMemory | null): DialScene {
   const P = tokens.pitch;
   const gap = tokens.angularGap * P;
   const directId = (domainId: string) => `${domainId}::direct`;

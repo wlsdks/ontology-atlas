@@ -196,6 +196,7 @@ export function useTopologySceneControls({
       stale: (count) => tDial("stale", { count }),
       orphans: (count) => tDial("orphans", { count }),
       more: (count) => tDial("more", { count }),
+      moreMembers: (count) => tDial("moreMembers", { count }),
       ring: (min, max) =>
         max === null ? tDial("ringAtLeast", { min }) : min === 0 ? tDial("ringAtMostOne") : tDial("ringBetween", { min, max }),
       reading: (read, total) => tDial("reading", { read, total }),
