@@ -133,12 +133,12 @@ export interface CrossingGuard {
 
 const NEAR_EQUAL = 1.1;
 
-export function restBudget(counted: readonly DialLink[], endsOnScreen: number, tokens: DialTokens, guard: CrossingGuard | null = null): RestBudget {
+export function restBudget(counted: readonly DialLink[], endsOnScreen: number, tokens: DialTokens, guard: CrossingGuard | null = null, enforceGuard = false): RestBudget {
   const limit = counted.length <= tokens.restLinksMin
     ? counted.length
     : Math.max(tokens.restLinksMin, Math.min(tokens.restLinksMax, Math.round(tokens.restLinksPerEnd * endsOnScreen)));
   const perEndCap = endsOnScreen > tokens.perEndCapEnds ? tokens.perEndCap : Infinity;
-  const avoid = counted.length > limit || perEndCap !== Infinity ? guard : null;
+  const avoid = enforceGuard || counted.length > limit || perEndCap !== Infinity ? guard : null;
   const keep = new Set<string>();
   const dropped = new Set<string>();
   const perEnd = new Map<string, number>();

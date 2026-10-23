@@ -48,25 +48,19 @@ function domainSequence(memory: DialMemory | null): string[] {
   const hub = target.marks.find((m) => m.id === "p")!;
   return target.marks
     .filter((m) => /^d\d$/.test(m.id))
-    .map((m) => ({ id: m.id, angle: (Math.atan2(m.y - hub.y, m.x - hub.x) + Math.PI * 4) % (Math.PI * 2) }))
-    .sort((a, b) => a.angle - b.angle)
+    .map((m) => ({ id: m.id, column: m.x < hub.x ? 0 : 1, y: m.y }))
+    .sort((a, b) => a.column - b.column || a.y - b.y)
     .map((m) => m.id);
 }
 
-const cyclic = (seq: readonly string[]) => {
-  const first = [...seq].sort()[0]!;
-  const at = seq.indexOf(first);
-  return [...seq.slice(at), ...seq.slice(0, at)];
-};
-
 describe("predicted Flat marks under the dial", () => {
-  it("land the domains in the remembered ring order, not the default one", () => {
+  it("lands the domains in the remembered branch order", () => {
     const fresh = domainSequence(null);
     expect(fresh).toHaveLength(7);
     const remembered = [fresh[0]!, fresh[2]!, fresh[1]!, fresh[4]!, fresh[3]!, fresh[6]!, fresh[5]!];
     const memory: DialMemory = { order: remembered, radiusByStep: new Map(), angleById: new Map(), itemOrder: new Map() };
     const seq = domainSequence(memory);
-    expect(cyclic(seq)).not.toEqual(cyclic(fresh));
-    expect([cyclic(remembered), cyclic([...remembered].reverse())]).toContainEqual(cyclic(seq));
+    expect(seq).not.toEqual(fresh);
+    expect(seq).toEqual(remembered);
   });
 });

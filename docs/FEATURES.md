@@ -43,20 +43,37 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-Small Flat maps use domain label blocks with spaced outward capability branches,
-proportional marks and gradual detail disclosure. Five or six domains use shorter
-previews; long capability names wrap within a bounded column, with the full title
+Flat maps use domain label blocks with spaced outward capability branches,
+proportional marks and gradual detail disclosure. Larger domain sets use shorter
+previews and stable column groups; long capability names wrap within a bounded column, with the full title
 available on selection. Domain dependencies remain
-counted at their domain until capability inspection. Neutral emphasis marks the
+aggregated at their domain until capability inspection. Bundle counts appear with
+an explicit connection label while inspecting an endpoint, without bare overview
+numbers. Bounded local curves and screen-sized arrows preserve direction;
+individual relationship explanations and declaring documents remain in relation
+review. Congestion checks use the
+same curves that are painted; omitted overview links remain available on endpoint
+selection, with the total connection count retained. Neutral emphasis marks the
 selection; amber exclamation marks and a compact key explain evidence that needs
-rechecking. Detail positions separate implementation elements from capability
-faces. A same-scale selection nudge protects the visible branch from its inspector
-when the free span can contain it. Dense Flat maps retain usage rings around the
-project, packed member clusters,
-and counted directional dependencies at rest. Concepts
-navigation separates selection from tree disclosure. Project inspectors show one
+rechecking. Implementation elements sit in compact groups beside their capability,
+with readable square marks, wrapped names and membership stems. An ordinary owned element
+whose name cannot fit leaves no unexplained mark or invisible pointer target.
+A same-scale selection nudge protects the visible branch from its inspector
+when the free span can contain it. More/collapse controls disclose actual capability
+batches with interruptible fading and frame the visible members. Focused areas
+keep the branch grammar, omit a forced-open root collapse control, and offer a
+labelled Full map return that restores the selected root. Concepts
+navigation separates selection from tree disclosure. Below 1280 px, selecting a
+concept temporarily folds the index to leave room for its map and inspector;
+closing the inspector restores the preference, and explicit reopening still works.
+Project inspectors show one
 source status and remedy, with dated measurement details under Check record; these
 presentation changes do not accept meaning or update source receipts.
+Inspector headings name recorded membership roles, such as Implementation elements
+or Belongs to domain. Directed groups say Depends on only when their complete
+relation types support that reading; mixed types remain neutrally labelled.
+Saved analysis history separates list failures from selected-artifact failures,
+ignores stale reads, and presents a localized remedy with optional technical details.
 
 ## Surfaces
 
@@ -80,9 +97,11 @@ sections and boundaries. Selecting a relation keeps its details in the review
 panel instead of opening a duplicate inspector alongside it.
 Agent reads of that same relation retain the review target. Opening a current
 evidence document exits path selection and opens its full detail.
+Escape also dismisses a review during its opening transition, preserving the
+map selection and path beneath it; nested search and document surfaces close first.
 Analysis requests use the interface language for explanatory prose and findings,
 while keeping identifiers, structured fields and exact quotations unchanged.
-Small Flat maps keep their branch forms during meaning and relation inspection;
+Flat maps keep their branch forms during meaning and relation inspection;
 relation captions still describe the recorded edges. Light is masked from card
 interiors so travelling signals cannot wash out their text.
 

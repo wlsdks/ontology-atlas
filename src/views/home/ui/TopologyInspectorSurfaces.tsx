@@ -25,6 +25,7 @@ import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailP
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/inspector/topology-node-significance";
+import { relationHeadingKeys } from "../lib/inspector/relation-heading/relation-heading";
 import { returnFocusIfDropped } from "../lib/keyboard/topology-focus-return";
 import { resolveNodeVaultRef } from "../lib/authoring/topology-node-edit";
 
@@ -156,6 +157,9 @@ export function TopologyInspectorSurfaces({
   const { openMeaningWorkbench, meaningWorkbenchOpen } = homeWorkbenchController;
   const { acpPresentationVisible } = acpRuntimeController;
   const { handleEnterRealm } = topologyRouteControls;
+  const relationHeadings = !grayAreaOpen && nodePanelMounted && panelDatasheetModel
+    ? relationHeadingKeys(panelDatasheetModel.kind, panelDatasheetModel.groups)
+    : null;
 
   return (<>
     <Surface
@@ -199,11 +203,11 @@ export function TopologyInspectorSurfaces({
     ) : null}
     {/* Stays mounted until the panel's `<Surface>` reports `onExited`, drawing the retained model
        as it folds. */}
-    {!grayAreaOpen && nodePanelMounted && panelDatasheetModel ? (
+    {!grayAreaOpen && nodePanelMounted && panelDatasheetModel && relationHeadings ? (
       <div
         ref={nodePopoverPositionerRef}
         data-testid="topology-node-popover-positioner"
-        data-topology-camera-obstacle="side-panel"
+        data-topology-camera-obstacle={panelOpen ? "side-panel" : "none"}
         data-position-contract="selected-inspector-aligns-to-right-inset"
         data-fixed-surface-role="selected-node-inspector"
         data-fixed-surface-measure-target="topology-node-popover"
@@ -259,26 +263,24 @@ export function TopologyInspectorSurfaces({
                 domainLabel: t("nodeDatasheet.domainLabel"),
                 poweredOn: t("nodeDatasheet.poweredOn"),
                 poweredOff: t("nodeDatasheet.poweredOff"),
-                // `usedBy` is a direction with its own key; the others map 1:1 to relation types
-                // in the shared plain register.
-                metricContains: relationVocabulary("contains", "plain"),
+                metricContains: t(relationHeadings.contains),
                 containsShowAll: t("nodeDatasheet.containsShowAll"),
                 groupShowMore: t("nodeDatasheet.groupShowMore"),
                 groupShowFewer: t("nodeDatasheet.groupShowFewer"),
                 containsShowSummary: t("nodeDatasheet.containsShowSummary"),
                 containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
-                metricUsedBy: t("nodeDatasheet.metricUsedBy"),
-                metricDependsOn: relationVocabulary("depends_on", "plain"),
-                metricBelongsTo: relationVocabulary("belongs_to", "plain"),
+                metricUsedBy: t(relationHeadings.usedBy),
+                metricDependsOn: t(relationHeadings.dependsOn),
+                metricBelongsTo: t(relationHeadings.belongsTo),
                 metricRelated: relationVocabulary("related_to", "plain"),
                 metricEvidence: relationVocabulary("describes", "plain"),
                 metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
-                metricUsedByHelp: t("nodeDatasheet.metricUsedByHelp"),
-                metricDependsOnHelp: t("nodeDatasheet.metricDependsOnHelp"),
+                metricUsedByHelp: t(relationHeadings.usedByHelp),
+                metricDependsOnHelp: t(relationHeadings.dependsOnHelp),
                 metricBelongsToHelp: t("nodeDatasheet.metricBelongsToHelp"),
                 metricRelatedHelp: t("nodeDatasheet.metricRelatedHelp"),
-                metricUsedByDomainsHelp: t("nodeDatasheet.metricUsedByDomainsHelp"),
-                metricDependsOnDomainsHelp: t("nodeDatasheet.metricDependsOnDomainsHelp"),
+                metricUsedByDomainsHelp: t(relationHeadings.usedByDomainsHelp),
+                metricDependsOnDomainsHelp: t(relationHeadings.dependsOnDomainsHelp),
                 metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                 noConnections: t("nodeDatasheet.noConnections"),
                 directLinks: (count) => t("nodeDatasheet.directLinks", { count }),

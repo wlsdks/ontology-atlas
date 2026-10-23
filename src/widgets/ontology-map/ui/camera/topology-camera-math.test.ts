@@ -29,6 +29,15 @@ const OVERVIEW_LABEL_BOTTOM_ALLOWANCE = Math.max(...Object.values(LABEL_OFFSET))
  * only at entry) is enforced separately by the zoom-ratio gate, not by farT.
  */
 describe("computeOverviewCameraTarget", () => {
+  it("uses one label reservation when the scene already includes its label pad", () => {
+    const bounds = { minX: -100, maxX: 100, minY: -500, maxY: 500 };
+    const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.02, cameraSmallGraphScaleMax: 1.3, safeInsetTop: 112, safeInsetBottom: 72 };
+    const padPx = { left: 24, right: 24, top: 24, bottom: 24 };
+    const single = computeOverviewFitScale(bounds, 1448, 806, tokens, 125, { padPx, labelBottomAllowance: 0 });
+    const classic = computeOverviewFitScale(bounds, 1448, 806, tokens, 125, { padPx });
+    expect(single * 1000).toBeCloseTo(806 - 112 - 72 - 48);
+    expect((single - classic) * 1000).toBeCloseTo(OVERVIEW_LABEL_BOTTOM_ALLOWANCE);
+  });
   const bounds = { minX: -100, minY: -100, maxX: 100, maxY: 100 };
   const tokens = { cameraScaleMax: 2.6, cameraScaleMin: 0.24, cameraSmallGraphScaleMax: 1.3, overviewEntryRatio: 0.95 };
   const FAR_HIGH_RATIO = 0.92; // --map-altitude-far-high-ratio

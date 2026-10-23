@@ -37,7 +37,7 @@ export function createPointerMoveHandler(
     clearClusterHover, releaseCameraForZoom,
   } = ctx;
 
-  const { hitTestClusterChip, hitVisibleNode, buildEdgeCandidates } = hits;
+  const { hitDialAction, hitTestClusterChip, hitVisibleNode, buildEdgeCandidates } = hits;
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const tokens = readOntologyMapTokensOrNull();
@@ -85,6 +85,13 @@ export function createPointerMoveHandler(
     // plain hover on the now-idle machine.
     if (pointerMachineRef.current.phase !== "idle" && e.buttons === 0) {
       handlePointerUp();
+      return;
+    }
+    const pressed = pointerMachineRef.current;
+    if (pressed.phase === "pressed" && pressed.downPoint && hitDialAction(pressed.downPoint.x, pressed.downPoint.y)) {
+      if (Math.hypot(point.x - pressed.downPoint.x, point.y - pressed.downPoint.y) > tokens.hysteresisPx)
+        pointerMachineRef.current = transitionPointerState(pressed, { type: "pointercancel" }, tokens.hysteresisPx).next;
+      e.currentTarget.style.cursor = hitDialAction(point.x, point.y) ? "pointer" : "grab";
       return;
     }
     // Capture the pressed node BEFORE the transition — the pressed→dragging
@@ -219,6 +226,13 @@ export function createPointerMoveHandler(
     // click (P3b) works during focus, so hover has to match ("if you can grab it you
     // can read it"; the root of the user report "With a node clicked, the edge hover tooltip does not appear"). The
     // candidates already reflect the focus tier's hit rules via buildEdgeCandidates.
+    if (hitDialAction(point.x, point.y)) {
+      e.currentTarget.style.cursor = "pointer";
+      hoveredNodeIdRef.current = null;
+      clearEdgeHover();
+      clearClusterHover();
+      return;
+    }
     const hitNodeId = hitVisibleNode(world, cameraRef.current, tokens, point.x, point.y);
     // Edge proximity at a node-miss point is a hover card, firing only when the edge identity changes;
     // a node hit clears it. Computed outside the hover block because the cursor decision also uses it.

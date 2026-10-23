@@ -84,7 +84,7 @@ const vault = (name: string) => {
   return hit;
 };
 
-interface Count { foreignSquares: number; entered: string | null; domains: number; capabilities: number; elements: number; lines: number; marks: number; maxPerEnd: number; counted: number }
+interface Count { restCounted: number; shown: number; previewBudget: number; foreignSquares: number; entered: string | null; domains: number; capabilities: number; elements: number; lines: number; marks: number; maxPerEnd: number; counted: number }
 
 function measure(name: string, width: number, zoom: number): Count {
   const { model, labelOf } = vault(name);
@@ -133,9 +133,11 @@ function measure(name: string, width: number, zoom: number): Count {
   for (const it of enteredCluster?.items ?? []) for (const el of it.elementIds) own.add(el);
   const foreignSquares = out.squares.filter((q) => q.id !== null && !own.has(q.id)).length;
   return {
-    foreignSquares, entered: disclosure.entered,
+    previewBudget: scene.clusters.length * (scene.branchPreviewRows ?? 0), foreignSquares, entered: disclosure.entered,
     domains, capabilities, elements, lines, marks: domains + capabilities + elements + lines,
     maxPerEnd: Math.max(0, ...perEnd.values()),
+    restCounted: model.flows.filter((flow) => !flow.relatesOnly).length,
+    shown: result.flows.links.filter((link) => !link.relatesOnly && result.flows.drawn.includes(link.key)).length,
     counted: result.flows.links.filter((l) => !l.relatesOnly).length,
   };
 }
@@ -162,9 +164,15 @@ describe("dial mark budget at four vault sizes (DESIGN.md, Mark budget)", () => 
       it(`${name} at ${width}, INDEX open: overview ≤ ${bar.overview}, zoom ≤ ${bar.zoom}${bar.deep === null ? "" : `, deep ≤ ${bar.deep}`}`, () => {
         const overview = measure(name, width, 1);
         expect(overview.marks).toBeLessThanOrEqual(bar.overview);
-        if (name === "storefront" || name === "dogfood") expect(overview.lines).toBeGreaterThanOrEqual(overview.counted);
+        if (name === "storefront" || name === "dogfood") {
+          expect(overview.lines).toBeGreaterThan(0);
+          expect(overview.counted).toBe(overview.restCounted);
+          expect(overview.shown).toBeGreaterThan(0);
+          expect(overview.shown).toBeLessThanOrEqual(overview.counted);
+        }
         if (name === "synth 2,000") {
-          expect(overview.capabilities).toBeGreaterThan(0);
+          expect(overview.domains).toBeGreaterThan(0);
+          expect(overview.capabilities).toBeLessThanOrEqual(overview.previewBudget);
           expect(overview.lines).toBeLessThanOrEqual(24);
         }
         if (name.endsWith("10,000")) {

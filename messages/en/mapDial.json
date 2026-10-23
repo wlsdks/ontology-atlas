@@ -13,9 +13,11 @@
   "linksShown": "{shown, number} of {total, number} links shown",
   "evidenceUnmeasured": "Evidence not measured",
   "reading": "Reading {read, number} of {total, number} files",
-  "settling": "Rings settle when every file is read",
+  "settling": "Arranging concepts as files are read",
   "legendNeeds": "needs",
   "legendUsers": "used by",
   "legendStale": "stale",
-  "moreMembers": "View {count, number} more"
+  "moreMembers": "View {count, number} more",
+  "lessMembers": "Collapse {count, number} revealed capabilities",
+  "connectionCount": "{count, plural, one {# connection} other {# connections}}"
 }

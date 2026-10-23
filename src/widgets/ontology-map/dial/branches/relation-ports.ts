@@ -1,3 +1,4 @@
+import { localRelationControl } from "../flow/local-control";
 import type { DialFrameMarks } from "../frame/marks";
 import type { Box, DialFrameResult, Point } from "../types";
 
@@ -7,7 +8,8 @@ export function clipBranchRelation(frame: DialFrameResult | null, from: string, 
   if (!frame?.contextOnly) return curve;
   const blocks = (frame.marks as DialFrameMarks).blocks ?? [];
   const boxFor = (id: string) => blocks.find((block) => block.id === id && block.alpha > 0.5)?.box;
-  const { a, b, control: c } = curve;
+  const { a, b } = curve;
+  const c = localRelationControl(a, b, curve.control);
   const point = (t: number) => ({ x: (1 - t) ** 2 * a.x + 2 * (1 - t) * t * c.x + t * t * b.x, y: (1 - t) ** 2 * a.y + 2 * (1 - t) * t * c.y + t * t * b.y });
   const inside = (p: Point, box: Box) => p.x >= box.minX - 6 && p.x <= box.maxX + 6 && p.y >= box.minY - 6 && p.y <= box.maxY + 6;
   const exit = (box: Box | undefined, reverse: boolean) => {

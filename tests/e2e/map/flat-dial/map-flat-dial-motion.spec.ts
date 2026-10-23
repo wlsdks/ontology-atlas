@@ -466,17 +466,20 @@ interface LightProbe {
   plan: () => { kind: string; anchorId: string; createdMs: number; signals: { key: string; fromId: string; toId: string; startMs: number }[] }[];
 }
 
-test("a domain focus crossfades inks in 120 ms, then one light runs per attended direction, then the map sleeps", async ({ page }) => {
+test("a domain focus crossfades neutral inks in 120 ms, emits directional light, and sleeps after framing", async ({ page }) => {
   test.setTimeout(120_000);
   await installSampler(page, { probe: true });
   await openSample(page, "light=force&");
   await waitQuiet(page);
-  const needs = await opaqueInk(page, "--map-indigo-bright");
-  const usedBy = await opaqueInk(page, "--map-edge-selected");
+  const attendedInk = await opaqueInk(page, "--map-dial-stroke-domain");
   const selectedAt = await clickDomain(page, ORDERS);
   await page.waitForFunction(() => ((window as unknown as { __atlasMapLight?: LightProbe }).__atlasMapLight?.plan().length ?? 0) > 0, undefined, { polling: "raf", timeout: 30_000 });
   const plan = await page.evaluate(() => (window as unknown as { __atlasMapLight: LightProbe }).__atlasMapLight.plan());
   await page.waitForFunction(() => (window as unknown as { __atlasMapLight: LightProbe }).__atlasMapLight.active() === false, undefined, { polling: "raf", timeout: 30_000 });
+  const lightEnded = await page.evaluate(() => performance.now());
+  await waitForMapStill(page);
+  await waitQuiet(page);
+  const framingSettledMs = await page.evaluate((start) => performance.now() - start, lightEnded);
   const quiet = await quietAfter(page);
   const all = (await frames(page)).filter((f) => f.t >= selectedAt);
   const focused = all.find((f) => f.inkMix < 1) ?? all[0]!;
@@ -486,7 +489,7 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   const attendedAtFirst = attendedOf(focused);
   const attendedInks = [...new Set(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!)).map((s) => s.split("|")[1]!) : [])];
   const numeralsAtFirst = focused.numerals.map((n) => n.split("|")[0]!);
-  const attendedFar = new Set(attendedAtFirst.map((k) => k.split("\u0000").find((id) => id !== ORDERS)!));
+  const drawnFlows = await page.evaluate(() => (window.__atlasMap!.dial!() as DialProbe).flows);
   const signals = plan.flatMap((p) => p.signals);
   const mixAt = full?.at ?? Infinity;
   const earlyLights = signals.filter((s) => s.startMs < mixAt).length;
@@ -496,7 +499,8 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
     firstFrameMs: Math.round(focused.t - focused.at),
     attendedKeys: attendedKeys.length,
     attendedInks,
-    tokens: [needs, usedBy],
+    tokens: [attendedInk],
+    framingSettledMs: Math.round(framingSettledMs),
     numeralsAtFirst: numeralsAtFirst.length,
     lights: signals.length,
     earlyLights,
@@ -505,14 +509,20 @@ test("a domain focus crossfades inks in 120 ms, then one light runs per attended
   console.log(`[flat-dial-motion] focus ${JSON.stringify(verdict)}`);
   expect(full, "the ink mix reaches 1").toBeTruthy();
   expect.soft(verdict.mixMs!, "ink mix 1 within a drawn frame of 120 ms after the first focused frame finished painting (ms)").toBeLessThanOrEqual(FOCUS_MS + Math.max(FRAME_MS, verdict.gapMs ?? FRAME_MS));
-  expect.soft(attendedInks.filter((ink) => channelGap(ink, needs) > 1 && channelGap(ink, usedBy) > 1), "attended strip inks outside the needs and used-by tokens").toEqual([]);
+  expect.soft(attendedInks.filter((ink) => channelGap(ink, attendedInk) > 1), "attended branch strips use the neutral domain stroke").toEqual([]);
   expect.soft(attendedAtFirst.length, "attended flows on the first focused frame").toBeGreaterThan(0);
   expect.soft(numeralsAtFirst.length, "counts on the first focused frame").toBeGreaterThan(0);
-  expect.soft(numeralsAtFirst.filter((k) => !attendedFar.has(k.split("\u0000")[1]!)), "counts away from an attended far end").toEqual([]);
-  expect.soft([...attendedFar].filter((id) => focused.names.includes(id) && !numeralsAtFirst.includes(`far\u0000${id}`)), "named far domains without a count on the first focused frame").toEqual([]);
+  expect.soft(numeralsAtFirst.filter((key) => !attendedAtFirst.includes(key)), "counts belong to drawn attended connections").toEqual([]);
+  for (const numeral of focused.numerals) {
+    const [key, value] = numeral.split("|");
+    const flow = drawnFlows.find(flow => flow.key === key)!;
+    const counts = [...value!.matchAll(/\d[\d,]*/g)].map(match => Number(match[0].replaceAll(",", "")));
+    expect.soft(counts, "the caption names exactly one directional count").toHaveLength(1);
+    expect.soft([flow.ab, flow.ba], "the count is a recorded directional weight").toContain(counts[0]);
+  }
   expect.soft(signals.length, "lights launched = attended direction strokes").toBe(full ? full.inks.filter((s) => attendedKeys.includes(s.split("|")[0]!) && s.split("|")[2] !== "relates").length : -1);
   expect.soft(earlyLights, "lights departing before the ink mix reaches 1").toBe(0);
-  expect.soft(quiet, "frames in 1.5 s after the last light").toBe(0);
+  expect.soft(quiet, "frames in 1.5 s after light and camera settle").toBe(0);
 });
 
 test("zoom ramps are functions of camera scale, whatever the path to it", async ({ page }) => {

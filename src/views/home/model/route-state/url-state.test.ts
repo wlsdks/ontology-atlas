@@ -727,12 +727,58 @@ describe("realm expansion (?realm=)", () => {
     expect(params.get("open")).toBeNull();
   });
 
-  it("exitRealmRouteState clears realm and selection", () => {
+  it("clears both path endpoints and path mode when entering a realm", () => {
+    const entered = enterRealmRouteState({
+      ...DEFAULT_HOME_ROUTE_STATE,
+      analysisMode: "path",
+      pathSourceSlug: "element:source",
+      pathTargetSlug: "element:target",
+    }, "capability:y");
+
+    expect(entered.analysisMode).toBe("overview");
+    expect(entered.pathSourceSlug).toBeNull();
+    expect(entered.pathTargetSlug).toBeNull();
+    const params = applyHomeRouteState(new URLSearchParams(), entered);
+    expect(params.get("mode")).toBeNull();
+    expect(params.get("pathFrom")).toBeNull();
+    expect(params.get("pathTo")).toBeNull();
+  });
+
+  it("restores the realm root after exiting a complete path and rereading the URL", () => {
+    const current = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      realmSlug: "capability:y",
+      analysisMode: "path" as const,
+      pathSourceSlug: "element:source",
+      pathTargetSlug: "element:target",
+    };
+    const exited = exitRealmRouteState(current);
+    const params = applyHomeRouteState(
+      applyHomeRouteState(new URLSearchParams(), current),
+      exited,
+    );
+
+    expect(params.get("realm")).toBeNull();
+    expect(params.get("p")).toBe("capability:y");
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "capability:y",
+      realmSlug: null,
+      analysisMode: "overview",
+      pathSourceSlug: null,
+      pathTargetSlug: null,
+    });
+    expect(exited.pathSourceSlug).toBeNull();
+    expect(exited.pathTargetSlug).toBeNull();
+  });
+
+  it("exitRealmRouteState restores the realm root selection on the full map", () => {
     const inRealm = { ...DEFAULT_HOME_ROUTE_STATE, realmSlug: "capability:y", selectedSlug: "element:z" };
     const exited = exitRealmRouteState(inRealm);
     expect(exited.realmSlug).toBeNull();
-    expect(exited.selectedSlug).toBeNull();
-    expect(applyHomeRouteState(new URLSearchParams("realm=capability:y"), exited).get("realm")).toBeNull();
+    expect(exited.selectedSlug).toBe("capability:y");
+    const params = applyHomeRouteState(new URLSearchParams("realm=capability:y"), exited);
+    expect(params.get("realm")).toBeNull();
+    expect(params.get("p")).toBe("capability:y");
   });
 });
 

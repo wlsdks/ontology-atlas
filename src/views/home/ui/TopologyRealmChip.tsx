@@ -1,6 +1,6 @@
 "use client";
 
-import { Orbit, X } from "lucide-react";
+import { ArrowLeft, Orbit } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/controls/chrome-chip";
@@ -21,7 +21,7 @@ export interface TopologyRealmChipProps {
 }
 
 /**
- * Scopes the map to one node with ✕ back to the whole map; rides the top-centre row
+ * Scopes the map to one node with a labeled return to the whole map; rides the top-centre row
  * like `TopologyPathChip`.
  */
 export function TopologyRealmChip({
@@ -61,13 +61,15 @@ export function TopologyRealmChip({
         aria-label={clearAriaLabel}
         data-testid="topology-realm-chip-clear"
         className={controlClass({
-          shape: "icon",
+          shape: "segment",
           size: "sm",
-          tone: "muted",
-          className: "-mr-1 hover:text-[color:var(--color-text-primary)]",
+          tone: "secondary",
+          hoverInk: "strong",
+          className: "-mr-1 shrink-0 gap-1.5",
         })}
       >
-        <X size={ICON_SIZE.md} aria-hidden />
+        <ArrowLeft size={ICON_SIZE.md} aria-hidden />
+        <span>{clearAriaLabel}</span>
       </button>
     </div>
   );

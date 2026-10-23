@@ -559,10 +559,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       homingActiveRef.current = running || homeSpringsRef.current.size > 0;
     }
 
-    // --- Realm coordinate step: FLIP the inside nodes, fling the outside
-    // ones away under gravity. The tick settles entering → active and
-    // exiting → idle. While exiting, the homing above returns coordinates to
-    // home, so this block leaves them alone. ---
+    // Realm coordinates stay exclusive during entry and exit; reduced motion settles in one frame.
     {
       const rt = realmTransitionReducer(realmTransitionRef.current, { type: "tick", now });
       realmTransitionRef.current = rt;
@@ -618,25 +615,23 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                 }
             }
             else if (data && rt.phase === "exiting" && !reducedMotionRef.current) {
-                // Exit reverse-playback: inside nodes reverse-FLIP (deepest layer
-                // first, target → home) and outside nodes return against gravity
-                // (fling position → home) — the deterministic inverse of the entry
-                // step. Reduced-motion never reaches here: the exit effect above
-                // already snapped home and went idle with duration 0.
+                // Return from the captured live frame, including an interrupted entry or a dragged member.
                 const elapsed = now - rt.startMs;
                 for (const node of world.nodes) {
                     const target = data.insideTargets.get(node.id);
                     if (target) {
-                        const home = data.insideFrom.get(node.id) ?? target;
+                        const home = data.returnPositions?.get(node.id) ?? data.insideFrom.get(node.id) ?? target;
                         const delay = realmExitFlipDelayFor(data.depthById.get(node.id) ?? 1);
-                        const p = realmInsidePosition(target, home, elapsed - delay, REALM_EXIT_FLIP_MS);
+                        const start = data.exitSnapshot?.positions.get(node.id) ?? target;
+                        const p = realmInsidePosition(start, home, elapsed - delay, REALM_EXIT_FLIP_MS);
                         node.x = p.x;
                         node.y = p.y;
                     }
                     else {
                         const from = data.outsideFrom.get(node.id);
                         if (from) {
-                            const p = realmOutsideReturnPosition(from, data.flingCenter, elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, {
+                            const p = realmOutsideReturnPosition(data.returnPositions?.get(node.id) ?? from, data.flingCenter, elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, {
+                                start: data.exitSnapshot?.positions.get(node.id),
                                 duration: REALM_EXIT_OUTSIDE_RETURN_MS,
                                 fallbackAngle: fallbackAngleFor(node.id),
                             });
@@ -651,9 +646,13 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
                 overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
             }
             else if (rt.phase === "idle" && realmDataRef.current !== null) {
-                // Exit complete: reverse playback returned everything home, so drop
-                // the realm data and settle the overview anchor against the home
-                // spineBounds — the close of the recomputation above.
+                // A throttled frame can skip the entire exit; complete its coordinates before discarding the snapshot.
+                const completed = realmDataRef.current;
+                for (const node of world.nodes) {
+                  const home = completed.returnPositions?.get(node.id) ?? completed.insideFrom.get(node.id) ?? completed.outsideFrom.get(node.id);
+                  if (home) { node.x = home.x; node.y = home.y; }
+                }
+                recomputeWorldGeometry(world, tokens);
                 realmDataRef.current = null;
                 overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length, dialOverviewFit(world));
             }

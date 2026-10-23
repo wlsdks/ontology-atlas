@@ -334,7 +334,7 @@ export function deriveDeeplinkAncestorExpansion(
 }
 
 /**
- * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path source clear.
+ * A realm is a new coordinate system, so selection (`p`), expansion (`open`) and path analysis clear.
  */
 export function enterRealmRouteState(
   current: HomeRouteState,
@@ -343,15 +343,26 @@ export function enterRealmRouteState(
   return {
     ...current,
     realmSlug: slug,
+    analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
+    pathSourceSlug: null,
+    pathTargetSlug: null,
     selectedSlug: null,
     focusedHubSlug: null,
     expandedParents: [],
   };
 }
 
-/** Also clears the selection. */
+/** Returns to the realm root on the full map. */
 export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
-  return { ...current, realmSlug: null, selectedSlug: null, focusedHubSlug: null };
+  return {
+    ...current,
+    realmSlug: null,
+    selectedSlug: current.realmSlug,
+    focusedHubSlug: null,
+    analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
+    pathSourceSlug: null,
+    pathTargetSlug: null,
+  };
 }
 
 /**

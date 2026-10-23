@@ -489,6 +489,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     reframeViewportRef,
     selectionCameraRef,
     cameraGestureRevisionRef,
+    focusLeashPxRef,
   });
   useTopologyLayoutCommands({
     relayoutToken,
@@ -512,6 +513,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       onSelect?.(slug, source);
     }, [onSelect, selectionSourceRef]);
     const { flyToNode } = useTopologyFocusNavigation({
+    panelInsetsRef,
         lastFocusedSlugRef,
         focusedSlug,
         egoRevealBatchesRef,
@@ -545,7 +547,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectionSourceRef,
   });
   useTopologyRealmTransition({
-    realmRootId,
+    view3d, cameraTokens, dialLabels, realmRootId,
     prevRealmRootIdRef,
     lastActiveMsRef,
     worldRef,

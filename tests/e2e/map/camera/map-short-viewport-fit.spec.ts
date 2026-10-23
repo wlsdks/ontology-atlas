@@ -15,9 +15,10 @@ async function drawnFill(page: import("@playwright/test").Page) {
     const free = dial.freeRect;
     const chips = probe.nodes().filter((n) => !n.hidden && n.kind === "domain");
     const boxes: Box[] = [
-      ...chips.map((n) => ({ minX: n.x - n.radius, maxX: n.x + n.radius, minY: n.y - n.radius, maxY: n.y + n.radius })),
+      ...probe.nodes().filter((n) => !n.hidden && (n.alpha ?? 0) > 0.05).map((n) => ({ minX: n.x - n.radius, maxX: n.x + n.radius, minY: n.y - n.radius, maxY: n.y + n.radius })),
       ...dial.discs.map((d) => ({ minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r })),
-      ...dial.texts.filter((t) => t.role === "domain").map((t) => t.box),
+      // Branch names extend beyond their parent cards; measure every drawn name.
+      ...dial.texts.map((t) => t.box),
     ];
     const minX = Math.min(...boxes.map((b) => b.minX));
     const maxX = Math.max(...boxes.map((b) => b.maxX));

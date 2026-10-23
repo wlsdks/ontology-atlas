@@ -4,15 +4,13 @@ import { canvasOrigin, openDial, ORDERS, readDial, report, WIDTHS, QUERY, type V
 import { waitForMapStill } from "../../settle";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
-const OVERVIEW: Record<Vault, { rings: number[]; marks: number; lines: number | "all"; perEnd?: number; crossings: number; namesCrossed: number; noDiscs?: boolean }> = {
-  storefront: { rings: [2, 4, 3], marks: 100, lines: "all", crossings: 10, namesCrossed: 3 },
-  dogfood: { rings: [], marks: 60, lines: "all", crossings: 2, namesCrossed: 0 },
-  "synth 2,000": { rings: [15], marks: 400, lines: 24, crossings: 40, namesCrossed: 2 },
-  "synth 10,000": { rings: [33], marks: 80, lines: 40, perEnd: 6, crossings: 15, namesCrossed: 3, noDiscs: true },
-  "layered 10,000": { rings: [3, 12, 15, 3], marks: 80, lines: 40, perEnd: 6, crossings: 100, namesCrossed: 6, noDiscs: true },
+const OVERVIEW: Record<Vault, { domains: number; flows: number; marks: number; lines: number; perEnd?: number; crossings: number; namesCrossed: number; noDiscs?: boolean }> = {
+  storefront: { domains: 9, flows: 21, marks: 100, lines: 21, crossings: 10, namesCrossed: 3 },
+  dogfood: { domains: 4, flows: 5, marks: 60, lines: 5, crossings: 2, namesCrossed: 0 },
+  "synth 2,000": { domains: 15, flows: 45, marks: 400, lines: 24, crossings: 40, namesCrossed: 2 },
+  "synth 10,000": { domains: 33, flows: 99, marks: 80, lines: 40, perEnd: 6, crossings: 15, namesCrossed: 3, noDiscs: true },
+  "layered 10,000": { domains: 33, flows: 403, marks: 80, lines: 40, perEnd: 6, crossings: 100, namesCrossed: 6, noDiscs: true },
 };
-
-const ZOOM_CEILING = 3.2;
 
 const overlaps = (a: Box, b: Box) => a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
 const inside = (a: Box, r: Box) => a.minX >= r.minX && a.maxX <= r.maxX && a.minY >= r.minY && a.maxY <= r.maxY;
@@ -27,43 +25,106 @@ function drawnPerEnd(dial: DialProbe): number {
   return Math.max(0, ...count.values());
 }
 
-function ringSplit(dial: DialProbe): number[] {
-  const steps = [...dial.rings].sort((a, b) => a.radius - b.radius).map((r) => r.step);
-  return steps.map((step) => dial.clusters.filter((c) => c.step === step).length);
+async function selectFromSearch(page: Page, id: string) {
+  const label = await page.evaluate(id => window.__atlasMap!.nodes().find(n => n.id === id)!.label, id);
+  await page.keyboard.press("ControlOrMeta+k");
+  const search = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
+  await expect(search).toBeVisible();
+  await search.getByRole("combobox").fill(label);
+  await search.locator(`[role="option"][data-value="ontology:${id}"]`).click();
+  await expect(search).toBeHidden();
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
+  await page.mouse.move(5, 5);
+  await waitForMapStill(page);
 }
 
-async function zoomAt(page: Page, at: { x: number; y: number }, done: (dial: DialProbe) => boolean, ceiling = ZOOM_CEILING + 0.5): Promise<DialProbe> {
-  const origin = await canvasOrigin(page);
-  await page.mouse.move(origin.x + at.x, origin.y + at.y);
-  for (;;) {
-    const dial = await readDial(page);
-    if (done(dial) || dial.zoomRatio >= ceiling) return dial;
-    const before = dial.zoomRatio;
-    await page.mouse.wheel(0, -60);
-    await waitForMapStill(page, { what: "camera" });
-    if ((await readDial(page)).zoomRatio <= before + 1e-4) return readDial(page);
+async function checkDomainOrientation(page: Page, dial: DialProbe) {
+  const nodes = await page.evaluate(() => window.__atlasMap!.nodes());
+  const named = new Set(dial.texts.filter(t => t.role === "domain").map(t => t.id));
+  const directions = dial.clusters.map(c => ({
+    id: c.domainId,
+    side: Math.sign(nodes.find(n => n.id === c.capabilityIds[0])!.x - c.chip.x),
+  }));
+  expect.soft([...new Set(directions.filter(c => named.has(c.id)).map(c => c.side))].sort(), "both facing branch directions keep a named reference").toEqual([...new Set(directions.map(c => c.side))].sort());
+  return dial.clusters.filter(c => !named.has(c.domainId)).map(c => c.domainId);
+}
+
+async function recoverCulledNames(page: Page, vault: Vault, size: { width: number; height: number }, ids: readonly string[], extra = "") {
+  for (const id of ids) {
+    if (QUERY[vault]) await openDial(page, vault, size, `${extra}p=${encodeURIComponent(id)}&`);
+    else await selectFromSearch(page, id);
+    const selected = await readDial(page);
+    const name = selected.texts.find(t => t.id === id && t.role === "domain");
+    expect(name, `selecting the culled domain ${id} restores its name`).toBeDefined();
+    expect(inside(name!.box, selected.freeRect), `the restored name ${id} clears the panels`).toBe(true);
+    expect.soft(selected.textOverlaps, "restoring a selected name does not overlap another name").toBe(0);
   }
 }
 
-async function atRest(page: Page): Promise<DialProbe> {
-  const origin = await canvasOrigin(page);
-  const spot = await page.evaluate(() => {
-    const d = window.__atlasMap!.dial!() as DialProbe;
-    const marks = [...d.discs.map((q) => ({ x: q.x, y: q.y })), ...d.clusters.map((c) => c.chip)];
-    let best = { x: d.freeRect.minX, y: d.freeRect.minY, gap: -1 };
-    for (let x = d.freeRect.minX + 12; x < d.freeRect.maxX; x += 12) {
-      for (let y = d.freeRect.minY + 12; y < d.freeRect.maxY; y += 12) {
-        if (d.texts.some((t) => x >= t.box.minX && x <= t.box.maxX && y >= t.box.minY && y <= t.box.maxY)) continue;
-        const gap = Math.min(...marks.map((m) => Math.hypot(m.x - x, m.y - y)));
-        if (gap > best.gap) best = { x, y, gap };
-      }
+async function recoverOmittedPairs(page: Page, overview: DialProbe) {
+  const domainOf = new Map(overview.clusters.flatMap(c => c.capabilityIds.map(id => [id, c.domainId] as const)));
+  const omitted = overview.flows.filter(f => !f.drawn && !f.relatesOnly);
+  for (const domain of new Set(omitted.map(f => f.a))) {
+    await selectFromSearch(page, domain);
+    const selected = await readDial(page);
+    for (const missing of omitted.filter(f => f.a === domain)) {
+      const recovered = selected.flows.filter(f => {
+        const a = domainOf.get(f.a) ?? f.a;
+        const b = domainOf.get(f.b) ?? f.b;
+        return !f.relatesOnly && ((a === missing.a && b === missing.b) || (a === missing.b && b === missing.a));
+      });
+      const counts = recovered.reduce((sum, f) => {
+        const forward = (domainOf.get(f.a) ?? f.a) === missing.a;
+        return { ab: sum.ab + (forward ? f.ab : f.ba), ba: sum.ba + (forward ? f.ba : f.ab) };
+      }, { ab: 0, ba: 0 });
+      expect.soft(counts, `${missing.key} keeps both directional counts while selected`).toEqual({ ab: missing.ab, ba: missing.ba });
+      expect.soft(recovered.some(f => f.drawn), `selecting an endpoint reveals the omitted pair ${missing.key}`).toBe(true);
     }
-    return best;
-  });
-  await page.mouse.move(origin.x + spot.x, origin.y + spot.y);
-  await page.waitForFunction(() => window.__atlasMap!.hover() === null, undefined, { polling: "raf" });
+  }
+}
+
+async function selectCanvasDomain(page: Page, id: string) {
+  const dial = await readDial(page);
+  const name = dial.texts.find(t => t.id === id && t.role === "domain")!;
+  expect(name, "the domain can be selected by its drawn name").toBeDefined();
+  const origin = await canvasOrigin(page);
+  await page.mouse.dblclick(origin.x + (name.box.minX + name.box.maxX) / 2, origin.y + (name.box.minY + name.box.maxY) / 2);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
+  await page.mouse.move(5, 5);
   await waitForMapStill(page);
-  return readDial(page);
+}
+
+async function correctStubCounts(page: Page, dial: DialProbe) {
+  const labels = await page.evaluate(() => Object.fromEntries(window.__atlasMap!.nodes().map(n => [n.id, n.label])));
+  for (const stub of dial.stubs) {
+    const flow = dial.flows.find(f => f.key === stub.flowKey)!;
+    const farIsB = dial.texts.some(t => t.role === "stub" && t.id === flow.b && t.text === stub.text);
+    const far = farIsB ? flow.b : flow.a;
+    const out = farIsB ? flow.ab : flow.ba;
+    const back = farIsB ? flow.ba : flow.ab;
+    const want = [labels[far], out > 0 ? `→${out}` : null, back > 0 ? `←${back}` : null].filter(Boolean).join(" ");
+    expect.soft(stub.text, `stub ${stub.flowKey} keeps its direction and counts`).toBe(want);
+  }
+}
+
+async function clickMemberAction(page: Page, domainId: string, direction: "more" | "less") {
+  const pattern = direction === "more" ? /more/i : /collapse/i;
+  const dial = await readDial(page);
+  const action = dial.texts.find(t => t.id === domainId && t.role === "more" && pattern.test(t.text));
+  expect(action, `${direction} is available for ${domainId}`).toBeDefined();
+  expect(inside(action!.box, dial.freeRect), "the disclosure control is clear of the panels").toBe(true);
+  const origin = await canvasOrigin(page);
+  await page.mouse.click(origin.x + (action!.box.minX + action!.box.maxX) / 2, origin.y + (action!.box.minY + action!.box.maxY) / 2);
+  await page.mouse.move(5, 5);
+  await waitForMapStill(page);
+  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId), "disclosure keeps its domain selected").toBe(domainId);
+}
+
+function clearFocusedNames(dial: DialProbe) {
+  expect.soft(dial.namesCrossed, "focused names crossed by lines").toBe(0);
+  expect.soft(dial.textOverlaps, "focused names overlapping names").toBe(0);
+  expect.soft(cut(dial), "focused names stay whole").toEqual([]);
+  expect.soft(dial.texts.filter(t => !inside(t.box, dial.freeRect)).map(t => t.text), "focused texts stay outside the panels").toEqual([]);
 }
 
 function namedCapabilities(dial: DialProbe, domainId: string): { named: number; total: number; missing: string[] } {
@@ -75,7 +136,7 @@ function namedCapabilities(dial: DialProbe, domainId: string): { named: number; 
 
 for (const vault of Object.keys(OVERVIEW) as Vault[]) {
   for (const size of WIDTHS) {
-    test(`${vault} at ${size.width}: the overview keeps its rings, marks, lines and names inside the bars`, async ({ page }) => {
+    test(`${vault} at ${size.width}: the branch overview keeps every domain, marks, lines and names inside the bars`, async ({ page }) => {
       test.setTimeout(180_000);
       await openDial(page, vault, size);
       if (QUERY[vault]) await expect(page.getByTestId("topology-scope-readout")).toHaveAttribute("data-synthetic", "true");
@@ -84,38 +145,34 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
       const bar = OVERVIEW[vault];
       const drawn = dial.flows.filter((f) => f.drawn).length;
       const marks = dial.clusters.length + dial.discs.length + drawn;
-      const measured = { rings: ringSplit(dial), marks, discs: dial.discs.length, drawn, flows: dial.flows.length, perEnd: drawnPerEnd(dial), crossings: dial.crossings, namesCrossed: dial.namesCrossed, textOverlaps: dial.textOverlaps, numerals: dial.numerals.length };
+      const measured = { domains: dial.clusters.length, rings: dial.rings.length, marks, discs: dial.discs.length, drawn, flows: dial.flows.length, perEnd: drawnPerEnd(dial), crossings: dial.crossings, namesCrossed: dial.namesCrossed, textOverlaps: dial.textOverlaps, numerals: dial.numerals.length };
       report(`${vault} ${size.width} overview`, measured);
 
       expect.soft(dial.zoomRatio, "the overview").toBeCloseTo(1, 2);
-      expect.soft(measured.rings, "domains per ring, innermost first").toEqual(bar.rings);
+      expect.soft(dial.rings, "Flat maps keep the branch grammar at every graph size").toEqual([]);
+      expect.soft(dial.clusters, "every domain belongs to the branch layout").toHaveLength(bar.domains);
+      const culledNames = await checkDomainOrientation(page, dial);
       expect.soft(marks, "chips + capability discs + lines").toBeLessThanOrEqual(bar.marks);
       if (bar.noDiscs) expect.soft(dial.discs.length, "capability discs at the overview").toBe(0);
-      if (bar.lines === "all") expect.soft(dial.flows.filter((f) => !f.drawn).map((f) => f.key), "every flow drawn").toEqual([]);
-      else expect.soft(drawn, "lines at rest").toBeLessThanOrEqual(bar.lines);
+      expect.soft(dial.flows, "the flow inventory retains every pair, including omitted rest lines").toHaveLength(bar.flows);
+      expect.soft(new Set(dial.flows.map(f => f.key)).size, "each flow pair occurs once").toBe(bar.flows);
+      expect.soft(dial.budget.total, "the disclosure count includes every counted pair").toBe(dial.flows.filter(f => !f.relatesOnly).length);
+      expect.soft(drawn, "some connections remain visible at rest").toBeGreaterThan(0);
+      expect.soft(drawn, "lines at rest").toBeLessThanOrEqual(bar.lines);
       if (bar.perEnd !== undefined) expect.soft(measured.perEnd, "lines per end").toBeLessThanOrEqual(bar.perEnd);
       expect.soft(dial.crossings, "line crossings").toBeLessThanOrEqual(bar.crossings);
       expect.soft(dial.namesCrossed, "names a line crosses").toBeLessThanOrEqual(bar.namesCrossed);
       expect.soft(dial.textOverlaps, "names overlapping names").toBe(0);
       expect.soft(cut(dial), "every name whole").toEqual([]);
       if (vault === "synth 2,000") expect.soft(dial.numerals.length, "rest numerals").toBeLessThanOrEqual(9);
-      if (vault === "storefront") expect.soft(dial.ledger, "no ledger on the storefront overview: zooming names its capabilities in place").toBeNull();
+      expect.soft(dial.ledger, "branch maps do not switch to a detached ledger").toBeNull();
+      if (vault === "storefront" || vault === "dogfood") await recoverOmittedPairs(page, dial);
+      await recoverCulledNames(page, vault, size, culledNames);
     });
   }
 }
 
 for (const size of WIDTHS) {
-  test(`storefront at ${size.width}: ring labels name the ranges they have room for`, async ({ page }) => {
-    await openDial(page, "storefront", size);
-    const dial = await readDial(page);
-    const ringTexts = dial.texts.filter((t) => t.role === "ring").map((t) => t.text);
-    report(`storefront ${size.width} rings`, { ringLabels: ringTexts.length, rings: dial.rings.length, ringTexts });
-    await expect(page.getByTestId("flat-dial-legend")).toHaveCount(0);
-    expect.soft(new Set(ringTexts).size, "one label per ring").toBe(ringTexts.length);
-    expect.soft(ringTexts.length, "ring labels").toBeLessThanOrEqual(dial.rings.length);
-    expect.soft(ringTexts.length, "ring labels").toBeGreaterThan(0);
-  });
-
   test(`storefront at ${size.width}: rest numerals rank inside their budget and touch no name`, async ({ page }) => {
     await openDial(page, "storefront", size);
     const dial = await readDial(page);
@@ -140,7 +197,7 @@ for (const size of WIDTHS) {
 for (const vault of ["storefront", "synth 2,000"] as const) {
   for (const size of WIDTHS) {
     for (const index of ["expanded", "collapsed"] as const) {
-      test(`${vault} at ${size.width}, INDEX ${index}: no name under INDEX or the rail, and every domain keeps its name`, async ({ page }) => {
+      test(`${vault} at ${size.width}, INDEX ${index}: names clear the panels and culled domains remain accessible`, async ({ page }) => {
         await openDial(page, vault, size, `index=${index}&`);
         await expect(page.getByTestId("topology-index-panel")).toHaveCount(vault === "storefront" && index === "expanded" ? 1 : 0);
         const dial = await readDial(page);
@@ -148,97 +205,107 @@ for (const vault of ["storefront", "synth 2,000"] as const) {
         const named = new Set(dial.texts.filter((t) => t.role === "domain").map((t) => t.id));
         report(`${vault} ${size.width} ${index} free rect`, { outside, named: named.size, D: dial.clusters.length });
         expect.soft(outside, "texts outside the free rect").toEqual([]);
-        expect.soft(named.size, "distinct domain names").toBe(dial.clusters.length);
+        expect.soft(dial.clusters, "every domain remains in the map").toHaveLength(OVERVIEW[vault].domains);
+        const culled = await checkDomainOrientation(page, dial);
+        await recoverCulledNames(page, vault, size, culled, `index=${index}&`);
       });
     }
   }
 }
 
-test("storefront Orders zoomed: every capability named, leaders and names clear, stubs say their counts", async ({ page }) => {
-  await openDial(page, "storefront", WIDTHS[0]);
-  const chip = (await readDial(page)).clusters.find((c) => c.domainId === ORDERS)!.chip;
-  const dial = await zoomAt(page, chip, (d) => d.zoomRatio >= 1.65 && namedCapabilities(d, ORDERS).missing.length === 0);
-  const named = namedCapabilities(dial, ORDERS);
-  const labels = await page.evaluate(() => Object.fromEntries(window.__atlasMap!.nodes().map((n) => [n.id, n.label])));
-  report("Orders zoomed", { zoom: dial.zoomRatio, named, ledger: dial.ledger, namesCrossed: dial.namesCrossed, stubs: dial.stubs.map((s) => s.text) });
-
-  expect.soft(named.missing, `Orders named at ${dial.zoomRatio.toFixed(2)}×`).toEqual([]);
-  expect.soft(dial.zoomRatio, "zoom needed to name every capability").toBeLessThanOrEqual(ZOOM_CEILING);
-  expect.soft(dial.ledger?.leaderCrossings ?? 0, "leader crossings").toBe(0);
-  expect.soft(dial.namesCrossed, "zoomed names crossed").toBe(0);
-  expect.soft(cut(dial), "every name whole").toEqual([]);
-  for (const stub of dial.stubs) {
-    const flow = dial.flows.find((f) => f.key === stub.flowKey)!;
-    const farIsB = dial.texts.some((t) => t.role === "stub" && t.id === flow.b && t.text === stub.text);
-    const far = farIsB ? flow.b : flow.a;
-    const out = farIsB ? flow.ab : flow.ba;
-    const back = farIsB ? flow.ba : flow.ab;
-    const want = [labels[far], out > 0 ? `→${out}` : null, back > 0 ? `←${back}` : null].filter(Boolean).join(" ");
-    expect.soft(stub.text, `stub ${stub.flowKey}`).toBe(want);
+for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
+  for (const size of WIDTHS) {
+    test(`${vault} at ${size.width}: More reveals members, Collapse reverses it, and scope viewing returns to the same domain`, async ({ page }) => {
+      test.setTimeout(180_000);
+      await openDial(page, vault, size);
+      const overview = await readDial(page);
+      const domainId = vault === "storefront" ? ORDERS : overview.clusters.find(c => c.capabilityIds.length > 12)!.domainId;
+      if (vault === "storefront") await selectFromSearch(page, domainId);
+      else await selectCanvasDomain(page, domainId);
+      const before = namedCapabilities(await readDial(page), domainId);
+      expect(before.named, "the selected branch shows its initial members").toBeGreaterThan(0);
+      expect(before.missing.length, "the fixture exercises a real hidden member").toBeGreaterThan(0);
+      await clickMemberAction(page, domainId, "more");
+      await expect.poll(async () => namedCapabilities(await readDial(page), domainId).named).toBeGreaterThan(before.named);
+      const expanded = await readDial(page);
+      const newlyNamed = before.missing.filter(id => expanded.texts.some(t => t.id === id && t.role === "capability"));
+      expect(newlyNamed.length, "More exposes previously hidden concepts").toBeGreaterThan(0);
+      expect(namedCapabilities(expanded, domainId).named, "one action reveals a bounded batch").toBeLessThanOrEqual(before.named * 2);
+      clearFocusedNames(expanded);
+      await correctStubCounts(page, expanded);
+      if (vault === "layered 10,000") {
+        expect.soft(expanded.flows.filter(f => f.drawn).length, "focused large-graph lines at rest").toBeLessThanOrEqual(20);
+        expect.soft(expanded.crossings, "focused large-graph line crossings").toBe(0);
+      }
+      await clickMemberAction(page, domainId, "less");
+      await expect.poll(async () => namedCapabilities(await readDial(page), domainId).missing).toEqual(before.missing);
+      const collapsed = await readDial(page);
+      clearFocusedNames(collapsed);
+      if (vault === "storefront") await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+      const scopeEntry = page.getByTestId(vault === "storefront" ? "map-detail-panel-action-realm" : "topology-realm-enter-button");
+      await expect(scopeEntry).toBeVisible();
+      await scopeEntry.click();
+      await expect(page.getByTestId("topology-realm-chip-clear")).toBeVisible();
+      await page.waitForFunction(id => {
+        const probe = window.__atlasMap;
+        const dial = probe?.dial?.();
+        return dial?.owns && (dial as DialProbe).domainAppear >= 0.999 && probe?.nodes().some(node => node.id === id && node.draggable);
+      }, domainId);
+      await waitForMapStill(page);
+      const scoped = await readDial(page);
+      expect(scoped.owns, "scope viewing keeps the same renderer").toBe(true);
+      expect(scoped.clusters.map(c => c.domainId)).toEqual([domainId]);
+      expect(scoped.rings, "scope viewing keeps the branch grammar").toEqual([]);
+      const scopeBefore = namedCapabilities(scoped, domainId);
+      expect(scopeBefore.named, "the scope exposes a readable initial subset").toBeGreaterThan(0);
+      expect(scopeBefore.missing.length).toBeGreaterThan(0);
+      await clickMemberAction(page, domainId, "more");
+      await expect.poll(async () => namedCapabilities(await readDial(page), domainId).named).toBeGreaterThan(scopeBefore.named);
+      const scopeAfter = await readDial(page);
+      const count = namedCapabilities(scopeAfter, domainId).named;
+      expect(count, "scope disclosure stays bounded").toBeLessThanOrEqual(scopeBefore.named * 2);
+      if (vault === "storefront") expect(namedCapabilities(scopeAfter, domainId).missing, "all eight Orders capabilities are reachable").toEqual([]);
+      expect.soft(scopeAfter.flows.filter(f => f.drawn).length, "focused lines at rest").toBeLessThanOrEqual(20);
+      expect.soft(scopeAfter.crossings, "focused line crossings").toBe(0);
+      clearFocusedNames(scopeAfter);
+      report(`${vault} ${size.width} disclosure`, { domainId, before, newlyNamed, scopeBefore, scopeNamed: count, squares: scopeAfter.squares });
+      await page.getByTestId("topology-realm-chip-clear").click();
+      await expect(page.getByTestId("topology-realm-chip")).toBeHidden();
+      await waitForMapStill(page);
+      expect((await readDial(page)).clusters).toHaveLength(OVERVIEW[vault].domains);
+      expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domainId);
+      if (vault === "storefront") await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+      await expect(scopeEntry).toBeVisible();
+    });
   }
-});
-
-for (const size of WIDTHS) {
-  test(`synth 2,000 at ${size.width}: zooming the central domain names every capability, in place or in the ledger`, async ({ page }) => {
-    test.setTimeout(180_000);
-    await openDial(page, "synth 2,000", size);
-    const start = await readDial(page);
-    const cx = (start.freeRect.minX + start.freeRect.maxX) / 2;
-    const cy = (start.freeRect.minY + start.freeRect.maxY) / 2;
-    const target = [...start.clusters].sort((a, b) => Math.hypot(a.chip.x - cx, a.chip.y - cy) - Math.hypot(b.chip.x - cx, b.chip.y - cy))[0]!;
-    const origin = await canvasOrigin(page);
-    await page.mouse.move(origin.x + target.chip.x, origin.y + target.chip.y);
-    await page.mouse.wheel(0, -60);
-    await expect.poll(async () => (await readDial(page)).zoomRatio).toBeGreaterThan(start.zoomRatio);
-    const dial = await zoomAt(page, target.chip, (d) => d.disclosure.enteredDomain !== null && namedCapabilities(d, d.disclosure.enteredDomain).missing.length === 0 && d.namesCrossed === 0);
-    const entered = dial.disclosure.enteredDomain;
-    const named = entered ? namedCapabilities(dial, entered) : null;
-    report(`synth 2,000 ${size.width} zoomed`, { aimed: target.domainId, entered, zoom: dial.zoomRatio, named, ledger: dial.ledger, namesCrossed: dial.namesCrossed });
-    expect(entered, "a domain is entered").not.toBeNull();
-    expect.soft(named!.missing, `${entered} named`).toEqual([]);
-    expect.soft(named!.total, "the entered domain has capabilities").toBeGreaterThan(0);
-    expect.soft(dial.zoomRatio, "zoom needed").toBeLessThanOrEqual(ZOOM_CEILING);
-    expect.soft(dial.ledger?.leaderCrossings ?? 0, "leader crossings").toBe(0);
-    expect.soft(dial.namesCrossed, "zoomed names crossed").toBe(0);
-    expect.soft(cut(dial), "every name whole").toEqual([]);
-  });
 }
 
-test("layered 10,000: wheel zoom at the innermost domain keeps lines, crossings and names inside the zoom bars", async ({ page }) => {
-  test.setTimeout(240_000);
-  await openDial(page, "layered 10,000", WIDTHS[0]);
-  const start = await readDial(page);
-  const inner = [...start.rings].sort((a, b) => a.radius - b.radius)[0]!.step;
-  const target = start.clusters.find((c) => c.step === inner)!;
-  await zoomAt(page, target.chip, (d) => d.zoomRatio >= 5, 6);
-  const at5 = await atRest(page);
-  report("layered 10,000 at 5×", { zoom: at5.zoomRatio, entered: at5.disclosure.enteredDomain, discs: at5.discs.length, drawn: at5.flows.filter((f) => f.drawn).length, crossings: at5.crossings, stubs: at5.stubs.length, namesCrossed: at5.namesCrossed, textOverlaps: at5.textOverlaps });
-  expect.soft(at5.zoomRatio, "reached 5×").toBeGreaterThanOrEqual(5);
-  expect.soft(at5.discs.length, "capabilities drawn").toBeGreaterThan(0);
-  expect.soft(at5.flows.filter((f) => f.drawn).length, "lines at rest").toBeLessThanOrEqual(20);
-  expect.soft(at5.crossings, "crossings").toBe(0);
-  expect.soft(cut(at5), "every stub label whole").toEqual([]);
-
-  const deep = await zoomAt(page, target.chip, (d) => d.zoomRatio >= 13.8, 20);
-  report("layered 10,000 deep", { zoom: deep.zoomRatio, discs: deep.discs.length, texts: deep.texts.length, textOverlaps: deep.textOverlaps });
-  expect.soft(deep.zoomRatio, "reached 13.8×").toBeGreaterThanOrEqual(13.8);
-  expect.soft(cut(deep), "every text whole").toEqual([]);
-});
-
-test("layered 10,000: element squares stay inside the orphan cluster at 5× and at most 1,000 at 13.8×", async ({ page }) => {
-  test.setTimeout(240_000);
-  await openDial(page, "layered 10,000", WIDTHS[0]);
-  const start = await readDial(page);
-  const inner = [...start.rings].sort((a, b) => a.radius - b.radius)[0]!.step;
-  const target = start.clusters.find((c) => c.step === inner)!;
-  await zoomAt(page, target.chip, (d) => d.zoomRatio >= 5, 6);
-  const at5 = await atRest(page);
-  await zoomAt(page, target.chip, (d) => d.zoomRatio >= 13.8, 20);
-  const deep = await atRest(page);
-  report("layered 10,000 squares", { at5: { zoom: at5.zoomRatio, squares: at5.squares }, deep: { zoom: deep.zoomRatio, squares: deep.squares } });
-  expect.soft(at5.zoomRatio, "reached 5×").toBeGreaterThanOrEqual(5);
-  expect.soft(at5.squares, "element squares outside the orphan cluster at 5×").toBe(0);
-  expect.soft(deep.zoomRatio, "reached 13.8×").toBeGreaterThanOrEqual(13.8);
-  expect.soft(deep.squares, "element squares at 13.8×").toBeGreaterThan(0);
-  expect.soft(deep.squares, "element squares at 13.8×").toBeLessThanOrEqual(1000);
-});
+for (const vault of ["synth 10,000", "layered 10,000"] as const) {
+  for (const size of WIDTHS) {
+    test(`${vault} at ${size.width}: deep links reach hidden contained and unassigned elements without exposing the entire graph`, async ({ page }) => {
+      test.setTimeout(180_000);
+      await openDial(page, vault, size);
+      const initial = await page.evaluate(() => window.__atlasMap!.nodes());
+      for (const id of ["synth-el-1", "synth-el-0"]) {
+        const hidden = initial.find(n => n.id === id)!;
+        expect(hidden, "the synthetic fixture contains the requested element").toBeDefined();
+        expect(hidden.hidden || (hidden.alpha ?? 0) <= 0.05, "the deep link starts from an undisclosed element").toBe(true);
+        await openDial(page, vault, size, `p=${encodeURIComponent(id)}&`);
+        await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
+        const selected = await page.evaluate(id => window.__atlasMap!.nodes().find(n => n.id === id)!, id);
+        const dial = await readDial(page);
+        const name = dial.texts.find(t => t.id === id && t.role === "element");
+        expect(name, "the selected element is named in the map").toBeDefined();
+        expect(selected.hidden, "the selected element is drawn").toBe(false);
+        expect(selected.alpha ?? 0, "the selected element is visibly present").toBeGreaterThan(0.5);
+        expect(inside({ minX: selected.x - selected.radius, maxX: selected.x + selected.radius, minY: selected.y - selected.radius, maxY: selected.y + selected.radius }, dial.freeRect), "the selected element clears the panels").toBe(true);
+        expect(inside(name!.box, dial.freeRect), "the selected element name clears the panels").toBe(true);
+        expect.soft(dial.squares, "rendered implementation elements remain bounded").toBeLessThanOrEqual(1000);
+        clearFocusedNames(dial);
+        report(`${vault} ${size.width} hidden element`, { id, squares: dial.squares, namesCrossed: dial.namesCrossed, textOverlaps: dial.textOverlaps });
+        await page.keyboard.press("Escape");
+        await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBeNull();
+      }
+    });
+  }
+}

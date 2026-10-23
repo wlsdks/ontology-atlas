@@ -128,3 +128,51 @@ test("branch map: travelling relation light leaves card text clear", async ({ pa
   expect(light.frames, "sample the actual relation light while it travels").toBeGreaterThan(0);
   expect(light.peak, "relation light never bleeds across card text").toBe(0);
 });
+
+test("branch map: the default nine-domain sample keeps readable branches", async ({ page }) => {
+  await openDial(page, "storefront", { width: 1920, height: 1080 });
+  const dial = await readDial(page);
+  expect(dial.rings).toHaveLength(0);
+  expect(dial.clusters).toHaveLength(9);
+  expect(dial.texts.filter(t => t.role === "domain")).toHaveLength(9);
+  expect(dial.textOverlaps).toBe(0);
+});
+
+test("branch map: More reveals a real member, collapse reverses it, and scoped viewing has a return", async ({ page }) => {
+  await openDial(page, "dogfood", { width: 1920, height: 1080 });
+  const domain = "domain:agent-access";
+  const members = (await readDial(page)).clusters.find(c => c.domainId === domain)!.capabilityIds;
+  const visible = async () => (await readDial(page)).texts.filter(t => t.role === "capability" && t.id && members.includes(t.id));
+  const clickAction = async (label: RegExp) => {
+    const action = (await readDial(page)).texts.find(t => t.id === domain && t.role === "more" && label.test(t.text));
+    expect(action).toBeDefined();
+    const origin = await canvasOrigin(page);
+    await page.mouse.click(origin.x + (action!.box.minX + action!.box.maxX) / 2, origin.y + (action!.box.minY + action!.box.maxY) / 2);
+    await page.mouse.move(5, 5);
+    await waitForMapStill(page);
+  };
+  expect(await visible()).toHaveLength(6);
+  await clickAction(/more/i);
+  await expect.poll(async () => (await visible()).length).toBe(7);
+  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domain);
+  await clickAction(/collapse/i);
+  await expect.poll(async () => (await visible()).length).toBe(6);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await page.getByTestId("map-detail-panel-action-realm").click();
+  await expect(page.getByTestId("topology-realm-chip-clear")).toBeVisible();
+  await waitForMapStill(page);
+  const scoped = await readDial(page);
+  expect(scoped.owns).toBe(true);
+  expect(scoped.clusters).toHaveLength(1);
+  expect(scoped.rings).toHaveLength(0);
+  expect(scoped.texts.some(t => t.id === domain && t.role === "domain")).toBe(true);
+  await clickAction(/more/i);
+  await expect.poll(async () => (await visible()).length).toBe(7);
+  await page.getByTestId("topology-realm-chip-clear").click();
+  await expect(page.getByTestId("topology-realm-chip")).toBeHidden();
+  await waitForMapStill(page);
+  expect((await readDial(page)).clusters).toHaveLength(4);
+  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domain);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await expect(page.getByTestId("map-detail-panel-action-realm")).toBeVisible();
+});

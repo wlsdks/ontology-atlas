@@ -18,6 +18,16 @@ const BASE: TopologyEscLadderInput = {
 };
 
 describe("resolveTopologyEscLadderAction", () => {
+  it('cancels an entering workbench without leaving its realm or clearing its relation', () => {
+    expect(resolveTopologyEscLadderAction({ ...BASE, workbenchOpen: true,
+      realmActive: true, selectedEdgeActive: true, hasSelection: true })).toBe('close-workbench');
+  });
+
+  it('leaves nested search and document surfaces ahead of the workbench', () => {
+    expect(resolveTopologyEscLadderAction({ ...BASE, workbenchOpen: true, searchOpen: true })).toBe('none');
+    expect(resolveTopologyEscLadderAction({ ...BASE, workbenchOpen: true, fullDetailOpen: true })).toBe('close-full-detail');
+  });
+
   it("returns none when nothing is open", () => {
     expect(resolveTopologyEscLadderAction(BASE)).toBe("none");
   });

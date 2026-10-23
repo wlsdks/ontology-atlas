@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraTarget } from "../../engine/camera";
 import type { SelectionCamera, SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { FocusLeashPx } from "./topology-camera-math";
+import { computeOverviewCameraTarget, type FocusLeashPx } from "./topology-camera-math";
 import type { TopologyWorld } from "../world/topology-world";
 
 const tokens = vi.hoisted(
@@ -45,6 +45,7 @@ vi.mock("../../render/edge-fireflies", async () => {
 
 import { stepTopologyPhysics } from "../frame-loop/topology-physics-step";
 import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
+import * as branchFrame from "./branch-frame/target";
 
 type Kind = "project" | "domain" | "capability";
 
@@ -106,7 +107,7 @@ describe("useTopologyFocusNavigation", () => {
     x: { value: x, velocity: 0 }, y: { value: y, velocity: 0 }, scale: { value: scale, velocity: 0 },
   });
 
-  function setup(overrides: Partial<Parameters<typeof useTopologyFocusNavigation>[0]> = {}) {
+  function setup(overrides: Partial<Parameters<typeof useTopologyFocusNavigation>[0]> = {}, initial: string | null = null) {
     const deps = {
       lastFocusedSlugRef: ref<string | null>(null),
       egoRevealBatchesRef: ref(1),
@@ -141,7 +142,7 @@ describe("useTopologyFocusNavigation", () => {
       ...overrides,
     } as unknown as Parameters<typeof useTopologyFocusNavigation>[0];
     const hook = renderHook((focusedSlug: string | null) => useTopologyFocusNavigation({ ...deps, focusedSlug }), {
-      initialProps: null as string | null,
+      initialProps: initial,
     });
     const select = (slug: string | null, { click = false } = {}) => {
       if (click && slug !== null) deps.selectionSourceRef.current = { slug, source: "canvas-click" };
@@ -151,6 +152,149 @@ describe("useTopologyFocusNavigation", () => {
     };
     return { deps, hook, select };
   }
+
+  it("frames an initial deep link but recomputes the current overview when it is deselected", () => {
+    let left = 0;
+    const unfinishedEntry = { tx: 900, ty: 200, tscale: 0.8 };
+    const { deps, select } = setup({ lastFocusedSlugRef: ref("f"), cameraTargetRef: ref(unfinishedEntry),
+      overviewFitRef: ref("full"), cameraTokens: <T,>(t: T) => ({ ...t, safeInsetLeft: left }),
+    }, "f");
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+    expect(deps.selectionCameraRef.current).toBeNull();
+    left = 300;
+    select(null);
+    const world = deps.worldRef.current!;
+    expect(deps.cameraTargetRef.current).toEqual(computeOverviewCameraTarget(world.bounds, 1200, 800, { ...tokens, safeInsetLeft: left }, world.nodes.length));
+  });
+
+  it("returns the first user search to the exact view it left", () => {
+    const before = { tx: 123, ty: -47, tscale: 0.8 };
+    const { deps, select } = setup({ cameraTargetRef: ref({ ...before }) });
+    select("f");
+    expect(deps.selectionCameraRef.current?.restore).toEqual(before);
+    select(null);
+    expect(deps.cameraTargetRef.current).toEqual(before);
+  });
+
+  it("allows a searched branch camera to rest beyond the default focus leash", () => {
+    const target = { tx: 0, ty: 0, tscale: 1 };
+    vi.spyOn(branchFrame, "branchFocusTarget").mockReturnValue(target);
+    const { deps, select } = setup();
+    select("east");
+    expect(deps.cameraTargetRef.current).toEqual(target);
+    expect(deps.focusLeashPxRef.current!.x).toBeGreaterThan(Math.abs(1500 - target.tx) * target.tscale);
+  });
+
+  it("waits for scoped entry to finish before framing an initial selected capability", () => {
+    const phase = ref({ phase: "entering" });
+    const { deps } = setup({ realmTransitionRef: phase as never }, "f");
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    phase.current.phase = "active";
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+  });
+
+  it("preserves selection and deselection framing inside an active 3D realm", () => {
+    const { deps, select } = setup({ view3dRef: ref(true), realmTransitionRef: ref({ phase: "active" }) as never });
+    select("f");
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(1);
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+    select(null);
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(2);
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+  });
+
+  it("does not apply a pending Flat focus after switching to 3D", () => {
+    const worldRef = ref<TopologyWorld | null>(null);
+    const view3dRef = ref(false);
+    const { deps, hook } = setup({ worldRef, view3dRef });
+    deps.focusedSlugRef.current = "f";
+    hook.rerender("f");
+    frames.shift()?.(performance.now());
+    worldRef.current = world();
+    view3dRef.current = true;
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+  });
+
+  it("waits for search modal isolation to release before measuring the selected map", () => {
+    const shell = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    shell.append(canvas);
+    shell.setAttribute("aria-hidden", "true");
+    const measured = vi.fn();
+    const cameraTokens = <T,>(t: T) => { measured(); return { ...t, safeInsetLeft: 324 }; };
+    const { deps, select } = setup({ canvasRef: ref(canvas), cameraTokens });
+    select("f");
+    expect(measured).not.toHaveBeenCalled();
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    shell.removeAttribute("aria-hidden");
+    frames.shift()?.(performance.now());
+    expect(measured).toHaveBeenCalledTimes(1);
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(1);
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+  });
+
+  it("waits for the selected node's world instead of consuming a deep link before it exists", () => {
+    const worldRef = ref<TopologyWorld | null>(null);
+    const { deps, hook } = setup({ worldRef });
+    deps.focusedSlugRef.current = "f";
+    hook.rerender("f");
+    frames.shift()?.(performance.now());
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    worldRef.current = world();
+    frames.shift()!(performance.now());
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+  });
+
+  it("releases the closing inspector's label exclusion on deselect", () => {
+    const panelInsetsRef = ref<{ left: number; right: number } | null>({ left: 300, right: 400 });
+    const { select } = setup({ panelInsetsRef });
+    select("p", { click: true });
+    select(null);
+    expect(panelInsetsRef.current?.right).toBe(tokens.safeInsetRight);
+  });
+
+  it("does not re-reserve a closing inspector after a manual pan", () => {
+    const panelInsetsRef = ref<{ left: number; right: number } | null>({ left: 0, right: 400 });
+    const { deps, select } = setup({ panelInsetsRef, cameraTokens: <T,>(t: T) => {
+      panelInsetsRef.current = { left: 0, right: 400 };
+      return { ...t, safeInsetRight: 400 };
+    } });
+    select("f", { click: true });
+    deps.cameraTargetRef.current = { tx: 900, ty: 50, tscale: 1.4 };
+    deps.cameraGestureRevisionRef.current++;
+    deps.userDrivenCameraRef.current = true;
+    select(null);
+    expect(panelInsetsRef.current?.right).toBe(tokens.safeInsetRight);
+  });
+
+  it("remeasures the inspector after a fly action selects its domain", () => {
+    let right = 0;
+    const { deps, hook, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: right }) });
+    hook.result.current.flyToNode("east");
+    const before = { ...deps.cameraTargetRef.current };
+    right = 400;
+    select("east");
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(2);
+    expect(deps.cameraTargetRef.current).not.toEqual(before);
+    expect(deps.selectionCameraRef.current?.framed).toBe(true);
+  });
+
+  it("does not replace the saved return camera when realm exit restores the selected root", () => {
+    const { deps, select } = setup();
+    deps.cameraTargetRef.current = { tx: 130, ty: -75, tscale: 0.7 };
+    deps.realmTransitionRef.current = { phase: "exiting", rootId: "f", startMs: 0, durationMs: 800 };
+    select("f");
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.cameraTargetRef.current).toEqual({ tx: 130, ty: -75, tscale: 0.7 });
+  });
 
   it("a click selects without moving the camera when the node already sits in the free map", () => {
     const { deps, select } = setup();
@@ -234,9 +378,8 @@ describe("useTopologyFocusNavigation", () => {
   });
 
   it("a deep link framed on arrival leaves a moved view alone on deselect", () => {
-    const { deps, select } = setup();
-    select("f");
-    deps.selectionCameraRef.current = null;
+    const { deps, select } = setup({ lastFocusedSlugRef: ref("f") }, "f");
+    frames.shift()?.(performance.now());
     deps.cameraTargetRef.current = { tx: 760, ty: 0, tscale: 1.3 };
     deps.userDrivenCameraRef.current = true;
     vi.mocked(deps.beginCameraTween).mockClear();

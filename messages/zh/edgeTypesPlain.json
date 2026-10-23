@@ -1,7 +1,7 @@
 {
-  "contains": "包含",
-  "belongs_to": "属于",
-  "depends_on": "依赖",
+  "contains": "包含的项目",
+  "belongs_to": "包含此项的概念",
+  "depends_on": "依赖的项目",
   "implements": "实现",
   "uses": "使用",
   "describes": "依据",
