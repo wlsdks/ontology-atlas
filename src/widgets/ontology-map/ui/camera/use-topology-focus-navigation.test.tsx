@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CameraTarget } from "../../engine/camera";
 import type { SelectionCamera, SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { FocusLeashPx } from "./topology-camera-math";
+import { computeOverviewCameraTarget, type FocusLeashPx } from "./topology-camera-math";
 import type { TopologyWorld } from "../world/topology-world";
 
 const tokens = vi.hoisted(
@@ -153,11 +153,28 @@ describe("useTopologyFocusNavigation", () => {
     return { deps, hook, select };
   }
 
-  it("frames an initial deep link even when interaction state already stores that selected id", () => {
-    const { deps } = setup({ lastFocusedSlugRef: ref("f") }, "f");
+  it("frames an initial deep link but recomputes the current overview when it is deselected", () => {
+    let left = 0;
+    const unfinishedEntry = { tx: 900, ty: 200, tscale: 0.8 };
+    const { deps, select } = setup({ lastFocusedSlugRef: ref("f"), cameraTargetRef: ref(unfinishedEntry),
+      overviewFitRef: ref("full"), cameraTokens: <T,>(t: T) => ({ ...t, safeInsetLeft: left }),
+    }, "f");
     frames.shift()?.(performance.now());
     expect(deps.beginCameraTween).toHaveBeenCalled();
-    expect(deps.selectionCameraRef.current?.slug).toBe("f");
+    expect(deps.selectionCameraRef.current).toBeNull();
+    left = 300;
+    select(null);
+    const world = deps.worldRef.current!;
+    expect(deps.cameraTargetRef.current).toEqual(computeOverviewCameraTarget(world.bounds, 1200, 800, { ...tokens, safeInsetLeft: left }, world.nodes.length));
+  });
+
+  it("returns the first user search to the exact view it left", () => {
+    const before = { tx: 123, ty: -47, tscale: 0.8 };
+    const { deps, select } = setup({ cameraTargetRef: ref({ ...before }) });
+    select("f");
+    expect(deps.selectionCameraRef.current?.restore).toEqual(before);
+    select(null);
+    expect(deps.cameraTargetRef.current).toEqual(before);
   });
 
   it("allows a searched branch camera to rest beyond the default focus leash", () => {
@@ -342,9 +359,8 @@ describe("useTopologyFocusNavigation", () => {
   });
 
   it("a deep link framed on arrival leaves a moved view alone on deselect", () => {
-    const { deps, select } = setup();
-    select("f");
-    deps.selectionCameraRef.current = null;
+    const { deps, select } = setup({ lastFocusedSlugRef: ref("f") }, "f");
+    frames.shift()?.(performance.now());
     deps.cameraTargetRef.current = { tx: 760, ty: 0, tscale: 1.3 };
     deps.userDrivenCameraRef.current = true;
     vi.mocked(deps.beginCameraTween).mockClear();

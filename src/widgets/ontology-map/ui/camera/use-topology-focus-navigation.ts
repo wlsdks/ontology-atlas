@@ -155,6 +155,7 @@ export function useTopologyFocusNavigation({
 
   useEffect(() => {
     if (lastFocusedSlugRef.current === focusedSlug && (focusedSlug === null || view3dRef.current || handledInitialFocus.current)) return;
+    const preselectedOnArrival = !handledInitialFocus.current && focusedSlug !== null && lastFocusedSlugRef.current === focusedSlug;
     const releasedSlug = lastFocusedSlugRef.current;
     const releasedLeash = focusLeashPxRef.current;
         /*
@@ -286,7 +287,7 @@ export function useTopologyFocusNavigation({
       }
       if (branchTarget && focusedSlug !== null) focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(focusedSlug)!, branchTarget, width, height, measured);
       selectionCameraRef.current =
-        target !== null && focusedSlug !== null && !realmActive
+        target !== null && focusedSlug !== null && !realmActive && !preselectedOnArrival
           ? recordSelectionCamera(memory, { slug: focusedSlug, framed: true, current: cameraTargetRef.current, landed: target, gesture })
           : null;
       if (!target) return;
