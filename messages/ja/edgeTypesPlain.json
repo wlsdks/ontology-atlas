@@ -1,7 +1,7 @@
 {
-  "contains": "含む",
-  "belongs_to": "所属",
-  "depends_on": "依存",
+  "contains": "含まれる項目",
+  "belongs_to": "この項目を含むもの",
+  "depends_on": "依存する項目",
   "implements": "実装",
   "uses": "利用",
   "describes": "根拠",
