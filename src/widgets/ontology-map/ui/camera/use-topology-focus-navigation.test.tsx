@@ -180,6 +180,16 @@ describe("useTopologyFocusNavigation", () => {
     expect(deps.beginCameraTween).toHaveBeenCalled();
   });
 
+  it("preserves selection and deselection framing inside an active 3D realm", () => {
+    const { deps, select } = setup({ view3dRef: ref(true), realmTransitionRef: ref({ phase: "active" }) as never });
+    select("f");
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(1);
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+    select(null);
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(2);
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+  });
+
   it("does not apply a pending Flat focus after switching to 3D", () => {
     const worldRef = ref<TopologyWorld | null>(null);
     const view3dRef = ref(false);

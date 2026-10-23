@@ -363,7 +363,7 @@ export function useTopologyCameraNavigation({
     } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
       const dial = realmActive ? realmData?.dial : world.dial;
-      const branchTarget = branchFocusTarget(world, dial, focused, tokens, width, height);
+      const branchTarget = branchFocusTarget(world, dial, focused, tokens, width, height, { scopedCapability: realmActive && realmData?.flat });
       if (branchTarget && focusLeashPxRef) focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(focused)!, branchTarget, width, height, tokens);
       target = branchTarget ?? computeFocusCameraTarget(
         world,
@@ -383,7 +383,7 @@ export function useTopologyCameraNavigation({
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
           tokens);
-        target = branchFocusTarget(world, realmData.dial, realmData.rootId, tokens, width, height, realmPhase === "entering" ? realmData.insideTargets : undefined)
+        target = branchFocusTarget(world, realmData.dial, realmData.rootId, tokens, width, height, { positions: realmPhase === "entering" ? realmData.insideTargets : undefined, scopedCapability: realmData.flat })
           ?? realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       }
     } else if (mode === "spotlight") {

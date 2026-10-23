@@ -13,12 +13,13 @@ import { focusTargetLeashPx } from "../topology-camera-math";
 type Insets = { obstacleInsetLeft?: number; obstacleInsetRight?: number };
 
 /** Fit the disclosed names and controls against the occupied canvas, not the entire map's label pad. */
-export function branchFocusTarget(world: TopologyWorld, dial: DialWorld | null | undefined, id: string, tokens: OntologyMapTokens & Insets, width: number, height: number, positions?: ReadonlyMap<string, Point>): CameraTarget | null {
+export function branchFocusTarget(world: TopologyWorld, dial: DialWorld | null | undefined, id: string, tokens: OntologyMapTokens & Insets, width: number, height: number, options: { positions?: ReadonlyMap<string, Point>; scopedCapability?: boolean } = {}): CameraTarget | null {
   const domainCluster = dial?.scene.branches ? dial.scene.clusterByDomain.get(id) : null;
+  if (!domainCluster && !options.scopedCapability) return null;
   const owner = dial?.model?.capabilityById.get(id)?.domainId;
   const cluster = domainCluster ?? (owner && dial?.scene.branches ? dial.scene.clusterByDomain.get(owner) : null);
   const node = world.nodeById.get(id);
-  const root = node && { ...node, ...positions?.get(id) };
+  const root = node && { ...node, ...options.positions?.get(id) };
   if (!dial || !cluster || !root) return null;
   const style = readDialTokens();
   const measure = createMeasureText();
@@ -31,7 +32,7 @@ export function branchFocusTarget(world: TopologyWorld, dial: DialWorld | null |
   const cardWidth = Math.max(style.nameMaxPx + style.ledgerGapPx * 2, ...titleLines.map(line => measure(line, titleStyle.font) + style.ledgerGapPx * 2));
   const cardHeight = (style.ledgerGapPx + style.chipMinPx) * 2 + (titleLines.length - 1) * titleStyle.height;
   const labels = members.map(item => {
-    const point = positions?.get(item.id) ?? world.nodeById.get(item.id) ?? item;
+    const point = options.positions?.get(item.id) ?? world.nodeById.get(item.id) ?? item;
     const label = world.nodeById.get(item.id)?.label ?? item.id;
     const lines = branchNameLines(label, memberStyle.font, style.nameMaxPx, measure);
     return { point, width: Math.max(...lines.map(line => measure(line, memberStyle.font))), height: lines.length * memberStyle.height + 4 };

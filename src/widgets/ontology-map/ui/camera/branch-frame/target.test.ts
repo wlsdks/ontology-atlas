@@ -71,7 +71,8 @@ it("reserves readable selected capability space between two panels", () => {
   dial.model = { capabilityById: new Map([["c0", { domainId: "d" }]]) } as never;
   const selected = world.nodeById.get("c0")!;
   selected.label = "Selected capability";
-  const target = branchFocusTarget(world, dial, "c0", { ...tokens, obstacleInsetLeft: 322, obstacleInsetRight: 374 } as OntologyMapTokens, 976, 720);
+  expect(branchFocusTarget(world, dial, "c0", tokens, 976, 720), "unscoped capability selection retains related-endpoint framing").toBeNull();
+  const target = branchFocusTarget(world, dial, "c0", { ...tokens, obstacleInsetLeft: 322, obstacleInsetRight: 374 } as OntologyMapTokens, 976, 720, { scopedCapability: true });
   expect(target).not.toBeNull();
   const x = (selected.x - target!.tx) * target!.tscale + 488;
   expect(target!.tscale).toBeGreaterThanOrEqual(0.6);
@@ -83,5 +84,5 @@ it("frames planned realm positions instead of the departing overview coordinates
   const expected = branchFocusTarget(world, dial, "d", tokens, 1400, 900)!;
   const planned = new Map([...world.nodeById].map(([id, point]) => [id, { x: point.x, y: point.y }]));
   for (const node of world.nodeById.values()) { node.x += 2400; node.y -= 900; }
-  expect(branchFocusTarget(world, dial, "d", tokens, 1400, 900, planned)).toEqual(expected);
+  expect(branchFocusTarget(world, dial, "d", tokens, 1400, 900, { positions: planned })).toEqual(expected);
 });
