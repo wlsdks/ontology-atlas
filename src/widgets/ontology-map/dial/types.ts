@@ -166,6 +166,8 @@ export interface DialOwnershipInput {
     hasDial: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean; focusedRelationsCaptioned: boolean; brushedIsElement: boolean;
 }
 export interface DialFrameInput {
+  requiredBranchIds?: ReadonlySet<string>;
+  contextInkAlphas?: ReadonlyMap<string, number>;
   contextAlphas?: ReadonlyMap<string, number>; deferPaint?: boolean;
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
   nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;

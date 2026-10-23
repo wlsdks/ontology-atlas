@@ -35,6 +35,8 @@ export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha"
 export interface DialMarksInput {
   now?: number; reducedMotion?: boolean;
   contextAlphas?: ReadonlyMap<string, number>;
+  requiredBranchIds?: ReadonlySet<string>;
+  contextInkAlphas?: ReadonlyMap<string, number>;
   model: DialModel;
   scene: DialScene;
   tokens: DialTokens;
