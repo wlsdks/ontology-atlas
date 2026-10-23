@@ -63,6 +63,53 @@ function frame(focus: string | null, scale = 2, longName = false, domains = 3, c
 }
 
 describe("implementation branches", () => {
+  for (const count of [1, 3]) it(`renders ${count} domain-owned elements at their real row positions without a synthetic square`, () => {
+    const nodes: TreeInputNode[] = [{ id: "p", label: "Project", kind: "project" }, { id: "d", label: "Domain", kind: "domain" }, { id: "c", label: "Capability", kind: "capability" },
+      ...Array.from({ length: count }, (_, i) => ({ id: `native${i}`, label: `Native reader ${i}`, kind: "element" as const }))];
+    const edges: TreeInputEdge[] = [["p", "d"], ["d", "c"], ...Array.from({ length: count }, (_, i) => ["d", `native${i}`])]
+      .map(([source, target]) => ({ source: source!, target: target!, kind: "contains", relationType: "contains" }));
+    const model = buildDialModel({ tree: readContainmentTree(nodes, edges), dependencies: [], flows: [], elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
+    const scene = layoutDial(model, ["d"], tokens, null);
+    const direct = scene.clusters[0]!.items.find((item) => item.direct)!;
+    const { input } = frame("d", 2);
+    const attention = resolveDialAttention(model, null, null);
+    const toScreen = (x: number, y: number) => ({ x: 1800 + x * 2, y: 900 + y * 2 });
+    Object.assign(input, { model, scene, attention, inkAttention: attention, focusedNodeId: null, evidence: undefined, toScreen,
+      nodeScreen: (id: string) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; },
+      elementLabel: (id: string) => `Native reader ${id}`,
+      disclosure: { ...input.disclosure, entered: "d", elementsAlpha: 1, elementAlphaFor: () => 1 },
+    });
+    if (count === 1) input.freeRect = { ...input.freeRect, maxX: toScreen(direct.x, direct.y).x + 24 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    expect(out.squares.some((square) => square.id === null)).toBe(false);
+    expect(out.squares).toHaveLength(count);
+    expect(Math.hypot(scene.positions.get("native0")!.x - direct.x, scene.positions.get("native0")!.y - direct.y)).toBeLessThanOrEqual(tokens.pitch / 2);
+    const card = out.blocks!.find((block) => block.id === "d")!.box;
+    for (const square of out.squares) {
+      expect(square).toMatchObject(input.nodeScreen(square.id!)!);
+      const label = out.texts.find((text) => text.id === square.id && text.role === "element");
+      expect(label).toBeDefined();
+      expect(result.picks.find((pick) => pick.id === square.id)).toMatchObject({ x: square.x, y: square.y, r: 12 });
+      expect(result.rows.find((row) => row.id === square.id)?.box).toBe(label!.box);
+      expect(label!.box.maxX).toBeLessThanOrEqual(input.freeRect.maxX);
+      const stem = out.stems!.find((stem) => Math.abs(Math.max(Math.abs(stem.b.x - square.x), Math.abs(stem.b.y - square.y)) - square.half) < .01);
+      expect(stem).toBeDefined();
+      expect(stem!.a.x).toBeCloseTo(card.maxX);
+      expect(stem!.a.y).toBeCloseTo((card.minY + card.maxY) / 2);
+      const points = Array.from({ length: 33 }, (_, i) => {
+        const t = i / 32;
+        return { x: (1 - t) ** 2 * stem!.a.x + 2 * t * (1 - t) * stem!.c.x + t ** 2 * stem!.b.x,
+          y: (1 - t) ** 2 * stem!.a.y + 2 * t * (1 - t) * stem!.c.y + t ** 2 * stem!.b.y };
+      });
+      for (const text of out.texts) expect(crossesBox([points], text.box)).toBe(false);
+      for (const point of points) {
+        expect(point.x >= input.freeRect.minX && point.x <= input.freeRect.maxX).toBe(true);
+        expect(point.y >= input.freeRect.minY && point.y <= input.freeRect.maxY).toBe(true);
+      }
+    }
+  });
+
   it("places children close to their capability in distinct compact rows", () => {
     const { input } = frame("d0c0", 2, false, 1, 1, undefined, 4);
     const cap = input.scene.positions.get("d0c0")!;
@@ -302,17 +349,15 @@ describe("dense branch disclosure", () => {
     expect(rebuild().out.texts.some((text) => text.id === "d0c7")).toBe(false);
   });
 
-  it("fades the direct-member square with its actual disclosure presence", () => {
+  it("does not paint a synthetic direct-member square below actual element disclosure", () => {
     const { input } = frame(null, 1);
     input.disclosure = { ...input.disclosure, elementsAlpha: 0.03 };
     const cluster = input.scene.clusters[0]!;
     cluster.items.push({ ...cluster.items[0]!, id: "direct", direct: true, elementIds: [] });
     const out = emptyDialFrameMarks();
     buildDialMarks(input, out);
-    const direct = out.squares.find((square) => square.id === null)!;
-    expect(direct).toBeDefined();
-    expect(out.inks[direct.rim]).not.toBe(input.inks.element);
-    expect(out.inks[direct.fill]).not.toBe(input.inks.elementFill);
+    expect(out.squares.some((square) => square.id === null)).toBe(false);
+    expect(out.stems).toHaveLength(out.discs.length + out.glyphs.filter((glyph) => glyph.kind === "capability").length);
   });
 
   it("gives the more-members row an explicit disclosure action", () => {

@@ -22,7 +22,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const chords: DialMarksResult["chords"] = [];
   const blocks = out.blocks ??= [];
   const stems = out.stems ??= [];
-  const children: { id: string; parent: Point; radius: number; p: Point; half: number; active: boolean }[] = [];
+  const children: { id: string; parent: Point; radius: number; p: Point; half: number; active: boolean; direct: boolean }[] = [];
   const boxes = new Map<string, Box>();
   const radii = new Map<string, number>();
   const nameBoxes = new Map<string, Box>();
@@ -156,26 +156,22 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       radii.set(item.id, radius);
       const itemVisible = visible(q, tokens.nameMaxPx);
       if ((!active && !partners.has(item.id) && !explicitDisclosure && capAlpha <= 0.02) || (!itemVisible && !activeElements)) continue;
-      if (itemVisible) {
+      if (itemVisible && !item.direct) {
         const state = input.evidence?.stateOf(item.id);
         const tint = mixOver(color(item.id, "capability", state === "stale" ? inks.stale : inks.capabilityRim), inks.bg, presence);
         const root = { x: p.x + side * width / 2 * detail, y: p.y };
         stems.push({ a: root, c: { x: (root.x + q.x) / 2, y: q.y }, b: { x: q.x - side * radius, y: q.y }, ink: ink(mixOver(color(item.id, "capability", inks.element), inks.bg, presence)) });
-        if (item.direct) {
-          if (takeElement(false)) out.squares.push({ id: null, ...q, half: radius, fill: ink(mixOver(inks.elementFill, inks.bg, presence)), rim: ink(mixOver(inks.element, inks.bg, presence)) });
-        } else {
-          if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg);
-          else {
-            out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
-            if (presence > 0.5) picks.push({ id: item.id, ...q, r: radius });
-          }
-          alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
-          if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
-          if (namesVisible || expanded || memberIndex >= previewRows || active || partners.has(item.id)) {
-            const label = model.capabilityById.get(item.id)!.label;
-            const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel), presence);
-            if (presence > 0.5) rows.push({ id: item.id, box: name });
-          }
+        if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg);
+        else {
+          out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
+          if (presence > 0.5) picks.push({ id: item.id, ...q, r: radius });
+        }
+        alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
+        if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
+        if (namesVisible || expanded || memberIndex >= previewRows || active || partners.has(item.id)) {
+          const label = model.capabilityById.get(item.id)!.label;
+          const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel), presence);
+          if (presence > 0.5) rows.push({ id: item.id, box: name });
         }
       }
       const a = disclosure.elementAlphaFor(item);
@@ -199,7 +195,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
           alphas.set(el, 1);
         }
         if (label) text(el, "element", label, { x: e.x + side * (half + tokens.chipMinPx), y: e.y }, side > 0 ? "left" : "right", "element", inks.domainLabel);
-        children.push({ id: el, parent: q, radius: radius + (active ? tokens.chipMinPx : 0), p: e, half: activeElement ? tokens.discGlyphPx : half, active: activeElement });
+        children.push({ id: el, parent: item.direct ? { x: p.x + side * width / 2 * detail, y: p.y } : q, radius: item.direct ? 0 : radius + (active ? tokens.chipMinPx : 0), p: e, half: activeElement ? tokens.discGlyphPx : half, active: activeElement, direct: item.direct });
       }
     }
     const more = domain.capabilityIds.length - shownMembers;
@@ -254,7 +250,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       // A fixed set of ports keeps containment separate from the central capability caption.
       for (const turn of [sign, -sign]) {
         const a = { x: parent.x, y: parent.y + turn * radius };
-        const reach = Math.max(tokens.ledgerGapPx * 2, Math.abs(p.x - parent.x) * 0.6);
+        const reach = Math.min(child.direct ? tokens.nameMaxPx : Infinity, Math.max(tokens.ledgerGapPx * 2, Math.abs(p.x - parent.x) * 0.6));
         const edge = { x: p.x, y: p.y + turn * half };
         for (const { b, c } of [
           { b: { x: p.x + (p.x < parent.x ? half : -half), y: p.y }, c: { x: parent.x, y: p.y } },
@@ -265,6 +261,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
             const t = i / 32;
             return { x: (1 - t) ** 2 * a.x + 2 * t * (1 - t) * c.x + t ** 2 * b.x, y: (1 - t) ** 2 * a.y + 2 * t * (1 - t) * c.y + t ** 2 * b.y };
           });
+          if (child.direct && points.some((point) => point.x < input.freeRect.minX || point.x > input.freeRect.maxX || point.y < input.freeRect.minY || point.y > input.freeRect.maxY)) continue;
           const bounds = { minX: Math.min(...points.map((p) => p.x)), maxX: Math.max(...points.map((p) => p.x)), minY: Math.min(...points.map((p) => p.y)), maxY: Math.max(...points.map((p) => p.y)) };
           const blocked = (box: Box) => overlaps(bounds, box) && crossesBox([points], box);
           if (out.texts.some((text) => blocked(text.box)) || childBodies.some((body) => body.id !== child.id && blocked(body.box))) continue;
