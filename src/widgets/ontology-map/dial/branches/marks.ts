@@ -1,11 +1,11 @@
-import { scaledLabelFont, scaledLabelFontSize } from "../../render/labels";
+import { scaledLabelFont } from "../../render/labels";
 import { buildFlowMarks } from "../flow-marks";
 import { crossfadeInk, inkIndex, mixOver } from "../ink";
 import { smoothstep } from "../frame/disclosure";
 import type { DialFrameMarks, DialMarksInput, DialMarksResult } from "../frame/marks";
 import type { Box, DialAttention, DialKind, GlyphMark, Point, TextMark } from "../types";
 import { branchPreviewRows, BRANCH_ROW_PITCH } from "./layout";
-import { capabilityNameTries, overlaps } from "../label-marks";
+import { crossesBox, overlaps } from "../label-marks";
 import { branchNameLines, branchTextStyle } from "./text";
 import { branchMemberAlpha, branchMemberCount } from "./member-disclosure";
 import { settleBranchNames } from "./name-occupancy";
@@ -22,6 +22,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const chords: DialMarksResult["chords"] = [];
   const blocks = out.blocks ??= [];
   const stems = out.stems ??= [];
+  const children: { id: string; parent: Point; radius: number; p: Point; half: number; active: boolean }[] = [];
   const boxes = new Map<string, Box>();
   const radii = new Map<string, number>();
   const nameBoxes = new Map<string, Box>();
@@ -65,8 +66,8 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   );
   const text = (id: string, role: TextMark["role"], value: string, p: Point, align: CanvasTextAlign, kind: DialKind, tint: string, presence = 1) => {
     if (selected(id) && (role === "capability" || role === "element")) tint = inks.domainLabelAttended;
-    const { font, height } = branchTextStyle(role, kind, tokens.labelScale);
-    const lines = (role === "capability" || role === "domain") ? branchNameLines(value, font, tokens.nameMaxPx, input.measureText) : [value];
+    const { font, height } = branchTextStyle(role === "element" ? "capability" : role, kind, tokens.labelScale);
+    const lines = (role === "capability" || role === "domain" || role === "element") ? branchNameLines(value, font, tokens.nameMaxPx, input.measureText) : [value];
     const width = Math.max(...lines.map((line) => input.measureText(line, font)));
     const textHeight = height * lines.length;
     const left = align === "right" ? p.x - width : align === "center" ? p.x - width / 2 : p.x;
@@ -88,7 +89,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     };
     out.glyphs.push(g);
     const alpha = input.contextAlphas?.get(id) ?? 1;
-    if (alpha >= 0.05) picks.push({ id, ...p, r: kind === "element" ? Math.max(4, r) : r });
+    if (alpha >= 0.05) picks.push({ id, ...p, r: kind === "element" ? Math.max(tokens.chipMinPx * 1.5, r) : r });
     alphas.set(id, alpha);
   };
   const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
@@ -185,22 +186,20 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         if (input.contextAlphas && (input.contextAlphas.get(el) ?? 0) < 0.5) continue;
         const at = scene.positions.get(el)!;
         const e = position(el, at);
-        if (!visible(e, tokens.chipMinPx) || !takeElement(activeElement)) continue;
-        if (activeElement) glyph(el, "element", e, tokens.discMinPx, inks.element, inks.elementFill);
+        if (!visible(e, tokens.chipMinPx)) continue;
+        const label = input.elementLabel(el);
+        if (!activeElement && (!label || item.elementPitch * input.scale < tokens.elementName)) continue;
+        const half = Math.max(tokens.chipMinPx * 0.75, Math.min(tokens.discGlyphPx, item.elementPitch * input.scale * 0.22));
+        if (!activeElement && (e.x - half < input.freeRect.minX || e.x + half > input.freeRect.maxX || e.y - half < input.freeRect.minY || e.y + half > input.freeRect.maxY)) continue;
+        if (!takeElement(activeElement)) continue;
+        if (activeElement) glyph(el, "element", e, tokens.discGlyphPx, inks.element, inks.elementFill);
         else {
-          out.squares.push({ id: el, ...e, half: Math.min(3.2, Math.max(1.2, item.elementPitch * input.scale * 0.22)), fill: ink(inks.elementFill), rim: ink(inks.element) });
-          picks.push({ id: el, ...e, r: 4 });
+          out.squares.push({ id: el, ...e, half, fill: ink(inks.elementFill), rim: ink(inks.element) });
+          picks.push({ id: el, ...e, r: tokens.chipMinPx * 1.5 });
           alphas.set(el, 1);
         }
-        const label = input.elementLabel(el);
-        if (label && (activeElement || item.elementPitch * input.scale >= tokens.elementName)) {
-          const font = scaledLabelFont("element", tokens.labelScale);
-          const width = input.measureText(label, font);
-          const height = scaledLabelFontSize("element", tokens.labelScale);
-          const fit = capabilityNameTries({ ...e, r: tokens.chipMinPx }, width, height).find((candidate) => !out.texts.some((t) => overlaps(t.box, candidate.box)));
-          const at = fit ?? (activeElement ? { x: e.x, y: e.y - tokens.ledgerGapPx, align: "center" as const } : null);
-          if (at) text(el, "element", label, at, at.align, "element", inks.units);
-        }
+        if (label) text(el, "element", label, { x: e.x + side * (half + tokens.chipMinPx), y: e.y }, side > 0 ? "left" : "right", "element", inks.domainLabel);
+        children.push({ id: el, parent: q, radius: radius + (active ? tokens.chipMinPx : 0), p: e, half: activeElement ? tokens.discGlyphPx : half, active: activeElement });
       }
     }
     const more = domain.capabilityIds.length - shownMembers;
@@ -240,6 +239,52 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     }
   }
   settleBranchNames(input, out, nameBoxes, rows);
+  const hidden = new Set<string>();
+  const childBodies = [
+    ...(out.blocks ?? []).filter((mark) => mark.alpha > 0.01).map((mark) => ({ id: mark.id, box: mark.box })),
+    ...out.glyphs.map((mark) => ({ id: mark.id, box: { minX: mark.x - mark.r, maxX: mark.x + mark.r, minY: mark.y - mark.r, maxY: mark.y + mark.r } })),
+    ...out.discs.map((mark) => ({ id: mark.id, box: { minX: mark.x - mark.r, maxX: mark.x + mark.r, minY: mark.y - mark.r, maxY: mark.y + mark.r } })),
+    ...out.squares.map((mark) => ({ id: mark.id, box: { minX: mark.x - mark.half, maxX: mark.x + mark.half, minY: mark.y - mark.half, maxY: mark.y + mark.half } })),
+  ];
+  for (const child of children) {
+    const { parent, p, radius, half } = child;
+    const sign = p.y < parent.y ? -1 : 1;
+    let stem: BranchStem | undefined;
+    if (nameBoxes.has(child.id)) {
+      // A fixed set of ports keeps containment separate from the central capability caption.
+      for (const turn of [sign, -sign]) {
+        const a = { x: parent.x, y: parent.y + turn * radius };
+        const reach = Math.max(tokens.ledgerGapPx * 2, Math.abs(p.x - parent.x) * 0.6);
+        const edge = { x: p.x, y: p.y + turn * half };
+        for (const { b, c } of [
+          { b: { x: p.x + (p.x < parent.x ? half : -half), y: p.y }, c: { x: parent.x, y: p.y } },
+          { b: edge, c: { x: parent.x, y: p.y + turn * reach } },
+          { b: edge, c: { x: (parent.x + p.x) / 2, y: p.y + turn * reach } },
+        ]) {
+          const points = Array.from({ length: 33 }, (_, i) => {
+            const t = i / 32;
+            return { x: (1 - t) ** 2 * a.x + 2 * t * (1 - t) * c.x + t ** 2 * b.x, y: (1 - t) ** 2 * a.y + 2 * t * (1 - t) * c.y + t ** 2 * b.y };
+          });
+          const bounds = { minX: Math.min(...points.map((p) => p.x)), maxX: Math.max(...points.map((p) => p.x)), minY: Math.min(...points.map((p) => p.y)), maxY: Math.max(...points.map((p) => p.y)) };
+          const blocked = (box: Box) => overlaps(bounds, box) && crossesBox([points], box);
+          if (out.texts.some((text) => blocked(text.box)) || childBodies.some((body) => body.id !== child.id && blocked(body.box))) continue;
+          stem = { a, c, b, ink: ink(mixOver(inks.element, inks.bg, 0.5)) };
+          break;
+        }
+        if (stem) break;
+      }
+    }
+    if (stem) stems.push(stem);
+    else if (!child.active) hidden.add(child.id);
+  }
+  if (hidden.size) {
+    out.squares = out.squares.filter((mark) => !hidden.has(mark.id!));
+    out.texts = out.texts.filter((mark) => !hidden.has(mark.id!));
+    out.leaders = out.leaders.filter((mark) => !hidden.has(mark.id));
+    for (const id of hidden) { nameBoxes.delete(id); alphas.set(id, 0); }
+    for (let i = picks.length - 1; i >= 0; i--) if (hidden.has(picks[i]!.id)) picks.splice(i, 1);
+    for (let i = rows.length - 1; i >= 0; i--) if (hidden.has(rows[i]!.id)) rows.splice(i, 1);
+  }
   const flows = input.contextAlphas ? { links: [], drawn: [], entered: disclosure.entered, resolved: disclosure.resolved, budget: { shown: 0, total: 0, perEndCap: Infinity }, stubs: [] } : buildFlowMarks({
     model, scene, tokens, inks, attention: input.attention, inkAttention: input.inkAttention, previous: input.previous,
     inkMix: input.inkMix, chordPresence: input.chordPresence, scale: input.scale,
