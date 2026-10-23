@@ -144,6 +144,21 @@ describe("buildFlowMarks", () => {
     expect(run(model, { scene, focusId: "d3" }).out.numerals).toHaveLength(0);
   });
 
+  it("omits a localized count that cannot fit the free canvas while preserving its directed bundle", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d1c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map([["d0", { x: 500, y: 200 }], ["d1", { x: 500, y: 500 }]]);
+    const options = { scene, focusId: "d0", nodeScreen: (id: string) => points.get(id) ?? null, connectionCount: (count: number) => `${count} connections` };
+    const fitting = run(model, options);
+    expect(fitting.out.numerals).toHaveLength(1);
+    const freeRect = { minX: 480, minY: 100, maxX: 1000, maxY: 700 };
+    const constrained = run(model, { ...options, freeRect });
+    expect(constrained.out.numerals).toHaveLength(0);
+    expect(constrained.out.strips).toHaveLength(1);
+    expect(constrained.out.strips[0]).toMatchObject({ headEnd: true, headStart: false, gapT0: 0, gapT1: 0 });
+    expect(constrained.result.links).toEqual(fitting.result.links);
+  });
+
   it("draws a two-way pair as one strip with two heads", () => {
     const { out } = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]));
     expect(out.strips).toHaveLength(1);

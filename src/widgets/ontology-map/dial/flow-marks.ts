@@ -144,7 +144,7 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
     for (const t of s.slots) {
       const q = quadAt(a, c, b, t);
       const box = boxAt(q.x, q.y);
-      if (input.occupied.some((o) => overlaps(o, box))) continue;
+      if (!inside(box, input.freeRect) || input.occupied.some((o) => overlaps(o, box))) continue;
       const half = (textW / 2 + input.tokens.numeralGapPx) / Math.max(1, trimmed);
       gapT0 = Math.max(0, t - half);
       gapT1 = Math.min(1, t + half);
