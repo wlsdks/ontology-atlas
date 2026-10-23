@@ -11,6 +11,7 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
+  SELECTION_NUDGE_MARGIN_PX,
   selectionNudgeTarget,
   type SelectionCamera,
   type SelectionSource
@@ -31,6 +32,7 @@ import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "..
 import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
+import { branchPreviewRows } from "../../dial/branches/layout";
 
 export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialFocusFrame | undefined {
   if (lastDialFrame() === null) return undefined;
@@ -211,7 +213,16 @@ export function useTopologyFocusNavigation({
         const node = world.nodeById.get(focusedSlug);
         const measured = cameraTokens(tokens);
         const current = cameraTargetRef.current;
-        const nudge = node ? selectionNudgeTarget(current, node, width, { left: measured.safeInsetLeft, right: measured.safeInsetRight }) : null;
+        const branch = world.dial?.scene.branches ? world.dial.scene.clusterByDomain.get(focusedSlug) : null;
+        const frame = branch ? lastDialFrame() : null;
+        const ids = new Set([focusedSlug, ...(branch?.items.slice(0, branchPreviewRows(world.dial!.scene.clusters.length)).map((it) => it.id) ?? [])]);
+        const names = frame?.labelBoxes.filter((box) => ids.has(box.nodeId)) ?? [];
+        const sx = node ? (node.x - current.tx) * current.tscale + width / 2 : 0;
+        const margin = names.length ? {
+          left: Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement),
+          right: Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement),
+        } : SELECTION_NUDGE_MARGIN_PX;
+        const nudge = node ? selectionNudgeTarget(current, node, width, { left: measured.safeInsetLeft, right: measured.safeInsetRight }, margin) : null;
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
         const leash = leashFor(width, height, measured);

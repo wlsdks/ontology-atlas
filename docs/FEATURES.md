@@ -43,8 +43,15 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-Small Flat maps use domain label blocks with outward capability branches and
-thin directional dependencies. Dense Flat maps retain usage rings around the
+Small Flat maps use domain label blocks with spaced outward capability branches,
+proportional marks and gradual detail disclosure. Five or six domains use shorter
+previews; long capability names wrap within a bounded column, with the full title
+available on selection. Domain dependencies remain
+counted at their domain until capability inspection. Neutral emphasis marks the
+selection; amber exclamation marks and a compact key explain evidence that needs
+rechecking. Detail positions separate implementation elements from capability
+faces. A same-scale selection nudge protects the visible branch from its inspector
+when the free span can contain it. Dense Flat maps retain usage rings around the
 project, packed member clusters,
 and counted directional dependencies at rest. Concepts
 navigation separates selection from tree disclosure. Project inspectors show one

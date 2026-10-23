@@ -272,6 +272,16 @@ describe("packed disclosure layout", () => {
 });
 
 describe("branch overview", () => {
+  it("keeps implementation elements clear of capability faces in detail readers", () => {
+    const model = modelOf(dogfood.nodes, dogfood.edges);
+    const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+    const nodes = [...scene.positions.entries()];
+    const collisions = nodes.flatMap(([id, p], i) => nodes.slice(i + 1)
+      .filter(([, q]) => Math.hypot(p.x - q.x, p.y - q.y) < 28)
+      .map(([other]) => [id, other]));
+    expect(collisions).toEqual([]);
+  });
+
   it("keeps every real concept and separates member rows from the dependency corridor", () => {
     const model = modelOf(dogfood.nodes, dogfood.edges);
     const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);

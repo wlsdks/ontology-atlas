@@ -42,7 +42,7 @@ const MAP = {
     nodeStrokeDim: "#44465a", nodeFillDim: "#18181c", nodeFillDomain: "#262836", nodeFillProject: "#2a2a30", nodeStrokeDomain: "#8a8ea8",
     amberHub: "#d8a040", recentChange: "#d8a040", numeralShadow: "#000000", numeralFace: "#e8e8f0", projectHairlineInner: "#806030",
     projectPinTick: "#806030", selectionRingIndigo: "#8b8cff", selectionRingHairline: "#5a5cc0", hoverRing: "#8b8cff", hoverShimmerSeg: 0.2,
-    hoverShimmerPeriodMs: 2400, nodeSheenTint: "#232329", nodeSheenBlend: 0.6, egoRestAlpha: 0.32, radiusProject: 22,
+    hoverShimmerPeriodMs: 2400, nodeSheenTint: "#232329", nodeSheenBlend: 0.6, egoRestAlpha: 0.32, radiusProject: 22, radiusCapability: 11,
 } as unknown as OntologyMapTokens;
 const LABELS: DialLabels = {
     units: (c, e) => `${c} capabilities · ${e} elements`, stale: (n) => `${n} stale`, orphans: (n) => `${n} loose`, more: (n) => `+${n} more`,
@@ -238,7 +238,7 @@ describe("frame registry", () => {
     });
 
     it("keeps compact previews actionable and restores a selected hidden capability's feedback", () => {
-        const input = frameInput(modelOf(false, 8), { reducedMotion: true });
+        const input = frameInput(modelOf(false, 8), { reducedMotion: true, scale: 0.65 });
         const first = paintDialFrame(input);
         expect(first.alphas.get("d1c7")).toBe(0);
         const more = first.marks.texts.find((t) => t.id === "d1" && t.role === "more")!;
@@ -248,7 +248,7 @@ describe("frame registry", () => {
         expect(agentOnly.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", agentFocus: true }));
         expect(agentOnly.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
         const next = paintDialFrame({ ...input, focusedNodeId: "d1c7", agentFocusNodeId: "d1c7", selectionPulse: { nodeId: "d1c7", scaleFactor: 1.1, alpha: 1 } });
-        expect(next.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", kind: "capability", egoState: "center", agentFocus: true, selectionPulse: expect.objectContaining({ alpha: 1 }) }));
+        expect(next.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", kind: "capability", egoState: "normal", agentFocus: true, selectionPulse: null }));
         expect(next.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
     });
 
@@ -270,7 +270,8 @@ describe("frame registry", () => {
         const hovered = paintDialFrame({ ...input, hoveredNodeId: "d1" });
         expect(hovered.marks.texts.map((t) => ({ id: t.id, role: t.role, box: t.box }))).toEqual(before);
         const focused = hovered.marks.texts.find((t) => t.id === "d1" && t.role === "domain")!;
-        expect(hovered.marks.inks[focused.ink]).not.toBe(restInk);
+        expect(hovered.marks.inks[focused.ink]).toBe(restInk);
+        expect((hovered.marks as DialFrameMarks).blocks!.some((b) => hovered.marks.inks[b.rim] === restInk)).toBe(true);
     });
 
     it("withholds full domain labels until the arriving marks have separated", () => {

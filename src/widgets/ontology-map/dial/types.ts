@@ -140,8 +140,8 @@ export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r
     count: string | null;
     stalePip: boolean;
 }
-type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element";
-export interface TextMark { id: string | null; role: TextRole; text: string; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
+type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element" | "status";
+export interface TextMark { id: string | null; role: TextRole; text: string; lines?: readonly string[]; lineHeight?: number; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
     }[] | null;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;

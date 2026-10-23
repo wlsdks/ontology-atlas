@@ -39,6 +39,7 @@ import { useMapLayoutMorph } from "../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { DomainStructureMap } from "@/widgets/ontology-map";
 import { TopologyLightLegend } from "./TopologyLightLegend";
+import { TopologyFlatKey } from "./TopologyScopeReadout";
 
 export interface TopologyMapRendererProps {
   localGraphRoot: string | null;
@@ -354,6 +355,7 @@ export function TopologyMapRenderer({
           )}
         </div>
       ) : null}
+      {morph.surface === "map" && !view3d && !morph.overlay ? <TopologyFlatKey evidence={mapEvidence} selected={canvasSelectedSlug !== null} /> : null}
       {morph.overlay ? (
         <MapLayoutMorphOverlay
           key={morph.overlay.id}

@@ -1,4 +1,8 @@
 {
+  "keyCapability": "○ 能力",
+  "keyDependency": "→ 依赖对象",
+  "keyStale": "! 黄色 · 需要重新核查依据",
+  "keySelection": "明亮项 · 选中及直接关联",
   "units": "{capabilities, plural, other {# 项能力}} · {elements, plural, other {# 个元素}}",
   "stale": "{count, number} 项过时",
   "orphans": "{count, plural, other {# 个概念不属于任何领域}}",

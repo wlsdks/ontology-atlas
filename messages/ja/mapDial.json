@@ -1,4 +1,8 @@
 {
+  "keyCapability": "○ 能力",
+  "keyDependency": "→ 必要とする先",
+  "keyStale": "! 黄色 · 根拠の再確認が必要",
+  "keySelection": "明るい項目 · 選択と直接のつながり",
   "units": "{capabilities, plural, other {ケイパビリティ#件}} · {elements, plural, other {要素#件}}",
   "stale": "古い{count, number}件",
   "orphans": "{count, plural, other {#件の概念がどのドメインにも属していません}}",

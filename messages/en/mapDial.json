@@ -1,4 +1,8 @@
 {
+  "keyCapability": "○ Capability",
+  "keyDependency": "→ Depends on",
+  "keyStale": "! Amber · evidence needs rechecking",
+  "keySelection": "Bright · selected and directly connected",
   "units": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
   "stale": "{count, number} stale",
   "orphans": "{count, plural, one {# concept belongs} other {# concepts belong}} to no domain",

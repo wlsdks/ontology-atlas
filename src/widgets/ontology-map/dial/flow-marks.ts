@@ -549,6 +549,13 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
 
 function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Point): Point {
   if (input.scene.branches) {
+    const ca = input.scene.clusterByDomain.get(l.u);
+    const cb = input.scene.clusterByDomain.get(l.v);
+    if (ca && cb && ca.branchSide === cb.branchSide) {
+      const side = ca.branchSide ?? 1;
+      const inner = side > 0 ? Math.min(a.p.x, b.p.x) : Math.max(a.p.x, b.p.x);
+      return { x: inner - side * input.tokens.nameMaxPx, y: (a.p.y + b.p.y) / 2 };
+    }
     const dx = b.p.x - a.p.x;
     const dy = b.p.y - a.p.y;
     return { x: (a.p.x + b.p.x) / 2 - dy * 0.08, y: (a.p.y + b.p.y) / 2 + dx * 0.08 };
@@ -564,6 +571,12 @@ function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Poin
 
 function linkInk(input: FlowMarksInput, l: DialLink, from: string, numeral: boolean, presence: number): string {
   const { model, inks } = input;
+  if (input.scene.branches) {
+    const read = (a: DialAttention | null) => a?.domainId
+      ? attendedUnder(model, a, l) ? numeral ? inks.domainLabelAttended : inks.domainRim : inks.flowReceded
+      : numeral ? inks.numeral : inks.flow;
+    return mixOver(crossfadeInk(read(input.previous ?? input.inkAttention), read(input.inkAttention), input.inkMix), inks.bg, presence);
+  }
   const now = strokeInk(inks, model, input.inkAttention, l, from, numeral);
   const was = input.previous ? strokeInk(inks, model, input.previous, l, from, numeral) : now;
   return mixOver(crossfadeInk(was, now, input.inkMix), inks.bg, presence);
@@ -646,8 +659,17 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
 
 function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
   const base = controlOf(input, l, a, b, hub);
-  const boundary = (id: string, end: End, toward: Point): Point => {
+  const boundary = (id: string, other: string, end: End, toward: Point): Point => {
     const box = input.endBox?.(id);
+    const cluster = input.scene.clusterByDomain.get(id);
+    if (box && cluster) {
+      const peers = input.model.flows.filter((f) => f.a === id || f.b === id)
+        .map((f) => f.a === id ? f.b : f.a)
+        .sort((a, b) => (input.scene.positions.get(a)?.y ?? 0) - (input.scene.positions.get(b)?.y ?? 0) || a.localeCompare(b));
+      const at = peers.indexOf(domainOfEnd(input.model, other));
+      const fraction = at < 0 || peers.length < 2 ? 0.5 : (at + 1) / (peers.length + 1);
+      return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y: box.minY + (box.maxY - box.minY) * fraction };
+    }
     const dx = toward.x - end.p.x;
     const dy = toward.y - end.p.y;
     const t = box ? Math.min((box.maxX - box.minX) / 2 / Math.max(1e-6, Math.abs(dx)), (box.maxY - box.minY) / 2 / Math.max(1e-6, Math.abs(dy))) : end.r / Math.max(1, Math.hypot(dx, dy));
@@ -658,14 +680,14 @@ function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: E
     const dy = end.p.y - start.p.y;
     const len = Math.max(1, Math.hypot(dx, dy));
     const c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
-    const p0 = boundary(from, start, c);
-    const p1 = boundary(to, end, c);
+    const p0 = boundary(from, to, start, c);
+    const p1 = boundary(to, from, end, c);
     const width = l.attended ? input.tokens.flowFocusBase + 0.3 : input.tokens.flowRestBase;
     const curve = emit(input, out, {
       key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, w0: width, w1: width,
       ink: linkInk(input, l, from, false, presence), headStart: false, headEnd: !l.relatesOnly,
       trimStart: input.tokens.flowTrimStartPx, trimEnd: input.tokens.flowTrimEndPx,
-      dashed: l.relatesOnly, numeral: l.attended && count > 0 ? String(count) : null,
+      dashed: l.relatesOnly, numeral: l.attended && count > 1 ? String(count) : null,
       numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
     });
     if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: end.r });

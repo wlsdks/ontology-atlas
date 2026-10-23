@@ -56,7 +56,7 @@ export function dialOverviewPad(scene: DialScene, model: DialModel, labels: Dial
     let left = tokens.chipMaxPx;
     let right = tokens.chipMaxPx;
     for (const c of scene.clusters) for (const it of c.items) {
-      const width = Math.min(tokens.nameMaxPx, measure(model.capabilityById.get(it.id)?.label ?? "", font)) + tokens.ledgerGapPx;
+      const width = Math.min(tokens.nameMaxPx, measure(model.capabilityById.get(it.id)?.label ?? "", font)) + tokens.ledgerGapPx + tokens.chipMinPx;
       if (c.branchSide === 1) right = Math.max(right, width);
       else left = Math.max(left, width);
     }
