@@ -54,7 +54,7 @@ reject each change as a Markdown diff.
 </tr>
 </table>
 
-Flat maps show domain labels with spaced outward capability branches and thin directed dependencies. Mark sizes and detail fade with the available row spacing as you zoom. Domains keep counted domain dependencies; selecting a capability exposes its connections. A persistent bright outline distinguishes the selection, while amber exclamation marks mean evidence needs rechecking; the map key explains both marks and direction. Larger maps keep the same branch grammar with shorter previews and stable column groups. More/collapse controls disclose actual capabilities; focused areas keep that grammar and a labelled return to the full map. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
+Flat maps show domain labels with spaced outward capability branches and thin directed dependencies. Mark sizes and detail fade with the available row spacing as you zoom. Domains keep counted domain dependencies. The overview limits crossing lines; selecting an endpoint reveals its recorded connections. A persistent bright outline distinguishes the selection, while amber exclamation marks mean evidence needs rechecking; the map key explains both marks and direction. Larger maps keep the same branch grammar with shorter previews and stable column groups. More/collapse controls disclose actual capabilities; focused areas keep that grammar and a labelled return to the full map. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
 
 ## Quick start
 

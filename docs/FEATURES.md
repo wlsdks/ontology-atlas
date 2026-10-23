@@ -47,7 +47,9 @@ Flat maps use domain label blocks with spaced outward capability branches,
 proportional marks and gradual detail disclosure. Larger domain sets use shorter
 previews and stable column groups; long capability names wrap within a bounded column, with the full title
 available on selection. Domain dependencies remain
-counted at their domain until capability inspection. Neutral emphasis marks the
+counted at their domain until capability inspection. Congestion checks use the
+same curves that are painted; omitted overview links remain available on endpoint
+selection, with the total connection count retained. Neutral emphasis marks the
 selection; amber exclamation marks and a compact key explain evidence that needs
 rechecking. Detail positions separate implementation elements from capability
 faces. A same-scale selection nudge protects the visible branch from its inspector

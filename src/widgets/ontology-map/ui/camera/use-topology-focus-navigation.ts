@@ -44,6 +44,7 @@ export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialF
 }
 
 interface Dependencies {
+  panelInsetsRef?: RefObject<{ left: number; right: number } | null>;
   lastFocusedSlugRef: RefObject<string | null>;
   focusedSlug: string | null;
   egoRevealBatchesRef: RefObject<number>;
@@ -83,6 +84,7 @@ function leashFor(width: number, height: number, tokens: OntologyMapTokens): Foc
 
 /** Own focus camera transitions and reversible inspection targets. */
 export function useTopologyFocusNavigation({
+  panelInsetsRef,
   lastFocusedSlugRef,
   focusedSlug,
   egoRevealBatchesRef,
@@ -195,6 +197,11 @@ export function useTopologyFocusNavigation({
       const phase = realmTransitionRef.current.phase;
       if (phase === "exiting" || (phase === "entering" && focusedSlug === null)) return;
       const tokens = readOntologyMapTokensOrNull() ?? effectTokens;
+      const measured = cameraTokens(tokens);
+      if (focusedSlug === null && panelInsetsRef?.current) {
+        const right = Math.max(tokens.safeInsetRight, canvasRef.current ? measureEdgeFitObstacle(canvasRef.current, "right")?.reach ?? 0 : 0);
+        panelInsetsRef.current = { left: measured.safeInsetLeft, right };
+      }
       const memory = selectionCameraRef.current;
       const gesture = cameraGestureRevisionRef.current;
       const pathPick = focusedSlug !== null && isPathTargetPick(mapLensKindRef.current, focusedSlug, spotlightIdsRef.current);
@@ -225,7 +232,6 @@ export function useTopologyFocusNavigation({
 
       if ((!realmActive || realmData?.flat) && source === "canvas-click" && !pathPick && focusedSlug !== null) {
         const node = world.nodeById.get(focusedSlug);
-        const measured = cameraTokens(tokens);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;
         const margin = branchSelectionMargin(world, activeDial, focusedSlug, current.tscale, width - measured.safeInsetLeft - measured.safeInsetRight);
@@ -251,7 +257,6 @@ export function useTopologyFocusNavigation({
         target = realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       } else {
         const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
-        const measured = cameraTokens(tokens);
         // A deselect lands where the fit tile will: the folding panel is still on screen, so its side
         // takes the token and the rail's reach, which is what a fit with no panel measures.
         const canvas = canvasRef.current;
@@ -281,7 +286,7 @@ export function useTopologyFocusNavigation({
       moveCamera(target, tokens);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
+  }, [focusedSlug, panelInsetsRef, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
 
   return { flyToNode };
 }

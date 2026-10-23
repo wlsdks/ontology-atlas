@@ -116,15 +116,12 @@ export function useTopologyGraphProjection({
   });
   const spotlightIds = spotlightOn ? recentNodeIds : null;
   const freshChannelSlugs = spotlightOn ? recentNodeIds : changedSlugs;
-  const graph = useMemo(() => {
-    if (synthSize !== null) {
-      const synth = synthesizeVaultGraph(synthSize, { dependencies: synthDependencies, shape: synthShape });
-      return buildOntologyMapGraph(synth.nodes, synth.edges, { changedSlugs: freshChannelSlugs });
-    }
-    return insight
-      ? buildOntologyMapGraph(insight.nodes, insight.edges, { changedSlugs: freshChannelSlugs, dustySlugs })
-      : { nodes: [], edges: [] };
-  }, [dustySlugs, freshChannelSlugs, insight, synthDependencies, synthShape, synthSize]);
+  const projectedSource = useMemo(() => synthSize !== null
+    ? synthesizeVaultGraph(synthSize, { dependencies: synthDependencies, shape: synthShape })
+    : insight, [insight, synthDependencies, synthShape, synthSize]);
+  const graph = useMemo(() => projectedSource
+    ? buildOntologyMapGraph(projectedSource.nodes, projectedSource.edges, { changedSlugs: freshChannelSlugs, dustySlugs })
+    : { nodes: [], edges: [] }, [dustySlugs, freshChannelSlugs, projectedSource]);
   const synthEvidence = useMemo<MapEvidence | null>(() => {
     if (synthSize === null || synthStaleShare === null) return null;
     return {
@@ -138,21 +135,23 @@ export function useTopologyGraphProjection({
     const nodeId = `project:${selectedProject.slug}`;
     return insight?.nodes.some((node) => node.id === nodeId) ? nodeId : selectedProject.slug;
   }, [insight, selectedProject]);
-  const resolvedSelectionSlug = selectedProjectNodeId ?? selectedOntologyNodeId;
+  const resolvedSelectionSlug = synthSize !== null
+    ? projectedSource?.nodes.find(node => node.id === selectedSlug)?.id ?? null
+    : selectedProjectNodeId ?? selectedOntologyNodeId;
   const canvasSelectedSlug = resolveCanvasSelectedSlug({
     selectedSlug,
     resolvedSlug: resolvedSelectionSlug,
-    sourceReady: deeplinkSourceReady,
-    projectsLoaded,
-    ontologyLoaded: insight !== null,
+    sourceReady: synthSize !== null || deeplinkSourceReady,
+    projectsLoaded: synthSize !== null || projectsLoaded,
+    ontologyLoaded: projectedSource !== null,
   });
   const canvasSelectedGraphNode = useMemo(
-    () => canvasSelectedSlug ? insight?.nodes.find((node) => node.id === canvasSelectedSlug) ?? null : null,
-    [canvasSelectedSlug, insight],
+    () => canvasSelectedSlug ? projectedSource?.nodes.find((node) => node.id === canvasSelectedSlug) ?? null : null,
+    [canvasSelectedSlug, projectedSource],
   );
   const resolvedRealmSlug = useMemo(
-    () => resolveRealmNodeId(realmSlug, (insight?.nodes ?? []).map((node) => node.id)),
-    [insight, realmSlug],
+    () => resolveRealmNodeId(realmSlug, (projectedSource?.nodes ?? []).map((node) => node.id)),
+    [projectedSource, realmSlug],
   );
   const realmTitle = useMemo(
     () => resolvedRealmSlug ? graph.nodes.find((node) => node.id === resolvedRealmSlug)?.label ?? resolvedRealmSlug : null,

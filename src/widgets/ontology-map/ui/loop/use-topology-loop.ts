@@ -512,6 +512,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       onSelect?.(slug, source);
     }, [onSelect, selectionSourceRef]);
     const { flyToNode } = useTopologyFocusNavigation({
+    panelInsetsRef,
         lastFocusedSlugRef,
         focusedSlug,
         egoRevealBatchesRef,

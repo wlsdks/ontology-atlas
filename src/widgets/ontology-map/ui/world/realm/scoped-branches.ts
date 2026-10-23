@@ -1,3 +1,4 @@
+import { SELECTION_NUDGE_MARGIN_PX } from "../../../model/camera/flat-selection-camera";
 import { readContainmentTree, rollDomainDependencies, rollDirectedDomainFlows, rollRelatesCapabilityPairs, rollRelatesDomainPairs } from '../../../model/containment-tree';
 import { buildDialModel } from '../../../dial/dial-model';
 import { layoutDial } from '../../../dial/layout';
@@ -24,7 +25,8 @@ export function scopedBranches(world: TopologyWorld, memberIds: ReadonlySet<stri
     const shown = scene.clusters.flatMap(c => [c.chip, ...c.items.slice(0, scene.branchPreviewRows ?? branchPreviewRows(scene.clusters.length))]);
     scene.extent = { ...scene.extent, minY: Math.min(...shown.map(p => p.y)) - input.tokens.pitch };
   }
-  return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
+  const pad = dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens);
+  return { model, scene, overviewPadPx: { ...pad, left: pad.left + SELECTION_NUDGE_MARGIN_PX, right: pad.right + SELECTION_NUDGE_MARGIN_PX } };
 }
 
 export function scopedTreePositions(rootId: string, memberIds: ReadonlySet<string>, depthById: ReadonlyMap<string, number>, pitch: number): Map<string, Point> {

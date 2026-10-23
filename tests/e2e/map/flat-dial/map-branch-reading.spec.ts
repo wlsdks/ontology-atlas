@@ -157,6 +157,7 @@ test("branch map: More reveals a real member, collapse reverses it, and scoped v
   expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domain);
   await clickAction(/collapse/i);
   await expect.poll(async () => (await visible()).length).toBe(6);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
   await page.getByTestId("map-detail-panel-action-realm").click();
   await expect(page.getByTestId("topology-realm-chip-clear")).toBeVisible();
   await waitForMapStill(page);
@@ -172,5 +173,6 @@ test("branch map: More reveals a real member, collapse reverses it, and scoped v
   await waitForMapStill(page);
   expect((await readDial(page)).clusters).toHaveLength(4);
   expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domain);
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
   await expect(page.getByTestId("map-detail-panel-action-realm")).toBeVisible();
 });

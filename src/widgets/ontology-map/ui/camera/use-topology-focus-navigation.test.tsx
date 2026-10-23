@@ -152,6 +152,14 @@ describe("useTopologyFocusNavigation", () => {
     return { deps, hook, select };
   }
 
+  it("releases the closing inspector's label exclusion on deselect", () => {
+    const panelInsetsRef = ref<{ left: number; right: number } | null>({ left: 300, right: 400 });
+    const { select } = setup({ panelInsetsRef });
+    select("p", { click: true });
+    select(null);
+    expect(panelInsetsRef.current?.right).toBe(tokens.safeInsetRight);
+  });
+
   it("remeasures the inspector after a fly action selects its domain", () => {
     let right = 0;
     const { deps, hook, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: right }) });
