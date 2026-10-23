@@ -1,82 +1,60 @@
 import { expect, test } from "@playwright/test";
+import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 
-test("expand all reveals the claimed count and collapse restores it", async ({ page }) => {
+test("a branch reveals the capability batch it claims and collapse restores the preview", async ({ page }) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 900 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off&realm=project%3Astorefront", { waitUntil: "domcontentloaded" });
+  await page.goto("/en/topology/?e2e=1&guides=off&realm=project%3Astorefront", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
   await waitForMapStill(page);
-
-  const nodePos = () =>
-    page.evaluate(() => {
-      const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; label: string; x: number; y: number; radius: number }> } }).__atlasMap;
-      const box = document.querySelector('[data-testid="ontology-map-canvas"]')?.getBoundingClientRect();
-      const n = m?.nodes().find((n) => !n.hidden && n.label === "주문");
-      return n && box ? { px: box.left + n.x, py: box.top + n.y, r: n.radius } : null;
-    });
-  const visibleCount = () =>
-    page.evaluate(
-      () => (window as unknown as { __atlasMap: { nodes: () => Array<{ hidden: boolean }> } }).__atlasMap.nodes().filter((n) => !n.hidden).length,
-    );
-  const orderChip = () =>
-    page.evaluate(() => {
-      const m = (window as unknown as { __atlasMap: { chips: () => Array<{ parentId: string; claimedCount: number; expanded: boolean; shownChildren: number }> } }).__atlasMap;
-      return m.chips().find((c) => c.parentId === "domain:order") ?? null;
-    });
-
-  const first = await nodePos();
-  expect(first, "the order domain was not found on the map, so this spec spins idle").not.toBeNull();
-  await page.mouse.click(first!.px, first!.py);
-  await expect
-    .poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId), {
-      timeout: 15_000,
-      message: "the order domain was not selected",
-    })
-    .toBe("domain:order");
+  const dial = () => page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+  const clickText = async (role: "domain" | "more", pattern: RegExp) => {
+    const text = (await dial()).texts.find((text) => text.id === "domain:order" && text.role === role && pattern.test(text.text));
+    expect(text, `Orders has a drawn ${role} target matching ${pattern}`).toBeDefined();
+    const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+    await page.mouse.click(box.x + (text!.box.minX + text!.box.maxX) / 2, box.y + (text!.box.minY + text!.box.maxY) / 2);
+    await page.mouse.move(5, 5);
+  };
+  await clickText("domain", /^Orders$/);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId), { message: "the drawn Orders name selects its domain" }).toBe("domain:order");
   await waitForMapStill(page);
-
-  const before = await visibleCount();
-  const chipBefore = await orderChip();
-  expect(chipBefore, "the order chip is missing, so the chips() hook is dead").not.toBeNull();
-  expect(chipBefore!.expanded).toBe(false);
-  expect(chipBefore!.claimedCount).toBeGreaterThan(0);
-
+  const shown = async () => {
+    const frame = await dial();
+    const members = new Set(frame.clusters.find((cluster) => cluster.domainId === "domain:order")!.capabilityIds);
+    return frame.discs.filter((disc) => members.has(disc.id)).map((disc) => disc.id).sort();
+  };
+  const before = await shown();
+  expect(before.length, "the domain shows a capability preview").toBeGreaterThan(0);
+  const more = (await dial()).texts.find((text) => text.id === "domain:order" && text.role === "more" && /^View \d+ more$/.test(text.text));
+  expect(more, "the preview claims a concrete next batch").toBeDefined();
+  const claimed = Number(more!.text.match(/\d+/)![0]);
+  expect(claimed).toBeGreaterThan(0);
+  await clickText("more", /^View \d+ more$/);
+  await expect.poll(async () => (await shown()).length, { message: "More reveals exactly the claimed capability batch" }).toBe(before.length + claimed);
   await waitForMapStill(page);
-  const selected = await nodePos();
-  await page.mouse.click(selected!.px, selected!.py - (selected!.r + 32));
-  await expect
-    .poll(async () => (await visibleCount()) - before, {
-      timeout: 20_000,
-      message: "the expansion did not reveal as many as it claimed",
-    })
-    .toBe(chipBefore!.claimedCount);
-  const chipAfter = await orderChip();
-  expect(chipAfter!.expanded).toBe(true);
-  expect(chipAfter!.shownChildren, "chips disagrees with what the screen shows").toBe(chipBefore!.claimedCount);
-
-  const overlapPairs = await page.evaluate(() => {
-    const m = (window as unknown as { __atlasMap: { nodes: () => Array<{ hidden: boolean; x: number; y: number; radius: number }> } }).__atlasMap;
-    const nodes = m.nodes().filter((n) => !n.hidden && n.radius > 0);
-    let pairs = 0;
-    for (let i = 0; i < nodes.length; i += 1) {
-      for (let j = i + 1; j < nodes.length; j += 1) {
-        const a = nodes[i];
-        const b = nodes[j];
-        if (Math.hypot(a.x - b.x, a.y - b.y) < a.radius + b.radius) pairs += 1;
-      }
+  const after = await shown();
+  expect(before.every((id) => after.includes(id)), "revealing a batch retains the preview").toBe(true);
+  const frame = await dial();
+  const names = frame.texts.filter((text) => after.includes(text.id ?? "") && text.role === "capability");
+  expect(names.map((text) => text.id).sort(), "every disclosed capability is named").toEqual(after);
+  for (const name of names) {
+    expect(name.box.minX, `${name.id} clears the free map's left edge`).toBeGreaterThanOrEqual(frame.freeRect.minX);
+    expect(name.box.maxX, `${name.id} clears the inspector`).toBeLessThanOrEqual(frame.freeRect.maxX);
+    expect(name.box.minY, `${name.id} stays below the toolbar`).toBeGreaterThanOrEqual(frame.freeRect.minY);
+    expect(name.box.maxY, `${name.id} stays above the footer`).toBeLessThanOrEqual(frame.freeRect.maxY);
+  }
+  const marks = frame.discs.filter((disc) => after.includes(disc.id));
+  expect(marks.length, "each disclosed capability has a visible mark").toBe(after.length);
+  for (const [index, mark] of marks.entries()) {
+    for (const other of marks.slice(index + 1)) {
+      expect(Math.hypot(mark.x - other.x, mark.y - other.y), `${mark.id} does not overlap ${other.id}`).toBeGreaterThanOrEqual(mark.r + other.r);
     }
-    return pairs;
-  });
-  expect(overlapPairs, "the expanded nodes overlap each other").toBe(0);
-
-  await waitForMapStill(page);
-  const expanded = await nodePos();
-  await page.mouse.click(expanded!.px, expanded!.py - (expanded!.r + 32));
-  await expect
-    .poll(visibleCount, { timeout: 20_000, message: "collapse did not restore the original state" })
-    .toBe(before);
+  }
+  await clickText("more", /^Collapse \d+ revealed capabilities$/);
+  await expect.poll(shown, { message: "Collapse restores the original capability preview" }).toEqual(before);
 });
