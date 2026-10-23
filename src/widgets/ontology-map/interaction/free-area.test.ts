@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   measureCanvasInsets,
+  collectCanvasObstacles,
   computeFreeArea,
   SIDE_PANEL_HEIGHT_RATIO,
   type Rect,
@@ -168,6 +169,34 @@ describe("measureCanvasInsets", () => {
     }
     return canvas;
   };
+
+  it("keeps explicit side panels inside a generic full-canvas wrapper in measured free space", () => {
+    const left: Rect = { x: 64, y: 148, width: 324, height: 456, cameraObstacle: "side-panel" };
+    const right: Rect = { x: 1128, y: 32, width: 352, height: 456, cameraObstacle: "side-panel" };
+    const canvas = fakeCanvas([CANVAS, left, right]);
+    const wrapper = canvas.nextElementSibling!;
+    const leftPanel = wrapper.nextElementSibling!;
+    const rightPanel = leftPanel.nextElementSibling!;
+    wrapper.append(leftPanel, rightPanel);
+    const obstacles = collectCanvasObstacles(canvas, CANVAS);
+    expect(obstacles).toContainEqual(left);
+    expect(obstacles).toContainEqual(right);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 324, right: 384 });
+    expect(computeFreeArea(CANVAS, obstacles)).toEqual({ x: 388, y: 0, width: 740, height: 982 });
+  });
+
+  it("counts nested explicit side-panel declarations once without growing their edge inset", () => {
+    const left: Rect = { x: 64, y: 148, width: 324, height: 456, cameraObstacle: "side-panel" };
+    const nested: Rect = { x: 80, y: 164, width: 280, height: 400, cameraObstacle: "side-panel" };
+    const canvas = fakeCanvas([CANVAS, left, nested]);
+    const wrapper = canvas.nextElementSibling!;
+    const panel = wrapper.nextElementSibling!;
+    panel.append(panel.nextElementSibling!);
+    wrapper.append(panel);
+    const obstacles = collectCanvasObstacles(canvas, CANVAS);
+    expect(obstacles.filter((obstacle) => obstacle.cameraObstacle === "side-panel")).toEqual([left]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 324, right: 0 });
+  });
 
   it("measures the right popover as a right inset (measured geometry)", () => {
     const canvas = fakeCanvas([RIGHT_POPOVER]);

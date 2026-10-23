@@ -10,6 +10,7 @@ import { layoutDial } from "../layout";
 import { resolveDialTokens } from "../tokens";
 import { applyBranchMemberAction } from "./member-disclosure";
 import { crossesBox, overlaps } from "../label-marks";
+import { pickDial, pickDialAction } from "../pick";
 import { dialOverviewBounds, dialOverviewPad } from "../fit";
 import { computeOverviewCameraTarget } from "../../ui/camera/topology-camera-math";
 
@@ -104,6 +105,36 @@ describe("branch reading", () => {
 
 
 describe("dense branch disclosure", () => {
+  it("keeps production More and Collapse hit bounds aligned with their visible labels beside neighboring cards", () => {
+    const { input } = frame("d0", 1, false, 9, 8);
+    const selected = input.scene.positions.get("d0")!;
+    const toScreen = (x: number, y: number) => ({ x: 600 + (x - selected.x) * 0.6, y: 260 + (y - selected.y) * 0.6 });
+    Object.assign(input, { toScreen, scale: 0.6, viewportWidth: 1040, viewportHeight: 720, reducedMotion: true,
+      freeRect: { minX: 0, maxX: 640, minY: 100, maxY: 640 }, appearOf: (id: string) => id === "d0" ? 1 : 0,
+      nodeScreen: (id: string) => { const p = input.scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; },
+    });
+    const check = () => {
+      const out = emptyDialFrameMarks();
+      const result = buildDialMarks(input, out);
+      const controls = result.rows.filter((row) => row.action?.domainId === "d0");
+      expect(controls.length).toBeGreaterThan(0);
+      for (const row of controls) {
+        const label = out.texts.find((text) => text.role === "more" && text.box === row.box);
+        expect(label).toBeDefined();
+        const { minX, maxX, minY, maxY } = label!.box;
+        result.rows.push({ id: "neighboring-domain", box: { minX: minX - 10, maxX: maxX + 10, minY: minY - 10, maxY: maxY + 10 } });
+        for (const x of [minX, (minX + maxX) / 2, maxX]) for (const y of [minY, (minY + maxY) / 2, maxY]) {
+          expect(pickDialAction(result.rows, x, y)).toEqual(row.action);
+          expect(pickDial(result.picks, result.rows, x, y, 8)).toBeNull();
+        }
+      }
+      return controls;
+    };
+    const more = check().find((row) => row.action?.direction === "more")!;
+    expect(applyBranchMemberAction(input.scene, more.action!, 0)).toBe(true);
+    expect(check().some((row) => row.action?.direction === "less")).toBe(true);
+  });
+
   it("reveals an appended capability after a remembered direct-element item without changing item order", () => {
     const modelOf = (count: number) => {
       const nodes: TreeInputNode[] = [

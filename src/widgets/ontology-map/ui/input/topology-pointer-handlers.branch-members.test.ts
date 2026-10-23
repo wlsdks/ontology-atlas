@@ -57,6 +57,21 @@ describe("branch member controls", () => {
     expect(test.events).toEqual(["select", "fly:4", "select", "fly:2"]);
   });
 
+  it("expands the visible control instead of selecting an overlapping neighboring domain card", () => {
+    const test = setup();
+    frame.current!.rows.push({ id: "marketing", box: { minX: 60, minY: 60, maxX: 140, maxY: 140 } });
+    frame.current!.picks.push({ id: "marketing", x: 100, y: 100, r: 20 });
+    test.handlers.handlePointerMove(test.event(100, 100, 0));
+    expect(test.canvas.style.cursor).toBe("pointer");
+    test.handlers.handlePointerDown(test.event());
+    expect(test.refs.pointerMachineRef.current.pressedNodeId).toBeNull();
+    expect(test.refs.nodeDragRef.current).toBeNull();
+    test.handlers.handlePointerUp(test.event());
+    expect(branchMemberCount(test.scene, "d")).toBe(4);
+    expect(test.onSelect).toHaveBeenCalledExactlyOnceWith("d", "canvas-dblclick");
+    expect(test.events).toEqual(["select", "fly:4"]);
+  });
+
   it("shows a button cursor and cancels a dragged control without moving the camera", () => {
     const test = setup();
     test.handlers.handlePointerMove(test.event(100, 100, 0));
