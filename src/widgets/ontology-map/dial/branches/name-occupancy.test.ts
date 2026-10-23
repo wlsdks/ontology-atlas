@@ -7,7 +7,7 @@ import { settleBranchNames } from "./name-occupancy";
 const glyph = (id: string, x: number, y: number, r = 12): GlyphMark => ({ id, kind: "capability", x, y, r, egoState: "center", fill: "#101014", stroke: "#f4f4f8", hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false });
 function setup(role: TextMark["role"] = "capability") {
   const input = {
-    focusedNodeId: "active", attention: { capabilityId: "active", domainId: null },
+    focusedNodeId: "active", attention: { capabilityId: "active", domainId: null, needsCaps: new Set(), usedByCaps: new Set(), relatesCaps: new Set() },
     viewportWidth: 1440, viewportHeight: 1000, freeRect: { minX: 320, minY: 100, maxX: 1000, maxY: 900 },
     tokens: { chipMinPx: 8 },
   } as unknown as DialMarksInput;
@@ -31,6 +31,24 @@ describe("branch name placement near occupied geometry", () => {
     expect(test.names.get("active")).toEqual(test.text.box);
     expect(test.rows.find((row) => row.id === "active")?.box).toEqual(test.text.box);
   });
+
+  for (const relation of ["needsCaps", "usedByCaps", "relatesCaps"] as const) {
+    it(`${relation}: keeps an attended cross-domain partner named inside the free canvas`, () => {
+      const test = setup();
+      test.input.focusedNodeId = "selected";
+      test.input.attention.capabilityId = "selected";
+      test.input.attention[relation] = new Set(["active"]);
+      test.out.discs.push({ id: "active", x: 980, y: 400, r: 12, fill: 0, rim: 0, dashed: false, lineWidth: 1 });
+      test.out.squares.push({ id: "implementation", x: 880, y: 400, half: 3, fill: 0, rim: 0 });
+      test.settle();
+      expect(test.out.texts).toContain(test.text);
+      expect(test.text.box.minX).toBeGreaterThanOrEqual(test.input.freeRect.minX);
+      expect(test.text.box.maxX).toBeLessThanOrEqual(test.input.freeRect.maxX);
+      expect(overlaps(test.text.box, { minX: 968, maxX: 992, minY: 388, maxY: 412 })).toBe(false);
+      expect(overlaps(test.text.box, { minX: 877, maxX: 883, minY: 397, maxY: 403 })).toBe(false);
+      expect(test.rows.find((row) => row.id === "active")?.box).toBe(test.text.box);
+    });
+  }
 
   it("uses a vertical leader when another disc blocks the clear horizontal anchor", () => {
     const test = setup();
