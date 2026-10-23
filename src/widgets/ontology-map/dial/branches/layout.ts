@@ -36,7 +36,7 @@ export function branchLayout(model: DialModel, packed: DialScene, pitch: number,
   const pairRows = Math.ceil(pairs.length / pairColumns);
   const positions = new Map<string, Point>();
   const placedElements = new Set<string>();
-  const elementRows: { ids: string[]; start: Point; side: -1 | 1 }[] = [];
+  const elementRows: { ids: string[]; start: Point; side: -1 | 1; direct: boolean }[] = [];
   const clusters = pairs.flatMap((columns, pairIndex) => {
     const centre = {
       x: ((pairIndex % pairColumns) - (pairColumns - 1) / 2) * PAIR_COLUMN_PITCH * pitch,
@@ -86,11 +86,11 @@ export function branchLayout(model: DialModel, packed: DialScene, pitch: number,
       reserve(it);
     }
   } else for (const p of positions.values()) reserve(p);
-  for (const c of clusters) for (const it of c.items) elementRows.push({ ids: it.elementIds, start: { x: it.x + c.branchSide * 2.5 * pitch, y: it.y }, side: c.branchSide });
+  for (const c of clusters) for (const it of c.items) elementRows.push({ ids: it.elementIds, start: { x: it.x + c.branchSide * (it.direct ? 0 : 2.5) * pitch, y: it.y }, side: c.branchSide, direct: it.direct });
   for (const row of elementRows) {
     for (const [index, id] of row.ids.entries()) {
       if (placedElements.has(id)) continue;
-      const p = { x: row.start.x + row.side * Math.floor(index / 2) * 3 * pitch, y: row.start.y + (index % 2 === 0 ? -0.5 : 0.5) * pitch };
+      const p = { x: row.start.x + row.side * Math.floor(index / 2) * 3 * pitch, y: row.start.y + (row.direct && row.ids.length === 1 ? 0 : index % 2 === 0 ? -0.5 : 0.5) * pitch };
       while (blocked(p)) p.x += row.side * pitch;
       placedElements.add(id);
       positions.set(id, p);

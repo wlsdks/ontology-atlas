@@ -18,7 +18,11 @@ function edgeToward(box: Box, target: Point): Point {
 export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, nameBoxes: Map<string, Box>, rows: DialRowPick[]): void {
   const active = new Set([input.focusedNodeId, input.attention.capabilityId ?? input.attention.domainId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId]);
   const members = new Set(out.texts.filter((text) => text.role === "capability" && input.attention.domainId != null && input.model?.capabilityById.get(text.id!)?.domainId === input.attention.domainId));
-  const children = new Set(out.texts.filter((text) => text.role === "element" && input.attention.domainId != null && input.model?.domainOf.get(text.id!) === input.attention.domainId));
+  const children = new Set(out.texts.filter((text) => {
+    if (text.role !== "element") return false;
+    const domain = input.model?.domainOf.get(text.id!);
+    return domain != null && (domain === input.attention.domainId || !input.model.capabilityOf.has(text.id!));
+  }));
   const actionRows = new Map(rows.filter((row) => row.action?.domainId === input.attention.domainId).map((row) => [row.box, row]));
   const controls = new Set(out.texts.filter((text) => text.role === "more" && actionRows.has(text.box)));
   const priority = (text: TextMark) => active.has(text.id) && !controls.has(text) ? 0 : text.role === "project" ? 1 : controls.has(text) || text.id === input.attention.domainId ? 2 : members.has(text) ? 3 : text.role === "domain" ? 4 : children.has(text) ? 5 : 6;
