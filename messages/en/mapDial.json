@@ -18,5 +18,6 @@
   "legendUsers": "used by",
   "legendStale": "stale",
   "moreMembers": "View {count, number} more",
-  "lessMembers": "Collapse {count, number} revealed capabilities"
+  "lessMembers": "Collapse {count, number} revealed capabilities",
+  "connectionCount": "{count, plural, one {# connection} other {# connections}}"
 }

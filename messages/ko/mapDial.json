@@ -18,5 +18,6 @@
   "legendUsers": "사용하는 곳",
   "legendStale": "낡음",
   "moreMembers": "역량 {count, number}개 더 보기",
-  "lessMembers": "펼친 역량 {count, number}개 접기"
+  "lessMembers": "펼친 역량 {count, number}개 접기",
+  "connectionCount": "연결 {count, number}개"
 }

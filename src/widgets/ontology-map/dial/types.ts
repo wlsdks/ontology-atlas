@@ -8,7 +8,7 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number;
 }
 export interface Pad { left: number; right: number; top: number; bottom: number;
 }
-export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; lessMembers?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
+export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; lessMembers?(count: number): string; connectionCount?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
 }
 export interface DialTokens {
   pitch: number;

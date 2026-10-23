@@ -18,5 +18,6 @@
   "legendUsers": "利用元",
   "legendStale": "古い",
   "moreMembers": "残り{count, number}件を見る",
-  "lessMembers": "展開したケイパビリティ{count, number}件を折りたたむ"
+  "lessMembers": "展開したケイパビリティ{count, number}件を折りたたむ",
+  "connectionCount": "接続 {count, number} 件"
 }

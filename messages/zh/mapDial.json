@@ -18,5 +18,6 @@
   "legendUsers": "被依赖",
   "legendStale": "过时",
   "moreMembers": "查看另外 {count, number} 项",
-  "lessMembers": "收起已展开的 {count, number} 项能力"
+  "lessMembers": "收起已展开的 {count, number} 项能力",
+  "connectionCount": "{count, number} 个连接"
 }

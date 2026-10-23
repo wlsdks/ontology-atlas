@@ -47,12 +47,18 @@ Flat maps use domain label blocks with spaced outward capability branches,
 proportional marks and gradual detail disclosure. Larger domain sets use shorter
 previews and stable column groups; long capability names wrap within a bounded column, with the full title
 available on selection. Domain dependencies remain
-counted at their domain until capability inspection. Congestion checks use the
+aggregated at their domain until capability inspection. Bundle counts appear with
+an explicit connection label while inspecting an endpoint, without bare overview
+numbers. Bounded local curves and screen-sized arrows preserve direction;
+individual relationship explanations and declaring documents remain in relation
+review. Congestion checks use the
 same curves that are painted; omitted overview links remain available on endpoint
 selection, with the total connection count retained. Neutral emphasis marks the
 selection; amber exclamation marks and a compact key explain evidence that needs
-rechecking. Detail positions separate implementation elements from capability
-faces. A same-scale selection nudge protects the visible branch from its inspector
+rechecking. Implementation elements sit in compact groups beside their capability,
+with readable square marks, wrapped names and membership stems. An ordinary element
+whose name cannot fit leaves no unexplained mark or invisible pointer target.
+A same-scale selection nudge protects the visible branch from its inspector
 when the free span can contain it. More/collapse controls disclose actual capability
 batches with interruptible fading and frame the visible members. Focused areas
 keep the branch grammar, omit a forced-open root collapse control, and offer a
