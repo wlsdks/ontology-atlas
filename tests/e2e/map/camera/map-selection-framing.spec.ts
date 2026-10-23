@@ -97,25 +97,34 @@ test("auto-arrange while everything is expanded keeps every node on screen", asy
 });
 
 test("the Korean relation sentence joins its particles to the names", async ({ page }) => {
-  await page.goto("/ko/topology/?e2e=1&guides=off&realm=domain%3Afulfillment", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/topology/?e2e=1&guides=off&realm=domain%3Afulfillment&mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration", { waitUntil: "domcontentloaded" });
   await expect.poll(async () => (await readMap(page)).visible, { timeout: 20000 }).toBeGreaterThan(0);
   await waitForMapStill(page);
+  await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
   const box = (await page.locator('[data-testid="ontology-map-canvas"]').boundingBox())!;
-  const m = await page.evaluate(() => {
-    const nodes = (window as unknown as { __atlasMap: AtlasMap;
-        }).__atlasMap.nodes();
-    const at = (id: string) => nodes.find((n) => n.id === id)!;
-    return { from: at("domain:fulfillment"), to: at("capability:carrier-integration") };
+  const hit = await page.evaluate(() => {
+    type Hit = { sourceId: string; targetId: string; kind: string };
+    const map = (window as unknown as { __atlasMap: AtlasMap & { edges: () => Array<{ sourceId: string; targetId: string; ax: number; ay: number; bx: number; by: number }>; edgeAt: (x: number, y: number) => Hit | null } }).__atlasMap;
+    const edge = map.edges().find((edge) => edge.sourceId === "domain:fulfillment" && edge.targetId === "capability:carrier-integration");
+    if (!edge) return null;
+    // Inspect the recorded edge's corridor; branch ports can move its hit target off the chord.
+    const dx = edge.bx - edge.ax, dy = edge.by - edge.ay;
+    const length = Math.hypot(dx, dy);
+    if (length === 0) return null;
+    for (let step = 1; step < 20; step++) {
+      const t = step / 20;
+      for (let offset = -length / 5; offset <= length / 5; offset += 3) {
+        const x = edge.ax + dx * t - dy / length * offset;
+        const y = edge.ay + dy * t + dx / length * offset;
+        const picked = map.edgeAt(x, y);
+        if (picked?.sourceId === edge.sourceId && picked.targetId === edge.targetId && picked.kind === "contains") return { x, y };
+      }
+    }
+    return null;
   });
-  const mid = { x: (m.from.x + m.to.x) / 2, y: (m.from.y + m.to.y) / 2 };
-  await page.mouse.move(box.x + mid.x, box.y + mid.y);
-  await page.waitForFunction(
-    (point) =>
-      Boolean(
-        (window as unknown as { __atlasMap?: { edgeAt?: (x: number, y: number) => unknown;
-        };
-    }).__atlasMap?.edgeAt?.(point.x, point.y)), mid, { polling: "raf", timeout: 15000 });
-  await page.mouse.click(box.x + mid.x, box.y + mid.y);
+  expect(hit, "the recorded containment relation has a typed pointer target").not.toBeNull();
+  await page.mouse.click(box.x + hit!.x, box.y + hit!.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().edge)).toMatchObject({ sourceId: "domain:fulfillment", targetId: "capability:carrier-integration" });
   const sentence = page.locator('[data-testid="map-edge-sentence"]');
   await expect(sentence).toBeVisible({ timeout: 5000 });
   await expect(sentence).toHaveText("배송이 택배사 연동을 담고 있어요.");

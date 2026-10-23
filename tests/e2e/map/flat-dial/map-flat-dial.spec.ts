@@ -4,57 +4,59 @@ import { canvasOrigin, openDial, ORDERS, readDial, report, WIDTHS } from "./map-
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
-test("storefront: hovering Orders keeps every name and count; selecting it counts at each named far domain", async ({ page }) => {
+async function hoverOrders(page: Page) {
+  const dial = await readDial(page);
+  const name = dial.texts.find((text) => text.id === ORDERS && text.role === "domain");
+  expect(name, "Orders has a drawn name to hover").toBeDefined();
+  const origin = await canvasOrigin(page);
+  await page.mouse.move(origin.x + (name!.box.minX + name!.box.maxX) / 2, origin.y + (name!.box.minY + name!.box.maxY) / 2);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.hover())).toBe(ORDERS);
+  await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+}
+
+test("storefront: hovering Orders keeps names stable and inspection preserves named directional bundles", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
   const rest = await readDial(page);
-  const chip = rest.clusters.find((c) => c.domainId === ORDERS)!.chip;
-  const origin = await canvasOrigin(page);
-  await page.mouse.move(origin.x + chip.x - 40, origin.y + chip.y - 40);
-  await page.mouse.move(origin.x + chip.x, origin.y + chip.y, { steps: 6 });
-  await page.waitForFunction((id) => window.__atlasMap!.hover() === id, ORDERS, { polling: "raf" });
-  await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+  await hoverOrders(page);
   const hovered = await readDial(page);
-  const names = (d: DialProbe) => d.texts.filter((t) => t.id !== ORDERS).map((t) => `${t.role}|${t.text}`).sort();
-  const counts = (d: DialProbe) => d.numerals.map((n) => `${n.flowKey}|${n.text}`).sort();
-  expect.soft(names(hovered), "hover keeps the resting names").toEqual(names(rest));
-  expect.soft(counts(hovered), "hover keeps the resting counts").toEqual(counts(rest));
+  const names = (dial: DialProbe) => dial.texts.filter((text) => text.role === "domain").map((text) => [text.id, text.text, text.box]);
+  expect(names(hovered), "hover preserves domain names and their positions").toEqual(names(rest));
+  expect(rest.numerals, "the overview has no bare bundle numbers").toEqual([]);
 
   await page.mouse.down();
   await page.mouse.up();
-  await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, ORDERS, { polling: "raf" });
-  await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(ORDERS);
+  await page.mouse.move(5, 5);
   await waitForMapStill(page);
   const dial = await readDial(page);
-  const capOf = new Map(dial.clusters.flatMap((c) => c.capabilityIds.map((id) => [id, c.domainId] as const)));
-  const domains = new Set(dial.clusters.map((c) => c.domainId));
-  const mine = (id: string) => id === ORDERS || capOf.get(id) === ORDERS;
-  const stubbed = new Set(dial.stubs.map((s) => s.flowKey));
-  const want = new Map<string, { needs: number; used: number }>();
-  for (const f of dial.flows) {
-    if (!f.drawn || f.relatesOnly || stubbed.has(f.key) || mine(f.a) === mine(f.b)) continue;
-    const far = mine(f.a) ? f.b : f.a;
-    if (!domains.has(far)) continue;
-    const c = want.get(far) ?? { needs: 0, used: 0 };
-    c.needs += mine(f.a) ? f.ab : f.ba;
-    c.used += mine(f.a) ? f.ba : f.ab;
-    want.set(far, c);
+  // Sample-vault directed connections, independent of the painted count strings.
+  const expected = [
+    ["domain:customer", 2, 2], ["domain:catalog", 2, 1], ["domain:inventory", 3, 0],
+    ["domain:marketing", 2, 1], ["domain:payment", 3, 0], ["domain:fulfillment", 1, 0],
+    ["domain:loyalty", 0, 1], ["domain:support", 0, 1],
+  ] as const;
+  const labels = new Map(await page.evaluate(() => window.__atlasMap!.nodes().map((node) => [node.id, node.label] as const)));
+  expect(dial.texts.some((text) => text.id === ORDERS && text.role === "domain"), "the inspected endpoint is named").toBe(true);
+  for (const [far, needs, used] of expected) {
+    const flow = dial.flows.find((flow) => (flow.a === ORDERS && flow.b === far) || (flow.b === ORDERS && flow.a === far));
+    expect(flow, `${far} keeps its recorded domain bundle`).toBeDefined();
+    expect([flow!.a === ORDERS ? flow!.ab : flow!.ba, flow!.a === ORDERS ? flow!.ba : flow!.ab], `${far} keeps both directions`).toEqual([needs, used]);
+    expect(flow!.drawn, `${far} is drawn or recovered on endpoint inspection`).toBe(true);
+    const label = labels.get(far);
+    expect(label, `${far} has a recorded endpoint name`).toBeTruthy();
+    const namedDomain = dial.texts.some((text) => text.id === far && text.role === "domain" && text.text === label);
+    const namedStub = dial.stubs.some((stub) => stub.flowKey === flow!.key && stub.text.startsWith(`${label} `));
+    expect(namedDomain || namedStub, `${far} retains its name or a named stub for this bundle`).toBe(true);
   }
-  const grammar = ({ needs, used }: { needs: number; used: number }) => [needs > 0 ? `→${needs}` : null, used > 0 ? `←${used}` : null].filter((p) => p !== null).join(" ");
-  const labelOf = new Map((await page.evaluate(() => window.__atlasMap!.nodes().map((n) => [n.id, n.label] as const))));
-  const shown = [...want].map(([far, c]) => ({
-    far,
-    want: grammar(c),
-    count: dial.numerals.find((n) => n.flowKey === `far\u0000${far}`)?.text ?? null,
-    named: dial.texts.some((t) => t.role === "domain" && t.id === far),
-    label: dial.texts.find((t) => t.role === "stub" && t.id === far)?.text ?? null,
-  }));
-  report("select Orders", shown);
-  expect.soft(want.size, "Orders has drawn far domains").toBeGreaterThan(0);
-  expect.soft(dial.numerals.filter((n) => !n.flowKey.startsWith("far\u0000")).map((n) => n.flowKey), "no count on a strand").toEqual([]);
-  for (const s of shown) {
-    if (s.named) expect.soft(s.count, `${s.far}: the count beside its name`).toBe(s.want);
-    else expect.soft(s.label, `${s.far}: its name and count beside its chip`).toBe(`${labelOf.get(s.far)} ${s.want}`);
+  expect(dial.numerals.length, "inspection draws localized connection counts").toBeGreaterThan(0);
+  for (const numeral of dial.numerals) {
+    const flow = dial.flows.find((flow) => flow.key === numeral.flowKey);
+    expect(flow, "each count belongs to a recorded bundle").toBeDefined();
+    expect([flow!.ab, flow!.ba].filter((count) => count > 1).map((count) => `${count} connections`), "the labelled count retains a recorded direction").toContain(numeral.text);
+    expect(numeral.box.minX).toBeGreaterThanOrEqual(dial.freeRect.minX);
+    expect(numeral.box.maxX).toBeLessThanOrEqual(dial.freeRect.maxX);
   }
+  report("selected directional bundles", dial.flows.filter((flow) => flow.a === ORDERS || flow.b === ORDERS));
 });
 
 async function opaqueInk(page: Page, token: string): Promise<string> {
@@ -72,50 +74,34 @@ async function opaqueInk(page: Page, token: string): Promise<string> {
 
 const channelGap = (a: string, b: string) => Math.max(...[1, 3, 5].map((i) => Math.abs(parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16))));
 
-test("storefront: hovering Orders gives partner capability discs the needs or used-by rim ink", async ({ page }) => {
+test("storefront: hovering Orders emphasizes its recorded bundles with neutral ink", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
-  const needsInk = await opaqueInk(page, "--map-indigo-bright");
-  const usedByInk = await opaqueInk(page, "--map-edge-selected");
-  const before = await readDial(page);
-  const chip = before.clusters.find((c) => c.domainId === ORDERS)!.chip;
-  const origin = await canvasOrigin(page);
-  await page.mouse.move(origin.x + chip.x - 40, origin.y + chip.y - 40);
-  await page.mouse.move(origin.x + chip.x, origin.y + chip.y, { steps: 6 });
-  await page.waitForFunction((id) => window.__atlasMap!.hover() === id, ORDERS, { polling: "raf" });
-  await page.waitForFunction(() => (window.__atlasMap!.dial!() as DialProbe).inkMix >= 1, undefined, { polling: "raf" });
+  const neutral = await opaqueInk(page, "--map-dial-stroke-domain");
+  await hoverOrders(page);
   const dial = await readDial(page);
-  const domainOf = new Map(dial.clusters.flatMap((c) => c.capabilityIds.map((id) => [id, c.domainId] as const)));
-  const inked = (ink: string) => dial.discs.filter((d) => channelGap(d.ink, ink) <= 1).map((d) => domainOf.get(d.id));
-  const needsDomains = new Set(inked(needsInk));
-  const userDomains = new Set(inked(usedByInk));
-  const needed = new Set<string>();
-  const using = new Set<string>();
-  for (const f of dial.flows) {
-    if (f.relatesOnly || (f.a !== ORDERS && f.b !== ORDERS)) continue;
-    const other = f.a === ORDERS ? f.b : f.a;
-    if ((f.a === ORDERS ? f.ab : f.ba) > 0) needed.add(other);
-    if ((f.a === ORDERS ? f.ba : f.ab) > 0) using.add(other);
-  }
-  report("hover Orders partner rims", { needed: [...needed], using: [...using], needsDomains: [...needsDomains], userDomains: [...userDomains] });
-  expect(needed.size + using.size, "Orders has cross-domain partners").toBeGreaterThan(0);
-  expect.soft([...needed].filter((d) => !needsDomains.has(d)), "every domain Orders needs shows a needs rim").toEqual([]);
-  expect.soft([...using].filter((d) => !userDomains.has(d) && !needsDomains.has(d)), "every domain using Orders shows a used-by rim").toEqual([]);
-  expect.soft([...needsDomains].filter((d) => d === undefined || !needed.has(d)), "needs rims only on domains Orders needs").toEqual([]);
-  expect.soft([...userDomains].filter((d) => d === undefined || !using.has(d)), "used-by rims only on domains that use Orders").toEqual([]);
+  const partners = dial.flows.filter((flow) => !flow.relatesOnly && (flow.a === ORDERS || flow.b === ORDERS));
+  const attended = dial.strips.filter((strip) => partners.some((flow) => flow.key === strip.flowKey));
+  expect(partners.length, "Orders has recorded cross-domain partners").toBeGreaterThan(0);
+  expect(attended.length, "hover paints recorded partner bundles").toBeGreaterThan(0);
+  for (const strip of attended) expect(channelGap(strip.ink, neutral), `${strip.flowKey} uses neutral emphasis`).toBeLessThanOrEqual(1);
 });
 
-
-test("a lens hands Flat back to the classic paint, and clearing it returns the dial", async ({ page }) => {
+test("an impact lens retains named branches and Escape clears its selection", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
   await page.goto(`/en/topology/?p=${encodeURIComponent("capability:checkout")}&impact=downstream&guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
-  const owns = () => page.evaluate(() => window.__atlasMap?.dial?.().owns ?? null);
-  await expect.poll(owns, { message: "the impact lens hands the paint back" }).toBe(false);
+  await expect.poll(() => new URL(page.url()).searchParams.get("impact")).toBe("downstream");
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe("capability:checkout");
+  await waitForMapStill(page);
+  const named = await page.evaluate(() => window.__atlasMap!.labels());
+  expect(named.some((label) => label.nodeId === "capability:checkout"), "the inspected capability keeps its branch name").toBe(true);
+  expect(named.filter((label) => label.nodeId.startsWith("domain:")).length, "the lens preserves domain branch context").toBeGreaterThan(0);
   await expect.poll(async () => {
     await page.keyboard.press("Escape");
     return page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null);
   }, { message: "Escape walks the ladder down to no selection, which clears the lens" }).toBeNull();
-  await expect.poll(owns, { message: "clearing the lens returns the dial" }).toBe(true);
+  await expect.poll(() => new URL(page.url()).searchParams.get("impact")).toBeNull();
+  await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
 });
 
 test("a selected element hands Flat back and returning restores the map scope", async ({ page }) => {
