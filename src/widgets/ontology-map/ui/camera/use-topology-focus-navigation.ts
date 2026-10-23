@@ -139,7 +139,7 @@ export function useTopologyFocusNavigation({
     if (!raw || !world || width <= 0 || height <= 0 || !world.nodeById.has(slug)) return;
     const tokens = cameraTokens(raw);
     const activeDial = realm?.dial ?? world.dial;
-    const target = branchFocusTarget(world, activeDial, slug, tokens, width, height) ?? computeFocusCameraTarget(
+    const target = branchFocusTarget(world, activeDial, slug, tokens, width, height, { scopedCapability: realm?.flat }) ?? computeFocusCameraTarget(
       world, tokens, width, height, slug,
       overviewScaleRef.current * raw.overviewEntryRatio,
       realm?.memberIds ?? null,
@@ -178,9 +178,10 @@ export function useTopologyFocusNavigation({
       return;
     }
 
+    const requested3d = view3dRef.current;
     let raf = 0;
     const resolveFocus = () => {
-      if (view3dRef.current) return;
+      if (view3dRef.current !== requested3d) return;
       const tokens = readOntologyMapTokensOrNull();
       const world = worldRef.current;
       const { width, height } = viewportRef.current;
@@ -257,7 +258,7 @@ export function useTopologyFocusNavigation({
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
           tokens);
-        target = branchFocusTarget(world, realmData.dial, realmData.rootId, measured, width, height)
+        target = branchFocusTarget(world, realmData.dial, realmData.rootId, measured, width, height, { scopedCapability: realmData.flat })
           ?? realmCameraTarget(bounds, measured, width, height, realmData.dial?.overviewPadPx);
       } else {
         const realmMembers = realmActive ? realmData?.memberIds ?? null : null;
@@ -270,7 +271,7 @@ export function useTopologyFocusNavigation({
             : measured;
         focusLeashPxRef.current = focusedSlug === null ? null : leashFor(width, height, focusTokens);
         const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
-        branchTarget = focusedSlug !== null && !pathPick ? branchFocusTarget(world, realmActive ? realmData?.dial : world.dial, focusedSlug, focusTokens, width, height) : null;
+        branchTarget = focusedSlug !== null && !pathPick ? branchFocusTarget(world, realmActive ? realmData?.dial : world.dial, focusedSlug, focusTokens, width, height, { scopedCapability: realmActive && realmData?.flat }) : null;
         target =
           focusedSlug !== null && !realmActive && pathPick
             ? // A path's source waits for its target: frame the map the target is picked

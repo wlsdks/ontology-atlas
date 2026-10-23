@@ -170,7 +170,7 @@ export function useTopologyRealmTransition({
           tscale: cameraRef.current.scale.value,
         };
         const measured = cameraTokens?.(tokens) ?? tokens;
-        const target = branchFocusTarget(world, data.dial, realmRootId, measured, width, height, data.insideTargets)
+        const target = branchFocusTarget(world, data.dial, realmRootId, measured, width, height, { positions: data.insideTargets, scopedCapability: data.flat })
           ?? realmCameraTarget(data.bounds, measured, width, height, data.dial?.overviewPadPx);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
