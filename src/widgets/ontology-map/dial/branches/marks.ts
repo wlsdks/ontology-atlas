@@ -287,6 +287,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   }
   const flows = input.contextAlphas ? { links: [], drawn: [], entered: disclosure.entered, resolved: disclosure.resolved, budget: { shown: 0, total: 0, perEndCap: Infinity }, stubs: [] } : buildFlowMarks({
     model, scene, tokens, inks, attention: input.attention, inkAttention: input.inkAttention, previous: input.previous,
+    connectionCount: input.labels?.connectionCount,
     inkMix: input.inkMix, chordPresence: input.chordPresence, scale: input.scale,
     viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight, freeRect: input.freeRect,
     nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText: input.measureText,

@@ -386,6 +386,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   const endRadiusPx = (id: string) => chips.get(id)?.r ?? discs.get(id)?.r ?? 0;
   const flowBase = {
     model, scene, tokens, inks, attention: attn, inkAttention: hov, previous: input.previous, inkMix: input.inkMix, chordPresence: input.chordPresence,
+    connectionCount: input.labels?.connectionCount,
     scale: s, viewportWidth: W, viewportHeight: H, freeRect: input.freeRect,
     nodeScreen: input.nodeScreen, toScreen: input.toScreen, endRadiusPx, appearOf: input.appearOf, measureText: input.measureText, resolution: disclosure,
   };

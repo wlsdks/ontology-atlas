@@ -56,7 +56,7 @@ same curves that are painted; omitted overview links remain available on endpoin
 selection, with the total connection count retained. Neutral emphasis marks the
 selection; amber exclamation marks and a compact key explain evidence that needs
 rechecking. Implementation elements sit in compact groups beside their capability,
-with readable square marks, wrapped names and membership stems. An ordinary element
+with readable square marks, wrapped names and membership stems. An ordinary owned element
 whose name cannot fit leaves no unexplained mark or invisible pointer target.
 A same-scale selection nudge protects the visible branch from its inspector
 when the free span can contain it. More/collapse controls disclose actual capability
