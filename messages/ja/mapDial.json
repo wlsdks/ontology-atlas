@@ -12,5 +12,6 @@
   "settling": "全ファイルの読み込みが終わると輪が確定します",
   "legendNeeds": "依存先",
   "legendUsers": "利用元",
-  "legendStale": "古い"
+  "legendStale": "古い",
+  "moreMembers": "残り{count, number}件を見る"
 }

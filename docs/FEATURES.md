@@ -43,7 +43,9 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-The Flat map uses usage rings around the project, packed member clusters,
+Small Flat maps use domain label blocks with outward capability branches and
+thin directional dependencies. Dense Flat maps retain usage rings around the
+project, packed member clusters,
 and counted directional dependencies at rest. Concepts
 navigation separates selection from tree disclosure. Project inspectors show one
 source status and remedy, with dated measurement details under Check record; these

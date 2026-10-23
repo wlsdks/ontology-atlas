@@ -12,5 +12,6 @@
   "settling": "Rings settle when every file is read",
   "legendNeeds": "needs",
   "legendUsers": "used by",
-  "legendStale": "stale"
+  "legendStale": "stale",
+  "moreMembers": "View {count, number} more"
 }

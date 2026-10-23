@@ -23,6 +23,7 @@ const RING_CAPTION_INSIDE_FREE_MAP = 24;
 const RAIL = ["topology-fit-control", "topology-tour-button", "topology-shortcuts-help-button", "topology-replay-growth"];
 
 interface Frame {
+  branchLabelsOutside: string[] | null;
   freeLeft: number;
   freeRight: number;
   drawnLeft: number;
@@ -78,6 +79,9 @@ async function measure(page: Page): Promise<Frame> {
       .map(shown)
       .filter((box): box is DOMRect => box !== null);
     return {
+      branchLabelsOutside: dial?.owns && dial.rings.length === 0 && dial.clusters.length > 0
+        ? dial.texts.filter((t) => t.box.minX < dial.freeRect.minX || t.box.maxX > dial.freeRect.maxX || t.box.minY < dial.freeRect.minY || t.box.maxY > dial.freeRect.maxY).map((t) => t.text)
+        : null,
       freeLeft: (index ?? tab)?.right ?? canvas.left,
       freeRight: rail.length > 0 ? Math.min(...rail.map((box) => box.left)) : canvas.right,
       drawnLeft: Math.min(...lefts),
@@ -120,7 +124,9 @@ function check(frame: Frame, where: string, { chromeLine }: { chromeLine: boolea
     failures.push(`${where}: ${frame.drawn} drawn nodes with readable radii, nothing to centre`);
     return failures;
   }
-  if (Math.abs(offset) > TOLERANCE) {
+  if (frame.branchLabelsOutside !== null) {
+    if (frame.branchLabelsOutside.length) failures.push(`${where}: branch names outside the free map: ${frame.branchLabelsOutside.join(", ")}`);
+  } else if (Math.abs(offset) > TOLERANCE) {
     failures.push(`${where}: the drawing's centre is ${offset.toFixed(1)}px from the free map's centre`);
   }
   if (frame.hubY !== null && frame.ringTop !== null && frame.freeTop !== null && frame.freeBottom !== null) {

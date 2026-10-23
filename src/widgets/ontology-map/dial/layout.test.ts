@@ -15,7 +15,7 @@ import {
   type TreeInputNode,
 } from "../model/containment-tree";
 import { buildDialModel } from "./dial-model";
-import { layoutDial } from "./layout";
+import { layoutDial, layoutPackedDial } from "./layout";
 import { circularDomainOrder } from "./order";
 import { ladderStep } from "./rings";
 import type { DialMemory, DialModel, DialScene } from "./types";
@@ -83,7 +83,7 @@ function crafted(domains: number, capsOf: (i: number) => number, deps: readonly 
 }
 
 function lay(model: DialModel, memory: DialMemory | null): DialScene {
-  return layoutDial(model, circularDomainOrder(model, memory?.order ?? null).order, tokens, memory);
+  return layoutPackedDial(model, circularDomainOrder(model, memory?.order ?? null).order, tokens, memory);
 }
 
 function overviewScale(scene: DialScene) {
@@ -142,7 +142,7 @@ const fixtures = {
   ]),
 };
 
-describe("layoutDial", () => {
+describe("packed disclosure layout", () => {
   for (const [name, graph] of Object.entries(fixtures)) {
     const model = modelOf(graph.nodes, graph.edges);
     const scene = lay(model, null);
@@ -268,5 +268,27 @@ describe("layoutDial", () => {
     }
     expect(scene.rings.map((r) => scene.memory.radiusByStep.get(r.step))).toEqual(scene.rings.map((r) => r.radius));
     expect(scene.orphans.ids).toEqual(["stray"]);
+  });
+});
+
+describe("branch overview", () => {
+  it("keeps every real concept and separates member rows from the dependency corridor", () => {
+    const model = modelOf(dogfood.nodes, dogfood.edges);
+    const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+    expect(scene.branches).toBe(true);
+    expect(scene.rings).toHaveLength(0);
+    expect([...scene.positions.keys()].sort()).toEqual([...lay(model, null).positions.keys()].sort());
+    for (const c of scene.clusters) {
+      for (const it of c.items) expect(Math.sign(it.x - c.chip.x)).toBe(Math.sign(c.chip.x));
+      expect(minItemDistance(scene)).toBeGreaterThanOrEqual(tokens.pitch);
+    }
+  });
+
+  it("retains packed disclosure when one domain cannot fit readable rows", () => {
+    const g = crafted(3, (i) => i === 0 ? 200 : 5, [[1, 0]]);
+    const model = modelOf(g.nodes, g.edges);
+    const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+    expect(scene.branches).not.toBe(true);
+    expect(scene.positions.size).toBe(g.nodes.length);
   });
 });

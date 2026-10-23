@@ -54,7 +54,7 @@ reject each change as a Markdown diff.
 </tr>
 </table>
 
-The Flat map places domains on usage rings around the project and shows counted dependencies at rest. Hover highlights connections; selecting reveals needs and used-by relationships. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
+Small Flat maps show domain labels with outward capability branches and thin directed dependencies. Dense maps retain usage rings and packed disclosure. Hover highlights a domain and its connections without moving labels; selecting reveals needs and used-by relationships. The Concepts panel separates searching, selecting and expanding the tree, while project details keep dated source checks under **Check record**.
 
 ## Quick start
 
