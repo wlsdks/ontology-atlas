@@ -35,12 +35,18 @@ test("storefront: hovering Orders keeps names stable and inspection preserves na
     ["domain:marketing", 2, 1], ["domain:payment", 3, 0], ["domain:fulfillment", 1, 0],
     ["domain:loyalty", 0, 1], ["domain:support", 0, 1],
   ] as const;
+  const labels = new Map(await page.evaluate(() => window.__atlasMap!.nodes().map((node) => [node.id, node.label] as const)));
   expect(dial.texts.some((text) => text.id === ORDERS && text.role === "domain"), "the inspected endpoint is named").toBe(true);
   for (const [far, needs, used] of expected) {
     const flow = dial.flows.find((flow) => (flow.a === ORDERS && flow.b === far) || (flow.b === ORDERS && flow.a === far));
     expect(flow, `${far} keeps its recorded domain bundle`).toBeDefined();
     expect([flow!.a === ORDERS ? flow!.ab : flow!.ba, flow!.a === ORDERS ? flow!.ba : flow!.ab], `${far} keeps both directions`).toEqual([needs, used]);
     expect(flow!.drawn, `${far} is drawn or recovered on endpoint inspection`).toBe(true);
+    const label = labels.get(far);
+    expect(label, `${far} has a recorded endpoint name`).toBeTruthy();
+    const namedDomain = dial.texts.some((text) => text.id === far && text.role === "domain" && text.text === label);
+    const namedStub = dial.stubs.some((stub) => stub.flowKey === flow!.key && stub.text.startsWith(`${label} `));
+    expect(namedDomain || namedStub, `${far} retains its name or a named stub for this bundle`).toBe(true);
   }
   expect(dial.numerals.length, "inspection draws localized connection counts").toBeGreaterThan(0);
   for (const numeral of dial.numerals) {
