@@ -40,7 +40,7 @@ export function indexSelectionOverrideReducer(
  * Updated during render, not in an effect, or a new selection's first frame inherits the old
  * override.
  */
-export function useIndexSelectionOverride(selectionActive: boolean): {
+export function useIndexSelectionOverride(selectionActive: boolean, keepOnRowPick = true): {
   manualExpand: boolean;
   markManualExpand: () => void;
   beginExpandedSelection: () => void;
@@ -57,8 +57,9 @@ export function useIndexSelectionOverride(selectionActive: boolean): {
     dispatch({ type: 'manual-expand' });
   }, []);
   const beginExpandedSelection = useCallback(() => {
+    if (!keepOnRowPick) return;
     dispatch({ type: 'begin-expanded-selection' });
-  }, []);
+  }, [keepOnRowPick]);
 
   return {
     manualExpand: selectionActive && state.selectionActive ? state.manualExpand : false,

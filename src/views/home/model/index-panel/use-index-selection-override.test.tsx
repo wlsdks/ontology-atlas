@@ -24,6 +24,20 @@ describe('indexSelectionOverrideReducer', () => {
 });
 
 describe('useIndexSelectionOverride', () => {
+  it('lets a narrow row pick yield space while explicit reopening still wins for that selection', () => {
+    const { result, rerender } = renderHook(
+      ({ active }) => useIndexSelectionOverride(active, false),
+      { initialProps: { active: false } },
+    );
+    rerender({ active: true });
+    act(() => result.current.beginExpandedSelection());
+    expect(result.current.manualExpand).toBe(false);
+    act(() => result.current.markManualExpand());
+    expect(result.current.manualExpand).toBe(true);
+    rerender({ active: false });
+    expect(result.current.manualExpand).toBe(false);
+  });
+
   it('can start an INDEX-originated selection expanded after the selection is published', () => {
     const { result, rerender } = renderHook(
       ({ selectionActive }) => useIndexSelectionOverride(selectionActive),

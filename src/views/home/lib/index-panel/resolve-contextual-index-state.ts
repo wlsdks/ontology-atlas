@@ -1,8 +1,6 @@
 import type { IndexPanelState } from "@/widgets/topology-index-panel";
-import { LG_BREAKPOINT_PX } from "@/shared/lib/use-viewport-below";
-
-/** Below `lg` the panel is a sheet over INDEX; from it the free span is 260 px or more, measured. */
-export const FLAT_SELECTION_KEEPS_INDEX_FROM_PX = LG_BREAKPOINT_PX;
+/** Keep both panels only where their remaining map span can hold a readable branch. */
+export const FLAT_SELECTION_KEEPS_INDEX_FROM_PX = 1280;
 
 export interface ContextualIndexStateInputs {
   baseState: IndexPanelState;

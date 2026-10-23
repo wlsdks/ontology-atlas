@@ -57,7 +57,10 @@ when the free span can contain it. More/collapse controls disclose actual capabi
 batches with interruptible fading and frame the visible members. Focused areas
 keep the branch grammar, omit a forced-open root collapse control, and offer a
 labelled Full map return that restores the selected root. Concepts
-navigation separates selection from tree disclosure. Project inspectors show one
+navigation separates selection from tree disclosure. Below 1280 px, selecting a
+concept temporarily folds the index to leave room for its map and inspector;
+closing the inspector restores the preference, and explicit reopening still works.
+Project inspectors show one
 source status and remedy, with dated measurement details under Check record; these
 presentation changes do not accept meaning or update source receipts.
 Inspector headings name recorded membership roles, such as Implementation elements

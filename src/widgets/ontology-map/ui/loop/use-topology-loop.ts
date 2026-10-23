@@ -489,6 +489,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     reframeViewportRef,
     selectionCameraRef,
     cameraGestureRevisionRef,
+    focusLeashPxRef,
   });
   useTopologyLayoutCommands({
     relayoutToken,
