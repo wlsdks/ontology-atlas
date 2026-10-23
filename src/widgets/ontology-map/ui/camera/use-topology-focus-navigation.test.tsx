@@ -220,6 +220,25 @@ describe("useTopologyFocusNavigation", () => {
     expect(deps.beginCameraTween).not.toHaveBeenCalled();
   });
 
+  it("waits for search modal isolation to release before measuring the selected map", () => {
+    const shell = document.createElement("div");
+    const canvas = document.createElement("canvas");
+    shell.append(canvas);
+    shell.setAttribute("aria-hidden", "true");
+    const measured = vi.fn();
+    const cameraTokens = <T,>(t: T) => { measured(); return { ...t, safeInsetLeft: 324 }; };
+    const { deps, select } = setup({ canvasRef: ref(canvas), cameraTokens });
+    select("f");
+    expect(measured).not.toHaveBeenCalled();
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    shell.removeAttribute("aria-hidden");
+    frames.shift()?.(performance.now());
+    expect(measured).toHaveBeenCalledTimes(1);
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(1);
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+  });
+
   it("waits for the selected node's world instead of consuming a deep link before it exists", () => {
     const worldRef = ref<TopologyWorld | null>(null);
     const { deps, hook } = setup({ worldRef });

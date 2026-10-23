@@ -186,7 +186,8 @@ export function useTopologyFocusNavigation({
       const tokens = readOntologyMapTokensOrNull();
       const world = worldRef.current;
       const { width, height } = viewportRef.current;
-      if (!tokens || !world || width <= 0 || height <= 0 || (focusedSlug !== null && (!world.nodeById.has(focusedSlug) || realmTransitionRef.current.phase === "entering"))) {
+      const isolated = !!canvasRef.current?.closest('[aria-hidden="true"], [inert]');
+      if (isolated || !tokens || !world || width <= 0 || height <= 0 || (focusedSlug !== null && (!world.nodeById.has(focusedSlug) || realmTransitionRef.current.phase === "entering"))) {
         raf = requestAnimationFrame(resolveFocus);
         return;
       }
