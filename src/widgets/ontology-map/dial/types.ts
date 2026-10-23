@@ -108,13 +108,13 @@ export interface DialRing { step: number; min: number; max: number | null; radiu
 }
 export interface DialItem { id: string; direct: boolean; x: number; y: number; elementIds: string[]; elementPitch: number;
 }
-export interface DialCluster { branchSide?: -1 | 1; domainId: string; step: number; angle: number; chip: Point; footprint: number; items: DialItem[];
+export interface DialCluster { branchPair?: number; branchCorridorX?: number; branchSide?: -1 | 1; domainId: string; step: number; angle: number; chip: Point; footprint: number; items: DialItem[];
 }
-export interface DialMemory { order: string[]; radiusByStep: ReadonlyMap<number, number>; angleById: ReadonlyMap<string, { step: number; angle: number;
+export interface DialMemory { branchOrder?: readonly string[]; order: string[]; radiusByStep: ReadonlyMap<number, number>; angleById: ReadonlyMap<string, { step: number; angle: number;
     }>;
     itemOrder: ReadonlyMap<string, string[]>;
 }
-export interface DialScene { branches?: boolean; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
+export interface DialScene { branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
     }; axisAngle: number; extent: Box; positions: ReadonlyMap<string, Point>; medianElementPitch: number; memory: DialMemory;
 }
 export interface DialWorld {

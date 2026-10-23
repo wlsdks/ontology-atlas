@@ -169,7 +169,7 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     evidence, attention, inkAttention, previous, inkMix, chordPresence,
     scale: input.scale, zoomRatio: input.zoomRatio, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
     freeRect: input.freeRect, nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText,
-    elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId, contextAlphas: input.contextAlphas,
+    elementLabel: input.elementLabel, focusedNodeId: input.focusedNodeId, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId, contextAlphas: input.contextAlphas,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, hubLines: [placementText, evidenceText], disclosure,
   }, pool);
   crossfadeNumerals(pool, input.worldKey, input.now, input.reducedMotion);

@@ -8,39 +8,53 @@ import { buildDialMarks, emptyDialFrameMarks, type DialMarksInput } from "../fra
 import { resolveDialInks } from "../ink";
 import { layoutDial } from "../layout";
 import { resolveDialTokens } from "../tokens";
+import { overlaps } from "../label-marks";
+import { dialOverviewBounds, dialOverviewPad } from "../fit";
+import { computeOverviewCameraTarget } from "../../ui/camera/topology-camera-math";
 
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const tokens = resolveDialTokens((v) => v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? "");
 const map = { canvasBgNear: "#101014", edgeDepends: "#8a8fa8", indigoBright: "#8b8cff", edgeSelected: "#7882ff", labelDomain: "#d0d2dc", labelElement: "#9a9caa", labelCapability: "#b8bac8", labelProject: "#e8e8f0", edgeContainsL2: "#3a3c48", nodeFillCapability: "#20222c", nodeStrokeCapability: "#7a7e96", nodeFillElement: "#1a1c24", nodeStrokeElement: "#6a6e80", statusWarning: "#e0a040", nodeStrokeDim: "#44465a", nodeFillDim: "#18181c", nodeFillDomain: "#262836", egoRestAlpha: 0.32, radiusProject: 22, radiusCapability: 11 } as unknown as OntologyMapTokens;
 
-function frame(focus: string | null, scale = 2, longName = false) {
+function frame(focus: string | null, scale = 2, longName = false, domains = 3, capabilities = 3, fitWidth?: number, elements = 0) {
   const nodes: TreeInputNode[] = [{ id: "p", label: "Project", kind: "project" }];
   const edges: TreeInputEdge[] = [];
   const contains = (source: string, target: string) => edges.push({ source, target, kind: "contains", relationType: "contains" });
-  for (let d = 0; d < 3; d++) {
+  for (let d = 0; d < domains; d++) {
     nodes.push({ id: `d${d}`, label: `Domain ${d}`, kind: "domain" });
     contains("p", `d${d}`);
-    for (let c = 0; c < 3; c++) {
+    for (let c = 0; c < capabilities; c++) {
       nodes.push({ id: `d${d}c${c}`, label: longName ? "긴 이름을 가진 개념을 선택하고 관계와 구현 근거를 모두 읽는 경우" : `Capability ${d}.${c}`, kind: "capability" });
       contains(`d${d}`, `d${d}c${c}`);
+      for (let e = 0; e < elements; e++) {
+        nodes.push({ id: `d${d}c${c}e${e}`, label: `Element ${e}`, kind: "element" });
+        contains(`d${d}c${c}`, `d${d}c${c}e${e}`);
+      }
       if (d) edges.push({ source: `d${d}c${c}`, target: `d0c${c}`, kind: "depends", relationType: "depends_on" });
     }
   }
   const tree = readContainmentTree(nodes, edges);
   const dependencies = rollDomainDependencies(tree, edges);
-  const model = buildDialModel({ tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)), elementIds: [] });
+  const model = buildDialModel({ tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges)), elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id) });
   const scene = layoutDial(model, model.domains.map((d) => d.id), tokens, null);
-  const toScreen = (x: number, y: number) => ({ x: 1800 + x * scale, y: 900 + y * scale });
+  const width = fitWidth ?? 3600;
+  const height = fitWidth === 1040 ? 720 : fitWidth === 1920 ? 1080 : 1800;
+  const camera = fitWidth ? computeOverviewCameraTarget(dialOverviewBounds(scene), width, height, {
+    cameraScaleMax: 10, cameraScaleMin: 0.01, cameraSmallGraphScaleMax: 10, overviewEntryRatio: 0.95,
+    safeInsetLeft: 322, safeInsetRight: 64, safeInsetTop: 164, safeInsetBottom: 96,
+  } as OntologyMapTokens, nodes.length, { padPx: dialOverviewPad(scene, model, null, (s) => s.length * 7, tokens) }) : null;
+  if (camera) scale = camera.tscale;
+  const toScreen = (x: number, y: number) => ({ x: width / 2 + (x - (camera?.tx ?? 0)) * scale, y: height / 2 + (y - (camera?.ty ?? 0)) * scale });
   const attention = resolveDialAttention(model, null, focus);
-  const freeRect = { minX: 0, minY: 0, maxX: 3600, maxY: 1800 };
+  const freeRect = { minX: 0, minY: 0, maxX: width, maxY: height };
   const input: DialMarksInput = {
     model, scene, tokens, mapTokens: map, inks: resolveDialInks({ ...map, nodeHoleFill: "#0c0c10" }, tokens), labels: null,
     evidence: dialEvidenceView(model, new Map([["d0c0", "stale"]])), attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: 2, viewportWidth: 3600, viewportHeight: 1800, freeRect,
+    scale, zoomRatio: 2, viewportWidth: width, viewportHeight: height, freeRect,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
-    appearOf: () => 1, measureText: (s) => s.length * 7, elementLabel: () => null,
-    hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: 3600, viewportHeight: 1800, toScreen }, freeRect, attention, tokens),
+    appearOf: () => 1, measureText: (s) => s.length * 7, elementLabel: (id) => elements ? `Element ${id}` : null,
+    focusedNodeId: focus, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: width, viewportHeight: height, toScreen }, freeRect, attention, tokens),
   };
   const out = emptyDialFrameMarks();
   return { out, result: buildDialMarks(input, out), input };
@@ -84,5 +98,92 @@ describe("branch reading", () => {
     expect(out.discs.every((d) => d.r >= 10)).toBe(true);
     expect(result.picks.find((p) => p.id === "d0c0")!.r).toBeGreaterThanOrEqual(10);
     expect(out.texts.some((t) => t.id === "d0c0" && t.role === "status")).toBe(true);
+  });
+});
+
+
+describe("dense branch disclosure", () => {
+  for (const domains of [9, 20, 50]) for (const width of [1040, 1920]) {
+    it(`${domains} domains at ${width}px: keeps visible names apart`, () => {
+      const { out } = frame(null, 1, true, domains, 8, width);
+      const names = out.texts.filter((t) => ["project", "domain", "capability"].includes(t.role));
+      expect(names.some((t) => t.role === "project")).toBe(true);
+      expect(names.some((t) => t.role === "domain")).toBe(true);
+      expect(names.flatMap((a, i) => names.slice(i + 1).filter((b) => overlaps(a.box, b.box)).map((b) => [a.id, b.id]))).toEqual([]);
+    });
+  }
+
+  it("reveals a selected hidden capability at overview scale without disclosing all hidden members", () => {
+    const { out, input } = frame("d0c199", 0.08, false, 3, 200);
+    expect(input.scene.positions.has("d0c199")).toBe(true);
+    expect(out.texts.some((t) => t.id === "d0c199" && t.role === "capability")).toBe(true);
+    expect(out.discs.length).toBeLessThanOrEqual(18);
+  });
+
+  it("keeps a selected hidden element named after its selection pulse ends", () => {
+    const { out } = frame("d0c199e0", 0.08, false, 3, 200, undefined, 1);
+    expect(out.texts.some((t) => t.id === "d0c199e0" && t.role === "element")).toBe(true);
+  });
+
+  it("routes dependencies across pairs with the arrow still ending at the provider", () => {
+    const base = frame(null, 1, false, 20, 8, 1920);
+    const providerPair = base.input.scene.clusterByDomain.get("d0")!.branchPair;
+    const source = base.input.scene.clusters.find((c) => c.branchPair !== providerPair)!.domainId;
+    const { input, result, out } = frame(source, 1, false, 20, 8, 1920);
+    const flow = result.flows.links.find((link) => (link.u === source && link.v === "d0") || (link.u === "d0" && link.v === source))!;
+    const strip = out.strips.find((line) => line.flowKey === flow.key)!;
+    expect(strip.headEnd).toBe(true);
+    expect(strip.headStart).toBe(false);
+    const from = input.nodeScreen(source)!;
+    const to = input.nodeScreen("d0")!;
+    expect(Math.hypot(strip.ax - from.x, strip.ay - from.y)).toBeLessThan(60);
+    expect(Math.hypot(strip.bx - to.x, strip.by - to.y)).toBeLessThan(60);
+    expect(strip.cy).toBeLessThan(Math.min(from.y, to.y));
+  });
+
+  it("does not shrink the overview for a name outside the member preview", () => {
+    const { input } = frame(null, 2, false, 3, 200);
+    const pad = () => dialOverviewPad(input.scene, input.model, null, input.measureText, tokens);
+    const before = pad();
+    const capabilities = new Map(input.model.capabilityById);
+    input.model = { ...input.model, capabilityById: capabilities };
+    capabilities.set("d0c199", { ...capabilities.get("d0c199")!, label: "A hidden capability title that is much longer than any visible title" });
+    expect(pad()).toEqual(before);
+    capabilities.set("d0c0", { ...capabilities.get("d0c0")!, label: "A visible capability title that is much longer than every other title" });
+    expect(pad().left).toBeGreaterThan(before.left);
+  });
+
+  it("reveals a distant active implementation when its domain is outside the viewport", () => {
+    const { input } = frame("d0c0e999", 0.08, false, 1, 1, undefined, 1000);
+    const target = input.scene.positions.get("d0c0e999")!;
+    const toScreen = (x: number, y: number) => ({ x: 500 + (x - target.x) * input.scale, y: 400 + (y - target.y) * input.scale });
+    input.toScreen = toScreen;
+    input.nodeScreen = (id) => { const point = input.scene.positions.get(id); return point ? toScreen(point.x, point.y) : null; };
+    input.viewportWidth = 1000;
+    input.viewportHeight = 800;
+    input.freeRect = { minX: 0, minY: 0, maxX: 1000, maxY: 800 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    expect(out.texts.some((text) => text.id === "d0c0e999" && text.role === "element")).toBe(true);
+    expect(result.picks.some((pick) => pick.id === "d0c0e999")).toBe(true);
+  });
+
+  it("names a selected orphan below the ordinary orphan disclosure ramp", () => {
+    const { input } = frame(null, 0.08);
+    const positions = new Map(input.scene.positions);
+    positions.set("free", { x: 0, y: 0 });
+    input.scene = { ...input.scene, positions, orphans: { ...input.scene.orphans, ids: ["free"] } };
+    input.focusedNodeId = "free";
+    input.elementLabel = () => "Unassigned element";
+    input.disclosure = { ...input.disclosure, orphanAlpha: 0 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    expect(out.texts.some((text) => text.id === "free" && text.role === "element")).toBe(true);
+    expect(result.picks.some((pick) => pick.id === "free")).toBe(true);
+  });
+
+  it("keeps the member preview bounded after the element ramp opens", () => {
+    const { out } = frame(null, 2, false, 3, 200);
+    expect(out.discs.length).toBeLessThanOrEqual(18);
   });
 });

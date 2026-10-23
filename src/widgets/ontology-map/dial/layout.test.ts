@@ -297,11 +297,65 @@ describe("branch overview", () => {
     }
   });
 
-  it("retains packed disclosure when one domain cannot fit readable rows", () => {
+  it("retains branch shape and every position when one domain has two hundred capabilities", () => {
     const g = crafted(3, (i) => i === 0 ? 200 : 5, [[1, 0]]);
     const model = modelOf(g.nodes, g.edges);
     const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
-    expect(scene.branches).not.toBe(true);
+    expect(scene.branches).toBe(true);
     expect(scene.positions.size).toBe(g.nodes.length);
   });
+});
+
+
+describe("scalable branch overview", () => {
+  it("keeps remembered branches still when a dependency arrives within its rank step", () => {
+    const graph = crafted(20, () => 8, []);
+    const model = modelOf(graph.nodes, graph.edges);
+    const before = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+    const next = modelOf(graph.nodes, [...graph.edges, { from: "d02-c000", to: "d03-c000", type: "depends_on" }]);
+    const after = layoutDial(next, circularDomainOrder(next, before.memory.order).order, tokens, before.memory);
+    expect([...after.positions]).toEqual([...before.positions]);
+  });
+
+  it("keeps complete existing pairs still when a domain is appended to the last pair", () => {
+    const graph = crafted(20, () => 8, []);
+    const model = modelOf(graph.nodes, graph.edges);
+    const before = layoutDial(model, model.domains.map((d) => d.id), tokens, null);
+    const extended = crafted(21, () => 8, []);
+    const next = modelOf(extended.nodes, extended.edges);
+    const after = layoutDial(next, circularDomainOrder(next, before.memory.order).order, tokens, before.memory);
+    const firstPair = before.clusters.filter((c) => c.branchPair === 0).flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]);
+    expect(moved(before, after, firstPair).filter(([, distance]) => distance > 0)).toEqual([]);
+    expect(after.positions.size).toBe(extended.nodes.length);
+    expect(after.memory.branchOrder!.slice(0, 20)).toEqual(before.memory.branchOrder);
+  });
+
+  it("preserves the established four-domain chip and member geometry", () => {
+    const graph = crafted(4, () => 8, []);
+    const model = modelOf(graph.nodes, graph.edges);
+    const scene = layoutDial(model, model.domains.map((d) => d.id), tokens, null);
+    expect(scene.clusters.map((c) => ({ id: c.domainId, chip: c.chip, first: { x: c.items[0]!.x, y: c.items[0]!.y } }))).toEqual([
+      { id: "d00", chip: { x: -340, y: -289 }, first: { x: -612, y: -493 } },
+      { id: "d01", chip: { x: -340, y: 289 }, first: { x: -612, y: 85 } },
+      { id: "d02", chip: { x: 340, y: -238 }, first: { x: 612, y: -442 } },
+      { id: "d03", chip: { x: 340 - 680 / 3, y: 340 }, first: { x: 612 - 680 / 3, y: 136 } },
+    ]);
+  });
+  for (const [name, graph] of [["default storefront", storefront], ["twenty domains", crafted(20, () => 8, [[1, 0], [19, 0]])], ["fifty domains", crafted(50, () => 8, [[1, 0], [49, 0]])]] as const) {
+    it(`${name}: preserves the branch grammar and every concept position`, () => {
+      const model = modelOf(graph.nodes, graph.edges);
+      const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+      expect(scene.branches).toBe(true);
+      expect(scene.rings).toEqual([]);
+      expect([...scene.positions.keys()].sort()).toEqual(graph.nodes.map((n) => n.id).sort());
+      expect(new Set([...scene.positions.values()].map((p) => `${p.x}:${p.y}`)).size).toBe(scene.positions.size);
+      expect(scene.branchPreviewRows).toBe(model.domains.length > 12 ? 1 : 2);
+      if (model.domains.length > 12) {
+        expect(new Set(scene.clusters.map((c) => c.branchPair)).size).toBeGreaterThan(1);
+        const w = scene.extent.maxX - scene.extent.minX;
+        const h = scene.extent.maxY - scene.extent.minY;
+        expect(Math.max(w / h, h / w)).toBeLessThan(3);
+      }
+    });
+  }
 });

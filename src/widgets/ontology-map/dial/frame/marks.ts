@@ -56,6 +56,7 @@ export interface DialMarksInput {
   appearOf(id: string): number;
   measureText: MeasureText;
   elementLabel(id: string): string | null;
+  focusedNodeId?: string | null;
   hoveredNodeId: string | null;
   agentFocusNodeId: string | null;
   selectionPulse: { nodeId: string; scaleFactor: number; alpha: number } | null;
