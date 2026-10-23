@@ -207,7 +207,7 @@ export function TopologyInspectorSurfaces({
       <div
         ref={nodePopoverPositionerRef}
         data-testid="topology-node-popover-positioner"
-        data-topology-camera-obstacle="side-panel"
+        data-topology-camera-obstacle={panelOpen ? "side-panel" : "none"}
         data-position-contract="selected-inspector-aligns-to-right-inset"
         data-fixed-surface-role="selected-node-inspector"
         data-fixed-surface-measure-target="topology-node-popover"
