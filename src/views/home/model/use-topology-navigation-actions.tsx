@@ -35,7 +35,7 @@ interface Options {
   >;
 }
 
-type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean };
+type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean;exitPath?:boolean };
 type SelectionContext = {
   interactionSelectedSlugRef: Options['topologyCanvasFocus']['interactionSelectedSlugRef'];
   structure:boolean;
@@ -57,7 +57,12 @@ function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug
   current.setSelectedRelationActive(false);
   current.setNodePopoverDismissed(false);
   const isHub=Boolean(current.projectBySlug.get(slug)?.isHub);
-  current.setRouteState(route=>resolveTopologyNodeClickRouteState(route,slug,{isHub,preserveImpact:options?.preserveImpact}));
+  current.setRouteState(route=>resolveTopologyNodeClickRouteState(
+    options?.exitPath && route.analysisMode === 'path'
+      ? { ...route, analysisMode: 'overview', pathSourceSlug: null, pathTargetSlug: null }
+      : route,
+    slug,{isHub,preserveImpact:options?.preserveImpact}
+  ));
   if(options?.keepIndexOpen)current.beginExpandedIndexSelection();
 }
 export function useTopologyNavigationActions({
@@ -172,7 +177,12 @@ function useAcpMapIntent({
       interactionSelectedSlugRef.current = null;
       setExpandAllActive(false);
       setMeaningEditorState(null);
-      setSelectedEdge(null);
+      // Reading the relation under review must not discard its typed context.
+      // A different path still clears the previous relation selection.
+      setSelectedEdge((current) => current && (
+        (current.sourceId === sourceId && current.targetId === targetId) ||
+        (current.sourceId === targetId && current.targetId === sourceId)
+      ) ? current : null);
       setFullDetailSlug(null);
       setSelectedRelationActive(false);
       setRouteState((current) =>

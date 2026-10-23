@@ -78,6 +78,8 @@ paragraph within 320 characters, including the canonical `## Definition` section
 The full-document action retains the remaining
 sections and boundaries. Selecting a relation keeps its details in the review
 panel instead of opening a duplicate inspector alongside it.
+Agent reads of that same relation retain the review target. Opening a current
+evidence document exits path selection and opens its full detail.
 Analysis requests use the interface language for explanatory prose and findings,
 while keeping identifiers, structured fields and exact quotations unchanged.
 Small Flat maps keep their branch forms during meaning and relation inspection;

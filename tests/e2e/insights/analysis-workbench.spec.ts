@@ -150,5 +150,8 @@ for (const width of [1040, 1512]) {
         caption: api.relationCaptions().some((caption) => caption.edgeId.includes('product-detail') && caption.edgeId.includes('cart')),
       };
     })).toEqual({ endpoints: 2, edges: 1, caption: true });
+    await relation.getByRole('button', { name: en.analysisWorkbench.declaringDocument }).click();
+    await expect(page).not.toHaveURL(/mode=path/);
+    await expect(page.getByTestId('full-detail-a1')).toBeVisible();
   });
 }
