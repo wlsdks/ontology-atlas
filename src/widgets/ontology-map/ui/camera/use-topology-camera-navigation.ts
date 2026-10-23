@@ -1,6 +1,7 @@
+"use client";
+
 import { branchFocusTarget } from "./branch-frame/target";
 import { branchSelectionMargin } from "./branch-frame/selection-margin";
-"use client";
 
 import {
   useEffect,

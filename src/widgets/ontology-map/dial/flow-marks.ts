@@ -1,3 +1,5 @@
+import { quadAt, quadLength, trimmedPiece, overlaps, inside } from "./flow/geometry";
+import { branchPortFraction } from "./branches/ports";
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
 import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
@@ -77,40 +79,10 @@ export function flowHeadSize(tokens: DialTokens, w0: number, w1: number): number
   return tokens.flowHeadBasePx + tokens.flowHeadGain * Math.max(w0, w1);
 }
 
-function overlaps(a: Box, b: Box): boolean {
-  return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
-}
 
-function inside(box: Box, rect: Box): boolean {
-  return box.minX >= rect.minX && box.maxX <= rect.maxX && box.minY >= rect.minY && box.maxY <= rect.maxY;
-}
 
-function quadAt(p0: Point, c: Point, p1: Point, t: number): Point {
-  const u = 1 - t;
-  return { x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y };
-}
 
-function quadPiece(p0: Point, c: Point, p1: Point, t0: number, t1: number): [Point, Point, Point] {
-  return [
-    quadAt(p0, c, p1, t0),
-    {
-      x: (1 - t0) * (1 - t1) * p0.x + ((1 - t0) * t1 + t0 * (1 - t1)) * c.x + t0 * t1 * p1.x,
-      y: (1 - t0) * (1 - t1) * p0.y + ((1 - t0) * t1 + t0 * (1 - t1)) * c.y + t0 * t1 * p1.y,
-    },
-    quadAt(p0, c, p1, t1),
-  ];
-}
 
-function quadLength(p0: Point, c: Point, p1: Point): number {
-  let len = 0;
-  let prev = p0;
-  for (let i = 1; i <= 16; i += 1) {
-    const q = quadAt(p0, c, p1, i / 16);
-    len += Math.hypot(q.x - prev.x, q.y - prev.y);
-    prev = q;
-  }
-  return len;
-}
 
 function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameRing: boolean): Point {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -161,11 +133,6 @@ interface Stroke {
   slots: readonly number[];
 }
 
-function trimmedPiece(p0: Point, c: Point, p1: Point, trimStart: number, trimEnd: number): [Point, Point, Point] | null {
-  const length = quadLength(p0, c, p1);
-  if (length < 1) return null;
-  return quadPiece(p0, c, p1, Math.min(0.45, trimStart / length), Math.max(0.55, 1 - trimEnd / length));
-}
 
 function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: Point; b: Point } | null {
   const piece = trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
@@ -667,25 +634,6 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
   });
 }
 
-const branchPorts = new WeakMap<DialScene, Map<string, Map<string, number>>>();
-
-function branchPortFraction(input: FlowMarksInput, id: string, other: string): number {
-  let ports = branchPorts.get(input.scene);
-  if (!ports) {
-    const peers = new Map<string, string[]>();
-    for (const flow of input.model.flows) for (const [from, to] of [[flow.a, flow.b], [flow.b, flow.a]] as const) {
-      const list = peers.get(from) ?? [];
-      list.push(to);
-      peers.set(from, list);
-    }
-    ports = new Map([...peers].map(([domain, list]) => {
-      list.sort((a, b) => (input.scene.positions.get(a)?.y ?? 0) - (input.scene.positions.get(b)?.y ?? 0) || a.localeCompare(b));
-      return [domain, new Map(list.map((peer, i) => [peer, list.length < 2 ? 0.5 : (i + 1) / (list.length + 1)]))];
-    }));
-    branchPorts.set(input.scene, ports);
-  }
-  return ports.get(id)?.get(domainOfEnd(input.model, other)) ?? 0.5;
-}
 
 function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
   const base = controlOf(input, l, a, b, hub);

@@ -152,6 +152,18 @@ describe("useTopologyFocusNavigation", () => {
     return { deps, hook, select };
   }
 
+  it("remeasures the inspector after a fly action selects its domain", () => {
+    let right = 0;
+    const { deps, hook, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: right }) });
+    hook.result.current.flyToNode("east");
+    const before = { ...deps.cameraTargetRef.current };
+    right = 400;
+    select("east");
+    expect(deps.beginCameraTween).toHaveBeenCalledTimes(2);
+    expect(deps.cameraTargetRef.current).not.toEqual(before);
+    expect(deps.selectionCameraRef.current?.framed).toBe(true);
+  });
+
   it("does not replace the saved return camera when realm exit restores the selected root", () => {
     const { deps, select } = setup();
     deps.cameraTargetRef.current = { tx: 130, ty: -75, tscale: 0.7 };

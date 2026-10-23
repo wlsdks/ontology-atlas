@@ -217,7 +217,11 @@ export function useTopologyFocusNavigation({
         if (back.kind !== "overview") return;
       }
       // A double-click already framed this node.
-      if ((!realmActive || realmData?.flat) && focusedSlug !== null && memory?.slug === focusedSlug && memory.framed) return;
+      if ((!realmActive || realmData?.flat) && focusedSlug !== null && memory?.slug === focusedSlug && memory.framed) {
+        // The first fly precedes the inspector mount; this frame can measure its occupied width.
+        flyToNode(focusedSlug);
+        return;
+      }
 
       if ((!realmActive || realmData?.flat) && source === "canvas-click" && !pathPick && focusedSlug !== null) {
         const node = world.nodeById.get(focusedSlug);
@@ -277,7 +281,7 @@ export function useTopologyFocusNavigation({
       moveCamera(target, tokens);
     });
     return () => cancelAnimationFrame(raf);
-  }, [focusedSlug, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
+  }, [focusedSlug, flyToNode, beginCameraTween, cameraTokens, constellationFocusId, lastFocusedSlugRef, egoRevealBatchesRef, selectionPulseRef, view3dRef, realmTransitionRef, domeRuntimeRef, worldRef, viewportRef, overviewScaleRef, realmDataRef, cameraTargetRef, cameraGestureRevisionRef, userDrivenCameraRef, dampingRef, cameraAngularFreqRef, lastActiveMsRef, focusedSlugRef, canvasRef, expandedParentsRef, focusLeashPxRef, overviewFitRef, clusteredIdsRef, mapLensKindRef, spotlightIdsRef, selectionCameraRef, selectionSourceRef, cameraRef, moveCamera]);
 
   return { flyToNode };
 }
