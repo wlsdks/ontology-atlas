@@ -17,8 +17,12 @@ function edgeToward(box: Box, target: Point): Point {
 // Claim text room independently of world row spacing.
 export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, nameBoxes: Map<string, Box>, rows: DialRowPick[]): void {
   const active = new Set([input.focusedNodeId, input.attention.capabilityId ?? input.attention.domainId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId]);
-  const priority = (text: TextMark) => active.has(text.id) ? 0 : text.role === "project" ? 1 : text.id === input.attention.domainId ? 2 : text.role === "domain" ? 3 : 4;
-  const names = out.texts.filter(isName).sort((a, b) => priority(a) - priority(b));
+  const members = new Set(out.texts.filter((text) => text.role === "capability" && input.attention.domainId != null && input.model?.capabilityById.get(text.id!)?.domainId === input.attention.domainId));
+  const actionRows = new Map(rows.filter((row) => row.action?.domainId === input.attention.domainId).map((row) => [row.box, row]));
+  const controls = new Set(out.texts.filter((text) => text.role === "more" && actionRows.has(text.box)));
+  const priority = (text: TextMark) => active.has(text.id) && !controls.has(text) ? 0 : text.role === "project" ? 1 : controls.has(text) || text.id === input.attention.domainId ? 2 : members.has(text) ? 3 : text.role === "domain" ? 4 : 5;
+  const names = out.texts.filter(isName);
+  const placing = [...names, ...controls].sort((a, b) => priority(a) - priority(b));
   const accepted = new Set<TextMark>();
   const occupied: Box[] = [];
   const bodies = [
@@ -32,18 +36,20 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
   const cards = (out.blocks ?? []).filter((block) => block.alpha > 0.01);
   const oldBoxes = new Set(names.map((text) => text.box));
   const inside = (box: Box) => box.minX >= input.freeRect.minX && box.maxX <= input.freeRect.maxX && box.minY >= input.freeRect.minY && box.maxY <= input.freeRect.maxY;
-  for (const text of names) {
+  for (const text of placing) {
     const height = text.box.maxY - text.box.minY;
     const width = text.box.maxX - text.box.minX;
-    const required = active.has(text.id) || text.role === "project";
+    const control = controls.has(text);
+    const required = !control && (active.has(text.id) || text.role === "project");
+    const movable = required || members.has(text) || control || text.role === "domain";
     const original = { x: text.x, y: text.y };
     const originalBox = text.box;
     const clamp = (box: Box) => shifted(box,
       Math.max(input.freeRect.minX, Math.min(input.freeRect.maxX - width, box.minX)),
       Math.max(input.freeRect.minY, Math.min(input.freeRect.maxY - height, box.minY)));
-    const initial = required ? clamp(originalBox) : originalBox;
-    if (!required && (!inside(initial) || occupied.some((box) => overlaps(box, initial)))) continue;
-    const body = bodies.find((mark) => mark.id === text.id)?.box;
+    const initial = required || control ? clamp(originalBox) : originalBox;
+    if (!required && !members.has(text) && !control && (!inside(initial) || occupied.some((box) => overlaps(box, initial)))) continue;
+    const body = control ? undefined : bodies.find((mark) => mark.id === text.id)?.box;
     const gap = input.tokens.chipMinPx;
     const clear = (box: Box) => inside(box)
       && !occupied.some((other) => overlaps(other, box))
@@ -55,7 +61,7 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
       });
     function* candidates(): Generator<Box> {
       yield initial;
-      if (!required && text.role !== "domain") return;
+      if (!movable) return;
       const anchors = [initial];
       if (body) {
         const left = shifted(initial, body.minX - gap - width, initial.minY);
@@ -68,7 +74,8 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
         anchors.push(...preferred, ...vertical);
       }
       anchors.push(shifted(initial, input.freeRect.minX, initial.minY), shifted(initial, input.freeRect.maxX - width, initial.minY));
-      for (let step = 1; step <= Math.ceil(input.viewportHeight / height); step++) {
+      const steps = required || text.role === "domain" ? Math.ceil(input.viewportHeight / height) : Math.min(12, Math.ceil(input.viewportHeight / height));
+      for (let step = 1; step <= steps; step++) {
         for (const anchor of anchors) {
           yield shifted(anchor, anchor.minX, anchor.minY - step * height);
           yield shifted(anchor, anchor.minX, anchor.minY + step * height);
@@ -82,6 +89,7 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     text.x += box.minX - originalBox.minX;
     text.y += box.minY - originalBox.minY;
     text.box = box;
+    if (control) actionRows.get(originalBox)!.box = box;
     if (text.x !== original.x || text.y !== original.y) {
       const start = body ? edgeToward(body, centreOf(box)) : original;
       const end = edgeToward(box, start);
@@ -91,15 +99,15 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     occupied.push(text.box);
   }
   out.texts = out.texts.filter((text) => {
-    if (isName(text)) return accepted.has(text);
+    if (isName(text) || controls.has(text)) return accepted.has(text);
     if ((text.role === "units" || text.role === "more" || text.role === "status") && !inside(text.box)) return false;
     if (text.role === "units" || text.role === "more") return !names.some((name) => accepted.has(name) && name.id !== text.id && overlaps(name.box, text.box));
     return true;
   });
   nameBoxes.clear();
-  for (const text of accepted) if (text.id) nameBoxes.set(text.id, text.box);
+  for (const text of names) if (accepted.has(text) && text.id) nameBoxes.set(text.id, text.box);
   const actions = rows.filter((row) => row.action && out.texts.some((text) => text.box === row.box));
   const kept = rows.filter((row) => !row.action && !oldBoxes.has(row.box));
-  for (const text of accepted) if (text.id) kept.push({ id: text.id, box: text.box });
+  for (const text of names) if (accepted.has(text) && text.id) kept.push({ id: text.id, box: text.box });
   rows.splice(0, rows.length, ...kept, ...actions);
 }
