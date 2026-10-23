@@ -104,13 +104,16 @@ test("an impact lens retains named branches and Escape clears its selection", as
   await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
 });
 
-test("a selected element hands Flat back and returning restores the map scope", async ({ page }) => {
+test("a selected implementation keeps branch forms and returning restores the map scope", async ({ page }) => {
   await openDial(page, "storefront", WIDTHS[0]);
   await expect(page.getByTestId("topology-scope-readout")).toBeVisible();
   await page.goto(`/en/topology/?p=${encodeURIComponent("element:cart-session")}&guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
   const owns = () => page.evaluate(() => window.__atlasMap?.dial?.().owns ?? null);
-  await expect.poll(owns, { message: "a selected element hands the paint back" }).toBe(false);
+  await expect.poll(owns, { message: "implementation inspection retains branch forms" }).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe("element:cart-session");
+  const implementation = (await readDial(page)).texts.find((text) => text.id === "element:cart-session" && text.role === "element");
+  expect(implementation, "the selected implementation keeps its drawn name").toBeDefined();
   await expect(page.getByTestId("flat-dial-legend")).toHaveCount(0);
   await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page);
