@@ -399,10 +399,23 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   const numberKeep = new Set(counted.filter((l) => budget.keep.has(l.key) && l.total >= tokens.restNumberMinCount).slice(0, numberLimit).map((l) => l.key));
 
   const stubs: Stub[] = [];
+  const reverseRecovery: Stub[] = [];
   const toDraw: { l: DialLink; a: End; b: End; presence: number }[] = [];
   for (const { l, a, b } of drawable) {
     if (!l.attended && !l.relatesOnly && !budget.keep.has(l.key)) continue;
     if (attn.domainId && !l.attended && l.relatesOnly) continue;
+    if (scene.branches && within(a.p) && within(b.p) && branchRoutes(l, a, b).length === 0) {
+      if (l.attended) {
+        const nearIsU = mineOf(model, attn)(l.u);
+        const near = nearIsU ? a : b;
+        const far = nearIsU ? b : a;
+        stubs.push({ link: l, near, nearId: nearIsU ? l.u : l.v, farId: nearIsU ? l.v : l.u, farP: far.p,
+          angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence: presenceOf(l) });
+        reverseRecovery.push({ link: l, near: far, nearId: nearIsU ? l.v : l.u, farId: nearIsU ? l.u : l.v, farP: near.p,
+          angle: Math.atan2(near.p.y - far.p.y, near.p.x - far.p.x), presence: presenceOf(l) });
+      }
+      continue;
+    }
     const presence = presenceOf(l);
     if (presence <= PRESENCE_FLOOR) continue;
     const ina = within(a.p);
@@ -427,6 +440,8 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   if (!scene.branches) placeFarNumerals(input, out, farCounts(input, toDraw));
   const focusChip = attn.domainId ? endOf(attn.domainId) : null;
   paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
+  const recovered = new Set(result.stubs.map(stub => stub.flowKey));
+  paintStubs(input, out, reverseRecovery.filter(stub => !recovered.has(stub.link.key)), result, chordLines);
   for (const { l, a, b, presence } of toDraw) {
     drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key), branchRoutes);
     result.drawn.push(l.key);

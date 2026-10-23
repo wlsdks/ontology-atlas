@@ -159,6 +159,25 @@ describe("buildFlowMarks", () => {
     expect(constrained.result.links).toEqual(fitting.result.links);
   });
 
+  it("recovers a blocked attended local route as a named directed stub without claiming an empty route", () => {
+    const model = modelOf([["d0c0", "d1c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map([["d0", { x: 500, y: 250 }], ["d1", { x: 500, y: 650 }]]);
+    const blocker = { minX: 100, minY: 350, maxX: 900, maxY: 550 };
+    const options = { scene, nodeScreen: (id: string) => points.get(id) ?? null, avoidTexts: [blocker], occupied: [blocker] };
+    const attended = run(model, { ...options, focusId: "d0" });
+    expect(attended.result.drawn).toEqual(["d0\0d1"]);
+    expect(attended.result.stubs).toHaveLength(1);
+    expect(attended.result.stubs[0]!.text).toBe(stubText("Domain 1", 1, 0));
+    expect(attended.out.strips).toHaveLength(1);
+    expect(attended.out.strips[0]).toMatchObject({ role: "stub", headEnd: true, headStart: false });
+    expect(attended.result.links[0]).toMatchObject({ uv: 1, vu: 0, total: 1 });
+    const resting = run(model, options);
+    expect(resting.result.links).toHaveLength(1);
+    expect(resting.result.drawn).toEqual([]);
+    expect(resting.out.strips).toEqual([]);
+  });
+
   it("draws a two-way pair as one strip with two heads", () => {
     const { out } = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]));
     expect(out.strips).toHaveLength(1);

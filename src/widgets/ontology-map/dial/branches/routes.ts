@@ -27,6 +27,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
     const hit = cache.get(key);
     if (hit) return hit;
     const curves: BranchCurve[] = [];
+    let blocked = false;
     const base = control(l, a, b);
     const boundary = (id: string, other: string, end: BranchEnd, toward: Point, turn = false): Point => {
       const box = input.endBox?.(id);
@@ -46,36 +47,24 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const dx = end.p.x - start.p.x;
       const dy = end.p.y - start.p.y;
       const len = Math.max(1, Math.hypot(dx, dy));
-      const original = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
       const local = localRelationControl(start.p, end.p, base);
       let c = { x: local.x - dy / len * offset, y: local.y + dx / len * offset };
       let turn = false;
       if (input.avoidTexts?.length) {
-        const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
-        const free = input.freeRect;
-        const turnX = (id: string, other: string, endpoint: BranchEnd) => {
-          const side = input.scene.clusterByDomain.get(id)?.branchSide;
-          const direction = side ? -side : Math.sign(mid.x - endpoint.p.x);
-          return boundary(id, other, endpoint, c).x + direction * 8;
-        };
-        const startX = turnX(from, to, start);
-        const endX = turnX(to, from, end);
-        const above = Math.min(start.p.y, end.p.y) - input.tokens.ledgerGapPx * 3;
-        const below = Math.max(start.p.y, end.p.y) + input.tokens.ledgerGapPx * 3;
-        const basic = [original,
-          { x: c.x, y: free.minY + 8 }, { x: c.x, y: free.maxY - 8 },
-          { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
-          { x: mid.x, y: free.minY + 8 }, { x: mid.x, y: free.maxY - 8 },
-        ];
-        const turning = [c, ...basic,
-          { x: startX, y: free.minY + 8 }, { x: startX, y: free.maxY - 8 },
-          { x: endX, y: free.minY + 8 }, { x: endX, y: free.maxY - 8 },
-          ...[c.x, startX, endX].flatMap((x) => [{ x, y: above }, { x, y: below }]),
-        ];
-        const hits = (control: Point, ceiling = Infinity, edge = false) => {
-          const piece = trimmedPiece(boundary(from, to, start, control, edge), control, boundary(to, from, end, control, edge), input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
+        const geometry = (control: Point, edge: boolean) => {
+          const p0 = boundary(from, to, start, control, edge);
+          const p1 = boundary(to, from, end, control, edge);
+          const ex = p1.x - p0.x;
+          const ey = p1.y - p0.y;
+          const projection = (control.x - p0.x) * ex + (control.y - p0.y) * ey;
+          if (!l.relatesOnly && (projection < 0 || projection > ex * ex + ey * ey)) return null;
+          const piece = trimmedPiece(p0, control, p1, input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
           const line = samplePiece(piece);
-          if (!line) return Infinity;
+          if (!line) return null;
+          const length = line.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - line[index]!.x, point.y - line[index]!.y), 0);
+          return { control, edge, line, length };
+        };
+        const hits = (line: Point[], ceiling = Infinity) => {
           let count = 0;
           for (const box of input.avoidTexts!) {
             if (crossesBox([line], box)) count += 1;
@@ -83,16 +72,38 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
           }
           return count;
         };
-        let best = hits(c);
-        for (const { candidate, edge } of [...basic.map((candidate) => ({ candidate, edge: false })), ...turning.map((candidate) => ({ candidate, edge: true }))]) {
-          if (best === 0) break;
-          const fromCluster = input.scene.clusterByDomain.get(from);
-          const toCluster = input.scene.clusterByDomain.get(to);
-          if (fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair
-            && [fromCluster, toCluster].some((cluster) => (candidate.x - (input.nodeScreen(cluster.domainId) ?? input.toScreen(cluster.chip.x, cluster.chip.y)).x) * (cluster.branchSide ?? 1) >= 0)) continue;
-          const count = hits(candidate, best, edge);
-          if (count < best) { best = count; c = candidate; turn = edge; }
+        const initial = geometry(c, false);
+        let best = initial ? hits(initial.line) : Infinity;
+        if (best > 0) {
+          const controls = [c];
+          for (const along of [0.5, 0.25, 0.75, 0.125, 0.875, 0.0625, 0.9375]) for (const normal of [0, 24, -24, 48, -48, 72, -72, 96, -96, 120, -120, 144, -144]) {
+            const bend = normal + offset;
+            controls.push({ x: start.p.x + dx * along - dy / len * bend, y: start.p.y + dy * along + dx / len * bend });
+          }
+          if (domainOfEnd(input.model, from) !== domainOfEnd(input.model, to)) {
+            const free = input.freeRect;
+            const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
+            const startX = boundary(from, to, start, c).x - (input.scene.clusterByDomain.get(from)?.branchSide ?? 0) * 8;
+            const endX = boundary(to, from, end, c).x - (input.scene.clusterByDomain.get(to)?.branchSide ?? 0) * 8;
+            controls.push({ x: base.x - dy / len * offset, y: base.y + dx / len * offset },
+              { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
+              ...[c.x, mid.x, startX, endX].flatMap(x => [{ x, y: free.minY + 8 }, { x, y: free.maxY - 8 },
+                { x, y: Math.min(start.p.y, end.p.y) - input.tokens.ledgerGapPx * 3 },
+                { x, y: Math.max(start.p.y, end.p.y) + input.tokens.ledgerGapPx * 3 }]));
+          }
+          const candidates = controls.flatMap(control => [geometry(control, false), geometry(control, true)])
+            .filter(candidate => candidate !== null).sort((a, b) => a.length - b.length);
+          for (const candidate of candidates) {
+            const fromCluster = input.scene.clusterByDomain.get(from);
+            const toCluster = input.scene.clusterByDomain.get(to);
+            if (fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair
+              && [fromCluster, toCluster].some((cluster) => (candidate.control.x - (input.nodeScreen(cluster.domainId) ?? input.toScreen(cluster.chip.x, cluster.chip.y)).x) * (cluster.branchSide ?? 1) >= 0)) continue;
+            const count = hits(candidate.line, best);
+            if (count < best) { best = count; c = candidate.control; turn = candidate.edge; }
+            if (best === 0) break;
+          }
         }
+        if (best > 0 && !l.relatesOnly) { blocked = true; return; }
       }
       const p0 = boundary(from, to, start, c, turn);
       const p1 = boundary(to, from, end, c, turn);
@@ -103,6 +114,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
     const offset = l.uv > 0 && l.vu > 0 ? input.tokens.flowSplitPx * 3 : 0;
     if (l.uv > 0 || l.relatesOnly) run(l.u, l.v, a, b, l.uv, offset);
     if (l.vu > 0) run(l.v, l.u, b, a, l.vu, offset);
+    if (blocked) curves.length = 0;
     cache.set(key, curves);
     return curves;
   };
