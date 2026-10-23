@@ -9,7 +9,7 @@ import { resolveDialInks } from "../ink";
 import { layoutDial } from "../layout";
 import { resolveDialTokens } from "../tokens";
 import { applyBranchMemberAction } from "./member-disclosure";
-import { overlaps } from "../label-marks";
+import { crossesBox, overlaps } from "../label-marks";
 import { dialOverviewBounds, dialOverviewPad } from "../fit";
 import { computeOverviewCameraTarget } from "../../ui/camera/topology-camera-math";
 
@@ -223,7 +223,13 @@ describe("dense branch disclosure", () => {
     const to = input.nodeScreen("d0")!;
     expect(Math.hypot(strip.ax - from.x, strip.ay - from.y)).toBeLessThan(60);
     expect(Math.hypot(strip.bx - to.x, strip.by - to.y)).toBeLessThan(60);
-    expect(strip.cy).toBeLessThan(Math.min(from.y, to.y));
+    expect(strip.cy < Math.min(from.y, to.y) || strip.cy > Math.max(from.y, to.y)).toBe(true);
+    const curve = Array.from({ length: 65 }, (_, i) => {
+      const t = i / 64;
+      const u = 1 - t;
+      return { x: u * u * strip.ax + 2 * u * t * strip.cx + t * t * strip.bx, y: u * u * strip.ay + 2 * u * t * strip.cy + t * t * strip.by };
+    });
+    for (const name of out.texts) expect(crossesBox([curve], name.box), name.text).toBe(false);
   });
 
   it("does not shrink the overview for a name outside the member preview", () => {
