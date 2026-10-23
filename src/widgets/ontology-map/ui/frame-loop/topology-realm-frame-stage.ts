@@ -158,7 +158,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
         const elapsed = now - realmState.startMs - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS;
         const alphaMap = new Map<string, number>();
         for (const id of realmData.outsideFrom.keys()) {
-          alphaMap.set(id, realmOutsideReturnAlpha(elapsed, REALM_EXIT_OUTSIDE_RETURN_MS));
+          alphaMap.set(id, realmOutsideReturnAlpha(elapsed, REALM_EXIT_OUTSIDE_RETURN_MS, realmData.exitSnapshot?.outsideAlpha));
         }
         realmOutsideReturnAlphaById = alphaMap;
       }
@@ -210,7 +210,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
         // An exit erases the warding ring in reverse (1 → 0); an entry draws
         // it after a delay (0 → 1).
         drawProgress: exiting
-          ? realmWardingEraseProgress(now - realmState.startMs)
+          ? realmWardingEraseProgress(now - realmState.startMs, undefined, realmData.exitSnapshot?.wardingProgress)
           : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
         // Census engraving, so the ring says what it is the boundary of.
         caption: getRealmCaption(),

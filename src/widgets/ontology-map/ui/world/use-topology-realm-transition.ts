@@ -10,6 +10,12 @@ import {
 } from "../../expressive/release-offsets";
 import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
 import {
+  isRealmOutsideCulled,
+  REALM_EXIT_OUTSIDE_RETURN_DELAY_MS,
+  REALM_WARDING_DRAW_DELAY_MS,
+  realmOutsideReturnAlpha,
+  realmWardingDrawProgress,
+  realmWardingEraseProgress,
   realmTransitionReducer,
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
@@ -98,17 +104,12 @@ export function useTopologyRealmTransition({
   overviewScaleRef,
 }: Dependencies) {
 
-  // --- Realm entry/exit: a `realmRootId` change relays out the subtree and
-  // starts the transition choreography. Entering re-lays the subtree around
-  // that node as a temporary root, FLIPs the members, flings the outsiders away
-  // under gravity, and dollies the camera into the warding ring. Exiting
-  // returns every node on its home spring (reusing the relayout homing) and
-  // fits the camera to the overview. The only new motion contract is
-  // realm-transition's FLIP and fling; the exit rides the proven homing path.
+  // Realm motion owns coordinates until the transition hands them back to drag physics.
   useEffect(() => {
     const sameRoot = realmRootId === prevRealmRootIdRef.current;
-    if (sameRoot && (realmRootId === null || realmDataRef.current?.flat === !view3d)) return;
-    const savedEntry = sameRoot ? realmDataRef.current?.entryCamera : null;
+    if (sameRoot && (realmRootId === null || (realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
+    const savedEntry = realmDataRef.current?.entryCamera;
+    const savedPositions = realmDataRef.current?.returnPositions;
     prevRealmRootIdRef.current = realmRootId;
     lastActiveMsRef.current = performance.now();
 
@@ -142,6 +143,7 @@ export function useTopologyRealmTransition({
         !view3d ? { tokens: readDialTokens(), labels: dialLabels ?? null, measureText: createMeasureText(), rememberOrder: false, memory: null } : undefined,
       );
       if (!data) return;
+      data.returnPositions = savedPositions ?? new Map(world.nodes.map(n => [n.id, { x: n.x, y: n.y }]));
       realmDataRef.current = data;
       // New realm, so the warding ease resets and the first frame seeds by
       // snapping to the initial radius.
@@ -177,11 +179,21 @@ export function useTopologyRealmTransition({
         beginCameraTween(target, 860);
       }
     } else {
-      // --- Exiting: a deterministic reverse playback of the entry — inside
-      // nodes reverse-FLIP (deepest layer first) and outside nodes return
-      // against reverse gravity. The realm data owns those coordinates, not the
-      // home springs, so the frame loop's exiting step drives them. The camera
-      // rides a 750 ms overview tween to stay in sync with the choreography. ---
+      // Capture the live frame before changing phase; cancelling entry must not finish its fling.
+      const data = realmDataRef.current;
+      const previous = realmTransitionRef.current;
+      if (data) {
+        const elapsed = now - previous.startMs;
+        data.exitSnapshot = {
+          positions: new Map(world.nodes.map(n => [n.id, { x: n.x, y: n.y }])),
+          outsideAlpha: previous.phase === "exiting"
+            ? realmOutsideReturnAlpha(elapsed - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS, undefined, data.exitSnapshot?.outsideAlpha)
+            : isRealmOutsideCulled(previous, now) ? 0 : 1,
+          wardingProgress: previous.phase === "exiting"
+            ? realmWardingEraseProgress(elapsed, undefined, data.exitSnapshot?.wardingProgress)
+            : previous.phase === "active" ? 1 : realmWardingDrawProgress(elapsed - REALM_WARDING_DRAW_DELAY_MS),
+        };
+      }
       realmTransitionRef.current = realmTransitionReducer(realmTransitionRef.current, {
         type: "exit",
         now,
@@ -191,7 +203,7 @@ export function useTopologyRealmTransition({
       // coordinates and a drag right after the exit does not jump. Heat is 0
       // during the transition, so it does not tick.
       simRef.current = createForceSimulation(
-        world.nodes.map((n) => ({ id: n.id, x: n.homeX, y: n.homeY })),
+        world.nodes.map((n) => ({ id: n.id, x: data?.returnPositions?.get(n.id)?.x ?? n.homeX, y: data?.returnPositions?.get(n.id)?.y ?? n.homeY })),
         world.edges.map((e) => ({ source: e.sourceId, target: e.targetId })),
       );
       if (reduced) {
@@ -202,7 +214,7 @@ export function useTopologyRealmTransition({
         const springs = new Map<string, HomeSpringState>();
         for (const node of world.nodes) springs.set(node.id, initHomeSpring(node.x, node.y));
         homeSpringsRef.current = springs;
-        homeTargetOverrideRef.current = null; // Exiting targets global home.
+        homeTargetOverrideRef.current = data?.returnPositions ?? null;
         homingActiveRef.current = true;
       } else {
         // The realm data owns the inside reverse-FLIP and the outside return,
@@ -210,18 +222,6 @@ export function useTopologyRealmTransition({
         homingActiveRef.current = false;
         homeSpringsRef.current.clear();
         homeTargetOverrideRef.current = null;
-        // Members may have been dragged since the realm settled, so refresh the
-        // reverse-FLIP origins (`insideTargets`) to the live coordinates and
-        // the first exit frame does not jump.
-        const data = realmDataRef.current;
-        if (data) {
-          const liveTargets = new Map<string, { x: number; y: number; }>();
-          for (const [id, fallback] of data.insideTargets) {
-            const n = world.nodeById.get(id);
-            liveTargets.set(id, n ? { x: n.x, y: n.y } : fallback);
-          }
-          realmDataRef.current = { ...data, insideTargets: liveTargets };
-        }
       }
       if (width > 0 && height > 0 && hasInitializedRef.current) {
         // Return to "where the user was looking" if entry saved a keyframe,
@@ -238,6 +238,6 @@ export function useTopologyRealmTransition({
         beginCameraTween(target, 750);
       }
     }
-  }, [realmRootId, view3d = false, cameraTokens, dialLabels, beginCameraTween, prevRealmRootIdRef, lastActiveMsRef, worldRef, viewportRef, reducedMotionRef, nodeDragRef, heatRef, dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, realmActiveHandedOffRef, expandedParentsRef, realmDataRef, wardingFitRef, realmTransitionRef, homingActiveRef, homeSpringsRef, homeTargetOverrideRef, hasInitializedRef, cameraRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef, simRef, overviewFitRef, clusteredIdsRef, overviewScaleRef]);
+  }, [realmRootId, view3d, cameraTokens, dialLabels, beginCameraTween, prevRealmRootIdRef, lastActiveMsRef, worldRef, viewportRef, reducedMotionRef, nodeDragRef, heatRef, dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, realmActiveHandedOffRef, expandedParentsRef, realmDataRef, wardingFitRef, realmTransitionRef, homingActiveRef, homeSpringsRef, homeTargetOverrideRef, hasInitializedRef, cameraRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef, simRef, overviewFitRef, clusteredIdsRef, overviewScaleRef]);
 
 }

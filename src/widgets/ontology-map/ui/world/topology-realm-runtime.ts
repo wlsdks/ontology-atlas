@@ -74,6 +74,14 @@ export interface RealmRuntimeData {
    * overview.
    */
   entryCamera: CameraTarget | null;
+  /** The original overview coordinates survive a rebuild of the same scope in another mode. */
+  returnPositions?: ReadonlyMap<string, { x: number; y: number }>;
+  /** Captured before exit changes the phase, so interruption starts exactly where entry stopped. */
+  exitSnapshot?: {
+    positions: ReadonlyMap<string, { x: number; y: number }>;
+    outsideAlpha: number;
+    wardingProgress: number;
+  };
 }
 
 const DEPTH_TIER_KINDS = ["project", "domain", "capability", "element"] as const;
