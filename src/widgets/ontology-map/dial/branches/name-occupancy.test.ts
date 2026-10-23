@@ -50,6 +50,24 @@ describe("branch name placement near occupied geometry", () => {
     });
   }
 
+  for (const promotion of ["partner", "comparison"] as const) {
+    it(`${promotion}: withholds a promoted name when every placement intersects an unrelated card`, () => {
+      const test = setup();
+      test.input.focusedNodeId = "selected";
+      test.input.attention.capabilityId = "selected";
+      if (promotion === "partner") test.input.attention.needsCaps = new Set(["active"]);
+      else test.input.requiredBranchIds = new Set(["active"]);
+      const disc = { id: "active", x: 980, y: 400, r: 12, fill: 0, rim: 0, dashed: false, lineWidth: 1 };
+      test.out.discs.push(disc);
+      test.out.blocks = [{ id: "unrelated", box: { ...test.input.freeRect }, fill: 0, rim: 0, alpha: 1 }];
+      test.settle();
+      expect(test.out.texts).not.toContain(test.text);
+      expect(test.names.has("active")).toBe(false);
+      expect(test.rows.some((row) => row.id === "active")).toBe(false);
+      expect(test.out.discs).toContain(disc);
+    });
+  }
+
   it("uses a vertical leader when another disc blocks the clear horizontal anchor", () => {
     const test = setup();
     test.out.glyphs.push(glyph("active", 980, 400));

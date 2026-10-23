@@ -17,7 +17,8 @@ function edgeToward(box: Box, target: Point): Point {
 // Claim text room independently of world row spacing.
 export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, nameBoxes: Map<string, Box>, rows: DialRowPick[]): void {
   const partners = input.attention.capabilityId === null ? [] : [...input.attention.needsCaps, ...input.attention.usedByCaps, ...input.attention.relatesCaps];
-  const active = new Set([...(input.requiredBranchIds ?? []), ...partners, input.focusedNodeId, input.attention.capabilityId ?? input.attention.domainId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId]);
+  const foreground = new Set([input.focusedNodeId, input.attention.capabilityId ?? input.attention.domainId, input.hoveredNodeId, input.agentFocusNodeId, input.selectionPulse?.nodeId]);
+  const active = new Set([...(input.requiredBranchIds ?? []), ...partners, ...foreground]);
   const members = new Set(out.texts.filter((text) => text.role === "capability" && input.attention.domainId != null && input.model?.capabilityById.get(text.id!)?.domainId === input.attention.domainId));
   const children = new Set(out.texts.filter((text) => {
     if (text.role !== "element") return false;
@@ -100,7 +101,8 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     }
     let chosen: Box | undefined;
     for (const candidate of candidates()) if (clear(candidate)) { chosen = candidate; break; }
-    if (!chosen && !required) continue;
+    const fallback = required && (foreground.has(text.id) || text.role === "project");
+    if (!chosen && !fallback) continue;
     const box = chosen ?? initial;
     text.x += box.minX - originalBox.minX;
     text.y += box.minY - originalBox.minY;

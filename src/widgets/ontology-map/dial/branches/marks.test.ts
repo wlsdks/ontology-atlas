@@ -171,6 +171,22 @@ describe("implementation branches", () => {
     }
   });
 
+  it("keeps comparison endpoints inspectable when no collision-free name placement exists", () => {
+    const { input } = frame(null, 0.08, false, 1, 1, undefined, 2);
+    const ids = ["d0c0e0", "d0c0e1"];
+    input.requiredBranchIds = new Set(ids);
+    input.disclosure = { ...input.disclosure, elementsAlpha: 0, elementAlphaFor: () => 0 };
+    const out = emptyDialFrameMarks();
+    out.blocks = [{ id: "unrelated", box: { ...input.freeRect }, fill: 0, rim: 0, alpha: 1 }];
+    const result = buildDialMarks(input, out);
+    for (const id of ids) {
+      expect(out.glyphs.find((mark) => mark.id === id)).toMatchObject({ kind: "element" });
+      expect(out.texts.some((text) => text.id === id)).toBe(false);
+      expect(result.picks.some((pick) => pick.id === id)).toBe(true);
+      expect(result.rows.some((row) => row.id === id)).toBe(false);
+    }
+  });
+
   it("withholds an ordinary unnamed implementation together with its target", () => {
     const { input } = frame("d0c0", 2, false, 1, 1, undefined, 2);
     input.elementLabel = () => null;
