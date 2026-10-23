@@ -224,9 +224,10 @@ export function realmExitFlipDelayFor(depth: number): number {
 export function realmWardingEraseProgress(
   elapsed: number,
   duration: number = REALM_EXIT_WARDING_ERASE_MS,
+  fromProgress = 1,
 ): number {
   if (duration <= 0) return 0;
-  return clamp01(1 - elapsed / duration);
+  return clamp01(fromProgress) * clamp01(1 - elapsed / duration);
 }
 
 /**
@@ -248,19 +249,20 @@ export function realmOutsideReturnReach(
 export function realmOutsideReturnAlpha(
   elapsed: number,
   duration: number = REALM_EXIT_OUTSIDE_RETURN_MS,
+  fromAlpha = 0,
 ): number {
-  return 1 - realmOutsideReturnReach(elapsed, duration);
+  return 1 - (1 - clamp01(fromAlpha)) * realmOutsideReturnReach(elapsed, duration);
 }
 
 /**
- * The `from` point is home, where the entry fling started; the radius and curl rewind to land
- * exactly there. `duration <= 0` goes home at once.
+ * Returns to `from` from a live snapshot when supplied, otherwise rewinds the full fling.
+ * `duration <= 0` goes home at once.
  */
 export function realmOutsideReturnPosition(
   from: Point,
   center: Point,
   elapsed: number,
-  options?: { duration?: number; reach?: number; curl?: number; fallbackAngle?: number },
+  options?: { duration?: number; reach?: number; curl?: number; fallbackAngle?: number; start?: Point },
 ): Point {
   const duration = options?.duration ?? REALM_EXIT_OUTSIDE_RETURN_MS;
   const reach = options?.reach ?? REALM_FLING_REACH;
@@ -268,6 +270,7 @@ export function realmOutsideReturnPosition(
   const fallbackAngle = options?.fallbackAngle ?? 0;
 
   if (duration <= 0) return { x: from.x, y: from.y };
+  if (options?.start) return realmInsidePosition(options.start, from, elapsed, duration);
 
   const dx = from.x - center.x;
   const dy = from.y - center.y;

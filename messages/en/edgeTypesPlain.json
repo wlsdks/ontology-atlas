@@ -1,7 +1,7 @@
 {
-  "contains": "contains",
-  "belongs_to": "belongs to",
-  "depends_on": "leans on",
+  "contains": "Contained items",
+  "belongs_to": "Containers",
+  "depends_on": "Depends on",
   "implements": "implements",
   "uses": "uses",
   "describes": "evidence",

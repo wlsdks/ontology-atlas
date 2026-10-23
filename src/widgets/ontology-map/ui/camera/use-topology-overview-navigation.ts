@@ -21,6 +21,7 @@ import {
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "../world/topology-realm-runtime";
 import { dialOverviewFit, type TopologyWorld } from "../world/topology-world";
+import { branchFocusTarget } from "./branch-frame/target";
 
 interface Dependencies {
   worldRef: RefObject<TopologyWorld | null>;
@@ -92,7 +93,11 @@ export function useTopologyOverviewNavigation({
         realmData,
         new Set([...expandedParentsRef.current, realmData.rootId]),
         tokens);
-      const target = realmCameraTarget(bounds, tokens, width, height);
+      const measured = cameraTokens(tokens);
+      const target = branchFocusTarget(world, realmData.dial, realmData.rootId, measured, width, height, {
+        positions: realmPhase === "entering" ? realmData.insideTargets : undefined,
+        scopedCapability: realmData.flat,
+      }) ?? realmCameraTarget(bounds, measured, width, height, realmData.dial?.overviewPadPx);
       cameraTargetRef.current = target;
       userDrivenCameraRef.current = false;
       dampingRef.current = tokens.cameraDampingDefault;

@@ -99,19 +99,17 @@ describe("dial layout on real and synthetic vaults", () => {
     [10000, "uniform"],
     [10000, "layered"],
   ] as const) {
-    it(`synth ${total} ${shape}: every concept placed, footprints apart, capabilities a pitch apart`, () => {
+    it(`synth ${total} ${shape}: every concept placed, preview branches apart, capabilities a pitch apart`, () => {
       const graph = synthesizeVaultGraph(total, { shape });
       const scene = lay(modelOf(graph.nodes, graph.edges), null);
       expect(graph.nodes.filter((n) => KINDS.has(n.kind) && !scene.positions.has(n.id)).map((n) => n.id)).toEqual([]);
-      let gap = Infinity;
-      for (let i = 0; i < scene.clusters.length; i += 1) {
-        for (let j = i + 1; j < scene.clusters.length; j += 1) {
-          const a = scene.clusters[i]!;
-          const b = scene.clusters[j]!;
-          gap = Math.min(gap, Math.hypot(a.chip.x - b.chip.x, a.chip.y - b.chip.y) - a.footprint - b.footprint);
-        }
+      expect(scene.branches).toBe(true);
+      expect(new Set([...scene.positions.values()].map((p) => `${p.x}:${p.y}`)).size).toBe(scene.positions.size);
+      const preview = scene.clusters.flatMap((c) => [c.chip, ...c.items.slice(0, scene.branchPreviewRows).map((it) => ({ x: it.x, y: it.y }))]);
+      for (let i = 0; i < preview.length; i += 1) {
+        for (const b of preview.slice(i + 1)) expect(Math.hypot(preview[i]!.x - b.x, preview[i]!.y - b.y)).toBeGreaterThanOrEqual(tokens.pitch);
       }
-      expect(gap).toBeGreaterThanOrEqual(tokens.angularGap * tokens.pitch - 1e-6);
+      for (const c of scene.clusters) for (const it of c.items) expect(Math.sign(it.x - c.chip.x)).toBe(c.branchSide);
       for (const c of scene.clusters) {
         if (c.items.length > 200) continue;
         for (let i = 0; i < c.items.length; i += 1) {

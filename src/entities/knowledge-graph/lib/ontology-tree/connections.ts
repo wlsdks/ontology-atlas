@@ -7,6 +7,7 @@ export interface DatasheetConnection {
   title: string;
   kind: string;
   relationType: string;
+  relationTypes?: readonly string[];
   direction: "incoming" | "outgoing";
 }
 
@@ -31,7 +32,7 @@ function containmentNodeIsParent(connection: DatasheetConnection): boolean {
     : connection.direction === "outgoing";
 }
 
-/** Role groups, each deduped by neighbor id, in input order. */
+/** O(n+t) role groups, deduped by neighbor in input order. */
 export function groupConnectionsByRole(
   connections: readonly DatasheetConnection[],
 ): RoleGroupedConnections {
@@ -41,38 +42,46 @@ export function groupConnectionsByRole(
   const belongsTo: DatasheetConnection[] = [];
   const related: DatasheetConnection[] = [];
   const seen = {
-    contains: new Set<string>(),
-    usedBy: new Set<string>(),
-    dependsOn: new Set<string>(),
-    belongsTo: new Set<string>(),
-    related: new Set<string>(),
+    contains: new Map<string, Set<string>>(),
+    usedBy: new Map<string, Set<string>>(),
+    dependsOn: new Map<string, Set<string>>(),
+    belongsTo: new Map<string, Set<string>>(),
+    related: new Map<string, Set<string>>(),
   };
   for (const connection of connections) {
     let bucket: DatasheetConnection[];
-    let seenSet: Set<string>;
+    let seenTypes: Map<string, Set<string>>;
     if (isContainmentRelation(connection.relationType)) {
       if (containmentNodeIsParent(connection)) {
         bucket = contains;
-        seenSet = seen.contains;
+        seenTypes = seen.contains;
       } else {
         bucket = belongsTo;
-        seenSet = seen.belongsTo;
+        seenTypes = seen.belongsTo;
       }
     } else if (!isDirectionalRelation(connection.relationType)) {
       bucket = related;
-      seenSet = seen.related;
+      seenTypes = seen.related;
     } else if (connection.direction === "incoming") {
       bucket = usedBy;
-      seenSet = seen.usedBy;
+      seenTypes = seen.usedBy;
     } else {
       bucket = dependsOn;
-      seenSet = seen.dependsOn;
+      seenTypes = seen.dependsOn;
     }
-    if (seenSet.has(connection.id)) continue;
-    seenSet.add(connection.id);
-    bucket.push(connection);
+    const types = seenTypes.get(connection.id);
+    if (types) {
+      for (const type of connection.relationTypes ?? [connection.relationType]) types.add(type);
+      continue;
+    }
+    seenTypes.set(connection.id, new Set(connection.relationTypes ?? [connection.relationType]));
+    bucket.push({ ...connection });
   }
-  return { contains, usedBy, dependsOn, belongsTo, related };
+  const groups = { contains, usedBy, dependsOn, belongsTo, related };
+  for (const role of Object.keys(groups) as (keyof RoleGroupedConnections)[]) {
+    for (const row of groups[role]) row.relationTypes = [...seen[role].get(row.id)!];
+  }
+  return groups;
 }
 
 /** Structural shapes compatible with the KnowledgeGraph types. */

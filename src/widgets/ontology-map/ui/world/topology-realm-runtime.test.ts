@@ -233,3 +233,30 @@ describe("buildRealmRuntimeData: realm boundary and framing based on visible mem
     expect(wCollapsed).toBeLessThan(wExpanded);
   });
 });
+
+describe('Flat scoped branches', () => {
+  const dialInput = {
+    tokens: { pitch: 34, spiralC: 0.61, spiralK0: 4.5, elementRoom: 0.42, elementHole: 0.13, angularGap: 0.9, ringGap: 2.1, hubClearance: 78, orphanPitch: 0.5, nameMaxPx: 164, labelScale: 1, chipMinPx: 8, ledgerGapPx: 16 },
+    labels: null, measureText: (text: string) => text.length * 8, memory: null, rememberOrder: false,
+  } as unknown as import('../../dial/types').DialWorldInput;
+  it('keeps domain and member kinds in a scoped branch scene instead of promoting their depth', () => {
+    const data = buildRealmRuntimeData(buildFixtureWorld(), 'd', tokens, new Set(['d']), dialInput)!;
+    expect(data.flat).toBe(true);
+    expect(data.dial?.scene.branches).toBe(true);
+    expect(data.dial?.model.projectId).toBeNull();
+    expect(data.dial?.model.domains.map(d => d.id)).toEqual(['d']);
+    expect([...data.insideTargets.keys()].sort()).toEqual(['c', 'd', 'e']);
+    expect(data.tierKindById.get('d')).toBe('domain');
+    expect(data.tierKindById.get('e')).toBe('element');
+    expect(data.insideTargets.get('c')!.x).toBeGreaterThan(data.insideTargets.get('d')!.x);
+  });
+  it('lays out capability scopes as a readable tree while retaining the true node kinds', () => {
+    const data = buildRealmRuntimeData(buildFixtureWorld(), 'c', tokens, new Set(['c']), dialInput)!;
+    expect(data.flat).toBe(true);
+    expect(data.dial).toBeNull();
+    expect(data.insideTargets.get('c')).toEqual({ x: 0, y: 0 });
+    expect(data.insideTargets.get('e')!.x).toBeGreaterThan(0);
+    expect(data.tierKindById.get('c')).toBe('capability');
+    expect(data.tierKindById.get('e')).toBe('element');
+  });
+});

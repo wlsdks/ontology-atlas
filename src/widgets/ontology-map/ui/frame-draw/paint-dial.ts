@@ -11,7 +11,7 @@ import type { FrameInputs } from "./frame-begin";
 
 function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, number>): DialFrameResult | null {
   const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse, ctx } = frame;
-  const dial = world.dial;
+  const dial = frame.realmDial ?? world.dial;
   if (!dial)
     return null;
   let dialTokens;
@@ -51,7 +51,7 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
     mapTokens: tokens, dialTokens, labels: frame.dial?.labels ?? null, evidence: frame.dial?.evidence ?? null,
     hoveredNodeId: frame.hoveredNodeId, focusedNodeId: frame.focusedNodeId, agentFocusNodeId: frame.agentFocusNodeId,
     selectionPulse: pulse && selectionPulse ? { nodeId: selectionPulse.nodeId, ...pulse } : null,
-    appearOf: (id) => Math.min(1, Math.max(0, appearById?.get(id) ?? 1)),
+    appearOf: (id) => Math.min(1, Math.max(0, appearById?.get(id) ?? 1)) * (frame.realmOutsideReturnAlphaById?.get(id) ?? 1),
     hubCount: hub ? String(dialConceptTotal(dial.model)) : null,
     elementLabel: (id) => world.nodeById.get(id)?.label ?? null,
     now, reducedMotion,
@@ -68,7 +68,7 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
 }
 
 export function prepareBranchContext(frame: FrameInputs, alphas: ReadonlyMap<string, number>): DialFrameResult | null {
-  if (!frame.world.dial?.scene.branches || frame.domeOn || frame.realmDepthById !== null || frame.wardingRing !== null) return null;
+  if (!(frame.realmDial ?? frame.world.dial)?.scene.branches || frame.domeOn || (!frame.realmDial && (frame.realmDepthById !== null || frame.wardingRing !== null))) return null;
   return paintOwnedDial(frame, new Map(alphas));
 }
 
@@ -86,9 +86,9 @@ export function paintBranchContext(frame: FrameInputs, result: DialFrameResult) 
 export function paintDial(frame: FrameInputs): boolean {
   const { world, realmDepthById, wardingRing, selectedEdge, previewEdge, spotlightIds, pathEdgeIds, dial,
     focusedNodeId, relationCaptions, hoveredNodeId, trailLensKeepIds, domeOn } = frame;
-  const dialOwns = world.dial != null && dialOwnsFlatPaint({
+  const dialOwns = (frame.realmDial ?? world.dial) != null && dialOwnsFlatPaint({
     hasDial: !domeOn,
-    realmActive: realmDepthById !== null || wardingRing !== null,
+    realmActive: !frame.realmDial && (realmDepthById !== null || wardingRing !== null),
     edgeSelected: selectedEdge !== null,
     edgePreviewed: previewEdge !== null,
     trailLensOpen: trailLensKeepIds !== null,

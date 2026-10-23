@@ -33,6 +33,7 @@ export interface DialFrameMarks extends DialMarks { plates: PlateMark[]; extraTe
 export type DialDisclosureInput = Pick<DialDisclosure, "capAlpha" | "plateAlpha" | "elementsAlpha" | "elementAlphaFor" | "orphanAlpha" | "entered" | "resolved" | "endpointSlide">;
 
 export interface DialMarksInput {
+  now?: number; reducedMotion?: boolean;
   contextAlphas?: ReadonlyMap<string, number>;
   model: DialModel;
   scene: DialScene;
@@ -56,6 +57,7 @@ export interface DialMarksInput {
   appearOf(id: string): number;
   measureText: MeasureText;
   elementLabel(id: string): string | null;
+  focusedNodeId?: string | null;
   hoveredNodeId: string | null;
   agentFocusNodeId: string | null;
   selectionPulse: { nodeId: string; scaleFactor: number; alpha: number } | null;
@@ -384,6 +386,7 @@ export function buildDialMarks(input: DialMarksInput, out: DialFrameMarks): Dial
   const endRadiusPx = (id: string) => chips.get(id)?.r ?? discs.get(id)?.r ?? 0;
   const flowBase = {
     model, scene, tokens, inks, attention: attn, inkAttention: hov, previous: input.previous, inkMix: input.inkMix, chordPresence: input.chordPresence,
+    connectionCount: input.labels?.connectionCount,
     scale: s, viewportWidth: W, viewportHeight: H, freeRect: input.freeRect,
     nodeScreen: input.nodeScreen, toScreen: input.toScreen, endRadiusPx, appearOf: input.appearOf, measureText: input.measureText, resolution: disclosure,
   };

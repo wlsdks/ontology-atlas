@@ -121,8 +121,9 @@ export function collectCanvasObstacles(
     const style = getComputedStyle(el);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
-    // Keep only the outermost — an inner child is the same area counted twice.
-    if (out.some((r) => r.x <= box.x && r.y <= box.y && r.x + r.width >= box.right && r.y + r.height >= box.bottom)) {
+    const cameraObstacle = el.getAttribute("data-topology-camera-obstacle") === "side-panel" ? "side-panel" as const : undefined;
+    // Keep outer geometry without losing an explicit panel's role.
+    if (out.some((r) => (!cameraObstacle || r.cameraObstacle === cameraObstacle) && r.x <= box.x && r.y <= box.y && r.x + r.width >= box.right && r.y + r.height >= box.bottom)) {
       continue;
     }
     out.push({
@@ -130,9 +131,7 @@ export function collectCanvasObstacles(
       y: box.y,
       width: box.width,
       height: box.height,
-      ...(el.getAttribute("data-topology-camera-obstacle") === "side-panel"
-        ? { cameraObstacle: "side-panel" as const }
-        : {}),
+      ...(cameraObstacle ? { cameraObstacle } : {}),
     });
   }
   return out;

@@ -504,7 +504,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, tourAutoStartReady, ontologySearchOpen,
     localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
     topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
-    topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration
+    topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
+    homeWorkbenchController
   });
   const topologySceneControls = useTopologySceneControls({
     pathSourceSlug, pathTargetSlug, analysisMode, expandAllActive, setRouteState, setExpandAllActive,
