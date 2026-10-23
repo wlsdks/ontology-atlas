@@ -239,6 +239,15 @@ export function paintDialMarks(ctx: CanvasRenderingContext2D, marks: DialFrameMa
   const ground = mixOver(map.canvasBgNear, map.canvasBgNear);
   ctx.save();
 
+  for (const stem of marks.stems ?? []) {
+    ctx.beginPath();
+    ctx.moveTo(stem.a.x, stem.a.y);
+    ctx.quadraticCurveTo(stem.c.x, stem.c.y, stem.b.x, stem.b.y);
+    ctx.strokeStyle = inks[stem.ink]!;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
   for (const plates of groupBy(marks.plates, (p) => `${p.fill}|${p.rim}`).values()) {
     ctx.beginPath();
     for (const p of plates) {
@@ -336,6 +345,18 @@ export function paintDialMarks(ctx: CanvasRenderingContext2D, marks: DialFrameMa
   }
 
   const shape = shapeTokens(map);
+  for (const block of marks.blocks ?? []) {
+    const b = block.box;
+    ctx.globalAlpha = block.alpha;
+    ctx.beginPath();
+    ctx.roundRect(b.minX, b.minY, b.maxX - b.minX, b.maxY - b.minY, 6);
+    ctx.fillStyle = inks[block.fill]!;
+    ctx.fill();
+    ctx.strokeStyle = inks[block.rim]!;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
   for (const g of marks.glyphs) paintGlyph(ctx, g, map, shape, options);
 
   ctx.lineJoin = "round";

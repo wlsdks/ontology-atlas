@@ -1,6 +1,7 @@
 import { LABEL_OFFSET, scaledLabelFont, scaledLabelFontSize } from "../render/labels";
 import { domainLabelBlock, sideOf, type MeasureText } from "./label-marks";
 import type { Box, DialLabels, DialModel, DialScene, DialTokens, Pad } from "./types";
+import { branchTextStyle } from "./branches/text";
 
 const NAME_GAP_PX = 5;
 const ORPHAN_GAP_PX = 8;
@@ -50,6 +51,18 @@ export function dialOverviewBounds(scene: Pick<DialScene, "rings" | "extent" | "
 }
 
 export function dialOverviewPad(scene: DialScene, model: DialModel, labels: DialLabels | null, measure: MeasureText, tokens: DialTokens): Pad {
+  if (scene.branches) {
+    const { font } = branchTextStyle("capability", "capability", tokens.labelScale);
+    let left = tokens.chipMaxPx;
+    let right = tokens.chipMaxPx;
+    for (const c of scene.clusters) for (const it of c.items) {
+      const width = Math.min(tokens.nameMaxPx, measure(model.capabilityById.get(it.id)?.label ?? "", font)) + tokens.ledgerGapPx;
+      if (c.branchSide === 1) right = Math.max(right, width);
+      else left = Math.max(left, width);
+    }
+    const side = Math.max(left, right);
+    return { left: side, right: side, top: tokens.ledgerGapPx, bottom: tokens.ledgerGapPx };
+  }
   return scene.rings.length > 0 ? { left: 0, right: 0, top: 0, bottom: 0 } : dialLabelPad(scene, model, labels, measure, tokens);
 }
 

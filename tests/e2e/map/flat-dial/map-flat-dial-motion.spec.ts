@@ -260,7 +260,7 @@ function streamedVault(withLateRingChange: boolean): Record<string, string> {
   const body = (title: string) => `\n${title} keeps one boundary of the product honest.\n\n## Includes\n- One responsibility.\n`;
   const pad = (n: number) => String(n).padStart(4, "0");
   const files: Record<string, string> = {};
-  const domains = Array.from({ length: 6 }, (_, d) => `domains/d${d}`);
+  const domains = Array.from({ length: withLateRingChange ? 7 : 6 }, (_, d) => `domains/d${d}`);
   files["atlas.md"] = `---\nkind: project\nslug: atlas\ntitle: Atlas\ndomains: [${domains.join(", ")}]\n---\n${body("Atlas")}`;
   for (const domain of domains) files[`${domain}.md`] = `---\nkind: domain\nslug: ${domain}\ntitle: ${domain}\n---\n${body(domain)}`;
   const listed: string[][] = Array.from({ length: 24 }, () => []);

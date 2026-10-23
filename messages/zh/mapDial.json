@@ -12,5 +12,6 @@
   "settling": "读完所有文件后，圆环才会确定",
   "legendNeeds": "依赖",
   "legendUsers": "被依赖",
-  "legendStale": "过时"
+  "legendStale": "过时",
+  "moreMembers": "查看另外 {count, number} 项"
 }

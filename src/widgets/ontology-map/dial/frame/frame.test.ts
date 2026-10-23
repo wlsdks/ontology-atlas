@@ -27,7 +27,8 @@ import {
   paintDialFrame,
   sampleStrips } from "./frame";
 import { layoutDial } from "../layout";
-import { emptyDialFrameMarks } from "./marks";
+import { pickDial } from "../pick";
+import { emptyDialFrameMarks, type DialFrameMarks } from "./marks";
 import { circularDomainOrder } from "../order";
 import { resolveDialTokens } from "../tokens";
 import type { DialFrameInput, DialLabels, DialModel, DialOwnershipInput, Point } from "../types";
@@ -66,16 +67,21 @@ function recordingContext(): CanvasRenderingContext2D {
         },
     }) as unknown as CanvasRenderingContext2D;
 }
-function modelOf(links = true): DialModel {
+function modelOf(links = true, capabilities = 4, elements = 0): DialModel {
     const nodes: TreeInputNode[] = [{ id: "p", label: "Project", kind: "project" }];
     const edges: TreeInputEdge[] = [];
     const contains = (s: string, t: string) => edges.push({ source: s, target: t, kind: "contains", relationType: "contains" });
     for (let d = 0; d < 5; d += 1) {
         nodes.push({ id: `d${d}`, label: `Domain ${d}`, kind: "domain" });
         contains("p", `d${d}`);
-        for (let c = 0; c < 4; c += 1) {
+        for (let c = 0; c < capabilities; c += 1) {
             nodes.push({ id: `d${d}c${c}`, label: `Capability ${d}.${c}`, kind: "capability" });
             contains(`d${d}`, `d${d}c${c}`);
+            for (let e = 0; e < elements; e += 1) {
+                const id = `d${d}c${c}e${e}`;
+                nodes.push({ id, label: `Element ${id}`, kind: "element" });
+                contains(`d${d}c${c}`, id);
+            }
         }
     }
     for (let d = 0; d < 5 && links; d += 1)
@@ -212,6 +218,66 @@ describe("dialChordPresence", () => {
     });
 });
 describe("frame registry", () => {
+    it("collapses cards and preview stems when their rows no longer fit", () => {
+        const result = paintDialFrame(frameInput(modelOf(false), { scale: 0.3, reducedMotion: true }));
+        const marks = result.marks as DialFrameMarks;
+        expect(marks.blocks).toHaveLength(0);
+        expect(marks.stems).toHaveLength(0);
+        expect(result.marks.texts.filter((t) => t.role === "domain")).toHaveLength(5);
+        expect(result.marks.glyphs.filter((g) => g.kind === "domain")).toHaveLength(5);
+    });
+
+    it("keeps selected same-domain partners named when overview rows are too small", () => {
+        const base = modelOf();
+        const model = { ...base, capabilityDependencies: [...base.capabilityDependencies, { from: "d1c0", to: "d1c3", fromDomain: "d1", toDomain: "d1" }] };
+        const result = paintDialFrame(frameInput(model, { scale: 0.3, focusedNodeId: "d1c0", reducedMotion: true }));
+        const named = result.marks.texts.filter((t) => t.role === "capability").map((t) => t.id);
+        expect(named).toContain("d1c0");
+        expect(named).toContain("d1c3");
+        expect(describeLastDialFrame(W, H)!.flows).toContainEqual(expect.objectContaining({ a: "d1c0", b: "d1c3", ab: 1, drawn: true }));
+    });
+
+    it("keeps compact previews actionable and restores a selected hidden capability's feedback", () => {
+        const input = frameInput(modelOf(false, 8), { reducedMotion: true });
+        const first = paintDialFrame(input);
+        expect(first.alphas.get("d1c7")).toBe(0);
+        const more = first.marks.texts.find((t) => t.id === "d1" && t.role === "more")!;
+        expect(more).toBeDefined();
+        expect(pickDial(first.picks, first.rows, (more.box.minX + more.box.maxX) / 2, more.y, 0)).toBe("d1");
+        const agentOnly = paintDialFrame({ ...input, agentFocusNodeId: "d1c7" });
+        expect(agentOnly.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", agentFocus: true }));
+        expect(agentOnly.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
+        const next = paintDialFrame({ ...input, focusedNodeId: "d1c7", agentFocusNodeId: "d1c7", selectionPulse: { nodeId: "d1c7", scaleFactor: 1.1, alpha: 1 } });
+        expect(next.marks.glyphs).toContainEqual(expect.objectContaining({ id: "d1c7", kind: "capability", egoState: "center", agentFocus: true, selectionPulse: expect.objectContaining({ alpha: 1 }) }));
+        expect(next.marks.texts.some((t) => t.id === "d1c7" && t.role === "capability")).toBe(true);
+    });
+
+    it("reveals element names when detailed zoom has room", () => {
+        const input = frameInput(modelOf(false, 4, 1), { scale: 4, focusedNodeId: "d1c0", reducedMotion: true });
+        const result = paintDialFrame(input);
+        expect(result.marks.squares.some((q) => q.id === "d1c0e0")).toBe(true);
+        expect(result.marks.texts.some((t) => t.role === "element" && t.id === "d1c0e0")).toBe(true);
+    });
+    it("selects the entire domain label block and keeps its geometry stable under hover", () => {
+        const input = frameInput(modelOf(), { reducedMotion: true });
+        const first = paintDialFrame(input);
+        const row = first.rows.find((r) => r.id === "d1")!;
+        expect(row).toBeDefined();
+        expect(pickDial(first.picks, first.rows, row.box.maxX - 3, row.box.maxY - 3, 0)).toBe("d1");
+        const before = first.marks.texts.map((t) => ({ id: t.id, role: t.role, box: { ...t.box } }));
+        const normal = first.marks.texts.find((t) => t.id === "d1" && t.role === "domain")!;
+        const restInk = first.marks.inks[normal.ink];
+        const hovered = paintDialFrame({ ...input, hoveredNodeId: "d1" });
+        expect(hovered.marks.texts.map((t) => ({ id: t.id, role: t.role, box: t.box }))).toEqual(before);
+        const focused = hovered.marks.texts.find((t) => t.id === "d1" && t.role === "domain")!;
+        expect(hovered.marks.inks[focused.ink]).not.toBe(restInk);
+    });
+
+    it("withholds full domain labels until the arriving marks have separated", () => {
+        const r = paintDialFrame(frameInput(modelOf(), { appearOf: (id) => id === "p" ? 1 : 0.1 }));
+        expect(r.marks.glyphs.filter((g) => g.kind === "domain").length).toBeGreaterThan(0);
+        expect(r.marks.texts.filter((t) => t.role === "domain")).toHaveLength(0);
+    });
     it("sets the last frame and the light frame, and clears both", () => {
         const model = modelOf();
         expect(lastDialFrame()).toBeNull();
@@ -224,7 +290,7 @@ describe("frame registry", () => {
         expect(dialLightFrame()).toBeNull();
         expect(describeLastDialFrame(W, H)).toBeNull();
     });
-    it("keeps the unmeasured-evidence caption where it rests while the project name fades in", () => {
+    it("keeps the project context and unmeasured-evidence caption stable during arrival", () => {
         const model = modelOf(false);
         const labels = { ...LABELS, evidenceUnmeasured: () => "Evidence not measured" };
         const caption = (appear: number) => {
@@ -234,7 +300,7 @@ describe("frame registry", () => {
         };
         const before = caption(0.05);
         const after = caption(1);
-        expect([before.named, after.named]).toEqual([false, true]);
+        expect([before.named, after.named]).toEqual([true, true]);
         expect(before.y).toBe(after.y);
     });
     it("describes the last frame with rings, disclosure, budget and placement", () => {

@@ -28,7 +28,7 @@ const edge = (source: string, target: string, relationType: string): OntologyMap
 });
 const nodes: OntologyMapNode[] = [mapNode("p", "project")];
 const edges: OntologyMapEdge[] = [];
-for (let d = 0; d < 5; d += 1) {
+for (let d = 0; d < 7; d += 1) {
   nodes.push(mapNode(`d${d}`, "domain"));
   edges.push(edge("p", `d${d}`, "contains"));
   for (let c = 0; c < 3; c += 1) {
@@ -62,8 +62,8 @@ const cyclic = (seq: readonly string[]) => {
 describe("predicted Flat marks under the dial", () => {
   it("land the domains in the remembered ring order, not the default one", () => {
     const fresh = domainSequence(null);
-    expect(fresh).toHaveLength(5);
-    const remembered = [fresh[0]!, fresh[2]!, fresh[1]!, fresh[4]!, fresh[3]!];
+    expect(fresh).toHaveLength(7);
+    const remembered = [fresh[0]!, fresh[2]!, fresh[1]!, fresh[4]!, fresh[3]!, fresh[6]!, fresh[5]!];
     const memory: DialMemory = { order: remembered, radiusByStep: new Map(), angleById: new Map(), itemOrder: new Map() };
     const seq = domainSequence(memory);
     expect(cyclic(seq)).not.toEqual(cyclic(fresh));

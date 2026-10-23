@@ -130,6 +130,8 @@ function resetMarks(m: DialFrameMarks): void {
   m.leaders.length = 0;
   m.plates.length = 0;
   m.extraTexts.length = 0;
+  if (m.blocks) m.blocks.length = 0;
+  if (m.stems) m.stems.length = 0;
 }
 
 function inksOf(input: DialFrameInput): DialInks {

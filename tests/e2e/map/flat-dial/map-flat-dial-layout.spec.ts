@@ -6,7 +6,7 @@ import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/t
 
 const OVERVIEW: Record<Vault, { rings: number[]; marks: number; lines: number | "all"; perEnd?: number; crossings: number; namesCrossed: number; noDiscs?: boolean }> = {
   storefront: { rings: [2, 4, 3], marks: 100, lines: "all", crossings: 10, namesCrossed: 3 },
-  dogfood: { rings: [2, 2], marks: 60, lines: "all", crossings: 2, namesCrossed: 3 },
+  dogfood: { rings: [], marks: 60, lines: "all", crossings: 2, namesCrossed: 0 },
   "synth 2,000": { rings: [15], marks: 400, lines: 24, crossings: 40, namesCrossed: 2 },
   "synth 10,000": { rings: [33], marks: 80, lines: 40, perEnd: 6, crossings: 15, namesCrossed: 3, noDiscs: true },
   "layered 10,000": { rings: [3, 12, 15, 3], marks: 80, lines: 40, perEnd: 6, crossings: 100, namesCrossed: 6, noDiscs: true },
