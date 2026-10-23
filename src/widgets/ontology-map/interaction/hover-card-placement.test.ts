@@ -52,4 +52,19 @@ describe("placeHoverCard", () => {
       card.x < index.x + index.w && index.x < card.x + card.w && card.y < index.y + index.h && index.y < card.y + card.h;
     expect(onIndex).toBe(false);
   });
+
+  it("keeps a narrow utility overlap out of a dense drawing", () => {
+    const tile = { x: 980, y: 304, w: 36, h: 36 };
+    const cardSize = { w: 280, h: 124 };
+    const drawing = [
+      { x: 400, y: 150, w: 300, h: 400 },
+      { x: 720, y: 180, w: 280, h: 124 },
+    ];
+    const placement = placeHoverCard({ x: 712.9, y: 322.3 }, cardSize, drawing,
+      { x: 8, y: 8, w: 1024, h: 704 }, 14, [tile]);
+    const overlapsTile = placement.left < tile.x + tile.w &&
+      placement.left + cardSize.w > tile.x && placement.top < tile.y + tile.h &&
+      placement.top + cardSize.h > tile.y;
+    expect(overlapsTile).toBe(false);
+  });
 });

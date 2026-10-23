@@ -1,7 +1,7 @@
 /**
  * Where a pointer-anchored card goes so it covers nothing the map drew: four corners around
  * the pointer are tried in a fixed order so the card does not wander; the least overlap wins.
- * Chrome counts far more than a drawn node: covering a control hides the control.
+ * Chrome clears before drawn nodes: even a small overlap hides part of a control.
  */
 
 /** How much worse a px² of covered chrome is than a px² of covered drawing. */
@@ -68,17 +68,22 @@ export function placeHoverCard(
   chrome: readonly Rect[] = [],
 ): HoverCardPlacement {
   let best: HoverCardPlacement | null = null;
+  let bestChromeOverlap = Infinity;
   for (const corner of CORNER_ORDER) {
     const rect = clampInto(cornerRect(anchor, size, offset, corner), bounds);
     let overlap = 0;
     for (const item of avoid) overlap += overlapArea(rect, item);
-    for (const item of chrome) overlap += CHROME_OVERLAP_WEIGHT * overlapArea(rect, item);
+    let chromeOverlap = 0;
+    for (const item of chrome) chromeOverlap += overlapArea(rect, item);
+    overlap += CHROME_OVERLAP_WEIGHT * chromeOverlap;
     const coversPointer =
       anchor.x >= rect.x && anchor.x <= rect.x + rect.w && anchor.y >= rect.y && anchor.y <= rect.y + rect.h;
     // Covering the pointer hides the very line being read; count it as a full card.
     const score = overlap + (coversPointer ? size.w * size.h : 0);
-    if (best === null || score < best.overlap) {
+    if (best === null || chromeOverlap < bestChromeOverlap ||
+      (chromeOverlap === bestChromeOverlap && score < best.overlap)) {
       best = { left: rect.x, top: rect.y, corner, overlap: score };
+      bestChromeOverlap = chromeOverlap;
       if (score === 0) break;
     }
   }
