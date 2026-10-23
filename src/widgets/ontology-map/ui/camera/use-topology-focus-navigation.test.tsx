@@ -106,7 +106,7 @@ describe("useTopologyFocusNavigation", () => {
     x: { value: x, velocity: 0 }, y: { value: y, velocity: 0 }, scale: { value: scale, velocity: 0 },
   });
 
-  function setup(overrides: Partial<Parameters<typeof useTopologyFocusNavigation>[0]> = {}) {
+  function setup(overrides: Partial<Parameters<typeof useTopologyFocusNavigation>[0]> = {}, initial: string | null = null) {
     const deps = {
       lastFocusedSlugRef: ref<string | null>(null),
       egoRevealBatchesRef: ref(1),
@@ -141,7 +141,7 @@ describe("useTopologyFocusNavigation", () => {
       ...overrides,
     } as unknown as Parameters<typeof useTopologyFocusNavigation>[0];
     const hook = renderHook((focusedSlug: string | null) => useTopologyFocusNavigation({ ...deps, focusedSlug }), {
-      initialProps: null as string | null,
+      initialProps: initial,
     });
     const select = (slug: string | null, { click = false } = {}) => {
       if (click && slug !== null) deps.selectionSourceRef.current = { slug, source: "canvas-click" };
@@ -151,6 +151,27 @@ describe("useTopologyFocusNavigation", () => {
     };
     return { deps, hook, select };
   }
+
+  it("frames an initial deep link even when interaction state already stores that selected id", () => {
+    const { deps } = setup({ lastFocusedSlugRef: ref("f") }, "f");
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+    expect(deps.selectionCameraRef.current?.slug).toBe("f");
+  });
+
+  it("waits for the selected node's world instead of consuming a deep link before it exists", () => {
+    const worldRef = ref<TopologyWorld | null>(null);
+    const { deps, hook } = setup({ worldRef });
+    deps.focusedSlugRef.current = "f";
+    hook.rerender("f");
+    frames.shift()?.(performance.now());
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    worldRef.current = world();
+    frames.shift()!(performance.now());
+    expect(deps.lastFocusedSlugRef.current).toBe("f");
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+  });
 
   it("releases the closing inspector's label exclusion on deselect", () => {
     const panelInsetsRef = ref<{ left: number; right: number } | null>({ left: 300, right: 400 });

@@ -27,11 +27,11 @@ function drawnPerEnd(dial: DialProbe): number {
 
 async function selectFromSearch(page: Page, id: string) {
   const label = await page.evaluate(id => window.__atlasMap!.nodes().find(n => n.id === id)!.label, id);
-  await page.getByTestId("topology-concept-search").click();
+  await page.keyboard.press("ControlOrMeta+k");
   const search = page.getByRole("dialog").filter({ has: page.getByRole("combobox") });
   await expect(search).toBeVisible();
   await search.getByRole("combobox").fill(label);
-  await search.getByRole("option").filter({ has: page.getByText(label, { exact: true }) }).click();
+  await search.locator(`[role="option"][data-value="ontology:${id}"]`).click();
   await expect(search).toBeHidden();
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
   await page.mouse.move(5, 5);
