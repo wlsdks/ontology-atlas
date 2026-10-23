@@ -246,6 +246,11 @@ for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
       await expect(scopeEntry).toBeVisible();
       await scopeEntry.click();
       await expect(page.getByTestId("topology-realm-chip-clear")).toBeVisible();
+      await page.waitForFunction(id => {
+        const probe = window.__atlasMap;
+        const dial = probe?.dial?.();
+        return dial?.owns && (dial as DialProbe).domainAppear >= 0.999 && probe?.nodes().some(node => node.id === id && node.draggable);
+      }, domainId);
       await waitForMapStill(page);
       const scoped = await readDial(page);
       expect(scoped.owns, "scope viewing keeps the same renderer").toBe(true);
