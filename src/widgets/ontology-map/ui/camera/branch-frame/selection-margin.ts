@@ -32,10 +32,10 @@ export function branchSelectionMargin(world: TopologyWorld, dial: DialWorld | nu
       ranges.push({ id: member, left: x - (cluster.branchSide === -1 ? gap + name : gap), right: x + (cluster.branchSide === -1 ? gap : gap + name) });
     }
   }
-  const margins = (items: typeof ranges) => ({
-    left: Math.max(SELECTION_NUDGE_MARGIN_PX, -Math.min(...items.map(p => p.left)) + SELECTION_NUDGE_MARGIN_PX),
-    right: Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...items.map(p => p.right)) + SELECTION_NUDGE_MARGIN_PX),
+  const margins = (items: typeof ranges, air = SELECTION_NUDGE_MARGIN_PX) => ({
+    left: Math.max(air, -Math.min(...items.map(p => p.left)) + air),
+    right: Math.max(air, Math.max(...items.map(p => p.right)) + air),
   });
   const whole = margins(ranges);
-  return whole.left + whole.right <= freeWidth ? whole : margins(ranges.filter(p => p.id === id));
+  return whole.left + whole.right <= freeWidth ? whole : margins(ranges.filter(p => p.id === id), freeWidth >= 400 ? SELECTION_NUDGE_MARGIN_PX : 24);
 }

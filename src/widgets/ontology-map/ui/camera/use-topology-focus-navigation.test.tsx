@@ -45,6 +45,7 @@ vi.mock("../../render/edge-fireflies", async () => {
 
 import { stepTopologyPhysics } from "../frame-loop/topology-physics-step";
 import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
+import * as branchFrame from "./branch-frame/target";
 
 type Kind = "project" | "domain" | "capability";
 
@@ -157,6 +158,39 @@ describe("useTopologyFocusNavigation", () => {
     frames.shift()?.(performance.now());
     expect(deps.beginCameraTween).toHaveBeenCalled();
     expect(deps.selectionCameraRef.current?.slug).toBe("f");
+  });
+
+  it("allows a searched branch camera to rest beyond the default focus leash", () => {
+    const target = { tx: 0, ty: 0, tscale: 1 };
+    vi.spyOn(branchFrame, "branchFocusTarget").mockReturnValue(target);
+    const { deps, select } = setup();
+    select("east");
+    expect(deps.cameraTargetRef.current).toEqual(target);
+    expect(deps.focusLeashPxRef.current!.x).toBeGreaterThan(Math.abs(1500 - target.tx) * target.tscale);
+  });
+
+  it("waits for scoped entry to finish before framing an initial selected capability", () => {
+    const phase = ref({ phase: "entering" });
+    const { deps } = setup({ realmTransitionRef: phase as never }, "f");
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
+    expect(deps.lastFocusedSlugRef.current).toBeNull();
+    phase.current.phase = "active";
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).toHaveBeenCalled();
+  });
+
+  it("does not apply a pending Flat focus after switching to 3D", () => {
+    const worldRef = ref<TopologyWorld | null>(null);
+    const view3dRef = ref(false);
+    const { deps, hook } = setup({ worldRef, view3dRef });
+    deps.focusedSlugRef.current = "f";
+    hook.rerender("f");
+    frames.shift()?.(performance.now());
+    worldRef.current = world();
+    view3dRef.current = true;
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
   });
 
   it("waits for the selected node's world instead of consuming a deep link before it exists", () => {

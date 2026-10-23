@@ -25,3 +25,9 @@ describe("branch selection clearance", () => {
     expect(left.right).toBeLessThan(left.left);
   });
 });
+
+it("keeps the selected label clear when both panels leave only a narrow span", () => {
+  const margin = branchSelectionMargin(world, dial(1), "c", 1, 280) as { left: number; right: number };
+  expect(margin.left + margin.right).toBeLessThan(280);
+  expect(margin.right).toBeGreaterThanOrEqual("Selected capability".length * 8 + 30 + 24);
+});

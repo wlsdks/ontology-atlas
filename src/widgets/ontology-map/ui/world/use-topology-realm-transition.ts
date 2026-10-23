@@ -31,6 +31,7 @@ import { buildRealmRuntimeData, realmCameraTarget, type RealmRuntimeData } from 
 import { dialOverviewFit, type TopologyWorld } from "./topology-world";
 import { readDialTokens } from "../../dial/tokens";
 import { createMeasureText } from "../../dial/fit";
+import { branchFocusTarget } from "../camera/branch-frame/target";
 import type { DialLabels } from "../../dial/types";
 
 interface Dependencies {
@@ -168,7 +169,9 @@ export function useTopologyRealmTransition({
           ty: cameraRef.current.y.value,
           tscale: cameraRef.current.scale.value,
         };
-        const target = realmCameraTarget(data.bounds, cameraTokens?.(tokens) ?? tokens, width, height, data.dial?.overviewPadPx);
+        const measured = cameraTokens?.(tokens) ?? tokens;
+        const target = branchFocusTarget(world, data.dial, realmRootId, measured, width, height, data.insideTargets)
+          ?? realmCameraTarget(data.bounds, measured, width, height, data.dial?.overviewPadPx);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
