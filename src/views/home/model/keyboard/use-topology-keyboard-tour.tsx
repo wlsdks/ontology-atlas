@@ -6,6 +6,7 @@ import type { useTopologyGraphProjection } from "../map-canvas/use-topology-grap
 import type { useTopologyInspectorState } from "../inspector/use-topology-inspector-state";
 import type { useTopologyNavigationActions } from "../use-topology-navigation-actions";
 import type { useTopologyRouteControls } from "../route-state/use-topology-route-controls";
+import type { useHomeWorkbenchController } from "../use-home-workbench-controller";
 
 import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
@@ -51,7 +52,8 @@ interface Options {
   setRouteState: (updater: Partial<import("@/views/home/model/route-state/url-state").HomeRouteState> | ((current: import("@/views/home/model/route-state/url-state").HomeRouteState) => import("@/views/home/model/route-state/url-state").HomeRouteState), options?: import("@/views/home/model/route-state/use-home-route-state").HomeRouteStateUpdateOptions | undefined) => void;
   sampleModeSettled: ReturnType<typeof useFirstRunSampleModeSettled>;
   requestVaultOpen: () => void;
-  topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "agentDockOpen">;
+  topologyAgentOrchestration: Pick<ReturnType<typeof useTopologyAgentOrchestration>, "agentDockOpen" | "closeVaultAgent">;
+  homeWorkbenchController: Pick<ReturnType<typeof useHomeWorkbenchController>, "workbenchOpenRef">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "routedConstellation" | "setActiveConstellation">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm">;
   topologyInspectorState: Pick<ReturnType<typeof useTopologyInspectorState>, "nodePopoverVisible">;
@@ -82,7 +84,8 @@ export function useTopologyKeyboardTour({
   setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, tourAutoStartReady, ontologySearchOpen,
   localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
   topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
-  topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration
+  topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
+  homeWorkbenchController
 }: Options) {
   const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
@@ -95,7 +98,8 @@ export function useTopologyKeyboardTour({
   const flatMap = useFlatMapView();
   const { handleExitRealm } = topologyRouteControls;
   const { routedConstellation, setActiveConstellation } = topologyExplorationLenses;
-  const { agentDockOpen } = topologyAgentOrchestration;
+  const { agentDockOpen, closeVaultAgent } = topologyAgentOrchestration;
+  const { workbenchOpenRef } = homeWorkbenchController;
 
 
   // Resolves DOM or canvas anchors here and hands the tour feature a boolean, since features may
@@ -189,6 +193,7 @@ export function useTopologyKeyboardTour({
       return;
     }
     const action = resolveTopologyEscLadderAction({
+      workbenchOpen: workbenchOpenRef.current.agent || workbenchOpenRef.current.meaning,
       realmActive: resolvedRealmSlug !== null,
       selectedEdgeActive: selectedEdge !== null,
       contextMenuOpen: contextMenuNode !== null,
@@ -202,12 +207,16 @@ export function useTopologyKeyboardTour({
       nodePopoverOpen: !flatMap && nodePopoverVisible,
       hasLocalGraphRoot: localGraphRoot !== null,
     });
-    // Inside a realm, Escape returns to the whole map before anything else.
+    // With no review above it, Escape leaves the realm before other map states.
     if (action === "close-realm") {
       handleExitRealm();
       return;
     }
     switch (action) {
+      case "close-workbench":
+        event.preventDefault();
+        closeVaultAgent();
+        break;
       case "close-edge-popover":
         // The popover returns focus to its trigger itself (`OntologyMapEdgePanel`).
         setSelectedEdge(null);

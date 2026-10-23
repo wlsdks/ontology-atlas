@@ -14,7 +14,7 @@ import { buildDialModel, resolveDialAttention } from "./dial-model";
 import { stubText } from "./far-counts";
 import { buildFlowMarks, fanAngles, flowHeadSize, focusFlowWidth, rampedFocusWidth, rampedRestWidth, restFlowWidth, type FlowMarksInput } from "./flow-marks";
 import { crossfadeInk, mixOver, resolveDialInks } from "./ink";
-import { countCrossings, sampleStrips } from "./frame/frame";
+import { countCrossings, namesCrossed, sampleStrips } from "./frame/frame";
 import { resolveDialTokens } from "./tokens";
 import type { Box, DialAttention, DialCluster, DialItem, DialMarks, DialModel, DialScene, Point } from "./types";
 
@@ -120,6 +120,80 @@ describe("buildFlowMarks", () => {
     expect(strong.w0).toBeCloseTo(rampedRestWidth(TOKENS, 3, 3));
     expect(weak.w0).toBeCloseTo(rampedRestWidth(TOKENS, 1, 3));
     expect(weak.w1).toBeCloseTo(weak.w0 * TOKENS.flowTaper);
+  });
+
+  it("keeps Flat branch direction readable at both overview and focus zoom", () => {
+    const model = modelOf([["d0c0", "d2c0"]]);
+    for (const scale of [0.24, 2.6]) {
+      const scene = { ...sceneOf(model), branches: true };
+      const { out } = run(model, { scene, scale });
+      expect(out.strips.length).toBeGreaterThan(0);
+      expect(out.strips.every(strip => strip.headEnd && strip.headSize >= 8)).toBe(true);
+    }
+  });
+
+  it("labels only attended Flat bundles with the localized connection count", () => {
+    const model = modelOf([["d0c0", "d3c0"], ["d0c1", "d3c0"], ["d3c1", "d0c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const connectionCount = (count: number) => `connections:${count}`;
+    expect(run(model, { scene, connectionCount }).out.numerals).toHaveLength(0);
+    const { out, result } = run(model, { scene, connectionCount, focusId: "d3" });
+    expect(out.numerals.map(mark => mark.text)).toEqual([connectionCount(2)]);
+    expect(result.links.map(link => [link.uv, link.vu])).toEqual([[2, 1]]);
+    expect(out.strips).toHaveLength(2);
+    expect(run(model, { scene, focusId: "d3" }).out.numerals).toHaveLength(0);
+  });
+
+  it("omits a localized count that cannot fit the free canvas while preserving its directed bundle", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d1c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map([["d0", { x: 500, y: 200 }], ["d1", { x: 500, y: 500 }]]);
+    const options = { scene, focusId: "d0", nodeScreen: (id: string) => points.get(id) ?? null, connectionCount: (count: number) => `${count} connections` };
+    const fitting = run(model, options);
+    expect(fitting.out.numerals).toHaveLength(1);
+    const freeRect = { minX: 480, minY: 100, maxX: 1000, maxY: 700 };
+    const constrained = run(model, { ...options, freeRect });
+    expect(constrained.out.numerals).toHaveLength(0);
+    expect(constrained.out.strips).toHaveLength(1);
+    expect(constrained.out.strips[0]).toMatchObject({ headEnd: true, headStart: false, gapT0: 0, gapT1: 0 });
+    expect(constrained.result.links).toEqual(fitting.result.links);
+  });
+
+  it("recovers a blocked attended local route as a named directed stub without claiming an empty route", () => {
+    const model = modelOf([["d0c0", "d1c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map([["d0", { x: 500, y: 250 }], ["d1", { x: 500, y: 650 }]]);
+    const blocker = { minX: 100, minY: 350, maxX: 900, maxY: 550 };
+    const options = { scene, nodeScreen: (id: string) => points.get(id) ?? null, avoidTexts: [blocker], occupied: [blocker] };
+    const attended = run(model, { ...options, focusId: "d0" });
+    expect(attended.result.drawn).toEqual(["d0\0d1"]);
+    expect(attended.result.stubs).toHaveLength(1);
+    expect(attended.result.stubs[0]!.text).toBe(stubText("Domain 1", 1, 0));
+    expect(attended.out.strips).toHaveLength(1);
+    expect(attended.out.strips[0]).toMatchObject({ role: "stub", headEnd: true, headStart: false });
+    expect(attended.result.links[0]).toMatchObject({ uv: 1, vu: 0, total: 1 });
+    const resting = run(model, options);
+    expect(resting.result.links).toHaveLength(1);
+    expect(resting.result.drawn).toEqual([]);
+    expect(resting.out.strips).toEqual([]);
+    const absent = run(model, { ...options, focusId: "d0", appearOf: () => 0 });
+    expect(absent.result.links).toHaveLength(1);
+    expect(absent.result.drawn).toEqual([]);
+    expect(absent.result.stubs).toEqual([]);
+    expect(absent.out.strips).toEqual([]);
+  });
+
+  it("keeps captions clear across near and reverse stub recovery", () => {
+    const model = modelOf(Array.from({ length: 8 }, (_, i) => ["d0c0", `d${i + 1}c0`]));
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map<string, Point>([["d0",{"x":494.8078582296148,"y":378.0255474965088}],["d1",{"x":409.6912756562233,"y":289.319518788252}],["d2",{"x":595.9670092677698,"y":473.7223935103975}],["d3",{"x":537.6757470425218,"y":570.3805720550008}],["d4",{"x":658.508271467872,"y":411.8390043708496}],["d5",{"x":503.2972159795463,"y":598.8866756507196}],["d6",{"x":453.97155943792313,"y":500.32259372761473}],["d7",{"x":536.1200988758355,"y":441.942815289367}],["d8",{"x":661.1285001272336,"y":507.7892823959701}]]);
+    const blockers = [{"minX":463.6837573722005,"maxX":574.8334833607078,"minY":248.3083462761715,"maxY":334.30250503122807},{"minX":457.4129941407591,"maxX":483.95634279586375,"minY":437.7069683233276,"maxY":532.2491053119302},{"minX":427.8936962597072,"maxX":507.34679659828544,"minY":306.5404188307002,"maxY":404.95087295770645}];
+    const painted = run(model, { scene, freeRect: { minX: 300, maxX: 750, minY: 200, maxY: 650 }, focusId: "d0", nodeScreen: id => points.get(id) ?? null, avoidTexts: blockers, occupied: [...blockers] });
+    expect(painted.out.texts.some(text => text.id === "d0")).toBe(true);
+    expect(painted.result.stubs.length).toBeGreaterThanOrEqual(2);
+    expect(namesCrossed(sampleStrips(painted.out.strips), painted.out.texts)).toEqual({ count: 0, names: [] });
+    expect(painted.result.links).toHaveLength(8);
+    for (const key of painted.result.drawn) expect(painted.out.strips.some(strip => strip.flowKey === key)).toBe(true);
   });
 
   it("draws a two-way pair as one strip with two heads", () => {
@@ -289,6 +363,42 @@ describe("buildFlowMarks", () => {
     const cap = input.nodeScreen("d0c0")!;
     const [st] = out.strips.filter((s) => s.role === "stub");
     expect(Math.hypot(st!.ax - cap.x, st!.ay - cap.y)).toBeLessThan(4 + 4 + 1);
+  });
+
+  it("recovers a blocked attended stub without losing its directed counts or light geometry", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d1c0"], ["d1c1", "d0c0"]]);
+    const over = { freeRect: { minX: 350, minY: 20, maxX: 650, maxY: 300 }, viewportWidth: 4000, viewportHeight: 4000, focusId: "d0" };
+    const first = run(model, over).result.stubs[0]!;
+    expect(first).toBeDefined();
+    const { result, out, input } = run(model, { ...over, occupied: [first.box] });
+    expect(result.stubs).toHaveLength(1);
+    expect(result.stubs[0]!.text).toBe("Domain 1 →2 ←1");
+    expect(overlap(first.box, result.stubs[0]!.box)).toBe(false);
+    expect(result.drawn).toEqual(["d0\0d1"]);
+    const strips = out.strips.filter((strip) => strip.role === "stub");
+    expect(strips).toHaveLength(2);
+    expect(input.chords.map((chord) => [chord.sourceDomain, chord.targetDomain])).toEqual([["d0", "d1"], ["d1", "d0"]]);
+    for (const [index, chord] of input.chords.entries()) {
+      const strip = strips[index]!;
+      expect([chord.a.x, chord.a.y, chord.c.x, chord.c.y, chord.b.x, chord.b.y]).toEqual([strip.ax, strip.ay, strip.cx, strip.cy, strip.bx, strip.by]);
+    }
+    expect(namesCrossed(sampleStrips(out.strips), out.texts)).toEqual({ count: 0, names: [] });
+  });
+
+  it("keeps recovered outgoing arrowheads beyond their full-card source and leaves room for each head", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d2c0"]]);
+    const origin = { x: 500, y: 150 };
+    const positions = new Map([["d0", origin], ["d1", { x: 500, y: -850 }], ["d2", { x: 500, y: 1150 }]]);
+    const { out } = run(model, { focusId: "d0", freeRect: { minX: 350, minY: 0, maxX: 650, maxY: 300 }, endRadiusPx: () => 32,
+      nodeScreen: (id) => positions.get(id) ?? null, occupied: [{ minX: 396, minY: 118, maxX: 604, maxY: 182 }, { minX: 499, minY: 207, maxX: 501, maxY: 208 }],
+    });
+    const strips = out.strips.filter((strip) => strip.role === "stub");
+    expect(strips).toHaveLength(2);
+    for (const strip of strips) {
+      const start = Math.hypot(strip.ax - origin.x, strip.ay - origin.y);
+      const end = Math.hypot(strip.bx - origin.x, strip.by - origin.y);
+      expect(end - start).toBeGreaterThanOrEqual(strip.headSize);
+    }
   });
 
   it("fans stubs at least stub-gap-deg apart", () => {

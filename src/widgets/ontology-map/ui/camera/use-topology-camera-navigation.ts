@@ -1,5 +1,8 @@
 "use client";
 
+import { branchFocusTarget, branchTargetLeash } from "./branch-frame/target";
+import { branchSelectionMargin } from "./branch-frame/selection-margin";
+
 import {
   useEffect,
   useLayoutEffect,
@@ -19,7 +22,7 @@ import {
 import { resolveViewportReframeMode } from "../../model/camera/viewport-reframe";
 import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
+import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
 import {
   overviewBoundsFor,
   overviewFitTokens
@@ -33,6 +36,7 @@ import {
 } from "./use-topology-viewport-lifecycle";
 
 interface Dependencies {
+  focusLeashPxRef?: RefObject<FocusLeashPx | null>;
   runOverviewFit: () => void;
   worldRef: RefObject<TopologyWorld | null>;
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
@@ -85,6 +89,7 @@ function invokeViewportReframe(ref: RefObject<(motion: ViewportReframeMotion) =>
 
 /** Own overview, spotlight, constellation, and viewport camera navigation. */
 export function useTopologyCameraNavigation({
+  focusLeashPxRef,
   runOverviewFit,
   worldRef,
   viewportRef,
@@ -329,14 +334,15 @@ export function useTopologyCameraNavigation({
     }
 
     const memory = selectionCameraRef.current;
-    if (mode === "focus" && focused !== null && !realmActive && memory?.slug === focused && !memory.framed) {
+    if (mode === "focus" && focused !== null && (!realmActive || realmDataRef.current?.flat) && memory?.slug === focused && !memory.framed) {
       // A click only selected, so a new viewport only re-checks that the panel does not cover the node.
       const node = world.nodeById.get(focused);
       const current = cameraTargetRef.current;
-      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight });
+      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight }, branchSelectionMargin(world, realmDataRef.current?.dial ?? world.dial, focused, current.tscale, width - tokens.safeInsetLeft - tokens.safeInsetRight));
       if (nudge === null) return false;
       selectionCameraRef.current = recordSelectionCamera(memory, { slug: focused, framed: false, current, landed: nudge, gesture: cameraGestureRevisionRef.current });
       cameraTargetRef.current = nudge;
+      if (focusLeashPxRef) focusLeashPxRef.current = branchTargetLeash(node!, nudge, width, height, tokens);
       userDrivenCameraRef.current = false;
       dampingRef.current = tokens.cameraDampingDefault;
       cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -356,7 +362,10 @@ export function useTopologyCameraNavigation({
         dialFit);
     } else if (mode === "focus" && focused !== null) {
       const realmData = realmDataRef.current;
-      target = computeFocusCameraTarget(
+      const dial = realmActive ? realmData?.dial : world.dial;
+      const branchTarget = branchFocusTarget(world, dial, focused, tokens, width, height, { scopedCapability: realmActive && realmData?.flat });
+      if (branchTarget && focusLeashPxRef) focusLeashPxRef.current = branchTargetLeash(world.nodeById.get(focused)!, branchTarget, width, height, tokens);
+      target = branchTarget ?? computeFocusCameraTarget(
         world,
         tokens,
         width,
@@ -374,7 +383,8 @@ export function useTopologyCameraNavigation({
           realmData,
           new Set([...expandedParentsRef.current, realmData.rootId]),
           tokens);
-        target = realmCameraTarget(bounds, tokens, width, height);
+        target = branchFocusTarget(world, realmData.dial, realmData.rootId, tokens, width, height, { positions: realmPhase === "entering" ? realmData.insideTargets : undefined, scopedCapability: realmData.flat })
+          ?? realmCameraTarget(bounds, tokens, width, height, realmData.dial?.overviewPadPx);
       }
     } else if (mode === "spotlight") {
       // Recent changes/path/full expand already own a single node-set fit in one place.

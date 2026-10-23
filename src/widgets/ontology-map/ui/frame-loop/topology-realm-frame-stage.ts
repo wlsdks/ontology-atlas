@@ -1,3 +1,4 @@
+import type { DialWorld } from '../../dial/types';
 import { projectTourAnchor } from "./topology-tour-anchor";
 import type { CameraAxes } from "../../engine/camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
@@ -7,6 +8,7 @@ import { computeVisibleWardingRadius } from "../../model/realm/realm";
 import type { DepthParallaxOffset } from "../../model/realm/realm-depth-parallax";
 import {
   isRealmOutsideCulled,
+  REALM_OUTSIDE_FLING_MS,
   REALM_EXIT_OUTSIDE_RETURN_DELAY_MS,
   REALM_EXIT_OUTSIDE_RETURN_MS,
   REALM_WARDING_DRAW_DELAY_MS,
@@ -31,6 +33,7 @@ type SourceRef<T> = { current: T; };
 type RealmTierKind = "project" | "domain" | "capability" | "element";
 
 export interface RealmFrameResult {
+  realmDial: DialWorld | null;
   frameClusteredIds: ReadonlySet<string>;
   frameChips: readonly ClusterChip[];
   realmWarding: {
@@ -87,6 +90,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     getRealmCaption,
   } = sources;
   const result: RealmFrameResult = {
+    realmDial: null,
     frameClusteredIds: new Set(),
     frameChips: [],
     realmWarding: null,
@@ -109,6 +113,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     frameClusteredIdsInput: ReadonlySet<string>,
     frameChipsInput: readonly ClusterChip[],
   ): RealmFrameResult {
+    let realmDial: DialWorld | null = null;
     let frameClusteredIds = frameClusteredIdsInput;
     let frameChips = frameChipsInput;
     // --- Realm: hard-cull the outside nodes once the fling completes, and
@@ -132,11 +137,14 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       (realmState.phase === "entering" || realmState.phase === "active" || realmState.phase === "exiting")
     ) {
       const exiting = realmState.phase === "exiting";
+      if (realmData.flat && realmData.dial) {
+        realmDial = exiting || (realmState.phase === "entering" && now - realmState.startMs < REALM_OUTSIDE_FLING_MS) ? (world.dial ?? null) : realmData.dial;
+      }
       realmTierKinds = realmData.tierKindById;
       realmDepthById = realmData.depthById;
       // Parallax bands are active-only: during an exit the world is folding
       // up, so they do not apply.
-      realmDepthParallax = !exiting && realmParallaxRef.current
+      realmDepthParallax = !realmData.flat && !exiting && realmParallaxRef.current
         ? { depth2: realmParallaxRef.current.depth2, depth3: realmParallaxRef.current.depth3 }
         : null;
       if (realmState.phase === "entering" && !reducedMotionRef.current) {
@@ -150,7 +158,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
         const elapsed = now - realmState.startMs - REALM_EXIT_OUTSIDE_RETURN_DELAY_MS;
         const alphaMap = new Map<string, number>();
         for (const id of realmData.outsideFrom.keys()) {
-          alphaMap.set(id, realmOutsideReturnAlpha(elapsed, REALM_EXIT_OUTSIDE_RETURN_MS));
+          alphaMap.set(id, realmOutsideReturnAlpha(elapsed, REALM_EXIT_OUTSIDE_RETURN_MS, realmData.exitSnapshot?.outsideAlpha));
         }
         realmOutsideReturnAlphaById = alphaMap;
       }
@@ -167,7 +175,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       // membership test — batch chips from inside parents stay, those from
       // outside parents are culled with them.
       frameChips = frameChips.filter((ch) =>
-        realmData.memberIds.has(parseClusterMoreChipId(ch.parentId) ?? ch.parentId),
+        ch.parentId !== realmData.rootId && realmData.memberIds.has(parseClusterMoreChipId(ch.parentId) ?? ch.parentId),
       );
       // The warding radius is refitted to the reach of this frame's
       // **visible** members, excluding anything collapsed by the density gate
@@ -176,6 +184,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       // visible world. Measuring against `insideTargets` (the settled
       // coordinates) keeps the target steady through the entry FLIP, and it
       // eases over 240 ms only when the visible set changes.
+      if (!realmData.flat) {
       const wc = realmData.wardingCenter;
       const reaches: number[] = [];
       for (const id of realmData.memberIds) {
@@ -201,11 +210,12 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
         // An exit erases the warding ring in reverse (1 → 0); an entry draws
         // it after a delay (0 → 1).
         drawProgress: exiting
-          ? realmWardingEraseProgress(now - realmState.startMs)
+          ? realmWardingEraseProgress(now - realmState.startMs, undefined, realmData.exitSnapshot?.wardingProgress)
           : realmWardingDrawProgress(now - realmState.startMs - REALM_WARDING_DRAW_DELAY_MS),
         // Census engraving, so the ring says what it is the boundary of.
         caption: getRealmCaption(),
       };
+      }
     }
 
     // Orbit enter button sits due east of the focused ring; bearings must stay distinct from the expand
@@ -261,6 +271,7 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       dome: domeRuntimeRef.current,
     });
 
+    result.realmDial = realmDial;
     result.frameClusteredIds = frameClusteredIds;
     result.frameChips = frameChips;
     result.realmWarding = realmWarding;

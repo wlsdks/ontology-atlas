@@ -1,13 +1,9 @@
-/**
- * The order one Escape dismisses the canvas selection layer; overlays with their own Escape handler
- * are not here. A pure decision table: `handleTopologyEscape` in the keyboard-tour hook
- * (`model/keyboard/use-topology-keyboard-tour.tsx`) dispatches one rung per keypress, which keeps the
- * shortcut sheet's "one step at a time" promise.
- */
+/** One Escape dismisses one surface, including a review still acquiring focus. */
 export interface TopologyEscLadderInput {
+  /** The review may be open before its animated surface can take keyboard focus. */
+  workbenchOpen?: boolean;
   /** Leaving a realm outranks any overlay inside it, since it changes the whole view. */
   realmActive?: boolean;
-  /** Lives here, not inline in the keydown handler, so the ladder tests can see this rung. */
   selectedEdgeActive?: boolean;
   /** The newest, most transient overlay closes first, or it reads as stuck chrome. */
   contextMenuOpen: boolean;
@@ -40,6 +36,7 @@ export interface TopologyEscLadderInput {
 }
 
 export type TopologyEscLadderAction =
+  | "close-workbench"
   | "close-realm"
   | "close-edge-popover"
   | "close-context-menu"
@@ -54,13 +51,25 @@ export type TopologyEscLadderAction =
   | "none";
 
 /**
- * One thing per keypress, in this priority order: realm, edge popover, context menu, tour,
+ * An open workbench dismisses its nested surfaces before itself. Otherwise the map keeps this
+ * priority order: realm, edge popover, context menu, tour,
  * composer, search (deferred), full detail, relation lens, node popover, deselect, local-graph pop,
  * nothing.
  */
 export function resolveTopologyEscLadderAction(
   input: TopologyEscLadderInput,
 ): TopologyEscLadderAction {
+  // Match the review's local Escape handler while focus is still on its opener.
+  // A nested surface must retain its own first dismissal.
+  if (input.workbenchOpen) {
+    if (input.searchOpen) return "none";
+    if (input.contextMenuOpen) return "close-context-menu";
+    if (input.tourOpen) return "close-tour";
+    if (input.createNodeOpen) return "close-create-node";
+    if (input.bootstrapOpen) return "close-bootstrap";
+    if (input.fullDetailOpen) return "close-full-detail";
+    return "close-workbench";
+  }
   if (input.realmActive) return "close-realm";
   if (input.selectedEdgeActive) return "close-edge-popover";
   if (input.contextMenuOpen) return "close-context-menu";

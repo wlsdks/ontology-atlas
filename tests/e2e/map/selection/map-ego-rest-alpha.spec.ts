@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { waitForMapStill } from "../../settle";
 
-/** Dimmed nodes sink to `--map-ego-rest-alpha`; ego members stay at 1. */
+/** Disclosed context sinks by the rest alpha; folded branch members stay absent. */
 type Probe = {
   nodes: () => Array<{ id: string; hidden: boolean; alpha: number }>;
   selection: () => { nodeId: string | null };
@@ -34,11 +34,14 @@ test("concepts outside the selection recede while neighbors stay as they are", a
   expect(restAlpha).toBeLessThan(1);
 
   await expect
-    .poll(async () => (await alphas(page))?.siblings.map((v) => (v === null ? null : Math.round(v * 100) / 100)), {
+    .poll(async () => {
+      const siblings = (await alphas(page))?.siblings;
+      return !!siblings && siblings.every((value) => value !== null && value >= 0 && value <= restAlpha + 1e-6) && siblings.some((value) => value !== null && value > 0);
+    }, {
       timeout: 15_000,
-      message: "a sibling concept outside the selection did not recede",
+      message: "a disclosed sibling outside the selection did not recede",
     })
-    .toEqual([restAlpha, restAlpha, restAlpha]);
+    .toBe(true);
   // Ego members keep their tier alpha (a capability's can sit below 1 at some
   // zooms) and never sink: each stays well above the rest alpha.
   const after = (await alphas(page))!;

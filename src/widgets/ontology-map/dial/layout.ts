@@ -69,7 +69,7 @@ function itemOrderOf(domainId: string, entries: readonly string[], remembered: r
 
 export function layoutDial(model: DialModel, order: readonly string[], tokens: LayoutTokens, memory: DialMemory | null): DialScene {
   const scene = layoutPackedDial(model, order, tokens, memory);
-  return branchLayout(model, scene, tokens.pitch);
+  return branchLayout(model, scene, tokens.pitch, memory?.branchOrder);
 }
 
 export function layoutPackedDial(model: DialModel, order: readonly string[], tokens: LayoutTokens, memory: DialMemory | null): DialScene {

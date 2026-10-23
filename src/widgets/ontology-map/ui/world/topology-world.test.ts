@@ -16,6 +16,7 @@ import {
   computeRevealedBounds,
   computeSpineBounds,
   dialOverviewFit,
+  dialFocusFrame,
   isSpineNode,
   recomputeWorldGeometry,
   type WorldNode,
@@ -544,7 +545,23 @@ describe("buildTopologyWorld with the Flat dial", () => {
         expect(computeRevealedBounds(world, fullTokens, crowded, null)).toEqual(extent);
         recomputeWorldGeometry(world, fullTokens);
         expect(world.spineBounds).toEqual(extent);
-        expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.02 });
+        expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.02, labelBottomAllowance: 0 });
+    });
+    it("frames hidden contained, direct and unassigned elements by their actual scene position", () => {
+        const world = buildTopologyWorld([...nodes, mapNode("direct", "element"), mapNode("free", "element")], [...edges, edge("d0", "direct", "contains")], fullTokens, "disc", input(null));
+        for (const id of ["d0c13e", "direct", "free"]) {
+            expect(world.nodeById.get(id)?.kind).toBe("element");
+            const frame = dialFocusFrame(world, id, dialTokens);
+            expect(frame?.ids).toEqual(new Set([id]));
+            expect(frame?.nameScale).toBe(dialTokens.capName / dialTokens.pitch);
+            expect(world.dial!.scene.positions.has(id)).toBe(true);
+        }
+        expect(dialFocusFrame(world, "missing", dialTokens)).toBeUndefined();
+        expect(dialFocusFrame(world, "d0", dialTokens)).toBeUndefined();
+        expect(dialFocusFrame(world, "p", dialTokens)).toBeUndefined();
+        const capability = dialFocusFrame(world, "d0c0", dialTokens)!;
+        expect(capability.ids.has("d0c0")).toBe(true);
+        expect(capability.ids.has("d1c0")).toBe(true);
     });
     it("spends nothing on the classic layout when the scene places every node", () => {
         vi.mocked(computeConcentricLayout).mockClear();

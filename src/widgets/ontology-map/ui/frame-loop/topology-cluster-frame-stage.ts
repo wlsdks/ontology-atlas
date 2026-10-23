@@ -403,7 +403,8 @@ export function createClusterFrameStage(sources: ClusterFrameStageSources) {
     result.effectiveExpanded = structure.effectiveExpanded;
     result.frameClusteredIds = structure.clusteredIds;
     result.captionFoldedIds = structure.captionFoldedIds;
-    result.frameChips = frameChips;
+    const scopeRoot = realmDataRef.current?.rootId;
+    result.frameChips = scopeRoot ? frameChips.filter(chip => chip.parentId !== scopeRoot) : frameChips;
     result.batchAppearVisible = structure.batchAppearVisible;
     return result;
   };

@@ -1,5 +1,11 @@
+import { planStubs, stubCandidates, type Stub, type StubPlan } from "./flow/stubs";
+export { fanAngles } from "./flow/stubs";
+import { flowHeadSize } from "./flow/arrow-size";
+export { flowHeadSize } from "./flow/arrow-size";
+import { quadAt, quadLength, trimmedPiece, overlaps, inside } from "./flow/geometry";
+import { createBranchRouter, type BranchRouter } from "./branches/routes";
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
-import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
+import { placeFarNumerals, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
@@ -32,6 +38,7 @@ export interface FlowMarksInput {
   resolution: DialResolution;
   named?: ReadonlySet<string>;
   nameBoxes?: ReadonlyMap<string, Box>;
+  connectionCount?(count: number): string;
 }
 
 export interface FlowMarksResult {
@@ -50,7 +57,6 @@ const PRESENCE_FLOOR = 0.02;
 const OFFSCREEN_PX = 40;
 const FREE_SLACK_PX = 6;
 const HUB_CLEAR_PX = 66;
-const STUB_SHORT = 0.74;
 const CHORD_SAMPLES = 12;
 
 export function restFlowWidth(tokens: DialTokens, count: number): number {
@@ -72,46 +78,6 @@ export function rampedRestWidth(tokens: DialTokens, count: number, maxTotal: num
 export function rampedFocusWidth(tokens: DialTokens, count: number, maxTotal: number): number {
   return Math.min(focusFlowWidth(tokens, count), tokens.flowFocusBase + (tokens.flowFocusMax - tokens.flowFocusBase) * logShare(count, maxTotal));
 }
-
-export function flowHeadSize(tokens: DialTokens, w0: number, w1: number): number {
-  return tokens.flowHeadBasePx + tokens.flowHeadGain * Math.max(w0, w1);
-}
-
-function overlaps(a: Box, b: Box): boolean {
-  return a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
-}
-
-function inside(box: Box, rect: Box): boolean {
-  return box.minX >= rect.minX && box.maxX <= rect.maxX && box.minY >= rect.minY && box.maxY <= rect.maxY;
-}
-
-function quadAt(p0: Point, c: Point, p1: Point, t: number): Point {
-  const u = 1 - t;
-  return { x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y };
-}
-
-function quadPiece(p0: Point, c: Point, p1: Point, t0: number, t1: number): [Point, Point, Point] {
-  return [
-    quadAt(p0, c, p1, t0),
-    {
-      x: (1 - t0) * (1 - t1) * p0.x + ((1 - t0) * t1 + t0 * (1 - t1)) * c.x + t0 * t1 * p1.x,
-      y: (1 - t0) * (1 - t1) * p0.y + ((1 - t0) * t1 + t0 * (1 - t1)) * c.y + t0 * t1 * p1.y,
-    },
-    quadAt(p0, c, p1, t1),
-  ];
-}
-
-function quadLength(p0: Point, c: Point, p1: Point): number {
-  let len = 0;
-  let prev = p0;
-  for (let i = 1; i <= 16; i += 1) {
-    const q = quadAt(p0, c, p1, i / 16);
-    len += Math.hypot(q.x - prev.x, q.y - prev.y);
-    prev = q;
-  }
-  return len;
-}
-
 function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameRing: boolean): Point {
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   const dx = b.x - a.x;
@@ -143,6 +109,7 @@ function routeControl(a: Point, b: Point, hub: Point, pivot: Point | null, sameR
 }
 
 interface Stroke {
+  piece?: readonly [Point, Point, Point];
   key: string;
   role: StripMark["role"];
   p0: Point;
@@ -161,14 +128,9 @@ interface Stroke {
   slots: readonly number[];
 }
 
-function trimmedPiece(p0: Point, c: Point, p1: Point, trimStart: number, trimEnd: number): [Point, Point, Point] | null {
-  const length = quadLength(p0, c, p1);
-  if (length < 1) return null;
-  return quadPiece(p0, c, p1, Math.min(0.45, trimStart / length), Math.max(0.55, 1 - trimEnd / length));
-}
 
 function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: Point; b: Point } | null {
-  const piece = trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
+  const piece = s.piece ?? trimmedPiece(s.p0, s.c, s.p1, s.trimStart, s.trimEnd);
   if (!piece) return null;
   const [a, c, b] = piece;
   const trimmed = quadLength(a, c, b);
@@ -182,7 +144,7 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
     for (const t of s.slots) {
       const q = quadAt(a, c, b, t);
       const box = boxAt(q.x, q.y);
-      if (input.occupied.some((o) => overlaps(o, box))) continue;
+      if (!inside(box, input.freeRect) || input.occupied.some((o) => overlaps(o, box))) continue;
       const half = (textW / 2 + input.tokens.numeralGapPx) / Math.max(1, trimmed);
       gapT0 = Math.max(0, t - half);
       gapT1 = Math.min(1, t + half);
@@ -194,7 +156,7 @@ function emit(input: FlowMarksInput, out: FlowMarks, s: Stroke): { a: Point; c: 
   out.strips.push({
     flowKey: s.key, role: s.role, ink: inkIndex(out, s.ink),
     ax: a.x, ay: a.y, cx: c.x, cy: c.y, bx: b.x, by: b.y, w0: s.w0, w1: s.w1, gapT0, gapT1,
-    dashed: s.dashed, headStart: s.headStart, headEnd: s.headEnd, headSize: s.dashed ? 0 : flowHeadSize(input.tokens, s.w0, s.w1),
+    dashed: s.dashed, headStart: s.headStart, headEnd: s.headEnd, headSize: s.dashed ? 0 : flowHeadSize(input.tokens, s.w0, s.w1, input.scene.branches),
   });
   return { a, c, b };
 }
@@ -247,21 +209,6 @@ function segmentHitsBox(x0: number, y0: number, x1: number, y1: number, b: Box):
   return clip(-dx, x0 - b.minX) && clip(dx, b.maxX - x0) && clip(-dy, y0 - b.minY) && clip(dy, b.maxY - y0);
 }
 
-function stubLength(tokens: DialTokens, free: Box): number {
-  return Math.max(tokens.stubMinPx, Math.min(tokens.stubMaxPx, tokens.stubFreeShare * Math.min(free.maxX - free.minX, free.maxY - free.minY)));
-}
-
-interface Stub {
-  link: DialLink;
-  near: End;
-  nearId: string;
-  farId: string;
-  farP: Point;
-  angle: number;
-  presence: number;
-  counts?: { needs: number; used: number };
-}
-
 function mergeAttendedStubs(model: DialModel, attn: DialAttention, stubs: readonly Stub[], chip: End | null): Stub[] {
   if (!attn.domainId || !chip) return [...stubs];
   const mine = mineOf(model, attn);
@@ -297,29 +244,6 @@ function mergeAttendedStubs(model: DialModel, attn: DialAttention, stubs: readon
   return out;
 }
 
-export function fanAngles(angles: readonly number[], gapDeg: number): number[] {
-  const order = angles.map((a, i) => ({ a, i })).sort((x, y) => x.a - y.a || x.i - y.i);
-  const minGap = (gapDeg * Math.PI) / 180;
-  for (let k = 1; k < order.length; k += 1) if (order[k]!.a - order[k - 1]!.a < minGap) order[k]!.a = order[k - 1]!.a + minGap;
-  const out = new Array<number>(angles.length);
-  for (const o of order) out[o.i] = o.a;
-  return out;
-}
-
-interface StubPlan {
-  st: Stub;
-  start: Point;
-  end: Point;
-  cos: number;
-  sin: number;
-  needs: number;
-  used: number;
-  text: string;
-  startX: number;
-  ty: number;
-  box: Box;
-}
-
 const STUB_LINE_PAD_PX = 3;
 const STUB_END_CLEAR_PX = 16;
 
@@ -343,55 +267,24 @@ function grown(box: Box, pad: number): Box {
   return { minX: box.minX - pad, maxX: box.maxX + pad, minY: box.minY - pad, maxY: box.maxY + pad };
 }
 
-function planStubs(input: FlowMarksInput, stubs: Stub[], nameFont: string, nameFontPx: number): StubPlan[] {
-  const { tokens, model } = input;
-  const length = stubLength(tokens, input.freeRect);
-  const byNear = new Map<string, Stub[]>();
-  for (const st of stubs) {
-    const list = byNear.get(st.nearId);
-    if (list) list.push(st);
-    else byNear.set(st.nearId, [st]);
-  }
-  const plans: StubPlan[] = [];
-  for (const list of byNear.values()) {
-    list.sort((x, y) => x.angle - y.angle || (x.farId < y.farId ? -1 : 1));
-    const angles = fanAngles(list.map((s) => s.angle), tokens.stubGapDeg);
-    list.forEach((st, k) => {
-      const reach = length * (k % 2 === 0 ? 1 : STUB_SHORT);
-      const cos = Math.cos(angles[k]!);
-      const sin = Math.sin(angles[k]!);
-      const start = { x: st.near.p.x + cos * (st.near.r + 4), y: st.near.p.y + sin * (st.near.r + 4) };
-      const end = { x: st.near.p.x + cos * reach, y: st.near.p.y + sin * reach };
-      const nearIsU = st.nearId === st.link.u;
-      const needs = st.counts?.needs ?? (nearIsU ? st.link.uv : st.link.vu);
-      const used = st.counts?.used ?? (nearIsU ? st.link.vu : st.link.uv);
-      const name = model.capabilityById.get(st.farId)?.label ?? model.domainById.get(st.farId)?.label ?? st.farId;
-      const text = stubText(name, needs, used);
-      const align: CanvasTextAlign = cos > 0.25 ? "left" : cos < -0.25 ? "right" : "center";
-      const tx = end.x + cos * 8;
-      const ty = end.y + sin * 10;
-      const width = input.measureText(text, nameFont);
-      const startX = align === "left" ? tx : align === "right" ? tx - width : tx - width / 2;
-      const box = { minX: startX - 2, maxX: startX + width + 2, minY: ty - nameFontPx * 0.7, maxY: ty + nameFontPx * 0.7 };
-      plans.push({ st, start, end, cos, sin, needs, used, text, startX, ty, box });
-    });
-  }
-  return plans.sort((x, y) => Number(y.st.link.attended) - Number(x.st.link.attended) || y.st.link.total - x.st.link.total || (x.st.link.key < y.st.link.key ? -1 : x.st.link.key > y.st.link.key ? 1 : x.st.nearId < y.st.nearId ? -1 : 1));
-}
-
-function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[]): void {
+function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[], accepted: StubPlan[]): void {
   const { tokens, inks, model } = input;
   const nameFont = scaledLabelFont("capability", tokens.labelScale);
   const nameFontPx = scaledLabelFontSize("capability", tokens.labelScale);
-  const accepted: StubPlan[] = [];
   const hits = (plan: StubPlan, box: Box) => segmentHitsBox(plan.start.x, plan.start.y, plan.end.x, plan.end.y, grown(box, STUB_LINE_PAD_PX));
-  for (const plan of planStubs(input, stubs, nameFont, nameFontPx)) {
+  const clear = (plan: StubPlan) => {
+    const { st, box } = plan;
+    return inside(box, input.freeRect) && !input.occupied.some((o) => overlaps(o, box))
+      && !crossesBox(chordLines, grown(box, STUB_LINE_PAD_PX))
+      && (st.link.attended || (!chordLines.some((line) => stubCrossesLine(plan, line)) && !accepted.some((other) => stubCrossesLine(plan, [other.start, other.end]))))
+      && !accepted.some((other) => hits(other, box) || hits(plan, other.box))
+      && !input.avoidTexts?.some((text) => hits(plan, text));
+  };
+  for (const original of planStubs(input, stubs, nameFont, nameFontPx)) {
+    let plan: StubPlan | undefined;
+    for (const candidate of stubCandidates(input, original)) if (clear(candidate)) { plan = candidate; break; }
+    if (!plan) continue;
     const { st, start, end, cos, sin, needs, used, box } = plan;
-    if (!inside(box, input.freeRect) || input.occupied.some((o) => overlaps(o, box))) continue;
-    if (crossesBox(chordLines, grown(box, STUB_LINE_PAD_PX))) continue;
-    if (!st.link.attended && (chordLines.some((line) => stubCrossesLine(plan, line)) || accepted.some((other) => stubCrossesLine(plan, [other.start, other.end])))) continue;
-    if (accepted.some((other) => hits(other, box) || hits(plan, other.box))) continue;
-    if (input.avoidTexts?.some((t) => hits(plan, t))) continue;
     accepted.push(plan);
     input.occupied.push(box);
     const needsInk = mixOver(strokeInk(inks, model, input.inkAttention, st.link, st.nearId, false), inks.bg, st.presence);
@@ -476,10 +369,13 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     ends.add(l.v);
   }
   const within = (p: Point) => p.x >= free.minX - FREE_SLACK_PX && p.x <= free.maxX + FREE_SLACK_PX && p.y >= free.minY - FREE_SLACK_PX && p.y <= free.maxY + FREE_SLACK_PX;
+  const branchRoutes = createBranchRouter(input, (l, a, b) => controlOf(input, l, a, b, hub));
   const restLine = ({ l, a, b }: { l: DialLink; a: End; b: End }) => {
     if (!within(a.p) || !within(b.p)) return null;
+    if (scene.branches) return branchRoutes(l, a, b).map((curve) => curve.line);
     const s = restStroke(tokens, l, a, b);
-    return sampledPiece(trimmedPiece(s.p0, controlOf(input, l, a, b, hub), s.p1, s.trimStart, s.trimEnd));
+    const line = sampledPiece(trimmedPiece(s.p0, controlOf(input, l, a, b, hub), s.p1, s.trimStart, s.trimEnd));
+    return line ? [line] : [];
   };
   const drawableByKey = new Map(drawable.map((d) => [d.l.key, d] as const));
   const guard = restCrossingGuard(
@@ -487,24 +383,40 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
       const d = drawableByKey.get(l.key);
       return d ? restLine(d) : null;
     },
-    drawable.filter((d) => d.l.relatesOnly).map(restLine).filter((pts): pts is Point[] => pts !== null),
+    drawable.filter((d) => d.l.relatesOnly).flatMap((d) => restLine(d) ?? []),
     W,
     H,
   );
   const counted = drawable.filter((d) => !d.l.relatesOnly).map((d) => d.l);
-  const budget = restBudget(counted, ends.size, tokens, guard);
+  const budget = restBudget(counted, ends.size, tokens, scene.branches ? {
+    crosses: (link) => branchRoutes(link, drawableByKey.get(link.key)!.a, drawableByKey.get(link.key)!.b).some((curve) => input.avoidTexts?.some((box) => crossesBox([curve.line], box))) || guard.crosses(link),
+    add: (link) => guard.add(link),
+  } : guard, !!scene.branches);
   result.budget = { shown: 0, total: budget.total, perEndCap: budget.perEndCap };
   const maxTotal = Math.max(1, ...counted.filter((l) => budget.keep.has(l.key) || l.attended).map((l) => l.total));
   const numberLimit = Math.max(tokens.restNumbersMin, Math.min(tokens.restNumbersMax, Math.round(tokens.restNumbersShare * onScreen)));
   const numberKeep = new Set(counted.filter((l) => budget.keep.has(l.key) && l.total >= tokens.restNumberMinCount).slice(0, numberLimit).map((l) => l.key));
 
   const stubs: Stub[] = [];
+  const reverseRecovery: Stub[] = [];
   const toDraw: { l: DialLink; a: End; b: End; presence: number }[] = [];
   for (const { l, a, b } of drawable) {
     if (!l.attended && !l.relatesOnly && !budget.keep.has(l.key)) continue;
     if (attn.domainId && !l.attended && l.relatesOnly) continue;
     const presence = presenceOf(l);
     if (presence <= PRESENCE_FLOOR) continue;
+    if (scene.branches && within(a.p) && within(b.p) && branchRoutes(l, a, b).length === 0) {
+      if (l.attended) {
+        const nearIsU = mineOf(model, attn)(l.u);
+        const near = nearIsU ? a : b;
+        const far = nearIsU ? b : a;
+        stubs.push({ link: l, near, nearId: nearIsU ? l.u : l.v, farId: nearIsU ? l.v : l.u, farP: far.p,
+          angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence });
+        reverseRecovery.push({ link: l, near: far, nearId: nearIsU ? l.v : l.u, farId: nearIsU ? l.u : l.v, farP: near.p,
+          angle: Math.atan2(near.p.y - far.p.y, near.p.x - far.p.x), presence });
+      }
+      continue;
+    }
     const ina = within(a.p);
     const inb = within(b.p);
     if (!ina && !inb) continue;
@@ -518,16 +430,20 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
     toDraw.push({ l, a, b, presence });
   }
 
-  const chordLines = toDraw.map(({ l, a, b }) => {
+  const chordLines = toDraw.flatMap(({ l, a, b }) => {
+    if (scene.branches) return branchRoutes(l, a, b).map((curve) => curve.line);
     const c = controlOf(input, l, a, b, hub);
-    return Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES));
+    return [Array.from({ length: CHORD_SAMPLES + 1 }, (_, k) => quadAt(a.p, c, b.p, k / CHORD_SAMPLES))];
   });
   toDraw.sort((x, y) => Number(x.l.attended) - Number(y.l.attended) || x.l.total - y.l.total || (x.l.key < y.l.key ? -1 : 1));
   if (!scene.branches) placeFarNumerals(input, out, farCounts(input, toDraw));
   const focusChip = attn.domainId ? endOf(attn.domainId) : null;
-  paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
+  const acceptedStubs: StubPlan[] = [];
+  paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines, acceptedStubs);
+  const recovered = new Set(result.stubs.map(stub => stub.flowKey));
+  paintStubs(input, out, reverseRecovery.filter(stub => !recovered.has(stub.link.key)), result, chordLines, acceptedStubs);
   for (const { l, a, b, presence } of toDraw) {
-    drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key));
+    drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key), branchRoutes);
     result.drawn.push(l.key);
   }
   for (const st of result.stubs) if (!result.drawn.includes(st.flowKey)) result.drawn.push(st.flowKey);
@@ -538,7 +454,10 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
       if (!l.attended || l.relatesOnly || shown.has(l.key)) continue;
       const a = endOf(l.u);
       const b = endOf(l.v);
-      if (a && b && within(a.p) && within(b.p)) drawFanLink(input, out, fanAttn, l, a, b, share * presenceOf(l), hub);
+      if (a && b && within(a.p) && within(b.p)) {
+        if (scene.branches) drawBranchLink(input, out, l, a, b, share * presenceOf(l), branchRoutes);
+        else drawFanLink(input, out, fanAttn, l, a, b, share * presenceOf(l), hub);
+      }
     }
   };
   fan(input.inkAttention, input.inkMix);
@@ -549,12 +468,22 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
 
 function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Point): Point {
   if (input.scene.branches) {
-    const ca = input.scene.clusterByDomain.get(l.u);
-    const cb = input.scene.clusterByDomain.get(l.v);
+    const ca = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.u));
+    const cb = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.v));
+    if (ca && cb && ca.branchPair !== cb.branchPair) {
+      const cx = ((ca.branchCorridorX ?? ca.chip.x) + (cb.branchCorridorX ?? cb.chip.x)) / 2;
+      return {
+        x: input.toScreen(cx, 0).x,
+        y: Math.min(a.p.y, b.p.y) - Math.max(input.tokens.nameMaxPx, Math.abs(a.p.x - b.p.x) * 0.35 + Math.abs(a.p.y - b.p.y) * 0.25),
+      };
+    }
     if (ca && cb && ca.branchSide === cb.branchSide) {
       const side = ca.branchSide ?? 1;
       const inner = side > 0 ? Math.min(a.p.x, b.p.x) : Math.max(a.p.x, b.p.x);
       return { x: inner - side * input.tokens.nameMaxPx, y: (a.p.y + b.p.y) / 2 };
+    }
+    if (ca && cb && input.scene.clusters.length > 4 && ca.branchCorridorX !== undefined) {
+      return { x: input.toScreen(ca.branchCorridorX, 0).x, y: (a.p.y + b.p.y) / 2 };
     }
     const dx = b.p.x - a.p.x;
     const dy = b.p.y - a.p.y;
@@ -604,9 +533,9 @@ function farCounts(input: FlowMarksInput, toDraw: readonly { l: DialLink; a: End
   return far;
 }
 
-function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean): void {
+function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point, maxTotal: number, numberAtRest: boolean, routes: BranchRouter): void {
   if (input.scene.branches) {
-    drawBranchLink(input, out, l, a, b, presence, hub);
+    drawBranchLink(input, out, l, a, b, presence, routes);
     return;
   }
   const { tokens, model, attention: attn, inks } = input;
@@ -657,44 +586,19 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
   });
 }
 
-function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
-  const base = controlOf(input, l, a, b, hub);
-  const boundary = (id: string, other: string, end: End, toward: Point): Point => {
-    const box = input.endBox?.(id);
-    const cluster = input.scene.clusterByDomain.get(id);
-    if (box && cluster) {
-      const peers = input.model.flows.filter((f) => f.a === id || f.b === id)
-        .map((f) => f.a === id ? f.b : f.a)
-        .sort((a, b) => (input.scene.positions.get(a)?.y ?? 0) - (input.scene.positions.get(b)?.y ?? 0) || a.localeCompare(b));
-      const at = peers.indexOf(domainOfEnd(input.model, other));
-      const fraction = at < 0 || peers.length < 2 ? 0.5 : (at + 1) / (peers.length + 1);
-      return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y: box.minY + (box.maxY - box.minY) * fraction };
-    }
-    const dx = toward.x - end.p.x;
-    const dy = toward.y - end.p.y;
-    const t = box ? Math.min((box.maxX - box.minX) / 2 / Math.max(1e-6, Math.abs(dx)), (box.maxY - box.minY) / 2 / Math.max(1e-6, Math.abs(dy))) : end.r / Math.max(1, Math.hypot(dx, dy));
-    return { x: end.p.x + dx * t, y: end.p.y + dy * t };
-  };
-  const run = (from: string, to: string, start: End, end: End, count: number, offset: number) => {
-    const dx = end.p.x - start.p.x;
-    const dy = end.p.y - start.p.y;
-    const len = Math.max(1, Math.hypot(dx, dy));
-    const c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
-    const p0 = boundary(from, to, start, c);
-    const p1 = boundary(to, from, end, c);
+
+function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, routes: BranchRouter): void {
+  for (const { from, to, count, p0, c, p1, piece } of routes(l, a, b)) {
     const width = l.attended ? input.tokens.flowFocusBase + 0.3 : input.tokens.flowRestBase;
     const curve = emit(input, out, {
-      key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, w0: width, w1: width,
+      key: l.key, role: l.relatesOnly ? "relates" : "chord", p0, c, p1, piece, w0: width, w1: width,
       ink: linkInk(input, l, from, false, presence), headStart: false, headEnd: !l.relatesOnly,
       trimStart: input.tokens.flowTrimStartPx, trimEnd: input.tokens.flowTrimEndPx,
-      dashed: l.relatesOnly, numeral: l.attended && count > 1 ? String(count) : null,
+      dashed: l.relatesOnly, numeral: l.attended && count > 1 ? input.connectionCount?.(count) ?? null : null,
       numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
     });
     if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: 0, arrivalBloom: false });
-  };
-  const offset = l.uv > 0 && l.vu > 0 ? input.tokens.flowSplitPx * 3 : 0;
-  if (l.uv > 0 || l.relatesOnly) run(l.u, l.v, a, b, l.uv, offset);
-  if (l.vu > 0) run(l.v, l.u, b, a, l.vu, offset);
+  }
 }
 
 function drawFanLink(input: FlowMarksInput, out: FlowMarks, attn: DialAttention, l: DialLink, a: End, b: End, share: number, hub: Point): void {
@@ -724,7 +628,7 @@ const GUARD_SAMPLES = 16;
 const GUARD_END_CLEAR_PX = 16;
 const GUARD_CELL_PX = 48;
 
-function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obstacles: readonly (readonly Point[])[], width: number, height: number): CrossingGuard {
+function restCrossingGuard(lineOf: (l: DialLink) => readonly (readonly Point[])[] | null, obstacles: readonly (readonly Point[])[], width: number, height: number): CrossingGuard {
   const lines: (readonly Point[])[] = [];
   const segs: { line: number; k: number }[] = [];
   const grid = new Map<number, number[]>();
@@ -748,8 +652,8 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
   };
   const nearEnd = (p: Point, pts: readonly Point[]) =>
     Math.hypot(p.x - pts[0]!.x, p.y - pts[0]!.y) < GUARD_END_CLEAR_PX || Math.hypot(p.x - pts[pts.length - 1]!.x, p.y - pts[pts.length - 1]!.y) < GUARD_END_CLEAR_PX;
-  const memo = new Map<string, readonly Point[] | null>();
-  const lineFor = (link: DialLink): readonly Point[] | null => {
+  const memo = new Map<string, readonly (readonly Point[])[] | null>();
+  const lineFor = (link: DialLink): readonly (readonly Point[])[] | null => {
     const hit = memo.get(link.key);
     if (hit !== undefined) return hit;
     const pts = lineOf(link);
@@ -759,9 +663,9 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
   for (const o of obstacles) insert(o);
   return {
     crosses(link) {
-      const pts = lineFor(link);
-      if (!pts) return false;
-      for (let k = 0; k < pts.length - 1; k += 1) {
+      const candidates = lineFor(link);
+      if (!candidates) return false;
+      for (const pts of candidates) for (let k = 0; k < pts.length - 1; k += 1) {
         let hit = false;
         cells(pts[k]!, pts[k + 1]!, (key) => {
           if (hit) return;
@@ -779,8 +683,7 @@ function restCrossingGuard(lineOf: (l: DialLink) => readonly Point[] | null, obs
       return false;
     },
     add(link) {
-      const pts = lineFor(link);
-      if (pts) insert(pts);
+      for (const pts of lineFor(link) ?? []) insert(pts);
     },
   };
 }

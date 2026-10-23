@@ -358,19 +358,8 @@ test.describe("map keyboard walk", () => {
     expect(covered, "the selected node is covered by a panel").toEqual([]);
   });
 
-  /**
-   * **When the camera does bring a node in, it lands in the free area's centre.**
-   *
-   * ⚠️ The "not covered" test above does not prove this change — confirmed by probe:
-   * reverting the target to the viewport centre left that test **green**, because at
-   * this zoom and on this graph a centred node happens not to reach the popover
-   * (x1128). Passing is not evidence (`/gate-probe`).
-   *
-   * So **the changed thing is measured directly**: right after a transition actually
-   * occurs, is the node at the free area's centre? Reverting to the viewport centre
-   * diverges by the measured 192px and turns red immediately.
-   */
-  test("after the camera moves, the node sits at the center of the free area", async ({ page }) => {
+  // A camera transition must leave the selected branch visible beside the inspector.
+  test("after the camera moves, the selected branch stays inside the free area", async ({ page }) => {
     await focusCanvas(page);
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => selectedId(page), { timeout: 5_000 }).not.toBeNull();
@@ -429,15 +418,15 @@ test.describe("map keyboard walk", () => {
           if (r.x + r.width / 2 >= box.x + box.width / 2) rightEdge = Math.min(rightEdge, r.x);
           else left = Math.max(left, r.right);
         }
-        const freeCenterX = rightEdge > left ? (left + rightEdge) / 2 : box.x + box.width / 2;
         return {
           camX: cam.x,
           camY: cam.y,
           boxX: box.x,
           nodeDocX: box.x + node.x,
-          freeCenterX,
-          canvasCenterX: box.x + box.width / 2,
-          canvasWidth: box.width,
+          freeLeft: left - box.x,
+          freeRight: rightEdge - box.x,
+          canvasHeight: box.height,
+          name: probe.labels().find((label) => label.nodeId === id) ?? null,
         };
       });
 
@@ -455,20 +444,14 @@ test.describe("map keyboard walk", () => {
       }
     }
     expect(landed, "never triggered a camera transition").not.toBeNull();
-    // The dive frames the focus's ego bounds and the leash then holds the focus near the centre, so the
-    // node's own rest says little; the aim of the framed centre is what must favour the free area.
-    const frame = await page.evaluate(() => window.__atlasMap?.focusFrame?.() ?? null);
-    expect(frame, "the dive reported the bounds it framed").not.toBeNull();
-    const aimDocX = landed!.boxX + frame!.aimX;
-    const toFree = Math.abs(aimDocX - landed!.freeCenterX);
-    const toCanvas = Math.abs(aimDocX - landed!.canvasCenterX);
-    expect(
-      toFree,
-      `The framed centre was aimed closer to the screen centre (${landed!.canvasCenterX}) than to the free area's centre (${landed!.freeCenterX}), so the offset did not apply (free ${Math.round(toFree)}px · screen ${Math.round(toCanvas)}px)`,
-    ).toBeLessThan(toCanvas);
-    expect(toFree, `the framed centre was aimed ${Math.round(toFree)}px from the free area's centre`).toBeLessThan(8);
-    expect(landed!.nodeDocX, "the node lies inside the frame").toBeGreaterThanOrEqual(landed!.boxX + frame!.left - 1);
-    expect(landed!.nodeDocX, "the node lies inside the frame").toBeLessThanOrEqual(landed!.boxX + frame!.right + 1);
+    // Selection may make only a small nudge; its drawn name and mark must clear the inspector.
+    expect(landed!.name, "the selected branch keeps a drawn name").not.toBeNull();
+    expect(landed!.name!.minX, "the selected name clears the left obstruction").toBeGreaterThanOrEqual(landed!.freeLeft - 1);
+    expect(landed!.name!.maxX, "the selected name clears the right inspector").toBeLessThanOrEqual(landed!.freeRight + 1);
+    expect(landed!.name!.minY, "the selected name stays on the canvas").toBeGreaterThanOrEqual(0);
+    expect(landed!.name!.maxY, "the selected name stays on the canvas").toBeLessThanOrEqual(landed!.canvasHeight);
+    expect(landed!.nodeDocX - landed!.boxX, "the selected mark clears the left obstruction").toBeGreaterThanOrEqual(landed!.freeLeft);
+    expect(landed!.nodeDocX - landed!.boxX, "the selected mark clears the right inspector").toBeLessThanOrEqual(landed!.freeRight);
   });
 
   /** The shortcut sheet is the only place that teaches the keyboard, so it must list arrow-key walking. */
