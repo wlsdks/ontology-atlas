@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { definitionSectionCases } from '../../../../tests/fixtures/definition-section-cases.mjs';
 import { buildDefinitionPreview, buildExcerpt, extractOutLinksWithContext, firstHeading, parseFrontmatter } from './parse-frontmatter';
 
 describe('parseFrontmatter — basics', () => {
@@ -367,6 +368,9 @@ describe('complete opening definition previews', () => {
 
 
 describe('ambiguous definition continuations', () => {
+  it.each(definitionSectionCases)('reads $name without dropping its qualification', ({ body, expected }) => {
+    expect(buildDefinitionPreview(body, { title: 'Retry' })).toBe(expected);
+  });
   it('keeps indented continuation text even when its first character resembles a block', () => {
     expect(buildDefinitionPreview('Retry dispatch may write reports\n    # only with explicit approval.', {})).toBe('Retry dispatch may write reports # only with explicit approval.');
   });

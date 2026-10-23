@@ -436,6 +436,10 @@ export function buildDefinitionPreview(
     current = lines.next();
     while (!current.done && !current.value.trim()) current = lines.next();
   }
+  if (current.value && /^ {0,3}##[ \t]+Definition(?:[ \t]+#+)?[ \t]*$/.test(current.value)) {
+    current = lines.next();
+    while (!current.done && !current.value.trim()) current = lines.next();
+  }
   const paragraph: string[] = [];
   for (; !current.done; current = lines.next()) {
     const line = current.value;

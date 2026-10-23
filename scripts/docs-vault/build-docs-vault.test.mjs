@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after, before, describe, it, test } from 'node:test';
+import { definitionSectionCases } from '../../tests/fixtures/definition-section-cases.mjs';
 
 /** This checkout's root — the source the bare-worktree probe below copies from. */
 const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -421,6 +422,7 @@ test('generated manifests retain eligible definitions without flattening boundar
   const root = await mkdtemp(path.join(os.tmpdir(), 'definition-preview-'));
   const intro = 'Retries a failed read, but does not persist a report.';
   const cases = [
+    ...definitionSectionCases.map(({ name, body, expected }) => [name, 'title: Retry\n', body, expected]),
     ['inline-pipe-qualification', 'title: Retry\n', 'Retry dispatch may write reports\nonly for `ReadRequest | WriteRequest` with explicit approval.', 'Retry dispatch may write reports only for `ReadRequest | WriteRequest` with explicit approval.'],
     ['indented-qualification', 'title: Retry\n', 'Retry dispatch may write reports\n    only with explicit approval.', 'Retry dispatch may write reports only with explicit approval.'],
     ['tabbed-qualification', 'title: Retry\n', 'Retry dispatch may write reports\n\tonly with explicit approval.', 'Retry dispatch may write reports only with explicit approval.'],
