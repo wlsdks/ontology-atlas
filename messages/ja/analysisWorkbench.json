@@ -186,5 +186,9 @@
       "missing": "なし",
       "unknown": "不明"
     }
-  }
+  },
+  "reviewPurpose": "記録された役割、範囲、つながりが製品の目的に合っているか確認します。",
+  "definitionEyebrow": "役割と範囲",
+  "recordedDefinition": "記録された説明・原文",
+  "recordedReason": "記録された接続理由・原文"
 }

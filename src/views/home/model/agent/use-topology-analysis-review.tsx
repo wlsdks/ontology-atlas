@@ -121,9 +121,9 @@ export function useTopologyAnalysisReview({
   const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
   const openAnalysisEvidence = useCallback((slug: string) => {
     const nodeId = chatNodeIndex.get(slug);
-    if (nodeId) { handleSelect(nodeId); setFullDetailSlug(nodeId); }
+    if (nodeId) { setSelectedEdge(null); handleSelect(nodeId, { exitPath: true }); setFullDetailSlug(nodeId); }
     else router.push(buildDocsVaultHref({ slug }));
-  }, [chatNodeIndex, handleSelect, router, setFullDetailSlug]);
+  }, [chatNodeIndex, handleSelect, router, setFullDetailSlug, setSelectedEdge]);
   const showAnalysisRelation = useCallback((edge: NonNullable<typeof selectedEdge>) => {
     interactionSelectedSlugRef.current = null;
     setExpandAllActive(false);

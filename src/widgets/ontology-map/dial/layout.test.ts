@@ -272,11 +272,24 @@ describe("packed disclosure layout", () => {
 });
 
 describe("branch overview", () => {
+  it("keeps implementation elements clear of capability faces in detail readers", () => {
+    const model = modelOf(dogfood.nodes, dogfood.edges);
+    const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
+    const nodes = [...scene.positions.entries()];
+    const collisions = nodes.flatMap(([id, p], i) => nodes.slice(i + 1)
+      .filter(([, q]) => Math.hypot(p.x - q.x, p.y - q.y) < 28)
+      .map(([other]) => [id, other]));
+    expect(collisions).toEqual([]);
+  });
+
   it("keeps every real concept and separates member rows from the dependency corridor", () => {
     const model = modelOf(dogfood.nodes, dogfood.edges);
     const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
     expect(scene.branches).toBe(true);
     expect(scene.rings).toHaveLength(0);
+    const project = scene.positions.get(model.projectId!)!;
+    expect(project.x).toBe((scene.extent.minX + scene.extent.maxX) / 2);
+    expect(project.y).toBeLessThan(Math.min(...scene.clusters.flatMap((c) => c.items.map((it) => it.y))) - tokens.pitch * 2);
     expect([...scene.positions.keys()].sort()).toEqual([...lay(model, null).positions.keys()].sort());
     for (const c of scene.clusters) {
       for (const it of c.items) expect(Math.sign(it.x - c.chip.x)).toBe(Math.sign(c.chip.x));

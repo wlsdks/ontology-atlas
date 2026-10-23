@@ -5,8 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn(), info: vi.fn(), warning: vi.fn() }, Toaster: () => null }));
 import messages from '../../../../messages/en.json';
+import ko from '../../../../messages/ko.json';
 import { analysisDigest, type AnalysisBasis, type AnalysisRun } from '@/entities/analysis-record';
-import type { AnalysisCaptureContext } from '@/features/acp-session';
+import { ANALYSIS_FINDINGS_INSTRUCTION, type AnalysisCaptureContext } from '@/features/acp-session';
 
 const archive = vi.hoisted(() => ({ read: vi.fn(), append: vi.fn(), basis: vi.fn() }));
 vi.mock('@/entities/analysis-record', async (original) => ({ ...await original<object>(), readAnalysisHistory: archive.read, appendAnalysisRecord: archive.append, analysisArchiveWritable: () => true }));
@@ -36,6 +37,14 @@ beforeEach(async () => {
 
 function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
 describe('analysis context workbench', () => {
+  it('requests localized analysis prose while preserving the structured finding contract', () => {
+    const onRequest = vi.fn();
+    render(<NextIntlClientProvider locale="ko" messages={ko}><AnalysisWorkbench context={context} contextLabel="Project" open onClose={() => {}} onRequest={onRequest} /></NextIntlClientProvider>);
+    fireEvent.click(screen.getByRole('button', { name: ko.analysisWorkbench.analyze }));
+    const text = onRequest.mock.calls[0]![0];
+    expect(text).toContain('Korean (ko)');
+    expect(text).toContain(ANALYSIS_FINDINGS_INSTRUCTION);
+  });
   it('announces a saved analysis once, even when the workbench remounts with the same save state', () => {
     const state = { status: 'saved' as const, id: '2b5f1c3e-7a44-4d9b-9c1e-0f5a6b7c8d9e', handle: context.handle, record: null, error: null };
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest: vi.fn(), capture: { state, setState: vi.fn() } };

@@ -169,17 +169,18 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     evidence, attention, inkAttention, previous, inkMix, chordPresence,
     scale: input.scale, zoomRatio: input.zoomRatio, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
     freeRect: input.freeRect, nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText,
-    elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId,
+    elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId, contextAlphas: input.contextAlphas,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, hubLines: [placementText, evidenceText], disclosure,
   }, pool);
   crossfadeNumerals(pool, input.worldKey, input.now, input.reducedMotion);
-  paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
+  if (!input.deferPaint) paintDialMarks(input.ctx, pool, input.mapTokens, { now: input.now, reducedMotion: input.reducedMotion, numeralHaloPx: input.dialTokens.numeralHaloPx });
   markFocusPainted(input.worldKey, performance.now());
 
   const labelBoxes: DialFrameResult["labelBoxes"] = [];
   for (const t of pool.texts) if (t.id !== null && LABELLED_ROLES.has(t.role)) labelBoxes.push({ nodeId: t.id, text: t.text, ...t.box });
   const light: DialLightFrame = { attentionKey: attention.key, focused: attention.selected, inkMix, chords: built.chords };
   const result: DialFrameResult = {
+    contextOnly: input.contextAlphas !== undefined,
     drawnCount: built.drawnCount, tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows,
     labelBoxes, light, inkMix, chordPresence, marks: pool,
   };

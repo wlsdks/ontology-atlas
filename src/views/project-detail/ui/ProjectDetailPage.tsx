@@ -547,7 +547,7 @@ export function ProjectDetailPage({
                 {...constructionReview.inputProps}
                 data-testid="construction-review-ingress"
                 aria-label={t("constructionReview.openResult")}
-                className="sr-only"
+                hidden
               />
               <Button
                 type="button"

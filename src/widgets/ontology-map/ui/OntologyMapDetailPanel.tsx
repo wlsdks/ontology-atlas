@@ -302,7 +302,7 @@ export function OntologyMapDetailPanel({
           "shadow-[var(--map-panel-shadow)]",
         ].join(" ")}
       >
-        <div data-testid="map-detail-panel-body" className="min-h-0 overflow-y-auto pb-2">
+        <div data-testid="map-detail-panel-body" className="min-h-0 overflow-y-auto pb-3">
         {/* Identity precedes source state and actions. */}
         <IdentityZone
           nodeId={nodeId}

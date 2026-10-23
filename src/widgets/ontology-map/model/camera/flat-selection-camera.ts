@@ -36,11 +36,11 @@ export function selectionNudgeTarget(
   node: { x: number },
   viewportWidth: number,
   insets: { left: number; right: number },
-  margin = SELECTION_NUDGE_MARGIN_PX,
+  margin: number | { left: number; right: number } = SELECTION_NUDGE_MARGIN_PX,
 ): CameraTarget | null {
-  const lo = insets.left + margin;
-  const hi = viewportWidth - insets.right - margin;
-  if (hi <= lo) return null;
+  const lo = insets.left + (typeof margin === "number" ? margin : margin.left);
+  const hi = viewportWidth - insets.right - (typeof margin === "number" ? margin : margin.right);
+  if (hi <= lo) return typeof margin === "number" ? null : selectionNudgeTarget(camera, node, viewportWidth, insets);
   const sx = (node.x - camera.tx) * camera.tscale + viewportWidth / 2;
   const shift = sx < lo ? sx - lo : sx > hi ? sx - hi : 0;
   if (Math.abs(shift) <= 0.5) return null;

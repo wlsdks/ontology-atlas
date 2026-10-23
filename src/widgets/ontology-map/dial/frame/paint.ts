@@ -158,6 +158,10 @@ function paintGlyph(ctx: CanvasRenderingContext2D, g: GlyphMark, map: OntologyMa
 }
 
 function paintText(ctx: CanvasRenderingContext2D, t: Omit<TextMark, "role">, inks: readonly string[], halo: string): void {
+  if (t.lines) {
+    t.lines.forEach((line, i) => paintText(ctx, { ...t, text: line, lines: undefined, y: t.y + (i - (t.lines!.length - 1) / 2) * t.lineHeight! }, inks, halo));
+    return;
+  }
   ctx.font = t.font;
   ctx.textBaseline = "middle";
   ctx.strokeStyle = halo;

@@ -553,10 +553,19 @@ test('a user camera move while reading survives first placement', async ({page})
   await page.mouse.move(1120, 360, {steps:8});
   await page.mouse.up();
   await waitForMapStill(page, {what:'camera'});
+  await expect.poll(() => page.evaluate(() => {
+    const camera = window.__atlasMap!.camera()!;
+    const target = window.__atlasMap!.cameraTarget!()!;
+    return Math.hypot(camera.x - target.x, camera.y - target.y) * camera.scale;
+  })).toBeLessThanOrEqual(0.05);
   const before = await page.evaluate(() => window.__atlasMap?.camera());
+  const beforeTarget = await page.evaluate(() => window.__atlasMap!.cameraTarget!());
   await release(page);
   await waitForDial(page);
   const after = await page.evaluate(() => window.__atlasMap?.camera());
+  const afterTarget = await page.evaluate(() => window.__atlasMap!.cameraTarget!());
+  console.log(`[flat-dial-motion] reader camera ${JSON.stringify({ before, beforeTarget, after, afterTarget })}`);
+  expect(afterTarget).toEqual(beforeTarget);
   expect(before).toBeTruthy();
   expect(after).toBeTruthy();
   expect({ scale: after!.scale, width: after!.width, height: after!.height })

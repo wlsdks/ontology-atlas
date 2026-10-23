@@ -43,8 +43,15 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-Small Flat maps use domain label blocks with outward capability branches and
-thin directional dependencies. Dense Flat maps retain usage rings around the
+Small Flat maps use domain label blocks with spaced outward capability branches,
+proportional marks and gradual detail disclosure. Five or six domains use shorter
+previews; long capability names wrap within a bounded column, with the full title
+available on selection. Domain dependencies remain
+counted at their domain until capability inspection. Neutral emphasis marks the
+selection; amber exclamation marks and a compact key explain evidence that needs
+rechecking. Detail positions separate implementation elements from capability
+faces. A same-scale selection nudge protects the visible branch from its inspector
+when the free span can contain it. Dense Flat maps retain usage rings around the
 project, packed member clusters,
 and counted directional dependencies at rest. Concepts
 navigation separates selection from tree disclosure. Project inspectors show one
@@ -64,9 +71,20 @@ Project source-path repair opens the exact affected concept and its recorded
 relative path. Missing, stale or out-of-project targets require remeasurement;
 copied handoffs keep that target without disclosing the private source root.
 
-Meaning review previews a nonblank authored description or a complete opening
-prose paragraph within 320 characters. The full-document action exposes the
-remaining sections and boundaries, including when no preview is eligible.
+Meaning review explains the roles, boundaries and connections to examine before
+offering AI analysis. Original descriptions and connection rationales expand in
+place; previews retain a nonblank authored description or a complete opening
+paragraph within 320 characters, including the canonical `## Definition` section.
+The full-document action retains the remaining
+sections and boundaries. Selecting a relation keeps its details in the review
+panel instead of opening a duplicate inspector alongside it.
+Agent reads of that same relation retain the review target. Opening a current
+evidence document exits path selection and opens its full detail.
+Analysis requests use the interface language for explanatory prose and findings,
+while keeping identifiers, structured fields and exact quotations unchanged.
+Small Flat maps keep their branch forms during meaning and relation inspection;
+relation captions still describe the recorded edges. Light is masked from card
+interiors so travelling signals cannot wash out their text.
 
 The optional companion game and related personal-record screens are retired.
 Existing local saves remain untouched; no replacement viewer or export is provided.

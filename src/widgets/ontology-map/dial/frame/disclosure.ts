@@ -103,7 +103,7 @@ export function resolveDialDisclosure(
 ): DialDisclosure {
   const ramps = rampsOf(scene, camera.scale, tokens);
   const entered = enteredOf(scene, camera, freeRect, attention, ramps.capAlpha > CAPS_DRAWN_ALPHA);
-  const resolved = entered !== null && ramps.pitchPx >= tokens.resolve && ownLinks(model, entered) <= tokens.resolveBudget;
+  const resolved = (!scene.branches || attention.capabilityId !== null) && entered !== null && ramps.pitchPx >= tokens.resolve && ownLinks(model, entered) <= tokens.resolveBudget;
   return {
     pitchPx: ramps.pitchPx,
     capAlpha: ramps.capAlpha,

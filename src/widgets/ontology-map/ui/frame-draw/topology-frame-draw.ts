@@ -3,7 +3,7 @@ import { beginFrame } from "./frame-begin";
 import { beginNodeLayer, paintStrataDust } from "./node-layer";
 import { paintBackdrop } from "./paint-backdrop";
 import { paintClusterChips } from "./paint-chips";
-import { paintDial } from "./paint-dial";
+import { paintBranchContext, paintDial, prepareBranchContext } from "./paint-dial";
 import { paintDomeStage } from "./paint-dome-stage";
 import { paintEdges } from "./paint-edges";
 import { paintLabels } from "./paint-labels";
@@ -34,10 +34,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   if (paintDial(frame)) return;
   const focus = prepareFocus(frame);
   const alpha = computeNodeAlpha(frame, focus);
+  const branch = prepareBranchContext(frame, alpha.effectiveAlphaById);
   const edges = prepareEdges(frame, focus, alpha);
   const stage = paintDomeStage(frame, focus, edges);
   paintEdges(frame, focus, alpha, edges, stage);
   const layer = beginNodeLayer(frame);
+  if (branch) {
+    const context = paintBranchContext(frame, branch);
+    paintRelationCaptions(frame, edges, layer, context.reservations, context.safe);
+    return;
+  }
   paintStrataDust(frame, focus, layer);
   paintNodes(frame, focus, alpha, stage, layer);
   paintWardingRing(frame, focus, layer);

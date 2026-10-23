@@ -116,7 +116,7 @@ describe("resolveDialDisclosure", () => {
 
   it("resolves from the resolve pitch and slides the endpoints over the next 12 px", () => {
     const target = scene.clusterByDomain.get("d0")!.chip;
-    const at = (pitch: number) => resolveDialDisclosure(model, scene, camera(scene, pitch, target), FREE, rest, TOKENS);
+    const at = (pitch: number) => resolveDialDisclosure(model, { ...scene, branches: false }, camera(scene, pitch, target), FREE, rest, TOKENS);
     expect(at(TOKENS.resolve - 1)).toMatchObject({ entered: "d0", resolved: false, endpointSlide: 0 });
     expect(at(TOKENS.resolve)).toMatchObject({ entered: "d0", resolved: true, endpointSlide: 0 });
     expect(at(TOKENS.resolve + RESOLVE_SLIDE_PX / 2).endpointSlide).toBeCloseTo(0.5);

@@ -186,5 +186,9 @@
       "missing": "缺失",
       "unknown": "未知"
     }
-  }
+  },
+  "reviewPurpose": "检查记录的职责、范围和连接原因是否符合产品的实际目标。",
+  "definitionEyebrow": "职责与范围",
+  "recordedDefinition": "记录的说明 · 原文",
+  "recordedReason": "记录的连接原因 · 原文"
 }

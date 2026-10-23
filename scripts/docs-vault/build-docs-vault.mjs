@@ -355,6 +355,10 @@ function buildDefinitionPreview(
     index += 1;
     while (index < lines.length && !lines[index].trim()) index += 1;
   }
+  if (/^ {0,3}##[ \t]+Definition(?:[ \t]+#+)?[ \t]*$/.test(lines[index] ?? '')) {
+    index += 1;
+    while (index < lines.length && !lines[index].trim()) index += 1;
+  }
   const paragraph = [];
   for (; index < lines.length; index += 1) {
     const line = lines[index];

@@ -87,6 +87,9 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
       if (!planned && frame.inkMix >= 1) {
         planned = true;
         current = frame.chords.length > 0 ? planFocusSignal(frame.attentionKey, frame.chords.map(chordEdge), input.now, input.kinematics, input.reducedMotion) : null;
+        for (const signal of current?.signals ?? []) {
+          if (signal.edge.arrivalBloom === false) signal.bloomId = null;
+        }
       }
       if (current === null) return false;
       const { kinematics, tokens } = input;

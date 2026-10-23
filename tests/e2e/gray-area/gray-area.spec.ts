@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import reviewLabels from '../../../messages/ko/analysisWorkbench.json';
 import { waitForAnimationsDone, waitForMapStill } from '../settle';
 import { installGrayAreaHarness as install, openGrayAreaPreview as open, inspectGrayArea as inspect, waitForGrayAreaTop } from './harness';
 
@@ -165,7 +166,7 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await composer.fill('제가 고친 조사 질문이에요');
   await page.getByTestId('acp-chat-runtime').click();await page.getByRole('option',{name:'Codex',exact:true}).click();
   await expect(composer).toHaveText('제가 고친 조사 질문이에요');await expect(heading).toContainText('재시도 전달');
-  await dock.getByRole('tab',{name:'의미',exact:true}).click();await expect(heading).not.toContainText('재시도 전달');
+  await dock.getByRole('tab',{name:reviewLabels.meaning,exact:true}).click();await expect(heading).not.toContainText('재시도 전달');
   await dock.getByRole('tab',{name:'대화',exact:true}).click();await expect(heading).toContainText('재시도 전달');
   await composer.fill('');await expect(heading).not.toContainText('재시도 전달');
   await page.getByTestId('acp-chat-runtime').click();await page.getByRole('option',{name:'Claude Agent',exact:true}).click();

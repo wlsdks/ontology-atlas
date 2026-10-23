@@ -4,15 +4,16 @@ import { crossfadeInk, inkIndex, mixOver } from "../ink";
 import { smoothstep } from "../frame/disclosure";
 import type { DialFrameMarks, DialMarksInput, DialMarksResult } from "../frame/marks";
 import type { Box, DialAttention, DialKind, GlyphMark, Point, TextMark } from "../types";
-import { BRANCH_PREVIEW_ROWS } from "./layout";
+import { branchPreviewRows, BRANCH_ROW_PITCH } from "./layout";
 import { capabilityNameTries, overlaps } from "../label-marks";
-import { branchTextStyle } from "./text";
+import { branchNameLines, branchTextStyle } from "./text";
 
-export interface BranchBlock { box: Box; fill: number; rim: number; alpha: number }
+export interface BranchBlock { id: string; box: Box; fill: number; rim: number; alpha: number }
 export interface BranchStem { a: Point; c: Point; b: Point; ink: number }
 
 export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): DialMarksResult {
   const { model, scene, tokens, inks, mapTokens: map, disclosure } = input;
+  const previewRows = branchPreviewRows(scene.clusters.length);
   const alphas = new Map<string, number>();
   const picks: DialMarksResult["picks"] = [];
   const rows: DialMarksResult["rows"] = [];
@@ -27,11 +28,12 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
   const position = (id: string, p: Point) => input.nodeScreen(id) ?? input.toScreen(p.x, p.y);
   const visible = (p: Point, room: number) => p.x + room >= 0 && p.x - room <= input.viewportWidth && p.y + room >= 0 && p.y - room <= input.viewportHeight;
   const colorFor = (a: DialAttention | null, id: string, kind: DialKind, rest: string): string => {
+    if (input.contextAlphas) return mixOver(rest, inks.bg, input.contextAlphas.get(id) ?? map.egoRestAlpha);
     if (!a?.domainId) return rest;
     const domain = model.domainOf.get(id);
     const own = a.domainId === id || (domain === a.domainId && (a.capabilityId === null || a.capabilityId === id));
     const partner = a.needsCaps.has(id) || a.usedByCaps.has(id) || a.relatesCaps.has(id);
-    if (own || partner) return inks.needs;
+    if (own || partner) return rest;
     if (kind === "domain" && a.partnerDomains.has(id)) return rest;
     return mixOver(rest, inks.bg, map.egoRestAlpha);
   };
@@ -39,31 +41,35 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     colorFor(input.previous ?? input.inkAttention, id, kind, rest),
     colorFor(input.inkAttention, id, kind, rest), input.inkMix,
   );
-  const text = (id: string, role: TextMark["role"], value: string, p: Point, align: CanvasTextAlign, kind: DialKind, tint: string) => {
+  const text = (id: string, role: TextMark["role"], value: string, p: Point, align: CanvasTextAlign, kind: DialKind, tint: string, presence = 1) => {
     const { font, height } = branchTextStyle(role, kind, tokens.labelScale);
-    const width = input.measureText(value, font);
+    const lines = role === "capability" ? branchNameLines(value, font, tokens.nameMaxPx, input.measureText) : [value];
+    const width = Math.max(...lines.map((line) => input.measureText(line, font)));
+    const textHeight = height * lines.length;
     const left = align === "right" ? p.x - width : align === "center" ? p.x - width / 2 : p.x;
-    const box = { minX: left - 2, maxX: left + width + 2, minY: p.y - height / 2 - 2, maxY: p.y + height / 2 + 2 };
+    const box = { minX: left - 2, maxX: left + width + 2, minY: p.y - textHeight / 2 - 2, maxY: p.y + textHeight / 2 + 2 };
     const domain = model.domainById.has(id) ? id : model.domainOf.get(id);
     const arrival = domain ? smoothstep(tokens.chordArrival, 1, input.appearOf(domain)) : 1;
-    out.texts.push({ id, role, text: value, ...p, align, font, ink: ink(mixOver(tint, inks.bg, arrival)), box, parts: null });
-    if (role !== "units" && role !== "more") nameBoxes.set(id, box);
+    out.texts.push({ id, role, text: lines.join(" "), lines: lines.length > 1 ? lines : undefined, lineHeight: height, ...p, align, font, ink: ink(mixOver(tint, inks.bg, arrival * presence)), box, parts: null });
+    if (role !== "units" && role !== "more" && role !== "status") nameBoxes.set(id, box);
     return box;
   };
   const glyph = (id: string, kind: DialKind, p: Point, r: number, stroke: string, fill: string, stalePip = false) => {
     const g: GlyphMark = {
       id, kind, ...p, r, stroke, fill,
-      egoState: input.attention.capabilityId === id || (input.attention.capabilityId === null && input.attention.domainId === id) ? "center" : "normal",
+      egoState: "normal",
       count: null, stalePip,
-      hovered: input.hoveredNodeId === id, agentFocus: input.agentFocusNodeId === id,
-      selectionPulse: input.selectionPulse?.nodeId === id ? input.selectionPulse : null,
+      hovered: false, agentFocus: input.agentFocusNodeId === id,
+      selectionPulse: null,
     };
     out.glyphs.push(g);
-    picks.push({ id, ...p, r });
-    alphas.set(id, 1);
+    const alpha = input.contextAlphas?.get(id) ?? 1;
+    if (alpha >= 0.05) picks.push({ id, ...p, r });
+    alphas.set(id, alpha);
   };
-  const rowHeight = tokens.ledgerRowPx * 2;
-  const namesVisible = tokens.pitch * input.scale >= rowHeight * 0.65;
+  const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
+  const detail = smoothstep(tokens.ledgerGapPx, tokens.ledgerGapPx + tokens.chipMinPx, rowPx);
+  const namesVisible = detail > 0.01;
   const capAlpha = disclosure.capAlpha;
   for (const cluster of scene.clusters) {
     const id = cluster.domainId;
@@ -83,51 +89,56 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const width = Math.max(tokens.nameMaxPx + tokens.ledgerGapPx, titleWidth + tokens.ledgerGapPx * 2, unitsWidth + tokens.ledgerGapPx * 2);
     const halfHeight = tokens.ledgerGapPx + tokens.chipMinPx;
     const box = { minX: p.x - width / 2, maxX: p.x + width / 2, minY: p.y - halfHeight, maxY: p.y + halfHeight };
-    boxes.set(id, box);
+    const halfWidth = tokens.chipMinPx + (width / 2 - tokens.chipMinPx) * detail;
+    const portHeight = tokens.chipMinPx + (halfHeight - tokens.chipMinPx) * detail;
+    boxes.set(id, { minX: p.x - halfWidth, maxX: p.x + halfWidth, minY: p.y - portHeight, maxY: p.y + portHeight });
     if (namesVisible) {
-      blocks.push({ box, fill: ink(mixOver(inks.domainFill, inks.bg, 0.5)), rim: ink(color(id, "domain", inks.domainRim)), alpha: arrival });
-      rows.push({ id, box });
-    } else boxes.delete(id);
-    radii.set(id, namesVisible ? halfHeight : tokens.chipMinPx);
-    const marker = namesVisible ? { x: box.minX + tokens.ledgerGapPx * 0.7, y: p.y } : p;
+      const before = input.previous ?? input.inkAttention;
+      const fill = (a: DialAttention | null) => mixOver(inks.domainFill, inks.bg, a?.domainId === id ? 1 : 0.5);
+      const rim = (a: DialAttention | null) => a?.domainId === id ? inks.domainLabelAttended : colorFor(a, id, "domain", inks.domainRim);
+      blocks.push({ id, box, fill: ink(crossfadeInk(fill(before), fill(input.inkAttention), input.inkMix)), rim: ink(crossfadeInk(rim(before), rim(input.inkAttention), input.inkMix)), alpha: arrival * detail });
+      if (detail > 0.5) rows.push({ id, box });
+    }
+    radii.set(id, portHeight);
+    const marker = { x: p.x + (box.minX + tokens.ledgerGapPx * 0.7 - p.x) * detail, y: p.y };
     glyph(id, "domain", marker, tokens.chipMinPx * appear, color(id, "domain", inks.domainRim), inks.domainFill, (input.evidence?.staleByDomain.get(id) ?? 0) > 0);
     const side = cluster.branchSide ?? 1;
-    const outer = p.x + side * (titleWidth + tokens.ledgerGapPx);
-    const beside = outer >= tokens.chipMinPx && outer <= input.viewportWidth - tokens.chipMinPx;
-    const compactTitle = beside ? { x: p.x + side * tokens.ledgerGapPx, y: p.y } : { x: p.x, y: p.y + tokens.ledgerGapPx };
-    const title = text(id, "domain", domain.label, namesVisible ? { x: box.minX + tokens.ledgerGapPx * 1.5, y: p.y - tokens.chipMinPx } : compactTitle, namesVisible ? "left" : beside ? side > 0 ? "left" : "right" : "center", "domain", color(id, "domain", inks.domainLabelAttended));
-    if (namesVisible) text(id, "units", units, { x: box.minX + tokens.ledgerGapPx * 1.5, y: p.y + tokens.ledgerGapPx / 2 }, "left", "element", color(id, "domain", inks.units));
-    else rows.push({ id, box: title });
+    const textX = marker.x + tokens.chipMinPx + tokens.ledgerGapPx / 2;
+    const title = text(id, "domain", domain.label, { x: textX, y: p.y - tokens.chipMinPx * detail }, "left", "domain", color(id, "domain", inks.domainLabelAttended));
+    if (namesVisible) text(id, "units", units, { x: textX, y: p.y + tokens.ledgerGapPx / 2 }, "left", "element", color(id, "domain", inks.units), detail);
+    if (detail <= 0.5) rows.push({ id, box: title });
     for (const [itemIndex, item] of cluster.items.entries()) {
-      const active = input.attention.capabilityId === item.id || input.hoveredNodeId === item.id || input.agentFocusNodeId === item.id || input.selectionPulse?.nodeId === item.id;
-      const preview = !item.direct && itemIndex < BRANCH_PREVIEW_ROWS;
-      const revealed = (preview && namesVisible) || disclosure.elementsAlpha > 0.5 || active || partners.has(item.id);
-      if (!revealed) { if (!item.direct) alphas.set(item.id, 0); continue; }
+      const active = input.attention.capabilityId === item.id || input.hoveredNodeId === item.id || input.agentFocusNodeId === item.id || input.selectionPulse?.nodeId === item.id || (input.contextAlphas?.get(item.id) ?? 0) >= 0.5;
+      const preview = !item.direct && itemIndex < previewRows;
+      const presence = active || partners.has(item.id) ? 1 : Math.max(preview ? detail : 0, disclosure.elementsAlpha);
+      if (presence <= 0.01 || (input.contextAlphas && (input.contextAlphas.get(item.id) ?? 0) < 0.05)) { if (!item.direct) alphas.set(item.id, 0); continue; }
       const q = item.direct ? input.toScreen(item.x, item.y) : position(item.id, item);
-      const radius = Math.min(tokens.discMaxPx, Math.max(tokens.discMinPx, input.scale * tokens.pitch * tokens.discPitchShare));
+      const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
       radii.set(item.id, radius);
       if (capAlpha <= 0.02 || !visible(q, tokens.nameMaxPx)) continue;
       const state = input.evidence?.stateOf(item.id);
-      const tint = color(item.id, "capability", state === "stale" ? inks.stale : inks.capabilityRim);
-      const root = namesVisible ? { x: side > 0 ? box.maxX : box.minX, y: p.y } : p;
-      stems.push({ a: root, c: { x: (root.x + q.x) / 2, y: q.y }, b: { x: q.x - side * radius, y: q.y }, ink: ink(color(item.id, "capability", inks.element)) });
+      const tint = mixOver(color(item.id, "capability", state === "stale" ? inks.stale : inks.capabilityRim), inks.bg, presence);
+      const root = { x: p.x + side * width / 2 * detail, y: p.y };
+      stems.push({ a: root, c: { x: (root.x + q.x) / 2, y: q.y }, b: { x: q.x - side * radius, y: q.y }, ink: ink(mixOver(color(item.id, "capability", inks.element), inks.bg, presence)) });
       if (item.direct) out.squares.push({ id: null, ...q, half: radius, fill: ink(inks.elementFill), rim: ink(inks.element) });
       else {
-        if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg, state === "stale");
+        if (active) glyph(item.id, "capability", q, Math.max(radius, tokens.discGlyphPx), tint, inks.bg);
         else {
-          out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(inks.bg), rim: ink(tint), dashed: state === "unknown", lineWidth: 1.3 });
-          picks.push({ id: item.id, ...q, r: radius });
+          out.discs.push({ id: item.id, ...q, r: radius * appear, fill: ink(mixOver(inks.capabilityFill, inks.bg, presence)), rim: ink(tint), dashed: false, lineWidth: 1.3 });
+          if (presence > 0.5) picks.push({ id: item.id, ...q, r: radius });
         }
-        alphas.set(item.id, 1);
+        alphas.set(item.id, input.contextAlphas?.get(item.id) ?? presence);
+        if (state === "stale" && namesVisible) text(item.id, "status", "!", q, "center", "element", tint, presence);
         if (namesVisible || active || partners.has(item.id)) {
           const label = model.capabilityById.get(item.id)!.label;
-          const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel));
-          rows.push({ id: item.id, box: name });
+          const name = text(item.id, "capability", label, { x: q.x + side * (radius + tokens.chipMinPx), y: q.y }, side > 0 ? "left" : "right", "capability", color(item.id, "capability", inks.domainLabel), presence);
+          if (presence > 0.5) rows.push({ id: item.id, box: name });
         }
       }
       const a = disclosure.elementAlphaFor(item);
-      if (a <= 0.5 || (disclosure.entered !== id && input.attention.capabilityId !== item.id)) continue;
+      if (!input.contextAlphas && (a <= 0.5 || (disclosure.entered !== id && input.attention.capabilityId !== item.id))) continue;
       for (const el of item.elementIds) {
+        if (input.contextAlphas && (input.contextAlphas.get(el) ?? 0) < 0.5) continue;
         const at = scene.positions.get(el)!;
         const e = position(el, at);
         if (!visible(e, tokens.chipMinPx)) continue;
@@ -144,12 +155,13 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
         }
       }
     }
-    const more = domain.capabilityIds.length - BRANCH_PREVIEW_ROWS;
-    if (more > 0 && disclosure.elementsAlpha <= 0.5 && namesVisible) {
-      const last = cluster.items[BRANCH_PREVIEW_ROWS - 1]!;
-      const point = input.toScreen(last.x, last.y + tokens.pitch);
-      const label = text(id, "more", input.labels?.moreMembers?.(more) ?? input.labels?.more(more) ?? `+${more}`, { x: point.x + side * (tokens.discMaxPx + tokens.chipMinPx), y: point.y }, side > 0 ? "left" : "right", "capability", color(id, "domain", inks.units));
-      rows.push({ id, box: label });
+    const more = domain.capabilityIds.length - previewRows;
+    if (!input.contextAlphas && more > 0 && disclosure.elementsAlpha < 0.99 && namesVisible) {
+      const last = cluster.items[previewRows - 1]!;
+      const point = input.toScreen(last.x, last.y + tokens.pitch * BRANCH_ROW_PITCH);
+      const radius = Math.min(map.radiusCapability * 1.5, Math.max(tokens.discGlyphPx, rowPx / 3));
+      const label = text(id, "more", input.labels?.moreMembers?.(more) ?? input.labels?.more(more) ?? `+${more}`, { x: point.x + side * (radius + tokens.chipMinPx), y: point.y }, side > 0 ? "left" : "right", "capability", color(id, "domain", inks.units), detail * (1 - disclosure.elementsAlpha));
+      if (detail > 0.5 && disclosure.elementsAlpha < 0.5) rows.push({ id, box: label });
     }
   }
   for (const id of scene.orphans.ids) {
@@ -162,13 +174,15 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const id = model.projectId;
     const p = position(id, scene.positions.get(id)!);
     if (visible(p, tokens.nameMaxPx)) {
-      glyph(id, "project", p, tokens.hubMinPx, inks.domainRim, inks.bg);
-      const name = text(id, "project", model.projectLabel, { x: p.x + tokens.hubMinPx + tokens.ledgerGapPx / 2, y: p.y }, "left", "project", inks.domainLabelAttended);
+      const radius = Math.min(tokens.hubMaxPx, Math.max(tokens.hubMinPx, map.radiusProject * input.scale));
+      glyph(id, "project", p, radius, inks.domainRim, inks.bg);
+      const titleY = p.y + radius + tokens.ledgerGapPx;
+      const name = text(id, "project", model.projectLabel, { x: p.x, y: titleY }, "center", "project", inks.domainLabelAttended);
       rows.push({ id, box: name });
-      input.hubLines?.forEach((line, i) => { if (line) text(id, "units", line, { x: name.minX, y: p.y + (namesVisible ? 1 : -1) * (i + 1) * tokens.ledgerRowPx }, "left", "element", inks.units); });
+      input.hubLines?.forEach((line, i) => { if (line) text(id, "units", line, { x: p.x, y: titleY + (i + 1) * tokens.ledgerRowPx }, "center", "element", inks.units); });
     }
   }
-  const flows = buildFlowMarks({
+  const flows = input.contextAlphas ? { links: [], drawn: [], entered: disclosure.entered, resolved: disclosure.resolved, budget: { shown: 0, total: 0, perEndCap: Infinity }, stubs: [] } : buildFlowMarks({
     model, scene, tokens, inks, attention: input.attention, inkAttention: input.inkAttention, previous: input.previous,
     inkMix: input.inkMix, chordPresence: input.chordPresence, scale: input.scale,
     viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight, freeRect: input.freeRect,
@@ -177,6 +191,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     occupied: [...boxes.values(), ...out.texts.map((t) => t.box)], avoidTexts: out.texts.map((t) => t.box), chords,
     resolution: disclosure, named: new Set(nameBoxes.keys()), nameBoxes,
   }, out);
+  if (input.contextAlphas) stems.length = 0;
   const elementSquares = out.squares.filter((q) => q.id !== null).length;
   return { drawnCount: [...alphas.values()].filter((a) => a > 0.5).length, tier: elementSquares ? "element" : "circuit", alphas, picks, rows, chords, flows, ledger: null, elementSquares };
 }

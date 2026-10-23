@@ -140,8 +140,8 @@ export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r
     count: string | null;
     stalePip: boolean;
 }
-type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element";
-export interface TextMark { id: string | null; role: TextRole; text: string; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
+type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element" | "status";
+export interface TextMark { id: string | null; role: TextRole; text: string; lines?: readonly string[]; lineHeight?: number; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
     }[] | null;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
@@ -156,7 +156,7 @@ export interface DialRowPick {
     id: string;
     box: Box;
 }
-export interface DialChordLight { key: string; sourceDomain: string; targetDomain: string; a: Point; c: Point; b: Point; widthPx: number; chipRadiusPx: number;
+export interface DialChordLight { key: string; sourceDomain: string; targetDomain: string; a: Point; c: Point; b: Point; widthPx: number; chipRadiusPx: number; arrivalBloom?: boolean;
 }
 export interface DialLightFrame { attentionKey: string; focused: boolean; inkMix: number; chords: DialChordLight[];
 }
@@ -164,6 +164,7 @@ export interface DialOwnershipInput {
     hasDial: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean; focusedRelationsCaptioned: boolean; brushedIsElement: boolean;
 }
 export interface DialFrameInput {
+  contextAlphas?: ReadonlyMap<string, number>; deferPaint?: boolean;
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
   nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
   viewportWidth: number; viewportHeight: number; freeRect: Box;
@@ -174,6 +175,7 @@ export interface DialFrameInput {
   now: number; reducedMotion: boolean; domainAppear: number;
 }
 export interface DialFrameResult {
+  contextOnly?: boolean;
   drawnCount: number; tier: "circuit" | "element"; alphas: ReadonlyMap<string, number>; picks: DialPick[]; rows: DialRowPick[];
   labelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number;
     }[];

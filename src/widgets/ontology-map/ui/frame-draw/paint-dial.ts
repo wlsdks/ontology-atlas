@@ -2,22 +2,25 @@ import { computeSelectionPulse } from "../../model/ambient/selection-pulse";
 import { dialConceptTotal } from "../../dial/dial-model";
 import { clearDialFrame, dialOwnsFlatPaint, paintDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
+import { paintDialMarks } from "../../dial/frame/paint";
+import type { DialFrameMarks } from "../../dial/frame/marks";
+import type { DialFrameResult } from "../../dial/types";
 import { tierAssemblyAppear } from "../../morph/tier-assembly";
 import { passState, effectiveAlphaByIdReused } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 
-function paintOwnedDial(frame: FrameInputs): boolean {
+function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, number>): DialFrameResult | null {
   const { world, camera, viewportWidth, viewportHeight, tokens, now, reducedMotion, appearById, selectionPulse, ctx } = frame;
   const dial = world.dial;
   if (!dial)
-    return false;
+    return null;
   let dialTokens;
   try {
     dialTokens = readDialTokens();
   }
   catch {
     clearDialFrame();
-    return false;
+    return null;
   }
   const camX = camera.x.value;
   const camY = camera.y.value;
@@ -31,6 +34,7 @@ function paintOwnedDial(frame: FrameInputs): boolean {
     ? computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta)
     : null;
   const result = paintDialFrame({
+    contextAlphas, deferPaint: contextAlphas !== undefined,
     ctx, dial, worldKey: world,
     nodeScreen: (id) => {
       const node = world.nodeById.get(id);
@@ -60,7 +64,22 @@ function paintOwnedDial(frame: FrameInputs): boolean {
   passState.drawnLabelBoxes = result.labelBoxes;
   passState.drawnRelationCaptions = [];
   passState.drawnNodeCount = result.drawnCount;
-  return true;
+  return result;
+}
+
+export function prepareBranchContext(frame: FrameInputs, alphas: ReadonlyMap<string, number>): DialFrameResult | null {
+  if (!frame.world.dial?.scene.branches || frame.domeOn || frame.realmDepthById !== null || frame.wardingRing !== null) return null;
+  return paintOwnedDial(frame, new Map(alphas));
+}
+
+export function paintBranchContext(frame: FrameInputs, result: DialFrameResult) {
+  const marks = result.marks as DialFrameMarks;
+  paintDialMarks(frame.ctx, marks, frame.tokens, { now: frame.now, reducedMotion: frame.reducedMotion, numeralHaloPx: readDialTokens().numeralHaloPx });
+  const insets = frame.panelInsets ?? { left: 0, right: 0 };
+  return {
+    reservations: (marks.blocks ?? []).map((block) => ({ bbox: block.box, priority: 100, ownerId: block.id })),
+    safe: { left: insets.left, right: frame.viewportWidth - insets.right, top: frame.tokens.safeInsetTop, bottom: frame.viewportHeight - frame.tokens.safeInsetBottom },
+  };
 }
 
 // True when the dial owned the whole frame, so the map passes must not run.

@@ -10,6 +10,12 @@ const view = { tx: 0, ty: 0, tscale: 1 };
 const insets = { left: 300, right: 400 };
 
 describe("flat selection camera", () => {
+  it("keeps a selected outward branch clear of the inspector without changing zoom", () => {
+    const nudge = selectionNudgeTarget(view, { x: 250 }, 1600, insets, { left: 100, right: 360 })!;
+    expect(nudge.tscale).toBe(1);
+    expect(nudge.ty).toBe(0);
+    expect(250 - nudge.tx + 800 + 360).toBe(1200);
+  });
   it("slides only sideways, at the same scale, and only when the panel would cover the node", () => {
     expect(selectionNudgeTarget(view, { x: 0 }, 1600, insets)).toBeNull();
     const nudge = selectionNudgeTarget(view, { x: 600 }, 1600, insets)!;

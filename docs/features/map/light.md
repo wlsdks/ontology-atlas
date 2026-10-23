@@ -31,6 +31,10 @@ and fades; the selected concept keeps its own glow. Selecting another concept
 replaces the light; clearing the selection ends it. A selection that was already
 there when the map opened, such as a deep link, does not light.
 
+The branch map ends the travelling light at the drawn connection port. It
+omits the broad arrival bloom so a domain card's text and surface stay clear.
+The travelling head fades at the port on the existing arrival clock.
+
 ## Path
 
 When a path between two concepts is found, its relations light hop by hop in
