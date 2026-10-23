@@ -241,6 +241,7 @@ for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
       await expect.poll(async () => namedCapabilities(await readDial(page), domainId).missing).toEqual(before.missing);
       const collapsed = await readDial(page);
       clearFocusedNames(collapsed);
+      if (vault === "storefront") await page.getByTestId("map-detail-panel-more-menu-trigger").click();
       const scopeEntry = page.getByTestId(vault === "storefront" ? "map-detail-panel-action-realm" : "topology-realm-enter-button");
       await expect(scopeEntry).toBeVisible();
       await scopeEntry.click();
@@ -268,6 +269,7 @@ for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
       await waitForMapStill(page);
       expect((await readDial(page)).clusters).toHaveLength(OVERVIEW[vault].domains);
       expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(domainId);
+      if (vault === "storefront") await page.getByTestId("map-detail-panel-more-menu-trigger").click();
       await expect(scopeEntry).toBeVisible();
     });
   }

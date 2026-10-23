@@ -215,7 +215,7 @@ export function useTopologyFocusNavigation({
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);
         const held = cameraTargetRef.current;
         if (back.kind === "stay" && anchor && releasedLeash && held.tscale > overviewScaleRef.current) {
-          const bounds = focusPanBounds(anchor, releasedLeash, held.tscale, cameraTokens(tokens).cameraFocusPanMargin);
+          const bounds = focusPanBounds(anchor, releasedLeash, held.tscale, measured.cameraFocusPanMargin);
           const edge = clampPointToPanBounds(held.tx, held.ty, bounds);
           const seen = cameraRef.current;
           const between = (value: number, a: number, b: number) => Math.min(Math.max(a, b), Math.max(Math.min(a, b), value));

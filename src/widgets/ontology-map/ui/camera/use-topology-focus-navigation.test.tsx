@@ -160,6 +160,20 @@ describe("useTopologyFocusNavigation", () => {
     expect(panelInsetsRef.current?.right).toBe(tokens.safeInsetRight);
   });
 
+  it("does not re-reserve a closing inspector after a manual pan", () => {
+    const panelInsetsRef = ref<{ left: number; right: number } | null>({ left: 0, right: 400 });
+    const { deps, select } = setup({ panelInsetsRef, cameraTokens: <T,>(t: T) => {
+      panelInsetsRef.current = { left: 0, right: 400 };
+      return { ...t, safeInsetRight: 400 };
+    } });
+    select("f", { click: true });
+    deps.cameraTargetRef.current = { tx: 900, ty: 50, tscale: 1.4 };
+    deps.cameraGestureRevisionRef.current++;
+    deps.userDrivenCameraRef.current = true;
+    select(null);
+    expect(panelInsetsRef.current?.right).toBe(tokens.safeInsetRight);
+  });
+
   it("remeasures the inspector after a fly action selects its domain", () => {
     let right = 0;
     const { deps, hook, select } = setup({ cameraTokens: <T,>(t: T) => ({ ...t, safeInsetRight: right }) });
