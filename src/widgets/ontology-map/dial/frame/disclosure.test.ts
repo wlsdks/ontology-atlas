@@ -129,10 +129,10 @@ describe("resolveDialDisclosure", () => {
     const big = modelOf(2, TOKENS.resolveBudget + 1, many);
     const bigScene = sceneOf(big);
     const cam = camera(bigScene, TOKENS.resolve + 20, bigScene.clusterByDomain.get("d0")!.chip);
-    expect(resolveDialDisclosure(big, bigScene, cam, FREE, resolveDialAttention(big, null, null), TOKENS)).toMatchObject({ entered: "d0", resolved: false, endpointSlide: 0 });
+    expect(resolveDialDisclosure(big, bigScene, cam, FREE, resolveDialAttention(big, null, "d0c0"), TOKENS)).toMatchObject({ entered: "d0", resolved: false, endpointSlide: 0 });
     const fits = modelOf(2, TOKENS.resolveBudget, many.slice(0, TOKENS.resolveBudget));
     const fitsScene = sceneOf(fits);
     const fitsCam = camera(fitsScene, TOKENS.resolve + 20, fitsScene.clusterByDomain.get("d0")!.chip);
-    expect(resolveDialDisclosure(fits, fitsScene, fitsCam, FREE, resolveDialAttention(fits, null, null), TOKENS)).toMatchObject({ entered: "d0", resolved: true });
+    expect(resolveDialDisclosure(fits, fitsScene, fitsCam, FREE, resolveDialAttention(fits, null, "d0c0"), TOKENS)).toMatchObject({ entered: "d0", resolved: true });
   });
 });

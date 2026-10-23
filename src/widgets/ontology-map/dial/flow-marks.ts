@@ -549,12 +549,22 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
 
 function controlOf(input: FlowMarksInput, l: DialLink, a: End, b: End, hub: Point): Point {
   if (input.scene.branches) {
-    const ca = input.scene.clusterByDomain.get(l.u);
-    const cb = input.scene.clusterByDomain.get(l.v);
+    const ca = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.u));
+    const cb = input.scene.clusterByDomain.get(domainOfEnd(input.model, l.v));
+    if (ca && cb && ca.branchPair !== cb.branchPair) {
+      const cx = ((ca.branchCorridorX ?? ca.chip.x) + (cb.branchCorridorX ?? cb.chip.x)) / 2;
+      return {
+        x: input.toScreen(cx, 0).x,
+        y: Math.min(a.p.y, b.p.y) - Math.max(input.tokens.nameMaxPx, Math.abs(a.p.x - b.p.x) * 0.35 + Math.abs(a.p.y - b.p.y) * 0.25),
+      };
+    }
     if (ca && cb && ca.branchSide === cb.branchSide) {
       const side = ca.branchSide ?? 1;
       const inner = side > 0 ? Math.min(a.p.x, b.p.x) : Math.max(a.p.x, b.p.x);
       return { x: inner - side * input.tokens.nameMaxPx, y: (a.p.y + b.p.y) / 2 };
+    }
+    if (ca && cb && input.scene.clusters.length > 4 && ca.branchCorridorX !== undefined) {
+      return { x: input.toScreen(ca.branchCorridorX, 0).x, y: (a.p.y + b.p.y) / 2 };
     }
     const dx = b.p.x - a.p.x;
     const dy = b.p.y - a.p.y;
@@ -657,17 +667,34 @@ function drawLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b:
   });
 }
 
+const branchPorts = new WeakMap<DialScene, Map<string, Map<string, number>>>();
+
+function branchPortFraction(input: FlowMarksInput, id: string, other: string): number {
+  let ports = branchPorts.get(input.scene);
+  if (!ports) {
+    const peers = new Map<string, string[]>();
+    for (const flow of input.model.flows) for (const [from, to] of [[flow.a, flow.b], [flow.b, flow.a]] as const) {
+      const list = peers.get(from) ?? [];
+      list.push(to);
+      peers.set(from, list);
+    }
+    ports = new Map([...peers].map(([domain, list]) => {
+      list.sort((a, b) => (input.scene.positions.get(a)?.y ?? 0) - (input.scene.positions.get(b)?.y ?? 0) || a.localeCompare(b));
+      return [domain, new Map(list.map((peer, i) => [peer, list.length < 2 ? 0.5 : (i + 1) / (list.length + 1)]))];
+    }));
+    branchPorts.set(input.scene, ports);
+  }
+  return ports.get(id)?.get(domainOfEnd(input.model, other)) ?? 0.5;
+}
+
 function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: End, b: End, presence: number, hub: Point): void {
   const base = controlOf(input, l, a, b, hub);
   const boundary = (id: string, other: string, end: End, toward: Point): Point => {
     const box = input.endBox?.(id);
     const cluster = input.scene.clusterByDomain.get(id);
-    if (box && cluster) {
-      const peers = input.model.flows.filter((f) => f.a === id || f.b === id)
-        .map((f) => f.a === id ? f.b : f.a)
-        .sort((a, b) => (input.scene.positions.get(a)?.y ?? 0) - (input.scene.positions.get(b)?.y ?? 0) || a.localeCompare(b));
-      const at = peers.indexOf(domainOfEnd(input.model, other));
-      const fraction = at < 0 || peers.length < 2 ? 0.5 : (at + 1) / (peers.length + 1);
+    const otherCluster = input.scene.clusterByDomain.get(domainOfEnd(input.model, other));
+    if (box && cluster && cluster.branchPair === otherCluster?.branchPair) {
+      const fraction = branchPortFraction(input, id, other);
       return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y: box.minY + (box.maxY - box.minY) * fraction };
     }
     const dx = toward.x - end.p.x;
@@ -679,7 +706,37 @@ function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: E
     const dx = end.p.x - start.p.x;
     const dy = end.p.y - start.p.y;
     const len = Math.max(1, Math.hypot(dx, dy));
-    const c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+    let c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+    if (input.scene.clusters.length > 4 && input.avoidTexts?.length) {
+      const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
+      const free = input.freeRect;
+      const candidates = [c,
+        { x: c.x, y: free.minY + 8 }, { x: c.x, y: free.maxY - 8 },
+        { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
+        { x: mid.x, y: free.minY + 8 }, { x: mid.x, y: free.maxY - 8 },
+      ];
+      const hits = (control: Point, ceiling = Infinity) => {
+        const piece = trimmedPiece(boundary(from, to, start, control), control, boundary(to, from, end, control), input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
+        const line = sampledPiece(piece);
+        if (!line) return Infinity;
+        let count = 0;
+        for (const box of input.avoidTexts!) {
+          if (crossesBox([line], box)) count += 1;
+          if (count >= ceiling) break;
+        }
+        return count;
+      };
+      let best = hits(c);
+      for (const candidate of candidates.slice(1)) {
+        if (best === 0) break;
+        const fromCluster = input.scene.clusterByDomain.get(from);
+        const toCluster = input.scene.clusterByDomain.get(to);
+        if (fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair
+          && [fromCluster, toCluster].some((cluster) => (candidate.x - (input.nodeScreen(cluster.domainId) ?? input.toScreen(cluster.chip.x, cluster.chip.y)).x) * (cluster.branchSide ?? 1) >= 0)) continue;
+        const count = hits(candidate, best);
+        if (count < best) { best = count; c = candidate; }
+      }
+    }
     const p0 = boundary(from, to, start, c);
     const p1 = boundary(to, from, end, c);
     const width = l.attended ? input.tokens.flowFocusBase + 0.3 : input.tokens.flowRestBase;

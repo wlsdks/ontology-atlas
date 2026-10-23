@@ -1,3 +1,4 @@
+import { branchMembersAnimating } from "../branches/member-disclosure";
 import { MOTION } from "@/shared/motion/tokens";
 import { easeOutCubic } from "../../model/camera/camera-easing";
 import { dialConceptTotal, dialEvidenceView, resolveDialAttention } from "../dial-model";
@@ -165,11 +166,11 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   const placementText = dialPlacementLine(placement.state, placement.progress, input.labels);
   const evidenceText = evidence !== null && !evidence.measured ? input.labels?.evidenceUnmeasured?.() ?? null : null;
   const built = buildDialMarks({
-    model, scene, tokens: input.dialTokens, mapTokens: input.mapTokens, inks: inksOf(input), labels: input.labels,
+    now: input.now, reducedMotion: input.reducedMotion, model, scene, tokens: input.dialTokens, mapTokens: input.mapTokens, inks: inksOf(input), labels: input.labels,
     evidence, attention, inkAttention, previous, inkMix, chordPresence,
     scale: input.scale, zoomRatio: input.zoomRatio, viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight,
     freeRect: input.freeRect, nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText,
-    elementLabel: input.elementLabel, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId, contextAlphas: input.contextAlphas,
+    elementLabel: input.elementLabel, focusedNodeId: input.focusedNodeId, hoveredNodeId: input.hoveredNodeId, agentFocusNodeId: input.agentFocusNodeId, contextAlphas: input.contextAlphas,
     selectionPulse: input.selectionPulse, hubCount: input.hubCount, hubLines: [placementText, evidenceText], disclosure,
   }, pool);
   crossfadeNumerals(pool, input.worldKey, input.now, input.reducedMotion);
@@ -180,6 +181,8 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
   for (const t of pool.texts) if (t.id !== null && LABELLED_ROLES.has(t.role)) labelBoxes.push({ nodeId: t.id, text: t.text, ...t.box });
   const light: DialLightFrame = { attentionKey: attention.key, focused: attention.selected, inkMix, chords: built.chords };
   const result: DialFrameResult = {
+    branchScene: scene.branches ? scene : undefined,
+    branchMembersAnimating: !!scene.branches && !input.reducedMotion && branchMembersAnimating(scene, input.now),
     contextOnly: input.contextAlphas !== undefined,
     drawnCount: built.drawnCount, tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows,
     labelBoxes, light, inkMix, chordPresence, marks: pool,
