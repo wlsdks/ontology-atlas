@@ -8,7 +8,7 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number;
 }
 export interface Pad { left: number; right: number; top: number; bottom: number;
 }
-export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
+export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; lessMembers?(count: number): string; connectionCount?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
 }
 export interface DialTokens {
   pitch: number;
@@ -108,13 +108,13 @@ export interface DialRing { step: number; min: number; max: number | null; radiu
 }
 export interface DialItem { id: string; direct: boolean; x: number; y: number; elementIds: string[]; elementPitch: number;
 }
-export interface DialCluster { branchSide?: -1 | 1; domainId: string; step: number; angle: number; chip: Point; footprint: number; items: DialItem[];
+export interface DialCluster { branchPair?: number; branchCorridorX?: number; branchSide?: -1 | 1; domainId: string; step: number; angle: number; chip: Point; footprint: number; items: DialItem[];
 }
-export interface DialMemory { order: string[]; radiusByStep: ReadonlyMap<number, number>; angleById: ReadonlyMap<string, { step: number; angle: number;
+export interface DialMemory { branchOrder?: readonly string[]; order: string[]; radiusByStep: ReadonlyMap<number, number>; angleById: ReadonlyMap<string, { step: number; angle: number;
     }>;
     itemOrder: ReadonlyMap<string, string[]>;
 }
-export interface DialScene { branches?: boolean; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
+export interface DialScene { branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
     }; axisAngle: number; extent: Box; positions: ReadonlyMap<string, Point>; medianElementPitch: number; memory: DialMemory;
 }
 export interface DialWorld {
@@ -135,7 +135,7 @@ interface TickMark { ink: number; x0: number; y0: number; x1: number; y1: number
 }
 interface RailMark { ink: number; cx: number; cy: number; r: number; a0: number; a1: number;
 }
-export interface GlyphMark { id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number;
+export interface GlyphMark { selectionInk?: string; id: string; kind: DialKind; x: number; y: number; r: number; egoState: "center" | "neighbor" | "dim" | "normal"; fill: string | null; stroke: string | null; hovered: boolean; agentFocus: boolean; selectionPulse: { scaleFactor: number; alpha: number;
     } | null;
     count: string | null;
     stalePip: boolean;
@@ -152,7 +152,9 @@ export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMar
 }
 export interface DialPick { id: string; x: number; y: number; r: number;
 }
+export interface DialRowAction { type: "branch-members"; domainId: string; direction: "more" | "less" }
 export interface DialRowPick {
+    action?: DialRowAction;
     id: string;
     box: Box;
 }
@@ -164,6 +166,8 @@ export interface DialOwnershipInput {
     hasDial: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean; focusedRelationsCaptioned: boolean; brushedIsElement: boolean;
 }
 export interface DialFrameInput {
+  requiredBranchIds?: ReadonlySet<string>;
+  contextInkAlphas?: ReadonlyMap<string, number>;
   contextAlphas?: ReadonlyMap<string, number>; deferPaint?: boolean;
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
   nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
@@ -175,6 +179,7 @@ export interface DialFrameInput {
   now: number; reducedMotion: boolean; domainAppear: number;
 }
 export interface DialFrameResult {
+  branchScene?: DialScene; branchMembersAnimating?: boolean;
   contextOnly?: boolean;
   drawnCount: number; tier: "circuit" | "element"; alphas: ReadonlyMap<string, number>; picks: DialPick[]; rows: DialRowPick[];
   labelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number;

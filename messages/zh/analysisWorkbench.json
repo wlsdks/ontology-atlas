@@ -101,6 +101,8 @@
   "fillNotes": "补写 {count} 条缺失的关联理由",
   "relationNotesPrompt": "仅使用 Atlas 工具，把此范围内每个关联背后缺失的理由写成一句话，放进 `relation_notes`。对每个理由为空的关系：先用 get_concepts(body: \"full\") 读取两端文档，再对来源文档（frontmatter 中列出目标的那份）使用 patch_concept 提出备注，传入 expected_mtime 并保留其他所有键；使用该文件夹自身的语言书写。备注要说明这个主张在此代码库中为何成立，而不是说 A 包含 B 或依赖 B。文档没有给出理由时，什么都不写，并把这一对列入未决问题。`domain:` 反向指针与父级的包含关系共用同一条理由：只写在父文档上，绝不写在子文档上。本轮最多写 {limit} 条备注；结束时说明还剩多少条。",
   "meaningTransitions": {
+    "artifactReadFailed": "无法读取已保存的依据",
+    "readFailed": "无法读取语义判断记录",
     "title": "语义决定",
     "boundary": "不可变的审阅快照。保存的字节不能验证某个人的身份，也不能批准代码，或证明检查、合并或部署。",
     "openFolder": "打开你的本体文件夹，查看语义决定。",

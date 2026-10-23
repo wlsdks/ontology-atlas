@@ -3,6 +3,7 @@ import en from '../../../messages/en.json';
 import { readFileSync } from 'node:fs';
 import { FIT_LOCALES } from '../locales';
 import { seedFirstRunSeen } from '../first-run-seed';
+import { waitForMapSettled } from '../settle';
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
 
@@ -103,6 +104,20 @@ test('the map meaning action returns an open history dock to meaning without clo
 
 test.describe('keyboard review at the app minimum window', () => {
   test.use({ viewport: { width: 1040, height: 720 } });
+  test('an opening review answers Escape before its focus handoff finishes', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/en/topology/?e2e=1&guides=off&index=collapsed');
+    await waitForMapSettled(page);
+    const opener = page.getByTestId('topology-meaning-workbench-toggle');
+    for (let cycle = 0; cycle < 6; cycle += 1) {
+      await opener.focus();
+      await page.keyboard.press('Enter');
+      await page.keyboard.press('Escape');
+      await expect(opener).toHaveAttribute('aria-pressed', 'false');
+      await expect(page.getByTestId('analysis-workbench')).toBeHidden();
+      await expect(opener).toBeFocused();
+    }
+  });
   for (const route of ['topology', 'architecture']) {
     test(`${route}: review takes visible focus and restores its opener`, async ({ page }) => {
       await page.goto(`/en/${route}/?e2e=1&guides=off&index=collapsed`);

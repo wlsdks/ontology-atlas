@@ -23,6 +23,8 @@ import type { LayoutRadii, LayoutRings } from "../../model/layout/layout";
 import { computeTopologyClusterState } from "./topology-cluster-state";
 import { radiusForKind, type TopologyWorld } from "./topology-world";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
+import type { DialWorld, DialWorldInput, Pad } from "../../dial/types";
+import { scopedBranches, scopedTreePositions } from "./realm/scoped-branches";
 
 /** Content bbox slack (world units) — so the camera fit holds the outermost node comfortably. */
 const CONTENT_BOUNDS_MARGIN = 40;
@@ -31,6 +33,8 @@ const EMPTY_EXPANDED = new Set<string>();
 
 export interface RealmRuntimeData {
   rootId: string;
+  flat?: boolean;
+  dial?: DialWorld | null;
   /** Realm member ids (the root included). */
   memberIds: ReadonlySet<string>;
   /** Ids outside the realm — hard-culled after the transition. */
@@ -70,6 +74,14 @@ export interface RealmRuntimeData {
    * overview.
    */
   entryCamera: CameraTarget | null;
+  /** The original overview coordinates survive a rebuild of the same scope in another mode. */
+  returnPositions?: ReadonlyMap<string, { x: number; y: number }>;
+  /** Captured before exit changes the phase, so interruption starts exactly where entry stopped. */
+  exitSnapshot?: {
+    positions: ReadonlyMap<string, { x: number; y: number }>;
+    outsideAlpha: number;
+    wardingProgress: number;
+  };
 }
 
 const DEPTH_TIER_KINDS = ["project", "domain", "capability", "element"] as const;
@@ -124,6 +136,7 @@ export function realmVisibleBounds(
   expandedParents: ReadonlySet<string>,
   tokens: OntologyMapTokens,
 ): RealmBounds {
+  if (data.flat) return data.bounds;
   const points: { x: number; y: number }[] = [];
   const reaches: number[] = [];
   let maxNodeRadius = 0;
@@ -172,6 +185,7 @@ export function buildRealmRuntimeData(
    * member counts as visible.
    */
   expandedParents: ReadonlySet<string> = EMPTY_EXPANDED,
+  dialInput?: DialWorldInput,
 ): RealmRuntimeData | null {
   if (!world.nodeById.has(rootId)) return null;
   // Membership walks every `contains` edge, like the ledger and datasheet, so shared multi-parent
@@ -195,7 +209,10 @@ export function buildRealmRuntimeData(
     capability: tokens.radiusCapability,
     element: tokens.radiusElement,
   };
-  const layout = computeRealmLayout(subtree, rings, radii);
+  const dial = dialInput ? scopedBranches(world, subtree.memberIds, dialInput) : null;
+  const layout = dial?.scene.positions ?? (dialInput
+    ? scopedTreePositions(rootId, subtree.memberIds, subtree.depthById, dialInput.tokens.pitch)
+    : computeRealmLayout(subtree, rings, radii));
 
   const insideTargets = new Map<string, { x: number; y: number }>();
   const insideFrom = new Map<string, { x: number; y: number }>();
@@ -235,7 +252,7 @@ export function buildRealmRuntimeData(
   // Camera fit = the visible content bbox ∪ the warding circle's bbox (see the
   // `unionWithWardingCircle` comment — the warding circle is the realm surface's
   // frame, so it is held whole rather than clipped).
-  const bounds = unionWithWardingCircle(
+  let bounds = unionWithWardingCircle(
     computeVisibleBounds(visibleMemberPoints, CONTENT_BOUNDS_MARGIN + maxNodeRadius, {
       minX: -wardingRadius,
       minY: -wardingRadius,
@@ -244,9 +261,14 @@ export function buildRealmRuntimeData(
     }),
     wardingRadius,
   );
+  if (dialInput) {
+    bounds = dial ? { ...dial.scene.extent } : computeVisibleBounds([...insideTargets.values()], 80, bounds);
+  }
 
   return {
     rootId,
+    flat: dialInput !== undefined,
+    dial,
     memberIds: subtree.memberIds,
     outsideIds,
     insideTargets,
@@ -261,7 +283,7 @@ export function buildRealmRuntimeData(
     tierKindById: new Map(
       [...subtree.depthById].map(([id, depth]) => [
         id,
-        DEPTH_TIER_KINDS[Math.min(depth, DEPTH_TIER_KINDS.length - 1)],
+        dialInput ? world.nodeById.get(id)!.kind : DEPTH_TIER_KINDS[Math.min(depth, DEPTH_TIER_KINDS.length - 1)],
       ]),
     ),
     depthById: new Map(subtree.depthById),
@@ -281,11 +303,12 @@ export function realmCameraTarget(
   tokens: OntologyMapTokens,
   viewportWidth: number,
   viewportHeight: number,
+  pad: Pad = { left: 0, right: 0, top: 0, bottom: 0 },
 ): CameraTarget {
-  const insetLeft = tokens.safeInsetLeft;
-  const insetRight = tokens.safeInsetRight;
-  const insetTop = tokens.safeInsetTop;
-  const insetBottom = tokens.safeInsetBottom;
+  const insetLeft = tokens.safeInsetLeft + pad.left;
+  const insetRight = tokens.safeInsetRight + pad.right;
+  const insetTop = tokens.safeInsetTop + pad.top;
+  const insetBottom = tokens.safeInsetBottom + pad.bottom;
   const effW = Math.max(1, viewportWidth - insetLeft - insetRight);
   const effH = Math.max(1, viewportHeight - insetTop - insetBottom);
   const fit = fitWorldTarget(bounds, effW, effH, tokens.cameraScaleMax, tokens.cameraScaleMin);

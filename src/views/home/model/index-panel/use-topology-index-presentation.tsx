@@ -45,14 +45,15 @@ export function useTopologyIndexPresentation({
   const { canCreateNode, selectedEdge } = topologyAuthoring;
 
   // Bound to the datasheet being shown, so after the first Esc (popover closed, selection kept)
-  // INDEX returns. An open edge panel docks in the same slot, so INDEX yields to it too. The realm
-  // ledger is exempt as a realm's only exit.
+  // INDEX returns. An open edge panel docks in the same slot, so INDEX yields to it too.
   const topologySelectionActive = (Boolean(v2DatasheetModel) && !nodePopoverDismissed) || selectedEdge !== null;
+  const flatMap = useFlatMapView();
+  const belowFlatKeepWidth = useViewportBelow(FLAT_SELECTION_KEEPS_INDEX_FROM_PX);
   const {
     manualExpand: indexManualExpandDuringSelection,
     markManualExpand: markIndexManualExpandDuringSelection,
     beginExpandedSelection: beginExpandedIndexSelection,
-  } = useIndexSelectionOverride(topologySelectionActive);
+  } = useIndexSelectionOverride(topologySelectionActive, !flatMap || !belowFlatKeepWidth);
   // The analysis rail owns the slot only in a non-overview mode, so returning to overview gives it
   // back.
   const handleIndexTabExpand = useCallback(() => {
@@ -91,8 +92,6 @@ export function useTopologyIndexPresentation({
     positioner.style.setProperty("--topology-chrome-in-origin", `${ox}px ${oy}px`);
   }, [lastCanvasPointerRef, nodePopoverPositionerRef, nodePopoverSlug]);
   const topologyGraphEmpty = (ontologyInsight?.nodes.length ?? 0) === 0;
-  const flatMap = useFlatMapView();
-  const belowFlatKeepWidth = useViewportBelow(FLAT_SELECTION_KEEPS_INDEX_FROM_PX);
   const flatSelectionKeepsIndex = flatMap && !belowFlatKeepWidth;
   // The agent dock applies the same session demotion, or the map becomes a corridor between two
   // panels.

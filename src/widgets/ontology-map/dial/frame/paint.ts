@@ -147,7 +147,7 @@ function paintGlyph(ctx: CanvasRenderingContext2D, g: GlyphMark, map: OntologyMa
       isHovered: g.hovered, hoverEmphasis: 1, selectionPulse: g.selectionPulse, agentFocus: g.agentFocus,
       spotlightRing: null, now: o.now, reducedMotion: o.reducedMotion, glyphStyle: "fill",
     },
-    tokens,
+    g.selectionInk && g.egoState === "center" ? { ...tokens, selectionIndigo: g.selectionInk, selectionHairline: g.selectionInk } : tokens,
   );
   if (g.stalePip) {
     ctx.beginPath();

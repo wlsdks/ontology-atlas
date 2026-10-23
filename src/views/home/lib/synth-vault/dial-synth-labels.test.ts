@@ -17,14 +17,13 @@ import {
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { createMeasureText, dialOverviewPad } from "@/widgets/ontology-map/dial/fit";
 import { namesCrossed, sampleStrips } from "@/widgets/ontology-map/dial/frame/frame";
-import { buildFlowMarks } from "@/widgets/ontology-map/dial/flow-marks";
+import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/frame/marks";
 import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
-import { buildLabelMarks, type Circle, type LabelMarksOut } from "@/widgets/ontology-map/dial/label-marks";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
-import type { Box, DialLabels, DialMarks, DialModel, Point } from "@/widgets/ontology-map/dial/types";
+import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/types";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
 
 import { synthesizeVaultGraph } from "./synth-vault";
@@ -33,7 +32,7 @@ const KINDS = new Set(["project", "domain", "capability", "element"]);
 const css = readFileSync("app/styles/map-dial-tokens.css", "utf8");
 const TOKENS = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.match(new RegExp(`${v}:\\s*([^;]+);`))?.[1] ?? ""));
 const MAP = {
-  canvasBgNear: "#101014", edgeDepends: "#8a8fa8", indigoBright: "#8b8cff", edgeSelected: "#7882ff", labelDomain: "#d0d2dc",
+  radiusProject: 22, radiusCapability: 11, canvasBgNear: "#101014", edgeDepends: "#8a8fa8", indigoBright: "#8b8cff", edgeSelected: "#7882ff", labelDomain: "#d0d2dc",
   labelElement: "#9a9caa", labelCapability: "#b8bac8", labelProject: "#e8e8f0", edgeContainsL2: "#3a3c48", nodeFillCapability: "#20222c",
   nodeStrokeCapability: "#7a7e96", nodeFillElement: "#1a1c24", nodeStrokeElement: "#6a6e80", nodeHoleFill: "#0c0c10", statusWarning: "#e0a040",
   nodeStrokeDim: "#44465a", egoRestAlpha: 0.32,
@@ -78,16 +77,12 @@ const VAULTS = {
   "layered 10,000": () => load(synthesizeVaultGraph(10000, { shape: "layered", dependencies: true })),
 };
 
-const smooth = (a: number, b: number, x: number) => {
-  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
+const measure = createMeasureText();
 
-interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focusDomain?: string }
+interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focusDomain?: string; focusNode?: string }
 
 function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) {
   const scene = layoutDial(model, circularDomainOrder(model, null).order, TOKENS, null);
-  const measure = createMeasureText();
   const free: Box = { minX: 8 + (opts.indexOpen ? INDEX_PX : 0), minY: 70, maxX: opts.width - 64, maxY: VIEW_H - 36 };
   const pad = dialOverviewPad(scene, model, LABELS, measure, TOKENS);
   const e = scene.extent;
@@ -96,7 +91,8 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
     (free.maxY - free.minY - pad.top - pad.bottom) / (e.maxY - e.minY),
   );
   const scale = fit * (opts.zoom ?? 1);
-  const focus = opts.focusDomain ? scene.clusterByDomain.get(opts.focusDomain)!.chip : null;
+  const focusId = opts.focusNode ?? opts.focusDomain ?? null;
+  const focus = focusId ? scene.positions.get(focusId)! : null;
   const cx = focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale;
   const cy = focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale;
   const sx = (free.minX + free.maxX) / 2;
@@ -107,49 +103,17 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
     return p ? toScreen(p.x, p.y) : null;
   };
 
-  const pitchPx = TOKENS.pitch * scale;
-  const capAlpha = smooth(TOKENS.capOnFrom, TOKENS.capOnFull, pitchPx);
-  const maxItems = Math.max(1, ...scene.clusters.map((c) => c.items.length));
-  const chips = new Map<string, Circle>();
-  for (const c of scene.clusters) {
-    const p = toScreen(c.chip.x, c.chip.y);
-    const fr = c.footprint * scale;
-    if (p.x + fr < 0 || p.x - fr > opts.width || p.y + fr < 0 || p.y - fr > VIEW_H) continue;
-    chips.set(c.domainId, { ...p, r: TOKENS.chipMinPx + (TOKENS.chipMaxPx - TOKENS.chipMinPx) * Math.sqrt(c.items.length / maxItems) });
-  }
-  const discs = new Map<string, Circle>();
-  if (capAlpha > 0.01) {
-    const base = Math.max(TOKENS.discMinPx, Math.min(TOKENS.discMaxPx, pitchPx * TOKENS.discPitchShare));
-    for (const c of scene.clusters) {
-      if (!chips.has(c.domainId)) continue;
-      for (const it of c.items) {
-        const r = Math.min(pitchPx * TOKENS.discCapShare, base * (0.8 + 0.2 * Math.min(3, Math.sqrt(it.elementIds.length))));
-        discs.set(it.id, { ...toScreen(it.x, it.y), r: r * (0.6 + 0.4 * capAlpha) });
-      }
-    }
-  }
-  const hub = model.projectId ? { ...toScreen(0, 0), r: TOKENS.hubMinPx } : null;
-  const attention = resolveDialAttention(model, null, null);
-  const occupied: Box[] = [];
-  const marks: DialMarks = { inks: [], strips: [], discs: [], squares: [], ticks: [], rails: [], glyphs: [], texts: [], numerals: [], leaders: [] };
-  const flows = buildFlowMarks({
-    model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free, nodeScreen, toScreen,
-    endRadiusPx: (id) => discs.get(id)?.r ?? chips.get(id)?.r ?? TOKENS.chipMinPx, appearOf: () => 1, measureText: measure, occupied, chords: [],
-    resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
+  const attention = resolveDialAttention(model, null, focusId);
+  const marks = emptyDialFrameMarks();
+  const result = buildDialMarks({
+    model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
+    attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
+    scale, zoomRatio: opts.zoom ?? 1, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free,
+    nodeScreen, toScreen, appearOf: () => 1, measureText: measure, elementLabel: (id) => labelOf.get(id) ?? null,
+    focusedNodeId: focusId, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
   }, marks);
-  const lines = sampleStrips(marks.strips);
-  const out: LabelMarksOut = { texts: [], extraTexts: [] };
-  const inkList: string[] = [];
-  buildLabelMarks({
-    model, scene, labels: LABELS, evidence: null, attention, tokens: TOKENS,
-    inks: { project: "p", domain: "d", domainReceded: "dr", domainAttended: "da", units: "u", stale: "s", capability: "c", needs: "n", usedBy: "ub", orphans: "o", ring: "r", element: "e", halo: "h" },
-    ink: (c) => { const i = inkList.indexOf(c); return i >= 0 ? i : inkList.push(c) - 1; },
-    measureText: measure, scale, toScreen, hub, chips, discs, capAlpha, lines, occupied, freeRect: free,
-    ledgerIds: new Set(), elementLabel: (id) => labelOf.get(id) ?? null,
-  }, out);
-  const texts = [...marks.texts, ...out.texts, ...out.extraTexts].map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box }));
-  return { scene, flows, lines, texts, scale, fit, free };
+  return { scene, flows: result.flows, picks: result.picks, lines: sampleStrips(marks.strips), texts: marks.texts, scale, fit, free };
 }
 
 function textOverlaps(texts: readonly { id: string | null; text: string; box: Box }[]): number {
@@ -177,20 +141,52 @@ describe("dial labels at real vault sizes", () => {
     });
   }
 
-  it("synth 10,000: all 33 domain names at 1512, at least 26 at 1040 with INDEX open", () => {
+  it("synth 10,000: orients every facing column and reveals culled domains and hidden members on selection", () => {
     const vault = VAULTS["synth 10,000"]();
-    const shown = (width: number, indexOpen: boolean) => new Set(frame(vault, { width, indexOpen }).texts.filter((t) => t.role === "domain").map((t) => t.id)).size;
     expect(vault.model.domains).toHaveLength(33);
-    expect(shown(VIEW_W, true)).toBe(33);
-    expect(shown(1040, true)).toBeGreaterThanOrEqual(26);
+    for (const width of [VIEW_W, 1040]) {
+      const overview = frame(vault, { width, indexOpen: true });
+      const named = new Set(overview.texts.filter((t) => t.role === "domain").map((t) => t.id));
+      const groups = new Set(overview.scene.clusters.map((c) => `${c.branchPair}:${c.branchSide}`));
+      for (const group of groups) expect(overview.scene.clusters.some((c) => `${c.branchPair}:${c.branchSide}` === group && named.has(c.domainId))).toBe(true);
+      expect(textOverlaps(overview.texts)).toBe(0);
+      for (const text of overview.texts.filter((t) => t.role === "domain")) {
+        expect(text.box.minX).toBeGreaterThanOrEqual(overview.free.minX);
+        expect(text.box.maxX).toBeLessThanOrEqual(overview.free.maxX);
+        expect(text.box.minY).toBeGreaterThanOrEqual(overview.free.minY);
+        expect(text.box.maxY).toBeLessThanOrEqual(overview.free.maxY);
+      }
+      expect(overview.scene.positions.size).toBe(vault.model.domainOf.size + 1);
+      const hiddenDomains = vault.model.domains.filter((d) => !named.has(d.id)).map((d) => d.id);
+      const hiddenMembers = vault.model.domains.map((d) => d.capabilityIds.at(-1)!).filter(Boolean);
+      for (const id of [...hiddenDomains, ...hiddenMembers]) {
+        const selected = frame(vault, { width, indexOpen: true, focusNode: id });
+        expect(selected.texts.some((t) => t.id === id && (t.role === "domain" || t.role === "capability"))).toBe(true);
+        expect(selected.picks.some((pick) => pick.id === id)).toBe(true);
+      }
+    }
   });
 
-  it("storefront at 2.6× on Orders, entered domain resolved: names crossed ≤ 5", () => {
+  it("storefront at 2.6× resolves selected capability endpoints and keeps the selected name reachable", () => {
+    const vault = VAULTS.storefront();
+    const orders = vault.model.domains.find((d) => d.label === "Orders")!;
+    const id = orders.capabilityIds.at(-1)!;
+    const f = frame(vault, { width: VIEW_W, indexOpen: true, zoom: 2.6, focusNode: id });
+    expect(f.flows.resolved).toBe(true);
+    expect(f.flows.links.some((link) => link.u === id || link.v === id)).toBe(true);
+    expect(f.texts.some((text) => text.id === id && text.role === "capability")).toBe(true);
+    expect(f.picks.some((pick) => pick.id === id)).toBe(true);
+    expect(namesCrossed(f.lines, f.texts).count).toBeLessThanOrEqual(5);
+    expect(textOverlaps(f.texts)).toBe(0);
+  });
+
+  it("storefront at 2.6× on Orders: counted domain endpoints keep names crossed below five", () => {
     const vault = VAULTS.storefront();
     const orders = vault.model.domains.find((d) => d.label === "Orders");
     expect(orders).toBeDefined();
     const f = frame(vault, { width: VIEW_W, indexOpen: true, zoom: 2.6, focusDomain: orders!.id });
-    expect(f.flows.resolved).toBe(true);
+    expect(f.flows.resolved).toBe(false);
+    expect(f.flows.links.every((link) => vault.model.domainById.has(link.u) && vault.model.domainById.has(link.v))).toBe(true);
     const crossed = namesCrossed(f.lines, f.texts);
     expect(crossed.count, crossed.names.join(" | ")).toBeLessThanOrEqual(5);
     expect(textOverlaps(f.texts)).toBe(0);
