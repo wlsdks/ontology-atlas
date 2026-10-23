@@ -1,7 +1,9 @@
+import { planStubs, stubCandidates, type Stub, type StubPlan } from "./flow/stubs";
+export { fanAngles } from "./flow/stubs";
 import { quadAt, quadLength, trimmedPiece, overlaps, inside } from "./flow/geometry";
 import { createBranchRouter, type BranchRouter } from "./branches/routes";
 import { NUMERAL_FONT_PX, numeralFont, scaledLabelFont, scaledLabelFontSize, tabularWidth } from "../render/labels";
-import { placeFarNumerals, stubText, type FarCount } from "./far-counts";
+import { placeFarNumerals, type FarCount } from "./far-counts";
 import { crossfadeInk, inkIndex, mixOver, type DialInks } from "./ink";
 import type { DialResolution } from "./frame/disclosure";
 import { crossesBox } from "./label-marks";
@@ -52,7 +54,6 @@ const PRESENCE_FLOOR = 0.02;
 const OFFSCREEN_PX = 40;
 const FREE_SLACK_PX = 6;
 const HUB_CLEAR_PX = 66;
-const STUB_SHORT = 0.74;
 const CHORD_SAMPLES = 12;
 
 export function restFlowWidth(tokens: DialTokens, count: number): number {
@@ -215,21 +216,6 @@ function segmentHitsBox(x0: number, y0: number, x1: number, y1: number, b: Box):
   return clip(-dx, x0 - b.minX) && clip(dx, b.maxX - x0) && clip(-dy, y0 - b.minY) && clip(dy, b.maxY - y0);
 }
 
-function stubLength(tokens: DialTokens, free: Box): number {
-  return Math.max(tokens.stubMinPx, Math.min(tokens.stubMaxPx, tokens.stubFreeShare * Math.min(free.maxX - free.minX, free.maxY - free.minY)));
-}
-
-interface Stub {
-  link: DialLink;
-  near: End;
-  nearId: string;
-  farId: string;
-  farP: Point;
-  angle: number;
-  presence: number;
-  counts?: { needs: number; used: number };
-}
-
 function mergeAttendedStubs(model: DialModel, attn: DialAttention, stubs: readonly Stub[], chip: End | null): Stub[] {
   if (!attn.domainId || !chip) return [...stubs];
   const mine = mineOf(model, attn);
@@ -265,29 +251,6 @@ function mergeAttendedStubs(model: DialModel, attn: DialAttention, stubs: readon
   return out;
 }
 
-export function fanAngles(angles: readonly number[], gapDeg: number): number[] {
-  const order = angles.map((a, i) => ({ a, i })).sort((x, y) => x.a - y.a || x.i - y.i);
-  const minGap = (gapDeg * Math.PI) / 180;
-  for (let k = 1; k < order.length; k += 1) if (order[k]!.a - order[k - 1]!.a < minGap) order[k]!.a = order[k - 1]!.a + minGap;
-  const out = new Array<number>(angles.length);
-  for (const o of order) out[o.i] = o.a;
-  return out;
-}
-
-interface StubPlan {
-  st: Stub;
-  start: Point;
-  end: Point;
-  cos: number;
-  sin: number;
-  needs: number;
-  used: number;
-  text: string;
-  startX: number;
-  ty: number;
-  box: Box;
-}
-
 const STUB_LINE_PAD_PX = 3;
 const STUB_END_CLEAR_PX = 16;
 
@@ -311,55 +274,25 @@ function grown(box: Box, pad: number): Box {
   return { minX: box.minX - pad, maxX: box.maxX + pad, minY: box.minY - pad, maxY: box.maxY + pad };
 }
 
-function planStubs(input: FlowMarksInput, stubs: Stub[], nameFont: string, nameFontPx: number): StubPlan[] {
-  const { tokens, model } = input;
-  const length = stubLength(tokens, input.freeRect);
-  const byNear = new Map<string, Stub[]>();
-  for (const st of stubs) {
-    const list = byNear.get(st.nearId);
-    if (list) list.push(st);
-    else byNear.set(st.nearId, [st]);
-  }
-  const plans: StubPlan[] = [];
-  for (const list of byNear.values()) {
-    list.sort((x, y) => x.angle - y.angle || (x.farId < y.farId ? -1 : 1));
-    const angles = fanAngles(list.map((s) => s.angle), tokens.stubGapDeg);
-    list.forEach((st, k) => {
-      const reach = length * (k % 2 === 0 ? 1 : STUB_SHORT);
-      const cos = Math.cos(angles[k]!);
-      const sin = Math.sin(angles[k]!);
-      const start = { x: st.near.p.x + cos * (st.near.r + 4), y: st.near.p.y + sin * (st.near.r + 4) };
-      const end = { x: st.near.p.x + cos * reach, y: st.near.p.y + sin * reach };
-      const nearIsU = st.nearId === st.link.u;
-      const needs = st.counts?.needs ?? (nearIsU ? st.link.uv : st.link.vu);
-      const used = st.counts?.used ?? (nearIsU ? st.link.vu : st.link.uv);
-      const name = model.capabilityById.get(st.farId)?.label ?? model.domainById.get(st.farId)?.label ?? st.farId;
-      const text = stubText(name, needs, used);
-      const align: CanvasTextAlign = cos > 0.25 ? "left" : cos < -0.25 ? "right" : "center";
-      const tx = end.x + cos * 8;
-      const ty = end.y + sin * 10;
-      const width = input.measureText(text, nameFont);
-      const startX = align === "left" ? tx : align === "right" ? tx - width : tx - width / 2;
-      const box = { minX: startX - 2, maxX: startX + width + 2, minY: ty - nameFontPx * 0.7, maxY: ty + nameFontPx * 0.7 };
-      plans.push({ st, start, end, cos, sin, needs, used, text, startX, ty, box });
-    });
-  }
-  return plans.sort((x, y) => Number(y.st.link.attended) - Number(x.st.link.attended) || y.st.link.total - x.st.link.total || (x.st.link.key < y.st.link.key ? -1 : x.st.link.key > y.st.link.key ? 1 : x.st.nearId < y.st.nearId ? -1 : 1));
-}
-
 function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[]): void {
   const { tokens, inks, model } = input;
   const nameFont = scaledLabelFont("capability", tokens.labelScale);
   const nameFontPx = scaledLabelFontSize("capability", tokens.labelScale);
   const accepted: StubPlan[] = [];
   const hits = (plan: StubPlan, box: Box) => segmentHitsBox(plan.start.x, plan.start.y, plan.end.x, plan.end.y, grown(box, STUB_LINE_PAD_PX));
-  for (const plan of planStubs(input, stubs, nameFont, nameFontPx)) {
+  const clear = (plan: StubPlan) => {
+    const { st, box } = plan;
+    return inside(box, input.freeRect) && !input.occupied.some((o) => overlaps(o, box))
+      && !crossesBox(chordLines, grown(box, STUB_LINE_PAD_PX))
+      && (st.link.attended || (!chordLines.some((line) => stubCrossesLine(plan, line)) && !accepted.some((other) => stubCrossesLine(plan, [other.start, other.end]))))
+      && !accepted.some((other) => hits(other, box) || hits(plan, other.box))
+      && !input.avoidTexts?.some((text) => hits(plan, text));
+  };
+  for (const original of planStubs(input, stubs, nameFont, nameFontPx)) {
+    let plan: StubPlan | undefined;
+    for (const candidate of stubCandidates(input, original)) if (clear(candidate)) { plan = candidate; break; }
+    if (!plan) continue;
     const { st, start, end, cos, sin, needs, used, box } = plan;
-    if (!inside(box, input.freeRect) || input.occupied.some((o) => overlaps(o, box))) continue;
-    if (crossesBox(chordLines, grown(box, STUB_LINE_PAD_PX))) continue;
-    if (!st.link.attended && (chordLines.some((line) => stubCrossesLine(plan, line)) || accepted.some((other) => stubCrossesLine(plan, [other.start, other.end])))) continue;
-    if (accepted.some((other) => hits(other, box) || hits(plan, other.box))) continue;
-    if (input.avoidTexts?.some((t) => hits(plan, t))) continue;
     accepted.push(plan);
     input.occupied.push(box);
     const needsInk = mixOver(strokeInk(inks, model, input.inkAttention, st.link, st.nearId, false), inks.bg, st.presence);

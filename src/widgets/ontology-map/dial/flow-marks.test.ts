@@ -14,7 +14,7 @@ import { buildDialModel, resolveDialAttention } from "./dial-model";
 import { stubText } from "./far-counts";
 import { buildFlowMarks, fanAngles, flowHeadSize, focusFlowWidth, rampedFocusWidth, rampedRestWidth, restFlowWidth, type FlowMarksInput } from "./flow-marks";
 import { crossfadeInk, mixOver, resolveDialInks } from "./ink";
-import { countCrossings, sampleStrips } from "./frame/frame";
+import { countCrossings, namesCrossed, sampleStrips } from "./frame/frame";
 import { resolveDialTokens } from "./tokens";
 import type { Box, DialAttention, DialCluster, DialItem, DialMarks, DialModel, DialScene, Point } from "./types";
 
@@ -289,6 +289,26 @@ describe("buildFlowMarks", () => {
     const cap = input.nodeScreen("d0c0")!;
     const [st] = out.strips.filter((s) => s.role === "stub");
     expect(Math.hypot(st!.ax - cap.x, st!.ay - cap.y)).toBeLessThan(4 + 4 + 1);
+  });
+
+  it("recovers a blocked attended stub without losing its directed counts or light geometry", () => {
+    const model = modelOf([["d0c0", "d1c0"], ["d0c1", "d1c0"], ["d1c1", "d0c0"]]);
+    const over = { freeRect: { minX: 350, minY: 20, maxX: 650, maxY: 300 }, viewportWidth: 4000, viewportHeight: 4000, focusId: "d0" };
+    const first = run(model, over).result.stubs[0]!;
+    expect(first).toBeDefined();
+    const { result, out, input } = run(model, { ...over, occupied: [first.box] });
+    expect(result.stubs).toHaveLength(1);
+    expect(result.stubs[0]!.text).toBe("Domain 1 →2 ←1");
+    expect(overlap(first.box, result.stubs[0]!.box)).toBe(false);
+    expect(result.drawn).toEqual(["d0\0d1"]);
+    const strips = out.strips.filter((strip) => strip.role === "stub");
+    expect(strips).toHaveLength(2);
+    expect(input.chords.map((chord) => [chord.sourceDomain, chord.targetDomain])).toEqual([["d0", "d1"], ["d1", "d0"]]);
+    for (const [index, chord] of input.chords.entries()) {
+      const strip = strips[index]!;
+      expect([chord.a.x, chord.a.y, chord.c.x, chord.c.y, chord.b.x, chord.b.y]).toEqual([strip.ax, strip.ay, strip.cx, strip.cy, strip.bx, strip.by]);
+    }
+    expect(namesCrossed(sampleStrips(out.strips), out.texts)).toEqual({ count: 0, names: [] });
   });
 
   it("fans stubs at least stub-gap-deg apart", () => {

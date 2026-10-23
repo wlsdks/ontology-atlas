@@ -134,7 +134,36 @@ const cases = [
   { name: "dense 33", graph: () => denseGraph(33), domains: 33, crossings: 15, names: 3 },
 ];
 
+
+const RECOVERY_POSES = [
+  {"vault":"storefront","width":1448,"domain":"domain:customer","pose":{"x":592.2635555242086,"y":-263.05337799240857,"scale":2.2040440690517418,"height":982,"free":{"minX":0,"minY":148,"maxX":1064,"maxY":886},"more":false},"missing":["domain:customer\u0000domain:order"]},
+  {"vault":"storefront","width":1448,"domain":"domain:catalog","pose":{"x":-500.71153992313083,"y":-6.826923480709301,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:catalog\u0000domain:inventory"]},
+  {"vault":"storefront","width":1448,"domain":"domain:inventory","pose":{"x":-500.71153992313083,"y":-312.8269234807093,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:inventory\u0000domain:marketing","domain:inventory\u0000domain:support"]},
+  {"vault":"storefront","width":1448,"domain":"domain:marketing","pose":{"x":-500.71153992313083,"y":299.1730765192907,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:marketing\u0000domain:support"]},
+  {"vault":"storefront","width":1448,"domain":"domain:order","pose":{"x":-500.71153992313083,"y":-618.8269234807093,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:order\u0000domain:support"]},
+  {"vault":"storefront","width":1448,"domain":"domain:fulfillment","pose":{"x":500.71153992313083,"y":-567.8269234807093,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:fulfillment\u0000domain:inventory"]},
+  {"vault":"storefront","width":1448,"domain":"domain:loyalty","pose":{"x":500.71153992313083,"y":350.1730765192907,"scale":2.5999998462200162,"height":982,"free":{"minX":0,"minY":148,"maxX":1448,"maxY":886},"more":false},"missing":["domain:loyalty\u0000domain:payment"]},
+  {"vault":"storefront","width":976,"domain":"domain:catalog","pose":{"x":-510.16617863558656,"y":-6.2482894781033735,"scale":1.880514665842056,"height":720,"free":{"minX":0,"minY":112,"maxX":976,"maxY":648},"more":false},"missing":["domain:catalog\u0000domain:inventory"]},
+  {"vault":"storefront","width":976,"domain":"domain:inventory","pose":{"x":-510.16617863558656,"y":-312.2482894781034,"scale":1.880514665842056,"height":720,"free":{"minX":0,"minY":112,"maxX":976,"maxY":648},"more":false},"missing":["domain:inventory\u0000domain:marketing","domain:inventory\u0000domain:support"]},
+  {"vault":"storefront","width":976,"domain":"domain:marketing","pose":{"x":-510.16617863558656,"y":299.75171052189665,"scale":1.880514665842056,"height":720,"free":{"minX":0,"minY":112,"maxX":976,"maxY":648},"more":false},"missing":["domain:marketing\u0000domain:support"]},
+  {"vault":"storefront","width":976,"domain":"domain:order","pose":{"x":-510.16617863558656,"y":-618.2482894781034,"scale":1.880514665842056,"height":720,"free":{"minX":0,"minY":112,"maxX":976,"maxY":648},"more":false},"missing":["domain:order\u0000domain:support"]},
+  {"vault":"storefront","width":976,"domain":"domain:fulfillment","pose":{"x":510.16617863558656,"y":-567.2482894781033,"scale":1.880514665842056,"height":720,"free":{"minX":0,"minY":112,"maxX":976,"maxY":648},"more":false},"missing":["domain:fulfillment\u0000domain:inventory","domain:fulfillment\u0000domain:order"]},
+  {"vault":"dogfood","width":976,"domain":"domain:agent-access","pose":{"x":1027.5557082403564,"y":-318.3227708214597,"scale":0.42760168910026564,"height":720,"free":{"minX":0,"minY":112,"maxX":600,"maxY":648},"more":false},"missing":["domain:agent-access\u0000domain:meaning-layer","domain:agent-access\u0000domain:code-evidence"]},
+];
+
 describe("production branch flow congestion", () => {
+  for (const recorded of RECOVERY_POSES) it(`${recorded.vault} ${recorded.width} ${recorded.domain}: recovers omitted selected pairs with actual painted stubs`, () => {
+    const manifest = recorded.vault === "storefront" ? storefrontManifest : dogfoodManifest;
+    const vault = load(deriveOntologyFromVault(manifest as unknown as VaultManifest) as unknown as Graph);
+    const painted = frame(vault, { width: recorded.width, indexOpen: false, focusDomain: recorded.domain, pose: recorded.pose });
+    for (const key of recorded.missing) {
+      expect(painted.flows.drawn, key).toContain(key);
+      expect(painted.marks.strips.some((strip) => strip.flowKey === key && strip.role === "stub"), key).toBe(true);
+      expect(painted.flows.stubs.some((stub) => stub.flowKey === key), key).toBe(true);
+    }
+    expect(namesCrossed(painted.lines, painted.texts)).toEqual({ count: 0, names: [] });
+  });
+
   for (const [state, pose] of Object.entries({
     expanded: { x: -82.91981316980947, y: -667.5189903964313, scale: 0.2178308749198914, more: true },
     collapsed: { x: -209.03695838123065, y: -631.5185208319245, scale: 0.42760168910026564, more: false },
