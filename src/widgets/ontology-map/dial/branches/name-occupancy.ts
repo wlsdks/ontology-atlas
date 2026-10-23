@@ -51,7 +51,9 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     if (!required && !members.has(text) && !control && (!inside(initial) || occupied.some((box) => overlaps(box, initial)))) continue;
     const body = control ? undefined : bodies.find((mark) => mark.id === text.id)?.box;
     const gap = input.tokens.chipMinPx;
+    const side = text.role === "domain" && !cards.some((card) => card.id === text.id && card.alpha >= 0.5) ? input.scene?.clusterByDomain.get(text.id!)?.branchSide : undefined;
     const clear = (box: Box) => inside(box)
+      && (!side || !body || (side < 0 ? box.maxX <= body.minX - gap : box.minX >= body.maxX + gap))
       && !occupied.some((other) => overlaps(other, box))
       && !bodies.some((mark) => overlaps(mark.box, box))
       && !cards.some((card) => {

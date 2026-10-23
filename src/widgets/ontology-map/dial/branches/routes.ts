@@ -27,13 +27,14 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
     if (hit) return hit;
     const curves: BranchCurve[] = [];
     const base = control(l, a, b);
-    const boundary = (id: string, other: string, end: BranchEnd, toward: Point): Point => {
+    const boundary = (id: string, other: string, end: BranchEnd, toward: Point, turn = false): Point => {
       const box = input.endBox?.(id);
       const cluster = input.scene.clusterByDomain.get(id);
       const otherCluster = input.scene.clusterByDomain.get(domainOfEnd(input.model, other));
       if (box && cluster && cluster.branchPair === otherCluster?.branchPair) {
         const fraction = branchPortFraction(input, id, other);
-        return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y: box.minY + (box.maxY - box.minY) * fraction };
+        const y = turn && toward.y < box.minY ? box.minY : turn && toward.y > box.maxY ? box.maxY : box.minY + (box.maxY - box.minY) * fraction;
+        return { x: cluster.branchSide === 1 ? box.minX : box.maxX, y };
       }
       const dx = toward.x - end.p.x;
       const dy = toward.y - end.p.y;
@@ -45,16 +46,31 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const dy = end.p.y - start.p.y;
       const len = Math.max(1, Math.hypot(dx, dy));
       let c = { x: base.x - dy / len * offset, y: base.y + dx / len * offset };
+      let turn = false;
       if (input.avoidTexts?.length) {
         const mid = { x: (start.p.x + end.p.x) / 2, y: (start.p.y + end.p.y) / 2 };
         const free = input.freeRect;
-        const candidates = [c,
+        const turnX = (id: string, other: string, endpoint: BranchEnd) => {
+          const side = input.scene.clusterByDomain.get(id)?.branchSide;
+          const direction = side ? -side : Math.sign(mid.x - endpoint.p.x);
+          return boundary(id, other, endpoint, c).x + direction * 8;
+        };
+        const startX = turnX(from, to, start);
+        const endX = turnX(to, from, end);
+        const above = Math.min(start.p.y, end.p.y) - input.tokens.ledgerGapPx * 3;
+        const below = Math.max(start.p.y, end.p.y) + input.tokens.ledgerGapPx * 3;
+        const basic = [
           { x: c.x, y: free.minY + 8 }, { x: c.x, y: free.maxY - 8 },
           { x: free.minX + 8, y: mid.y }, { x: free.maxX - 8, y: mid.y },
           { x: mid.x, y: free.minY + 8 }, { x: mid.x, y: free.maxY - 8 },
         ];
-        const hits = (control: Point, ceiling = Infinity) => {
-          const piece = trimmedPiece(boundary(from, to, start, control), control, boundary(to, from, end, control), input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
+        const turning = [c, ...basic,
+          { x: startX, y: free.minY + 8 }, { x: startX, y: free.maxY - 8 },
+          { x: endX, y: free.minY + 8 }, { x: endX, y: free.maxY - 8 },
+          ...[c.x, startX, endX].flatMap((x) => [{ x, y: above }, { x, y: below }]),
+        ];
+        const hits = (control: Point, ceiling = Infinity, edge = false) => {
+          const piece = trimmedPiece(boundary(from, to, start, control, edge), control, boundary(to, from, end, control, edge), input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
           const line = samplePiece(piece);
           if (!line) return Infinity;
           let count = 0;
@@ -65,18 +81,18 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
           return count;
         };
         let best = hits(c);
-        for (const candidate of candidates.slice(1)) {
+        for (const { candidate, edge } of [...basic.map((candidate) => ({ candidate, edge: false })), ...turning.map((candidate) => ({ candidate, edge: true }))]) {
           if (best === 0) break;
           const fromCluster = input.scene.clusterByDomain.get(from);
           const toCluster = input.scene.clusterByDomain.get(to);
           if (fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair
             && [fromCluster, toCluster].some((cluster) => (candidate.x - (input.nodeScreen(cluster.domainId) ?? input.toScreen(cluster.chip.x, cluster.chip.y)).x) * (cluster.branchSide ?? 1) >= 0)) continue;
-          const count = hits(candidate, best);
-          if (count < best) { best = count; c = candidate; }
+          const count = hits(candidate, best, edge);
+          if (count < best) { best = count; c = candidate; turn = edge; }
         }
       }
-      const p0 = boundary(from, to, start, c);
-      const p1 = boundary(to, from, end, c);
+      const p0 = boundary(from, to, start, c, turn);
+      const p1 = boundary(to, from, end, c, turn);
       const piece = trimmedPiece(p0, c, p1, input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
       const line = samplePiece(piece);
       if (piece && line) curves.push({ from, to, count, p0, c, p1, piece, line });

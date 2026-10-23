@@ -22,6 +22,7 @@ import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclos
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
 import { circularDomainOrder } from "@/widgets/ontology-map/dial/order";
+import { applyBranchMemberAction } from "./member-disclosure";
 import { resolveDialTokens } from "@/widgets/ontology-map/dial/tokens";
 import type { Box, DialLabels, DialModel, Point } from "@/widgets/ontology-map/dial/types";
 import type { OntologyMapTokens } from "@/widgets/ontology-map/tokens/read-map-tokens";
@@ -71,24 +72,28 @@ function load({ nodes, edges }: Graph): { model: DialModel; labelOf: Map<string,
 
 const measure = createMeasureText();
 
-interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focusDomain?: string; focusNode?: string; recenter?: boolean }
+interface FrameOptions { width: number; indexOpen: boolean; zoom?: number; focusDomain?: string; focusNode?: string; recenter?: boolean;
+  pose?: { x: number; y: number; scale: number; height: number; free: Box; more: boolean };
+}
 
 function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) {
   const scene = layoutDial(model, circularDomainOrder(model, null).order, TOKENS, null);
-  const free: Box = { minX: 8 + (opts.indexOpen ? INDEX_PX : 0), minY: 70, maxX: opts.width - 64, maxY: VIEW_H - 36 };
+  const free: Box = opts.pose?.free ?? { minX: 8 + (opts.indexOpen ? INDEX_PX : 0), minY: 70, maxX: opts.width - 64, maxY: VIEW_H - 36 };
+  const height = opts.pose?.height ?? VIEW_H;
+  if (opts.pose?.more) applyBranchMemberAction(scene, { type: "branch-members", domainId: opts.focusDomain!, direction: "more" }, 0);
   const pad = dialOverviewPad(scene, model, LABELS, measure, TOKENS);
   const e = scene.extent;
   const fit = Math.min(
     (free.maxX - free.minX - pad.left - pad.right) / (e.maxX - e.minX),
     (free.maxY - free.minY - pad.top - pad.bottom) / (e.maxY - e.minY),
   );
-  const scale = fit * (opts.zoom ?? 1);
+  const scale = opts.pose?.scale ?? fit * (opts.zoom ?? 1);
   const focusId = opts.focusNode ?? opts.focusDomain ?? null;
   const focus = focusId && opts.recenter !== false ? scene.positions.get(focusId)! : null;
-  const cx = focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale;
-  const cy = focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale;
-  const sx = (free.minX + free.maxX) / 2;
-  const sy = (free.minY + free.maxY) / 2;
+  const cx = opts.pose?.x ?? (focus ? focus.x : (e.minX + e.maxX) / 2 + (pad.right - pad.left) / 2 / scale);
+  const cy = opts.pose?.y ?? (focus ? focus.y : (e.minY + e.maxY) / 2 + (pad.bottom - pad.top) / 2 / scale);
+  const sx = opts.pose ? opts.width / 2 : (free.minX + free.maxX) / 2;
+  const sy = opts.pose ? height / 2 : (free.minY + free.maxY) / 2;
   const toScreen = (x: number, y: number): Point => ({ x: sx + (x - cx) * scale, y: sy + (y - cy) * scale });
   const nodeScreen = (id: string) => {
     const p = scene.positions.get(id);
@@ -100,12 +105,13 @@ function frame({ model, labelOf }: ReturnType<typeof load>, opts: FrameOptions) 
   const result = buildDialMarks({
     model, scene, tokens: TOKENS, mapTokens: MAP, inks: resolveDialInks(MAP, TOKENS), labels: LABELS, evidence: null,
     attention, inkAttention: attention, previous: null, inkMix: 1, chordPresence: 1,
-    scale, zoomRatio: opts.zoom ?? 1, viewportWidth: opts.width, viewportHeight: VIEW_H, freeRect: free,
+    scale, zoomRatio: opts.zoom ?? 1, viewportWidth: opts.width, viewportHeight: height, freeRect: free,
     nodeScreen, toScreen, appearOf: () => 1, measureText: measure, elementLabel: (id) => labelOf.get(id) ?? null,
     focusedNodeId: focusId, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
-    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: VIEW_H, toScreen }, free, attention, TOKENS),
+    hubLines: opts.pose ? ["Evidence not measured"] : undefined, reducedMotion: true,
+    disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: opts.width, viewportHeight: height, toScreen }, free, attention, TOKENS),
   }, marks);
-  return { scene, flows: result.flows, picks: result.picks, marks, lines: sampleStrips(marks.strips), texts: marks.texts, scale, fit, free, nodeScreen };
+  return { scene, flows: result.flows, picks: result.picks, rows: result.rows, marks, lines: sampleStrips(marks.strips), texts: marks.texts, scale, fit, free, nodeScreen };
 }
 
 
@@ -129,6 +135,27 @@ const cases = [
 ];
 
 describe("production branch flow congestion", () => {
+  for (const [state, pose] of Object.entries({
+    expanded: { x: -82.91981316980947, y: -667.5189903964313, scale: 0.2178308749198914, more: true },
+    collapsed: { x: -209.03695838123065, y: -631.5185208319245, scale: 0.42760168910026564, more: false },
+  })) it(`keeps every painted caption clear of relation lines in the actual Orders 1040 ${state} pose`, () => {
+    const vault = load(deriveOntologyFromVault(storefrontManifest as unknown as VaultManifest) as unknown as Graph);
+    const painted = frame(vault, { width: 976, indexOpen: false, focusDomain: "domain:order", pose: { ...pose, height: 720, free: { minX: 0, minY: 112, maxX: 600, maxY: 648 } } });
+    const crossed = namesCrossed(painted.lines, painted.texts);
+    console.info(`[orders-1040-${state}] ${JSON.stringify(crossed)}`);
+    expect(crossed).toEqual({ count: 0, names: [] });
+    expect(painted.flows.drawn.length).toBeGreaterThan(0);
+    expect(painted.flows.links.map((link) => [link.key, link.uv, link.vu, link.total])).toEqual(vault.model.flows.map((flow) => [flow.key, flow.ab, flow.ba, flow.total]));
+    const within = (point: Point) => point.x >= painted.free.minX && point.x <= painted.free.maxX && point.y >= painted.free.minY && point.y <= painted.free.maxY;
+    for (const link of painted.flows.links.filter((link) => link.attended)) {
+      if (within(painted.nodeScreen(link.u)!) && within(painted.nodeScreen(link.v)!)) expect(painted.flows.drawn).toContain(link.key);
+    }
+    for (const member of painted.scene.clusterByDomain.get("domain:order")!.items.filter((item) => !item.direct).slice(0, pose.more ? 4 : 2)) {
+      expect(painted.texts.some((text) => text.id === member.id && text.role === "capability")).toBe(true);
+      expect(painted.rows.some((row) => row.id === member.id)).toBe(true);
+    }
+  });
+
   for (const sample of cases) for (const width of [1512, 1040]) {
     it(`${sample.name} at ${width}: measures the actual painted branches inside crossing and name budgets`, () => {
       const vault = load(sample.graph());
