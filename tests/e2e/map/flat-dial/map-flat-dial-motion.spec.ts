@@ -476,7 +476,6 @@ test("a domain focus crossfades neutral inks in 120 ms, emits directional light,
   await page.waitForFunction(() => ((window as unknown as { __atlasMapLight?: LightProbe }).__atlasMapLight?.plan().length ?? 0) > 0, undefined, { polling: "raf", timeout: 30_000 });
   const plan = await page.evaluate(() => (window as unknown as { __atlasMapLight: LightProbe }).__atlasMapLight.plan());
   await page.waitForFunction(() => (window as unknown as { __atlasMapLight: LightProbe }).__atlasMapLight.active() === false, undefined, { polling: "raf", timeout: 30_000 });
-  // Panel avoidance can still move the camera after the last travelling light.
   const lightEnded = await page.evaluate(() => performance.now());
   await waitForMapStill(page);
   await waitQuiet(page);
