@@ -744,6 +744,33 @@ describe("realm expansion (?realm=)", () => {
     expect(params.get("pathTo")).toBeNull();
   });
 
+  it("restores the realm root after exiting a complete path and rereading the URL", () => {
+    const current = {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      realmSlug: "capability:y",
+      analysisMode: "path" as const,
+      pathSourceSlug: "element:source",
+      pathTargetSlug: "element:target",
+    };
+    const exited = exitRealmRouteState(current);
+    const params = applyHomeRouteState(
+      applyHomeRouteState(new URLSearchParams(), current),
+      exited,
+    );
+
+    expect(params.get("realm")).toBeNull();
+    expect(params.get("p")).toBe("capability:y");
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "capability:y",
+      realmSlug: null,
+      analysisMode: "overview",
+      pathSourceSlug: null,
+      pathTargetSlug: null,
+    });
+    expect(exited.pathSourceSlug).toBeNull();
+    expect(exited.pathTargetSlug).toBeNull();
+  });
+
   it("exitRealmRouteState restores the realm root selection on the full map", () => {
     const inRealm = { ...DEFAULT_HOME_ROUTE_STATE, realmSlug: "capability:y", selectedSlug: "element:z" };
     const exited = exitRealmRouteState(inRealm);

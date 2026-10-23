@@ -354,7 +354,15 @@ export function enterRealmRouteState(
 
 /** Returns to the realm root on the full map. */
 export function exitRealmRouteState(current: HomeRouteState): HomeRouteState {
-  return { ...current, realmSlug: null, selectedSlug: current.realmSlug, focusedHubSlug: null };
+  return {
+    ...current,
+    realmSlug: null,
+    selectedSlug: current.realmSlug,
+    focusedHubSlug: null,
+    analysisMode: current.analysisMode === "path" ? "overview" : current.analysisMode,
+    pathSourceSlug: null,
+    pathTargetSlug: null,
+  };
 }
 
 /**
