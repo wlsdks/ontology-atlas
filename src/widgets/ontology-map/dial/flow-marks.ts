@@ -267,11 +267,10 @@ function grown(box: Box, pad: number): Box {
   return { minX: box.minX - pad, maxX: box.maxX + pad, minY: box.minY - pad, maxY: box.maxY + pad };
 }
 
-function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[]): void {
+function paintStubs(input: FlowMarksInput, out: FlowMarks, stubs: Stub[], result: FlowMarksResult, chordLines: readonly (readonly Point[])[], accepted: StubPlan[]): void {
   const { tokens, inks, model } = input;
   const nameFont = scaledLabelFont("capability", tokens.labelScale);
   const nameFontPx = scaledLabelFontSize("capability", tokens.labelScale);
-  const accepted: StubPlan[] = [];
   const hits = (plan: StubPlan, box: Box) => segmentHitsBox(plan.start.x, plan.start.y, plan.end.x, plan.end.y, grown(box, STUB_LINE_PAD_PX));
   const clear = (plan: StubPlan) => {
     const { st, box } = plan;
@@ -404,20 +403,20 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   for (const { l, a, b } of drawable) {
     if (!l.attended && !l.relatesOnly && !budget.keep.has(l.key)) continue;
     if (attn.domainId && !l.attended && l.relatesOnly) continue;
+    const presence = presenceOf(l);
+    if (presence <= PRESENCE_FLOOR) continue;
     if (scene.branches && within(a.p) && within(b.p) && branchRoutes(l, a, b).length === 0) {
       if (l.attended) {
         const nearIsU = mineOf(model, attn)(l.u);
         const near = nearIsU ? a : b;
         const far = nearIsU ? b : a;
         stubs.push({ link: l, near, nearId: nearIsU ? l.u : l.v, farId: nearIsU ? l.v : l.u, farP: far.p,
-          angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence: presenceOf(l) });
+          angle: Math.atan2(far.p.y - near.p.y, far.p.x - near.p.x), presence });
         reverseRecovery.push({ link: l, near: far, nearId: nearIsU ? l.v : l.u, farId: nearIsU ? l.u : l.v, farP: near.p,
-          angle: Math.atan2(near.p.y - far.p.y, near.p.x - far.p.x), presence: presenceOf(l) });
+          angle: Math.atan2(near.p.y - far.p.y, near.p.x - far.p.x), presence });
       }
       continue;
     }
-    const presence = presenceOf(l);
-    if (presence <= PRESENCE_FLOOR) continue;
     const ina = within(a.p);
     const inb = within(b.p);
     if (!ina && !inb) continue;
@@ -439,9 +438,10 @@ export function buildFlowMarks(input: FlowMarksInput, out: FlowMarks): FlowMarks
   toDraw.sort((x, y) => Number(x.l.attended) - Number(y.l.attended) || x.l.total - y.l.total || (x.l.key < y.l.key ? -1 : 1));
   if (!scene.branches) placeFarNumerals(input, out, farCounts(input, toDraw));
   const focusChip = attn.domainId ? endOf(attn.domainId) : null;
-  paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines);
+  const acceptedStubs: StubPlan[] = [];
+  paintStubs(input, out, mergeAttendedStubs(model, attn, stubs, focusChip && within(focusChip.p) ? focusChip : null), result, chordLines, acceptedStubs);
   const recovered = new Set(result.stubs.map(stub => stub.flowKey));
-  paintStubs(input, out, reverseRecovery.filter(stub => !recovered.has(stub.link.key)), result, chordLines);
+  paintStubs(input, out, reverseRecovery.filter(stub => !recovered.has(stub.link.key)), result, chordLines, acceptedStubs);
   for (const { l, a, b, presence } of toDraw) {
     drawLink(input, out, l, a, b, presence, hub, maxTotal, numberKeep.has(l.key), branchRoutes);
     result.drawn.push(l.key);
