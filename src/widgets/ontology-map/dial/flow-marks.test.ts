@@ -159,6 +159,43 @@ describe("buildFlowMarks", () => {
     expect(constrained.result.links).toEqual(fitting.result.links);
   });
 
+  it("recovers a blocked attended local route as a named directed stub without claiming an empty route", () => {
+    const model = modelOf([["d0c0", "d1c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map([["d0", { x: 500, y: 250 }], ["d1", { x: 500, y: 650 }]]);
+    const blocker = { minX: 100, minY: 350, maxX: 900, maxY: 550 };
+    const options = { scene, nodeScreen: (id: string) => points.get(id) ?? null, avoidTexts: [blocker], occupied: [blocker] };
+    const attended = run(model, { ...options, focusId: "d0" });
+    expect(attended.result.drawn).toEqual(["d0\0d1"]);
+    expect(attended.result.stubs).toHaveLength(1);
+    expect(attended.result.stubs[0]!.text).toBe(stubText("Domain 1", 1, 0));
+    expect(attended.out.strips).toHaveLength(1);
+    expect(attended.out.strips[0]).toMatchObject({ role: "stub", headEnd: true, headStart: false });
+    expect(attended.result.links[0]).toMatchObject({ uv: 1, vu: 0, total: 1 });
+    const resting = run(model, options);
+    expect(resting.result.links).toHaveLength(1);
+    expect(resting.result.drawn).toEqual([]);
+    expect(resting.out.strips).toEqual([]);
+    const absent = run(model, { ...options, focusId: "d0", appearOf: () => 0 });
+    expect(absent.result.links).toHaveLength(1);
+    expect(absent.result.drawn).toEqual([]);
+    expect(absent.result.stubs).toEqual([]);
+    expect(absent.out.strips).toEqual([]);
+  });
+
+  it("keeps captions clear across near and reverse stub recovery", () => {
+    const model = modelOf(Array.from({ length: 8 }, (_, i) => ["d0c0", `d${i + 1}c0`]));
+    const scene = { ...sceneOf(model), branches: true };
+    const points = new Map<string, Point>([["d0",{"x":494.8078582296148,"y":378.0255474965088}],["d1",{"x":409.6912756562233,"y":289.319518788252}],["d2",{"x":595.9670092677698,"y":473.7223935103975}],["d3",{"x":537.6757470425218,"y":570.3805720550008}],["d4",{"x":658.508271467872,"y":411.8390043708496}],["d5",{"x":503.2972159795463,"y":598.8866756507196}],["d6",{"x":453.97155943792313,"y":500.32259372761473}],["d7",{"x":536.1200988758355,"y":441.942815289367}],["d8",{"x":661.1285001272336,"y":507.7892823959701}]]);
+    const blockers = [{"minX":463.6837573722005,"maxX":574.8334833607078,"minY":248.3083462761715,"maxY":334.30250503122807},{"minX":457.4129941407591,"maxX":483.95634279586375,"minY":437.7069683233276,"maxY":532.2491053119302},{"minX":427.8936962597072,"maxX":507.34679659828544,"minY":306.5404188307002,"maxY":404.95087295770645}];
+    const painted = run(model, { scene, freeRect: { minX: 300, maxX: 750, minY: 200, maxY: 650 }, focusId: "d0", nodeScreen: id => points.get(id) ?? null, avoidTexts: blockers, occupied: [...blockers] });
+    expect(painted.out.texts.some(text => text.id === "d0")).toBe(true);
+    expect(painted.result.stubs.length).toBeGreaterThanOrEqual(2);
+    expect(namesCrossed(sampleStrips(painted.out.strips), painted.out.texts)).toEqual({ count: 0, names: [] });
+    expect(painted.result.links).toHaveLength(8);
+    for (const key of painted.result.drawn) expect(painted.out.strips.some(strip => strip.flowKey === key)).toBe(true);
+  });
+
   it("draws a two-way pair as one strip with two heads", () => {
     const { out } = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]));
     expect(out.strips).toHaveLength(1);
