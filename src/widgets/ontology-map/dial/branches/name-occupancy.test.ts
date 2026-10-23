@@ -113,4 +113,40 @@ describe("branch name placement near occupied geometry", () => {
     expect(test.names.has("active")).toBe(true);
   });
 
+  it("relocates a focused branch member name around nearby implementation squares", () => {
+    const test = setup();
+    test.input.attention = { ...test.input.attention, domainId: "domain", capabilityId: null };
+    test.input.focusedNodeId = "domain";
+    test.input.model = { capabilityById: new Map([["active", { domainId: "domain" }]]) } as unknown as DialMarksInput["model"];
+    test.text.x = 650;
+    test.text.box = { minX: 648, maxX: 832, minY: 390, maxY: 410 };
+    test.rows[0]!.box = test.text.box;
+    test.out.discs.push({ id: "active", x: 850, y: 400, r: 10, fill: 0, rim: 0, dashed: false, lineWidth: 1 });
+    test.out.squares.push({ id: "implementation", x: 820, y: 400, half: 3, fill: 0, rim: 0 });
+    test.settle();
+    expect(test.out.texts).toContain(test.text);
+    expect(overlaps(test.text.box, { minX: 817, maxX: 823, minY: 397, maxY: 403 })).toBe(false);
+    expect(test.rows.find((row) => row.id === "active")?.box).toEqual(test.text.box);
+    expect(test.out.leaders.some((leader) => leader.id === "active")).toBe(true);
+  });
+
+  it("reserves and relocates a focused branch Collapse control instead of dropping its target", () => {
+    const test = setup("domain");
+    test.input.attention = { ...test.input.attention, domainId: "active", capabilityId: null };
+    test.text.x = 520;
+    test.text.box = { minX: 518, maxX: 702, minY: 390, maxY: 410 };
+    test.rows[0]!.box = test.text.box;
+    const control: TextMark = { ...test.text, role: "more", text: "Collapse", box: { ...test.text.box } };
+    const action: DialRowPick = { id: "active", box: control.box, action: { type: "branch-members", domainId: "active", direction: "less" } };
+    test.out.texts.push(control);
+    test.rows.push(action);
+    test.settle();
+    expect(test.out.texts).toContain(control);
+    expect(overlaps(test.text.box, control.box)).toBe(false);
+    expect(test.rows).toContain(action);
+    expect(action.box).toBe(control.box);
+    expect(test.names.get("active")).toBe(test.text.box);
+    expect(test.out.leaders.some((leader) => leader.id === "active")).toBe(true);
+  });
+
 });

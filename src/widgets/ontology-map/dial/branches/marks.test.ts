@@ -105,6 +105,58 @@ describe("branch reading", () => {
 
 
 describe("dense branch disclosure", () => {
+  it("keeps a newly disclosed member name readable beside its implementation squares at the synth 1512 pose", () => {
+    const { input } = frame("d0", 1, false, 20, 20, undefined, 6);
+    const selected = input.scene.positions.get("d0")!;
+    const scale = 1.6976102912425999;
+    const toScreen = (x: number, y: number) => ({ x: 1094 + (x - selected.x) * scale, y: 500 + (y - selected.y) * scale });
+    Object.assign(input, { toScreen, scale, viewportWidth: 1448, viewportHeight: 982, reducedMotion: true,
+      freeRect: { minX: 0, maxX: 1448, minY: 148, maxY: 886 }, elementLabel: () => null,
+      nodeScreen: (id: string) => { const p = input.scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; },
+      disclosure: { ...input.disclosure, entered: "d0", elementsAlpha: 1, elementAlphaFor: () => 1 },
+    });
+    const member = input.scene.clusterByDomain.get("d0")!.items.filter((item) => !item.direct)[1]!;
+    const positions = input.scene.positions as Map<string, { x: number; y: number }>;
+    member.elementIds.forEach((id, index) => positions.set(id, { x: member.x - (20 + index * 10) / scale, y: member.y }));
+    applyBranchMemberAction(input.scene, { type: "branch-members", domainId: "d0", direction: "more" }, 0);
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    const label = out.texts.find((text) => text.id === member.id && text.role === "capability");
+    expect(label).toBeDefined();
+    expect(out.squares.some((square) => member.elementIds.includes(square.id!))).toBe(true);
+    for (const square of out.squares) expect(overlaps(label!.box, { minX: square.x - square.half, maxX: square.x + square.half, minY: square.y - square.half, maxY: square.y + square.half })).toBe(false);
+    expect(result.rows.find((row) => row.id === member.id)?.box).toBe(label!.box);
+    expect(result.rows.some((row) => row.action?.domainId === "d0" && row.action.direction === "less")).toBe(true);
+  });
+
+  it("keeps disclosed names and both controls readable at the Orders 1040 compressed-row pose", () => {
+    const { input } = frame("d1", 1, true, 9, 8, undefined, 2);
+    const selected = input.scene.positions.get("d1")!;
+    const scale = 0.2178308749198914;
+    const toScreen = (x: number, y: number) => ({ x: 432 + (x - selected.x) * scale, y: 372 + (y - selected.y) * scale });
+    Object.assign(input, { toScreen, scale, viewportWidth: 976, viewportHeight: 720, reducedMotion: true,
+      freeRect: { minX: 0, maxX: 600, minY: 112, maxY: 648 },
+      nodeScreen: (id: string) => { const p = input.scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; },
+    });
+    applyBranchMemberAction(input.scene, { type: "branch-members", domainId: "d1", direction: "more" }, 0);
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    const members = input.scene.clusterByDomain.get("d1")!.items.filter((item) => !item.direct).slice(0, 4);
+    for (const member of members) {
+      expect(out.texts.some((text) => text.id === member.id && text.role === "capability"), member.id).toBe(true);
+      expect(result.rows.some((row) => row.id === member.id)).toBe(true);
+    }
+    expect(result.rows.filter((row) => row.action?.domainId === "d1").map((row) => row.action!.direction).sort()).toEqual(["less", "more"]);
+    const texts = out.texts.filter((text) => text.role !== "units" && text.role !== "status");
+    for (let i = 0; i < texts.length; i++) for (let j = i + 1; j < texts.length; j++) expect(overlaps(texts[i]!.box, texts[j]!.box)).toBe(false);
+    for (const text of out.texts) {
+      expect(text.box.minX).toBeGreaterThanOrEqual(input.freeRect.minX);
+      expect(text.box.maxX).toBeLessThanOrEqual(input.freeRect.maxX);
+      expect(text.box.minY).toBeGreaterThanOrEqual(input.freeRect.minY);
+      expect(text.box.maxY).toBeLessThanOrEqual(input.freeRect.maxY);
+    }
+  });
+
   it("keeps production More and Collapse hit bounds aligned with their visible labels beside neighboring cards", () => {
     const { input } = frame("d0", 1, false, 9, 8);
     const selected = input.scene.positions.get("d0")!;
