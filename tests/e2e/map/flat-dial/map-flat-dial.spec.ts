@@ -151,9 +151,13 @@ test("storefront at 1512: each units line says what that domain's INDEX row says
     ),
   );
   const numbers = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
-  const units = dial.texts.filter((t) => t.role === "units" && t.id !== null);
+  const domainIds = new Set(dial.clusters.map((cluster) => cluster.domainId));
+  const units = dial.texts.filter((t) => t.role === "units" && t.id !== null && domainIds.has(t.id));
   const compared = units.map((t) => ({ id: t.id!, dial: numbers(t.text).slice(0, 2), index: index[t.id!] ? numbers(index[t.id!]!) : null }));
   report("units vs INDEX", compared);
   expect(compared.length, "units lines drawn").toBeGreaterThan(0);
-  for (const row of compared) expect.soft(row.dial, `${row.id} units line against its INDEX row`).toEqual(row.index);
+  for (const row of compared) {
+    expect(row.dial, `${row.id} names both capability and element counts`).toHaveLength(2);
+    expect.soft(row.dial, `${row.id} units line against its INDEX row`).toEqual(row.index);
+  }
 });
