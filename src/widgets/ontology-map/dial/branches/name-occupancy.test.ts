@@ -149,4 +149,20 @@ describe("branch name placement near occupied geometry", () => {
     expect(test.out.leaders.some((leader) => leader.id === "active")).toBe(true);
   });
 
+  it("keeps compact domain names on the member side while retaining names inside full cards", () => {
+    for (const alpha of [0.3, 1]) {
+      const test = setup("domain");
+      test.input.scene = { clusterByDomain: new Map([["active", { branchSide: -1 }]]) } as unknown as DialMarksInput["scene"];
+      test.text.x = 726;
+      test.text.box = { minX: 724, maxX: 908, minY: 390, maxY: 410 };
+      test.rows[0]!.box = test.text.box;
+      test.out.glyphs.push({ ...glyph("active", 700, 400), egoState: "normal" });
+      test.out.blocks = [{ id: "active", box: { minX: 400, maxX: 1000, minY: 350, maxY: 500 }, fill: 0, rim: 0, alpha }];
+      test.settle();
+      if (alpha < 0.5) expect(test.text.box.maxX).toBeLessThanOrEqual(700 - 12 - 8);
+      else expect(test.text.box).toEqual({ minX: 724, maxX: 908, minY: 390, maxY: 410 });
+      expect(test.rows.find((row) => row.id === "active")?.box).toBe(test.text.box);
+    }
+  });
+
 });
