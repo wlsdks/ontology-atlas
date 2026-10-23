@@ -54,7 +54,9 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     const height = text.box.maxY - text.box.minY;
     const width = text.box.maxX - text.box.minX;
     const control = controls.has(text);
-    const required = !control && (active.has(text.id) || text.role === "project");
+    const domainBody = text.role === "domain" ? bodies.find((mark) => mark.id === text.id)?.box : undefined;
+    const connectedDomain = !!domainBody && inside(domainBody) && !inside(text.box) && input.attention.selected && input.attention.partnerDomains?.has(text.id!);
+    const required = !control && (active.has(text.id) || text.role === "project" || connectedDomain);
     const movable = required || members.has(text) || children.has(text) || control || text.role === "domain";
     const original = { x: text.x, y: text.y };
     const originalBox = text.box;
@@ -65,7 +67,7 @@ export function settleBranchNames(input: DialMarksInput, out: DialFrameMarks, na
     if (!required && !members.has(text) && !children.has(text) && !control && (!inside(initial) || occupied.some((box) => overlaps(box, initial)))) continue;
     const body = control ? undefined : bodies.find((mark) => mark.id === text.id)?.box;
     const gap = input.tokens.chipMinPx;
-    const side = text.role === "domain" && !cards.some((card) => card.id === text.id && card.alpha >= 0.5) ? input.scene?.clusterByDomain.get(text.id!)?.branchSide : undefined;
+    const side = text.role === "domain" && !connectedDomain && !cards.some((card) => card.id === text.id && card.alpha >= 0.5) ? input.scene?.clusterByDomain.get(text.id!)?.branchSide : undefined;
     const clear = (box: Box) => inside(box)
       && (!side || !body || (side < 0 ? box.maxX <= body.minX - gap : box.minX >= body.maxX + gap))
       && (text.role !== "element" || !containment.some((stem) => overlaps(stem.box, box) && crossesBox([stem.points], box)))

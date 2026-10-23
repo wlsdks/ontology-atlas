@@ -21,6 +21,20 @@ function setup(role: TextMark["role"] = "capability") {
 }
 
 describe("branch name placement near occupied geometry", () => {
+  it.each([false, true])("keeps an inspected far domain identifiable beside a panel unless every slot is blocked: %s", (blocked) => {
+    const test = setup("domain");
+    test.input.focusedNodeId = "selected";
+    test.input.attention = { ...test.input.attention, selected: true, capabilityId: null, domainId: "selected", partnerDomains: new Set(["active"]) };
+    test.input.scene = { clusterByDomain: new Map([["active", { branchSide: 1 }]]) } as unknown as DialMarksInput["scene"];
+    test.out.glyphs.push({ ...glyph("active", 980, 400), kind: "domain", egoState: "normal" });
+    if (blocked) test.out.blocks = [{ id: "unrelated", box: { ...test.input.freeRect }, fill: 0, rim: 0, alpha: 1 }];
+    test.settle();
+    expect(test.out.texts.includes(test.text)).toBe(!blocked);
+    if (!blocked) {
+      expect(test.text.box.maxX).toBeLessThanOrEqual(960);
+      expect(test.names.get("active")).toEqual(test.text.box);
+    }
+  });
   it("flips a required label away from its own selected circle beside the right inspector", () => {
     const test = setup();
     test.out.glyphs.push(glyph("active", 980, 400));
