@@ -19,6 +19,18 @@ function samplePiece(piece: readonly [Point, Point, Point] | null): Point[] | nu
   return piece ? Array.from({ length: 17 }, (_, k) => quadAt(...piece, k / 16)) : null;
 }
 
+function linesCross(first: readonly Point[], second: readonly Point[]): boolean {
+  const side = (a: Point, b: Point, p: Point) => (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+  for (let i = 1; i < first.length; i++) for (let j = 1; j < second.length; j++) {
+    const a = first[i - 1]!;
+    const b = first[i]!;
+    const c = second[j - 1]!;
+    const d = second[j]!;
+    if (side(a, b, c) * side(a, b, d) < 0 && side(c, d, a) * side(c, d, b) < 0) return true;
+  }
+  return false;
+}
+
 // Cache only this frame: name boxes, animation endpoints and camera can all change.
 export function createBranchRouter(input: FlowMarksInput, control: (link: DialLink, a: BranchEnd, b: BranchEnd) => Point): BranchRouter {
   const cache = new Map<string, BranchCurve[]>();
@@ -50,7 +62,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const local = localRelationControl(start.p, end.p, base);
       let c = { x: local.x - dy / len * offset, y: local.y + dx / len * offset };
       let turn = false;
-      if (input.avoidTexts?.length) {
+      if (input.avoidTexts?.length || curves.length > 0) {
         const geometry = (control: Point, edge: boolean) => {
           const p0 = boundary(from, to, start, control, edge);
           const p1 = boundary(to, from, end, control, edge);
@@ -61,12 +73,13 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
           const piece = trimmedPiece(p0, control, p1, input.tokens.flowTrimStartPx, input.tokens.flowTrimEndPx);
           const line = samplePiece(piece);
           if (!line) return null;
+          if (curves.some(curve => linesCross(curve.line, line))) return null;
           const length = line.slice(1).reduce((sum, point, index) => sum + Math.hypot(point.x - line[index]!.x, point.y - line[index]!.y), 0);
           return { control, edge, line, length };
         };
         const hits = (line: Point[], ceiling = Infinity) => {
           let count = 0;
-          for (const box of input.avoidTexts!) {
+          for (const box of input.avoidTexts ?? []) {
             if (crossesBox([line], box)) count += 1;
             if (count >= ceiling) break;
           }

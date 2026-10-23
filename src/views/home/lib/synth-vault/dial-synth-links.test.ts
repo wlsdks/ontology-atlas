@@ -18,6 +18,9 @@ import {
 import { buildDialModel, resolveDialAttention } from "@/widgets/ontology-map/dial/dial-model";
 import { type FlowMarksInput } from "@/widgets/ontology-map/dial/flow-marks";
 import { buildDialMarks, emptyDialFrameMarks } from "@/widgets/ontology-map/dial/frame/marks";
+import { countCrossings, namesCrossed, sampleStrips } from "@/widgets/ontology-map/dial/frame/frame";
+import { applyBranchMemberAction } from "@/widgets/ontology-map/dial/branches/member-disclosure";
+import { createMeasureText } from "@/widgets/ontology-map/dial/fit";
 import { resolveDialDisclosure } from "@/widgets/ontology-map/dial/frame/disclosure";
 import { resolveDialInks } from "@/widgets/ontology-map/dial/ink";
 import { layoutDial } from "@/widgets/ontology-map/dial/layout";
@@ -118,31 +121,47 @@ const MAP = {
   nodeStrokeDim: "#44465a", egoRestAlpha: 0.32,
 } as unknown as OntologyMapTokens;
 
-function overview(model: DialModel, focus: string | null = null) {
+function overview(model: DialModel, focus: string | null = null, pose?: { x: number; y: number; scale: number }) {
   const scene = (layoutDial as unknown as RingLayout)(model, circularDomainOrder(model, null).order, TOKENS, null);
-  const W = 1512;
-  const H = 982;
-  const free = { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 };
+  if (pose && focus) applyBranchMemberAction(scene, { type: "branch-members", domainId: focus, direction: "more" }, 0);
+  const W = pose ? 976 : 1512;
+  const H = pose ? 720 : 982;
+  const free = pose ? { minX: 0, minY: 164, maxX: W, maxY: 648 } : { minX: 8, minY: 70, maxX: W - 64, maxY: H - 36 };
   const e = scene.extent;
-  const scale = Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
-  const cx = (e.minX + e.maxX) / 2;
-  const cy = (e.minY + e.maxY) / 2;
-  const toScreen = (x: number, y: number) => ({ x: (free.minX + free.maxX) / 2 + (x - cx) * scale, y: (free.minY + free.maxY) / 2 + (y - cy) * scale });
+  const scale = pose?.scale ?? Math.min((free.maxX - free.minX) / (e.maxX - e.minX), (free.maxY - free.minY) / (e.maxY - e.minY));
+  const cx = pose?.x ?? (e.minX + e.maxX) / 2;
+  const cy = pose?.y ?? (e.minY + e.maxY) / 2;
+  const toScreen = (x: number, y: number) => ({ x: (pose ? W / 2 : (free.minX + free.maxX) / 2) + (x - cx) * scale, y: (pose ? H / 2 : (free.minY + free.maxY) / 2) + (y - cy) * scale });
   const input: FlowMarksInput = {
     model, scene, tokens: TOKENS, inks: resolveDialInks(MAP, TOKENS), attention: resolveDialAttention(model, null, focus), inkAttention: resolveDialAttention(model, null, focus), previous: null,
     inkMix: 1, chordPresence: 1, scale, viewportWidth: W, viewportHeight: H, freeRect: free,
     nodeScreen: (id) => { const p = scene.positions.get(id); return p ? toScreen(p.x, p.y) : null; }, toScreen,
-    endRadiusPx: () => 10, appearOf: () => 1, measureText: (t) => t.length * 6.5, occupied: [], chords: [],
+    endRadiusPx: () => 10, appearOf: () => 1, measureText: pose ? createMeasureText() : (t) => t.length * 6.5, occupied: [], chords: [],
     resolution: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, resolveDialAttention(model, null, null), TOKENS),
   };
   const out = emptyDialFrameMarks();
-  return buildDialMarks({ ...input, mapTokens: MAP, labels: null, evidence: null, zoomRatio: 1,
+  const result = buildDialMarks({ ...input, mapTokens: MAP, labels: pose ? {
+    units: (c, e) => `${c} capabilities · ${e} elements`, stale: n => `${n} stale`, orphans: n => `${n} elements`, more: n => `+${n} more`,
+    ring: (min, max) => `${min}–${max}`, reading: (r, t) => `${r} of ${t}`, settling: () => "settling", linksShown: (s, t) => `${s} of ${t} links`,
+  } : null, evidence: null, zoomRatio: 1,
     focusedNodeId: focus, hoveredNodeId: null, agentFocusNodeId: null, selectionPulse: null, hubCount: null,
     elementLabel: () => null, disclosure: resolveDialDisclosure(model, scene, { scale, viewportWidth: W, viewportHeight: H, toScreen }, free, input.attention, TOKENS),
-  }, out).flows;
+  }, out);
+  const lines = sampleStrips(out.strips);
+  return { ...result.flows, crossings: countCrossings(lines, W, H), namesCrossed: namesCrossed(lines, out.texts).count };
 }
 
 describe("link budget on the production branch layout", () => {
+  it("keeps both directions of a layered pair uncrossed after More in the observed 1040 pose", () => {
+    const { model } = VAULTS["layered 10,000"]();
+    const result = overview(model, "synth-domain-6", { x: -1877.2668913234295, y: -1541.483945911225, scale: 0.8299631714820861 });
+    const pair = result.links.find(link => link.key === "synth-domain-30\0synth-domain-6")!;
+    expect(pair).toMatchObject({ uv: 25, vu: 27 });
+    expect(result.drawn).toContain(pair.key);
+    expect(result.drawn.length).toBeLessThanOrEqual(20);
+    expect(result.crossings).toBe(0);
+    expect(result.namesCrossed).toBe(0);
+  });
   it.skipIf(!layoutReady)("layered 10,000 overview: at most 40 lines, at most 6 per end", () => {
     const { model } = VAULTS["layered 10,000"]();
     const result = overview(model);
