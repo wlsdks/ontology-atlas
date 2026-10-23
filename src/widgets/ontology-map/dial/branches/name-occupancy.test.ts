@@ -1,0 +1,103 @@
+import { describe, expect, it } from "vitest";
+import { emptyDialFrameMarks, type DialMarksInput } from "../frame/marks";
+import { overlaps } from "../label-marks";
+import type { Box, DialRowPick, GlyphMark, TextMark } from "../types";
+import { settleBranchNames } from "./name-occupancy";
+
+const glyph = (id: string, x: number, y: number, r = 12): GlyphMark => ({ id, kind: "capability", x, y, r, egoState: "center", fill: "#101014", stroke: "#f4f4f8", hovered: false, agentFocus: false, selectionPulse: null, count: null, stalePip: false });
+function setup(role: TextMark["role"] = "capability") {
+  const input = {
+    focusedNodeId: "active", attention: { capabilityId: "active", domainId: null },
+    viewportWidth: 1440, viewportHeight: 1000, freeRect: { minX: 320, minY: 100, maxX: 1000, maxY: 900 },
+    tokens: { chipMinPx: 8 },
+  } as unknown as DialMarksInput;
+  const out = emptyDialFrameMarks();
+  const text: TextMark = { id: "active", role, text: "Selected concept name", x: 1000, y: 400, align: "left", font: "14px sans-serif", ink: 0, box: { minX: 998, maxX: 1182, minY: 390, maxY: 410 }, parts: null };
+  out.texts.push(text);
+  const rows: DialRowPick[] = [{ id: "active", box: text.box }];
+  const names = new Map<string, Box>();
+  const settle = () => settleBranchNames(input, out, names, rows);
+  return { input, out, text, rows, names, settle };
+}
+
+describe("branch name placement near occupied geometry", () => {
+  it("flips a required label away from its own selected circle beside the right inspector", () => {
+    const test = setup();
+    test.out.glyphs.push(glyph("active", 980, 400));
+    test.settle();
+    expect(test.text.box.maxX).toBeLessThanOrEqual(980 - 12 - 8 - 8);
+    expect(test.text.box.minX).toBeGreaterThanOrEqual(test.input.freeRect.minX);
+    expect(test.text.y).toBe(400);
+    expect(test.names.get("active")).toEqual(test.text.box);
+    expect(test.rows.find((row) => row.id === "active")?.box).toEqual(test.text.box);
+  });
+
+  it("uses a vertical leader when another disc blocks the clear horizontal anchor", () => {
+    const test = setup();
+    test.out.glyphs.push(glyph("active", 980, 400));
+    test.out.discs.push({ id: "neighbor", x: 880, y: 400, r: 18, fill: 0, rim: 0, dashed: false, lineWidth: 1 });
+    test.settle();
+    const circle = { minX: 960, maxX: 1000, minY: 380, maxY: 420 };
+    const disc = { minX: 862, maxX: 898, minY: 382, maxY: 418 };
+    expect(overlaps(test.text.box, circle)).toBe(false);
+    expect(overlaps(test.text.box, disc)).toBe(false);
+    expect(test.text.y).not.toBe(400);
+    expect(test.out.leaders).toContainEqual(expect.objectContaining({ id: "active" }));
+    expect(test.rows.find((row) => row.id === "active")?.box).toEqual(test.text.box);
+  });
+
+  it("avoids its own element square after bounds clamping", () => {
+    const test = setup("element");
+    test.out.squares.push({ id: "active", x: 980, y: 400, half: 4, fill: 0, rim: 0 });
+    test.settle();
+    expect(overlaps(test.text.box, { minX: 976, maxX: 984, minY: 396, maxY: 404 })).toBe(false);
+  });
+
+  it("relocates a resting domain name obstructed by its glyph without dropping its orientation", () => {
+    const test = setup("domain");
+    test.input.focusedNodeId = null;
+    test.input.attention.capabilityId = null;
+    test.text.x = 820;
+    test.text.box = { minX: 818, maxX: 1000, minY: 390, maxY: 410 };
+    test.rows[0]!.box = test.text.box;
+    test.out.glyphs.push({ ...glyph("active", 980, 400), egoState: "normal" });
+    test.settle();
+    expect(test.text.box.maxX).toBeLessThanOrEqual(980 - 12 - 8);
+    expect(test.out.texts).toContain(test.text);
+    expect(test.rows.find((row) => row.id === "active")?.box).toEqual(test.text.box);
+  });
+
+  it("keeps capability names outside cards even when their ids match", () => {
+    const test = setup();
+    test.text.x = 400;
+    test.text.y = 280;
+    test.text.box = { minX: 398, maxX: 582, minY: 270, maxY: 290 };
+    const card = { minX: 350, maxX: 700, minY: 200, maxY: 400 };
+    test.out.blocks = [{ id: "active", box: card, fill: 0, rim: 0, alpha: 1 }];
+    test.settle();
+    expect(overlaps(test.text.box, card)).toBe(false);
+    expect(test.out.texts).toContain(test.text);
+  });
+
+  for (const role of ["domain", "project"] as const) {
+    it(`${role}: keeps a name inside its own card while avoiding its own marker and a foreign card`, () => {
+      const test = setup(role);
+      test.text.x = 400;
+      test.text.y = 280;
+      test.text.box = { minX: 398, maxX: 582, minY: 270, maxY: 290 };
+      test.rows[0]!.box = test.text.box;
+      test.out.glyphs.push(glyph("active", 330, 280));
+      const own = { minX: 300, maxX: 700, minY: 200, maxY: 400 };
+      test.out.blocks = [{ id: "active", box: own, fill: 0, rim: 0, alpha: 1 }];
+      test.settle();
+      expect(test.text.box).toEqual({ minX: 398, maxX: 582, minY: 270, maxY: 290 });
+      const foreign = { minX: 390, maxX: 600, minY: 260, maxY: 300 };
+      test.out.blocks.push({ id: "other", box: foreign, fill: 0, rim: 0, alpha: 1 });
+      test.settle();
+      expect(overlaps(test.text.box, foreign)).toBe(false);
+      expect(test.text.box.minX).toBeGreaterThanOrEqual(test.input.freeRect.minX);
+      expect(test.text.box.maxX).toBeLessThanOrEqual(test.input.freeRect.maxX);
+      expect(test.out.texts).toContain(test.text);
+    });
+  }
+});
