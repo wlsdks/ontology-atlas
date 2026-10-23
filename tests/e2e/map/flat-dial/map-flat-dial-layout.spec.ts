@@ -4,12 +4,12 @@ import { canvasOrigin, openDial, ORDERS, readDial, report, WIDTHS, QUERY, type V
 import { waitForMapStill } from "../../settle";
 import type { Box, DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
 
-const OVERVIEW: Record<Vault, { domains: number; marks: number; lines: number | "all"; perEnd?: number; crossings: number; namesCrossed: number; noDiscs?: boolean }> = {
-  storefront: { domains: 9, marks: 100, lines: "all", crossings: 10, namesCrossed: 3 },
-  dogfood: { domains: 4, marks: 60, lines: "all", crossings: 2, namesCrossed: 0 },
-  "synth 2,000": { domains: 15, marks: 400, lines: 24, crossings: 40, namesCrossed: 2 },
-  "synth 10,000": { domains: 33, marks: 80, lines: 40, perEnd: 6, crossings: 15, namesCrossed: 3, noDiscs: true },
-  "layered 10,000": { domains: 33, marks: 80, lines: 40, perEnd: 6, crossings: 100, namesCrossed: 6, noDiscs: true },
+const OVERVIEW: Record<Vault, { domains: number; flows: number; marks: number; lines: number; perEnd?: number; crossings: number; namesCrossed: number; noDiscs?: boolean }> = {
+  storefront: { domains: 9, flows: 21, marks: 100, lines: 21, crossings: 10, namesCrossed: 3 },
+  dogfood: { domains: 4, flows: 5, marks: 60, lines: 5, crossings: 2, namesCrossed: 0 },
+  "synth 2,000": { domains: 15, flows: 45, marks: 400, lines: 24, crossings: 40, namesCrossed: 2 },
+  "synth 10,000": { domains: 33, flows: 99, marks: 80, lines: 40, perEnd: 6, crossings: 15, namesCrossed: 3, noDiscs: true },
+  "layered 10,000": { domains: 33, flows: 403, marks: 80, lines: 40, perEnd: 6, crossings: 100, namesCrossed: 6, noDiscs: true },
 };
 
 const overlaps = (a: Box, b: Box) => a.minX < b.maxX && a.maxX > b.minX && a.minY < b.maxY && a.maxY > b.minY;
@@ -36,6 +36,51 @@ async function selectFromSearch(page: Page, id: string) {
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
   await page.mouse.move(5, 5);
   await waitForMapStill(page);
+}
+
+async function checkDomainOrientation(page: Page, dial: DialProbe) {
+  const nodes = await page.evaluate(() => window.__atlasMap!.nodes());
+  const named = new Set(dial.texts.filter(t => t.role === "domain").map(t => t.id));
+  const directions = dial.clusters.map(c => ({
+    id: c.domainId,
+    side: Math.sign(nodes.find(n => n.id === c.capabilityIds[0])!.x - c.chip.x),
+  }));
+  expect.soft([...new Set(directions.filter(c => named.has(c.id)).map(c => c.side))].sort(), "both facing branch directions keep a named reference").toEqual([...new Set(directions.map(c => c.side))].sort());
+  return dial.clusters.filter(c => !named.has(c.domainId)).map(c => c.domainId);
+}
+
+async function recoverCulledNames(page: Page, vault: Vault, size: { width: number; height: number }, ids: readonly string[], extra = "") {
+  for (const id of ids) {
+    if (QUERY[vault]) await openDial(page, vault, size, `${extra}p=${encodeURIComponent(id)}&`);
+    else await selectFromSearch(page, id);
+    const selected = await readDial(page);
+    const name = selected.texts.find(t => t.id === id && t.role === "domain");
+    expect(name, `selecting the culled domain ${id} restores its name`).toBeDefined();
+    expect(inside(name!.box, selected.freeRect), `the restored name ${id} clears the panels`).toBe(true);
+    expect.soft(selected.textOverlaps, "restoring a selected name does not overlap another name").toBe(0);
+  }
+}
+
+async function recoverOmittedPairs(page: Page, overview: DialProbe) {
+  const domainOf = new Map(overview.clusters.flatMap(c => c.capabilityIds.map(id => [id, c.domainId] as const)));
+  const omitted = overview.flows.filter(f => !f.drawn && !f.relatesOnly);
+  for (const domain of new Set(omitted.map(f => f.a))) {
+    await selectFromSearch(page, domain);
+    const selected = await readDial(page);
+    for (const missing of omitted.filter(f => f.a === domain)) {
+      const recovered = selected.flows.filter(f => {
+        const a = domainOf.get(f.a) ?? f.a;
+        const b = domainOf.get(f.b) ?? f.b;
+        return !f.relatesOnly && ((a === missing.a && b === missing.b) || (a === missing.b && b === missing.a));
+      });
+      const counts = recovered.reduce((sum, f) => {
+        const forward = (domainOf.get(f.a) ?? f.a) === missing.a;
+        return { ab: sum.ab + (forward ? f.ab : f.ba), ba: sum.ba + (forward ? f.ba : f.ab) };
+      }, { ab: 0, ba: 0 });
+      expect.soft(counts, `${missing.key} keeps both directional counts while selected`).toEqual({ ab: missing.ab, ba: missing.ba });
+      expect.soft(recovered.some(f => f.drawn), `selecting an endpoint reveals the omitted pair ${missing.key}`).toBe(true);
+    }
+  }
 }
 
 async function selectCanvasDomain(page: Page, id: string) {
@@ -106,11 +151,14 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
       expect.soft(dial.zoomRatio, "the overview").toBeCloseTo(1, 2);
       expect.soft(dial.rings, "Flat maps keep the branch grammar at every graph size").toEqual([]);
       expect.soft(dial.clusters, "every domain belongs to the branch layout").toHaveLength(bar.domains);
-      expect.soft(new Set(dial.texts.filter(t => t.role === "domain").map(t => t.id)).size, "every domain has a readable name").toBe(bar.domains);
+      const culledNames = await checkDomainOrientation(page, dial);
       expect.soft(marks, "chips + capability discs + lines").toBeLessThanOrEqual(bar.marks);
       if (bar.noDiscs) expect.soft(dial.discs.length, "capability discs at the overview").toBe(0);
-      if (bar.lines === "all") expect.soft(dial.flows.filter((f) => !f.drawn).map((f) => f.key), "every flow drawn").toEqual([]);
-      else expect.soft(drawn, "lines at rest").toBeLessThanOrEqual(bar.lines);
+      expect.soft(dial.flows, "the flow inventory retains every pair, including omitted rest lines").toHaveLength(bar.flows);
+      expect.soft(new Set(dial.flows.map(f => f.key)).size, "each flow pair occurs once").toBe(bar.flows);
+      expect.soft(dial.budget.total, "the disclosure count includes every counted pair").toBe(dial.flows.filter(f => !f.relatesOnly).length);
+      expect.soft(drawn, "some connections remain visible at rest").toBeGreaterThan(0);
+      expect.soft(drawn, "lines at rest").toBeLessThanOrEqual(bar.lines);
       if (bar.perEnd !== undefined) expect.soft(measured.perEnd, "lines per end").toBeLessThanOrEqual(bar.perEnd);
       expect.soft(dial.crossings, "line crossings").toBeLessThanOrEqual(bar.crossings);
       expect.soft(dial.namesCrossed, "names a line crosses").toBeLessThanOrEqual(bar.namesCrossed);
@@ -118,6 +166,8 @@ for (const vault of Object.keys(OVERVIEW) as Vault[]) {
       expect.soft(cut(dial), "every name whole").toEqual([]);
       if (vault === "synth 2,000") expect.soft(dial.numerals.length, "rest numerals").toBeLessThanOrEqual(9);
       expect.soft(dial.ledger, "branch maps do not switch to a detached ledger").toBeNull();
+      if (vault === "storefront" || vault === "dogfood") await recoverOmittedPairs(page, dial);
+      await recoverCulledNames(page, vault, size, culledNames);
     });
   }
 }
@@ -147,7 +197,7 @@ for (const size of WIDTHS) {
 for (const vault of ["storefront", "synth 2,000"] as const) {
   for (const size of WIDTHS) {
     for (const index of ["expanded", "collapsed"] as const) {
-      test(`${vault} at ${size.width}, INDEX ${index}: no name under INDEX or the rail, and every domain keeps its name`, async ({ page }) => {
+      test(`${vault} at ${size.width}, INDEX ${index}: names clear the panels and culled domains remain accessible`, async ({ page }) => {
         await openDial(page, vault, size, `index=${index}&`);
         await expect(page.getByTestId("topology-index-panel")).toHaveCount(vault === "storefront" && index === "expanded" ? 1 : 0);
         const dial = await readDial(page);
@@ -155,7 +205,9 @@ for (const vault of ["storefront", "synth 2,000"] as const) {
         const named = new Set(dial.texts.filter((t) => t.role === "domain").map((t) => t.id));
         report(`${vault} ${size.width} ${index} free rect`, { outside, named: named.size, D: dial.clusters.length });
         expect.soft(outside, "texts outside the free rect").toEqual([]);
-        expect.soft(named.size, "distinct domain names").toBe(dial.clusters.length);
+        expect.soft(dial.clusters, "every domain remains in the map").toHaveLength(OVERVIEW[vault].domains);
+        const culled = await checkDomainOrientation(page, dial);
+        await recoverCulledNames(page, vault, size, culled, `index=${index}&`);
       });
     }
   }
