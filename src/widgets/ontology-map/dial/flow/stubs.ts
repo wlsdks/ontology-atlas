@@ -1,3 +1,4 @@
+import { flowHeadSize } from "./arrow-size";
 import type { FlowMarksInput } from "../flow-marks";
 import { stubText } from "../far-counts";
 import type { DialLink } from "../links";
@@ -34,7 +35,7 @@ function stubLength(tokens: DialTokens, free: Box): number {
 }
 
 function minimumReach(tokens: DialTokens, st: Stub): number {
-  return st.near.r + 4 + tokens.flowHeadBasePx + tokens.flowHeadGain * tokens.flowFocusMax;
+  return st.near.r + 4 + flowHeadSize(tokens, tokens.flowFocusMax, tokens.flowFocusMax, true);
 }
 
 export function fanAngles(angles: readonly number[], gapDeg: number): number[] {

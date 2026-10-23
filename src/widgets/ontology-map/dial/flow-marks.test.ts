@@ -122,6 +122,28 @@ describe("buildFlowMarks", () => {
     expect(weak.w1).toBeCloseTo(weak.w0 * TOKENS.flowTaper);
   });
 
+  it("keeps Flat branch direction readable at both overview and focus zoom", () => {
+    const model = modelOf([["d0c0", "d2c0"]]);
+    for (const scale of [0.24, 2.6]) {
+      const scene = { ...sceneOf(model), branches: true };
+      const { out } = run(model, { scene, scale });
+      expect(out.strips.length).toBeGreaterThan(0);
+      expect(out.strips.every(strip => strip.headEnd && strip.headSize >= 8)).toBe(true);
+    }
+  });
+
+  it("labels only attended Flat bundles with the localized connection count", () => {
+    const model = modelOf([["d0c0", "d3c0"], ["d0c1", "d3c0"], ["d3c1", "d0c0"]]);
+    const scene = { ...sceneOf(model), branches: true };
+    const connectionCount = (count: number) => `connections:${count}`;
+    expect(run(model, { scene, connectionCount }).out.numerals).toHaveLength(0);
+    const { out, result } = run(model, { scene, connectionCount, focusId: "d3" });
+    expect(out.numerals.map(mark => mark.text)).toEqual([connectionCount(2)]);
+    expect(result.links.map(link => [link.uv, link.vu])).toEqual([[2, 1]]);
+    expect(out.strips).toHaveLength(2);
+    expect(run(model, { scene, focusId: "d3" }).out.numerals).toHaveLength(0);
+  });
+
   it("draws a two-way pair as one strip with two heads", () => {
     const { out } = run(modelOf([["d0c0", "d2c0"], ["d2c1", "d0c1"]]));
     expect(out.strips).toHaveLength(1);
