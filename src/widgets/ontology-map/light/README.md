@@ -39,6 +39,10 @@ its place and lights source to target, and the stop it leads to blooms when the
 hop is due. A path that appears while a concept is focused, or under the trail
 lens, is held back and does not light later.
 
+Branch-map chords already end at their drawn ports, so their light plan applies
+no second radius trim and no radial arrival bloom. The travelling head keeps
+its normal fade; packed layouts retain their concept bloom.
+
 ## Contracts the layer keeps
 
 - Light only: two programs (a Gaussian strip along a quadratic, and radial

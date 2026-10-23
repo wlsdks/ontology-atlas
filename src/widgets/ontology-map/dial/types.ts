@@ -156,7 +156,7 @@ export interface DialRowPick {
     id: string;
     box: Box;
 }
-export interface DialChordLight { key: string; sourceDomain: string; targetDomain: string; a: Point; c: Point; b: Point; widthPx: number; chipRadiusPx: number;
+export interface DialChordLight { key: string; sourceDomain: string; targetDomain: string; a: Point; c: Point; b: Point; widthPx: number; chipRadiusPx: number; arrivalBloom?: boolean;
 }
 export interface DialLightFrame { attentionKey: string; focused: boolean; inkMix: number; chords: DialChordLight[];
 }

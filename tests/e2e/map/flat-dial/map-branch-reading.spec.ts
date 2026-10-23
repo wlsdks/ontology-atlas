@@ -44,3 +44,21 @@ test("branch map: implementation detail never stacks an element over its capabil
   expect(pair).toHaveLength(2);
   expect(Math.hypot(pair[0]!.x - pair[1]!.x, pair[0]!.y - pair[1]!.y)).toBeGreaterThan(pair[0]!.radius + pair[1]!.radius + 8);
 });
+
+test("branch map: a clicked capability keeps its entire name outside the inspector", async ({ page }) => {
+  await openDial(page, "dogfood", { width: 1920, height: 1080 });
+  const id = "capability:agent-environment-doctor";
+  const origin = await canvasOrigin(page);
+  const node = await page.evaluate((id) => window.__atlasMap!.nodes().find((n) => n.id === id)!, id);
+  const zoom = await page.evaluate(() => window.__atlasMap!.camera()!.scale);
+  await page.mouse.click(origin.x + node.x, origin.y + node.y);
+  await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  await page.mouse.move(5, 5);
+  await waitForMapStill(page);
+  const selected = await readDial(page);
+  const name = selected.texts.find((t) => t.id === id && t.role === "capability")!;
+  expect(name).toBeDefined();
+  expect(name.box.minX).toBeGreaterThanOrEqual(selected.freeRect.minX);
+  expect(name.box.maxX).toBeLessThanOrEqual(selected.freeRect.maxX);
+  expect(await page.evaluate(() => window.__atlasMap!.camera()!.scale)).toBeCloseTo(zoom, 3);
+});

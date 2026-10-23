@@ -214,10 +214,11 @@ export function useTopologyFocusNavigation({
         const measured = cameraTokens(tokens);
         const current = cameraTargetRef.current;
         const branch = world.dial?.scene.branches ? world.dial.scene.clusterByDomain.get(focusedSlug) : null;
-        const frame = branch ? lastDialFrame() : null;
+        const frame = world.dial?.scene.branches ? lastDialFrame() : null;
         const ids = new Set([focusedSlug, ...(branch?.items.slice(0, branchPreviewRows(world.dial!.scene.clusters.length)).map((it) => it.id) ?? [])]);
         const names = frame?.labelBoxes.filter((box) => ids.has(box.nodeId)) ?? [];
-        const sx = node ? (node.x - current.tx) * current.tscale + width / 2 : 0;
+        const seen = cameraRef.current;
+        const sx = node ? (node.x - seen.x.value) * seen.scale.value + width / 2 : 0;
         const margin = names.length ? {
           left: Math.max(SELECTION_NUDGE_MARGIN_PX, sx - Math.min(...names.map((b) => b.minX)) + tokens.radiusElement),
           right: Math.max(SELECTION_NUDGE_MARGIN_PX, Math.max(...names.map((b) => b.maxX)) - sx + tokens.radiusElement),

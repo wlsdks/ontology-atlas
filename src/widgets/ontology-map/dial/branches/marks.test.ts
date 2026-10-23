@@ -73,6 +73,8 @@ describe("branch reading", () => {
     const domain = frame("d0");
     expect(domain.result.flows.links.flatMap((l) => [l.u, l.v]).every((id) => domain.input.model.domainById.has(id))).toBe(true);
     expect(domain.result.flows.links.reduce((sum, l) => sum + l.total, 0)).toBe(6);
+    expect(domain.result.chords.length).toBeGreaterThan(0);
+    expect(domain.result.chords.every((chord) => chord.chipRadiusPx === 0 && chord.arrivalBloom === false)).toBe(true);
     const capability = frame("d0c0");
     expect(capability.result.flows.links.filter((l) => l.u === "d0c0" || l.v === "d0c0").reduce((sum, l) => sum + l.total, 0)).toBe(2);
   });

@@ -287,6 +287,9 @@ describe("branch overview", () => {
     const scene = layoutDial(model, circularDomainOrder(model, null).order, tokens, null);
     expect(scene.branches).toBe(true);
     expect(scene.rings).toHaveLength(0);
+    const project = scene.positions.get(model.projectId!)!;
+    expect(project.x).toBe((scene.extent.minX + scene.extent.maxX) / 2);
+    expect(project.y).toBeLessThan(Math.min(...scene.clusters.flatMap((c) => c.items.map((it) => it.y))) - tokens.pitch * 2);
     expect([...scene.positions.keys()].sort()).toEqual([...lay(model, null).positions.keys()].sort());
     for (const c of scene.clusters) {
       for (const it of c.items) expect(Math.sign(it.x - c.chip.x)).toBe(Math.sign(c.chip.x));

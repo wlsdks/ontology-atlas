@@ -690,7 +690,7 @@ function drawBranchLink(input: FlowMarksInput, out: FlowMarks, l: DialLink, a: E
       dashed: l.relatesOnly, numeral: l.attended && count > 1 ? String(count) : null,
       numeralInk: linkInk(input, l, from, true, presence), slots: REST_SLOTS,
     });
-    if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: end.r });
+    if (curve && l.attended) input.chords.push({ key: `${from}\0${to}`, sourceDomain: from, targetDomain: to, ...curve, widthPx: width, chipRadiusPx: 0, arrivalBloom: false });
   };
   const offset = l.uv > 0 && l.vu > 0 ? input.tokens.flowSplitPx * 3 : 0;
   if (l.uv > 0 || l.relatesOnly) run(l.u, l.v, a, b, l.uv, offset);

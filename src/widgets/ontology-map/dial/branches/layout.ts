@@ -75,12 +75,12 @@ export function branchLayout(model: DialModel, packed: DialScene, pitch: number)
   const minX = Math.min(...previewXs);
   const maxX = Math.max(...previewXs);
   const previewYs = clusters.flatMap((c) => [c.chip.y, ...c.items.slice(0, previewRows).map((it) => it.y)]);
-  const minY = Math.min(...previewYs) - rowPitch;
+  const minY = Math.min(...previewYs) - rowPitch * 2;
   const maxY = Math.max(...clusters.map((c) => {
     const shown = c.items.slice(0, previewRows);
     return (shown.at(-1)?.y ?? c.chip.y) + (model.domainById.get(c.domainId)!.capabilityIds.length > previewRows ? rowPitch : 0);
   })) + pitch / 2;
-  if (model.projectId) positions.set(model.projectId, { x: minX, y: minY });
+  if (model.projectId) positions.set(model.projectId, { x: (minX + maxX) / 2, y: minY });
   const orphanCentre = { x: 0, y: maxY + packed.orphans.radius };
   for (const id of packed.orphans.ids) {
     const p = packed.positions.get(id)!;

@@ -52,6 +52,20 @@ const chord = (key: string, sourceDomain: string, targetDomain: string, ax: numb
 const CHORDS = [chord("pay>ship", "pay", "ship", 100, 500), chord("cart>pay", "cart", "pay", 600, 100)];
 
 describe("createDialLightSource", () => {
+  it("ends a branch signal at its port without washing the card in an arrival bloom", () => {
+    const portChord = { ...CHORDS[0]!, chipRadiusPx: 0, arrivalBloom: false };
+    const frame: DialLightFrame = { attentionKey: "pay", focused: true, inkMix: 1, chords: [portChord] };
+    const source = createDialLightSource(() => frame);
+    const blooms: string[] = [];
+    const { out, heads } = emitter();
+    out.bloom = (id) => blooms.push(id);
+    for (let now = 0; now <= 2000; now += 16) source.step(input(now), out);
+    expect(heads.length).toBeGreaterThan(0);
+    expect(blooms.some((id) => id.startsWith("head:"))).toBe(true);
+    expect(blooms.filter((id) => id.startsWith("node:"))).toEqual([]);
+    expect(source.plan()).toBeNull();
+  });
+
   it("plans nothing on hover", () => {
     const frame: DialLightFrame = { attentionKey: "pay", focused: false, inkMix: 1, chords: CHORDS };
     const source = createDialLightSource(() => frame);

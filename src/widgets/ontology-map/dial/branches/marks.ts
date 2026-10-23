@@ -171,10 +171,12 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const id = model.projectId;
     const p = position(id, scene.positions.get(id)!);
     if (visible(p, tokens.nameMaxPx)) {
-      glyph(id, "project", p, tokens.hubMinPx, inks.domainRim, inks.bg);
-      const name = text(id, "project", model.projectLabel, { x: p.x + tokens.hubMinPx + tokens.ledgerGapPx / 2, y: p.y }, "left", "project", inks.domainLabelAttended);
+      const radius = Math.min(tokens.hubMaxPx, Math.max(tokens.hubMinPx, map.radiusProject * input.scale));
+      glyph(id, "project", p, radius, inks.domainRim, inks.bg);
+      const titleY = p.y + radius + tokens.ledgerGapPx;
+      const name = text(id, "project", model.projectLabel, { x: p.x, y: titleY }, "center", "project", inks.domainLabelAttended);
       rows.push({ id, box: name });
-      input.hubLines?.forEach((line, i) => { if (line) text(id, "units", line, { x: name.minX, y: p.y + (namesVisible ? 1 : -1) * (i + 1) * tokens.ledgerRowPx }, "left", "element", inks.units); });
+      input.hubLines?.forEach((line, i) => { if (line) text(id, "units", line, { x: p.x, y: titleY + (i + 1) * tokens.ledgerRowPx }, "center", "element", inks.units); });
     }
   }
   const flows = buildFlowMarks({
