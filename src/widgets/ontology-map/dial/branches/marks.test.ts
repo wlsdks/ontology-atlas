@@ -62,6 +62,64 @@ function frame(focus: string | null, scale = 2, longName = false, domains = 3, c
   return { out, result: buildDialMarks(input, out), input };
 }
 
+describe("implementation branches", () => {
+  it("places children close to their capability in distinct compact rows", () => {
+    const { input } = frame("d0c0", 2, false, 1, 1, undefined, 4);
+    const cap = input.scene.positions.get("d0c0")!;
+    const children = [0, 1, 2, 3].map((i) => input.scene.positions.get(`d0c0e${i}`)!);
+    expect(Math.abs(children[0]!.x - cap.x)).toBeLessThanOrEqual(tokens.pitch * 3);
+    expect(children[0]!.y).not.toBe(children[1]!.y);
+    expect(children[0]!.x).toBe(children[1]!.x);
+    expect(new Set(children.map((p) => `${p.x}:${p.y}`)).size).toBe(4);
+  });
+
+  it("shows readable named squares with aligned targets and containment stems at actual dragged positions", () => {
+    const { input } = frame("d0c0", 2, false, 1, 1, undefined, 4);
+    input.elementLabel = (id) => `Implementation ${id}: native application connection and evidence`;
+    const original = input.nodeScreen;
+    input.nodeScreen = (id) => {
+      const p = original(id);
+      return p && id === "d0c0e0" ? { x: p.x + 12, y: p.y - 10 } : p;
+    };
+    input.disclosure = { ...input.disclosure, entered: "d0", elementsAlpha: 1, elementAlphaFor: () => 1 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    const children = out.squares.filter((square) => square.id?.startsWith("d0c0e"));
+    expect(children).toHaveLength(4);
+    for (const square of children) {
+      const label = out.texts.find((text) => text.id === square.id && text.role === "element");
+      expect(label).toBeDefined();
+      expect(label!.lines).toHaveLength(2);
+      expect(result.rows.find((row) => row.id === square.id)?.box).toBe(label!.box);
+      expect(parseFloat(label!.font.match(/([\d.]+)px/)![1]!)).toBeGreaterThanOrEqual(14);
+      expect(square.half).toBeGreaterThanOrEqual(6);
+      expect(square.half).toBeLessThanOrEqual(7.5);
+      expect(result.picks.find((pick) => pick.id === square.id)).toMatchObject({ x: square.x, y: square.y });
+      expect(result.picks.find((pick) => pick.id === square.id)!.r).toBeGreaterThanOrEqual(12);
+      const stem = out.stems!.find((stem) => Math.abs(Math.hypot(stem.b.x - square.x, stem.b.y - square.y) - square.half) < 0.01);
+      expect(stem).toBeDefined();
+      const points = Array.from({ length: 33 }, (_, i) => {
+        const t = i / 32;
+        return { x: (1 - t) ** 2 * stem!.a.x + 2 * t * (1 - t) * stem!.c.x + t ** 2 * stem!.b.x,
+          y: (1 - t) ** 2 * stem!.a.y + 2 * t * (1 - t) * stem!.c.y + t ** 2 * stem!.b.y };
+      });
+      for (const text of out.texts) expect(crossesBox([points], text.box)).toBe(false);
+    }
+    expect(children.find((square) => square.id === "d0c0e0")).toMatchObject(input.nodeScreen("d0c0e0")!);
+  });
+
+  it("withholds an ordinary unnamed implementation together with its target", () => {
+    const { input } = frame("d0c0", 2, false, 1, 1, undefined, 2);
+    input.elementLabel = () => null;
+    input.disclosure = { ...input.disclosure, entered: "d0", elementsAlpha: 1, elementAlphaFor: () => 1 };
+    const out = emptyDialFrameMarks();
+    const result = buildDialMarks(input, out);
+    expect(out.squares.filter((square) => square.id?.startsWith("d0c0e"))).toHaveLength(0);
+    expect(result.picks.filter((pick) => pick.id.startsWith("d0c0e"))).toHaveLength(0);
+    expect(out.stems).toHaveLength(1);
+  });
+});
+
 describe("branch reading", () => {
   it("bounds long visible names while preserving the full concept title", () => {
     const { input, out } = frame(null, 1, true);
@@ -123,7 +181,8 @@ describe("dense branch disclosure", () => {
     const result = buildDialMarks(input, out);
     const label = out.texts.find((text) => text.id === member.id && text.role === "capability");
     expect(label).toBeDefined();
-    expect(out.squares.some((square) => member.elementIds.includes(square.id!))).toBe(true);
+    expect(out.squares.some((square) => member.elementIds.includes(square.id!))).toBe(false);
+    expect(result.picks.some((pick) => member.elementIds.includes(pick.id))).toBe(false);
     for (const square of out.squares) expect(overlaps(label!.box, { minX: square.x - square.half, maxX: square.x + square.half, minY: square.y - square.half, maxY: square.y + square.half })).toBe(false);
     expect(result.rows.find((row) => row.id === member.id)?.box).toBe(label!.box);
     expect(result.rows.some((row) => row.action?.domainId === "d0" && row.action.direction === "less")).toBe(true);

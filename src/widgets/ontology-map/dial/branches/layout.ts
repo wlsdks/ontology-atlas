@@ -86,17 +86,15 @@ export function branchLayout(model: DialModel, packed: DialScene, pitch: number,
       reserve(it);
     }
   } else for (const p of positions.values()) reserve(p);
-  for (const c of clusters) for (const it of c.items) elementRows.push({ ids: it.elementIds, start: { x: it.x + c.branchSide * MEMBER_REACH * pitch, y: it.y }, side: c.branchSide });
+  for (const c of clusters) for (const it of c.items) elementRows.push({ ids: it.elementIds, start: { x: it.x + c.branchSide * 2.5 * pitch, y: it.y }, side: c.branchSide });
   for (const row of elementRows) {
-    let x = row.start.x;
-    for (const id of row.ids) {
+    for (const [index, id] of row.ids.entries()) {
       if (placedElements.has(id)) continue;
-      const p = { x, y: row.start.y };
+      const p = { x: row.start.x + row.side * Math.floor(index / 2) * 3 * pitch, y: row.start.y + (index % 2 === 0 ? -0.5 : 0.5) * pitch };
       while (blocked(p)) p.x += row.side * pitch;
       placedElements.add(id);
       positions.set(id, p);
       reserve(p);
-      x = p.x + row.side * pitch;
     }
   }
   const previewXs = clusters.flatMap((c) => [c.chip.x, ...c.items.slice(0, previewRows).map((it) => it.x)]);
