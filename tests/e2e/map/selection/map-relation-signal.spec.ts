@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
+import { useDogfoodSample as seedDogfoodSample } from "../../sample-source";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 
 interface LightHead {
@@ -139,30 +140,6 @@ async function sampleInkMix(page: Page) {
   });
 }
 
-async function panWhileDialLightFlies(page: Page) {
-  const start = await page.evaluate(() => {
-    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
-    const stretch = canvas.width / window.__atlasMap!.camera()!.width;
-    const marks = window.__atlasMap!.nodes().filter((node) => !node.hidden).map((node) => ({ x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch }));
-    let best = { x: 0, y: 0, clear: -1 };
-    for (let y = canvas.top + 120; y < canvas.bottom - 80; y += 16) {
-      for (let x = canvas.left + canvas.width * 0.35; x < canvas.right - 80; x += 16) {
-        const clear = Math.min(...marks.map((m) => Math.hypot(m.x - x, m.y - y)));
-        if (clear > best.clear) best = { x, y, clear };
-      }
-    }
-    return best;
-  });
-  expect(start.clear, "an empty spot of the canvas to drag").toBeGreaterThan(24);
-  await page.mouse.move(start.x, start.y);
-  await page.mouse.down();
-  for (let i = 1; i <= 40; i += 1) {
-    await page.mouse.move(start.x - i * 3, start.y - i);
-    await page.evaluate(() => new Promise<void>((done) => requestAnimationFrame(() => done())));
-  }
-  await page.mouse.up();
-}
-
 function headTrack(frames: LightFrame[], key: string, source: string) {
   return frames.flatMap((frame) => frame.heads.filter((head) => head.key === key && head.source === source).map((head) => ({ frame, head })));
 }
@@ -184,13 +161,14 @@ function allowedArrivalIndex(frames: LightFrame[], from: number, signal: LightSi
 test("a keyboard focus runs one light along each relation, in its direction, riding the reveal", async ({ page }) => {
   test.setTimeout(120_000);
   await openMap(page);
+  await page.setViewportSize({ width: 2560, height: 1440 });
+  await waitForMapStill(page);
   await waitForLight(page);
-  const focus = await drawnFlowDomain(page);
+  const focus = "domain:order";
   await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
   await sampleInkMix(page);
   await selectBySearch(page, focus);
-  const pan = panWhileDialLightFlies(page);
-  const event = await lightEvent(page, "focus", () => pan);
+  const event = await lightEvent(page, "focus");
   const plan = event.plan.map((signal) => ({ ...signal, revealBound: false }));
   const { frames } = event;
 
@@ -240,7 +218,14 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
     }
   }
 
-  const glue = frames.flatMap((frame) => frame.glue).filter((sample) => !sample.ambiguous && sample.lineContrast >= 8);
+  // A fresh focus leaves keyboard input clear of the closing search dialog.
+  await page.keyboard.press("Escape");
+  await waitForMapStill(page);
+  await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
+  await clickConcept(page, focus);
+  const zoom = page.keyboard.press("=").then(() => page.keyboard.press("="));
+  const movingEvent = await lightEvent(page, "focus", () => zoom);
+  const glue = [...frames, ...movingEvent.frames].flatMap((frame) => frame.glue).filter((sample) => !sample.ambiguous && sample.lineContrast >= 8);
   expect(new Set(glue.map((sample) => sample.key)).size, "the glue was measured on at least two lines").toBeGreaterThanOrEqual(2);
   const moved = glue.filter((sample) => sample.cameraShiftPx >= MOVED_PX);
   test.info().annotations.push({
@@ -264,15 +249,17 @@ test("a keyboard focus runs one light along each relation, in its direction, rid
 
 test("inside a realm, the classic focus light runs one light along each relation and stands the comets down", async ({ page }) => {
   test.setTimeout(120_000);
-  await openMap(page, "&realm=project%3Astorefront");
+  const focus = "element:map-frame-loop";
+  await seedDogfoodSample(page);
+  await openMap(page, "&realm=capability%3Aontology-map");
   await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
   await waitForLight(page);
   await page.evaluate(() => window.__atlasMapLight!.record(true, { glue: true }));
-  await selectBySearch(page, FOCUS);
+  await selectBySearch(page, focus);
   const { plan, frames } = await lightEvent(page, "focus");
 
   expect(plan.length, "the focus lit its relations").toBeGreaterThanOrEqual(3);
-  const focusIndex = frames.findIndex((frame) => frame.focus === FOCUS);
+  const focusIndex = frames.findIndex((frame) => frame.focus === focus);
   expect(focusIndex, "the recorder saw the focus frame").toBeGreaterThanOrEqual(0);
   const reached = new Map<string, number>();
   for (const signal of plan) {
@@ -365,6 +352,9 @@ async function clickConcept(page: Page, id: string) {
     const probe = window.__atlasMap!;
     const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     const stretch = canvas.width / probe.camera()!.width;
+    const dial = probe.dial?.();
+    const text = dial?.owns ? dial.texts.find((mark) => mark.id === nodeId && ["domain", "capability", "element"].includes(mark.role)) : undefined;
+    if (text) return { x: canvas.left + (text.box.minX + text.box.maxX) / 2, y: canvas.top + (text.box.minY + text.box.maxY) / 2 };
     const node = probe.nodes().find((candidate) => candidate.id === nodeId && !candidate.hidden);
     return node ? { x: canvas.left + node.x * stretch, y: canvas.top + node.y * stretch } : null;
   }, id);

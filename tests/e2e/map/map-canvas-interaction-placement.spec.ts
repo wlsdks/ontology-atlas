@@ -17,27 +17,27 @@ const contains = (b: Box, p: {
     x: number;
     y: number;
 }) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h;
-/** Enters a domain's realm through its panel action; the Flat overview picks no line. */
-async function enterRealmOf(page: Page, domain: {
-    x: number;
-    y: number;
-}) {
-    if (!(await page.getByTestId("map-detail-panel").isVisible().catch(() => false))) {
-        await page.mouse.click(domain.x, domain.y);
-        await expect(page.getByTestId("map-detail-panel")).toBeVisible();
-    }
+/** Capability realms expose individual edges; domain realms retain aggregated branches. */
+async function enterRelationRealm(page: Page) {
+    const label = await page.evaluate(() => window.__atlasMap!.nodes().find((node) => node.id === "capability:ontology-map")!.label);
+    await page.getByTestId("topology-concept-search").click();
+    const search = page.getByRole("dialog", { name: "이 지도에서 검색" });
+    await expect(search).toBeVisible();
+    await page.keyboard.type(label);
+    await expect(search.locator('[role="option"][aria-selected="true"]')).toContainText(label);
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("map-detail-panel")).toBeVisible();
     await page.getByTestId("map-detail-panel-more-menu-trigger").click();
     await page.getByTestId("map-detail-panel-action-realm").click();
     await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
-    // Entering closes the panel; an Escape here would leave the realm again.
     await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
-    await waitForMapStill(page).catch(() => { });
+    await waitForMapStill(page);
 }
 test.describe("map canvas interactions on the dogfood vault", () => {
     test.setTimeout(150000);
     test("MC-04: the edge hover card never lands on INDEX or the utility tiles", async ({ page }) => {
         await arrive(page, { width: 1040, height: 720 });
-        await enterRealmOf(page, await pickDomain(page));
+        await enterRelationRealm(page);
         // In a realm the INDEX column holds the realm's ledger.
         const index = (await rectOf(page, "topology-index-panel")) ?? (await rectOf(page, "topology-realm-ledger"));
         expect(index, "INDEX is open at arrival").not.toBeNull();
@@ -46,6 +46,8 @@ test.describe("map canvas interactions on the dogfood vault", () => {
             const m = (window as unknown as {
                 __atlasMap: {
                     edges: () => Array<{
+                        sourceId: string;
+                        targetId: string;
                         visible: boolean;
                         hidden: boolean;
                         ax: number;
@@ -58,9 +60,10 @@ test.describe("map canvas interactions on the dogfood vault", () => {
                 };
             }).__atlasMap;
             const c = document.querySelector('[data-surface-role="map-canvas"]')!.getBoundingClientRect();
+            const drawn = new Set(window.__atlasMap!.nodes().filter((node) => !node.hidden && (node.alpha ?? 1) > 0.5).map((node) => node.id));
             return m
                 .edges()
-                .filter((e) => e.visible && !e.hidden)
+                .filter((e) => e.visible && !e.hidden && drawn.has(e.sourceId) && drawn.has(e.targetId))
                 .map((e) => ({ x: c.x + 0.25 * e.ax + 0.5 * e.controlX + 0.25 * e.bx, y: c.y + 0.25 * e.ay + 0.5 * e.controlY + 0.25 * e.by }));
         });
         const free = midpoints.filter((p) => !chrome.some((r) => contains(r, p)) && p.x > 0 && p.x < 1040 && p.y > 0 && p.y < 720);
@@ -143,11 +146,13 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         await capture(page, "mc07-detail-panel");
         // The same slot for an edge: same width, same primary grammar, read in the domain's realm
         // once the camera rests, not mid-flight.
-        await enterRealmOf(page, domain);
+        await enterRelationRealm(page);
         const edge = await page.evaluate(() => {
             const m = (window as unknown as {
                 __atlasMap: {
                     edges: () => Array<{
+                        sourceId: string;
+                        targetId: string;
                         visible: boolean;
                         hidden: boolean;
                         ax: number;
@@ -173,10 +178,13 @@ test.describe("map canvas interactions on the dogfood vault", () => {
                 x: 0.25 * x.ax + 0.5 * x.controlX + 0.25 * x.bx,
                 y: 0.25 * x.ay + 0.5 * x.controlY + 0.25 * x.by,
             });
-            const e = m.edges().find((x) => x.visible && !x.hidden && Math.hypot(x.bx - x.ax, x.by - x.ay) > 60 && Boolean(m.edgeAt(mid(x).x, mid(x).y)))!;
+            const drawn = new Set(window.__atlasMap!.nodes().filter((node) => !node.hidden && (node.alpha ?? 1) > 0.5).map((node) => node.id));
+            const e = m.edges().find((x) => x.visible && !x.hidden && drawn.has(x.sourceId) && drawn.has(x.targetId) && Math.hypot(x.bx - x.ax, x.by - x.ay) > 60 && Boolean(m.edgeAt(mid(x).x, mid(x).y)));
+            if (!e) return null;
             return { x: c.x + mid(e).x, y: c.y + mid(e).y };
         });
-        await page.mouse.click(edge.x, edge.y);
+        expect(edge, "an individual relation can be selected in the capability realm").not.toBeNull();
+        await page.mouse.click(edge!.x, edge!.y);
         const edgePanel = page.getByTestId("map-edge-panel");
         await expect(edgePanel).toBeVisible();
         expect(Math.round((await rectOf(page, "map-edge-panel"))!.w)).toBe(Math.round(nodePanelWidth));

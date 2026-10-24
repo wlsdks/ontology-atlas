@@ -145,6 +145,20 @@ function curveAt(curve: LightHead["curve"], t: number): { x: number; y: number; 
   return { x: u * u * ax + 2 * u * t * cx + t * t * bx, y: u * u * ay + 2 * u * t * cy + t * t * by, tx: dx / length, ty: dy / length };
 }
 
+function nearCurve(point: { x: number; y: number }, curve: LightHead["curve"], from: number, to: number, clearance: number): boolean {
+  let a = curveAt(curve, from);
+  for (let i = 1; i <= CURVE_STEPS; i += 1) {
+    const b = curveAt(curve, from + (to - from) * i / CURVE_STEPS);
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const span = dx * dx + dy * dy;
+    const t = span > 0 ? Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.y - a.y) * dy) / span)) : 0;
+    if (Math.hypot(point.x - a.x - t * dx, point.y - a.y - t * dy) <= clearance) return true;
+    a = b;
+  }
+  return false;
+}
+
 function curveLength(curve: LightHead["curve"]): number {
   let length = 0;
   let previous = curveAt(curve, 0);
@@ -187,9 +201,11 @@ function measureGlue(
   const twinOf = (key: string) => key.split("\0").reverse().join("\0");
   const clear = heads.filter((h) => {
     if (h.arrived) return false;
-    if (heads.some((other) => other.source === h.source && other.key !== h.key && other.key === twinOf(h.key))) return false;
     const length = curveLength(h.curve);
-    return (h.t - h.departAt) * length >= GLUE_RIM_PX + GLUE_SLICES * GLUE_SLICE_PX && (h.arriveAt - h.t) * length >= GLUE_RIM_PX;
+    if ((h.t - h.departAt) * length < GLUE_RIM_PX + GLUE_SLICES * GLUE_SLICE_PX || (h.arriveAt - h.t) * length < GLUE_RIM_PX) return false;
+    const slices = Array.from({ length: GLUE_SLICES }, (_, k) => curveAt(h.curve, h.t - ((k + 1) * GLUE_SLICE_PX) / length));
+    return !heads.some((other) => other.source === h.source && other.key !== h.key && other.key === twinOf(h.key)
+      && slices.some((point) => nearCurve(point, other.curve, 0, 1, GLUE_ACROSS_PX * 2)));
   });
   for (const head of clear.slice(0, GLUE_HEADS)) {
     const length = curveLength(head.curve);
@@ -220,7 +236,8 @@ function measureGlue(
     result.push({
       key: head.key,
       t: head.t,
-      ambiguous: !singlePeak(line) || !isolated(line) || !isolated(light),
+      ambiguous: !singlePeak(line) || !isolated(line) || !isolated(light) || heads.some((other) => other.key !== head.key
+        && nearCurve({ x: ahead[0], y: ahead[1] }, other.curve, other.departAt, other.t, GLUE_ACROSS_PX * 2)),
       cameraShiftPx: cameraShiftAcross(slices[0]!, frame, previous),
       offsetPx: Math.abs(peakAt(light, across) - strokeCentre(line, across)),
       lineContrast: Math.max(...line) - Math.min(...line),
