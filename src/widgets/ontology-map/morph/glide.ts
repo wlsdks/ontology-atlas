@@ -11,6 +11,9 @@ const STAGGER_MS = STAGGER * 1000;
 const STIFFNESS = SPRING.canvas.stiffness;
 const ZETA = SPRING.canvas.dampingRatio;
 const VISUAL_MS_AT_UNIT_MASS = springVisualMs(SPRING.canvas);
+const SETTLE_BAND = 0.005;
+const SETTLE_ENVELOPE_LOG = Math.log(1 / (SETTLE_BAND * Math.sqrt(1 - ZETA * ZETA)));
+const STEP_OVERSHOOT = Math.exp(-ZETA * Math.PI / Math.sqrt(1 - ZETA * ZETA));
 
 export interface GlideTracks {
   ids: readonly string[];
@@ -127,6 +130,24 @@ function median(values: number[]): number {
   return values.length === 0 ? 0 : values[Math.floor(values.length / 2)]!;
 }
 
+function curveSpringRate(glide: Glide, tracks: GlideTracks, i: number): number {
+  const parent = glide.parent[i]!;
+  const bulge = glide.bulge[i]!;
+  if (parent < 0 || !glide.polar[i] || bulge === 0) return 1;
+  const dx = tracks.x1[i]! - tracks.x0[i]!;
+  const dy = tracks.y1[i]! - tracks.y0[i]!;
+  const travel = Math.hypot(dx, dy);
+  if (travel === 0) return 1;
+  const offsetDx = dx - (tracks.x1[parent]! - tracks.x0[parent]!);
+  const offsetDy = dy - (tracks.y1[parent]! - tracks.y0[parent]!);
+  const dr = glide.r1[i]! - glide.r0[i]!;
+  const radius = Math.max(glide.r0[i]!, glide.r1[i]!) + Math.abs(dr) * STEP_OVERSHOOT;
+  const speed = Math.hypot(dx - bulge * offsetDx, dy - bulge * offsetDy)
+    + bulge * Math.hypot(dr, radius * glide.turn[i]!);
+  const gain = Math.max(1, speed / travel);
+  return 1 + Math.log(gain) / SETTLE_ENVELOPE_LOG;
+}
+
 export function planGlide(tracks: GlideTracks, options: GlideOptions): Glide {
   const { ids, x0, y0, x1, y1 } = tracks;
   const n = ids.length;
@@ -191,6 +212,7 @@ export function planGlide(tracks: GlideTracks, options: GlideOptions): Glide {
   }
   for (let i = n - 1; i >= 0; i -= 1) {
     const at = order[i]!;
+    glide.omega[at] = glide.omega[at]! * curveSpringRate(glide, tracks, at);
     const p = parent[at]!;
     if (p < 0) continue;
     glide.vx[at] = glide.vx[at]! - glide.follow[at]! * glide.vx[p]!;
