@@ -107,6 +107,40 @@ async function correctStubCounts(page: Page, dial: DialProbe) {
   }
 }
 
+function selectedPairCounts(dial: DialProbe, domainId: string) {
+  const domainOf = new Map(dial.clusters.flatMap(cluster => cluster.capabilityIds.map(id => [id, cluster.domainId] as const)));
+  const counts = new Map<string, { needs: number; used: number }>();
+  for (const flow of dial.flows) {
+    if (flow.relatesOnly) continue;
+    const a = domainOf.get(flow.a) ?? flow.a;
+    const b = domainOf.get(flow.b) ?? flow.b;
+    if ((a === domainId) === (b === domainId)) continue;
+    const far = a === domainId ? b : a;
+    const pair = counts.get(far) ?? { needs: 0, used: 0 };
+    pair.needs += a === domainId ? flow.ab : flow.ba;
+    pair.used += a === domainId ? flow.ba : flow.ab;
+    counts.set(far, pair);
+  }
+  return [...counts].sort(([a], [b]) => a.localeCompare(b));
+}
+
+function namedSelectedStubs(dial: DialProbe, domainId: string) {
+  const pairs = selectedPairCounts(dial, domainId);
+  expect(pairs.length, "the fixture has selected directional connections").toBeGreaterThan(0);
+  expect(dial.stubs.length, "the selected offscreen connections have named recovery stubs").toBeGreaterThan(0);
+  expect(new Set(dial.stubs.map(stub => stub.flowKey)).size, "each recovered pair has one named stub").toBe(dial.stubs.length);
+  for (const stub of dial.stubs) {
+    const flow = dial.flows.find(flow => flow.key === stub.flowKey);
+    expect(flow, `stub ${stub.flowKey} refers to a semantic pair`).toBeDefined();
+    expect(flow!.drawn, `stub ${stub.flowKey} is counted as drawn`).toBe(true);
+    const far = flow!.a === domainId ? flow!.b : flow!.a;
+    expect(pairs.some(([id]) => id === far), `stub ${stub.flowKey} connects the selected domain`).toBe(true);
+    expect(dial.texts.filter(text => text.role === "stub" && text.id === far && text.text === stub.text), `stub ${stub.flowKey} has one whole far-end name`).toHaveLength(1);
+    expect(inside(stub.box, dial.freeRect), `stub ${stub.flowKey} clears the panels`).toBe(true);
+    expect(dial.strips.filter(strip => strip.role === "stub" && strip.flowKey === stub.flowKey), `stub ${stub.flowKey} draws each nonzero direction`).toHaveLength(Number(flow!.ab > 0) + Number(flow!.ba > 0));
+  }
+}
+
 async function clickMemberAction(page: Page, domainId: string, direction: "more" | "less") {
   const pattern = direction === "more" ? /more/i : /collapse/i;
   const dial = await readDial(page);
@@ -234,7 +268,8 @@ for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
       clearFocusedNames(expanded);
       await correctStubCounts(page, expanded);
       if (vault === "layered 10,000") {
-        expect.soft(expanded.flows.filter(f => f.drawn).length, "focused large-graph lines at rest").toBeLessThanOrEqual(20);
+        expect(selectedPairCounts(expanded, domainId), "disclosure preserves every selected pair and its directional counts").toEqual(selectedPairCounts(overview, domainId));
+        namedSelectedStubs(expanded, domainId);
         expect.soft(expanded.crossings, "focused large-graph line crossings").toBe(0);
       }
       await clickMemberAction(page, domainId, "less");
