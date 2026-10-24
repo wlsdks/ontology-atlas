@@ -267,3 +267,23 @@ test("under reduced motion the relations are lit on the first focused frame", as
   const { progress } = analyse(frames, target.id);
   expect(progress[1], "all lit on the first focused frame").toBeGreaterThanOrEqual(0.85);
 });
+
+
+test("a reduced-motion capability deep link keeps its members inside the camera frame", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1400, height: 860 });
+  await seedDogfoodSample(page);
+  await seedFirstRunSeen(page);
+  await page.goto(`${ROUTE}&realm=capability%3Aontology-map`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__atlasMap?.nodes().filter(node => !node.hidden && (node.alpha ?? 1) > 0.5).length ?? 0)).toBe(6);
+  await waitForMapStill(page);
+  const frame = await page.evaluate(() => {
+    const map = window.__atlasMap!;
+    const camera = map.camera()!;
+    const members = map.nodes().filter(node => !node.hidden && (node.alpha ?? 1) > 0.5);
+    return { count: members.length, outside: members.filter(node => node.x - node.radius < 0 || node.y - node.radius < 0 || node.x + node.radius > camera.width || node.y + node.radius > camera.height).map(node => ({ id: node.id, x: node.x, y: node.y })) };
+  });
+  expect(frame.count, "the capability and its five implementation members are drawn").toBe(6);
+  expect(frame.outside, "every scoped member remains inside the camera frame").toEqual([]);
+});
