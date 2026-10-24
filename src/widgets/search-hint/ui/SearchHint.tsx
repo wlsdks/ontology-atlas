@@ -99,7 +99,7 @@ export function SearchHint({
          * Below `xl` it starts at the left and keeps out of the right rail's column,
          * or its search tile reads as part of that rail.
          */
-        "pointer-events-auto min-w-0 max-w-full md:self-stretch md:max-xl:pr-[calc(var(--chrome-tile-size)+var(--topology-chrome-gap))] xl:min-w-min xl:basis-0 xl:grow",
+        "pointer-events-none min-w-0 max-w-full md:self-stretch md:max-xl:pr-[calc(var(--chrome-tile-size)+var(--topology-chrome-gap))] xl:min-w-min xl:basis-0 xl:grow",
         // Scope exit stays usable when focus hides utility tiles.
         phoneFocusSuppressed && !realmChip
           ? "hidden xl:block"
@@ -127,7 +127,7 @@ export function SearchHint({
       data-search-lane-shadow-token="--chrome-shadow"
     >
       <div className="flex min-w-0 items-center justify-end gap-[var(--topology-chrome-gap)] md:justify-start">
-        <div className={cn("shrink-0 items-center gap-[var(--topology-chrome-gap)]", phoneFocusSuppressed && realmChip ? "hidden xl:flex" : "flex")} data-testid="topology-tool-tile-group">
+        <div className={cn("pointer-events-auto shrink-0 items-center gap-[var(--topology-chrome-gap)]", phoneFocusSuppressed && realmChip ? "hidden xl:flex" : "flex")} data-testid="topology-tool-tile-group">
         {onToggleExpandAll ? (
           <div className="hidden md:block">
             <ChromeChip
@@ -260,7 +260,7 @@ export function SearchHint({
           // width up to `max-w-md`, or the path chip shrinks to one letter; past that
           // each chip truncates its label (full text in hover and accessible name).
           <div
-            className="flex min-w-0 items-center gap-[var(--topology-chrome-gap)] xl:max-w-md"
+            className="pointer-events-auto flex min-w-0 items-center gap-[var(--topology-chrome-gap)] xl:max-w-md"
             data-testid="topology-status-chip-group"
           >
             {phoneFocusSuppressed && realmChip ? <div className="hidden xl:contents">{returnChip}</div> : returnChip}
