@@ -200,6 +200,36 @@ describe("implementation branches", () => {
 });
 
 describe("branch reading", () => {
+  it("keeps overview cards aligned and opaque when their member rows are readable", () => {
+    const { input } = frame(null, 0.4, false, 9, 8);
+    input.labels = {
+      units: () => "역량 8 · 요소 6", more: (n) => `+${n}`,
+      stale: (n) => `${n} stale`, orphans: (n) => `${n} unassigned`, ring: (min) => `${min}+`,
+      reading: (read, total) => `${read}/${total}`, settling: () => "settling", linksShown: (shown, total) => `${shown}/${total}`,
+    };
+    const out = emptyDialFrameMarks();
+    buildDialMarks(input, out);
+    expect(out.blocks).toHaveLength(9);
+    for (const block of out.blocks!) {
+      const title = out.texts.find((text) => text.id === block.id && text.role === "domain")!;
+      const units = out.texts.find((text) => text.id === block.id && text.role === "units")!;
+      const glyph = out.glyphs.find((mark) => mark.id === block.id)!;
+      expect(block.alpha).toBe(1);
+      expect(title.x).toBe(units.x);
+      expect(title.box.minX).toBeGreaterThan(glyph.x + glyph.r);
+      expect(units.box.maxX).toBeLessThanOrEqual(block.box.maxX);
+      expect(out.inks[units.ink]).toBe(input.inks.units);
+    }
+    for (const strip of out.strips) {
+      const points = Array.from({ length: 65 }, (_, i) => {
+        const t = i / 64;
+        return { x: (1 - t) ** 2 * strip.ax + 2 * (1 - t) * t * strip.cx + t ** 2 * strip.bx,
+          y: (1 - t) ** 2 * strip.ay + 2 * (1 - t) * t * strip.cy + t ** 2 * strip.by };
+      });
+      for (const block of out.blocks!) expect(crossesBox([points], block.box)).toBe(false);
+    }
+  });
+
   it("reports the receded ink alpha while retaining full ink for selected and cross-domain neighbors", () => {
     const { input, out, result } = frame("d0c0");
     const receded = out.discs.find((disc) => disc.id === "d0c1")!;

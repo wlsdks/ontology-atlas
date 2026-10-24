@@ -15,22 +15,29 @@ test("a path keeps every spine node on the canvas and out from under the toolbar
   const reading = await page.evaluate(() => {
     const probe = window.__atlasMap!;
     const camera = probe.camera()!;
+    const dial = probe.dial!()!;
+    if (!("texts" in dial)) throw new Error("the path branch frame is not drawn");
     const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     // The tool lane: every control drawn over the canvas's top band.
     const controls = [...document.querySelectorAll<HTMLElement>("main button")]
       .map((el) => el.getBoundingClientRect())
       .filter((r) => r.width > 0 && r.top < 120 && r.left > canvas.left);
-    const toolbarBottom = Math.max(...controls.map((r) => r.bottom)) - canvas.top;
-    const spine = probe.nodes().filter((node) => !node.hidden && (node.kind === "domain" || node.kind === "project"));
+    const spine = new Set(probe.nodes().filter((node) => !node.hidden && (node.kind === "domain" || node.kind === "project")).map((node) => node.id));
+    const names = dial.texts.filter((text) => text.id && spine.has(text.id) && (text.role === "domain" || text.role === "project"));
+    const boxes = [
+      ...names.map((text) => ({ id: text.id!, ...text.box })),
+      ...dial.glyphs.filter((mark) => spine.has(mark.id)).map((mark) => ({ id: mark.id, minX: mark.x - mark.r, maxX: mark.x + mark.r, minY: mark.y - mark.r, maxY: mark.y + mark.r })),
+      ...dial.blocks.filter((block) => block.alpha > 0.5 && spine.has(block.id)).map((block) => ({ id: block.id, ...block.box })),
+    ];
     return {
-      underToolbar: spine.filter((node) => node.y - node.radius < toolbarBottom).map((node) => node.label),
-      offscreen: spine
-        .filter((node) => node.y - node.radius < 0 || node.y + node.radius > camera.height || node.x - node.radius < 0 || node.x + node.radius > camera.width)
-        .map((node) => node.label),
-      spine: spine.length,
+      underToolbar: boxes.filter((box) => controls.some((control) => box.minX < control.right - canvas.left && box.maxX > control.left - canvas.left && box.minY < control.bottom - canvas.top && box.maxY > control.top - canvas.top)).map((box) => box.id),
+      offscreen: boxes.filter((box) => box.minY < 0 || box.maxY > camera.height || box.minX < 0 || box.maxX > camera.width).map((box) => box.id),
+      missingNames: [...spine].filter((id) => !names.some((name) => name.id === id)),
+      spine: spine.size,
     };
   });
-  expect(reading.spine, "스파인이 없으면 이 스펙은 공회전한다").toBeGreaterThan(3);
-  expect(reading.underToolbar, "툴바 아래 들어간 스파인 노드").toEqual([]);
-  expect(reading.offscreen, "화면 밖으로 나간 스파인 노드").toEqual([]);
+  expect(reading.spine, "the path must retain a nonempty overview spine").toBeGreaterThan(3);
+  expect(reading.missingNames, "spine concepts without painted names").toEqual([]);
+  expect(reading.underToolbar, "painted spine marks obscured by toolbar controls").toEqual([]);
+  expect(reading.offscreen, "painted spine marks outside the canvas").toEqual([]);
 });
