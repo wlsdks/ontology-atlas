@@ -2,10 +2,11 @@ import { expect, test, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
+import { useDogfoodSample as seedDogfoodSample } from "../../sample-source";
 import { waitForMapStill } from "../../settle";
 
-// The Flat overview counts lines between domains; one relation at a time is revealed inside a realm.
-const ROUTE = "/ko/topology/?e2e=1&guides=off&realm=domain%3Aorder";
+// A capability realm exposes individual relations; domain realms retain aggregated branches.
+const ROUTE = "/ko/topology/?e2e=1&guides=off";
 const SAMPLES = 24;
 // Points under fixed-pixel labels and discs change by up to 26 levels while
 // the camera frames a selection; a point the reveal lights changes by more.
@@ -25,43 +26,55 @@ interface RevealWindow {
 
 async function openMap(page: Page) {
   await page.setViewportSize({ width: 1400, height: 860 });
+  await seedDogfoodSample(page);
   await seedFirstRunSeen(page);
   await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
   await expect
     .poll(() => page.evaluate(() => window.__atlasMap?.nodes().filter((n) => !n.hidden).length ?? 0), { timeout: 30_000 })
     .toBeGreaterThan(0);
   await waitForMapStill(page);
+  const label = await page.evaluate(() => window.__atlasMap!.nodes().find((node) => node.id === "capability:ontology-map")!.label);
+  await selectBySearch(page, label);
+  await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  await page.getByTestId("map-detail-panel-more-menu-trigger").click();
+  await page.getByTestId("map-detail-panel-action-realm").click();
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  await expect(page.getByTestId("map-detail-panel")).toHaveCount(0);
+  await waitForMapStill(page);
   await page.evaluate(() => (window as unknown as RevealWindow).__atlasMap?.setComets?.(false));
 }
 
 async function pickTarget(page: Page): Promise<{ id: string; label: string }> {
-  const target = await page.evaluate(() => {
-    const map = window.__atlasMap!;
-    const nodes = new Map(map.nodes().map((n) => [n.id, n]));
-    const onScreen = (id: string) => {
-      const n = nodes.get(id);
-      return !!n && !n.hidden && (n.alpha ?? 1) > 0.5 && n.x > 60 && n.y > 60 && n.x < innerWidth - 480 && n.y < innerHeight - 60;
-    };
-    const count = new Map<string, { all: number; outgoing: number }>();
-    for (const e of map.edges()) {
-      if (!onScreen(e.sourceId) || !onScreen(e.targetId)) continue;
-      if (Math.hypot(e.bx - e.ax, e.by - e.ay) < 60) continue;
-      for (const end of [e.sourceId, e.targetId]) {
-        // The realm root only contains; a concept inside it carries the dependencies.
-        if (nodes.get(end)?.kind === "project" || nodes.get(end)?.kind === "domain") continue;
-        const c = count.get(end) ?? { all: 0, outgoing: 0 };
-        c.all += 1;
-        if (end === e.sourceId) c.outgoing += 1;
-        count.set(end, c);
+  let target: { id: string; label: string } | null = null;
+  await expect.poll(async () => {
+    target = await page.evaluate(() => {
+      const map = window.__atlasMap!;
+      const nodes = new Map(map.nodes().map((n) => [n.id, n]));
+      const onScreen = (id: string) => {
+        const n = nodes.get(id);
+        return !!n && !n.hidden && (n.alpha ?? 1) > 0.5 && n.x > 60 && n.y > 60 && n.x < map.camera()!.width - 60 && n.y < map.camera()!.height - 60;
+      };
+      const count = new Map<string, { all: number; outgoing: number }>();
+      for (const e of map.edges()) {
+        if (!onScreen(e.sourceId) || !onScreen(e.targetId)) continue;
+        if (Math.hypot(e.bx - e.ax, e.by - e.ay) < 60) continue;
+        for (const end of [e.sourceId, e.targetId]) {
+          // Prefer a concept whose outgoing dependencies exercise the directional reveal.
+          if (nodes.get(end)?.kind === "project" || nodes.get(end)?.kind === "domain") continue;
+          const c = count.get(end) ?? { all: 0, outgoing: 0 };
+          c.all += 1;
+          if (end === e.sourceId && e.kind === "depends") c.outgoing += 1;
+          count.set(end, c);
+        }
       }
-    }
-    const [id] =
-      [...count.entries()]
-        .filter(([, c]) => c.all >= 3 && c.outgoing >= 1)
-        .sort((a, b) => b[1].outgoing - a[1].outgoing || b[1].all - a[1].all)[0] ?? [];
-    return id ? { id, label: nodes.get(id)!.label } : null;
-  });
-  expect(target, "a concept with three drawn relations is on screen").not.toBeNull();
+      const [id] =
+        [...count.entries()]
+          .filter(([, c]) => c.all >= 3 && c.outgoing >= 1)
+          .sort((a, b) => b[1].outgoing - a[1].outgoing || b[1].all - a[1].all)[0] ?? [];
+      return id ? { id, label: nodes.get(id)!.label } : null;
+    });
+    return target;
+  }, { message: "a concept with three drawn relations is on screen" }).not.toBeNull();
   return target!;
 }
 
@@ -253,4 +266,24 @@ test("under reduced motion the relations are lit on the first focused frame", as
   const frames = await collect(page, target.id);
   const { progress } = analyse(frames, target.id);
   expect(progress[1], "all lit on the first focused frame").toBeGreaterThanOrEqual(0.85);
+});
+
+
+test("a reduced-motion capability deep link keeps its members inside the camera frame", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1400, height: 860 });
+  await seedDogfoodSample(page);
+  await seedFirstRunSeen(page);
+  await page.goto(`${ROUTE}&realm=capability%3Aontology-map`, { waitUntil: "domcontentloaded" });
+  await expect(page.getByTestId("topology-realm-chip")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__atlasMap?.nodes().filter(node => !node.hidden && (node.alpha ?? 1) > 0.5).length ?? 0)).toBe(6);
+  await waitForMapStill(page);
+  const frame = await page.evaluate(() => {
+    const map = window.__atlasMap!;
+    const camera = map.camera()!;
+    const members = map.nodes().filter(node => !node.hidden && (node.alpha ?? 1) > 0.5);
+    return { count: members.length, outside: members.filter(node => node.x - node.radius < 0 || node.y - node.radius < 0 || node.x + node.radius > camera.width || node.y + node.radius > camera.height).map(node => ({ id: node.id, x: node.x, y: node.y })) };
+  });
+  expect(frame.count, "the capability and its five implementation members are drawn").toBe(6);
+  expect(frame.outside, "every scoped member remains inside the camera frame").toEqual([]);
 });

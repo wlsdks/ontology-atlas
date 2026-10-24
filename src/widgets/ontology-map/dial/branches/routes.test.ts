@@ -18,6 +18,21 @@ function fixture() {
 const link = { key: "d\0c", u: "d", v: "c", uv: 3, vu: 2, total: 5, attended: true, relatesOnly: false } as DialLink;
 
 describe("readable branch routes", () => {
+  it("keeps same-column arrows in the inner gutter beyond both card faces", () => {
+    const input = fixture();
+    const end = { p: { x: 300, y: 600 }, r: 12 };
+    const column = { step: 0, angle: 0, footprint: 0, items: [], branchPair: 0, branchSide: -1 as const };
+    input.scene.clusterByDomain = new Map([
+      ["d", { ...column, domainId: "d", chip: a.p }],
+      ["peer", { ...column, domainId: "peer", chip: end.p }],
+    ]);
+    input.endBox = (id) => ({ minX: 240, maxX: 360, minY: id === "d" ? 270 : 570, maxY: id === "d" ? 330 : 630 });
+    const curves = createBranchRouter(input, () => ({ x: 460, y: 450 }))({ ...link, v: "peer", vu: 0 }, a, end);
+    expect(curves).toHaveLength(1);
+    expect(Math.min(...curves[0]!.line.map((point) => point.x))).toBeGreaterThan(360);
+    expect(curves[0]!.line[8]!.x).toBeGreaterThan(360 + input.tokens.ledgerGapPx / 2);
+  });
+
   it("connects a same-domain capability through its facing card edge without a returning loop", () => {
     const route = createBranchRouter(fixture(), () => ({ x: 700, y: -600 }));
     const curves = route(link, a, b);

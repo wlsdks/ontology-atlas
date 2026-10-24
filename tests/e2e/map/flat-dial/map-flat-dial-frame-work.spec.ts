@@ -2,9 +2,11 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 
 import "../../atlas-map-probe";
 import { seedFirstRunSeen } from "../../first-run-seed";
+import { useDogfoodSample } from "../../sample-source";
 import { installFrameWork, p95, startFrameWork, stopFrameWork } from "../frame-work";
 import { waitForMapSettled, waitForMapStill } from "../../settle";
 import type { DialProbe } from "../../../../src/widgets/ontology-map/dial/types";
+import { synthesizeVaultGraph } from "../../../../src/views/home/lib/synth-vault/synth-vault";
 
 const SHAPES = [
   { name: "synth 10,000", query: "synth=10000&synthDeps=1&" },
@@ -16,7 +18,7 @@ const PAN_MS = 3_000;
 const PAN_MIN_STEPS = 45;
 const IDLE_MS = 10_000;
 const WORK_P95_MS = 8.3;
-const LEDGER_CAPACITY = 46;
+const LARGE_DOMAIN_MIN_MEMBERS = 46;
 const LIGHT_WINDOW_MS = 2_400;
 const LIGHT_FRAMES_LOST = 12;
 const LIGHT_MARKER = "light: no shader";
@@ -173,6 +175,48 @@ async function idleFrames(page: Page): Promise<number> {
 
 const round = (n: number) => +n.toFixed(2);
 
+async function memberAction(page: Page, domainId: string, direction: "more" | "less") {
+  const dial = await readDial(page);
+  const action = dial.texts.find(t => t.id === domainId && t.role === "more" && (direction === "more" ? /more/i : /collapse/i).test(t.text));
+  expect(action, `${domainId} offers ${direction}`).toBeDefined();
+  const box = action!.box;
+  expect(box.minX).toBeGreaterThanOrEqual(dial.freeRect.minX);
+  expect(box.maxX).toBeLessThanOrEqual(dial.freeRect.maxX);
+  expect(box.minY).toBeGreaterThanOrEqual(dial.freeRect.minY);
+  expect(box.maxY).toBeLessThanOrEqual(dial.freeRect.maxY);
+  return { box, count: Number(action!.text.match(/[\d,]+/)?.[0].replaceAll(",", "")) };
+}
+
+async function clickMemberAction(page: Page, domainId: string, direction: "more" | "less") {
+  const action = await memberAction(page, domainId, direction);
+  const origin = await canvasOrigin(page);
+  const point = { x: origin.x + (action.box.minX + action.box.maxX) / 2, y: origin.y + (action.box.minY + action.box.maxY) / 2 };
+  expect(await page.evaluate(p => document.elementFromPoint(p.x, p.y)?.getAttribute("data-testid"), point), "the painted member control belongs to the canvas").toBe("ontology-map-canvas");
+  await page.mouse.click(point.x, point.y);
+  await page.mouse.move(5, 5);
+  await waitForMapStill(page);
+  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId), "disclosure keeps the domain selected").toBe(domainId);
+  return action.count;
+}
+
+function readMembers(dial: DialProbe, domainId: string, labels: Record<string, string>, memberIds: readonly string[]) {
+  const names = dial.texts.filter(t => t.id !== null && memberIds.includes(t.id) && t.role === "capability");
+  expect(names.length, `${domainId} has readable member names`).toBeGreaterThan(0);
+  expect(new Set(names.map(t => t.id)).size, "each named member occurs once").toBe(names.length);
+  for (const name of names) {
+    expect(name.text.replace(/\s+/g, " "), `${name.id} keeps its whole title`).toBe(labels[name.id!].replace(/\s+/g, " "));
+    expect(name.box.minX).toBeGreaterThanOrEqual(dial.freeRect.minX);
+    expect(name.box.maxX).toBeLessThanOrEqual(dial.freeRect.maxX);
+    expect(name.box.minY).toBeGreaterThanOrEqual(dial.freeRect.minY);
+    expect(name.box.maxY).toBeLessThanOrEqual(dial.freeRect.maxY);
+  }
+  const units = dial.texts.find(t => t.id === domainId && t.role === "units");
+  expect(units, "the domain exposes its complete capability total").toBeDefined();
+  expect(Number(units!.text.match(/[\d,]+/)?.[0].replaceAll(",", "")), "the displayed total counts every capability").toBe(memberIds.length);
+  const shown = names.map(t => t.id!);
+  return { shown, remaining: memberIds.filter(id => !shown.includes(id)) };
+}
+
 for (const shape of SHAPES) {
   test(`${shape.name}: the dial's calls per frame stay inside the count bar, pans inside the work bar, idle draws nothing`, async ({ page }) => {
     test.setTimeout(300_000);
@@ -225,37 +269,80 @@ for (const shape of SHAPES) {
     }
   });
 
-  test(`${shape.name}: the largest domain's ledger lists min(n, capacity) whole names and counts the rest`, async ({ page }) => {
+  test(`${shape.name}: the largest domain keeps whole branch names and exact disclosure counts`, async ({ page }) => {
     test.setTimeout(240_000);
-    const dial = await openDial(page, shape.query);
-    const target = [...dial.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
-    const n = target.capabilityIds.length;
-    const origin = await canvasOrigin(page);
-    await page.evaluate((id) => (window.__atlasMap as unknown as { select: (id: string) => void }).select(id), target.domainId);
-    await page.mouse.move(origin.x + target.chip.x, origin.y + target.chip.y);
-    let ledger: DialProbe["ledger"] = null;
-    let last: DialProbe = dial;
-    for (let step = 0; step < 40; step += 1) {
-      last = await readDial(page);
-      if (last.ledger?.domainId === target.domainId) {
-        ledger = last.ledger;
-        break;
-      }
-      const chip = last.clusters.find((c) => c.domainId === target.domainId)!.chip;
-      await page.mouse.move(origin.x + chip.x, origin.y + chip.y);
-      await page.mouse.wheel(0, -60);
-      await waitForMapStill(page, { what: "camera" });
-    }
-    const texts = last.texts.filter((t) => t.role === "ledger" || t.role === "more");
-    console.log(`[flat-dial-frame-work] ${shape.name} ledger ${JSON.stringify({ domain: target.domainId, n, zoom: round(last.zoomRatio), ledger })}`);
-    expect(ledger, `${target.domainId} (${n} capabilities) opens a ledger`).not.toBeNull();
-    expect(ledger!.total, "the ledger counts the domain's capabilities").toBe(n);
-    expect.soft(ledger!.shown, "shown = min(n, capacity), capacity ≥ 46").toBeGreaterThanOrEqual(Math.min(n, LEDGER_CAPACITY));
-    expect.soft(ledger!.more, "more = n − shown").toBe(n - ledger!.shown);
-    expect.soft(ledger!.leaderCrossings, "leader crossings").toBe(0);
-    expect.soft(texts.filter((t) => t.text.includes("…")).map((t) => t.text), "every ledger name whole").toEqual([]);
+    const overview = await openDial(page, shape.query);
+    const source = synthesizeVaultGraph(10_000, { dependencies: true, shape: shape.query.includes("synthShape=layered") ? "layered" : "uniform" });
+    const sourceCapabilities = source.nodes.filter(n => n.kind === "capability");
+    const capabilityIds = new Set(sourceCapabilities.map(n => n.id));
+    const expectedMembers = new Map(source.nodes.filter(n => n.kind === "domain").map(n => [n.id, [] as string[]]));
+    for (const edge of source.edges) if (edge.type === "contains" && capabilityIds.has(edge.to)) expectedMembers.get(edge.from)!.push(edge.to);
+    expect(overview.clusters.map(c => c.domainId).sort(), "every source domain survives projection").toEqual([...expectedMembers.keys()].sort());
+    for (const cluster of overview.clusters) expect([...cluster.capabilityIds].sort(), `${cluster.domainId} keeps its complete source membership`).toEqual(expectedMembers.get(cluster.domainId)!.sort());
+    expect(await page.evaluate(() => window.__atlasMap!.nodes().filter(n => n.kind === "capability").map(n => n.id).sort()), "every source capability remains in the graph").toEqual([...capabilityIds].sort());
+    expect(overview.clusters.length, "the inventory contains real domains").toBeGreaterThan(0);
+    const target = [...overview.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
+    const members = target.capabilityIds;
+    expect(members.length, "the largest domain exercises at least the former reading capacity").toBeGreaterThanOrEqual(LARGE_DOMAIN_MIN_MEMBERS);
+    expect(new Set(members).size).toBe(members.length);
+    expect(members.length, "the reading target is a largest source domain").toBe(Math.max(...[...expectedMembers.values()].map(ids => ids.length)));
+    const labels = Object.fromEntries(sourceCapabilities.map(n => [n.id, n.title]));
+    expect(members.filter(id => !labels[id]?.trim()), "every member has a source name").toEqual([]);
+    await openDial(page, `${shape.query}p=${encodeURIComponent(target.domainId)}&`);
+    const before = readMembers(await readDial(page), target.domainId, labels, members);
+    expect(before.remaining.length, "the fixture exercises genuinely hidden members").toBeGreaterThan(0);
+    const batch = (await memberAction(page, target.domainId, "more")).count;
+    expect(batch, "More advertises a nonempty bounded batch").toBeGreaterThan(0);
+    expect(batch).toBeLessThanOrEqual(before.shown.length);
+    expect(batch).toBeLessThanOrEqual(before.remaining.length);
+    await clickMemberAction(page, target.domainId, "more");
+    await expect.poll(async () => readMembers(await readDial(page), target.domainId, labels, members).shown.length).toBe(before.shown.length + batch);
+    const expanded = readMembers(await readDial(page), target.domainId, labels, members);
+    expect(before.shown.filter(id => !expanded.shown.includes(id)), "More keeps the existing names").toEqual([]);
+    expect(expanded.remaining.length, "remaining = total minus every named member").toBe(members.length - expanded.shown.length);
+    expect(expanded.remaining.length).toBe(before.remaining.length - batch);
+    expect((await memberAction(page, target.domainId, "less")).count, "Collapse counts the revealed members").toBe(batch);
+    await clickMemberAction(page, target.domainId, "less");
+    await expect.poll(async () => readMembers(await readDial(page), target.domainId, labels, members).shown).toEqual(before.shown);
+    expect((await memberAction(page, target.domainId, "more")).count).toBe(batch);
+
+    console.log(`[flat-dial-frame-work] ${shape.name} branch reading ${JSON.stringify({ domain: target.domainId, total: members.length, before, batch, expanded })}`);
   });
+
 }
+
+test("an authored hidden capability remains readable through a public deep link and Back", async ({ page }) => {
+  await useDogfoodSample(page);
+  const overview = await openDial(page, "");
+  const target = [...overview.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
+  expect(target.capabilityIds.length, "the authored domain contains real capabilities").toBeGreaterThan(0);
+  const labels = await page.evaluate(() => Object.fromEntries(window.__atlasMap!.nodes().map(n => [n.id, n.label])));
+  await openDial(page, `p=${encodeURIComponent(target.domainId)}&`);
+  await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  const before = readMembers(await readDial(page), target.domainId, labels, target.capabilityIds);
+  expect(before.remaining.length, "the authored fixture contains a genuinely hidden capability").toBeGreaterThan(0);
+  const hidden = before.remaining.at(-1)!;
+  await openDial(page, `p=${encodeURIComponent(hidden)}&`);
+  await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(hidden);
+  await expect.poll(async () => (await readDial(page)).texts.some(t => t.id === hidden && t.role === "capability")).toBe(true);
+  const selected = await readDial(page);
+  const name = selected.texts.find(t => t.id === hidden && t.role === "capability")!;
+  expect(name.text.replace(/\s+/g, " ")).toBe(labels[hidden].replace(/\s+/g, " "));
+  expect(name.box.minX).toBeGreaterThanOrEqual(selected.freeRect.minX);
+  expect(name.box.maxX).toBeLessThanOrEqual(selected.freeRect.maxX);
+  expect(name.box.minY).toBeGreaterThanOrEqual(selected.freeRect.minY);
+  expect(name.box.maxY).toBeLessThanOrEqual(selected.freeRect.maxY);
+  await page.goBack();
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(target.domainId);
+  await waitForMapStill(page);
+  expect(readMembers(await readDial(page), target.domainId, labels, target.capabilityIds)).toEqual(before);
+  await page.getByTestId("ontology-map-canvas").focus();
+  await expect(page.getByTestId("ontology-map-canvas")).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect.poll(() => new URL(page.url()).searchParams.get("p")).toBeNull();
+  console.log(`[flat-dial-frame-work] authored recovery ${JSON.stringify({ domain: target.domainId, total: target.capabilityIds.length, before, hidden, label: name.text })}`);
+});
 
 async function lightRun(browser: Browser, blocked: boolean): Promise<{ lost: number; frames: number; layer: boolean }> {
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2 });

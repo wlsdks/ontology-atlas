@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-10-11T12:49:25.221Z",
+  "npmDependencyCutoff": "2026-10-24T01:59:46.374Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.89.1",
+        "package": "@agentclientprotocol/claude-agent-acp@0.95.0",
         "args": []
       }
     },
@@ -104,6 +104,24 @@
       }
     },
     {
+      "id": "bob",
+      "name": "Bob",
+      "description": "IBM Bob is your AI-Powered Development Partner",
+      "website": "https://bob.ibm.com",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/bob.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "npx",
+        "package": "@ibm/bob@2.0.9",
+        "args": [
+          "acp"
+        ]
+      }
+    },
+    {
       "id": "cline",
       "name": "Cline",
       "description": "Autonomous coding agent CLI - capable of creating/editing files, running commands, using the browser, and more",
@@ -115,7 +133,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.70",
+        "package": "cline@3.0.73",
         "args": [
           "--acp"
         ]
@@ -133,7 +151,25 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.164.0",
+        "package": "@tencent-ai/codebuddy-code@2.174.0",
+        "args": [
+          "--acp"
+        ]
+      }
+    },
+    {
+      "id": "github-copilot-cli",
+      "name": "Copilot",
+      "description": "GitHub's AI pair programmer",
+      "website": "https://github.com/features/copilot/cli/",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/github-copilot-cli.svg",
+      "brandInk": "#000000",
+      "cli": "copilot",
+      "launch": {
+        "kind": "npx",
+        "package": "@github/copilot@1.0.103",
         "args": [
           "--acp"
         ]
@@ -256,7 +292,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.16",
+        "package": "dimcode@0.5.21",
         "args": [
           "acp"
         ]
@@ -274,7 +310,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.19",
+        "package": "dirac-cli@0.5.23",
         "args": [
           "--acp"
         ]
@@ -292,7 +328,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.238.0",
+        "package": "droid@0.248.0",
         "args": [
           "exec",
           "--output-format",
@@ -330,25 +366,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.63.0",
-        "args": [
-          "--acp"
-        ]
-      }
-    },
-    {
-      "id": "github-copilot-cli",
-      "name": "GitHub Copilot",
-      "description": "GitHub's AI pair programmer",
-      "website": "https://github.com/features/copilot/cli/",
-      "license": "proprietary",
-      "verified": false,
-      "icon": "/acp-icons/github-copilot-cli.svg",
-      "brandInk": "#000000",
-      "cli": "copilot",
-      "launch": {
-        "kind": "npx",
-        "package": "@github/copilot@1.0.95",
+        "package": "@google/gemini-cli@0.65.0",
         "args": [
           "--acp"
         ]
@@ -366,7 +384,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.14.0",
+        "package": "glm-acp-agent@1.15.0",
         "args": []
       }
     },
@@ -416,7 +434,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.51",
+        "package": "@xai-official/grok@1.0.70",
         "args": [
           "agent",
           "stdio"
@@ -472,7 +490,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.8.8",
+        "package": "@kilocode/cli@7.8.17",
         "args": [
           "acp"
         ]
@@ -579,7 +597,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.51",
+        "package": "@compass-ai/nova@1.1.59",
         "args": [
           "acp"
         ]
@@ -595,6 +613,24 @@
       "icon": "/acp-icons/opencode.svg",
       "brandInk": "#000000",
       "cli": "opencode",
+      "launch": {
+        "kind": "binary",
+        "command": "opencode",
+        "args": [
+          "acp"
+        ]
+      }
+    },
+    {
+      "id": "opencode-v2",
+      "name": "OpenCode V2",
+      "description": "The open source coding agent, version 2",
+      "website": "https://opencode.ai",
+      "license": "MIT",
+      "verified": false,
+      "icon": "/acp-icons/opencode-v2.svg",
+      "brandInk": null,
+      "cli": null,
       "launch": {
         "kind": "binary",
         "command": "opencode",
@@ -667,7 +703,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.25.0",
+        "package": "@qwen-code/qwen-code@0.26.0",
         "args": [
           "--acp",
           "--experimental-skills"
@@ -686,7 +722,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@smbcloud/sigit@1.6.6",
+        "package": "@smbcloud/sigit@1.7.4",
         "args": []
       }
     },

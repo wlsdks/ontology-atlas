@@ -149,6 +149,17 @@ const CASES: Array<{ tool: string; options: Option[]; expected: string }> = [
     expected: OPTION_ID.exitPlanDefault,
   },
   {
+    // v0.95.0 suppresses clear-context grants when allowContextReset is false.
+    tool: 'ExitPlanMode (plan present, context reset unavailable)',
+    options: [
+      { optionId: OPTION_ID.exitPlanDefault, name: 'Yes, manually approve edits', kind: 'allow_once' },
+      { optionId: OPTION_ID.exitPlanAuto, name: 'Yes, and use auto mode', kind: 'allow_always' },
+      { optionId: OPTION_ID.exitPlanBypass, name: 'Yes, and bypass permissions', kind: 'allow_always' },
+      reject('No, keep planning'),
+    ],
+    expected: OPTION_ID.exitPlanDefault,
+  },
+  {
     // Plan mode entered from `bypassPermissions`: bypass leads the elevated entries.
     tool: 'ExitPlanMode (plan, entered from bypass)',
     options: [
@@ -401,20 +412,12 @@ describe('permission options — the app picks the one that ends with this call'
 });
 
 /**
- * **The option arrays are pinned to the version they were transcribed from.**
- *
- * Arrays are checked against `src/permissions/options/*.ts` in the exact release tag.
- * A fixture quietly becomes a
- * fiction: the registry gets bumped, the builders change, and these arrays keep passing while
- * describing a version nobody runs. The rule this file measures would then be measured against
- * nothing. `ExitPlanMode` in particular grew its `exit-plan-clear-*` entries between releases.
- *
- * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
- * app launches from: a bump turns this red and the arrays get re-read.
+ * The registry version must match the re-read `src/permissions/options/*.ts` builders;
+ * otherwise these arrays could pass while describing an adapter nobody runs.
+ * v0.95.0 (ebfbfbdaa9c2) keeps the ids and kinds, adding allowContextReset to ExitPlanMode.
  */
-// v0.89.1 src/permissions/options/{shared,shell,filesystem,tools}.ts retain these builders.
 // options.ts retains allow_once ordering and the defaultToNo decline-first variant.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.89.1';
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.95.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {

@@ -10,7 +10,7 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1512, height: 806 });
   await seedFirstRunSeen(page);
-  await page.goto("/ko/topology/?e2e=1&guides=off&realm=domain%3Aorder", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/topology/?e2e=1&guides=off&realm=capability%3Acustomer-messaging", { waitUntil: "domcontentloaded" });
   await page.evaluate(() => document.fonts.ready);
   await waitForMapStill(page);
 
@@ -28,7 +28,7 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
         return { id: `${edge.sourceId}→${edge.targetId}`, x: box.left + mx, y: box.top + my };
       });
   });
-  expect(edges.length, "그려진 선이 없으면 이 스펙은 공회전한다").toBeGreaterThan(3);
+  expect(edges.length, "the fixture draws at least four individual relations").toBeGreaterThan(3);
 
   let judged = 0;
   const covered: string[] = [];
@@ -104,6 +104,6 @@ test("hovering a line puts the card beside the drawn nodes, not on them", async 
     await page.mouse.move(edge.x + 200, 30); // off the line, so the next hover is a fresh card
     await expect(card).toBeHidden({ timeout: 2_000 });
   }
-  expect(judged, "판정할 수 있는 선이 하나도 없었다").toBeGreaterThan(0);
-  expect(covered, "카드가 그려진 노드를 덮은 선").toEqual([]);
+  expect(judged, "at least one hovered relation has a clear card corner").toBeGreaterThan(0);
+  expect(covered, "relations whose card covers a drawn node").toEqual([]);
 });

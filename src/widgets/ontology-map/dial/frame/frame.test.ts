@@ -219,7 +219,7 @@ describe("dialChordPresence", () => {
 });
 describe("frame registry", () => {
     it("collapses cards and preview stems when their rows no longer fit", () => {
-        const result = paintDialFrame(frameInput(modelOf(false), { scale: 0.3, reducedMotion: true }));
+        const result = paintDialFrame(frameInput(modelOf(false), { scale: 0.2, reducedMotion: true }));
         const marks = result.marks as DialFrameMarks;
         expect(marks.blocks).toHaveLength(0);
         expect(marks.stems).toHaveLength(0);

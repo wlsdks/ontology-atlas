@@ -98,7 +98,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     alphas.set(id, kind === "element" || kind === "project" || selected(id) ? alpha : inkAlpha(id, kind));
   };
   const rowPx = tokens.pitch * BRANCH_ROW_PITCH * input.scale;
-  const detail = smoothstep(tokens.ledgerGapPx, tokens.ledgerGapPx + tokens.chipMinPx, rowPx);
+  const detail = scene.clusters.length <= 12
+    ? smoothstep(tokens.chipMinPx * 2, tokens.ledgerGapPx, rowPx)
+    : smoothstep(tokens.ledgerGapPx, tokens.ledgerGapPx + tokens.chipMinPx, rowPx);
   const namesVisible = detail > 0.01;
   const capAlpha = disclosure.capAlpha;
   for (const cluster of scene.clusters) {
@@ -118,8 +120,9 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const titleWidth = Math.max(...titleLines.map((line) => input.measureText(line, titleFont)));
     const titleExtraHeight = (titleLines.length - 1) * branchTextStyle("domain", "domain", tokens.labelScale).height;
     const units = input.labels?.units(domain.capabilityIds.length, domain.elementCount) ?? "";
-    const unitsWidth = input.measureText(units, scaledLabelFont("capability", tokens.labelScale));
-    const width = Math.max(tokens.nameMaxPx + tokens.ledgerGapPx, titleWidth + tokens.ledgerGapPx * 2, unitsWidth + tokens.ledgerGapPx * 2);
+    const unitsWidth = input.measureText(units, branchTextStyle("units", "element", tokens.labelScale).font);
+    const textInset = tokens.ledgerGapPx * 1.2 + tokens.chipMinPx;
+    const width = Math.max(tokens.nameMaxPx + tokens.ledgerGapPx, Math.max(titleWidth, unitsWidth) + textInset + tokens.ledgerGapPx);
     const halfHeight = tokens.ledgerGapPx + tokens.chipMinPx + titleExtraHeight / 2;
     const box = { minX: p.x - width / 2, maxX: p.x + width / 2, minY: p.y - halfHeight, maxY: p.y + halfHeight };
     const halfWidth = tokens.chipMinPx + (width / 2 - tokens.chipMinPx) * detail;
@@ -129,7 +132,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
       const before = input.previous ?? input.inkAttention;
       const fill = (a: DialAttention | null) => mixOver(inks.domainFill, inks.bg, a?.domainId === id ? 1 : 0.5);
       const rim = (a: DialAttention | null) => a?.domainId === id ? inks.domainLabelAttended : colorFor(a, id, "domain", inks.domainRim);
-      blocks.push({ id, box, fill: ink(crossfadeInk(fill(before), fill(input.inkAttention), input.inkMix)), rim: ink(crossfadeInk(rim(before), rim(input.inkAttention), input.inkMix)), alpha: arrival * detail });
+      blocks.push({ id, box: boxes.get(id)!, fill: ink(crossfadeInk(fill(before), fill(input.inkAttention), input.inkMix)), rim: ink(crossfadeInk(rim(before), rim(input.inkAttention), input.inkMix)), alpha: arrival * detail });
       if (detail > 0.5) rows.push({ id, box });
     }
     radii.set(id, portHeight);
@@ -140,7 +143,7 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     const compactTextX = p.x + side * (tokens.chipMinPx + tokens.ledgerGapPx / 2) - (side < 0 ? titleWidth : 0);
     const textX = scene.clusters.length > 4 ? compactTextX + (cardTextX - compactTextX) * detail : cardTextX;
     const title = text(id, "domain", domain.label, { x: textX, y: p.y - (tokens.chipMinPx + titleExtraHeight / 2) * detail }, "left", "domain", color(id, "domain", inks.domainLabelAttended));
-    if (namesVisible) text(id, "units", units, { x: textX, y: p.y + (tokens.ledgerGapPx + titleExtraHeight) / 2 }, "left", "element", color(id, "domain", inks.units), detail);
+    if (detail > 0.7) text(id, "units", units, { x: textX, y: p.y + (tokens.ledgerGapPx + titleExtraHeight) / 2 }, "left", "element", color(id, "domain", inks.units), smoothstep(0.7, 1, detail));
     if (detail <= 0.5) rows.push({ id, box: title });
     const shownMembers = branchMemberCount(scene, id);
     const expanded = shownMembers > previewRows;
@@ -294,7 +297,8 @@ export function buildBranchMarks(input: DialMarksInput, out: DialFrameMarks): Di
     viewportWidth: input.viewportWidth, viewportHeight: input.viewportHeight, freeRect: input.freeRect,
     nodeScreen: input.nodeScreen, toScreen: input.toScreen, appearOf: input.appearOf, measureText: input.measureText,
     endRadiusPx: (id) => radii.get(id) ?? 0, endBox: (id) => boxes.get(id) ?? null,
-    occupied: [...boxes.values(), ...out.texts.map((t) => t.box)], avoidTexts: out.texts.map((t) => t.box), chords,
+    occupied: [...boxes.values(), ...out.texts.map((t) => t.box)], avoidTexts: out.texts.map((t) => t.box),
+    avoidBodies: [...boxes.values()], chords,
     resolution: disclosure, named: new Set(nameBoxes.keys()), nameBoxes,
   }, out);
   if (input.contextAlphas) stems.length = 0;
