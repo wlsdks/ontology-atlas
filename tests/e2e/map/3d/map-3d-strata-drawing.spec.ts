@@ -470,6 +470,11 @@ test(`Strata ${legend.width}x${legend.height} — the tier names land on nothing
     const box = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
     return { x: box.x, y: box.y };
   });
+  const targetReachesCanvas = await page.evaluate(({ x, y }) => {
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]');
+    return document.elementFromPoint(x, y) === canvas;
+  }, { x: canvasBox.x + target.x, y: canvasBox.y + target.y });
+  expect(targetReachesCanvas, `${target.id}'s drawn centre was covered by transparent chrome`).toBe(true);
   await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y);
   // The names are measured against the docked inspector, so wait for the inspector
   // to be there and for the reframe it causes to finish — not for 900 ms of this
