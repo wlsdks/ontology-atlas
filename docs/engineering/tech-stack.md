@@ -56,8 +56,8 @@ means hidden or an opaque token, low alpha is prohibited, and unit tests enforce
 | Module format | plain `.mjs` ESM, documented with JSDoc | A TypeScript conversion paying for the build pipeline it adds. If types are ever needed downstream, the cheaper path is `tsc --emit-declaration-only` |
 | Node | `>=24 <25` | Nothing pending. Root, CLI and MCP manifests share this one contract |
 | Argument parsing | hand-written, `cli-args.mjs` | The flat registry of 54 commands growing flags complex enough to need a framework. `citty` and its peers were rejected because `--help` automation alone did not pay for them |
-| MCP SDK | `@modelcontextprotocol/server` 2.0.0, which pins `core` 2.0.0 itself | Stdio transport is settled. Re-check the registry and tool schemas whenever a published contract changes |
-| Vitest, Playwright | 4.1.10, 1.62.0 | Nothing pending. Take major upgrades opportunistically, after reading the release notes |
+| MCP SDK | `@modelcontextprotocol/server` 2.3.0, which pins `core` 2.3.0 itself | Stdio transport is settled. Re-check the registry and tool schemas whenever a published contract changes |
+| Vitest, Playwright | 4.1.12, 1.62.0 | Nothing pending. Take major upgrades opportunistically, after reading the release notes |
 
 **npm publish preparation was retired on 2026-07-27.** npm is not a delivery channel for this
 product: the source checkout and the installed macOS app carry the CLI and the MCP server, and

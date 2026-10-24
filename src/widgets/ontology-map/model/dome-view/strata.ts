@@ -1,6 +1,5 @@
 import {
   CONE_STAGGER_FROM,
-  CONE_STAGGER_IN,
   CONE_STAGGER_OUT,
   DOME_PLANE,
   domeHash01,
@@ -19,6 +18,7 @@ import type { DomeCircle, DomeCoord, DomeInputNode, DomeSector, DomeViewKind } f
  * is a visible position.
  */
 const STRATA_PLACED_FILL = 0.82;
+const STRATA_STAGGER_IN = 0.92;
 
 /**
  * The cone's apex needs no radius, but Strata rings every plane; 34 clears the project disc
@@ -149,9 +149,8 @@ export function buildStrataTargets(
   };
 
   /*
-   * Two lanes per plane: bearing comes from the sector, so neighbours from different parents
-   * can fuse on one circle, and the sweep pulls related nodes together. The cone's stagger
-   * applied to the whole plane, radius only, so sector containment survives. It runs
+   * Two lanes preserve sector bearings. Strata's inner lane leaves more arc length than the
+   * cone's parent-local stagger, keeping projected peers apart at narrow fits. This runs
    * inside `layout`, so the crossing score reads the drawn geometry.
    */
   const applyLanes = (): void => {
@@ -163,7 +162,7 @@ export function buildStrataTargets(
         .sort((a, b) => (a.bearing !== b.bearing ? a.bearing - b.bearing : a.id < b.id ? -1 : 1));
       if (lane.length <= CONE_STAGGER_FROM) continue;
       lane.forEach((entry, i) => {
-        const r = DOME_PLANE[kind].r * STRATA_PLACED_FILL * (i % 2 ? CONE_STAGGER_OUT : CONE_STAGGER_IN);
+        const r = DOME_PLANE[kind].r * STRATA_PLACED_FILL * (i % 2 ? CONE_STAGGER_OUT : STRATA_STAGGER_IN);
         entry.c.px = Math.cos(entry.bearing) * r;
         entry.c.pz = Math.sin(entry.bearing) * r;
       });

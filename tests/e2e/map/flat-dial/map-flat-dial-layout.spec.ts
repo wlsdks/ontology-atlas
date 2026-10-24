@@ -107,6 +107,51 @@ async function correctStubCounts(page: Page, dial: DialProbe) {
   }
 }
 
+function selectedPairCounts(dial: DialProbe, domainId: string) {
+  const domainOf = new Map(dial.clusters.flatMap(cluster => cluster.capabilityIds.map(id => [id, cluster.domainId] as const)));
+  const counts = new Map<string, { needs: number; used: number }>();
+  for (const flow of dial.flows) {
+    if (flow.relatesOnly) continue;
+    const a = domainOf.get(flow.a) ?? flow.a;
+    const b = domainOf.get(flow.b) ?? flow.b;
+    if ((a === domainId) === (b === domainId)) continue;
+    const far = a === domainId ? b : a;
+    const pair = counts.get(far) ?? { needs: 0, used: 0 };
+    pair.needs += a === domainId ? flow.ab : flow.ba;
+    pair.used += a === domainId ? flow.ba : flow.ab;
+    counts.set(far, pair);
+  }
+  return [...counts].sort(([a], [b]) => a.localeCompare(b));
+}
+
+function namedSelectedStubs(dial: DialProbe, domainId: string) {
+  const domainOf = new Map(dial.clusters.flatMap(cluster => cluster.capabilityIds.map(id => [id, cluster.domainId] as const)));
+  const selected = (flow: DialProbe["flows"][number]) => ((domainOf.get(flow.a) ?? flow.a) === domainId) !== ((domainOf.get(flow.b) ?? flow.b) === domainId);
+  const pairs = selectedPairCounts(dial, domainId);
+  expect(pairs.length, "the fixture has selected directional connections").toBeGreaterThan(0);
+  const drawn = dial.flows.filter(flow => flow.drawn && !flow.relatesOnly && selected(flow));
+  expect(drawn.length, "selected connections are declared drawn").toBeGreaterThan(0);
+  for (const flow of drawn) {
+    expect(dial.strips.some(strip => strip.flowKey === flow.key && (strip.role === "chord" || strip.role === "stub")), `drawn selected pair ${flow.key} has a painted chord or recovery stub`).toBe(true);
+  }
+  expect(dial.stubs.length, "the selected offscreen connections have named recovery stubs").toBeGreaterThan(0);
+  expect(new Set(dial.stubs.map(stub => stub.flowKey)).size, "each recovered pair has one named stub").toBe(dial.stubs.length);
+  expect([...new Set(dial.strips.filter(strip => strip.role === "stub").map(strip => strip.flowKey))].sort(), "painted recovery keys equal the named stub plans").toEqual(dial.stubs.map(stub => stub.flowKey).sort());
+  for (const stub of dial.stubs) {
+    const flow = dial.flows.find(flow => flow.key === stub.flowKey);
+    expect(flow, `stub ${stub.flowKey} refers to a semantic pair`).toBeDefined();
+    expect(flow!.drawn, `stub ${stub.flowKey} is counted as drawn`).toBe(true);
+    const names = dial.texts.filter(text => text.role === "stub" && (text.id === flow!.a || text.id === flow!.b) && text.text === stub.text);
+    expect(names, `stub ${stub.flowKey} has one whole endpoint name`).toHaveLength(1);
+    if (selected(flow!)) {
+      const far = (domainOf.get(flow!.a) ?? flow!.a) === domainId ? flow!.b : flow!.a;
+      expect(names[0]!.id, `selected stub ${stub.flowKey} names its far end`).toBe(far);
+    }
+    expect(inside(stub.box, dial.freeRect), `stub ${stub.flowKey} clears the panels`).toBe(true);
+    expect(dial.strips.filter(strip => strip.role === "stub" && strip.flowKey === stub.flowKey), `stub ${stub.flowKey} draws each nonzero direction`).toHaveLength(Number(flow!.ab > 0) + Number(flow!.ba > 0));
+  }
+}
+
 async function clickMemberAction(page: Page, domainId: string, direction: "more" | "less") {
   const pattern = direction === "more" ? /more/i : /collapse/i;
   const dial = await readDial(page);
@@ -234,7 +279,8 @@ for (const vault of ["storefront", "synth 2,000", "layered 10,000"] as const) {
       clearFocusedNames(expanded);
       await correctStubCounts(page, expanded);
       if (vault === "layered 10,000") {
-        expect.soft(expanded.flows.filter(f => f.drawn).length, "focused large-graph lines at rest").toBeLessThanOrEqual(20);
+        expect(selectedPairCounts(expanded, domainId), "disclosure preserves every selected pair and its directional counts").toEqual(selectedPairCounts(overview, domainId));
+        namedSelectedStubs(expanded, domainId);
         expect.soft(expanded.crossings, "focused large-graph line crossings").toBe(0);
       }
       await clickMemberAction(page, domainId, "less");

@@ -215,7 +215,7 @@
   "license": "MIT",
   "private": true,
   "dependencies": {
-    "@modelcontextprotocol/server": "2.0.0",
+    "@modelcontextprotocol/server": "2.3.0",
     "mdast-util-from-markdown": "2.0.3"
   }
 }

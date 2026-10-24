@@ -59,7 +59,10 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
       const dx = end.p.x - start.p.x;
       const dy = end.p.y - start.p.y;
       const len = Math.max(1, Math.hypot(dx, dy));
-      const local = localRelationControl(start.p, end.p, base);
+      const fromCluster = input.scene.clusterByDomain.get(from);
+      const toCluster = input.scene.clusterByDomain.get(to);
+      const sameColumn = fromCluster && toCluster && fromCluster.branchPair === toCluster.branchPair && fromCluster.branchSide === toCluster.branchSide;
+      const local = localRelationControl(sameColumn ? boundary(from, to, start, base) : start.p, sameColumn ? boundary(to, from, end, base) : end.p, base);
       let c = { x: local.x - dy / len * offset, y: local.y + dx / len * offset };
       let turn = false;
       if (input.avoidTexts?.length || curves.length > 0) {
@@ -79,7 +82,7 @@ export function createBranchRouter(input: FlowMarksInput, control: (link: DialLi
         };
         const hits = (line: Point[], ceiling = Infinity) => {
           let count = 0;
-          for (const box of input.avoidTexts ?? []) {
+          for (const box of [...(input.avoidTexts ?? []), ...(l.attended ? [] : input.avoidBodies ?? [])]) {
             if (crossesBox([line], box)) count += 1;
             if (count >= ceiling) break;
           }

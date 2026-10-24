@@ -44,7 +44,9 @@ incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
 Flat maps use domain label blocks with spaced outward capability branches,
-proportional marks and gradual detail disclosure. Larger domain sets use shorter
+proportional marks and gradual detail disclosure. Readable cards align their icon,
+title and counts together; connection ends respect the same visible card boundary.
+Larger domain sets use shorter
 previews and stable column groups; long capability names wrap within a bounded column, with the full title
 available on selection. Domain dependencies remain
 aggregated at their domain until capability inspection. Bundle counts appear with

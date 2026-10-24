@@ -18,7 +18,7 @@ async function openEmptyLane(page: Page) {
   await waitForAnimationsDone(page.locator("main"));
   await page.getByTestId("automations-new").click();
   await expect(page.getByTestId("library-rounds-allow")).toBeVisible();
-  await waitForAnimationsDone(page.locator("main"));
+  await waitForAnimationsDone(page.getByTestId("library-rounds-sheet"));
 }
 
 async function saveAndSample(page: Page) {

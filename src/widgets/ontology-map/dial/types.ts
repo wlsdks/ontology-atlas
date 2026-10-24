@@ -211,6 +211,8 @@ export interface DialProbe {
     };
   texts: { id: string | null; role: TextRole; text: string; box: Box; font: string;
     }[];
+  glyphs: DialPick[];
+  blocks: { id: string; box: Box; alpha: number }[];
     numerals: {
         flowKey: string;
         text: string;

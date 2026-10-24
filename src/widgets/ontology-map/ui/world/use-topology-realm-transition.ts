@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useRef,
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
@@ -104,20 +105,22 @@ export function useTopologyRealmTransition({
   clusteredIdsRef,
   overviewScaleRef,
 }: Dependencies) {
+  const realmWorldRef = useRef<TopologyWorld | null>(null);
 
   // Realm motion owns coordinates until the transition hands them back to drag physics.
   useEffect(() => {
+    const world = worldRef.current;
     const sameRoot = realmRootId === prevRealmRootIdRef.current;
-    if (sameRoot && (realmRootId === null || (realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
+    if (sameRoot && (realmRootId === null || (world === realmWorldRef.current && realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
     const savedEntry = realmDataRef.current?.entryCamera;
     const savedPositions = realmDataRef.current?.returnPositions;
     prevRealmRootIdRef.current = realmRootId;
     lastActiveMsRef.current = performance.now();
 
-    const world = worldRef.current;
     const tokens = readOntologyMapTokensOrNull();
     const { width, height } = viewportRef.current;
     if (!world || !tokens) return;
+    realmWorldRef.current = world;
     const now = performance.now();
     const reduced = reducedMotionRef.current;
 
@@ -241,6 +244,6 @@ export function useTopologyRealmTransition({
         beginCameraTween(target, 750);
       }
     }
-  }, [realmRootId, view3d, cameraTokens, dialLabels, beginCameraTween, prevRealmRootIdRef, lastActiveMsRef, worldRef, viewportRef, reducedMotionRef, nodeDragRef, heatRef, dragAffectedSetRef, dragStartPosRef, dragTugOffsetsRef, realmActiveHandedOffRef, expandedParentsRef, realmDataRef, wardingFitRef, realmTransitionRef, homingActiveRef, homeSpringsRef, homeTargetOverrideRef, hasInitializedRef, cameraRef, dampingRef, cameraTargetRef, userDrivenCameraRef, cameraAngularFreqRef, simRef, overviewFitRef, clusteredIdsRef, overviewScaleRef]);
+  });
 
 }

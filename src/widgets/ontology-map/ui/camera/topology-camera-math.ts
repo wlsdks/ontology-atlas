@@ -417,7 +417,7 @@ export function computeDomeFitCameraTarget(
   const spanY = Math.max(1e-6, bounds.maxY - bounds.minY);
   const tscale = Math.min(
     tokens.cameraScaleMax,
-    Math.max(tokens.cameraScaleMin, Math.min(availW / spanX, availH / spanY)),
+    Math.min(availW / spanX, availH / spanY),
   );
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;

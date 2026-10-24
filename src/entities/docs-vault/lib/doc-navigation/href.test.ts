@@ -2,6 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { buildDocsVaultHref } from './href';
 
 describe('buildDocsVaultHref', () => {
+  it('opens ontology documents in Library with their return context and fragment', () => {
+    expect(buildDocsVaultHref({
+      slug: 'ontology/capabilities/mcp-server',
+      collection: 'ontology',
+      via: 'topology:capability:mcp-server',
+      hash: '#includes',
+    })).toBe('/library/?tab=ontology&slug=ontology%2Fcapabilities%2Fmcp-server&via=topology%3Acapability%3Amcp-server#includes');
+  });
+
   it('builds slug-only href', () => {
     expect(buildDocsVaultHref({ slug: 'ARCHITECTURE' })).toBe(
       '/docs/?slug=ARCHITECTURE',
