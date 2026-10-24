@@ -205,7 +205,7 @@ function measureGlue(
     if ((h.t - h.departAt) * length < GLUE_RIM_PX + GLUE_SLICES * GLUE_SLICE_PX || (h.arriveAt - h.t) * length < GLUE_RIM_PX) return false;
     const slices = Array.from({ length: GLUE_SLICES }, (_, k) => curveAt(h.curve, h.t - ((k + 1) * GLUE_SLICE_PX) / length));
     return !heads.some((other) => other.source === h.source && other.key !== h.key && other.key === twinOf(h.key)
-      && slices.some((point) => nearCurve(point, other.curve, 0, 1, GLUE_ACROSS_PX * 2)));
+      && slices.some((point) => nearCurve(point, other.curve, other.tailStart, other.drawnEnd, GLUE_ACROSS_PX * 2)));
   });
   for (const head of clear.slice(0, GLUE_HEADS)) {
     const length = curveLength(head.curve);
@@ -237,7 +237,7 @@ function measureGlue(
       key: head.key,
       t: head.t,
       ambiguous: !singlePeak(line) || !isolated(line) || !isolated(light) || heads.some((other) => other.key !== head.key
-        && nearCurve({ x: ahead[0], y: ahead[1] }, other.curve, other.departAt, other.t, GLUE_ACROSS_PX * 2)),
+        && nearCurve({ x: ahead[0], y: ahead[1] }, other.curve, other.tailStart, other.drawnEnd, GLUE_ACROSS_PX * 2)),
       cameraShiftPx: cameraShiftAcross(slices[0]!, frame, previous),
       offsetPx: Math.abs(peakAt(light, across) - strokeCentre(line, across)),
       lineContrast: Math.max(...line) - Math.min(...line),
