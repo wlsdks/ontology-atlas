@@ -372,9 +372,13 @@ ship, are held to the license policy but not listed.
 
 The production dependency tree of `mcp/`, which the sidecar binary compiles in.
 
-### MIT (38)
+### Apache-2.0 (2)
 
-`@modelcontextprotocol/core`, `@modelcontextprotocol/server`, `@types/debug`, `@types/mdast`, `@types/ms`, `@types/unist`, `character-entities`, `debug`, `decode-named-character-reference`, `dequal`, `devlop`, `mdast-util-from-markdown`, `mdast-util-to-string`, `micromark`, `micromark-core-commonmark`, `micromark-factory-destination`, `micromark-factory-label`, `micromark-factory-space`, `micromark-factory-title`, `micromark-factory-whitespace`, `micromark-util-character`, `micromark-util-chunked`, `micromark-util-classify-character`, `micromark-util-combine-extensions`, `micromark-util-decode-numeric-character-reference`, `micromark-util-decode-string`, `micromark-util-edit-map`, `micromark-util-encode`, `micromark-util-html-tag-name`, `micromark-util-normalize-identifier`, `micromark-util-resolve-all`, `micromark-util-sanitize-uri`, `micromark-util-subtokenize`, `micromark-util-symbol`, `micromark-util-types`, `ms`, `unist-util-stringify-position`, `zod`
+`@modelcontextprotocol/core`, `@modelcontextprotocol/server`
+
+### MIT (36)
+
+`@types/debug`, `@types/mdast`, `@types/ms`, `@types/unist`, `character-entities`, `debug`, `decode-named-character-reference`, `dequal`, `devlop`, `mdast-util-from-markdown`, `mdast-util-to-string`, `micromark`, `micromark-core-commonmark`, `micromark-factory-destination`, `micromark-factory-label`, `micromark-factory-space`, `micromark-factory-title`, `micromark-factory-whitespace`, `micromark-util-character`, `micromark-util-chunked`, `micromark-util-classify-character`, `micromark-util-combine-extensions`, `micromark-util-decode-numeric-character-reference`, `micromark-util-decode-string`, `micromark-util-edit-map`, `micromark-util-encode`, `micromark-util-html-tag-name`, `micromark-util-normalize-identifier`, `micromark-util-resolve-all`, `micromark-util-sanitize-uri`, `micromark-util-subtokenize`, `micromark-util-symbol`, `micromark-util-types`, `ms`, `unist-util-stringify-position`, `zod`
 
 ## Adapted code (0)
 

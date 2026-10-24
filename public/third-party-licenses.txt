@@ -4386,7 +4386,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 The production dependency tree of mcp/, compiled into the ontology-atlas-mcp binary.
 
 --------------------------------------------------------------------------------
-License: MIT
+License: Apache-2.0
 Used by:
   @modelcontextprotocol/core (Anthropic, PBC)
   @modelcontextprotocol/server (Anthropic, PBC)
