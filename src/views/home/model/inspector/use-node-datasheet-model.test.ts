@@ -66,7 +66,7 @@ function renderModel(
 }
 
 describe("useNodeDatasheetModel document link honesty", () => {
-  it("a node with its own document links to it", () => {
+  it("a node with its own document links directly to its canonical Library document", () => {
     const selected = node("capability:frontmatter-to-ontology", [
       "ontology/capabilities/frontmatter-to-ontology",
     ]);
@@ -74,7 +74,7 @@ describe("useNodeDatasheetModel document link honesty", () => {
 
     // Pins which document the link targets; `ontology-node-href.test.ts` covers the `via` marker.
     expect(model.v2DatasheetModel?.documentHref).toBe(
-      "/docs/?slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology" +
+      "/library/?tab=ontology&slug=ontology%2Fcapabilities%2Ffrontmatter-to-ontology" +
         "&via=topology%3Acapability%3Afrontmatter-to-ontology",
     );
     expect(model.v2DatasheetModel?.mentionDocumentHref).toBeNull();
@@ -133,7 +133,7 @@ describe("useNodeDatasheetModel document link honesty", () => {
     const model = renderModel(selected, [selected]);
 
     expect(model.v2DatasheetModel?.documentHref).toBe(
-      "/docs/?slug=capabilities%2Flegacy&via=topology%3Acapability%3Alegacy",
+      "/library/?tab=ontology&slug=capabilities%2Flegacy&via=topology%3Acapability%3Alegacy",
     );
   });
 

@@ -1,6 +1,6 @@
 [package]
 name = "ontology-atlas"
-version = "1.7.0"
+version = "1.8.0"
 description = "Local-first codebase ontology workbench"
 authors = ["ontology-atlas contributors"]
 edition = "2021"
@@ -25,8 +25,8 @@ sha2 = "0.10"
 chrono = { version = "0.4", default-features = false, features = ["std", "now"] }
 notify-debouncer-full = "0.3"
 futures-util = "0.3"
-tokio = { version = "1.52.3", features = ["io-util", "process", "rt", "sync", "time"] }
-tauri-plugin-updater = "2.10.1"
+tokio = { version = "1.53.3", features = ["io-util", "process", "rt", "sync", "time"] }
+tauri-plugin-updater = { version = "2.10.1", default-features = false, features = ["rustls-tls"] }
 tauri-plugin-process = "2.3.1"
 # A packaged `.app` has nowhere to print. Every `println!` in this crate is inside `#[cfg(test)]`,
 # so an installed build previously explained nothing after the fact — an owner reporting "the agent

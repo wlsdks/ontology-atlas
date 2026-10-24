@@ -32,7 +32,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.89.1 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
+    // v0.95.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),
@@ -160,11 +160,11 @@ describe('work mode list: nothing that removes the gate is offered', () => {
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.89.1: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
+   * 0.95.0: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
    * now sent only to the adapter's own AIR client, so Atlas receives no kind and `mode-safety.ts`
    * judges by id alone; every gate-removing id is on its measured list.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.89.1',
+  claude: '@agentclientprotocol/claude-agent-acp@0.95.0',
   /**
    * 2.2.2 src/AgentMode.ts restores readOnly and adds workspace-write; Atlas excludes the
    * latter because its workspaceWrite sandbox permits edits before an approval request.

@@ -37,6 +37,30 @@ const parents = new Map([
 ]);
 
 describe("planGlide", () => {
+  it("settles the recorded moving-parent curved tracks within half a percent by 950 ms", () => {
+    const tracks = tracksOf([
+      { id: "synth-domain-0", from: [627.8283019036538, 269.4906256925192], to: [733.0000021881369, 330.6128551084956] },
+      { id: "synth-domain-1", from: [627.8283019036538, 449.64099439872496], to: [825.9999998972738, 437.99999973576854] },
+      { id: "synth-domain-2", from: [627.8283019036538, 629.7913631049307], to: [732.9999997809065, 545.387148272828] },
+      { id: "synth-domain-3", from: [904.9827152978166, 290.2772066970814], to: [546.999999926927, 545.3871501019589] },
+      { id: "synth-domain-4", from: [904.9827152978166, 470.42757540328716], to: [453.99999964690426, 437.99999847965535] },
+      { id: "synth-domain-5", from: [904.9827152978166, 650.5779441094929], to: [547.0000000470635, 330.6128499700269] },
+      { id: "synth-project", from: [800, 158.62886033485404], to: [640.0000001811677, 437.99999968366865] },
+    ]);
+    const glide = planGlide(tracks, {
+      parentOf: new Map(tracks.ids.filter((id) => id !== "synth-project").map((id) => [id, "synth-project"])),
+      massOf: (id) => id === "synth-project" ? 0.5 : 1,
+    });
+    for (let ms = 950; ms <= 1500; ms += 10) {
+      const frame = sampleGlide(glide, tracks, ms);
+      for (const [i, id] of tracks.ids.entries()) {
+        const span = Math.hypot(tracks.x1[i]! - tracks.x0[i]!, tracks.y1[i]! - tracks.y0[i]!);
+        const remaining = Math.hypot(frame.x[i]! - tracks.x1[i]!, frame.y[i]! - tracks.y1[i]!);
+        expect(remaining / span, `${id} at ${ms} ms`).toBeLessThanOrEqual(0.005);
+      }
+    }
+  });
+
   it("carries a child whose offset is unchanged with its parent", () => {
     const run = trace(
       [
@@ -129,6 +153,22 @@ describe("planGlide", () => {
     expect(light.overshoot).toBeLessThanOrEqual(0.007);
     expect(heavy.overshoot).toBeLessThanOrEqual(0.007);
     expect(planGlide(tracksOf([{ id: "x", from: [0, 0], to: [1, 0] }]), { parentOf: parents, massOf: () => 9 }).omega[0]).toBeCloseTo(Math.sqrt(70), 9);
+  });
+
+  it("preserves the curved path and overshoot when mass stretches its motion by the square root of two", () => {
+    const tracks = tracksOf([
+      { id: "domain:a", from: [0, 0], to: [0, 0] },
+      { id: "capability:a1", from: [100, 0], to: [-120, 10] },
+    ]);
+    const light = planGlide(tracks, { parentOf: parents, anchorId: "domain:a" });
+    const heavy = planGlide(tracks, { parentOf: parents, anchorId: "domain:a", massOf: () => 1 });
+    const child = tracks.ids.indexOf("capability:a1");
+    const delay = light.delayMs[child]!;
+    for (let elapsed = 0; elapsed <= 1200; elapsed += 5) {
+      const a = sampleGlide(light, tracks, delay + elapsed);
+      const b = sampleGlide(heavy, tracks, delay + elapsed * Math.SQRT2);
+      expect(Math.hypot(a.x[child]! - b.x[child]!, a.y[child]! - b.y[child]!)).toBeLessThanOrEqual(1e-8);
+    }
   });
 
   it("keeps position and velocity through a reversal", () => {

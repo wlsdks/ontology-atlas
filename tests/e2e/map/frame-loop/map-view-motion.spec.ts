@@ -73,19 +73,12 @@ test("the chrome under the inspector fades where it stands and returns in place,
     const resting = await read();
     expect(resting.filter((r) => r.box === null).map((r) => r.id), "chrome missing at rest, so the spec measures nothing").toEqual([]);
     const node = await page.evaluate(() => {
-        const map = (window as unknown as {
-            __atlasMap: {
-                nodes: () => {
-                    kind: string;
-                    x: number;
-                    y: number;
-                    hidden: boolean;
-                }[];
-            };
-        }).__atlasMap;
+        const map = window.__atlasMap!;
+        const dial = map.dial!();
+        if (!("texts" in dial)) throw new Error("the branch frame is not drawn");
         const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
-        const target = map.nodes().find((n) => n.kind === "domain" && !n.hidden && n.x > 520 && n.x < 1000)!;
-        return { x: canvas.x + target.x, y: canvas.y + target.y };
+        const target = dial.texts.find((text) => text.role === "domain" && text.box.minX > 520 && text.box.maxX < 1000)!;
+        return { x: canvas.x + (target.box.minX + target.box.maxX) / 2, y: canvas.y + (target.box.minY + target.box.maxY) / 2 };
     });
     await page.mouse.click(node.x, node.y);
     await expect(page.getByTestId("map-detail-panel")).toBeVisible();

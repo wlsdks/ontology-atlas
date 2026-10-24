@@ -291,6 +291,7 @@ export function useNodeDatasheetModel({
       documentHref: nodeFocus.ownDocumentSlug
         ? buildDocsVaultHref({
             slug: nodeFocus.ownDocumentSlug,
+            collection: 'ontology',
             via: buildTopologyReturnMarker(selectedOntologyNode.id),
           })
         : null,
