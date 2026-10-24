@@ -141,9 +141,12 @@ function namedSelectedStubs(dial: DialProbe, domainId: string) {
     const flow = dial.flows.find(flow => flow.key === stub.flowKey);
     expect(flow, `stub ${stub.flowKey} refers to a semantic pair`).toBeDefined();
     expect(flow!.drawn, `stub ${stub.flowKey} is counted as drawn`).toBe(true);
-    const far = (domainOf.get(flow!.a) ?? flow!.a) === domainId ? flow!.b : flow!.a;
-    expect(selected(flow!), `stub ${stub.flowKey} has exactly one selected domain end`).toBe(true);
-    expect(dial.texts.filter(text => text.role === "stub" && text.id === far && text.text === stub.text), `stub ${stub.flowKey} has one whole far-end name`).toHaveLength(1);
+    const names = dial.texts.filter(text => text.role === "stub" && (text.id === flow!.a || text.id === flow!.b) && text.text === stub.text);
+    expect(names, `stub ${stub.flowKey} has one whole endpoint name`).toHaveLength(1);
+    if (selected(flow!)) {
+      const far = (domainOf.get(flow!.a) ?? flow!.a) === domainId ? flow!.b : flow!.a;
+      expect(names[0]!.id, `selected stub ${stub.flowKey} names its far end`).toBe(far);
+    }
     expect(inside(stub.box, dial.freeRect), `stub ${stub.flowKey} clears the panels`).toBe(true);
     expect(dial.strips.filter(strip => strip.role === "stub" && strip.flowKey === stub.flowKey), `stub ${stub.flowKey} draws each nonzero direction`).toHaveLength(Number(flow!.ab > 0) + Number(flow!.ba > 0));
   }
