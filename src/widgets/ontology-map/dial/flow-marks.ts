@@ -34,6 +34,7 @@ export interface FlowMarksInput {
   measureText(text: string, font: string): number;
   occupied: Box[];
   avoidTexts?: readonly Box[];
+  avoidBodies?: readonly Box[];
   chords: DialChordLight[];
   resolution: DialResolution;
   named?: ReadonlySet<string>;

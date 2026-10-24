@@ -51,6 +51,8 @@ export interface LightHead {
   revealBound: boolean;
   departAt: number;
   arriveAt: number;
+  tailStart: number;
+  drawnEnd: number;
   curve: [number, number, number, number, number, number];
 }
 
@@ -160,6 +162,8 @@ function createPlanRunner(id: string) {
           revealBound: signal.revealBound,
           departAt: signal.departAt,
           arriveAt: signal.arriveAt,
+          tailStart: frame.tailStart,
+          drawnEnd: frame.drawnEnd,
           curve: [departure.x, departure.y, screen.c.x, screen.c.y, arrival.x, arrival.y],
         });
       }

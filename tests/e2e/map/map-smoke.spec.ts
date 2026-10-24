@@ -107,8 +107,15 @@ test.describe("ontology-map smoke", () => {
       .getByTestId("map-detail-panel-action-document");
     await expect(documentAction).toBeVisible();
     await expect(documentAction).not.toHaveAttribute("aria-disabled", "true");
+    const documentHref = new URL((await documentAction.getAttribute("href"))!, page.url());
+    expect(documentHref.pathname).toBe("/en/library/");
+    expect(documentHref.searchParams.get("tab")).toBe("ontology");
+    const documentSlug = documentHref.searchParams.get("slug");
+    expect(documentSlug?.split("/").pop()).toBe(REAL_CAPABILITY_SLUG.split(":")[1]);
     await documentAction.click();
-    await expect(page).toHaveURL(/\/en\/docs\//, { timeout: 10_000 });
+    await expect(page).toHaveURL(/\/en\/library\//, { timeout: 10_000 });
+    await expect(page.getByTestId("docs-editor-path")).toHaveText(`${documentSlug}.md`);
+    await expect(page.getByTestId("docs-reading-pane").locator("article")).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(new RegExp(`p=${REAL_CAPABILITY_SLUG.replace(":", "%3A")}`));

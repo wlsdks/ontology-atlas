@@ -450,6 +450,8 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
         placement: last.placement,
         texts: allTexts.map((t) => ({ id: t.id, role: t.role, text: t.text, box: t.box, font: t.font })),
         numerals: marks.numerals.map((n) => ({ flowKey: n.flowKey, text: n.text, box: n.box, font: n.font })),
+        glyphs: marks.glyphs.map(({ id, x, y, r }) => ({ id, x, y, r })),
+        blocks: (marks.blocks ?? []).map(({ id, box, alpha }) => ({ id, box: { ...box }, alpha })),
         discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "", dashed: d.dashed })),
         squares: last.elementSquares,
         strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "" })),

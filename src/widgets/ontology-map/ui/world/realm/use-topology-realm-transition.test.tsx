@@ -70,8 +70,8 @@ function fixture(reducedMotion = false) {
   }, { initialProps: { root: "root" as string | null, mode: false } });
   return {
     hook, sources, nodes,
-    step: (now: number) => { mocks.now = now; step(now, 1 / 60, tokens, world, 1200, 800); },
-    paint: (now: number) => paint(now, 1 / 60, tokens, world, sources.cameraRef.current as never, 1200, 800, new Set(), new Set(), []),
+    step: (now: number) => { mocks.now = now; step(now, 1 / 60, tokens, sources.worldRef.current, 1200, 800); },
+    paint: (now: number) => paint(now, 1 / 60, tokens, sources.worldRef.current, sources.cameraRef.current as never, 1200, 800, new Set(), new Set(), []),
   };
 }
 
@@ -127,6 +127,30 @@ describe("interruptible realm entry", () => {
     expect(f.paint(100).realmWarding?.drawProgress).toBe(0);
     f.hook.rerender({ root: null, mode: true });
     expect(f.paint(100).realmWarding?.drawProgress).toBe(0);
+  });
+
+  it("keeps a reduced-motion realm aligned when its world is rebuilt", () => {
+    const f = fixture(true);
+    f.step(0);
+    const previous = f.sources.worldRef.current;
+    const nodes = previous.nodes.map(node => ({ ...node, x: node.homeX, y: node.homeY }));
+    f.sources.worldRef.current = { ...previous, nodes, nodeById: new Map(nodes.map(node => [node.id, node])) };
+    f.hook.rerender({ root: "root", mode: false });
+    f.step(1);
+    expect(nodes.find(node => node.id === "root")).toMatchObject({ x: 0, y: 0 });
+    expect(f.sources.cameraTargetRef.current).toEqual({ tx: 0, ty: 0, tscale: 1 });
+    f.hook.rerender({ root: null, mode: false });
+    f.step(2);
+    expect(nodes.map(node => ({ x: node.x, y: node.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
+  });
+
+  it("preserves a dragged realm member through a render without a world rebuild", () => {
+    const f = fixture(true);
+    f.step(0);
+    f.nodes[0].x = 24;
+    f.hook.rerender({ root: "root", mode: false });
+    f.step(1);
+    expect(f.nodes[0].x).toBe(24);
   });
 
   it("snaps both entry and exit under reduced motion", () => {
