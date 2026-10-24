@@ -125,6 +125,8 @@ export function createDialLightSource(read: () => DialLightFrame | null): LightS
             revealBound: signal.revealBound,
             departAt: signal.departAt,
             arriveAt: signal.arriveAt,
+            tailStart: signalAt.tailStart,
+            drawnEnd: signalAt.drawnEnd,
             curve: [departure.x, departure.y, chord.c.x, chord.c.y, arrival.x, arrival.y],
           });
         }
