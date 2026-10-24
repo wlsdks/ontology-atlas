@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { VaultManifest } from "@/entities/docs-vault";
+import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
+import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
 
 import type { CameraAxes } from "../../engine/camera";
-import { worldToScreen } from "../../ui/camera/topology-camera-math";
+import { computeDomeFitCameraTarget, worldToScreen } from "../../ui/camera/topology-camera-math";
 import { findCouplingGroups } from "./coupling-groups";
 import { DOME_PLANE } from "./cone-layout";
 import { CLOUD_ITERATIONS } from "./coupling-cloud";
@@ -1180,6 +1183,53 @@ describe("the cloud past the exact pair ceiling", () => {
 });
 
 describe("Strata — four labelled planes, and drops that cannot cross", () => {
+  it("keeps capability discs separate at the narrow sample-vault fit", () => {
+    const graph = deriveOntologyFromVault(storefrontManifest as unknown as VaultManifest);
+    const firstParent = new Map<string, string>();
+    const lastParent = new Map<string, string>();
+    for (const edge of graph.edges) {
+      if (edge.type !== "contains") continue;
+      if (!firstParent.has(edge.to)) firstParent.set(edge.to, edge.from);
+      lastParent.set(edge.to, edge.from);
+    }
+    const kindOf = new Map(graph.nodes.map((node) => [node.id, node.kind]));
+    const domainOf = (start: string | undefined): string | null => {
+      const seen = new Set<string>();
+      let id = start;
+      while (id !== undefined && !seen.has(id)) {
+        if (kindOf.get(id) === "domain") return id;
+        seen.add(id);
+        id = firstParent.get(id);
+      }
+      return null;
+    };
+    const nodes: DomeInputNode[] = graph.nodes.map((node) => ({
+      id: node.id, kind: node.kind as DomeViewKind, x: 0, y: 0,
+      parentId: (domainOf(lastParent.get(node.id)) === domainOf(node.id)
+        ? lastParent.get(node.id) : firstParent.get(node.id)) ?? null,
+    }));
+    const model = buildDomeModel(nodes, {
+      arrangement: "strata",
+      edges: graph.edges.map((edge) => ({ sourceId: edge.from, targetId: edge.to })),
+    });
+    const bounds = domeWorldBounds(model, 0.55, DOME_PITCH_DEFAULT)!;
+    const target = computeDomeFitCameraTarget(bounds, 976, 720,
+      { left: 324, right: 60, top: 104, bottom: 46 }, 12,
+      { cameraScaleMin: 0.24, cameraScaleMax: 2.6, domeFitFill: 0.98 });
+    const discs = nodes.filter((node) => node.kind === "capability").map((node) => {
+      const point = projectDomeCoord(model, model.coords.get(node.id)!, 0.55, DOME_PITCH_DEFAULT);
+      return { id: node.id, x: point.wx * target.tscale, y: point.wy * target.tscale, radius: DOME_NODE_PX.capability * point.s };
+    });
+    expect(discs.length).toBeGreaterThan(1);
+    for (let i = 0; i < discs.length; i += 1) {
+      for (let j = i + 1; j < discs.length; j += 1) {
+        const a = discs[i];
+        const b = discs[j];
+        expect(Math.hypot(a.x - b.x, a.y - b.y), `${a.id} overlaps ${b.id}`).toBeGreaterThanOrEqual(a.radius + b.radius);
+      }
+    }
+  });
+
   const tree: DomeInputNode[] = [
     { id: "p", kind: "project", x: 0, y: 0, parentId: null },
     { id: "d-a", kind: "domain", x: -200, y: 0, parentId: "p" },
