@@ -56,13 +56,11 @@ on 2026-07-27 alongside the `2026-07-28` specification, and v2 is now the stable
 release line. v1 moved to a long-lived `v1.x` branch receiving bug and security
 fixes for at least six months.
 
-**The wire protocol did not move.** v2 ships the *same* supported-version list as
-v1 — measured:
+**Atlas keeps its legacy stdio negotiation.** Its low-level `Server` and
+`StdioServerTransport` wiring uses the measured supported-version list:
 `["2025-11-25","2025-06-18","2025-03-26","2024-11-05","2024-10-07"]`,
-`LATEST = 2025-11-25`. The `2026-07-28` spec's `server/discover` and stateless
-envelope exist only in v2's type definitions, not in its negotiation constants.
-So this migration buys **the vessel, not the cargo**: when the SDK does implement
-`2026-07-28`, the move is a version bump instead of a package rewrite.
+`LATEST = 2025-11-25`. SDK 2.3.0 also implements newer discovery and stateless
+interfaces; this dependency update does not switch Atlas to those interfaces.
 
 **Old clients still connect** — verified by driving a v2 server over stdio with a
 `2024-11-05` `initialize`: it negotiates that version and answers `tools/list`
