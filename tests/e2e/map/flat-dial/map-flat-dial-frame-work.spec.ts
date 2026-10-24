@@ -334,7 +334,7 @@ test("an authored hidden capability remains readable through a public deep link 
   expect(name.box.minY).toBeGreaterThanOrEqual(selected.freeRect.minY);
   expect(name.box.maxY).toBeLessThanOrEqual(selected.freeRect.maxY);
   await page.goBack();
-  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(target.domainId);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap?.selection().nodeId ?? null)).toBe(target.domainId);
   await waitForMapStill(page);
   expect(readMembers(await readDial(page), target.domainId, labels, target.capabilityIds)).toEqual(before);
   await page.getByTestId("ontology-map-canvas").focus();
