@@ -10,33 +10,34 @@ routes: [/topology]
 
 ## Readable branch overview
 
-Small maps use domain label blocks with outward capability rows. The overview
-shows up to six capabilities per domain and an explicit remaining-members action
-that opens the domain inspector. Detailed zoom reveals continuation columns;
-selected capabilities and their partners remain named even outside the preview. Short undirected
-branches encode membership; thin arrows encode dependencies in their actual
-directions, including separate arrows for reciprocal dependencies. Dashed
-`relates` links retain their distinct meaning. The project is a compact context
-label above the drawing. Hover changes ink on the whole domain, its members and
-its relationships without moving any label. Domain blocks and member names are
-whole pick targets; dragging still moves the real concept.
+Flat maps use domain label blocks with outward capability rows at every density.
+The initial preview shows up to six capabilities per domain with at most four
+domains, four with five or six domains, two with seven through twelve domains,
+and one with larger domain sets. Larger sets keep the same branch grammar in
+stable column groups. The domain's units line counts its complete capability
+and element membership, independently of the visible preview.
 
-This presentation applies through six domains, 24 rows in any domain and 48 rows
-overall. It retains every concept, reserves a direct-element slot while a folder
-loads, and uses the same zoom-driven element disclosure and evidence states as
-the packed dial. At smaller scales, domain blocks collapse to square marks and
-whole names, and membership previews wait until their rows have enough room.
-Selection, search and the navigator remain available at every scale. Domain
-type uses the title step, member type the body-lg step, and metadata the label step.
-Counts remain available on selected relationships and in the inspector.
+More advertises the next bounded batch and reveals actual members. Collapse
+names the additionally revealed count and restores the initial preview.
+Disclosure and collapse fade interruptibly; fitting accounts for the disclosed
+names and controls. Long capability names wrap within a bounded column, with
+the full title available in the selected concept's inspector. Short undirected branches encode
+membership; thin arrows encode dependencies in their actual directions.
+Dashed `relates` links retain their distinct meaning. Hover changes ink without
+moving labels. Domain blocks and member names are whole pick targets; dragging
+still moves the real concept.
 
-The owner approved this direction after the earlier rollback; decision
-`d170c030-35e9-4a0d-82b4-fcc00683c76b` records the boundary. The following ring and
-ledger rules describe the retained dense presentation.
+Every concept remains in the graph even when its name has no room. At smaller
+scales, domain blocks collapse toward compact marks and readable previews wait
+for enough screen room. Selected concepts receive naming priority. The project
+is a compact context label above the drawing. Domain type uses the title step,
+member type the body-lg step, and metadata the label step.
 
-## Packed overview
+Decision `9cc79e76-48db-4606-9376-c050cb690221` supersedes the former six-domain,
+24-row-per-domain and 48-row-overall fallback thresholds. Dense maps do not
+switch back to orbital rings or the former zoom-triggered ledger.
 
-At the overview, Flat is a dial (`src/widgets/ontology-map/dial/`). The project sits at the centre. Each domain stands on a ring by how many other domains depend on it: 32 or more, 16–31, 8–15, 4–7, 2–3 and 0–1, innermost the most depended on. A ring's range is written on its circle wherever a slot clear of lines and names is left. Around a ring, coupled domains are neighbours. A domain is drawn as its area; its capabilities appear around its chip once they have room on screen, and their elements after them. Names are whole or absent, never cut with "…", drawn in the page's typeface once every weight has loaded, on the type ramp (project 16, domain 12.5, capability 11, element and ring captions 9.5, counts 11 with tabular figures; `map-dial-tokens.contract.test.ts` holds each kind on the ramp at the shipped `--map-dial-label-scale`), and every name and count stands on a cut-out of the ground, so rings and lines stop at its edge. A domain name takes a side of its chip that no line crosses, between the lines if it must, before it lets one cross it. The project name does the same around the hub, between strands up to 36 px out, and is left off only when every one of those slots is crossed or taken. The decision is record `88b537fc` (2026-10-02).
+## Scope readout
 
 The bottom corner has one passive scope line, without a generic legend or click invitation.
 Its count comes from graph membership, not visible marks or zoom: a full map shows its total,
@@ -57,19 +58,36 @@ Hovering changes ink only: every resting name and count keeps its place, the hov
 
 ## Zoom
 
-Detail follows screen room, not zoom history: the same camera scale gives the same marks. When one end of a line leaves the free map (the viewport less the open panels), the line ends in a named stub such as `Payments →3 ←2`, in capability type at every zoom (stub names no longer grow with the camera); under a selection, links from several of the selected domain's capabilities to one far end leave its chip as one stub carrying all of their counts. Zoomed into a domain (the selected one, else the one nearest the middle of the free map; hovering enters none) whose capabilities cannot all be named in place, a **ledger** lists them whole in one column beside it, joined to their discs by leaders that never cross; past its capacity it ends with `+N more`. Ledger rows, discs, chips and the hub are pick targets; lines are not, so Flat at the overview has no edge pick or edge hover card (a realm keeps them).
+Detail follows screen room and explicit member disclosure. More and Collapse
+remain actual canvas pick targets. Capability names wrap to at most two lines
+within a bounded column, with an ellipsis when longer names overflow. Selecting
+the concept exposes its full title in the inspector. A name omitted from a crowded overview does
+not remove its concept from the graph. Zoom and pan can expose its neighborhood;
+selection, search and the navigator provide access to authored concepts.
+
+When a relation end leaves the free map (the viewport less the open panels),
+a named stub retains its directional counts. Domain-level aggregation remains
+until capability inspection; detailed relation explanations stay in relation
+review.
 
 ## Lenses and realms
 
-The dial owns Flat's paint only at the overview with nothing narrowing it. A realm, a selected or previewed edge, a trail, a spotlight, a path or impact lens, and a selected element draw the earlier dots and lines on the same positions, so nothing jumps. The Flat overview folds nothing: double-click there selects, while folding, `+N` chips, Expand all and `?open=` work inside a realm.
+Meaning and relation inspection retain Flat's branch forms. Scoped domain and
+capability views reuse branch marks with actual kinds; smaller scopes use a
+containment tree. The labelled Full map return restores the selected root.
 
 ## Memory and first read
 
-Ring radii, each domain's angle and each domain's capability order are remembered per folder in `localStorage`, so an edit that changes no ring moves nothing and a reload of the same folder lands every mark where it was. A first read places domains once their capabilities are read, and applies any later ring changes once, at the end.
+Vault-scoped layout memory retains domain ordering and placement across reads.
+A first read places domains as their capabilities arrive and settles the final
+placement after reading. Progressive disclosure retains the full graph rather
+than replacing hidden concepts with synthetic nodes.
 
 ## Evidence
 
-Evidence rims show where evidence is measured: stale is amber, unknown is dashed, and a domain's units line adds "N stale". When nothing was measured, every capability rim is dashed as unknown and a caption under the hub reads "Evidence not measured", placed below the first slot under the hub that the resting marks leave the project name, so it stays put while strands arrive and the name fades in; the name keeps that slot unless a strand crosses it; while the history is still being read, neither shows. The rings themselves are solid in `--map-dial-ring`, so a dashed line on the dial always means unknown evidence or a `relates` link.
+Evidence state stays attached to real concepts. Stale members carry an amber
+mark. When evidence has not been measured, a caption under the project states
+that limitation; a synthetic performance fixture is not authored evidence.
 
 ## Performance bars
 
@@ -87,6 +105,10 @@ What the dial draws, an agent can ask for:
 - `query_ontology({operation:"domain_matrix", types:["depends_on"]})` or `ontology-atlas domain-matrix --types depends_on`: the counted lines.
 - `query_ontology({operation:"blast_radius", slug, direction:"incoming"})` or `ontology-atlas blast-radius <slug> --direction incoming`: what a focused capability is used by.
 
-The overview frames the outer ring about the hub, reaching past it only where the drawing overhangs on both sides, so the hub stands within 8 px of the free map's middle and the ring's top stands at least 24 px inside the free map, whose top already sits below the tool row and any band under it; the first fit, the fit tile and closing an inspector land on that one frame. The first populated dial fits this overview before assembling, including when a folder arrives in intermediate batches. Panning while the folder is still being read keeps the person's camera position through that placement.
+The overview fits the domain branches and their bounded previews into the free
+map, whose top sits below the tool row and any band beneath it. The first fit,
+the fit tile and closing an inspector use that overview framing. Panning while
+a folder is still being read preserves the person's camera position through
+placement.
 
 Opening the map shows one loader, and none when it would show for less than `--motion-base`. Names are placed against the resting layout and appear once, where they stay: each fades in over `--motion-fast` once its mark has travelled 90 % of its rise, the hub's with the domains', and all at once with reduced motion. A domain whose chip the free map's edge cuts stays unnamed until a slot clear of lines opens; one inside the free map is named over a line only when every slot crosses one.
