@@ -1,5 +1,6 @@
 interface DocsVaultHrefInput {
   slug?: string | null;
+  collection?: 'ontology';
   hash?: string | null;
   intent?: 'local' | null;
   dogfood?: boolean;
@@ -8,9 +9,10 @@ interface DocsVaultHrefInput {
   reviewId?: string | null;
 }
 
-/** `/docs/`, plus `?slug=` and a `#section` fragment when given. */
+/** Document address with return context and fragment. */
 export function buildDocsVaultHref({
   slug,
+  collection,
   hash,
   intent,
   dogfood,
@@ -21,6 +23,7 @@ export function buildDocsVaultHref({
   const normalizedHash = hash?.trim().replace(/^#/, '');
   const queryParts: string[] = [];
 
+  if (collection === 'ontology') queryParts.push('tab=ontology');
   if (normalizedSlug) queryParts.push(`slug=${encodeURIComponent(normalizedSlug)}`);
   if (intent === 'local') queryParts.push('intent=local');
   if (dogfood) queryParts.push('dogfood=1');
@@ -28,5 +31,6 @@ export function buildDocsVaultHref({
   if (via && reviewId) queryParts.push(`review=${encodeURIComponent(reviewId)}`);
 
   const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
-  return `/docs/${query}${normalizedHash ? `#${normalizedHash}` : ''}`;
+  const pathname = collection === 'ontology' ? '/library/' : '/docs/';
+  return `${pathname}${query}${normalizedHash ? `#${normalizedHash}` : ''}`;
 }
