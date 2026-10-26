@@ -167,3 +167,31 @@ describe('useVaultConnectors', () => {
     expect(result.current.connectors).toHaveLength(0);
   });
 });
+
+
+describe('Library setup lifetime', () => {
+  it('invalidates captured setup when a different handle opens at the same root', async () => {
+    const first = fakeVault(undefined, '/vault/same');
+    const next = fakeVault(undefined, '/vault/same');
+    const { result, rerender, unmount } = renderHook(({ handle }) => useVaultConnectors(handle), { initialProps: { handle: first.handle } });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const old = result.current.setup!;
+    rerender({ handle: next.handle });
+    expect(await old.inspect((id) => record({ id, origin: 'library-import:notion' }), 'TOKEN', () => true)).toBe('setupStopped');
+    const current = result.current.setup!;
+    unmount();
+    expect(await current.inspect((id) => record({ id, origin: 'library-import:notion' }), 'TOKEN', () => true)).toBe('setupStopped');
+    expect(first.files.size).toBe(0); expect(next.files.size).toBe(0);
+  });
+  it('invalidates captured setup when the native absolute root changes on a retained handle', async () => {
+    const vault = fakeVault(undefined, '/vault/first');
+    const { result, rerender } = renderHook(() => useVaultConnectors(vault.handle));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    const old = result.current.setup!;
+    (vault.handle as unknown as { rootPath: string }).rootPath = '/vault/next';
+    rerender();
+    expect(await old.inspect((id) => record({ id, origin: 'library-import:notion' }), 'TOKEN', () => true)).toBe('setupStopped');
+    expect(result.current.vaultRoot).toBe('/vault/next');
+    expect(vault.files.size).toBe(0);
+  });
+});

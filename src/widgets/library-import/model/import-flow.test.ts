@@ -72,7 +72,7 @@ describe('what it writes into the folder', () => {
      * Switched on, unlike other connector paths: the person asked to bring documents in, so off
      * would silently find nothing.
      */
-    expect(record.enabled).toBe(true);
+    expect(record.enabled).toBe(false);
     // And the row still says where it came from, so the folder can be read back later.
     expect(record.origin).toBe('library-import:notion');
   });

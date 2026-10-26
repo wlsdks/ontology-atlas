@@ -182,7 +182,7 @@
     "staleOnly": "要確認のソースバージョン{count, number}件",
     "partialOnly": "一部のみ読み込み済み{count, number}件",
     "import": "サービスから取り込む",
-    "importTooltip": "Notion、Confluence、Jira、GitHubから文書を取り込みます",
+    "importTooltip": "サービスを選んで接続し、このフォルダに取り込む文書を指定します",
     "pagesNeedReview": "再確認が必要な既存ページ{count, number}件"
   },
   "wiki": {
@@ -449,6 +449,11 @@
     "staleLit": "変更された原本{count, number}件と、それを引用するページ{pages, number}件が強調されています。Escapeキーか、図を押すと解除されます。"
   },
   "find": {
+    "searchLabel": "ファイル名・パスで絞り込む",
+    "searchHint": "検索を変えても選択は残ります。検索で隠れた文書は見送りとして記録しません。",
+    "searchCount": "全{total, number}件中{visible, number}件 · {selected, number}件を選択",
+    "noMatches": "一致するファイル名やパスはありません。",
+    "clearSearch": "検索をクリア",
     "title": "許可したフォルダ内の文書",
     "preamble": "Atlasは名前、形式、サイズで一覧にしました。どれも開いていません。選ぶまでコピーはされません。",
     "webLimit": "ここでたどれるのは、開いたフォルダだけです。紐づけたプロジェクトフォルダには絶対パスが必要で、それを保持するのはアプリです。",
@@ -921,7 +926,9 @@
       "columnRound": "点検",
       "columnOutcome": "結果",
       "ghostTime": "––:––",
-      "ghostAria": "最初の実行が入る場所"
+      "ghostAria": "最初の実行が入る場所",
+      "includeSleep": "スリープ区間も表示（{count}件）",
+      "noPasses": "まだ実行されたチェックはありません。"
     },
     "sheet": {
       "readbackHour": "1時間ごと",

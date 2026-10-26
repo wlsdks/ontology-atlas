@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, ExternalLink } from 'lucide-react';
 
@@ -11,14 +11,12 @@ import { Input } from '@/shared/ui/fields/input';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { connectorSecretRef, connectorSecretSet } from '@/shared/lib/connectors/tauri-connector-secrets';
+import { connectorSecretRef, isConnectorSecretBridgeAvailable } from '@/shared/lib/connectors/tauri-connector-secrets';
 import {
   resolveConnectorRuntimes,
   runtimePath,
-  type ResolvedRuntime,
 } from '@/shared/lib/connectors/tauri-connector-runtimes';
-import type { ConnectorRecord } from '@/shared/lib/connectors/connector-record';
-import type { ConnectorWriteResult } from '@/shared/lib/connectors/connector-store';
+import type { ConnectorSetup, SetupFailure, SetupInspection } from '@/shared/lib/connectors/connector-setup';
 import { serviceVariant } from '../model/import-flow';
 
 import {
@@ -33,17 +31,31 @@ import {
   type ImportStep,
 } from '../model/import-flow';
 
-/**
- * The Library's door for bringing documents from a service, in the person's words, never MCP,
- * stdio, npx or environment variable; the technical `/mcp` dialog is the last tile. Step one writes
- * the connector and switches it on; steps two and three hand a bounded brief to the Library's agent
- * turn, where fetching and picking happen because Atlas is not the MCP client.
- */
-export function LibraryImportDialog({
+type LibraryImportProps = {
+  open: boolean;
+  onClose: () => void;
+  setup: ConnectorSetup | null;
+  onSetupSaved: () => void;
+  onAddFiles: () => void;
+  onBrief: (brief: string) => void;
+  onOpenAdvanced: () => void;
+  canRunAgent: boolean;
+  agentGap: 'browser' | 'runtime';
+  testIdPrefix?: string;
+};
+
+/** A completed service setup and all sensitive input belong to this captured folder session. */
+export function LibraryImportDialog(props: LibraryImportProps) {
+  return <LibraryImportFlow key={props.setup?.sessionId ?? 'browser'} {...props} />;
+}
+
+/** Save local service setup before asking an agent for a bounded document import. */
+function LibraryImportFlow({
   open,
   onClose,
-  /** Writes the connector row into the folder. The Library view hands its store's `upsert` in. */
-  onAttach,
+  setup,
+  onSetupSaved,
+  onAddFiles,
   /** Hands the finished brief to the Library's agent turn. */
   onBrief,
   /** Opens the technical dialog for a service this list does not know. */
@@ -59,24 +71,35 @@ export function LibraryImportDialog({
    */
   agentGap,
   testIdPrefix = 'library-import',
-}: {
-  open: boolean;
-  onClose: () => void;
-  onAttach: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
-  onBrief: (brief: string) => void;
-  onOpenAdvanced: () => void;
-  canRunAgent: boolean;
-  agentGap: 'browser' | 'runtime';
-  testIdPrefix?: string;
-}) {
+}: LibraryImportProps) {
   const t = useTranslations('libraryImport');
   const [step, setStep] = useState<ImportStep>('pick');
   const [serviceId, setServiceId] = useState<ImportServiceId | null>(null);
   const [token, setToken] = useState('');
   const [what, setWhat] = useState('');
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<SetupFailure | 'setupRuntimeUnavailable' | null>(null);
+  const [checkVersion, setCheckVersion] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [inspection, setInspection] = useState<SetupInspection | null>(null);
+  const generation = useRef(0);
+  const saving = useRef(false);
+  const native = isConnectorSecretBridgeAvailable();
   const [connectedName, setConnectedName] = useState<string | null>(null);
-  const [runtimes, setRuntimes] = useState<ResolvedRuntime[] | null>(null);
+
+  const serviceButtons = useRef(new Map<ImportServiceId, HTMLButtonElement>());
+  const tokenField = useRef<HTMLInputElement>(null);
+  const requestField = useRef<HTMLInputElement>(null);
+  const saveButton = useRef<HTMLButtonElement>(null);
+  const saveStatus = useRef<HTMLParagraphElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const target = step === 'connect' ? pending ? saveStatus.current : inspection?.hasSecret ? saveButton.current : tokenField.current
+      : step === 'choose' ? requestField.current
+        : serviceId ? serviceButtons.current.get(serviceId) : null;
+    target?.focus({ preventScroll: true });
+  }, [open, step, serviceId, pending, checking, inspection?.hasSecret]);
 
   const service = useMemo(
     () => IMPORT_SERVICES.find((candidate) => candidate.id === serviceId) ?? null,
@@ -84,13 +107,19 @@ export function LibraryImportDialog({
   );
   const entry = service ? serviceEntry(service) : null;
   const ask = service ? serviceAsk(service) : null;
+  const askName = ask?.kind === 'token' ? ask.name : null;
 
   const reset = useCallback(() => {
+    generation.current += 1;
+    saving.current = false;
+    setPending(false);
+    setChecking(false);
+    setInspection(null);
     setStep('pick');
     setServiceId(null);
     setToken('');
     setWhat('');
-    setFailed(false);
+    setFailed(null);
     setConnectedName(null);
   }, []);
 
@@ -108,45 +137,73 @@ export function LibraryImportDialog({
         onOpenAdvanced();
         return;
       }
+      setToken('');
+      setChecking(true);
       setServiceId(next.id);
       setStep('connect');
-      setFailed(false);
-      // Only a local program needs a path resolved, and only then is it worth asking.
-      void resolveConnectorRuntimes().then(setRuntimes);
+      setFailed(null);
+
     },
     [close, onOpenAdvanced],
   );
 
-  const connect = useCallback(async () => {
-    if (!service || !entry) return;
-    const id =
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `c${Date.now().toString(36)}`;
-    const variant = serviceVariant(entry);
-    const record = importConnector(service, {
-      id,
-      runtimePath: variant.kind === 'local' ? runtimePath(runtimes, variant.runtime) : null,
-      secretRef: connectorSecretRef,
+  useEffect(() => {
+    const attempt = ++generation.current;
+    saving.current = false;
+    if (!open || step !== 'connect' || !service || !entry || !askName || !native) return;
+    const live = () => generation.current === attempt;
+    void (async () => {
+      await Promise.resolve();
+      if (!live()) return;
+      setPending(false);
+      setInspection(null);
+      setFailed(null);
+      setChecking(true);
+      if (!setup) { setFailed('setupFolderUnavailable'); setChecking(false); return; }
+      const variant = serviceVariant(entry);
+      const runtimes = variant.kind === 'local' ? await resolveConnectorRuntimes() : null;
+      if (!live()) return;
+      const path = variant.kind === 'local' ? runtimePath(runtimes, variant.runtime) : null;
+      if (variant.kind === 'local' && !path?.startsWith('/')) {
+        setFailed('setupRuntimeUnavailable'); setChecking(false); return;
+      }
+      const result = await setup.inspect((id) => importConnector(service, {
+        id, runtimePath: path, secretRef: connectorSecretRef,
+      })!, askName, live);
+      if (!live()) return;
+      if (typeof result === 'string') setFailed(result);
+      else setInspection(result);
+      setChecking(false);
+    })().catch(() => {
+      if (live()) { setFailed('setupFolderUnavailable'); setChecking(false); }
     });
-    if (!record) return;
-    const result = await onAttach(record);
-    if (result?.status !== 'saved') {
-      setFailed(true);
-      return;
-    }
-    /*
-     * The token is stored only after the row is on disk, or a failed write leaves a stored value
-     * nothing on screen points at.
-     */
-    if (ask?.kind === 'token' && token.trim()) {
-      await connectorSecretSet(connectorSecretRef(id, ask.name), token.trim()).catch(() => null);
-    }
+    return () => { generation.current += 1; };
+  }, [open, step, service, entry, askName, native, setup, checkVersion]);
+
+  const back = () => {
+    generation.current += 1;
+    saving.current = false;
+    setPending(false);
     setToken('');
-    setConnectedName(record.name);
-    setFailed(false);
+    setStep('pick');
+  };
+  const connect = async () => {
+    if (!inspection && !checking && failed && failed !== 'setupConflict' && failed !== 'setupStopped' && failed !== 'setupRuntimeUnavailable') { setCheckVersion((version) => version + 1); return; }
+    if (!setup || !inspection || ask?.kind !== 'token' || saving.current || checking) return;
+    saving.current = true; // Synchronous admission, before React renders disabled.
+    setPending(true);
+    setFailed(null);
+    const attempt = generation.current;
+    const live = () => generation.current === attempt;
+    const result = await setup.save(inspection, ask.name, token, live, () => { if (live()) setToken(''); });
+    if (!live()) return;
+    saving.current = false;
+    setPending(false);
+    if (!result.ok) { setFailed(result.error); return; }
+    setConnectedName(result.record.name);
+    onSetupSaved();
     setStep('choose');
-  }, [ask, entry, onAttach, runtimes, service, token]);
+  };
 
   const bring = useCallback(() => {
     if (!service) return;
@@ -200,6 +257,10 @@ export function LibraryImportDialog({
                 className={cn('min-w-0', index === IMPORT_SERVICES.length - 1 && index % 2 === 0 && 'sm:col-span-2')}
               >
                 <button
+                  ref={(node) => {
+                    if (node) serviceButtons.current.set(candidate.id, node);
+                    else serviceButtons.current.delete(candidate.id);
+                  }}
                   type="button"
                   data-testid={`${testIdPrefix}-service`}
                   data-service={candidate.id}
@@ -228,10 +289,7 @@ export function LibraryImportDialog({
               </li>
             ))}
           </ul>
-          {/*
-           * Google Drive is not a tile: every Drive MCP needs a self-made OAuth client, so this
-           * says why and names the path that works.
-           */}
+          {/* State this surface's limit and the file-import path, without claims about every provider. */}
           <p
             data-testid={`${testIdPrefix}-absent-note`}
             className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
@@ -250,12 +308,22 @@ export function LibraryImportDialog({
           >
             {t('stepOf', { step: 1, total: 3 })}
           </p>
+          {!native ? (
+            <div data-testid={`${testIdPrefix}-web-setup`} className="mt-3">
+              <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">{t('webSetupTitle')}</p>
+              <p className="mt-2 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('webSetupBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Link href="/download/" data-testid={`${testIdPrefix}-no-agent-app`} className={controlClass({ shape: 'link', tone: 'accent', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>{t('noAgentGetApp')}</Link>
+                <Button className="atlas-touch-floor" onClick={() => { close(); onAddFiles(); }} data-testid={`${testIdPrefix}-add-files`}>{t('addFiles')}</Button>
+              </div>
+            </div>
+          ) : <>
           <p className="mt-1 max-w-prose break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">
             {ask.kind === 'browser'
               ? t('connectBrowser', {
                   service: t(`service.${service.id}.title` as 'service.notion.title'),
                 })
-              : t('connectToken', {
+              : t(inspection?.hasSecret ? 'resumeSetupBody' : 'connectToken', {
                   service: t(`service.${service.id}.title` as 'service.notion.title'),
                 })}
           </p>
@@ -274,7 +342,7 @@ export function LibraryImportDialog({
                   target="_blank"
                   rel="noopener noreferrer"
                   data-testid={`${testIdPrefix}-revoke`}
-                  className={controlClass({ shape: 'link', tone: 'accent', className: 'text-label' })}
+                  className={controlClass({ shape: 'link', tone: 'accent', className: 'atlas-touch-floor atlas-touch-floor-wide text-label' })}
                 >
                   <span aria-hidden data-external-link-marker>
                     ↗
@@ -286,14 +354,16 @@ export function LibraryImportDialog({
               </>
             ) : null}
           </p>
-          {ask.kind === 'token' ? (
+          {ask.kind === 'token' && !inspection?.hasSecret ? (
             <>
               <Input
+                ref={tokenField}
                 label={t('tokenLabel')}
                 size="md"
                 type="password"
                 autoComplete="off"
                 spellCheck={false}
+                disabled={pending}
                 value={token}
                 data-testid={`${testIdPrefix}-token`}
                 onChange={(event) => setToken(event.target.value)}
@@ -308,7 +378,7 @@ export function LibraryImportDialog({
                   className={controlClass({
                     shape: 'link',
                     tone: 'accent',
-                    className: 'mt-2 text-label',
+                    className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-label',
                   })}
                 >
                   <span aria-hidden data-external-link-marker>
@@ -325,23 +395,30 @@ export function LibraryImportDialog({
               data-testid={`${testIdPrefix}-failed`}
               className="mt-3 break-keep text-label leading-prose text-[color:var(--color-status-danger)]"
             >
-              {t('connectFailed')}
+              {t(failed)}
             </p>
           ) : null}
-          <div className="mt-4 flex items-center justify-between gap-2">
-            <Button variant="ghost" onClick={() => setStep('pick')}>
+          {checking || pending ? <p ref={saveStatus} tabIndex={-1} role="status" aria-live="polite" data-testid={`${testIdPrefix}-pending`} className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t(checking ? 'checkingSetup' : 'savePendingBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
+          {inspection?.existing && !inspection.hasSecret && !failed && !pending ? <p className="mt-3 text-label leading-prose text-[color:var(--color-text-tertiary)]">{t('resumeSetupBody', { service: t(`service.${service.id}.title` as 'service.notion.title') })}</p> : null}
+          {failed === 'setupRuntimeUnavailable' ? <Button className="atlas-touch-floor mt-2" onClick={() => { close(); onAddFiles(); }}>{t('addFiles')}</Button> : null}
+          {failed || inspection?.existing ? <Button variant="ghost" className="atlas-touch-floor mt-2" onClick={() => { close(); onOpenAdvanced(); }}>{t('inspectSetup')}</Button> : null}
+          </>}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <Button variant="ghost" className="atlas-touch-floor" onClick={back}>
               {t('back')}
             </Button>
-            <Chip
+            {native ? <Chip
+              ref={saveButton}
               size="lg"
               tone="accentOnTint"
               data-testid={`${testIdPrefix}-connect`}
-              disabled={ask.kind === 'token' && !token.trim()}
+              aria-busy={pending}
+              disabled={pending || checking || failed === 'setupConflict' || failed === 'setupStopped' || failed === 'setupRuntimeUnavailable' || (!inspection && !failed) || (!!inspection && !inspection.hasSecret && !token.trim())}
               onClick={() => void connect()}
               className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
             >
-              {t('connectAction')}
-            </Chip>
+              {t(pending ? 'savePending' : failed ? 'retrySave' : inspection?.existing ? 'resumeSetup' : 'connectAction')}
+            </Chip> : null}
           </div>
         </>
       ) : null}
@@ -369,6 +446,7 @@ export function LibraryImportDialog({
             })}
           </p>
           <Input
+            ref={requestField}
             label={t('whatLabel')}
             size="md"
             type="text"
@@ -405,8 +483,7 @@ export function LibraryImportDialog({
           ) : null}
           {canRunAgent ? null : (
             /*
-             * The degradation contract: why it cannot happen here, and that the connection is saved
-             * and on for any coding tool on this folder.
+             * A saved local setup is not proof of remote service access or a ready coding tool.
              */
             <div
               role="status"
@@ -425,7 +502,7 @@ export function LibraryImportDialog({
                 className={controlClass({
                   shape: 'link',
                   tone: 'accent',
-                  className: 'mt-2 text-label font-[var(--font-weight-signature)]',
+                  className: 'atlas-touch-floor atlas-touch-floor-wide mt-2 text-label font-[var(--font-weight-signature)]',
                 })}
               >
                 {agentGap === 'browser' ? t('noAgentGetApp') : t('noAgentSeeRuntimes')}
@@ -433,7 +510,7 @@ export function LibraryImportDialog({
             </div>
           )}
           <div className="mt-4 flex items-center justify-between gap-2">
-            <Button variant="ghost" onClick={() => setStep('connect')}>
+            <Button variant="ghost" className="atlas-touch-floor" onClick={() => setStep('connect')}>
               {t('back')}
             </Button>
             {canRunAgent ? (

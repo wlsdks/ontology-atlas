@@ -1,12 +1,13 @@
 "use client";
 
 import { ActionFeedbackGlyph, type ActionFeedbackState } from '@/shared/motion/action-feedback-glyph';
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { FilePlus2, SearchX } from "lucide-react";
 
 import { candidateKey, formatSourceBytes, type SourceCandidate } from "@/entities/docs-vault";
 import { Button, Checkbox, Chip, CloseButton, Dialog, EmptyState, controlClass } from "@/shared/ui";
+import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 
@@ -26,7 +27,7 @@ export interface FindDocumentsDialogProps {
   /** Candidates already refused on this machine, and hidden from the list. */
   declinedCount: number;
   onForgetDeclined: () => void;
-  /** Copies the ticked candidates; the unticked ones are remembered as refused. */
+  /** Copies all ticked candidates; only visible unticked ones are remembered as refused. */
   onAdd: (selected: SourceCandidate[], declined: SourceCandidate[]) => void;
   busy: boolean;
   /** Pick files by hand when the walk proposes nothing; closes this dialog first. */
@@ -50,29 +51,36 @@ export function FindDocumentsDialog({
 }: FindDocumentsDialogProps) {
   const t = useTranslations("library.find");
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
+  const [query, setQuery] = useState('');
+  const queryRef = useRef<HTMLInputElement>(null);
   /** Every run starts unticked, reset by key during render, or a click lands on an unseen file. */
   const runKey = `${open}:${outcome?.candidates.length ?? -1}:${outcome?.candidates[0]?.relativePath ?? ""}`;
   const [tickedRunKey, setTickedRunKey] = useState(runKey);
   if (tickedRunKey !== runKey) {
     setTickedRunKey(runKey);
     setTicked(new Set());
+    setQuery('');
   }
 
   const candidates = useMemo(() => outcome?.candidates ?? [], [outcome]);
+  const needle = query.trim().toLowerCase();
+  const visible = useMemo(() => candidates.filter((candidate) =>
+    `${candidate.name}\n${candidate.relativePath}`.toLowerCase().includes(needle),
+  ), [candidates, needle]);
   const byRoot = useMemo(() => {
     const groups = new Map<string, SourceCandidate[]>();
-    for (const candidate of candidates) {
+    for (const candidate of visible) {
       const list = groups.get(candidate.rootLabel);
       if (list) list.push(candidate);
       else groups.set(candidate.rootLabel, [candidate]);
     }
     return [...groups];
-  }, [candidates]);
+  }, [visible]);
 
   /* Nothing to pick is a finished answer: an EmptyState, and the footer stands down. */
   const nothingToPick = outcome !== null && candidates.length === 0;
   const selected = candidates.filter((candidate) => ticked.has(candidateKey(candidate)));
-  const declined = candidates.filter((candidate) => !ticked.has(candidateKey(candidate)));
+  const declined = visible.filter((candidate) => !ticked.has(candidateKey(candidate)));
 
   return (
     <Dialog
@@ -94,7 +102,7 @@ export function FindDocumentsDialog({
         <CloseButton
           label={t("close")}
           data-testid="find-documents-close"
-          className="-mr-2 -mt-1 shrink-0"
+          className="atlas-touch-floor atlas-touch-floor-wide -mr-2 -mt-1 shrink-0"
           onClick={onClose}
         />
       </div>
@@ -116,7 +124,7 @@ export function FindDocumentsDialog({
               shape: "link",
               tone: "accent",
               hoverInk: "strong",
-              className: "rounded-chip px-1.5 py-0.5",
+              className: "atlas-touch-floor atlas-touch-floor-wide rounded-chip px-1.5 py-0.5",
             })}
           >
             {t("webGetApp")}
@@ -129,9 +137,27 @@ export function FindDocumentsDialog({
         </p>
       ) : null}
 
+      {candidates.length > 0 ? (
+        <div className="mt-4 flex flex-col gap-2">
+          <Input
+            ref={queryRef}
+            type="search"
+            label={t('searchLabel')}
+            hint={t('searchHint')}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            disabled={busy}
+            className="w-full"
+          />
+          <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
+            {t('searchCount', { visible: visible.length, total: candidates.length, selected: selected.length })}
+          </p>
+        </div>
+      ) : null}
+
       <div
         data-testid="find-documents-list"
-        className="mt-4 flex min-h-0 flex-1 max-h-[46dvh] flex-col gap-3 overflow-auto"
+        className="mt-4 flex min-h-0 flex-1 max-h-[46dvh] flex-col gap-3 overflow-auto pb-3"
       >
         {outcome === null ? (
           <p className="text-body text-[color:var(--color-text-tertiary)]">{t("walking")}</p>
@@ -165,16 +191,28 @@ export function FindDocumentsDialog({
               }
             />
           </div>
+        ) : visible.length === 0 ? (
+          <EmptyState
+            size="compact"
+            tone="solid"
+            icon={<SearchX />}
+            title={t('noMatches')}
+            action={<Chip
+              data-testid="find-documents-clear-search"
+              className="atlas-touch-floor"
+              onClick={() => { setQuery(''); queryRef.current?.focus(); }}
+            >{t('clearSearch')}</Chip>}
+          />
         ) : (
           byRoot.map(([rootLabel, rows]) => (
             <section key={rootLabel} className="flex flex-col gap-1">
-              <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+              <h3 className="font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-tertiary)]">
                 {t("rootHeader", { root: rootLabel, count: rows.length })}
               </h3>
               {rows.map((candidate) => {
                 const key = candidateKey(candidate);
                 return (
-                  /* The whole row is the label; a long path truncates so rows keep equal height. */
+                  /* Keep both names readable: equal basenames can belong to different folders. */
                   <Checkbox
                     key={key}
                     data-testid={`find-documents-candidate-${candidate.relativePath}`}
@@ -187,18 +225,15 @@ export function FindDocumentsDialog({
                         return next;
                       })
                     }
-                    className="min-h-[var(--control-h-lg)] w-full gap-3 rounded-chip px-2 hover:bg-[color:var(--color-overlay-1)]"
+                    className="min-h-[var(--control-h-lg)] w-full gap-3 rounded-chip px-2 py-2 hover:bg-[color:var(--color-overlay-1)]"
                     label={
-                      <>
-                        {/* The name wins the space; the path truncates but stays, since folders can share a file name. */}
-                        <span className="min-w-0 flex-[2] truncate">{candidate.name}</span>
-                        <span className="min-w-0 flex-1 truncate text-right font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                          {candidate.relativePath}
+                      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                        <span className="[overflow-wrap:anywhere]">{candidate.name}</span>
+                        <span className="flex min-w-0 flex-wrap gap-x-3 gap-y-0.5 font-mono text-caption text-[color:var(--color-text-tertiary)]">
+                          <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">{candidate.relativePath}</span>
+                          <span className="shrink-0 tabular-nums">{candidate.extension.toUpperCase()} · {formatSourceBytes(candidate.size)}</span>
                         </span>
-                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {candidate.extension.toUpperCase()} · {formatSourceBytes(candidate.size)}
-                        </span>
-                      </>
+                      </span>
                     }
                   />
                 );
@@ -222,7 +257,7 @@ export function FindDocumentsDialog({
           className="mt-2 flex items-center gap-2 text-label text-[color:var(--color-text-tertiary)]"
         >
           <span className="min-w-0 flex-1">{t("declined", { count: declinedCount })}</span>
-          <Button variant="ghost" size="sm" onClick={onForgetDeclined}>
+          <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={onForgetDeclined}>
             {t("forgetDeclined")}
           </Button>
         </p>
@@ -230,12 +265,13 @@ export function FindDocumentsDialog({
 
       {nothingToPick ? null : (
         <div className="mt-4 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="ghost" className="atlas-touch-floor" onClick={onClose} disabled={busy}>
             {t("cancel")}
           </Button>
           <Button
             data-testid="find-documents-add"
             variant="primary"
+            className="atlas-touch-floor"
             disabled={busy || selected.length === 0}
             onClick={() => onAdd(selected, declined)}
           >
