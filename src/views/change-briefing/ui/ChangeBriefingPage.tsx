@@ -14,6 +14,7 @@ import { Input } from '@/shared/ui/fields/input';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { PAGE_TITLE } from '@/shared/ui/tokens/page-frame';
 import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, type BriefingPeriod } from '../model/briefing-model';
 import { useBriefing } from '../model/use-briefing';
 import { BriefingPatch } from './BriefingPatch';
@@ -140,7 +141,7 @@ export function ChangeBriefingPage() {
     <div className="mx-auto max-w-screen-xl space-y-8 px-4 pt-6 md:px-8 md:pt-8">
       <header className="flex flex-wrap items-end justify-between gap-5 border-b border-[color:var(--color-border-soft)] pb-5">
         <div className="min-w-0 space-y-2">
-          <div className="flex flex-wrap items-center gap-3"><h1 tabIndex={-1} className="text-title font-[var(--font-weight-strong)]">{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span></div>
+          <div className="flex flex-wrap items-center gap-3"><h1 tabIndex={-1} className={native ? "text-title font-[var(--font-weight-strong)]" : PAGE_TITLE}>{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span></div>
           {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={root ? 'ghost' : 'primary'} size="sm" aria-label={git(root ? 'changeRepository' : 'chooseRepository')} onClick={() => { void pickTauriSourceDirectory(git('chooseRepository')).then(path => { if (path) { setSourceChoice(path); setMode('summary'); refresh(); } }); }}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>}
           {!root && <p className="max-w-prose text-body text-[color:var(--color-text-secondary)]">{git('sourcePrompt')}</p>}
         </div>
