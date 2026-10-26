@@ -242,11 +242,12 @@ describe("Select exit frame", () => {
 describe("Select inside a dialog", () => {
   it("dismisses choices before its dialog and returns focus to the trigger", () => {
     const close = vi.fn();
-    render(<Dialog open onClose={close} ariaLabel="Read coverage"><Harness /></Dialog>);
+    render(<Dialog open onClose={close} ariaLabel="Read coverage"><button>Close coverage</button><Harness /></Dialog>);
     const trigger = screen.getByRole("combobox");
     fireEvent.click(trigger);
     const list = screen.getByRole("listbox");
     expect(screen.getByRole("dialog").contains(list)).toBe(true);
+    expect(trigger).toHaveFocus();
     fireEvent.keyDown(trigger, { key: "Escape" });
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();

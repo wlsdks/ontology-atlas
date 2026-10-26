@@ -166,6 +166,7 @@ export function Select({
 
   const openList = useCallback(() => {
     if (disabled) return;
+    triggerRef.current?.focus({ preventScroll: true });
     setPortalTarget(triggerRef.current?.closest<HTMLElement>('[role="dialog"],[role="alertdialog"]') ?? null);
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     // Measured on open, not after mount, which would draw one frame at (0,0) and jump.
