@@ -1,60 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { waitForAnimationsDone, waitForBoxStill } from '../settle';
-import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
-
-async function enter(page: import('@playwright/test').Page) {
-  await installBriefingRuntime(page);
-  await page.addInitScript(() => localStorage.setItem('ontology-atlas:local-endpoint', JSON.stringify({ baseUrl: 'http://localhost:11434', model: 'fixture-text-model' })));
-  await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
-  await expect(page.getByTestId('briefing-narrative')).toBeVisible();
-}
-async function prepare(page: import('@playwright/test').Page) {
-  await readPrs(page);
-  await expectCoverage(page, '1 PR descriptions read');
-  await reviewSummary(page);
-  await expect(page.getByRole('dialog')).toBeVisible();
-}
-async function calls(page: import('@playwright/test').Page, command: string) {
-  return page.evaluate(name => (window as unknown as { __briefingProbe: { calls: { command: string; args: Record<string, unknown> }[] } }).__briefingProbe.calls.filter(call => call.command === name), command);
-}
-
-async function reviewSummary(page: import('@playwright/test').Page) {
-  await page.getByTestId('briefing-summary-mode').click();
-  await page.getByRole('button', { name: /^(Create summary|Rebuild summary)$/, exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Explain this period', exact: true })).toBeVisible();
-}
-async function openCoverage(page: import('@playwright/test').Page) {
-  if (!await page.getByTestId('briefing-coverage-dialog').isVisible()) await page.getByTestId('briefing-coverage').click();
-  return page.getByTestId('briefing-coverage-dialog');
-}
-async function expectCoverage(page: import('@playwright/test').Page, text: string, absent = false) {
-  if (await page.getByTestId('briefing-settings-dialog').isVisible()) await page.getByRole('button', { name: 'Close settings', exact: true }).click();
-  if (absent && !await page.getByTestId('briefing-coverage').count()) {
-    await expect(page.getByTestId('briefing-narrative')).toHaveCount(0); return;
-  }
-  const dialog = await openCoverage(page);
-  if (absent) await expect(dialog).not.toContainText(text); else await expect(dialog).toContainText(text);
-  await dialog.getByRole('button', { name: 'Close coverage', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-}
-async function readPrs(page: import('@playwright/test').Page) {
-  const summary = await page.getByTestId('briefing-summary-mode').getAttribute('aria-checked') === 'true';
-  const read = page.getByRole('button', { name: /^(Read GitHub PR descriptions|Read latest PR descriptions)$/ });
-  if (!await read.isVisible()) {
-    await page.getByTestId('briefing-originals').click();
-    const list = page.getByRole('button', { name: 'Source list', exact: true });
-    if (await list.isVisible()) await list.click();
-  }
-  await read.click();
-  if (summary) await page.getByTestId('briefing-summary-mode').click();
-}
-async function chooseModel(page: import('@playwright/test').Page) {
-  const link = page.getByRole('link', { name: 'Choose model', exact: true });
-  if (!await link.isVisible()) await page.getByTestId('briefing-settings').click();
-  await link.click();
-}
+import { setBriefingMode } from './change-briefing-fixture';
+import { calls, chooseModel, enter, expectCoverage, openCoverage, prepare, readPrs, reviewSummary } from './git-pr-briefing-helpers';
 
 test('keeps reading modes exclusive and loads further originals into keyboard focus', async ({ page }) => {
   await enter(page);
@@ -789,5 +736,32 @@ for (const [triggerId, dialogId] of [['briefing-coverage', 'briefing-coverage-di
     await expect(trigger).toBeFocused();
     expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
     expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
+  });
+}
+
+for (const [triggerId, dialogId, closeName] of [
+  ['briefing-coverage', 'briefing-coverage-dialog', 'Close coverage'],
+  ['briefing-settings', 'briefing-settings-dialog', 'Close settings'],
+]) {
+  test(`keeps ${dialogId} in focus when the explanation finishes`, async ({ page }) => {
+    await enter(page); await prepare(page);
+    await page.evaluate(() => { (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true; });
+    await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+    await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
+    const trigger = page.getByTestId(triggerId);
+    await trigger.click();
+    const dialog = page.getByTestId(dialogId);
+    const close = dialog.getByRole('button', { name: closeName, exact: true });
+    await expect(close).toBeFocused();
+    await page.evaluate(() => { (window as unknown as { __briefingProbe: { release: () => void } }).__briefingProbe.release(); });
+    await expect(page.getByTestId('briefing-theme')).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0);
+    await expect(dialog).toBeVisible();
+    await waitForBoxStill(dialog);
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
   });
 }

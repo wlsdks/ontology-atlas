@@ -82,7 +82,16 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const error = failure?.code;
   const displaySources = sources;
   useEffect(() => {
-    if (current?.overview) requestAnimationFrame(() => { if (sourceRef.current && !sourceRef.current.closest('[hidden]')) return; if (resultRef.current?.closest('[hidden]')) return; resultRef.current?.focus(); resultRef.current?.scrollIntoView({ block: 'start' }); });
+    if (!current?.overview) return;
+    requestAnimationFrame(() => {
+      const modalOpen = Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"]'))
+        .some(dialog => getComputedStyle(dialog).pointerEvents !== 'none');
+      if (modalOpen) return;
+      if (sourceRef.current && !sourceRef.current.closest('[hidden]')) return;
+      if (resultRef.current?.closest('[hidden]')) return;
+      resultRef.current?.focus();
+      resultRef.current?.scrollIntoView({ block: 'start' });
+    });
   }, [current?.overview]);
   useEffect(() => {
     let alive = true;
