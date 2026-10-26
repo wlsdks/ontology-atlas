@@ -77,7 +77,7 @@ Lenses: moment, evidence, boundaries, smallest-slice, spec. Keep `decisions: [b1
    Accept only same-repository merged PRs whose locally available merge SHA is introduced between a selected first-parent
    commit and its parent. An older ancestor or number mention is insufficient; unknown association remains unknown.
    Support #2925's wrapper: its merge SHA is the second parent of `1003757fd`. Local evidence never depends on PR availability.
-4. When sources are ready, Atlas shows the exact text preview, connected model/address and byte/record counts beside Create explanation.
+4. When sources are ready, Atlas shows source-message/PR counts, the connected model/address, excluded content and the request total before Create explanation. The reading-first preview exposes exact bytes and sequential processing under Request details, and unchanged complete records under Review text to send. Any extra overview transfer and unsendable records remain visible before the start action.
    Use the existing local Models connection; no API-key setup or Codex-subscription claim. One click sends one text-only request:
    complete included messages, matched PR descriptions, source IDs and coverage metadata.
    Exclude code, ontology, app-added absolute paths, chat history, credentials and tool/MCP definitions.

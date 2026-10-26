@@ -49,7 +49,7 @@ The first slice changes presentation and navigation, preserving source selection
 1. When the person opens Changes, Atlas keeps repository and calendar controls in a compact top toolbar. On a wide desktop, title, repository and period occupy one band; narrow windows wrap in reading order. The exact applied range appears once. Settings stays available without a usable repository.
 2. When the person selects a repository/period, Atlas reads the same local history and eligible saved PR copies. Summary, Sources and Code are visible, mutually exclusive modes. Before generation, Summary offers one short invitation, current source counts and direct access to Sources. Switching modes sends no HTTP or model request.
 3. When no eligible PR description is available, Atlas offers the existing explicit PR read first, with commit-only explanation as the named alternative. When PR descriptions are ready, creating the explanation is primary. Saved copies retain visible unchecked freshness. A missing model offers model choice while originals/code remain usable.
-4. When the person starts an explanation, Atlas shows the existing whole-record/model/destination/workload preview and requires its existing start action. During work it shows current stage, completed parts and Stop. It does not call an active request unsent, imply full delivery, or present a final partial-summary warning before any accepted explanation exists.
+4. When the person starts an explanation, Atlas shows a transfer preview led by commit-message/PR counts and the model/address. The initial view states request totals, excluded content, session lifetime and any additional overview transfer. Request details exposes exact bytes and sequential-part mechanics; Review text to send exposes unchanged originals. These two inspections are exclusive and reset for a new preview. Unsendable originals remain visible. The existing start action is still required. During work it shows current stage, completed parts and Stop. It does not call an active request unsent, imply full delivery, or present a final partial-summary warning before any accepted explanation exists.
 5. When a supported explanation becomes available, Atlas presents one dominant reading column: thematic sections, concise change text, optional reason, recorded limits and author checks. It uses the existing short reason label, not a repeated question heading. It does not recreate three equal boxed cards or empty headings for missing fields.
 6. When the person follows a citation, Atlas enters Sources at that exact passage, retaining source version and origin. Back to summary restores the originating claim and scroll position. A source opened from the list returns to the exact list row. Mode changes retain each mode's last position; initial Sources entry opens its list, and an original reader always offers Source list.
 7. When the model is wrong, evidence is missing, work stops or an input changes, Atlas keeps the appropriate compact partial/stale/stopped/failed state visible beside the modes, with its recovery action. Validated parts, originals and attribution remain available. Completion never implies full coverage or verified behavior.
@@ -76,7 +76,7 @@ Settings, Coverage and previews use existing Dialog focus/Escape behavior; no ne
 | Local records, no PR descriptions | `webBody`; existing get-app entry | `summaryEmptyTitle`, `summaryEmptyBody`; `sourcesMode`, `readPrs` or `analyseCommits` |
 | Saved PR originals reopened | `webBody`; existing get-app entry | `savedPrStatus`; Sources or `analyse`, with explicit `prRefresh` available |
 | Missing model | `webBody`; existing get-app entry | `summaryModelMissing`; `chooseModel` or `sourcesMode` / `codeMode` |
-| Source/model preview | `webBody`; existing get-app entry | Existing `periodPlanTitle`, `transfer`, `periodPlan`; review, close or `periodStart` |
+| Source/model preview | `webBody`; existing get-app entry | `periodPlanTitle`, `previewSourceCount`, model/address and request scope; optional original/details inspection, close or `periodStart` |
 | Active reading / overview | `webBody`; existing get-app entry | `periodProgress` / `periodSynthesizing`, `stop`; read accepted parts or originals |
 | Stopping / stopped | `webBody`; existing get-app entry | `periodStopping`, then `summaryStopped`; `periodContinue`; exact progress in Coverage |
 | Part / overview failure | `webBody`; existing get-app entry | `summaryFailed`, `periodPartFailed` / `periodOverviewFailed`; retry stage or read completed parts |
@@ -132,6 +132,14 @@ Existing permission, transfer, specific failure, calendar and storage strings re
 | `sourceListTitle` | Sources mode heading | Commit and PR originals |
 | `sourceList` | Original reader navigation | Source list |
 | `backSummary` | Citation reader return action | Back to summary |
+| `previewSourceCount` | Preview scope | {commits, plural, one {# commit message} other {# commit messages}} · {prs, plural, one {# PR description} other {# PR descriptions}} |
+| `previewModel` | Preview model label | Model |
+| `previewDestination` | Preview destination label | Destination |
+| `previewSourceScope` | Visible transfer scope | Source IDs and dates are included. Code and ontology documents are excluded. |
+| `previewSingleRequest` | Zero/single-part workload | Model requests: {count} |
+| `previewMultipleRequests` | Multipart workload ceiling | Up to {count} model requests |
+| `previewOverview` | Visible additional transfer | Reads in parts, then sends up to {bytes} bytes of selected originals for the overview. |
+| `previewDetails` | Exact-byte and part inspection | Request details |
 
 ## Edge cases
 
