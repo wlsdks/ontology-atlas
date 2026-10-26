@@ -7,6 +7,8 @@ const packet = narrativePacket([original, source('commit:release', 'Publish rele
 const passage = sourcePassages(original);
 const claim = (text: string, index: number) => ({ text, evidence: [passage[index].id], inferred: false });
 const answer = () => ({ themes: [{ title: 'Readable map', change: claim('Return controls stay visible.', 1), reason: claim('They were hidden by panels.', 1), checks: [claim('The author reports 131 passing tests.', 2)], limits: [claim('First frames remain above the bar: 53/57 ms versus 50 ms.', 3)] }] });
+const koreanAnswer = () => ({ themes: [{ title: '지도 탐색', change: claim('돌아가기 버튼이 보이도록 바꿨어요.', 1), reason: claim('패널에 가려진 탐색을 개선해요.', 1), checks: [claim('작성자는 테스트 131개 통과를 기록했어요.', 2)], limits: [claim('첫 프레임 53/57ms는 50ms 기준을 넘어요.', 3)] }] });
+const response = (value: unknown) => JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(value) } }] });
 
 describe('source-linked briefing packets', () => {
   it('retains original Unicode, whitespace and hostile text as quoted source data', () => {
@@ -45,16 +47,32 @@ describe('source-linked briefing packets', () => {
     expect(result.themes[0].limits).toEqual([]);
   });
   it('rejects untranslated English claims in a Korean explanation while preserving Korean claims', () => {
-    const response = (value: unknown) => JSON.stringify({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(value) } }] });
     expect(() => narrativeResponse(response(answer()), packet, 'ko')).toThrow('language mismatch');
-    const korean = answer();
-    korean.themes[0].title = '지도 탐색';
-    korean.themes[0].change.text = '돌아가기 버튼이 보이도록 바꿨어요.';
-    korean.themes[0].reason.text = '패널에 가려진 탐색을 개선해요.';
-    korean.themes[0].checks[0].text = '작성자는 테스트 131개 통과를 기록했어요.';
-    korean.themes[0].limits[0].text = '첫 프레임 53/57ms는 50ms 기준을 넘어요.';
-    expect(narrativeResponse(response(korean), packet, 'ko').themes).toHaveLength(1);
+    expect(narrativeResponse(response(koreanAnswer()), packet, 'ko').themes).toHaveLength(1);
     expect(narrativeResponse(response(answer()), packet, 'en').themes).toHaveLength(1);
+  });
+  it.each(['title', 'change', 'reason', 'checks', 'limits'] as const)('rejects invented foreign-script words in Korean %s', field => {
+    for (const text of ['陳舊한 브라우저 설정', '세 가지的陈舊한 설정', 'windowing 문제를 修正했습니다.', 'カナ를 처리했어요.', 'かな를 처리했어요.', '𠀀를 처리했어요.']) {
+      const value = koreanAnswer();
+      const theme = value.themes[0];
+      if (field === 'title') theme.title = text;
+      else if (field === 'checks' || field === 'limits') theme[field][0].text = text;
+      else theme[field].text = text;
+      expect(() => narrativeResponse(response(value), packet, 'ko')).toThrow('language mismatch');
+      expect(narrativeResponse(response(value), packet, 'ja').themes).toHaveLength(1);
+    }
+  });
+  it('preserves literal foreign-script source names only from the cited sent passages', () => {
+    const named = source('pr:names', 'Rename src/東京/かな/カナ/𠀀.ts without changing its behavior.\n\nUnrelated: 大阪.');
+    const input = narrativePacket([original, named], 'day', 16000);
+    const evidence = [sourcePassages(named)[0].id];
+    const value = { themes: [{ title: '東京 경로', change: { text: 'src/東京/かな/カナ/𠀀.ts 경로를 바꿨어요.', evidence, inferred: false }, reason: null, checks: [], limits: [] }] };
+    expect(narrativeResponse(response(value), input, 'ko').themes).toEqual(value.themes);
+    value.themes[0].change.text = '大阪 경로를 바꿨어요.';
+    expect(() => narrativeResponse(response(value), input, 'ko')).toThrow('language mismatch');
+    value.themes[0].change.text = '東京 경로를 바꿨어요.';
+    value.themes[0].change.evidence = [passage[1].id];
+    expect(() => narrativeResponse(response(value), input, 'ko')).toThrow('language mismatch');
   });
   it('rejects invented citations, missing attribution and tool-bearing or truncated answers', () => {
     const invalid = answer(); invalid.themes[0].change.evidence = ['pr:other:p0'];

@@ -78,7 +78,14 @@ export function narrativeResponse(body: string, packet: NarrativePacket, locale 
     if (choice?.finish_reason !== 'stop') throw new Error(`invalid-analysis: model finish ${String(choice?.finish_reason)}`);
     if (!choice.message || (choice.message.tool_calls != null && (!Array.isArray(choice.message.tool_calls) || choice.message.tool_calls.length > 0)) || typeof choice.message.content !== 'string') throw new Error('invalid-analysis: non-text response');
     const result = parseNarrative(choice.message.content, packet);
-    if (locale === 'ko' && result.themes.some(theme => [theme.change, ...(theme.reason ? [theme.reason] : [])].some(claim => !/[\uac00-\ud7a3]/u.test(claim.text)))) throw new Error('invalid-analysis: language mismatch');
+    if (locale === 'ko') {
+      const passages = new Map(packet.sources.flatMap(source => sourcePassages(source).filter(passage => packet.evidenceIds.includes(passage.id)).map(passage => [passage.id, passage.text] as const)));
+      const hasUncitedScript = (text: string, evidence: string[]) => (text.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]+/gu) ?? []).some(word => !evidence.some(id => passages.get(id)?.includes(word)));
+      if (result.themes.some(theme => {
+        const claims = [theme.change, ...(theme.reason ? [theme.reason] : []), ...theme.checks, ...theme.limits];
+        return hasUncitedScript(theme.title, claims.flatMap(claim => claim.evidence)) || claims.some(claim => hasUncitedScript(claim.text, claim.evidence)) || [theme.change, ...(theme.reason ? [theme.reason] : [])].some(claim => !/[\uac00-\ud7a3]/u.test(claim.text));
+      })) throw new Error('invalid-analysis: language mismatch');
+    }
     return result;
   } catch (error) { if (error instanceof Error && error.message.startsWith('invalid-analysis:')) throw error; throw new Error('invalid-analysis: invalid JSON'); }
 }
