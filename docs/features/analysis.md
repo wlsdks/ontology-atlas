@@ -69,6 +69,17 @@ gaps scope is an exclusive keyboard-operable control that names each scope's
 count and dims the cards outside it. The share of capabilities with an anchor
 lives under the count-basis disclosure.
 
+A separate Source state filter selects All sources, Source changed, Path missing
+or Not checked. Its counts cover recorded capabilities, not implementation
+elements. It combines with name search and the recorded-gap scope; their
+intersection is counted beside the board. Cards outside the scope recede while
+the selected claim and its document remain open. A state filter prioritizes
+matches within each responsibility's initial twelve cards, with the selected
+claim retained and explicit continuation for the rest. Missing source
+paths take precedence over changed paths, following the existing evidence
+verdict. Unavailable, unmeasured, omitted and folder-only evidence stays Not
+checked; zero changed paths is not a claim of current or accepted meaning.
+
 The selected claim links to its declaring document. A local, documented claim
 also links to the existing Map meaning editor and its typed review boundary.
 Analysis does not accept meaning or write proposed corrections itself.

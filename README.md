@@ -92,7 +92,7 @@ Your agent reaches the folder two ways:
 
 A project's source-path repair opens the affected concept and recorded relative path; stale or missing targets require remeasurement.
 
-Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning.
+Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning. Analysis filters capabilities by changed, missing or unchecked source evidence while keeping the selected claim open.
 
 Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
 

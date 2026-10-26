@@ -76,6 +76,8 @@ or Belongs to domain. Directed groups say Depends on only when their complete
 relation types support that reading; mixed types remain neutrally labelled.
 Saved analysis history separates list failures from selected-artifact failures,
 ignores stale reads, and presents a localized remedy with optional technical details.
+Analysis can narrow capabilities by source changes, missing paths or unchecked
+evidence alongside name search and recorded gaps, preserving the selected claim.
 
 Primary navigation and the G M shortcut restore the selected map concept after
 visiting another screen. The Concepts search also survives panel and route
