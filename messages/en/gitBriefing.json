@@ -109,7 +109,7 @@
   "periodReadingBytes": "Reading requests send {bytes} bytes in total.",
   "periodOverviewPlan": "One final request will use up to {bytes} bytes of selected original passages to create the overview.",
   "periodSinglePart": "This period fits in one reading request. Its explanation will be the overview.",
-  "periodSessionOnly": "Completed parts stay available during this app session. Closing the app clears this progress.",
+  "periodSessionOnly": "Generated explanations and progress clear when you close Atlas.",
   "periodUnsendable": "{count} source records cannot be sent. Read their reasons below; the other records remain in the plan.",
   "periodStart": "Create period explanation",
   "periodProgress": "Reading part {current} of {parts} · {completed} completed",
@@ -206,5 +206,13 @@
   "sourceList": "Source list",
   "backSummary": "Back to summary",
   "sourceInventory": "Commits {commits} · PRs {prs}",
-  "rebuildSummary": "Rebuild summary"
+  "rebuildSummary": "Rebuild summary",
+  "previewSourceCount": "{commits, plural, one {# commit message} other {# commit messages}} · {prs, plural, one {# PR description} other {# PR descriptions}}",
+  "previewModel": "Model",
+  "previewDestination": "Destination",
+  "previewSourceScope": "Source IDs and dates are included. Code and ontology documents are excluded.",
+  "previewSingleRequest": "Model requests: {count}",
+  "previewMultipleRequests": "Up to {count} model requests",
+  "previewOverview": "Reads in parts, then sends up to {bytes} bytes of selected originals for the overview.",
+  "previewDetails": "Request details"
 }
