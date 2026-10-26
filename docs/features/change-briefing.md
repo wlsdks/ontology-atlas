@@ -28,6 +28,11 @@ the overview restores the entry focus. While reading a long comparison, a sticky
 header keeps its revision basis and group-scoped previous/next file controls
 visible. The file chooser returns to the selected file, including beyond the
 first 40 rows. Paths outside the selected group have no group-sequence controls.
+The touched-file chooser searches every literal path in the selected group,
+including files beyond the first rendered batch. Its independently scrolling
+list keeps long collections from expanding the whole reading page. Filtering
+does not change the group, comparison scope or previous/next sequence; reopening
+the chooser clears its filter and reveals the current file.
 
 Current capability and listed-element implementation anchors group touched
 paths. A path can belong to multiple groups, so group totals are not additive.

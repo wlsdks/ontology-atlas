@@ -85,7 +85,7 @@ Settings, Coverage and previews use existing Dialog focus/Escape behavior; no ne
 | Partial accepted explanation | `webBody`; existing get-app entry | `summaryPartial`; `scopeDetails` or Sources; recoverable request action stays visible |
 | Stale prior result | `webBody`; existing get-app entry | `summaryStale`; prior report and `periodNewPlan`; `periodStale` details in Coverage |
 | Sources list / original | `webBody`; existing get-app entry | `sourceListTitle`, source versions; read a row, then `backSources` or `backSummary`; `sourceList` always reaches the list |
-| Code reading | `webBody`; existing get-app entry | `codeMode`; existing area/file/comparison selection and return controls; other panels absent |
+| Code reading | `webBody`; existing get-app entry | `codeMode`; area/file/comparison selection and return controls; bounded touched-file collection with local full-path search, empty matches and selected-file recovery; other panels absent |
 | Coverage open | `webBody`; existing get-app entry | `scopeTitle`, section headings; inspect counts/parts, `closeScope` |
 | Settings open | `webBody`; existing get-app entry | `settingsTitle`, `settingsModel`, `settingsPrs`, existing saved-copy controls; `closeSettings` |
 | PR unavailable / partial / rate limited | `webBody`; existing get-app entry | `prUnavailable` / `prPartial` / `prRateLimited` and retry time; local reading continues, retry explicit |
@@ -109,6 +109,9 @@ Existing permission, transfer, specific failure, calendar and storage strings re
 | `summaryMode` | Mode control | Summary |
 | `sourcesMode` | Mode control | Sources |
 | `codeMode` | Mode control | Code |
+| `changeBriefing.findFile` | Local touched-file filter | Find a changed file |
+| `changeBriefing.fileMatches` | Matching paths in the selected group | {count} of {total} files |
+| `changeBriefing.noMatchingFiles` | Empty filter result | No matching files. Change or clear the search. |
 | `summaryEmptyTitle` | Summary before generation | Read this period |
 | `summaryEmptyBody` | Summary before generation | Read the originals, or create a summary. |
 | `summaryModelMissing` | Summary without a local model | Choose a local model to create a summary. You can read the originals now. |
@@ -158,7 +161,7 @@ Existing permission, transfer, specific failure, calendar and storage strings re
 - Source/model/backend/transport/storage/security changes, new providers or automatic HTTP/model requests: the reading redesign retains these boundaries.
 - Reclassifying author checks/limits or independently verifying behavior: the observed semantic gap needs a separate measured slice.
 - New routes, ontology construction/acceptance, persisted runs, export, notifications or background collection: none restores this reading task.
-- Rebuilding Code's internal area/file/comparison controls: preserve that ability inside its exclusive mode.
+- Changing Code's grouping or comparison authority: preserve those contracts. The observed long-file-list recovery adds local path filtering and a bounded file collection inside its existing chooser.
 
 ## Acceptance criteria
 
@@ -170,6 +173,7 @@ Existing permission, transfer, specific failure, calendar and storage strings re
 6. Given the actual PR `Test plan` and result that omitted checks, when reading the reconstruction, then a native source audit still reaches the original and exposes the explanation gap without a health/verification claim. The redraw changes no author extraction, model prompt, source validation or accepted evidence.
 7. Given every state, long Hangul/paths and the recorded 28-commit/39-PR period, when running the routed full surface audit, full responsive matrix, changed journey walk and computer-use loop, then `change-briefing-layout.spec.ts`, the relevant design audit and native captures prove readable controls, focus/Escape restoration and bounded scrolling. Web proof separately retains `webTitle` / `webBody` and its capability boundary.
 8. Given implementation and locale integration, when the lead runs `pnpm checks:changed -- --run`, then every recommendation completes and the reviewed app comes from that source. This spec/catalogue change alone establishes no runtime, visual, semantic or owner-comprehension acceptance.
+9. Given an area with more than 40 changed paths, when finding a later file by its path, reading it and reopening the chooser, then `briefing-file-navigation.spec.ts` proves full-group search, unchanged file-sequence position, cleared search and focused current-file recovery. The full width matrix measures the bounded collection; native use verifies wheel and keyboard access without a model request.
 
 ## Risks
 
