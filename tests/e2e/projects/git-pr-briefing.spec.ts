@@ -67,12 +67,19 @@ test('keeps reading modes exclusive and loads further originals into keyboard fo
   await expect(page.getByTestId('briefing-summary')).not.toBeVisible();
   await expect(page.getByTestId('briefing-ready')).not.toBeVisible();
   await sources.getByRole('button', { name: /Read \d+ more sources/ }).click();
-  const next = sources.locator('[data-control="row"]').nth(40);
-  await expect(next).toBeFocused();
+  await expect(sources.locator('[data-control="row"]').nth(40)).toBeFocused();
+  const next = sources.locator('[data-control="row"]').nth(44);
+  const before = await next.evaluate(element => {
+    const main = element.closest('main')!;
+    main.scrollTop += element.getBoundingClientRect().top - 300;
+    (element as HTMLElement).focus({ preventScroll: true });
+    return { scroll: main.scrollTop, top: element.getBoundingClientRect().top };
+  });
   await next.press('Enter');
   await expect(page.getByTestId('briefing-original')).toBeFocused();
   await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to source list', exact: true }).first().click();
   await expect(next).toBeFocused();
+  await expect.poll(() => next.evaluate(element => ({ scroll: element.closest('main')!.scrollTop, top: element.getBoundingClientRect().top }))).toEqual(before);
   await page.getByTestId('briefing-source-browser').click();
   await expect(sources).not.toBeVisible();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
@@ -117,6 +124,15 @@ test('anchors modal choices during entry motion and dismisses them before the di
   await expect(page.getByRole('listbox')).toHaveCount(0);
   await expect(page.getByTestId('briefing-coverage-dialog')).toBeVisible();
   await expect(trigger).toBeFocused();
+  await page.evaluate(() => document.addEventListener('mousedown', event => {
+    if ((event.target as Element).closest('[role="combobox"]')) event.preventDefault();
+  }));
+  await page.getByRole('button', { name: 'Close coverage', exact: true }).focus();
+  await trigger.click();
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.getByTestId('briefing-coverage-dialog')).toBeVisible();
   await trigger.press('Escape');
   await expect(page.getByTestId('briefing-coverage-dialog')).toHaveCount(0);
 });

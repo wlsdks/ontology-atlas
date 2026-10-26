@@ -63,6 +63,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const resultRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLElement>(null);
   const citationRef = useRef<HTMLButtonElement | null>(null);
+  const readingReturn = useRef<{ main: HTMLElement; scrollTop: number } | null>(null);
   const [reader, setReader] = useState<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean } | null>(null);
   const [visibleSources, setVisibleSources] = useState(40);
   const [scopeOpen, setScopeOpen] = useState(false);
@@ -122,7 +123,8 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     onMode(fromList ? 'sources' : 'summary');
     requestAnimationFrame(() => {
       const origin = citationRef.current;
-      if (origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus();
+      if (readingReturn.current?.main.isConnected) readingReturn.current.main.scrollTop = readingReturn.current.scrollTop;
+      if (origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
       else (fromList ? originalsHeading.current : resultRef.current)?.focus();
     });
   }
@@ -138,6 +140,8 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   function openSource(source: NarrativeSource, passage: string | null, button: HTMLButtonElement, fromList = false) {
     if (current && !current.overview) api.select(current.index);
     citationRef.current = button;
+    const main = button.closest('main');
+    readingReturn.current = main ? { main, scrollTop: main.scrollTop } : null;
     onMode('sources');
     setReader({ source, passage, fromList, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
     requestAnimationFrame(() => { sourceRef.current?.focus(); sourceRef.current?.scrollIntoView({ block: 'start' }); });
