@@ -35,9 +35,9 @@ function useLeaving<T>(value: T) {
   return state.leaving;
 }
 
-export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers, matches, onlyGaps, vaultKey, onSelectEdge, onSelectClaim }: {
+export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers, matches, searching, onlyGaps, vaultKey, onSelectEdge, onSelectClaim }: {
   board: AnalysisBoard; mode: Question; selectedEdge: string | null; selectedClaim: string | null;
-  markers: ReadonlyMap<string, BoardMarker>; matches: ReadonlySet<string> | null; onlyGaps: boolean; vaultKey: string;
+  markers: ReadonlyMap<string, BoardMarker>; matches: ReadonlySet<string> | null; searching: boolean; onlyGaps: boolean; vaultKey: string;
   onSelectEdge: (edgeId: string) => void; onSelectClaim: (claimId: string) => void;
 }) {
   const t = useTranslations('ontologyPages.insights.analysis');
@@ -61,8 +61,8 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
   }, [board.links]);
   const shown = board.lanes.map(lane => {
     const pinned = relationships ? lane.claims.find(claim => claim.node.id === selected?.from || claim.node.id === selected?.to)?.node.id ?? null : selectedClaim;
-    if (matches || openLanes.has(lane.id) || lane.claims.length <= LANE_LIMIT) return lane.claims;
-    return busiestInOrder(lane.claims, claim => linksOf.get(claim.node.id)?.length ?? 0, lane.claims.find(claim => claim.node.id === pinned) ?? null, LANE_LIMIT);
+    if (searching || openLanes.has(lane.id) || lane.claims.length <= LANE_LIMIT) return lane.claims;
+    return busiestInOrder(lane.claims, claim => matches ? Number(matches.has(claim.node.id)) : linksOf.get(claim.node.id)?.length ?? 0, lane.claims.find(claim => claim.node.id === pinned) ?? null, LANE_LIMIT);
   });
   const shownKey = shown.map(claims => claims.map(claim => claim.node.id).join()).join('|');
   const liveIds = new Set(shown.flat().flatMap(claim => !relationships || linksOf.has(claim.node.id) ? [claim.node.id] : []));
@@ -221,7 +221,7 @@ export function ProjectBoard({ board, mode, selectedEdge, selectedClaim, markers
           {lane.claims.flatMap((claim, at) => [...passesBefore(at), ...visible.has(claim) ? [card(claim)] : []])}
           {passesBefore(lane.claims.length)}
           {!cards.length ? <li className="self-center px-1 text-label text-[color:var(--color-text-tertiary)]">{t('laneEmpty')}</li> : null}
-          {hidden > 0 || openLanes.has(lane.id) && lane.claims.length > LANE_LIMIT && !matches ? <li><Button variant="ghost" size="sm" data-board-node={`more:${lane.id}`} className="atlas-touch-floor"
+          {hidden > 0 || openLanes.has(lane.id) && lane.claims.length > LANE_LIMIT && !searching ? <li><Button variant="ghost" size="sm" data-board-node={`more:${lane.id}`} className="atlas-touch-floor"
             onClick={() => setOpenLanes(current => { const next = new Set(current); if (!next.delete(lane.id)) next.add(lane.id); return next; })}>
             {hidden > 0 ? t('showMoreItems', { count: hidden }) : t('showLessItems')}
           </Button></li> : null}
