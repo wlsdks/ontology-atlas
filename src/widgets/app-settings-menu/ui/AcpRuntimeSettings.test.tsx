@@ -667,6 +667,20 @@ describe('runtime rows: marks, columns and the result block', () => {
   });
 });
 
+describe('pending chat setup guidance', () => {
+  it('names only chat-capable tools still waiting for setup', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, state: 'login-needed' }),
+      makeRuntime({ id: 'codex-acp', isolated: true }),
+      makeRuntime({ id: 'gemini' }),
+      makeRuntime({ id: 'cursor', state: 'cli-missing' }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+    const note = await screen.findByTestId('app-settings-runtimes-page-note');
+    expect(note).toHaveTextContent(JSON.stringify({ names: 'claude-acp' }));
+  });
+});
+
 describe('the other-tools shelf', () => {
   it('puts what a person can make ready first — a sign-in, then installs — and says the undetectable state once', async () => {
     bridge.detect.mockResolvedValue([

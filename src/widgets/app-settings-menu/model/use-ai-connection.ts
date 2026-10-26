@@ -24,8 +24,10 @@ export interface AiConnectionState {
   applyStatus: (provider: SecretProvider, next: SecretStatus) => void;
   /** The experimental Jev key (a separate Keychain account, never one of the three model vendors). */
   jevStatus: JevSecretStatus | null;
-  /** Whether the Keychain has answered; until then a key row draws no status, so none flips. */
+  /** Whether all model-key lookups have answered. */
   keysRead: boolean;
+  keyReads: Record<SecretProvider, boolean>;
+  jevRead: boolean;
   applyJevStatus: (next: JevSecretStatus) => void;
   /** The newest lines of the vault's sent log, oldest first. */
   auditEntries: LlmAuditEntry[];
@@ -56,7 +58,9 @@ export function useAiConnection({
   const [statuses, setStatuses] =
     useState<Record<SecretProvider, SecretStatus | null>>(EMPTY_STATUSES);
   const [jevStatus, setJevStatus] = useState<JevSecretStatus | null>(null);
-  const [keysRead, setKeysRead] = useState(false);
+  const [keyReads, setKeyReads] = useState<Record<SecretProvider, boolean>>({ anthropic: false, openai: false, gemini: false });
+  const [jevRead, setJevRead] = useState(false);
+  const keysRead = SECRET_PROVIDERS.every((provider) => keyReads[provider]);
   const [auditEntries, setAuditEntries] = useState<LlmAuditEntry[]>([]);
   const [auditTotal, setAuditTotal] = useState<number | null>(null);
   const [auditError, setAuditError] = useState<AuditReadFailure | null>(null);
@@ -69,33 +73,31 @@ export function useAiConnection({
     let cancelled = false;
     const initialEpochs = { ...statusEpochs.current };
     const initialJevEpoch = jevEpoch.current;
+    for (const provider of SECRET_PROVIDERS) {
+      void (async () => {
+        let status: SecretStatus | null = null;
+        try {
+          status = await secretStatus(provider);
+        } catch {
+          status = null;
+        }
+        if (cancelled) return;
+        setStatuses((prev) => statusEpochs.current[provider] === initialEpochs[provider]
+          ? { ...prev, [provider]: status }
+          : prev);
+        setKeyReads((prev) => ({ ...prev, [provider]: true }));
+      })();
+    }
     void (async () => {
-      const settled = await Promise.all(
-        SECRET_PROVIDERS.map(async (provider) => {
-          try {
-            return [provider, await secretStatus(provider)] as const;
-          } catch {
-            // A failed lookup shows as "none": the next action, entering a key, is the same.
-            return [provider, null] as const;
-          }
-        }),
-      );
-      let jev: JevSecretStatus | null = null;
+      let status: JevSecretStatus | null = null;
       try {
-        jev = await jevSecretStatus();
+        status = await jevSecretStatus();
       } catch {
-        jev = null;
+        status = null;
       }
       if (cancelled) return;
-      setStatuses((prev) => {
-        const next = { ...prev };
-        for (const [provider, status] of settled) {
-          if (statusEpochs.current[provider] === initialEpochs[provider]) next[provider] = status;
-        }
-        return next;
-      });
-      setJevStatus(prev => jevEpoch.current === initialJevEpoch ? jev : prev);
-      setKeysRead(true);
+      setJevStatus((prev) => jevEpoch.current === initialJevEpoch ? status : prev);
+      setJevRead(true);
     })();
     return () => {
       cancelled = true;
@@ -158,6 +160,8 @@ export function useAiConnection({
     applyStatus,
     jevStatus,
     keysRead,
+    keyReads,
+    jevRead,
     applyJevStatus,
     auditEntries,
     auditTotal,

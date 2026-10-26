@@ -39,7 +39,8 @@
     "connectors": "MCP 연결",
     "git-remote": "Git 보내기·받기·가져오기",
     "coding-tools": "코딩 도구",
-    "website-files": "웹사이트 파일"
+    "website-files": "웹사이트 파일",
+    "git-pr-descriptions": "GitHub PR 설명 조회"
   },
   "updateOn": "자동 확인 켬",
   "updateOff": "자동 확인 끔",

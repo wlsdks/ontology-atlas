@@ -81,6 +81,13 @@ export const OUTBOUND_PATHS: readonly OutboundPath[] = [
     recordedIn: null,
   },
   {
+    id: 'git-pr-descriptions',
+    trigger: 'press',
+    hosts: ['api.github.com'],
+    carries: 'no-folder-content',
+    recordedIn: null,
+  },
+  {
     id: 'git-remote',
     trigger: 'press',
     hosts: ['your-git-remote'],

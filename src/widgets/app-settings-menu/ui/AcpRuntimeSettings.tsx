@@ -207,7 +207,7 @@ export function AcpRuntimeSettings({
   const pageNote = !embedded || (ready.length > 0 && waiting === 0)
     ? null
     : waiting > 0
-      ? t('waitingNote')
+      ? t('waitingNote', { names: listed.filter((r) => !isRuntimeUsable(r.state)).map((r) => r.label).join(' · ') })
       : t(others.length > 0 ? 'noneReadyCaption' : 'noneReadyCaptionNoList');
   const hasShelf = runtimes !== null && others.length > 0;
 
@@ -317,7 +317,7 @@ export function AcpRuntimeSettings({
         {runtimes === null ? (
           /*
            * Named while the scan runs and counted once it answers, so the heading that holds the
-           * re-scan press (a guided-tour anchor) exists from the start.
+           * re-scan control exists from the start.
            */
           <SettingsGroup label={t(embedded ? 'pageHeading' : 'heading')} trailing={recheck}>
             <SettingsRow label={t('checking')} control={null} testId="app-settings-runtimes-loading" />

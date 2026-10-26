@@ -7,10 +7,11 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 
 import { AcpRuntimeSettings, ModelConnections } from '@/widgets/app-settings-menu';
 import { PageHeaderBar, TabBar } from '@/shared/ui';
-import { useRouter } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat/agent-chat-intent';
 import { isAcpBridgeAvailable } from '@/shared/lib/agent-chat/tauri-acp';
+import { controlClass } from '@/shared/ui/control-class';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { framerSpring, SPRING } from '@/shared/motion/spring';
@@ -30,6 +31,7 @@ export function AgentsPage({
   mcpCount,
 }: { children?: ReactNode; mcpCount?: number } = {}) {
   const t = useTranslations('agents');
+  const tBriefing = useTranslations('gitBriefing');
   const tMcp = useTranslations('mcp');
   const router = useRouter();
   const openChatOnMap = useCallback(
@@ -130,6 +132,7 @@ export function AgentsPage({
             : 'pt-8 md:pt-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]',
         )}
       >
+      {searchParams?.get('returnTo') === 'changes' && <Link href="/changes/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'mb-4 w-fit' })}>{tBriefing('back')}</Link>}
       <motion.div
         data-placement={staged ? 'stage' : 'list'}
         className={cn('min-w-0', staged && 'my-auto')}

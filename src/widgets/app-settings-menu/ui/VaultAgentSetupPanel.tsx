@@ -523,9 +523,6 @@ export function VaultAgentSetupPanel({
   const agentSetupReadyCount = agentSetupFiles.filter(
     (file) => agentStatus[file.key] && agentStatus[file.validKey] !== false,
   ).length;
-  const nextMissingAgentConfig = agentSetupFiles.find(
-    (file) => !agentStatus[file.key] || agentStatus[file.validKey] === false,
-  );
   const hasMissingAgentConfig = agentSetupFiles.some(
     (file) => !agentStatus[file.key],
   );
@@ -794,7 +791,11 @@ export function VaultAgentSetupPanel({
                 size="lg"
                 tone="secondary"
                 data-testid="agent-setup-verify-open"
-                onClick={() => setVerifyOpen(true)}
+                onClick={(event) => {
+                  // WebKit pointer activation need not focus a button; capture this exact opener.
+                  event.currentTarget.focus({ preventScroll: true });
+                  setVerifyOpen(true);
+                }}
                 className={`${DETAIL_TOGGLE_CHIP} shrink-0 whitespace-nowrap`}
               >
                 <CheckCircle2 size={ICON_SIZE.md} aria-hidden />
@@ -892,7 +893,7 @@ export function VaultAgentSetupPanel({
               <div className="divide-y divide-[color:var(--color-divider)] rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-recessed-a12)]">
                 {/*
                   The one statement of the count, naming whose files it counts (Atlas reads back
-                  only Claude Code's and Codex's); the next step follows only when one is missing.
+                  only Claude Code's and Codex's). Each tool has its own setup and check.
                 */}
                 <div className="flex items-start gap-2 px-2.5 py-2">
                   <span
@@ -915,31 +916,31 @@ export function VaultAgentSetupPanel({
                         tools: agentSetupConnections.map((connection) => connection.label).join(' · '),
                       })}
                     </p>
-                    {nextMissingAgentConfig ? (
-                      <p
-                        data-testid="agent-setup-status-next"
-                        className="mt-0.5 break-keep text-body leading-prose text-[color:var(--color-amber-source-text-a95)]"
-                      >
-                        {agentStatus[nextMissingAgentConfig.key]
-                          ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
-                          : t('agentSetup.nextMissing', { path: nextMissingAgentConfig.path })}
-                      </p>
-                    ) : null}
+                    <p
+                      data-testid="agent-setup-status-next"
+                      className="mt-0.5 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]"
+                    >
+                      {t('agentSetup.configChoice')}
+                    </p>
                   </div>
                 </div>
                 <dl className="grid gap-1 px-2.5 py-2">
-                  {agentSetupConnections.map(({ key, label, check }) => (
-                    <div key={key} className="flex items-baseline justify-between gap-2">
-                      <dt className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
-                        {label}
-                      </dt>
-                      {/* Monospace, because the value really is the command you type into that
-                          tool. It is the one place in this box where that face carries meaning. */}
-                      <dd className="shrink-0 font-mono text-label text-[color:var(--color-text-tertiary)]">
-                        {check}
-                      </dd>
-                    </div>
-                  ))}
+                  {agentSetupConnections.map(({ key, file, label, check }) => {
+                    const ready = agentStatus[file.key] && agentStatus[file.validKey] !== false;
+                    return (
+                      <div key={key} className="flex items-baseline justify-between gap-3">
+                        <dt className="shrink-0 text-body text-[color:var(--color-text-secondary)]">
+                          {label}
+                        </dt>
+                        <dd className="min-w-0 text-right text-label leading-label [overflow-wrap:anywhere] text-[color:var(--color-text-tertiary)]">
+                          {ready ? <span className="font-mono">{check}</span>
+                            : agentStatus[file.key]
+                              ? t('agentSetup.nextInvalid', { path: file.path })
+                              : t('agentSetup.nextMissing', { path: file.path })}
+                        </dd>
+                      </div>
+                    );
+                  })}
                 </dl>
               </div>
               {/* The proof packet ends the step whose job is proving the connection. */}

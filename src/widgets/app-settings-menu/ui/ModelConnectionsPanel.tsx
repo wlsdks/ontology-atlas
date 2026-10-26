@@ -9,6 +9,7 @@ import {
   secretErrorMessage,
   secretSet,
   secretVerify,
+  sourceModelVerify,
   LOCAL_PROVIDER,
   SECRET_PROVIDERS,
   SECRET_PROVIDER_HOSTS,
@@ -133,7 +134,7 @@ function refocusIfLost(ref: RefObject<HTMLElement | null>) {
 
 export interface ModelConnectionsPanelProps {
   connection: AiConnectionState;
-  /** The vault's absolute path where known on the desktop — where every transfer is recorded. */
+  /** Vault transfers log here; standalone local checks use fixed app data. */
   vaultRootPath: string | null;
   downloadHref: string;
   onDownloadNavigate?: () => void;
@@ -152,7 +153,8 @@ export function ModelConnectionsPanel({
     applyStatus,
     jevStatus,
     applyJevStatus,
-    keysRead,
+    keyReads,
+    jevRead,
     auditEntries,
     auditTotal,
     refreshAudit,
@@ -270,7 +272,7 @@ export function ModelConnectionsPanel({
               key={provider}
               provider={provider}
               status={statuses[provider]}
-              read={keysRead}
+              read={keyReads[provider]}
               vaultRootPath={vaultRootPath}
               expanded={expanded === `key:${provider}`}
               onExpand={() => setExpanded(`key:${provider}`)}
@@ -288,7 +290,7 @@ export function ModelConnectionsPanel({
         <ModelGroup label={t('externalTitle')} testId="models-external">
           <JevRow
             status={jevStatus}
-            read={keysRead}
+            read={jevRead}
             vaultRootPath={vaultRootPath}
             mode={expanded === 'jev:key' ? 'key' : expanded === 'jev:check' ? 'check' : null}
             onMode={(mode) => setExpanded(mode === 'key' ? 'jev:key' : 'jev:check')}
@@ -537,7 +539,7 @@ function KeyRow({
 }: {
   provider: SecretProvider;
   status: SecretStatus | null;
-  /** Whether the Keychain has answered yet; until then the row draws no status or control. */
+  /** Key actions wait for this provider’s Keychain lookup. */
   read: boolean;
   vaultRootPath: string | null;
   expanded: boolean;
@@ -585,7 +587,11 @@ function KeyRow({
     }
   };
 
-  const statusNode = !read ? null : verify.kind === 'checking' ? (
+  const statusNode = !read ? (
+    <RowStatus tone="idle" testId={`ai-key-loading-${provider}`}>
+      {t('keychainChecking')}
+    </RowStatus>
+  ) : verify.kind === 'checking' ? (
     <RowStatus tone="idle" testId={`ai-status-${provider}`}>
       {t('verifying')}
     </RowStatus>
@@ -845,6 +851,11 @@ function LocalRunnerRow({
   /** The row's own address: the saved one when it is this row's, else the runner's default. */
   const address = runner.id === 'custom' ? (savedHere ? local.baseUrl : '') : runner.defaultBaseUrl;
   const [draftUrl, setDraftUrl] = useState(() => address || runner.defaultBaseUrl);
+  const addressRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (expanded) addressRef.current?.focus({ preventScroll: true });
+  }, [expanded]);
   const [verify, setVerify] = useState<LocalVerifyState>({ kind: 'idle' });
   const headerCheckRef = useRef<HTMLButtonElement | null>(null);
   const detailCheckRef = useRef<HTMLButtonElement | null>(null);
@@ -882,10 +893,10 @@ function LocalRunnerRow({
 
   const runVerify = async (url: string, ref: RefObject<HTMLButtonElement | null>) => {
     const target = url.trim();
-    if (!vaultRootPath || verify.kind === 'checking' || !target) return;
+    if (verify.kind === 'checking' || !target) return;
     setVerify({ kind: 'checking', url: target });
     try {
-      const result = await secretVerify(LOCAL_PROVIDER, vaultRootPath, target);
+      const result = await (vaultRootPath ? secretVerify(LOCAL_PROVIDER, vaultRootPath, target) : sourceModelVerify(target));
       if (!result) return;
       const verdict = readLocalVerdict(result);
       const done: LocalVerifyState = { kind: 'done', url: target, ...verdict };
@@ -971,7 +982,7 @@ function LocalRunnerRow({
         <>
           {/* The header check asks the saved address, so it stands only while the row is closed:
               an open row has one check, the one beside the address being typed. */}
-          {active && !expanded && vaultRootPath ? (
+          {active && !expanded ? (
             <Chip
               ref={headerCheckRef}
               size="lg"
@@ -1003,6 +1014,7 @@ function LocalRunnerRow({
         <>
           <div className="flex min-w-0 items-center gap-2">
             <input
+              ref={addressRef}
               type="text"
               inputMode="url"
               autoComplete="off"
@@ -1034,7 +1046,7 @@ function LocalRunnerRow({
               tone="accentOnTint"
               data-testid="ai-verify-local"
               onClick={() => void runVerify(draftUrl, detailCheckRef)}
-              disabled={verify.kind === 'checking' || !vaultRootPath || !draftUrl.trim()}
+              disabled={verify.kind === 'checking' || !draftUrl.trim()}
               className={COMMIT_CHIP}
             >
               {verify.kind === 'checking' ? t('verifying') : t('actionCheck')}
@@ -1214,7 +1226,11 @@ function JevRow({
       caption={error ?? tJev('caption')}
       captionTone={error ? 'danger' : 'neutral'}
       status={
-        !read ? null : stored ? (
+        !read ? (
+          <RowStatus tone="idle" testId="jev-key-loading">
+            {t('keychainChecking')}
+          </RowStatus>
+        ) : stored ? (
           <RowStatus tone="saved" testId="jev-key-status">
             <StoredKey last4={status?.last4 ?? ''} checked={false} />
           </RowStatus>
@@ -1315,6 +1331,7 @@ function AuditSection({
   retry: () => void;
 }) {
   const t = useTranslations('agents.models');
+  const tBriefing = useTranslations('gitBriefing');
   const hasLog = !error && Boolean(vaultRootPath) && total !== null && total > 0;
   return (
     <section aria-labelledby="ai-audit-title" className="min-w-0" data-testid="ai-audit-tail">
@@ -1322,7 +1339,7 @@ function AuditSection({
       <div className="mt-1.5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2">
         {!vaultRootPath ? (
           <p className="text-body text-[color:var(--color-text-tertiary)]" data-testid="ai-audit-no-vault">
-            {t('auditNoVault')}
+            {tBriefing('sourceAudit')}
           </p>
         ) : error ? (
           <div className="flex min-w-0 items-center gap-2" data-testid="ai-audit-error">
