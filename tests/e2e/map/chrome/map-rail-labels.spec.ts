@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { seedFirstRunSeen } from '../../first-run-seed';
+import { waitForBoxStill } from '../../settle';
 
 const TILES = [
   'topology-fit-control',
@@ -36,7 +37,10 @@ test.describe('map utility rail — fixed icon controls', () => {
     await seedFirstRunSeen(page);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/en/topology?guides=off&e2e=1');
-    await expect(page.getByTestId('topology-replay-growth')).toBeVisible();
+    for (const id of TILES) {
+      await expect(tile(page, id)).toBeVisible();
+      await waitForBoxStill(tile(page, id));
+    }
   });
 
   test('keeps every utility square while its hover tooltip names it', async ({ page }) => {
