@@ -84,3 +84,29 @@ for (const width of [390, 1512]) {
     expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
   });
 }
+
+test('refreshes history instead of retrying an expired patch snapshot', async ({ page }) => {
+  await installBriefingRuntime(page);
+  await mountDesktopVault(page);
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('briefing-source-browser').click();
+  const range = await page.getByTestId('briefing-range').innerText();
+  await page.getByTestId('briefing-group-capabilities/checkout').click();
+  await setBriefingMode(page, 'stale');
+  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
+  const patch = page.getByRole('region', { name: 'Changed lines: src/features/checkout/service.ts', exact: true });
+  await expect(patch).toContainText('changed while reading');
+  await setBriefingMode(page, 'changed-head');
+  const reads = () => page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.filter(call => call.command === 'git_change_briefing').length);
+  const before = await reads();
+  await patch.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await expect.poll(reads).toBe(before + 1);
+  await expect(page.getByTestId('briefing-source-browser')).toBeFocused();
+  await expect(page.getByTestId('briefing-overview')).toBeVisible();
+  await expect(page.getByTestId('briefing-range')).toHaveText(range);
+  await page.getByTestId('briefing-group-capabilities/checkout').click();
+  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
+  await expect(page.getByTestId('briefing-patch')).toContainText('+limit = 20');
+  const lastHead = await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string; args: { head?: string } }[] } }).__briefingProbe.calls.filter(call => call.command === 'git_change_briefing_patch').at(-1)?.args.head);
+  expect(lastHead).toBe('f'.repeat(40));
+});
