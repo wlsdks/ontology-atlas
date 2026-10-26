@@ -141,7 +141,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const note = page.getByTestId("app-settings-runtimes-disk-note");
     await expect(note).toBeAttached({ timeout: 30_000 });
     const panel = page.getByRole("tooltip").filter({ has: note });
-    const button = page.locator("div.group").filter({ has: note }).getByRole("button").first();
+    const button = panel.locator("..").getByRole("button");
     await button.focus();
     await expect.poll(() => panel.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
     // Shown by focus, the panel must not catch clicks meant for the rows it covers.

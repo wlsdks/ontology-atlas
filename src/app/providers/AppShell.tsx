@@ -188,6 +188,8 @@ function VaultRouteIdentityBoundary({
     !localReady;
   const destination = resolveActiveNavDestination(pathname);
   const sourceOnlyDestination = destination === "changes" || destination === "agents";
+  // Resolve the remembered folder before exposing controls that a restore would replace.
+  const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
   const desktopWithoutVault = desktop && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
 
   useEffect(() => {
@@ -195,7 +197,7 @@ function VaultRouteIdentityBoundary({
     router.replace("/");
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
-  if (localLoadPending) {
+  if (localLoadPending || sourceRestorePending) {
     return (
       <VaultOpeningPane
         name={vault.status === "loading" ? (vault.handle?.name ?? null) : null}
