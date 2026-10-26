@@ -14,7 +14,7 @@ The existing Git destination remains scoped to vault documents and checkpoints.
 
 Choose a project and a daily, weekly, monthly or yearly calendar period, move
 back or forward, or apply inclusive custom dates. The initial period is this
-week; weeks start Monday. The displayed local timezone and exact dates determine
+week; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine
 committer-time membership. Uncommitted work and separately counted commits
 inside merged branches are excluded: this is current-HEAD first-parent history,
 including merge integration differences.

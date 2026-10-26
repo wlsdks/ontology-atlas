@@ -41,7 +41,7 @@ export function ChangeBriefingPage() {
   const [anchor, setAnchor] = useArrivalMemory(memory && `${memory}:anchor`, localDate(new Date()));
   const [from, setFrom] = useArrivalMemory(memory && `${memory}:from`, anchor);
   const [to, setTo] = useArrivalMemory(memory && `${memory}:to`, anchor);
-  const [custom, setCustom] = useArrivalMemory(memory && `${memory}:custom`, { from: anchor, to: anchor });
+  const [custom, setCustom] = useArrivalMemory<{ from: string; to: string } | null>(memory && `${memory}:custom`, null);
   const [projectChoice, setProjectChoice] = useArrivalMemory(memory && `${memory}:project`, '');
   const [selection, setSelection] = useArrivalMemory<{ scope: string; group: string; area: string | null; path: string | null } | null>(memory && `${memory}:selection`, null);
   const [rows, setRows] = useArrivalMemory(memory && `${memory}:rows`, { files: 40, commits: 40, net: 40 });
@@ -58,7 +58,7 @@ export function ChangeBriefingPage() {
   const docs = useMemo(() => vault.manifest?.docs ?? [], [vault.manifest]);
   const projects = docs.filter(doc => doc.frontmatter.kind === 'project');
   const project = sourceChoice ? '' : projects.some(doc => doc.slug === projectChoice) ? projectChoice : projects[0]?.slug ?? '';
-  const range = briefingRange(period, anchor, custom.from, custom.to);
+  const range = briefingRange(period, anchor, custom?.from, custom?.to);
   const invalidDraft = period === 'custom' && !briefingRange('custom', anchor, from, to);
   const root = native ? sourceChoice ?? (vault.handle && project ? getTauriVaultRootPath(vault.handle) ?? null : null) : null;
   const { data, loading, error, refresh } = useBriefing(root, project, range, vault.lastLoadedAt);
@@ -77,6 +77,15 @@ export function ChangeBriefingPage() {
   const repositoryMemory = data ? `${JSON.stringify(['source-narrative', data.sourceRoot, data.snapshot, range ? `${range.start} – ${range.end}` : ''])}:repository` : null;
   const [repository, setRepository] = useArrivalMemory(repositoryMemory, '');
   const codeHeadingRef = useRef<HTMLHeadingElement>(null);
+  function changePeriod(next: BriefingPeriod) {
+    if (next === 'custom' && !custom) {
+      const initial = { from: range?.start ?? anchor, to: range?.end ?? anchor };
+      setFrom(initial.from);
+      setTo(initial.to);
+      setCustom(initial);
+    }
+    setPeriod(next);
+  }
   function changeMode(next: BriefingReadingMode) {
     if (next === mode) return;
     setPositions({ ...positions, [mode]: mainRef.current?.scrollTop ?? 0 });
@@ -147,7 +156,7 @@ export function ChangeBriefingPage() {
         </div>
       {native && root && <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-end gap-4">
         <div className="flex flex-wrap items-end gap-3">
-          <Select ariaLabel={t('period')} value={period} onChange={value => setPeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
+          <Select ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
           {period !== 'custom' ? <Input label={t('anchorDate')} type="date" value={anchor} onChange={event => setAnchor(event.target.value)} /> : <>
             <Input label={t('startDate')} type="date" value={from} onChange={event => setFrom(event.target.value)} />
             <Input label={t('endDate')} type="date" value={to} onChange={event => setTo(event.target.value)} error={invalidDraft ? t('invalidRange') : undefined} />
