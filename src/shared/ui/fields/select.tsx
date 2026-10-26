@@ -75,6 +75,8 @@ type Anchor = {
   /** Room left in the viewport in this direction: the space cap's input. */
   availableHeight: number;
   placement: "below" | "above";
+  /** Captured with the trigger: local coordinates follow a dialog's entry translation. */
+  dialogOrigin: { left: number; top: number; bottom: number } | null;
 };
 
 /**
@@ -87,6 +89,13 @@ function measureAnchor(trigger: HTMLElement): Anchor {
   const spaceBelow = viewportHeight - rect.bottom - ANCHOR_GAP - VIEWPORT_PAD;
   const spaceAbove = rect.top - ANCHOR_GAP - VIEWPORT_PAD;
   const flip = spaceBelow < PREFERRED_SPACE && spaceAbove > spaceBelow;
+  const dialog = trigger.closest<HTMLElement>('[role="dialog"],[role="alertdialog"]');
+  const bounds = dialog?.getBoundingClientRect();
+  const dialogOrigin = dialog && bounds ? {
+    left: bounds.left + dialog.clientLeft - dialog.scrollLeft,
+    top: bounds.top + dialog.clientTop - dialog.scrollTop,
+    bottom: viewportHeight - bounds.bottom + (dialog.offsetHeight - dialog.clientHeight - dialog.clientTop) + dialog.scrollTop,
+  } : null;
   return {
     left: rect.left,
     width: rect.width,
@@ -94,6 +103,7 @@ function measureAnchor(trigger: HTMLElement): Anchor {
     bottom: flip ? viewportHeight - rect.top + ANCHOR_GAP : null,
     availableHeight: Math.max(0, flip ? spaceAbove : spaceBelow),
     placement: flip ? "above" : "below",
+    dialogOrigin,
   };
 }
 
@@ -134,6 +144,7 @@ export function Select({
   const optionDomId = (index: number) => `${baseId}-opt-${index}`;
 
   const [open, setOpen] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [growth, setGrowth] = useState<ListboxGrowth | null>(null);
@@ -155,6 +166,7 @@ export function Select({
 
   const openList = useCallback(() => {
     if (disabled) return;
+    setPortalTarget(triggerRef.current?.closest<HTMLElement>('[role="dialog"],[role="alertdialog"]') ?? null);
     setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
     // Measured on open, not after mount, which would draw one frame at (0,0) and jump.
     if (triggerRef.current) setAnchor(measureAnchor(triggerRef.current));
@@ -341,6 +353,7 @@ export function Select({
         break;
       case "Escape":
         e.preventDefault();
+        e.stopPropagation();
         closeList();
         break;
       case "Tab":
@@ -366,7 +379,7 @@ export function Select({
 
   const anchorStyle: CSSProperties | undefined = anchor
     ? {
-        left: listLeft ?? anchor.left,
+        left: (listLeft ?? anchor.left) - (anchor.dialogOrigin?.left ?? 0),
         /*
          * The trigger width is a floor, not the width: a list pinned to a narrow trigger
          * truncated its choices. `VIEWPORT_PAD` caps one long item.
@@ -375,8 +388,8 @@ export function Select({
         maxWidth: `calc(100vw - ${VIEWPORT_PAD * 2}px)`,
         // Before rows are measured only the space cap applies.
         maxHeight: growth ? growth.height : anchor.availableHeight,
-        ...(anchor.top !== null ? { top: anchor.top } : {}),
-        ...(anchor.bottom !== null ? { bottom: anchor.bottom } : {}),
+        ...(anchor.top !== null ? { top: anchor.top - (anchor.dialogOrigin?.top ?? 0) } : {}),
+        ...(anchor.bottom !== null ? { bottom: anchor.bottom - (anchor.dialogOrigin?.bottom ?? 0) } : {}),
         // Without a reached cap a scrollbar would falsely say "there is more".
         overflowY: growth?.overflowing === false ? "hidden" : "auto",
         ...(edgeMask ? { maskImage: edgeMask, WebkitMaskImage: edgeMask } : {}),
@@ -404,7 +417,7 @@ export function Select({
         data-testid={dataTestid ? `${dataTestid}-listbox` : undefined}
         style={anchorStyle}
         {...transientSurface("anchored")}
-      className="select-listbox fixed z-40 rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+      className={cn("select-listbox z-40 rounded-panel border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]", portalTarget ? "absolute" : "fixed")}
       >
         {options.map((option, index) => {
           const isSelected = option.value === value;
@@ -501,7 +514,7 @@ export function Select({
         />
       </button>
 
-      {list && typeof document !== "undefined" ? createPortal(list, document.body) : null}
+      {list && typeof document !== "undefined" ? createPortal(list, portalTarget ?? document.body) : null}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { Select, type SelectOption } from "./select";
+import { Dialog } from "../surfaces/dialog";
 
 const OPTIONS: SelectOption[] = [
   { value: "capability", label: "역량", description: "coherent behavior" },
@@ -234,5 +235,23 @@ describe("Select exit frame", () => {
     expect(listbox).toHaveAttribute("aria-hidden", "true");
     expect(listbox).toHaveAttribute("inert");
     expect(listbox).toHaveAttribute("data-state", "closed");
+  });
+});
+
+
+describe("Select inside a dialog", () => {
+  it("dismisses choices before its dialog and returns focus to the trigger", () => {
+    const close = vi.fn();
+    render(<Dialog open onClose={close} ariaLabel="Read coverage"><Harness /></Dialog>);
+    const trigger = screen.getByRole("combobox");
+    fireEvent.click(trigger);
+    const list = screen.getByRole("listbox");
+    expect(screen.getByRole("dialog").contains(list)).toBe(true);
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+    expect(close).not.toHaveBeenCalled();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(close).toHaveBeenCalledOnce();
   });
 });
