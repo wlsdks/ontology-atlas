@@ -771,3 +771,23 @@ test('opens settings by keyboard and returns focus without clearing copies', asy
   await expect(trigger).toBeFocused();
   expect(await calls(page, 'git_briefing_clear_saved_pulls')).toHaveLength(0);
 });
+
+
+for (const [triggerId, dialogId] of [['briefing-coverage', 'briefing-coverage-dialog'], ['briefing-settings', 'briefing-settings-dialog']]) {
+  test(`returns pointer-opened ${triggerId} to its opener`, async ({ page }) => {
+    await enter(page);
+    await page.evaluate(() => document.addEventListener('mousedown', event => {
+      if ((event.target as Element).closest('button')) event.preventDefault();
+    }));
+    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).focus();
+    const trigger = page.getByTestId(triggerId);
+    await trigger.click();
+    const dialog = page.getByTestId(dialogId);
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
+    expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
+  });
+}

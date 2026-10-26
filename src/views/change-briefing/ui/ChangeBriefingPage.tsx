@@ -162,7 +162,7 @@ export function ChangeBriefingPage() {
           <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={refresh}><RefreshCw size={16} />{t('refresh')}</Button>
         </div>
       </section>}
-        {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden />{git('briefingSettings')}</Button>}
+        {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden />{git('briefingSettings')}</Button>}
       </header>
       {native && root && <div ref={modesRef} className="flex flex-wrap items-center justify-between gap-3">
         <SegmentedControl<BriefingReadingMode> ariaLabel={git('readingModes')} value={mode} onChange={changeMode} options={[

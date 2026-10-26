@@ -107,6 +107,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     finally { setPrLoading(false); }
   }
   function openScope(button: HTMLButtonElement) {
+    button.focus({ preventScroll: true });
     scopeOpener.current = button; setScopeOpen(true);
   }
   function closeScope() {
