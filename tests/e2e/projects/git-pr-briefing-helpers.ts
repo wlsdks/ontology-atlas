@@ -54,4 +54,3 @@ export async function chooseModel(page: import('@playwright/test').Page) {
   if (!await link.isVisible()) await page.getByTestId('briefing-settings').click();
   await link.click();
 }
-
