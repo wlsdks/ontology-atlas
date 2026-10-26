@@ -575,7 +575,7 @@ test('keeps saved-copy management available in an empty period without a remote 
 
 test('reopens saved originals after reload without network and keeps versions after failed refresh', async ({ page }) => {
   await enter(page); await prepare(page);
-  await page.getByRole('dialog').getByRole('button', { name: 'Back to explanation', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.reload();
   await expectCoverage(page, 'Opened 1 saved PR descriptions. GitHub has not been checked.');
   expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
@@ -600,7 +600,7 @@ test('reopens saved originals after reload without network and keeps versions af
 
 test('clears copies without a usable source and keeps open originals session-only', async ({ page }) => {
   await enter(page); await prepare(page);
-  await page.getByRole('dialog').getByRole('button',{name:'Back to explanation',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Cancel',exact:true}).click();
   await page.getByTestId('briefing-settings').click();
   await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
   await expectCoverage(page, '1 PR descriptions read');
@@ -643,7 +643,7 @@ for (const mode of ['cache-unavailable', 'cache-unsupported', 'cache-save-failed
 
 test('keeps measured empty results empty after restart and reports failed clearing truthfully', async ({ page }) => {
   await enter(page); await prepare(page);
-  await page.getByRole('dialog').getByRole('button', { name: 'Back to explanation', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await setBriefingMode(page,'cache-clear-failed');
   await page.getByTestId('briefing-settings').click();
   await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
@@ -663,7 +663,7 @@ test('keeps measured empty results empty after restart and reports failed cleari
 for (const action of ['manual-read', 'clear'] as const) {
   test(`does not reapply a held saved-original result after ${action}`, async ({ page }) => {
     await enter(page); await prepare(page);
-    await page.getByRole('dialog').getByRole('button', { name: 'Back to explanation', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
     await page.evaluate(() => {
       const value = JSON.parse(localStorage.getItem('atlas-fixture-pr-copies')!);
       value.descriptions[0].title = 'Older saved original'; value.descriptions[0].digest = 'f'.repeat(64);

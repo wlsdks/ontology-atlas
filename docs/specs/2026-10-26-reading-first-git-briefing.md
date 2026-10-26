@@ -140,6 +140,7 @@ Existing permission, transfer, specific failure, calendar and storage strings re
 | `previewMultipleRequests` | Multipart workload ceiling | Up to {count} model requests |
 | `previewOverview` | Visible additional transfer | Reads in parts, then sends up to {bytes} bytes of selected originals for the overview. |
 | `previewDetails` | Exact-byte and part inspection | Request details |
+| `previewCancel` | Return without sending, including previews opened from Code | Cancel |
 
 ## Edge cases
 

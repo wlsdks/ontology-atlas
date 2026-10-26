@@ -45,7 +45,7 @@ export function PeriodPlanDialog({ preview, connection, close, start, clearedAt 
         {plan.parts.length > 0 && <p>{t(plan.parts.length > 1 ? 'periodOverviewPlan' : 'periodSinglePart', { bytes: plan.limit })}</p>}
       </RowDisclosure>
       <p className="text-label text-[color:var(--color-text-secondary)]">{t('periodSessionOnly')}</p>
-      </DialogBody><DialogFooter><div className="flex min-w-0 flex-wrap justify-end gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={close}>{t('back')}</Button><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={!plan.parts.length} onClick={start}>{t('periodStart')}</Button></div>
+      </DialogBody><DialogFooter><div className="flex min-w-0 flex-wrap justify-end gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={close}>{t('previewCancel')}</Button><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" disabled={!plan.parts.length} onClick={start}>{t('periodStart')}</Button></div>
     </DialogFooter></>}
   </Dialog>;
 }

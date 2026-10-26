@@ -207,12 +207,13 @@
   "backSummary": "Back to summary",
   "sourceInventory": "Commits {commits} · PRs {prs}",
   "rebuildSummary": "Rebuild summary",
-  "previewSourceCount": "コミットメッセージ {commits}件 · PR説明 {prs}件",
+  "previewSourceCount": "コミットメッセージ{commits}件 · PR説明{prs}件",
   "previewModel": "モデル",
   "previewDestination": "送信先",
   "previewSourceScope": "根拠IDと期間も含まれます。コードとオントロジー文書は送りません。",
-  "previewSingleRequest": "モデルへのリクエスト {count}回",
+  "previewSingleRequest": "モデルへのリクエスト{count}回",
   "previewMultipleRequests": "モデルへのリクエストは最大{count}回",
   "previewOverview": "原文を分割して読み、選んだ原文を最大{bytes}バイト再送して概要を作ります。",
-  "previewDetails": "リクエストの詳細"
+  "previewDetails": "リクエストの詳細",
+  "previewCancel": "キャンセル"
 }

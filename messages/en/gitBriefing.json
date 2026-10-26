@@ -214,5 +214,6 @@
   "previewSingleRequest": "Model requests: {count}",
   "previewMultipleRequests": "Up to {count} model requests",
   "previewOverview": "Reads in parts, then sends up to {bytes} bytes of selected originals for the overview.",
-  "previewDetails": "Request details"
+  "previewDetails": "Request details",
+  "previewCancel": "Cancel"
 }

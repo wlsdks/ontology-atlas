@@ -214,5 +214,6 @@
   "previewSingleRequest": "모델 요청 {count}회",
   "previewMultipleRequests": "모델 요청 최대 {count}회",
   "previewOverview": "원문을 나눠 읽은 뒤, 선택한 원문 구절을 최대 {bytes}바이트까지 다시 보내 요약해요.",
-  "previewDetails": "요청 세부 정보"
+  "previewDetails": "요청 세부 정보",
+  "previewCancel": "취소"
 }
