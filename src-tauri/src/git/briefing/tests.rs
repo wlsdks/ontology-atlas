@@ -63,12 +63,21 @@ impl Fixture {
         git(&self.source, &["rev-parse", "HEAD"])
     }
     fn read(&self, start: i64, end: i64) -> ChangeBriefing {
-        measure(self.vault.to_str().unwrap(), "fixture", start, end, || {})
+        measure_identity(|| self.identity(), start, end, || {})
+    }
+    fn identity(&self) -> Result<Identity, String> {
+        #[cfg(unix)]
+        {
+            identity(self.vault.to_str().unwrap(), "fixture")
+        }
+        #[cfg(not(unix))]
+        {
+            picked_identity(self.source.to_str().unwrap())
+        }
     }
     fn patch(&self, briefing: &ChangeBriefing, path: &str) -> ChangeBriefingPatch {
-        read_patch(
-            self.vault.to_str().unwrap(),
-            "fixture",
+        read_patch_identity(
+            || self.identity(),
             &briefing.head,
             briefing.base.as_deref(),
             briefing.tip.as_deref().unwrap(),
@@ -108,7 +117,11 @@ fn reads_inclusive_start_exclusive_end_and_literal_hangul_newline_paths() {
     let _scope = f.grant();
     f.write("before.ts", "before");
     f.commit(START - 1, "before");
-    let path = "src/한글\nfile.ts";
+    let path = if cfg!(windows) {
+        "src/한글 file.ts"
+    } else {
+        "src/한글\nfile.ts"
+    };
     f.write(path, "start");
     let included = f.commit(START, "at start");
     f.write("after.ts", "end");
@@ -202,25 +215,31 @@ fn merge_integration_includes_paths_but_does_not_double_count_branch_commits() {
     assert_eq!(result.commits[0].subject, "integration");
     assert_eq!(result.commits[0].paths, ["merged.ts"]);
 }
+#[cfg(unix)]
 #[test]
 fn denies_ungranted_sources_and_missing_bindings_without_using_vault_git() {
     let f = Fixture::new();
     let _scope = crate::vault_grants::EnforcedScope::granting(std::slice::from_ref(&f.vault));
     f.write("file.ts", "body");
     f.commit(START, "first");
-    assert_eq!(f.read(START, START + 10).status, "ungranted");
+    assert_eq!(
+        measure(f.vault.to_str().unwrap(), "fixture", START, START + 10, || {}).status,
+        "ungranted"
+    );
     fs::remove_file(f.vault.join(".ontology-atlas/project-sources.json")).unwrap();
-    assert_eq!(f.read(START, START + 10).status, "no-source");
+    assert_eq!(
+        measure(f.vault.to_str().unwrap(), "fixture", START, START + 10, || {}).status,
+        "no-source"
+    );
 }
 #[test]
-fn rejects_changed_head_and_binding_during_read_and_patch() {
+fn rejects_changed_head_during_read() {
     let f = Fixture::new();
     let _scope = f.grant();
     f.write("value.ts", "old");
     f.commit(START, "base");
-    let stale = measure(
-        f.vault.to_str().unwrap(),
-        "fixture",
+    let stale = measure_identity(
+        || f.identity(),
         START,
         START + 10,
         || {
@@ -229,6 +248,14 @@ fn rejects_changed_head_and_binding_during_read_and_patch() {
     );
     assert_eq!(stale.status, "stale");
     assert!(stale.commits.is_empty());
+}
+#[cfg(unix)]
+#[test]
+fn rejects_changed_binding_during_patch() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("value.ts", "old");
+    f.commit(START, "base");
     let result = f.read(START, START + 10);
     let patch = read_patch(
         f.vault.to_str().unwrap(),
@@ -244,17 +271,50 @@ fn rejects_changed_head_and_binding_during_read_and_patch() {
     assert_eq!(patch.status, "stale");
     assert!(patch.patch.is_empty());
 }
+#[cfg(not(unix))]
+#[test]
+fn bound_briefing_refuses_reads_without_supported_metadata_confinement() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("value.ts", "body");
+    let head = f.commit(START, "root");
+    let bound = measure(f.vault.to_str().unwrap(), "fixture", START, START + 10, || {});
+    assert_eq!(bound.status, "no-source");
+    assert!(bound.commits.is_empty());
+    assert!(bound.head.is_empty());
+    assert!(bound.base.is_none());
+    assert!(bound.tip.is_none());
+    assert!(bound.net_paths.is_none());
+    let patch = read_patch(
+        f.vault.to_str().unwrap(),
+        "fixture",
+        &head,
+        None,
+        &head,
+        "value.ts",
+        || {},
+    );
+    assert_eq!(patch.status, "unavailable");
+    assert!(patch.patch.is_empty());
+}
 #[test]
 fn patch_requires_issued_endpoints_and_a_literal_returned_path() {
     let f = Fixture::new();
     let _scope = f.grant();
-    f.write(":(glob)*", "literal\n");
+    let literal_path = if cfg!(windows) {
+        "[private].ts"
+    } else {
+        ":(glob)*"
+    };
+    f.write(literal_path, "literal\n");
+    f.write("p.ts", "wildcard match\n");
     f.write("private.ts", "private\n");
     f.commit(START, "root");
     let result = f.read(START, START + 10);
-    let patch = f.patch(&result, ":(glob)*");
+    let patch = f.patch(&result, literal_path);
     assert!(patch.patch.contains("+literal"));
     assert!(!patch.patch.contains("+private"));
+    assert!(!patch.patch.contains("+wildcard match"));
     for path in [
         "../outside",
         "/tmp/outside",
@@ -264,9 +324,8 @@ fn patch_requires_issued_endpoints_and_a_literal_returned_path() {
         assert_eq!(f.patch(&result, path).status, "unavailable");
     }
     assert_eq!(
-        read_patch(
-            f.vault.to_str().unwrap(),
-            "fixture",
+        read_patch_identity(
+            || f.identity(),
             &result.head,
             Some(&"a".repeat(40)),
             result.tip.as_deref().unwrap(),

@@ -47,12 +47,14 @@ commit. Reverts can retain touched evidence while leaving no endpoint difference
 Out-of-order dates can include intervening changes outside the chosen dates in
 this endpoint comparison; exact revisions and that qualification stay visible.
 
-The native bridge requires the recorded source binding and source grant, pins
+The project-bound native bridge requires the recorded source binding and source grant, pins
 and rechecks root identity, binding and HEAD, and refuses stale evidence. Patch
 reads require a recently issued snapshot and its literal touched path. It runs
 no external diff/textconv, hooks, network fetch or write operation. Missing or
 moved source access offers folder permission recovery and Projects; it never
 silently substitutes the vault repository or rebinds the project.
+Project-bound reads use the Unix confined metadata reader and remain unavailable on Windows.
+Direct picker-granted source reading follows the separate standalone path below.
 
 Reads are bounded at 2,000 first-parent commits, 8 MiB history output and 20,000
 path records. Partial reads state that coverage is incomplete. File comparisons
