@@ -1,5 +1,10 @@
 /** Design gates: tokens, the design-system document, the ontology design surface, and design proof routing. */
 
+const UI_AUDIT_PATHS = [
+  /^scripts\/design\/ui-audit(?:\.test)?\.mjs$/,
+  /^scripts\/lib\/design\/ui-audit-(?:probe|checks)\.mjs$/,
+];
+
 export const rules = [
   {
     order: 90,
@@ -25,6 +30,18 @@ export const rules = [
     command: 'pnpm test:design:tokens',
     reason: 'the token printer or its tests changed',
     matches: [/^scripts\/design\/design-tokens(?:\.test)?\.mjs$/],
+  },
+  {
+    order: 110,
+    command: 'pnpm test:ui:audit',
+    reason: 'the rendered audit collector or numerical judge changed',
+    matches: UI_AUDIT_PATHS,
+  },
+  {
+    order: 115,
+    command: 'pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts',
+    reason: 'audit reachability and visibility need real DOM geometry with planted defects',
+    matches: UI_AUDIT_PATHS,
   },
   {
     order: 360,
