@@ -58,6 +58,8 @@
   "checksMissing": "The included descriptions do not state which checks ran.",
   "limitsMissing": "The included descriptions do not state remaining limits. This is not evidence that none remain.",
   "readSources": "Read sources",
+  "viewSourceText": "原文テキストを表示",
+  "viewFormattedText": "読みやすく表示",
   "sourceHeading": "Source evidence",
   "sourceCitation": "Read source {source}",
   "back": "Back to explanation",

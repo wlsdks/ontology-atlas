@@ -58,6 +58,8 @@
   "checksMissing": "The included descriptions do not state which checks ran.",
   "limitsMissing": "The included descriptions do not state remaining limits. This is not evidence that none remain.",
   "readSources": "Read sources",
+  "viewSourceText": "View source text",
+  "viewFormattedText": "View formatted text",
   "sourceHeading": "Source evidence",
   "sourceCitation": "Read source {source}",
   "back": "Back to explanation",
