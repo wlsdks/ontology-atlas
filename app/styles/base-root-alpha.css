@@ -393,18 +393,6 @@
     --engraved-numeral-face: #8c8c94;
     --engraved-numeral-text-shadow: 0 1px 0 #08080a;
     --topology-blocking-backdrop-surface: rgba(0, 0, 0, 0.72);
-    /* Guided tour (2026-07-23, `src/features/guided-tour`) — scrim + cutout
-       paint. Lighter than `--topology-blocking-backdrop-surface` (0.72): the tour is an "what to point at" cue, so the map must show through (composer
-       blocking scrim has full occlusion intent, so it is darker). Opaque mask with 0 blur — distinct technique from glow/neon rings (`0 0 ... rgba(indigo)` + blur>0 emission), so do not extend this token for glow purposes. */
-    --topology-tour-scrim-surface: rgba(0, 0, 0, 0.6);
-    /* Step transition cutout rect interpolation duration — same value as the ramp's "move" step
-       (`--motion-base`). `prefers-reduced-motion` removes it via `motion-reduce:
-       transition-none` (instant snap).
-       This token could be merged with `--motion-base` reference, but hasn't been yet — merging would require accompanying easing changes across all 3 tour scrim/cutout locations, making it a change requiring separate frame evidence rather than value-only modification. */
-    /* Splitting the same 180ms into two handles means one side will eventually lag —
-       we already collapsed focus/panel for this reason above, leaving only tour.
-       Points directly to ramp (same value, no render change). */
-    --topology-tour-transition-ms: var(--motion-base);
     --topology-blocking-map-opacity: 0.24;
     --topology-blocking-map-filter: saturate(0.58);
     --topology-blocking-composer-top: clamp(7.5rem, 12vh, 9.5rem);
@@ -451,18 +439,14 @@
     );
     --topology-shortcuts-help-phone-top: 188px;
     --topology-shortcuts-help-focus-phone-top: 208px;
-    /* Right vertical rail 3-tile rhythm (overview/guided tour/shortcuts) — guided tour
-       entry tile (2026-07-23, `topology-tour-button`) inserted between Fit tile and "?" tile, updating current state from 2 tiles to 3. Follows the same expression pattern as existing two top tokens based on control-desktop-top (single token instead of JSX inline calc — all other right rail tiles follow this convention). */
-    --topology-tour-help-desktop-top: calc(
+    /* The map utility rail is fit, shortcuts, then growth replay. */
+    --topology-shortcuts-help-desktop-top: calc(
       var(--topology-floating-control-desktop-top) + var(--chrome-tile-size) + 8px
     );
-    --topology-shortcuts-help-desktop-top: calc(
-      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
-    );
-    /* Growth replay tile (2026-09-02, `topology-replay-growth`) — the fourth slot of the
+    /* Growth replay tile (2026-09-02, `topology-replay-growth`) — the third slot of the
        same rhythm, one row below the "?" tile. */
     --topology-growth-replay-desktop-top: calc(
-      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 3
+      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
     );
     /* Settings gear (formerly OntologyMapSettingsGear — settings integration after 2026-07-24,
        AppSettingsMenu trigger, chrome-datasheet-final.html draft) —

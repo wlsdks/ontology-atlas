@@ -176,3 +176,32 @@ test("branch map: More reveals a real member, collapse reverses it, and scoped v
   await page.getByTestId("map-detail-panel-more-menu-trigger").click();
   await expect(page.getByTestId("map-detail-panel-action-realm")).toBeVisible();
 });
+
+test("branch map: meaning captions terminate at visible concepts", async ({ page }) => {
+  await openDial(page, "dogfood", { width: 1512, height: 949 });
+  await page.goto("/en/topology/?guides=off&e2e=1&p=capability%3Alibrary-workspace");
+  await expect(page.getByTestId("map-detail-panel")).toBeVisible();
+  await page.getByTestId("map-detail-panel-action-meaning").click();
+  await expect(page.getByTestId("analysis-workbench")).toBeVisible();
+  await waitForMapStill(page);
+  const captions = await page.evaluate(() => {
+    const map = window.__atlasMap!;
+    const nodes = new Map(map.nodes().map((node) => [node.id, node]));
+    return map.relationCaptions!().map((caption) => {
+      const [source, target] = caption.edgeId.split(/--[^>]+-->/);
+      return { edgeId: caption.edgeId, sourceAlpha: nodes.get(source)?.alpha ?? 0, targetAlpha: nodes.get(target)?.alpha ?? 0 };
+    });
+  });
+  expect(captions.length).toBeGreaterThan(0);
+  for (const caption of captions) {
+    expect(caption.sourceAlpha, caption.edgeId).toBeGreaterThanOrEqual(0.5);
+    expect(caption.targetAlpha, caption.edgeId).toBeGreaterThanOrEqual(0.5);
+  }
+  // An explicit relation choice still reveals its implementation endpoint.
+  await page.getByTestId("meaning-relation").filter({ hasText: "Passage ask brief" })
+    .getByRole("button", { name: /^Show this connection/ }).click();
+  await waitForMapStill(page);
+  const endpoint = await page.evaluate(() => window.__atlasMap!.nodes().find((node) => node.id === "element:passage-ask-brief"));
+  expect(endpoint?.alpha).toBeGreaterThanOrEqual(0.5);
+  expect((await readDial(page)).texts.some((text) => text.id === "element:passage-ask-brief")).toBe(true);
+});

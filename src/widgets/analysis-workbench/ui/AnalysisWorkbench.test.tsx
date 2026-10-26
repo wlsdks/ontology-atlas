@@ -37,6 +37,17 @@ beforeEach(async () => {
 
 function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
 describe('analysis context workbench', () => {
+  it('returns to the named door instead of a route container on unmount', async () => {
+    const route = document.createElement('main'); route.tabIndex = -1;
+    const opener = document.createElement('button'); opener.id = 'workbench-test-door';
+    document.body.append(route, opener); route.focus();
+    const view = render(wrapper(<AnalysisWorkbench context={context} contextLabel="Project" open returnFocusSelector="#workbench-test-door" onClose={() => {}} />));
+    expect(screen.getByTestId('analysis-workbench-close')).toHaveFocus();
+    view.unmount();
+    route.focus();
+    await waitFor(() => expect(opener).toHaveFocus());
+    route.remove(); opener.remove();
+  });
   it('requests localized analysis prose while preserving the structured finding contract', () => {
     const onRequest = vi.fn();
     render(<NextIntlClientProvider locale="ko" messages={ko}><AnalysisWorkbench context={context} contextLabel="Project" open onClose={() => {}} onRequest={onRequest} /></NextIntlClientProvider>);

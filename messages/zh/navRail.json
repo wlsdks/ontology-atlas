@@ -11,5 +11,6 @@
   "mcp": "MCP",
   "git": "Git",
   "getApp": "下载应用",
-  "getAppTitle": "桌面应用会记住你的文件夹，可离线打开，并负责历史记录和 AI 连接"
+  "getAppTitle": "桌面应用会记住你的文件夹，可离线打开，并负责历史记录和 AI 连接",
+  "changes": "变更"
 }

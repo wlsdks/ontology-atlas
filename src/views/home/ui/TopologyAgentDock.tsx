@@ -16,9 +16,10 @@ import { ErrorBoundary } from "@/shared/ui/fallbacks/error-boundary";
 import { AcpChatPanel, AcpChatResizeHandle } from "@/widgets/acp-chat-panel";
 import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import dynamic from "next/dynamic";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from 'next-intl';
 import { subjectSuggestions } from "@/features/acp-session";
+import { createChatDraftStore, reportChatDraftPresence, type ChatDraftPresence } from "../model/agent/chat-draft-store";
 import { resolveAnalysisFindingTarget } from '../model/agent/analysis-finding-target';
 const VaultAgentPanel = dynamic(
   () => import("@/widgets/vault-agent-panel").then((m) => m.VaultAgentPanel),
@@ -134,25 +135,13 @@ export function TopologyAgentDock({
     meaningRelations, captureTaskBaseline
   } = topologyAnalysisReview;
   const { edgePanelModel, selectedEdge, setAcpRelationPreview } = topologyAuthoring;
-  // The draft outlives the panel, which unmounts on an idle close; one folder's draft, in memory.
-  const draftRef = useRef<{ folder: string | null; text: string; prefillNonce:number|null }>({ folder: null, text: "", prefillNonce:null });
-  const draftStore = useMemo(
-    () => ({
-      read: () => (draftRef.current.folder === gitVaultPath ? {text:draftRef.current.text,prefillNonce:draftRef.current.prefillNonce} : {text:"",prefillNonce:null}),
-      write: (draft: {text:string;prefillNonce:number|null}) => {
-        draftRef.current = { folder: gitVaultPath, ...draft };
-      },
-    }),
-    [gitVaultPath],
-  );
+  const draftStore = useMemo(() => createChatDraftStore(vault.handle), [vault.handle]);
   const draftContextKey=JSON.stringify([gitVaultPath,vaultAgentPrefill?.nonce,investigationBasis?.nonce]);
-  const [draftContext,setDraftContext]=useState<{key:string;seen:boolean;retired:boolean}|null>(null);
-  const handleDraftPresence=useCallback((present:boolean)=>{
-    const hasDraft=present||(draftRef.current.folder===gitVaultPath&&draftRef.current.text.trim().length>0);
-    setDraftContext(current=>{
-    if(current?.key!==draftContextKey)return {key:draftContextKey,seen:hasDraft,retired:false};
-    return {...current,seen:current.seen||hasDraft,retired:current.retired||(!hasDraft&&current.seen)};
-  });},[draftContextKey,gitVaultPath]);
+  const [draftContext,setDraftContext]=useState<ChatDraftPresence>(null);
+  const handleDraftPresence = useMemo(
+    () => reportChatDraftPresence.bind(null, draftStore, draftContextKey, setDraftContext),
+    [draftContextKey, draftStore],
+  );
   const preparedContext=vaultAgentPrefill?.context?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired) ? vaultAgentPrefill?.context?.label : null;
   // One subject for header, composer and asks: a picked concept, or the folder.
   const investigationLabel=investigationBasis?.vaultPath===gitVaultPath && (draftContext?.key!==draftContextKey||!draftContext.retired)?investigationBasis.label:null;
@@ -259,7 +248,7 @@ export function TopologyAgentDock({
               )}
             >
               <AnalysisWorkbench
-                returnFocusSelector={'[data-testid="topology-meaning-workbench-toggle"]'}
+                returnFocusSelector={meaningWorkbenchOpen ? '[data-testid="topology-meaning-workbench-toggle"]' : '[data-testid="topology-vault-agent-toggle"]'}
                 context={meaningAnalysisContext}
                 capture={analysisCapture}
                 conversationLabel={investigationLabel??preparedContext}

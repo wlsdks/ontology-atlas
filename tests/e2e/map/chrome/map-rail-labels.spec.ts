@@ -4,7 +4,6 @@ import { seedFirstRunSeen } from '../../first-run-seed';
 
 const TILES = [
   'topology-fit-control',
-  'topology-tour-button',
   'topology-shortcuts-help-button',
   'topology-replay-growth',
 ] as const;

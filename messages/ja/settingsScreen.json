@@ -17,10 +17,9 @@
   "motionFull": "システムに従う・控えめにしない",
   "motionCaptionApp": "システム設定 → アクセシビリティ → ディスプレイ → 視差効果を減らす で変更できます",
   "motionCaptionWeb": "お使いのコンピュータのシステム設定で変更できます",
-  "guidesLabel": "画面ガイド",
-  "guidesCaption": "各画面を初めて開いたときに自動で開きます。オフにすると、「もう一度表示」かマップ右上のガイドアイコンからだけ開きます",
-  "guidesAutoLabel": "ガイドを自動で表示",
+  "guidesLabel": "フォルダーの開始案内",
+  "guidesCaption": "サンプルを見ているときに、フォルダーを開く案内を一度だけ自動表示します。フォルダーボタンからいつでも開けます。",
+  "guidesAutoLabel": "フォルダーの案内を自動表示",
   "guidesOn": "オン",
-  "guidesOff": "オフ",
-  "guidesReplay": "もう一度表示"
+  "guidesOff": "オフ"
 }

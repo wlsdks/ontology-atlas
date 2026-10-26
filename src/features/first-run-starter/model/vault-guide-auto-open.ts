@@ -1,7 +1,6 @@
 /**
  * First-visit folder prompt: in settled sample mode with this flag unrecorded,
- * `VaultOpenGuideSheet` auto-opens once; its skip hands over to the guided tour, whose
- * transient guard waits for the sheet. localStorage because one prompt is enough; the folder CTA
+ * `VaultOpenGuideSheet` auto-opens once. localStorage because one prompt is enough; the folder CTA
  * always opens the same sheet.
  */
 import { readGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
@@ -13,8 +12,7 @@ export function readVaultGuideAutoOpened(
 ): boolean {
   if (typeof window === 'undefined') return true;
   /*
-   * The global auto-display switch covers this sheet too; it lives in `shared/lib` because two
-   * features read it and FSD forbids a feature-to-feature import.
+   * The global auto-display switch covers this sheet too; it lives in `shared/lib` so settings and the first-run card use the same preference.
    */
   if (!readGuideAutoStart()) return true;
   try {

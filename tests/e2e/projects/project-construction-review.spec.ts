@@ -64,6 +64,7 @@ test.describe("project ontology construction review", () => {
 
     const summary = page.getByTestId("construction-review-summary");
     await expect(summary).toBeVisible();
+    await expect(page.getByTestId("construction-review-outcome")).toBeFocused();
     await expect(summary).toHaveAttribute("data-qualification-status", "qualified");
     await expect(summary).toHaveAttribute("data-write-eligibility", "executable");
     await expect(page.getByTestId("construction-review-human-approval")).toContainText("reviewer");
@@ -90,9 +91,9 @@ test.describe("project ontology construction review", () => {
       .toEqual(localKeysBefore);
   });
 
-  test("at 1040 and 1512 the summary and evidence disclosure neither overflow nor get covered", async ({ page }) => {
+  test("at narrow and desktop widths the summary and evidence disclosure neither overflow nor get covered", async ({ page }) => {
     await openJson(page, envelope());
-    for (const width of [1040, 1512]) {
+    for (const width of [390, 1040, 1512]) {
       await page.setViewportSize({ width, height: 720 });
       const summary = page.getByTestId("construction-review-summary");
       await expect(summary).toBeVisible();
@@ -156,6 +157,13 @@ test.describe("project ontology construction review", () => {
         state,
       );
       await expect(page.getByTestId("construction-review-summary")).toHaveCount(0);
+      await expect(page.getByTestId("construction-review-outcome")).toBeFocused();
+      await page.keyboard.press("Tab");
+      const picking = page.waitForEvent("filechooser");
+      await expect(page.getByTestId("construction-review-retry")).toBeFocused();
+      await page.keyboard.press("Enter");
+      await (await picking).setFiles([]);
+      await expect(page.getByTestId("construction-review-error")).toHaveAttribute("data-envelope-state", state);
     });
   }
 });

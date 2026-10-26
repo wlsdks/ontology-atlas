@@ -422,7 +422,7 @@
   /*
    * ── The map's utility rail names itself as one group ─────────────────────────
    *
-   * The rail is four icon-only tiles (fit · tour · shortcuts · replay). Each one
+   * The rail is three icon-only tiles (fit · shortcuts · replay). Each one
    * carried its own tooltip, so finding a control meant hovering tiles one at a
    * time and reading one answer per wait — the rail could not be *scanned*.
    *
@@ -488,10 +488,6 @@
     transform-origin: center;
   }
 
-  .guided-tour-card-in {
-    animation: panelCrossfadeIn var(--topology-tour-transition-ms)
-      var(--motion-ease) both;
-  }
 
   @keyframes overlaySpringIn {
     from {

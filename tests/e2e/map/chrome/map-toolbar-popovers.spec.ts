@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openOwnerState } from "./map-toolbar-popovers-harness";
-import { waitForBoxStill, waitForMapStill } from "../../settle";
+import { waitForBoxStill } from "../../settle";
 /**
  * Each claim is measured: trail popover clear of INDEX, tool tiles and status chips on one row
  * in every view, path chip actions at the 24px target floor, keyboard focus handoff, and the
@@ -107,7 +107,7 @@ test("the tools and chips share one row, and a view change does not move it betw
         const index = r("topology-index-panel") ?? r("topology-index-tab");
         const search = r("topology-concept-search")!;
         // The rail is `display: contents`; its column is where its tiles stand.
-        const rail = r("topology-tour-button");
+        const rail = r("topology-shortcuts-help-button");
         return {
             laneLeft: lane.left,
             freeLeft: index ? index.right : 0,
@@ -119,6 +119,7 @@ test("the tools and chips share one row, and a view change does not move it betw
     if (narrow.laneLeft - narrow.freeLeft > 40) {
         failures.push(`1040: the wrapped search lane starts ${Math.round(narrow.laneLeft - narrow.freeLeft)}px from the free map's left`);
   }
+  expect(narrow.railLeft, "the surviving right-rail control must be measurable").not.toBeNull();
   if (narrow.railLeft !== null && narrow.searchRight > narrow.railLeft) {
     failures.push(`1040: the search tile ends at ${Math.round(narrow.searchRight)}, inside the right rail's column (${Math.round(narrow.railLeft)})`);
   }
@@ -148,36 +149,6 @@ test("the path chip's two actions are one 24px icon button shape", async ({ page
     await expect(outcome).toBeVisible();
     const clipped = await outcome.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
     expect(clipped, "the path outcome is cut off").toBe(false);
-});
-test("the tour's try-click card stands clear of the toolbar, and leaves through an exit frame", async ({ page }) => {
-    test.setTimeout(180000);
-    await openOwnerState(page);
-    await page.getByTestId("topology-tour-button").click();
-    const overlay = page.getByTestId("guided-tour-overlay");
-    await expect(page.getByTestId("guided-tour-card")).toBeVisible();
-    for (const step of ["nodes", "relations", "try-click"]) {
-        await page.getByTestId("guided-tour-next").first().click();
-        await expect(overlay).toHaveAttribute("data-tour-step", step);
-    }
-    await waitForMapStill(page).catch(() => { });
-    await waitForBoxStill(page.getByTestId("guided-tour-card"), { frames: 6 });
-    const covered = await page.evaluate(() => {
-        const card = document.querySelector('[data-testid="guided-tour-card"]')!.getBoundingClientRect();
-        return [
-            ...document.querySelectorAll<HTMLElement>('[data-testid="topology-top-toolbar"] button, [data-testid="topology-top-toolbar"] a[href], [data-testid="topology-top-toolbar"] [role="status"]')
-        ]
-            .filter((el) => {
-            const r = el.getBoundingClientRect();
-            return r.width > 0 && r.height > 0 && r.left < card.right && r.right > card.left && r.top < card.bottom && r.bottom > card.top;
-        })
-            .map((el) => el.dataset.testid ?? el.getAttribute("aria-label") ?? el.tagName);
-    });
-    expect(covered, `the card covers ${covered.join(", ")}`).toEqual([]);
-    // One Escape: the overlay is still drawn, fading and inert, in the frame after it.
-    await page.keyboard.press("Escape");
-    const exitFrame = await page.evaluate(() => document.querySelector('[data-testid="guided-tour-overlay"]')?.getAttribute("data-state") ?? "gone");
-    expect(exitFrame, "the tour hard-cut out on Escape").toBe("closed");
-    await expect(overlay).toHaveCount(0);
 });
 /** Every visible control in the toolbar, as rects. */
 async function toolbarControls(page: Page) {
@@ -258,22 +229,4 @@ test("the toolbar is one lane row inside the map's top reserve at every width", 
     })
         .toBe(0);
     expect(failures, failures.join("\n")).toEqual([]);
-});
-/** At 1040x720 the path chip must not stand over `domain:catalog`, the node the try-click step lights. */
-test("the tour's lit node is not under the toolbar at 1040x720", async ({ page }) => {
-    test.setTimeout(180000);
-    await openOwnerState(page, 1040);
-    await page.setViewportSize({ width: 1040, height: 720 });
-    await page.getByTestId("topology-tour-button").click();
-    const overlay = page.getByTestId("guided-tour-overlay");
-    await expect(page.getByTestId("guided-tour-card")).toBeVisible();
-    for (const step of ["nodes", "relations", "try-click"]) {
-        await page.getByTestId("guided-tour-next").first().click();
-        await expect(overlay).toHaveAttribute("data-tour-step", step);
-    }
-    await waitForMapStill(page).catch(() => { });
-    await waitForBoxStill(page.getByTestId("topology-tour-anchor"), { frames: 6 });
-    const anchor = (await page.getByTestId("topology-tour-anchor").boundingBox())!;
-    const covering = (await toolbarControls(page)).filter((c) => c.left < anchor.x + anchor.width && c.right > anchor.x && c.top < anchor.y + anchor.height && c.bottom > anchor.y);
-    expect(covering.map((c) => c.id), `the lit node at [${Math.round(anchor.x)},${Math.round(anchor.y)}] is under the toolbar`).toEqual([]);
 });

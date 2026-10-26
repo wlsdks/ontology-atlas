@@ -48,3 +48,22 @@ test('a queued task without a named runner waits for verified detection', async 
   // The fixture stops at session creation; no user turn or provider request runs.
   expect(await page.evaluate(() => (window as unknown as { __nativeCalls: { command: string }[] }).__nativeCalls.some(call => call.command === 'acp_send'))).toBe(false);
 });
+
+test('an unsent map draft survives visiting another screen and returning', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  const runtime = { id: 'codex-acp', label: 'Codex', verified: true, isolated: true, icon: null, brandInk: null, description: '', website: null, license: null, launchKind: 'npx', cliPath: '/fixture/cli', adapterPath: null, adapterPackage: null, state: 'ready' };
+  await installDesktopRailRuntime(page, {}, { fast: [runtime], probed: [runtime] });
+  await page.goto('/ko/?guides=off&e2e=1');
+  await page.getByTestId('first-run-open').click();
+  await page.getByTestId('topology-vault-agent-toggle').click();
+  const composer = page.getByTestId('acp-chat-panel').getByRole('textbox');
+  const draft = 'Explain the checkout flow before changing it.';
+  await composer.fill(draft);
+  await page.getByTestId('app-nav-rail-item-git').click();
+  await expect(page).toHaveURL(/\/git\//);
+  await page.getByTestId('app-nav-rail-item-map').click();
+  await expect(page.getByTestId('ontology-map-canvas')).toBeVisible();
+  await page.getByTestId('topology-vault-agent-toggle').click();
+  await expect(composer).toHaveValue(draft);
+  expect(await page.evaluate(() => (window as unknown as { __nativeCalls: { command: string }[] }).__nativeCalls.some(call => call.command === 'acp_send'))).toBe(false);
+});

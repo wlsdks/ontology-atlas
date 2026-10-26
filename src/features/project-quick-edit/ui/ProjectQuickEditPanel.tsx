@@ -258,6 +258,7 @@ export function ProjectQuickEditPanel({
         variant={open ? "outline" : triggerVariant}
         size="sm"
         data-testid="public-quick-edit-toggle"
+        className="atlas-touch-floor atlas-touch-floor-wide"
         onClick={(event) => {
           // Pointer activation does not focus the button in WebKit, but the modal
           // contract restores its captured opener after Escape or close.

@@ -173,7 +173,8 @@
       "pinDoc": "Pin / unpin (pinned section stays on top)",
       "copyDocUrl": "Copy current document URL to clipboard",
       "tagFilter": "Click a tag chip to filter the tree",
-      "modeToggle": "Mode toggle: show only that mode's docs"
+      "modeToggle": "Mode toggle: show only that mode's docs",
+      "goTo_changes": "Go to change briefing"
     },
     "keys": {
       "drag": "Drag",

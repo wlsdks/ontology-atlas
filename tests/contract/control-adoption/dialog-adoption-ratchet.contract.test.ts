@@ -88,7 +88,6 @@ const REGISTERED: ReadonlyArray<readonly [file: string, count: number, why: stri
  * by migration in the `variant="palette"` registration round.
  */
 const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
-  ["src/features/guided-tour/ui/GuidedTourCard.tsx", 1],
   ["src/features/docs-vault-local/ui/VaultOpenGuideSheet.tsx", 1],
   ["src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx", 1],
   ["src/features/ontology-blocks/ui/BlockImportModule.tsx", 1],

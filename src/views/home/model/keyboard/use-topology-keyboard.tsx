@@ -10,14 +10,11 @@ import type { useHomeWorkbenchController } from "../use-home-workbench-controlle
 
 import { type ProjectImpactMode } from "@/entities/project";
 import { useFirstRunSampleModeSettled } from "@/features/first-run-starter";
-import { canAutoStartGuidedTour, readGuideAutoStart, readGuidedTourStatus, resolveAnchorRect, useGuidedTour, useGuidedTourAutoStartReady, useRegisterGuideReplay, watchGuidedTourAutoStartCancel, type TourAnchor } from "@/features/guided-tour";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
 import { useFlatMapView } from "@/shared/lib/preferences/appearance-preferences";
-import { derivedHook } from "@/shared/lib/derived-hook";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
-import { useCallback, useEffect, useEffectEvent, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent } from "react";
 import { shouldSuppressGlobalShortcuts } from "../../lib/keyboard/blocking-surface";
-import { resolveTourAnchorNodeId } from "../../lib/keyboard/resolve-tour-anchor-node";
 import { resolveTopologyEscLadderAction } from "../../lib/keyboard/topology-esc-ladder";
 import { useFocusReturnOnClose } from "./use-focus-return-on-close";
 
@@ -26,26 +23,11 @@ const CANVAS_RETURN = ["ontology-map-canvas"] as const;
 const BOOTSTRAP_RETURN = ["topology-index-uncataloged-docs", "ontology-map-canvas"] as const;
 /** The popover's own "full detail" button, still under the closed overlay. */
 const FULL_DETAIL_RETURN = ["map-detail-panel-open-full-detail", "ontology-map-canvas"] as const;
-const TOUR_RETURN = ["topology-tour-button", "ontology-map-canvas"] as const;
-
-function tourAnchorResolver(nodes: Parameters<typeof resolveTourAnchorNodeId>[0]) {
-  const graph = new WeakRef(nodes);
-  return (anchor: TourAnchor): boolean => {
-    if (anchor === null) return true;
-    if (anchor.type === "canvas-node") {
-      const live = graph.deref();
-      return live !== undefined && resolveTourAnchorNodeId(live, anchor.target) !== null;
-    }
-    return resolveAnchorRect(anchor.value) !== null;
-  };
-}
-const useTourAnchorResolver = derivedHook(tourAnchorResolver);
 
 interface Options {
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setShortcutsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setDocsDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  tourAutoStartReady: ReturnType<typeof useGuidedTourAutoStartReady>;
   ontologySearchOpen: boolean;
   localGraphRoot: string | null;
   setLocalGraphStack: React.Dispatch<React.SetStateAction<string[]>>;
@@ -80,15 +62,15 @@ interface Options {
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "ontologyMapGraph" | "canvasSelectedSlug" | "resolvedRealmSlug">;
 }
-export function useTopologyKeyboardTour({
-  setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, tourAutoStartReady, ontologySearchOpen,
+export function useTopologyKeyboard({
+  setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, ontologySearchOpen,
   localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
   topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
   topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
   homeWorkbenchController
 }: Options) {
-  const { ontologyMapGraph, canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
-  const { handleClose, handleSelect } = topologyNavigationActions;
+  const { canvasSelectedSlug, resolvedRealmSlug } = topologyGraphProjection;
+  const { handleClose } = topologyNavigationActions;
   const { setSelectedEdge, closeCreateNode, selectedEdge, createNodeOpen, bootstrapOpen, setBootstrapOpen, acpTurnActivityFrame } = topologyAuthoring;
   const {
     contextMenuNode, fullDetailOpen, selectedRelationActive, closeContextMenu, setFullDetailSlug,
@@ -101,79 +83,6 @@ export function useTopologyKeyboardTour({
   const { agentDockOpen, closeVaultAgent } = topologyAgentOrchestration;
   const { workbenchOpenRef } = homeWorkbenchController;
 
-
-  // Resolves DOM or canvas anchors here and hands the tour feature a boolean, since features may
-  // not import widgets.
-  const canResolveTourAnchor = useTourAnchorResolver(ontologyMapGraph.nodes);
-  const tour = useGuidedTour({
-    hasSelection: canvasSelectedSlug != null,
-    canResolveAnchor: canResolveTourAnchor,
-    // A kept selection fades the utility lane, so the next step would light a hidden toggle.
-    onLeaveDatasheet: handleClose,
-  });
-  const tourAnchorRef = useRef<HTMLDivElement | null>(null);
-  const tourAnchorNodeId =
-    tour.open && tour.step && tour.step.anchor !== null && tour.step.anchor.type === "canvas-node"
-      ? resolveTourAnchorNodeId(ontologyMapGraph.nodes, tour.step.anchor.target)
-      : null;
-  const activateTourAnchor = useCallback(() => {
-    if (!tourAnchorNodeId) return;
-    setSelectedEdge(null);
-    handleSelect(tourAnchorNodeId);
-  }, [handleSelect, tourAnchorNodeId, setSelectedEdge]);
-  // Opening the tour retires other transient surfaces, like the create-node composer.
-  const openGuidedTour = useCallback(() => {
-    setOntologySearchOpen(false);
-    setShortcutsOpen(false);
-    setDocsDrawerOpen(false);
-    closeCreateNode();
-    tour.start();
-  }, [closeCreateNode, setDocsDrawerOpen, setOntologySearchOpen, setShortcutsOpen, tour]);
-
-  // The settings guide row sits in the same place on every destination; the map registers this
-  // function.
-  useRegisterGuideReplay(openGuidedTour);
-
-  // Starts once when sample mode settles and no done/skipped status is stored; never for
-  // local-vault users.
-  const autoTourFiredRef = useRef(false);
-  // `openGuidedTour` changes every render, so a ref keeps this effect's deps
-  // to `tourAutoStartReady` alone, or the timer resets every render and never fires.
-  const openGuidedTourRef = useRef(openGuidedTour);
-  useEffect(() => {
-    openGuidedTourRef.current = openGuidedTour;
-  }, [openGuidedTour]);
-  useEffect(() => {
-    if (autoTourFiredRef.current || !tourAutoStartReady) return undefined;
-    if (!readGuideAutoStart()) return undefined;
-    // Once turned off, nothing appears by itself; the compass tile and settings replay still open
-    // it.
-    if (readGuidedTourStatus() !== null) return undefined;
-    // Fires at the first moment nothing covers it (no modal open, document focused), starting 900
-    // ms in. No retry cap: a cap let a long folder-picker visit lose the tour for good. The first
-    // real interaction while waiting cancels it, so a card never cuts across a panel the person
-    // just opened.
-    let timerId = 0;
-    const tick = () => {
-      if (autoTourFiredRef.current) return;
-      if (canAutoStartGuidedTour()) {
-        autoTourFiredRef.current = true;
-        stopInteractionWatch();
-        openGuidedTourRef.current();
-        return;
-      }
-      timerId = window.setTimeout(tick, 2000);
-    };
-    const stopInteractionWatch = watchGuidedTourAutoStartCancel(() => {
-      autoTourFiredRef.current = true;
-      window.clearTimeout(timerId);
-    });
-    timerId = window.setTimeout(tick, 900);
-    return () => {
-      window.clearTimeout(timerId);
-      stopInteractionWatch();
-    };
-  }, [tourAutoStartReady]);
 
   // One Escape closes one surface in `resolveTopologyEscLadderAction` order, the shortcut sheet's
   // promise (`docs/features/keyboard.md`). `defaultPrevented` is checked first because Radix closes
@@ -197,7 +106,6 @@ export function useTopologyKeyboardTour({
       realmActive: resolvedRealmSlug !== null,
       selectedEdgeActive: selectedEdge !== null,
       contextMenuOpen: contextMenuNode !== null,
-      tourOpen: tour.open,
       createNodeOpen,
       bootstrapOpen,
       searchOpen: ontologySearchOpen,
@@ -223,10 +131,6 @@ export function useTopologyKeyboardTour({
         break;
       case "close-context-menu":
         closeContextMenu();
-        break;
-      case "close-tour":
-        // Closes only the tour (records `skipped`): one keypress, one surface.
-        tour.skip();
         break;
       case "close-create-node":
         closeCreateNode();
@@ -271,7 +175,6 @@ export function useTopologyKeyboardTour({
   useFocusReturnOnClose(bootstrapOpen, BOOTSTRAP_RETURN);
   useFocusReturnOnClose(createNodeOpen, CANVAS_RETURN);
   useFocusReturnOnClose(fullDetailOpen, FULL_DETAIL_RETURN);
-  useFocusReturnOnClose(tour.open, TOUR_RETURN);
 
   const handleSelectImpactMode = useCallback(
     (nextMode: ProjectImpactMode) => {
@@ -286,7 +189,6 @@ export function useTopologyKeyboardTour({
   // One predicate (`blocking-surface`) silences global shortcuts while a blocking surface is open.
   const shortcutsSuppressed = shouldSuppressGlobalShortcuts({
     createNodeOpen,
-    tourOpen: tour.open,
     // `blocked`: the agent stopped and the permission card waits.
     agentAwaitingDecision: acpTurnActivityFrame?.activity.state === "blocked",
   });
@@ -336,5 +238,5 @@ export function useTopologyKeyboardTour({
       },
     },
   ]);
-  return { openGuidedTour, tour, tourAnchorNodeId, tourAnchorRef, handleSelectImpactMode, activateTourAnchor } as const;
+  return { handleSelectImpactMode } as const;
 }

@@ -11,7 +11,7 @@ import { useTopologyCreateIntent } from "../model/authoring/use-topology-create-
 import { useTopologyExplorationLenses } from "../model/map-canvas/use-topology-exploration-lenses";
 import { useTopologyIndexPresentation } from "../model/index-panel/use-topology-index-presentation";
 import { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
+import { useTopologyKeyboard } from "../model/keyboard/use-topology-keyboard";
 import { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import { useTopologyPreferences } from "../model/use-topology-preferences";
 import { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
@@ -35,7 +35,6 @@ import { cancelMapNavigation, readMapNavigationPending } from "@/shared/lib/navi
 import { useArrivalMemory } from "@/shared/lib/navigation/route-arrival-memory";
 import { useAgentDockDefaultOpen } from "@/shared/lib/llm-connection/use-agent-dock-default";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
-import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useLocalStorageBoolean } from "@/shared/lib/preferences/use-local-storage-boolean";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { LiveAnnouncer, WidgetErrorFallback, useToast } from "@/shared/ui";
@@ -54,7 +53,6 @@ import { useNodeDatasheetModel } from "../model/inspector/use-node-datasheet-mod
 import { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
 import { isDeeplinkRouteState } from "../model/route-state/url-state";
 
-import { useGuidedTourAutoStartReady } from "@/features/guided-tour";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { refreshIndexDependentTokens } from "@/widgets/ontology-map";
 import { type IndexPanelState } from "@/widgets/topology-index-panel";
@@ -205,7 +203,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
    */
   const toast = useToast();
   /** Scaffold failures reach a person as a sentence, not a thrown string. */
-  const failureSentence = useFailureSentence();
 
   const prefetchedProjectHrefsRef = useRef(new Set<string>());
   const preloadedImageUrlsRef = useRef(new Set<string>());
@@ -281,7 +278,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     void openVault();
   }, [fsaUnsupported, openVault, setUnsupportedGuideOpen]);
   // Accepts both the sample and a real folder settling (`use-auto-start-ready.ts`).
-  const tourAutoStartReady = useGuidedTourAutoStartReady();
   const topologyAuthoring = useTopologyAuthoring({ setRouteState, meaningEditorIntent, meaningEditParam, toast, topologyVaultReadModel, topologyPreferences });
   const {
     canCreateNode, createNodeOpen, bootstrapOpen, nodeEditTarget, agentActivityStatus, agentFocusNodeId,
@@ -500,8 +496,8 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     topologyAuthoring, topologyGraphProjection, topologyIndexPresentation, topologySourceReadiness,
     topologyAgentOrchestration, topologyInspectorState
   });
-  const topologyKeyboardTour = useTopologyKeyboardTour({
-    setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, tourAutoStartReady, ontologySearchOpen,
+  const topologyKeyboard = useTopologyKeyboard({
+    setOntologySearchOpen, setShortcutsOpen, setDocsDrawerOpen, ontologySearchOpen,
     localGraphRoot, setLocalGraphStack, setRouteState, sampleModeSettled, requestVaultOpen,
     topologyGraphProjection, topologyNavigationActions, topologyAuthoring, topologyCanvasFocus,
     topologyInspectorState, topologyRouteControls, topologyExplorationLenses, topologyAgentOrchestration,
@@ -509,7 +505,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   });
   const topologySceneControls = useTopologySceneControls({
     pathSourceSlug, pathTargetSlug, analysisMode, expandAllActive, setRouteState, setExpandAllActive,
-    setFitViewToken, toast, failureSentence, mapEntryTicket, localGraphRoot, topologyGraphStats,
+    setFitViewToken, toast, mapEntryTicket, localGraphRoot, topologyGraphStats,
     projectsQuery, activeCategory, topologyVisibleCount, setTopologyGraphStats, topologyExplorationLenses,
     topologyVaultReadModel, topologyGraphProjection, topologyRouteControls, topologyPreferences,
     topologyAuthoring, topologyCanvasFocus
@@ -545,9 +541,9 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           <h1 className="sr-only">
             {t('srHeading')}
           </h1>
-          <GestureHint
+          {topologySceneControls.topologyRenderState.renderCanvas && <GestureHint
             disabled={drawerOpen || structure}
-          />
+          />}
           <LiveAnnouncer
             message={(() => {
               if (!selectedProject) return "";
@@ -632,7 +628,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               topologyNavigationActions={topologyNavigationActions}
               topologyRouteControls={topologyRouteControls}
               topologyPreferences={topologyPreferences}
-              topologyKeyboardTour={topologyKeyboardTour}
               topologyAuthoring={topologyAuthoring}
               topologySourceReadiness={topologySourceReadiness}
               acpRuntimeController={acpRuntimeController}
@@ -682,7 +677,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyAnalysisReview={topologyAnalysisReview}
             topologyNavigationActions={topologyNavigationActions}
             topologyRouteControls={topologyRouteControls}
-            topologyKeyboardTour={topologyKeyboardTour}
             topologyInspectorState={topologyInspectorState}
             topologyCreateIntent={topologyCreateIntent}
             topologyIndexPresentation={topologyIndexPresentation}
@@ -691,6 +685,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
           />
           {/* The alert text is held through the exit window. */}
           <TopologyInspectorSurfaces
+            topologyKeyboard={topologyKeyboard}
             grayAreaOpen={grayArea.open}
             grayAreaAction={grayArea.action}
             projectsError={projectsError}
@@ -701,7 +696,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             tSummaryFreshness={tSummaryFreshness}
             topologyPreferences={topologyPreferences}
             topologyAuthoring={topologyAuthoring}
-            topologyKeyboardTour={topologyKeyboardTour}
             topologyNavigationActions={topologyNavigationActions}
             topologyInspectorState={topologyInspectorState}
             topologyCanvasFocus={topologyCanvasFocus}
@@ -729,7 +723,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
             topologyAuthoring={topologyAuthoring}
             topologyNavigationActions={topologyNavigationActions}
             topologyRouteControls={topologyRouteControls}
-            topologyKeyboardTour={topologyKeyboardTour}
           />
         </div>
         {/* In the same flex row as the map column, so one width animation moves both. */}

@@ -17,10 +17,9 @@
   "motionFull": "시스템 설정 따름 · 줄이지 않음",
   "motionCaptionApp": "시스템 설정 → 손쉬운 사용 → 디스플레이 → 동작 줄이기에서 바꿔요",
   "motionCaptionWeb": "컴퓨터의 시스템 설정에서 바꿔요",
-  "guidesLabel": "화면 안내",
-  "guidesCaption": "처음 여는 화면마다 한 번 저절로 떠요. 끄면 「다시 보기」나 지도 오른쪽 위 안내 아이콘으로만 열려요",
-  "guidesAutoLabel": "화면 안내 자동 표시",
+  "guidesLabel": "폴더 시작 안내",
+  "guidesCaption": "샘플을 둘러볼 때 폴더 여는 방법을 한 번 자동으로 안내해요. 폴더 버튼으로는 언제든 직접 열 수 있어요.",
+  "guidesAutoLabel": "폴더 시작 안내 자동 표시",
   "guidesOn": "켬",
-  "guidesOff": "끔",
-  "guidesReplay": "다시 보기"
+  "guidesOff": "끔"
 }

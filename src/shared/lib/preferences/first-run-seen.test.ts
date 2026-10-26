@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { DESTINATION_TOURS } from "./tour-steps";
-import { destinationTourStatusKey } from "./tour-storage";
 import {
   FIRST_RUN_SEEN_ENTRIES,
   applyFirstRunSeen,
@@ -15,17 +13,11 @@ describe("first-run-seen", () => {
   });
 
   describe("FIRST_RUN_SEEN_ENTRIES", () => {
-    // Derived from the destinations, so a new guide cannot be omitted silently.
-    it("covers every destination guide", () => {
-      const keys = new Set(FIRST_RUN_SEEN_ENTRIES.map(([key]) => key));
-      for (const id of Object.keys(DESTINATION_TOURS)) {
-        expect(keys).toContain(destinationTourStatusKey(id));
-      }
-      expect(keys).toContain("guided-tour:v1");
-      expect(keys).toContain("vault-open-guide:auto:v1");
-      expect(keys).toContain("atlas.library.guide-seen");
-      // The destinations plus the map, the folder sheet and the Library home guide.
-      expect(keys.size).toBe(Object.keys(DESTINATION_TOURS).length + 3);
+    it("covers the surviving folder and Library guidance", () => {
+      expect(FIRST_RUN_SEEN_ENTRIES).toEqual([
+        ["vault-open-guide:auto:v1", "1"],
+        ["atlas.library.guide-seen", "on"],
+      ]);
     });
   });
 

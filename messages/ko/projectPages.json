@@ -114,8 +114,11 @@
     "constructionReview": {
       "eyebrow": "지도에 쓰기 전 안전 점검",
       "title": "지금 안전하게 결정할 것",
-      "openResult": "검수 결과 열기",
-      "readingResult": "검수 결과 읽는 중…",
+      "openResult": "검수 JSON 가져오기",
+      "readingResult": "검수 JSON 읽는 중…",
+      "fileHint": "이 프로젝트의 검수 결과가 담긴 JSON 파일을 선택해요. 가져온 내용은 이 화면에서만 읽고, 지도에는 쓰지 않아요.",
+      "resultRegion": "가져온 검수 결과",
+      "retryFile": "다른 검수 JSON 선택",
       "errorTitle": "이 검수 결과는 신뢰할 수 없어요",
       "errors": {
         "malformed": "필수 검증 자료가 없거나 읽을 수 없어요. 계획과 승인을 정상 결과처럼 보여주지 않아요.",

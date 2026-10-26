@@ -5,7 +5,6 @@ import type { useTopologyCanvasFocus } from "../model/use-topology-canvas-focus"
 import type { useTopologyCreateIntent } from "../model/authoring/use-topology-create-intent";
 import type { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
 import type { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import type { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
@@ -13,9 +12,10 @@ import type { useTopologySceneControls } from "../model/map-canvas/use-topology-
 import type { useTopologySourceReadiness } from "../model/project-source/use-topology-source-readiness";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
 import { useVaultLoadProgress } from "@/entities/vault-session";
+import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
 import { focusWhenReady } from "../lib/keyboard/topology-focus-return";
 import { TopologyIndexPanel, TopologyIndexTab, TopologyRealmLedger } from "@/widgets/topology-index-panel";
 
@@ -28,7 +28,6 @@ interface TopologyIndexSlotProps {
   acpRuntimeController: Pick<ReturnType<typeof useAcpRuntimeController>, "acpRuntimes">;
   topologySourceReadiness: Pick<ReturnType<typeof useTopologySourceReadiness>, "unboundProjectSource" | "projectSourceReadiness">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "canCreateNode" | "agentAttributedRecentNodeId" | "bootstrapPlan" | "setBootstrapOpen">;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "openGuidedTour" | "tour">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "setAudiencePlain" | "kindCountsTitle">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "handleExitRealm" | "handleEnterRealm" | "handleIndexCollapse">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
@@ -37,7 +36,6 @@ interface TopologyIndexSlotProps {
     | "changedSlugs"
     | "recentChanges"
     | "spotlightOn"
-    | "dustySlugs"
     | "brokenDocCount"
     | "vault"
   >;
@@ -45,6 +43,7 @@ interface TopologyIndexSlotProps {
   topologySceneControls: Pick<
     ReturnType<typeof useTopologySceneControls>,
     | "indexTreeResult"
+    | "starterRecoveryActive"
     | "realmActive"
     | "realmLedgerModel"
     | "indexMaxDomainDescendantCount"
@@ -61,7 +60,7 @@ interface TopologyIndexSlotProps {
 export function TopologyIndexSlot({
   indexSlotFrames, setRouteState, recentWindow, topologyCanvasFocus, topologyInspectorState,
   topologySceneControls, topologyGraphProjection, topologyVaultReadModel, topologyNavigationActions,
-  topologyRouteControls, topologyPreferences, topologyKeyboardTour, topologyAuthoring,
+  topologyRouteControls, topologyPreferences, topologyAuthoring,
   topologySourceReadiness, acpRuntimeController, topologyAgentOrchestration, topologyCreateIntent
 }: TopologyIndexSlotProps) {
   const { topologyCreateNodeBlockingActive } = topologyCreateIntent;
@@ -69,23 +68,24 @@ export function TopologyIndexSlot({
   const { selectedRelationActive } = topologyCanvasFocus;
   const { indexDemotedByNodeSheet } = topologyInspectorState;
   const {
-    indexTreeResult, realmActive, realmLedgerModel, indexMaxDomainDescendantCount, indexDomainCensus,
+    indexTreeResult, starterRecoveryActive, realmActive, realmLedgerModel, indexMaxDomainDescendantCount, indexDomainCensus,
     topologyTotalNodes, topologyTotalRelations, indexDomainCount
   } = topologySceneControls;
   const { canvasSelectedSlug } = topologyGraphProjection;
-  const { changedSlugs, recentChanges, spotlightOn, dustySlugs, brokenDocCount, vault } = topologyVaultReadModel;
+  const { changedSlugs, recentChanges, spotlightOn, brokenDocCount, vault } = topologyVaultReadModel;
   const { handleSelect } = topologyNavigationActions;
   const { handleExitRealm, handleEnterRealm, handleIndexCollapse } = topologyRouteControls;
   const { t, audiencePlain, setAudiencePlain, kindCountsTitle } = topologyPreferences;
-  const { openGuidedTour, tour } = topologyKeyboardTour;
   const { canCreateNode, agentAttributedRecentNodeId, bootstrapPlan, setBootstrapOpen } = topologyAuthoring;
   const { unboundProjectSource, projectSourceReadiness } = topologySourceReadiness;
   const { acpRuntimes } = acpRuntimeController;
   const { handleIndexTabExpandFromAgent } = topologyAgentOrchestration;
   const loadProgress = useVaultLoadProgress();
+  const { query, search, select } = useMapReadingContext(vault.handle);
+  useEffect(() => { select(canvasSelectedSlug); }, [canvasSelectedSlug, select]);
 
   return (<>
-    {!selectedRelationActive && !topologyCreateNodeBlockingActive
+    {topologyTotalNodes > 0 && !selectedRelationActive && !topologyCreateNodeBlockingActive && !starterRecoveryActive
       ? indexSlotFrames.map((frame) => (
         <div
           // Keyed so collapse and expand take turns in the slot with the shared `.map-overlay-in`
@@ -158,6 +158,8 @@ export function TopologyIndexSlot({
                 />
               ) : (
                 <TopologyIndexPanel
+                  searchQuery={query}
+                  onSearchQueryChange={search}
                   // Plain mode drops element rows for display only; ledger and counts
                   // use `indexTreeResult`.
                   treeResult={
@@ -177,9 +179,6 @@ export function TopologyIndexSlot({
                     handleIndexCollapse();
                     focusWhenReady(["topology-index-tab"], { leaving });
                   }}
-                  onStartTour={openGuidedTour}
-                  tourIndexSpotlit={tour.open && tour.step?.id === "index"}
-                  tourAgentSpotlit={tour.open && tour.step?.id === "agent"}
                   onEnablePlainMode={() => setAudiencePlain(true)}
                   // Gates the hint explaining the missing element rows.
                   plainMode={audiencePlain}
@@ -206,7 +205,6 @@ export function TopologyIndexSlot({
                   // dialog on a populated map too.
                   uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
                   // The row hides at 0.
-                  dustyNodeCount={dustySlugs.size}
                   brokenDocCount={brokenDocCount}
                   unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                   // Opens the project with the caret on its connect action.
@@ -276,8 +274,6 @@ export function TopologyIndexSlot({
                       count: bootstrapPlan?.elements.length ?? 0,
                     }),
                     uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
-                    dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
-                    dustyNodesAction: t("index.dustyNodesAction"),
                     brokenDocsLabel: t("index.brokenDocsLabel", { count: brokenDocCount }),
                     brokenDocsAction: t("index.brokenDocsAction"),
                     sourceUnboundLabel: t("index.sourceUnboundLabel", {

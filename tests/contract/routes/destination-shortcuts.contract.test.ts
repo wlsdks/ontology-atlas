@@ -213,15 +213,15 @@ describe("the rail, the sheet and the shell read the same table", () => {
     ).toBeLessThanOrEqual(9);
   });
 
-  it("the current list has eight: automations go to the management hub, and the docs drawer and MCP merges stay", () => {
+  it("the current list has nine: source changes have a separate entry and the existing merges stay", () => {
     /*
      * A ceiling far above the current count turns slack into a free pass, so the exact inventory is
      * pinned: a change to the list needs a decision.
      */
     expect(
       DESTINATION_IDS.length,
-      "the destination list changed; review the decision to add Automations or to merge Library/Docs and Agents/MCP",
-    ).toBe(8);
+      "the destination list changed; review the source-change briefing destination decision",
+    ).toBe(9);
   });
 
   /**

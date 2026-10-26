@@ -1,5 +1,4 @@
 import type { DialWorld } from '../../dial/types';
-import { projectTourAnchor } from "./topology-tour-anchor";
 import type { CameraAxes } from "../../engine/camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
@@ -68,8 +67,6 @@ export interface RealmFrameStageSources {
   onEnterRealmRef: SourceRef<((slug: string) => void) | undefined>;
   realmEnterTargetRef: SourceRef<string | null>;
   domeRuntimeRef: SourceRef<DomeRuntime | null>;
-  tourAnchorElRef: SourceRef<HTMLDivElement | null>;
-  tourAnchorNodeIdRef: SourceRef<string | null>;
   getRealmCaption: () => string | null;
 }
 
@@ -85,8 +82,6 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
     onEnterRealmRef,
     realmEnterTargetRef,
     domeRuntimeRef,
-    tourAnchorElRef,
-    tourAnchorNodeIdRef,
     getRealmCaption,
   } = sources;
   const result: RealmFrameResult = {
@@ -264,12 +259,6 @@ export function createRealmFrameStage(sources: RealmFrameStageSources) {
       }
     }
 
-    projectTourAnchor({
-      element: tourAnchorElRef.current,
-      nodeId: tourAnchorNodeIdRef.current,
-      world, camera, width, height, tokens,
-      dome: domeRuntimeRef.current,
-    });
 
     result.realmDial = realmDial;
     result.frameClusteredIds = frameClusteredIds;

@@ -59,8 +59,7 @@ function fixture(reducedMotion = false) {
     dragVelRef: ref({ x: 0, y: 0 }), dragPrevPosRef: ref(null), dropSeededRef: ref(false),
     geomPrevXRef: ref(null), geomPrevYRef: ref(null), sepDisplacedIdsRef: ref(new Set()), prevPinnedNodeIdRef: ref(null),
     view3dRef: ref(false), domeRuntimeRef: ref(null), realmParallaxRef: ref(null), realmEnterButtonElRef: ref(null),
-    focusedSlugRef: ref(null), onEnterRealmRef: ref(undefined), realmEnterTargetRef: ref(null),
-    tourAnchorElRef: ref(null), tourAnchorNodeIdRef: ref(null), getRealmCaption: () => null,
+    focusedSlugRef: ref(null), onEnterRealmRef: ref(undefined), realmEnterTargetRef: ref(null), getRealmCaption: () => null,
   };
   const step = createWorldMotionFrameStage(sources as unknown as WorldMotionFrameStageSources);
   const paint = createRealmFrameStage(sources as unknown as RealmFrameStageSources);

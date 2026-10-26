@@ -93,7 +93,7 @@ function configuration(canvas: HTMLCanvasElement) {
             view3dRef: { current: false },
       trailLensPropRef: { current: null }, lastInputMsRef: { current: 0 }, ambientSleepDelayRef: { current: undefined },
     },
-    presentationFrameStage: { animatedBgRef: { current: null }, tourAnchorNodeIdRef: { current: null } },
+    presentationFrameStage: { animatedBgRef: { current: null } },
   } as unknown as Parameters<typeof useTopologyFrameLoop>[0];
 }
 
