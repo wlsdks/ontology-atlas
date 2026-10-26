@@ -52,7 +52,7 @@ describe('source-linked briefing packets', () => {
     expect(narrativeResponse(response(answer()), packet, 'en').themes).toHaveLength(1);
   });
   it.each(['title', 'change', 'reason', 'checks', 'limits'] as const)('rejects invented foreign-script words in Korean %s', field => {
-    for (const text of ['陳舊한 브라우저 설정', '세 가지的陈舊한 설정', 'カナ를 처리했어요.', 'かな를 처리했어요.', '𠀀를 처리했어요.']) {
+    for (const text of ['陳舊한 브라우저 설정', '세 가지的陈舊한 설정', 'windowing 문제를 修正했습니다.', 'カナ를 처리했어요.', 'かな를 처리했어요.', '𠀀를 처리했어요.']) {
       const value = koreanAnswer();
       const theme = value.themes[0];
       if (field === 'title') theme.title = text;
