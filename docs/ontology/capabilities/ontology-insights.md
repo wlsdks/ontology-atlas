@@ -18,6 +18,7 @@ A workbench where a person compares declared product relationships with their de
 ## Includes
 - A project board: each recorded responsibility is a row, its capabilities are cards, and each arrow names one declared cross-responsibility dependency between real concepts. Selecting a declaration keeps its source document and recorded rationale alongside it.
 - Inspection of a selected capability's recorded implementation roles or path, documentary findings, and source state. Missing evidence is not proof that implementation is absent.
+- Source-state scopes combine with name search and recorded gaps while keeping the selected claim open. Counts cover capabilities; unavailable or unmeasured evidence stays unchecked, and a source change does not accept or reject the recorded meaning.
 - Exact document and correction entries that return to the selected claim, with visible keyboard focus.
 - Three sections: product connections, the review summary, and Wiki evidence. Scope distinguishes the bundled example, a single project, and a folder containing multiple projects.
 - Addresses to retired sections: a Guidance address replaces itself with Harness At a glance, and a Written explanations address opens product connections with a notice that counts the folder's saved explanations and says where to read them.

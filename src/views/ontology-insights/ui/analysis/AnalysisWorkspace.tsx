@@ -10,7 +10,7 @@ import { useSurfaceSwap, useSwapHeight } from '@/shared/lib/render-timing/use-pr
 import { SourceDateRecovery } from './SourceDateRecovery';
 import { useOntologyEvidence } from '../../lib/use-ontology-evidence';
 import { Link } from '@/i18n/navigation';
-import { Button, Disclosure, IconButton, OntologyMapKindGlyph } from '@/shared/ui';
+import { Button, Disclosure, IconButton, OntologyMapKindGlyph, Select } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
@@ -18,6 +18,7 @@ import { buildTopologyMeaningEditorNodeHref, buildEdgeTypeRows, computeEdgeTypeD
 import { CopyAgentTextButton } from '../parts/CopyAgentTextButton';
 import { selectedAnalysisRequest } from '../../lib/selected-analysis-request';
 import { filterAnalysisItems } from '../../lib/analysis-selection';
+import { linearAnalysisSourceScopes, type AnalysisSourceScope } from '../../lib/analysis-source-scope';
 import { buildAnalysisModel, type AnalysisClaim } from '../../lib/analysis-model';
 import { buildAnalysisBoard } from '../../lib/analysis-board';
 import { AnalysisListSearch } from './AnalysisListSearch';
@@ -48,17 +49,21 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const pendingClaimFocus = useRef<string | null>(initialClaim && model.claims.some(item => item.node.id === initialClaim) ? initialClaim : null);
   const pendingEdgeFocus = useRef(Boolean(initialEdge && board.links.some(link => link.edge.id === initialEdge)));
   const [onlyGaps, setOnlyGaps] = useState(initialQuestion === 'evidence' && !initialClaim);
+  const [sourceScope, setSourceScope] = useState<AnalysisSourceScope>('all');
   const stepIndex = Math.max(0, board.links.findIndex(link => link.edge.id === edgeId));
   const edge = board.links[stepIndex]?.edge ?? null;
   const pair = edge ? model.pairs.find(candidate => candidate.edges.includes(edge)) ?? null : null;
+  const evidenceQuestion = question === 'evidence' || !pair;
   const candidates = onlyGaps ? model.gaps : model.claims;
-  const matches = useMemo(() => claimQuery.trim() ? new Set(filterAnalysisItems(model.claims, claimQuery, item => [name(item.node), item.node.title]).map(item => item.node.id)) : null, [model.claims, claimQuery]);
+  const sourceScopes = useMemo(() => linearAnalysisSourceScopes(model.claims.map(item => item.node.id), source.evidence), [model.claims, source.evidence]);
+  const searchMatches = useMemo(() => claimQuery.trim() ? new Set(filterAnalysisItems(model.claims, claimQuery, item => [name(item.node), item.node.title]).map(item => item.node.id)) : null, [model.claims, claimQuery]);
+  const matches = useMemo(() => evidenceQuestion && sourceScope !== 'all' ? new Set([...sourceScopes[sourceScope]].filter(id => !searchMatches || searchMatches.has(id))) : searchMatches, [evidenceQuestion, sourceScope, sourceScopes, searchMatches]);
+  const matchingCount = candidates.filter(item => !matches || matches.has(item.node.id)).length;
   const claim = model.claims.find(candidate => candidate.node.id === claimId) ?? candidates[0] ?? null;
   const markers = useMemo(() => new Map(model.claims.flatMap((item): [string, BoardMarker][] => source.evidence?.missing.has(item.node.id) ? [[item.node.id, 'missing']] : source.evidence?.stale.has(item.node.id) ? [[item.node.id, 'moved']] : [])), [model.claims, source.evidence]);
   const implementationOf = (item: KnowledgeGraphEdge) => model.claims.find(candidate => candidate.node.id === item.from || candidate.roles.some(role => role.id === item.from)) ?? null;
   const docsOf = (item: KnowledgeGraphEdge) => item.evidenceIds.flatMap(slug => { const doc = docs.find(candidate => candidate.slug === slug); return doc ? [doc] : []; });
   const implementationClaim = edge ? implementationOf(edge) : null;
-  const evidenceQuestion = question === 'evidence' || !pair;
   const declaringDocs = edge ? docsOf(edge) : [];
   const href = (slug: string) => buildDocsVaultHref({ slug, intent: mode === 'static' ? null : 'local', via: evidenceQuestion ? 'insights:do-next' : 'insights:connections', reviewId: evidenceQuestion && claim ? `analysis:${claim.node.id}` : edge ? `relation:${edge.id}` : null });
   const selectedNodes = evidenceQuestion ? claim ? [claim.node] : [] : edge ? [model.byId.get(edge.from)!, model.byId.get(edge.to)!] : [];
@@ -98,6 +103,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     if (!implementationClaim) return;
     pendingClaimFocus.current = implementationClaim.node.id;
     setClaimQuery('');
+    setSourceScope('all');
     setQuestion('evidence'); setOnlyGaps(false); setClaimId(implementationClaim.node.id);
   }
   function openEvidence(gaps: boolean) { pendingClaimFocus.current = null; setOnlyGaps(gaps); setClaimId(gaps && claim && !claim.gaps.length ? model.gaps[0]?.node.id ?? null : claim?.node.id ?? null); }
@@ -121,10 +127,12 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
               {mode === 'local' ? <><span><span className={styles.boardMarker} data-marker="moved" />{t('sourceShort.moved')}</span><span><span className={styles.boardMarker} data-marker="missing" />{t('sourceShort.missing')}</span></> : null}
               <span>{t('markerGap')}</span>
             </div>
+            <Select ariaLabel={t('sourceScope')} size="md" value={sourceScope} onChange={value => setSourceScope(value as AnalysisSourceScope)} options={(['all', 'moved', 'missing', 'unknown'] as const).map(value => ({ value, label: t(`sourceScopeOptions.${value}`, { count: sourceScopes[value].size }) }))} />
             <SegmentedControl ariaLabel={t('capabilityFilter')} value={onlyGaps ? 'gaps' : 'all'} onChange={value => openEvidence(value === 'gaps')} options={[{ value: 'all', label: t('allFilter', { count: model.claims.length }) }, { value: 'gaps', label: t('gapsFilter', { count: model.gaps.length }) }]} />
           </div> : null}
         </div>
-        <ProjectBoard board={board} mode={evidenceQuestion ? 'evidence' : 'relationships'} selectedEdge={edge?.id ?? null} selectedClaim={claim?.node.id ?? null} markers={markers} matches={matches} onlyGaps={onlyGaps}
+        {evidenceQuestion && sourceScope !== 'all' ? <p role="status" aria-atomic="true" data-testid="analysis-source-scope-status" className="mb-3 text-label text-[color:var(--color-text-secondary)]">{t('sourceScopeMatches', { count: matchingCount })}</p> : null}
+        <ProjectBoard board={board} mode={evidenceQuestion ? 'evidence' : 'relationships'} selectedEdge={edge?.id ?? null} selectedClaim={claim?.node.id ?? null} markers={markers} matches={matches} searching={searchMatches !== null} onlyGaps={onlyGaps}
           vaultKey={mode === 'local' ? `local:${vault.handle?.name ?? ''}` : 'static'} onSelectEdge={selectEdge} onSelectClaim={selectClaim} />
         <Disclosure summary={t('countBasis')} className={styles.countBasis}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('countDetails', { total: model.dependencyCount, cross: model.crossCount, internal: model.internal, unassigned: model.unassigned })}</p><p className="mt-3 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('inspectionBasis', { inspected: model.inspected, total: model.claims.length })}</p><p className="mt-3 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('anchorSummary', { anchored: model.anchored, total: model.claims.length })}</p><div className="mt-3 flex flex-wrap gap-3">{relationTypes.map(row => <span key={row.type} className="text-label text-[color:var(--color-text-tertiary)]">{relationLabel(row.type)} · {row.count}</span>)}</div></Disclosure>
       </div>
