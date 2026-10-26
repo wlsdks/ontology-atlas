@@ -4,7 +4,7 @@ import { waitForMapStill } from "../../settle";
 
 type MapNode = { id: string; kind: string; label: string; x: number; y: number; hidden: boolean;
 };
-type AtlasMap = { nodes: () => MapNode[]; selection: () => { nodeId: string | null;
+type AtlasMap = { nodes: () => MapNode[]; cameraTarget: () => { x: number; y: number; scale: number }; selection: () => { nodeId: string | null;
     };
 };
 
@@ -40,6 +40,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("a node picked from the search palette is framed left of the detail panel", async ({ page }) => {
+  const readTarget = () => page.evaluate(() => (window as unknown as { __atlasMap: AtlasMap }).__atlasMap.cameraTarget());
+  const beforeTarget = await readTarget();
   const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
   await page.locator('[data-testid="topology-concept-search"]').click();
   await expect(palette, "검색 칩이 팔레트를 연다").toBeVisible();
@@ -49,6 +51,7 @@ test("a node picked from the search palette is framed left of the detail panel",
     "고른 결과가 배송이다").toContainText("배송");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-testid="map-detail-panel"]')).toBeVisible({ timeout: 5000 });
+  await expect.poll(readTarget, { message: "the search selection issues its camera target" }).not.toEqual(beforeTarget);
   await waitForMapStill(page, { what: "camera" });
   const after = await readMap(page);
   expect(after.selected, "검색으로 고른 노드가 선택된다").not.toBeNull();
