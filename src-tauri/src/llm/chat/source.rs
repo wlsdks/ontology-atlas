@@ -184,6 +184,11 @@ fn request_body(packet: &str, model: &str, locale: &str, limit: usize) -> Result
         "zh" => "Simplified Chinese",
         _ => "English",
     };
+    let writing_rule = if locale == "ko" {
+        " Write Korean prose in Hangul, including titles, changes, reasons, checks and limits. Do not substitute Chinese characters or Japanese words for Korean words, or mix them into Korean grammar. Preserve exact source identifiers and proper names, including non-Latin names, only when they occur verbatim in the cited passages."
+    } else {
+        ""
+    };
     let value: Value = serde_json::from_str(packet).map_err(|_| "invalid-packet")?;
     let sources = value["sources"]
         .as_array()
@@ -204,7 +209,7 @@ fn request_body(packet: &str, model: &str, locale: &str, limit: usize) -> Result
             return Err("invalid-packet".into());
         }
     }
-    Ok(json!({"model":model,"stream":false,"max_tokens":OUTPUT_TOKENS,"reasoning_effort":"none","response_format":{"type":"json_schema","json_schema":{"name":"git_briefing","strict":true,"schema":serde_json::from_str::<Value>(RESPONSE_SCHEMA).map_err(|_| "invalid-packet")?}},"messages":[{"role":"system","content":format!("{PROMPT} Every reason, check and limit must use the same claim object as change, never a string. JSON schema: {RESPONSE_SCHEMA}. All natural-language titles and claim text MUST be in {language}, regardless of the source language. Translate source wording. Keep JSON property names, numerical values and evidence IDs unchanged.")},{"role":"user","content":packet}]}).to_string())
+    Ok(json!({"model":model,"stream":false,"max_tokens":OUTPUT_TOKENS,"reasoning_effort":"none","response_format":{"type":"json_schema","json_schema":{"name":"git_briefing","strict":true,"schema":serde_json::from_str::<Value>(RESPONSE_SCHEMA).map_err(|_| "invalid-packet")?}},"messages":[{"role":"system","content":format!("{PROMPT} Every reason, check and limit must use the same claim object as change, never a string. JSON schema: {RESPONSE_SCHEMA}. All natural-language titles and claim text MUST be in {language}, regardless of the source language. Translate source wording. Keep JSON property names, numerical values and evidence IDs unchanged.{writing_rule}")},{"role":"user","content":packet}]}).to_string())
 }
 #[tauri::command]
 pub async fn source_briefing_chat(
