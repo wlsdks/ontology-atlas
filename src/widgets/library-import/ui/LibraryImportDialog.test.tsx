@@ -94,7 +94,7 @@ describe('service setup', () => {
     expect(active.origin).toBe('library-import:notion');
     expect(writes.join('')).not.toContain('ntn_test_value');
     expect(approve).toHaveBeenCalledExactlyOnceWith(active);
-    expect(screen.getByTestId('library-import-what')).toHaveFocus();
+    await waitFor(() => expect(screen.getByTestId('library-import-what')).toHaveFocus());
   });
   it('retries activation on the same row without asking for or writing the confirmed token again', async () => {
     let fail = true;
