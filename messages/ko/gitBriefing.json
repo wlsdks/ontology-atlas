@@ -58,6 +58,8 @@
   "checksMissing": "포함된 설명에는 어떤 검사를 했는지 적혀 있지 않아요.",
   "limitsMissing": "포함된 설명에는 남은 한계가 적혀 있지 않아요. 한계가 없다는 근거는 아니에요.",
   "readSources": "원문 근거 읽기",
+  "viewSourceText": "원문 텍스트 보기",
+  "viewFormattedText": "읽기 보기",
   "sourceHeading": "원문 근거",
   "sourceCitation": "근거 {source} 읽기",
   "back": "해설로 돌아가기",

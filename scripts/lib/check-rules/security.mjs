@@ -72,6 +72,7 @@ export const rules = [
       /^src\/views\/gateway-doc\/ui\/GatewayDocPage\.tsx$/,
       /^src\/views\/library\/ui\/(?:LibraryPage\.tsx|library-page\/[^/]+\.tsx?|parts\/questions\/(?:AnswerRevisionComparison|LibraryQuestionDesk)\.tsx)$/,
       /^src\/views\/project-detail\/ui\/ProjectBriefSummary\.tsx$/,
+      /^src\/views\/change-briefing\/ui\/OriginalSourceBody\.tsx$/,
       /^src\/widgets\/(?:analysis-workbench\/ui\/AnalysisWorkbench|full-detail-a1\/ui\/FullDetailA1)\.tsx$/,
       /^scripts\/lib\/check-rules\/security\.mjs$/,
       /^tests\/contract\/security\/security-surfaces\.contract\.test\.ts$/,
