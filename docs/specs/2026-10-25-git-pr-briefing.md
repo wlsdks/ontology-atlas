@@ -118,9 +118,9 @@ No synthetic history is presented as native evidence on the web.
 | State | Web | macOS app |
 |---|---|---|
 | First run / no ontology | `webTitle`, `webBody`; get app | Visible `title` entry on launch chooser; `sourcePrompt`, `chooseRepository` in Changes |
-| Model recovery without ontology | `webBody`; get app | `openFolder` | Standalone exit | Open an ontology folder |
-| `sourceAudit` | No-vault model settings | Connection checks are recorded in Atlas app data on this device; they send no repository text. |
-| `chooseModel` opens Models; `back` returns with repository/dates |
+| Model recovery without ontology | `webBody`; get app | `openFolder` opens an ontology folder; standalone exit remains available. |
+| Connection audit | `webBody`; get app | `sourceAudit`; no-vault connection checks are recorded in Atlas app data on this device without repository text. |
+| Model selection | `webBody`; get app | `chooseModel` opens Models; `back` returns with repository/dates. |
 | Moved, replaced, unreadable or denied folder | `webBody`; get app | `sourceUnavailable`; choose again, keep dates |
 | No Git history | `webBody`; get app | `noHistory`; choose another/retry |
 | Loading / read error | `webBody`; get app | `loading` / `readError`; stop/retry |
@@ -134,9 +134,9 @@ No synthetic history is presented as native evidence on the web.
 | Partial Git/PR/analysis | `webBody`; get app | `partialHistory` / `prPartial` / `partialAnalysis`, `coverage`; narrow/read omissions |
 | Model absent or ACP-only / too-small context | `webBody`; get app | `modelUnavailable` / `modelLimit`; model settings/sources |
 | Analysing / stopped / timeout | `webBody`; get app | `analyzing` / `cancelled` / `analysisFailed`; stop/retry/sources |
-| Invalid / insufficient / receipt failure (rejected answer retained in screen memory only for inspection) | `webBody`; get app | `languageMismatch` | Untranslated answer | The model did not use the screen language. Your sources and dates are kept; try again. |
-| `incompleteAnalysis` | Output length failure | The explanation was too long to finish. Your sources and dates are kept. Narrow the dates and try again. |
-| `invalidAnalysis` / `noExplanation` / `auditFailed`; sources/retry |
+| Untranslated answer | `webBody`; get app | `languageMismatch`; keep sources and dates, retry. |
+| Output length failure | `webBody`; get app | `incompleteAnalysis`; keep sources and dates, narrow the dates and retry. |
+| Invalid / insufficient / receipt failure | `webBody`; get app | `invalidAnalysis` / `noExplanation` / `auditFailed`; sources/retry. Rejected answers remain in screen memory for inspection. |
 | Ready / wrong explanation | `webBody`; get app | `proposed`, `attribution`, `limitsHeading`; original source |
 | Source reader / incomplete original | `webBody`; get app | `sourceHeading` / `sourceUnavailableInline`; other source/back |
 | Stale snapshot | `webBody`; get app | `stale`; refresh, keep dates/old attribution |
