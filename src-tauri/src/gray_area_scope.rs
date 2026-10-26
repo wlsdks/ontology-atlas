@@ -364,7 +364,10 @@ fn capture_directory(
             continue;
         }
         if !result.limits.capture_text {
-            if result.scanned_entries >= result.limits.entries { result.limited = true; break; }
+            if result.scanned_entries >= result.limits.entries {
+                result.limited = true;
+                break;
+            }
             result.scanned_entries += 1;
         }
         if result

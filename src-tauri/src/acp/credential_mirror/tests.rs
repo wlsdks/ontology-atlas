@@ -177,7 +177,8 @@ fn a_credential_is_only_ever_compared_as_a_digest() {
 
 #[test]
 fn the_terminal_account_is_carried_into_the_app_folder_without_losing_its_other_keys() {
-    let terminal = serde_json::json!({ "oauthAccount": { "emailAddress": "new@example.com" }, "other": 1 });
+    let terminal =
+        serde_json::json!({ "oauthAccount": { "emailAddress": "new@example.com" }, "other": 1 });
     let app = serde_json::json!({ "oauthAccount": { "emailAddress": "old@example.com" }, "projects": {} });
     let merged = merge_oauth_account(Some(app), &terminal).expect("an account to carry");
     assert_eq!(merged["oauthAccount"]["emailAddress"], "new@example.com");

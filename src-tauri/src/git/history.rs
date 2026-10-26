@@ -123,11 +123,7 @@ fn list(
     Ok(references)
 }
 
-fn content(
-    vault_path: &str,
-    slug: &str,
-    revision: &str,
-) -> Result<Option<String>, String> {
+fn content(vault_path: &str, slug: &str, revision: &str) -> Result<Option<String>, String> {
     if !valid_slug(slug) || !valid_revision(revision) {
         return Err(coded("git-history-invalid-reference", ""));
     }
@@ -187,6 +183,10 @@ pub fn vault_node_revisions(
 }
 
 #[tauri::command(async)]
-pub fn vault_node_revision_content(vault_path: String, slug: String, revision: String) -> Result<Option<String>, String> {
+pub fn vault_node_revision_content(
+    vault_path: String,
+    slug: String,
+    revision: String,
+) -> Result<Option<String>, String> {
     content(&vault_path, &slug, &revision)
 }

@@ -2,8 +2,8 @@ use serde::Serialize;
 
 use super::changes::{find_staged_outside_vault, get_full_porcelain_status, get_porcelain_status};
 use super::repo::{
-    divergence_counts, find_repo_root, get_current_branch, get_head_short_hash, get_remote_url, get_upstream_ref,
-    is_head_detached, vault_pathspec,
+    divergence_counts, find_repo_root, get_current_branch, get_head_short_hash, get_remote_url,
+    get_upstream_ref, is_head_detached, vault_pathspec,
 };
 use super::runner::validate_vault_dir;
 

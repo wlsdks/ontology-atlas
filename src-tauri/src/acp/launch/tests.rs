@@ -1,9 +1,7 @@
 use super::*;
 use crate::acp::npx_cache::npx_launch_package;
 use crate::acp::registry::snapshot;
-use crate::acp::test_support::{
-    empty_dirs, npx_package, probe_with, test_bin, test_path_env,
-};
+use crate::acp::test_support::{empty_dirs, npx_package, probe_with, test_bin, test_path_env};
 use std::collections::HashSet;
 
 #[test]
