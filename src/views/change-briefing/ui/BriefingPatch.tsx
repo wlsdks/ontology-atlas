@@ -6,11 +6,12 @@ import { ChevronLeft, ChevronRight, List } from 'lucide-react';
 import { Button, IconButton } from '@/shared/ui';
 import { gitChangeBriefingPatch, gitSourceBriefingPatch, type ChangeBriefing, type ChangeBriefingPatch } from '@/shared/lib/git/tauri-change-briefing';
 
-export function BriefingPatch({ root, project, data, path, paths, onNavigate, onChooseFile }: {
+export function BriefingPatch({ root, project, data, path, paths, onNavigate, onChooseFile, onRefresh }: {
   root: string; project: string; data: ChangeBriefing; path: string;
   paths: string[];
   onNavigate: (path: string, direction: 'previous' | 'next') => void;
   onChooseFile: () => void;
+  onRefresh: () => void;
 }) {
   const t = useTranslations('changeBriefing');
   const [attempt, setAttempt] = useState(0);
@@ -41,7 +42,7 @@ export function BriefingPatch({ root, project, data, path, paths, onNavigate, on
       <p className="break-words text-label text-[color:var(--color-text-secondary)]">{t('patchBasis', { before: data.base?.slice(0, 8) ?? t('initialTree'), after: data.tip?.slice(0, 8) ?? '' })}</p>
     </div>
     <p className="break-all text-body text-[color:var(--color-text-secondary)]">{path}</p>
-    {!ready ? <p role="status">{t('patchLoading')}</p> : !result || result.status === 'unavailable' || result.status === 'stale' ? <div role="status" className="space-y-3"><p>{t(result?.status === 'stale' ? 'stale' : 'patchUnavailable')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => setAttempt(value => value + 1)}>{t('patchRetry')}</Button></div> : result.status === 'binary' ? <p>{t('patchBinary')}</p> : !result.patch ? <p>{t('patchNoDifference')}</p> : <>
+    {!ready ? <p role="status">{t('patchLoading')}</p> : !result || result.status === 'unavailable' || result.status === 'stale' ? <div role="status" className="space-y-3"><p>{t(result?.status === 'stale' ? 'stale' : 'patchUnavailable')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={result?.status === 'stale' ? onRefresh : () => setAttempt(value => value + 1)}>{t(result?.status === 'stale' ? 'refresh' : 'patchRetry')}</Button></div> : result.status === 'binary' ? <p>{t('patchBinary')}</p> : !result.patch ? <p>{t('patchNoDifference')}</p> : <>
       {result.truncated && <p role="status" className="text-[color:var(--color-status-warning)]">{t('patchTruncated')}</p>}
       <pre data-testid="briefing-patch" className="whitespace-pre-wrap break-all rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 font-mono text-body">{result.patch}</pre>
     </>}

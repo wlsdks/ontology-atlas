@@ -64,7 +64,9 @@ Direct picker-granted source reading follows the separate standalone path below.
 Reads are bounded at 2,000 first-parent commits, 8 MiB history output and 20,000
 path records. Partial reads state that coverage is incomplete. File comparisons
 show at most 32 KiB; binary, unavailable, stale and truncated states remain
-explicit. A refresh restores an expired patch snapshot. Calendar inputs and selection survive route changes within the same vault
+explicit. An expired patch offers a briefing refresh that reads history again
+and returns focus to Code with the chosen period retained. It does not repeat
+the expired patch request. Calendar inputs and selection survive route changes within the same vault
 session, after the source revisions are re-read and match. Dates are retained after
 read errors; an obsolete response cannot replace a newer scope.
 

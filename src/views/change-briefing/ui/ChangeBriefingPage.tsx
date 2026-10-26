@@ -106,6 +106,11 @@ export function ChangeBriefingPage() {
       else modesRef.current?.querySelector<HTMLElement>('[data-testid="briefing-source-browser"]')?.focus();
     });
   }
+  function refreshCode() {
+    modesRef.current?.querySelector<HTMLElement>('[data-testid="briefing-source-browser"]')?.focus({ preventScroll: true });
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+    refresh();
+  }
   const entryRef = useRef<string | null>(null);
   function chooseGroup(id: string, area?: string) {
     if (!data) return;
@@ -221,7 +226,7 @@ export function ChangeBriefingPage() {
 
 
                 <div ref={filesRef}><Disclosure animated key={`${current?.path ?? 'file-list'}:${pickerRequest}`} open={!current?.path || pickerRequest > 0} summary={t('paths')} summaryTestId="briefing-touched-files"><BriefingFileList paths={readingGroup?.paths ?? []} selected={current?.path ?? null} limit={rows.files} onChoose={choosePath} onMore={event => showMore('files', event)} /></Disclosure></div>
-                {current?.path && root && <div ref={patchRef} tabIndex={-1}><BriefingPatch key={`${project}:${data.head}:${data.base}:${data.tip}:${current.path}`} root={root} project={project} data={data} path={current.path} paths={readingGroup?.paths ?? []} onNavigate={choosePath} onChooseFile={openFilePicker} /></div>}
+                {current?.path && root && <div ref={patchRef} tabIndex={-1}><BriefingPatch key={`${project}:${data.head}:${data.base}:${data.tip}:${current.path}`} root={root} project={project} data={data} path={current.path} paths={readingGroup?.paths ?? []} onNavigate={choosePath} onChooseFile={openFilePicker} onRefresh={refreshCode} /></div>}
 
                 <Disclosure animated summary={t('netComparison')} summaryTestId="briefing-comparison"><section className="space-y-2"><p className="text-body text-[color:var(--color-text-secondary)]">{t('comparisonScope')}</p><p className="break-all text-body">{t('comparisonBasis', { before: data.base?.slice(0, 8) ?? t('initialTree'), after: data.tip?.slice(0, 8) ?? '' })}</p><p className="text-body text-[color:var(--color-text-secondary)]">{t('comparisonNote')}</p><p>{data.netPaths === null ? t('netUnavailable') : !data.netPaths.length ? t('netEmpty') : t('netFiles', { count: data.netPaths.length })}</p>{data.netPaths && data.netPaths.length > 0 && <Disclosure animated summary={t('paths')} summaryTestId="briefing-net-paths"><div className="space-y-1 pb-2">{data.netPaths.slice(0, rows.net).map(path => <RowButton key={path} aria-label={`${t('patchAction')}: ${path}`} onClick={() => choosePath(path)}><span className="break-all py-1 text-body">{path}</span></RowButton>)}{data.netPaths.length > rows.net && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={event => showMore('net', event)}>{t('showMoreFiles', { count: Math.min(40, data.netPaths.length - rows.net) })}</Button>}</div></Disclosure>}</section></Disclosure>
                 <section className="space-y-2 border-t border-[color:var(--color-border-soft)] pt-4"><h3 className="text-body font-[var(--font-weight-strong)]">{t('commits')}</h3><p className="text-body text-[color:var(--color-text-secondary)]">{t('commitAttribution')}</p><ul className="space-y-3">{readingGroup?.commits.slice(0, rows.commits).map(commit => <li tabIndex={-1} key={commit.hash} className="break-words text-body"><code className="text-label text-[color:var(--color-text-secondary)]">{commit.hash.slice(0, 8)}</code> {commit.message ? <Disclosure animated summary={commit.subject}><div>{commit.messageComplete === false && <p className="text-body text-[color:var(--color-status-warning)]">{git('sourceUnavailableInline')}</p>}<pre className="whitespace-pre-wrap break-words py-3 font-mono text-body">{commit.message}</pre></div></Disclosure> : commit.subject}</li>)}</ul>{readingGroup && readingGroup.commits.length > rows.commits && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={event => showMore('commits', event)}>{t('showMoreCommits', { count: Math.min(40, readingGroup.commits.length - rows.commits) })}</Button>}</section>
