@@ -109,7 +109,7 @@
   "periodReadingBytes": "Reading requests send {bytes} bytes in total.",
   "periodOverviewPlan": "One final request will use up to {bytes} bytes of selected original passages to create the overview.",
   "periodSinglePart": "This period fits in one reading request. Its explanation will be the overview.",
-  "periodSessionOnly": "Completed parts stay available during this app session. Closing the app clears this progress.",
+  "periodSessionOnly": "生成した説明と進行状況はAtlasを閉じると消えます。",
   "periodUnsendable": "{count} source records cannot be sent. Read their reasons below; the other records remain in the plan.",
   "periodStart": "Create period explanation",
   "periodProgress": "Reading part {current} of {parts} · {completed} completed",
@@ -206,5 +206,14 @@
   "sourceList": "Source list",
   "backSummary": "Back to summary",
   "sourceInventory": "Commits {commits} · PRs {prs}",
-  "rebuildSummary": "Rebuild summary"
+  "rebuildSummary": "Rebuild summary",
+  "previewSourceCount": "コミットメッセージ{commits}件 · PR説明{prs}件",
+  "previewModel": "モデル",
+  "previewDestination": "送信先",
+  "previewSourceScope": "根拠IDと期間も含まれます。コードとオントロジー文書は送りません。",
+  "previewSingleRequest": "モデルへのリクエスト{count}回",
+  "previewMultipleRequests": "モデルへのリクエストは最大{count}回",
+  "previewOverview": "原文を分割して読み、選んだ原文を最大{bytes}バイト再送して概要を作ります。",
+  "previewDetails": "リクエストの詳細",
+  "previewCancel": "キャンセル"
 }

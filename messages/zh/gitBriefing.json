@@ -109,7 +109,7 @@
   "periodReadingBytes": "Reading requests send {bytes} bytes in total.",
   "periodOverviewPlan": "One final request will use up to {bytes} bytes of selected original passages to create the overview.",
   "periodSinglePart": "This period fits in one reading request. Its explanation will be the overview.",
-  "periodSessionOnly": "Completed parts stay available during this app session. Closing the app clears this progress.",
+  "periodSessionOnly": "关闭 Atlas 后，生成的说明和进度将被清除。",
   "periodUnsendable": "{count} source records cannot be sent. Read their reasons below; the other records remain in the plan.",
   "periodStart": "Create period explanation",
   "periodProgress": "Reading part {current} of {parts} · {completed} completed",
@@ -206,5 +206,14 @@
   "sourceList": "Source list",
   "backSummary": "Back to summary",
   "sourceInventory": "Commits {commits} · PRs {prs}",
-  "rebuildSummary": "Rebuild summary"
+  "rebuildSummary": "Rebuild summary",
+  "previewSourceCount": "{commits} 条提交消息 · {prs} 份 PR 说明",
+  "previewModel": "模型",
+  "previewDestination": "发送地址",
+  "previewSourceScope": "包含来源标识和日期范围。不发送代码内容或本体文档。",
+  "previewSingleRequest": "模型请求：{count} 次",
+  "previewMultipleRequests": "最多 {count} 次模型请求",
+  "previewOverview": "分批读取原文，再发送最多 {bytes} 字节的所选原文来生成概要。",
+  "previewDetails": "请求详情",
+  "previewCancel": "取消"
 }
