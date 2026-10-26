@@ -149,9 +149,8 @@ fn prepare_isolated_config_without_credentials_does_not_invent_a_link() {
     let _ = std::fs::remove_dir_all(&base);
     let home = base.join("home");
     std::fs::create_dir_all(&home).unwrap();
-    let dir =
-        prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home), None, "")
-            .unwrap();
+    let dir = prepare_isolated_config("claude-acp", &base.join("appdata"), Some(&home), None, "")
+        .unwrap();
     assert!(!dir.join(".credentials.json").exists());
     let _ = std::fs::remove_dir_all(&base);
 }

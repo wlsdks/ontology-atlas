@@ -20,7 +20,8 @@ schedule action. Both states share one list panel, whose column header uses the 
 empty lane shows one dimmed ghost row, its name marked as an example ("e.g. …"), with the default cadence where the first schedule will appear,
 and saving it turns that row real in place while the lane glides from the window's centre to the top. While a lane has no schedule, or the screen cannot hold one yet, the lede, the list and the facts are one stage centred in the window. The new-schedule button keeps its place in the header bar, filled while the lane is empty. The header bar starts at the page gutter like every destination's; the body wears the 960px column centred at every width, as Agents does, and the three facts follow the list.
 Without a folder, the installed app opens a folder in place.
-The browser explains the installed-app requirement.
+The browser explains the installed-app requirement. Cancelling a new schedule returns keyboard
+focus to the header action in both lanes, including after an unfocused native pointer click.
 
 Edit opens the schedule's own sheet on the schedule as it stands, with its name, cadence and
 scope editable. Saving keeps its id and its run history and recomputes its next run. When the

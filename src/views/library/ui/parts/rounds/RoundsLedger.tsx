@@ -12,7 +12,7 @@ import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Chip } from "@/shared/ui";
+import { Checkbox, Chip } from "@/shared/ui";
 
 import { groupLedgerByDay, passDurationSeconds } from "../../../lib/rounds/round-presentation";
 import { landInk } from "./landing";
@@ -23,7 +23,7 @@ import styles from "./rounds-ledger.module.css";
  *
  * What is drawn is what changed. A pass that held is one quiet line on the axis so the eye
  * skips it; a pass that found something stale, wrote, refused or failed is a card with the
- * pages named as presses; a sleep gap is a hatched band with its span. n8n's execution log says
+ * pages named as presses; sleep gaps can be included as hatched bands with their spans. n8n's execution log says
  * "37 succeeded"; this axis says which page became untrue at which hour, which is the thing a
  * person came back to learn.
  *
@@ -221,6 +221,9 @@ export function RoundsLedger({
 }) {
   const t = useTranslations("library.rounds");
   const durationWords = useDurationWords();
+  const [showSleep, setShowSleep] = useState(false);
+  const sleepCount = entries.filter((entry) => entry.outcome === "asleep").length;
+  const visibleEntries = showSleep ? entries : entries.filter((entry) => entry.outcome !== "asleep");
   const pageTitle = (slug: string) => titleFor?.(slug) ?? pageName(slug);
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   const dayFormat = new Intl.DateTimeFormat(locale, { weekday: "short", month: "short", day: "numeric" });
@@ -239,7 +242,7 @@ export function RoundsLedger({
     setArrived((current) => new Set([...current, ...fresh]));
   }, [entries]);
 
-  const days = groupLedgerByDay(entries);
+  const days = groupLedgerByDay(visibleEntries);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const yesterday = new Date(today);
@@ -249,16 +252,25 @@ export function RoundsLedger({
 
   return (
     <section aria-label={t("ledger.aria")} data-testid="library-rounds-ledger">
+      {sleepCount > 0 ? (
+        <div className="mb-3 flex flex-wrap justify-end">
+          <Checkbox
+            label={t("ledger.includeSleep", { count: sleepCount })}
+            checked={showSleep}
+            onChange={(event) => setShowSleep(event.target.checked)}
+            data-testid="library-rounds-show-sleep"
+            className="atlas-touch-floor"
+          />
+        </div>
+      ) : null}
       <LedgerColumns />
       <div className="mt-2 flex flex-col gap-6">
         {running ? <LiveRow key={running.startedAt} running={running} locale={locale} /> : null}
-        {entries.length === 0 && !running ? (
+        {visibleEntries.length === 0 && !running ? (
           <LedgerWaitingRow ink={beforeFirstRound ? "ghost" : "live"} landed={landed}>
-            {beforeFirstRound ? <span aria-hidden className={styles.nameSlot} /> : (
-              <p data-testid="library-rounds-ledger-empty" className="min-w-0 text-body leading-body">
-                {allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
-              </p>
-            )}
+            <p data-testid="library-rounds-ledger-empty" className="min-w-0 text-body leading-body">
+              {beforeFirstRound ? t("ledger.noPasses") : allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
+            </p>
           </LedgerWaitingRow>
         ) : null}
         {days.map((day) => (

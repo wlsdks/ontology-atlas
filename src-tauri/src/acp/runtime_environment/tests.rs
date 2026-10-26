@@ -46,9 +46,8 @@ fn environment_keys(environment: &[(OsString, OsString)]) -> HashSet<String> {
 #[test]
 fn verified_subscription_runtimes_drop_ambient_credentials_and_injection_inputs() {
     for runtime_id in ["claude-acp", "codex-acp"] {
-        let environment =
-            sanitized_runtime_environment(runtime_id, sample_parent_environment())
-                .expect("verified subscription runtime must use an explicit environment");
+        let environment = sanitized_runtime_environment(runtime_id, sample_parent_environment())
+            .expect("verified subscription runtime must use an explicit environment");
         let keys = environment_keys(&environment);
 
         for preserved in [
@@ -86,8 +85,7 @@ fn verified_subscription_runtimes_drop_ambient_credentials_and_injection_inputs(
 fn explicit_environment_profiles_exist_only_for_verified_login_probes() {
     assert!(!SANITIZED_ENV_RUNTIMES.is_empty());
     for runtime_id in SANITIZED_ENV_RUNTIMES {
-        let agent =
-            registry_agent(runtime_id).expect("environment profile needs a registry row");
+        let agent = registry_agent(runtime_id).expect("environment profile needs a registry row");
         assert!(
             agent.verified,
             "{runtime_id}: unverified runtime got an environment profile"

@@ -93,6 +93,8 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   folder characters to the named host, offered only when a folder is open to record it),
   replace, and a two-press remove. Only the last four characters are ever drawn (a screen
   reader hears "key ending …"); a pasted draft lives only while its row is open.
+  Saved-key lookups show their pending state per row and complete independently. A slow
+  vendor lookup or experimental external-check lookup does not hold back other controls.
 - **External check** — the Jev evidence check, labelled experimental: a separate Keychain key,
   a pasted claim and passage (held read-only while a request is out), the exact JSON request on
   screen before the one press that sends it to `api.typesafe.ai` (the Rust bridge refuses any
@@ -115,7 +117,7 @@ and with whose key. The strip reads Agents | Models | MCP. Decision:
   does not establish that the model server stopped inference.
 - **Web** — the tab exists and shows the desktop-only card (why, and the app download); no
   sample rows. Settings keeps a "Models · API keys" door row in its Agents pane, and the map dock's
-  no-key button opens this tab. Every way a row closes returns focus to its opener, and results
+  no-key button opens this tab. Opening a local runner row focuses its address, so Escape closes the editor before the native window handles the key. Every way a row closes returns focus to its opener, and results
   are announced once through one polite live region.
 
 ### `/agents?tab=mcp` — MCP
@@ -137,6 +139,10 @@ connectors dialog. The rail has no MCP tile; `g c` lands here.
   first-contact proof packet an agent pastes to prove it attached, and the former
   "Not working?" fold (file status, CLI verification, connecting from another code folder).
   The server-lifetime sentence and the folder-root note wait in a hint beside the heading.
+  Connection checks follow each tool independently: prepared files show that tool's check
+  command; missing or invalid files show that tool's setup state. Other tools remain
+  optional instead of becoming a shared next-step requirement. Closing the check returns keyboard
+  focus to its opener, including when a native pointer click did not focus that button.
 - **Connectors** — the attached list: one line per connector carrying the service mark, the name,
   what will actually run, the switch, and one more-actions button; that button's dialog holds the
   keychain fields and removal, and removal confirms first because forgetting a token cannot be

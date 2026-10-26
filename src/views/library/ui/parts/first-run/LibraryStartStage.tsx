@@ -84,7 +84,10 @@ export function LibraryStartStage({
         </button>
         <button
           type="button"
-          onClick={onFindDocuments}
+          onClick={(event) => {
+            event.currentTarget.focus({ preventScroll: true });
+            onFindDocuments();
+          }}
           disabled={busy}
           data-testid="library-start-find-documents"
           className={controlClass({
@@ -101,7 +104,10 @@ export function LibraryStartStage({
         </button>
         <button
           type="button"
-          onClick={onImportFromService}
+          onClick={(event) => {
+            event.currentTarget.focus({ preventScroll: true });
+            onImportFromService();
+          }}
           disabled={busy}
           data-testid="library-start-import"
           title={t("sources.importTooltip")}

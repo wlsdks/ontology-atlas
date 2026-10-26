@@ -1,9 +1,7 @@
 use super::*;
 use crate::acp::launch::resolve_launch;
 use crate::acp::login_probe::{real_probe, LOGIN_PROBE};
-use crate::acp::test_support::{
-    empty_dirs, npx_package, probe_with, test_bin, test_path_env,
-};
+use crate::acp::test_support::{empty_dirs, npx_package, probe_with, test_bin, test_path_env};
 use std::collections::HashSet;
 
 #[cfg(not(windows))]
@@ -31,8 +29,7 @@ fn detects_a_runtime_that_lives_only_under_nvm() {
         login_ok: &|_, _, _, _| Some(true),
     };
 
-    let path =
-        std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
+    let path = std::env::join_paths([PathBuf::from("/usr/bin"), PathBuf::from("/bin")]).unwrap();
     let out = detect_runtimes(Some(Path::new("/home/me")), Some(&path), &probe, None, None);
 
     let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
@@ -413,8 +410,8 @@ mod timing_probe {
 
 #[cfg(test)]
 mod newcomer_view {
-    use crate::acp::test_support::{empty_dirs, probe_with};
     use super::*;
+    use crate::acp::test_support::{empty_dirs, probe_with};
     use std::collections::HashSet;
 
     /// What the screen shows a machine with nothing installed; diagnostic.

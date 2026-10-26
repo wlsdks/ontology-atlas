@@ -166,22 +166,7 @@
                                 ontologyMapEdgePanelStyle?.visibility !== "hidden" &&
                                 Number(ontologyMapEdgePanelStyle?.opacity || "1") > 0.01
                               );
-                              const guidedTourOverlay = document.querySelector(
-                                '[data-testid="guided-tour-overlay"]'
-                              );
-                              const guidedTourOverlayRect =
-                                guidedTourOverlay?.getBoundingClientRect();
-                              const guidedTourOverlayStyle = guidedTourOverlay
-                                ? getComputedStyle(guidedTourOverlay)
-                                : null;
-                              const guidedTourOverlayVisible = Boolean(
-                                guidedTourOverlayRect &&
-                                guidedTourOverlayRect.width > 1 &&
-                                guidedTourOverlayRect.height > 1 &&
-                                guidedTourOverlayStyle?.display !== "none" &&
-                                guidedTourOverlayStyle?.visibility !== "hidden" &&
-                                Number(guidedTourOverlayStyle?.opacity || "1") > 0.01
-                              );
+                              const guidedTourOverlayVisible = false;
                               const ontologyMapPrefersReducedMotion =
                                 window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
                               const mapViewport = document.querySelector('[data-testid="ontology-map"]');

@@ -35,7 +35,7 @@ interface Options {
   >;
 }
 
-type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean;exitPath?:boolean };
+type SelectOptions = { preserveImpact?:boolean;keepIndexOpen?:boolean;exitPath?:boolean | 'when-complete' };
 type SelectionContext = {
   interactionSelectedSlugRef: Options['topologyCanvasFocus']['interactionSelectedSlugRef'];
   structure:boolean;
@@ -60,7 +60,7 @@ function selectFromCurrentContext(context:React.RefObject<SelectionContext>,slug
   current.setNodePopoverDismissed(false);
   const isHub=Boolean(current.projectBySlug.get(slug)?.isHub);
   current.setRouteState(route=>resolveTopologyNodeClickRouteState(
-    options?.exitPath && route.analysisMode === 'path'
+    (options?.exitPath === true || (options?.exitPath === 'when-complete' && route.pathSourceSlug !== null && route.pathTargetSlug !== null)) && route.analysisMode === 'path'
       ? { ...route, analysisMode: 'overview', pathSourceSlug: null, pathTargetSlug: null }
       : route,
     slug,{isHub,preserveImpact:options?.preserveImpact}

@@ -18,6 +18,7 @@
  */
 import {
   ConnectorSecretLiteralError,
+  connectorFingerprint,
   type ConnectorRecord,
   deserializeConnectorState,
   serializeConnectorState,
@@ -51,7 +52,7 @@ export type ConnectorWriteResult =
       keys: string[];
     }
   | {
-      status: 'blocked_malformed' | 'blocked_unavailable' | 'write_failed';
+      status: 'blocked_malformed' | 'blocked_unavailable' | 'write_failed' | 'conflict' | 'cancelled';
       connectors: ConnectorRecord[];
     };
 
@@ -64,6 +65,9 @@ export interface ConnectorStore {
   /** Add or replace one connector by id. */
   upsert(connector: ConnectorRecord): Promise<ConnectorWriteResult>;
   remove(id: string): Promise<ConnectorWriteResult>;
+  /** Library setup only: compare the exact prior row and sibling names inside the queue. */
+  guardSetup(record: ConnectorRecord, expected: ConnectorRecord | null, activate: boolean,
+    isCurrent: () => boolean): Promise<ConnectorWriteResult>;
 }
 
 export function createConnectorStore(medium: ConnectorMedium): ConnectorStore {
@@ -133,6 +137,24 @@ export function createConnectorStore(medium: ConnectorMedium): ConnectorStore {
 
   return {
     read: () => enqueue(readCurrent),
+    guardSetup: (record, expected, activate, isCurrent) => enqueue(async () => {
+      if (!isCurrent()) return { status: 'cancelled', connectors: [] };
+      const current = await readCurrent();
+      if (!isCurrent()) return { status: 'cancelled', connectors: current.connectors };
+      if (current.status === 'malformed' || current.status === 'unavailable') {
+        return { status: current.status === 'malformed' ? 'blocked_malformed' : 'blocked_unavailable', connectors: [] };
+      }
+      const matching = current.connectors.filter((c) => c.id === record.id);
+      const row = matching[0];
+      const collision = current.connectors.some((c) => c.id !== record.id && c.name.trim() === record.name.trim());
+      if (matching.length !== (expected ? 1 : 0) || collision || (expected ? !row || row.enabled !== expected.enabled ||
+        row.origin !== expected.origin || connectorFingerprint(row) !== connectorFingerprint(expected) : row !== undefined)) {
+        return { status: 'conflict', connectors: current.connectors };
+      }
+      const next = row ? { ...row, enabled: activate ? true : row.enabled } : { ...record, enabled: false };
+      if (row && row.enabled === next.enabled) return { status: 'saved', connectors: current.connectors };
+      return commit(current, row ? current.connectors.map((c) => c.id === row.id ? next : c) : [...current.connectors, next]);
+    }),
     save: (connectors) => mutate(() => connectors),
     setEnabled: (id, enabled) =>
       mutate((current) =>

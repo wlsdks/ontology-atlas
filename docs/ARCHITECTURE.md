@@ -41,6 +41,7 @@ area: architecture
 │ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      relationships + evidence        │
 │ ├─ /git                    vault Git workbench         │
+│ ├─ /changes                source change briefing      │
 │ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
@@ -964,3 +965,10 @@ the additive V2 linked snapshot format. V2 publishes an immediate immutable
 meaning-decision snapshot and later appends terminal/readback refinements through
 an exact previous-record digest link; it never edits the earlier record or uses
 timestamps as proof of ordering.
+
+
+### Disposable source PR originals
+
+Changes uses `tauri-change-briefing.ts` and `git/briefing/prs/cache.rs` for app-only historical copies of explicitly read public PR descriptions. `public-pr-copies/copies.json` under app-local data is a bounded, versioned disposable envelope, separate from source transfer receipts and ontology truth. It stores no folder grants, model results or commit bodies. Native restore requires a fresh granted source receipt, current selected remote and local merge/introduction proof; its scope hashes canonical folder and filesystem identity, excluding HEAD. Disk-only restore leaves every selected commit remotely unchecked.
+
+Unix storage uses component-wise no-follow directory handles, private regular files, a bounded record-count/byte reader, a dedicated cross-process lock and atomic replacement. Clear changes a persisted generation so an earlier network read cannot repopulate copies; its command has no caller path or source-grant prerequisite. Unsupported safe storage degrades to session-only fresh reads. The web bridge returns absence. See [the retention spec](specs/2026-10-26-reuse-read-pr-originals.md) for limits, reconciliation and recovery proof.

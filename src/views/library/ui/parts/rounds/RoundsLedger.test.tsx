@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider, createTranslator } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -115,5 +115,38 @@ describe('the ledger', () => {
     expect(line).toHaveTextContent(`${ledger('undone.removed', { page: 'wiki/new.md' })} ${ledger('undoneReason.forbiddenKey', { key: 'describes' })}`);
     expect(line).toHaveTextContent(`${ledger('leftAsIs', { page: 'wiki/theirs.md' })} ${ledger('undoneReason.notDraft')}`);
     expect(card.getByTestId('library-rounds-left-as-is')).toHaveTextContent(ledger('leftAsIs', { page: 'wiki/notes.md' }));
+  });
+});
+
+
+describe('sleep gaps in check history', () => {
+  it('keeps execution outcomes visible while sleep gaps require an explicit selection', () => {
+    const sleep = entry({ id: 'sleep', roundId: undefined, outcome: 'asleep', stale: [], checked: 0 });
+    const failed = entry({ id: 'failed', outcome: 'failed', stale: [], checked: 0 });
+    const entries = [sleep, entry({ id: 'held', outcome: 'held', stale: [] }), failed];
+    draw({ entries });
+    expect(screen.queryByTestId('library-rounds-pass-sleep')).not.toBeInTheDocument();
+    expect(screen.getByTestId('library-rounds-pass-held')).toBeInTheDocument();
+    expect(screen.getByTestId('library-rounds-pass-failed')).toBeInTheDocument();
+    const show = screen.getByTestId('library-rounds-show-sleep');
+    expect(show).not.toBeChecked();
+    fireEvent.click(show);
+    expect(show).toBeChecked();
+    expect(screen.getByTestId('library-rounds-pass-sleep')).toBeInTheDocument();
+    fireEvent.click(show);
+    expect(screen.queryByTestId('library-rounds-pass-sleep')).not.toBeInTheDocument();
+    expect(entries).toEqual([sleep, expect.objectContaining({ id: 'held' }), failed]);
+  });
+  it('shows a no-execution state when the only recorded entries are sleep gaps', () => {
+    draw({ entries: [entry({ id: 'sleep-only', roundId: undefined, outcome: 'asleep', stale: [], checked: 0 })], beforeFirstRound: true, nextDueLabel: null });
+    expect(screen.getByTestId('library-rounds-ledger-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('library-rounds-pass-sleep-only')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('library-rounds-show-sleep'));
+    expect(screen.queryByTestId('library-rounds-ledger-empty')).not.toBeInTheDocument();
+    expect(screen.getByTestId('library-rounds-pass-sleep-only')).toBeInTheDocument();
+  });
+  it('offers no irrelevant sleep control when no gaps were recorded', () => {
+    draw({ entries: [entry()] });
+    expect(screen.queryByTestId('library-rounds-show-sleep')).not.toBeInTheDocument();
   });
 });

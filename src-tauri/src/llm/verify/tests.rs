@@ -85,9 +85,10 @@ fn every_named_vendor_is_reachable_only_over_https() {
 #[test]
 fn the_hosts_match_the_shared_fixture_the_screen_promises() {
     // Web tests read the same fixture, so the promised destination matches.
-    let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("../../../../tests/fixtures/llm-provider-hosts.json"))
-            .unwrap();
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../tests/fixtures/llm-provider-hosts.json"
+    ))
+    .unwrap();
     let hosts = fixture["hosts"].as_object().unwrap();
     assert_eq!(hosts.len(), 3, "fixture must cover every named vendor");
     for (provider, expected) in hosts {

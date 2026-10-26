@@ -67,8 +67,6 @@ export function useTopologyRealmState({
   /** Orbit button DOM mirror, so the mount-only rAF effect need not depend on the prop ref. */
   const realmEnterButtonElRef = useRef<HTMLButtonElement | null>(null);
 
-  /** Guided-tour anchor circle DOM mirror — same reason as the realm button. */
-  const tourAnchorElRef = useRef<HTMLDivElement | null>(null);
 
   // --- Depth parallax (reacts to camera input while a realm is active) ---
   /** Parallax offset for depth 2 (the capability ring), in world units. Converges to 0 when the camera stops. */
@@ -117,7 +115,7 @@ export function useTopologyRealmState({
   return {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
     wardingFitRef, prevRealmRootIdRef, realmEnterTargetRef, onEnterRealmRef, realmEnterButtonElRef,
-    tourAnchorElRef, realmParallaxDepth2Ref, realmParallaxDepth3Ref, prevCameraCenterRef, realmParallaxRef,
+    realmParallaxDepth2Ref, realmParallaxDepth3Ref, prevCameraCenterRef, realmParallaxRef,
     realmTierKindsRef, realmExpandChainRef, clusterBarLabelsRef,
   };
 }

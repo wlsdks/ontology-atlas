@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
+import { useMapReadingContext } from '@/shared/lib/navigation/map-reading-context';
+import { buildTopologyReturnHref } from '@/entities/knowledge-graph';
 import { useSoleProjectHref } from '@/features/project-data-source';
 import { describeVaultShape } from '@/shared/lib/vault-folder/vault-shape';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/navigation/nav-destination';
@@ -66,6 +68,7 @@ export function BottomTabBar() {
   const t = useTranslations('nav');
   const tRail = useTranslations('navRail');
   const vault = useLocalVault();
+  const readingContext = useMapReadingContext(vault.handle);
 
   /**
    * Web-only download utility below lg, outside `TABS`. The hook sits above the early return to
@@ -81,7 +84,7 @@ export function BottomTabBar() {
     isDesktopApp: desktopRuntime === true,
   });
 
-  if (shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
+  if ((desktopRuntime === true && !vault.manifest && !vault.partialTotal) || shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
     return null;
   }
 
@@ -89,9 +92,13 @@ export function BottomTabBar() {
   const visible = destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null);
   const mapTabs = TABS.filter((tab) => visible.has(tab.id));
   const shapeTabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
-  const tabs = soleProjectHref
-    ? shapeTabs.map((tab) => (tab.id === 'projects' ? { ...tab, href: soleProjectHref } : tab))
-    : shapeTabs;
+  const tabs = shapeTabs.map((tab) => {
+    if (tab.id === 'projects' && soleProjectHref) return { ...tab, href: soleProjectHref };
+    if (tab.id === 'map' && activeId !== 'map' && readingContext.selectedId) {
+      return { ...tab, href: buildTopologyReturnHref(readingContext.selectedId) };
+    }
+    return tab;
+  });
 
 
   return (

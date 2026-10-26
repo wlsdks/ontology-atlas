@@ -17,10 +17,9 @@
   "motionFull": "Follows system · not reduced",
   "motionCaptionApp": "Change it in System Settings → Accessibility → Display → Reduce motion",
   "motionCaptionWeb": "Change it in your computer's system settings",
-  "guidesLabel": "Screen guides",
-  "guidesCaption": "Opens by itself the first time you visit each screen. Turned off, it opens only from Show again or the guide icon at the map's top right",
-  "guidesAutoLabel": "Show guides automatically",
+  "guidesLabel": "Folder start guide",
+  "guidesCaption": "Automatically offers the folder-opening guide once when exploring the sample. You can always open a folder from the folder button.",
+  "guidesAutoLabel": "Show the folder guide automatically",
   "guidesOn": "On",
-  "guidesOff": "Off",
-  "guidesReplay": "Show again"
+  "guidesOff": "Off"
 }

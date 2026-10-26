@@ -114,8 +114,11 @@
     "constructionReview": {
       "eyebrow": "マップへの書き込み前の安全確認",
       "title": "今、安全に決められること",
-      "openResult": "レビュー結果を開く",
-      "readingResult": "レビュー結果を読み込み中…",
+      "openResult": "検証JSONを読み込む",
+      "readingResult": "検証JSONを読み込み中…",
+      "fileHint": "このプロジェクトの検証結果を含むJSONファイルを選びます。この画面でのみ読み取り、マップには書き込みません。",
+      "resultRegion": "読み込んだ検証結果",
+      "retryFile": "別の検証JSONを選ぶ",
       "errorTitle": "このレビュー結果は信頼できません",
       "errors": {
         "malformed": "必要な検証の成果物が見つからないか、読み取れません。計画も承認も表示しません。",

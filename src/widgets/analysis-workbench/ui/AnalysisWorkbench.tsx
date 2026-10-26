@@ -76,9 +76,10 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
   useEffect(() => {
     if (!open) return;
     const panel = panelRef.current;
+    const isPageContainer = (element: Element | null) => element === document.body || Boolean(element?.matches('main, [role="main"]'));
     /* Record the opener once: later runs of this effect already see focus on the close button. */
     const active = document.activeElement;
-    const origin = active instanceof HTMLElement && active !== document.body && !panel?.contains(active)
+    const origin = active instanceof HTMLElement && !isPageContainer(active) && !panel?.contains(active)
       ? active : null;
     closeRef.current?.focus({ preventScroll: true });
     return () => {
@@ -89,7 +90,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       let frames = 0;
       const restore = () => {
         const current = document.activeElement;
-        if (current !== document.body && current?.isConnected && !panel?.contains(current)) return;
+        if (!isPageContainer(current) && current?.isConnected && !panel?.contains(current)) return;
         const target = origin?.isConnected && !origin.closest('[inert]')
           ? origin : returnFocusSelector ? document.querySelector<HTMLElement>(returnFocusSelector) : null;
         const putAway = !panel?.isConnected || !!panel.closest('[inert]');
@@ -261,7 +262,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       {error.detail ? <FailureDetail summary={t('errorDetails')} detail={error.detail} /> : null}
     </div> : null}
     {notice ? <p role="status" className="text-label leading-label text-[color:var(--color-text-secondary)]">{notice}</p> : null}
-    {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
+    {tab === 'meaning' ? <div role="tabpanel" id="workbench-tabpanel-meaning" aria-labelledby="workbench-tab-meaning" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1">
       <div className="flex flex-col gap-2">
         <p className="text-body leading-body text-[color:var(--color-text-primary)]">{t(context.mode === 'meaning' ? 'reviewPurpose' : 'architectureCriteria')}</p>
         {/*
@@ -276,7 +277,7 @@ export function AnalysisWorkbench({ context, contextLabel, conversationLabel = n
       </div>
       <div className={DIVIDED}>{facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}</div>
     </div> : null}
-    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
+    {tab === 'history' ? <div role="tabpanel" id="workbench-tabpanel-history" aria-labelledby="workbench-tab-history" className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pb-2 pr-1" aria-busy={busy || readPending}>
       <MeaningTransitionHistory handle={context.handle} open={open && tab === 'history'} foldWhenQuiet={!runs.length} onStateChange={setDecisionArchive} />
       {/*
        * The trigger shows only latest plus a short date and time; the id moves to the option

@@ -96,12 +96,6 @@ interface TopologyIndexPanelLabels {
   /** "N documents not on the map" (the caller has already formatted the count). */
   uncatalogedDocsLabel: string;
   uncatalogedDocsAction: string;
-  /**
-   * Living-map drift: "N dusty nodes" plus the action to the freshness tab. Neutral tone only; the
-   * warning ramp is forbidden here.
-   */
-  dustyNodesLabel: string;
-  dustyNodesAction: string;
   /** "N documents the checks caught" (count formatted by the caller) plus the action that opens
    *  the document library, where the per-document explanation and repair already live. */
   brokenDocsLabel: string;
@@ -111,7 +105,7 @@ interface TopologyIndexPanelLabels {
    * where the fix lives; no folder is chosen here.
    */
   sourceUnboundLabel: string;
-  /** The eyebrow over the list of things to tidy (uncataloged, dusty, broken, unbound rows). */
+  /** The eyebrow over the list of things to tidy (uncataloged, broken, unbound rows). */
   tidyHeading: string;
   /** Says the map inside the picked project was opened, so the substitution is never silent. */
   openedInsideLabel: string;
@@ -130,16 +124,9 @@ export interface TopologyIndexPanelProps {
   changedSlugs: ReadonlySet<string>;
   selectedId: string | null;
   onSelect: (nodeId: string) => void;
+  searchQuery?: string;
+  onSearchQueryChange?: (query: string) => void;
   onCollapse: () => void;
-  /**
-   * The first-run card's tour CTA; HomePage owns the tour state (FSD), so only the callback comes
-   * down.
-   */
-  onStartTour?: () => void;
-  /** The guided tour is pointing at the INDEX: the first-run card gives way to the list it describes. */
-  tourIndexSpotlit?: boolean;
-  /** The guided tour is pointing at the first-run card's one-line command: its disclosure stands open. */
-  tourAgentSpotlit?: boolean;
   /** The first-run card's plain-words toggle; HomePage owns audiencePlain. */
   onEnablePlainMode?: () => void;
   labels: TopologyIndexPanelLabels;
@@ -155,8 +142,6 @@ export interface TopologyIndexPanelProps {
   } | null;
   /** How many documents are in the vault but still have no kind (so are not on the map). */
   uncatalogedDocCount?: number;
-  /** Living-map drift — the number of dusty nodes. At 0 the row is hidden. */
-  dustyNodeCount?: number;
   /** Documents carrying at least one error-severity validation issue. At 0 the row is absent. */
   brokenDocCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
@@ -193,10 +178,7 @@ export interface TopologyIndexPanelProps {
    * (`filterTreeExcludeKind`).
    */
   plainMode?: boolean;
-  /**
-   * Hides the dusty-nodes row in the static sample, whose graph is the product's own dogfood;
-   * omitted, always shown.
-   */
+  /** Shows maintenance controls only for an opened vault. */
   vaultLoaded?: boolean;
   /**
    * Basename of the folder the concepts were read from, null in sample mode; a basename because the
@@ -220,6 +202,8 @@ export interface TopologyIndexPanelProps {
  * surfaces.
  */
 export function TopologyIndexPanel({
+  searchQuery,
+  onSearchQueryChange,
   treeResult,
   totalConcepts,
   totalRelations,
@@ -232,7 +216,6 @@ export function TopologyIndexPanel({
   className,
   recentChanges = null,
   uncatalogedDocCount,
-  dustyNodeCount,
   brokenDocCount,
   unboundProjectNodeId = null,
   onOpenUnboundSource,
@@ -245,9 +228,6 @@ export function TopologyIndexPanel({
   agentAvailable = false,
   onDismissOpenedInside,
   onPromoteUncatalogedDocs = null,
-  onStartTour,
-  tourIndexSpotlit = false,
-  tourAgentSpotlit = false,
   onEnablePlainMode,
   domainCensus = null,
   lens: lensProp,
@@ -273,7 +253,9 @@ export function TopologyIndexPanel({
     onChange: (next) => onWindowChange?.(next),
   });
 
-  const [query, setQuery] = useState("");
+  const [localQuery, setLocalQuery] = useState("");
+  const query = searchQuery ?? localQuery;
+  const setQuery = onSearchQueryChange ?? setLocalQuery;
   const rootIds = useMemo(
     () => treeResult.roots.map((root) => root.node.id),
     [treeResult.roots],
@@ -408,15 +390,6 @@ export function TopologyIndexPanel({
       onClick: onPromoteUncatalogedDocs,
     });
   }
-  if (vaultLoaded && dustyNodeCount && dustyNodeCount > 0) {
-    tidyRows.push({
-      key: "dusty",
-      testId: "topology-index-dusty-nodes",
-      label: labels.dustyNodesLabel,
-      action: labels.dustyNodesAction,
-      href: "/ontology/insights?tab=do-next",
-    });
-  }
   if (vaultLoaded && brokenDocCount && brokenDocCount > 0) {
     tidyRows.push({
       key: "broken",
@@ -463,8 +436,6 @@ export function TopologyIndexPanel({
         /* Selecting any node means the guidance card has done its job —
            see `FirstRunStarterModule`'s `nodeSelected` doc-block. */
         nodeSelected={selectedId !== null}
-        indexSpotlit={tourIndexSpotlit}
-        agentSpotlit={tourAgentSpotlit}
         /*
          * The make-a-map-from-code door is for any open vault with nothing pointing at real code,
          * not only people who never opened a folder.
@@ -481,7 +452,6 @@ export function TopologyIndexPanel({
         agentAvailable={agentAvailable}
         relations={totalRelations}
         domains={domainCount}
-        onStartTour={onStartTour}
         onEnablePlainMode={onEnablePlainMode}
         audiencePlain={plainMode}
       >

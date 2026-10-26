@@ -1024,6 +1024,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: none.
 **Fix**: Use `--mode=pin` afterward to reject tag retargeting while letting `main` keep advancing.
 
+### Rendered UI audit
+
+**Run**: `pnpm ui:audit -- --url=<base> --route=<path> [--scope=<selector>]`
+**Proves**: Geometry, reachability, contrast and scroll reserve in the rendered page, or one explicitly scoped visible region. A scoped audit refuses missing, ambiguous and hidden subjects and reports a nonzero element inventory. Any audit refuses an empty visible inventory.
+**Escalate**: `pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts` for collector changes; the planted cover must remain detectable even when outside the scope.
+**Fix**: Correct actual layout findings. Scope a modal to distinguish its controls from intentionally covered background controls.
+
 ### Repo link and citation integrity
 
 **Run**: `pnpm docs:links`

@@ -166,3 +166,32 @@ test('a wiki-only vault leaves Ontology empty and restores no ordinary tab', asy
   await expect(page.locator('[data-docs-header-zone="tabs"]')).not.toContainText('Vault instructions');
   await expect(page.getByRole('heading', { level: 1, name: 'Ontology' })).toHaveCount(1);
 });
+
+test('returning from Library keeps the selected map concept and search', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await loadVault(page, MIXED_LIBRARY_VAULT);
+  const search = page.getByTestId('topology-index-search');
+  if (!(await search.isVisible())) await page.getByTestId('topology-index-tab').click();
+  await search.fill('Settlement');
+  await page.locator('[data-index-row="capability:settlement"]').click();
+  await expect(page.getByTestId('app-nav-rail-item-library')).toHaveAttribute('href', /slug=capabilities%2Fsettlement/);
+  await page.getByTestId('app-nav-rail-item-library').click();
+  await expect(page.getByTestId('docs-editor-path')).toHaveText('capabilities/settlement.md');
+  await page.getByTestId('app-nav-rail-item-map').click();
+  await expect(page).toHaveURL(/p=capability%3Asettlement/);
+  await expect(search).toHaveValue('Settlement');
+  await expect(page.locator('[data-index-row="capability:settlement"]')).toHaveAttribute('aria-selected', 'true');
+
+  await page.getByTestId('app-nav-rail-item-library').click();
+  await page.getByTestId('docs-editor-path').click();
+  await page.keyboard.press('g');
+  await page.keyboard.press('m');
+  await expect(page).toHaveURL(/p=capability%3Asettlement/);
+  await expect(search).toHaveValue('Settlement');
+
+  await page.getByTestId('app-nav-rail-item-library').click();
+  await expect(page.getByTestId('docs-editor-path')).toHaveText('capabilities/settlement.md');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('[data-tabbar="primary"]').getByRole('link', { name: 'Map', exact: true }).click();
+  await expect(page).toHaveURL(/p=capability%3Asettlement/);
+});

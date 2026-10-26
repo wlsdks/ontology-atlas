@@ -62,7 +62,9 @@ size against a documented cap, where the Codex bar measures the **merged** root 
 already being cut; the reference comparison with its declared twin, shown only where a twin was
 compared; the file's modification time on
 this disk, labelled as that rather than as a commit date; and, for a directory, its files. A
-directory with differing files unfolds them as indented rows, and a file on one side only is listed
+directory with differing files unfolds them as indented rows. Initially only the selected
+folder is expanded; other folders retain their count summaries. Explicitly opened folders stay
+open until the person closes them, and a file on one side only is listed
 once, under the folder that holds it. Choosing a file that has a twin shows both complete files
 side by side on shared rows (one above the other in a narrow detail), so a line and its counterpart
 sit on the same y; each side is headed by the mark and name of the tool that reads it (Claude Code, Codex) and the

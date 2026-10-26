@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { activeTestId, arrive, capture, drawnNodes, pickDomain, rectOf, type Box } from "./map-canvas-interaction-harness";
+import { arrive, capture, drawnNodes, pickDomain, rectOf, type Box } from "./map-canvas-interaction-harness";
 import {
   waitForAnimationsDone,
   waitForBoxStill,
@@ -41,7 +41,7 @@ test.describe("map canvas interactions on the dogfood vault", () => {
         // In a realm the INDEX column holds the realm's ledger.
         const index = (await rectOf(page, "topology-index-panel")) ?? (await rectOf(page, "topology-realm-ledger"));
         expect(index, "INDEX is open at arrival").not.toBeNull();
-        const chrome = (await Promise.all(["topology-index-panel", "topology-realm-ledger", "topology-replay-growth", "topology-shortcuts-help-button", "topology-tour-button"].map((t) => rectOf(page, t)))).filter((r): r is Box => r !== null);
+        const chrome = (await Promise.all(["topology-index-panel", "topology-realm-ledger", "topology-replay-growth", "topology-shortcuts-help-button"].map((t) => rectOf(page, t)))).filter((r): r is Box => r !== null);
         const midpoints = await page.evaluate(() => {
             const m = (window as unknown as {
                 __atlasMap: {
@@ -194,90 +194,6 @@ test.describe("map canvas interactions on the dogfood vault", () => {
             expect(e).toEqual({ h: row[0]!.h, radius: row[0]!.radius });
         }
         await capture(page, "mc13-edge-panel");
-    });
-    test("MC-14/MC-11/MC-10e: the tour offers no dead back, keeps its subjects in view, and ends on its tile", async ({ page }) => {
-        await arrive(page, { width: 1512, height: 949 });
-        await page.getByTestId("topology-tour-button").click();
-        await expect(page.getByTestId("guided-tour-card")).toBeVisible();
-        await expect(page.getByTestId("guided-tour-back")).toHaveCount(0);
-        // Where [next] sits inside its card, not on the window: step 1 has no anchor and centres,
-        // step 2 stands beside the project node, so the card itself moves by design.
-        const nextInset = async () => {
-            const card = (await rectOf(page, "guided-tour-card"))!;
-            const next = (await rectOf(page, "guided-tour-next"))!;
-            return { right: Math.round(card.x + card.w - (next.x + next.w)), bottom: Math.round(card.y + card.h - (next.y + next.h)) };
-        };
-        const nextBefore = await nextInset();
-        for (let i = 0; i < 12; i++) {
-            const step = await page.getByTestId("guided-tour-overlay").getAttribute("data-tour-step");
-            // Settle on what the step shows, not on a clock: a fixed 700 ms read the card mid-entrance
-            // on a slow CI runner and saw the Next button 74 px off.
-            const tourCard = page.getByTestId("guided-tour-card");
-            await waitForAnimationsDone(tourCard);
-            await waitForBoxStill(tourCard);
-            await waitForMapStill(page);
-            const card = (await rectOf(page, "guided-tour-card"))!;
-            if (step === "nodes") {
-                // [next] keeps its place in the card when [back] appears beside it on step 2.
-                expect(await nextInset(), "[next] holds the card's trailing corner").toEqual(nextBefore);
-                // The card stands beside the node the step names, never on it.
-                const cutout = (await rectOf(page, "topology-tour-anchor"))!;
-                expect(cutout, "the anchor probe is projected onto the project node").not.toBeNull();
-                const project = (await drawnNodes(page)).find((n) => n.id.startsWith("project:"))!;
-                expect(contains(cutout, project), "the cutout is centred on the project node").toBe(true);
-                expect(intersects(card, cutout), "the step 2 card covers the project node").toBe(false);
-            }
-            if (step === "relations" || step === "datasheet") {
-                const labels = await page.evaluate(() => {
-                    const m = (window as unknown as {
-                        __atlasMap: {
-                            labels: () => Array<{
-                                nodeId: string;
-                                minX: number;
-                                minY: number;
-                                maxX: number;
-                                maxY: number;
-                            }>;
-                            selection: () => {
-                                nodeId: string | null;
-                            };
-                        };
-                    }).__atlasMap;
-                    const c = document.querySelector('[data-surface-role="map-canvas"]')!.getBoundingClientRect();
-                    return {
-                        selected: m.selection().nodeId,
-                        boxes: m.labels().map((b) => ({ id: b.nodeId, x: c.x + b.minX, y: c.y + b.minY, w: b.maxX - b.minX, h: b.maxY - b.minY })),
-                    };
-                });
-                const covered = labels.boxes.filter((b) => intersects(card, b));
-                if (step === "datasheet") {
-                    expect(covered.map((b) => b.id), "the datasheet card covers the node it describes").not.toContain(labels.selected);
-                }
-                else {
-                    const heads = covered.filter((b) => b.id.startsWith("domain:") || b.id.startsWith("project:"));
-                    expect(heads.map((b) => b.id), "the relations card covers a domain or the project").toEqual([]);
-                }
-                await capture(page, `mc11-tour-${step}`);
-            }
-            const finish = page.getByTestId("guided-tour-finish-tour");
-            if (await finish.count()) {
-                await finish.click();
-                break;
-            }
-            const next = page.getByTestId("guided-tour-next");
-            if (await next.count())
-                await next.click();
-            else if (await page.getByTestId("guided-tour-activate-target").count())
-                await page.getByTestId("guided-tour-activate-target").click();
-            else if (await page.getByTestId("guided-tour-finish").count()) {
-                await page.getByTestId("guided-tour-finish").click();
-                break;
-            }
-            else
-                break;
-        }
-        await expect(page.getByTestId("guided-tour-overlay")).toHaveCount(0);
-        await expect.poll(() => activeTestId(page)).toBe("topology-tour-button");
     });
     test("MC-06: in Strata the selected domain's lit neighbourhood stays clear of its panel", async ({ page }) => {
         await arrive(page, { width: 1040, height: 720 });

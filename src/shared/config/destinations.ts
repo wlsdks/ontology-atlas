@@ -18,6 +18,7 @@ export const DESTINATION_IDS = [
   'projects',
   // Agents: install and connect work with progress, kept out of the settings sheet.
   'agents',
+  'changes',
   // MCP is the second tab of Agents: `/mcp/` redirects to `DESTINATION_HREF.mcp`.
   'git',
 ] as const;
@@ -55,6 +56,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   library: '/library/',
   automations: '/automations/',
   git: '/git/',
+  changes: '/changes/',
 };
 
 export function withQuery(href: string, query: Readonly<Record<string, string>>): string {
@@ -89,6 +91,7 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   // `u` — automation is a management utility, and `a` belongs to Agents.
   automations: 'u',
   git: 'g',
+  changes: 'b',
 };
 
 /** How long, in ms, to wait for the second letter after the leader. */

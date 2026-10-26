@@ -317,19 +317,6 @@ export interface OntologyMapProps {
    */
   overviewFit?: "spine" | "full";
   /**
-   * Projection contract for the guided tour's canvas node anchor: while non-null, the loop writes a
-   * transform plus `--tour-anchor-r` into `tourAnchorRef`'s DOM every frame. Choosing the node
-   * belongs to HomePage (`resolve-tour-anchor-node.ts`).
-   */
-  tourAnchorNodeId?: string | null;
-  /**
-   * The guided tour's anchor circle DOM — HomePage/`GuidedTourOverlay` creates it
-   * and passes it down here as well (the overlay is what reads the rect to place
-   * its cutout). This component renders the actual element and only the ref is
-   * shared outward.
-   */
-  tourAnchorRef?: RefObject<HTMLDivElement | null>;
-  /**
    * While a DOM overlay is open the canvas is excluded from the keyboard and screen-reader tree;
    * INDEX and the datasheet remain the accessible alternatives.
    */
@@ -406,7 +393,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -550,8 +537,6 @@ export function OntologyMap(props: OntologyMapProps) {
       panelHoverNodeIdRef,
       tierReveal,
       overviewFit,
-      tourAnchorNodeId,
-      tourAnchorRef,
       glyphSet,
       canvasBackground,
       view3d,
@@ -662,14 +647,6 @@ export function OntologyMap(props: OntologyMapProps) {
       {/* The inspector docks against the same right edge the names favour, and the
                   reader is looking at one concept, so the names step aside while it is open. */}
       {tierNamesActive && !detailPanelVisible ? (<OntologyMapTierLegend names={tierNames ?? []} labels={domeTierLabels!} onRaise={raiseDomeTier} onWidths={setDomeTierNameWidths}/>) : null}
-      {/* Measurement probe with no paint: it must never transition, including under the global
-         reduced-motion duration. GuidedTourOverlay paints the scrim and cutout and reads this rect from
-         the z-70 layer. */}
-      {tourAnchorRef ? (<div ref={tourAnchorRef} data-testid="topology-tour-anchor" data-tour-anchor-node={tourAnchorNodeId ?? undefined} aria-hidden className="pointer-events-none absolute left-0 top-0 z-40 transition-none" style={{
-                width: "calc(var(--tour-anchor-r, 0px) * 2)",
-                height: "calc(var(--tour-anchor-r, 0px) * 2)",
-                visibility: tourAnchorNodeId ? "visible" : "hidden",
-            }}/>) : null}
       {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")}
         /* Read by assistive technology, and non-existent to pointer and focus. */
         role="status" aria-live="polite" data-state={noticePresence.exiting ? "closed" : "open"} className={[

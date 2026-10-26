@@ -38,9 +38,9 @@ describe("the map's side lanes are footprint plus one equal air", () => {
   });
 
   it("the utility rail stands one chrome inset from the map's right edge, half an inset beside the dock", () => {
-    // Four tiles: fit (its own file) and the tour, shortcuts and growth-replay tiles.
+    // Three tiles: fit (its own file), shortcuts and growth replay.
     expect(fit).toContain("md:right-[var(--chrome-inset)]");
-    expect(canvas.match(/md:right-\[var\(--chrome-inset\)\]/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(canvas.match(/md:right-\[var\(--chrome-inset\)\]/g)?.length ?? 0).toBeGreaterThanOrEqual(2);
     for (const source of [fit, canvas, chrome]) expect(source).not.toMatch(/xl:(right|top)-8/);
     expect(css).toMatch(/\[data-agent-panel-open='true'\] \[data-agent-dock-adjacent-rail='true'\] \{\s*right: calc\(var\(--chrome-inset\) \/ 2\);/);
   });

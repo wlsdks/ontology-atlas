@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Every auto-start guide site must read the auto-start switch. The map auto-start lives in an effect
- * that render tests cannot reach, so the source is read directly.
+ * Every remaining automatic folder-guide entry must read the shared switch.
+ * The source inventory also catches a new caller that was not registered.
  */
 
 const ROOT = process.cwd();
@@ -13,8 +13,6 @@ const read = (rel: string): string => readFileSync(join(ROOT, rel), "utf8");
 
 /** Files that own an auto-start = files that must read the switch. This list is the reach. */
 const AUTO_START_SITES = [
-  "src/views/home/model/keyboard/use-topology-keyboard-tour.tsx",
-  "src/features/guided-tour/ui/DestinationGuide.tsx",
   "src/features/first-run-starter/model/vault-guide-auto-open.ts",
 ] as const;
 
@@ -49,7 +47,7 @@ describe("on-screen guide auto display: the switch covers every firing point", (
     walk("src");
 
     // Idling guard — the scanner must not find 0 files and pass as "nothing diverged".
-    expect(found.length, "found no file that reads the switch, so the scan is broken").toBeGreaterThan(1);
+    expect(found.length, "found no file that reads the switch, so the scan is broken").toBeGreaterThan(0);
 
     const registered = new Set<string>(AUTO_START_SITES);
     const unregistered = found.filter((p) => !registered.has(p));
@@ -67,15 +65,10 @@ describe("on-screen guide auto display: the switch covers every firing point", (
     ).toEqual([]);
   });
 
-  /** Turning the switch off is not deletion: the ways to summon a guide must stay alive regardless. */
-  it("the calling path does not hide behind the switch", () => {
-    const settings = read("src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx");
-    const replayRow = settings.slice(settings.indexOf("app-settings-replay-guide"));
-    expect(replayRow.slice(0, 900)).not.toContain("guideAutoStart");
-  });
+
 });
 
 it("keeps the protected topology owners connected to the route", () => {
   const route = readFileSync("src/views/home/ui/HomePage.tsx", "utf8");
-  expect(route).toContain('useTopologyKeyboardTour({');
+  expect(route).toContain('useTopologyKeyboard({');
 });

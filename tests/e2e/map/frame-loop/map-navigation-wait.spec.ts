@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { stubDirectoryPicker } from '../../vault-picker-stub';
+import { seedFirstRunSeen } from '../../first-run-seed';
 import { installDesktopRailRuntime, mountDesktopVault } from '../../desktop-rail-arrival-harness';
 
 test('Map announces preparation before leaving the current pane and reveals a drawn canvas', async ({ page }) => {
@@ -251,3 +253,39 @@ test('normal motion moves every painted orbit and the travel detector rejects a 
     }
   }
 });
+
+for (const fixture of [
+  { name: 'an empty folder', files: {} as Record<string, string> },
+  { name: 'a folder with a concept and no relations', files: {
+    'domains/payments.md': '---\nkind: domain\ntitle: Payments\n---\nPayment responsibility.\n',
+  } },
+]) {
+  test(`Map entry reveals the start actions for ${fixture.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 982 });
+    await stubDirectoryPicker(page, fixture.files);
+    await seedFirstRunSeen(page);
+    await page.goto('/en/topology/?guides=off');
+    await page.getByTestId('first-run-starter-open').click();
+    await page.getByTestId('vault-guide-pick-existing').click();
+    const start = page.getByTestId('vault-start-steps');
+    await expect(start).toBeVisible();
+    await page.getByTestId('app-nav-rail-item-agents').click();
+    await expect(page).toHaveURL(/\/agents\//);
+    await page.getByTestId('app-nav-rail-item-map').click();
+    await expect(page).toHaveURL(/\/topology\//);
+    await expect(page.getByTestId('map-navigation-wait')).toHaveCount(0);
+    await expect(page.locator('[data-app-shell-pane]')).not.toHaveAttribute('inert');
+    await expect(start).toBeVisible();
+    await expect(start.getByRole('button').last()).toBeEnabled();
+    await expect(page.locator('canvas[data-surface-role="map-canvas"]')).toHaveCount(0);
+
+    await page.getByTestId('app-nav-rail-item-agents').click();
+    await expect(page).toHaveURL(/\/agents\//);
+    await page.keyboard.press('g');
+    await page.keyboard.press('m');
+    await expect(page).toHaveURL(/\/topology\//);
+    await expect(page.getByTestId('map-navigation-wait')).toHaveCount(0);
+    await expect(start).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.querySelector('#main')?.contains(document.activeElement))).toBe(true);
+  });
+}

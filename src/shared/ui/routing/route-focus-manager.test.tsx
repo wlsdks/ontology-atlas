@@ -108,6 +108,19 @@ describe('RouteFocusManager', () => {
     });
   });
 
+  it('clears a URL marker that arrives after the client navigation render', async () => {
+    route.pathname = '/ko/docs/';
+    rememberRouteFocusIntent('/docs/');
+    render(<><RouteFocusManager /><div data-testid="late-destination" /></>);
+    act(() => {
+      window.history.replaceState({}, '', '/ko/docs/?intent=local&focus=main#evidence');
+      screen.getByTestId('late-destination').innerHTML = '<main id="main"><h1>Documents</h1></main>';
+    });
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Documents' })).toHaveFocus());
+    expect(window.location.search).toBe('?intent=local');
+    expect(window.location.hash).toBe('#evidence');
+  });
+
   it('survives a native navigation through a temporary URL focus marker', async () => {
     expect(buildRouteFocusHref('/docs/?intent=local')).toBe(
       '/docs/?intent=local&focus=main',

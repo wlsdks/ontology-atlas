@@ -182,7 +182,7 @@
     "staleOnly": "원문 {count, number}개의 버전을 확인해야 해요",
     "partialOnly": "{count, number}개는 앞부분만 읽었어요",
     "import": "외부에서 가져오기",
-    "importTooltip": "Notion·Confluence·Jira·GitHub에서 문서를 가져와요",
+    "importTooltip": "서비스를 고르고 연결한 뒤 이 폴더로 가져올 문서를 정해요",
     "pagesNeedReview": "기존 페이지 {count, number}개를 다시 확인해야 해요"
   },
   "wiki": {
@@ -449,6 +449,11 @@
     "staleLit": "달라진 원문 {count, number}개와 그것을 인용한 문서 {pages, number}개만 밝게 남았어요. Escape를 누르거나 그림을 누르면 원래대로 돌아가요."
   },
   "find": {
+    "searchLabel": "파일명·경로로 찾기",
+    "searchHint": "검색을 바꿔도 선택은 유지돼요. 검색으로 가려진 문서는 거절로 기록하지 않아요.",
+    "searchCount": "전체 {total, number}개 중 {visible, number}개 · 선택 {selected, number}개",
+    "noMatches": "검색어와 맞는 파일명이나 경로가 없어요.",
+    "clearSearch": "검색 지우기",
     "title": "허락한 폴더 안의 문서",
     "preamble": "이름·형식·크기만 훑었어요. 파일을 연 적은 없어요. 고르기 전에는 아무것도 복사하지 않아요.",
     "webLimit": "여기서는 지금 연 폴더만 훑을 수 있어요. 연결해 둔 코드 폴더는 절대 경로가 필요하고, 그건 앱이 갖고 있어요.",
@@ -921,7 +926,9 @@
       "columnRound": "점검",
       "columnOutcome": "결과",
       "ghostTime": "––:––",
-      "ghostAria": "첫 실행이 들어올 자리"
+      "ghostAria": "첫 실행이 들어올 자리",
+      "includeSleep": "잠든 시간도 보기 ({count})",
+      "noPasses": "아직 실행된 점검이 없어요."
     },
     "sheet": {
       "readbackHour": "한 시간마다",

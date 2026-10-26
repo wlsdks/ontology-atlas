@@ -164,7 +164,9 @@ pub(crate) fn acp_start(
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     // Include app installs, or the screen keeps asking for installation.
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths
+        .as_deref()
+        .map(acp::managed_cli::managed_cli_bin_dir);
     // Include the app's Node for the same reason.
     let managed_node_bin = app_data_for_paths
         .as_deref()
@@ -178,8 +180,11 @@ pub(crate) fn acp_start(
         managed_node_bin.as_deref(),
     )?;
     let repo_root = git::find_repo_root(&root).ok().flatten();
-    launch.path_env =
-        acp::search_path::path_without_vault_node_modules_bin(&launch.path_env, &root, repo_root.as_deref());
+    launch.path_env = acp::search_path::path_without_vault_node_modules_bin(
+        &launch.path_env,
+        &root,
+        repo_root.as_deref(),
+    );
 
     // Heal a half-downloaded npx entry just before launch (see `acp/npx_cache.rs`).
     let npx_preflight = acp::npx_cache::preflight_npx_cache(&launch, home.as_deref());
@@ -224,7 +229,11 @@ pub(crate) fn acp_start(
     );
     let spawned = spawned.unwrap_or_else(|| launch.clone());
     let mut command = adapter_command(&spawned.program, &spawned.args, &app_data, &root);
-    acp::runtime_environment::apply_runtime_environment(&mut command, &runtime_id, &spawned.path_env);
+    acp::runtime_environment::apply_runtime_environment(
+        &mut command,
+        &runtime_id,
+        &spawned.path_env,
+    );
     command.env(isolation_env, isolation_dir);
 
     #[cfg(unix)]
@@ -304,7 +313,9 @@ pub(crate) fn acp_start(
         acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { reason } => {
             Some(format!("npx-first-run-download:healed:{reason}"))
         }
-        acp::npx_cache::NpxCachePreflight::FirstDownload => Some("npx-first-run-download".to_string()),
+        acp::npx_cache::NpxCachePreflight::FirstDownload => {
+            Some("npx-first-run-download".to_string())
+        }
         // Report the reason so the screen can explain the repeat failure.
         acp::npx_cache::NpxCachePreflight::HealFailed { reason, error } => {
             Some(format!("npx-cache-heal-failed:{reason}:{error}"))
@@ -315,7 +326,8 @@ pub(crate) fn acp_start(
     };
     let downloading = matches!(
         npx_preflight,
-        acp::npx_cache::NpxCachePreflight::FirstDownload | acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { .. }
+        acp::npx_cache::NpxCachePreflight::FirstDownload
+            | acp::npx_cache::NpxCachePreflight::HealedBrokenEntry { .. }
     );
     if let Some(message) = first_run_message {
         let entry = downloading
@@ -343,7 +355,9 @@ pub(crate) fn acp_start(
                 if !alive {
                     break;
                 }
-                if acp::npx_cache::npx_entry_health(&entry, &package) == acp::npx_cache::NpxEntryHealth::Usable {
+                if acp::npx_cache::npx_entry_health(&entry, &package)
+                    == acp::npx_cache::NpxEntryHealth::Usable
+                {
                     let _ = on_event.send(AcpStreamEvent::Notice {
                         message: "npx-download-done".to_string(),
                     });
@@ -384,7 +398,10 @@ fn spawn_acp_line_pump<R: std::io::Read + Send + 'static>(
     std::thread::spawn(move || {
         let mut reader = std::io::BufReader::new(stream);
         loop {
-            match acp::agent_process::read_bounded_line(&mut reader, acp::agent_process::MAX_LINE_BYTES) {
+            match acp::agent_process::read_bounded_line(
+                &mut reader,
+                acp::agent_process::MAX_LINE_BYTES,
+            ) {
                 Ok(Some(bytes)) => {
                     let line = acp_line_text(bytes);
                     if let Some(sink) = early_lines.as_ref() {
@@ -436,7 +453,9 @@ pub(crate) fn acp_permission_verdict(
 ) -> String {
     let verdict = permission_verdict_for_session(&sessions, &session_id, file_path.as_deref());
     match verdict {
-        acp::permission_verdict::PermissionVerdict::AllowInsideVault => "allow-inside-vault".to_string(),
+        acp::permission_verdict::PermissionVerdict::AllowInsideVault => {
+            "allow-inside-vault".to_string()
+        }
         acp::permission_verdict::PermissionVerdict::Ask => "ask".to_string(),
     }
 }

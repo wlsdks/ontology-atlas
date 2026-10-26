@@ -1,9 +1,9 @@
 import type { Page } from "@playwright/test";
-import { FIRST_RUN_SEEN_ENTRIES } from "../../src/features/guided-tour/model/first-run-seen";
+import { FIRST_RUN_SEEN_ENTRIES } from "../../src/shared/lib/preferences/first-run-seen";
 
 /**
  * First-visit surfaces raise a scrim that swallows clicks in specs of a returning user.
- * The keys come from `first-run-seen.ts`, which derives them from `DESTINATION_TOURS`.
+ * The keys come from `first-run-seen.ts`, which lists the remaining folder and Library first-visit surfaces.
  */
 export { FIRST_RUN_SEEN_ENTRIES };
 

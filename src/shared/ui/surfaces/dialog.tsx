@@ -126,7 +126,7 @@ export function Dialog({
             {...transientSurface("sheet")}
             // No ring on programmatic container focus (`dialog-focus-ring.spec.ts`).
             className={cn(
-              "rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
+              "relative rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
               size !== "viewport" && "w-[min(var(--dialog-w-sm),calc(100vw-2rem))]",
               size === "md" && "w-[min(var(--dialog-w-md),calc(100vw-2rem))]",
               size === "viewport" && "h-[calc(100vh-var(--chrome-inset)*2)] w-[calc(100vw-var(--chrome-inset)*2)] max-w-none",

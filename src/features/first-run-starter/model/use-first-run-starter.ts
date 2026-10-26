@@ -113,11 +113,11 @@ export function useFirstRunStarter({ mapSelectionActive = false }: { mapSelectio
   const errorDetail = failure?.detail ?? null;
 
   useEffect(() => {
-    // Escape belongs first to a map selection, the tour, a modal or an edge panel.
+    // Escape belongs first to a map selection, a modal or an edge panel.
     if (!visible || mapSelectionActive) return;
     const handler = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (document.querySelector('[data-testid="map-edge-panel"], [data-testid="guided-tour-overlay"], [role="dialog"][aria-modal="true"]') !== null) return;
+      if (document.querySelector('[data-testid="map-edge-panel"], [role="dialog"][aria-modal="true"]') !== null) return;
       event.preventDefault();
       dismiss();
     };

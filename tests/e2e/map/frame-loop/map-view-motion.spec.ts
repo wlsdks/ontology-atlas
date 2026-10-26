@@ -63,7 +63,7 @@ test("the chrome under the inspector fades where it stands and returns in place,
     });
     expect(new Set(transition.durations).size, "left and right move on different clocks").toBe(1);
     expect(new Set(transition.timings).size, "left and right move on different curves").toBe(1);
-    const chrome = ["topology-utility-action-lane", "map-analysis-status-entry", "topology-fit-control", "topology-tour-button", "topology-shortcuts-help-button"];
+    const chrome = ["topology-utility-action-lane", "map-analysis-status-entry", "topology-fit-control", "topology-shortcuts-help-button"];
     const read = () => page.evaluate((ids) => ids.map((id) => {
         const el = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
         if (!el) return { id, box: null, opacity: null, inert: false };

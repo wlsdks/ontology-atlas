@@ -18,6 +18,7 @@ test("closing the shortcuts sheet returns focus to the button that opened it", a
   await trigger.click();
   await expect(page.getByRole("dialog", { name: /키보드 단축키/ })).toBeVisible();
 
+  await expect(page.getByTestId("shortcut-sheet-relation-guide")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(trigger, "if the button vanished after closing, this spec spins idle").toBeVisible();

@@ -7,11 +7,6 @@ export interface TopologyEscLadderInput {
   selectedEdgeActive?: boolean;
   /** The newest, most transient overlay closes first, or it reads as stuck chrome. */
   contextMenuOpen: boolean;
-  /**
-   * Its viewport blocker would make an ignored Escape look like a frozen app; Escape closes only
-   * the tour.
-   */
-  tourOpen: boolean;
   /** Defense in depth: focus may have left the composer while it still blocks the page. */
   createNodeOpen: boolean;
   /**
@@ -40,7 +35,6 @@ export type TopologyEscLadderAction =
   | "close-realm"
   | "close-edge-popover"
   | "close-context-menu"
-  | "close-tour"
   | "close-create-node"
   | "close-bootstrap"
   | "close-full-detail"
@@ -52,7 +46,7 @@ export type TopologyEscLadderAction =
 
 /**
  * An open workbench dismisses its nested surfaces before itself. Otherwise the map keeps this
- * priority order: realm, edge popover, context menu, tour,
+ * priority order: realm, edge popover, context menu,
  * composer, search (deferred), full detail, relation lens, node popover, deselect, local-graph pop,
  * nothing.
  */
@@ -64,7 +58,6 @@ export function resolveTopologyEscLadderAction(
   if (input.workbenchOpen) {
     if (input.searchOpen) return "none";
     if (input.contextMenuOpen) return "close-context-menu";
-    if (input.tourOpen) return "close-tour";
     if (input.createNodeOpen) return "close-create-node";
     if (input.bootstrapOpen) return "close-bootstrap";
     if (input.fullDetailOpen) return "close-full-detail";
@@ -73,7 +66,6 @@ export function resolveTopologyEscLadderAction(
   if (input.realmActive) return "close-realm";
   if (input.selectedEdgeActive) return "close-edge-popover";
   if (input.contextMenuOpen) return "close-context-menu";
-  if (input.tourOpen) return "close-tour";
   if (input.createNodeOpen) return "close-create-node";
   if (input.bootstrapOpen) return "close-bootstrap";
   // The palette handles this keypress itself.

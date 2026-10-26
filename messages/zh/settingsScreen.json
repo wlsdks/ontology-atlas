@@ -17,10 +17,9 @@
   "motionFull": "跟随系统 · 不减少",
   "motionCaptionApp": "在系统设置 → 辅助功能 → 显示 → 减少动态效果中更改",
   "motionCaptionWeb": "在你电脑的系统设置中更改",
-  "guidesLabel": "界面引导",
-  "guidesCaption": "首次进入每个界面时自动打开。关闭后，只能通过“再次显示”或地图右上角的引导图标打开",
-  "guidesAutoLabel": "自动显示引导",
+  "guidesLabel": "文件夹入门提示",
+  "guidesCaption": "浏览示例时，自动显示一次打开文件夹的方法。也可以随时通过文件夹按钮打开。",
+  "guidesAutoLabel": "自动显示文件夹提示",
   "guidesOn": "开",
-  "guidesOff": "关",
-  "guidesReplay": "再次显示"
+  "guidesOff": "关"
 }

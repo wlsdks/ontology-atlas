@@ -32,6 +32,7 @@ export const AUDITED_ROUTES = [
   "/ko/project/new/",
   "/ko/project/fallback/",
   "/ko/git/",
+  "/ko/changes/",
   // Measures the no-tools state: the web cannot spawn processes.
   "/ko/agents/",
   // Measures the no-vault state: a browser cannot read agent config files or hold a token.

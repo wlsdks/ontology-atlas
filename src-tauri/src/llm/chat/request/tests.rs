@@ -61,9 +61,10 @@ fn a_json_body_survives_the_curl_config_escape_round_trip() {
 
 #[test]
 fn every_chat_endpoint_is_https_and_shares_the_verify_host() {
-    let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("../../../../../tests/fixtures/llm-provider-hosts.json"))
-            .unwrap();
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../../../tests/fixtures/llm-provider-hosts.json"
+    ))
+    .unwrap();
     let hosts = fixture["hosts"].as_object().unwrap();
     for (provider, expected) in hosts {
         let request = chat_request(

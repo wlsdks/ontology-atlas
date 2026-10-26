@@ -385,9 +385,25 @@ test.describe("the Library destination", () => {
   });
 
   test("ticking a candidate and confirming copies it into sources/", async ({ page }) => {
-    await openLibrary(page);
+    await openLibrary(page, { ...VAULT,
+      'inbox/Schedule.pdf': '%PDF-1.7 schedule\n',
+      'other/Notes.pdf': '%PDF-1.7 notes\n',
+    });
     await page.getByTestId("library-find-documents").click();
+    const dialog = page.getByRole('dialog');
+    const query = dialog.getByRole('searchbox');
+    await query.fill(' REQUIREMENTS ');
     await page.getByTestId("find-documents-candidate-inbox/Requirements v3.pdf").check();
+    await query.fill('inbox/schedule');
+    await expect(dialog.getByRole('checkbox')).toHaveCount(1);
+    await page.getByTestId('find-documents-candidate-inbox/Schedule.pdf').check();
+    await query.fill('not-present');
+    await expect(dialog.getByRole('checkbox')).toHaveCount(0);
+    await dialog.getByTestId('find-documents-clear-search').click();
+    await expect(query).toBeFocused();
+    await expect(page.getByTestId('find-documents-candidate-inbox/Requirements v3.pdf')).toBeChecked();
+    await expect(page.getByTestId('find-documents-candidate-inbox/Schedule.pdf')).toBeChecked();
+    await query.fill('schedule');
     await page.getByTestId("find-documents-add").click();
 
     // The copy is the artifact: the row appears in the library because the walk found a
@@ -395,8 +411,40 @@ test.describe("the Library destination", () => {
     await expect(
       page.getByTestId("library-source-sources/Requirements v3.pdf"),
     ).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId('library-source-sources/Schedule.pdf')).toBeVisible();
     await expect(page.getByTestId("library-source-list")).toContainText("not compiled");
+    await page.getByTestId('library-find-documents').click();
+    await expect(dialog.getByRole('searchbox')).toHaveValue('');
+    await expect(page.getByTestId('find-documents-candidate-other/Notes.pdf')).toBeVisible();
+    await expect(page.getByTestId('find-documents-add')).toBeDisabled();
   });
+
+  for (const empty of [true, false]) {
+    test(`document discovery returns focus to its ${empty ? 'empty-stage' : 'index'} opener after an unfocused pointer click`, async ({ page }) => {
+      await openLibrary(page, empty ? {
+        'project.md': VAULT['project.md'],
+        'inbox/Requirements.pdf': '%PDF-1.7 requirements\n',
+      } : VAULT);
+      const opener = page.getByTestId(empty ? 'library-start-find-documents' : 'library-find-documents');
+      await opener.evaluate((button) => {
+        (document.activeElement as HTMLElement)?.blur();
+        button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
+      });
+      await opener.click();
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('searchbox')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+      await expect(opener).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(dialog.getByRole('searchbox')).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(opener).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(dialog.getByRole('searchbox')).toBeVisible();
+      await dialog.getByTestId('find-documents-close').click();
+      await expect(opener).toBeFocused();
+    });
+  }
 });
 
 

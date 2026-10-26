@@ -592,7 +592,10 @@ export function LibrarySection({
           <Tooltip content={t("sources.findTooltip")} {...INDEX_CHIP_TIP}>
             <Chip
               data-testid="library-find-documents"
-              onClick={onFindDocuments}
+              onClick={(event) => {
+                event.currentTarget.focus({ preventScroll: true });
+                onFindDocuments();
+              }}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"
@@ -604,7 +607,10 @@ export function LibrarySection({
           <Tooltip content={t("sources.importTooltip")} {...INDEX_CHIP_TIP}>
             <Chip
               data-testid="library-import-open"
-              onClick={onImportFromService}
+              onClick={(event) => {
+                event.currentTarget.focus({ preventScroll: true });
+                onImportFromService();
+              }}
               disabled={busy}
               tone="muted"
               className="w-full justify-start hover:text-[color:var(--color-text-primary)]"

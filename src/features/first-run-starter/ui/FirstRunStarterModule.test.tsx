@@ -135,8 +135,8 @@ describe('FirstRunStarterModule', () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
-  it('keeps one primary and one secondary action on the face and folds the rest', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable onStartTour={vi.fn()} onEnablePlainMode={vi.fn()} />);
+  it('keeps the folder action on the face and folds the rest', () => {
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable onEnablePlainMode={vi.fn()} />);
     const card = screen.getByTestId('first-run-starter');
     const faceButtons = [...card.querySelectorAll('button')]
       .filter((button) => !button.closest('[inert]'))
@@ -144,7 +144,6 @@ describe('FirstRunStarterModule', () => {
     expect(faceButtons).toEqual([
       'first-run-starter-dismiss',
       'first-run-starter-open',
-      'first-run-tour-cta',
       'first-run-starter-sample-source-storefront',
       'first-run-starter-sample-source-dogfood',
       'first-run-starter-more-toggle',
@@ -187,23 +186,6 @@ describe('FirstRunStarterModule', () => {
     } finally {
       if (original) Object.defineProperty(window.navigator, 'platform', original);
     }
-  });
-
-  it('renders the tour CTA when onStartTour is provided and routes the click', () => {
-    const onStartTour = vi.fn();
-    render(
-      <FirstRunStarterModule concepts={1} relations={1} domains={1} onStartTour={onStartTour} />,
-    );
-    const cta = screen.getByTestId('first-run-tour-cta');
-    expect(cta.className).toContain('h-10');
-    expect(screen.getByTestId('first-run-starter-open').className).toContain('h-10');
-    fireEvent.click(cta);
-    expect(onStartTour).toHaveBeenCalledTimes(1);
-  });
-
-  it('renders no tour CTA when onStartTour is omitted', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    expect(screen.queryByTestId('first-run-tour-cta')).not.toBeInTheDocument();
   });
 
   it('promotes the plain-mode hint to a one-click toggle when the callback is provided', () => {
@@ -619,49 +601,6 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
       </FirstRunStarterModule>,
     );
     expect(screen.getByTestId('index-body'), 'INDEX did not open when the lens turned on').toBeInTheDocument();
-  });
-
-  it('the tour pointing at the INDEX folds the card for that step, and gives it back after', () => {
-    const { rerender } = render(
-      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
-        <div data-testid="index-body" />
-      </FirstRunStarterModule>,
-    );
-    expect(screen.queryByTestId('index-body')).toBeNull();
-
-    rerender(
-      <FirstRunStarterModule concepts={1} relations={1} domains={1} indexSpotlit>
-        <div data-testid="index-body" />
-      </FirstRunStarterModule>,
-    );
-    expect(screen.getByTestId('index-body'), 'the tour lit the INDEX and the list did not open').toBeInTheDocument();
-
-    rerender(
-      <FirstRunStarterModule concepts={1} relations={1} domains={1}>
-        <div data-testid="index-body" />
-      </FirstRunStarterModule>,
-    );
-    expect(screen.queryByTestId('index-body'), 'the step was left and the card did not come back').toBeNull();
-  });
-
-  it("the tour pointing at the command opens both disclosures for that step, and the person's toggle rules after", () => {
-    const { rerender } = render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
-    expect(screen.getByTestId('first-run-starter-more-toggle')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByTestId('first-run-starter-cli-toggle')).not.toBeInTheDocument();
-
-    rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentSpotlit />);
-    expect(screen.getByTestId('first-run-starter-more-toggle'), 'the tour lit the command and its group stayed shut').toHaveAttribute('aria-expanded', 'true');
-    const openBoxes = document.querySelectorAll<HTMLElement>('.ai-row-disclosure[data-state="open"]');
-    expect(openBoxes).toHaveLength(2);
-    for (const box of openBoxes) {
-      expect(box.style.height, 'the tour-opened group grew through a transition instead of arriving whole').toBe('auto');
-    }
-    expect(screen.getByTestId('first-run-starter-cli-toggle'), 'the tour lit the command and the disclosure stayed shut').toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
-
-    rerender(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
-    expect(screen.getByTestId('first-run-starter-more-toggle')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByTestId('first-run-starter-cli-toggle')).not.toBeInTheDocument();
   });
 
   it('stays collapsed when the lens turns off', () => {

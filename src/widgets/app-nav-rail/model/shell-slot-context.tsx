@@ -19,8 +19,9 @@ interface NavRailShellState {
   contextHrefs: NavRailContextHrefs | null;
 }
 
-/** Rail item id to context href (docs vault only). */
+/** Reading and project targets shared by the persistent navigation. */
 export interface NavRailContextHrefs {
+  map?: string;
   docs?: string;
   /** The Projects door target when the folder holds exactly one project; absent otherwise. */
   projects?: string;

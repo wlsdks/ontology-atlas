@@ -1,6 +1,7 @@
 // Git writes stay vault-scoped; bound evidence reads require the recorded source
 // binding and its source grant. Network operations run only on request.
 
+pub(crate) mod briefing;
 mod changes;
 mod classify;
 pub(crate) mod commits;

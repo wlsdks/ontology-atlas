@@ -189,7 +189,7 @@ fn build_webview_verify_vault_bootstrap_script(root_path: &str) -> String {
     transaction.oncomplete = () => {{
       db.close();
       window.localStorage.setItem("ontology-atlas:verify-fixture-vault", rootPath);
-      window.localStorage.setItem("guided-tour:v1", "skipped");
+      window.localStorage.setItem("vault-open-guide:auto:v1", "1");
       location.reload();
     }};
     transaction.onerror = () => {{
@@ -561,7 +561,7 @@ mod tests {
         assert!(script.contains("\"/tmp/Atlas Fixture/docs/ontology\""));
         assert!(script.contains("const fixtureName = \"ontology\""));
         assert!(script.contains("ontology-atlas:verify-fixture-vault"));
-        assert!(script.contains("window.localStorage.setItem(\"guided-tour:v1\", \"skipped\")"));
+        assert!(script.contains("window.localStorage.setItem(\"vault-open-guide:auto:v1\", \"1\")"));
         assert!(script.contains("location.reload()"));
         assert!(!script.contains("indexedDB.deleteDatabase"));
         // One folder resumes rather than asking.

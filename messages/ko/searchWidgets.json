@@ -173,7 +173,8 @@
       "pinDoc": "고정 / 고정 해제 (고정 섹션 상단 고정)",
       "copyDocUrl": "현재 문서 URL 클립보드 복사",
       "tagFilter": "태그 칩 클릭 → 트리 필터",
-      "modeToggle": "모드 토글: 해당 모드 문서만"
+      "modeToggle": "모드 토글: 해당 모드 문서만",
+      "goTo_changes": "변경 브리핑으로"
     },
     "keys": {
       "drag": "드래그",

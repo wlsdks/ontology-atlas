@@ -18,18 +18,13 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
-import { destinationsForVaultShape } from "@/shared/config/destinations";
-import {
-  DestinationGuide,
-  GuideReplayProvider,
-  applyGuideOverride,
-} from "@/features/guided-tour";
+import { destinationsForVaultShape, type DestinationId } from "@/shared/config/destinations";
+import { applyGuideOverride } from "@/shared/lib/preferences/first-run-seen";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
 import {
   isGatewaySurface,
   resolveActiveNavDestination,
-  resolveGuideDestination,
   stripLocalePrefix,
 } from "@/shared/lib/navigation/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor";
@@ -39,6 +34,8 @@ import { RouteFocusManager } from "@/shared/ui/routing/route-focus-manager";
 import { MapNavigationOverlay } from "./MapNavigationOverlay";
 import { ShellKeyboardSurfaces } from "./ShellKeyboardSurfaces";
 import { beginMapNavigation, cancelMapNavigation, useMapNavigationPending } from "@/shared/lib/navigation/map-navigation-pending";
+import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
+import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
 
@@ -71,24 +68,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => installExternalLinkOpener(), []);
   return (
     <NavRailShellProvider>
-      <GuideReplayProvider>
-          {/*
-            One update state machine for the toast and the settings check, or they disagree and
-            the daily auto check runs twice. The settings sheet is inside the rail, so this
-            provider sits outside it.
-          */}
-          <AppUpdateProvider>
-            {/*
-              The Library's rounds clock lives above every route, once: a second mount would
-              tick twice and could open two adapters for one pass.
-            */}
-            <LibraryRoundsProvider>
-              <RouteFocusManager />
-              <RouteViewTransitionSettle />
-              <ShellColumn>{children}</ShellColumn>
-            </LibraryRoundsProvider>
-          </AppUpdateProvider>
-      </GuideReplayProvider>
+      {/*
+        One update state machine for the toast and the settings check, or they disagree and
+        the daily auto check runs twice. The settings sheet is inside the rail, so this
+        provider sits outside it.
+      */}
+      <AppUpdateProvider>
+        {/*
+          The Library's rounds clock lives above every route, once: a second mount would
+          tick twice and could open two adapters for one pass.
+        */}
+        <LibraryRoundsProvider>
+          <RouteFocusManager />
+          <RouteViewTransitionSettle />
+          <ShellColumn>{children}</ShellColumn>
+        </LibraryRoundsProvider>
+      </AppUpdateProvider>
     </NavRailShellProvider>
   );
 }
@@ -109,17 +104,7 @@ function useGuideOverride(): void {
 
 function ShellColumn({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const surface = resolveActiveNavDestination(pathname);
   const mapPending = useMapNavigationPending();
-
-  /*
-   * The map owns its own journey, so it gets no destination guide; projects gets one only on
-   * the list. `tab` stays null: reading the query here bails every route out of static
-   * prerendering (`output: 'export'`), and a leaf boundary around it would need an empty
-   * fallback that `route-blank-fallback.contract.test.ts` forbids. The MCP tab therefore shows
-   * the Agents guide until the page supplies its tab.
-   */
-  const guideDestination = resolveGuideDestination({ surface, pathname, tab: null });
 
   return (
     // The shell owns the viewport (see `AppShell`). `relative` makes it the containing block
@@ -154,14 +139,9 @@ function ShellColumn({ children }: { children: ReactNode }) {
         <MapNavigationOverlay />
       </div>
 
-      {/* First-visit guide per destination, owned by the shell so no page can miss it.
-          The `key` remounts it per destination so the previous card does not linger. */}
-      <DestinationGuide key={guideDestination ?? "none"} destination={guideDestination} />
-
       {/* Owned by the shell so every screen surfaces an update. Outside a desktop shell the
           hook does nothing, so there is no branch here to drift from it. */}
       <AppUpdateSurface />
-
 
     </div>
   );
@@ -206,14 +186,18 @@ function VaultRouteIdentityBoundary({
     desktop &&
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
-  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest && !vault.partialTotal;
+  const destination = resolveActiveNavDestination(pathname);
+  const sourceOnlyDestination = destination === "changes" || destination === "agents";
+  // Resolve the remembered folder before exposing controls that a restore would replace.
+  const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
+  const desktopWithoutVault = desktop && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
 
   useEffect(() => {
     if (!desktopWithoutVault || !vault.restoreAttempted) return;
     router.replace("/");
   }, [desktopWithoutVault, router, vault.restoreAttempted]);
 
-  if (localLoadPending) {
+  if (localLoadPending || sourceRestorePending) {
     return (
       <VaultOpeningPane
         name={vault.status === "loading" ? (vault.handle?.name ?? null) : null}
@@ -269,13 +253,16 @@ function VaultOpeningPane({ name, reserveRail, map }: { name: string | null; res
   );
 }
 
-
 function AppNavRailSlot() {
   const { settingsSlot, hidden, contextHrefs } = useNavRailShellValue();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
+  const readingContext = useMapReadingContext(vault.handle);
+  const mapReturnHref = resolveActiveNavDestination(pathname) !== "map" && readingContext.selectedId
+    ? buildTopologyReturnHref(readingContext.selectedId)
+    : undefined;
   /*
    * With exactly one project, the Projects door opens it. The rail, its shortcut and the mobile
    * tab bar all read this hook, or they disagree about where one destination leads.
@@ -327,15 +314,18 @@ function AppNavRailSlot() {
       toast.show(tShortcutRows("navBlockedByOverlay"), "info");
     },
     disabled: gateway,
-    hrefOverrides: contextHrefs?.docs ? { docs: contextHrefs.docs } : undefined,
-    visible: visibleDestinations,
+    hrefOverrides: { docs: contextHrefs?.docs, map: mapReturnHref },
+    visible: desktopWithoutVault ? new Set<DestinationId>(["changes", "agents"]) : visibleDestinations,
   });
 
   // The shell fills the utility tier by default so no page can forget it; git is a
   // destination, not a tile here.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
-  const railHidden = hidden || gateway || desktopWithoutVault;
+  const sourceOnlyDestination = ["changes", "agents"].includes(resolveActiveNavDestination(pathname) ?? "");
+  const sourceOnly = desktopWithoutVault && sourceOnlyDestination;
+  const shownDestinations = sourceOnly ? new Set<DestinationId>(["changes", "agents"]) : visibleDestinations;
+  const railHidden = hidden || gateway || (desktopWithoutVault && !sourceOnlyDestination);
 
   return (
     <>
@@ -348,11 +338,11 @@ function AppNavRailSlot() {
         settingsSlot={utilityTier}
         hidden={railHidden}
         contextHrefs={
-          soleProjectHref ? { ...contextHrefs, projects: soleProjectHref } : contextHrefs
+          { ...contextHrefs, map: mapReturnHref, ...(soleProjectHref ? { projects: soleProjectHref } : {}), ...(sourceOnly ? { agents: "/agents/?tab=models&returnTo=changes" } : {}) }
         }
         gitDirtyCount={gitDirtyCount}
         agentsNoticeCount={installNotice.count}
-        visibleDestinations={visibleDestinations}
+        visibleDestinations={shownDestinations}
       />
       {/*
         `?` and ⌘K follow the rail, for the reason the `G` keys do above: the keys the shortcut

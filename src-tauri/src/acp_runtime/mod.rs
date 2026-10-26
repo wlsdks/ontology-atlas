@@ -30,7 +30,9 @@ pub(crate) fn acp_detect_runtimes(
     let path = std::env::var_os("PATH");
     // Include app installs, or the screen still says installation is required.
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths
+        .as_deref()
+        .map(acp::managed_cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
@@ -202,8 +204,8 @@ pub(crate) fn acp_install_cli(
         managed_node_bin.as_deref(),
     );
     // Never by name: a GUI app's PATH differs from the shell's.
-    let npm =
-        acp::command_lookup::resolve_command("npm", &dirs, &probe).ok_or_else(|| "npm-missing".to_string())?;
+    let npm = acp::command_lookup::resolve_command("npm", &dirs, &probe)
+        .ok_or_else(|| "npm-missing".to_string())?;
     let child_path = std::env::join_paths(dirs.iter())
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
@@ -360,7 +362,9 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         std::env::var_os(if cfg!(windows) { "USERPROFILE" } else { "HOME" }).map(PathBuf::from);
     let path = std::env::var_os("PATH");
     let app_data_for_paths = app.path().app_data_dir().ok();
-    let managed_bin = app_data_for_paths.as_deref().map(acp::managed_cli::managed_cli_bin_dir);
+    let managed_bin = app_data_for_paths
+        .as_deref()
+        .map(acp::managed_cli::managed_cli_bin_dir);
     let managed_node_bin = app_data_for_paths
         .as_deref()
         .and_then(managed_node::managed_node_bin_dir);
@@ -375,8 +379,8 @@ fn doctor_context(app: &tauri::AppHandle, runtime_id: &str) -> Result<OwnedDocto
         .map(|joined| joined.to_string_lossy().to_string())
         .unwrap_or_default();
 
-    let agent =
-        acp::registry::registry_agent(runtime_id).ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
+    let agent = acp::registry::registry_agent(runtime_id)
+        .ok_or_else(|| format!("unknown-runtime:{runtime_id}"))?;
     let cli = agent
         .cli
         .as_deref()

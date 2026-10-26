@@ -11,8 +11,8 @@ pub(super) struct Scratch {
 
 impl Scratch {
     pub(super) fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir()
-            .join(format!("atlas-remote-state-{name}-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("atlas-remote-state-{name}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&dir);
         let work = dir.join("work");
         let origin = dir.join("origin.git");

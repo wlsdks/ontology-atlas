@@ -263,7 +263,6 @@
     "changeAnnouncement": "개념 {count}개 갱신됨: 반영됨",
     "close": "닫기",
     "replayGrowthTooltip": "온톨로지 생성 흐름 보기",
-    "tourTooltip": "가이드 투어",
     "shortcutsTooltip": "키보드 단축키 (?)",
     "spotlightWindowSummary": "최근 {days}일 · {count}"
   },
@@ -330,8 +329,6 @@
     "agentBadge": "에이전트가 방금",
     "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
     "uncatalogedDocsAction": "지도에 추가",
-    "dustyNodesLabel": "먼지 앉은 개념 {count}개: 오래 손대지 않았어요",
-    "dustyNodesAction": "할 일 보기",
     "brokenDocsLabel": "검사에 걸린 문서 {count}개",
     "brokenDocsAction": "온톨로지 문서 열기",
     "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
@@ -381,7 +378,7 @@
     "clickHint": "클릭하면 상세 · 출처 문서"
   },
   "canvas": {
-    "ariaLabel": "제품 지도: 방향키로 이어진 개념을 옮겨 다닐 수 있어요. INDEX 패널에서도 같은 정보를 볼 수 있어요"
+    "ariaLabel": "제품 지도: 방향키로 이어진 개념을 옮겨 다닐 수 있어요. 개념 탐색 패널에서도 같은 정보를 볼 수 있어요"
   },
   "cluster": {
     "hint": "자식이 많은 그룹은 +N 칩으로 접혀 있어요. 칩을 클릭하면 그 그룹이 펼쳐지고, 다시 클릭하면 접혀요.",
@@ -479,8 +476,8 @@
     "agent": {
       "title": "AI 에이전트 연결",
       "bodyFound": "이 컴퓨터에서 쓸 수 있는 AI 도구를 찾았어요. 연결하면 대화하면서 온톨로지를 같이 채울 수 있어요.",
-      "bodyMissing": "Claude Agent를 쓰고 있다면 여기서 대화를 열 수 있어요. 이 대화는 폴더 밖 파일을 건드리기 전에 항상 먼저 물어봐요. Codex처럼 MCP 연결을 지원하는 다른 도구는 자기 앱이나 터미널에서 이 폴더에 연결할 수 있어요. 연결하지 않아도 나머지는 그대로 쓸 수 있어요.",
-      "cta": "에이전트 설정 열기",
+      "bodyMissing": "에이전트 화면에서 설치된 도구와 지도 옆에서 대화할 수 있는 도구를 확인하세요. 직접 실행한 도구는 MCP로 연결할 수도 있어요. AI 없이도 계속할 수 있어요.",
+      "cta": "에이전트 연결하기",
       "runtimeReady": "앱 안에서 바로 대화할 수 있어요"
     },
     "analyze": {
@@ -496,7 +493,10 @@
       "title": "시작 문서 만들기",
       "body": "아직 빈 폴더예요. 뼈대 문서 다섯 장과 AI 연결 설정을 한 번에 만들어 둘게요. 나중에 고치거나 지워도 돼요.",
       "cta": "시작 문서 만들기",
-      "ctaBusy": "만드는 중…"
+      "ctaBusy": "만드는 중…",
+      "failedTitle": "시작 문서를 모두 만들지 못했어요",
+      "failedBody": "저장된 파일은 그대로 있어요. 폴더의 쓰기 권한과 여유 공간을 확인한 뒤 다시 시도해 주세요. 다시 시도해도 기존 파일을 덮어쓰지 않아요.",
+      "ctaRetry": "다시 시도"
     },
     "manual": {
       "title": "직접 시작하기",

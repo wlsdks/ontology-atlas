@@ -184,26 +184,6 @@ describe('useFirstRunStarter', () => {
     window.removeEventListener('keydown', bubbleHandler);
   });
 
-  it('yields Escape to the guided tour while its overlay is open (no silent permanent dismiss)', () => {
-  // A card beneath the tour scrim must not swallow Escape in the capture phase.
-    const overlay = document.createElement('div');
-    overlay.setAttribute('data-testid', 'guided-tour-overlay');
-    document.body.appendChild(overlay);
-    try {
-      const { result } = renderHook(() => useFirstRunStarter());
-
-      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
-      act(() => {
-        window.dispatchEvent(event);
-      });
-
-      expect(result.current.visible).toBe(true);
-      expect(event.defaultPrevented).toBe(false);
-    } finally {
-      overlay.remove();
-    }
-  });
-
   it('does nothing on Escape when not visible', () => {
     mocks.sampleModeSettled = false;
     renderHook(() => useFirstRunStarter());

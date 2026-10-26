@@ -63,6 +63,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
       type ProbeNode = { id: string; x: number; y: number; hidden: boolean };
       type Probe = {
         camera?: () => { x: number; y: number; scale: number; width: number; height: number } | null;
+        cameraTarget?: () => { x: number; y: number; scale: number };
         nodes?: () => ProbeNode[];
         dome?: () => {
           yaw: number;
@@ -83,6 +84,11 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         const camera = probe.camera?.() ?? null;
         if (!camera || camera.width <= 0) return false;
         signature = `${tenth(camera.x)},${tenth(camera.y)},${Math.round(camera.scale * 1e4)}`;
+        const target = argument.what === "camera" ? probe.cameraTarget?.() : null;
+        if (target) {
+          signature += `>${tenth(target.x)},${tenth(target.y)},${Math.round(target.scale * 1e4)}`;
+          settling = Math.hypot(camera.x - target.x, camera.y - target.y) >= 0.5 || Math.abs(camera.scale - target.scale) >= 1e-4;
+        }
       }
       if (argument.what === "layout") {
         const nodes = probe.nodes?.() ?? [];

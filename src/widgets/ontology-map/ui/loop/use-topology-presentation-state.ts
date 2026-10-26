@@ -26,7 +26,6 @@ interface Dependencies {
   trailHoverNodeIdRef: RefObject<string | null> | undefined;
   panelHoverNodeIdRef: RefObject<string | null> | undefined;
   agentFocusNodeId: string | null;
-  tourAnchorNodeId: string | null;
   spotlightIds: ReadonlySet<string> | null;
   mapLensKind: TopologyMapLensKind;
   pathEdgeIds: ReadonlySet<string> | null;
@@ -48,7 +47,6 @@ export function useTopologyPresentationState({
   trailHoverNodeIdRef,
   panelHoverNodeIdRef,
   agentFocusNodeId,
-  tourAnchorNodeId,
   spotlightIds,
   mapLensKind,
   pathEdgeIds,
@@ -113,8 +111,6 @@ export function useTopologyPresentationState({
 
   const agentFocusNodeIdRef = useRef<string | null>(agentFocusNodeId);
 
-  const tourAnchorNodeIdRef = useRef<string | null>(tourAnchorNodeId);
-
   const spotlightIdsRef = useRef<ReadonlySet<string> | null>(spotlightIds);
 
   const mapLensKindRef = useRef<TopologyMapLensKind>(mapLensKind);
@@ -143,7 +139,7 @@ export function useTopologyPresentationState({
     previewAlphaRef, previewCommitRef, previewTransitionRef, glyphStyleRef, canvasBackgroundRef,
     footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLenRef, footprintAppearAtRef,
     ambientSleepDelayRef, visitedTrailRef, visitedTrailSetRef, drawnTrailLensRef, trailLensPropRef,
-    trailBrushPropRef, panelHoverPropRef, agentFocusNodeIdRef, tourAnchorNodeIdRef, spotlightIdsRef,
+    trailBrushPropRef, panelHoverPropRef, agentFocusNodeIdRef, spotlightIdsRef,
     mapLensKindRef, pathEdgeIdsRef, spotlightRampRef, spotlightDashOffsetRef, trailLensRampRef,
     trailLensOpenedAtRef, onZoomTierChangeRef, onDrawnCountChangeRef, drawnNodeCountRef, lastZoomTierRef,
     tierRevealRef,

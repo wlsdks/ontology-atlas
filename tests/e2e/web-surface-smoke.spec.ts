@@ -353,21 +353,13 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page
         .locator('[data-testid="library-import-service"][data-service="notion"]')
         .click();
-      /*
-       * Notion needs a token, so the walk types one; the claim is unchanged: the browser cannot start the
-       * tool that fetches, and says so.
-       */
-      await page.getByTestId("library-import-token").fill("ntn_smoke_value");
-      await page.getByTestId("library-import-connect").click();
-      await page
-        .getByTestId("library-import-no-agent")
-        .waitFor({ timeout: 20_000 });
+      await page.getByTestId("library-import-web-setup").waitFor();
+      await expect(page.getByTestId("library-import-token")).toHaveCount(0);
+      await expect(page.getByTestId("library-import-connect")).toHaveCount(0);
     },
     needsVault: true,
-    card: "library-import-no-agent",
-    // The card does not name the browser: the sentence is true wherever it renders, and
-    // `surface-naming-ratchet` counts strings that do.
-    reason: /브라우저는 그 도구를 띄우지 못해요[\s\S]*연결은 저장되었고 켜져 있으니/,
+    card: "library-import-web-setup",
+    reason: /브라우저에서는[\s\S]*키체인에[\s\S]*파일 넣기/,
     destination: "library-import-no-agent-app",
   },
   {

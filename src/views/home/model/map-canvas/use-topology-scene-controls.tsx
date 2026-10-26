@@ -1,3 +1,4 @@
+import { useStarterRecovery } from "../authoring/starter-recovery-store";
 import type { useTopologyAuthoring } from "../authoring/use-topology-authoring";
 import type { useTopologyCanvasFocus } from "../use-topology-canvas-focus";
 import type { useTopologyExplorationLenses } from "./use-topology-exploration-lenses";
@@ -8,7 +9,6 @@ import type { useTopologyVaultReadModel } from "../use-topology-vault-read-model
 
 import { useProjects } from "@/features/project-data-source";
 import { completeMapNavigation } from "@/shared/lib/navigation/map-navigation-pending";
-import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useToast } from "@/shared/ui";
 import type { DialLabels } from "@/widgets/ontology-map";
 import { useTranslations } from "next-intl";
@@ -37,7 +37,6 @@ interface Options {
   setExpandAllActive: React.Dispatch<React.SetStateAction<boolean>>;
   setFitViewToken: React.Dispatch<React.SetStateAction<number>>;
   toast: ReturnType<typeof useToast>;
-  failureSentence: ReturnType<typeof useFailureSentence>;
   mapEntryTicket: number | null;
   localGraphRoot: string | null;
   topologyGraphStats: { key: string; nodes: number; relations: number; } | null;
@@ -62,7 +61,7 @@ interface Options {
 }
 export function useTopologySceneControls({
   pathSourceSlug, pathTargetSlug, analysisMode, expandAllActive, setRouteState, setExpandAllActive,
-  setFitViewToken, toast, failureSentence, mapEntryTicket, localGraphRoot, topologyGraphStats,
+  setFitViewToken, toast, mapEntryTicket, localGraphRoot, topologyGraphStats,
   projectsQuery, activeCategory, topologyVisibleCount, setTopologyGraphStats, topologyExplorationLenses,
   topologyVaultReadModel, topologyGraphProjection, topologyRouteControls, topologyPreferences,
   topologyAuthoring, topologyCanvasFocus
@@ -137,28 +136,26 @@ export function useTopologySceneControls({
     }));
   }, [expandAllActive, setExpandAllActive, setFitViewToken, setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive]);
   // An explicit click, never automatic, keeps the promise not to write into a folder unasked.
-  const [starterScaffolding, setStarterScaffolding] = useState(false);
+  const { store: starterRecovery, phase: starterPhase } = useStarterRecovery(vault.handle);
+  const starterRecoveryActive = starterPhase !== "idle";
+  const starterScaffolding = starterPhase === "creating";
+  const starterScaffoldFailed = starterPhase === "failed";
+  const dismissStarterRecovery = starterRecovery.clear;
   const handleScaffoldStarter = useCallback(async () => {
-    setStarterScaffolding(true);
+    if (!vault.handle || !starterRecovery.begin()) return false;
     try {
       const result = await vault.scaffoldOntology(activeLocale);
-      toast.show(
-        // Concepts and config files are counted apart, or the toast disagrees with the settings
-        // panel.
-        t("startChecklist.scaffoldToast", {
-          concepts: result.markdownCreated,
-          configs: result.agentConfigCreated,
-        }),
-        "success",
-      );
-    } catch (err) {
-      // Reader-facing sentences come from here or `messages/*.json`, never from a module that
-      // cannot know the locale.
-      toast.show(failureSentence(err, t("createNode.toastError")).sentence, "error");
-    } finally {
-      setStarterScaffolding(false);
+      toast.show(t("startChecklist.scaffoldToast", {
+        concepts: result.markdownCreated,
+        configs: result.agentConfigCreated,
+      }), "success");
+      starterRecovery.clear();
+      return true;
+    } catch {
+      starterRecovery.fail();
+      return false;
     }
-  }, [vault, toast, t, activeLocale, failureSentence]);
+  }, [vault, toast, t, activeLocale, starterRecovery]);
 
   const {
     topologyTotalNodes, topologyTotalRelations, indexTreeResult, indexDomainCount,
@@ -244,6 +241,12 @@ export function useTopologySceneControls({
     totalNodes: currentTopologyGraphStats?.nodes ?? visibleTopologyNodeCount,
     totalRelations: currentTopologyGraphStats?.relations ?? visibleTopologyRelationCount,
   });
+  useEffect(() => {
+    // This committed start screen has no canvas to report a drawn frame.
+    if (topologyRenderState.showImmediateEmptyState && !topologyRenderState.renderCanvas) {
+      completeMapNavigation(mapEntryTicket);
+    }
+  }, [mapEntryTicket, topologyRenderState.showImmediateEmptyState, topologyRenderState.renderCanvas]);
   // `?category=` is the only filter source left.
   const topologyFiltersActive = activeCategory !== null;
   const topologyOverlayState = resolveTopologyOverlayState({
@@ -285,7 +288,8 @@ export function useTopologySceneControls({
     drawerOpen, handleToggleExpandAll, pathChipLabel, pathChipOutcome, pathChipState, pathPacketCopied, copyPathPacket,
     handleClearPath, indexTreeResult, realmActive, realmLedgerModel, indexMaxDomainDescendantCount,
     indexDomainCensus, topologyTotalNodes, topologyTotalRelations, indexDomainCount, topologyOverlayState,
-    handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount, clearTopologyFilters,
+    handleScaffoldStarter, starterScaffolding, starterRecoveryActive, starterScaffoldFailed, dismissStarterRecovery,
+    emptyTopologyNodeCount, clearTopologyFilters,
     topologyRenderState, mapMountTaskReady, handleExpandRequest, handleMapFrameDrawn,
     handleTopologyGraphStatsChange, mapLensIds, mapLensKind, pathLensEdgeIds, pathExpandedParents,
     allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels

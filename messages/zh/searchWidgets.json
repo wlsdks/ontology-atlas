@@ -173,7 +173,8 @@
       "pinDoc": "固定 / 取消固定（固定的内容始终在顶部）",
       "copyDocUrl": "将当前文档的链接复制到剪贴板",
       "tagFilter": "点击标签筛选目录树",
-      "modeToggle": "模式切换：只显示该模式的文档"
+      "modeToggle": "模式切换：只显示该模式的文档",
+      "goTo_changes": "前往变更简报"
     },
     "keys": {
       "drag": "拖动",

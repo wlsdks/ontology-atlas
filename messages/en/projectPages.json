@@ -114,8 +114,11 @@
     "constructionReview": {
       "eyebrow": "Safety check before writing to the map",
       "title": "What is safe to decide now",
-      "openResult": "Open review result",
-      "readingResult": "Reading review result…",
+      "openResult": "Import review JSON",
+      "readingResult": "Reading review JSON…",
+      "fileHint": "Choose a JSON file containing this project’s review results. Atlas reads it for this screen only and does not write it into the map.",
+      "resultRegion": "Imported review result",
+      "retryFile": "Choose another review JSON",
       "errorTitle": "This review result cannot be trusted",
       "errors": {
         "malformed": "Required qualification artifacts are missing or unreadable. No plan or approval is shown.",

@@ -65,6 +65,16 @@ async function starterFileParent(
   return { parent, fileName };
 }
 
+async function starterFileExists(parent: FileSystemDirectoryHandle, name: string): Promise<boolean> {
+  try {
+    await parent.getFileHandle(name);
+    return true;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'NotFoundError') return false;
+    throw error;
+  }
+}
+
 /**
  * Writes the starter for the chosen parts (`VaultShape`) into `root`, always creating the fixed
  * folder tree. It takes `root` as an argument because a creation door writes while the folder is
@@ -74,25 +84,25 @@ export async function writeVaultStarter(
   root: FileSystemDirectoryHandle,
   starterLocale: string,
   shape: VaultShape,
-  existingSlugs: { has(slug: string): boolean },
+  onFileWritten?: (path: string) => void,
 ): Promise<StarterWrite> {
   // Count the two kinds separately: the toast and the settings panel must show the same number.
   let markdownCreated = 0;
   let skipped = 0;
   let firstFailure: unknown = null;
   for (const { relPath, content } of shape.map ? materializeStarterFiles(starterLocale) : []) {
-    // The slug is the path with the `.md` extension removed, per createDoc / saveDoc rules.
-    if (existingSlugs.has(relPath.replace(/\.md$/, ''))) {
-      skipped += 1;
-      continue;
-    }
     try {
       const { parent, fileName } = await starterFileParent(root, relPath);
+      if (await starterFileExists(parent, fileName)) {
+        skipped += 1;
+        continue;
+      }
       const fh = await parent.getFileHandle(fileName, { create: true });
       const writable = await fh.createWritable();
       await writable.write(content);
       await writable.close();
       markdownCreated += 1;
+      onFileWritten?.(relPath);
     } catch (error) {
       skipped += 1;
       firstFailure ??= error;
@@ -115,10 +125,7 @@ export async function writeVaultStarter(
   ]) {
     try {
       const { parent, fileName } = await starterFileParent(root, guide.relPath);
-      const existing = await parent
-        .getFileHandle(fileName)
-        .then(() => true)
-        .catch(() => false);
+      const existing = await starterFileExists(parent, fileName);
       if (existing) {
         skipped += 1;
         continue;
@@ -128,6 +135,7 @@ export async function writeVaultStarter(
       await writable.write(guide.content);
       await writable.close();
       guideCreated += 1;
+      onFileWritten?.(guide.relPath);
     } catch (error) {
       skipped += 1;
       firstFailure ??= error;

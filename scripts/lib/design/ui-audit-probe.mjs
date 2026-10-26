@@ -3,7 +3,7 @@ import { judgeRaw } from "./ui-audit-checks.mjs";
 const INTERACTIVE = 'a[href],button,input,select,textarea,[role=button],[role=tab],[tabindex]:not([tabindex="-1"])';
 export const FREEZE_CSS = "*,*::before,*::after{transition:none!important;animation:none!important}";
 
-function uiAuditProbe({ rampNames, interactive }) {
+function uiAuditProbe({ rampNames, interactive, scope }) {
   const chain = (el) => {
     const out = [];
     for (let n = el; n && out.length < 4 && n !== document.documentElement; n = n.parentElement) {
@@ -67,13 +67,20 @@ function uiAuditProbe({ rampNames, interactive }) {
     shadow: resolve(rampNames.shadow, "boxShadow", (s) => s.boxShadow),
   };
 
-  const all = [...document.body.querySelectorAll("*")].filter((el) => !["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"].includes(el.tagName));
+  const roots = scope ? [...document.querySelectorAll(scope)] : [document.body];
+  if (roots.length !== 1) throw new Error(`Audit scope must match exactly one element; found ${roots.length}: ${scope}`);
+  const root = roots[0];
+  if (scope && !painted(root)) throw new Error(`Audit scope is not visible: ${scope}`);
+  const subjects = [...root.querySelectorAll("*")];
+  if (scope) subjects.unshift(root);
+  const all = subjects.filter((el) => !["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE"].includes(el.tagName));
   const visible = all.filter(painted);
+  if (!visible.length) throw new Error("Audit measured no visible elements");
   const visibleSet = new Set(visible);
 
   const docOverflow = document.documentElement.scrollWidth - innerWidth;
   const overflow = [];
-  if (docOverflow > 0) overflow.push({ selector: "document", px: docOverflow });
+  if (!scope && docOverflow > 0) overflow.push({ selector: "document", px: docOverflow });
   const scrollsX = (n) => ["auto", "scroll"].includes(getComputedStyle(n).overflowX);
   for (const el of visible) {
     const right = el.getBoundingClientRect().right;
@@ -85,7 +92,7 @@ function uiAuditProbe({ rampNames, interactive }) {
     if (!scrolled) overflow.push({ selector: chain(el), px: r1(right - innerWidth) });
   }
 
-  const controls = [...document.querySelectorAll(interactive)].filter(painted);
+  const controls = (scope ? [root, ...root.querySelectorAll(interactive)].filter(el => el.matches(interactive)) : [...document.querySelectorAll(interactive)]).filter(painted);
   const occluded = [];
   const targets = [];
   for (const el of controls) {
@@ -93,8 +100,8 @@ function uiAuditProbe({ rampNames, interactive }) {
     const area = cache.get(el);
     const width = area.right - area.left, height = area.bottom - area.top;
     if (b.width < 44 || b.height < 44) targets.push({ selector: chain(el), intrinsicSize: `${r1(b.width)}x${r1(b.height)}`, availableSize: `${r1(width)}x${r1(height)}`, clipped: width < b.width - 0.5 || height < b.height - 0.5 });
-    const cx = (area.left + area.right) / 2;
-    const cy = (area.top + area.bottom) / 2;
+    const cx = Math.min((area.left + area.right) / 2, innerWidth - 1);
+    const cy = Math.min((area.top + area.bottom) / 2, innerHeight - 1);
     const hit = document.elementFromPoint(cx, cy);
     const canvasReachable = el.tagName === "CANVAS" && [0.1, 0.5, 0.9].some((x) =>
       [0.1, 0.5, 0.9].some((y) => document.elementFromPoint(area.left + width * x, area.top + height * y) === el));
@@ -182,10 +189,10 @@ function uiAuditProbe({ rampNames, interactive }) {
     if (gap < 8) scrollEnd.push({ selector: chain(el), gapPx: r1(gap) });
   }
 
-  return { ramps, overflow, occluded, overlap, targets, styled, texts, canvas, siblingSets, scrollEnd };
+  return { ramps, overflow, occluded, overlap, targets, styled, texts, canvas, siblingSets, scrollEnd, measuredElements: visible.length };
 }
 
-export async function auditPage(page, { width, rampNames }) {
-  const raw = await page.evaluate(uiAuditProbe, { rampNames, interactive: INTERACTIVE });
-  return judgeRaw(raw, { width });
+export async function auditPage(page, { width, rampNames, scope = "" }) {
+  const raw = await page.evaluate(uiAuditProbe, { rampNames, interactive: INTERACTIVE, scope });
+  return { ...judgeRaw(raw, { width }), measuredElements: raw.measuredElements };
 }

@@ -21,12 +21,16 @@ function parseArgs(argv) {
     else if (key === "widths") opts.widths = value.split(",").map(Number).filter((n) => n > 0);
     else if (key === "height") opts.height = Number(value);
     else if (key === "wait") opts.wait = value;
+    else if (key === "scope") {
+      if (!value.trim()) throw new Error("--scope needs a CSS selector");
+      opts.scope = value;
+    }
     else if (key === "json") opts.json = true;
     else if (key === "shots") opts.shots = path.resolve(value);
     else if (arg !== "--") throw new Error(`unknown argument: ${arg}`);
   }
   if (!opts.url || opts.routes.length === 0) {
-    throw new Error("usage: pnpm ui:audit -- --url=<base> --route=<path> [--route=...] [--widths=..] [--height=900] [--wait=<selector>] [--json] [--shots=<dir>]");
+    throw new Error("usage: pnpm ui:audit -- --url=<base> --route=<path> [--route=...] [--widths=..] [--height=900] [--wait=<selector>] [--scope=<selector>] [--json] [--shots=<dir>]");
   }
   return opts;
 }
@@ -55,12 +59,12 @@ try {
       if (opts.wait) await page.waitForSelector(opts.wait);
       await page.addStyleTag({ content: FREEZE_CSS });
       await page.waitForTimeout(100);
-      const { findings, unmeasured } = await auditPage(page, { width, rampNames });
+      const { findings, unmeasured, measuredElements } = await auditPage(page, { width, rampNames, scope: opts.scope });
       if (opts.shots) {
         const name = `${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root"}@${width}.png`;
         await page.screenshot({ path: path.join(opts.shots, name) });
       }
-      results.push({ route, width, findings, unmeasured });
+      results.push({ route, width, findings, unmeasured, measuredElements });
       await context.close();
     }
   }
@@ -73,7 +77,7 @@ if (opts.json) {
 } else {
   for (const r of results) {
     const tail = r.unmeasured > 0 ? ` · contrast unmeasured ${r.unmeasured}` : "";
-    console.log(formatSummary(r.route, r.width, r.findings) + tail);
+    console.log(formatSummary(r.route, r.width, r.findings) + tail + ` · subjects ${r.measuredElements}`);
     for (const check of CHECKS) {
       for (const f of r.findings[check].slice(0, PER_CHECK)) console.log(formatFinding(check, f));
     }

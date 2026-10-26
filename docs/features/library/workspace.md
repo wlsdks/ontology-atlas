@@ -107,6 +107,12 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
+Check history shows executed checks first. Sleep gaps stay in the recorded ledger and
+can be included with the labelled checkbox and its gap count; they are excluded by
+default, including when the folder has no executed checks. A sleep-only ledger shows
+the no-checks-yet state rather than a long list under execution history. The control
+changes presentation only: it does not edit recorded gaps, schedules, outcomes or permissions.
+
 Library has four tabs — Sources, Wiki, Ontology and Check history
 (`LibraryTab` in `src/app/library-workspace/index.tsx`; labels in
 `messages/en/library.json` `workspace.*`) — and each tab keeps its own reader and
@@ -668,16 +674,22 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   dialog with every box unticked. Document formats only (`pdf docx doc xlsx xls csv pptx
   ppt txt rtf odt ods odp epub`), dotfiles, dependency and build directories, and
   credential-shaped names excluded. Refusals are remembered in `localStorage` per folder —
-  a per-machine convenience, never a second store in the vault. Project roots are app-only
+  a per-machine convenience, never a second store in the vault. A file-name/path filter
+  narrows the metadata list without opening files. Selections survive filtering; confirmation
+  copies all selected candidates and remembers only visible, unselected candidates as passed
+  over. Hidden search results are not refusals. Long names and paths wrap so candidates with
+  the same basename remain distinguishable. Cancel, Escape and the corner close return focus
+  to the invoking Find documents button, both on the empty stage and in the source index,
+  so Enter can reopen it without restarting keyboard navigation. Project roots are app-only
   (a binding is an absolute path); the dialog says so and links to `/download/`.
 - **Bring from a service** (new 2026-09-07) — the door for documents that are not on
   this computer at all. Owner: *"connecting a service is mostly for the Library anyway —
   people want the things they already wrote somewhere else."* Tiles name services, not
   protocols — Notion, GitHub, and last, a way out to the technical dialog at `/agents/?tab=mcp&mcp=connectors` for
-  anything else. **This path never says MCP, stdio, npx or environment variable**; a
-  component test asserts that. Three steps: ① the person pastes the one value the service
-  issues, with a link to where; Atlas puts it in the keychain, writes the connection into
-  the folder with the name only, and switches it on — saying that the **coding agent**, not
+  anything else. **The main service path uses service names and ordinary actions**; the final tile
+  links to technical settings. Three steps: ① the person pastes the one value the service
+  issues, with a link to where; Atlas stages disabled metadata, confirms the exact keychain
+  receipt, then guards activation/readback and this Mac's exact-definition approval — saying that the **coding agent**, not
   Atlas, is what reaches the service with it; ② the person says what to bring, in their own
   words; ③ a bounded brief opens the Library's existing agent turn, which searches, lists
   at most twenty documents, waits to be told which, and writes each one under
@@ -690,7 +702,16 @@ Tour one-click doors: hree one-click doors, plus one that reaches outside this c
   is the dead end this door exists to remove, so they return with an adapter that can sign
   in. **Google Drive is deliberately absent**: no entry in the committed catalogue has
   verified facts for it yet, and a tile onto a guess is a door that opens onto nothing.
-  **What is not proven**: the picking happens inside the agent turn, not on this screen,
+  The note describes Atlas's current direct-connection limit and offers Add files, without
+  making a claim about every provider endpoint. Closing returns focus to the invoking import
+  button on both the empty stage and source index. Selecting a service focuses its credential
+  field; Back returns to that service, and a saved connection focuses the document-request field.
+  Save admits one attempt and reports pending and failed stages; retry reuses the row. Confirmed
+  tokens need not be entered again. Close/Back cancel subsequent actions; already-issued writes
+  may finish. Changed/deleted rows and all sibling-name collisions require saved-settings review.
+  A browser asks for no token and offers Get the app or Add files. Detection uses the captured
+  session/handle and absolute root; same-path physical replacement and cross-process atomicity
+  are unproven. **What is not proven**: the picking happens inside the agent turn, not on this screen,
   because Atlas is not the MCP client and cannot call a service's tools or receive their
   result as data. Nothing here has been observed against a live Notion or Atlassian
   account; the screen says where the choosing happens rather than promising a list it
