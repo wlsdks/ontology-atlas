@@ -28,6 +28,11 @@ the overview restores the entry focus. While reading a long comparison, a sticky
 header keeps its revision basis and group-scoped previous/next file controls
 visible. The file chooser returns to the selected file, including beyond the
 first 40 rows. Paths outside the selected group have no group-sequence controls.
+The touched-file chooser searches every literal path in the selected group,
+including files beyond the first rendered batch. Its independently scrolling
+list keeps long collections from expanding the whole reading page. Filtering
+does not change the group, comparison scope or previous/next sequence; reopening
+the chooser clears its filter and reveals the current file.
 
 Current capability and listed-element implementation anchors group touched
 paths. A path can belong to multiple groups, so group totals are not additive.
@@ -59,7 +64,9 @@ Direct picker-granted source reading follows the separate standalone path below.
 Reads are bounded at 2,000 first-parent commits, 8 MiB history output and 20,000
 path records. Partial reads state that coverage is incomplete. File comparisons
 show at most 32 KiB; binary, unavailable, stale and truncated states remain
-explicit. A refresh restores an expired patch snapshot. Calendar inputs and selection survive route changes within the same vault
+explicit. An expired patch offers a briefing refresh that reads history again
+and returns focus to Code with the chosen period retained. It does not repeat
+the expired patch request. Calendar inputs and selection survive route changes within the same vault
 session, after the source revisions are re-read and match. Dates are retained after
 read errors; an obsolete response cannot replace a newer scope.
 

@@ -92,5 +92,8 @@
   "nextFile": "다음 파일",
   "chooseFile": "다른 파일 고르기",
   "filePosition": "파일 {index} / {total}",
-  "groupFiles": "이 묶음의 파일"
+  "groupFiles": "이 묶음의 파일",
+  "findFile": "변경한 파일 찾기",
+  "fileMatches": "전체 {total}개 중 {count}개",
+  "noMatchingFiles": "일치하는 파일이 없어요. 검색어를 바꾸거나 지워보세요."
 }

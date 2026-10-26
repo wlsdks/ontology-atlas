@@ -92,5 +92,8 @@
   "nextFile": "Next file",
   "chooseFile": "Choose another file",
   "filePosition": "File {index} of {total}",
-  "groupFiles": "Files in this group"
+  "groupFiles": "Files in this group",
+  "findFile": "変更したファイルを探す",
+  "fileMatches": "全{total}件中{count}件",
+  "noMatchingFiles": "一致するファイルがありません。検索語を変更するか消してください。"
 }
