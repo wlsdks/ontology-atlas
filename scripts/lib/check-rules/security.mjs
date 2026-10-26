@@ -39,6 +39,8 @@ export const rules = [
       /^src-tauri\/Cargo\.lock$/,
       /^src\/shared\/lib\/(?:[a-z-]+\/)?tauri-[a-z0-9-]+\.ts$/,
       /^src\/shared\/lib\/library\/source-citation\.ts$/,
+      /^src\/shared\/lib\/desktop-shell\/cancellable-request\.ts$/,
+      /^src\/shared\/lib\/llm-connection\/source-briefing\.ts$/,
       /^src\/features\/library\/lib\/questions\/question-desk-brief\.ts$/,
       /^src\/shared\/lib\/(?:connectors\/mcp-install-link|failures\/report-webview-error)\.ts$/,
       /^src\/shared\/lib\/library\/(?:open-vault-file|inflate-raw)\.ts$/,
