@@ -330,7 +330,7 @@ describe("scalable branch overview", () => {
     expect(after.memory.branchOrder!.slice(0, 20)).toEqual(before.memory.branchOrder);
   });
 
-  it("preserves the established four-domain chip and member geometry", () => {
+  it("aligns four-domain columns without pulling the lower-right group into its peer", () => {
     const graph = crafted(4, () => 8, []);
     const model = modelOf(graph.nodes, graph.edges);
     const scene = layoutDial(model, model.domains.map((d) => d.id), tokens, null);
@@ -338,7 +338,7 @@ describe("scalable branch overview", () => {
       { id: "d00", chip: { x: -340, y: -289 }, first: { x: -612, y: -493 } },
       { id: "d01", chip: { x: -340, y: 289 }, first: { x: -612, y: 85 } },
       { id: "d02", chip: { x: 340, y: -238 }, first: { x: 612, y: -442 } },
-      { id: "d03", chip: { x: 340 - 680 / 3, y: 340 }, first: { x: 612 - 680 / 3, y: 136 } },
+      { id: "d03", chip: { x: 340, y: 340 }, first: { x: 612, y: 136 } },
     ]);
   });
   for (const [name, graph] of [["default storefront", storefront], ["twenty domains", crafted(20, () => 8, [[1, 0], [19, 0]])], ["fifty domains", crafted(50, () => 8, [[1, 0], [49, 0]])]] as const) {
