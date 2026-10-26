@@ -306,6 +306,7 @@ async function prepareParts(page: import('@playwright/test').Page) {
 
 test('reads all fitting records once, then builds an overview from original passages', async ({ page }) => {
   await prepareParts(page);
+  await page.getByRole('button', { name: 'Request details', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('one at a time');
   await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
   await expectCoverage(page, 'All planned parts are finished.');
@@ -413,8 +414,7 @@ test('keeps completed parts after stop and resumes without resending them', asyn
 
 test('retries only the overview after preserving every completed part', async ({ page }) => {
   await prepareParts(page);
-  const planText = await page.getByRole('dialog').innerText();
-  const parts = Number(planText.match(/in (\d+) reading requests/)![1]);
+  const parts = Number(await page.getByTestId('briefing-plan-requests').getAttribute('data-reading-parts'));
   await page.evaluate(number => { (window as unknown as { __briefingProbe: { failAt: number } }).__briefingProbe.failAt = number; }, parts + 1);
   await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Retry overview', exact: true })).toBeVisible();
