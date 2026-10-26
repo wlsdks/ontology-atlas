@@ -173,7 +173,6 @@ export function useLocalVaultInternal() {
             handle,
             options.starter.locale,
             options.starter.shape ?? FULL_STARTER_SHAPE,
-            result.build.fileHandles,
           );
           starterWritten = written.created;
           starterError = written.firstFailure;
