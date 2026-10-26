@@ -152,6 +152,19 @@ const RECOVERY_POSES = [
 ];
 
 describe("production branch flow congestion", () => {
+  for (const width of [976, 1018]) it(`keeps domain cards separated with the conversation open at ${width}px of map space`, () => {
+    const vault = load(deriveOntologyFromVault(dogfoodManifest as unknown as VaultManifest) as unknown as Graph);
+    const painted = frame(vault, { width, indexOpen: false });
+    const cards = painted.marks.blocks!.filter((block) => block.alpha > 0.5);
+    expect(cards).toHaveLength(4);
+    for (let i = 0; i < cards.length; i++) for (const b of cards.slice(i + 1)) {
+      const a = cards[i]!;
+      const horizontalGap = Math.max(b.box.minX - a.box.maxX, a.box.minX - b.box.maxX);
+      const verticalGap = Math.max(b.box.minY - a.box.maxY, a.box.minY - b.box.maxY);
+      expect(Math.max(horizontalGap, verticalGap), `${a.id} / ${b.id}`).toBeGreaterThanOrEqual(TOKENS.ledgerGapPx);
+    }
+  });
+
   for (const recorded of RECOVERY_POSES) it(`${recorded.vault} ${recorded.width} ${recorded.domain}: recovers omitted selected pairs with actual painted stubs`, () => {
     const manifest = recorded.vault === "storefront" ? storefrontManifest : dogfoodManifest;
     const vault = load(deriveOntologyFromVault(manifest as unknown as VaultManifest) as unknown as Graph);

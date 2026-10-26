@@ -39,13 +39,10 @@ export interface FirstRunStarterModuleProps {
   concepts: number;
   relations: number;
   domains: number;
-  onStartTour?: () => void;
   onEnablePlainMode?: () => void;
   audiencePlain?: boolean;
   lensActive?: boolean;
   nodeSelected?: boolean;
-  indexSpotlit?: boolean;
-  agentSpotlit?: boolean;
   mapUnbuilt?: boolean;
   agentAvailable?: boolean;
   children?: ReactNode;
@@ -122,19 +119,15 @@ function CardDisclosure({
   );
 }
 
-const guidedTourOpen = () => document.querySelector('[data-testid="guided-tour-overlay"]') !== null;
 
 export function FirstRunStarterModule({
   concepts,
   relations,
   domains,
-  onStartTour,
   onEnablePlainMode,
   audiencePlain = false,
   lensActive = false,
   nodeSelected = false,
-  indexSpotlit = false,
-  agentSpotlit = false,
   mapUnbuilt = false,
   agentAvailable = false,
   children,
@@ -162,12 +155,9 @@ export function FirstRunStarterModule({
   const [moreOpen, setMoreOpen] = useState(false);
   const [cliOpen, setCliOpen] = useState(false);
   const [wordsOpen, setWordsOpen] = useState(false);
-  const moreShown = moreOpen || agentSpotlit;
-  const cliShown = cliOpen || agentSpotlit;
+  const moreShown = moreOpen;
+  const cliShown = cliOpen;
   const cliBridgeRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (agentSpotlit) cliBridgeRef.current?.scrollIntoView?.({ block: "nearest" });
-  }, [agentSpotlit]);
   const focusReopenRef = useRef(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -192,8 +182,7 @@ export function FirstRunStarterModule({
   }, [lensActive]);
   const selectionCollapsedRef = useRef(false);
   useEffect(() => {
-    // The tour's own try-click does not count.
-    if (!nodeSelected || selectionCollapsedRef.current || guidedTourOpen()) return;
+    if (!nodeSelected || selectionCollapsedRef.current) return;
     selectionCollapsedRef.current = true;
     setCollapsed(true);
   }, [nodeSelected]);
@@ -263,7 +252,7 @@ export function FirstRunStarterModule({
         {children}
       </>
     );
-  if (!visible || collapsed || indexSpotlit) {
+  if (!visible || collapsed) {
     return (
       <>
         {reopenRow}
@@ -373,17 +362,6 @@ export function FirstRunStarterModule({
               <p className="text-label leading-label text-[color:var(--color-status-danger)]">{errorText}</p>
             </div>
           ) : null}
-          {onStartTour ? (
-            <Button
-              variant="outline"
-              size="md"
-              data-testid="first-run-tour-cta"
-              onClick={onStartTour}
-              className="atlas-touch-floor w-full"
-            >
-              {t("tourCta")}
-            </Button>
-          ) : null}
         </div>
 
         <div
@@ -439,7 +417,6 @@ export function FirstRunStarterModule({
 
         <div key="more" className="mt-3 flex flex-col gap-1">
           <CardDisclosure
-            key={agentSpotlit ? "tour-step" : "person"}
             open={moreShown}
             onToggle={() => setMoreOpen((open) => !open)}
             label={t("moreWaysToggle")}

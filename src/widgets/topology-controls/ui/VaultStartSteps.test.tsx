@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
@@ -120,13 +120,46 @@ describe('the last step names what it creates', () => {
     expect(screen.getByTestId("start-step-cta-starter").textContent).toBe("시작 문서 만들기");
   });
 
+  it('waits for creation, keeps a failed attempt retryable, and finishes after success', async () => {
+    let resolveAttempt!: (success: boolean) => void;
+    const onScaffoldStarter = vi.fn(() => new Promise<boolean>((resolve) => {
+      resolveAttempt = resolve;
+    }));
+    const onFinish = vi.fn();
+    renderSteps({ onScaffoldStarter, onFinish });
+    fireEvent.click(screen.getByTestId("start-step-skip"));
+    fireEvent.click(screen.getByTestId("start-step-skip"));
+    fireEvent.click(screen.getByTestId("start-step-cta-starter"));
+    expect(onScaffoldStarter).toHaveBeenCalledTimes(1);
+    expect(onFinish).not.toHaveBeenCalled();
+    await act(async () => resolveAttempt(false));
+    expect(card().dataset.step).toBe("starter");
+    expect(onFinish).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByTestId("start-step-cta-starter"));
+    expect(onScaffoldStarter).toHaveBeenCalledTimes(2);
+    expect(onFinish).not.toHaveBeenCalled();
+    await act(async () => resolveAttempt(true));
+    expect(onFinish).toHaveBeenCalledTimes(1);
+  });
+
   it('locks and says so while creating', () => {
     renderSteps({ onScaffoldStarter: vi.fn(), scaffolding: true });
-    fireEvent.click(screen.getByTestId("start-step-skip"));
-    fireEvent.click(screen.getByTestId("start-step-skip"));
     const cta = screen.getByTestId("start-step-cta-starter") as HTMLButtonElement;
     expect(cta.disabled).toBe(true);
     expect(cta.textContent).toBe("만드는 중…");
+  });
+
+  it('keeps a failed starter retry separate from newly discovered documents', async () => {
+    const onFinish = vi.fn();
+    const onScaffoldStarter = vi.fn().mockResolvedValue(true);
+    renderSteps({ scaffoldFailed: true, docsFoundCount: 7, onStartFromDocs: vi.fn(), onScaffoldStarter, onFinish });
+    expect(card().dataset.step).toBe("starter");
+    expect(screen.getByRole("alert")).toBe(screen.getByTestId("start-step-scaffold-error"));
+    expect(screen.queryByTestId("start-step-progress")).toBeNull();
+    expect(screen.queryByTestId("start-step-back")).toBeNull();
+    await act(async () => fireEvent.click(screen.getByTestId("start-step-cta-starter")));
+    expect(onScaffoldStarter).toHaveBeenCalledTimes(1);
+    expect(onFinish).toHaveBeenCalledTimes(1);
   });
 
   it('makes the last step create-by-hand when docs already exist', () => {

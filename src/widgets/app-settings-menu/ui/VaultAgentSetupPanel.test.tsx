@@ -112,6 +112,19 @@ describe('VaultAgentSetupPanel', () => {
     copyTextMock.mockReset();
   });
 
+  it.each(['button', 'Escape'] as const)('returns to the check opener after %s closes a dialog opened without pointer focus', async (method) => {
+    // fireEvent.click preserves WebKit's unfocused pointer activation instead of focusing the opener.
+    renderPanel();
+    const opener = screen.getByTestId('agent-setup-verify-open');
+    expect(screen.getByTestId('agent-setup-verify-dialog')).toContainElement(document.activeElement as HTMLElement);
+    if (method === 'button') {
+      fireEvent.click(screen.getByRole('button', { name: /^닫기$/ }));
+    } else {
+      fireEvent.keyDown(window, { key: 'Escape' });
+    }
+    await waitFor(() => expect(opener).toHaveFocus());
+  });
+
   it('renders nothing unless the vault is loaded', () => {
     const { container } = rtlRender(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
@@ -140,7 +153,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText(
         setupCopy.statusSummary.replace('{tools}', 'Claude Code · Codex').replace('{ready}', '1').replace('{total}', '2'),
       )).toBeInTheDocument();
-    expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent('다음: .mcp.json 만들기');
+    expect(screen.getByTestId('agent-setup-status-next')).not.toHaveTextContent('.mcp.json');
     expect(
       screen.getByText(setupCopy.rootSummaryMissing),
     ).toBeInTheDocument();
@@ -439,9 +452,9 @@ describe('VaultAgentSetupPanel', () => {
     // One statement of the count: the row below says it, so no amber badge repeats it.
     expect(screen.queryByText('누락')).toBeNull();
     expect(screen.getByText('Claude Code · Codex 연결 파일 1/2개 준비됨')).toBeInTheDocument();
-    expect(screen.getByTestId('agent-setup-status-next')).toHaveTextContent(
-      '점검: .codex/config.toml는 Ontology Atlas 연결 설정이 아니에요',
-    );
+    const codexRow = within(screen.getByTestId('agent-setup-step-3')).getByText('Codex', { selector: 'dt' }).closest('div')!;
+    expect(codexRow).toHaveTextContent(setupCopy.nextInvalid.replace('{path}', '.codex/config.toml'));
+    expect(within(codexRow).queryByText(setupCopy.connectionCodexCheck)).toBeNull();
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -1391,16 +1404,24 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(dialog).getByTestId('agent-setup-status-summary')).toHaveTextContent(
       'Claude Code · Codex 연결 파일 0/2개 준비됨',
     );
-    // The next step is the line under the count, not a second sentence restating zero.
-    expect(within(dialog).getByTestId('agent-setup-status-next')).toHaveTextContent('.mcp.json');
+    // Neither tool has a file to check yet.
+    expect(within(dialog).queryByText(setupCopy.connectionCodexCheck)).toBeNull();
+    expect(within(dialog).queryByText(setupCopy.connectionClaudeCursorCheck)).toBeNull();
     expect(within(dialog).queryByText(/아직 연결 파일이 없어요/)).toBeNull();
   });
 
-  it('once one file exists the restart step returns and the next line names the missing file', () => {
-    renderPanel();
-    const dialog = screen.getByTestId('agent-setup-verify-dialog');
-    expect(within(dialog).getByTestId('agent-setup-step-2')).toBeInTheDocument();
-    expect(within(dialog).getByTestId('agent-setup-status-next')).toBeInTheDocument();
+  it.each([
+    { ready: 'Codex', pending: 'Claude Code', mcpJson: false, codexConfig: true, command: setupCopy.connectionCodexCheck, pendingCommand: setupCopy.connectionClaudeCursorCheck },
+    { ready: 'Claude Code', pending: 'Codex', mcpJson: true, codexConfig: false, command: setupCopy.connectionClaudeCursorCheck, pendingCommand: setupCopy.connectionCodexCheck },
+  ])('offers the check for $ready without requiring another tool', ({ ready, pending, mcpJson, codexConfig, command, pendingCommand }) => {
+    const vault = renderPanel({ agentConfigStatus: { mcpJson, mcpJsonValid: mcpJson, codexConfig, codexConfigValid: codexConfig, mcpExample: false } });
+    const step = screen.getByTestId('agent-setup-step-3');
+    expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
+    const readyRow = within(step).getByText(ready, { selector: 'dt' }).closest('div')!;
+    const pendingRow = within(step).getByText(pending, { selector: 'dt' }).closest('div')!;
+    expect(within(readyRow).getByText(command)).toBeInTheDocument();
+    expect(within(pendingRow).queryByText(pendingCommand)).toBeNull();
+    expect(vault.ensureAgentConfigs).not.toHaveBeenCalled();
   });
 
   it('offers create for a missing config and shows ready for a valid one', () => {

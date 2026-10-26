@@ -48,20 +48,6 @@ test("a sheet's fields span the sheet and the cadence detents meet the 24px targ
   }
 });
 
-test("the guide switch and its replay action stand at one height", async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await seedFirstRunSeen(page);
-  await page.goto("/en/git/?guides=off");
-  await page.getByTestId("app-settings-trigger").click();
-  const replay = page.getByTestId("app-settings-replay-guide-button");
-  await expect(replay).toBeVisible();
-  await waitForAnimationsDone(page.getByTestId("app-settings-body"));
-  await expectOneRow(
-    [await measure(page.getByTestId("app-settings-guide-auto-start-switch")), await measure(replay)],
-    "guide row",
-  );
-});
-
 test("the document header's tile and folder chip stand at one height", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await seedFirstRunSeen(page);

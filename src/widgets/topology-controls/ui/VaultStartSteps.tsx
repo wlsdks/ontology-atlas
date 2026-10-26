@@ -20,8 +20,7 @@ import { Chip } from "@/shared/ui";
 
 /**
  * The first steps after a folder opens, one at a time with an explanation. It blocks nothing (every
- * step can be skipped, the last one ends the card), a press counts as progress, and the explanation
- * area holds three lines so height does not jump.
+ * step can be skipped, the last one ends the card). Creation waits for success.
  */
 
 export type StartStepId = "docs" | "agent" | "analyze" | "starter" | "manual";
@@ -45,8 +44,9 @@ export interface VaultStartStepsProps {
   /** The instruction text — a copy for people whose paste target is outside. */
   analyzePrompt: string;
   /** Create skeleton documents plus the connection config in an empty folder. null when documents already exist. */
-  onScaffoldStarter?: (() => void) | null;
+  onScaffoldStarter?: (() => Promise<boolean>) | null;
   scaffolding?: boolean;
+  scaffoldFailed?: boolean;
   /** The alternative — create the first node by hand. */
   onCreateNode: (kind: "project" | "domain") => void;
   /** How many documents were found in this folder that are not yet on the map. Above 0, a step is added. */
@@ -72,6 +72,7 @@ export function VaultStartSteps({
   analyzePrompt,
   onScaffoldStarter = null,
   scaffolding = false,
+  scaffoldFailed = false,
   onCreateNode,
   docsFoundCount = 0,
   sourceFileCount = 0,
@@ -117,7 +118,8 @@ export function VaultStartSteps({
     [codeDominant, hasDocs, onScaffoldStarter],
   );
 
-  const current = steps[Math.min(index, steps.length - 1)];
+  const scaffoldActive = scaffolding || scaffoldFailed;
+  const current = scaffoldActive ? "starter" : steps[Math.min(index, steps.length - 1)];
   const isLast = index >= steps.length - 1;
 
   /** Move on. Passing the last one means this card has done its job. */
@@ -132,7 +134,7 @@ export function VaultStartSteps({
   /** A done step's secondary button says Next, not Skip. */
   const currentDone = current === "agent" ? agentReady : acted.has(current);
 
-  const body =
+  const body = scaffoldFailed ? t("starter.failedBody") :
     current === "docs"
       ? t("docs.body", { count: docsFoundCount })
       : current === "agent"
@@ -147,7 +149,7 @@ export function VaultStartSteps({
             ? t("starter.body")
             : t("manual.body");
 
-  const title =
+  const title = scaffoldFailed ? t("starter.failedTitle") :
     current === "docs"
       ? t("docs.title")
       : current === "agent"
@@ -158,7 +160,7 @@ export function VaultStartSteps({
             ? t("starter.title")
             : t("manual.title");
 
-  /** The primary action names what it does, and pressing it advances. */
+  /** The primary action names what it does. */
   const primary = (() => {
     if (current === "docs") {
       return {
@@ -175,7 +177,7 @@ export function VaultStartSteps({
     if (current === "agent") {
       return {
         /*
-         * Connecting lives in one place, the settings Agents pane, whatever was detected, so the
+         * Connecting lives in the Agents destination, whatever was detected, so the
          * name and the action agree.
          */
         label: t("agent.cta"),
@@ -230,13 +232,12 @@ export function VaultStartSteps({
     }
     if (current === "starter") {
       return {
-        label: scaffolding ? t("starter.ctaBusy") : t("starter.cta"),
+        label: scaffolding ? t("starter.ctaBusy") : scaffoldFailed ? t("starter.ctaRetry") : t("starter.cta"),
         icon: <Sparkles size={ICON_SIZE.sm} aria-hidden />,
         testId: "start-step-cta-starter",
         disabled: scaffolding,
-        run: () => {
-          onScaffoldStarter?.();
-          advance();
+        run: async () => {
+          if (await onScaffoldStarter?.()) onFinish?.();
         },
       };
     }
@@ -274,19 +275,16 @@ export function VaultStartSteps({
           <h2 className="min-w-0 break-keep text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
             {title}
           </h2>
-          <span
+          {!scaffoldActive ? <span
             data-testid="start-step-progress"
             className="shrink-0 font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
           >
             {t("progress", { current: index + 1, total: steps.length })}
-          </span>
+          </span> : null}
         </div>
-        {/*
-         * The explanation area is fixed at three lines (`min-h-15`, 60px) so the card does not jump
-         * between steps.
-         */}
         <p
-          data-testid="start-step-body"
+          data-testid={scaffoldFailed ? "start-step-scaffold-error" : "start-step-body"}
+          role={scaffoldFailed ? "alert" : undefined}
           className="mt-2 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]"
         >
           {body}
@@ -332,7 +330,7 @@ export function VaultStartSteps({
         ) : null}
         <div className="mt-4 flex items-center justify-between gap-2">
           {/* The way back — the first step has nowhere to go, so it only holds the space. */}
-          {index > 0 ? (
+          {index > 0 && !scaffoldActive ? (
             <Chip
               size="md"
               tone="secondary"
@@ -354,7 +352,8 @@ export function VaultStartSteps({
               hoverInk="strong"
               hoverSurface="lift"
               data-testid="start-step-skip"
-              onClick={advance}
+              disabled={scaffolding}
+              onClick={scaffoldFailed ? onFinish : advance}
             >
               {currentDone ? t("next") : t("skip")}
             </Chip>

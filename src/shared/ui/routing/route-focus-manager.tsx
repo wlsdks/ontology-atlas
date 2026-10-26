@@ -130,7 +130,7 @@ export function RouteFocusManager() {
         (main.contains(active) ||
           active.closest('[role="dialog"][aria-modal="true"]'))
       ) {
-        if (hasUrlFocusIntent) clearRouteFocusQueryMarker();
+        clearRouteFocusQueryMarker();
         return true;
       }
 
@@ -150,7 +150,7 @@ export function RouteFocusManager() {
       const target = heading && !headingIsControl ? heading : main;
       target.tabIndex = -1;
       target.focus({ preventScroll: true });
-      if (hasUrlFocusIntent) clearRouteFocusQueryMarker();
+      clearRouteFocusQueryMarker();
       return true;
     };
 

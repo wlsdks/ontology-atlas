@@ -263,7 +263,6 @@
     "changeAnnouncement": "{count} concepts updated: synced",
     "close": "Close",
     "replayGrowthTooltip": "Ontology growth flow",
-    "tourTooltip": "Guided tour",
     "shortcutsTooltip": "Keyboard shortcuts (?)",
     "spotlightWindowSummary": "Last {days}d · {count}"
   },
@@ -330,8 +329,6 @@
     "agentBadge": "Agent just now",
     "uncatalogedDocsLabel": "{count} docs not on the map",
     "uncatalogedDocsAction": "Add to map",
-    "dustyNodesLabel": "{count} concepts gathering dust: untouched for a while",
-    "dustyNodesAction": "See to-dos",
     "brokenDocsLabel": "{count} docs the checks caught",
     "brokenDocsAction": "Open Ontology documents",
     "sourceUnboundLabel": "{count} project(s) with no code folder",
@@ -381,7 +378,7 @@
     "clickHint": "Click for details · source doc"
   },
   "canvas": {
-    "ariaLabel": "Product map: walk connected concepts with the arrow keys. The INDEX panel shows the same information"
+    "ariaLabel": "Product map: walk connected concepts with the arrow keys. The Concepts panel shows the same information"
   },
   "cluster": {
     "hint": "Dense groups are folded into +N chips: click a chip to expand that group, click again to collapse.",
@@ -479,8 +476,8 @@
     "agent": {
       "title": "Connect an AI agent",
       "bodyFound": "Found an AI tool on this computer. Connect it and you can fill the ontology together in conversation.",
-      "bodyMissing": "If you use Claude Agent, you can open a chat here. That chat always asks first before touching anything outside this folder. Codex and other tools that speak MCP can reach this folder from their own app or terminal. Everything else works without connecting.",
-      "cta": "Open agent settings",
+      "bodyMissing": "Open Agents to check your installed tools and see which can chat beside the map. You can also connect a tool you run yourself over MCP. You can continue without AI.",
+      "cta": "Open Agents",
       "runtimeReady": "Ready to talk to inside the app"
     },
     "analyze": {
@@ -496,7 +493,10 @@
       "title": "Create the starter documents",
       "body": "This folder is still empty. We can create five skeleton documents and the AI connection settings in one go. You can edit or delete them later.",
       "cta": "Create starter documents",
-      "ctaBusy": "Creating…"
+      "ctaBusy": "Creating…",
+      "failedTitle": "Starter documents could not be finished",
+      "failedBody": "Saved files are kept. Check the folder’s write permissions and available disk space, then try again. Existing files will not be overwritten.",
+      "ctaRetry": "Try again"
     },
     "manual": {
       "title": "Start by hand",

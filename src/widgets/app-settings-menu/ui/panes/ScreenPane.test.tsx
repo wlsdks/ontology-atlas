@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SCREEN_CATALOG } from '../../model/catalog/screen';
 import { ScreenPane } from './ScreenPane';
@@ -6,7 +6,6 @@ import { ScreenPane } from './ScreenPane';
 const mocks = vi.hoisted(() => ({
   desktop: false,
   reducedMotion: false,
-  replay: null as null | (() => void),
 }));
 
 vi.mock('next-intl', () => ({
@@ -17,9 +16,8 @@ vi.mock('@/shared/lib/desktop-shell/desktop-shell', () => ({ isDesktopShell: () 
 vi.mock('@/shared/lib/render-timing/use-prefers-reduced-motion', () => ({
   usePrefersReducedMotion: () => mocks.reducedMotion,
 }));
-vi.mock('@/features/guided-tour', () => ({
+vi.mock('@/shared/lib/preferences/guide-auto-start', () => ({
   useGuideAutoStart: () => true,
-  useGuideReplay: () => mocks.replay,
   writeGuideAutoStart: vi.fn(),
 }));
 vi.mock('@/features/locale-switch', () => ({
@@ -45,7 +43,6 @@ function renderPane() {
 beforeEach(() => {
   mocks.desktop = false;
   mocks.reducedMotion = false;
-  mocks.replay = null;
   window.localStorage.clear();
   document.documentElement.removeAttribute('data-text-size');
 });
@@ -97,22 +94,5 @@ describe('ScreenPane', () => {
     expect(screen.getByTestId('app-settings-motion').textContent).toContain(
       'settingsScreen.motionCaptionApp',
     );
-  });
-
-  it('closes without returning focus before replaying the guide', () => {
-    const replay = vi.fn();
-    mocks.replay = replay;
-    const { onClose } = renderPane();
-    act(() => {
-      fireEvent.click(screen.getByTestId('app-settings-replay-guide-button'));
-    });
-    expect(onClose).toHaveBeenCalledWith(false);
-    expect(replay).toHaveBeenCalled();
-  });
-
-  it('omits the replay button where no guide is registered', () => {
-    renderPane();
-    expect(screen.queryByTestId('app-settings-replay-guide-button')).toBeNull();
-    expect(screen.getByTestId('app-settings-guide-auto-start-switch')).toBeTruthy();
   });
 });

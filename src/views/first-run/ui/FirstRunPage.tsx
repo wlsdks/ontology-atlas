@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CircleHelp, FolderOpen, Layers, Library, Map as MapIcon, Sparkles, Zap } from "lucide-react";
 import type { VaultShape } from "@/shared/lib/vault-folder/vault-shape";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
 import { useJustStartVault, useVaultCreateFlow } from "@/features/docs-vault-local";
@@ -29,6 +30,7 @@ import styles from './first-run-chooser.module.css';
 export function FirstRunPage() {
   const [chooserHelpOpen, setChooserHelpOpen] = useState(false);
   const t = useTranslations("firstRun");
+  const tBriefing = useTranslations("gitBriefing");
   // Shared with the `/docs` chooser.
   const tSwitch = useTranslations("vaultSwitch");
   const toast = useToast();
@@ -356,6 +358,8 @@ export function FirstRunPage() {
             </div> : null}
           </>
         )}
+
+        {showJustStart && !choosingFor ? <Link href="/changes/" className={controlClass({ shape: "row", hoverSurface: "lift", hoverInk: "strong", className: "grid gap-1 border border-[color:var(--color-border-soft)] p-4" })}><span className="text-body font-[var(--font-weight-strong)]">{tBriefing("title")}</span><span className="text-body text-[color:var(--color-text-secondary)]">{tBriefing("sourcePrompt")}</span></Link> : null}
 
         {failure ? (
           <p

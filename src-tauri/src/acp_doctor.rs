@@ -112,7 +112,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     // Controlling codex's config directory is not holding its write gate (decision
     // (111)); report the compound boundary instead.
     out.push(
-        if acp::registry::chat_eligible(ctx.runtime_id) && acp::isolation::config_env_for(ctx.runtime_id).is_some() {
+        if acp::registry::chat_eligible(ctx.runtime_id)
+            && acp::isolation::config_env_for(ctx.runtime_id).is_some()
+        {
             let detail = SESSION_MODE_GATE
                 .iter()
                 .find(|(id, _)| *id == ctx.runtime_id)
@@ -132,7 +134,10 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
     // No cache outside npx is not applicable, so it is left off rather than shown green.
     if let Some(entry) = npx_entry_path(ctx) {
         out.push(
-            match acp::npx_cache::npx_entry_health(&entry, npx_package(ctx).as_deref().unwrap_or("")) {
+            match acp::npx_cache::npx_entry_health(
+                &entry,
+                npx_package(ctx).as_deref().unwrap_or(""),
+            ) {
                 acp::npx_cache::NpxEntryHealth::Usable => AcpCheck::ok("npx-cache", None),
                 // Not yet downloaded is fine: it downloads on first launch.
                 acp::npx_cache::NpxEntryHealth::Missing => {
@@ -235,15 +240,17 @@ pub(crate) fn repair(ctx: &DoctorContext<'_>, check_id: &str) -> Result<(), Stri
     }
     match check_id {
         // One preparation path fixes all three, so a separate fix cannot drift from it.
-        "config-dir" | "credentials-link" | "shadow-keychain" => acp::isolation::prepare_isolated_config(
-            ctx.runtime_id,
-            ctx.app_data_dir,
-            ctx.home,
-            ctx.cli,
-            ctx.path_env,
-        )
-        .map(|_| ())
-        .map_err(|reason| format!("repair-failed:{reason}")),
+        "config-dir" | "credentials-link" | "shadow-keychain" => {
+            acp::isolation::prepare_isolated_config(
+                ctx.runtime_id,
+                ctx.app_data_dir,
+                ctx.home,
+                ctx.cli,
+                ctx.path_env,
+            )
+            .map(|_| ())
+            .map_err(|reason| format!("repair-failed:{reason}"))
+        }
         "npx-cache" => {
             let entry =
                 npx_entry_path(ctx).ok_or_else(|| "repair-failed:no-npx-entry".to_string())?;
@@ -286,8 +293,14 @@ mod tests {
     use super::*;
 
     fn prepare_for_test(c: &DoctorContext<'_>) {
-        acp::isolation::prepare_isolated_config(c.runtime_id, c.app_data_dir, c.home, c.cli, c.path_env)
-            .expect("setup must succeed for this test to hold");
+        acp::isolation::prepare_isolated_config(
+            c.runtime_id,
+            c.app_data_dir,
+            c.home,
+            c.cli,
+            c.path_env,
+        )
+        .expect("setup must succeed for this test to hold");
     }
 
     fn ctx<'a>(app_data: &'a Path, home: Option<&'a Path>) -> DoctorContext<'a> {

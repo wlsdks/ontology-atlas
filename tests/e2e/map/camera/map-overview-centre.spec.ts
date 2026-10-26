@@ -20,7 +20,7 @@ const SIZES = [
 const TOLERANCE = 4;
 const HUB_VERTICAL_TOLERANCE = 8;
 const RING_CAPTION_INSIDE_FREE_MAP = 24;
-const RAIL = ["topology-fit-control", "topology-tour-button", "topology-shortcuts-help-button", "topology-replay-growth"];
+const RAIL = ["topology-fit-control", "topology-shortcuts-help-button", "topology-replay-growth"];
 
 interface Frame {
   branchLabelsOutside: string[] | null;

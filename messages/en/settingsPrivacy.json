@@ -39,7 +39,8 @@
     "connectors": "MCP connections",
     "git-remote": "Git send, pull and fetch",
     "coding-tools": "Coding tools",
-    "website-files": "Website files"
+    "website-files": "Website files",
+    "git-pr-descriptions": "GitHub PR descriptions"
   },
   "updateOn": "Automatic check on",
   "updateOff": "Automatic check off",

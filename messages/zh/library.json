@@ -182,7 +182,7 @@
     "staleOnly": "{count} 个来源版本待复核",
     "partialOnly": "{count} 个仅读取了部分内容",
     "import": "从服务导入",
-    "importTooltip": "从 Notion、Confluence、Jira 或 GitHub 导入文档",
+    "importTooltip": "选择并连接服务，再指定要导入此文件夹的文档",
     "pagesNeedReview": "{count} 个现有页面需要重新检查"
   },
   "wiki": {
@@ -449,6 +449,11 @@
     "staleLit": "{count} 份已变更的原文已点亮，连同引用它们的 {pages} 个页面。按 Escape 或点按画面即可清除。"
   },
   "find": {
+    "searchLabel": "按文件名或路径筛选",
+    "searchHint": "更改搜索时保留选择。因筛选而隐藏的文档不会被记为跳过。",
+    "searchCount": "共 {total, number} 个，显示 {visible, number} 个 · 已选 {selected, number} 个",
+    "noMatches": "没有匹配的文件名或路径。",
+    "clearSearch": "清除搜索",
     "title": "已授权文件夹中的文档",
     "preamble": "Atlas 按名称、格式和大小列出了这些文档，没有打开其中任何一份。选定之前不会复制任何内容。",
     "webLimit": "这里只能遍历你打开的文件夹；已绑定的项目文件夹需要绝对路径，而这由应用持有。",
@@ -921,7 +926,9 @@
       "columnRound": "巡检",
       "columnOutcome": "结果",
       "ghostTime": "––:––",
-      "ghostAria": "第一次运行会出现在这里"
+      "ghostAria": "第一次运行会出现在这里",
+      "includeSleep": "显示休眠时段（{count} 条）",
+      "noPasses": "尚未运行任何检查。"
     },
     "sheet": {
       "readbackHour": "每小时",

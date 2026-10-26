@@ -12,9 +12,15 @@ fn oversized_scopes_can_be_recovered_with_a_narrower_selection() {
         nodes.push(json!({"uid":format!("member-{index}"),"slug":slug,"kind":"element"}));
         edges.push(json!({"from":"project","to":slug,"via":"contains"}));
     }
-    assert_eq!(selected_scope(&nodes, &edges, "project", &["project-id".into()]).unwrap_err(), "scope_limit");
+    assert_eq!(
+        selected_scope(&nodes, &edges, "project", &["project-id".into()]).unwrap_err(),
+        "scope_limit"
+    );
     let oversized: Vec<_> = (0..13).map(|index| format!("member-{index}")).collect();
-    assert_eq!(selected_scope(&nodes, &edges, "project", &oversized).unwrap_err(), "scope_invalid");
+    assert_eq!(
+        selected_scope(&nodes, &edges, "project", &oversized).unwrap_err(),
+        "scope_invalid"
+    );
     let (scope, _) = selected_scope(&nodes, &edges, "project", &["member-0".into()]).unwrap();
     assert_eq!(scope, vec!["elements/member-0"]);
 }

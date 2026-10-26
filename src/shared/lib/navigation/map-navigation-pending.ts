@@ -69,7 +69,7 @@ export function cancelMapNavigation(id?: number | null) {
   emit();
 }
 
-/** Only a successful draw (including zero nodes) calls this completion path. */
+/** A drawn map or a committed start screen completes its own navigation ticket. */
 export function completeMapNavigation(id: number | null) {
   if (id === null || current?.id !== id) return;
   const focus = current.focusCanvas;

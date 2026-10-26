@@ -108,6 +108,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the label now and the action stays in the accessible name. The glyph sat in JSX
   between two expressions, the one shape the label-decoration gate's two scans
   cannot see; a measured sweep of `src` and `app` found this was the only one.
+- Search results navigate to their selected concept after a completed path, clearing the old
+  path and inspected relation. While a path still lacks an endpoint, search continues to supply
+  that endpoint. Canvas clicks keep the existing path-building behavior.
 - **A path names both of its ends** (2026-09-20) → the path lens keeps its nodes
   at full ink, but their labels ranked as ordinary concepts, so an endpoint
   inside an expanded domain disc lost its slot to that domain and the project.
@@ -127,8 +130,8 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   row into view; a branch folded again stays folded until the next selection.
 
 - **"Recent" is dated by Git in the app** (2026-09-25) → the INDEX recent-changes
-  window, the `?recent=` spotlight, the dusty rows, a node's "changed … ago" and the
-  Analysis Recent changes tab read each concept document's date from one Git walk:
+  window, the `?recent=` spotlight and a node's "changed … ago" read each concept
+  document's date from one Git walk:
   its last commit, or its file's
   date when Git shows it edited or new since (the rule the bundled manifest is built
   with). A clone, checkout or restored backup stamps every file with the moment it

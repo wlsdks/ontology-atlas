@@ -2109,3 +2109,21 @@ describe('files changed only in comments', () => {
     assert.ok(skipped.some((command) => command.startsWith('pnpm exec eslint')));
   });
 });
+
+
+describe('rendered UI audit coverage', () => {
+  it('routes each audit implementation file to numerical and real-browser probes', () => {
+    const paths = [
+      'scripts/design/ui-audit.mjs',
+      'scripts/design/ui-audit.test.mjs',
+      'scripts/lib/design/ui-audit-probe.mjs',
+      'scripts/lib/design/ui-audit-checks.mjs',
+    ];
+    assert.equal(paths.filter(existsSync).length, 4);
+    for (const path of paths) {
+      const commands = commandNames(suggestFocusedChecks([path]));
+      assert.ok(commands.includes('pnpm test:ui:audit'), path);
+      assert.ok(commands.includes('pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts'), path);
+    }
+  });
+});

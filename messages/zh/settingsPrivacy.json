@@ -39,7 +39,8 @@
     "connectors": "MCP 连接",
     "git-remote": "Git 推送、拉取和获取",
     "coding-tools": "编码工具",
-    "website-files": "网站文件"
+    "website-files": "网站文件",
+    "git-pr-descriptions": "GitHub PR descriptions"
   },
   "updateOn": "自动检查已开",
   "updateOff": "自动检查已关",

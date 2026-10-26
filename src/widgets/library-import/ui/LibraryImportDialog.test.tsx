@@ -1,265 +1,198 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import messages from '../../../../messages/ko.json';
-
+import { createConnectorSetup } from '@/shared/lib/connectors/connector-setup';
+import { createConnectorStore } from '@/shared/lib/connectors/connector-store';
 import { LibraryImportDialog } from './LibraryImportDialog';
+import type { ConnectorSecretStatus } from '@/shared/lib/connectors/tauri-connector-secrets';
 
-/**
- * The three steps with the service mocked. Nothing here reaches a real service; this proves the
- * descriptor written, that it is on, that no token lands in the folder file, and that the brief is
- * bounded.
- */
-
-const secretSet = vi.fn(async (_ref: string, _value: string) => true);
-vi.mock('@/shared/lib/connectors/tauri-connector-secrets', () => ({
-  connectorSecretRef: (id: string, name: string) => `${id}:${name}`,
-  connectorSecretSet: (...args: unknown[]) => secretSet(...(args as [string, string])),
+const bridge = vi.hoisted(() => ({ available: true }));
+const secretSet = vi.fn<(ref: string, value: string) => Promise<ConnectorSecretStatus | null>>();
+const secretStatus = vi.fn<(ref: string) => Promise<ConnectorSecretStatus | null>>();
+const resolveRuntimes = vi.fn();
+vi.mock('@/shared/lib/connectors/tauri-connector-secrets', async (original) => ({
+  ...await original<typeof import('@/shared/lib/connectors/tauri-connector-secrets')>(),
+  isConnectorSecretBridgeAvailable: () => bridge.available,
+  connectorSecretSet: (ref: string, value: string) => secretSet(ref, value),
+  connectorSecretStatus: (ref: string) => secretStatus(ref),
 }));
-
 vi.mock('@/shared/lib/connectors/tauri-connector-runtimes', () => ({
-  resolveConnectorRuntimes: async () => [{ name: 'npx', path: '/opt/homebrew/bin/npx' }],
+  resolveConnectorRuntimes: () => resolveRuntimes(),
   runtimePath: (runtimes: Array<{ name: string; path: string | null }> | null, name: string) =>
     runtimes?.find((runtime) => runtime.name === name)?.path ?? null,
 }));
 
-type Attach = Parameters<typeof LibraryImportDialog>[0]['onAttach'];
-
-function draw(overrides: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}) {
-  const onAttach = vi.fn<Attach>(async () => ({ status: 'saved' as const, connectors: [] }));
-  const onBrief = vi.fn<Parameters<typeof LibraryImportDialog>[0]['onBrief']>();
-  const onOpenAdvanced = vi.fn();
-  const onClose = vi.fn();
-  render(
-    <NextIntlClientProvider locale="ko" messages={messages}>
-      <LibraryImportDialog
-        open
-        onClose={onClose}
-        onAttach={onAttach}
-        onBrief={onBrief}
-        onOpenAdvanced={onOpenAdvanced}
-        canRunAgent
-        agentGap="browser"
-        {...overrides}
-      />
-    </NextIntlClientProvider>,
-  );
-  return { onAttach, onBrief, onOpenAdvanced, onClose };
+function draw(options: Partial<Parameters<typeof LibraryImportDialog>[0]> = {}, write?: (text: string) => Promise<void>) {
+  let text: string | null = null;
+  const writes: string[] = [];
+  const store = createConnectorStore({ read: async () => text, write: async (next) => {
+    writes.push(next); await write?.(next); text = next;
+  } });
+  const approve = vi.fn(() => true);
+  const setup = createConnectorSetup(store, { current: () => true, approved: () => false, approve });
+  const callbacks = { onSetupSaved: vi.fn(), onAddFiles: vi.fn(), onClose: vi.fn(), onBrief: vi.fn<(brief: string) => void>(), onOpenAdvanced: vi.fn() };
+  const props = { open: true, setup, ...callbacks, canRunAgent: true, agentGap: 'runtime' as const, ...options };
+  const tree = (next: Parameters<typeof LibraryImportDialog>[0]) => <NextIntlClientProvider locale="ko" messages={messages}><LibraryImportDialog {...next} /></NextIntlClientProvider>;
+  const view = render(tree(props));
+  const replace = (next: Partial<Parameters<typeof LibraryImportDialog>[0]>) => view.rerender(tree({ ...props, ...next }));
+  return { ...props, ...callbacks, writes, approve, store, view, replace };
 }
-
-/** The one value the Notion program asks for; the tests never check its shape, only its path. */
-const typeToken = () =>
-  fireEvent.change(screen.getByTestId('library-import-token'), {
-    target: { value: 'ntn_test_value' },
-  });
-
-const pickService = (id: string) => {
-  const tile = screen
-    .getAllByTestId('library-import-service')
-    .find((element) => element.getAttribute('data-service') === id);
-  if (!tile) throw new Error(`no tile: ${id}`);
-  fireEvent.click(tile);
+const pick = (id = 'notion') => fireEvent.click(screen.getAllByTestId('library-import-service').find((tile) => tile.dataset.service === id)!);
+const enter = async () => {
+  pick();
+  fireEvent.change(screen.getByTestId('library-import-token'), { target: { value: 'ntn_test_value' } });
+  await waitFor(() => expect(screen.getByTestId('library-import-connect')).toBeEnabled());
 };
+const save = () => fireEvent.click(screen.getByTestId('library-import-connect'));
 
 beforeEach(() => {
-  secretSet.mockClear();
+  bridge.available = true;
+  secretSet.mockReset(); secretStatus.mockReset(); resolveRuntimes.mockReset();
+  secretSet.mockImplementation(async (secretRef) => ({ secretRef, stored: true, last4: 'alue' }));
+  secretStatus.mockImplementation(async (secretRef) => ({ secretRef, stored: true, last4: 'alue' }));
+  resolveRuntimes.mockResolvedValue([{ name: 'npx', path: '/opt/homebrew/bin/npx' }]);
 });
 
-describe('bringing documents in from a service', () => {
-  it('never says MCP, stdio, npx or environment variable to the person', () => {
-    /* This door never uses the technical words; the MCP screen still does. */
-    draw();
-    /*
-     * The escape-hatch tile is excluded on purpose: there MCP is the right word for the other door.
-     */
-    const other = screen
-      .getAllByTestId('library-import-service')
-      .find((element) => element.getAttribute('data-service') === 'other');
-    other?.remove();
-    const text = document.body.textContent ?? '';
-    for (const jargon of ['MCP', 'stdio', 'npx', 'env', 'HTTP', 'transport']) {
-      expect(text).not.toContain(jargon);
-    }
+describe('service setup', () => {
+  it('admits one save while a folder write is pending and keeps Close available', async () => {
+    const { writes } = draw({}, () => new Promise(() => {}));
+    await enter(); save(); save();
+    await waitFor(() => expect(writes).toHaveLength(1));
+    expect(screen.getByTestId('library-import-connect')).toBeDisabled();
+    expect(screen.getByTestId('library-import-connect')).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByTestId('library-import-token')).toBeDisabled();
+    expect(screen.getByTestId('library-import-close')).toBeEnabled();
+    expect(screen.getByTestId('library-import-pending')).toHaveFocus();
   });
-
-  it('offers the way out for a service the list does not know, and does not stack two dialogs', () => {
-    const { onOpenAdvanced, onClose } = draw();
-    pickService('other');
-    expect(onOpenAdvanced).toHaveBeenCalled();
-    // Closed first: two blocking surfaces at once is the shape `design.md` forbids.
-    expect(onClose).toHaveBeenCalled();
+  it.each(['rejected', 'unavailable', 'not-stored', 'wrong-ref'] as const)('preserves input and refuses completion when the credential receipt is %s', async (failure) => {
+    if (failure === 'rejected') secretSet.mockRejectedValueOnce(new Error('redacted'));
+    else secretSet.mockImplementationOnce(async (ref) => failure === 'unavailable' ? null : { secretRef: failure === 'wrong-ref' ? 'other' : ref, stored: failure !== 'not-stored', last4: null });
+    const { approve, writes } = draw(); await enter(); save();
+    expect(await screen.findByTestId('library-import-failed')).toHaveAttribute('role', 'alert');
+    expect(screen.queryByTestId('library-import-connected')).not.toBeInTheDocument();
+    expect(screen.getByTestId('library-import-token')).toHaveValue('ntn_test_value');
+    expect(JSON.parse(writes[0]!).connectors[0].enabled).toBe(false);
+    expect(approve).not.toHaveBeenCalled();
   });
-
-  it('step one asks for the one value, says where it is issued, and who uses it', () => {
-    /*
-     * The token goes to the keychain, the folder's file gets the name, and the coding tool reaches
-     * the service.
-     */
-    draw();
-    pickService('notion');
-    const step = screen.getByTestId('library-import-step');
-    expect(step).toHaveAttribute('data-step', 'connect');
-    expect(screen.getByTestId('library-import-token')).toBeInTheDocument();
-    expect(screen.getByTestId('library-import-token-issue')).toHaveAttribute('href', expect.stringMatching(/^https:/));
-    expect(document.body.textContent).toContain('키체인');
-    expect(document.body.textContent).toContain('코딩 도구');
-    // The press waits for the value.
+  it('does not continue a delayed save after Close', async () => {
+    let finish!: () => void;
+    const held = new Promise<void>((resolve) => { finish = resolve; });
+    const { writes, approve } = draw({}, () => held); await enter(); save();
+    await waitFor(() => expect(writes).toHaveLength(1));
+    fireEvent.click(screen.getByTestId('library-import-close'));
+    await act(async () => { finish(); });
+    expect(secretSet).not.toHaveBeenCalled(); expect(approve).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('library-import-connected')).not.toBeInTheDocument();
+  });
+  it('stages disabled metadata, confirms the token, then enables and approves the exact saved row', async () => {
+    const { writes, approve } = draw(); await enter(); save();
+    await screen.findByTestId('library-import-connected');
+    const [staged, active] = writes.map((text) => JSON.parse(text).connectors[0]);
+    expect(staged.enabled).toBe(false); expect(active.enabled).toBe(true);
+    expect(staged.id).toBe(active.id); expect(active.command).toBe('/opt/homebrew/bin/npx');
+    expect(active.origin).toBe('library-import:notion');
+    expect(writes.join('')).not.toContain('ntn_test_value');
+    expect(approve).toHaveBeenCalledExactlyOnceWith(active);
+    expect(screen.getByTestId('library-import-what')).toHaveFocus();
+  });
+  it('retries activation on the same row without asking for or writing the confirmed token again', async () => {
+    let fail = true;
+    const { writes, approve } = draw({}, async (text) => {
+      if (JSON.parse(text).connectors[0].enabled && fail) throw new Error('read only');
+    });
+    await enter(); save(); await screen.findByTestId('library-import-failed');
+    expect(screen.queryByTestId('library-import-token')).not.toBeInTheDocument();
+    expect(approve).not.toHaveBeenCalled(); fail = false; save();
+    await screen.findByTestId('library-import-connected');
+    expect(secretSet).toHaveBeenCalledTimes(1);
+    expect(new Set(writes.map((text) => JSON.parse(text).connectors[0].id)).size).toBe(1);
+  });
+  it('keeps input when the folder write throws', async () => {
+    draw({}, async () => { throw new Error('unavailable'); }); await enter(); save();
+    await screen.findByTestId('library-import-failed');
+    expect(screen.getByTestId('library-import-token')).toHaveValue('ntn_test_value');
+    expect(secretSet).not.toHaveBeenCalled();
+  });
+  it('restores the selected tile on Back and clears sensitive input', async () => {
+    draw(); await enter(); expect(screen.getByTestId('library-import-token')).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: /^뒤로$/ }));
+    expect(screen.getAllByTestId('library-import-service').find((tile) => tile.dataset.service === 'notion')).toHaveFocus();
+    pick('github'); expect(screen.getByTestId('library-import-token')).toHaveValue('');
+  });
+  it('waits for runtime readiness and offers recovery when the runtime is missing', async () => {
+    let finish!: (value: unknown) => void;
+    resolveRuntimes.mockReturnValueOnce(new Promise((resolve) => { finish = resolve; }));
+    const { writes } = draw(); pick();
+    fireEvent.change(screen.getByTestId('library-import-token'), { target: { value: 'test' } });
+    expect(screen.getByTestId('library-import-connect')).toBeDisabled();
+    await act(async () => { finish([{ name: 'npx', path: null }]); });
+    await screen.findByTestId('library-import-failed'); expect(writes).toHaveLength(0);
     expect(screen.getByTestId('library-import-connect')).toBeDisabled();
   });
-
-  it('writes the connection switched on, then asks what to bring', async () => {
-    const { onAttach } = draw();
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-
-    await waitFor(() => expect(onAttach).toHaveBeenCalled());
-    const written = onAttach.mock.calls[0]![0] as {
-      args: string[];
-      enabled: boolean;
-      origin?: string;
-    };
-    expect(written.args.join(' ')).toContain('@notionhq/notion-mcp-server');
-    expect(written.enabled).toBe(true);
-    expect(written.origin).toBe('library-import:notion');
-    // The value went to the keychain, after the row was on disk, and never into the folder.
-    await waitFor(() => expect(secretSet).toHaveBeenCalledTimes(1));
-    expect(secretSet.mock.calls[0]![1]).toBe('ntn_test_value');
-    expect(JSON.stringify(written)).not.toContain('ntn_test_value');
-
-    await waitFor(() =>
-      expect(screen.getByTestId('library-import-step')).toHaveAttribute('data-step', 'choose'),
-    );
-    expect(screen.getByTestId('library-import-connected')).toBeInTheDocument();
+  it('offers browser remedies without token collection, writes or secret lookups', async () => {
+    bridge.available = false;
+    const { onAddFiles, onClose, writes } = draw(); pick();
+    expect(screen.getByTestId('library-import-web-setup')).toBeInTheDocument();
+    expect(screen.queryByTestId('library-import-token')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-import-connect')).not.toBeInTheDocument();
+    expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute('href', expect.stringContaining('/download'));
+    fireEvent.click(screen.getByTestId('library-import-add-files'));
+    expect(onClose).toHaveBeenCalledBefore(onAddFiles); expect(writes).toHaveLength(0);
+    expect(secretStatus).not.toHaveBeenCalled(); expect(secretSet).not.toHaveBeenCalled();
   });
-
-  it('stays on step one and says so when the folder saved nothing', async () => {
-    /*
-     * A failed write must not look like a successful one, or the next step opens a conversation on
-     * a missing connection.
-     */
-    const refuse = vi.fn(async () => ({ status: 'blocked_unavailable' as const, connectors: [] }));
-    draw({ onAttach: refuse });
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    await waitFor(() => expect(refuse).toHaveBeenCalled());
-    expect(await screen.findByTestId('library-import-failed')).toHaveAttribute('role', 'alert');
-    expect(screen.getByTestId('library-import-step')).toHaveAttribute('data-step', 'connect');
-  });
-
-  it('hands over a bounded brief naming the folder, and closes rather than stacking on the dock', async () => {
-    const { onBrief, onClose } = draw();
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    await waitFor(() =>
-      expect(screen.getByTestId('library-import-step')).toHaveAttribute('data-step', 'choose'),
-    );
-    fireEvent.change(screen.getByTestId('library-import-what'), {
-      target: { value: 'API 설계 문서' },
-    });
+  it('hands a bounded document request to the agent only after an explicit Bring press', async () => {
+    const { onBrief, onClose } = draw(); await enter(); save(); await screen.findByTestId('library-import-connected');
+    expect(onBrief).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByTestId('library-import-what'), { target: { value: 'API 설계 문서' } });
     fireEvent.click(screen.getByTestId('library-import-bring'));
-
-    expect(onBrief).toHaveBeenCalledTimes(1);
-    const brief = onBrief.mock.calls[0]![0] as string;
-    expect(brief).toContain('sources/notion/');
-    expect(brief).toContain('at most 20');
-    expect(brief).toContain('API 설계 문서');
-    expect(brief).toMatch(/Do not write anything before I answer/);
-    // The dock opens next, and a scrim over it would make the conversation unreachable.
+    expect(onBrief).toHaveBeenCalledOnce();
+    const brief = onBrief.mock.calls[0]![0];
+    for (const part of ['sources/notion/', 'at most 20', 'API 설계 문서', 'Do not write anything before I answer']) expect(brief).toContain(part);
     expect(onClose).toHaveBeenCalled();
   });
-
-  it('offers no press it cannot honour, and says what did happen instead', async () => {
-    /*
-     * With no agent the last press is not offered; the screen says the connection is saved and on
-     * for any coding tool on this folder.
-     */
-    draw({ canRunAgent: false });
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    await waitFor(() =>
-      expect(screen.getByTestId('library-import-step')).toHaveAttribute('data-step', 'choose'),
-    );
-    expect(screen.queryByTestId('library-import-bring')).toBeNull();
-    // And nothing left on screen still promises the conversation that cannot start.
-    expect(screen.queryByTestId('library-import-runtime')).toBeNull();
-    expect(document.body.textContent).not.toContain('대화가 열려요');
-    const card = screen.getByTestId('library-import-no-agent');
-    expect(card).toHaveAttribute('role', 'status');
-    // A reason, what still works, and a destination that opens — the degradation contract.
-    expect(card).toHaveTextContent('연결은 저장되었고');
-    expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute(
-      'href',
-      expect.stringContaining('/download'),
-    );
+  it('provides the runtime remedy when the setup is saved without a ready coding tool', async () => {
+    draw({ canRunAgent: false }); await enter(); save(); await screen.findByTestId('library-import-connected');
+    expect(screen.queryByTestId('library-import-bring')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-import-runtime')).not.toBeInTheDocument();
+    expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute('href', expect.stringContaining('/agents'));
   });
-
-  it('names the right absence: the app has a runtime gap, not a browser', () => {
-    /*
-     * A browser cannot start programs while the app simply has no verified coding tool yet, so the
-     * two absences get different sentences.
-     */
-    draw({ canRunAgent: false, agentGap: 'runtime' });
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    return waitFor(() => {
-      const card = screen.getByTestId('library-import-no-agent');
-      expect(card).toHaveTextContent('아직 준비된 도구가 없어요');
-      expect(card.textContent).not.toContain('브라우저');
-      expect(screen.getByTestId('library-import-no-agent-app')).toHaveAttribute(
-        'href',
-        expect.stringContaining('/agents'),
-      );
-    });
-  });
-
-  it('points at where the permission is really taken back, not only that a row does not do it', () => {
-    // "Told the door doesn't lock behind me, but not where the real lock is" — cold walkthrough.
-    draw();
-    pickService('notion');
-    expect(screen.getByTestId('library-import-revoke')).toHaveAttribute(
-      'href',
-      expect.stringContaining('notion.com'),
-    );
-  });
-
-  it('says which conversation can reach it, so Codex does not meet a silent absence', () => {
-    /*
-     * Connectors reach only runtimes with a measured permission path (Claude today), so Codex users
-     * must be told.
-     */
-    draw();
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    return waitFor(() => {
-      expect(screen.getByTestId('library-import-runtime')).toHaveTextContent('Codex');
-    });
-  });
-
-  it('says where the picking happens instead of implying this screen will draw the list', () => {
-    /* Atlas cannot draw the result list, so the screen names where the results are. */
-    draw();
-    pickService('notion');
-    typeToken();
-    fireEvent.click(screen.getByTestId('library-import-connect'));
-    return waitFor(() => {
-      expect(document.body.textContent).toContain('대화가 열려요');
-      expect(document.body.textContent).toContain('허락을 물어봐요');
-    });
+  it('closes before opening the advanced service settings', () => {
+    const { onClose, onOpenAdvanced } = draw(); pick('other'); expect(onClose).toHaveBeenCalledBefore(onOpenAdvanced);
   });
 });
 
-describe('the service tiles fill their column', () => {
-  it('lets an odd last tile span both columns, so the two-column grid leaves no hole', () => {
-    draw();
-    const cells = screen.getAllByTestId('library-import-service').map((tile) => tile.closest('li'));
-    const spanning = cells.filter((cell) => cell?.className.includes('sm:col-span-2'));
-    expect(spanning).toEqual(cells.length % 2 === 1 ? [cells.at(-1)] : []);
+
+describe('folder replacement', () => {
+  const nextSetup = () => createConnectorSetup(createConnectorStore({ read: async () => null, write: async () => {} }), {
+    current: () => true, approved: () => false, approve: () => true,
   });
+  it('clears the old token and starts service selection when the captured folder changes', async () => {
+    const f = draw(); await enter();
+    f.replace({ setup: nextSetup() });
+    expect(screen.queryByTestId('library-import-token')).not.toBeInTheDocument();
+    pick();
+    expect(screen.getByTestId('library-import-token')).toHaveValue('');
+  });
+  it('cannot hand a completed setup from the previous folder to the next folder agent', async () => {
+    const f = draw(); await enter(); save(); await screen.findByTestId('library-import-connected');
+    const nextBrief = vi.fn(); f.replace({ setup: nextSetup(), onBrief: nextBrief });
+    expect(screen.queryByTestId('library-import-connected')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-import-bring')).not.toBeInTheDocument();
+    expect(nextBrief).not.toHaveBeenCalled();
+    expect(screen.getAllByTestId('library-import-service')).toHaveLength(3);
+  });
+});
+
+
+it('focuses Resume when a confirmed token removes the credential field', async () => {
+  let fail = true;
+  draw({}, async (text) => { if (JSON.parse(text).connectors[0].enabled && fail) throw new Error('read only'); });
+  await enter(); save(); await screen.findByTestId('library-import-failed');
+  fireEvent.click(screen.getByRole('button', { name: /^뒤로$/ })); pick();
+  await waitFor(() => expect(screen.getByTestId('library-import-connect')).toBeEnabled());
+  await waitFor(() => expect(screen.getByTestId('library-import-connect')).toHaveFocus());
+  expect(screen.queryByTestId('library-import-token')).not.toBeInTheDocument();
+  fail = false;
+  save(); await screen.findByTestId('library-import-connected');
 });

@@ -1,6 +1,6 @@
 /**
  * Model for bringing documents in from a service: connect (write the connector descriptor and
- * switch it on, asking for one token if needed), say what to bring, then hand a bounded brief to
+ * stage it off, confirm token storage, then activate it), say what to bring, then hand a bounded brief to
  * the Library's agent turn. Atlas is not the MCP client, so the agent lists and picks results
  * inside its turn and every file lands under `sources/<service>/` through the permission card;
  * Atlas writes nothing itself.
@@ -35,8 +35,7 @@ export interface ImportService {
 }
 
 /**
- * The tiles. Google Drive is absent: every Drive server needs a self-made OAuth client; add it
- * to `scripts/registry-snapshots/build-mcp-catalogue.mjs` with sources when a sign-in-only endpoint exists.
+ * The tiles require a committed catalogue entry and a connection path this surface supports.
  */
 /*
  * Confluence and Jira wait for an adapter that can sign in: a hosted OAuth address given to the
@@ -90,10 +89,7 @@ export function serviceAsk(
   };
 }
 
-/**
- * The connector, switched on unlike every other path into `connectors.json`: the person asked to
- * bring documents in, so off would find nothing. It stays visible and switchable on the MCP screen.
- */
+/** A disabled service draft. Guarded setup activates it only after credential confirmation. */
 export function importConnector(
   service: ImportService,
   options: { id: string; runtimePath?: string | null; secretRef: (id: string, name: string) => string },
@@ -106,7 +102,7 @@ export function importConnector(
     runtimePath: options.runtimePath ?? null,
     secretRef: options.secretRef,
   });
-  return { ...draft, enabled: true, origin: `library-import:${service.id}` };
+  return { ...draft, enabled: false, origin: `library-import:${service.id}` };
 }
 
 export type ImportStep = 'pick' | 'connect' | 'choose' | 'bring';

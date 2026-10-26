@@ -41,8 +41,7 @@ fn permission_policy_reads_the_path_not_the_title() {
 
 #[test]
 fn permission_policy_rejects_invalid_vault_roots_instead_of_allowing_everything() {
-    let base =
-        std::env::temp_dir().join(format!("atlas-acp-invalid-root-{}", std::process::id()));
+    let base = std::env::temp_dir().join(format!("atlas-acp-invalid-root-{}", std::process::id()));
     let outside = base.join("outside.md");
     let not_a_directory = base.join("not-a-directory");
     std::fs::create_dir_all(&base).unwrap();
@@ -69,8 +68,7 @@ fn permission_policy_rejects_invalid_vault_roots_instead_of_allowing_everything(
 #[cfg(unix)]
 #[test]
 fn permission_policy_rejects_a_session_root_replaced_by_an_outside_symlink() {
-    let base =
-        std::env::temp_dir().join(format!("atlas-acp-replaced-root-{}", std::process::id()));
+    let base = std::env::temp_dir().join(format!("atlas-acp-replaced-root-{}", std::process::id()));
     let vault = base.join("vault");
     let outside = base.join("outside");
     std::fs::create_dir_all(&vault).unwrap();

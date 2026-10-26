@@ -45,10 +45,9 @@ export function branchLayout(model: DialModel, packed: DialScene, pitch: number,
     return columns.flatMap((column, columnIndex) => {
       const side: -1 | 1 = ranked.length === 1 ? 1 : columnIndex === 0 ? -1 : 1;
       let top = centre.y - height / 2 + (columnIndex === 0 ? 0 : GROUP_GAP * pitch / 2);
-      return column.map((c, index) => {
+      return column.map((c) => {
         const rows = rowsOf(c.domainId);
-        const inset = ranked.length <= 4 && columnIndex === 1 && index % 2 === 1 ? COLUMN_PITCH * pitch / 3 : 0;
-        const chip = { x: centre.x + (ranked.length === 1 ? -MEMBER_REACH * pitch / 2 : side * COLUMN_PITCH * pitch / 2 - inset), y: top + rows * rowPitch / 2 };
+        const chip = { x: centre.x + (ranked.length === 1 ? -MEMBER_REACH * pitch / 2 : side * COLUMN_PITCH * pitch / 2), y: top + rows * rowPitch / 2 };
         top += rows * rowPitch + GROUP_GAP * pitch;
         positions.set(c.domainId, chip);
         const elementStep = pitch;

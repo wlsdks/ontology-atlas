@@ -1,8 +1,8 @@
 use super::curl::{curl_argv, curl_config_for, run_curl};
-use super::{AUDIT_BLOCKED_PREFIX, host_of};
 use super::local_endpoint::{
-    LOCAL_DEFAULT_BASE_URL, LOCAL_MODELS_PATH, LOCAL_PROVIDER, local_endpoint, normalize_base_url,
+    local_endpoint, normalize_base_url, LOCAL_DEFAULT_BASE_URL, LOCAL_MODELS_PATH, LOCAL_PROVIDER,
 };
+use super::{host_of, AUDIT_BLOCKED_PREFIX};
 use crate::errors::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope};
 use crate::secrets;
@@ -269,6 +269,12 @@ pub fn secret_verify(
         &Target::Vendor { secret: &secret },
         send_via_curl,
     )
+}
+
+#[tauri::command(async)]
+pub fn source_model_verify(app: tauri::AppHandle, base_url: String) -> Result<LlmVerifyResult, String> {
+    let audit_dir = super::source_audit_dir(&app)?;
+    verify_with(LOCAL_PROVIDER, &audit_dir, &Target::Address { base_url: &base_url }, send_via_curl)
 }
 
 #[cfg(test)]

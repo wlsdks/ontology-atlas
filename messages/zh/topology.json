@@ -263,7 +263,6 @@
     "changeAnnouncement": "已更新 {count} 个概念：已同步",
     "close": "关闭",
     "replayGrowthTooltip": "本体成长过程",
-    "tourTooltip": "引导游览",
     "shortcutsTooltip": "键盘快捷键 (?)",
     "spotlightWindowSummary": "近 {days} 天 · {count}"
   },
@@ -330,8 +329,6 @@
     "agentBadge": "智能体刚刚",
     "uncatalogedDocsLabel": "{count} 篇文档不在地图上",
     "uncatalogedDocsAction": "加入地图",
-    "dustyNodesLabel": "{count} 个概念蒙尘：已有一段时间没动过",
-    "dustyNodesAction": "查看待办",
     "brokenDocsLabel": "{count} 篇文档未通过检查",
     "brokenDocsAction": "打开本体文档",
     "sourceUnboundLabel": "{count} 个项目未连接代码文件夹",
@@ -381,7 +378,7 @@
     "clickHint": "点击查看详情 · 来源文档"
   },
   "canvas": {
-    "ariaLabel": "产品地图：用方向键在相连的概念间移动。INDEX 面板显示相同的信息"
+    "ariaLabel": "产品地图：用方向键在相连的概念间移动。「查找概念」面板显示相同的信息"
   },
   "cluster": {
     "hint": "密集的分组会折叠成 +N 标签：点击标签展开该分组，再点击收起。",
@@ -479,8 +476,8 @@
     "agent": {
       "title": "连接 AI 智能体",
       "bodyFound": "在这台电脑上找到了 AI 工具。连接后，就能在对话中一起充实本体。",
-      "bodyMissing": "如果你使用 Claude Agent，可以在这里打开对话。对话在触及此文件夹之外的内容前，总会先征求同意。Codex 等支持 MCP 的工具可以从各自的应用或终端访问此文件夹。不连接也不影响其他功能。",
-      "cta": "打开智能体设置",
+      "bodyMissing": "在智能体页面查看已安装的工具，以及哪些工具可以在地图旁对话。也可以通过 MCP 连接自行启动的工具。无需 AI 也能继续使用。",
+      "cta": "打开智能体",
       "runtimeReady": "可在应用内对话"
     },
     "analyze": {
@@ -496,7 +493,10 @@
       "title": "创建入门文档",
       "body": "这个文件夹还是空的。我们可以一次创建五份骨架文档和 AI 连接设置。之后可以随时编辑或删除。",
       "cta": "创建入门文档",
-      "ctaBusy": "正在创建…"
+      "ctaBusy": "正在创建…",
+      "failedTitle": "未能完成初始文档的创建",
+      "failedBody": "已保存的文件会保留。请检查文件夹的写入权限和可用空间，然后重试。已有文件不会被覆盖。",
+      "ctaRetry": "重试"
     },
     "manual": {
       "title": "手动开始",

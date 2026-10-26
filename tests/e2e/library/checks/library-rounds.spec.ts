@@ -49,10 +49,20 @@ test.describe("Library rounds", () => {
 
     const ledger = page.getByTestId("library-rounds-ledger");
     await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
+    await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(0);
+    const sleepToggle = ledger.getByTestId("library-rounds-show-sleep");
+    await sleepToggle.focus();
+    await page.keyboard.press("Space");
+    await expect(sleepToggle).toBeChecked();
+    await expect(sleepToggle).toBeFocused();
     await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(1);
     await expect(ledger.locator("[data-outcome='redrafted']")).toContainText("1 agent turn");
     await expect(ledger.locator("[data-outcome='redrafted']")).toContainText("mcp__confluence__create_page");
     await expect(ledger.locator("[data-outcome='stale']")).toContainText("no agent turn");
+
+    await page.keyboard.press("Space");
+    await expect(sleepToggle).not.toBeChecked();
+    await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(0);
 
     // A held pass is a line, a change is a card: the card has a border, the line does not.
     const heldHeight = await ledger.locator("[data-outcome='held']").first().evaluate((el) => el.getBoundingClientRect().height);
@@ -255,4 +265,26 @@ test.describe("Library rounds", () => {
     await expect(page.getByTestId("library-rounds")).toHaveAttribute("data-rounds-state", "app-required");
     await expect(page.getByTestId("library-rounds").getByRole("link", { name: "Get the app" })).toHaveAttribute("href", /\/download\/$/);
   });
+});
+
+
+test("sleep-only history stays distinct from executed checks and remains available on request", async ({ page }) => {
+  await seedFirstRunSeen(page);
+  await installDesktopBridge(page, { seedRounds: false });
+  await page.addInitScript(() => {
+    const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+    files['.ontology-atlas/rounds-ledger.jsonl'] = JSON.stringify({ v: 1, id: 'sleep-only', outcome: 'asleep',
+      startedAt: '2026-10-20T01:00:00Z', endedAt: '2026-10-20T03:00:00Z', checked: 0,
+      stale: [], written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'clock' }) + '\n';
+  });
+  await openRounds(page);
+  const ledger = page.getByTestId('library-rounds-ledger');
+  await expect(ledger.getByTestId('library-rounds-ledger-empty')).toBeVisible();
+  await expect(ledger.locator('[data-outcome="asleep"]')).toHaveCount(0);
+  const before = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds-ledger.jsonl']);
+  await ledger.getByTestId('library-rounds-show-sleep').check();
+  await expect(ledger.getByTestId('library-rounds-pass-sleep-only')).toBeVisible();
+  await expect(ledger.getByTestId('library-rounds-ledger-empty')).toHaveCount(0);
+  const after = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds-ledger.jsonl']);
+  expect(after).toBe(before);
 });

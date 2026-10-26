@@ -290,7 +290,9 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
     <LibraryImportDialog
       open={importOpen}
       onClose={() => setImportOpen(false)}
-      onAttach={(connector) => connectors.upsert(connector, { allowHere: true })}
+      setup={connectors.setup}
+      onSetupSaved={() => void connectors.reload()}
+      onAddFiles={handleAddFiles}
       onBrief={(brief) => agent.start(brief, "import")}
       canRunAgent={agent.route === "agent"}
       agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}

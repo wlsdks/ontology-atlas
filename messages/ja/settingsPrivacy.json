@@ -39,7 +39,8 @@
     "connectors": "MCP接続",
     "git-remote": "Gitの送信・取得",
     "coding-tools": "コーディングツール",
-    "website-files": "Webサイトのファイル"
+    "website-files": "Webサイトのファイル",
+    "git-pr-descriptions": "GitHub PR descriptions"
   },
   "updateOn": "自動確認オン",
   "updateOff": "自動確認オフ",

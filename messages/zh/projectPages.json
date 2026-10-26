@@ -114,8 +114,11 @@
     "constructionReview": {
       "eyebrow": "写入地图前的安全检查",
       "title": "现在可以放心决定的事",
-      "openResult": "打开审查结果",
-      "readingResult": "正在读取审查结果…",
+      "openResult": "导入审核 JSON",
+      "readingResult": "正在读取审核 JSON…",
+      "fileHint": "选择包含此项目审核结果的 JSON 文件。Atlas 仅在此页面读取内容，不会将其写入地图。",
+      "resultRegion": "导入的审核结果",
+      "retryFile": "选择其他审核 JSON",
       "errorTitle": "此审查结果不可信",
       "errors": {
         "malformed": "必需的资格审查文件缺失或无法读取。不显示任何计划或批准。",

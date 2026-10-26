@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useLayoutEffect, useState } from 'react';
 
 import { connectorFingerprint, type ConnectorRecord } from '@/shared/lib/connectors/connector-record';
 import {
@@ -9,7 +9,8 @@ import {
   type ConnectorWriteResult,
   createVaultFileConnectorStore,
 } from '@/shared/lib/connectors/connector-store';
-import { forgetApproval, recordApproval, useMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
+import { forgetApproval, readMachineApprovals, recordApproval, useMachineApprovals } from '@/shared/lib/connectors/machine-approvals';
+import { createConnectorSetup, type ConnectorSetup } from '@/shared/lib/connectors/connector-setup';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 
 /**
@@ -23,6 +24,7 @@ export interface VaultConnectorsState {
    * `malformed` means the file exists and is not ours, which blocks writing, so the screen must
    * say so rather than show an empty list.
    */
+  setup: ConnectorSetup | null;
   status: 'loading' | 'ready' | 'malformed' | 'unavailable';
   connectors: ConnectorRecord[];
   /** `<connector>.<variable>` for each plaintext credential the file still holds. */
@@ -73,6 +75,16 @@ function toLoaded(store: ConnectorStore, result: ConnectorReadResult): Loaded {
   };
 }
 
+function createSetupLifetime(identity: object) {
+  let active = false;
+  return {
+    identity,
+    activate: () => { active = true; },
+    deactivate: () => { active = false; },
+    isCurrent: () => active,
+  };
+}
+
 export function useVaultConnectors(
   handle: FileSystemDirectoryHandle | null | undefined,
 ): VaultConnectorsState {
@@ -82,6 +94,18 @@ export function useVaultConnectors(
   );
   const vaultRoot = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const session = useMemo(() => createSetupLifetime({ store, vaultRoot }), [store, vaultRoot]);
+  useLayoutEffect(() => {
+    session.activate();
+    return session.deactivate;
+  }, [session]);
+  const setup = useMemo(() => store && vaultRoot ? createConnectorSetup(store, {
+    leaseIdentity: handle!,
+    current: session.isCurrent,
+    approved: (record) => readMachineApprovals().approves('connector', vaultRoot, record.id, connectorFingerprint(record)),
+    approve: (record) => recordApproval('connector', vaultRoot, record.id, connectorFingerprint(record)),
+  }) : null, [store, vaultRoot, session, handle]);
+
 
   useEffect(() => {
     if (!store) return;
@@ -153,6 +177,7 @@ export function useVaultConnectors(
   const shown = (id: string) => connectors.find((connector) => connector.id === id);
 
   return {
+    setup,
     status: store ? (current?.status ?? 'loading') : 'unavailable',
     connectors,
     secretLiteralKeys: current?.secretLiteralKeys ?? NO_KEYS,

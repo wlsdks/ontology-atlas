@@ -64,7 +64,9 @@ export function HarnessGuidesView({
 
   const [chosen, setChosen] = useState<string | null>(null);
   const selectedKey = chosen !== null && selections.has(chosen) ? chosen : firstKey;
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const [folderOpen, setFolderOpen] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const isOpen = (row: GuideRow) => folderOpen.get(row.key) ??
+    (row.key === selectedKey || row.driftFiles.some((file) => file.key === selectedKey));
 
   const { leaving } = useSurfaceSwap(selectedKey);
   const { hostRef, capture } = useSwapHeight(selectedKey);
@@ -98,12 +100,7 @@ export function HarnessGuidesView({
 
   const setOpen = useCallback(
     (row: GuideRow, open: boolean) => {
-      setCollapsed((current) => {
-        const next = new Set(current);
-        if (open) next.delete(row.key);
-        else next.add(row.key);
-        return next;
-      });
+      setFolderOpen((current) => new Map(current).set(row.key, open));
       /* A collapsed folder hides its files, so a selection inside it moves up to the folder. */
       if (!open && row.driftFiles.some((file) => file.key === selectedKey)) select(row.key, false);
     },
@@ -126,11 +123,11 @@ export function HarnessGuidesView({
     else if (event.key === 'Home') next = items[0];
     else if (event.key === 'End') next = items[items.length - 1];
     else if (event.key === 'ArrowRight' && selection?.kind === 'guide' && selection.row.driftFiles.length > 0) {
-      if (collapsed.has(selection.row.key)) setOpen(selection.row, true);
+      if (!isOpen(selection.row)) setOpen(selection.row, true);
       else next = items[index + 1];
     } else if (event.key === 'ArrowLeft' && selection?.kind === 'drift') {
       next = items.find((item) => item.dataset.guideItem === selection.row.key);
-    } else if (event.key === 'ArrowLeft' && selection?.kind === 'guide' && !collapsed.has(selection.row.key)) {
+    } else if (event.key === 'ArrowLeft' && selection?.kind === 'guide' && isOpen(selection.row)) {
       if (selection.row.driftFiles.length > 0) setOpen(selection.row, false);
     } else return;
     event.preventDefault();
@@ -212,7 +209,7 @@ export function HarnessGuidesView({
                 {rows.map((row) => {
                   const share = mergedShare(row, report);
                   const differing = differingCount(row);
-                  const open = !collapsed.has(row.key);
+                  const open = isOpen(row);
                   const childrenId = `harness-guide-files-${row.key}`;
                   return (
                     <li key={row.key} data-testid={`harness-guide-row-${row.ruleId}`}>

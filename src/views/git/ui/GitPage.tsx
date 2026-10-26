@@ -11,6 +11,7 @@ export function GitPage() {
 
   return (
     <main
+      id="main"
       data-testid="git-page"
       // Takes the shell's height and scrolls inside, or short content collapses the canvas.
       className="flex h-full flex-col overflow-hidden bg-[color:var(--color-canvas)]"

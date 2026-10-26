@@ -1,7 +1,9 @@
-use crate::llm::curl::curl_config_for;
-use crate::llm::local_endpoint::{LOCAL_CHAT_PATH, LOCAL_PROVIDER, local_endpoint, normalize_base_url};
-use crate::llm::verify::{ANTHROPIC_VERSION, Target, checked_secret, wrong_target};
 use crate::errors::coded;
+use crate::llm::curl::curl_config_for;
+use crate::llm::local_endpoint::{
+    local_endpoint, normalize_base_url, LOCAL_CHAT_PATH, LOCAL_PROVIDER,
+};
+use crate::llm::verify::{checked_secret, wrong_target, Target, ANTHROPIC_VERSION};
 
 /// Same host as the verify URL, or chat goes somewhere key registration never promised.
 pub(super) const ANTHROPIC_CHAT_URL: &str = "https://api.anthropic.com/v1/messages";

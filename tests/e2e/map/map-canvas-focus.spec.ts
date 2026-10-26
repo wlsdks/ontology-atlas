@@ -29,6 +29,27 @@ test.describe("map canvas focus on the dogfood vault", () => {
         await expect(menu).toHaveCount(0);
         await expect.poll(() => activeTestId(page)).toBe("ontology-map-canvas");
     });
+    for (const action of ["back", "close"] as const) {
+        test(`full detail ${action} preserves the selected concept and its inspector`, async ({ page }) => {
+            await arrive(page, { width: 1512, height: 949 });
+            const domain = await pickDomain(page);
+            await page.mouse.click(domain.x, domain.y);
+            const panel = page.getByTestId("map-detail-panel");
+            await expect(panel).toBeVisible();
+            const selected = await panel.getAttribute("data-selected-node-id");
+            expect(selected).toBeTruthy();
+            const selectedAddress = new URL(page.url()).searchParams.get("p");
+            await page.getByTestId("map-detail-panel-open-full-detail").click();
+            const fullDetail = page.getByTestId("topology-full-detail-a1-positioner");
+            await expect(fullDetail).toBeVisible();
+            if (action === "back") await fullDetail.getByRole("button", { name: "← 지도", exact: true }).click();
+            else await page.getByTestId("full-detail-a1-close").click();
+            await expect(fullDetail).toHaveCount(0);
+            await expect(panel).toHaveAttribute("data-selected-node-id", selected!);
+            await expect.poll(() => new URL(page.url()).searchParams.get("p")).toBe(selectedAddress);
+            await expect(page.getByTestId("map-detail-panel-open-full-detail")).toBeFocused();
+        });
+    }
     test("MC-10: full detail, INDEX fold and INDEX search hand focus back", async ({ page }) => {
         await arrive(page, { width: 1512, height: 949 });
         // (f) Esc in a non-empty INDEX search clears it and keeps the caret there.

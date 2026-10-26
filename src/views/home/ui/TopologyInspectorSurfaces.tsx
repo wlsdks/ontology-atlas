@@ -7,7 +7,7 @@ import type { useTopologyCreateIntent } from "../model/authoring/use-topology-cr
 import type { useTopologyExplorationLenses } from "../model/map-canvas/use-topology-exploration-lenses";
 import type { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
 import type { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import type { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
+import type { useTopologyKeyboard } from "../model/keyboard/use-topology-keyboard";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
@@ -91,7 +91,7 @@ interface TopologyInspectorSurfacesProps {
     | "fullDetailA1Model"
   >;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect" | "handleDatasheetClose">;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "handleSelectImpactMode">;
+  topologyKeyboard: Pick<ReturnType<typeof useTopologyKeyboard>, "handleSelectImpactMode">;
   topologyAuthoring: Pick<
     ReturnType<typeof useTopologyAuthoring>,
     | "createNodeOpen"
@@ -119,7 +119,7 @@ interface TopologyInspectorSurfacesProps {
 export function TopologyInspectorSurfaces({
   grayAreaOpen, grayAreaAction,
   projectsError, heldProjectsError, renderProjects, impactMode, tEditProvenance, tSummaryFreshness,
-  topologyPreferences, topologyAuthoring, topologyKeyboardTour, topologyNavigationActions,
+  topologyPreferences, topologyAuthoring, topologyKeyboard, topologyNavigationActions,
   topologyInspectorState, topologyCanvasFocus, topologyVaultReadModel, topologySourceReadiness,
   topologySourceActions, topologyGraphProjection, topologyAgentOrchestration, homeWorkbenchController,
   acpRuntimeController, topologyRouteControls, topologyExplorationLenses, topologyCreateIntent
@@ -134,7 +134,7 @@ export function TopologyInspectorSurfaces({
     closeMeaningEditor, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
     edgePanelOpen, setSelectedEdge
   } = topologyAuthoring;
-  const { handleSelectImpactMode } = topologyKeyboardTour;
+  const { handleSelectImpactMode } = topologyKeyboard;
   const { handleClose, handleSelect, handleDatasheetClose } = topologyNavigationActions;
   const {
     nodePanelMounted, panelDatasheetModel, panelOpen, meaningEditorOpen, setNodePanelMounted, heldContextMenu,
@@ -575,8 +575,8 @@ export function TopologyInspectorSurfaces({
             ? () => handleProjectSourceAction(handleSelect)
             : undefined}
           onSelectNode={(id) => handleSelect(id)}
-          onClose={handleClose}
-          onBackToMap={handleClose}
+          onClose={() => setFullDetailSlug(null)}
+          onBackToMap={() => setFullDetailSlug(null)}
         />
       </Surface>
     ) : null}

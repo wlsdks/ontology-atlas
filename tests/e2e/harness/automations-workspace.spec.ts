@@ -71,6 +71,9 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await page.getByRole('button', { name: /Open.*folder/i }).first().click();
   await expect(page.getByTestId('app-nav-rail')).toBeVisible();
   await page.goto('/en/automations/?guides=off&kind=documents');
+  await page.getByTestId('automations-new').evaluate((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
+  });
   await page.getByTestId('automations-new').click();
   await page.getByTestId('library-rounds-rename').click();
   await page.getByTestId('library-rounds-name').fill('Cancelled document draft');
@@ -78,7 +81,7 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Day', exact: true }).click();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   // Do not wait for the old exit to finish before opening the next draft.
-  await page.getByTestId('automations-new').press('Enter');
+  await page.keyboard.press('Enter');
   const documents = page.getByTestId('library-rounds-sheet');
   await expect(documents).not.toContainText('Cancelled document draft');
   await expect(page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Hours', exact: true })).toHaveAttribute('aria-checked', 'true');
@@ -90,6 +93,9 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   // Escape first dismisses the nested menu; save the fresh default document schedule.
   await page.getByTestId('library-rounds-allow').click();
   await expect(documents).toHaveCount(0);
+  await page.getByTestId('automations-new').evaluate((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
+  });
   await page.getByTestId('automations-new').click();
   await expect(page.getByTestId('library-rounds-add-menu')).toHaveCount(0);
   await expect(page.getByTestId('library-rounds-rename')).not.toContainText('Cancelled document draft');
@@ -97,16 +103,22 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await expect(documents).toHaveCount(0);
 
   await page.getByTestId('automations-tab-ontology').click();
+  await page.getByTestId('automations-new').evaluate((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
+  });
   await page.getByTestId('automations-new').click();
   await page.getByTestId('ontology-automation-name').fill('Cancelled ontology draft');
   await page.keyboard.press('Escape');
-  await page.getByTestId('automations-new').press('Enter');
+  await page.keyboard.press('Enter');
   await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
   await page.getByTestId('ontology-automation-name').fill('Saved ontology review');
   await page.getByTestId('ontology-automation-focus').fill('Evidence links');
   await page.getByTestId('ontology-automation-allow').click();
   await expect(page.getByTestId('ontology-automation-sheet')).toHaveCount(0);
   await expect(page.getByTestId('automations-list')).toContainText('Saved ontology review');
+  await page.getByTestId('automations-new').evaluate((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
+  });
   await page.getByTestId('automations-new').click();
   await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
   await expect(page.getByTestId('ontology-automation-focus')).toHaveValue('');

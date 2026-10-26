@@ -276,8 +276,6 @@ export function TopologyCommandChrome({
             // Lane popovers clamp to this box, which already reserves INDEX, the inspector and the
             // dock seam.
             data-popover-boundary="free-map"
-            // `GuidedTourOverlay` keeps its card clear of the toolbar.
-            data-tour-keep-clear="map-toolbar"
             data-agent-dock-adjacent-rail="true"
             data-right-inspector-reserve={
               inspectorOwnsRightRail ? "recenter-in-remaining-map" : undefined

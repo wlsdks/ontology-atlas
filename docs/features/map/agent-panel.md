@@ -8,6 +8,15 @@ routes: [/topology]
 
 # Agent panel
 
+Ordinary unsent chat text survives leaving Map and returning to the same opened
+folder. Recovery is memory-only and keyed by the actual folder handle; another
+folder with the same name does not inherit it. Sending or clearing removes the
+recoverable text. Prepared evidence requests remain within their originating
+review context. Restoring text never sends it. Opening the dock from the map Agent button records
+that button as the return target, including pointer activation on macOS WebKit.
+Closing the dock restores focus there so Enter can reopen it without navigating
+from the start of the map.
+
 #### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
 - **Meaning, findings/history, and conversation share one context dock.** The
   map toolbar and selected concept expose Meaning review. It explains the

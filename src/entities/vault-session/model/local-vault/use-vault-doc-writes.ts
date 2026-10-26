@@ -398,15 +398,18 @@ export function useVaultDocWrites(
     }
     const vaultHandle = live.handle;
     await requireWritePermission(vaultHandle);
-    const { markdownCreated, agentConfigCreated, created, skipped } = await writeVaultStarter(
+    const { markdownCreated, agentConfigCreated, created, skipped, firstFailure } = await writeVaultStarter(
       vaultHandle,
       starterLocale,
       shape,
-      live.fileHandles,
+      (path) => {
+        if (stateRef.current.handle === vaultHandle && path.endsWith('.md')) markSelfWrite(path.slice(0, -3));
+      },
     );
     await reloadIfOpen(vaultHandle);
+    if (firstFailure) throw firstFailure;
     return { markdownCreated, agentConfigCreated, created, skipped };
-  }, [openState, reloadIfOpen, requireWritePermission]);
+  }, [openState, reloadIfOpen, requireWritePermission, stateRef, markSelfWrite]);
 
   /**
    * The write the "connect" button performs: only that client's file. Omitting `client` (the

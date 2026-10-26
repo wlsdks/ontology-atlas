@@ -1,5 +1,4 @@
 import type { useTopologyAuthoring } from "../model/authoring/use-topology-authoring";
-import type { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
 
@@ -7,8 +6,6 @@ import type { useTopologyRouteControls } from "../model/route-state/use-topology
 const MountedGlobalSearch = dynamic(() => import("@/widgets/global-search").then(m => m.MountedGlobalSearch), { ssr: false });
 
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import { GuidedTourOverlay } from "@/features/guided-tour";
-import { readDrawnMapMarks } from "@/widgets/ontology-map";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
 import dynamic from "next/dynamic";
 const ShortcutSheet = dynamic(
@@ -20,20 +17,6 @@ const DocsQuickDrawer = dynamic(
   { ssr: false },
 );
 
-/** What the tour card must leave visible per step. Module scope for a stable identity. */
-function readTourAvoidRects(stepId: string) {
-  if (stepId === "relations") {
-    return readDrawnMapMarks((id) => id.startsWith("domain:") || id.startsWith("project:"));
-  }
-  if (stepId === "datasheet") {
-    const selected = document
-      .querySelector('[data-testid="map-detail-panel"]')
-      ?.getAttribute("data-selected-node-id");
-    return selected ? readDrawnMapMarks((id) => id === selected) : [];
-  }
-  return [];
-}
-
 interface TopologyUtilityOverlaysProps {
   ontologySearchOpen: boolean;
   setOntologySearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -41,7 +24,6 @@ interface TopologyUtilityOverlaysProps {
   setShortcutsOpen: React.Dispatch<React.SetStateAction<boolean>>;
   docsDrawerOpen: boolean;
   setDocsDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "tour" | "tourAnchorRef" | "tourAnchorNodeId" | "activateTourAnchor">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "selectedProject">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleSelect">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "createNodeOpen">;
@@ -50,12 +32,11 @@ interface TopologyUtilityOverlaysProps {
 export function TopologyUtilityOverlays({
   ontologySearchOpen, setOntologySearchOpen, shortcutsOpen, setShortcutsOpen, docsDrawerOpen,
   setDocsDrawerOpen, topologyAuthoring, topologyNavigationActions, topologyRouteControls,
-  topologyKeyboardTour
+
 }: TopologyUtilityOverlaysProps) {
   const { createNodeOpen } = topologyAuthoring;
   const { handleSelect } = topologyNavigationActions;
   const { selectedProject } = topologyRouteControls;
-  const { tour, tourAnchorRef, tourAnchorNodeId, activateTourAnchor } = topologyKeyboardTour;
 
   return (<>
     <MountedGlobalSearch
@@ -66,8 +47,8 @@ export function TopologyUtilityOverlays({
         if (createNodeOpen && next) return;
         setOntologySearchOpen(next);
       }}
-      onSelectNode={(node) => handleSelect(node.id)}
-      onSelectProject={(project) => handleSelect(project.slug)}
+      onSelectNode={(node) => handleSelect(node.id, { exitPath: 'when-complete' })}
+      onSelectProject={(project) => handleSelect(project.slug, { exitPath: 'when-complete' })}
     />
     <ShortcutSheet
       open={!createNodeOpen && shortcutsOpen}
@@ -86,12 +67,6 @@ export function TopologyUtilityOverlays({
           }
           : null
       }
-    />
-    <GuidedTourOverlay
-      tour={tour}
-      canvasAnchorRef={tourAnchorRef}
-      onActivateAnchor={tourAnchorNodeId ? activateTourAnchor : undefined}
-      readAvoidRects={readTourAvoidRects}
     />
   </>);
 }

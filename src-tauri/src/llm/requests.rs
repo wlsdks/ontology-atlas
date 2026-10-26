@@ -18,9 +18,9 @@ struct Entries {
     requests: HashMap<String, Entry>,
 }
 #[derive(Default)]
-pub(super) struct Registry(Mutex<Entries>);
+pub(crate) struct Registry(Mutex<Entries>);
 
-pub(super) struct Request {
+pub(crate) struct Request {
     registry: Arc<Registry>,
     id: String,
     pub receiver: oneshot::Receiver<()>,
@@ -57,7 +57,7 @@ impl Registry {
         );
         Ok(id)
     }
-    pub(super) fn claim(self: &Arc<Self>, owner: &str, id: &str) -> Result<Request, String> {
+    pub(crate) fn claim(self: &Arc<Self>, owner: &str, id: &str) -> Result<Request, String> {
         let mut entries = self.0.lock().unwrap();
         let entry = entries
             .requests
@@ -109,7 +109,7 @@ impl Registry {
         });
     }
 }
-pub(super) fn registry() -> &'static Arc<Registry> {
+pub(crate) fn registry() -> &'static Arc<Registry> {
     static REGISTRY: OnceLock<Arc<Registry>> = OnceLock::new();
     REGISTRY.get_or_init(|| Arc::new(Registry::default()))
 }

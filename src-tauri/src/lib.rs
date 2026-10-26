@@ -8,6 +8,7 @@ mod acp_session;
 mod agent_setup;
 mod analysis_archive;
 mod app_shell;
+mod audit_read;
 mod command_output;
 mod connector_secrets;
 mod connectors;
@@ -23,7 +24,6 @@ mod library;
 mod llm;
 mod llm_audit;
 mod local_construction;
-mod audit_read;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
@@ -57,7 +57,9 @@ pub(crate) use vault::scope::{
     ensure_inside_canonical, resolve_directory_target_inside, resolve_write_target_inside,
 };
 use vault::watch::VaultWatcherState;
-use webview_verify::{apply_verify_window_size, isolate_verify_webview_storage, WEBVIEW_VERIFY_ENV};
+use webview_verify::{
+    apply_verify_window_size, isolate_verify_webview_storage, WEBVIEW_VERIFY_ENV,
+};
 pub(crate) use webview_verify::{js_string_literal, write_verify_line};
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -154,8 +156,9 @@ pub fn run() {
             // boundary on, choose where grants persist, and re-grant the app's own
             // vault container plus every vault a prior launch recorded.
             if let Ok(store) = app.path().app_data_dir() {
-                let container =
-                    std::env::var("HOME").ok().map(|home| default_vault_parent_dir(&home));
+                let container = std::env::var("HOME")
+                    .ok()
+                    .map(|home| default_vault_parent_dir(&home));
                 vault_grants::initialize(store.join("granted-vault-roots.json"), container);
             }
 
@@ -189,7 +192,11 @@ pub fn run() {
             // The payload contract asserts this line.
             write_verify_line(format!(
                 "[ontology-atlas-window-verify] state_plugin={}",
-                if verify_webview { "disabled" } else { "enabled" }
+                if verify_webview {
+                    "disabled"
+                } else {
+                    "enabled"
+                }
             ));
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
                 // Its presence at setup separates a restored window from the config default.
@@ -208,8 +215,7 @@ pub fn run() {
 
             #[cfg(target_os = "macos")]
             if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
-                let diagnostic_default_pacing =
-                    map_entry_diagnostic::default_pacing_from_env();
+                let diagnostic_default_pacing = map_entry_diagnostic::default_pacing_from_env();
                 map_entry_diagnostic::write_pacing_metadata(diagnostic_default_pacing);
                 if !diagnostic_default_pacing {
                     disable_webview_frame_rate_cap(&window);
@@ -294,6 +300,9 @@ pub fn run() {
             jev::jev_secret_clear,
             jev::jev_judge,
             llm::verify::secret_verify,
+            llm::verify::source_model_verify,
+            llm::chat::source::source_model_capacity,
+            llm::chat::source::source_briefing_chat,
             llm::chat::llm_chat,
             llm::requests::llm_chat_prepare,
             llm::requests::llm_chat_cancel,
@@ -303,6 +312,14 @@ pub fn run() {
             git::remote::git_set_remote,
             git::snapshot::git_snapshot,
             git::commits::git_history,
+            git::briefing::git_change_briefing,
+            git::briefing::git_change_briefing_patch,
+            git::briefing::git_source_briefing,
+            git::briefing::git_source_briefing_patch,
+            git::briefing::prs::git_briefing_repositories,
+            git::briefing::prs::git_briefing_pull_descriptions,
+            git::briefing::prs::cache::git_briefing_saved_pull_descriptions,
+            git::briefing::prs::cache::git_briefing_clear_saved_pulls,
             git::history::vault_node_revisions,
             git::history::vault_node_revision_content,
             git::evidence::git_paths_last_change,
@@ -335,7 +352,11 @@ pub fn run() {
                 apply_verify_window_size(app_handle);
                 schedule_show_main_window(app_handle.clone());
             }
-            RunEvent::WindowEvent { label, event: tauri::WindowEvent::Destroyed, .. } => {
+            RunEvent::WindowEvent {
+                label,
+                event: tauri::WindowEvent::Destroyed,
+                ..
+            } => {
                 llm::requests::cancel_owner(Some(&label));
                 audit_read::cancel_owner(Some(&label));
             }

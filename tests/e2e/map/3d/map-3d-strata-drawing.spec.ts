@@ -391,7 +391,6 @@ test(`Strata ${legend.width}x${legend.height} — the tier names land on nothing
       }));
       const chrome = [
         "topology-fit-control",
-        "topology-tour-button",
         "topology-shortcuts-help-button",
         "topology-replay-growth",
         "topology-index-panel",

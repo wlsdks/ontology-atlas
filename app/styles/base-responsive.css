@@ -348,9 +348,6 @@
      * Keyframes are opacity-only, so time is restored; the cut-out ring's
      * `transition-[top,left,width,height]` stays cut because it is a translation axis.
      */
-    .guided-tour-card-in {
-      animation-duration: var(--topology-tour-transition-ms) !important;
-    }
 
     /*
      * Toast (sonner) — **not turning it off, but reducing the shake**.

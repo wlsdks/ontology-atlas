@@ -24,6 +24,7 @@ describe("retired Skills product surface", () => {
       "agents",
       // MCP reopened the seven-cap decision (91) but did not reinstate the retired surface, and the two
       // assertions below still say so.
+      "changes",
       "git",
     ]);
     expect(resolveActiveNavDestination("/skills")).toBeNull();
@@ -44,11 +45,7 @@ describe("retired Skills product surface", () => {
       expect(messages).not.toHaveProperty("agentSkills");
       expect(messages.navRail).not.toHaveProperty("skills");
       expect(messages.navRail).not.toHaveProperty("studio");
-      expect(messages.guidedTour.steps).not.toHaveProperty("skillsWhat");
-      expect(messages.guidedTour.steps).not.toHaveProperty("skillsOpen");
       expect(messages.searchWidgets.shortcuts.rows).not.toHaveProperty("goTo_skills");
-      expect(messages.guidedTour.steps).not.toHaveProperty("studioWhat");
-      expect(messages.guidedTour.steps).not.toHaveProperty("studioCard");
       expect(messages.searchWidgets.shortcuts.rows).not.toHaveProperty("goTo_studio");
 
       expect(messages).toHaveProperty("agents");

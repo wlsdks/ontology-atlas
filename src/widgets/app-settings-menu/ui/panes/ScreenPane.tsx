@@ -2,24 +2,20 @@
 
 import { useTranslations } from 'next-intl';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { useGuideAutoStart, useGuideReplay, writeGuideAutoStart } from '@/features/guided-tour';
+import { useGuideAutoStart, writeGuideAutoStart } from '@/shared/lib/preferences/guide-auto-start';
 import { useAudiencePlain } from '@/shared/lib/preferences/audience-preference';
-import { cn } from '@/shared/lib/cn';
 import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { TEXT_SIZES, useTextSize, writeTextSize } from '@/shared/lib/preferences/text-size';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { Chip } from '@/shared/ui/controls/controls';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { GlyphSetPicker } from '../AppearancePickers';
 import {
-  DETAIL_TOGGLE_CHIP,
   SegmentSwitch,
   SettingsGroup,
   SettingsRow,
 } from '../settings-primitives';
 
 export function ScreenPane({
-  onClose,
   onLocaleSwitchStart,
 }: {
   onClose: (returnFocus: boolean) => void;
@@ -29,7 +25,6 @@ export function ScreenPane({
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   const textSize = useTextSize();
   const reducedMotion = usePrefersReducedMotion();
-  const replayGuide = useGuideReplay();
   const guideAutoStart = useGuideAutoStart();
   return (
     <SettingsGroup testId="app-settings-screen-group">
@@ -103,20 +98,6 @@ export function ScreenPane({
                 { value: false, label: t('guidesOff') },
               ]}
             />
-            {replayGuide ? (
-              <Chip
-                size="lg"
-                tone="secondary"
-                data-testid="app-settings-replay-guide-button"
-                onClick={() => {
-                  onClose(false);
-                  replayGuide();
-                }}
-                className={cn(DETAIL_TOGGLE_CHIP, 'min-h-9')}
-              >
-                {t('guidesReplay')}
-              </Chip>
-            ) : null}
           </>
         }
       />

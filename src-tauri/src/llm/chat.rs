@@ -2,19 +2,20 @@
 // bodies, parses responses and owns the loop, one command call per round trip.
 
 mod request;
+pub(crate) mod source;
 
 use super::curl::{curl_argv_with_timeout, interpret_curl_output};
-use super::{AUDIT_BLOCKED_PREFIX, host_of};
 use super::http_output;
 use super::local_endpoint::{
-    LOCAL_DEFAULT_BASE_URL, LOCAL_PROVIDER, is_loopback_authority, normalize_base_url,
+    is_loopback_authority, normalize_base_url, LOCAL_DEFAULT_BASE_URL, LOCAL_PROVIDER,
 };
 use super::requests;
-use super::verify::{AUTH_DENIED_STATUSES, Target, wrong_target};
+use super::verify::{wrong_target, Target, AUTH_DENIED_STATUSES};
+use super::{host_of, AUDIT_BLOCKED_PREFIX};
 use crate::errors::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
 use crate::secrets;
-use request::{ChatRequest, chat_request, curl_chat_config, model_placement, validate_model_id};
+use request::{chat_request, curl_chat_config, model_placement, validate_model_id, ChatRequest};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
@@ -57,7 +58,11 @@ pub struct AuditScopeInput {
 }
 
 fn local_chat_timeout(construction: bool) -> &'static str {
-    if construction { CHAT_TIMEOUT_SECONDS } else { LOCAL_CHAT_TIMEOUT_SECONDS }
+    if construction {
+        CHAT_TIMEOUT_SECONDS
+    } else {
+        LOCAL_CHAT_TIMEOUT_SECONDS
+    }
 }
 
 fn send_chat_cancellable(
@@ -67,13 +72,35 @@ fn send_chat_cancellable(
 ) -> Result<ChatEcho, String> {
     send_chat_with_policy(request, timeout, cancellation, false)
 }
-fn construction_transport_policy(command: &mut Command, request: &ChatRequest) -> Result<(), String> {
+fn construction_transport_policy(
+    command: &mut Command,
+    request: &ChatRequest,
+) -> Result<(), String> {
     let endpoint = normalize_base_url(&request.url)?;
-    let authority = endpoint.split_once("://").ok_or_else(|| coded("endpoint-host-missing", ""))?.1.split('/').next().unwrap_or("");
-    if !is_loopback_authority(authority) { return Err(coded("construction-loopback-required", "")); }
-    if request.body.len() > 64 * 1024 { return Err(coded("construction-request-limit", "")); }
+    let authority = endpoint
+        .split_once("://")
+        .ok_or_else(|| coded("endpoint-host-missing", ""))?
+        .1
+        .split('/')
+        .next()
+        .unwrap_or("");
+    if !is_loopback_authority(authority) {
+        return Err(coded("construction-loopback-required", ""));
+    }
+    if request.body.len() > 64 * 1024 {
+        return Err(coded("construction-request-limit", ""));
+    }
     command.args(["--noproxy", "*"]);
-    for key in ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"] {
+    for key in [
+        "http_proxy",
+        "HTTP_PROXY",
+        "https_proxy",
+        "HTTPS_PROXY",
+        "all_proxy",
+        "ALL_PROXY",
+        "no_proxy",
+        "NO_PROXY",
+    ] {
         command.env_remove(key);
     }
     Ok(())
@@ -86,7 +113,9 @@ fn send_chat_with_policy(
 ) -> Result<ChatEcho, String> {
     let mut command = Command::new("curl");
     command.args(curl_argv_with_timeout(timeout));
-    if construction { construction_transport_policy(&mut command, request)?; }
+    if construction {
+        construction_transport_policy(&mut command, request)?;
+    }
     let config = curl_chat_config(request);
     let output = tauri::async_runtime::block_on(http_output::capture_cancelled(
         command,
@@ -204,7 +233,9 @@ pub async fn llm_chat(
     source_construction: Option<bool>,
 ) -> Result<LlmChatEcho, String> {
     let construction = source_construction.unwrap_or(false);
-    if construction && provider != LOCAL_PROVIDER { return Err(wrong_target(&provider)); }
+    if construction && provider != LOCAL_PROVIDER {
+        return Err(wrong_target(&provider));
+    }
     let mut owned = requests::registry().claim(window.label(), &request_id)?;
     tauri::async_runtime::spawn_blocking(move || {
         let vault_dir = crate::git::validate_vault_dir(&vault_path)?;
@@ -221,7 +252,12 @@ pub async fn llm_chat(
                 &body,
                 scope,
                 |request| {
-                    send_chat_with_policy(request, local_chat_timeout(construction), &mut owned.receiver, construction)
+                    send_chat_with_policy(
+                        request,
+                        local_chat_timeout(construction),
+                        &mut owned.receiver,
+                        construction,
+                    )
                 },
             );
         }

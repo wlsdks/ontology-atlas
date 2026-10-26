@@ -1,6 +1,5 @@
 "use client";
 import { useTopologyAppearanceEffects } from "./use-topology-appearance-effects";
-import { useTopologyTourAnchor } from "./use-topology-tour-anchor";
 import { useTopologyFrameLoop } from "../frame-loop/use-topology-frame-loop";
 import { useTopologyObserverBindings } from "./use-topology-observer-bindings";
 import { useTopologyOverviewNavigation } from "../camera/use-topology-overview-navigation";
@@ -81,8 +80,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster,
     onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null,
     visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null,
-    trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null,
-    tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
+    trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL,
+    glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null,
     expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs,
     onWalkDeadEnd = null, domeEvidence, dialLabels, evidenceStates, impactLens, onFlatDialChange, onHiddenDependenciesChange,
     relationCaptions, reviewQuestionIds, flatRingMemory = null, loadProgress = null, placingTierRead = false,
@@ -90,7 +89,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const {
     getRealmCaption, getClusterBarLabels, realmTransitionRef, realmDataRef, realmActiveHandedOffRef,
     wardingFitRef, prevRealmRootIdRef, realmEnterTargetRef, onEnterRealmRef, realmEnterButtonElRef,
-    tourAnchorElRef, realmParallaxDepth2Ref, realmParallaxDepth3Ref, prevCameraCenterRef, realmParallaxRef,
+    realmParallaxDepth2Ref, realmParallaxDepth3Ref, prevCameraCenterRef, realmParallaxRef,
     realmTierKindsRef, realmExpandChainRef, clusterBarLabelsRef,
   } = useTopologyRealmState({
     realmCaption,
@@ -102,7 +101,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     previewAlphaRef, previewCommitRef, previewTransitionRef, glyphStyleRef, canvasBackgroundRef,
     footprintPrefRef, footprintInkRef, footprintStepColorRef, footprintTrailLenRef, footprintAppearAtRef,
     ambientSleepDelayRef, visitedTrailRef, visitedTrailSetRef, drawnTrailLensRef, trailLensPropRef,
-    trailBrushPropRef, panelHoverPropRef, agentFocusNodeIdRef, tourAnchorNodeIdRef, spotlightIdsRef,
+    trailBrushPropRef, panelHoverPropRef, agentFocusNodeIdRef, spotlightIdsRef,
     mapLensKindRef, pathEdgeIdsRef, spotlightRampRef, spotlightDashOffsetRef, trailLensRampRef,
     trailLensOpenedAtRef, onZoomTierChangeRef, onDrawnCountChangeRef, drawnNodeCountRef, lastZoomTierRef,
     tierRevealRef,
@@ -119,7 +118,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     trailHoverNodeIdRef,
     panelHoverNodeIdRef,
     agentFocusNodeId,
-    tourAnchorNodeId,
     spotlightIds,
     mapLensKind,
     pathEdgeIds,
@@ -196,10 +194,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     reducedMotionRef,
     cameraTweenRef,
     cameraRef,
-  });
-  useTopologyTourAnchor({
-    tourAnchorRef, tourAnchorNodeId, tourAnchorElRef, tourAnchorNodeIdRef,
-    worldRef, viewportRef, cameraRef, domeRuntimeRef, lastActiveMsRef,
   });
   useTopologyObserverBindings({
         onGrowthReplayingChangeRef,
@@ -720,8 +714,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       onEnterRealmRef,
       realmEnterTargetRef,
       domeRuntimeRef,
-      tourAnchorElRef,
-      tourAnchorNodeIdRef,
       getRealmCaption,
     },
     revealFrameStage: {
@@ -855,7 +847,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       mapArrangementRef,
       domeTierRaisedKindRef,
       drawnTrailLensRef,
-      tourAnchorNodeIdRef,
       drawnNodeCountRef,
       onDrawnCountChangeRef,
       domeTierAnchorsSentRef,

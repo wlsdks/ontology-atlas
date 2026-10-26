@@ -39,7 +39,7 @@ import { worldToScreen } from "../camera/topology-camera-math";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "../frame-draw/topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "../loop/topology-loop-contract";
 import { dialFrameSummary } from "../../dial/frame/frame";
-import { radiusForKind, type TopologyWorld, type WorldEdge } from "../world/topology-world";
+import { type TopologyWorld, type WorldEdge } from "../world/topology-world";
 
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
 const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
@@ -120,7 +120,6 @@ interface Dependencies {
   mapArrangementRef: RefObject<MapArrangement>;
   domeTierRaisedKindRef: RefObject<DomeViewKind | null>;
   drawnTrailLensRef: RefObject<boolean>;
-  tourAnchorNodeIdRef: RefObject<string | null>;
   drawnNodeCountRef: RefObject<number>;
   onDrawnCountChangeRef: RefObject<((drawn: number) => void) | undefined>;
   domeTierAnchorsSentRef: RefObject<TierNameAnchor[] | null>;
@@ -195,7 +194,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   mapArrangementRef,
   domeTierRaisedKindRef,
   drawnTrailLensRef,
-  tourAnchorNodeIdRef,
   drawnNodeCountRef,
   onDrawnCountChangeRef,
   domeTierAnchorsSentRef,
@@ -498,24 +496,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
         // Record which lens state this frame drew; the idle gate compares
         // against it next frame to decide whether the lens changed.
         drawnTrailLensRef.current = trailLensActive;
-        // Spotlight ring is drawn by the engine with the same `worldToScreen` as the node so they align;
-        // the scrim cutout stays with the GuidedTourOverlay.
-        {
-            const anchorId = tourAnchorNodeIdRef.current;
-            const node = anchorId ? world.nodeById.get(anchorId) : undefined;
-            if (node) {
-                const dFrame = domeRuntimeRef.current?.frame.get(node.id);
-                const rr = radiusForKind(node.kind, tokens) * node.magnitudeScale * (dFrame?.s ?? 1) * camera.scale.value;
-                const s = worldToScreen(camera, width, height, node.x + (dFrame?.dx ?? 0), node.y + (dFrame?.dy ?? 0));
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, rr + 10, 0, Math.PI * 2);
-                ctx.strokeStyle = tokens.selectionRingIndigo;
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-                ctx.restore();
-            }
-        }
         // What the frame actually painted, reported only on change — the readout is
         // an instrument, and an instrument that restates a rule instead of the
         // screen is the defect this replaces.
