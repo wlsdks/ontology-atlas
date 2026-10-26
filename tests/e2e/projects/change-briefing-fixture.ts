@@ -35,6 +35,7 @@ export async function installBriefingRuntime(page: Page) {
         if (probe.mode === 'pr-empty') localStorage.removeItem('atlas-fixture-pr-copies');
         if (probe.mode === 'pr-unavailable' || probe.mode === 'pr-empty') return { status: probe.mode === 'pr-empty' ? 'measured' : 'unavailable', repository: 'owner/repo', unchecked: probe.mode === 'pr-empty' ? 0 : 2, uncheckedCommits: probe.mode === 'pr-empty' ? [] : ['c'.repeat(40), 'd'.repeat(40)], unlinked: 0, descriptions: [] };
         const result = { status: 'measured', saved: { status: probe.mode === 'cache-save-failed' ? 'unavailable' : 'saved', saved: 1, unsaved: 0, evicted: 0 }, repository: 'owner/repo', unchecked: 0, uncheckedCommits: [], unlinked: 0, descriptions: [{ number: 2925, title: 'Keep map navigation readable', body: 'Changes: keep return controls visible.\n\nWhy: panels hid navigation.\n\nChecks: 131 author-reported tests passed.\n\nLimits: first frames remain 53 ms and 57 ms against a 50 ms bar.', digest: 'e'.repeat(64), integration: 'c'.repeat(40), url: 'https://github.com/owner/repo/pull/2925', updatedAt: '2026-10-25T00:00:00Z', fetchedAt: '2026-10-25T01:00:00Z', copyKind: 'fresh' }] };
+        if (probe.mode === 'long-original') result.descriptions[0].body += '\n\n' + Array.from({ length: 160 }, (_, index) => `Original section ${index}: inspect the recorded change before returning.`).join('\n\n');
         if (probe.mode !== 'cache-save-failed') localStorage.setItem('atlas-fixture-pr-copies', JSON.stringify(result));
         return result;
       }
