@@ -87,14 +87,13 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame });
 
     const { view3dRef, trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
-    const { animatedBgRef, tourAnchorNodeIdRef } = configuration.presentationFrameStage;
+    const { animatedBgRef } = configuration.presentationFrameStage;
     const flatAndPlain = () =>
       !view3dRef.current
             &&
       neuralRampRef.current <= 0.001 &&
       (domeRuntimeRef.current?.rampClock ?? 0) <= 0 &&
       animatedBgRef.current === null &&
-      tourAnchorNodeIdRef.current === null &&
       !(trailLensPropRef.current?.current ?? false);
     const still = createStillFrame(canvas, ctx);
     let gateActiveMs = Number.NaN;

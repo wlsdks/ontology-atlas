@@ -192,6 +192,28 @@ describe('useLocalVaultInternal: the starter files of a created vault are part o
     expect(disk.files.get('project.md')).toMatch(/\p{Script=Hangul}/u);
   });
 
+  it('preserves a starter path created externally after the folder was read', async () => {
+    const { hook } = await mountHook();
+    await act(async () => { await hook.result.current.openRecent(record()); });
+    disk.files.set('elements/example-element.md', '# Newly written outside Atlas\n');
+    await act(async () => { await hook.result.current.scaffoldOntology('en'); });
+    expect(disk.files.get('elements/example-element.md')).toBe('# Newly written outside Atlas\n');
+    expect(hook.result.current.consumeSelfWrittenSlugs(new Set(['elements/example-element']))).toEqual(new Set());
+  });
+
+  it('reports only its newly saved starter files as app-owned writes', async () => {
+    disk.files.set('project.md', '# Existing work\n');
+    const { hook } = await mountHook();
+    await act(async () => { await hook.result.current.openRecent(record()); });
+    await act(async () => { await hook.result.current.scaffoldOntology('en'); });
+    expect(disk.files.get('project.md')).toBe('# Existing work\n');
+    const observed = new Set(['project', 'README', 'AGENTS', 'CLAUDE', 'wiki/_template', 'external']);
+    expect(hook.result.current.consumeSelfWrittenSlugs(observed)).toEqual(
+      new Set(['README', 'AGENTS', 'CLAUDE', 'wiki/_template']),
+    );
+    expect(hook.result.current.consumeSelfWrittenSlugs(observed)).toEqual(new Set());
+  });
+
   it('writes nothing to a folder that already has documents', async () => {
     disk.files.set('notes.md', '# Notes\n');
     const { hook } = await mountHook();

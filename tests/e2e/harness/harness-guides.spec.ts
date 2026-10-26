@@ -54,6 +54,7 @@ test.describe("harness guides workbench", () => {
   test("a file on one side only is listed once, and the folder lacking it counts it as missing", async ({ page }) => {
     await openGuides(page, { source: ONE_SIDED_BRIEF_SOURCE, locale: "en" });
     const list = page.getByTestId("harness-guide-list-pane");
+    await page.getByTestId("harness-guide-row-claude-agents").locator("button[aria-expanded]").click();
     await expect(list.locator("[data-guide-item]", { hasText: "scout.md" })).toHaveCount(1);
     const holding = page.getByTestId("harness-guide-row-claude-agents").locator("[data-guide-item]");
     await expect(holding.first()).toContainText("1 file has no twin");
@@ -73,13 +74,25 @@ test.describe("harness guides workbench", () => {
 
   test("the view opens on a file that differs from its twin, past a folder of one-sided files", async ({ page }) => {
     await openGuides(page, { source: CODEX_ONLY_BRIEF_SOURCE });
-    await expect(
-      page.getByTestId("harness-guide-row-agents-agents").locator("[data-guide-item]", { hasText: "lookout.md" }),
-    ).toBeVisible();
+    const other = page.getByTestId("harness-guide-row-agents-agents");
+    const toggle = other.locator("button[aria-expanded]");
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+    await expect(other.locator("[data-guide-item]", { hasText: "lookout.md" })).toBeHidden();
+    await expect(page.getByTestId("harness-guide-list-pane").locator('button[aria-expanded="true"]')).toHaveCount(1);
     const diff = page.getByTestId("harness-drift-diff");
     await expect(diff).toContainText("Claude Code");
     await expect(diff).toContainText("Codex");
     await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await other.locator("[data-guide-item]").first().click();
+    await page.keyboard.press("ArrowRight");
+    const file = other.locator("[data-guide-item]", { hasText: "lookout.md" });
+    await expect(file).toBeFocused();
+    await expect(file).toHaveAttribute("aria-pressed", "true");
+    await page.getByTestId("harness-guide-list-pane").locator('[data-guide-item="AGENTS.md"]').click();
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    await expect(file).toBeVisible();
   });
 
   test("a line both files share sits on one y, and a line only one file has faces an empty cell", async ({ page }) => {
@@ -139,6 +152,8 @@ test.describe("harness guides workbench", () => {
 
   test("the list and the detail each scroll on their own while the page stays put", async ({ page }) => {
     await openGuides(page, { source: CROWDED_SOURCE });
+    const skills = page.getByTestId("harness-guide-row-claude-skills").locator("button[aria-expanded]");
+    if (await skills.getAttribute("aria-expanded") === "false") await skills.click();
     await expect(claudeHookRow(page)).toContainText("연결됨");
     await claudeHookRow(page).click();
     const pane = page.getByTestId("harness-guide-detail-pane");

@@ -1,8 +1,8 @@
 #[cfg(unix)]
 mod cancellation;
 mod construction_probe;
-use super::*;
 use super::request::ANTHROPIC_CHAT_URL;
+use super::*;
 use crate::llm::tests::temp_vault;
 use std::cell::Cell;
 use std::fs;
@@ -16,20 +16,49 @@ fn construction_uses_a_longer_bound_without_changing_the_local_audit_timeout() {
 
 #[test]
 fn construction_transport_refuses_remote_https_and_large_payloads() {
-    let remote = ChatRequest { url: "https://example.com/v1/chat/completions".into(), headers: vec![], body: "marker".into() };
+    let remote = ChatRequest {
+        url: "https://example.com/v1/chat/completions".into(),
+        headers: vec![],
+        body: "marker".into(),
+    };
     assert!(construction_transport_policy(&mut Command::new("curl"), &remote).is_err());
-    let oversized = ChatRequest { url: "http://127.0.0.1:11434/v1/chat/completions".into(), headers: vec![], body: "x".repeat(64 * 1024 + 1) };
+    let oversized = ChatRequest {
+        url: "http://127.0.0.1:11434/v1/chat/completions".into(),
+        headers: vec![],
+        body: "x".repeat(64 * 1024 + 1),
+    };
     assert!(construction_transport_policy(&mut Command::new("curl"), &oversized).is_err());
 }
 
 #[test]
 fn construction_transport_removes_every_inherited_proxy_override() {
-    let request = ChatRequest { url: "http://127.0.0.1:11434/v1/chat/completions".into(), headers: vec![], body: "HARMLESS_SOURCE_MARKER".into() };
+    let request = ChatRequest {
+        url: "http://127.0.0.1:11434/v1/chat/completions".into(),
+        headers: vec![],
+        body: "HARMLESS_SOURCE_MARKER".into(),
+    };
     let mut command = Command::new("curl");
-    for key in ["http_proxy", "HTTP_PROXY", "https_proxy", "HTTPS_PROXY", "all_proxy", "ALL_PROXY", "no_proxy", "NO_PROXY"] { command.env(key, "untrusted-proxy-value"); }
+    for key in [
+        "http_proxy",
+        "HTTP_PROXY",
+        "https_proxy",
+        "HTTPS_PROXY",
+        "all_proxy",
+        "ALL_PROXY",
+        "no_proxy",
+        "NO_PROXY",
+    ] {
+        command.env(key, "untrusted-proxy-value");
+    }
     construction_transport_policy(&mut command, &request).unwrap();
     assert!(command.get_envs().all(|(_, value)| value.is_none()));
-    assert_eq!(command.get_args().map(|arg| arg.to_string_lossy().into_owned()).collect::<Vec<_>>(), ["--noproxy", "*"]);
+    assert_eq!(
+        command
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect::<Vec<_>>(),
+        ["--noproxy", "*"]
+    );
 }
 
 #[test]

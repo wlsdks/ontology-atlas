@@ -197,7 +197,7 @@ describe("brand fill × ink pairing — full source census", () => {
      * literals bounds it; open the place before raising the ceiling.
      */
     const { inklessFills } = scan();
-    expect(inklessFills, "brand-fill literals without ink grew — check that each spot is really a fill with no text").toBeLessThanOrEqual(16);
+    expect(inklessFills, "brand-fill literals without ink grew — check that each spot is really a fill with no text").toBeLessThanOrEqual(14);
   });
 
   it("when the blind spot shrinks the ceiling comes down too — slack is not left free", () => {
@@ -208,8 +208,8 @@ describe("brand fill × ink pairing — full source census", () => {
     const { inklessFills } = scan();
     expect(
       inklessFills,
-      "brand-fill literals without ink shrank — lower the ceiling of 15 above too.",
-    ).toBeGreaterThanOrEqual(15);
+      "brand-fill literals without ink shrank — lower the ceiling of 14 above too.",
+    ).toBeGreaterThanOrEqual(14);
   });
 
   it("the detector catches the planted violation and lets the proper pair go", () => {

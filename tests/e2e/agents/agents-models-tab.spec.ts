@@ -103,6 +103,25 @@ for (const width of [1280, 1512]) {
     // The flows below are width-independent; they run once, at the narrower desk width.
     if (width !== 1280) return;
 
+    test("runner editors accept immediate typing and Escape returns to their opener without a request", async ({ page }) => {
+      await openModelsTab(page);
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+      const before = await auditCount(page);
+      for (const runner of ["ollama", "lmstudio", "llamacpp", "custom"]) {
+        const opener = page.getByTestId(`ai-register-local-${runner}`);
+        await opener.click();
+        // Send the next key during the opening transition, without clicking the address.
+        await page.keyboard.press("ControlOrMeta+A");
+        await page.keyboard.type("http://localhost:9999");
+        await expect(page.getByTestId("ai-local-url")).toHaveValue("http://localhost:9999");
+        await page.keyboard.press("Escape");
+        await expect(opener).toBeFocused();
+        await expect(page.getByTestId(`ai-detail-local-${runner}`)).toHaveAttribute("data-state", "closed");
+      }
+      expect(await auditCount(page)).toBe(before);
+      expect(await page.evaluate(() => localStorage.getItem("ontology-atlas:local-endpoint"))).toBeNull();
+    });
+
     test("runner rows tell connected, empty and unreachable apart, and each check is recorded", async ({ page }) => {
       await openModelsTab(page);
       // Ollama answers with three models; pick one and it becomes the connected runner.
@@ -237,4 +256,46 @@ test("on the web the tab exists and says where it works, with no sample rows", a
   await capture(page, "1280-09-web");
   const result = await axe(page);
   expect(result.violations).toEqual([]);
+});
+
+test("one pending saved-key lookup does not hide other tools' actions", async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 982 });
+  await installDesktopRailRuntime(page, {}, undefined, { models: MODELS });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/ko/?guides=off");
+  await page.evaluate(() => {
+    const bridge = (window as unknown as { __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> } }).__TAURI_INTERNALS__;
+    const invoke = bridge.invoke.bind(bridge);
+    const pending: Record<string, () => void> = {};
+    bridge.invoke = (command, args) => {
+      const blocked = command === 'secret_status' && args?.provider === 'openai'
+        ? 'openai' : command === 'jev_secret_status' ? 'jev' : null;
+      if (!blocked) return invoke(command, args);
+      return new Promise(resolve => {
+        pending[blocked] = () => { void invoke(command, args).then(resolve); };
+      });
+    };
+    (window as unknown as { releaseKeyLookup(name: string): void }).releaseKeyLookup = name => {
+      if (!pending[name]) throw new Error(`No pending lookup for ${name}`);
+      pending[name]();
+      delete pending[name];
+    };
+  });
+  await page.getByTestId("first-run-open").click();
+  await page.getByTestId("app-nav-rail-item-agents").click();
+  await page.getByTestId("agents-tab-models").click();
+  await expect(page.getByTestId("ai-key-loading-openai")).toBeVisible();
+  await expect(page.getByTestId("jev-key-loading")).toBeVisible();
+  await page.getByTestId("ai-register-anthropic").click();
+  await expect(page.getByTestId("ai-key-input-anthropic")).toBeVisible();
+  await page.getByTestId("ai-cancel-anthropic").click();
+  await expect(page.getByTestId("ai-key-input-anthropic")).toBeHidden();
+  await capture(page, "1512-10-key-lookups-pending", "models-keys");
+  await page.evaluate(() => (window as unknown as { releaseKeyLookup(name: string): void }).releaseKeyLookup('openai'));
+  await expect(page.getByTestId("ai-stored-openai")).toContainText("····4f2a");
+  await expect(page.getByTestId("jev-key-loading")).toBeVisible();
+  await page.evaluate(() => (window as unknown as { releaseKeyLookup(name: string): void }).releaseKeyLookup('jev'));
+  await expect(page.getByTestId("jev-register")).toBeVisible();
+  await expect(page.getByTestId("ai-key-loading-openai")).toHaveCount(0);
+  await expect(page.getByTestId("jev-key-loading")).toHaveCount(0);
 });

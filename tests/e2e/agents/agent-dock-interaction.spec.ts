@@ -154,3 +154,25 @@ test('at 1040×720 the permission card leaves the call it asks about in view', a
     )
     .toBe('visible');
 });
+
+
+test('returns to the map agent door when a pointer press does not focus buttons', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await seedFirstRunSeen(page);
+  await installLibraryWorkHarness(page, {});
+  await openFolderFromFirstRun(page, 'ko');
+  await page.goto('/ko/?guides=off&e2e=1');
+  const chip = page.getByTestId('topology-vault-agent-toggle');
+  const main = page.locator('main#main');
+  await main.focus();
+  // macOS WebKit leaves focus on the route container on a pointer press. Dispatch the
+  // activation without Chromium's automatic button focus to exercise that path too.
+  await chip.dispatchEvent('click');
+  await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
+  await page.getByTestId('analysis-workbench-close').click();
+  await expect(chip).toHaveAttribute('aria-expanded', 'false');
+  await expect(chip).toBeFocused();
+  await chip.press('Enter');
+  await expect(chip).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('analysis-workbench-close')).toBeFocused();
+});

@@ -35,6 +35,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const focus = prepareFocus(frame);
   const alpha = computeNodeAlpha(frame, focus);
   const branch = prepareBranchContext(frame, alpha.effectiveAlphaById);
+  if (branch) {
+    // Branch disclosure is the final node presence; edges must read the same presence.
+    frame.world.nodes.forEach((node, index) => {
+      alpha.effectiveAlphaByIndex[index] = branch.alphas.get(node.id) ?? 0;
+    });
+  }
   const edges = prepareEdges(frame, focus, alpha);
   const stage = paintDomeStage(frame, focus, edges);
   paintEdges(frame, focus, alpha, edges, stage);

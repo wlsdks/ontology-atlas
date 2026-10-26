@@ -52,8 +52,9 @@ pub(super) struct RegistrySnapshot {
 /// found" rather than launching something invalid.
 pub(super) fn snapshot() -> &'static RegistrySnapshot {
     static SNAPSHOT: std::sync::OnceLock<RegistrySnapshot> = std::sync::OnceLock::new();
-    SNAPSHOT
-        .get_or_init(|| serde_json::from_str(include_str!("../acp-registry.json")).unwrap_or_default())
+    SNAPSHOT.get_or_init(|| {
+        serde_json::from_str(include_str!("../acp-registry.json")).unwrap_or_default()
+    })
 }
 
 pub(super) fn registry() -> &'static [RegistryAgent] {

@@ -144,24 +144,18 @@ test("the first-run card is the panel's own surface, starts its rows on one edge
     const rect = (sel: string) => document.querySelector(sel)!.getBoundingClientRect();
     const panel = rect('[data-testid="topology-index-panel"]');
     const card = rect('[data-testid="first-run-starter"]');
-    const radius = (sel: string) => getComputedStyle(document.querySelector(sel)!).borderTopLeftRadius;
     return {
       insetLeft: card.left - panel.left,
       insetRight: panel.right - card.right,
       edges: [
         rect('[data-testid="first-run-starter-sample-line"] > span').left,
         rect('[data-testid="first-run-starter-open"]').left,
-        rect('[data-testid="first-run-tour-cta"]').left,
         rect('[data-testid="first-run-starter-sample-source"]').left,
         rect('[data-testid="first-run-starter-more-toggle"] svg').left,
         rect('[data-testid="first-run-starter-glossary-toggle"] svg').left,
         rect('[data-testid="first-run-starter-glossary"] dt').left,
       ],
       band: rect('[data-testid="first-run-starter-glossary"]').top - rect('[data-testid="first-run-starter-glossary-toggle"]').bottom,
-      openRadius: radius('[data-testid="first-run-starter-open"]'),
-      tourRadius: radius('[data-testid="first-run-tour-cta"]'),
-      openHeight: rect('[data-testid="first-run-starter-open"]').height,
-      tourHeight: rect('[data-testid="first-run-tour-cta"]').height,
     };
   });
   expect(layout.insetLeft, "the card sits inside the panel as a second box").toBeLessThanOrEqual(1.5);
@@ -174,8 +168,6 @@ test("the first-run card is the panel's own surface, starts its rows on one edge
     expect(Math.abs(x! - glyphLed[0]!), `a row's words start at ${x}, off the glyph rows' text line at ${glyphLed[0]}`).toBeLessThanOrEqual(0.5);
   }
   expect(layout.band, "an empty band opens between the words toggle and its definitions").toBeLessThanOrEqual(24);
-  expect(layout.tourRadius).toBe(layout.openRadius);
-  expect(layout.tourHeight, "the two actions differ in height").toBe(layout.openHeight);
 });
 
 test("on a phone the expanded INDEX sheet leaves no caption underneath it", async ({ page }) => {

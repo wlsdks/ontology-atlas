@@ -170,8 +170,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "demo:first-run-starter-dismissed:v1", kind: "storage", scope: "global", note: "first-run card, one time only (session)" },
   { key: "demo:vault-start-steps-dismissed:v1", kind: "storage", scope: "global", note: "first-steps card, one time only (session); withdrawn once the last step is passed" },
   { key: "vault-open-guide:auto:v1", kind: "storage", scope: "global", note: "open-folder guide, one time only" },
-  { key: "guided-tour:v1", kind: "storage", scope: "global", note: "tour completion mark" },
-  { key: "guided-tour:${destination}:v1", kind: "storage", scope: "global", note: "per-destination tour completion mark" },
   { key: "ontology-atlas:last-route", kind: "storage", scope: "global", note: "**Nobody reads it**: route restoration was retired on 2026-07-30 (`locale-redirect.tsx`). It is a dead key rather than a defect, so this registry records only the fact and leaves deletion as a separate matter" },
 
   // ── Things that *define* the scope (they are the answer to "which vault") ──
@@ -395,7 +393,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
  * first.
  */
 const KEY_NAMESPACE_SHAPE =
-  /^(demo:|ontology-atlas:|atlas\.|atlas:|docs-vault:|docsVault:|guided-tour:|app-update:|dev:|vault-open-guide:|library\.)[A-Za-z0-9:._$%{}-]*$/;
+  /^(demo:|ontology-atlas:|atlas\.|atlas:|docs-vault:|docsVault:|app-update:|dev:|vault-open-guide:|library\.)[A-Za-z0-9:._$%{}-]*$/;
 const TRANSLATION_NAMESPACE_LEAD = /\b(?:use|get)Translations\s*(?:<\s*|\(\s*)$/;
 
 function sourceFiles(): string[] {

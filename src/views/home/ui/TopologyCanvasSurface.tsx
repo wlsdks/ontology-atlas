@@ -7,7 +7,6 @@ import type { useTopologyCreateIntent } from "../model/authoring/use-topology-cr
 import type { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
 import type { useTopologyIndexPresentation } from "../model/index-panel/use-topology-index-presentation";
 import type { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import type { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologySceneControls } from "../model/map-canvas/use-topology-scene-controls";
@@ -19,7 +18,7 @@ import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { ChromeTile, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { FrameMeter } from "@/shared/ui/status/frame-meter";
-import { Compass, HelpCircle, Play } from "lucide-react";
+import { HelpCircle, Play } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { TopologyChangeAnnouncement } from "./TopologyChangeAnnouncement";
@@ -66,7 +65,6 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
     ReturnType<typeof useTopologyInspectorState>,
     "selectedEdgeOwnsRightRail" | "selectedNodeFocusActive" | "topologyUtilityChromeCompact"
   >;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "openGuidedTour" | "tour">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyGraphProjection: Pick<ReturnType<typeof useTopologyGraphProjection>, "canvasSelectedSlug" | "localGraphProjects" | "resolvedSelectionSlug" | "isSynthetic">;
   topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "audiencePlain" | "view3d" | "structure">;
@@ -85,6 +83,9 @@ type TopologyCanvasSurfaceProps = TopologyMapRendererProps & {
     | "topologyOverlayState"
     | "handleScaffoldStarter"
     | "starterScaffolding"
+    | "starterRecoveryActive"
+    | "starterScaffoldFailed"
+    | "dismissStarterRecovery"
     | "emptyTopologyNodeCount"
     | "clearTopologyFilters"
     | "topologyRenderState"
@@ -111,7 +112,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
     heldLocalGraphStack, topologyVisibleCount, readoutStepsAside, unsupportedGuideOpen,
     setUnsupportedGuideOpen, requestVaultOpen, topologyCanvasFocus, topologySceneControls, topologyAuthoring,
     acpRuntimeController, topologyVaultReadModel, topologyAgentOrchestration, topologyPreferences,
-    topologyGraphProjection, topologyNavigationActions, topologyKeyboardTour, topologyInspectorState,
+    topologyGraphProjection, topologyNavigationActions, topologyInspectorState,
     topologyCreateIntent, topologyIndexPresentation,
   } = props;
   const {
@@ -121,7 +122,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   const { startStepsVisible, renderedIndexState, dismissStartSteps, readoutStackRef } = topologyIndexPresentation;
   const { handleCanvasPointerDownCapture, nodePopoverDismissed } = topologyCanvasFocus;
   const {
-    topologyOverlayState, handleScaffoldStarter, starterScaffolding, emptyTopologyNodeCount,
+    topologyOverlayState, handleScaffoldStarter, starterScaffolding, starterRecoveryActive, starterScaffoldFailed, dismissStarterRecovery, emptyTopologyNodeCount,
     clearTopologyFilters, topologyRenderState, mapMountTaskReady, drawerOpen, realmActive
   } = topologySceneControls;
   const { createNodeOpen, agentConnect, bootstrapPlan, setBootstrapOpen, canCreateNode } = topologyAuthoring;
@@ -133,7 +134,6 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
   const { t, view3d, structure } = topologyPreferences;
   const { canvasSelectedSlug, localGraphProjects, isSynthetic, ontologyMapGraph, resolvedRealmSlug } = topologyGraphProjection;
   const { handleClose, handleSelect } = topologyNavigationActions;
-  const { openGuidedTour } = topologyKeyboardTour;
   const { selectedEdgeOwnsRightRail, selectedNodeFocusActive, topologyUtilityChromeCompact } = topologyInspectorState;
   const railRecedes = !view3d && selectedNodeFocusActive;
   const [railReceded, setRailReceded] = useState(false);
@@ -179,7 +179,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
         >
           {/* With 0-1 visible nodes a lone dot reads as broken; an empty vault never mounts the
              engine at all. */}
-          {topologyOverlayState.kind === "structural-empty" && !createNodeOpen ? (
+          {(topologyOverlayState.kind === "structural-empty" || starterRecoveryActive) && !createNodeOpen ? (
             // A writable vault gets the progressive start checklist; with documents present its
             // first step is bootstrap.
             // Hidden while a conversation is open, which already started; closing the panel brings
@@ -194,11 +194,12 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                 // The same starter as "start fresh in an empty folder"; not passed when documents
                 // exist.
                 onScaffoldStarter={
-                  (vault.manifest?.docs.length ?? 0) === 0
+                  (starterRecoveryActive || (vault.manifest?.docs.length ?? 0) === 0)
                     ? handleScaffoldStarter
                     : null
                 }
                 scaffolding={starterScaffolding}
+                scaffoldFailed={starterScaffoldFailed}
                 // With documents present, they are the first step.
                 docsFoundCount={bootstrapPlan?.elements.length ?? 0}
                 sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
@@ -216,13 +217,13 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                 // INDEX floats over the map column instead of narrowing it, so the card needs its
                 // width to centre.
                 indexExpanded={renderedIndexState === "expanded"}
-                onFinish={dismissStartSteps}
+                onFinish={() => { dismissStarterRecovery(); dismissStartSteps(); }}
                 // "Connect" lives at the agents destination, so it navigates there
                 // (`docs/DECISIONS.md`, entry 90);
                 // chat has its own doors.
                 onOpenAgentConnect={() => router.push(DESTINATION_HREF.agents)}
               />
-            ) : (
+            ) : topologyOverlayState.kind === "structural-empty" ? (
               <TopologyEmptyState
                 conceptCount={emptyTopologyNodeCount}
                 reason={topologyOverlayState.emptyReason}
@@ -238,7 +239,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
                     : undefined
                 }
               />
-            )
+            ) : null
           ) : topologyOverlayState.kind === "filter-sparse" ? (
             <TopologyNoMatchesState
               onClearFilters={clearTopologyFilters}
@@ -278,26 +279,7 @@ export function TopologyCanvasSurface(props: TopologyCanvasSurfaceProps) {
               }}
             />
           )}
-          {/* Directly above the "?" tile; the tour is `md`+ only. */}
-          {structure || createNodeOpen ||
-            selectedEdgeOwnsRightRail ||
-            topologyBlockingOverlayActive ||
-            (view3d && selectedNodeFocusActive) ? null : (
-            <Tooltip content={t('controls.tourTooltip')} side="left">
-              <ChromeTile
-                inert={railRecedes}
-                icon={<Compass />}
-                title=""
-                aria-label={t('controls.tourTooltip')}
-                onClick={openGuidedTour}
-                data-testid="topology-tour-button"
-                data-agent-dock-adjacent-rail="true"
-                data-map-fit-obstacle="right"
-                className={`${railMotion} topology-ui-scale absolute right-4 z-20 hidden md:right-[var(--chrome-inset)] md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex`}
-              />
-            </Tooltip>
-          )}
-          {/* Two slots below the fit tile; on phones only in overview and focus, clear of the
+          {/* One slot below the fit tile; on phones only in overview and focus, clear of the
              path/health rail. */}
           {structure || createNodeOpen ||
             selectedEdgeOwnsRightRail ||

@@ -9,6 +9,22 @@ test.describe("interaction sweep — projects, agents, git", () => {
     await mountDesktopVault(page);
   });
 
+  for (const entry of ["rail", "direct"] as const) {
+    test(`Git arrival through ${entry} places the next keyboard step inside its workbench`, async ({ page }) => {
+      if (entry === "rail") await page.getByTestId("app-nav-rail-item-git").click();
+      else await page.goto("/ko/git/?focus=main&guides=off");
+      await expect(page.getByTestId("git-page")).toBeVisible();
+      await expect(page.getByTestId("atlas-git-panel")).toHaveAttribute("data-stage", "workbench");
+      await expect.poll(() => page.getByTestId("git-page").evaluate((main) => {
+        const active = document.activeElement;
+        return active === main || (active?.matches("h1") === true && main.contains(active));
+      })).toBe(true);
+      await page.keyboard.press("Tab");
+      expect(await page.getByTestId("git-page").evaluate((main) => main.contains(document.activeElement))).toBe(true);
+      await expect(page).not.toHaveURL(/[?&]focus=main/);
+    });
+  }
+
   test("git confirms share one grammar, take focus, close on Escape and hand focus back", async ({ page }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
     await page.goto("/ko/git/?guides=off");
@@ -125,7 +141,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const note = page.getByTestId("app-settings-runtimes-disk-note");
     await expect(note).toBeAttached({ timeout: 30_000 });
     const panel = page.getByRole("tooltip").filter({ has: note });
-    const button = page.locator("div.group").filter({ has: note }).getByRole("button").first();
+    const button = panel.locator("..").getByRole("button");
     await button.focus();
     await expect.poll(() => panel.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
     // Shown by focus, the panel must not catch clicks meant for the rows it covers.

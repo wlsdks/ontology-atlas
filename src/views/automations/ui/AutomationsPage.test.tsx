@@ -105,6 +105,7 @@ describe('Automations manager', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await waitFor(() => expect(screen.queryByTestId('ontology-automation-sheet')).not.toBeInTheDocument());
+    expect(screen.getByTestId('automations-new')).toHaveFocus();
     fireEvent.click(screen.getByTestId('automations-new'));
     expect(screen.getByTestId('ontology-automation-name')).toHaveValue(en.automations.ontology.defaultName);
     expect(screen.getByTestId('ontology-automation-focus')).toHaveValue('');

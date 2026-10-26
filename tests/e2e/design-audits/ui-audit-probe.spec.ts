@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { FREEZE_CSS, auditPage } from "../../../scripts/lib/design/ui-audit-probe.mjs";
+import { shouldFail } from "../../../scripts/lib/design/ui-audit-checks.mjs";
 
 const FIXTURE = `<!doctype html><html><head><style>
   :root { --text-body: 14px; --leading-body: 20px; --radius-card: 8px; }
@@ -157,4 +158,62 @@ test("positioned controls that escape an overflow ancestor remain audited agains
     expect(findings.occluded.some((item: { selector: string }) => item.selector.includes(`#${id}`))).toBe(true);
   }
   expect(JSON.stringify(findings)).not.toMatch(/#free-|#bounded-fixed/);
+});
+
+const MODAL_FIXTURE = `<style>
+ body { margin:0; color:#000; background:#fff }
+ button { position:absolute; left:100px; top:100px; width:48px; height:48px }
+ #dialog { position:absolute; left:80px; top:80px; width:300px; height:200px; background:#fff; z-index:2 }
+ #dialog button { left:20px; top:20px }
+</style><button id="behind">Behind</button><section id="dialog"><button id="inside">Inside</button></section>`;
+
+test('a scoped audit ignores the modal background and still detects a real cover inside it', async ({ page }) => {
+  await page.setContent(MODAL_FIXTURE);
+  const options = { width: 390, rampNames: RAMP_NAMES, scope: '#dialog' };
+  const unscoped = await auditPage(page, { width: 390, rampNames: RAMP_NAMES });
+  expect(unscoped.findings.occluded.some((item: { selector: string }) => item.selector.includes('#behind'))).toBe(true);
+  const clean = await auditPage(page, options);
+  expect(clean.measuredElements).toBeGreaterThan(1);
+  expect(clean.findings.occluded).toEqual([]);
+  expect(shouldFail([clean])).toBe(false);
+  await page.evaluate(() => {
+    const cover = document.createElement('div');
+    cover.id = 'external-cover';
+    cover.style.cssText = 'position:absolute;left:100px;top:100px;width:48px;height:48px;background:red;z-index:9';
+    document.body.append(cover);
+  });
+  const blocked = await auditPage(page, options);
+  expect(blocked.findings.occluded).toHaveLength(1);
+  expect(blocked.findings.occluded[0].selector).toContain('#inside');
+  expect(shouldFail([blocked])).toBe(true);
+  await page.locator('#external-cover').evaluate(el => el.remove());
+  expect((await auditPage(page, options)).findings.occluded).toEqual([]);
+});
+
+test('a scoped audit refuses missing, ambiguous or hidden subjects and empty inventories', async ({ page }) => {
+  await page.setContent(MODAL_FIXTURE);
+  for (const scope of ['#absent', 'button']) {
+    await expect(auditPage(page, { width: 390, rampNames: RAMP_NAMES, scope })).rejects.toThrow(/exactly one/);
+  }
+  await page.locator('#dialog').evaluate(el => { el.style.display = 'none'; });
+  await expect(auditPage(page, { width: 390, rampNames: RAMP_NAMES, scope: '#dialog' })).rejects.toThrow(/visible/);
+  await page.setContent('');
+  await expect(auditPage(page, { width: 390, rampNames: RAMP_NAMES })).rejects.toThrow(/no visible elements/);
+});
+
+test('does not sample outside the viewport for one-pixel edge slivers', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.setContent('<style>body{margin:0}button{position:fixed;width:44px;height:44px}</style><button id="bottom" style="left:16px;top:899px">B</button><button id="right" style="left:389px;top:16px">R</button>');
+  const result = await auditPage(page, { width: 390, rampNames: RAMP_NAMES });
+  expect(result.measuredElements).toBeGreaterThan(0);
+  expect(result.findings.occluded).toEqual([]);
+  await page.evaluate(() => {
+    for (const [left, top, width, height] of [[16, 899, 44, 1], [389, 16, 1, 44]]) {
+      const cover = document.createElement('div');
+      cover.style.cssText = `position:fixed;left:${left}px;top:${top}px;width:${width}px;height:${height}px;background:red;z-index:9`;
+      document.body.append(cover);
+    }
+  });
+  const covered = await auditPage(page, { width: 390, rampNames: RAMP_NAMES });
+  expect(covered.findings.occluded.map((value: { selector: string }) => value.selector).sort()).toEqual(['body > button#bottom', 'body > button#right']);
 });

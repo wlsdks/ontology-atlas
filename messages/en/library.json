@@ -182,7 +182,7 @@
     "staleOnly": "{count, plural, one {# source version needs review} other {# source versions need review}}",
     "partialOnly": "{count, plural, one {# read only in part} other {# read only in part}}",
     "import": "Bring from a service",
-    "importTooltip": "Bring documents in from Notion, Confluence, Jira or GitHub",
+    "importTooltip": "Choose a service, connect it, then choose which documents to bring into this folder",
     "pagesNeedReview": "{count, plural, one {# existing page needs rechecking} other {# existing pages need rechecking}}"
   },
   "wiki": {
@@ -449,6 +449,11 @@
     "staleLit": "{count, plural, one {# changed original is lit} other {# changed originals are lit}}, with the {pages, plural, one {# page} other {# pages}} citing them. Escape, or a press on the picture, clears it."
   },
   "find": {
+    "searchLabel": "Find by file name or path",
+    "searchHint": "Selections stay when you filter. Hidden results are not remembered as passed over.",
+    "searchCount": "Showing {visible, number} of {total, number} · {selected, number} selected",
+    "noMatches": "No file name or path matches this search.",
+    "clearSearch": "Clear search",
     "title": "Documents in the folders you granted",
     "preamble": "Atlas listed these by name, format and size. It has not opened any of them. Nothing is copied until you pick.",
     "webLimit": "Only the folder you opened can be walked here; a project folder you bound needs its absolute path, and the app is what holds it.",
@@ -921,7 +926,9 @@
       "columnRound": "Round",
       "columnOutcome": "Outcome",
       "ghostTime": "––:––",
-      "ghostAria": "Where the first pass will land"
+      "ghostAria": "Where the first pass will land",
+      "includeSleep": "Include sleep gaps ({count})",
+      "noPasses": "No checks have run yet."
     },
     "sheet": {
       "readbackHour": "Every hour",

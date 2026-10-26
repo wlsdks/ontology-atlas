@@ -158,8 +158,7 @@ fn terminate_tree_escalates_after_the_group_leader_is_reaped() {
     );
 
     let result = terminate_tree(leader_pid);
-    let gone_before_cleanup =
-        wait_until_gone(grandchild, std::time::Duration::from_millis(250));
+    let gone_before_cleanup = wait_until_gone(grandchild, std::time::Duration::from_millis(250));
     // Clean up the whole group before failing, so a red run leaves no processes.
     if !gone_before_cleanup {
         unsafe {

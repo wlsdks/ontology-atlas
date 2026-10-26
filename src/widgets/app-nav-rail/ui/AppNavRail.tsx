@@ -19,6 +19,7 @@ import {
   Library,
   LineChart,
   Map as MapIcon,
+  Newspaper,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
@@ -51,7 +52,7 @@ export interface AppNavRailProps {
   settingsSlot?: ReactNode;
   /** Hides the rail with CSS instead of unmounting, to keep its DOM identity across routes. */
   hidden?: boolean;
-  /** Per-item href overrides from context (docs vault only); other items keep their static href. */
+  /** Context targets override a destination; other items keep their static href. */
   contextHrefs?: NavRailContextHrefs | null;
   /** Uncommitted change count for the Git destination; the badge disappears at zero. */
   gitDirtyCount?: number;
@@ -134,7 +135,7 @@ export function AppNavRail({
   // Addresses come from `shared/config/destinations` so keyboard navigation and the shortcut sheet
   // share them.
   const allDestinations: RailDestination[] = [
-    { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
+    { id: "map", href: contextHrefs?.map ?? DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
     { id: "automations", href: DESTINATION_HREF.automations, label: t("automations"), Icon: CalendarClock },
@@ -150,6 +151,7 @@ export function AppNavRail({
       // Badge only for terminal install states; peripheral chrome shows no progress.
       badgeCount: agentsNoticeCount,
     },
+    { id: "changes", href: DESTINATION_HREF.changes, label: t("changes"), Icon: Newspaper },
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
   const destinations = allDestinations.filter(

@@ -193,7 +193,7 @@ export interface UseTopologyLoopArgs {
    * sweeps rows, and each change through React state re-renders the entire
    * HomePage tree (measured 68–109 ms, enough to feel sticky). The frame loop
    * already reads refs every frame, so it reaches the same result with zero
-   * renders — the same contract as `tourAnchorRef`.
+   * renders.
    */
   trailHoverNodeIdRef?: RefObject<string | null>;
   /**
@@ -209,15 +209,6 @@ export interface UseTopologyLoopArgs {
    * this one value.
    */
   tierReveal?: TierRevealConfig;
-  /**
-   * Guided tour — the node id the canvas anchor projects onto during steps 2
-   * and 4, or `null` when the step has no anchor or the node was not found.
-   * A block alongside the realm enter button writes a transform plus
-   * `--tour-anchor-r` into `tourAnchorRef`'s DOM every frame.
-   */
-  tourAnchorNodeId?: string | null;
-  /** DOM for the guided tour's anchor circle — rendered by `OntologyMap`, shared here as a ref only. */
-  tourAnchorRef?: RefObject<HTMLDivElement | null>;
   /**
    * Node body render style: `"geometric"` (default, filled) or `"line"`
    * (stroke only). The kind→silhouette mapping is unchanged either way. Reads

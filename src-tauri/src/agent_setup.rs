@@ -428,6 +428,17 @@ pub(crate) fn write_entry_atomically_with<T>(
     create_mode: libc::mode_t,
     fill: impl FnOnce(&mut fs::File) -> std::io::Result<T>,
 ) -> Result<T, String> {
+    write_entry_atomically_with_guard(parent, file_name, create_mode, fill, || Ok(()))
+}
+
+#[cfg(unix)]
+pub(crate) fn write_entry_atomically_with_guard<T>(
+    parent: &fs::File,
+    file_name: &std::ffi::CStr,
+    create_mode: libc::mode_t,
+    fill: impl FnOnce(&mut fs::File) -> std::io::Result<T>,
+    before_publish: impl FnOnce() -> std::io::Result<()>,
+) -> Result<T, String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -483,6 +494,7 @@ pub(crate) fn write_entry_atomically_with<T>(
         let filled = fill(&mut temporary)?;
         temporary.sync_all()?;
         ensure_private_temporary(&temporary, "before commit")?;
+        before_publish()?;
         let renamed = unsafe {
             libc::renameat(
                 parent.as_raw_fd(),

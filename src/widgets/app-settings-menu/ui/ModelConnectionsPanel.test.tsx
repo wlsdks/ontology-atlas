@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   secretSet: vi.fn(),
   secretClear: vi.fn(),
   secretVerify: vi.fn(),
+  sourceModelVerify: vi.fn(),
   jevSecretSet: vi.fn(),
   jevSecretClear: vi.fn(),
   jevJudge: vi.fn(),
@@ -26,6 +27,7 @@ vi.mock('@/shared/lib/llm-connection/tauri-secrets', async (importOriginal) => {
     secretSet: mocks.secretSet,
     secretClear: mocks.secretClear,
     secretVerify: mocks.secretVerify,
+    sourceModelVerify: mocks.sourceModelVerify,
   };
 });
 
@@ -79,6 +81,8 @@ function makeConnection(overrides: Partial<AiConnectionState> = {}): AiConnectio
     jevStatus: null,
     applyJevStatus: vi.fn(),
     keysRead: true,
+    keyReads: { anthropic: true, openai: true, gemini: true },
+    jevRead: true,
     auditEntries: [],
     auditTotal: 0,
     auditError: null,
@@ -302,11 +306,21 @@ describe('API key connection check', () => {
     expect(screen.getByText(`${NS}.verifyNeedsVault`)).toBeInTheDocument();
   });
 
-  it('draws no key status until the Keychain has answered', () => {
-    renderPanel(makeConnection({ keysRead: false, statuses: STORED_ANTHROPIC }));
+  it('keeps stored state and key actions hidden while naming the pending lookup', () => {
+    renderPanel(makeConnection({ keysRead: false, keyReads: { anthropic: false, openai: false, gemini: false }, jevRead: false, statuses: STORED_ANTHROPIC }));
     expect(screen.queryByTestId('ai-stored-anthropic')).toBeNull();
     expect(screen.queryByTestId('ai-status-openai')).toBeNull();
     expect(screen.queryByTestId('ai-register-openai')).toBeNull();
+    expect(screen.getByTestId('ai-key-loading-openai')).toBeInTheDocument();
+    expect(screen.getByTestId('jev-key-loading')).toBeInTheDocument();
+  });
+
+  it('offers an answered key independently while other lookups remain pending', () => {
+    renderPanel(makeConnection({ keysRead: false, keyReads: { anthropic: false, openai: true, gemini: false }, jevRead: false }));
+    expect(screen.getByTestId('ai-register-openai')).toBeInTheDocument();
+    expect(screen.queryByTestId('ai-register-anthropic')).toBeNull();
+    expect(screen.getByTestId('ai-key-loading-anthropic')).toBeInTheDocument();
+    expect(screen.getByTestId('jev-key-loading')).toBeInTheDocument();
   });
 
   it('reads a saved key to a screen reader as a sentence, not four dots', () => {
@@ -616,7 +630,7 @@ describe('sent log', () => {
 
   it('says where the record would go when no folder is open', () => {
     renderPanel(makeConnection(), null);
-    expect(screen.getByTestId('ai-audit-no-vault')).toHaveTextContent(`${NS}.auditNoVault`);
+    expect(screen.getByTestId('ai-audit-no-vault')).toHaveTextContent('gitBriefing.sourceAudit');
     expect(screen.queryByTestId('ai-audit-open')).toBeNull();
   });
 });
@@ -685,6 +699,24 @@ describe('focus, announcements and abandoned checks', () => {
   });
 });
 
+describe('local runner keyboard entry', () => {
+  it.each(['ollama', 'lmstudio', 'llamacpp', 'custom'])(
+    'focuses the address for %s and returns Escape to its opener without saving', async (runner) => {
+      renderPanel(makeConnection());
+      const opener = screen.getByTestId(`ai-register-local-${runner}`);
+      fireEvent.click(opener);
+      const input = screen.getByTestId('ai-local-url');
+      expect(input).toHaveFocus();
+      fireEvent.change(input, { target: { value: 'http://localhost:9999' } });
+      fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+      expect(screen.getByTestId(`ai-detail-local-${runner}`)).toHaveAttribute('data-state', 'closed');
+      await waitFor(() => expect(opener).toHaveFocus());
+      expect(mocks.secretVerify).not.toHaveBeenCalled();
+      expect(window.localStorage.getItem('ontology-atlas:local-endpoint')).toBeNull();
+    },
+  );
+});
+
 describe('Escape order', () => {
   it('leaves the row open when an inner control already handled the Escape', () => {
     render(<ModelConnectionsPanel connection={makeConnection()} vaultRootPath="/vault" downloadHref="/download/" />);
@@ -718,4 +750,15 @@ describe('Escape order', () => {
     fireEvent.keyDown(screen.getByTestId('ai-connection-view'), { key: 'Escape' });
     expect(outerEscape).toHaveBeenCalledTimes(1);
   });
+});
+
+
+it('checks a local model without granting a vault or sending repository text', async () => {
+  mocks.sourceModelVerify.mockResolvedValue({ provider: 'local', ok: true, denied: false, httpStatus: 200, message: null, durationMs: 1, loggedAt: 'x', body: '{"data":[{"id":"fixture-text-model"}]}' });
+  renderPanel(makeConnection(), null);
+  fireEvent.click(screen.getByTestId('ai-register-local-ollama'));
+  fireEvent.click(screen.getByTestId('ai-verify-local'));
+  await waitFor(() => expect(mocks.sourceModelVerify).toHaveBeenCalledWith('http://localhost:11434'));
+  expect(mocks.secretVerify).not.toHaveBeenCalled();
+  await waitFor(() => expect(screen.getByTestId('ai-local-model-row')).toBeInTheDocument());
 });

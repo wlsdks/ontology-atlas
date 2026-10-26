@@ -36,6 +36,5 @@ export type { ConeInputNode, ConeKind } from './model/dome-view/cone-layout';
  * Where the last frame drew each node's name and disc, for chrome outside the map that must
  * leave what it explains in view (the guided tour's card).
  */
-export { readDrawnMapMarks } from './ui/frame-draw/drawn-map-marks';
 export { DomainStructureMap } from "./structure/DomainStructureMap";
 export { readDomainUsage, type DomainUsage } from "./model/domain-usage";

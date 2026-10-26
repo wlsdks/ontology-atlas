@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./AppShell";
@@ -181,5 +181,32 @@ describe("shell column owns the viewport", () => {
       </AppShell>,
     );
     expect(screen.queryByTestId("agent-terminal-handle")).not.toBeInTheDocument();
+  });
+});
+
+
+describe("source-only cold arrival", () => {
+  it.each(["/ko/agents", "/ko/changes"])("waits for restoration before exposing controls on %s", (pathname) => {
+    shellMocks.desktop = true;
+    shellMocks.pathname = pathname;
+    shellMocks.vault.restoreAttempted = false;
+    const content = <AppShell><input aria-label="Source question" /></AppShell>;
+    const { rerender } = render(content);
+    expect(screen.queryByRole("textbox", { name: "Source question" })).not.toBeInTheDocument();
+    expect(shellMocks.replace).not.toHaveBeenCalled();
+    shellMocks.vault.status = "opening";
+    rerender(<AppShell><input aria-label="Source question" /></AppShell>);
+    expect(screen.queryByRole("textbox", { name: "Source question" })).not.toBeInTheDocument();
+    shellMocks.vault.status = "idle";
+    shellMocks.vault.restoreAttempted = true;
+    rerender(<AppShell><input aria-label="Source question" /></AppShell>);
+    const input = screen.getByRole("textbox", { name: "Source question" });
+    input.focus();
+    fireEvent.change(input, { target: { value: "Explain this change" } });
+    rerender(<AppShell><input aria-label="Source question" /></AppShell>);
+    expect(screen.getByRole("textbox", { name: "Source question" })).toBe(input);
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue("Explain this change");
+    expect(shellMocks.replace).not.toHaveBeenCalled();
   });
 });

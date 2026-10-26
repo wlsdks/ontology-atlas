@@ -1,5 +1,4 @@
 .head { padding: .5rem 0; border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-.nameSlot { flex: none; width: 10rem; height: .5rem; border-radius: 9999px; background: var(--color-divider); }
 .dot { flex: none; width: .5rem; height: .5rem; border-radius: 9999px; background: var(--color-text-quaternary); }
 .dot[data-tone="stale"] { background: var(--color-status-warning); }
 .dot[data-tone="redrafted"] { background: var(--color-indigo-text-soft); }

@@ -10,7 +10,8 @@ export type AppNavDestinationId =
   | "projects"
   | "agents"
   | "mcp"
-  | "git";
+  | "git"
+  | "changes";
 
 /**
  * Pure prefix matcher for the canonical app destinations (feat/chrome-system
@@ -33,6 +34,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/architecture")) return "architecture";
   if (path.startsWith("/git")) return "git";
+  if (path.startsWith("/changes")) return "changes";
   if (path.startsWith("/agents")) return "agents";
   if (path.startsWith("/mcp")) return "mcp";
   if (path.startsWith("/library")) return "library";
@@ -104,31 +106,3 @@ export function stripLocalePrefix(
   }
   return pathname || "/";
 }
-
-/**
- * Which first-visit guide a screen gets differs from which rail tile lights. The map gets none,
- * `/project/<slug>` gets none (the projects guide describes the list), and the `mcp` guide needs the
- * Agents tab read from the address.
- */
-export function resolveGuideDestination({
-  surface,
-  pathname,
-  tab,
-}: {
-  surface: AppNavDestinationId | null;
-  pathname: string;
-  tab: string | null;
-  /*
-   * "map" is excluded in the type, not only at runtime: the guided tour's own id union has no
-   * `map` (that journey is the map view's), and this file may not import a feature's type to
-   * say so. Narrowing here is what lets the shell pass the result straight through.
-   */
-}): Exclude<AppNavDestinationId, 'map'> | null {
-  if (!surface || surface === 'map') return null;
-  if (surface === 'projects') {
-    return stripLocalePrefix(pathname).startsWith('/projects') ? surface : null;
-  }
-  if (surface === 'agents' && tab === 'mcp') return 'mcp';
-  return surface;
-}
-

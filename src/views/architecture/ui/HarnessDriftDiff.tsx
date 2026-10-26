@@ -103,7 +103,7 @@ function Cell({ line, marked, divided }: { line: AlignedLine | null; marked: boo
         edge,
       )}
     >
-      <span aria-hidden className="select-none text-right tabular-nums text-[color:var(--color-text-quaternary)]">
+      <span aria-hidden className="select-none text-right tabular-nums text-[color:var(--color-text-tertiary)]">
         {line.no}
       </span>
       <span className={cn('select-none', MARKED_TEXT)}>

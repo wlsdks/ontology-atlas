@@ -77,6 +77,27 @@ relation types support that reading; mixed types remain neutrally labelled.
 Saved analysis history separates list failures from selected-artifact failures,
 ignores stale reads, and presents a localized remedy with optional technical details.
 
+Primary navigation and the G M shortcut restore the selected map concept after
+visiting another screen. The Concepts search also survives panel and route
+remounts. Both stay in memory for the same opened folder handle; a different
+folder or an app restart starts a separate reading context. Explicit concept
+links still open their own target.
+
+Ordinary unsent ACP chat text survives screen changes in memory for the same
+opened folder. Prepared evidence requests remain within their originating review
+context; no request is sent by restoring a draft.
+
+Map entry also completes for empty folders and concepts without relationships,
+revealing their start actions without waiting for a canvas that is not mounted.
+Starter creation keeps its failure explanation and retry action visible even
+when some starter files have already been saved. Retrying preserves existing
+files and writes missing starter files. App-owned starter writes do not produce
+additional external-change notifications.
+
+Step-by-step popup tours and replay entries are retired. Folder opening guidance,
+contextual explanations, keyboard help and the Guide documentation remain.
+Closing a concept's full reading view returns to its selected map concept and inspector.
+
 ## Surfaces
 
 | Surface | Entry | Reference |
@@ -139,6 +160,13 @@ analysis. Counts, agent-reported tasks, source freshness and meaning acceptance
 are distinct; there is no global completeness score. See the
 [map workflow](features/map/README.md#optional-continued-analysis).
 
+Small Flat maps keep domain blocks in two separated columns when the conversation
+panel reduces the available map area.
+
+The map's maintenance list offers actions only where the destination can show the
+named items; it no longer advertises dusty concepts through the retired global
+Analysis repair catalog.
+
 The map's bottom corner reports one quiet scope count from graph membership.
 The generic legend, zoom invitation and sample click hint are removed; synthetic
 performance fixtures are explicitly labeled and do not show the unrelated sample
@@ -161,6 +189,7 @@ The desktop rail's order and hrefs come from
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
+| Changes: period briefing of a chosen Git repository | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
@@ -205,6 +234,10 @@ and managed-PC risk before the executable CTA. Chrome or Edge remains the
 install-free fallback when that warning or an organization policy is a blocker;
 the web still does not offer BYOK or MCP registration.
 
+Library service imports stage disabled metadata, confirm credential storage, then activate and allow the exact saved definition on this Mac. Pending saves cannot be submitted twice; failed saves can resume the same row. Changed settings and duplicate names require review. Browser users get Add files or the app, with no token field. Service access remains unverified.
+
+Library check history defaults to executed checks. A labelled control with a count includes recorded sleep gaps on demand without changing the ledger or schedule permissions.
+
 ## Topic files
 
 Destinations are one file each under `features/`; the map and the Library are
@@ -215,3 +248,7 @@ Data sources ([`data-sources.md`](features/data-sources.md)), the MCP server
 ([`mcp-server.md`](features/mcp-server.md)) and keyboard shortcuts
 ([`keyboard.md`](features/keyboard.md)) have one file each. Start a new one with
 `pnpm doc:new -- --type=feature --area=<area> --slug=<slug>`.
+
+Public GitHub PR reading is the recommended first step; commit-only explanations remain an explicitly limited alternative. Failed refreshes keep previously read PR versions and explanations for the same repository and period with a freshness warning; successful empty responses replace them. Bounded app-owned copies reopen eligible public PR originals after restart with original read times and unchecked current GitHub coverage. Source-independent clear preserves session originals and fences pending saves; failed storage never discards fresh text. Known GitHub rate limits stop lookup and disclose a provider retry time when available; local work remains usable and no retry starts automatically.
+
+Source Git/PR period explanations disclose sequential local-model requests, preserve completed parts in session memory for Stop/Continue, and create a compact overview from selected original passages. Completed-part choices include their first supported theme title; original readers offer a return action at both ends. Processing, uncertain interrupted delivery, citations and overview omissions remain distinct; records that exceed the request limit stay named gaps. Changed source/model/capacity/language requires a fresh plan. These author records do not accept ontology meaning or verify code behavior.

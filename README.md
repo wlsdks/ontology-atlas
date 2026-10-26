@@ -56,6 +56,10 @@ reject each change as a Markdown diff.
 
 Flat maps show domain labels with spaced outward capability branches and thin directed dependencies. Mark sizes and detail fade with the available row spacing as you zoom. Implementation elements form compact groups beside their capability, with readable names and membership stems. The overview limits crossing lines; inspecting an endpoint reveals its recorded connections and explicitly labelled bundle counts. Gentle local curves and screen-sized arrows keep direction legible. Individual relationship explanations and declaring documents remain available in relation review. A persistent bright outline distinguishes the selection, while amber exclamation marks mean evidence needs rechecking; the map key explains both marks and direction. Larger maps keep the same branch grammar with shorter previews and stable column groups. More/collapse controls disclose actual capabilities; focused areas keep that grammar and a labelled return to the full map. The Concepts panel separates searching, selecting and expanding the tree. Below 1280 px it temporarily folds beside an inspector and returns when that inspector closes; it can still be reopened explicitly. Project details keep dated source checks under **Check record**.
 
+Empty folders and concepts without relationships reveal their start actions when returning to Map from another screen. Starter creation keeps a persistent retry action after a write failure, including partial creation. Retrying preserves existing files and writes the missing starter files; completion produces one success notification. Popup tours are retired. Folder opening guidance, contextual help and keyboard help remain. Returning from a concept's full reading view keeps that concept selected on the map. Returning through primary navigation restores the selected map concept and Concepts search for the same opened folder, in memory for this session. Ordinary unsent chat text survives screen changes in memory for the same opened folder; restoring it never sends a request.
+
+Library service setup is app-only: Atlas confirms folder and keychain saves before activation. A browser offers the app or Add files without collecting service tokens. Local setup does not verify service access. Library check history lists executed checks first; recorded sleep gaps are available through an explicit display control.
+
 ## Quick start
 
 1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/), or open the [browser version](https://ontologyatlas.com/en/topology/).
@@ -93,6 +97,8 @@ Project checks distinguish a document changed since its last meaning review from
 Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
 
 ## Local-first
+
+The installed app's **Changes** prototype reads a chosen Git repository without requiring an ontology. Public GitHub PR reading is the recommended first step; commit-only explanations remain an explicitly limited alternative. Failed PR refreshes keep previously read versions and explanations with a freshness warning. Explicitly read public PR originals have bounded local copies that can reopen after restart, labelled with their original read time and unchecked current GitHub state. Saved copies can be cleared in Changes even without a source folder. Known GitHub rate limits show a retry time and pause PR reads while local sources remain usable. Select daily, weekly, monthly, yearly or custom local dates; inspect full commit messages, touched files and bounded code comparisons inside Atlas. A disclosed sequence reads every fitting collected complete record, preserves completed parts for session Stop/Continue, and builds a short overview from selected original passages; source, processing and overview gaps remain explicit. It reads current-branch first-parent history; author descriptions and optional ontology grouping do not establish verified behavior changes. [Change briefing](docs/features/change-briefing.md)
 
 - No backend, account or telemetry. The folder stays plain Markdown on your disk.
 - Model calls with your API key or a local model are opt-in, and each records its destination in `.ontology-atlas/llm-audit.jsonl`.
@@ -166,6 +172,8 @@ implementation still require exhaustive CI.
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
 | `pnpm ui:audit -- --url=<base> --route=<path>` | Rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
+
+Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
 
 </details>
 

@@ -232,3 +232,8 @@ export async function secretVerify(
 export function secretErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
   return nativeErrorMessage(err, lookup);
 }
+
+export async function sourceModelVerify(baseUrl: string): Promise<LlmVerifyResult | null> {
+  const invoke = getInvoke();
+  return invoke ? invoke<LlmVerifyResult>('source_model_verify', { baseUrl }) : null;
+}

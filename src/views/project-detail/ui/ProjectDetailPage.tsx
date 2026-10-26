@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -231,6 +231,18 @@ export function ProjectDetailPage({
   const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
+  const reviewOutcomeRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (constructionReview.status === "ready" || constructionReview.status === "blocked") {
+      const outcome = reviewOutcomeRef.current;
+      outcome?.focus({ preventScroll: true });
+      outcome?.scrollIntoView?.({ block: "start" });
+    }
+  }, [constructionReview.status]);
+  const openReviewPicker = (event: MouseEvent<HTMLButtonElement>) => {
+    event.currentTarget.focus({ preventScroll: true });
+    constructionReview.openPicker();
+  };
   const { show: showToast } = useToast();
   const [project, setProject] = useState<Project | null>(
     initialProject,
@@ -539,7 +551,7 @@ export function ProjectDetailPage({
               className="grid min-w-0 basis-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center @5xl/project-hero:ml-auto @5xl/project-hero:basis-auto"
             >
               <Link href={getTopologyProjectNodeHref(project.slug)} data-testid="project-detail-topology-link">
-                <Button type="button" variant="primary" size="sm" className="w-full sm:w-auto">
+                <Button type="button" variant="primary" size="sm" className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto">
                   {t("topBarTopologyView")}
                 </Button>
               </Link>
@@ -554,8 +566,10 @@ export function ProjectDetailPage({
                 variant="outline"
                 size="sm"
                 disabled={constructionReview.status === "reading"}
-                onClick={constructionReview.openPicker}
-                className="w-full sm:w-auto"
+                onClick={openReviewPicker}
+                data-testid="construction-review-open"
+                aria-describedby="construction-review-file-hint"
+                className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto"
               >
                 <FileText size={ICON_SIZE.md} aria-hidden="true" />
                 {constructionReview.status === "reading"
@@ -576,6 +590,10 @@ export function ProjectDetailPage({
             </div>
           </div>
 
+          <p id="construction-review-file-hint" className="mt-4 max-w-prose text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t("constructionReview.fileHint")}
+          </p>
+
           {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
           {canManageProject ? null : (
             <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
@@ -585,33 +603,43 @@ export function ProjectDetailPage({
               >
                 {t("readOnlyBadge")}
               </span>
-              <OpenVaultCta testId="project-detail-open-vault" />
+              <OpenVaultCta testId="project-detail-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />
             </div>
           )}
 
         </div>
       </header>
 
-      {constructionReview.status === "ready" && constructionReview.review ? (
-        <ConstructionReviewPanel
-          key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
-          review={constructionReview.review}
-        />
-      ) : null}
+      {constructionReview.status === "ready" || constructionReview.status === "blocked" ? (
+        <div ref={reviewOutcomeRef} tabIndex={-1} role="region"
+          aria-label={t("constructionReview.resultRegion")}
+          data-testid="construction-review-outcome" className="scroll-mt-6 focus:outline-none">
+          {constructionReview.status === "ready" && constructionReview.review ? (
+            <ConstructionReviewPanel
+              key={`${constructionReview.review.sourceDigest}:${constructionReview.review.planDigest}`}
+              review={constructionReview.review}
+            />
+          ) : null}
 
-      {constructionReview.status === "blocked" && constructionReview.errorState ? (
-        <section
-          data-testid="construction-review-error"
-          data-envelope-state={constructionReview.errorState}
-          className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
-        >
-          <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
-            {t("constructionReview.errorTitle")}
-          </h2>
-          <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
-            {t(`constructionReview.errors.${constructionReview.errorState}`)}
-          </p>
-        </section>
+          {constructionReview.status === "blocked" && constructionReview.errorState ? (
+            <section
+              data-testid="construction-review-error"
+              data-envelope-state={constructionReview.errorState}
+              className="mt-[var(--section-gap)] rounded-panel border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] p-[var(--card-pad)] sm:px-5"
+            >
+              <h2 className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-danger-text)]">
+                {t("constructionReview.errorTitle")}
+              </h2>
+              <p className="mt-1.5 text-body leading-prose text-[color:var(--color-text-secondary)]">
+                {t(`constructionReview.errors.${constructionReview.errorState}`)}
+              </p>
+              <Button type="button" variant="outline" size="sm" onClick={openReviewPicker}
+                data-testid="construction-review-retry" className="atlas-touch-floor atlas-touch-floor-wide mt-4">
+                {t("constructionReview.retryFile")}
+              </Button>
+            </section>
+          ) : null}
+        </div>
       ) : null}
 
       {/* The page's first answer: how much of each Atlas surface is built for this project. */}

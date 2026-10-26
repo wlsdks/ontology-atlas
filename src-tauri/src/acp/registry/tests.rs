@@ -18,10 +18,10 @@ fn the_registry_snapshot_is_loaded_and_every_entry_can_be_launched() {
                 // An unpinned adapter could silently speak a different protocol.
                 assert!(
                     package.contains('@')
-                        && package.rsplit('@').next().is_some_and(|v| v
-                            .chars()
+                        && package
+                            .rsplit('@')
                             .next()
-                            .is_some_and(|c| c.is_ascii_digit())),
+                            .is_some_and(|v| v.chars().next().is_some_and(|c| c.is_ascii_digit())),
                     "{} npx package has no version: {package}",
                     agent.id
                 );

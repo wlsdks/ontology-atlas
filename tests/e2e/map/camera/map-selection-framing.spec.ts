@@ -4,7 +4,7 @@ import { waitForMapStill } from "../../settle";
 
 type MapNode = { id: string; kind: string; label: string; x: number; y: number; hidden: boolean;
 };
-type AtlasMap = { nodes: () => MapNode[]; selection: () => { nodeId: string | null;
+type AtlasMap = { nodes: () => MapNode[]; cameraTarget: () => { x: number; y: number; scale: number }; selection: () => { nodeId: string | null;
     };
 };
 
@@ -40,6 +40,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("a node picked from the search palette is framed left of the detail panel", async ({ page }) => {
+  const readTarget = () => page.evaluate(() => (window as unknown as { __atlasMap: AtlasMap }).__atlasMap.cameraTarget());
+  const beforeTarget = await readTarget();
   const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
   await page.locator('[data-testid="topology-concept-search"]').click();
   await expect(palette, "검색 칩이 팔레트를 연다").toBeVisible();
@@ -49,6 +51,7 @@ test("a node picked from the search palette is framed left of the detail panel",
     "고른 결과가 배송이다").toContainText("배송");
   await page.keyboard.press("Enter");
   await expect(page.locator('[data-testid="map-detail-panel"]')).toBeVisible({ timeout: 5000 });
+  await expect.poll(readTarget, { message: "the search selection issues its camera target" }).not.toEqual(beforeTarget);
   await waitForMapStill(page, { what: "camera" });
   const after = await readMap(page);
   expect(after.selected, "검색으로 고른 노드가 선택된다").not.toBeNull();
@@ -162,4 +165,48 @@ test("a deep link that opens one domain frames its revealed children, and the 0 
   await page.keyboard.press("0");
   await waitForMapStill(page);
   expect(await drawnOffscreen(), "0 키 맞춤도 펼친 요소를 담는다").toBe(0);
+});
+
+for (const target of ["domain:order", "domain:customer", "domain:support"]) {
+  test(`search leaves a completed path and selects ${target}`, async ({ page }) => {
+    await page.goto("/ko/topology/?e2e=1&guides=off&mode=path&pathFrom=domain%3Aorder&pathTo=domain%3Acustomer");
+    await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
+    const label = await page.evaluate((id) => (window as unknown as { __atlasMap: AtlasMap }).__atlasMap.nodes().find((node) => node.id === id)!.label, target);
+    await page.getByTestId("topology-concept-search").click();
+    const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+    await palette.getByRole("combobox").fill(label);
+    await palette.locator(`[role="option"][data-value="ontology:${target}"]`).click();
+    await expect.poll(async () => (await readMap(page)).selected?.label).toBe(label);
+    await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens", "path");
+    const query = new URL(page.url()).searchParams;
+    expect(query.get("p")).toBe(target);
+    expect(query.has("pathFrom")).toBe(false);
+    expect(query.has("pathTo")).toBe(false);
+    await expect(page.getByTestId("ontology-map-canvas")).toBeFocused();
+  });
+}
+
+test("search still supplies the target of an unfinished path", async ({ page }) => {
+  await page.goto("/ko/topology/?e2e=1&guides=off&mode=path&pathFrom=domain%3Aorder");
+  await expect(page.getByTestId("ontology-map-canvas")).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("mode")).toBe("path");
+  const target = "domain:customer";
+  const label = await page.evaluate((id) => (window as unknown as { __atlasMap: AtlasMap }).__atlasMap.nodes().find((node) => node.id === id)!.label, target);
+  await page.getByTestId("topology-concept-search").click();
+  const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+  await palette.getByRole("combobox").fill(label);
+  await palette.locator(`[role="option"][data-value="ontology:${target}"]`).click();
+  await expect.poll(() => new URL(page.url()).searchParams.get("pathTo")).toBe(target);
+  await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
+});
+
+test("a project search result opens its project after a completed path", async ({ page }) => {
+  await page.goto("/ko/topology/?e2e=1&guides=off&mode=path&pathFrom=domain%3Aorder&pathTo=domain%3Acustomer");
+  await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
+  await page.getByTestId("topology-concept-search").click();
+  const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
+  await palette.locator('[role="option"][data-value="project:storefront"]').click();
+  await expect(page.getByTestId("project-drawer")).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("p")).toBe("storefront");
+  await expect(page.getByTestId("ontology-map")).not.toHaveAttribute("data-map-lens", "path");
 });

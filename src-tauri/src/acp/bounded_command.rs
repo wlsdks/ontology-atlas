@@ -6,7 +6,9 @@ pub(crate) fn bounded_output(
     command: std::process::Command,
     limit: std::time::Duration,
 ) -> Option<String> {
-    crate::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES).ok().map(|(_, stdout)| stdout)
+    crate::command_output::run(command, limit, MAX_PROBE_OUTPUT_BYTES)
+        .ok()
+        .map(|(_, stdout)| stdout)
 }
 
 /// `security add-generic-password` prints nothing either way, so only the exit status

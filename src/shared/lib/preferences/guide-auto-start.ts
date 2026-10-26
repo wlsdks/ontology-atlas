@@ -1,9 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react";
 
-/**
- * Global switch for whether guided tours start on their own; default off. Tours stay reachable
- * from the compass tile and settings. A stored explicit "1" is honoured.
- */
+/** Whether the sample offers the first-visit folder-opening guide automatically; default off. */
 
 const GUIDE_AUTO_START_KEY = "ontology-atlas:guide-auto-start:v1";
 
@@ -15,7 +12,7 @@ export const DEFAULT_GUIDE_AUTO_START = false;
 /**
  * Only an explicit choice counts ("1" on, "0" off); anything else takes the
  * default. That is what let the default flip to off without discarding the "1"
- * of everyone who had turned tours on.
+ * of everyone who had enabled automatic folder guidance.
  */
 export function resolveGuideAutoStart(saved: string | null): boolean {
   if (saved === "1") return true;

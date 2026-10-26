@@ -27,7 +27,7 @@ routes: []
   any caption outside a card share the card's left edge; row text sits inside the card
   (`tests/e2e/settings/settings-reading.spec.ts`, at 1040 and 1440).
 - **Panes** (`ui/panes/`): Screen · language (language, view mode on every screen, text size
-  Default / Large / Larger, concept icons, Motion status, screen guides); Map (background,
+  Default / Large / Larger, concept icons, Motion status, automatic folder-opening guidance); Map (background,
   drag and zoom speed, INDEX default only where the map injects it, frame meter On · Off);
   Agents (When an agent writes a wiki page, app only; door rows to Coding tools, Models · API
   keys with the Keychain key count, and MCP); Privacy · data (what can leave this computer

@@ -24,3 +24,14 @@ fn host_of(url: &str) -> &str {
 
 #[cfg(test)]
 mod tests;
+
+pub(crate) fn source_audit_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
+    let root = app.path().app_local_data_dir().map_err(|_| "audit-blocked:app-data-unavailable")?.join("source-briefing");
+    std::fs::create_dir_all(&root).map_err(|_| "audit-blocked:app-data-unavailable")?;
+    let metadata = std::fs::symlink_metadata(&root).map_err(|_| "audit-blocked:app-data-unavailable")?;
+    if !metadata.is_dir() || metadata.file_type().is_symlink() {
+        return Err("audit-blocked:app-data-unavailable".into());
+    }
+    Ok(root)
+}

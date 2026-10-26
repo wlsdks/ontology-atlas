@@ -66,8 +66,7 @@ fn restore_source_is_head_or_a_hash() {
 
 #[test]
 fn identity_guard_names_the_field_that_would_change() {
-    let now =
-        "---\nuid: 11111111\nslug: domains/orders\nmerged_uids: [22222222]\n---\n# Orders\n";
+    let now = "---\nuid: 11111111\nslug: domains/orders\nmerged_uids: [22222222]\n---\n# Orders\n";
     let same = "---\nuid: \"11111111\"\nslug: 'domains/orders'\nmerged_uids: [22222222]\n---\nolder body\n";
     assert_eq!(
         identity_difference(&read_identity(now), &read_identity(same)),

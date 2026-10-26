@@ -8,7 +8,6 @@ import type { useTopologyExplorationLenses } from "../model/map-canvas/use-topol
 import type { useTopologyGraphProjection } from "../model/map-canvas/use-topology-graph-projection";
 import type { useTopologyIndexPresentation } from "../model/index-panel/use-topology-index-presentation";
 import type { useTopologyInspectorState } from "../model/inspector/use-topology-inspector-state";
-import type { useTopologyKeyboardTour } from "../model/keyboard/use-topology-keyboard-tour";
 import type { useTopologyNavigationActions } from "../model/use-topology-navigation-actions";
 import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
@@ -56,7 +55,6 @@ export interface TopologyMapRendererProps {
   footprintBrushNodeIdRef: React.RefObject<string | null>;
   ontologySearchOpen: boolean;
   topologyInspectorState: Pick<ReturnType<typeof useTopologyInspectorState>, "nodePanelMounted">;
-  topologyKeyboardTour: Pick<ReturnType<typeof useTopologyKeyboardTour>, "tourAnchorNodeId" | "tourAnchorRef">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "expandedParentSet" | "handleToggleCluster" | "handleEnterRealm">;
   topologyNavigationActions: Pick<ReturnType<typeof useTopologyNavigationActions>, "handleClose" | "handleSelect">;
   topologyAnalysisReview: Pick<ReturnType<typeof useTopologyAnalysisReview>, "mapRelationCaptions" | "mapReviewQuestionIds">;
@@ -134,7 +132,7 @@ function useBodyLabelFont(): boolean {
 export function TopologyMapRenderer({
   localGraphRoot, mapEntryTicket, expandAllActive, mapAssemblesOnOpen, combinedFitToken, growthReplayToken, setGrowthReplaying,
   topologyRelayoutToken, setTopologyVisibleCount, footprintVisitedIds, footprintLensActiveRef,
-  footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyKeyboardTour, topologyRouteControls,
+  footprintBrushNodeIdRef, ontologySearchOpen, topologyInspectorState, topologyRouteControls,
   topologyNavigationActions, topologyAnalysisReview, topologyGraphProjection, topologyPreferences,
   topologyVaultReadModel, topologyAuthoring, topologySceneControls, topologyCanvasFocus, topologyExplorationLenses,
   topologyIndexPresentation, topologyCreateIntent, impactLensActive,
@@ -164,7 +162,6 @@ export function TopologyMapRenderer({
   const { mapRelationCaptions, mapReviewQuestionIds } = topologyAnalysisReview;
   const { handleClose, handleSelect } = topologyNavigationActions;
   const { expandedParentSet, handleToggleCluster, handleEnterRealm } = topologyRouteControls;
-  const { tourAnchorNodeId, tourAnchorRef } = topologyKeyboardTour;
   const { nodePanelMounted } = topologyInspectorState;
   const measuredMapEvidence = useMapEvidenceStates({ nodes: ontologyInsight?.nodes, enabled: !structure && !hexBoard });
   const mapEvidence = topologyGraphProjection.synthEvidence ?? measuredMapEvidence;
@@ -330,8 +327,6 @@ export function TopologyMapRenderer({
             trailHoverNodeIdRef={footprintBrushNodeIdRef}
             panelHoverNodeIdRef={panelHoverNodeIdRef}
             tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-            tourAnchorNodeId={tourAnchorNodeId}
-            tourAnchorRef={tourAnchorRef}
             overlayOpen={!createNodeOpen && ontologySearchOpen}
             glyphSet={glyphSet}
             canvasBackground={canvasBackground}

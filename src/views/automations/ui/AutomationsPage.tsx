@@ -157,7 +157,11 @@ export function AutomationsPage({
             { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
             { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
           ]} />}
-        actions={ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={add} disabled={lanePending}
+        actions={ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={(event) => {
+          // WebKit may activate without focus; keep this opener as the sheet's return point.
+          event.currentTarget.focus({ preventScroll: true });
+          add();
+        }} disabled={lanePending}
           data-testid="automations-new" className="atlas-touch-floor atlas-touch-floor-wide">
           <Plus size={ICON_SIZE.sm} aria-hidden />{t(`${lane}.new`)}
         </Button> : null} />

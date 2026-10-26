@@ -93,8 +93,6 @@ const labels = {
   agentBadge: "Agent just now",
   uncatalogedDocsLabel: "0 docs not on the map",
   uncatalogedDocsAction: "Promote",
-  dustyNodesLabel: "0 nodes gathering dust",
-  dustyNodesAction: "See freshness",
   brokenDocsLabel: "2 docs the checks caught",
   brokenDocsAction: "Open the library",
   sourceUnboundLabel: "1 project with no code folder",
@@ -676,8 +674,7 @@ describe("TopologyIndexPanel", () => {
       concepts: 102,
       relations: 478,
       domains: 6,
-      // Tour and plain-mode callbacks exist only when HomePage supplies them.
-      onStartTour: undefined,
+      // Plain-mode callbacks exist only when HomePage supplies them.
       onEnablePlainMode: undefined,
       audiencePlain: false,
     });
@@ -971,7 +968,6 @@ describe("TopologyIndexPanel", () => {
           onSelect={() => {}}
           onCollapse={() => {}}
           labels={labels}
-          dustyNodeCount={51}
           uncatalogedDocCount={3}
           onPromoteUncatalogedDocs={() => {}}
           vaultLoaded={false}
@@ -993,13 +989,12 @@ describe("TopologyIndexPanel", () => {
           onSelect={() => {}}
           onCollapse={() => {}}
           labels={labels}
-          dustyNodeCount={51}
           uncatalogedDocCount={3}
           onPromoteUncatalogedDocs={() => {}}
           vaultLoaded
         />,
       );
-      expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
+      expect(screen.queryByTestId("topology-index-dusty-nodes")).not.toBeInTheDocument();
       expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
     });
 
@@ -1231,7 +1226,7 @@ describe("TopologyIndexPanel", () => {
       expect(screen.queryByTestId("topology-index-source-unbound")).not.toBeInTheDocument();
     });
 
-    it("defaults to shown (vaultLoaded omitted) for backward compatibility with existing callers", () => {
+    it("does not advertise the retired freshness catalog without a vault gate", () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -1243,10 +1238,10 @@ describe("TopologyIndexPanel", () => {
           onSelect={() => {}}
           onCollapse={() => {}}
           labels={labels}
-          dustyNodeCount={51}
+          {...{ dustyNodeCount: 51 }}
         />,
       );
-      expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
+      expect(screen.queryByTestId("topology-index-dusty-nodes")).not.toBeInTheDocument();
     });
   });
 });

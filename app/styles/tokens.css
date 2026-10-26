@@ -65,8 +65,6 @@
    */
   --z-map-scrim: 25;           /* Backdrop behind map (surface that closes on click) */
   --z-dialog: 60;              /* Dialog over scrim */
-  --z-tour: 70;                /* First-visit guide overlay */
-  --z-tour-card: 75;           /* Card of that guide */
   --z-tooltip: 80;             /* Tooltip — must be readable even over dialogs */
   --z-skip-link: 100;          /* Skip link — above everything else */
 
@@ -657,7 +655,6 @@
   --tracking-caption: 0.04em;
   --tracking-label: 0.02em;
   --tracking-body: 0.005em;
-  --tracking-body-lg: 0em;
   --tracking-title: -0.01em;
 
   /*
