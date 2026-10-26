@@ -64,7 +64,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const resultRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLElement>(null);
   const citationRef = useRef<HTMLButtonElement | null>(null);
-  const [reader, setReader] = useArrivalMemory<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number } | null>(`${memory}:reader`, null);
+  const [reader, setReader] = useArrivalMemory<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number; reportIdentity: string | null } | null>(`${memory}:reader`, null);
   const [visibleSources, setVisibleSources] = useArrivalMemory(`${memory}:source-rows`, 40);
   useLayoutEffect(() => {
     const section = sourceRef.current;
@@ -96,6 +96,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const api = usePeriodNarrative({ data, period, sources, lookup: { status: matchedPulls?.status ?? 'not-requested', unchecked: matchedPulls?.unchecked ?? data.commits.length, unlinked: matchedPulls?.unlinked ?? 0 }, identity: key, connection: local, locale });
   const { current, busy: activeBusy, failure, prepare } = api;
   const error = failure?.code;
+  const reportIdentity = api.run && current ? `${api.run.id}:${current.index}` : null;
   const displaySources = sources;
   useEffect(() => {
     if (!current?.overview) return;
@@ -145,6 +146,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   }
   function closeReader() {
     const fromList = reader?.fromList;
+    const sameReport = Boolean(fromList || reader?.reportIdentity && reader.reportIdentity === reportIdentity);
     const main = sourceRef.current?.closest('main');
     const rememberedOrigin = reader && main?.querySelectorAll<HTMLElement>(`[data-briefing-origin="${CSS.escape(reader.passage ?? reader.source.id)}"]`)[reader.originIndex];
     const returnScroll = reader?.returnScroll;
@@ -152,9 +154,13 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     onMode(fromList ? 'sources' : 'summary');
     requestAnimationFrame(() => {
       const origin = citationRef.current?.isConnected ? citationRef.current : rememberedOrigin;
-      if (main?.isConnected && returnScroll !== undefined) main.scrollTop = returnScroll;
-      if (origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
-      else (fromList ? originalsHeading.current : resultRef.current)?.focus({ preventScroll: true });
+      if (sameReport && main?.isConnected && returnScroll !== undefined) main.scrollTop = returnScroll;
+      if (sameReport && origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
+      else {
+        const target = fromList ? originalsHeading.current : resultRef.current;
+        target?.focus({ preventScroll: sameReport });
+        if (!sameReport) target?.scrollIntoView({ block: 'start' });
+      }
     });
   }
   function showSourceList() {
@@ -172,7 +178,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     const main = button.closest('main');
     const originIndex = Array.from(main?.querySelectorAll(`[data-briefing-origin="${CSS.escape(passage ?? source.id)}"]`) ?? []).indexOf(button);
     onMode('sources');
-    setReader({ source, passage, fromList, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
+    setReader({ source, passage, fromList, reportIdentity, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
     requestAnimationFrame(() => { sourceRef.current?.focus(); sourceRef.current?.scrollIntoView({ block: 'start' }); });
   }
   const copyLabel = (source: NarrativeSource) => { const copy = prCopyDetails(source, clearedAt, locale); return t(copy.key, { fetchedAt: copy.fetchedAt }); };

@@ -93,3 +93,26 @@ test('restores a citation return target without carrying the reader into another
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
   expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(1);
 });
+
+test('returns to the summary heading when the originating explanation was replaced', async ({ page }) => {
+  await enter(page);
+  await prepare(page);
+  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByTestId('briefing-theme').getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).first().click();
+  const original = page.getByTestId('briefing-original');
+  await expect(original).toBeFocused();
+  await page.getByRole('button', { name: 'Next period', exact: true }).click();
+  await page.getByTestId('briefing-summary-mode').click();
+  await setBriefingMode(page, 'model-three');
+  await page.getByRole('button', { name: 'Rebuild summary', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await expect(page.getByTestId('briefing-theme')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Previous period', exact: true }).click();
+  await page.getByTestId('briefing-originals').click();
+  await expect(original).toBeVisible();
+  await leaveAndReturn(page);
+  await expect(original).toBeVisible();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+  await expect(page.locator('#git-briefing-title')).toBeFocused();
+  expect(await calls(page, 'source_briefing_chat')).toHaveLength(2);
+});
