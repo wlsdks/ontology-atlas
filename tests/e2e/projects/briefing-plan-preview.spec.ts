@@ -80,6 +80,35 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
 }
 
 for (const width of [390, 1512]) {
+  test(`keeps original inspection and part selection bounded at ${width}`, async ({ page }, testInfo) => {
+    await enter(page);
+    await setBriefingMode(page, 'batch');
+    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await setBriefingMode(page, 'long-original');
+    await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 20000; });
+    await prepare(page);
+    await page.setViewportSize({ width, height: 900 });
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Review text to send', exact: true }).click();
+    const part = dialog.getByRole('combobox', { name: 'Choose reading request to inspect', exact: true });
+    await part.click();
+    await expect(page.getByRole('listbox')).toBeInViewport({ ratio: 1 });
+    await page.getByRole('option').first().click();
+    await dialog.getByRole('button', { name: 'Keep map navigation readable', exact: true }).click();
+    const original = dialog.locator('pre');
+    await expect(original).toContainText('Original section 159');
+    const ramps = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));
+    for (const end of [false, true]) {
+      if (end) await original.evaluate(element => element.scrollIntoView({ block: 'end' }));
+      await waitForBoxStill(dialog);
+      const audit = await auditPage(page, { width, rampNames: ramps, scope: '[role="dialog"]' });
+      await testInfo.attach(`preview-${width}-original-${end}`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
+      expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
+      await expect(dialog.getByRole('button', { name: 'Create period explanation', exact: true })).toBeInViewport();
+    }
+    expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
+  });
+
   test(`retains request actions at doubled text size and ${width} width`, async ({ page }, testInfo) => {
     await enter(page); await prepare(page);
     await page.setViewportSize({ width, height: 900 });
