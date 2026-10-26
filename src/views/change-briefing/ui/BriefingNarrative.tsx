@@ -15,6 +15,7 @@ import { authorEvidence, type AuthorEvidenceKind } from '../model/author-evidenc
 import { narrativeSources, sourcePassages, type NarrativeClaim, type NarrativeSource } from '../model/narrative';
 import { usePeriodNarrative } from '../model/use-period-narrative';
 import { PeriodPlanDialog } from './PeriodPlanDialog';
+import { OriginalSourceBody } from './OriginalSourceBody';
 import { PeriodRunStatus, PeriodRunDetails } from './PeriodRunStatus';
 
 export type BriefingReadingMode = 'summary' | 'sources' | 'code';
@@ -64,7 +65,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const resultRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLElement>(null);
   const citationRef = useRef<HTMLButtonElement | null>(null);
-  const [reader, setReader] = useArrivalMemory<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number; reportIdentity: string | null } | null>(`${memory}:reader`, null);
+  const [reader, setReader] = useArrivalMemory<{ id: string; source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number; reportIdentity: string | null } | null>(`${memory}:reader`, null);
   const [visibleSources, setVisibleSources] = useArrivalMemory(`${memory}:source-rows`, 40);
   useLayoutEffect(() => {
     const section = sourceRef.current;
@@ -178,8 +179,13 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     const main = button.closest('main');
     const originIndex = Array.from(main?.querySelectorAll(`[data-briefing-origin="${CSS.escape(passage ?? source.id)}"]`) ?? []).indexOf(button);
     onMode('sources');
-    setReader({ source, passage, fromList, reportIdentity, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
-    requestAnimationFrame(() => { sourceRef.current?.focus(); sourceRef.current?.scrollIntoView({ block: 'start' }); });
+    setReader({ id: crypto.randomUUID(), source, passage, fromList, reportIdentity, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
+    requestAnimationFrame(() => {
+      const section = sourceRef.current;
+      section?.focus({ preventScroll: true });
+      const target = passage ? section?.querySelector(`[data-source-passage~="${CSS.escape(passage)}"]`) : null;
+      (target ?? section)?.scrollIntoView({ block: 'start' });
+    });
   }
   const copyLabel = (source: NarrativeSource) => { const copy = prCopyDetails(source, clearedAt, locale); return t(copy.key, { fetchedAt: copy.fetchedAt }); };
   const citations = new Map((current?.packet.sources ?? []).flatMap(source => sourcePassages(source).map(passage => ({ source, passage }))).map((value, index) => [value.passage.id, { source: value.source, passage: value.passage, number: index + 1 }]));
@@ -282,7 +288,8 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
       <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="min-w-0 flex-1 break-words text-title font-[var(--font-weight-strong)]">{reader.source.title}</h3><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={closeReader}>{t(reader.fromList ? 'backSources' : 'backSummary')}</Button></div>
       <p className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">{reader.source.kind === 'pr' ? reader.source.version : t('sourceVersion', { hash: reader.source.integration.slice(0, 8), snapshot: reader.head.slice(0, 8) })}</p>
       {reader.source.kind === 'pr' && <p className="text-label text-[color:var(--color-text-secondary)]">{copyLabel(reader.source)} · {t('prVersion', { number: Number(reader.source.id.split(':')[1]), updatedAt: formatPrTime(reader.source.updatedAt ?? '', locale), fetchedAt: formatPrTime(reader.source.fetchedAt ?? '', locale) })} · {t('prSnapshotNote')}</p>}
-      <div className="space-y-3">{!reader.source.text.trim() && <p role="status">{t('sourceUnavailableInline')}</p>}{sourcePassages(reader.source).map(passage => <pre key={passage.id} data-source-passage={passage.id} className={`whitespace-pre-wrap break-words font-mono text-body ${reader.passage === passage.id ? 'rounded-card bg-[color:var(--color-overlay-2)] p-3' : ''}`}>{passage.text}</pre>)}</div>
+      {!reader.source.text.trim() && <p role="status">{t('sourceUnavailableInline')}</p>}
+      <OriginalSourceBody key={reader.id} readerId={reader.id} source={reader.source} passage={reader.passage} memory={memory} rawLabel={t('viewSourceText')} readingLabel={t('viewFormattedText')} />
       <div className="flex flex-wrap items-center gap-3">
         <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" size="sm" onClick={closeReader}>{t(reader.fromList ? 'backSources' : 'backSummary')}</Button>
         <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={showSourceList}>{t('sourceList')}</Button>
