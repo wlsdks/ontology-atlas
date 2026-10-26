@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
-import messages from '../../../../messages/en/library.json';
+import messages from '../../../../messages/en.json';
 import type { SourceCandidate } from '@/entities/docs-vault';
 import { FindDocumentsDialog, type FindDocumentsDialogProps } from './FindDocumentsDialog';
 
@@ -20,7 +20,7 @@ function mount() {
     busy: false, onAdd: vi.fn(),
     outcome: { candidates: [first, second, third], truncated: false, unreadableRoots: [], projectRootsReachable: true, walkedRoots: [] },
   };
-  const view = (value: FindDocumentsDialogProps) => <NextIntlClientProvider locale="en" messages={{ library: messages }}><FindDocumentsDialog {...value} /></NextIntlClientProvider>;
+  const view = (value: FindDocumentsDialogProps) => <NextIntlClientProvider locale="en" messages={{ library: messages.library }}><FindDocumentsDialog {...value} /></NextIntlClientProvider>;
   return { props, ...render(view(props)), view };
 }
 

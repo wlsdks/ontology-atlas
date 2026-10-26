@@ -242,7 +242,7 @@ describe("Select exit frame", () => {
 describe("Select inside a dialog", () => {
   it("dismisses choices before its dialog and returns focus to the trigger", () => {
     const close = vi.fn();
-    render(<Dialog open onClose={close} ariaLabel="Read coverage"><button>Close coverage</button><Harness /></Dialog>);
+    render(<Dialog open onClose={close} aria-label="Read coverage"><button>Close coverage</button><Harness /></Dialog>);
     const trigger = screen.getByRole("combobox");
     fireEvent.click(trigger);
     const list = screen.getByRole("listbox");
