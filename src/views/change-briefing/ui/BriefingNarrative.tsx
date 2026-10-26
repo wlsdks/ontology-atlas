@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { FileText, Settings2, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Button, Chip, Dialog, RowButton, Select } from '@/shared/ui';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
+import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 import { controlClass } from '@/shared/ui/control-class';
 import { gitBriefingPullDescriptions, gitBriefingRepositories, gitBriefingSavedPullDescriptions, type SavedPulls, type ChangeBriefing, type PullDescriptions, type PullLookupFailure } from '@/shared/lib/git/tauri-change-briefing';
 import { isLocalEndpointReady, readLocalEndpoint, subscribeLocalEndpointChange } from '@/shared/lib/llm-connection/local-endpoint';
@@ -63,9 +64,24 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const resultRef = useRef<HTMLHeadingElement>(null);
   const sourceRef = useRef<HTMLElement>(null);
   const citationRef = useRef<HTMLButtonElement | null>(null);
-  const readingReturn = useRef<{ main: HTMLElement; scrollTop: number } | null>(null);
-  const [reader, setReader] = useState<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean } | null>(null);
-  const [visibleSources, setVisibleSources] = useState(40);
+  const [reader, setReader] = useArrivalMemory<{ source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number; reportIdentity: string | null } | null>(`${memory}:reader`, null);
+  const [visibleSources, setVisibleSources] = useArrivalMemory(`${memory}:source-rows`, 40);
+  useLayoutEffect(() => {
+    const section = sourceRef.current;
+    const main = section?.closest('main');
+    if (!reader || mode !== 'sources' || !section || !main) return;
+    const positionKey = JSON.stringify([memory, reader.source.id, reader.source.version, reader.passage, 'reader-position']);
+    const position = readArrivalMemory<number>(positionKey);
+    if (position !== undefined) {
+      main.scrollTop = position;
+    }
+    section.focus({ preventScroll: true });
+    const remember = () => {
+      if (!section.closest('[hidden]')) writeArrivalMemory(positionKey, main.scrollTop);
+    };
+    main.addEventListener('scroll', remember, { passive: true });
+    return () => main.removeEventListener('scroll', remember);
+  }, [memory, mode, reader]);
   const [scopeOpen, setScopeOpen] = useState(false);
   const scopeId = useId();
   const scopeOpener = useRef<HTMLButtonElement | null>(null);
@@ -80,6 +96,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const api = usePeriodNarrative({ data, period, sources, lookup: { status: matchedPulls?.status ?? 'not-requested', unchecked: matchedPulls?.unchecked ?? data.commits.length, unlinked: matchedPulls?.unlinked ?? 0 }, identity: key, connection: local, locale });
   const { current, busy: activeBusy, failure, prepare } = api;
   const error = failure?.code;
+  const reportIdentity = api.run && current ? `${api.run.id}:${current.index}` : null;
   const displaySources = sources;
   useEffect(() => {
     if (!current?.overview) return;
@@ -129,13 +146,21 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   }
   function closeReader() {
     const fromList = reader?.fromList;
+    const sameReport = Boolean(fromList || reader?.reportIdentity && reader.reportIdentity === reportIdentity);
+    const main = sourceRef.current?.closest('main');
+    const rememberedOrigin = reader && main?.querySelectorAll<HTMLElement>(`[data-briefing-origin="${CSS.escape(reader.passage ?? reader.source.id)}"]`)[reader.originIndex];
+    const returnScroll = reader?.returnScroll;
     setReader(null);
     onMode(fromList ? 'sources' : 'summary');
     requestAnimationFrame(() => {
-      const origin = citationRef.current;
-      if (readingReturn.current?.main.isConnected) readingReturn.current.main.scrollTop = readingReturn.current.scrollTop;
-      if (origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
-      else (fromList ? originalsHeading.current : resultRef.current)?.focus();
+      const origin = citationRef.current?.isConnected ? citationRef.current : rememberedOrigin;
+      if (sameReport && main?.isConnected && returnScroll !== undefined) main.scrollTop = returnScroll;
+      if (sameReport && origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
+      else {
+        const target = fromList ? originalsHeading.current : resultRef.current;
+        target?.focus({ preventScroll: sameReport });
+        if (!sameReport) target?.scrollIntoView({ block: 'start' });
+      }
     });
   }
   function showSourceList() {
@@ -151,15 +176,15 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     if (current && !current.overview) api.select(current.index);
     citationRef.current = button;
     const main = button.closest('main');
-    readingReturn.current = main ? { main, scrollTop: main.scrollTop } : null;
+    const originIndex = Array.from(main?.querySelectorAll(`[data-briefing-origin="${CSS.escape(passage ?? source.id)}"]`) ?? []).indexOf(button);
     onMode('sources');
-    setReader({ source, passage, fromList, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
+    setReader({ source, passage, fromList, reportIdentity, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
     requestAnimationFrame(() => { sourceRef.current?.focus(); sourceRef.current?.scrollIntoView({ block: 'start' }); });
   }
   const copyLabel = (source: NarrativeSource) => { const copy = prCopyDetails(source, clearedAt, locale); return t(copy.key, { fetchedAt: copy.fetchedAt }); };
   const citations = new Map((current?.packet.sources ?? []).flatMap(source => sourcePassages(source).map(passage => ({ source, passage }))).map((value, index) => [value.passage.id, { source: value.source, passage: value.passage, number: index + 1 }]));
   function claim(value: NarrativeClaim) {
-    return <div className="flex flex-wrap items-center gap-x-3 gap-y-2"><p className="max-w-prose whitespace-pre-wrap break-words text-body-lg">{value.text}</p><div className="flex flex-wrap items-center gap-2">{value.inferred && <span className="text-label text-[color:var(--color-text-secondary)]">{t('inferred')}</span>}{value.evidence.map((id, index) => <Chip key={id} size="lg" tone="muted" aria-label={t('sourceCitation', { source: citations.get(id)?.source.title ?? '' })} onClick={event => readCitation(id, event.currentTarget)}><FileText size={14} aria-hidden />{t('sourceNumber', { number: citations.get(id)?.number ?? index + 1 })}</Chip>)}</div></div>;
+    return <div className="flex flex-wrap items-center gap-x-3 gap-y-2"><p className="max-w-prose whitespace-pre-wrap break-words text-body-lg">{value.text}</p><div className="flex flex-wrap items-center gap-2">{value.inferred && <span className="text-label text-[color:var(--color-text-secondary)]">{t('inferred')}</span>}{value.evidence.map((id, index) => <Chip key={id} data-briefing-origin={id} size="lg" tone="muted" aria-label={t('sourceCitation', { source: citations.get(id)?.source.title ?? '' })} onClick={event => readCitation(id, event.currentTarget)}><FileText size={14} aria-hidden />{t('sourceNumber', { number: citations.get(id)?.number ?? index + 1 })}</Chip>)}</div></div>;
   }
   function authorRecord(value: NarrativeClaim, kind: AuthorEvidenceKind) {
     return <div className="space-y-3">{value.evidence.map((id, index) => {
@@ -167,7 +192,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
       if (!cited) return null;
       const excerpt = authorEvidence(sourcePassages(cited.source), kind).find(value => value.id === id);
       if (!excerpt) return null;
-      return <div key={id} className="space-y-2">{kind === 'limits' && <blockquote data-testid="briefing-limit-source" className="whitespace-normal break-words border-l border-[color:var(--color-border-soft)] pl-3 text-body-lg text-[color:var(--color-text-secondary)]">{excerpt.text}</blockquote>}<Chip size="lg" tone="muted" aria-label={t('sourceCitation', { source: cited.source.title })} onClick={event => readCitation(id, event.currentTarget)}><FileText size={14} aria-hidden />{t('sourceNumber', { number: citations.get(id)?.number ?? index + 1 })}</Chip></div>;
+      return <div key={id} className="space-y-2">{kind === 'limits' && <blockquote data-testid="briefing-limit-source" className="whitespace-normal break-words border-l border-[color:var(--color-border-soft)] pl-3 text-body-lg text-[color:var(--color-text-secondary)]">{excerpt.text}</blockquote>}<Chip data-briefing-origin={id} size="lg" tone="muted" aria-label={t('sourceCitation', { source: cited.source.title })} onClick={event => readCitation(id, event.currentTarget)}><FileText size={14} aria-hidden />{t('sourceNumber', { number: citations.get(id)?.number ?? index + 1 })}</Chip></div>;
     })}</div>;
   }
   const modelReady = isLocalEndpointReady(local);
@@ -248,7 +273,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     <div hidden={mode !== 'sources'} className="space-y-5" data-testid="briefing-sources">
       <div hidden={Boolean(reader)} className="space-y-5">
         <header className="flex flex-wrap items-center justify-between gap-3"><h2 ref={originalsHeading} tabIndex={-1} className="text-display font-[var(--font-weight-strong)]">{t('sourceListTitle')}</h2>{actions('sources')}</header>
-      <div ref={originalsList} className="max-w-4xl space-y-2">{displaySources.slice(0, visibleSources).map(source => <RowButton key={source.id} onClick={event => openSource(source, null, event.currentTarget, true)}><span className="min-w-0 py-2"><span className="block break-words text-body">{source.title}</span><span className="block text-label text-[color:var(--color-text-secondary)]">{source.kind === 'pr' ? `PR #${source.id.split(':')[1]} · ${copyLabel(source)}` : source.integration.slice(0, 8)}{source.kind === 'commit' && matchedPulls?.uncheckedCommits.includes(source.integration) && ` · ${t('prUnchecked')}`}{api.coverage && !api.stale && ` · ${t(api.coverage.linked.has(source.id) ? 'includedSource' : api.coverage.sent.has(source.id) ? 'unexplainedSource' : api.coverage.uncertain.has(source.id) ? 'periodDeliveryUnknown' : 'excludedSource')}`}</span></span></RowButton>)}{displaySources.length > visibleSources && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => {
+      <div ref={originalsList} className="max-w-4xl space-y-2">{displaySources.slice(0, visibleSources).map(source => <RowButton key={source.id} data-briefing-origin={source.id} onClick={event => openSource(source, null, event.currentTarget, true)}><span className="min-w-0 py-2"><span className="block break-words text-body">{source.title}</span><span className="block text-label text-[color:var(--color-text-secondary)]">{source.kind === 'pr' ? `PR #${source.id.split(':')[1]} · ${copyLabel(source)}` : source.integration.slice(0, 8)}{source.kind === 'commit' && matchedPulls?.uncheckedCommits.includes(source.integration) && ` · ${t('prUnchecked')}`}{api.coverage && !api.stale && ` · ${t(api.coverage.linked.has(source.id) ? 'includedSource' : api.coverage.sent.has(source.id) ? 'unexplainedSource' : api.coverage.uncertain.has(source.id) ? 'periodDeliveryUnknown' : 'excludedSource')}`}</span></span></RowButton>)}{displaySources.length > visibleSources && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => {
         setVisibleSources(visibleSources + 40);
         requestAnimationFrame(() => { const next = originalsList.current?.querySelectorAll<HTMLElement>('[data-control="row"]')[visibleSources]; next?.focus(); next?.scrollIntoView({ block: 'nearest' }); });
       }}>{t('moreSources', { count: Math.min(40, displaySources.length - visibleSources) })}</Button>}</div>
