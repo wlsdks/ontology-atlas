@@ -33,11 +33,17 @@ fn no_command_here_hands_the_key_back_to_the_webview() {
     }
     assert_eq!(
         signatures.len(),
-        4,
-        "only the connection probe, chat round trip, and the chat request prepare and cancel"
+        7,
+        "only the vault/source connection probes, chat, and request prepare/cancel"
     );
     let allowed = [
         ("fn secret_verify(", "Result<LlmVerifyResult, String>"),
+        ("fn source_model_verify(", "Result<LlmVerifyResult, String>"),
+        (
+            "fn source_model_capacity(",
+            "Result<SourceModelCapacity, String>",
+        ),
+        ("fn source_briefing_chat(", "Result<LlmChatEcho, String>"),
         ("fn llm_chat(", "Result<LlmChatEcho, String>"),
         ("fn llm_chat_prepare(", "Result<String, String>"),
         ("fn llm_chat_cancel(", ") -> bool"),
