@@ -158,7 +158,7 @@ function PublicPullInventoryScope({ data, memory, onActivity, onFiles }: Props) 
       <div className="min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
         <header className="space-y-3 border-b border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
           <p className="break-words text-label text-[color:var(--color-text-secondary)]">{repository} · {t('publicChoice')}</p>
-          <h2 ref={reader} tabIndex={-1} className="min-w-0 break-words text-display font-[var(--font-weight-strong)]">{selected.title}</h2>
+          <h2 ref={reader} tabIndex={-1} className="inline-block max-w-full break-words rounded-micro text-display font-[var(--font-weight-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">{selected.title}</h2>
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-[color:var(--color-text-secondary)]"><span className={badgeClass({ shape: 'tag', className: `gap-1.5 text-body ${statusTone}` })}><StatusIcon size={ICON_SIZE.md} aria-hidden />{status(selected.status)}</span><span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">#{selected.number}</span>{conflicts.has(selected.number) && <span className="text-body">{t('prVersionLabel')}: <span className="font-mono">{selected.digest.slice(0, 8)}</span></span>}</p>
         </header>
         <div className="grid min-w-0 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)]">
