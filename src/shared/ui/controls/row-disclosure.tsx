@@ -37,7 +37,7 @@ export function AnimatedDisclosure({ label, children, defaultOpen = false, testI
       <Button variant="ghost" size="sm" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} data-testid={testId}
         className={cn('atlas-touch-floor h-auto max-w-full justify-start whitespace-normal break-words px-0 text-left text-body text-[color:var(--color-text-secondary)]', className)}>
         <DisclosureMark open={open} />
-        {label}
+        <span className="min-w-0 break-words">{label}</span>
       </Button>
       <RowDisclosure open={open} id={id} className="pt-3">{children}</RowDisclosure>
     </div>

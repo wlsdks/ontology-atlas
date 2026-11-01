@@ -44,7 +44,7 @@ test('schedule rows expose result evidence, collapse, and keep creation cancella
   await expect(report).toContainText('sources/onboarding.md');
   await expect(report.locator('a[href*="slug=wiki%2Fonboarding"]')).toHaveCount(1);
   await expect(report).not.toContainText('wiki/onboarding.md');
-  await report.getByText('Tool activity', { exact: true }).press('Enter');
+  await report.getByRole('button', { name: 'Tool activity', exact: true }).press('Enter');
   await expect(report.getByText(/Refused: mcp__confluence__create_page/)).toBeVisible();
   await page.getByTestId('automations-remove').click();
   await expect(page.getByTestId('automations-confirm-remove')).toBeVisible();
