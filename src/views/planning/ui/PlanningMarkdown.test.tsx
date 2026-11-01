@@ -64,6 +64,20 @@ describe('untrusted Planning Markdown', () => {
     expect(screen.getAllByRole('img')).toHaveLength(2);
     view.unmount();
   });
+  it('releases removed images so the next revision can use their preview budget', async () => {
+    const header = [137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0];
+    const read = vi.fn(async () => { const bytes = new Uint8Array(16 * 1024 * 1024); bytes.set(header); return bytes; });
+    let sequence = 0;
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => `blob:${++sequence}`) });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const props = { document: 'plan.md', readImage: read, imageUnavailable: 'unavailable', unsupported: 'unsupported', imageLimit: 'limit' };
+    const view = render(<PlanningMarkdown {...props} text="![one](1.png) ![two](2.png)" revision={1} />);
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2));
+    view.rerender(<PlanningMarkdown {...props} text="![three](3.png)" revision={2} />);
+    await waitFor(() => expect(screen.getByAltText('three')).toBeVisible());
+    expect(screen.queryByText('limit')).toBeNull();
+    view.unmount();
+  });
   it('limits total unique pixels even when valid PNGs compress to small files', async () => {
     const chunk = (name: string, data: Buffer) => {
       const label = Buffer.from(name);

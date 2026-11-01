@@ -13,6 +13,10 @@ import { Input } from '@/shared/ui/fields/input';
 
 const panel = 'rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]';
 
+function sameBytes(left: Uint8Array | null, right: Uint8Array): boolean {
+  return left !== null && left.length === right.length && left.every((byte, index) => byte === right[index]);
+}
+
 export function PlanningPage() {
   const t = useTranslations('planning');
   const router = useRouter();
@@ -26,6 +30,7 @@ export function PlanningPage() {
   const [fileFailed, setFileFailed] = useState(false);
   const [search, setSearch] = useState('');
   const [checkedAt, setCheckedAt] = useState<number | null>(null);
+  const [imageRevision, setImageRevision] = useState(0);
   const [available, setAvailable] = useState<boolean | null>(null);
   const sequence = useRef(0);
   const inFlight = useRef(0);
@@ -64,11 +69,13 @@ export function PlanningPage() {
       }
       setFileChanged(changed || memory.changed);
       setContent(result.value && path?.toLowerCase().endsWith('.md') ? new TextDecoder().decode(result.value.bytes) : null);
-      setImageBytes(result.value && !path?.toLowerCase().endsWith('.md') ? result.value.bytes : null);
+      const nextImage = result.value && !path?.toLowerCase().endsWith('.md') ? result.value.bytes : null;
+      setImageBytes((previous) => nextImage && sameBytes(previous, nextImage) ? previous : nextImage);
       const failed = Boolean(path && !changed && !memory.changed && (!next.files.some((file) => file.path === path) || !result.value));
       if (failed) { pendingScroll.current = null; writePlanningMemory({ ...readPlanningMemory(), scroll: 0, returnFocus: null }); }
       setFileFailed(failed);
       setCheckedAt(Date.now());
+      setImageRevision(request);
       setStatus('ready');
     } catch {
       if (request === sequence.current) setStatus('unavailable');
@@ -170,7 +177,7 @@ export function PlanningPage() {
             <section ref={reader} onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className={`${panel} min-w-0 overflow-auto p-5 sm:p-6 lg:max-h-[70vh]`}>
               {!selected ? <p className="text-body text-[color:var(--color-text-secondary)]">{t('selectFile')}</p> : <div className="space-y-5">
                 <p className="break-all text-body text-[color:var(--color-text-secondary)]">{t('pathLabel', { path: selected })}</p>
-                {fileChanged ? <p role="alert">{t('fileChanged')}</p> : fileFailed ? <p role="alert">{t('fileUnavailable')}</p> : selected.toLowerCase().endsWith('.md') ? content !== null && <PlanningMarkdown key={`${selected}:${checkedAt}`} document={selected} text={content} readImage={readImage} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /> : imageBytes && <PlanningStandaloneImage key={`${selected}:${checkedAt}`} path={selected} bytes={imageBytes} alt={selected} unavailable={t('imageUnavailable')} unsupported={t('unsupported')} />}
+                {fileChanged ? <p role="alert">{t('fileChanged')}</p> : fileFailed ? <p role="alert">{t('fileUnavailable')}</p> : selected.toLowerCase().endsWith('.md') ? content !== null && <PlanningMarkdown key={selected} document={selected} text={content} readImage={readImage} revision={imageRevision} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /> : imageBytes && <PlanningStandaloneImage key={selected} path={selected} bytes={imageBytes} alt={selected} unavailable={t('imageUnavailable')} unsupported={t('unsupported')} />}
               </div>}
             </section>
           </div>

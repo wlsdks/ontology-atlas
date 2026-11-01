@@ -1,6 +1,105 @@
 import { expect, test } from '@playwright/test';
+import planning from '../../../messages/ko/planning.json';
 import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 import { crc32, deflateSync } from 'node:zlib';
+
+test('refresh keeps current images visible until revalidated bytes are ready', async ({ page }) => {
+  const chunk = (name: string, data: Buffer) => {
+    const label = Buffer.from(name);
+    const size = Buffer.alloc(4); size.writeUInt32BE(data.length);
+    const checksum = Buffer.alloc(4); checksum.writeUInt32BE(crc32(Buffer.concat([label, data])));
+    return Buffer.concat([size, label, data, checksum]);
+  };
+  const header = Buffer.alloc(13); header.writeUInt32BE(1, 0); header.writeUInt32BE(1, 4); header[8] = 8; header[9] = 6;
+  const png = (red: number, green: number) => Buffer.concat([
+    Buffer.from([137,80,78,71,13,10,26,10]), chunk('IHDR', header),
+    chunk('IDAT', deflateSync(Buffer.from([0, red, green, 0, 255]))), chunk('IEND', Buffer.alloc(0)),
+  ]).toString('base64');
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(({ red, green }) => {
+    type State = { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; image: string; hold: boolean; fail: boolean; release?: () => void; holdOpen: boolean; releaseOpen?: () => void; opens: number; reads: number; finished: number };
+    const win = window as unknown as State;
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.image = red; win.hold = false; win.fail = false; win.holdOpen = false; win.reads = 0; win.finished = 0; win.opens = 0;
+    const bytes = () => Array.from(Uint8Array.from(atob(win.image), c => c.charCodeAt(0)));
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: ['plan.md', 'image.png'].map((path) => ({ path, size: 1, modified_seconds: 1 })), skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document') {
+        if (args?.path === 'image.png') {
+          win.opens++;
+          if (win.holdOpen) await new Promise<void>((resolve) => { win.releaseOpen = resolve; });
+        }
+        const contents = args?.path === 'image.png' ? bytes() : Array.from(new TextEncoder().encode('![design](image.png)'));
+        return [...new TextEncoder().encode('a'.repeat(32)), ...contents];
+      }
+      if (cmd === 'planning_read_file') {
+        win.reads++;
+        const value = bytes();
+        if (win.hold) await new Promise<void>((resolve) => { win.release = resolve; });
+        win.finished++;
+        if (win.fail) throw new Error('unavailable');
+        return value;
+      }
+      return original(cmd, args);
+    };
+    Object.assign(win, { red, green });
+  }, { red: png(255, 0), green: png(0, 255) });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  const image = page.getByAltText('design');
+  await expect(image).toBeVisible();
+  const first = await image.getAttribute('src');
+  expect(first).toMatch(/^blob:/);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  expect(await image.getAttribute('src')).toBe(first);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(2);
+  await expect(image).toHaveAttribute('src', first!);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; green: string }; win.image = win.green; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  expect(await image.getAttribute('src')).toBe(first);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
+  await expect.poll(() => image.getAttribute('src')).not.toBe(first);
+  await expect.poll(() => image.evaluate((node) => {
+    const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+    const ctx = canvas.getContext('2d')!; ctx.drawImage(node as HTMLImageElement, 0, 0);
+    return [...ctx.getImageData(0, 0, 1, 1).data];
+  })).toEqual([0, 255, 0, 255]);
+  const greenUrl = await image.getAttribute('src');
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; red: string }; win.image = win.red; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; image: string; green: string }; win.hold = false; win.image = win.green; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(5);
+  await page.evaluate(() => (window as unknown as { release: () => void }).release());
+  await expect.poll(() => page.evaluate(() => (window as unknown as { finished: number }).finished)).toBe(5);
+  await expect(image).toHaveAttribute('src', greenUrl!);
+  await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = true; window.dispatchEvent(new Event('focus')); });
+  await expect(image).toHaveCount(0);
+  await expect(page.getByText(planning.imageUnavailable)).toBeVisible();
+  await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = false; window.dispatchEvent(new Event('focus')); });
+  await expect(image).toBeVisible();
+  await page.getByRole('button', { name: 'image.png' }).click();
+  const standalone = page.getByAltText('image.png');
+  await expect(standalone).toBeVisible();
+  const standaloneFirst = await standalone.getAttribute('src');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { opens: number }).opens)).toBe(2);
+  await expect(standalone).toHaveAttribute('src', standaloneFirst!);
+  await page.evaluate(() => { const win = window as unknown as { holdOpen: boolean; releaseOpen?: () => void; image: string; red: string }; win.image = win.red; win.holdOpen = true; delete win.releaseOpen; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseOpen?: () => void }).releaseOpen))).toBe(true);
+  expect(await standalone.getAttribute('src')).toBe(standaloneFirst);
+  await page.evaluate(() => { const win = window as unknown as { holdOpen: boolean; releaseOpen: () => void }; win.holdOpen = false; win.releaseOpen(); });
+  await expect.poll(() => standalone.getAttribute('src')).not.toBe(standaloneFirst);
+  await expect.poll(() => standalone.evaluate((node) => {
+    const canvas = document.createElement('canvas'); canvas.width = 1; canvas.height = 1;
+    const ctx = canvas.getContext('2d')!; ctx.drawImage(node as HTMLImageElement, 0, 0);
+    return [...ctx.getImageData(0, 0, 1, 1).data];
+  })).toEqual([255, 0, 0, 255]);
+});
 
 test('mocked native Planning keeps the selected document across explicit evidence navigation and refresh', async ({ page }) => {
   await installDesktopRailRuntime(page);
