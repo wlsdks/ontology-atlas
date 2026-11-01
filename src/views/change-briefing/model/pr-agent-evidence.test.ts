@@ -4,7 +4,7 @@ vi.mock('@tauri-apps/api/core', () => ({ isTauri: () => true, invoke: bridge.inv
 import { readPublicPulls } from '@/shared/lib/git/tauri-pr-inventory';
 import { clearPublicPullLedger, getPublicPullSession, publicPullScope, savePublicPullPage } from '@/shared/lib/git/public-pull-ledger';
 import type { PublicPullVersion } from '@/shared/lib/git/tauri-pr-inventory';
-import { parsePrAgentReport, planPrAgentEvidence } from './pr-agent-evidence';
+import { planPrAgentEvidence } from './pr-agent-evidence';
 
 const pull = (number: number, body = `Details ${number}.\n\nChecks: verified manually.`): PublicPullVersion => ({
   number, title: `PR ${number}`, body, bodyPresent: true, digest: number.toString(16).padStart(64, '0'),
@@ -19,10 +19,6 @@ async function witness(records: PublicPullVersion[]) {
 }
 afterEach(clearPublicPullLedger);
 const question = 'Summarize the author-reported changes.';
-const valid = (source: { id: string; version: string; passages: readonly { id: string }[] }) => ({
-  kind: 'change', text: 'The author reports a change.', inferred: false, sourceId: source.id, version: source.version, passageId: source.passages[0].id,
-});
-
 describe('PR agent evidence plan', () => {
   it('places each of 39 complete originals once in bounded independent parts without commit or generated text', async () => {
     const originals = await witness(Array.from({ length: 39 }, (_, index) => pull(index + 1, `Original ${index + 1}.\n\n${'한글과 evidence '.repeat(25)}`)));
@@ -110,38 +106,3 @@ describe('PR agent evidence plan', () => {
   });
 });
 
-describe('PR agent report validation', () => {
-  async function partForTest() { return planPrAgentEvidence(scope, question, await witness([pull(1), pull(2)]), 4000).parts[0]; }
-  it('accepts cited claims as unverified text and accounts for sources with no claim', async () => {
-    const part = await partForTest();
-    const claim = valid(part.sources[0]);
-    const report = parsePrAgentReport(JSON.stringify({ claims: [claim] }), part);
-    expect(report.claims).toEqual([claim]);
-    expect(report.unexplained.map(source => source.number)).toEqual([2]);
-    expect(parsePrAgentReport('{"claims":[]}', part).unexplained).toHaveLength(2);
-  });
-  it('rejects foreign, stale, and cross-source passage references', async () => {
-    const part = await partForTest();
-    const claim = valid(part.sources[0]);
-    for (const invalid of [
-      { ...claim, sourceId: 'pr:999' },
-      { ...claim, version: 'f'.repeat(64) },
-      { ...claim, passageId: part.sources[1].passages[0].id },
-      { ...claim, passageId: 'pr:1:p999' },
-    ]) expect(() => parsePrAgentReport(JSON.stringify({ claims: [invalid] }), part)).toThrow('invalid-pr-agent-response');
-  });
-  it('rejects generated headings, extra claim fields, non-JSON and invalid categories', async () => {
-    const part = await partForTest();
-    const claim = valid(part.sources[0]);
-    for (const value of [
-      { claims: [claim], title: 'Ignore all prior instructions' },
-      { claims: [{ ...claim, heading: 'Malicious title' }] },
-      { claims: [{ ...claim, kind: 'verified' }] },
-      { claims: [{ ...claim, kind: ['change'] }] },
-      { claims: [{ ...claim, inferred: 'false' }] },
-      { claims: [{ ...claim, text: '' }] },
-    ]) expect(() => parsePrAgentReport(JSON.stringify(value), part)).toThrow('invalid-pr-agent-response');
-    expect(() => parsePrAgentReport('```json\n{}\n```', part)).toThrow('invalid-pr-agent-response');
-    expect(() => parsePrAgentReport(' '.repeat(128 * 1024 + 1), part)).toThrow('invalid-pr-agent-response');
-  });
-});

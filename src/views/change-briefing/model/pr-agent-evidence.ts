@@ -13,8 +13,6 @@ const INSTRUCTIONS = [
 
 const encoder = new TextEncoder();
 const bytes = (value: string) => encoder.encode(value).length;
-const MAX_RESPONSE_BYTES = 128 * 1024;
-const MAX_CLAIMS = 200;
 const MAX_SOURCES_PER_PART = 40;
 const MAX_SELECTED = 400;
 const MAX_ORIGINAL_BYTES = 512 * 1024;
@@ -42,19 +40,6 @@ export interface PrAgentPlan {
   readonly parts: readonly PrAgentPart[];
   readonly omitted: readonly { readonly number: number; readonly version: string; readonly reason: 'unavailable' | 'overlarge' }[];
 }
-export interface PrAgentClaim {
-  readonly kind: 'change' | 'reason' | 'checks' | 'limits';
-  readonly text: string;
-  readonly inferred: boolean;
-  readonly sourceId: string;
-  readonly version: string;
-  readonly passageId: string;
-}
-export interface PrAgentReport {
-  readonly claims: readonly PrAgentClaim[];
-  readonly unexplained: readonly PrAgentSource[];
-}
-
 function sourceOf(version: PublicPullVersion): PrAgentSource {
   const id = `pr:${version.number}`;
   const body: string[] = [];
@@ -132,29 +117,3 @@ export function planPrAgentEvidence(scope: BriefingReceipt & { repository: strin
   return plan;
 }
 
-function exactKeys(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const actual = Object.keys(value);
-  return actual.length === keys.length && keys.every(key => Object.hasOwn(value, key));
-}
-
-export function parsePrAgentReport(raw: string, part: PrAgentPart): PrAgentReport {
-  if (bytes(raw) > MAX_RESPONSE_BYTES) throw new Error('invalid-pr-agent-response');
-  let response: unknown;
-  try { response = JSON.parse(raw); } catch { throw new Error('invalid-pr-agent-response'); }
-  if (!exactKeys(response, ['claims']) || !Array.isArray(response.claims) || response.claims.length > MAX_CLAIMS) throw new Error('invalid-pr-agent-response');
-  const sources = new Map(part.sources.map(source => [source.id, source]));
-  const cited = new Set<string>();
-  const claims = response.claims.map((value: unknown): PrAgentClaim => {
-    if (!exactKeys(value, ['kind', 'text', 'inferred', 'sourceId', 'version', 'passageId']) ||
-      typeof value.kind !== 'string' || !['change', 'reason', 'checks', 'limits'].includes(value.kind) ||
-      typeof value.text !== 'string' || !value.text.trim() || value.text.length > 1200 ||
-      typeof value.inferred !== 'boolean' || typeof value.sourceId !== 'string' ||
-      typeof value.version !== 'string' || typeof value.passageId !== 'string') throw new Error('invalid-pr-agent-response');
-    const source = sources.get(value.sourceId);
-    if (!source || source.version !== value.version || !source.passages.some(passage => passage.id === value.passageId)) throw new Error('invalid-pr-agent-response');
-    cited.add(source.id);
-    return Object.freeze({ kind: value.kind as PrAgentClaim['kind'], text: value.text, inferred: value.inferred, sourceId: value.sourceId, version: value.version, passageId: value.passageId });
-  });
-  return Object.freeze({ claims: Object.freeze(claims), unexplained: Object.freeze(part.sources.filter(source => !cited.has(source.id))) });
-}
