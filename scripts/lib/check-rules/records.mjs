@@ -16,7 +16,7 @@ export const rules = [
     matches: [
       /^scripts\/records\/decisions-find(?:\.test)?\.mjs$/,
       /^scripts\/lib\/records\/decision-record-template(?:\.test)?\.mjs$/,
-      /^scripts\/records\/check-decision-record\.mjs$/,
+      /^scripts\/records\/check-decision-record(?:\.test)?\.mjs$/,
     ],
   },
   {
