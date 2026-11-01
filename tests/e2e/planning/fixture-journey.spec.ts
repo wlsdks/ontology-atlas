@@ -57,12 +57,14 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.getByRole('button', { name: 'plan.md' }).click();
   const image = page.getByAltText('design');
   await expect(image).toBeVisible();
+  const liveStatus = (await page.getByText(planning.imageChecked).elementHandle())!;
   const first = await image.getAttribute('src');
   expect(first).toMatch(/^blob:/);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   expect(await image.getAttribute('src')).toBe(first);
   await expect(page.getByText(planning.imageChecking)).toBeVisible();
+  expect(await page.getByText(planning.imageChecking).evaluate((node, original) => node === original, liveStatus)).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(2);
   await expect(image).toHaveAttribute('src', first!);
@@ -92,12 +94,14 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(5);
   await expect.poll(() => page.evaluate(() => (window as unknown as { finished: number }).finished)).toBe(5);
   await expect(image).toHaveAttribute('src', greenUrl!);
-  await expect(page.getByText(planning.imageChecked)).toBeVisible();
+  await expect(page.getByText(planning.imageChecked)).toHaveClass(/sr-only/);
+  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('role', 'status');
   await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = true; window.dispatchEvent(new Event('focus')); });
   await expect(page.getByText(planning.imageUnconfirmed)).toBeVisible();
   await expect(image).toHaveAttribute('src', greenUrl!);
   await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = false; window.dispatchEvent(new Event('focus')); });
-  await expect(page.getByText(planning.imageChecked)).toBeVisible();
+  await expect(page.getByText(planning.imageChecked)).toHaveClass(/sr-only/);
+  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('role', 'status');
   await page.evaluate(() => { const win = window as unknown as { fail: boolean; hold: boolean; release?: () => void }; win.fail = true; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   await expect(image).toHaveAttribute('src', greenUrl!);
@@ -105,8 +109,10 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect(image).toHaveCount(0);
   await expect(page.getByText(planning.imageUnavailable)).toBeVisible();
+  expect(await page.getByText(planning.imageUnavailable).evaluate((node, original) => node === original, liveStatus)).toBe(true);
   await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = false; window.dispatchEvent(new Event('focus')); });
   await expect(image).toBeVisible();
+  expect(await page.getByText(planning.imageChecked).evaluate((node, original) => node === original, liveStatus)).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; red: string }; win.image = win.red; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { image: string; green: string }; win.image = win.green; });
@@ -169,10 +175,10 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   await details.focus();
   await page.keyboard.press('Enter');
   await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeVisible();
-  await expect(page.getByText(/소스 이력은 현재 브랜치/)).toBeVisible();
+  await expect(page.getByText(planning.historyLimit)).toBeVisible();
   await page.keyboard.press('Enter');
   await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
-  await expect(page.getByText('커밋 이력만 · 미커밋 제외')).toBeVisible();
+  await expect(page.getByText(planning.historyBrief)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
   await expect(page.getByAltText('design')).toHaveAttribute('src', /^blob:/);
   await expect.poll(() => page.getByAltText('design').evaluate((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth === 1)).toBe(true);
@@ -196,16 +202,55 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   await page.evaluate(() => { (window as unknown as { planningText: string }).planningText = '# Checkout plan\n\nUpdated decision'; window.dispatchEvent(new Event('focus')); });
   await expect(page.getByText(/폴더를 다시 확인하고 있습니다/)).toBeVisible();
   await expect(page.getByText('Updated decision')).toBeVisible();
-  await page.getByRole('button', { name: '소스 이력 보기' }).click();
+  await page.getByRole('button', { name: planning.openHistory }).click();
   await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect(page.getByText('Updated decision')).toBeVisible();
-  await expect(page.getByRole('button', { name: '소스 이력 보기' })).toBeFocused();
+  await expect(page.getByRole('button', { name: planning.openHistory })).toBeFocused();
   await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
   await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect(page.getByText('Updated decision')).toBeVisible();
   await expect(page.getByRole('button', { name: '온톨로지 맵 열기' })).toBeFocused();
+});
+
+test('file names lead the list while relative paths disambiguate and remain searchable', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    const paths = ['alpha/checkout.md', 'beta/deep/checkout.md', 'readme.md'];
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: paths.map((path) => ({ path, size: 1, modified_seconds: 1 })), skipped: 0, partial: false, visited: 3, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document') return Array.from(new TextEncoder().encode('a'.repeat(32) + '# ' + args?.path));
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  const list = page.getByRole('region', { name: planning.findFile });
+  const alpha = list.getByRole('button', { name: 'alpha/checkout.md', exact: true });
+  const beta = list.getByRole('button', { name: 'beta/deep/checkout.md', exact: true });
+  await expect(alpha).toBeVisible();
+  await expect(beta).toBeVisible();
+  expect(await alpha.innerText()).toBe('checkout.md\nalpha');
+  expect(await beta.innerText()).toBe('checkout.md\nbeta/deep');
+  const search = page.getByRole('textbox', { name: planning.findFile });
+  await search.fill('checkout.md');
+  await expect(list.getByRole('button')).toHaveCount(2);
+  await search.fill('beta/deep');
+  await expect(list.getByRole('button')).toHaveCount(1);
+  await beta.focus();
+  await page.keyboard.press('Enter');
+  await expect(beta).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('heading', { name: 'beta/deep/checkout.md' })).toBeVisible();
+  await search.clear();
+  await expect(list.getByRole('button')).toHaveCount(3);
+  await expect(beta).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByRole('button', { name: planning.openHistory })).toBeVisible();
+  await expect(page.getByText(planning.historyBrief)).toBeVisible();
 });
 
 test('late inventory from a previous folder never replaces the new selection', async ({ page }) => {
@@ -296,7 +341,7 @@ test('return waits for delayed images and never restores a replaced document', a
   await reader.evaluate((node) => { node.scrollTop = node.scrollHeight; node.dispatchEvent(new Event('scroll')); });
   const saved = await reader.evaluate((node) => node.scrollTop);
   expect(saved).toBeGreaterThan(600);
-  await page.getByRole('button', { name: '소스 이력 보기' }).click();
+  await page.getByRole('button', { name: planning.openHistory }).click();
   await page.evaluate(() => { (window as unknown as { deferImage: boolean }).deferImage = true; });
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);

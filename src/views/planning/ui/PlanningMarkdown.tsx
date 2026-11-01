@@ -137,8 +137,8 @@ function ImageElement({ url, alt, onError }: { url: string; alt: string; onError
   return <img src={url} alt={alt} className="h-auto max-w-full rounded-card" onError={onError} />;
 }
 type ImageLoad = { desired: number; running: boolean; stopped: boolean; kick: () => void };
-function ImageStatus({ state, pending }: { state: string; pending: boolean }) {
-  return <span role="status" data-planning-image-pending={pending ? 'true' : undefined} className="text-caption text-[color:var(--color-text-secondary)]">{state}</span>;
+function ImageStatus({ state, pending, hidden }: { state: string; pending: boolean; hidden: boolean }) {
+  return <span role="status" data-planning-image-pending={pending ? 'true' : undefined} className={hidden ? 'sr-only' : 'text-body text-[color:var(--color-text-secondary)]'}>{state}</span>;
 }
 function LocalImage({ document, src, alt, unavailable, unsupported, limited, resources }: { document: string; src: string; alt: string; unavailable: string; unsupported: string; limited: string; resources: Resources }) {
   const observation = useContext(ImageRevision);
@@ -178,9 +178,8 @@ function LocalImage({ document, src, alt, unavailable, unsupported, limited, res
   const current = result?.key === key ? result : null;
   const pending = status === 'checking' || (status === 'ready' && current?.revision !== revision);
   const label = status === 'unavailable' ? unconfirmed : pending ? checking : current?.url ? checked : current?.limited ? limited : unavailable;
-  if (!current?.url) return <ImageStatus state={label} pending={pending} />;
-  const displayed = current.url;
-  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setResult((previous) => previous?.url === displayed ? { ...previous, url: null, limited: false } : previous)} /><ImageStatus state={label} pending={pending} /></span>;
+  const displayed = current?.url;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top">{displayed && <ImageElement url={displayed} alt={alt} onError={() => setResult((previous) => previous?.url === displayed ? { ...previous, url: null, limited: false } : previous)} />}<ImageStatus state={label} pending={pending} hidden={status === 'ready' && !pending && Boolean(displayed)} /></span>;
 }
 
 export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsupported, observation }: { path: string; bytes: Uint8Array; alt: string; unavailable: string; unsupported: string; observation: Observation }) {
@@ -224,9 +223,8 @@ export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsuppo
   const retrying = failure?.bytes === bytes && failure.revision !== observation.revision;
   const pending = observation.status === 'checking' || (observation.status === 'ready' && (retrying || (!failed && display?.bytes !== bytes)));
   const label = observation.status === 'unavailable' ? observation.unconfirmed : pending ? observation.checking : failed ? unavailable : observation.checked;
-  if (!display || failed) return <ImageStatus state={label} pending={pending} />;
-  const displayed = display.url;
-  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setFailure({ bytes: display.bytes, revision: observation.revision })} /><ImageStatus state={label} pending={pending} /></span>;
+  const displayed = !failed ? display : null;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top">{displayed && <ImageElement url={displayed.url} alt={alt} onError={() => setFailure({ bytes: displayed.bytes, revision: observation.revision })} />}<ImageStatus state={label} pending={pending} hidden={observation.status === 'ready' && !pending && Boolean(displayed)} /></span>;
 }
 
 export function PlanningMarkdown({ document, text, readImage, imageUnavailable, unsupported, imageLimit, revision = 0, observation }: { document: string; text: string; readImage: ReadImage; imageUnavailable: string; unsupported: string; imageLimit: string; revision?: number; observation?: Observation }) {

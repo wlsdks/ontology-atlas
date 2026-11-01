@@ -200,7 +200,12 @@ export function PlanningPage() {
           <div className="grid min-h-[18rem] gap-4 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
             <section className={`${panel} min-w-0 space-y-3 p-4`} aria-label={t('findFile')}>
               <Input label={t('findFile')} value={search} onChange={(event) => setSearch(event.target.value)} className="w-full" />
-              <div ref={fileList} className="max-h-[30rem] space-y-1 overflow-y-auto">{files.map((file) => <RowButton key={file.path} onClick={() => openFile(file.path)} aria-current={selected === file.path ? 'true' : undefined} active={selected === file.path} className="w-full justify-start text-left max-[769px]:min-h-11">{file.path.toLowerCase().endsWith('.md') ? <FileText size={16} className="mt-1 shrink-0" /> : <FileImage size={16} className="mt-1 shrink-0" />}<span className="break-all">{file.path}</span></RowButton>)}
+              <div ref={fileList} className="max-h-[30rem] space-y-1 overflow-y-auto">{files.map((file) => {
+                const separator = file.path.lastIndexOf('/');
+                const name = file.path.slice(separator + 1);
+                const parent = separator < 0 ? '' : file.path.slice(0, separator);
+                return <RowButton key={file.path} onClick={() => openFile(file.path)} aria-label={file.path} aria-current={selected === file.path ? 'true' : undefined} active={selected === file.path} className="w-full justify-start text-left max-[769px]:min-h-11">{file.path.toLowerCase().endsWith('.md') ? <FileText size={16} className="mt-1 shrink-0" /> : <FileImage size={16} className="mt-1 shrink-0" />}<span className="flex min-w-0 flex-col"><span className="break-all font-[var(--font-weight-emphasis)]">{name}</span>{parent && <span className="break-all text-body text-[color:var(--color-text-secondary)]">{parent}</span>}</span></RowButton>;
+              })}
                 {inventory && files.length === 0 && <p className="py-3 text-body text-[color:var(--color-text-secondary)]">{search ? t('noMatches') : inventory.partial ? t('partial') : t('empty')}</p>}</div>
             </section>
             <section ref={reader} onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className={`${panel} min-w-0 overflow-auto p-5 sm:p-6 lg:max-h-[70vh]`}>
