@@ -28,12 +28,16 @@ export function PlanningPage() {
   const [fileChanged, setFileChanged] = useState(() => readPlanningMemory().changed);
   const [status, setStatus] = useState<'idle' | 'checking' | 'ready' | 'unavailable'>('idle');
   const [fileFailed, setFileFailed] = useState(false);
+  const [checkingId, setCheckingId] = useState(0);
+  const [slowId, setSlowId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [checkedAt, setCheckedAt] = useState<number | null>(null);
   const [imageRevision, setImageRevision] = useState(0);
   const [available, setAvailable] = useState<boolean | null>(null);
   const sequence = useRef(0);
-  const inFlight = useRef(0);
+  const activeRequest = useRef<number | null>(null);
+  const pendingRecheck = useRef(false);
+  const recheckCurrent = useRef<(() => void) | null>(null);
   const selectedRef = useRef(selected);
   const reader = useRef<HTMLDivElement>(null);
   const fileList = useRef<HTMLDivElement>(null);
@@ -49,7 +53,9 @@ export function PlanningPage() {
   const refresh = useCallback(async (scope: PlanningSelection, path: string | null) => {
     if (path && path === selectedRef.current && pendingScroll.current === null && reader.current && readPlanningMemory().identity) pendingScroll.current = reader.current.scrollTop;
     const request = ++sequence.current;
-    inFlight.current++;
+    activeRequest.current = request;
+    pendingRecheck.current = false;
+    setCheckingId(request);
     setStatus('checking');
     try {
       const memory = readPlanningMemory();
@@ -80,18 +86,36 @@ export function PlanningPage() {
     } catch {
       if (request === sequence.current) setStatus('unavailable');
     } finally {
-      inFlight.current--;
+      if (activeRequest.current === request) {
+        activeRequest.current = null;
+        if (pendingRecheck.current) { pendingRecheck.current = false; recheckCurrent.current?.(); }
+      }
     }
   }, []);
   useEffect(() => {
     if (!selection || available !== true) return;
-    void refresh(selection, selectedRef.current);
-    const interval = window.setInterval(() => { if (document.visibilityState === 'visible' && inFlight.current === 0) void refresh(selection, selectedRef.current); }, 10_000);
-    const recheck = () => { if (document.visibilityState === 'visible') { if (inFlight.current === 0) void refresh(selection, selectedRef.current); } else { sequence.current++; setStatus('checking'); } };
+    const requestCheck = () => {
+      if (recheckCurrent.current !== requestCheck || document.visibilityState !== 'visible') return;
+      if (activeRequest.current !== null) { pendingRecheck.current = true; return; }
+      void refresh(selection, selectedRef.current);
+    };
+    recheckCurrent.current = requestCheck;
+    requestCheck();
+    const interval = window.setInterval(requestCheck, 10_000);
+    const recheck = () => {
+      if (recheckCurrent.current !== requestCheck) return;
+      if (document.visibilityState === 'visible') requestCheck();
+      else { const request = ++sequence.current; setCheckingId(request); setStatus('checking'); }
+    };
     document.addEventListener('visibilitychange', recheck);
     window.addEventListener('focus', recheck);
-    return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', recheck); window.removeEventListener('focus', recheck); };
+    return () => { if (recheckCurrent.current === requestCheck) recheckCurrent.current = null; pendingRecheck.current = false; window.clearInterval(interval); document.removeEventListener('visibilitychange', recheck); window.removeEventListener('focus', recheck); };
   }, [selection, refresh, available]);
+  useEffect(() => {
+    if (status !== 'checking') return;
+    const timer = window.setTimeout(() => setSlowId(checkingId), 8_000);
+    return () => window.clearTimeout(timer);
+  }, [status, checkingId]);
   useEffect(() => {
     if (status !== 'ready') return;
     const memory = readPlanningMemory();
@@ -137,6 +161,9 @@ export function PlanningPage() {
       const next = await choosePlanningFolder(t('folderUnavailable'));
       if (!next) return;
       sequence.current++;
+      activeRequest.current = null;
+      pendingRecheck.current = false;
+      recheckCurrent.current = null;
       writePlanningMemory({ selection: next, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
       selectedRef.current = null;
       setSelection(next); setSelected(null); setInventory(null); setContent(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
@@ -163,6 +190,7 @@ export function PlanningPage() {
             <div className="min-w-0 space-y-1 text-body"><p className="break-all text-[color:var(--color-text-primary)]">{t('folderLabel', { folder: selection.path })} · {t('readOnly')}</p><p className="text-[color:var(--color-text-secondary)]">{status === 'checking' ? t('checking') : checkedAt ? t('observedAt', { time: new Date(checkedAt).toLocaleString() }) : t('loading')} · {t('observationLimit')}</p></div>
             <Button variant="outline" className="max-[769px]:min-h-11" data-planning-focus-fallback onClick={() => { if (fileChanged) { writePlanningMemory({ ...readPlanningMemory(), identity: null, changed: false }); setFileChanged(false); } void refresh(selection, selectedRef.current); }}><RefreshCw size={16} />{t('refresh')}</Button>
           </div>
+          {status === 'checking' && slowId === checkingId && <p role="status" className="text-body text-[color:var(--color-text-secondary)]">{t('checkingSlow')}</p>}
           {status === 'unavailable' && <p role="alert">{t('folderUnavailable')}</p>}
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 text-body text-[color:var(--color-text-secondary)]">
             {inventory && <p role="status">{t('visited', { count: inventory.visited })} {inventory.limit_reached && t('budgetLimit')} {inventory.depth_limited && t('depthLimit')} {inventory.omitted.unreadable > 0 && t('unreadable', { count: inventory.omitted.unreadable })} {inventory.unknown_remainder && t('unknownRemaining')}</p>}

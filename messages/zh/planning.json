@@ -42,5 +42,6 @@
   "checkingSupport": "正在检查文件夹支持情况…",
   "imageChecking": "正在检查图片…",
   "imageUnconfirmed": "图片尚未确认",
-  "imageChecked": "图片已检查"
+  "imageChecked": "图片已检查",
+  "checkingSlow": "文件夹检查耗时较长，可以刷新文件夹重试。"
 }

@@ -371,6 +371,54 @@ test('late first document cannot disturb the newer document or its refresh', asy
   expect(requests[1]).toBeLessThan(requests[2]);
 });
 
+test('resuming a delayed folder check coalesces and a stalled check can be retried', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    type State = { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; hidden: boolean; hold: boolean; release?: () => void; scans: number; text: string };
+    const win = window as unknown as State;
+    const original = win.__TAURI_INTERNALS__.invoke;
+    const timeout = window.setTimeout.bind(window);
+    window.setTimeout = ((handler: TimerHandler, delay?: number, ...args: unknown[]) => timeout(handler, delay === 8_000 ? 30 : delay, ...args)) as typeof window.setTimeout;
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => win.hidden ? 'hidden' : 'visible' });
+    win.hidden = false; win.hold = false; win.scans = 0; win.text = '# First';
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') {
+        win.scans++;
+        if (win.hold) await new Promise<void>((resolve) => { win.release = resolve; });
+        return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      }
+      if (cmd === 'planning_open_document') return Array.from(new TextEncoder().encode('a'.repeat(32) + win.text));
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByRole('heading', { name: 'First' })).toBeVisible();
+  const start = await page.evaluate(() => (window as unknown as { scans: number }).scans);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  await page.evaluate(() => { const win = window as unknown as { hidden: boolean; text: string }; win.hidden = true; document.dispatchEvent(new Event('visibilitychange')); win.text = '# Resumed'; win.hidden = false; document.dispatchEvent(new Event('visibilitychange')); for (let i = 0; i < 10; i++) window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(planning.checkingSlow)).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { scans: number }).scans)).toBe(start + 1);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
+  await expect(page.getByRole('heading', { name: 'Resumed' })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { scans: number }).scans)).toBe(start + 2);
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  await expect(page.getByText(planning.checkingSlow)).toBeVisible();
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; text: string }; win.hold = false; win.text = '# Recovered'; });
+  await page.getByRole('button', { name: '폴더 새로고침' }).click();
+  await expect(page.getByRole('heading', { name: 'Recovered' })).toBeVisible();
+  const recovered = await page.evaluate(() => (window as unknown as { scans: number }).scans);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { scans: number }).scans)).toBe(recovered + 1);
+  await page.evaluate(() => (window as unknown as { release: () => void }).release());
+  await expect(page.getByRole('heading', { name: 'Recovered' })).toBeVisible();
+});
+
 test('highly compressed images stop at the unique pixel budget', async ({ page }) => {
   const chunk = (name: string, data: Buffer) => {
     const label = Buffer.from(name);

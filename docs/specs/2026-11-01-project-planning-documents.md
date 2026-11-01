@@ -119,6 +119,7 @@ These are proposed exact English strings and message locations, not catalog entr
 | `linkedOmitted` | Known linked files excluded | Some linked files were skipped: {count}. |
 | `folderUnavailable` | Lost folder or access | This folder is unavailable or has changed. Choose the folder again. |
 | `checking` | Recheck before freshness is known | Checking the folder again… |
+| `checkingSlow` | A stalled check can be superseded by the folder refresh action | This check is taking longer than expected. Use Refresh folder to try again. |
 | `fileChanged` | Selected file changed | This file changed while you were reading. Refresh to read its current contents. |
 | `fileUnavailable` | Missing or unreadable selected file | This file cannot be read now. Refresh the folder or choose another file. |
 | `imageUnavailable` | Missing, blocked, corrupt or oversized image | This image could not be displayed. Check its path and the selected folder. |

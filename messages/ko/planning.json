@@ -42,5 +42,6 @@
   "checkingSupport": "폴더 지원 여부를 확인하고 있습니다…",
   "imageChecking": "이미지 확인 중…",
   "imageUnconfirmed": "이미지 확인 안 됨",
-  "imageChecked": "이미지 확인됨"
+  "imageChecked": "이미지 확인됨",
+  "checkingSlow": "폴더 확인이 오래 걸리고 있어요. 폴더 새로고침으로 다시 시도할 수 있습니다."
 }

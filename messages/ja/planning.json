@@ -42,5 +42,6 @@
   "checkingSupport": "フォルダ対応状況を確認しています…",
   "imageChecking": "画像を確認中…",
   "imageUnconfirmed": "画像は未確認",
-  "imageChecked": "画像を確認済み"
+  "imageChecked": "画像を確認済み",
+  "checkingSlow": "フォルダーの確認に時間がかかっています。フォルダーを更新して再試行できます。"
 }

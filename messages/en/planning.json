@@ -42,5 +42,6 @@
   "checkingSupport": "Checking folder support…",
   "imageChecking": "Checking image…",
   "imageUnconfirmed": "Image not confirmed",
-  "imageChecked": "Image checked"
+  "imageChecked": "Image checked",
+  "checkingSlow": "This check is taking longer than expected. Use Refresh folder to try again."
 }
