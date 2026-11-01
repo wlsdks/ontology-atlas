@@ -64,7 +64,7 @@ function isContractFile(path) {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm decisions:check [-- --base=<ref>]
+  console.log(`Usage: pnpm decisions:check [-- --base=<ref> | --template]
 
 Fails when a change adds or removes a user-facing route, edits the MCP/CLI
 public contract, or moves the design system's vocabulary/ramps, without
@@ -81,11 +81,16 @@ decision the next pass will silently re-make.
 
 function parseArgs(argv) {
   let base = process.env.DECISION_BASE_REF ?? "";
+  let template = false;
   for (const arg of argv) {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
+    }
+    if (arg === "--template") {
+      template = true;
+      continue;
     }
     if (arg.startsWith("--base=")) {
       base = arg.slice("--base=".length).trim();
@@ -94,7 +99,7 @@ function parseArgs(argv) {
     console.error(`[decisions] unknown argument: ${arg}`);
     process.exit(1);
   }
-  return base;
+  return { base, template };
 }
 
 function git(args) {
@@ -118,8 +123,9 @@ function resolveBase(explicit) {
   return null;
 }
 
-const base = resolveBase(parseArgs(process.argv.slice(2)));
-if (process.argv.includes("--template")) { console.log(TEMPLATE); process.exit(0); }
+const options = parseArgs(process.argv.slice(2));
+if (options.template) { console.log(TEMPLATE); process.exit(0); }
+const base = resolveBase(options.base);
 if (templateFailures()) process.exit(1);
 if (!base) {
   console.log("[decisions] no comparable base ref — skipping (nothing to diff against)");
