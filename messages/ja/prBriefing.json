@@ -78,7 +78,7 @@
   "retryUnknown": "このパートを再送信",
   "retryWarning": "エージェントが既にこのパートを受け取った可能性があります。再送信すると依頼が重複する場合があります。",
   "citationLimit": "引用は原文の位置を示すもので、説明がその原文で裏付けられることは証明しません。",
-  "versionConflict": "PR #{number}で複数のバージョンが見つかりました。送信前に確認できるバージョンを確認してください。",
+  "versionConflict": "PR #{number}の複数のバージョンが見つかりました。確認できる原文を確認してください。",
   "reviewVersions": "バージョンを確認",
   "prCoverageAtLeast": "GitHubの項目を{scanned}件確認し、この期間に更新されたPRを少なくとも{shown}件確認しました。読み取り中に一覧が変わる場合があります。",
   "originalsOmitted": "読み取れなかったか大きすぎる原文があります。",

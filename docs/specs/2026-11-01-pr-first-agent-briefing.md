@@ -76,7 +76,7 @@ Deliver and reinstall three independently verifiable units: (1) public PR list p
 | Unavailable, offline or access denied | `web`; open the app | `prFailed` or `privateUnavailable`; retry explicitly or read retained originals |
 | File list, selected file or unreadable comparison | `web`; open the app | `filesTab`, `filesScope`, `chooseFile`, `fileComparison`, `periodBasis`, `backToFiles`, `filePartial` and existing `changeBriefing.patchBinary` / `patchTruncated`; select one file or return |
 | Search empty, selected file filtered out | `web`; open the app | `noFileMatch` or `selectionFiltered`; select a match or clear search to restore full order |
-| Multiple versions of one PR | `web`; open the app | `versionConflict`, `reviewVersions`; inspect available originals and choose one before sending |
+| Multiple versions of one PR | `web`; open the app | `versionConflict`, `reviewVersions`; inspect available originals |
 | Saved/matched/unchecked/unlinked | `web`; open the app | `prSaved`, `linkedUnchecked`, `linkedUnlinked`; open saved originals or request a fresh list |
 | Private credential absent or account binding unproved | `web`; open the app | `githubNotReady` when absent; otherwise `accountPinUnsupported`; choose public reading or repair and return |
 | PR preview and unready agent | `web`; open the app | `preview`, `destination`, `folder`, `agentPermissions`, `noAgent` or `unverifiedRuntime`; edit request, choose an agent, send or cancel |
@@ -150,7 +150,8 @@ The following exact keys are in all four `messages/{en,ko,ja,zh}/prBriefing.json
 | `prBriefing.backToFiles` | Files view | Back to files |
 | `prBriefing.filesEmpty` | Files view | No files were recorded for this scope. Choose another period or return. |
 | `prBriefing.filePartial` | Files view | Some file changes could not be read. Refresh or return to the file list. |
-| `prBriefing.backToCommit` | Original reader | Back to commit |
+| `prBriefing.backToCommit` | File comparison | Back to commit |
+| `prBriefing.backToCommits` | Original reader | Back to commits |
 | `prBriefing.backToPr` | Original reader | Back to PR |
 | `prBriefing.chooseFile` | Files view | Select a file to compare for this period. |
 | `prBriefing.previousMatch` | Files view | Previous matching file |
@@ -170,7 +171,7 @@ The following exact keys are in all four `messages/{en,ko,ja,zh}/prBriefing.json
 | `prBriefing.retryUnknown` | Agent progress and result | Send this part again |
 | `prBriefing.retryWarning` | Agent progress and result | The agent may have received this part. Sending it again may duplicate the request. |
 | `prBriefing.citationLimit` | Agent progress and result | Citations locate passages; they do not prove the explanation is supported. |
-| `prBriefing.versionConflict` | PR original and status | PR #{number} was seen in multiple versions. Review the available versions before sending. |
+| `prBriefing.versionConflict` | PR original and status | PR #{number} was seen in multiple versions. Review the available originals. |
 | `prBriefing.reviewVersions` | PR original and status | Review versions |
 
 

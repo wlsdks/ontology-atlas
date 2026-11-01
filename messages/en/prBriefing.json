@@ -78,7 +78,7 @@
   "retryUnknown": "Send this part again",
   "retryWarning": "The agent may have received this part. Sending it again may duplicate the request.",
   "citationLimit": "Citations locate passages; they do not prove the explanation is supported.",
-  "versionConflict": "PR #{number} was seen in multiple versions. Review the available versions before sending.",
+  "versionConflict": "PR #{number} was seen in multiple versions. Review the available originals.",
   "reviewVersions": "Review versions",
   "prCoverageAtLeast": "Reviewed {scanned} entries; at least {shown} distinct PRs were updated in this period. The list may change while reading.",
   "originalsOmitted": "Some originals could not be read or were too large.",

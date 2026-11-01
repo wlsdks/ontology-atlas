@@ -15,7 +15,7 @@ it('shows only the selected commit original and restores focus to its list row',
   fireEvent.click(screen.getByRole('button', { name: /First commit/ }));
   expect(screen.getByText('first original')).toBeVisible();
   expect(screen.queryByRole('button', { name: /Incomplete commit/ })).toBeNull();
-  fireEvent.click(screen.getByRole('button', { name: 'backToCommit' }));
+  fireEvent.click(screen.getByRole('button', { name: 'backToCommits' }));
   expect(screen.getByRole('button', { name: /Incomplete commit/ })).toBeVisible();
   await waitFor(() => expect(screen.getByRole('button', { name: /First commit/ })).toHaveFocus());
 });

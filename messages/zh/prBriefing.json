@@ -78,7 +78,7 @@
   "retryUnknown": "重新发送此部分",
   "retryWarning": "代理可能已经收到此部分。再次发送可能导致请求重复。",
   "citationLimit": "引用只能定位原文段落，不能证明原文支持该说明。",
-  "versionConflict": "PR #{number} 出现了多个版本。发送前请检查可用版本。",
+  "versionConflict": "PR #{number} 出现了多个版本。请查看可用的原文。",
   "reviewVersions": "查看版本",
   "prCoverageAtLeast": "已检查 {scanned} 条 GitHub 记录，至少有 {shown} 个不同的 PR 在此期间更新。读取时列表可能发生变化。",
   "originalsOmitted": "部分原文无法读取或因过大而被省略。",
