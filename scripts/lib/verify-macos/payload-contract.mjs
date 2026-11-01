@@ -171,7 +171,10 @@ export function validateWebviewVerifyPayload(payload, {
   const webviewPath = webviewUrl.pathname;
   // A documents-only folder intentionally has no code map or Docs destination.
   // Its Library route must instead prove both the real surface and its navigation.
-  if (/\/library\/?$/.test(webviewPath)) {
+  if (/\/changes\/?$/.test(webviewPath)) {
+    if (payload.markers.briefingSurface !== true) return "WebView did not report a rendered briefing surface";
+    if (payload.markers.briefingRepositoryControl !== true) return "WebView did not report a visible briefing repository control";
+  } else if (/\/library\/?$/.test(webviewPath)) {
     const librarySurfaceError = validateLibrarySurfaceEvidence(payload.markers, {
       requireOntology: webviewUrl.searchParams.get("tab") === "ontology",
     });

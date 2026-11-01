@@ -104,6 +104,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = nu
     if (routeIs("planning")) {
       return WEBVIEW_PLANNING_WORKBENCH_MARKERS;
     }
+    if (routeIs("changes")) {
+      return [/\S/];
+    }
     if (routeIs("mcp")) {
       return WEBVIEW_MCP_WORKBENCH_MARKERS;
     }

@@ -336,6 +336,8 @@
                                   ontologyNav: links.some((link) => link.href.includes("/ontology") || /온톨로지|Ontology/.test(link.text)),
                                   sourceVaultNav: links.some((link) => link.href.includes("/docs") || /저장소|문서함|Source Vault|Documents/.test(link.text)),
                                   libraryNav: Boolean(document.querySelector('nav a[href*="/library"]')),
+                                  briefingSurface: aiSettingsVisible(document.querySelector('main[data-briefing-surface] h1')),
+                                  briefingRepositoryControl: aiSettingsVisible(document.querySelector('main[data-briefing-surface] header h1 + span + button:not([disabled]):not([data-testid="briefing-settings"])')),
                                   librarySurface: Boolean(
                                     aiSettingsVisible(libraryWorkspace) &&
                                     librarySelectedTab &&
