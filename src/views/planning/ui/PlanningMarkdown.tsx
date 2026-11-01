@@ -185,11 +185,11 @@ function LocalImage({ document, src, alt, unavailable, unsupported, limited, res
 
 export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsupported, observation }: { path: string; bytes: Uint8Array; alt: string; unavailable: string; unsupported: string; observation: Observation }) {
   const [display, setDisplay] = useState<{ url: string; bytes: Uint8Array } | null>(null);
-  const [failedBytes, setFailedBytes] = useState<Uint8Array | null>(null);
+  const [failure, setFailure] = useState<{ bytes: Uint8Array; revision: number } | null>(null);
   const mime = boundedPlanningImage(path, bytes);
-  const decoder = useRef<{ desired: { bytes: Uint8Array; mime: string | null }; pending: string | null; running: boolean; stopped: boolean; kick: () => void } | null>(null);
+  const decoder = useRef<{ desired: { bytes: Uint8Array; mime: string | null; revision: number }; pending: string | null; running: boolean; stopped: boolean; kick: () => void } | null>(null);
   useEffect(() => {
-    const state: NonNullable<typeof decoder.current> = { desired: { bytes: new Uint8Array(), mime: null }, pending: null, running: false, stopped: false, kick: () => {} };
+    const state: NonNullable<typeof decoder.current> = { desired: { bytes: new Uint8Array(), mime: null, revision: 0 }, pending: null, running: false, stopped: false, kick: () => {} };
     state.kick = () => {
       if (state.running || state.stopped || !state.desired.mime) return;
       const target = state.desired;
@@ -201,8 +201,8 @@ export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsuppo
         if (state.pending === next) { state.pending = null; if (state.stopped || state.desired !== target || !ready) URL.revokeObjectURL(next); }
         if (state.stopped) return;
         if (state.desired !== target) { state.kick(); return; }
-        if (!ready) { setFailedBytes(target.bytes); return; }
-        setFailedBytes(null);
+        if (!ready) { setFailure({ bytes: target.bytes, revision: target.revision }); return; }
+        setFailure(null);
         setDisplay({ url: next, bytes: target.bytes });
       });
     };
@@ -212,17 +212,21 @@ export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsuppo
   useEffect(() => {
     const state = decoder.current;
     if (!state) return;
-    state.desired = { bytes, mime };
+    if (failure?.bytes === bytes && failure.revision === observation.revision) return;
+    if (display?.bytes === bytes && failure?.bytes !== bytes) return;
+    if (state.running && state.desired.bytes === bytes && failure?.bytes !== bytes) return;
+    state.desired = { bytes, mime, revision: observation.revision };
     state.kick();
-  }, [path, bytes, mime]);
+  }, [path, bytes, mime, observation.revision, failure, display]);
   useEffect(() => () => { if (display) URL.revokeObjectURL(display.url); }, [display]);
   if (!/\.(?:png|jpe?g)$/i.test(path)) return <span role="status">{unsupported}</span>;
-  const failed = !mime || failedBytes === bytes;
-  const pending = observation.status === 'checking' || (observation.status === 'ready' && !failed && display?.bytes !== bytes);
+  const failed = !mime || failure?.bytes === bytes;
+  const retrying = failure?.bytes === bytes && failure.revision !== observation.revision;
+  const pending = observation.status === 'checking' || (observation.status === 'ready' && (retrying || (!failed && display?.bytes !== bytes)));
   const label = observation.status === 'unavailable' ? observation.unconfirmed : pending ? observation.checking : failed ? unavailable : observation.checked;
   if (!display || failed) return <ImageStatus state={label} pending={pending} />;
   const displayed = display.url;
-  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setFailedBytes(display.bytes)} /><ImageStatus state={label} pending={pending} /></span>;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setFailure({ bytes: display.bytes, revision: observation.revision })} /><ImageStatus state={label} pending={pending} /></span>;
 }
 
 export function PlanningMarkdown({ document, text, readImage, imageUnavailable, unsupported, imageLimit, revision = 0, observation }: { document: string; text: string; readImage: ReadImage; imageUnavailable: string; unsupported: string; imageLimit: string; revision?: number; observation?: Observation }) {

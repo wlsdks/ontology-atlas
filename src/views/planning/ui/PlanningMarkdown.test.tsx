@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { crc32, deflateSync } from 'node:zlib';
@@ -105,6 +105,30 @@ describe('untrusted Planning Markdown', () => {
     expect(revoke).toHaveBeenCalledWith('blob:3');
     await act(async () => decodeResolvers[2]());
     expect(revoke.mock.calls.filter(([url]) => url === 'blob:3')).toHaveLength(1);
+    vi.restoreAllMocks();
+    Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
+  });
+  it('retries the same standalone image after decode and rendering errors on a new check', async () => {
+    const bytes = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
+    let count = 0;
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => `blob:${++count}`) });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true, value: vi.fn() });
+    const decode = vi.spyOn(HTMLImageElement.prototype, 'decode').mockRejectedValueOnce(new Error('temporary')).mockResolvedValue();
+    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked' };
+    const props = { path: 'design.png', bytes, alt: 'design', unavailable: 'unavailable', unsupported: 'unsupported' };
+    const view = render(<PlanningStandaloneImage {...props} observation={observation} />);
+    await waitFor(() => expect(screen.getByText('unavailable')).toBeVisible());
+    expect(decode).toHaveBeenCalledTimes(1);
+    view.rerender(<PlanningStandaloneImage {...props} observation={{ ...observation, revision: 2 }} />);
+    await waitFor(() => expect(screen.getByAltText('design')).toHaveAttribute('src', 'blob:2'));
+    expect(decode).toHaveBeenCalledTimes(2);
+    fireEvent.error(screen.getByAltText('design'));
+    expect(screen.getByText('unavailable')).toBeVisible();
+    view.rerender(<PlanningStandaloneImage {...props} observation={{ ...observation, revision: 3 }} />);
+    await waitFor(() => expect(screen.getByAltText('design')).toHaveAttribute('src', 'blob:3'));
+    expect(decode).toHaveBeenCalledTimes(3);
+    view.unmount();
     vi.restoreAllMocks();
     Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
   });
