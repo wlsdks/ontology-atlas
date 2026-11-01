@@ -12,6 +12,32 @@ async function openBriefing(page: Page) {
   await expect(page.getByRole('button', { name: 'Read GitHub PRs' })).toBeVisible();
 }
 
+test('keeps scope help and search usable in the PR list toolbar', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openBriefing(page);
+  await setBriefingMode(page, 'inventory-large');
+  await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
+  const scope = page.getByRole('button', { name: 'Read scope' });
+  await scope.focus();
+  await expect(page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  const search = page.getByRole('textbox', { name: 'Find loaded PRs by title or number' });
+  await search.fill('Change request 42');
+  const match = page.getByRole('button', { name: /Change request 42/ });
+  await expect(match).toBeVisible();
+  await match.click();
+  await page.getByRole('button', { name: 'Back to pull requests' }).click();
+  await expect(match).toBeFocused();
+  const periodHeight = await page.getByRole('combobox', { name: 'Period' }).evaluate(element => element.getBoundingClientRect().height);
+  const rangeHeight = await page.getByRole('button', { name: 'Choose dates' }).evaluate(element => element.parentElement!.getBoundingClientRect().height);
+  expect(Math.abs(periodHeight - rangeHeight)).toBeLessThanOrEqual(2);
+  if (process.env.ATLAS_PR_PROOF) {
+    mkdirSync(process.env.ATLAS_PR_PROOF, { recursive: true });
+    await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/pr-search-1440.png` });
+  }
+});
+
 test('opens period files from a PR and returns to the same original', async ({ page }) => {
   await openBriefing(page);
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
@@ -291,9 +317,8 @@ test('measures the PR list and original at desktop, narrow and doubled text size
     const scope = page.getByRole('button', { name: 'Read scope' });
     const refresh = page.getByRole('button', { name: 'Refresh PRs' });
     const refreshTop = await refresh.evaluate(element => element.getBoundingClientRect().top);
-    await scope.focus();
-    await scope.press('Enter');
-    await expect(scope).toHaveAttribute('aria-expanded', 'true');
+    await scope.click();
+    await expect(page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' })).toBeVisible();
     expect(Math.abs(await refresh.evaluate(element => element.getBoundingClientRect().top) - refreshTop)).toBeLessThanOrEqual(1);
     await page.locator('main').evaluate(element => { element.scrollTop += 16; });
     const expanded = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
@@ -301,8 +326,8 @@ test('measures the PR list and original at desktop, narrow and doubled text size
     if (process.env.ATLAS_PR_PROOF) await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/pr-scope-${width}.png` });
     expect(shouldFail([expanded]), JSON.stringify(expanded.findings)).toBe(false);
     expect(expanded.findings.target, JSON.stringify(expanded.findings.target)).toEqual([]);
-    await scope.press('Space');
-    await expect(scope).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('tooltip')).toHaveCount(0);
     await row.click();
     await expect(page.getByText('Author original for PR 17.')).toBeVisible();
     const original = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
