@@ -1,5 +1,5 @@
 import { appendPublicPullPage, emptyPublicPullSession, MAX_PUBLIC_PULL_BYTES, MAX_PUBLIC_PULL_VERSIONS, type PublicPullSession } from './public-pull-session';
-import { invalidateNativePublicPullOriginals, type PublicPullInventory } from './tauri-pr-inventory';
+import { invalidateNativePublicPullOriginals, type PublicPullInventory, type PublicPullVersion } from './tauri-pr-inventory';
 
 const MAX_SCOPES = 32;
 const sessions = new Map<string, PublicPullSession>();
