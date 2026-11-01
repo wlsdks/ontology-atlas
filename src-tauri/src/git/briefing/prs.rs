@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 pub(crate) mod cache;
+pub(crate) mod inventory;
 mod response;
 pub(super) use response::FetchError;
 use response::PullLookupFailure;
@@ -89,7 +90,7 @@ fn source_receipt(
                 && r.identity.root == current.root
                 && r.identity.object == current.object
                 && r.identity.head == current.head
-                && r.tip == tip
+                && r.tip.as_deref() == Some(tip)
                 && r.base.as_deref() == base
         })
         .ok_or("stale")?;

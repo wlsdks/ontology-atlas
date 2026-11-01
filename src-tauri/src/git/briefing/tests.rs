@@ -598,3 +598,39 @@ fn pr_descriptions_require_same_repository_and_new_integration_membership() {
     let failed=super::prs::collect(&f.source,"owner/repo",&data.commits,|_,_|Err("offline".into()),&std::sync::atomic::AtomicBool::new(false));
     assert_eq!(failed.status,"unavailable"); assert_eq!(failed.unchecked,1); assert_eq!(failed.unchecked_commits, vec![data.commits[0].hash.clone()]);
 }
+
+#[test]
+fn empty_period_allows_pr_inventory_but_denies_existing_chat_and_patch_authority() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("source.ts", "one");
+    f.commit(START - 10, "outside the selected dates");
+    let data = git_source_briefing(f.source.to_string_lossy().into(), START, START + 10).unwrap();
+    assert_eq!(data.status, "measured");
+    assert!(data.commits.is_empty());
+    assert!(data.tip.is_none());
+    let identity = picked_identity(f.source.to_str().unwrap()).unwrap();
+    assert!(snapshot_for_identity(&identity, &data.head, &data.snapshot).is_ok());
+    assert!(verify_source_snapshot(f.source.to_str().unwrap(), &data.head, &data.snapshot).is_err());
+    assert!(verify_source_snapshot(f.source.to_str().unwrap(), &data.head, "forged").is_err());
+    let patch = git_source_briefing_patch(f.source.to_string_lossy().into(), data.head.clone(), None, data.head.clone(), "source.ts".into()).unwrap();
+    assert_eq!(patch.status, "unavailable");
+    f.commit(START + 1, "changed HEAD");
+    assert!(verify_source_snapshot(f.source.to_str().unwrap(), &data.head, &data.snapshot).is_err());
+}
+
+#[test]
+fn public_repository_discovery_works_for_empty_period_but_rejects_a_stale_snapshot() {
+    let f = Fixture::new();
+    let _scope = f.grant();
+    f.write("source.ts", "one");
+    f.commit(START - 10, "outside the selected dates");
+    git(&f.source, &["remote", "add", "origin", "https://github.com/owner/repo.git"]);
+    let data = git_source_briefing(f.source.to_string_lossy().into(), START, START + 10).unwrap();
+    let path = f.source.to_string_lossy().to_string();
+    assert!(data.tip.is_none());
+    assert_eq!(prs::inventory::git_briefing_public_repositories(path.clone(), data.head.clone(), data.snapshot.clone()).unwrap(), vec!["owner/repo"]);
+    assert!(prs::inventory::git_briefing_public_repositories(path.clone(), data.head.clone(), "forged".into()).is_err());
+    f.commit(START + 1, "new HEAD");
+    assert!(prs::inventory::git_briefing_public_repositories(path, data.head, data.snapshot).is_err());
+}
