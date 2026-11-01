@@ -25,7 +25,6 @@ test('prepares chosen PR originals for a manual agent handoff without an automat
   await page.getByRole('button', { name: 'Prepare agent request' }).click();
   const question = page.getByRole('textbox', { name: 'What should the agent explain?' });
   await question.fill('Explain the practical change.');
-  await page.getByRole('button', { name: /Selected PR originals/ }).click();
   const original = page.getByRole('button', { name: /#17 · Make checkout/ });
   await original.click();
   await expect(page.getByText('Author original for PR 17.')).toBeVisible();
@@ -159,7 +158,6 @@ test('keeps a long PR title readable in the selected-originals panel', async ({ 
   await page.getByRole('checkbox', { name: /Select PR #17:/ }).check();
   await page.setViewportSize({ width: 600, height: 900 });
   await page.getByRole('button', { name: 'Prepare agent request' }).click();
-  await page.getByRole('button', { name: /Selected PR originals/ }).click();
   const original = page.getByRole('button', { name: /#17 · A{20}/ });
   await expect(original).toBeVisible();
   await page.addStyleTag({ content: FREEZE_CSS });

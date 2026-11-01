@@ -56,7 +56,6 @@ it('preserves hidden selections through search and returns from an original to p
   fireEvent.click(screen.getByRole('checkbox'));
   fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
   fireEvent.change(screen.getByRole('textbox', { name: 'questionLabel' }), { target: { value: 'Review these.' } });
-  fireEvent.click(screen.getByRole('button', { name: /selectedOriginals/ }));
   fireEvent.click(screen.getByRole('button', { name: /^#1 · PR 1 ·/ }));
   expect(screen.getByText(/Author original/)).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'backToPreparation' }));
