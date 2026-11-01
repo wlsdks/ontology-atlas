@@ -9,7 +9,7 @@
   "empty": "No supported documents or images were found.",
   "folderLabel": "Folder: {folder}",
   "pathLabel": "Path: {path}",
-  "observedAt": "Last checked: {time}",
+  "observedAt": "Folder and document checked: {time}",
   "observationLimit": "Files may change before the next check.",
   "findFile": "Find a file or folder",
   "refresh": "Refresh folder",
@@ -39,5 +39,8 @@
   "details": "Reading and history details",
   "readOnly": "Read only",
   "historyBrief": "Committed history only · Uncommitted changes excluded",
-  "checkingSupport": "Checking folder support…"
+  "checkingSupport": "Checking folder support…",
+  "imageChecking": "Checking image…",
+  "imageUnconfirmed": "Image not confirmed",
+  "imageChecked": "Image checked"
 }

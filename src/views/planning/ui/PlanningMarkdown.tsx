@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { boundedPlanningImage, planningImageInfo, resolvePlanningImage } from '@/shared/lib/planning/image-path';
@@ -12,7 +12,9 @@ const MAX_IMAGES = 64;
 const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 16_777_216;
 const MAX_CONCURRENT = 3;
-const ImageRevision = createContext(0);
+type Observation = { revision: number; status: 'checking' | 'ready' | 'unavailable'; checking: string; unconfirmed: string; checked: string };
+const defaultObservation: Observation = { revision: 0, status: 'ready', checking: 'Checking image…', unconfirmed: 'Image not confirmed', checked: 'Image checked' };
+const ImageRevision = createContext<Observation>(defaultObservation);
 
 async function prepareImage(url: string): Promise<boolean> {
   const image = new Image();
@@ -38,7 +40,7 @@ function imageLimitPlugin(message: string) {
 }
 function imageResources(read: ReadImage) {
   type ImageValue = { url: string; blob: Blob; pixels: number };
-  type Entry = { revision: number; promise: Promise<ImageResult>; value: ImageValue | null };
+  type Entry = { revision: number; wanted: number; promise: Promise<ImageResult>; value: ImageValue | null };
   const cache = new Map<string, Entry>();
   const consumers = new Map<string, number>();
   const urls = new Set<string>();
@@ -62,14 +64,15 @@ function imageResources(read: ReadImage) {
         if (entry?.value) { total -= entry.value.blob.size; pixels -= entry.value.pixels; retire(entry.value.url); }
       });
     },
+    markWanted(path: string, revision: number) { const entry = cache.get(path); if (entry) entry.wanted = Math.max(entry.wanted, revision); },
     load(path: string, revision: number): Promise<ImageResult> {
       const cached = cache.get(path);
       if (cached?.revision === revision) return cached.promise;
       let resolve!: (result: ImageResult) => void;
       const promise = new Promise<ImageResult>((finish) => { resolve = finish; });
-      const entry: Entry = { revision, promise, value: cached?.value ?? null };
+      const entry: Entry = { revision, wanted: revision, promise, value: cached?.value ?? null };
       cache.set(path, entry);
-      const current = () => !disposed && cache.get(path) === entry;
+      const current = () => !disposed && cache.get(path) === entry && entry.wanted === entry.revision;
       const removePrevious = () => {
         if (!entry.value) return;
         total -= entry.value.blob.size;
@@ -133,56 +136,96 @@ function ImageElement({ url, alt, onError }: { url: string; alt: string; onError
   // eslint-disable-next-line @next/next/no-img-element -- local Blob URLs cannot use Next optimization.
   return <img src={url} alt={alt} className="h-auto max-w-full rounded-card" onError={onError} />;
 }
+type ImageLoad = { desired: number; running: boolean; stopped: boolean; kick: () => void };
+function ImageStatus({ state, pending }: { state: string; pending: boolean }) {
+  return <span role="status" data-planning-image-pending={pending ? 'true' : undefined} className="text-caption text-[color:var(--color-text-secondary)]">{state}</span>;
+}
 function LocalImage({ document, src, alt, unavailable, unsupported, limited, resources }: { document: string; src: string; alt: string; unavailable: string; unsupported: string; limited: string; resources: Resources }) {
-  const revision = useContext(ImageRevision);
+  const observation = useContext(ImageRevision);
+  const { revision, status, checking, unconfirmed, checked } = observation;
   const key = `${document}\0${src}`;
   const path = resolvePlanningImage(document, src);
   const supported = Boolean(path && /\.(?:png|jpe?g)$/i.test(path));
-  const [result, setResult] = useState<(ImageResult & { key: string }) | null>(null);
+  const [result, setResult] = useState<(ImageResult & { key: string; revision: number }) | null>(null);
+  const load = useRef<ImageLoad | null>(null);
   useEffect(() => {
     if (!path || !supported) return;
     resources.retainPath(path);
-    return () => { resources.releasePath(path); };
-  }, [path, supported, resources]);
+    const state: ImageLoad = { desired: 0, running: false, stopped: false, kick: () => {} };
+    state.kick = () => {
+      if (state.running || state.stopped) return;
+      const target = state.desired;
+      state.running = true;
+      void resources.load(path, target).then((value) => {
+        state.running = false;
+        if (state.stopped) return;
+        if (state.desired !== target) { state.kick(); return; }
+        setResult({ key, revision: target, ...value });
+      });
+    };
+    load.current = state;
+    return () => { state.stopped = true; if (load.current === state) load.current = null; resources.releasePath(path); };
+  }, [path, supported, key, resources]);
   useEffect(() => {
-    let active = true;
-    if (!path || !supported) return;
-    void resources.load(path, revision).then((value) => { if (active) setResult({ key, ...value }); });
-    return () => { active = false; };
-  }, [path, supported, key, resources, revision]);
+    const state = load.current;
+    if (!state || !path) return;
+    state.desired = revision;
+    resources.markWanted(path, revision);
+    state.kick();
+  }, [revision, path, supported, key, resources]);
   if (!path) return <span role="status">{unavailable}</span>;
   if (!supported) return <span role="status">{unsupported}</span>;
-  if (result?.key !== key) return <span role="status" data-planning-image-pending="true">{unavailable}</span>;
-  if (!result.url) return <span role="status">{result.limited ? limited : unavailable}</span>;
-  return <ImageElement url={result.url} alt={alt} onError={() => setResult({ key, url: null, limited: false })} />;
+  const current = result?.key === key ? result : null;
+  const pending = status === 'checking' || (status === 'ready' && current?.revision !== revision);
+  const label = status === 'unavailable' ? unconfirmed : pending ? checking : current?.url ? checked : current?.limited ? limited : unavailable;
+  if (!current?.url) return <ImageStatus state={label} pending={pending} />;
+  const displayed = current.url;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setResult((previous) => previous?.url === displayed ? { ...previous, url: null, limited: false } : previous)} /><ImageStatus state={label} pending={pending} /></span>;
 }
 
-export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsupported }: { path: string; bytes: Uint8Array; alt: string; unavailable: string; unsupported: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsupported, observation }: { path: string; bytes: Uint8Array; alt: string; unavailable: string; unsupported: string; observation: Observation }) {
+  const [display, setDisplay] = useState<{ url: string; bytes: Uint8Array } | null>(null);
+  const [failedBytes, setFailedBytes] = useState<Uint8Array | null>(null);
   const mime = boundedPlanningImage(path, bytes);
+  const decoder = useRef<{ desired: { bytes: Uint8Array; mime: string | null }; pending: string | null; running: boolean; stopped: boolean; kick: () => void } | null>(null);
   useEffect(() => {
-    let active = true;
-    if (!mime) {
-      void Promise.resolve().then(() => { if (active) setUrl(null); });
-      return () => { active = false; };
-    }
-    const next = URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: mime }));
-    void prepareImage(next).catch(() => false).then((ready) => {
-      if (!active || !ready) { URL.revokeObjectURL(next); if (active) { setUrl(null); setFailed(true); } return; }
-      setFailed(false);
-      setUrl(next);
-    });
-    return () => { active = false; };
-  }, [bytes, mime]);
-  useEffect(() => () => { if (url) URL.revokeObjectURL(url); }, [url]);
+    const state: NonNullable<typeof decoder.current> = { desired: { bytes: new Uint8Array(), mime: null }, pending: null, running: false, stopped: false, kick: () => {} };
+    state.kick = () => {
+      if (state.running || state.stopped || !state.desired.mime) return;
+      const target = state.desired;
+      const next = URL.createObjectURL(new Blob([new Uint8Array(target.bytes)], { type: target.mime! }));
+      state.pending = next;
+      state.running = true;
+      void prepareImage(next).catch(() => false).then((ready) => {
+        state.running = false;
+        if (state.pending === next) { state.pending = null; if (state.stopped || state.desired !== target || !ready) URL.revokeObjectURL(next); }
+        if (state.stopped) return;
+        if (state.desired !== target) { state.kick(); return; }
+        if (!ready) { setFailedBytes(target.bytes); return; }
+        setFailedBytes(null);
+        setDisplay({ url: next, bytes: target.bytes });
+      });
+    };
+    decoder.current = state;
+    return () => { state.stopped = true; if (state.pending) { URL.revokeObjectURL(state.pending); state.pending = null; } if (decoder.current === state) decoder.current = null; };
+  }, [path]);
+  useEffect(() => {
+    const state = decoder.current;
+    if (!state) return;
+    state.desired = { bytes, mime };
+    state.kick();
+  }, [path, bytes, mime]);
+  useEffect(() => () => { if (display) URL.revokeObjectURL(display.url); }, [display]);
   if (!/\.(?:png|jpe?g)$/i.test(path)) return <span role="status">{unsupported}</span>;
-  if (!mime || failed) return <span role="status">{unavailable}</span>;
-  if (!url) return <span role="status" data-planning-image-pending="true">{unavailable}</span>;
-  return <ImageElement url={url} alt={alt} onError={() => setFailed(true)} />;
+  const failed = !mime || failedBytes === bytes;
+  const pending = observation.status === 'checking' || (observation.status === 'ready' && !failed && display?.bytes !== bytes);
+  const label = observation.status === 'unavailable' ? observation.unconfirmed : pending ? observation.checking : failed ? unavailable : observation.checked;
+  if (!display || failed) return <ImageStatus state={label} pending={pending} />;
+  const displayed = display.url;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top"><ImageElement url={displayed} alt={alt} onError={() => setFailedBytes(display.bytes)} /><ImageStatus state={label} pending={pending} /></span>;
 }
 
-export function PlanningMarkdown({ document, text, readImage, imageUnavailable, unsupported, imageLimit, revision = 0 }: { document: string; text: string; readImage: ReadImage; imageUnavailable: string; unsupported: string; imageLimit: string; revision?: number }) {
+export function PlanningMarkdown({ document, text, readImage, imageUnavailable, unsupported, imageLimit, revision = 0, observation }: { document: string; text: string; readImage: ReadImage; imageUnavailable: string; unsupported: string; imageLimit: string; revision?: number; observation?: Observation }) {
   const resources = useMemo(() => imageResources(readImage), [readImage]);
   useEffect(() => { resources.retain(); return () => resources.release(); }, [resources]);
   const components = useMemo<Components>(() => ({
@@ -190,5 +233,5 @@ export function PlanningMarkdown({ document, text, readImage, imageUnavailable, 
     img: ({ src, alt }) => <LocalImage document={document} src={typeof src === 'string' ? src : ''} alt={alt ?? ''} unavailable={imageUnavailable} unsupported={unsupported} limited={imageLimit} resources={resources} />,
     table: ({ children }) => <div className="max-w-full overflow-x-auto"><table>{children}</table></div>,
   }), [document, imageUnavailable, unsupported, imageLimit, resources]);
-  return <div className={`min-w-0 max-w-prose break-words ${MARKDOWN_PROSE_CLASS}`}><ImageRevision.Provider value={revision}><ReactMarkdown skipHtml remarkPlugins={[remarkGfm, imageLimitPlugin(imageLimit)]} components={components}>{text}</ReactMarkdown></ImageRevision.Provider></div>;
+  return <div className={`min-w-0 max-w-prose break-words ${MARKDOWN_PROSE_CLASS}`}><ImageRevision.Provider value={observation ?? { ...defaultObservation, revision }}><ReactMarkdown skipHtml remarkPlugins={[remarkGfm, imageLimitPlugin(imageLimit)]} components={components}>{text}</ReactMarkdown></ImageRevision.Provider></div>;
 }

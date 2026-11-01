@@ -87,7 +87,7 @@ export function PlanningPage() {
     if (!selection || available !== true) return;
     void refresh(selection, selectedRef.current);
     const interval = window.setInterval(() => { if (document.visibilityState === 'visible' && inFlight.current === 0) void refresh(selection, selectedRef.current); }, 10_000);
-    const recheck = () => { if (document.visibilityState === 'visible') void refresh(selection, selectedRef.current); else { sequence.current++; setStatus('checking'); } };
+    const recheck = () => { if (document.visibilityState === 'visible') { if (inFlight.current === 0) void refresh(selection, selectedRef.current); } else { sequence.current++; setStatus('checking'); } };
     document.addEventListener('visibilitychange', recheck);
     window.addEventListener('focus', recheck);
     return () => { window.clearInterval(interval); document.removeEventListener('visibilitychange', recheck); window.removeEventListener('focus', recheck); };
@@ -150,6 +150,7 @@ export function PlanningPage() {
     void refresh(selection, path);
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
+  const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked') };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ?? [];
   return <main className="min-h-full">
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
@@ -177,7 +178,7 @@ export function PlanningPage() {
             <section ref={reader} onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className={`${panel} min-w-0 overflow-auto p-5 sm:p-6 lg:max-h-[70vh]`}>
               {!selected ? <p className="text-body text-[color:var(--color-text-secondary)]">{t('selectFile')}</p> : <div className="space-y-5">
                 <p className="break-all text-body text-[color:var(--color-text-secondary)]">{t('pathLabel', { path: selected })}</p>
-                {fileChanged ? <p role="alert">{t('fileChanged')}</p> : fileFailed ? <p role="alert">{t('fileUnavailable')}</p> : selected.toLowerCase().endsWith('.md') ? content !== null && <PlanningMarkdown key={selected} document={selected} text={content} readImage={readImage} revision={imageRevision} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /> : imageBytes && <PlanningStandaloneImage key={selected} path={selected} bytes={imageBytes} alt={selected} unavailable={t('imageUnavailable')} unsupported={t('unsupported')} />}
+                {fileChanged ? <p role="alert">{t('fileChanged')}</p> : fileFailed ? <p role="alert">{t('fileUnavailable')}</p> : selected.toLowerCase().endsWith('.md') ? content !== null && <PlanningMarkdown key={selected} document={selected} text={content} readImage={readImage} observation={observation} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /> : imageBytes && <PlanningStandaloneImage key={selected} path={selected} bytes={imageBytes} alt={selected} unavailable={t('imageUnavailable')} unsupported={t('unsupported')} observation={observation} />}
               </div>}
             </section>
           </div>

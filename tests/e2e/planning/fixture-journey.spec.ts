@@ -17,14 +17,20 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   ]).toString('base64');
   await installDesktopRailRuntime(page);
   await page.addInitScript(({ red, green }) => {
-    type State = { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; image: string; hold: boolean; fail: boolean; release?: () => void; holdOpen: boolean; releaseOpen?: () => void; opens: number; reads: number; finished: number };
+    type State = { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; image: string; hold: boolean; fail: boolean; failScan: boolean; release?: () => void; holdOpen: boolean; releaseOpen?: () => void; opens: number; reads: number; finished: number; tick?: () => void };
     const win = window as unknown as State;
     const original = win.__TAURI_INTERNALS__.invoke;
-    win.image = red; win.hold = false; win.fail = false; win.holdOpen = false; win.reads = 0; win.finished = 0; win.opens = 0;
+    const originalSetInterval = window.setInterval.bind(window);
+    window.setInterval = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) => {
+      if (timeout === 10_000 && typeof handler === 'function') win.tick = () => handler(...args);
+      return originalSetInterval(handler, timeout, ...args);
+    }) as typeof window.setInterval;
+    win.image = red; win.hold = false; win.fail = false; win.failScan = false; win.holdOpen = false; win.reads = 0; win.finished = 0; win.opens = 0;
     const bytes = () => Array.from(Uint8Array.from(atob(win.image), c => c.charCodeAt(0)));
     win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
       if (cmd === 'planning_supported') return true;
       if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan' && win.failScan) throw new Error('unavailable');
       if (cmd === 'planning_scan') return { files: ['plan.md', 'image.png'].map((path) => ({ path, size: 1, modified_seconds: 1 })), skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
       if (cmd === 'planning_open_document') {
         if (args?.path === 'image.png') {
@@ -56,12 +62,14 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   expect(await image.getAttribute('src')).toBe(first);
+  await expect(page.getByText(planning.imageChecking)).toBeVisible();
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(2);
   await expect(image).toHaveAttribute('src', first!);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; green: string }; win.image = win.green; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   expect(await image.getAttribute('src')).toBe(first);
+  await expect(page.getByText(planning.imageChecking)).toBeVisible();
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect.poll(() => image.getAttribute('src')).not.toBe(first);
   await expect.poll(() => image.evaluate((node) => {
@@ -73,16 +81,37 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; red: string }; win.image = win.red; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; image: string; green: string }; win.hold = false; win.image = win.green; window.dispatchEvent(new Event('focus')); });
-  await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(5);
+  await page.evaluate(async () => {
+    const win = window as unknown as { tick: () => void };
+    for (let i = 0; i < 20; i++) { win.tick(); await new Promise((resolve) => setTimeout(resolve, 5)); }
+  });
+  expect(await page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(4);
+  await expect(page.getByText(planning.imageChecking)).toBeVisible();
+  await expect(image).toHaveAttribute('src', greenUrl!);
   await page.evaluate(() => (window as unknown as { release: () => void }).release());
+  await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(5);
   await expect.poll(() => page.evaluate(() => (window as unknown as { finished: number }).finished)).toBe(5);
   await expect(image).toHaveAttribute('src', greenUrl!);
-  await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = true; window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(planning.imageChecked)).toBeVisible();
+  await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = true; window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(planning.imageUnconfirmed)).toBeVisible();
+  await expect(image).toHaveAttribute('src', greenUrl!);
+  await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = false; window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(planning.imageChecked)).toBeVisible();
+  await page.evaluate(() => { const win = window as unknown as { fail: boolean; hold: boolean; release?: () => void }; win.fail = true; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  await expect(image).toHaveAttribute('src', greenUrl!);
+  await expect(page.getByText(planning.imageChecking)).toBeVisible();
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect(image).toHaveCount(0);
   await expect(page.getByText(planning.imageUnavailable)).toBeVisible();
   await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = false; window.dispatchEvent(new Event('focus')); });
   await expect(image).toBeVisible();
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; red: string }; win.image = win.red; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
+  await page.evaluate(() => { const win = window as unknown as { image: string; green: string }; win.image = win.green; });
   await page.getByRole('button', { name: 'image.png' }).click();
+  await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   const standalone = page.getByAltText('image.png');
   await expect(standalone).toBeVisible();
   const standaloneFirst = await standalone.getAttribute('src');
@@ -92,6 +121,7 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.evaluate(() => { const win = window as unknown as { holdOpen: boolean; releaseOpen?: () => void; image: string; red: string }; win.image = win.red; win.holdOpen = true; delete win.releaseOpen; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseOpen?: () => void }).releaseOpen))).toBe(true);
   expect(await standalone.getAttribute('src')).toBe(standaloneFirst);
+  await expect(page.getByText(planning.imageChecking)).toBeVisible();
   await page.evaluate(() => { const win = window as unknown as { holdOpen: boolean; releaseOpen: () => void }; win.holdOpen = false; win.releaseOpen(); });
   await expect.poll(() => standalone.getAttribute('src')).not.toBe(standaloneFirst);
   await expect.poll(() => standalone.evaluate((node) => {

@@ -9,7 +9,7 @@
   "empty": "没有找到支持的文档或图片。",
   "folderLabel": "文件夹：{folder}",
   "pathLabel": "路径：{path}",
-  "observedAt": "上次检查：{time}",
+  "observedAt": "文件夹和文档检查时间：{time}",
   "observationLimit": "文件可能在下次检查前发生变化。",
   "findFile": "查找文件或文件夹",
   "refresh": "刷新文件夹",
@@ -39,5 +39,8 @@
   "details": "读取与历史范围",
   "readOnly": "只读",
   "historyBrief": "仅限提交历史 · 不含未提交更改",
-  "checkingSupport": "正在检查文件夹支持情况…"
+  "checkingSupport": "正在检查文件夹支持情况…",
+  "imageChecking": "正在检查图片…",
+  "imageUnconfirmed": "图片尚未确认",
+  "imageChecked": "图片已检查"
 }

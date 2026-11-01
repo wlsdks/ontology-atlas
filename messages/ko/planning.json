@@ -9,7 +9,7 @@
   "empty": "지원하는 문서나 이미지가 없습니다.",
   "folderLabel": "폴더: {folder}",
   "pathLabel": "경로: {path}",
-  "observedAt": "마지막 확인: {time}",
+  "observedAt": "폴더·문서 확인: {time}",
   "observationLimit": "다음 확인 전에 파일이 바뀔 수 있습니다.",
   "findFile": "파일이나 폴더 찾기",
   "refresh": "폴더 새로고침",
@@ -39,5 +39,8 @@
   "details": "읽기·이력 범위",
   "readOnly": "읽기 전용",
   "historyBrief": "커밋 이력만 · 미커밋 제외",
-  "checkingSupport": "폴더 지원 여부를 확인하고 있습니다…"
+  "checkingSupport": "폴더 지원 여부를 확인하고 있습니다…",
+  "imageChecking": "이미지 확인 중…",
+  "imageUnconfirmed": "이미지 확인 안 됨",
+  "imageChecked": "이미지 확인됨"
 }

@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { PlanningMarkdown } from './PlanningMarkdown';
+import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { crc32, deflateSync } from 'node:zlib';
 
 afterEach(() => vi.restoreAllMocks());
@@ -77,6 +77,36 @@ describe('untrusted Planning Markdown', () => {
     await waitFor(() => expect(screen.getByAltText('three')).toBeVisible());
     expect(screen.queryByText('limit')).toBeNull();
     view.unmount();
+  });
+  it('coalesces delayed standalone decoding and releases its object URLs on exit', async () => {
+    const image = (suffix: number) => new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,suffix]);
+    let count = 0;
+    const revoke = vi.fn();
+    const decodeResolvers: Array<() => void> = [];
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => `blob:${++count}`) });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
+    Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true, value: vi.fn() });
+    vi.spyOn(HTMLImageElement.prototype, 'decode').mockImplementation(() => new Promise<void>((resolve) => decodeResolvers.push(resolve)));
+    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked' };
+    const props = { path: 'design.png', alt: 'design', unavailable: 'unavailable', unsupported: 'unsupported', observation };
+    const view = render(<PlanningStandaloneImage {...props} bytes={image(0)} />);
+    await waitFor(() => expect(decodeResolvers).toHaveLength(1));
+    await act(async () => decodeResolvers[0]());
+    expect(screen.getByAltText('design')).toHaveAttribute('src', 'blob:1');
+    for (let i = 1; i <= 20; i++) view.rerender(<PlanningStandaloneImage {...props} bytes={image(i)} />);
+    expect(decodeResolvers).toHaveLength(2);
+    expect(screen.getByText('checking')).toBeVisible();
+    expect(screen.getByAltText('design')).toHaveAttribute('src', 'blob:1');
+    await act(async () => decodeResolvers[1]());
+    await waitFor(() => expect(decodeResolvers).toHaveLength(3));
+    expect(revoke).toHaveBeenCalledWith('blob:2');
+    view.unmount();
+    expect(revoke).toHaveBeenCalledWith('blob:1');
+    expect(revoke).toHaveBeenCalledWith('blob:3');
+    await act(async () => decodeResolvers[2]());
+    expect(revoke.mock.calls.filter(([url]) => url === 'blob:3')).toHaveLength(1);
+    vi.restoreAllMocks();
+    Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
   });
   it('limits total unique pixels even when valid PNGs compress to small files', async () => {
     const chunk = (name: string, data: Buffer) => {

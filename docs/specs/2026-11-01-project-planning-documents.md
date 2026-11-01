@@ -104,7 +104,8 @@ These are proposed exact English strings and message locations, not catalog entr
 | `empty` | Complete empty scan | No supported documents or images were found in this folder. Choose another folder or refresh. |
 | `folderLabel` | Selected scope | Folder: {folder} |
 | `pathLabel` | Open file | Path: {path} |
-| `observedAt` | Last successful observation | Last checked: {time} |
+| `observedAt` | Last successful folder and document observation; images have separate status | Folder and document checked: {time} |
+| `imageChecking`, `imageUnconfirmed`, `imageChecked` | Each image is checked separately; retain an earlier preview while checking and label it unconfirmed after a folder error. | Checking image… / Image not confirmed / Image checked |
 | `observationLimit` | Last-observation qualification | Files may change before the next check. |
 | `findFile` | File-name/path filter | Find a file or folder |
 | `refresh` | Retry and manual recheck | Refresh folder |

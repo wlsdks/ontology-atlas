@@ -9,7 +9,7 @@
   "empty": "対応する文書や画像がありません。",
   "folderLabel": "フォルダ：{folder}",
   "pathLabel": "パス：{path}",
-  "observedAt": "最終確認：{time}",
+  "observedAt": "フォルダー・文書の確認：{time}",
   "observationLimit": "次の確認までにファイルが変わることがあります。",
   "findFile": "ファイルやフォルダを探す",
   "refresh": "フォルダを更新",
@@ -39,5 +39,8 @@
   "details": "読み取りと履歴の範囲",
   "readOnly": "読み取り専用",
   "historyBrief": "コミット履歴のみ・未コミットの変更を除外",
-  "checkingSupport": "フォルダ対応状況を確認しています…"
+  "checkingSupport": "フォルダ対応状況を確認しています…",
+  "imageChecking": "画像を確認中…",
+  "imageUnconfirmed": "画像は未確認",
+  "imageChecked": "画像を確認済み"
 }
