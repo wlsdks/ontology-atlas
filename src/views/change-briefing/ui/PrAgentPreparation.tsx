@@ -54,7 +54,7 @@ export function PrAgentPreparation({ scope, active, versions, evidenceRevision, 
       const remotes = await publicPullRepositories(scope);
       if (generation !== copyGeneration.current) return;
       if (!remotes.includes(scope.repository) || !isIssuedPrAgentPlan(plan)) { setStale(true); return; }
-      const copied = await copyText(manualPrAgentPacket(plan.parts[index])).catch(() => false);
+      const copied = await copyText(manualPrAgentPacket(plan.parts[index]), { canFallback: () => generation === copyGeneration.current && isIssuedPrAgentPlan(plan) }).catch(() => false);
       if (generation === copyGeneration.current) setFeedback(copied ? (plan.parts.length === 1 ? t('copiedRequest') : t('copiedPart', { number: index + 1 })) : t('copyFailed'));
     } catch {
       if (generation === copyGeneration.current) setStale(true);

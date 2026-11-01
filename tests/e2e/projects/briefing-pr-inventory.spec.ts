@@ -52,6 +52,53 @@ test('prepares chosen PR originals for a manual agent handoff without an automat
   expect(calls).not.toContain('source_briefing_chat');
 });
 
+test('opens period files from a PR and returns to the same original', async ({ page }) => {
+  await openBriefing(page);
+  await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
+  await page.getByRole('button', { name: /Make checkout confirmation clear/ }).click();
+  await page.getByRole('button', { name: 'View files touched in this period' }).click();
+  await expect(page.getByText('These are files touched in the selected period, not a verified list of files changed by this PR.')).toBeVisible();
+  await expect(page.getByTestId('briefing-file-list').getByText('service.ts')).toBeVisible();
+  await page.getByTestId('briefing-file-list').getByText('service.ts').click();
+  await expect(page.getByText(/Compares .*not a single PR or commit/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back to PR' }).click();
+  await expect(page.getByRole('heading', { name: 'Make checkout confirmation clear' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View files touched in this period' })).toBeFocused();
+});
+
+test('opens only a commit’s recorded paths and returns to that commit', async ({ page }) => {
+  await openBriefing(page);
+  await page.getByRole('radio', { name: 'Commits', exact: true }).click();
+  await page.getByRole('button', { name: /revert previous rule/ }).click();
+  await page.getByRole('button', { name: 'View files touched by this commit' }).click();
+  await expect(page.getByTestId('briefing-file-list').getByText('service.ts')).toBeVisible();
+  await expect(page.getByTestId('briefing-file-list').getByText('unmapped.ts')).toHaveCount(0);
+  await page.getByTestId('briefing-file-list').getByText('service.ts').click();
+  await expect(page.getByText(/Compares .*not a single PR or commit/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back to commit' }).click();
+  await expect(page.getByRole('heading', { name: 'revert previous rule' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View files touched by this commit' })).toBeFocused();
+});
+
+test('keeps a selected file beyond the first page reachable on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 600, height: 900 });
+  await openBriefing(page);
+  await setBriefingMode(page, 'many');
+  await page.getByRole('button', { name: 'Refresh briefing' }).click();
+  await page.getByRole('radio', { name: 'Commits', exact: true }).click();
+  await page.getByRole('button', { name: /change tooling/ }).click();
+  await page.getByRole('button', { name: 'View files touched by this commit' }).click();
+  const search = page.getByRole('searchbox', { name: 'Find a changed file' });
+  await search.fill('tool-60');
+  await page.getByRole('button', { name: /mcp\/src\/tool-60\.ts/ }).click();
+  await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-60.ts' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to files' }).click();
+  await search.clear();
+  const selected = page.getByRole('button', { name: /mcp\/src\/tool-60\.ts/ });
+  await expect(selected).toBeVisible();
+  await expect(selected).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('measures PR selection and preparation across responsive widths', async ({ browser, baseURL }) => {
   test.setTimeout(150_000);
   const ramps = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));

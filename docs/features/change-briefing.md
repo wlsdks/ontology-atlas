@@ -19,6 +19,11 @@ committer-time membership. Uncommitted work and separately counted commits
 inside merged branches are excluded: this is current-HEAD first-parent history,
 including merge integration differences.
 
+From a commit original, its file action shows only that commit's recorded paths.
+From a PR original, the file action shows files touched in the whole selected
+period and explicitly identifies that broader scope. File comparisons use the
+period endpoints; returning restores the originating original and control.
+
 The Files view leads with measured file activity and direct entries to the six
 largest unmapped source areas, alongside the capability groups. Counts describe
 file activity, not importance or verified behavior. Reading scope and repository-wide
@@ -80,7 +85,7 @@ Pull requests are the first view; switching views or periods makes no GitHub or 
 
 An action reads no more than five pages, 2 MiB and 60 seconds. Pagination can continue explicitly when a safe cursor is available. Fetches are unauthenticated, use fixed GitHub HTTPS endpoints, and send no Git credentials or source code. Errors preserve earlier results and do not establish that a repository or PR is absent. Session memory retains at most 400 original versions and 16 MiB across up to 32 source scopes, and omits originals over 512 KiB. Changed versions and omissions remain visible. Clearing the session copies does not change GitHub. This direct inventory currently supports public github.com repositories only; private account access and ACP explanation are not yet available.
 
-Select retained PR originals independently of opening them, then prepare a question and inspect or explicitly copy a bounded packet for a separately operated coding agent. A PR with multiple observed versions has one explicitly selected version. Search does not discard hidden selections; unavailable or oversized originals are listed as omissions. The packet includes the question, original passages, source identities and instructions to produce a readable, cited answer. Atlas copies only on request and does not send the packet or control an external agent's tools and provider. A changed PR inventory retires the prepared packet. Before copying, Atlas rechecks the local source receipt and remote; another process can still change the repository between that check and the clipboard operation. This manual handoff is not an in-app ACP explanation or a verification of author claims.
+Select retained PR originals independently of opening them, then prepare a question and inspect or explicitly copy a bounded packet for a separately operated coding agent. A PR with multiple observed versions has one explicitly selected version. Search does not discard hidden selections; unavailable or oversized originals are listed as omissions. The packet includes the question, original passages, source identities and instructions to produce a readable, cited answer. Atlas copies only on request and does not send the packet or control an external agent's tools and provider. A changed PR inventory retires the prepared packet. Before copying, Atlas rechecks the local source receipt and remote; another process can still change the repository between that check and the clipboard operation. This manual handoff is not an in-app ACP explanation or a verification of author claims. The browser clipboard API cannot cancel an operating-system write once it has started; a cancelled request cannot start the fallback copy. Identified omitted PR versions remain visible across reads, and unidentifiable omissions stay explicit.
 
 ## Standalone source access
 

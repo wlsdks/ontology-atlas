@@ -15,7 +15,7 @@ import { OriginalSourceBody } from './OriginalSourceBody';
 import { PrAgentPreparation } from './PrAgentPreparation';
 import { Input } from '@/shared/ui/fields/input';
 
-type Props = { data: ChangeBriefing; memory: string; active?: boolean; onActivity?: (controller: AbortController | null) => void };
+type Props = { data: ChangeBriefing; memory: string; active?: boolean; onActivity?: (controller: AbortController | null) => void; onFiles?: () => void };
 type AgentSelection = { key: string; conflict: string | null };
 
 function githubPullsUrl(repository: string): string | null {
@@ -24,12 +24,12 @@ function githubPullsUrl(repository: string): string | null {
   return `https://github.com/${parts[0]}/${parts[1]}/pulls`;
 }
 
-export function PublicPullInventory({ data, memory, active, onActivity }: Props) {
+export function PublicPullInventory({ data, memory, active, onActivity, onFiles }: Props) {
   const scope = JSON.stringify([data.sourceRoot, data.head, data.snapshot]);
-  return <PublicPullInventoryScope key={scope} data={data} memory={memory} active={active} onActivity={onActivity} />;
+  return <PublicPullInventoryScope key={scope} data={data} memory={memory} active={active} onActivity={onActivity} onFiles={onFiles} />;
 }
 
-function PublicPullInventoryScope({ data, memory, active = true, onActivity }: Props) {
+function PublicPullInventoryScope({ data, memory, active = true, onActivity, onFiles }: Props) {
   const t = useTranslations('prBriefing');
   const git = useTranslations('gitBriefing');
   const locale = useLocale();
@@ -42,6 +42,7 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity }: P
   const [failed, setFailed] = useState(false);
   const [cursorInvalid, setCursorInvalid] = useState(false);
   const [scopeLimit, setScopeLimit] = useState(false);
+  const [visibleOmissions, setVisibleOmissions] = useState(10);
   const [openedFromPreparation, setOpenedFromPreparation] = useState<string | null>(null);
   const arrivalKey = JSON.stringify([memory, data.sourceRoot, data.head, data.snapshot, repository, publicPullLedgerGeneration()]);
   const [selectedKey, setSelectedKey] = useArrivalMemory<string | null>(`${arrivalKey}:public-pr-selected`, null);
@@ -132,11 +133,11 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity }: P
   const report = session.report;
   const conflicts = publicPullConflicts(session);
   const selected = session.versions.find(version => `${version.number}:${version.digest}` === selectedKey) ?? null;
-  const conflictFingerprint = (version: PublicPullVersion) => conflicts.has(version.number) ? JSON.stringify(session.versions.filter(item => item.number === version.number).map(item => item.digest).sort()) : null;
+  const evidenceRevision = publicPullEvidenceRevision(publicPullScope(sourceRoot, head, snapshot, repository));
+  const conflictFingerprint = (version: PublicPullVersion) => conflicts.has(version.number) || session.hadNativeOmissions || session.conflictOverflow ? evidenceRevision : null;
   const isSelectedForAgent = (version: PublicPullVersion) => selectedForAgent.some(item => item.key === `${version.number}:${version.digest}` && item.conflict === conflictFingerprint(version));
   const agentVersions = session.versions.filter(isSelectedForAgent);
   const agentScope = useMemo(() => ({ ...identity, repository }), [identity, repository]);
-  const evidenceRevision = publicPullEvidenceRevision(publicPullScope(sourceRoot, head, snapshot, repository));
   const needle = session.versions.length > 10 ? query.trim().toLocaleLowerCase() : '';
   const matches = session.versions.filter(version => !needle || `${version.title} #${version.number}`.toLocaleLowerCase().includes(needle));
   const clock = (value: string) => {
@@ -169,6 +170,7 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity }: P
       <p className="text-label text-[color:var(--color-text-secondary)]">#{selected.number} · {status(selected.status)} · {selected.digest.slice(0, 8)} · {t('prFresh', { updatedAt: clock(selected.updatedAt), fetchedAt: clock(selected.fetchedAt) })}</p>
       {conflicts.has(selected.number) && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('versionConflict', { number: selected.number })}</p>}
       {!selected.bodyPresent ? <p>{git('sourceUnavailableInline')}</p> : <OriginalSourceBody source={{ id: `pr:${selected.number}`, kind: 'pr', title: selected.title, text: `${selected.title}\n\n${selected.body}`, integration: '', version: selected.digest }} passage={null} memory={memory} readerId={`${selected.number}:${selected.digest}`} rawLabel={git('viewSourceText')} readingLabel={git('viewFormattedText')} />}
+      {onFiles && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={onFiles}>{t('filesFromPr')}</Button>}
       <a href={selected.url} target="_blank" rel="noopener noreferrer" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11' })}>{t('openOnGitHub')}</a>
     </section> : preparing ? <div ref={preparation} tabIndex={-1}>
       <PrAgentPreparation scope={agentScope} active={active} versions={agentVersions} evidenceRevision={evidenceRevision} preparedRevision={preparedRevision} question={question} onQuestion={setQuestion} originalsOpen={openedFromPreparation !== null} onBack={() => { setPreparing(false); setOpenedFromPreparation(null); requestAnimationFrame(() => prepareButton.current?.focus()); }} onOpen={open} />
@@ -186,6 +188,8 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity }: P
         {(report.reason === 'unavailable' || (report.status === 'unavailable' && report.reason !== 'rate-limited')) && <p role="status" className="text-[color:var(--color-status-warning)]">{t('prUnavailablePublic')}</p>}
         {(report.status !== 'observed' || session.hadNativeOmissions || session.conflictOverflow) && <p role="status">{t('prPartial')}</p>}
         {session.hadNativeOmissions && <p>{t('originalsOmitted')}</p>}
+        {session.nativeOmissions.length > 0 && <Disclosure summary={t('omittedList')}><div className="space-y-2 pt-2">{session.nativeOmissions.slice(0, visibleOmissions).map(item => <p key={`${item.number}:${item.digest}`}>#{item.number} · {item.digest.slice(0, 8)} · {t(item.reason === 'record-oversized' ? 'nativeOmittedOversized' : 'nativeOmittedLimit')}</p>)}{session.nativeOmissions.length > visibleOmissions && <Button variant="ghost" size="sm" onClick={() => setVisibleOmissions(value => value + 10)}>{t('morePrs', { count: Math.min(10, session.nativeOmissions.length - visibleOmissions) })}</Button>}</div></Disclosure>}
+        {session.nativeOmissionsUnlisted && <p>{t('nativeOmittedUnlisted')}</p>}
         {session.conflictOverflow && <p>{t('conflictsUnknown')}</p>}
         {session.omittedForSessionLimit > 0 && <p>{t('sessionLimit')}</p>}
         {(session.hasEarlierScan || report.restarted) && session.versions.length > 0 && <p>{t('retainedVersions')}</p>}

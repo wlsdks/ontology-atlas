@@ -201,6 +201,10 @@ The following exact keys are in all four `messages/{en,ko,ja,zh}/prBriefing.json
 | `prBriefing.copyRequestTitle` | Manual PR preparation | Ready to copy |
 | `prBriefing.copyRequest` | Manual PR preparation | Copy request |
 | `prBriefing.copiedRequest` | Manual PR preparation | Copied. Paste it into your coding agent. |
+| `prBriefing.omittedList` | PR inventory | Omitted PRs |
+| `prBriefing.nativeOmittedOversized` | PR inventory | Original exceeds the read limit |
+| `prBriefing.nativeOmittedLimit` | PR inventory | Read limit reached |
+| `prBriefing.nativeOmittedUnlisted` | PR inventory | Additional omitted PRs could not be identified. |
 
 ## Edge cases
 

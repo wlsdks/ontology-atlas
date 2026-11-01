@@ -6,11 +6,11 @@ import { ChevronRight, GitCommitHorizontal } from 'lucide-react';
 import { Button, RowButton } from '@/shared/ui';
 import type { BriefingCommit, ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 
-export function CommitInventory({ data, onExplain }: { data: ChangeBriefing; onExplain: () => void }) {
-  return <CommitInventoryScope key={JSON.stringify([data.sourceRoot, data.head, data.snapshot])} data={data} onExplain={onExplain} />;
+export function CommitInventory({ data, onExplain, onFiles }: { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void }) {
+  return <CommitInventoryScope key={JSON.stringify([data.sourceRoot, data.head, data.snapshot])} data={data} onExplain={onExplain} onFiles={onFiles} />;
 }
 
-function CommitInventoryScope({ data, onExplain }: { data: ChangeBriefing; onExplain: () => void }) {
+function CommitInventoryScope({ data, onExplain, onFiles }: { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void }) {
   const t = useTranslations('prBriefing');
   const git = useTranslations('gitBriefing');
   const locale = useLocale();
@@ -33,6 +33,7 @@ function CommitInventoryScope({ data, onExplain }: { data: ChangeBriefing; onExp
       <div className="flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 flex-1 break-words text-title font-[var(--font-weight-strong)]">{selected.subject}</h2><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={back}>{t('backToCommit')}</Button></div>
       <p className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">{selected.hash} · {clock(selected.committedAt)}</p>
       {selected.messageComplete === false ? <p role="status">{git('sourceUnavailableInline')}</p> : <pre className="whitespace-pre-wrap break-words font-mono text-body">{selected.message ?? selected.subject}</pre>}
+      {onFiles && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => onFiles(selected.paths)}>{t('filesFromCommit')}</Button>}
     </section> : <>
       <div className="flex flex-wrap items-start justify-between gap-3"><p className="max-w-prose text-body text-[color:var(--color-text-secondary)]">{t('commitScope')}</p>{data.commits.length > 0 && <Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" onClick={onExplain}>{t('commitPrepare')}</Button>}</div>
       {data.commits.length > 0 && <div ref={list} className="max-w-4xl divide-y divide-[color:var(--color-border-soft)] overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">{data.commits.slice(0, visible).map((commit) => <RowButton key={commit.hash} tone="strong" hoverSurface="lift" hoverInk="strong" className="rounded-none px-4 py-3" data-commit-hash={commit.hash} onClick={() => open(commit)}><GitCommitHorizontal size={16} aria-hidden className="shrink-0 text-[color:var(--color-text-secondary)]" /><span className="min-w-0 flex-1 text-left"><span className="block break-words text-body-lg font-[var(--font-weight-strong)]">{commit.subject}</span><span className="block text-label text-[color:var(--color-text-secondary)]">{commit.hash.slice(0, 8)} · {clock(commit.committedAt)}</span></span><ChevronRight size={16} aria-hidden className="shrink-0 text-[color:var(--color-text-secondary)]" /></RowButton>)}</div>}

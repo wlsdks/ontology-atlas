@@ -137,5 +137,9 @@
   "packetRaw": "実際にコピーされる内容 (JSON)",
   "copyRequestTitle": "エージェントに渡す",
   "copyRequest": "依頼をコピー",
-  "copiedRequest": "コピーしました。コーディングエージェントに貼り付けてください。"
+  "copiedRequest": "コピーしました。コーディングエージェントに貼り付けてください。",
+  "omittedList": "取得できなかったPRを見る",
+  "nativeOmittedOversized": "原文が読み取り上限を超過",
+  "nativeOmittedLimit": "読み取り上限に到達",
+  "nativeOmittedUnlisted": "番号を特定できなかったPRもあります。"
 }

@@ -1,4 +1,4 @@
-export async function copyText(text: string): Promise<boolean> {
+export async function copyText(text: string, options?: { canFallback?: () => boolean }): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
@@ -7,6 +7,8 @@ export async function copyText(text: string): Promise<boolean> {
       // Permission prompts can reject even when the Clipboard API exists; fall back to the legacy path.
     }
   }
+
+  if (options?.canFallback && !options.canFallback()) return false;
 
   if (typeof document === "undefined") {
     return false;

@@ -137,5 +137,9 @@
   "packetRaw": "实际复制的内容 (JSON)",
   "copyRequestTitle": "交给智能体",
   "copyRequest": "复制请求",
-  "copiedRequest": "已复制。请粘贴到你的编程智能体中。"
+  "copiedRequest": "已复制。请粘贴到你的编程智能体中。",
+  "omittedList": "查看遗漏的 PR",
+  "nativeOmittedOversized": "原文超过读取上限",
+  "nativeOmittedLimit": "已达到读取上限",
+  "nativeOmittedUnlisted": "还有无法确定编号的遗漏 PR。"
 }

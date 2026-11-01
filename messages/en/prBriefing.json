@@ -137,5 +137,9 @@
   "packetRaw": "Exact copied text (JSON)",
   "copyRequestTitle": "Ready to copy",
   "copyRequest": "Copy request",
-  "copiedRequest": "Copied. Paste it into your coding agent."
+  "copiedRequest": "Copied. Paste it into your coding agent.",
+  "omittedList": "Omitted PRs",
+  "nativeOmittedOversized": "Original exceeds the read limit",
+  "nativeOmittedLimit": "Read limit reached",
+  "nativeOmittedUnlisted": "Additional omitted PRs could not be identified."
 }

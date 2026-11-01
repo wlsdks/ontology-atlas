@@ -97,6 +97,50 @@ it('requires a fresh version choice when a conflict appears after selection', as
   expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
 });
 
+it('shows identified omitted PRs and keeps them visible after refresh', async () => {
+  const omission = { number: 42, digest: 'd'.repeat(64), updatedAt: '2026-01-01T00:00:00Z', reason: 'record-oversized' };
+  bridge.read.mockResolvedValueOnce({ ...page([version(1, 'a'.repeat(64))]), omitted: [omission], unlistedOmissions: 2 })
+    .mockResolvedValueOnce(page([]));
+  render(<PublicPullInventory data={data} memory="test" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'omittedList' }));
+  expect(screen.getByText(/#42 · dddddddd/)).toBeVisible();
+  expect(screen.getByText('nativeOmittedUnlisted')).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
+  await waitFor(() => expect(bridge.read).toHaveBeenCalledTimes(2));
+  expect(screen.getByText(/#42 · dddddddd/)).toBeVisible();
+});
+
+it('requires a fresh selection after an omitted conflicting version changes', async () => {
+  const omission = (digest: string) => ({ number: 1, digest, updatedAt: '2026-01-01T00:00:00Z', reason: 'too-large' });
+  bridge.read.mockResolvedValueOnce({ ...page([version(1, 'a'.repeat(64))]), conflicts: [1], omitted: [omission('b'.repeat(64))] })
+    .mockResolvedValueOnce({ ...page([]), conflicts: [1], omitted: [omission('c'.repeat(64))] });
+  render(<PublicPullInventory data={data} memory="test" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
+  fireEvent.click(await screen.findByRole('checkbox'));
+  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeDisabled());
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+});
+
+it('cancels a clipboard fallback when the question changes during copying', async () => {
+  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
+  let resolveCopy!: (copied: boolean) => void;
+  bridge.copy.mockImplementationOnce(() => new Promise<boolean>(resolve => { resolveCopy = resolve; }));
+  render(<PublicPullInventory data={data} memory="test" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
+  fireEvent.click(await screen.findByRole('checkbox'));
+  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
+  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
+  await waitFor(() => expect(bridge.copy).toHaveBeenCalledOnce());
+  const options = bridge.copy.mock.calls[0][1] as { canFallback: () => boolean };
+  expect(options.canFallback()).toBe(true);
+  fireEvent.change(screen.getByRole('textbox', { name: 'questionLabel' }), { target: { value: 'New question' } });
+  expect(options.canFallback()).toBe(false);
+  resolveCopy(false);
+});
+
 it.each(['receipt', 'remote'] as const)('refuses to copy when the %s cannot be verified', async failure => {
   bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
   render(<PublicPullInventory data={data} memory="test" />);

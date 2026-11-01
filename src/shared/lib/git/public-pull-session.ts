@@ -1,4 +1,4 @@
-import type { PublicPullInventory, PublicPullVersion } from './tauri-pr-inventory';
+import type { PublicPullInventory, PublicPullOmission, PublicPullVersion } from './tauri-pr-inventory';
 
 export const MAX_PUBLIC_PULL_VERSIONS = 400;
 export const MAX_PUBLIC_PULL_BYTES = 16 * 1024 * 1024;
@@ -8,6 +8,8 @@ export interface PublicPullSession {
   retainedBytes: number;
   omittedForSessionLimit: number;
   hadNativeOmissions: boolean;
+  nativeOmissions: PublicPullOmission[];
+  nativeOmissionsUnlisted: boolean;
   conflicts: number[];
   conflictOverflow: boolean;
   cursorNeedsRestart: boolean;
@@ -16,7 +18,7 @@ export interface PublicPullSession {
 }
 
 export const emptyPublicPullSession = (): PublicPullSession => ({
-  versions: [], retainedBytes: 0, omittedForSessionLimit: 0, hadNativeOmissions: false, conflicts: [], conflictOverflow: false, cursorNeedsRestart: false, hasEarlierScan: false, report: null,
+  versions: [], retainedBytes: 0, omittedForSessionLimit: 0, hadNativeOmissions: false, nativeOmissions: [], nativeOmissionsUnlisted: false, conflicts: [], conflictOverflow: false, cursorNeedsRestart: false, hasEarlierScan: false, report: null,
 });
 
 export function appendPublicPullPage(session: PublicPullSession, page: PublicPullInventory, limits = { versions: MAX_PUBLIC_PULL_VERSIONS, bytes: MAX_PUBLIC_PULL_BYTES }): PublicPullSession {
@@ -41,7 +43,15 @@ export function appendPublicPullPage(session: PublicPullSession, page: PublicPul
   const conflicts = observedConflicts.slice(0, MAX_PUBLIC_PULL_VERSIONS);
   const conflictOverflow = session.conflictOverflow || observedConflicts.length > MAX_PUBLIC_PULL_VERSIONS;
   const hadNativeOmissions = session.hadNativeOmissions || page.omitted.length > 0 || page.unlistedOmissions > 0;
-  return { versions, retainedBytes, omittedForSessionLimit, hadNativeOmissions, conflicts, conflictOverflow, cursorNeedsRestart: false, hasEarlierScan: session.hasEarlierScan, report: { ...page, versions: [] } };
+  const omitted = new Map(session.nativeOmissions.map(item => [`${item.number}:${item.digest}`, item]));
+  let nativeOmissionsUnlisted = session.nativeOmissionsUnlisted || page.unlistedOmissions > 0;
+  for (const item of page.omitted) {
+    const key = `${item.number}:${item.digest}`;
+    if (omitted.size < MAX_PUBLIC_PULL_VERSIONS || omitted.has(key)) omitted.set(key, item);
+    else nativeOmissionsUnlisted = true;
+  }
+  const nativeOmissions = [...omitted.values()];
+  return { versions, retainedBytes, omittedForSessionLimit, hadNativeOmissions, nativeOmissions, nativeOmissionsUnlisted, conflicts, conflictOverflow, cursorNeedsRestart: false, hasEarlierScan: session.hasEarlierScan, report: { ...page, versions: [] } };
 }
 
 export function publicPullConflicts(session: PublicPullSession): Set<number> {

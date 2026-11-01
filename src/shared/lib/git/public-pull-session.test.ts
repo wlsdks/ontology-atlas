@@ -44,3 +44,12 @@ it('bounds accumulated conflict metadata across explicitly restarted scans', () 
   expect(next.conflicts).toHaveLength(400);
   expect(next.conflictOverflow).toBe(true);
 });
+
+
+it('retains identified omitted versions across restarted reads and reports overflow', () => {
+  const omitted = { number: 42, digest: 'a'.repeat(64), updatedAt: '2026-01-01T00:00:00Z', reason: 'record-oversized' };
+  const first = appendPublicPullPage(emptyPublicPullSession(), { ...page([]), omitted: [omitted], unlistedOmissions: 2 });
+  const restarted = appendPublicPullPage(first, page([]));
+  expect(restarted.nativeOmissions).toEqual([omitted]);
+  expect(restarted.nativeOmissionsUnlisted).toBe(true);
+});

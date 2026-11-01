@@ -20,6 +20,7 @@ import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, 
 import { useBriefing } from '../model/use-briefing';
 import { BriefingPatch } from './BriefingPatch';
 import { BriefingFileList } from './BriefingFileList';
+import { BriefingOriginFiles } from './BriefingOriginFiles';
 import { BriefingNarrative, type BriefingReadingMode } from './BriefingNarrative';
 import { BriefingSettings } from './BriefingSettings';
 import { BriefingOverview } from './BriefingOverview';
@@ -57,6 +58,7 @@ export function ChangeBriefingPage() {
   const [commitActivity, setCommitActivity] = useState<{ busy: string; stop: () => void } | null>(null);
   const [mixedActivity, setMixedActivity] = useState<{ busy: string; stop: () => void } | null>(null);
   const [returnToExplanation, setReturnToExplanation] = useState(false);
+  const [fileOrigin, setFileOrigin] = useState<{ scope: string; kind: 'prs' | 'commits'; paths: string[]; element: HTMLElement | null } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [datesOpen, setDatesOpen] = useState(false);
   const [coverageSeat, setCoverageSeat] = useState<HTMLDivElement | null>(null);
@@ -82,6 +84,7 @@ export function ChangeBriefingPage() {
   const { data, loading, error, refresh } = useBriefing(root, project, range, vault.lastLoadedAt);
   const grouped = data && section === 'files' ? groupBriefing(data.commits, sourceChoice ? [] : docs, locale, project) : null;
   const scopeKey = JSON.stringify([root, project, range?.startEpoch, range?.endEpoch, data?.snapshot, data?.head, data?.base, data?.tip]);
+  const activeFileOrigin = fileOrigin?.scope === scopeKey ? fileOrigin : null;
   const [commitExplain, setCommitExplain] = useArrivalMemory(`${scopeKey}:commit-explain`, false);
   const [commitExplainStarted, setCommitExplainStarted] = useArrivalMemory(`${scopeKey}:commit-explain-started`, false);
   const [mixedStarted, setMixedStarted] = useArrivalMemory(`${scopeKey}:mixed-started`, false);
@@ -147,9 +150,28 @@ export function ChangeBriefingPage() {
     requestAnimationFrame(() => { if (mainRef.current) mainRef.current.scrollTop = positions[next] ?? 0; });
   }
   function changeSection(next: BriefingSection) {
+    if (next !== 'files') setFileOrigin(null);
     setSection(next);
     if (next === 'files') { setReturnToExplanation(false); changeMode('code'); }
     else if ((next === 'commits' || next === 'mixed') && mode === 'code') changeMode(codeOrigin.current?.mode === 'sources' ? 'sources' : 'summary');
+  }
+  function openOriginalFiles(kind: 'prs' | 'commits', paths: string[]) {
+    setFileOrigin({ scope: scopeKey, kind, paths: [...new Set(paths)], element: document.activeElement instanceof HTMLElement ? document.activeElement : null });
+    setReturnToExplanation(false);
+    setSection('files');
+    changeMode('code');
+    requestAnimationFrame(() => mainRef.current?.querySelector<HTMLElement>('[data-origin-files-heading]')?.focus());
+  }
+  function returnToOriginal() {
+    const origin = activeFileOrigin;
+    if (!origin) return;
+    setFileOrigin(null);
+    setSection(origin.kind);
+    changeMode('summary');
+    requestAnimationFrame(() => {
+      if (origin.element?.isConnected && !origin.element.closest('[hidden]')) origin.element.focus({ preventScroll: true });
+      else modesRef.current?.querySelector<HTMLElement>(`[data-testid="briefing-${origin.kind}"]`)?.focus({ preventScroll: true });
+    });
   }
   function openCode() {
     codeOrigin.current = { mode, section, element: document.activeElement instanceof HTMLElement ? document.activeElement : null };
@@ -312,7 +334,7 @@ export function ChangeBriefingPage() {
       {publicRead && section !== 'prs' && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('prLoading')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" onClick={() => publicRead.abort()}>{git('stop')}</Button></div>}
       {commitActivity && (section !== 'commits' || !commitExplain) && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('commitRunning')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" disabled={commitActivity.busy === 'cancelling'} onClick={commitActivity.stop}>{git('stop')}</Button></div>}
       {mixedActivity && section !== 'mixed' && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('combinedRunning')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" disabled={mixedActivity.busy === 'cancelling'} onClick={mixedActivity.stop}>{git('stop')}</Button></div>}
-      {status && !(status === 'empty' && section === 'prs') && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
+      {status && !(status === 'empty' && (section === 'prs' || activeFileOrigin)) && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
         <h2 className="text-title font-[var(--font-weight-strong)]">{t(status)}</h2>
         {!native && <><p className="text-[color:var(--color-text-secondary)]">{git('webBody')}</p><div className="flex flex-wrap gap-3"><Link href="/download/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })}><Download size={16} aria-hidden /><span>{nav('getApp')}</span></Link></div></>}
         {status === 'empty' && <p>{t('emptyHint')}</p>}
@@ -321,9 +343,9 @@ export function ChangeBriefingPage() {
       </section>}
       {validData && <>
         {data.status === 'partial' && section !== 'prs' && <div role="status" className="space-y-1 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)] text-[color:var(--color-status-warning)]"><p>{t('partial')}</p><p className="text-body">{t('limit', { limit: data.limit })}</p></div>}
-        <div hidden={section !== 'prs'}><PublicPullInventory data={data} memory={scopeKey} active={section === 'prs'} onActivity={setPublicRead} /></div>
+        <div hidden={section !== 'prs'}><PublicPullInventory data={data} memory={scopeKey} active={section === 'prs'} onActivity={setPublicRead} onFiles={() => openOriginalFiles('prs', data.commits.flatMap(commit => commit.paths))} /></div>
         {data.commits.length > 0 && <>
-          <div hidden={section !== 'commits' || commitExplain}><CommitInventory data={data} onExplain={() => { setCommitExplainStarted(true); setCommitExplain(true); changeMode('summary'); }} /></div>
+          <div hidden={section !== 'commits' || commitExplain}><CommitInventory data={data} onFiles={paths => openOriginalFiles('commits', paths)} onExplain={() => { setCommitExplainStarted(true); setCommitExplain(true); changeMode('summary'); }} /></div>
           {commitExplainStarted && <div hidden={section !== 'commits' || !commitExplain} className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={() => setCommitExplain(false)}>{review('backToCommits')}</Button><SegmentedControl<'summary' | 'sources'> className="max-[769px]:[&_[role=radio]]:min-h-11 max-[769px]:[&_[role=radio]]:min-w-11" ariaLabel={git('readingModes')} value={explanationMode === 'sources' ? 'sources' : 'summary'} onChange={changeMode} options={[{ value: 'summary', label: git('summaryMode') }, { value: 'sources', label: git('sourcesMode') }]} /></div><BriefingNarrative key={scopeKey} data={data} clearedAt={clearedAt} period={range ? `${range.start} – ${range.end}` : ''} mode={explanationMode} onMode={changeMode} repository={repository} setRepository={setRepository} onReadCode={openCode} coverageSeat={section === 'commits' && commitExplain ? coverageSeat : null} commitOnly onActivity={setCommitActivity} /></div>}
           {(mixedStarted || section === 'mixed') && <div hidden={section !== 'mixed'} className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -335,7 +357,8 @@ export function ChangeBriefingPage() {
         </>}
       </>}
       {native && <div className="space-y-4 [&>.ai-row-disclosure]:overflow-clip">
-        {validData && <section hidden={section !== 'files'} className="space-y-5">
+        {validData && activeFileOrigin && section === 'files' && root && <BriefingOriginFiles key={`${scopeKey}:${activeFileOrigin.kind}`} data={data} root={root} project={project} kind={activeFileOrigin.kind} paths={activeFileOrigin.paths} onBack={returnToOriginal} onRefresh={refreshCode} />}
+        {validData && <section hidden={section !== 'files' || Boolean(activeFileOrigin)} className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 ref={codeHeadingRef} tabIndex={-1} data-testid="briefing-code-heading" className="text-title font-[var(--font-weight-strong)]">{git('readPeriodCode')}</h2>
               {returnToExplanation && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={closeCode}>{git('closeCode')}</Button>}
