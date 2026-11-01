@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowLeft, CircleHelp, CircleX, FileText, GitMerge, GitPullRequest, GitPullRequestDraft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CircleHelp, CircleX, ExternalLink, FileText, GitMerge, GitPullRequest, GitPullRequestDraft, RefreshCw } from 'lucide-react';
 import { Button, Disclosure, IconButton, RowButton, Select } from '@/shared/ui';
 import { Tooltip } from '@/shared/ui/hints/tooltip';
 import { controlClass } from '@/shared/ui/control-class';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { emptyPublicPullSession, publicPullConflicts } from '@/shared/lib/git/public-pull-session';
 import { canStorePublicPullScope, clearPublicPullLedger, getPublicPullSession, invalidatePublicPullCursor, publicPullLedgerGeneration, publicPullScope, savePublicPullPage } from '@/shared/lib/git/public-pull-ledger';
@@ -51,7 +52,7 @@ function PublicPullInventoryScope({ data, memory, onActivity, onFiles }: Props) 
   const activeScope = useRef<string | null>(null);
   const generation = useRef(0);
   const list = useRef<HTMLDivElement>(null);
-  const reader = useRef<HTMLElement>(null);
+  const reader = useRef<HTMLHeadingElement>(null);
   const { sourceRoot, head, snapshot } = data;
   const identity = useMemo(() => ({ sourceRoot, head, snapshot }), [sourceRoot, head, snapshot]);
   const repositoryMemory = JSON.stringify(['public-pr-repository', sourceRoot, head, snapshot]);
@@ -137,6 +138,8 @@ function PublicPullInventoryScope({ data, memory, onActivity, onFiles }: Props) 
     return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
   };
   const status = (value: PublicPullVersion['status']) => t(value === 'draft' ? 'statusDraft' : value === 'open' ? 'statusOpen' : value === 'merged' ? 'statusMerged' : value === 'closed' ? 'statusClosed' : 'statusUnknown');
+  const StatusIcon = selected?.status === 'merged' ? GitMerge : selected?.status === 'draft' ? GitPullRequestDraft : selected?.status === 'closed' ? CircleX : selected?.status === 'open' ? GitPullRequest : CircleHelp;
+  const statusTone = selected?.status === 'merged' ? 'text-[color:var(--color-indigo-hover)]' : selected?.status === 'open' ? 'text-[color:var(--color-status-success)]' : 'text-[color:var(--color-text-secondary)]';
   const pullCount = new Set(session.versions.map(version => version.number)).size;
   const open = (version: PublicPullVersion) => {
     setSelectedKey(`${version.number}:${version.digest}`);
@@ -150,15 +153,28 @@ function PublicPullInventoryScope({ data, memory, onActivity, onFiles }: Props) 
 
   return <section className="space-y-4" aria-label={t('prTab')}>
     {reading && <div role="status" className="flex flex-wrap items-center gap-3"><p>{t('prLoading')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" onClick={() => current.current?.abort()}>{git('stop')}</Button></div>}
-    {selected ? <section ref={reader} tabIndex={-1} className="max-w-4xl space-y-4 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
+    {selected ? <section className="min-w-0 space-y-4">
       <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={back}><ArrowLeft size={ICON_SIZE.lg} aria-hidden />{t('backToPrs')}</button>
-      <p className="break-all text-label text-[color:var(--color-text-secondary)]">{repository} · {t('publicChoice')}</p>
-      <h2 className="min-w-0 break-words text-title font-[var(--font-weight-strong)]">{selected.title}</h2>
-      <p className="text-label text-[color:var(--color-text-secondary)]">#{selected.number} · {status(selected.status)} · {selected.digest.slice(0, 8)} · {t('prFresh', { updatedAt: clock(selected.updatedAt), fetchedAt: clock(selected.fetchedAt) })}</p>
-      {conflicts.has(selected.number) && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('versionConflict', { number: selected.number })}</p>}
-      {!selected.bodyPresent ? <p>{git('sourceUnavailableInline')}</p> : <OriginalSourceBody source={{ id: `pr:${selected.number}`, kind: 'pr', title: selected.title, text: `${selected.title}\n\n${selected.body}`, integration: '', version: selected.digest }} passage={null} memory={memory} readerId={`${selected.number}:${selected.digest}`} rawLabel={git('viewSourceText')} readingLabel={git('viewFormattedText')} />}
-      {onFiles && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={onFiles}>{t('filesFromPr')}</Button>}
-      <a href={selected.url} target="_blank" rel="noopener noreferrer" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11' })}>{t('openOnGitHub')}</a>
+      <div className="min-w-0 overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]">
+        <header className="space-y-3 border-b border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
+          <p className="break-words text-label text-[color:var(--color-text-secondary)]">{repository} · {t('publicChoice')}</p>
+          <h2 ref={reader} tabIndex={-1} className="inline-block max-w-full break-words rounded-micro text-display font-[var(--font-weight-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]">{selected.title}</h2>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-body text-[color:var(--color-text-secondary)]"><span className={badgeClass({ shape: 'tag', className: `gap-1.5 text-body ${statusTone}` })}><StatusIcon size={ICON_SIZE.md} aria-hidden />{status(selected.status)}</span><span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">#{selected.number}</span>{conflicts.has(selected.number) && <span className="text-body">{t('prVersionLabel')}: <span className="font-mono">{selected.digest.slice(0, 8)}</span></span>}</p>
+        </header>
+        <div className="grid min-w-0 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,18rem)]">
+          <div className="min-w-0 space-y-3 p-[var(--card-pad)]">
+            {conflicts.has(selected.number) && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('versionConflict', { number: selected.number })}</p>}
+            {!selected.bodyPresent ? <p>{git('sourceUnavailableInline')}</p> : <OriginalSourceBody source={{ id: `pr:${selected.number}`, kind: 'pr', title: selected.title, text: `${selected.title}\n\n${selected.body}`, integration: '', version: selected.digest }} passage={null} memory={memory} readerId={`${selected.number}:${selected.digest}`} rawLabel={git('viewSourceText')} readingLabel={git('viewFormattedText')} />}
+          </div>
+          <aside className="min-w-0 space-y-4 border-t border-[color:var(--color-border-soft)] p-[var(--card-pad)] lg:border-t-0 lg:border-l">
+            <dl className="space-y-3"><div><dt className="text-label text-[color:var(--color-text-secondary)]">{t('prUpdatedLabel')}</dt><dd className="mt-1 break-words text-body text-[color:var(--color-text-primary)]">{clock(selected.updatedAt)}</dd></div><div><dt className="text-label text-[color:var(--color-text-secondary)]">{t('prReadLabel')}</dt><dd className="mt-1 break-words text-body text-[color:var(--color-text-primary)]">{clock(selected.fetchedAt)}</dd></div></dl>
+            <div className="flex flex-wrap gap-2 lg:flex-col lg:items-start">
+              {onFiles && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={onFiles}>{t('filesFromPr')}</Button>}
+              <a href={selected.url} target="_blank" rel="noopener noreferrer" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2 max-[769px]:min-h-11' })}>{t('openOnGitHub')}<ExternalLink size={ICON_SIZE.md} aria-hidden /></a>
+            </div>
+          </aside>
+        </div>
+      </div>
     </section> : <>
       <div className="flex min-w-0 flex-wrap items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
         <p className="min-w-0 break-words font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{repository ? `${repository} · ${t('publicChoice')}` : t('shortScope')}</p>
