@@ -12,45 +12,6 @@ async function openBriefing(page: Page) {
   await expect(page.getByRole('button', { name: 'Read GitHub PRs' })).toBeVisible();
 }
 
-test('prepares chosen PR originals for a manual agent handoff without an automatic send', async ({ page }) => {
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => { (window as unknown as { copiedPacket: string }).copiedPacket = text; } } });
-  });
-  await openBriefing(page);
-  await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
-  const first = page.getByRole('checkbox', { name: /Select PR #17:/ });
-  await first.focus();
-  await first.press('Space');
-  await page.getByRole('checkbox', { name: /Select PR #18:/ }).check();
-  await page.getByRole('button', { name: 'Prepare agent request' }).click();
-  const question = page.getByRole('textbox', { name: 'What should the agent explain?' });
-  await question.fill('Explain the practical change.');
-  const original = page.getByRole('button', { name: /#17 · Make checkout/ });
-  await original.click();
-  await expect(page.getByText('Author original for PR 17.')).toBeVisible();
-  await page.getByRole('button', { name: 'Back to preparation' }).click();
-  await expect(question).toHaveValue('Explain the practical change.');
-  await expect(original).toBeFocused();
-  await page.getByRole('radio', { name: 'Commits', exact: true }).click();
-  await page.getByRole('radio', { name: 'Pull requests', exact: true }).click();
-  await expect(question).toHaveValue('Explain the practical change.');
-  await page.getByRole('button', { name: 'Exact packet' }).click();
-  await expect(page.getByText('Author original for PR 17.', { exact: true })).toBeVisible();
-  await expect(page.getByText('Author original for PR 18.', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Exact copied text (JSON)' }).click();
-  expect(await page.evaluate(() => (window as unknown as { copiedPacket?: string }).copiedPacket)).toBeUndefined();
-  await page.getByRole('button', { name: 'Copy request' }).click();
-  await expect(page.getByText('Copied. Paste it into your coding agent.')).toBeVisible();
-  const packet = JSON.parse(await page.evaluate(() => (window as unknown as { copiedPacket: string }).copiedPacket));
-  expect(await page.locator('pre').textContent()).toBe(await page.evaluate(() => (window as unknown as { copiedPacket: string }).copiedPacket));
-  expect(packet.question).toBe('Explain the practical change.');
-  expect(packet.instructions).toContain('concise, readable explanation');
-  expect(packet.sources.map((source: { id: string }) => source.id)).toEqual(['pr:17', 'pr:18']);
-  const calls = await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.map(call => call.command));
-  expect(calls).not.toContain('acp_start');
-  expect(calls).not.toContain('source_briefing_chat');
-});
-
 test('opens period files from a PR and returns to the same original', async ({ page }) => {
   await openBriefing(page);
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
@@ -113,66 +74,14 @@ test('keeps a selected file beyond the first page reachable on a narrow screen',
   await expect(selected).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('measures PR selection and preparation across responsive widths', async ({ browser, baseURL }) => {
-  test.setTimeout(150_000);
-  const ramps = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));
-  for (const width of [600, 768, 834, 1024, 1440, 1920, 2560]) {
-    const context = await browser.newContext({ baseURL, viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce', isMobile: width <= 768, hasTouch: width <= 768 });
-    const page = await context.newPage();
-    await openBriefing(page);
-    await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
-    await page.getByRole('checkbox', { name: /Select PR #17:/ }).check();
-    await page.setViewportSize({ width, height: 900 });
-    await page.addStyleTag({ content: FREEZE_CSS });
-    await page.mouse.move(0, 0);
-    const list = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
-    expect(shouldFail([list]), JSON.stringify({ width, findings: list.findings })).toBe(false);
-    expect(list.findings.target, JSON.stringify({ width, target: list.findings.target })).toEqual([]);
-    if (process.env.ATLAS_PR_PROOF) {
-      mkdirSync(process.env.ATLAS_PR_PROOF, { recursive: true });
-      await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/manual-selection-${width}.png` });
-    }
-    await page.getByRole('button', { name: 'Prepare agent request' }).click();
-    await expect(page.getByRole('textbox', { name: 'What should the agent explain?' })).toBeVisible();
-    const prepared = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
-    expect(shouldFail([prepared]), JSON.stringify({ width, findings: prepared.findings })).toBe(false);
-    expect(prepared.findings.target, JSON.stringify({ width, target: prepared.findings.target })).toEqual([]);
-    if (process.env.ATLAS_PR_PROOF) {
-      mkdirSync(process.env.ATLAS_PR_PROOF, { recursive: true });
-      await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/manual-preparation-${width}.png` });
-    }
-    await page.getByRole('button', { name: 'Exact packet' }).click();
-    await expect(page.getByText('Author original for PR 17.', { exact: true })).toBeVisible();
-    const expanded = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
-    expect(shouldFail([expanded]), JSON.stringify({ width, findings: expanded.findings })).toBe(false);
-    expect(expanded.findings.target, JSON.stringify({ width, target: expanded.findings.target })).toEqual([]);
-    await context.close();
-  }
-});
-
-test('keeps a long PR title readable in the selected-originals panel', async ({ page }) => {
-  const ramps = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));
-  await openBriefing(page);
-  await setBriefingMode(page, 'inventory-long');
-  await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
-  await page.getByRole('checkbox', { name: /Select PR #17:/ }).check();
-  await page.setViewportSize({ width: 600, height: 900 });
-  await page.getByRole('button', { name: 'Prepare agent request' }).click();
-  const original = page.getByRole('button', { name: /#17 · A{20}/ });
-  await expect(original).toBeVisible();
-  await page.addStyleTag({ content: FREEZE_CSS });
-  const result = await auditPage(page, { width: 600, rampNames: ramps, scope: 'main' });
-  expect(shouldFail([result]), JSON.stringify(result.findings)).toBe(false);
-  const clipped = await original.evaluate(element => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight);
-  expect(clipped).toBe(false);
-});
-
 test('separates public PRs, commit originals, and period files', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBriefing(page);
   expect(await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.some(call => call.command === 'git_briefing_public_inventory'))).toBe(false);
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
   await expect(page.getByRole('button', { name: /Make checkout confirmation clear/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Prepare agent request' })).toHaveCount(0);
+  await expect(page.getByRole('checkbox', { name: /Select PR/ })).toHaveCount(0);
   if (process.env.ATLAS_PR_PROOF) { mkdirSync(process.env.ATLAS_PR_PROOF, { recursive: true }); await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/pr-list.png` }); }
   await page.getByRole('button', { name: /Make checkout confirmation clear/ }).click();
   await expect(page.getByText('Author original for PR 17.')).toBeVisible();

@@ -2,8 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronRight, GitCommitHorizontal } from 'lucide-react';
+import { ArrowLeft, ChevronRight, GitCommitHorizontal } from 'lucide-react';
 import { Button, RowButton } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 import type { BriefingCommit, ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 
 export function CommitInventory({ data, onExplain, onFiles }: { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void }) {
@@ -30,7 +31,8 @@ function CommitInventoryScope({ data, onExplain, onFiles }: { data: ChangeBriefi
   };
   return <section className="space-y-5" aria-label={t('commitsTab')}>
     {selected ? <section ref={reader} tabIndex={-1} className="max-w-4xl space-y-4 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-      <div className="flex flex-wrap items-start justify-between gap-3"><h2 className="min-w-0 flex-1 break-words text-title font-[var(--font-weight-strong)]">{selected.subject}</h2><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={back}>{t('backToCommit')}</Button></div>
+      <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={back}><ArrowLeft size={18} aria-hidden />{t('backToCommit')}</button>
+      <h2 className="min-w-0 break-words text-title font-[var(--font-weight-strong)]">{selected.subject}</h2>
       <p className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">{selected.hash} · {clock(selected.committedAt)}</p>
       {selected.messageComplete === false ? <p role="status">{git('sourceUnavailableInline')}</p> : <pre className="whitespace-pre-wrap break-words font-mono text-body">{selected.message ?? selected.subject}</pre>}
       {onFiles && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => onFiles(selected.paths)}>{t('filesFromCommit')}</Button>}

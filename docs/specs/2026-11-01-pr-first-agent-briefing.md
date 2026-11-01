@@ -9,6 +9,8 @@ decisions: [453ee956-0cea-490f-9fab-26ae1f143f5c]
 
 # PR-first agent briefing
 
+The shipped scope is direct public PR reading and separate commit and file views. The ACP-related states and acceptance criteria below are proposed work, not available functionality. The temporary manual-copy request screen was removed after owner feedback.
+
 ## Person and moment
 
 The owner uses coding agents, sees too many low-signal commits, and asks to catch up on PRs, commits and files in separate views. They want collected PRs explained by the in-app coding agent, with originals accessible without an IDE, in the installed app first and a responsive web experience. They also ask for actual use and a rebuilt/reinstalled app walk. In two owner-provided screenshots at 02:13:12 and 02:13:37 on 2026-11-01, the same Code detail contains a 53-file list followed by seven commit messages; the owner asks to separate them and show only the chosen item in detail. The captures are session attachments at `/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/orca-drops-501/orca-drop-SjEA2V/` and `/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/orca-drops-501/orca-drop-fjcA6W/`. In a later installed-app walk the owner also found the one-color diff difficult to scan for additions and removals. Neither comprehension nor the new flow has yet been observed.
@@ -171,36 +173,8 @@ The following exact keys are in all four `messages/{en,ko,ja,zh}/prBriefing.json
 | `prBriefing.versionConflict` | PR original and status | PR #{number} was seen in multiple versions. Review the available versions before sending. |
 | `prBriefing.reviewVersions` | PR original and status | Review versions |
 
-| `prBriefing.selectionTitle` | Manual PR preparation | Select PRs to review |
-| `prBriefing.selectPr` | Manual PR preparation | Select PR #{number}: {title} |
-| `prBriefing.selectedPrs` | Manual PR preparation | {count} selected |
-| `prBriefing.reviewSelected` | Manual PR preparation | Prepare agent request |
-| `prBriefing.questionLabel` | Manual PR preparation | What should the agent explain? |
-| `prBriefing.questionDefault` | Manual PR preparation | Explain the changes, why they were made, reported checks, and known limitations. |
-| `prBriefing.manualNotice` | Manual PR preparation | Atlas does not send this request. Your agent may read other files or send data according to its settings. |
-| `prBriefing.manualParts` | Manual PR preparation | {count} copyable parts |
-| `prBriefing.manualPart` | Manual PR preparation | Part {number} of {total} |
-| `prBriefing.copyPart` | Manual PR preparation | Copy part {number} |
-| `prBriefing.copiedPart` | Manual PR preparation | Part {number} copied. |
-| `prBriefing.copyFailed` | Manual PR preparation | Could not copy. Select the packet text and copy it manually. |
-| `prBriefing.packetText` | Manual PR preparation | Exact packet |
-| `prBriefing.selectedOriginals` | Manual PR preparation | Selected PR originals |
-| `prBriefing.omittedUnavailable` | Manual PR preparation | PR #{number}: original unavailable |
-| `prBriefing.omittedOverlarge` | Manual PR preparation | PR #{number}: original exceeds the part limit |
-| `prBriefing.previewEmpty` | Manual PR preparation | Enter a question and select at least one PR. |
-| `prBriefing.previewStale` | Manual PR preparation | The repository or PRs changed or cannot be checked. Check the repository or refresh, then prepare again. |
-| `prBriefing.backToSelection` | Manual PR preparation | Back to PR selection |
-| `prBriefing.appAgentUnavailable` | Manual PR preparation | In-app agent analysis is not available yet. |
-| `prBriefing.backToPreparation` | Manual PR preparation | Back to preparation |
-| `prBriefing.questionTooLong` | Manual PR preparation | The question is too long. Shorten it and try again. |
 
-| `prBriefing.checkingSource` | Manual PR preparation | Checking source… |
 
-| `prBriefing.packetInstructions` | Manual PR preparation | Instructions |
-| `prBriefing.packetRaw` | Manual PR preparation | Exact copied text (JSON) |
-| `prBriefing.copyRequestTitle` | Manual PR preparation | Ready to copy |
-| `prBriefing.copyRequest` | Manual PR preparation | Copy request |
-| `prBriefing.copiedRequest` | Manual PR preparation | Copied. Paste it into your coding agent. |
 | `prBriefing.omittedList` | PR inventory | Omitted PRs |
 | `prBriefing.nativeOmittedOversized` | PR inventory | Original exceeds the read limit |
 | `prBriefing.nativeOmittedLimit` | PR inventory | Read limit reached |

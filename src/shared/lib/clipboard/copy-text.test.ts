@@ -50,18 +50,4 @@ describe("copyText", () => {
     expect(writeText).toHaveBeenCalledWith("fallback after reject");
     expect(execCommand).toHaveBeenCalledWith("copy");
   });
-  it("does not fall back after an in-flight clipboard request is cancelled", async () => {
-    let reject!: (reason: Error) => void;
-    const writeText = vi.fn(() => new Promise<void>((_resolve, rejectPromise) => { reject = rejectPromise; }));
-    Object.defineProperty(globalThis, "navigator", { value: { clipboard: { writeText } }, configurable: true });
-    const execCommand = vi.fn().mockReturnValue(true);
-    Object.defineProperty(document, "execCommand", { value: execCommand, configurable: true });
-    let current = true;
-    const pending = copyText("old request", { canFallback: () => current });
-    current = false;
-    reject(new Error("denied"));
-    await expect(pending).resolves.toBe(false);
-    expect(execCommand).not.toHaveBeenCalled();
-  });
-
 });

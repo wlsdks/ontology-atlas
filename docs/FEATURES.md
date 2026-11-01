@@ -191,7 +191,7 @@ The desktop rail's order and hrefs come from
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
-| Briefing: public PR updates, manual agent packets, commits and files in separate views | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
+| Briefing: public PR updates, commits and files in separate views | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |

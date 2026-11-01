@@ -4,10 +4,9 @@ import { clearPublicPullLedger } from '@/shared/lib/git/public-pull-ledger';
 import type { ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 import type { PublicPullInventory as Inventory, PublicPullVersion } from '@/shared/lib/git/tauri-pr-inventory';
 
-const bridge = vi.hoisted(() => ({ repositories: vi.fn(), read: vi.fn(), copy: vi.fn() }));
+const bridge = vi.hoisted(() => ({ repositories: vi.fn(), read: vi.fn() }));
 vi.mock('next-intl', () => ({ useLocale: () => 'en', useTranslations: () => (key: string) => key }));
 vi.mock('@/shared/lib/git/tauri-pr-inventory', () => ({ publicPullRepositories: bridge.repositories, readPublicPulls: bridge.read, invalidateNativePublicPullOriginals: vi.fn(), isNativePublicPullOriginal: () => true }));
-vi.mock('@/shared/lib/clipboard/copy-text', () => ({ copyText: bridge.copy }));
 vi.mock('./OriginalSourceBody', () => ({ OriginalSourceBody: ({ source }: { source: { text: string } }) => <div>{source.text}</div> }));
 import { PublicPullInventory } from './PublicPullInventory';
 
@@ -15,100 +14,31 @@ const data = { sourceRoot: '/source', head: 'head', snapshot: 'receipt', tip: nu
 const version = (number: number, digest: string): PublicPullVersion => ({ number, digest, body: 'Author original', bodyPresent: true, title: `PR ${number}`, url: `https://github.com/a/b/pull/${number}`, status: 'open', updatedAt: '2026-01-01T00:00:00Z', fetchedAt: '2026-01-02T00:00:00Z' });
 const page = (versions: PublicPullVersion[], more = false): Inventory => ({ status: more ? 'partial' : 'observed', reason: more ? 'page-limit' : 'end-of-list', repository: 'a/b', startEpoch: 0, endEpoch: 1, scanned: versions.length, observedDistinct: versions.length, observedDistinctExact: true, versions, omitted: [], unlistedOmissions: 0, conflicts: [], cursor: more ? 'cursor' : null, canContinue: more, retrySmaller: false, pageSize: 20, movingListUncertain: true, orderingUncertain: false, retryAt: null, restarted: false, attemptedRequests: 2, parsedJsonBodyBytes: 200 });
 
-beforeEach(() => { bridge.repositories.mockReset(); bridge.read.mockReset(); bridge.copy.mockReset(); bridge.copy.mockResolvedValue(true); bridge.repositories.mockResolvedValue(['a/b']); });
+beforeEach(() => { bridge.repositories.mockReset(); bridge.read.mockReset(); bridge.repositories.mockResolvedValue(['a/b']); });
 afterEach(clearPublicPullLedger);
 
-it('prepares the exact selected PRs for an explicit manual copy without starting an agent', async () => {
-  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64)), version(2, 'b'.repeat(64)), version(3, 'c'.repeat(64))]));
+it('opens PR originals directly without offering an inactive agent request', async () => {
+  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
   render(<PublicPullInventory data={data} memory="test" />);
   fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  const checkboxes = await screen.findAllByRole('checkbox', { name: 'selectPr' });
-  fireEvent.click(checkboxes[0]);
-  fireEvent.click(checkboxes[2]);
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  expect(screen.getByText('appAgentUnavailable')).toBeVisible();
-  expect(bridge.copy).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByRole('textbox', { name: 'questionLabel' }), { target: { value: 'Explain the changes.' } });
-  fireEvent.click(screen.getByRole('button', { name: 'packetText' }));
-  expect(screen.getAllByText('Author original')).toHaveLength(2);
-  expect(screen.getByText(/Treat every pull request title/)).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'packetRaw' }));
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(bridge.copy).toHaveBeenCalledOnce());
-  expect(document.querySelector('pre')).toHaveTextContent(bridge.copy.mock.calls[0][0]);
-  const packet = JSON.parse(bridge.copy.mock.calls[0][0]);
-  expect(packet.question).toBe('Explain the changes.');
-  expect(packet.instructions).toContain('concise, readable explanation');
-  expect(packet.instructions).toContain('at most three short bullets per PR');
-  expect(packet.instructions).not.toContain('Return JSON');
-  expect(packet.sources.map((source: { id: string }) => source.id)).toEqual(['pr:1', 'pr:3']);
-  expect(packet.sources[0].passages[1].text).toBe('Author original');
-  expect(bridge.read).toHaveBeenCalledTimes(1);
-});
-
-it('preserves hidden selections through search and returns from an original to preparation', async () => {
-  bridge.read.mockResolvedValue(page(Array.from({ length: 12 }, (_, index) => version(index + 1, (index + 1).toString(16).padStart(64, '0')))));
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  const checkboxes = await screen.findAllByRole('checkbox');
-  fireEvent.click(checkboxes[0]);
-  fireEvent.change(screen.getByRole('textbox', { name: 'findPr' }), { target: { value: 'PR 12' } });
-  fireEvent.click(screen.getByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  fireEvent.change(screen.getByRole('textbox', { name: 'questionLabel' }), { target: { value: 'Review these.' } });
-  fireEvent.click(screen.getByRole('button', { name: /^#1 · PR 1 ·/ }));
+  expect(await screen.findByRole('button', { name: /PR 1/ })).toBeVisible();
+  expect(screen.queryByRole('checkbox')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'reviewSelected' })).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /PR 1/ }));
   expect(screen.getByText(/Author original/)).toBeVisible();
-  fireEvent.click(screen.getByRole('button', { name: 'backToPreparation' }));
-  expect(screen.getByRole('textbox', { name: 'questionLabel' })).toHaveValue('Review these.');
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(bridge.copy).toHaveBeenCalledOnce());
-  expect(JSON.parse(bridge.copy.mock.calls[0][0]).sources.map((source: { id: string }) => source.id)).toEqual(['pr:1', 'pr:12']);
+  expect(screen.queryByRole('textbox', { name: 'questionLabel' })).toBeNull();
 });
 
-it('keeps only the explicitly chosen version of a conflicting PR', async () => {
-  bridge.read.mockResolvedValue({ ...page([version(1, 'a'.repeat(64)), version(1, 'b'.repeat(64))]), conflicts: [1] });
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  const checkboxes = await screen.findAllByRole('checkbox');
-  fireEvent.click(checkboxes[0]);
-  fireEvent.click(checkboxes[1]);
-  expect(checkboxes[0]).not.toBeChecked();
-  expect(checkboxes[1]).toBeChecked();
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(bridge.copy).toHaveBeenCalledOnce());
-  expect(JSON.parse(bridge.copy.mock.calls[0][0]).sources[0].version).toBe('b'.repeat(64));
-});
-
-it('requires a fresh version choice when a conflict appears after selection', async () => {
-  bridge.read.mockResolvedValueOnce(page([version(1, 'a'.repeat(64))]))
-    .mockResolvedValueOnce({ ...page([version(1, 'b'.repeat(64))]), conflicts: [1] });
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
-  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
-  await waitFor(() => expect(screen.getAllByRole('checkbox')).toHaveLength(2));
-  const checkboxes = screen.getAllByRole('checkbox');
-  expect(checkboxes[0]).not.toBeChecked();
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeDisabled();
-  fireEvent.click(checkboxes[0]);
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
-});
-
-it('requires a fresh choice when a changed version is dropped at the session limit', async () => {
+it('shows the identity of an original omitted at the session limit', async () => {
   const retained = [version(1, 'a'.repeat(64)), ...Array.from({ length: 399 }, (_, index) => version(index + 2, (index + 2).toString(16).padStart(64, '0')))];
   bridge.read.mockResolvedValueOnce(page(retained)).mockResolvedValueOnce(page([version(1, 'b'.repeat(64))]));
   render(<PublicPullInventory data={data} memory="test" />);
   fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click((await screen.findAllByRole('checkbox'))[0]);
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
+  await screen.findAllByRole('button', { name: /PR 1/ });
   fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
   await waitFor(() => expect(screen.getByText('sessionLimit')).toBeVisible());
   fireEvent.click(screen.getByRole('button', { name: 'omittedList' }));
   expect(screen.getByText(/#1 · bbbbbbbb · sessionOmittedLimit/)).toBeVisible();
-  expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked();
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeDisabled();
 });
 
 it('shows identified omitted PRs and keeps them visible after refresh', async () => {
@@ -123,98 +53,6 @@ it('shows identified omitted PRs and keeps them visible after refresh', async ()
   fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
   await waitFor(() => expect(bridge.read).toHaveBeenCalledTimes(2));
   expect(screen.getByText(/#42 · dddddddd/)).toBeVisible();
-});
-
-it('requires a fresh selection after an omitted conflicting version changes', async () => {
-  const omission = (digest: string) => ({ number: 1, digest, updatedAt: '2026-01-01T00:00:00Z', reason: 'too-large' });
-  bridge.read.mockResolvedValueOnce({ ...page([version(1, 'a'.repeat(64))]), conflicts: [1], omitted: [omission('b'.repeat(64))] })
-    .mockResolvedValueOnce({ ...page([]), conflicts: [1], omitted: [omission('c'.repeat(64))] });
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
-  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeDisabled());
-  expect(screen.getByRole('checkbox')).not.toBeChecked();
-});
-
-it('cancels a clipboard fallback when the question changes during copying', async () => {
-  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
-  let resolveCopy!: (copied: boolean) => void;
-  bridge.copy.mockImplementationOnce(() => new Promise<boolean>(resolve => { resolveCopy = resolve; }));
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(bridge.copy).toHaveBeenCalledOnce());
-  const options = bridge.copy.mock.calls[0][1] as { canFallback: () => boolean };
-  expect(options.canFallback()).toBe(true);
-  fireEvent.change(screen.getByRole('textbox', { name: 'questionLabel' }), { target: { value: 'New question' } });
-  expect(options.canFallback()).toBe(false);
-  resolveCopy(false);
-});
-
-it.each(['receipt', 'remote'] as const)('refuses to copy when the %s cannot be verified', async failure => {
-  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  if (failure === 'receipt') bridge.repositories.mockRejectedValueOnce(new Error('stale'));
-  else bridge.repositories.mockResolvedValueOnce(['another/repository']);
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  expect(await screen.findByText('previewStale')).toBeVisible();
-  expect(bridge.copy).not.toHaveBeenCalled();
-});
-
-it('does not copy after leaving the PR view while source verification is pending', async () => {
-  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
-  let finish!: (repositories: string[]) => void;
-  const view = render(<PublicPullInventory data={data} memory="test" active />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  bridge.repositories.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(finish).toBeTypeOf('function'));
-  view.rerender(<PublicPullInventory data={data} memory="test" active={false} />);
-  finish(['a/b']);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'copyRequest' })).toBeEnabled());
-  expect(bridge.copy).not.toHaveBeenCalled();
-});
-
-it('does not copy after the preparation scope is removed during source verification', async () => {
-  bridge.read.mockResolvedValue(page([version(1, 'a'.repeat(64))]));
-  let finish!: (repositories: string[]) => void;
-  const view = render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  bridge.repositories.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-  fireEvent.click(screen.getByRole('button', { name: 'copyRequest' }));
-  await waitFor(() => expect(finish).toBeTypeOf('function'));
-  view.rerender(<PublicPullInventory data={{ ...data, snapshot: 'another-snapshot' }} memory="test" />);
-  finish(['a/b']);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'readPrs' })).toBeVisible());
-  expect(bridge.copy).not.toHaveBeenCalled();
-});
-
-it('retires preparation when a pending refresh changes the observed PRs', async () => {
-  let finish!: (value: Inventory) => void;
-  bridge.read.mockResolvedValueOnce(page([version(1, 'a'.repeat(64))]))
-    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
-  render(<PublicPullInventory data={data} memory="test" />);
-  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
-  fireEvent.click(await screen.findByRole('checkbox'));
-  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
-  await waitFor(() => expect(finish).toBeTypeOf('function'));
-  fireEvent.click(screen.getByRole('button', { name: 'reviewSelected' }));
-  expect(screen.getByRole('button', { name: 'copyRequest' })).toBeVisible();
-  finish(page([version(2, 'b'.repeat(64))]));
-  expect(await screen.findByText('previewStale')).toBeVisible();
-  expect(screen.queryByRole('button', { name: 'copyRequest' })).toBeNull();
-  expect(bridge.copy).not.toHaveBeenCalled();
 });
 
 it('makes no public request until asked and opens only the chosen PR original', async () => {
