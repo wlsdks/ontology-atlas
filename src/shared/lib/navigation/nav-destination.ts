@@ -5,6 +5,7 @@ export type AppNavDestinationId =
   | "architecture"
   | "docs"
   | "library"
+  | "planning"
   | "automations"
   | "insights"
   | "projects"
@@ -38,6 +39,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/agents")) return "agents";
   if (path.startsWith("/mcp")) return "mcp";
   if (path.startsWith("/library")) return "library";
+  if (path.startsWith("/planning")) return "planning";
   if (path.startsWith("/automations")) return "automations";
   if (path.startsWith("/docs")) return "library";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";

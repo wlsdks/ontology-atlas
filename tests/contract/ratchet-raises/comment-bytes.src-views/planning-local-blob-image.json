@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-views", "raise": 91, "why": "The reader must display a bounded local Blob URL, which Next's static image optimizer cannot load, so the one direct image element records its narrow lint exception." }

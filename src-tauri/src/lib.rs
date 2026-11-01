@@ -27,6 +27,7 @@ mod local_construction;
 mod managed_node;
 mod map_entry_diagnostic;
 mod meaning_transition_archive;
+mod planning;
 mod project_source;
 mod secrets;
 mod source_access;
@@ -151,6 +152,7 @@ pub fn run() {
         .manage(VaultWatcherState::default())
         .manage(AcpInstallProgressState::default())
         .manage(AcpSessions::default())
+        .manage(planning::PlanningSession::default())
         .setup(move |app| {
             // Seed the vault-grant registry before any command can run: turn the
             // boundary on, choose where grants persist, and re-grant the app's own
@@ -247,6 +249,12 @@ pub fn run() {
             acp_session::acp_permission_verdict,
             vault::location::pick_vault_directory,
             source_access::pick_source_directory,
+            planning::commands::planning_supported,
+            planning::commands::planning_pick_folder,
+            planning::commands::planning_scan,
+            planning::commands::planning_read_file,
+            planning::commands::planning_open_document,
+            planning::commands::planning_revoke,
             local_construction::preview_local_construction_source,
             local_construction::read_local_construction_source,
             harness_source::list_harness_source_directory,

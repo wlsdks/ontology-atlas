@@ -1,0 +1,275 @@
+import { expect, test } from '@playwright/test';
+import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
+import { crc32, deflateSync } from 'node:zlib';
+
+test('mocked native Planning keeps the selected document across explicit evidence navigation and refresh', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; planningText: string; planningIdentity: string };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.planningText = '# Checkout plan\n\n![design](../images/mock.png)\n\nOriginal decision';
+    win.planningIdentity = 'a'.repeat(32);
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/project/docs' };
+      if (cmd === 'planning_scan') {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        return { files: [{ path: 'plans/checkout.md', size: 40, modified_seconds: 1 }, { path: 'images/mock.png', size: 68, modified_seconds: 1 }], skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      }
+      if (cmd === 'planning_read_file') {
+        if (args?.path === 'plans/checkout.md') return Array.from(new TextEncoder().encode(win.planningText));
+        if (args?.path === 'images/mock.png') return Array.from(Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aN4AAAAASUVORK5CYII='), c => c.charCodeAt(0)));
+        throw new Error('outside mock');
+      }
+      if (cmd === 'planning_open_document') {
+        if (args?.expectedIdentity && args.expectedIdentity !== win.planningIdentity) throw 'file-changed';
+        return Array.from(new TextEncoder().encode(win.planningIdentity + win.planningText));
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await page.getByRole('button', { name: '읽기·이력 범위' }).click();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeVisible();
+  await page.getByRole('button', { name: '읽기·이력 범위' }).click();
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plans/checkout.md' }).click();
+  const details = page.getByRole('button', { name: '읽기·이력 범위' });
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await details.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeVisible();
+  await expect(page.getByText(/소스 이력은 현재 브랜치/)).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await expect(page.getByText('커밋 이력만 · 미커밋 제외')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
+  await expect(page.getByAltText('design')).toHaveAttribute('src', /^blob:/);
+  await expect.poll(() => page.getByAltText('design').evaluate((image) => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth === 1)).toBe(true);
+  for (const width of [320, 600, 768, 834, 1024, 1440, 1920, 2560]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const detailsBox = await details.boundingBox();
+    expect(detailsBox?.height).toBeGreaterThanOrEqual(width <= 768 ? 44 : 40);
+    expect(detailsBox?.width).toBeGreaterThanOrEqual(40);
+    await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
+    if (width === 1440) expect((await page.locator('section').filter({ has: page.getByText('경로: plans/checkout.md') }).boundingBox())?.y).toBeLessThan(260);
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
+  if (process.env.PLANNING_CAPTURE_DIR) {
+    for (const width of [320, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.screenshot({ path: `${process.env.PLANNING_CAPTURE_DIR}/planning-mocked-${width}.png` });
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
+  }
+  await page.evaluate(() => { (window as unknown as { planningText: string }).planningText = '# Checkout plan\n\nUpdated decision'; window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(/폴더를 다시 확인하고 있습니다/)).toBeVisible();
+  await expect(page.getByText('Updated decision')).toBeVisible();
+  await page.getByRole('button', { name: '소스 이력 보기' }).click();
+  await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect(page.getByText('Updated decision')).toBeVisible();
+  await expect(page.getByRole('button', { name: '소스 이력 보기' })).toBeFocused();
+  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect(page.getByText('Updated decision')).toBeVisible();
+  await expect(page.getByRole('button', { name: '온톨로지 맵 열기' })).toBeFocused();
+});
+
+test('late inventory from a previous folder never replaces the new selection', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; oldScanFinished: boolean };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    let next = 0;
+    win.oldScanFinished = false;
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') { next++; return { generation: next, folder: `folder-${next}`, path: `/tmp/folder-${next}` }; }
+      if (cmd === 'planning_scan') {
+        const old = args?.generation === 1;
+        if (old) { await new Promise((resolve) => setTimeout(resolve, 400)); win.oldScanFinished = true; }
+        return { files: [{ path: old ? 'old.md' : 'new.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await expect(page.getByText('폴더: /tmp/folder-1')).toBeVisible();
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await expect(page.getByRole('button', { name: 'new.md' })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { oldScanFinished: boolean }).oldScanFinished)).toBe(true);
+  await expect(page.getByText('폴더: /tmp/folder-2')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'old.md' })).toHaveCount(0);
+});
+
+test('standalone images use the exact selected filename and decode locally', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; opened: string[] };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    const paths = ['design).png', 'design%20.png', '한글 공백.png'];
+    win.opened = [];
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: paths.map((path) => ({ path, size: 68, modified_seconds: 1 })), skipped: 0, partial: false, visited: 3, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document' && paths.includes(String(args?.path))) {
+        win.opened.push(String(args?.path));
+        const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aN4AAAAASUVORK5CYII='), c => c.charCodeAt(0));
+        return [...new TextEncoder().encode('a'.repeat(32)), ...png];
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  for (const path of ['design).png', 'design%20.png', '한글 공백.png']) {
+    await page.getByRole('button', { name: path }).click();
+    await expect.poll(() => page.getByAltText(path).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(1);
+  }
+  expect(await page.evaluate(() => (window as unknown as { opened: string[] }).opened)).toEqual(['design).png', 'design%20.png', '한글 공백.png']);
+});
+
+test('return waits for delayed images and never restores a replaced document', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; deferImage: boolean; releaseImage?: (fail: boolean) => void; identity: string };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.deferImage = false; win.identity = 'a'.repeat(32);
+    const png = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aN4AAAAASUVORK5CYII='), c => c.charCodeAt(0));
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }, { path: 'image.png', size: 68, modified_seconds: 1 }], skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document') {
+        if (args?.expectedIdentity && args.expectedIdentity !== win.identity) throw 'file-changed';
+        const text = '# Plan\n\n![delayed](image.png)\n\n' + Array.from({ length: 100 }, (_, n) => `Paragraph ${n}`).join('\n\n');
+        return Array.from(new TextEncoder().encode(win.identity + text));
+      }
+      if (cmd === 'planning_read_file') {
+        if (!win.deferImage) return Array.from(png);
+        return new Promise((resolve, reject) => { win.releaseImage = (fail) => fail ? reject('unavailable') : resolve(Array.from(png)); });
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.addStyleTag({ content: 'img[alt="delayed"] { height: 600px; width: 1px; }' });
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByAltText('delayed')).toBeVisible();
+  const reader = page.locator('section').filter({ has: page.getByText('경로: plan.md') });
+  await reader.evaluate((node) => { node.scrollTop = node.scrollHeight; node.dispatchEvent(new Event('scroll')); });
+  const saved = await reader.evaluate((node) => node.scrollTop);
+  expect(saved).toBeGreaterThan(600);
+  await page.getByRole('button', { name: '소스 이력 보기' }).click();
+  await page.evaluate(() => { (window as unknown as { deferImage: boolean }).deferImage = true; });
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);
+  expect(await reader.evaluate((node) => node.scrollTop)).toBeLessThan(saved);
+  await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(false));
+  await expect.poll(() => reader.evaluate((node) => node.scrollTop)).toBeGreaterThan(saved - 2);
+  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.evaluate(() => { delete (window as unknown as { releaseImage?: unknown }).releaseImage; });
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);
+  await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(true));
+  await expect.poll(() => reader.evaluate((node) => Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop))).toBeLessThan(2);
+  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.evaluate(() => { delete (window as unknown as { releaseImage?: unknown }).releaseImage; });
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);
+  await reader.evaluate((node) => { node.dispatchEvent(new WheelEvent('wheel', { deltaY: 10 })); node.scrollTop = 40; node.dispatchEvent(new Event('scroll')); });
+  await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(false));
+  await expect(page.getByAltText('delayed')).toBeVisible();
+  expect(await reader.evaluate((node) => node.scrollTop)).toBe(40);
+  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.evaluate(() => { (window as unknown as { identity: string }).identity = 'b'.repeat(32); });
+  await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
+  await expect(page.getByRole('alert').filter({ hasText: '파일이 변경' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Plan' })).toHaveCount(0);
+  expect(await reader.evaluate((node) => node.scrollTop)).toBe(0);
+});
+
+test('late first document cannot disturb the newer document or its refresh', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; releaseOld?: () => void; oldFinished: boolean; requests: number[] };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    let newest = 0;
+    let witness = '';
+    win.oldFinished = false; win.requests = [];
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: ['a.md', 'b.md'].map((path) => ({ path, size: 1, modified_seconds: 1 })), skipped: 0, partial: false, visited: 2, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document') {
+        const request = Number(args?.request);
+        win.requests.push(request);
+        if (request <= newest) throw 'selection-obsolete';
+        newest = request;
+        const path = String(args?.path);
+        if (path === 'a.md') await new Promise<void>((resolve) => { win.releaseOld = resolve; });
+        if (path === 'a.md') win.oldFinished = true;
+        if (request !== newest) throw 'selection-obsolete';
+        const token = path === 'b.md' ? 'b'.repeat(32) : 'a'.repeat(32);
+        if (args?.expectedIdentity && (args.expectedIdentity !== witness || witness !== token)) throw 'file-changed';
+        witness = token;
+        return Array.from(new TextEncoder().encode(token + (path === 'b.md' ? '# Newer B' : '# Older A')));
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'a.md' }).click();
+  await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseOld?: unknown }).releaseOld))).toBe(true);
+  await page.getByRole('button', { name: 'b.md' }).click();
+  await expect(page.getByRole('heading', { name: 'Newer B' })).toBeVisible();
+  await page.evaluate(() => (window as unknown as { releaseOld: () => void }).releaseOld());
+  await expect.poll(() => page.evaluate(() => (window as unknown as { oldFinished: boolean }).oldFinished)).toBe(true);
+  await page.getByRole('button', { name: '폴더 새로고침' }).click();
+  await expect(page.getByRole('heading', { name: 'Newer B' })).toBeVisible();
+  await expect(page.getByText(/읽는 동안 파일이 변경/)).toHaveCount(0);
+  const requests = await page.evaluate(() => (window as unknown as { requests: number[] }).requests);
+  expect(requests).toHaveLength(3);
+  expect(requests[0]).toBeLessThan(requests[1]);
+  expect(requests[1]).toBeLessThan(requests[2]);
+});
+
+test('highly compressed images stop at the unique pixel budget', async ({ page }) => {
+  const chunk = (name: string, data: Buffer) => {
+    const label = Buffer.from(name);
+    const size = Buffer.alloc(4); size.writeUInt32BE(data.length);
+    const sum = Buffer.alloc(4); sum.writeUInt32BE(crc32(Buffer.concat([label, data])));
+    return Buffer.concat([size, label, data, sum]);
+  };
+  const header = Buffer.alloc(13); header.writeUInt32BE(2048, 0); header.writeUInt32BE(2048, 4); header[8] = 8; header[9] = 6;
+  const png = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), chunk('IHDR', header), chunk('IDAT', deflateSync(Buffer.alloc((2048 * 4 + 1) * 2048))), chunk('IEND', Buffer.alloc(0))]);
+  expect(png.length).toBeLessThan(100_000);
+  await installDesktopRailRuntime(page);
+  await page.addInitScript((image) => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      if (cmd === 'planning_open_document') return Array.from(new TextEncoder().encode('a'.repeat(32) + '![a](1.png) ![repeat](1.png) ![b](2.png) ![c](3.png) ![d](4.png) ![over](5.png)'));
+      if (cmd === 'planning_read_file' && /^(?:[1-5])\.png$/.test(String(args?.path))) return Array.from(Uint8Array.from(atob(image), c => c.charCodeAt(0)));
+      return original(cmd, args);
+    };
+  }, png.toString('base64'));
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByText('문서 미리보기의 이미지 제한을 초과했습니다.')).toBeVisible();
+  await expect.poll(() => page.getByAltText('a', { exact: true }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(2048);
+  expect(await page.getByAltText('a', { exact: true }).getAttribute('src')).toEqual(await page.getByAltText('repeat').getAttribute('src'));
+  await expect(page.getByAltText('over')).toHaveCount(0);
+});

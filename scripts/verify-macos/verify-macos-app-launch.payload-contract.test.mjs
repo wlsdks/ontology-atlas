@@ -98,6 +98,18 @@ test("payload contract · the Agents route proves itself by its own body without
   assert.equal(markers.every((marker) => marker.test("Loading local app shell")), false);
 });
 
+test("payload contract · Planning checks the destination and folder action in every locale", () => {
+  for (const locale of ["en", "ja", "ko", "zh"]) {
+    const messages = JSON.parse(readFileSync(new URL(`../../messages/${locale}/planning.json`, import.meta.url), "utf8"));
+    const markers = webviewWorkbenchMarkersForPath(`/${locale}/planning/`);
+    assert.equal(markers.length, 2, locale);
+    const accepts = (text) => markers.every((marker) => marker.test(text));
+    assert.equal(accepts(`${messages.title}\n${messages.chooseFolder}`), true, locale);
+    assert.equal(accepts(messages.chooseFolder), false, `${locale}: missing destination`);
+    assert.equal(accepts(messages.title), false, `${locale}: missing folder action`);
+  }
+});
+
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
   // Body samples are truncated; the route title already proves app identity.

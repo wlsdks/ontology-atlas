@@ -1,0 +1,88 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PlanningMarkdown } from './PlanningMarkdown';
+import { crc32, deflateSync } from 'node:zlib';
+
+afterEach(() => vi.restoreAllMocks());
+describe('untrusted Planning Markdown', () => {
+  it('opens only in-root relative images and never emits live external links or HTML', async () => {
+    const png = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
+    const read = vi.fn(async () => png);
+    const create = vi.fn(() => 'blob:planning-test');
+    const revoke = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
+    const text = '![local](../images/mock.png) ![remote](https://example.com/a.png) ![outside](../../secret.png) ![webp](../images/mock.webp)\n\n[click](https://example.com) <img src="https://example.com/tracker.png" onerror="window.pwned=1"><script>window.pwned=1</script>';
+    const view = render(<PlanningMarkdown document="docs/plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:planning-test'));
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(read).toHaveBeenCalledWith('images/mock.png');
+    expect(screen.getByText('unsupported')).toBeVisible();
+    expect(view.container.querySelector('a')).toBeNull();
+    expect(view.container.querySelector('script')).toBeNull();
+    expect(view.container.querySelectorAll('img')).toHaveLength(1);
+    view.unmount();
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:planning-test'));
+  });
+  it('shares repeated images, limits document references, and revokes the shared URL on exit', async () => {
+    const png = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
+    const read = vi.fn(async () => png);
+    const revoke = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:shared') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
+    const text = Array.from({ length: 70 }, (_, i) => `![image${i}](image.png)`).join(' ');
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(64));
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(view.container.textContent).toContain('limit');
+    view.unmount();
+    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(1));
+  });
+  it('caps concurrent image reads and does not start queued reads after exit', async () => {
+    const resolvers: Array<(value: Uint8Array) => void> = [];
+    const read = vi.fn(() => new Promise<Uint8Array>((resolve) => resolvers.push(resolve)));
+    const create = vi.fn(() => 'blob:late');
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: create });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const text = Array.from({ length: 8 }, (_, i) => `![image${i}](${i}.png)`).join(' ');
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(3));
+    view.unmount();
+    await Promise.resolve();
+    resolvers.forEach((resolve) => resolve(new Uint8Array()));
+    await Promise.resolve();
+    expect(read).toHaveBeenCalledTimes(3);
+    expect(create).not.toHaveBeenCalled();
+  });
+  it('reports the document byte limit after two full-size images', async () => {
+    const header = [137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0];
+    const read = vi.fn(async (path: string) => { const bytes = new Uint8Array(path === '3.png' ? 33 : 16 * 1024 * 1024); bytes.set(header); return bytes; });
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:bounded') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const view = render(<PlanningMarkdown document="plan.md" text="![one](1.png) ![two](2.png) ![three](3.png)" readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(screen.getByText('limit')).toBeVisible());
+    expect(screen.getAllByRole('img')).toHaveLength(2);
+    view.unmount();
+  });
+  it('limits total unique pixels even when valid PNGs compress to small files', async () => {
+    const chunk = (name: string, data: Buffer) => {
+      const label = Buffer.from(name);
+      const length = Buffer.alloc(4); length.writeUInt32BE(data.length);
+      const checksum = Buffer.alloc(4); checksum.writeUInt32BE(crc32(Buffer.concat([label, data])));
+      return Buffer.concat([length, label, data, checksum]);
+    };
+    const header = Buffer.alloc(13); header.writeUInt32BE(2048, 0); header.writeUInt32BE(2048, 4); header[8] = 8; header[9] = 6;
+    const raw = Buffer.alloc((2048 * 4 + 1) * 2048);
+    const png = Buffer.concat([Buffer.from([137,80,78,71,13,10,26,10]), chunk('IHDR', header), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+    expect(png.length).toBeLessThan(100_000);
+    const read = vi.fn(async () => new Uint8Array(png));
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:compressed') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const text = '![a](1.png) ![repeat](1.png) ![b](2.png) ![c](3.png) ![d](4.png) ![over](5.png)';
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(screen.getByText('limit')).toBeVisible());
+    expect(screen.getAllByRole('img')).toHaveLength(5);
+    expect(read).toHaveBeenCalledTimes(5);
+    view.unmount();
+  });
+});

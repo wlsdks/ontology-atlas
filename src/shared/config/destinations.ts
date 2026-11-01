@@ -12,6 +12,7 @@ export const DESTINATION_IDS = [
   'architecture',
   // Ontology documents now live inside Library; /docs remains a link alias.
   'library',
+  'planning',
   // Automation management owns schedules; execution context remains Map or Library.
   'automations',
   'insights',
@@ -34,6 +35,7 @@ export const MOBILE_DESTINATION_IDS = [
   'map',
   'architecture',
   'library',
+  'planning',
   'insights',
   'projects',
 ] as const satisfies ReadonlyArray<DestinationId>;
@@ -54,6 +56,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   agents: '/agents/',
   mcp: '/agents/?tab=mcp',
   library: '/library/',
+  planning: '/planning/',
   automations: '/automations/',
   git: '/git/',
   changes: '/changes/',
@@ -88,6 +91,7 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   // `m` belongs to Map; `c` for the connectors it holds.
   mcp: 'c',
   library: 'l',
+  planning: 'n',
   // `u` — automation is a management utility, and `a` belongs to Agents.
   automations: 'u',
   git: 'g',
@@ -115,8 +119,8 @@ export function destinationsForVaultShape(
   shape: { map: boolean; wiki: boolean } | null | undefined,
 ): ReadonlySet<DestinationId> {
   if (!shape || shape.map || !shape.wiki) return new Set(DESTINATION_IDS);
-  return new Set<DestinationId>(['library', 'automations', 'agents', 'git']);
+  return new Set<DestinationId>(['library', 'planning', 'automations', 'agents', 'git']);
 }
 
 /** The bottom tabs for a wiki without a map: the Library is the one place to go. */
-export const WIKI_ONLY_MOBILE_DESTINATION_IDS = ['library'] as const satisfies ReadonlyArray<DestinationId>;
+export const WIKI_ONLY_MOBILE_DESTINATION_IDS = ['library', 'planning'] as const satisfies ReadonlyArray<DestinationId>;

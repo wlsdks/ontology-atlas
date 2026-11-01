@@ -176,8 +176,8 @@ describe("the rail, the sheet and the shell read the same table", () => {
     expect(sheet).toMatch(/rows:\s*\[\s*\.\.\.DESTINATION_ROWS/);
   });
 
-  it("both locales have wording for every destination", () => {
-    for (const locale of ["ko", "en"] as const) {
+  it("all locales have wording for every destination", () => {
+    for (const locale of ["ko", "en", "ja", "zh"] as const) {
       const messages = JSON.parse(read(`messages/${locale}.json`));
       const rows = messages.searchWidgets?.shortcuts?.rows ?? {};
       for (const id of DESTINATION_IDS) {
@@ -201,27 +201,27 @@ describe("the rail, the sheet and the shell read the same table", () => {
   });
 
   /**
-   * Nine is the ceiling the rail height supports at the app's minimum window (`minWidth: 1040`,
-   * `minHeight: 720`, 616px pane) with nothing scrolling. A tenth needs its own decision; the pane
-   * still scrolls for zoom and longer translations.
+   * The 2026-11-01 Planning decision permits ten. The scrollable rail remains
+   * necessary at minimum height, zoom, and longer translations.
    */
-  it("destinations do not exceed nine, and a tenth requires a separate decision", () => {
+  it("destinations do not exceed ten without a new decision", () => {
     expect(
       DESTINATION_IDS.length,
       `The rail has ${DESTINATION_IDS.length} destinations. ` +
-        `Adding a tenth needs its own decision record and an update to this cap`,
-    ).toBeLessThanOrEqual(9);
+        `Adding another needs its own decision record and an update to this cap`,
+    ).toBeLessThanOrEqual(10);
   });
 
-  it("the current list has nine: source changes have a separate entry and the existing merges stay", () => {
+  it("the current list has ten including Planning and source changes", () => {
     /*
      * A ceiling far above the current count turns slack into a free pass, so the exact inventory is
      * pinned: a change to the list needs a decision.
      */
     expect(
       DESTINATION_IDS.length,
-      "the destination list changed; review the source-change briefing destination decision",
-    ).toBe(9);
+      "the destination list changed; review the Planning rail decision",
+    ).toBe(10);
+    expect(DESTINATION_IDS).toContain("planning");
   });
 
   /**
