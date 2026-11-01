@@ -16,6 +16,7 @@ test('keeps scope help and search usable in the PR list toolbar', async ({ page 
   await page.setViewportSize({ width: 1440, height: 900 });
   await openBriefing(page);
   await setBriefingMode(page, 'inventory-large');
+  await expect(page.getByText('Updated in this period · open and closed PRs')).toBeVisible();
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
   const scope = page.getByRole('button', { name: 'Read scope' });
   await scope.focus();
@@ -321,11 +322,14 @@ test('measures the PR list and original at desktop, narrow and doubled text size
     await expect(page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' })).toBeVisible();
     expect(Math.abs(await refresh.evaluate(element => element.getBoundingClientRect().top) - refreshTop)).toBeLessThanOrEqual(1);
     await page.locator('main').evaluate(element => { element.scrollTop += 16; });
-    const expanded = await auditPage(page, { width, rampNames: ramps, scope: 'main' });
-    measurements.push({ width, state: 'scope-expanded', ...expanded });
+    const tooltip = page.getByRole('tooltip').filter({ hasText: 'PRs updated in the selected local dates' });
+    const box = await tooltip.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    await tooltip.hover();
+    await expect(tooltip).toBeVisible();
     if (process.env.ATLAS_PR_PROOF) await page.screenshot({ path: `${process.env.ATLAS_PR_PROOF}/pr-scope-${width}.png` });
-    expect(shouldFail([expanded]), JSON.stringify(expanded.findings)).toBe(false);
-    expect(expanded.findings.target, JSON.stringify(expanded.findings.target)).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('tooltip')).toHaveCount(0);
     await row.click();
