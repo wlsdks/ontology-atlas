@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
+import { JSDOM } from "jsdom";
 
 import {
   parseWebviewVerifyPayload,
@@ -96,6 +97,39 @@ test("payload contract · the Agents route proves itself by its own body without
     true,
   );
   assert.equal(markers.every((marker) => marker.test("Loading local app shell")), false);
+});
+
+test("payload contract · briefing requires its rendered surface, including source-only sessions", () => {
+  const payload = validPayload({
+    href: "tauri://localhost/ko/changes/",
+    bodyText: "Visible briefing content",
+    markers: { ontologyNav: false, libraryNav: false, briefingSurface: true, briefingRepositoryControl: true },
+  });
+  assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/changes/" }), null);
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, briefingSurface: false } }, { expectedPath: "/ko/changes/" }), /briefing surface/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: "Git·PR briefing", markers: { ...payload.markers, briefingRepositoryControl: false } }, { expectedPath: "/ko/changes/" }), /briefing.*control/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, bodyText: " " }, { expectedPath: "/ko/changes/" }), /body text was empty/);
+  assert.match(validateWebviewVerifyPayload({ ...payload, href: "tauri://localhost/ko/agents/" }, { expectedPath: "/ko/changes/" }), /ontology navigation marker|expected/);
+});
+
+test("briefing probe requires the visible repository action in either repository state", () => {
+  const probe = readFileSync(new URL("../../src-tauri/src/webview_verify/dom_marker_probe.js", import.meta.url), "utf8");
+  for (const repository of ["Choose repository", "ontology-atlas"]) {
+    const dom = new JSDOM(`<main data-briefing-surface><header><h1>Briefing</h1><span>Prototype</span><button>${repository}</button><button data-testid="briefing-settings">Settings</button></header></main>`, { url: "https://localhost/ko/changes/", runScripts: "outside-only" });
+    dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({ width: 100, height: 30 });
+    Object.defineProperty(dom.window.HTMLElement.prototype, "innerText", { get() { return this.textContent; } });
+    const markers = () => JSON.parse(dom.window.eval(probe)).markers;
+    assert.equal(markers().briefingRepositoryControl, true, repository);
+    const button = dom.window.document.querySelector("main header button");
+    button.disabled = true;
+    assert.equal(markers().briefingRepositoryControl, false, repository);
+    button.disabled = false;
+    button.style.display = "none";
+    assert.equal(markers().briefingRepositoryControl, false, repository);
+    button.remove();
+    assert.equal(markers().briefingRepositoryControl, false, repository);
+    dom.window.close();
+  }
 });
 
 test("payload contract · topology route accepts the current map shell", () => {
@@ -463,6 +497,10 @@ test("workbench markers follow an injected four-locale list", () => {
   for (const locale of locales) {
     const markers = webviewWorkbenchMarkersForPath(`/${locale}/library/`, locales);
     assert.notEqual(markers, WEBVIEW_WORKBENCH_MARKERS, locale);
+    const briefingMarkers = webviewWorkbenchMarkersForPath(`/${locale}/changes/`, locales);
+    assert.ok(briefingMarkers.length > 0, locale);
+    assert.notEqual(briefingMarkers, WEBVIEW_WORKBENCH_MARKERS, locale);
+    assert.equal(briefingMarkers.every((marker) => marker.test(" ")), false, locale);
   }
   assert.equal(webviewWorkbenchMarkersForPath("/ja/library/", ["en", "ko"]), WEBVIEW_WORKBENCH_MARKERS);
 });
