@@ -72,7 +72,7 @@ export function OriginalSourceBody({ source, passage, memory, readerId, rawLabel
     setDisplay({ readerId, raw: formatted && target?.getAttribute('data-source-passage')?.split(' ')[0] !== passage, located: true });
   }, [display.located, formatted, passage, readerId, setDisplay]);
   return <div className="space-y-3">
-    {source.kind === 'pr' && <Button variant="ghost" size="sm" onClick={() => setDisplay({ readerId, raw: !display.raw, located: true })}>{display.raw ? readingLabel : rawLabel}</Button>}
+    {source.kind === 'pr' && <Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={() => setDisplay({ readerId, raw: !display.raw, located: true })}>{display.raw ? readingLabel : rawLabel}</Button>}
     <div ref={root}>
       {formatted ? <div className={`min-w-0 max-w-prose break-words text-body-lg ${MARKDOWN_PROSE_CLASS}`} data-testid="briefing-source-reading"><ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={plugins} components={COMPONENTS}>{source.text.slice(bodyOffset)}</ReactMarkdown></div>
         : <div data-testid="briefing-source-text">{sourcePassages(source).map(value => <pre key={value.id} data-source-passage={value.id} data-source-selected={passage === value.id ? 'true' : undefined} className={`whitespace-pre-wrap break-words font-mono text-body ${passage === value.id ? 'rounded-card bg-[color:var(--color-overlay-2)] p-3' : ''}`}>{value.text}</pre>)}</div>}

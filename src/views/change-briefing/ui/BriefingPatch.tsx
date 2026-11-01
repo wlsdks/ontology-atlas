@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button, IconButton } from '@/shared/ui';
 import { gitChangeBriefingPatch, gitSourceBriefingPatch, type ChangeBriefing, type ChangeBriefingPatch } from '@/shared/lib/git/tauri-change-briefing';
 
-export function BriefingPatch({ root, project, data, path, paths, onNavigate, onChooseFile, onRefresh }: {
+export function BriefingPatch({ root, project, data, path, paths, query, onNavigate, onChooseFile, onRefresh }: {
   root: string; project: string; data: ChangeBriefing; path: string;
   paths: string[];
+  query: string;
   onNavigate: (path: string, direction: 'previous' | 'next') => void;
   onChooseFile: () => void;
   onRefresh: () => void;
 }) {
   const t = useTranslations('changeBriefing');
+  const review = useTranslations('prBriefing');
   const [attempt, setAttempt] = useState(0);
   const [snapshot, setSnapshot] = useState<{ attempt: number; value: ChangeBriefingPatch | null } | null>(null);
   useEffect(() => {
@@ -28,23 +30,26 @@ export function BriefingPatch({ root, project, data, path, paths, onNavigate, on
   const ready = snapshot?.attempt === attempt;
   const result = snapshot?.value;
   const index = paths.indexOf(path);
+  const filtered = Boolean(query.trim());
   return <section aria-label={t('patchTitle', { path })} className="space-y-3 border-t border-[color:var(--color-border-soft)] pt-4">
     <div data-testid="briefing-reading-header" className="sticky top-0 z-10 space-y-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 title={path} className="min-w-0 flex-1 break-all text-title font-[var(--font-weight-strong)]">{path.split('/').at(-1)}</h3>
-        {index >= 0 && <nav aria-label={t('groupFiles')} className="flex flex-wrap items-center gap-2">
-          <span data-testid="briefing-file-position" className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">{t('filePosition', { index: index + 1, total: paths.length })}</span>
-          <IconButton className="atlas-touch-floor atlas-touch-floor-wide" data-file-direction="previous" label={t('previousFile')} disabled={index === 0} onClick={() => onNavigate(paths[index - 1], 'previous')}><ChevronLeft size={16} /></IconButton>
-          <IconButton className="atlas-touch-floor atlas-touch-floor-wide" data-file-direction="next" label={t('nextFile')} disabled={index === paths.length - 1} onClick={() => onNavigate(paths[index + 1], 'next')}><ChevronRight size={16} /></IconButton>
-          <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={onChooseFile}><List size={16} aria-hidden />{t('chooseFile')}</Button>
+        {(index >= 0 || filtered) && <nav aria-label={t('groupFiles')} className="flex flex-wrap items-center gap-2">
+          {index >= 0 && <span data-testid="briefing-file-position" className="font-mono text-label tabular-nums text-[color:var(--color-text-secondary)]">{t('filePosition', { index: index + 1, total: paths.length })}</span>}
+          <IconButton className="atlas-touch-floor atlas-touch-floor-wide" data-file-direction="previous" label={filtered ? review('previousMatch') : t('previousFile')} disabled={index <= 0} onClick={() => onNavigate(paths[index - 1], 'previous')}><ChevronLeft size={16} /></IconButton>
+          <IconButton className="atlas-touch-floor atlas-touch-floor-wide" data-file-direction="next" label={filtered ? review('nextMatch') : t('nextFile')} disabled={index < 0 || index === paths.length - 1} onClick={() => onNavigate(paths[index + 1], 'next')}><ChevronRight size={16} /></IconButton>
         </nav>}
       </div>
-      <p className="break-words text-label text-[color:var(--color-text-secondary)]">{t('patchBasis', { before: data.base?.slice(0, 8) ?? t('initialTree'), after: data.tip?.slice(0, 8) ?? '' })}</p>
+      <Button data-return-files className="atlas-touch-floor atlas-touch-floor-wide @[56rem]/briefing-files:hidden" variant="ghost" size="sm" onClick={onChooseFile}><ChevronLeft size={16} aria-hidden />{review('backToFiles')}</Button>
+      {filtered && <p className="break-all text-label text-[color:var(--color-text-secondary)]">{review('activeSearch', { query })}</p>}
+      <p className="break-words text-label text-[color:var(--color-text-secondary)]">{review('periodBasis', { before: data.base?.slice(0, 8) ?? t('initialTree'), after: data.tip?.slice(0, 8) ?? '' })}</p>
+      {filtered && index < 0 && <p role="status" className="text-label text-[color:var(--color-text-secondary)]">{review('selectionFiltered')}</p>}
     </div>
     <p className="break-all text-body text-[color:var(--color-text-secondary)]">{path}</p>
     {!ready ? <p role="status">{t('patchLoading')}</p> : !result || result.status === 'unavailable' || result.status === 'stale' ? <div role="status" className="space-y-3"><p>{t(result?.status === 'stale' ? 'stale' : 'patchUnavailable')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={result?.status === 'stale' ? onRefresh : () => setAttempt(value => value + 1)}>{t(result?.status === 'stale' ? 'refresh' : 'patchRetry')}</Button></div> : result.status === 'binary' ? <p>{t('patchBinary')}</p> : !result.patch ? <p>{t('patchNoDifference')}</p> : <>
       {result.truncated && <p role="status" className="text-[color:var(--color-status-warning)]">{t('patchTruncated')}</p>}
-      <pre data-testid="briefing-patch" className="whitespace-pre-wrap break-all rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 font-mono text-body">{result.patch}</pre>
+      <pre data-testid="briefing-patch" className="whitespace-pre-wrap break-all rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 font-mono text-body">{result.patch.split('\n').map((line, index, all) => <span key={index} className={line.startsWith('+') && !line.startsWith('+++') ? 'block bg-[color:var(--color-overlay-2)]' : line.startsWith('-') && !line.startsWith('---') ? 'block border-l border-dashed border-[color:var(--color-text-tertiary)]' : 'block'}>{line}{index < all.length - 1 ? '\n' : ''}</span>)}</pre>
     </>}
   </section>;
 }

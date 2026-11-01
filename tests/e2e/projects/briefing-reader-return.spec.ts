@@ -10,7 +10,7 @@ test.use({ viewport: { width: 1920, height: 1080 } });
 async function leaveAndReturn(page: import('@playwright/test').Page) {
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
   await expect(page).toHaveURL(/topology/);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await expect(page.getByTestId('briefing-narrative')).toBeVisible();
 }
 
@@ -83,7 +83,7 @@ test('restores a citation return target without carrying the reader into another
   await expect(original).toBeFocused();
   await leaveAndReturn(page);
   await expect(original).toBeVisible();
-  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
   await expect(citation).toBeFocused();
   await citation.press('Enter');
   await page.getByRole('button', { name: 'Next period', exact: true }).click();
@@ -112,7 +112,7 @@ test('returns to the summary heading when the originating explanation was replac
   await expect(original).toBeVisible();
   await leaveAndReturn(page);
   await expect(original).toBeVisible();
-  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
   await expect(page.locator('#git-briefing-title')).toBeFocused();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(2);
 });

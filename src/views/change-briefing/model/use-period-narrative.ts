@@ -9,7 +9,7 @@ import { narrativeResponse, type NarrativePacket, type NarrativeSource } from '.
 import { planPeriod, type PeriodPlan } from './period-run';
 import { executePeriod, executionCoverage, freshExecution, type PeriodExecution, type PeriodFailure } from './period-execution';
 
-const activeJobs = new Map<string, { controller: AbortController; done: Promise<void> }>();
+const activeJobs = new Map<string, { controller: AbortController; done: Promise<void>; memoryKey: string }>();
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 const notify = () => listeners.forEach(listener => listener());
@@ -24,13 +24,14 @@ function failureFrom(error: unknown): PeriodFailure {
   return { detail, code: (detail.includes('audit-blocked:') || detail.includes('audit-log-')) ? 'auditFailed' : detail.includes('model-limit') ? 'modelLimit' : detail.includes('model-unavailable') ? 'modelUnavailable' : detail.includes('stale') || detail.includes('ungranted') ? 'stale' : 'analysisFailed' };
 }
 
-export function usePeriodNarrative({ data, period, sources, lookup, identity, connection, locale }: {
-  data: ChangeBriefing; period: string; sources: NarrativeSource[]; lookup: PeriodPlan['lookup']; identity: string; connection: LocalEndpointSettings; locale: string;
+export function usePeriodNarrative({ data, period, sources, lookup, identity, connection, locale, commitOnly = false }: {
+  data: ChangeBriefing; period: string; sources: NarrativeSource[]; lookup: PeriodPlan['lookup']; identity: string; connection: LocalEndpointSettings; locale: string; commitOnly?: boolean;
 }) {
-  const memoryKey = `source-period-run:${data.sourceRoot}`;
+  const jobKey = `source-period-run:${data.sourceRoot}`;
+  const memoryKey = commitOnly ? `source-period-run:commit-only:${JSON.stringify(data.sourceRoot)}` : jobKey;
   const [run, setRunState] = useState<StoredPeriodRun | null>(() => readArrivalMemory<StoredPeriodRun>(memoryKey) ?? null);
   const remember = (value: StoredPeriodRun) => { writeArrivalMemory(memoryKey, value); setRunState(value); };
-  const unsettled = useSyncExternalStore(subscribe, () => activeJobs.has(memoryKey), () => false);
+  const unsettled = useSyncExternalStore(subscribe, () => activeJobs.get(jobKey)?.memoryKey === memoryKey, () => false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [busy, setBusy] = useState<'preparing' | 'analyzing' | 'cancelling' | null>(null);
   const [preparationFailure, setPreparationFailure] = useState<{ key: string; value: PeriodFailure } | null>(null);
@@ -57,10 +58,10 @@ export function usePeriodNarrative({ data, period, sources, lookup, identity, co
     target = { ...target, epoch: crypto.randomUUID() };
     remember(target);
     setBusy('analyzing'); setPreparationFailure(null);
-    const previous = activeJobs.get(memoryKey);
+    const previous = activeJobs.get(jobKey);
     let settle!: () => void;
-    const job = { controller: owned, done: new Promise<void>(resolve => { settle = resolve; }) };
-    activeJobs.set(memoryKey, job); notify();
+    const job = { controller: owned, done: new Promise<void>(resolve => { settle = resolve; }), memoryKey };
+    activeJobs.set(jobKey, job); notify();
     try {
       if (previous) { previous.controller.abort(); await previous.done; }
       if (owned.signal.aborted) return;
@@ -80,7 +81,7 @@ export function usePeriodNarrative({ data, period, sources, lookup, identity, co
       });
     } finally {
       settle();
-      if (activeJobs.get(memoryKey) === job) { activeJobs.delete(memoryKey); notify(); }
+      if (activeJobs.get(jobKey) === job) { activeJobs.delete(jobKey); notify(); }
       setBusy(null); if (controller.current === owned) controller.current = null;
     }
   }

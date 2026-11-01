@@ -5,6 +5,24 @@ import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
 import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
 
+test('keeps coverage beside the combined briefing return and restores focus after inspection', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await installBriefingRuntime(page);
+  await mountDesktopVault(page);
+  await page.goto('/en/changes/?guides=off');
+  await page.getByTestId('briefing-mixed').click();
+  const mode = await page.getByRole('button', { name: 'Back to pull requests' }).boundingBox();
+  const coverage = await page.getByTestId('briefing-coverage').boundingBox();
+  const heading = await page.getByRole('heading', { name: 'Earlier combined briefing' }).boundingBox();
+  expect(mode && coverage && heading).toBeTruthy();
+  expect(Math.abs((mode!.y + mode!.height / 2) - (coverage!.y + coverage!.height / 2))).toBeLessThan(2);
+  expect(heading!.y - (mode!.y + mode!.height)).toBeLessThan(80);
+  await page.getByTestId('briefing-coverage').click();
+  await expect(page.getByTestId('briefing-coverage-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('briefing-coverage')).toBeFocused();
+});
+
 test('keeps grouped evidence and file comparison reachable across responsive bands and text zoom', async ({ browser, baseURL }) => {
   test.setTimeout(120_000);
   const rampNames = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));

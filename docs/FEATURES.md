@@ -191,7 +191,7 @@ The desktop rail's order and hrefs come from
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
-| Changes: period briefing of a chosen Git repository | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
+| Briefing: public PR updates, commits and files in separate views | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
@@ -251,6 +251,6 @@ Data sources ([`data-sources.md`](features/data-sources.md)), the MCP server
 ([`keyboard.md`](features/keyboard.md)) have one file each. Start a new one with
 `pnpm doc:new -- --type=feature --area=<area> --slug=<slug>`.
 
-Public GitHub PR reading is the recommended first step; commit-only explanations remain an explicitly limited alternative. Failed refreshes keep previously read PR versions and explanations for the same repository and period with a freshness warning; successful empty responses replace them. Bounded app-owned copies reopen eligible public PR originals after restart with original read times and unchecked current GitHub coverage. Source-independent clear preserves session originals and fences pending saves; failed storage never discards fresh text. Known GitHub rate limits stop lookup and disclose a provider retry time when available; local work remains usable and no retry starts automatically.
+Public GitHub PR reading is optional; commit-only explanations remain explicitly limited. Failed refreshes keep previously read PR versions and explanations for the same repository and period with a freshness warning; successful empty responses replace them. Bounded app-owned copies reopen eligible public PR originals after restart with original read times and unchecked current GitHub coverage. Source-independent clear preserves session originals and fences pending saves; failed storage never discards fresh text. Known GitHub rate limits stop lookup and disclose a provider retry time when available; local work remains usable and no retry starts automatically.
 
 Source Git/PR period explanations disclose sequential local-model requests, preserve completed parts in session memory for Stop/Continue, and create a compact overview from selected original passages. Completed-part choices include their first supported theme title; original readers offer a return action at both ends. Processing, uncertain interrupted delivery, citations and overview omissions remain distinct; records that exceed the request limit stay named gaps. Changed source/model/capacity/language requires a fresh plan. These author records do not accept ontology meaning or verify code behavior.
