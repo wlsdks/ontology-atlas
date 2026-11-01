@@ -1,6 +1,6 @@
 {
-  "title": "Change briefing",
-  "navLabel": "Changes",
+  "title": "Briefing",
+  "navLabel": "Briefing",
   "prototype": "Prototype",
   "intro": "Catch up on committed source changes, grouped by the capabilities recorded in this folder.",
   "project": "Project",
@@ -13,6 +13,8 @@
   "previous": "Previous period",
   "next": "Next period",
   "today": "Current period",
+  "chooseDates": "Choose dates",
+  "closeDates": "Close",
   "anchorDate": "Date in this period",
   "startDate": "Start date",
   "endDate": "End date",

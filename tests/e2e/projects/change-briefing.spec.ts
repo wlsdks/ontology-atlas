@@ -13,7 +13,7 @@ async function capture(page: import('@playwright/test').Page, state: string) {
 async function enter(page: import('@playwright/test').Page) {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await page.getByTestId('briefing-source-browser').click();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
 }
@@ -25,10 +25,11 @@ test('reads grouped source evidence and actual changed lines without leaving Atl
   await expect(page.getByRole('region', { name: 'Source evidence', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('-limit = 10\n+limit = 20');
-  await expect(page.getByTestId('briefing-group-unmapped')).toBeVisible();
+  await expect(page.getByTestId('briefing-group-unmapped')).toBeHidden();
   await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
   await expect(group).toBeFocused();
-  await expect(group).toHaveAttribute('aria-pressed', 'true');
+  await expect(group).toHaveAttribute('aria-pressed', 'false');
+  await group.click();
   await page.getByTestId('briefing-comparison').click();
   await page.getByTestId('briefing-net-paths').click();
   await page.getByRole('button', { name: 'Read changed lines: outside-period.ts', exact: true }).click();
@@ -39,7 +40,9 @@ test('navigates calendar periods and applies an inclusive custom interval', asyn
   await enter(page);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
   await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2024-02-20');
+  await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-01 – 2024-02-29');
   await page.getByRole('button', { name: 'Next period', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('2024-03-01 – 2024-03-31');
@@ -47,7 +50,7 @@ test('navigates calendar periods and applies an inclusive custom interval', asyn
   await page.getByRole('option', { name: 'Custom dates', exact: true }).click();
   await page.getByLabel('Start date', { exact: true }).fill('2024-02-29');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-28');
-  await expect(page.locator('main').getByRole('alert')).toBeVisible();
+  await expect(page.getByTestId('briefing-dates-dialog').getByRole('alert')).toBeVisible();
   await capture(page, 'invalid-dates');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-29');
   await page.getByRole('button', { name: 'Read this period', exact: true }).click();
@@ -83,7 +86,9 @@ for (const mode of ['binary', 'truncated', 'revert', 'patch-error'] as const) {
     if (mode === 'truncated') await expect(evidence).toContainText('32 KiB');
     if (mode === 'revert') await expect(evidence).toContainText('no differences');
     if (mode === 'patch-error') await expect(page.getByRole('button', { name: 'Retry file comparison', exact: true })).toBeVisible();
-    await expect(evidence).toContainText('author claim: changed checkout');
+    await page.getByRole('radio', { name: 'Commits', exact: true }).click();
+    await expect(evidence).toBeHidden();
+    await expect(page.getByRole('button', { name: /author claim: changed checkout/ })).toBeVisible();
     await capture(page, mode);
   });
 }
@@ -104,9 +109,10 @@ test('ignores an older period response after the next scope has loaded', async (
 test('does not insert an obsolete file comparison into a newly selected group', async ({ page }) => {
   await enter(page);
   await page.getByTestId('briefing-group-capabilities/checkout').click();
-  await page.evaluate(() => { (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true; });
+  await page.evaluate(() => { const probe = (window as unknown as { __briefingProbe: { hold: boolean; holdCommand: string } }).__briefingProbe; probe.holdCommand = '_patch'; probe.hold = true; });
   await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByText('Reading this file between the shown revisions…', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
   await page.getByTestId('briefing-group-unmapped').click();
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { release(): void } }).__briefingProbe.release(); });
   await expect(page.getByTestId('briefing-patch')).toHaveCount(0);
@@ -117,13 +123,15 @@ test('returns from the map to the same calendar range and selected comparison', 
   await enter(page);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
   await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2024-02-20');
+  await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByTestId('briefing-group-capabilities/checkout').click();
   await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toBeVisible();
   await page.getByRole('link', { name: 'Open capability on map', exact: true }).click();
   await expect(page).toHaveURL(/\/topology\//);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Monthly');
   await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-01 – 2024-02-29');
   await expect(page.getByTestId('briefing-group-capabilities/checkout')).toHaveAttribute('aria-pressed', 'true');
@@ -181,14 +189,13 @@ test('opens a literal source area directly from the overview and returns focus t
   await expect(evidence.getByRole('button', { name: 'Read changed lines: 한글/unmapped.ts', exact: true })).toHaveCount(0);
   await evidence.getByRole('button', { name: 'Read changed lines: mcp/src/tool-0.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toBeVisible();
-  await expect(page.getByTestId('briefing-touched-files')).toHaveAttribute('aria-expanded', 'false');
-  await page.getByTestId('briefing-touched-files').click();
+  await expect(page.getByTestId('briefing-file-list')).toBeVisible();
   await evidence.getByRole('button', { name: 'Read changed lines: mcp/src/tool-1.ts', exact: true }).click();
-  await expect(page.getByTestId('briefing-touched-files')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('briefing-file-list')).toBeVisible();
   await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-1.ts', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
   await expect(area).toBeFocused();
-  await expect(area).toHaveAttribute('aria-pressed', 'true');
+  await expect(area).toHaveAttribute('aria-pressed', 'false');
 });
 
 
@@ -214,12 +221,10 @@ test('keeps file switching reachable during a long diff and scopes navigation to
   await expect(next).toBeFocused();
   await next.press('Enter');
   await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-2.ts', exact: true })).toBeVisible();
-  await navigation.getByRole('button', { name: 'Choose another file', exact: true }).click();
-  await expect(page.getByTestId('briefing-touched-files')).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('briefing-file-list')).toBeVisible();
   await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-39.ts', exact: true }).click();
   await next.click();
   await expect(page.getByTestId('briefing-file-position')).toHaveText('File 41 of 61');
-  await navigation.getByRole('button', { name: 'Choose another file', exact: true }).click();
   const current = page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-40.ts', exact: true });
   await expect(current).toBeVisible();
   await expect(current).toHaveAttribute('aria-pressed', 'true');
@@ -247,7 +252,9 @@ test('starts from a cold native launch and reads source history without opening 
   await expect(page.getByRole('combobox', { name: 'Project', exact: true })).toHaveCount(0);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
   await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2026-10-25');
+  await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByTestId('briefing-settings').click();
   await page.getByRole('link', { name: 'Choose model', exact: true }).click();
   await expect(page).toHaveURL(/tab=models/);
@@ -256,7 +263,8 @@ test('starts from a cold native launch and reads source history without opening 
   await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toHaveText('Monthly');
   await expect(page.getByTestId('briefing-range')).toHaveText('2026-10-01 – 2026-10-31');
   await page.getByTestId('briefing-group-unmapped').click();
-  await page.getByRole('button', { name: 'author claim: changed checkout; not independently verified', exact: true }).click();
+  await page.getByRole('radio', { name: 'Commits', exact: true }).click();
+  await page.getByRole('button', { name: /author claim: changed checkout; not independently verified/ }).click();
   await expect(page.locator('pre').filter({ hasText: 'Why: keep the return action visible.' })).toBeVisible();
   const calls = await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string; args: Record<string, unknown> }[] } }).__briefingProbe.calls);
   expect(calls.some(call => call.command === 'git_source_briefing' && call.args.sourcePath === '/source/storefront' && !('vaultPath' in call.args))).toBe(true);
@@ -265,13 +273,15 @@ test('starts from a cold native launch and reads source history without opening 
 
 test('opens code context from a labelled control and returns focus when it closes', async ({ page }) => {
   await enter(page);
+  await page.getByTestId('briefing-mixed').click();
+  await page.getByTestId('briefing-originals').click();
+  await page.getByRole('button', { name: /author claim: changed checkout/ }).click();
+  const original = page.getByTestId('briefing-original');
+  const opener = original.getByRole('button', { name: 'Read code changes for the whole period', exact: true });
+  await opener.focus(); await opener.press('Enter');
   await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
-  await expect(page.getByTestId('briefing-source-browser')).toBeFocused();
   const close = page.getByRole('button', { name: 'Close code changes', exact: true });
   await close.focus(); await close.press('Enter');
-  await expect(page.getByTestId('briefing-source-browser')).toBeFocused();
-  await expect(page.getByTestId('briefing-source-browser')).toHaveAttribute('aria-checked', 'false');
-  await page.getByTestId('briefing-source-browser').press('Enter');
-  await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
-  await expect(page.getByTestId('briefing-source-browser')).toBeFocused();
+  await expect(original).toBeVisible();
+  await expect(opener).toBeFocused();
 });

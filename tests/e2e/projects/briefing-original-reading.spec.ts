@@ -80,7 +80,7 @@ test('opens a late cited passage in view and returns to the exact summary claim'
   const selected = original.locator('[data-source-passage]').filter({ hasText: 'Why: panels hid navigation.' });
   await expect(selected).toContainText('Why: panels hid navigation.');
   await expect(selected).toBeInViewport();
-  await original.getByRole('button', { name: 'Back to summary', exact: true }).last().click();
+  await original.getByRole('button', { name: 'Back to overview', exact: true }).last().click();
   await expect(reason).toBeFocused();
 });
 
@@ -99,7 +99,7 @@ test('keeps a cited passage inside a multi-paragraph code fence attached to the 
   await original.getByRole('button', { name: 'View source text', exact: true }).click();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${text}`);
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await expect(original.getByTestId('briefing-source-text')).toBeVisible();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${text}`);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
@@ -130,15 +130,19 @@ test('keeps an explicit formatted citation view through route and period returns
   await expect(original.getByTestId('briefing-source-text')).toBeVisible();
   await original.getByRole('button', { name: 'View formatted text', exact: true }).click();
   await expect(original.getByRole('heading', { name: 'Changes', exact: true })).toBeVisible();
-  const position = await original.evaluate(element => { const main = element.closest('main')!; main.scrollTop = 800; return main.scrollTop; });
+  await original.evaluate(element => { element.closest('main')!.scrollTop = 800; });
+  await page.getByRole('button', { name: 'Next period', exact: true }).scrollIntoViewIfNeeded();
+  const beforePeriodChange = await original.evaluate(element => element.closest('main')!.scrollTop);
   await page.getByRole('button', { name: 'Next period', exact: true }).click();
   await page.getByRole('button', { name: 'Previous period', exact: true }).click();
   await expect(original.getByTestId('briefing-source-reading')).toBeVisible();
+  await expect.poll(() => original.evaluate(element => element.closest('main')!.scrollTop)).toBe(beforePeriodChange);
+  const position = await original.evaluate(element => { const main = element.closest('main')!; main.scrollTop = 800; return main.scrollTop; });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await expect(original.getByTestId('briefing-source-reading')).toBeVisible();
   await expect.poll(() => original.evaluate(element => element.closest('main')!.scrollTop)).toBe(position);
-  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
   const citation = page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1);
   await expect(citation).toBeFocused();
   await citation.click();

@@ -9,7 +9,7 @@ for (const width of [390, 1512]) {
   test(`finds a file beyond the first batch without scrolling the whole list at ${width}`, async ({ page }) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
     await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
@@ -25,10 +25,13 @@ for (const width of [390, 1512]) {
     const file = page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-60.ts', exact: true });
     await expect(file).toBeVisible();
     await file.click();
-    await expect(page.getByTestId('briefing-file-position')).toHaveText('File 61 of 61');
-    await page.getByRole('button', { name: 'Choose another file', exact: true }).click();
-    await expect(search).toHaveValue('');
-    await expect(file).toBeFocused();
+    await expect(page.getByTestId('briefing-file-position')).toHaveText('File 1 of 1');
+    if (width < 1024) {
+      await page.getByRole('button', { name: 'Back to files', exact: true }).click();
+      await expect(file).toBeFocused();
+    }
+    await expect(search).toHaveValue('TOOL-60');
+    await expect(file).toHaveAttribute('aria-pressed', 'true');
     await search.fill('not-a-changed-file');
     await expect(list.getByRole('button')).toHaveCount(0);
     await search.fill('');
@@ -41,7 +44,7 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
   test(`keeps the changed-file collection bounded and reachable at ${width}`, async ({ page }, testInfo) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
     await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
@@ -62,7 +65,7 @@ for (const width of [390, 1512]) {
   test(`retains file search and selected-file recovery at doubled text size and ${width}`, async ({ page }, testInfo) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
     await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
@@ -76,9 +79,10 @@ for (const width of [390, 1512]) {
     await search.fill('tool-60');
     const file = page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-60.ts', exact: true });
     await file.click();
-    await page.getByRole('button', { name: 'Choose another file', exact: true }).click();
+    await page.getByRole('button', { name: 'Back to files', exact: true }).click();
     await expect(file).toBeFocused();
-    await expect(search).toHaveValue('');
+    await expect(search).toHaveValue('tool-60');
+    await expect(file).toHaveAttribute('aria-pressed', 'true');
     const audit = await auditPage(page, { width, rampNames: ramps, scope: '[aria-label="Source evidence"]' });
     await testInfo.attach(`files-${width}-text-zoom`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
     expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
@@ -88,7 +92,7 @@ for (const width of [390, 1512]) {
 test('refreshes history instead of retrying an expired patch snapshot', async ({ page }) => {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
   await page.getByTestId('briefing-source-browser').click();
   const range = await page.getByTestId('briefing-range').innerText();
   await page.getByTestId('briefing-group-capabilities/checkout').click();

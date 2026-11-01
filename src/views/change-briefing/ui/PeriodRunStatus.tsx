@@ -17,6 +17,7 @@ export function PeriodRunStatus({ api, detail = false }: Pick<DetailsProps, 'api
   const partial = plan.unsent.length > 0 || coverage.uncertain.size > 0 || coverage.unexplained > 0 || execution.accepted.length < plan.parts.length || plan.lookup.status !== 'measured' || plan.lookup.unchecked > 0 || plan.lookup.unlinked > 0 || run.collectionPartial || execution.accepted.some(value => value.unsupported > 0) || Boolean(selection && (selection.selected.length < selection.candidates.length || selection.represented < plan.parts.length)) || Boolean(execution.overview?.unexplained.length || execution.overview?.unsupported);
   const canContinue = !busy && !stale && execution.status !== 'finished';
   const failure = execution.failure;
+  if (!detail && !stale && (busy || (!canContinue && !(execution.accepted.length > 0 && partial)))) return null;
   if (!detail) return <div className="flex flex-wrap items-center gap-3" data-testid={detail ? "briefing-period-coverage" : "briefing-period-run"}>
     {stale ? <><p className="text-body text-[color:var(--color-status-warning)]">{t('summaryStale')}</p><Button disabled={Boolean(busy)} variant="outline" size="sm" onClick={event => { void api.prepare(event.currentTarget); }}>{t('periodNewPlan')}</Button></>
       : busy ? null : <>

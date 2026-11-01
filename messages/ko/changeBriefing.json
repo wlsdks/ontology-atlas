@@ -1,6 +1,6 @@
 {
-  "title": "변경 브리핑",
-  "navLabel": "변경",
+  "title": "브리핑",
+  "navLabel": "브리핑",
   "prototype": "프로토타입",
   "intro": "커밋된 소스 변경을 이 폴더에 기록된 역량별로 묶어 살펴보세요.",
   "project": "프로젝트",
@@ -13,6 +13,8 @@
   "previous": "이전 기간",
   "next": "다음 기간",
   "today": "현재 기간",
+  "chooseDates": "날짜 선택",
+  "closeDates": "닫기",
   "anchorDate": "기간에 포함할 날짜",
   "startDate": "시작일",
   "endDate": "종료일",
