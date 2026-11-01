@@ -1,8 +1,8 @@
 "use client";
 
-import { useSyncExternalStore, type MouseEvent, type ReactNode } from "react";
+import { forwardRef, useSyncExternalStore, type ComponentProps, type MouseEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useIsPresent } from "framer-motion";
 
 import { cn } from "@/shared/lib/cn";
 import { mergeRefs } from "@/shared/lib/merge-refs";
@@ -56,6 +56,11 @@ function useIsMounted(): boolean {
   );
 }
 
+const DialogScrim = forwardRef<HTMLDivElement, ComponentProps<typeof motion.div>>(function DialogScrim(props, ref) {
+  const present = useIsPresent();
+  return <motion.div {...props} ref={ref} inert={!present || undefined} aria-hidden={!present || undefined} />;
+});
+
 /**
  * The centred modal dialog. Focus trap, Escape, focus return, scroll lock, `aria-modal` and
  * scrim-click close are one package with no opt-out (WAI-ARIA APG, `.claude/rules/design.md`);
@@ -98,7 +103,7 @@ export function Dialog({
   return createPortal(
     <AnimatePresence>
       {open ? (
-        <motion.div
+        <DialogScrim
           ref={scrimLockoutRef}
           onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
@@ -135,7 +140,7 @@ export function Dialog({
           >
             {children}
           </motion.div>
-        </motion.div>
+        </DialogScrim>
       ) : null}
     </AnimatePresence>,
     document.body,
