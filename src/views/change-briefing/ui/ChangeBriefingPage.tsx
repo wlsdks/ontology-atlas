@@ -297,11 +297,11 @@ export function ChangeBriefingPage() {
         {native && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>}
         </div>
         {!root && <p className="max-w-prose text-body text-[color:var(--color-text-secondary)]">{git('sourcePrompt')}</p>}
-      {native && root && <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-3">
-        <Select className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
-        <div className="flex min-w-0 flex-wrap items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] px-1">
+      {native && root && <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
+        <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
+        <div className="flex min-h-8 min-w-0 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] px-1">
           {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('previous')} onClick={() => setAnchor(movePeriod(period, anchor, -1))}><ChevronLeft size={16} /></IconButton>}
-          <h2 data-testid="briefing-range" className="text-body font-[var(--font-weight-strong)]">{range ? period === 'day' ? range.start : t('range', { start: range.start, end: range.end }) : t('invalidRange')}</h2>
+          <h2 data-testid="briefing-range" className="min-w-0 break-words text-body font-[var(--font-weight-strong)]">{range ? period === 'day' ? range.start : t('range', { start: range.start, end: range.end }) : t('invalidRange')}</h2>
           {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('next')} onClick={() => setAnchor(movePeriod(period, anchor, 1))}><ChevronRight size={16} /></IconButton>}
           <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('chooseDates')} aria-haspopup="dialog" aria-expanded={datesOpen} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDatesOpen(true); }}><CalendarDays size={16} /></IconButton>
         </div>
