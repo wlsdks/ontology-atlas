@@ -13,7 +13,7 @@ export function Disclosure({ summary, children, open, className, summaryClassNam
   if (animated) return <div className={className}><AnimatedDisclosure label={summary} defaultOpen={open} testId={summaryTestId} className={summaryClassName}>{children}</AnimatedDisclosure></div>;
   return <div className={className} data-state={expanded ? 'open' : 'closed'}>
     <button type="button" data-testid={summaryTestId} aria-expanded={expanded} aria-controls={bodyId} onClick={() => setExpanded((value) => !value)}
-      className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: cn('max-w-full gap-1.5 text-left', summaryClassName) })}>
+      className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: cn('max-w-full gap-1.5 text-left align-top', summaryClassName) })}>
       <DisclosureMark open={expanded} />
       <span className="min-w-0 break-words">{summary}</span>
     </button>
