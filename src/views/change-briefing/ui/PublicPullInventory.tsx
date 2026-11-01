@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, CircleHelp, CircleX, FileText, GitMerge, GitPullRequest, GitPullRequestDraft } from 'lucide-react';
 import { Button, Disclosure, RowButton, Select } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { emptyPublicPullSession, publicPullConflicts } from '@/shared/lib/git/public-pull-session';
 import { canStorePublicPullScope, clearPublicPullLedger, getPublicPullSession, invalidatePublicPullCursor, publicPullLedgerGeneration, publicPullScope, savePublicPullPage } from '@/shared/lib/git/public-pull-ledger';
 import { publicPullRepositories, readPublicPulls, type PublicPullVersion } from '@/shared/lib/git/tauri-pr-inventory';
@@ -149,7 +150,7 @@ function PublicPullInventoryScope({ data, memory, onActivity, onFiles }: Props) 
   return <section className="space-y-4" aria-label={t('prTab')}>
     {reading && <div role="status" className="flex flex-wrap items-center gap-3"><p>{t('prLoading')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" onClick={() => current.current?.abort()}>{git('stop')}</Button></div>}
     {selected ? <section ref={reader} tabIndex={-1} className="max-w-4xl space-y-4 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-      <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={back}><ArrowLeft size={18} aria-hidden />{t('backToPrs')}</button>
+      <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={back}><ArrowLeft size={ICON_SIZE.lg} aria-hidden />{t('backToPrs')}</button>
       <p className="break-all text-label text-[color:var(--color-text-secondary)]">{repository} · {t('publicChoice')}</p>
       <h2 className="min-w-0 break-words text-title font-[var(--font-weight-strong)]">{selected.title}</h2>
       <p className="text-label text-[color:var(--color-text-secondary)]">#{selected.number} · {status(selected.status)} · {selected.digest.slice(0, 8)} · {t('prFresh', { updatedAt: clock(selected.updatedAt), fetchedAt: clock(selected.fetchedAt) })}</p>
