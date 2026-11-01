@@ -34,6 +34,9 @@ export function PlanningPage() {
   const [checkedAt, setCheckedAt] = useState<number | null>(null);
   const [imageRevision, setImageRevision] = useState(0);
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [folderNotice, setFolderNotice] = useState<'failure' | 'recovered' | null>(null);
+  const folderFailed = useRef(false);
+  const folderNoticeSelection = useRef(selection);
   const sequence = useRef(0);
   const activeRequest = useRef<number | null>(null);
   const pendingRecheck = useRef(false);
@@ -117,6 +120,15 @@ export function PlanningPage() {
     return () => window.clearTimeout(timer);
   }, [status, checkingId]);
   useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active || !selection || folderNoticeSelection.current !== selection) return;
+      if (status === 'unavailable' && !folderFailed.current) { folderFailed.current = true; setFolderNotice('failure'); }
+      else if (status === 'ready' && folderFailed.current) { folderFailed.current = false; setFolderNotice('recovered'); }
+    });
+    return () => { active = false; };
+  }, [selection, status]);
+  useEffect(() => {
     if (status !== 'ready') return;
     const memory = readPlanningMemory();
     if (restoreFocus.current) {
@@ -164,6 +176,9 @@ export function PlanningPage() {
       activeRequest.current = null;
       pendingRecheck.current = false;
       recheckCurrent.current = null;
+      folderFailed.current = false;
+      folderNoticeSelection.current = next;
+      setFolderNotice(null);
       writePlanningMemory({ selection: next, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
       selectedRef.current = null;
       setSelection(next); setSelected(null); setInventory(null); setContent(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
@@ -177,9 +192,11 @@ export function PlanningPage() {
     void refresh(selection, path);
   };
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
-  const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked') };
+  const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked'), attention: (name: string) => t('imageAttention', { image: name }), recovered: (name: string) => t('imageRecovered', { image: name }) };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ?? [];
   return <main className="min-h-full">
+    <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
+    <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
     <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 pb-28 sm:px-6 lg:px-10">
       {available === null ? <p role="status">{t('checkingSupport')}</p>
@@ -191,7 +208,7 @@ export function PlanningPage() {
             <Button variant="outline" className="max-[769px]:min-h-11" data-planning-focus-fallback onClick={() => { if (fileChanged) { writePlanningMemory({ ...readPlanningMemory(), identity: null, changed: false }); setFileChanged(false); } void refresh(selection, selectedRef.current); }}><RefreshCw size={16} />{t('refresh')}</Button>
           </div>
           {status === 'checking' && slowId === checkingId && <p role="status" className="text-body text-[color:var(--color-text-secondary)]">{t('checkingSlow')}</p>}
-          {status === 'unavailable' && <p role="alert">{t('folderUnavailable')}</p>}
+          {status === 'unavailable' && <p aria-live="off">{t('folderUnavailable')}</p>}
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 text-body text-[color:var(--color-text-secondary)]">
             {inventory && <p role="status">{t('visited', { count: inventory.visited })} {inventory.limit_reached && t('budgetLimit')} {inventory.depth_limited && t('depthLimit')} {inventory.omitted.unreadable > 0 && t('unreadable', { count: inventory.omitted.unreadable })} {inventory.unknown_remainder && t('unknownRemaining')}</p>}
             <Disclosure className="max-w-3xl [&>button]:min-h-10 max-[769px]:[&>button]:min-h-11" summary={t('details')}><div className="space-y-2 pt-2"><p>{t('chooseBody')}</p><p>{t('limits')}</p><p>{t('noContentSearch')}</p><p>{t('historyLimit')}</p><p>{t('comparisonLimit')}</p></div></Disclosure>

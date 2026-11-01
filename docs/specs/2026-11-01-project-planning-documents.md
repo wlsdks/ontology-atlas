@@ -105,7 +105,9 @@ These are proposed exact English strings and message locations, not catalog entr
 | `folderLabel` | Selected scope | Folder: {folder} |
 | `pathLabel` | Open file | Path: {path} |
 | `observedAt` | Last successful folder and document observation; images have separate status | Folder and document checked: {time} |
-| `imageChecking`, `imageUnconfirmed`, `imageChecked` | Each image is checked separately; retain an earlier preview while checking and label it unconfirmed after a folder error. Checking, unconfirmed and errors are visible; the successful check is announced to assistive technology without repeating visible captions. | Checking image… / Image not confirmed / Image checked |
+| `imageChecking`, `imageUnconfirmed`, `imageChecked` | Each image is checked separately; retain an earlier preview while checking and label it unconfirmed after a folder error. Checking, unconfirmed and errors are visible; routine automatic checks do not generate live announcements. An image-specific live region announces an individual image read or decode failure once and its recovery once. Folder-wide failure and recovery are each announced once for the folder instead of once per image. Successful checks stay available to assistive technology without repeating visible captions. | Checking image… / Image not confirmed / Image checked |
+| `imageAttention`, `imageRecovered` | Named live announcement for an individual image failure or its recovery | Image needs attention: {image} / Image recovered: {image} |
+| `folderRecovered` | One live announcement when the folder check recovers | Folder checked again. |
 | `observationLimit` | Last-observation qualification | Files may change before the next check. |
 | `findFile` | File-name/path filter | Find a file name or path |
 | `refresh` | Retry and manual recheck | Refresh folder |

@@ -43,5 +43,8 @@
   "imageChecking": "이미지 확인 중…",
   "imageUnconfirmed": "이미지 확인 안 됨",
   "imageChecked": "이미지 확인됨",
-  "checkingSlow": "폴더 확인이 오래 걸리고 있어요. 폴더 새로고침으로 다시 시도할 수 있습니다."
+  "checkingSlow": "폴더 확인이 오래 걸리고 있어요. 폴더 새로고침으로 다시 시도할 수 있습니다.",
+  "imageAttention": "{image}: 이미지 확인이 필요합니다.",
+  "imageRecovered": "{image}: 이미지 확인이 복구됐습니다.",
+  "folderRecovered": "폴더를 다시 확인했습니다."
 }

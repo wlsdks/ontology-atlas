@@ -12,8 +12,8 @@ const MAX_IMAGES = 64;
 const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
 const MAX_IMAGE_PIXELS = 16_777_216;
 const MAX_CONCURRENT = 3;
-type Observation = { revision: number; status: 'checking' | 'ready' | 'unavailable'; checking: string; unconfirmed: string; checked: string };
-const defaultObservation: Observation = { revision: 0, status: 'ready', checking: 'Checking image…', unconfirmed: 'Image not confirmed', checked: 'Image checked' };
+type Observation = { revision: number; status: 'checking' | 'ready' | 'unavailable'; checking: string; unconfirmed: string; checked: string; attention: (name: string) => string; recovered: (name: string) => string };
+const defaultObservation: Observation = { revision: 0, status: 'ready', checking: 'Checking image…', unconfirmed: 'Image not confirmed', checked: 'Image checked', attention: (name) => `Image needs attention: ${name}`, recovered: (name) => `Image recovered: ${name}` };
 const ImageRevision = createContext<Observation>(defaultObservation);
 
 async function prepareImage(url: string): Promise<boolean> {
@@ -137,9 +137,21 @@ function ImageElement({ url, alt, onError }: { url: string; alt: string; onError
   return <img src={url} alt={alt} className="h-auto max-w-full rounded-card" onError={onError} />;
 }
 type ImageLoad = { desired: number; running: boolean; stopped: boolean; kick: () => void };
-function ImageStatus({ state, pending, hidden }: { state: string; pending: boolean; hidden: boolean }) {
-  return <span role="status" data-planning-image-pending={pending ? 'true' : undefined} className={hidden ? 'sr-only' : 'text-body text-[color:var(--color-text-secondary)]'}>{state}</span>;
+function ImageStatus({ state, pending, hidden, failure, success, attention, recovered }: { state: string; pending: boolean; hidden: boolean; failure: boolean; success: boolean; attention: string; recovered: string }) {
+  const [announcement, setAnnouncement] = useState('');
+  const announcedFailure = useRef(false);
+  useEffect(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      if (failure && !announcedFailure.current) { announcedFailure.current = true; setAnnouncement(attention); }
+      else if (success && announcedFailure.current) { announcedFailure.current = false; setAnnouncement(recovered); }
+    });
+    return () => { active = false; };
+  }, [failure, success, attention, recovered]);
+  return <><span aria-live="off" data-planning-image-state data-planning-image-pending={pending ? 'true' : undefined} className={hidden ? 'sr-only' : 'text-body text-[color:var(--color-text-secondary)]'}>{state}</span><span role="status" data-planning-image-alert className="sr-only">{announcement}</span></>;
 }
+
 function LocalImage({ document, src, alt, unavailable, unsupported, limited, resources }: { document: string; src: string; alt: string; unavailable: string; unsupported: string; limited: string; resources: Resources }) {
   const observation = useContext(ImageRevision);
   const { revision, status, checking, unconfirmed, checked } = observation;
@@ -179,7 +191,7 @@ function LocalImage({ document, src, alt, unavailable, unsupported, limited, res
   const pending = status === 'checking' || (status === 'ready' && current?.revision !== revision);
   const label = status === 'unavailable' ? unconfirmed : pending ? checking : current?.url ? checked : current?.limited ? limited : unavailable;
   const displayed = current?.url;
-  return <span className="inline-flex max-w-full flex-col gap-1 align-top">{displayed && <ImageElement url={displayed} alt={alt} onError={() => setResult((previous) => previous?.url === displayed ? { ...previous, url: null, limited: false } : previous)} />}<ImageStatus state={label} pending={pending} hidden={status === 'ready' && !pending && Boolean(displayed)} /></span>;
+  return <span className="inline-flex max-w-full flex-col gap-1 pr-2 align-top">{displayed && <ImageElement url={displayed} alt={alt} onError={() => setResult((previous) => previous?.url === displayed ? { ...previous, url: null, limited: false } : previous)} />}<ImageStatus key={key} state={label} pending={pending} hidden={status === 'ready' && !pending && Boolean(displayed)} failure={status === 'ready' && !pending && !displayed} success={status === 'ready' && !pending && Boolean(displayed)} attention={observation.attention(alt || src)} recovered={observation.recovered(alt || src)} /></span>;
 }
 
 export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsupported, observation }: { path: string; bytes: Uint8Array; alt: string; unavailable: string; unsupported: string; observation: Observation }) {
@@ -224,7 +236,7 @@ export function PlanningStandaloneImage({ path, bytes, alt, unavailable, unsuppo
   const pending = observation.status === 'checking' || (observation.status === 'ready' && (retrying || (!failed && display?.bytes !== bytes)));
   const label = observation.status === 'unavailable' ? observation.unconfirmed : pending ? observation.checking : failed ? unavailable : observation.checked;
   const displayed = !failed ? display : null;
-  return <span className="inline-flex max-w-full flex-col gap-1 align-top">{displayed && <ImageElement url={displayed.url} alt={alt} onError={() => setFailure({ bytes: displayed.bytes, revision: observation.revision })} />}<ImageStatus state={label} pending={pending} hidden={observation.status === 'ready' && !pending && Boolean(displayed)} /></span>;
+  return <span className="inline-flex max-w-full flex-col gap-1 align-top">{displayed && <ImageElement url={displayed.url} alt={alt} onError={() => setFailure({ bytes: displayed.bytes, revision: observation.revision })} />}<ImageStatus key={path} state={label} pending={pending} hidden={observation.status === 'ready' && !pending && Boolean(displayed)} failure={observation.status === 'ready' && !pending && failed} success={observation.status === 'ready' && !pending && Boolean(displayed)} attention={observation.attention(alt || path)} recovered={observation.recovered(alt || path)} /></span>;
 }
 
 export function PlanningMarkdown({ document, text, readImage, imageUnavailable, unsupported, imageLimit, revision = 0, observation }: { document: string; text: string; readImage: ReadImage; imageUnavailable: string; unsupported: string; imageLimit: string; revision?: number; observation?: Observation }) {

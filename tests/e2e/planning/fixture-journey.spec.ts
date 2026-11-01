@@ -57,14 +57,25 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.getByRole('button', { name: 'plan.md' }).click();
   const image = page.getByAltText('design');
   await expect(image).toBeVisible();
-  const liveStatus = (await page.getByText(planning.imageChecked).elementHandle())!;
+  const visualStatus = (await page.getByText(planning.imageChecked).elementHandle())!;
+  const alert = page.locator('[data-planning-image-alert]');
+  await expect(alert).toHaveAttribute('role', 'status');
+  await expect(alert).toHaveText('');
+  await page.evaluate(() => {
+    const win = window as unknown as { imageAlertUpdates: string[] };
+    const node = document.querySelector('[data-planning-image-alert]')!;
+    win.imageAlertUpdates = [];
+    new MutationObserver(() => win.imageAlertUpdates.push(node.textContent ?? '')).observe(node, { childList: true, characterData: true, subtree: true });
+  });
+  const attention = planning.imageAttention.replace('{image}', 'design');
+  const recovered = planning.imageRecovered.replace('{image}', 'design');
   const first = await image.getAttribute('src');
   expect(first).toMatch(/^blob:/);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void }; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   expect(await image.getAttribute('src')).toBe(first);
   await expect(page.getByText(planning.imageChecking)).toBeVisible();
-  expect(await page.getByText(planning.imageChecking).evaluate((node, original) => node === original, liveStatus)).toBe(true);
+  expect(await page.getByText(planning.imageChecking).evaluate((node, original) => node === original, visualStatus)).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(2);
   await expect(image).toHaveAttribute('src', first!);
@@ -95,13 +106,20 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await expect.poll(() => page.evaluate(() => (window as unknown as { finished: number }).finished)).toBe(5);
   await expect(image).toHaveAttribute('src', greenUrl!);
   await expect(page.getByText(planning.imageChecked)).toHaveClass(/sr-only/);
-  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('role', 'status');
+  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('aria-live', 'off');
+  expect(await page.evaluate(() => (window as unknown as { imageAlertUpdates: string[] }).imageAlertUpdates)).toEqual([]);
   await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = true; window.dispatchEvent(new Event('focus')); });
   await expect(page.getByText(planning.imageUnconfirmed)).toBeVisible();
+  await expect(page.locator('[data-planning-folder-alert]')).toHaveText(planning.folderUnavailable);
+  await expect(alert).toHaveText('');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   await expect(image).toHaveAttribute('src', greenUrl!);
   await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = false; window.dispatchEvent(new Event('focus')); });
   await expect(page.getByText(planning.imageChecked)).toHaveClass(/sr-only/);
-  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('role', 'status');
+  await expect(page.getByText(planning.imageChecked)).toHaveAttribute('aria-live', 'off');
+  await expect(page.locator('[data-planning-folder-recovery]')).toHaveText(planning.folderRecovered);
+  await expect(alert).toHaveText('');
+  expect(await page.evaluate(() => (window as unknown as { imageAlertUpdates: string[] }).imageAlertUpdates)).toEqual([]);
   await page.evaluate(() => { const win = window as unknown as { fail: boolean; hold: boolean; release?: () => void }; win.fail = true; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   await expect(image).toHaveAttribute('src', greenUrl!);
@@ -109,10 +127,18 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release: () => void }; win.hold = false; win.release(); });
   await expect(image).toHaveCount(0);
   await expect(page.getByText(planning.imageUnavailable)).toBeVisible();
-  expect(await page.getByText(planning.imageUnavailable).evaluate((node, original) => node === original, liveStatus)).toBe(true);
+  await expect(alert).toHaveText(attention);
+  expect(await page.getByText(planning.imageUnavailable).evaluate((node, original) => node === original, visualStatus)).toBe(true);
   await page.evaluate(() => { (window as unknown as { fail: boolean }).fail = false; window.dispatchEvent(new Event('focus')); });
   await expect(image).toBeVisible();
-  expect(await page.getByText(planning.imageChecked).evaluate((node, original) => node === original, liveStatus)).toBe(true);
+  expect(await page.getByText(planning.imageChecked).evaluate((node, original) => node === original, visualStatus)).toBe(true);
+  await expect(alert).toHaveText(recovered);
+  expect(await page.evaluate(() => (window as unknown as { imageAlertUpdates: string[] }).imageAlertUpdates)).toEqual([attention, recovered]);
+  const readsBefore = await page.evaluate(() => (window as unknown as { reads: number }).reads);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { reads: number }).reads)).toBe(readsBefore + 1);
+  await expect(page.getByText(planning.imageChecked)).toHaveClass(/sr-only/);
+  expect(await page.evaluate(() => (window as unknown as { imageAlertUpdates: string[] }).imageAlertUpdates)).toEqual([attention, recovered]);
   await page.evaluate(() => { const win = window as unknown as { hold: boolean; release?: () => void; image: string; red: string }; win.image = win.red; win.hold = true; delete win.release; window.dispatchEvent(new Event('focus')); });
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { release?: () => void }).release))).toBe(true);
   await page.evaluate(() => { const win = window as unknown as { image: string; green: string }; win.image = win.green; });
@@ -135,6 +161,76 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
     const ctx = canvas.getContext('2d')!; ctx.drawImage(node as HTMLImageElement, 0, 0);
     return [...ctx.getImageData(0, 0, 1, 1).data];
   })).toEqual([255, 0, 0, 255]);
+});
+
+test('folder failures announce once for all images and individual image failures remain specific', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    type State = { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> }; failScan: boolean; failedImage: string; scans: number; folderUpdates: string[]; recoveryUpdates: string[]; imageUpdates: string[][] };
+    const win = window as unknown as State;
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.failScan = false; win.failedImage = ''; win.scans = 0;
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') {
+        win.scans++;
+        if (win.failScan) throw new Error('folder unavailable');
+        return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      }
+      if (cmd === 'planning_open_document') return Array.from(new TextEncoder().encode('a'.repeat(32) + '![one](1.png) ![two](2.png) ![three](3.png)'));
+      if (cmd === 'planning_read_file') {
+        if (args?.path === win.failedImage) throw new Error('image unavailable');
+        return Array.from(Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/aN4AAAAASUVORK5CYII='), c => c.charCodeAt(0)));
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByAltText('one')).toBeVisible();
+  await expect(page.getByAltText('two')).toBeVisible();
+  await expect(page.getByAltText('three')).toBeVisible();
+  const folder = page.locator('[data-planning-folder-alert]');
+  const folderRecovery = page.locator('[data-planning-folder-recovery]');
+  const imageAlerts = page.locator('[data-planning-image-alert]');
+  await expect(imageAlerts).toHaveCount(3);
+  await page.evaluate(() => {
+    const win = window as unknown as { folderUpdates: string[]; recoveryUpdates: string[]; imageUpdates: string[][] };
+    win.folderUpdates = []; win.recoveryUpdates = []; win.imageUpdates = [[], [], []];
+    const watch = (selector: string, updates: string[]) => {
+      const node = document.querySelector(selector)!;
+      new MutationObserver(() => updates.push(node.textContent ?? '')).observe(node, { childList: true, characterData: true, subtree: true });
+    };
+    watch('[data-planning-folder-alert]', win.folderUpdates);
+    watch('[data-planning-folder-recovery]', win.recoveryUpdates);
+    document.querySelectorAll('[data-planning-image-alert]').forEach((node, index) => new MutationObserver(() => win.imageUpdates[index].push(node.textContent ?? '')).observe(node, { childList: true, characterData: true, subtree: true }));
+  });
+  await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = true; window.dispatchEvent(new Event('focus')); });
+  await expect(folder).toHaveText(planning.folderUnavailable);
+  await expect(page.getByText(planning.imageUnconfirmed)).toHaveCount(3);
+  const scans = await page.evaluate(() => (window as unknown as { scans: number }).scans);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { scans: number }).scans)).toBe(scans + 1);
+  await expect(page.getByText(planning.imageUnconfirmed)).toHaveCount(3);
+  expect(await page.evaluate(() => (window as unknown as { folderUpdates: string[] }).folderUpdates)).toEqual([planning.folderUnavailable]);
+  expect(await page.evaluate(() => (window as unknown as { imageUpdates: string[][] }).imageUpdates)).toEqual([[], [], []]);
+  await page.evaluate(() => { const win = window as unknown as { failScan: boolean }; win.failScan = false; window.dispatchEvent(new Event('focus')); });
+  await expect(folderRecovery).toHaveText(planning.folderRecovered);
+  await expect(page.getByText(planning.imageChecked)).toHaveCount(3);
+  expect(await page.evaluate(() => (window as unknown as { recoveryUpdates: string[] }).recoveryUpdates)).toEqual([planning.folderRecovered]);
+  expect(await page.evaluate(() => (window as unknown as { imageUpdates: string[][] }).imageUpdates)).toEqual([[], [], []]);
+  await page.evaluate(() => { const win = window as unknown as { failedImage: string }; win.failedImage = '2.png'; window.dispatchEvent(new Event('focus')); });
+  await expect(page.getByText(planning.imageUnavailable)).toBeVisible();
+  const attention = planning.imageAttention.replace('{image}', 'two');
+  await expect(imageAlerts.nth(1)).toHaveText(attention);
+  expect(await page.evaluate(() => (window as unknown as { imageUpdates: string[][] }).imageUpdates)).toEqual([[], [attention], []]);
+  await page.evaluate(() => { const win = window as unknown as { failedImage: string }; win.failedImage = ''; window.dispatchEvent(new Event('focus')); });
+  const recovered = planning.imageRecovered.replace('{image}', 'two');
+  await expect(imageAlerts.nth(1)).toHaveText(recovered);
+  expect(await page.evaluate(() => (window as unknown as { imageUpdates: string[][] }).imageUpdates)).toEqual([[], [attention, recovered], []]);
+  expect(await page.evaluate(() => (window as unknown as { recoveryUpdates: string[] }).recoveryUpdates)).toEqual([planning.folderRecovered]);
 });
 
 test('mocked native Planning keeps the selected document across explicit evidence navigation and refresh', async ({ page }) => {
