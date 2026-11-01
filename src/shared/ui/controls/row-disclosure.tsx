@@ -1,11 +1,16 @@
 'use client';
 
 import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import { Button } from './button';
 import { ICON_SIZE } from '../tokens/icon-size';
+
+export function DisclosureMark({ open }: { open: boolean }) {
+  const Icon = open ? Minus : Plus;
+  return <span aria-hidden className="inline-flex size-5 shrink-0 items-center justify-center rounded-[var(--radius-micro)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]"><Icon size={ICON_SIZE.lg} /></span>;
+}
 
 /** Height and opacity grammar; children survive the exit but leave the focus order at once. */
 export function RowDisclosure({ open, id, children, className }: {
@@ -24,15 +29,15 @@ export function RowDisclosure({ open, id, children, className }: {
 }
 
 /** Secondary evidence uses the same disclosure rhythm as the owning schedule. */
-export function AnimatedDisclosure({ label, children, defaultOpen = false, testId }: { label: ReactNode; children: ReactNode; defaultOpen?: boolean; testId?: string }) {
+export function AnimatedDisclosure({ label, children, defaultOpen = false, testId, className }: { label: ReactNode; children: ReactNode; defaultOpen?: boolean; testId?: string; className?: string }) {
   const [open, setOpen] = useState(defaultOpen);
   const id = useId();
   return (
     <div>
       <Button variant="ghost" size="sm" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={id} data-testid={testId}
-        className="atlas-touch-floor h-auto justify-start px-0 text-body text-[color:var(--color-text-secondary)]">
-        <ChevronDown size={ICON_SIZE.sm} aria-hidden className={cn('flex-none transition-transform motion-reduce:transition-none', !open && '-rotate-90')} />
-        {label}
+        className={cn('atlas-touch-floor h-auto max-w-full justify-start whitespace-normal break-words px-0 text-left text-body text-[color:var(--color-text-secondary)]', className)}>
+        <DisclosureMark open={open} />
+        <span className="min-w-0 break-words">{label}</span>
       </Button>
       <RowDisclosure open={open} id={id} className="pt-3">{children}</RowDisclosure>
     </div>

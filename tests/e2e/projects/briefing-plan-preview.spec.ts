@@ -62,6 +62,26 @@ test('discloses the extra overview request and keeps oversized originals inspect
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
 });
 
+test('wraps a long unbroken source title in the expanded request preview', async ({ page }) => {
+  await enter(page);
+  await setBriefingMode(page, 'long-title');
+  await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 1000; });
+  await prepare(page);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: /source records cannot be sent/ }).click();
+  const title = dialog.getByRole('button', { name: /LongUnbrokenPullRequestTitle/ });
+  await expect(title).toBeVisible();
+  const geometry = await title.evaluate(element => ({ width: element.getBoundingClientRect().width, scrollWidth: element.scrollWidth, parentWidth: element.parentElement!.getBoundingClientRect().width }));
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width + 1);
+  expect(geometry.width).toBeLessThanOrEqual(geometry.parentWidth + 1);
+  await title.press('Enter');
+  await expect(title).toHaveAttribute('aria-expanded', 'true');
+  await title.press('Space');
+  await expect(title).toHaveAttribute('aria-expanded', 'false');
+});
+
 for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112], [1024, 768], [1440, 900], [1512, 900], [1920, 1080], [2560, 1440]]) {
   test(`keeps the default and expanded request preview reachable at ${width}`, async ({ page }, testInfo) => {
     await enter(page); await prepare(page);

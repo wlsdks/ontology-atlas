@@ -234,21 +234,32 @@ pub(crate) fn verify_source_snapshot(
     head: &str,
     snapshot: &str,
 ) -> Result<(), String> {
+    let (_, receipt) = source_snapshot(source_path, head, snapshot)?;
+    if receipt.tip.is_none() {
+        return Err("stale".into());
+    }
+    Ok(())
+}
+
+fn source_snapshot(source_path: &str, head: &str, snapshot: &str) -> Result<(Identity, Receipt), String> {
     let current = picked_identity(source_path)?;
+    let receipt = snapshot_for_identity(&current, head, snapshot)?;
+    Ok((current, receipt))
+}
+
+fn snapshot_for_identity(current: &Identity, head: &str, snapshot: &str) -> Result<Receipt, String> {
     let receipts = RECEIPTS
         .get_or_init(Default::default)
         .lock()
         .unwrap_or_else(|e| e.into_inner());
-    if !receipts.iter().any(|r| {
+    let receipt = receipts.iter().rev().find(|r| {
         r.snapshot == snapshot
             && r.identity.root == current.root
             && r.identity.object == current.object
             && r.identity.head == current.head
             && current.head == head
-    }) {
-        return Err("stale".into());
-    }
-    Ok(())
+    }).cloned().ok_or("stale")?;
+    Ok(receipt)
 }
 
 fn valid_hash(value: &str) -> bool {
@@ -267,21 +278,22 @@ fn valid_path(value: &str) -> bool {
 struct Receipt {
     identity: Identity,
     base: Option<String>,
-    tip: String,
+    tip: Option<String>,
+    start: i64,
+    end: i64,
     paths: HashSet<[u8; 32]>,
     commits: Vec<BriefingCommit>,
     snapshot: String,
     bytes: usize,
 }
 static RECEIPTS: OnceLock<Mutex<Vec<Receipt>>> = OnceLock::new();
-fn remember(identity: Identity, result: &ChangeBriefing) {
-    let Some(tip) = result.tip.clone() else {
-        return;
-    };
+fn remember(identity: Identity, result: &ChangeBriefing, start: i64, end: i64) {
     let receipt = Receipt {
         identity,
         base: result.base.clone(),
-        tip,
+        tip: result.tip.clone(),
+        start,
+        end,
         commits: result.commits.clone(),
         snapshot: result.snapshot.clone(),
         bytes: result
@@ -559,7 +571,7 @@ fn measure_identity(
         limit: COMMIT_LIMIT,
         partial_reasons: reasons,
     };
-    remember(before, &result);
+    remember(before, &result, start, end);
     result
 }
 
@@ -650,7 +662,7 @@ fn read_patch_identity(
         .any(|r| {
             r.identity == before
                 && r.base.as_deref() == base
-                && r.tip == tip
+                && r.tip.as_deref() == Some(tip)
                 && r.paths.contains(&path_digest)
         });
     if !issued {

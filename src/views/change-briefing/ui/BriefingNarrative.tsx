@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
-import { FileText, Settings2, Sparkles } from 'lucide-react';
+import { ChevronRight, FileText, Settings2, Sparkles } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import { Button, Chip, Dialog, RowButton, Select } from '@/shared/ui';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
@@ -20,25 +21,29 @@ import { PeriodRunStatus, PeriodRunDetails } from './PeriodRunStatus';
 
 export type BriefingReadingMode = 'summary' | 'sources' | 'code';
 
-export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, onMode, repository, setRepository }: {
+export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, onMode, repository, setRepository, coverageSeat, commitOnly = false, onActivity }: {
   data: ChangeBriefing; period: string; onReadCode: () => void; clearedAt: number;
   mode: BriefingReadingMode; onMode: (mode: BriefingReadingMode) => void;
   repository: string; setRepository: (next: string) => void;
+  coverageSeat: HTMLElement | null;
+  commitOnly?: boolean;
+  onActivity?: (activity: { busy: string; stop: () => void } | null) => void;
 }) {
   const t = useTranslations('gitBriefing');
+  const review = useTranslations('prBriefing');
   const locale = useLocale();
   const [local, setLocal] = useState(readLocalEndpoint);
   useEffect(() => subscribeLocalEndpointChange(() => setLocal(readLocalEndpoint())), []);
-  const memory = JSON.stringify(['source-narrative', data.sourceRoot, data.snapshot, period]);
+  const memory = JSON.stringify(['source-narrative', data.sourceRoot, data.snapshot, period, ...(commitOnly ? ['commit-only'] : [])]);
   const [repositories, setRepositories] = useState<string[] | null>(null);
   const [pulls, setPulls] = useArrivalMemory<PullDescriptions | null>(`${memory}:pulls`, null);
   const [savedEntry, setSavedEntry] = useState<{ repository: string; snapshot: string; value: SavedPulls | null } | null>(null);
-  const saved = savedEntry?.repository === repository && savedEntry.snapshot === data.snapshot ? savedEntry.value : null;
+  const saved = !commitOnly && savedEntry?.repository === repository && savedEntry.snapshot === data.snapshot ? savedEntry.value : null;
   const prRevision = useRef(0);
   const clearRef = useRef(clearedAt);
   useEffect(() => { clearRef.current = clearedAt; prRevision.current++; }, [clearedAt]);
   useEffect(() => {
-    if (!repository || pulls?.repository === repository) return;
+    if (commitOnly || !repository || pulls?.repository === repository) return;
     let alive = true;
     const revision = prRevision.current;
     void gitBriefingSavedPullDescriptions(data, repository).then(value => {
@@ -47,11 +52,11 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
       if (value?.pulls?.descriptions.length) setPulls(value.pulls);
     }, () => { if (alive && revision === prRevision.current) setSavedEntry({ repository, snapshot: data.snapshot, value: { status: 'unavailable', pulls: null, omitted: 0, ignored: 0 } }); });
     return () => { alive = false; };
-  }, [data, repository, pulls, setPulls, clearedAt]);
+  }, [commitOnly, data, repository, pulls, setPulls, clearedAt]);
   const [prLoading, setPrLoading] = useState(false);
   const [prError, setPrError] = useState(false);
   const [prStopped, setPrStopped] = useState(false);
-  const [prFailure, setPrFailure] = useArrivalMemory<PullLookupFailure | null>('git-pr:github-rate-limit', null);
+  const [prFailure, setPrFailure] = useArrivalMemory<PullLookupFailure | null>(commitOnly ? null : 'git-pr:github-rate-limit', null);
   const [retryNow, setRetryNow] = useState(() => Date.now());
   const prCooldown = Date.parse(prFailure?.retryAt ?? '') > retryNow;
   useEffect(() => {
@@ -66,6 +71,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const sourceRef = useRef<HTMLElement>(null);
   const citationRef = useRef<HTMLButtonElement | null>(null);
   const [reader, setReader] = useArrivalMemory<{ id: string; source: NarrativeSource; passage: string | null; head: string; fromList: boolean; returnScroll: number; originIndex: number; reportIdentity: string | null } | null>(`${memory}:reader`, null);
+  const [pinnedOverviewSource, setPinnedOverviewSource] = useState<string | null>(null);
   const [visibleSources, setVisibleSources] = useArrivalMemory(`${memory}:source-rows`, 40);
   useLayoutEffect(() => {
     const section = sourceRef.current;
@@ -88,17 +94,28 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   const scopeOpener = useRef<HTMLButtonElement | null>(null);
   const originalsHeading = useRef<HTMLHeadingElement>(null);
   const originalsList = useRef<HTMLDivElement>(null);
-  const matchedPulls = pulls?.repository === repository ? pulls : null;
+  const matchedPulls = !commitOnly && pulls?.repository === repository ? pulls : null;
   const hasPrDescriptions = Boolean(matchedPulls?.descriptions.length);
   const hasSavedCopies = Boolean(matchedPulls?.descriptions.some(pr => pr.copyKind === 'saved' && !(clearedAt && Date.parse(pr.fetchedAt) <= clearedAt)));
   const preferPrRead = Boolean(repository || repositories?.length) && !matchedPulls && !prError && !prStopped && !prFailure;
   const sources = useMemo(() => narrativeSources(data, matchedPulls?.descriptions ?? []), [data, matchedPulls]);
   const key = JSON.stringify([data.sourceRoot, data.snapshot, data.head, data.base, data.tip, period, matchedPulls && [matchedPulls.repository, matchedPulls.status, matchedPulls.unchecked, matchedPulls.uncheckedCommits, matchedPulls.unlinked, matchedPulls.descriptions.map(pr => [pr.digest, pr.updatedAt, pr.fetchedAt])], local.baseUrl, local.model, locale]);
-  const api = usePeriodNarrative({ data, period, sources, lookup: { status: matchedPulls?.status ?? 'not-requested', unchecked: matchedPulls?.unchecked ?? data.commits.length, unlinked: matchedPulls?.unlinked ?? 0 }, identity: key, connection: local, locale });
+  const api = usePeriodNarrative({ data, period, sources, lookup: { status: matchedPulls?.status ?? 'not-requested', unchecked: commitOnly ? 0 : matchedPulls?.unchecked ?? data.commits.length, unlinked: matchedPulls?.unlinked ?? 0 }, identity: commitOnly ? JSON.stringify([key, 'commit-only']) : key, connection: local, locale, commitOnly });
   const { current, busy: activeBusy, failure, prepare } = api;
+  const stopRef = useRef(api.stop);
+  useEffect(() => { stopRef.current = api.stop; }, [api.stop]);
+  useEffect(() => {
+    onActivity?.(activeBusy ? { busy: activeBusy, stop: () => stopRef.current() } : null);
+    return () => onActivity?.(null);
+  }, [activeBusy, onActivity]);
   const error = failure?.code;
   const reportIdentity = api.run && current ? `${api.run.id}:${current.index}` : null;
   const displaySources = sources;
+  const firstSources = displaySources.slice(0, 5);
+  const pinnedSource = pinnedOverviewSource && displaySources.find(source => source.id === pinnedOverviewSource);
+  const recentSources = pinnedSource && !firstSources.some(source => source.id === pinnedSource.id)
+    ? [...firstSources.slice(0, 4), pinnedSource]
+    : firstSources;
   useEffect(() => {
     if (!current?.overview) return;
     requestAnimationFrame(() => {
@@ -112,10 +129,11 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     });
   }, [current?.overview]);
   useEffect(() => {
+    if (commitOnly) return;
     let alive = true;
     void gitBriefingRepositories(data).then(values => { if (alive) { setRepositories(values); if (!values.includes(repository)) setRepository(values.length === 1 ? values[0] : ''); } }, () => { if (alive) setRepositories([]); });
     return () => { alive = false; };
-  }, [data, repository, setRepository]);
+  }, [commitOnly, data, repository, setRepository]);
   async function readPrs() {
     if (!repository || prLoading) return;
     prRevision.current++;
@@ -147,13 +165,14 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
   }
   function closeReader() {
     const fromList = reader?.fromList;
-    const sameReport = Boolean(fromList || reader?.reportIdentity && reader.reportIdentity === reportIdentity);
+    const sameReport = Boolean(fromList || (reader && reader.reportIdentity === reportIdentity));
     const main = sourceRef.current?.closest('main');
-    const rememberedOrigin = reader && main?.querySelectorAll<HTMLElement>(`[data-briefing-origin="${CSS.escape(reader.passage ?? reader.source.id)}"]`)[reader.originIndex];
     const returnScroll = reader?.returnScroll;
+    if (reader && !fromList && reader.reportIdentity === null) setPinnedOverviewSource(reader.source.id);
     setReader(null);
     onMode(fromList ? 'sources' : 'summary');
     requestAnimationFrame(() => {
+      const rememberedOrigin = reader && main?.querySelectorAll<HTMLElement>(`[data-briefing-origin="${CSS.escape(reader.passage ?? reader.source.id)}"]`)[reader.originIndex];
       const origin = citationRef.current?.isConnected ? citationRef.current : rememberedOrigin;
       if (sameReport && main?.isConnected && returnScroll !== undefined) main.scrollTop = returnScroll;
       if (sameReport && origin?.isConnected && !origin.closest('[inert],[hidden]')) origin.focus({ preventScroll: true });
@@ -182,6 +201,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     setReader({ id: crypto.randomUUID(), source, passage, fromList, reportIdentity, returnScroll: main?.scrollTop ?? 0, originIndex, head: api.run?.plan.sources.some(value => value.id === source.id && value.version === source.version) ? api.run.head : data.head });
     requestAnimationFrame(() => {
       const section = sourceRef.current;
+      if (section && document.activeElement !== section && section.contains(document.activeElement)) return;
       section?.focus({ preventScroll: true });
       const target = passage ? section?.querySelector(`[data-source-passage~="${CSS.escape(passage)}"]`) : null;
       (target ?? section)?.scrollIntoView({ block: 'start' });
@@ -202,12 +222,12 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     })}</div>;
   }
   const modelReady = isLocalEndpointReady(local);
-  const prAction = (repository || Boolean(repositories?.length)) && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={preferPrRead ? 'primary' : 'outline'} aria-describedby={prFailure ? 'git-pr-rate-limit' : undefined} disabled={!repository || prLoading || prCooldown || Boolean(activeBusy)} onClick={() => { void readPrs(); }}><FileText size={16} aria-hidden />{t(prLoading ? 'prLoading' : hasPrDescriptions ? 'prRefresh' : 'readPrs')}</Button>;
+  const prAction = !commitOnly && (repository || Boolean(repositories?.length)) && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" aria-describedby={prFailure ? 'git-pr-rate-limit' : undefined} disabled={!repository || prLoading || prCooldown || Boolean(activeBusy)} onClick={() => { void readPrs(); }}><FileText size={16} aria-hidden />{t(prLoading ? 'prLoading' : hasPrDescriptions ? 'prRefresh' : 'readPrs')}</Button>;
   const modelAction = modelReady
-    ? <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={preferPrRead ? 'outline' : 'primary'} aria-describedby={!hasPrDescriptions ? 'git-briefing-commit-only-note' : undefined} disabled={Boolean(activeBusy) || prLoading} onClick={event => { void prepare(event.currentTarget); }}><Sparkles size={16} aria-hidden />{t(current ? 'rebuildSummary' : hasPrDescriptions ? 'analyse' : 'analyseCommits')}</Button>
-    : <Link href="/agents/?tab=models&returnTo=changes" className={controlClass({ shape: 'card', size: 'lg', tone: preferPrRead ? 'secondary' : 'accent', hoverSurface: 'lift', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}><Settings2 size={16} aria-hidden />{t('chooseModel')}</Link>;
+    ? <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" aria-describedby={!current && !hasPrDescriptions ? 'git-briefing-commit-only-note' : undefined} disabled={Boolean(activeBusy) || prLoading} onClick={event => { void prepare(event.currentTarget); }}><Sparkles size={16} aria-hidden />{t(current ? 'rebuildSummary' : hasPrDescriptions ? 'analyse' : 'analyseCommits')}</Button>
+    : <Link href="/agents/?tab=models&returnTo=changes" className={controlClass({ shape: 'chip', size: 'lg', tone: 'secondary', hoverSurface: 'lift', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}><Settings2 size={16} aria-hidden />{t('chooseModel')}</Link>;
   const actions = (forView: 'summary' | 'sources') => <div className="space-y-3">
-    {repositories && repositories.length > 1 && <Select ariaLabel={t('remoteSelection')} value={repository} onChange={setRepository} placeholder={t('remoteSelection')} options={repositories.map(value => ({ value, label: value }))} />}
+    {!commitOnly && repositories && repositories.length > 1 && <Select ariaLabel={t('remoteSelection')} value={repository} onChange={setRepository} placeholder={t('remoteSelection')} options={repositories.map(value => ({ value, label: value }))} />}
     <div className="flex flex-wrap items-center gap-3">
       {forView === 'sources' ? prAction : preferPrRead ? <>{prAction}{modelAction}</> : <>{modelAction}{!current && prAction}</>}
     </div>
@@ -233,37 +253,45 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
       {matchedPulls?.status === 'partial' && !hasSavedCopies && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('prPartial')}</p>}
       {matchedPulls?.status === 'measured' && matchedPulls.descriptions.length === 0 && <p role="status" className="text-body text-[color:var(--color-text-secondary)]">{t('noPr')}</p>}
   </div>;
+  const periodStatus = <>
+    <PeriodRunStatus api={api} />
+    {activeBusy && <div role="status" className="flex flex-wrap items-center gap-3"><p>{t(activeBusy === 'cancelling' ? 'periodStopping' : activeBusy === 'preparing' ? 'preparing' : api.run?.execution.status === 'overview' ? 'periodSynthesizing' : 'periodProgress', { current: Math.min((api.run?.execution.accepted.length ?? 0) + 1, api.run?.plan.parts.length ?? 0), parts: api.run?.plan.parts.length ?? 0, completed: api.run?.execution.accepted.length ?? 0 })}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" disabled={activeBusy === 'cancelling'} onClick={api.stop}>{t('stop')}</Button></div>}
+  </>;
   return <section aria-label={t('title')} className="space-y-6" data-testid="briefing-narrative">
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--color-border-soft)] pb-4">
-      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-        <PeriodRunStatus api={api} />
-        {hasSavedCopies && <p className="text-label text-[color:var(--color-text-secondary)]">{t('savedPrStatus')}</p>}
-      </div>
-      <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" data-testid="briefing-coverage" onClick={event => openScope(event.currentTarget)}>{t('scopeDetails')}</Button>
-    </div>
+    {coverageSeat && createPortal(<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" data-testid="briefing-coverage" onClick={event => openScope(event.currentTarget)}>{t('scopeDetails')}</Button>, coverageSeat)}
+    {reader && mode === 'sources' && api.run ? <div className="flex min-h-10 items-center">{periodStatus}</div> : periodStatus}
+    {hasSavedCopies && <p className="text-label text-[color:var(--color-text-secondary)]">{t('savedPrStatus')}</p>}
     {(prError || matchedPulls?.status === 'unavailable') && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t(hasPrDescriptions ? 'prRefreshFailed' : 'prUnavailable')}</p>}
     {prFailure && <div id="git-pr-rate-limit" role="status" className="max-w-prose space-y-1 text-body text-[color:var(--color-status-warning)]"><p>{t('prRateLimited')}</p><p>{prFailure.retryAt && Number.isFinite(Date.parse(prFailure.retryAt)) ? t('prRetryAt', { time: new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(prFailure.retryAt)) }) : t('prRetryUnknown')}</p></div>}
     {saved && saved.status !== 'ready' && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t(saved.status === 'unsupported' ? 'prSavedUnsupported' : 'prSavedUnavailable')}</p>}
     {matchedPulls?.saved && ['unavailable', 'unsupported', 'superseded'].includes(matchedPulls.saved.status) && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t(matchedPulls.saved.status === 'unsupported' ? 'prSavedUnsupported' : matchedPulls.saved.status === 'superseded' ? 'prSaveSuperseded' : 'prSaveFailed')}</p>}
-    {matchedPulls && !hasSavedCopies && (matchedPulls.status === 'partial' || matchedPulls.unlinked > 0) && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t(matchedPulls.unlinked > 0 ? 'prUnlinked' : 'prPartial')}</p>}
+    {matchedPulls && (matchedPulls.status === 'partial' || matchedPulls.unchecked > 0) && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prUnchecked')}</p>}
+    {matchedPulls && matchedPulls.unlinked > 0 && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prUnlinked')}</p>}
     {prLoading && <div role="status" className="flex flex-wrap items-center gap-3"><p>{t('prLoading')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={() => prController.current?.abort()}>{t('stop')}</Button></div>}
     {prStopped && <p role="status" className="max-w-prose text-body text-[color:var(--color-text-secondary)]">{t('prCancelled')}</p>}
     {saved && saved.omitted > 0 && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prSavedOmitted', { count: saved.omitted })}</p>}
     {saved && saved.ignored > 0 && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prSavedIgnored', { count: saved.ignored })}</p>}
     {matchedPulls?.saved && matchedPulls.saved.unsaved > 0 && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prSaveTooLarge', { count: matchedPulls.saved.unsaved })}</p>}
     {matchedPulls?.saved && matchedPulls.saved.evicted > 0 && <p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t('prSavedEvicted', { count: matchedPulls.saved.evicted })}</p>}
-    {activeBusy && <div role="status" className="flex flex-wrap items-center gap-3"><p>{t(activeBusy === 'cancelling' ? 'periodStopping' : activeBusy === 'preparing' ? 'preparing' : api.run?.execution.status === 'overview' ? 'periodSynthesizing' : 'periodProgress', { current: Math.min((api.run?.execution.accepted.length ?? 0) + 1, api.run?.plan.parts.length ?? 0), parts: api.run?.plan.parts.length ?? 0, completed: api.run?.execution.accepted.length ?? 0 })}</p><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" disabled={activeBusy === 'cancelling'} onClick={api.stop}>{t('stop')}</Button></div>}
     {error && <div className="space-y-3" data-testid="briefing-error" data-briefing-error={error}><p role="status" className="max-w-prose text-body text-[color:var(--color-status-warning)]">{t(error)}</p>{failure?.response && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={event => openScope(event.currentTarget)}>{t('rejectedResponse')}</Button>}</div>}
     <div hidden={mode !== 'summary'} className="max-w-4xl space-y-7" data-testid="briefing-summary">
       <header className="flex flex-wrap items-start justify-between gap-5">
         <div className="min-w-0 space-y-2">
-          <p className="text-label text-[color:var(--color-text-secondary)]">{t('sourceInventory', { commits: data.commits.length, prs: matchedPulls?.descriptions.length ?? 0 })}</p>
+          <p className="text-label text-[color:var(--color-text-secondary)]">{commitOnly ? review('commitCount', { count: data.commits.length }) : matchedPulls ? t('sourceInventory', { commits: data.commits.length, prs: matchedPulls.descriptions.length }) : t('sourceInventoryUnchecked', { commits: data.commits.length })}</p>
           <h2 ref={resultRef} tabIndex={-1} id="git-briefing-title" className="text-display font-[var(--font-weight-strong)]">{api.stale ? t('periodPrevious') : current && !current.narrative.themes.length ? t('periodPartNoExplanation') : current && !current.overview && api.run ? t('periodPart', { number: current.index + 1, parts: api.run.plan.parts.length }) : t(current ? 'overviewReady' : 'summaryEmptyTitle')}</h2>
-          {!current && <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t(modelReady ? 'summaryEmptyBody' : 'summaryModelMissing')}</p>}
         </div>
         {current && actions('summary')}
       </header>
-      {!current && <div className="space-y-5 py-6">{actions('summary')}<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={showSourceList}>{t('sourceListTitle')}</Button></div>}
+      {!current && <section aria-label={t('recentOriginals')} className="space-y-4" data-testid="briefing-recent-originals">
+        <p className="text-label text-[color:var(--color-text-secondary)]">{t('originalsDisclaimer')}</p>
+        <div className="divide-y divide-[color:var(--color-border-soft)] border-y border-[color:var(--color-border-soft)]">
+          {recentSources.map(source => <RowButton key={source.id} tone="strong" hoverSurface="lift" hoverInk="strong" data-briefing-origin={source.id} onClick={event => openSource(source, null, event.currentTarget)}>
+            <span className="min-w-0 flex-1 py-2"><span className="block break-words text-body">{source.title}</span><span className="block text-label text-[color:var(--color-text-secondary)]">{source.kind === 'pr' ? `PR #${source.id.split(':')[1]} · ${copyLabel(source)}` : t('commitIdentity', { hash: source.integration.slice(0, 8) })}</span></span><ChevronRight size={16} aria-hidden />
+          </RowButton>)}
+        </div>
+        {displaySources.length > 5 && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={showSourceList}>{t('allOriginals')}</Button>}
+        <div className="border-t border-[color:var(--color-border-soft)] pt-4">{actions('summary')}</div>
+      </section>}
     {current && <>
       <div className="divide-y divide-[color:var(--color-border-soft)]">{current.narrative.themes.map((theme, index) => <article key={index} className="min-w-0 space-y-4 py-7 first:pt-0" data-testid="briefing-theme">
         <h3 className="text-title font-[var(--font-weight-strong)]">{theme.title}</h3>
@@ -301,7 +329,7 @@ export function BriefingNarrative({ data, period, onReadCode, clearedAt, mode, o
     <Dialog open={scopeOpen} onClose={closeScope} labelledBy={scopeId} size="md" testId="briefing-coverage-dialog">
       <div className="flex items-center justify-between gap-3"><h2 id={scopeId} className="text-title font-[var(--font-weight-strong)]">{t('scopeTitle')}</h2><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={closeScope}>{t('closeScope')}</Button></div>
       <div className="max-h-[70vh] space-y-6 overflow-y-auto pb-4 pt-5">
-        <section className="space-y-3"><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('collectionHeading')}</h3><p>{t('sourceCount', { count: data.commits.length })}{matchedPulls && ` · ${t('prCount', { count: matchedPulls.descriptions.length })}`}</p>{prMessages}</section>
+        <section className="space-y-3"><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('collectionHeading')}</h3><p>{t('sourceCount', { count: data.commits.length })}{matchedPulls && ` · ${t('prCount', { count: matchedPulls.descriptions.length })}`}</p>{!commitOnly && prMessages}</section>
         <section className="space-y-3 border-t border-[color:var(--color-border-soft)] pt-5"><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('processingHeading')}</h3>{api.run ? <PeriodRunStatus api={api} detail /> : <p>{t('summaryNotStarted')}</p>}
           <PeriodRunDetails api={api} readSource={(source, id, button) => { setScopeOpen(false); openSource(source, id, button); }} select={value => { setReader(null); api.select(value); setScopeOpen(false); onMode('summary'); requestAnimationFrame(() => { resultRef.current?.focus(); resultRef.current?.scrollIntoView({ block: 'start' }); }); }} />
         </section>

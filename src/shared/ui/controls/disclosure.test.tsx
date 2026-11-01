@@ -35,4 +35,16 @@ describe("Disclosure", () => {
     expect(screen.getByTestId("toggle").getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByText("Body")).toBeTruthy();
   });
+
+  it.each([false, true])("exposes and reverses the labelled state (animated: %s)", (animated) => {
+    render(<Disclosure summary="Reading scope" animated={animated}><p>Scope details</p></Disclosure>);
+    const toggle = screen.getByRole("button", { name: "Reading scope", expanded: false });
+    expect(toggle.querySelector("svg")?.closest('[aria-hidden="true"]')).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Reading scope", expanded: true })).toBe(toggle);
+    expect(screen.getByText("Scope details")).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(document.getElementById(toggle.getAttribute("aria-controls") ?? "")?.hasAttribute("inert")).toBe(true);
+  });
 });

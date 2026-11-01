@@ -7,6 +7,7 @@ export async function enter(page: import('@playwright/test').Page) {
   await page.addInitScript(() => localStorage.setItem('ontology-atlas:local-endpoint', JSON.stringify({ baseUrl: 'http://localhost:11434', model: 'fixture-text-model' })));
   await mountDesktopVault(page);
   await page.goto('/en/changes/?guides=off');
+  await page.getByTestId('briefing-mixed').click();
   await expect(page.getByTestId('briefing-narrative')).toBeVisible();
 }
 export async function prepare(page: import('@playwright/test').Page) {

@@ -27,9 +27,11 @@ test('keeps reading modes exclusive and loads further originals into keyboard fo
   await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to source list', exact: true }).first().click();
   await expect(next).toBeFocused();
   await expect.poll(() => next.evaluate(element => ({ scroll: element.closest('main')!.scrollTop, top: element.getBoundingClientRect().top }))).toEqual(before);
+  await page.getByRole('button', { name: 'Back to pull requests' }).click();
   await page.getByTestId('briefing-source-browser').click();
   await expect(sources).not.toBeVisible();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
+  await page.getByTestId('briefing-mixed').click();
   await page.getByTestId('briefing-originals').click();
   await expect(sources).toBeVisible();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
@@ -112,6 +114,7 @@ test('keeps progress and Stop reachable while reading Code', async ({ page }) =>
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true; });
   await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
   await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
+  await page.getByRole('button', { name: 'Back to pull requests' }).click();
   await page.getByTestId('briefing-source-browser').click();
   await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
   const stop = page.getByRole('button', { name: 'Stop', exact: true });
@@ -121,8 +124,9 @@ test('keeps progress and Stop reachable while reading Code', async ({ page }) =>
   await expect.poll(() => calls(page, 'llm_chat_cancel').then(values => values.length)).toBe(1);
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { release: () => void } }).__briefingProbe.release(); });
   await expect(stop).toHaveCount(0);
-  await expect(page.getByTestId('briefing-period-run')).toContainText('Summary stopped');
   await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
+  await page.getByTestId('briefing-mixed').click();
+  await expect(page.getByTestId('briefing-period-run')).toContainText('Summary stopped');
 });
 
 test('returns from an original to its source-list entry before an explanation exists', async ({ page }) => {
@@ -172,7 +176,7 @@ test('offers explicit PR reading, previews sources and opens exact originals fro
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeFocused();
   await expect(original).toContainText('Checks: 131 author-reported tests passed.');
-  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
   await expect(citation).toBeFocused();
   await citation.press('Enter');
   await expect(original).toBeVisible();
@@ -255,6 +259,7 @@ test('explains an output-length failure without accepting the truncated explanat
 test('rejects an untranslated response in the Korean interface without losing originals', async ({ page }) => {
   await enter(page);
   await page.goto('/ko/changes/?guides=off');
+  await page.getByTestId('briefing-mixed').click();
   await page.getByRole('button', { name: 'GitHub PR 설명 읽기', exact: true }).click();
   await page.getByRole('button', { name: '요약 만들기', exact: true }).click();
   await page.getByRole('button', { name: '이 기간 설명 만들기', exact: true }).click();
@@ -360,6 +365,27 @@ test('keeps the original reader in focus when a waiting explanation finishes', a
   await expect(source).toBeFocused();
 });
 
+test('keeps the original in place when an explanation finishes at doubled text size', async ({ page }) => {
+  await enter(page); await prepare(page);
+  await page.setViewportSize({ width: 390, height: 900 });
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '200%';
+    (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true;
+  });
+  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
+  await page.getByTestId('briefing-originals').click();
+  await page.getByRole('button', { name: /Keep map navigation readable PR #2925/ }).click();
+  const original = page.getByTestId('briefing-original');
+  await waitForBoxStill(original);
+  const before = await original.evaluate(element => element.getBoundingClientRect().top);
+  await page.evaluate(() => { (window as unknown as { __briefingProbe: { release: () => void } }).__briefingProbe.release(); });
+  await expect(page.getByRole('button', { name: 'Stop', exact: true })).toHaveCount(0);
+  await waitForBoxStill(original);
+  await expect(original).toBeFocused();
+  expect(Math.abs(await original.evaluate(element => element.getBoundingClientRect().top) - before)).toBeLessThanOrEqual(1);
+});
+
 test('offers a visible return at the end of a long original and restores its citation', async ({ page }) => {
   await enter(page);
   await page.evaluate(() => {
@@ -385,7 +411,7 @@ test('offers a visible return at the end of a long original and restores its cit
     await expect(original).toContainText('Original inspection note 79:');
     await original.locator('[data-source-passage]').last().evaluate(element => element.scrollIntoView({ block: 'end' }));
     await page.mouse.wheel(0, 160);
-    const back = original.getByRole('button', { name: 'Back to summary', exact: true }).last();
+    const back = original.getByRole('button', { name: 'Back to overview', exact: true }).last();
     await expect(back).toBeInViewport();
     await back.click();
     await expect(original).toBeHidden();
@@ -535,7 +561,7 @@ for (const mode of ['pr-unavailable', 'pr-error', 'pr-rate-limited', 'pr-partial
     const citation = theme.getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).first();
     await citation.click();
     await expect(page.getByTestId('briefing-original')).toContainText('Checks: 131 author-reported tests passed.');
-    await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to summary', exact: true }).first().click();
+    await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to overview', exact: true }).first().click();
     await expect(citation).toBeFocused();
     expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
     if (mode === 'pr-rate-limited') return;
@@ -577,6 +603,7 @@ test('reopens saved originals after reload without network and keeps versions af
   await enter(page); await prepare(page);
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await page.reload();
+  await page.getByTestId('briefing-mixed').click();
   await expectCoverage(page, 'Opened 1 saved PR descriptions. GitHub has not been checked.');
   expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
@@ -594,6 +621,7 @@ test('reopens saved originals after reload without network and keeps versions af
   await expectCoverage(page, '1 PR descriptions read');
   await expect(row).toContainText('Saved PR copy');
   await page.reload();
+  await page.getByTestId('briefing-mixed').click();
   await expectCoverage(page, 'Opened 1 saved PR descriptions');
   expect(await calls(page,'git_briefing_pull_descriptions')).toHaveLength(0);
 });
@@ -615,6 +643,7 @@ test('clears copies without a usable source and keeps open originals session-onl
   expect(await calls(page,'git_briefing_clear_saved_pulls')).toHaveLength(2);
   expect(await calls(page,'source_briefing_chat')).toHaveLength(0);
   await page.reload();
+  await page.getByTestId('briefing-mixed').click();
   await expect(page.getByTestId('briefing-narrative')).toBeVisible();
   await expectCoverage(page, '1 PR descriptions read', true);
   expect(await calls(page,'git_briefing_pull_descriptions')).toHaveLength(0);
@@ -629,7 +658,7 @@ for (const mode of ['cache-unavailable', 'cache-unsupported', 'cache-save-failed
     await readPrs(page);
     await expectCoverage(page, '1 PR descriptions read');
     if (mode === 'cache-save-failed') {
-      for (const view of ['briefing-summary-mode', 'briefing-source-browser', 'briefing-originals']) {
+      for (const view of ['briefing-summary-mode', 'briefing-originals']) {
         await page.getByTestId(view).click();
         await expect(page.getByRole('status').filter({ hasText: 'Could not update saved PR copies' })).toBeVisible();
       }
@@ -649,11 +678,13 @@ test('keeps measured empty results empty after restart and reports failed cleari
   await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
   await expect(page.getByTestId('briefing-saved-panel')).toContainText('Could not clear all saved PR copies');
   await page.reload();
+  await page.getByTestId('briefing-mixed').click();
   await expectCoverage(page, 'Opened 1 saved PR descriptions');
   await setBriefingMode(page,'pr-empty');
   await readPrs(page);
   await expectCoverage(page, '0 PR descriptions read');
   await page.reload();
+  await page.getByTestId('briefing-mixed').click();
   await page.getByTestId('briefing-originals').click();
   await expect(page.getByRole('button', { name: 'Read GitHub PR descriptions', exact: true })).toBeVisible();
   await expectCoverage(page, '1 PR descriptions read', true);
@@ -682,6 +713,7 @@ for (const action of ['manual-read', 'clear'] as const) {
       };
     });
     await page.reload();
+    await page.getByTestId('briefing-mixed').click();
     await expect.poll(() => page.evaluate(() => (window as unknown as { __savedHeld: boolean }).__savedHeld)).toBe(true);
     if (action === 'manual-read') {
       await readPrs(page);

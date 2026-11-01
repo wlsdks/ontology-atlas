@@ -317,6 +317,8 @@ pub fn run() {
             git::briefing::git_source_briefing,
             git::briefing::git_source_briefing_patch,
             git::briefing::prs::git_briefing_repositories,
+            git::briefing::prs::inventory::git_briefing_public_repositories,
+            git::briefing::prs::inventory::git_briefing_public_inventory,
             git::briefing::prs::git_briefing_pull_descriptions,
             git::briefing::prs::cache::git_briefing_saved_pull_descriptions,
             git::briefing::prs::cache::git_briefing_clear_saved_pulls,
