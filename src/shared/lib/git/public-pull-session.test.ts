@@ -29,7 +29,16 @@ it('bounds retained data across pages and does not silently continue after a ses
   const limited = appendPublicPullPage(initial, page([version(401, 'over')]));
   expect(limited.versions).toHaveLength(400);
   expect(limited.omittedForSessionLimit).toBe(1);
+  expect(limited.sessionOmissions).toEqual([{ number: 401, digest: 'over' }]);
   expect(appendPublicPullPage(limited, page([version(402, 'another')]))).toBe(limited);
+});
+
+it('bounds identified session omissions and marks overflow', () => {
+  const omitted = Array.from({ length: 401 }, (_, index) => version(index + 1, String(index)));
+  const limited = appendPublicPullPage(emptyPublicPullSession(), page(omitted), { versions: 0, bytes: 0 });
+  expect(limited.omittedForSessionLimit).toBe(401);
+  expect(limited.sessionOmissions).toHaveLength(400);
+  expect(limited.sessionOmissionsUnlisted).toBe(true);
 });
 
 it('counts UTF-8 bytes rather than characters when retaining originals', () => {

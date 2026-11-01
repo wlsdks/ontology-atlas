@@ -21,7 +21,7 @@ function evidenceState(session: PublicPullSession): string {
   const omissions = report?.omitted.map(item => JSON.stringify([item.number, item.digest, item.updatedAt, item.reason])).sort() ?? [];
   return JSON.stringify([
     session.versions.map(version => [version.number, version.digest]), [...session.conflicts].sort((a, b) => a - b),
-    session.omittedForSessionLimit, session.hadNativeOmissions, session.nativeOmissions.map(item => [item.number, item.digest, item.reason]), session.nativeOmissionsUnlisted, session.conflictOverflow, session.cursorNeedsRestart,
+    session.omittedForSessionLimit, session.sessionOmissions, session.sessionOmissionsUnlisted, session.hadNativeOmissions, session.nativeOmissions.map(item => [item.number, item.digest, item.reason]), session.nativeOmissionsUnlisted, session.conflictOverflow, session.cursorNeedsRestart,
     report && [report.status, report.reason, report.scanned, report.observedDistinct, report.observedDistinctExact,
       omissions, report.unlistedOmissions, report.canContinue, report.retrySmaller, report.pageSize,
       report.movingListUncertain, report.orderingUncertain, report.restarted],

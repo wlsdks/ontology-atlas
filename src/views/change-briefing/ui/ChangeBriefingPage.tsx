@@ -169,7 +169,7 @@ export function ChangeBriefingPage() {
     setSection(origin.kind);
     changeMode('summary');
     requestAnimationFrame(() => {
-      if (origin.element?.isConnected && !origin.element.closest('[hidden]')) origin.element.focus({ preventScroll: true });
+      if (origin.element?.isConnected && !origin.element.closest('[hidden]')) origin.element.focus();
       else modesRef.current?.querySelector<HTMLElement>(`[data-testid="briefing-${origin.kind}"]`)?.focus({ preventScroll: true });
     });
   }

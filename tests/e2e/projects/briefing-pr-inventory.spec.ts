@@ -66,6 +66,21 @@ test('opens period files from a PR and returns to the same original', async ({ p
   await expect(page.getByRole('button', { name: 'View files touched in this period' })).toBeFocused();
 });
 
+test('returns to a visible action in a long PR after visiting combined originals', async ({ page }) => {
+  await openBriefing(page);
+  await page.getByTestId('briefing-mixed').click();
+  await page.getByTestId('briefing-originals').click();
+  await page.getByRole('button', { name: 'Back to pull requests' }).click();
+  await setBriefingMode(page, 'inventory-reader-long');
+  await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
+  await page.getByRole('button', { name: /Make checkout confirmation clear/ }).click();
+  const files = page.getByRole('button', { name: 'View files touched in this period' });
+  await files.click();
+  await page.getByRole('button', { name: 'Back to PR' }).click();
+  await expect(files).toBeFocused();
+  await expect(files).toBeInViewport();
+});
+
 test('opens only a commit’s recorded paths and returns to that commit', async ({ page }) => {
   await openBriefing(page);
   await page.getByRole('radio', { name: 'Commits', exact: true }).click();
@@ -81,8 +96,8 @@ test('opens only a commit’s recorded paths and returns to that commit', async 
 });
 
 test('keeps a selected file beyond the first page reachable on a narrow screen', async ({ page }) => {
-  await page.setViewportSize({ width: 600, height: 900 });
   await openBriefing(page);
+  await page.setViewportSize({ width: 600, height: 900 });
   await setBriefingMode(page, 'many');
   await page.getByRole('button', { name: 'Refresh briefing' }).click();
   await page.getByRole('radio', { name: 'Commits', exact: true }).click();

@@ -97,6 +97,21 @@ it('requires a fresh version choice when a conflict appears after selection', as
   expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
 });
 
+it('requires a fresh choice when a changed version is dropped at the session limit', async () => {
+  const retained = [version(1, 'a'.repeat(64)), ...Array.from({ length: 399 }, (_, index) => version(index + 2, (index + 2).toString(16).padStart(64, '0')))];
+  bridge.read.mockResolvedValueOnce(page(retained)).mockResolvedValueOnce(page([version(1, 'b'.repeat(64))]));
+  render(<PublicPullInventory data={data} memory="test" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
+  fireEvent.click((await screen.findAllByRole('checkbox'))[0]);
+  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeEnabled();
+  fireEvent.click(screen.getByRole('button', { name: 'refreshPrs' }));
+  await waitFor(() => expect(screen.getByText('sessionLimit')).toBeVisible());
+  fireEvent.click(screen.getByRole('button', { name: 'omittedList' }));
+  expect(screen.getByText(/#1 · bbbbbbbb · sessionOmittedLimit/)).toBeVisible();
+  expect(screen.getAllByRole('checkbox')[0]).not.toBeChecked();
+  expect(screen.getByRole('button', { name: 'reviewSelected' })).toBeDisabled();
+});
+
 it('shows identified omitted PRs and keeps them visible after refresh', async () => {
   const omission = { number: 42, digest: 'd'.repeat(64), updatedAt: '2026-01-01T00:00:00Z', reason: 'record-oversized' };
   bridge.read.mockResolvedValueOnce({ ...page([version(1, 'a'.repeat(64))]), omitted: [omission], unlistedOmissions: 2 })

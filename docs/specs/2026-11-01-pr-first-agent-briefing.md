@@ -204,7 +204,8 @@ The following exact keys are in all four `messages/{en,ko,ja,zh}/prBriefing.json
 | `prBriefing.omittedList` | PR inventory | Omitted PRs |
 | `prBriefing.nativeOmittedOversized` | PR inventory | Original exceeds the read limit |
 | `prBriefing.nativeOmittedLimit` | PR inventory | Read limit reached |
-| `prBriefing.nativeOmittedUnlisted` | PR inventory | Additional omitted PRs could not be identified. |
+| `prBriefing.sessionOmittedLimit` | PR inventory | Session storage limit reached |
+| `prBriefing.nativeOmittedUnlisted` | PR inventory | Additional omitted PRs are not listed. |
 
 ## Edge cases
 

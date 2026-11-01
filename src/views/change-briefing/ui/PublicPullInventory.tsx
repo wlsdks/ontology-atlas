@@ -132,9 +132,13 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity, onF
 
   const report = session.report;
   const conflicts = publicPullConflicts(session);
+  const omittedVersions = [
+    ...session.nativeOmissions.map(item => ({ ...item, label: item.reason === 'record-oversized' ? 'nativeOmittedOversized' as const : 'nativeOmittedLimit' as const, origin: 'native' })),
+    ...session.sessionOmissions.map(item => ({ ...item, label: 'sessionOmittedLimit' as const, origin: 'session' })),
+  ];
   const selected = session.versions.find(version => `${version.number}:${version.digest}` === selectedKey) ?? null;
   const evidenceRevision = publicPullEvidenceRevision(publicPullScope(sourceRoot, head, snapshot, repository));
-  const conflictFingerprint = (version: PublicPullVersion) => conflicts.has(version.number) || session.hadNativeOmissions || session.conflictOverflow ? evidenceRevision : null;
+  const conflictFingerprint = (version: PublicPullVersion) => conflicts.has(version.number) || session.hadNativeOmissions || session.omittedForSessionLimit > 0 || session.conflictOverflow ? evidenceRevision : null;
   const isSelectedForAgent = (version: PublicPullVersion) => selectedForAgent.some(item => item.key === `${version.number}:${version.digest}` && item.conflict === conflictFingerprint(version));
   const agentVersions = session.versions.filter(isSelectedForAgent);
   const agentScope = useMemo(() => ({ ...identity, repository }), [identity, repository]);
@@ -188,8 +192,8 @@ function PublicPullInventoryScope({ data, memory, active = true, onActivity, onF
         {(report.reason === 'unavailable' || (report.status === 'unavailable' && report.reason !== 'rate-limited')) && <p role="status" className="text-[color:var(--color-status-warning)]">{t('prUnavailablePublic')}</p>}
         {(report.status !== 'observed' || session.hadNativeOmissions || session.conflictOverflow) && <p role="status">{t('prPartial')}</p>}
         {session.hadNativeOmissions && <p>{t('originalsOmitted')}</p>}
-        {session.nativeOmissions.length > 0 && <Disclosure summary={t('omittedList')}><div className="space-y-2 pt-2">{session.nativeOmissions.slice(0, visibleOmissions).map(item => <p key={`${item.number}:${item.digest}`}>#{item.number} · {item.digest.slice(0, 8)} · {t(item.reason === 'record-oversized' ? 'nativeOmittedOversized' : 'nativeOmittedLimit')}</p>)}{session.nativeOmissions.length > visibleOmissions && <Button variant="ghost" size="sm" onClick={() => setVisibleOmissions(value => value + 10)}>{t('morePrs', { count: Math.min(10, session.nativeOmissions.length - visibleOmissions) })}</Button>}</div></Disclosure>}
-        {session.nativeOmissionsUnlisted && <p>{t('nativeOmittedUnlisted')}</p>}
+        {omittedVersions.length > 0 && <Disclosure summary={t('omittedList')}><div className="space-y-2 pt-2">{omittedVersions.slice(0, visibleOmissions).map(item => <p key={`${item.origin}:${item.number}:${item.digest}`}>#{item.number} · {item.digest.slice(0, 8)} · {t(item.label)}</p>)}{omittedVersions.length > visibleOmissions && <Button variant="ghost" size="sm" onClick={() => setVisibleOmissions(value => value + 10)}>{t('morePrs', { count: Math.min(10, omittedVersions.length - visibleOmissions) })}</Button>}</div></Disclosure>}
+        {(session.nativeOmissionsUnlisted || session.sessionOmissionsUnlisted) && <p>{t('nativeOmittedUnlisted')}</p>}
         {session.conflictOverflow && <p>{t('conflictsUnknown')}</p>}
         {session.omittedForSessionLimit > 0 && <p>{t('sessionLimit')}</p>}
         {(session.hasEarlierScan || report.restarted) && session.versions.length > 0 && <p>{t('retainedVersions')}</p>}

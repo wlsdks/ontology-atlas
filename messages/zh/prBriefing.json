@@ -141,5 +141,6 @@
   "omittedList": "查看遗漏的 PR",
   "nativeOmittedOversized": "原文超过读取上限",
   "nativeOmittedLimit": "已达到读取上限",
-  "nativeOmittedUnlisted": "还有无法确定编号的遗漏 PR。"
+  "sessionOmittedLimit": "已达到会话存储上限",
+  "nativeOmittedUnlisted": "还有未列出的遗漏 PR。"
 }

@@ -141,5 +141,6 @@
   "omittedList": "빠진 PR 보기",
   "nativeOmittedOversized": "원문 읽기 크기 초과",
   "nativeOmittedLimit": "읽기 한도 도달",
-  "nativeOmittedUnlisted": "번호를 확인하지 못한 누락 PR도 있습니다."
+  "sessionOmittedLimit": "세션 저장 한도 도달",
+  "nativeOmittedUnlisted": "목록에 표시하지 못한 누락 PR도 있습니다."
 }

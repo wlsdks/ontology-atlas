@@ -141,5 +141,6 @@
   "omittedList": "Omitted PRs",
   "nativeOmittedOversized": "Original exceeds the read limit",
   "nativeOmittedLimit": "Read limit reached",
-  "nativeOmittedUnlisted": "Additional omitted PRs could not be identified."
+  "sessionOmittedLimit": "Session storage limit reached",
+  "nativeOmittedUnlisted": "Additional omitted PRs are not listed."
 }

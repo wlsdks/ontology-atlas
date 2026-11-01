@@ -7,6 +7,8 @@ export interface PublicPullSession {
   versions: PublicPullVersion[];
   retainedBytes: number;
   omittedForSessionLimit: number;
+  sessionOmissions: { number: number; digest: string }[];
+  sessionOmissionsUnlisted: boolean;
   hadNativeOmissions: boolean;
   nativeOmissions: PublicPullOmission[];
   nativeOmissionsUnlisted: boolean;
@@ -18,7 +20,7 @@ export interface PublicPullSession {
 }
 
 export const emptyPublicPullSession = (): PublicPullSession => ({
-  versions: [], retainedBytes: 0, omittedForSessionLimit: 0, hadNativeOmissions: false, nativeOmissions: [], nativeOmissionsUnlisted: false, conflicts: [], conflictOverflow: false, cursorNeedsRestart: false, hasEarlierScan: false, report: null,
+  versions: [], retainedBytes: 0, omittedForSessionLimit: 0, sessionOmissions: [], sessionOmissionsUnlisted: false, hadNativeOmissions: false, nativeOmissions: [], nativeOmissionsUnlisted: false, conflicts: [], conflictOverflow: false, cursorNeedsRestart: false, hasEarlierScan: false, report: null,
 });
 
 export function appendPublicPullPage(session: PublicPullSession, page: PublicPullInventory, limits = { versions: MAX_PUBLIC_PULL_VERSIONS, bytes: MAX_PUBLIC_PULL_BYTES }): PublicPullSession {
@@ -27,6 +29,8 @@ export function appendPublicPullPage(session: PublicPullSession, page: PublicPul
   const seen = new Set(versions.map((version) => `${version.number}:${version.digest}`));
   let retainedBytes = session.retainedBytes;
   let omittedForSessionLimit = session.omittedForSessionLimit;
+  const sessionOmissions = [...session.sessionOmissions];
+  let sessionOmissionsUnlisted = session.sessionOmissionsUnlisted;
   for (const version of page.versions) {
     const key = `${version.number}:${version.digest}`;
     if (seen.has(key)) continue;
@@ -34,6 +38,8 @@ export function appendPublicPullPage(session: PublicPullSession, page: PublicPul
     const bytes = new TextEncoder().encode(JSON.stringify(version)).byteLength;
     if (versions.length >= limits.versions || retainedBytes + bytes > limits.bytes) {
       omittedForSessionLimit++;
+      if (sessionOmissions.length < MAX_PUBLIC_PULL_VERSIONS) sessionOmissions.push({ number: version.number, digest: version.digest });
+      else sessionOmissionsUnlisted = true;
       continue;
     }
     versions.push(version);
@@ -51,7 +57,7 @@ export function appendPublicPullPage(session: PublicPullSession, page: PublicPul
     else nativeOmissionsUnlisted = true;
   }
   const nativeOmissions = [...omitted.values()];
-  return { versions, retainedBytes, omittedForSessionLimit, hadNativeOmissions, nativeOmissions, nativeOmissionsUnlisted, conflicts, conflictOverflow, cursorNeedsRestart: false, hasEarlierScan: session.hasEarlierScan, report: { ...page, versions: [] } };
+  return { versions, retainedBytes, omittedForSessionLimit, sessionOmissions, sessionOmissionsUnlisted, hadNativeOmissions, nativeOmissions, nativeOmissionsUnlisted, conflicts, conflictOverflow, cursorNeedsRestart: false, hasEarlierScan: session.hasEarlierScan, report: { ...page, versions: [] } };
 }
 
 export function publicPullConflicts(session: PublicPullSession): Set<number> {

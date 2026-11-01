@@ -141,5 +141,6 @@
   "omittedList": "取得できなかったPRを見る",
   "nativeOmittedOversized": "原文が読み取り上限を超過",
   "nativeOmittedLimit": "読み取り上限に到達",
-  "nativeOmittedUnlisted": "番号を特定できなかったPRもあります。"
+  "sessionOmittedLimit": "セッションの保存上限に到達",
+  "nativeOmittedUnlisted": "一覧に表示されない取得漏れのPRもあります。"
 }
