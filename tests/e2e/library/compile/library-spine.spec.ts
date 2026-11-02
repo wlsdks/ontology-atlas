@@ -79,7 +79,7 @@ const FILES_WITH_WAITING_SOURCE: Record<string, string> = {
 async function openLibraryHome(page: Page, files: Record<string, string> = FILES) {
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { files });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
@@ -199,7 +199,7 @@ test.describe('the Library index with an empty wiki', () => {
         'wiki/_template.md': '---\ntitle: <the page name>\n---\n\n## Summary\n',
       },
     });
-    await page.goto('/en/docs/');
+    await page.goto('/en/');
     await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-workspace-wiki').click();
@@ -216,7 +216,7 @@ test.describe('the Library spine names one lead step', () => {
   test('prints `next` on the lead card and `waiting` on the later one', async ({ page }) => {
     await seedFirstRunSeen(page);
     await installLibraryWorkHarness(page, { files: FILES_WITH_WAITING_SOURCE });
-    await page.goto('/en/docs/');
+    await page.goto('/en/');
     await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-graph-canvas').waitFor();
@@ -309,7 +309,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
       window.localStorage.removeItem('ontology-atlas:compile-brain');
     });
   }
-  await page.goto('/en/docs/?guides=off', { waitUntil: 'domcontentloaded' });
+  await page.goto('/en/?guides=off', { waitUntil: 'domcontentloaded' });
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await expect(page.getByRole('heading', { name: 'Map', level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library' }).click();

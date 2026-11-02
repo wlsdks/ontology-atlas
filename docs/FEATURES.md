@@ -239,6 +239,8 @@ and managed-PC risk before the executable CTA. Chrome or Edge remains the
 install-free fallback when that warning or an organization policy is a blocker;
 the web still does not offer BYOK or MCP registration.
 
+Before a vault is connected, the installed app keeps Library, Planning, Agents and Briefing reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
+
 Library service imports stage disabled metadata, confirm credential storage, then activate and allow the exact saved definition on this Mac. Pending saves cannot be submitted twice; failed saves can resume the same row. Changed settings and duplicate names require review. Browser users get Add files or the app, with no token field. Service access remains unverified.
 
 Library check history defaults to executed checks. A labelled control with a count includes recorded sleep gaps on demand without changing the ledger or schedule permissions.

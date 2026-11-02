@@ -20,7 +20,7 @@ test("a home popup returns its door on every close, and the canvas stands still"
     "wiki/workshop.md": LONG_PAGE,
     "sources/notes.txt": "Workshop source notes.\n",
   } });
-  await page.goto("/en/docs/");
+  await page.goto("/en/");
   await page.getByRole("button", { name: /Open my folder/i }).click();
   await expect(page.getByTestId("library-page")).toBeVisible();
 

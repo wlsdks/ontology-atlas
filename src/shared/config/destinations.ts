@@ -26,6 +26,8 @@ export const DESTINATION_IDS = [
 
 export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 
+export const FOLDER_OPTIONAL_DESTINATIONS: ReadonlySet<DestinationId> = new Set(['library', 'planning', 'agents', 'changes']);
+
 /*
  * Persistent bottom tabs below `lg`; web may add Get App as a sixth. Architecture stays so a
  * selected route remains visible. MCP and Agents are absent on purpose: they are desk work,

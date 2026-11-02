@@ -478,7 +478,7 @@ export async function openLibraryWorkScenario(
 ): Promise<LibraryWorkHarness> {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, options);
-  await page.goto("/en/docs/");
+  await page.goto("/en/");
   await page.getByRole("button", { name: /Open my folder/i }).click();
   await page.getByRole("heading", { name: "Map" }).waitFor();
   await page.goto("/en/library/?guides=off&e2e=1");

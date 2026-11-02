@@ -112,7 +112,7 @@ async function openComparison(page: Page, locale: 'en' | 'ko', bodies: { old: st
       [SOURCE]: ORIGINAL, [AUDIT]: AUDIT_TEXT, [ANSWER]: retainedPage(bodies.old),
     },
   });
-  await page.goto(`/${locale}/docs/`);
+  await page.goto(`/${locale}/`);
   await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
@@ -292,7 +292,7 @@ test('the answer page demotes leaving for the list below asking for a draft', as
       [SOURCE]: ORIGINAL, [AUDIT]: AUDIT_TEXT, [ANSWER]: retainedPage(OLD_BODY),
     },
   });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
@@ -385,7 +385,7 @@ test('the answer page opens on the answer at 1512 and at the window floor', asyn
      `goto` never draws the first-run door again. The two viewports are therefore a resize of
      one open answer, which is also what a person resizing the window does. */
   await page.setViewportSize({ width: 1512, height: 900 });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();

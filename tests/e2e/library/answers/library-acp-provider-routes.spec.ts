@@ -102,7 +102,7 @@ async function openLibrary(page: Page, runtimeId: LibraryWorkRuntimeId): Promise
     ? { ...BASE_FILES, '.codex/config.toml': LIBRARY_WORK_CODEX_CONFIG }
     : BASE_FILES;
   const harness = await installLibraryWorkHarness(page, { files, runtimeId });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await page.getByRole('heading', { name: 'Map' }).waitFor();
   await page.getByTestId('app-nav-rail-item-library').click();

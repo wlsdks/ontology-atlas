@@ -71,7 +71,7 @@ const FILES = {
 async function openLibrary(page: Page, files = FILES, locale = 'en') {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, { files });
-  await page.goto(`/${locale}/docs/`);
+  await page.goto(`/${locale}/`);
   await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
@@ -212,7 +212,7 @@ test('a Library without code nodes opens retained questions and routes an inline
   const { 'project.md': _project, ...documents } = FILES;
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { files: documents });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   await expect(page.getByTestId('library-questions-open')).toBeVisible();
   await expect(page.getByTestId('app-nav-rail-item-architecture')).toHaveCount(0);
@@ -250,7 +250,7 @@ for (const { retained, kind, manual, name } of [
     const harness = await installLibraryWorkHarness(page, {
       files: FILES, permissionFile: retained ? ANSWER : 'wiki/storage.md', permissionText: validWriteUp, writeMode: 'auto', filePermission: true,
     });
-    await page.goto('/en/docs/');
+    await page.goto('/en/');
     await page.getByRole('button', { name: /Open my folder/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-questions-open').click();

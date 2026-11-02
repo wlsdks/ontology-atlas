@@ -185,8 +185,8 @@ describe("shell column owns the viewport", () => {
 });
 
 
-describe("source-only cold arrival", () => {
-  it.each(["/ko/agents", "/ko/changes"])("waits for restoration before exposing controls on %s", (pathname) => {
+describe("folder-optional cold arrival", () => {
+  it.each(["/ko/agents", "/ko/changes", "/ko/library", "/ko/planning"])("waits for restoration before exposing controls on %s", (pathname) => {
     shellMocks.desktop = true;
     shellMocks.pathname = pathname;
     shellMocks.vault.restoreAttempted = false;

@@ -1,6 +1,5 @@
 {
   "title": "规划文档",
-  "chooseTitle": "选择规划文件夹",
   "chooseBody": "在原位置读取 Markdown 和设计图片。Atlas 不会移动或编辑这些文件。",
   "chooseFolder": "选择文件夹",
   "limits": "Atlas 会检查打开所选文件夹后的替换。无法检测打开前的替换、与其他路径共享的文件或文档内容中的秘密。",
@@ -48,5 +47,8 @@
   "imageRecovered": "{image}：图片已恢复。",
   "folderRecovered": "已重新检查文件夹。",
   "imageBlocked": "{image}：{reason}",
-  "imageUnnamed": "图片 {line}:{column}"
+  "imageUnnamed": "图片 {line}:{column}",
+  "startTitle": "集中查看规划与设计",
+  "startBody": "打开项目文件夹，在同一处阅读 Markdown 文档和设计图片。",
+  "designImages": "设计图片"
 }

@@ -145,7 +145,7 @@ async function installDesktopBridge(page: Page) {
  * part a reload would skip.
  */
 async function openLibrary(page: Page) {
-  await page.goto("/en/docs/");
+  await page.goto("/en/");
   await page.waitForLoadState("networkidle");
   const door = page.getByRole("button", { name: /^Open my folder/ });
   await door.first().waitFor({ timeout: 25_000 });

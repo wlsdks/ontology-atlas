@@ -31,7 +31,7 @@ test('Jev preview keeps the exact claim and long original passage reachable befo
       return originalInvoke(command, args);
     };
   });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /^Open my folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map' })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
