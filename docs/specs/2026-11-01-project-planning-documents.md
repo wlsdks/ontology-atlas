@@ -104,7 +104,7 @@ These are proposed exact English strings and message locations, not catalog entr
 | `empty` | Complete empty scan | No supported documents or images were found in this folder. Choose another folder or refresh. |
 | `folderLabel` | Selected scope | Folder: {folder} |
 | `pathLabel` | Open file | Path: {path} |
-| `observedAt` | Last successful folder and document observation; images have separate status | Folder and document checked: {time} |
+| `observedAt` | Last successful folder-list observation; the selected file and images have separate states | Folder list read: {time} |
 | `imageChecking`, `imageUnconfirmed`, `imageChecked` | Each image is checked separately; retain an earlier preview while checking and label it unconfirmed after a folder error. Checking, unconfirmed and errors are visible; routine automatic checks do not generate live announcements. An image-specific live region announces an individual image read or decode failure once and its recovery once. Folder-wide failure and recovery are each announced once for the folder instead of once per image. Successful checks stay available to assistive technology without repeating visible captions. | Checking image… / Image not confirmed / Image checked |
 | `imageAttention`, `imageRecovered` | Named live announcement for an individual image failure or its recovery | Image needs attention: {image} / Image recovered: {image} |
 | `imageBlocked`, `imageUnnamed` | Label and announce the specific blocked image without exposing remote URL data | {image}: {reason} / Image {line}:{column} |

@@ -9,7 +9,7 @@
   "empty": "対応する文書や画像がありません。",
   "folderLabel": "フォルダ：{folder}",
   "pathLabel": "パス：{path}",
-  "observedAt": "フォルダー・文書の確認：{time}",
+  "observedAt": "フォルダー一覧の取得：{time}",
   "observationLimit": "次の確認までにファイルが変わることがあります。",
   "findFile": "ファイル名またはパスを探す",
   "refresh": "フォルダを更新",

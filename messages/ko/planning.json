@@ -9,7 +9,7 @@
   "empty": "지원하는 문서나 이미지가 없습니다.",
   "folderLabel": "폴더: {folder}",
   "pathLabel": "경로: {path}",
-  "observedAt": "폴더·문서 확인: {time}",
+  "observedAt": "폴더 목록 조회: {time}",
   "observationLimit": "다음 확인 전에 파일이 바뀔 수 있습니다.",
   "findFile": "파일명 또는 경로 찾기",
   "refresh": "폴더 새로고침",

@@ -9,7 +9,7 @@
   "empty": "No supported documents or images were found.",
   "folderLabel": "Folder: {folder}",
   "pathLabel": "Path: {path}",
-  "observedAt": "Folder and document checked: {time}",
+  "observedAt": "Folder list read: {time}",
   "observationLimit": "Files may change before the next check.",
   "findFile": "Find a file name or path",
   "refresh": "Refresh folder",

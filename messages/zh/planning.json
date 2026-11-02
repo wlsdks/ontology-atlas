@@ -9,7 +9,7 @@
   "empty": "没有找到支持的文档或图片。",
   "folderLabel": "文件夹：{folder}",
   "pathLabel": "路径：{path}",
-  "observedAt": "文件夹和文档检查时间：{time}",
+  "observedAt": "文件夹列表读取时间：{time}",
   "observationLimit": "文件可能在下次检查前发生变化。",
   "findFile": "查找文件名或路径",
   "refresh": "刷新文件夹",

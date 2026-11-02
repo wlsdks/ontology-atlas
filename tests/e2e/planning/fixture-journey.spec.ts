@@ -183,6 +183,48 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   })).toEqual([255, 0, 0, 255]);
 });
 
+test('a readable folder does not hide an unreadable or replaced document', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { mode: 'unavailable' | 'changed' | 'ready'; now: number; lastScan: number; __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    win.mode = 'unavailable';
+    win.now = Date.now();
+    Date.now = () => win.now;
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
+      if (cmd === 'planning_scan') { win.lastScan = win.now += 60_000; return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } }; }
+      if (cmd === 'planning_open_document') {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        win.now += 120_000;
+        if (win.mode === 'unavailable') throw new Error('unavailable');
+        if (win.mode === 'changed') throw new Error('file-changed');
+        return Array.from(new TextEncoder().encode('a'.repeat(32) + '# Recovered plan'));
+      }
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  const folderObservation = page.getByText(planning.observedAt.split('{time}')[0], { exact: false });
+  await expect(folderObservation).toBeVisible();
+  await page.getByRole('button', { name: 'plan.md' }).click();
+  await expect(page.getByText(planning.fileUnavailable)).toBeVisible();
+  await expect(folderObservation).toBeVisible();
+  await expect(folderObservation).toContainText(await page.evaluate(() => new Date((window as unknown as { lastScan: number }).lastScan).toLocaleString()));
+  await expect(page.getByRole('button', { name: planning.openHistory })).toBeDisabled();
+  await page.evaluate(() => { (window as unknown as { mode: string }).mode = 'ready'; });
+  await page.getByRole('button', { name: planning.refresh }).click();
+  await expect(page.getByRole('heading', { name: 'Recovered plan' })).toBeVisible();
+  await expect(page.getByRole('button', { name: planning.openHistory })).toBeEnabled();
+  await page.evaluate(() => { (window as unknown as { mode: string }).mode = 'changed'; });
+  await page.getByRole('button', { name: planning.refresh }).click();
+  await expect(page.getByText(planning.fileChanged)).toBeVisible();
+  await expect(folderObservation).toBeVisible();
+  await expect(page.getByRole('button', { name: planning.openHistory })).toBeDisabled();
+});
+
 test('folder failures announce once for all images and individual image failures remain specific', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await page.addInitScript(() => {

@@ -62,11 +62,12 @@ export function PlanningPage() {
     setStatus('checking');
     try {
       const memory = readPlanningMemory();
-      const [next, result] = await Promise.all([
-        scanPlanningFolder(scope.generation),
+      const [observation, result] = await Promise.all([
+        scanPlanningFolder(scope.generation).then((value) => ({ value, at: Date.now() })),
         path && !memory.changed ? openPlanningDocument(scope.generation, path, memory.identity).then((value) => ({ value, error: null })).catch((error: unknown) => ({ value: null, error: String(error) })) : Promise.resolve({ value: null, error: null }),
       ]);
       if (request !== sequence.current) return;
+      const next = observation.value;
       setInventory(next);
       const changed = result.error?.includes('file-changed') ?? false;
       if (changed) {
@@ -83,7 +84,7 @@ export function PlanningPage() {
       const failed = Boolean(path && !changed && !memory.changed && (!next.files.some((file) => file.path === path) || !result.value));
       if (failed) { pendingScroll.current = null; writePlanningMemory({ ...readPlanningMemory(), scroll: 0, returnFocus: null }); }
       setFileFailed(failed);
-      setCheckedAt(Date.now());
+      setCheckedAt(observation.at);
       setImageRevision(request);
       setStatus('ready');
     } catch {
