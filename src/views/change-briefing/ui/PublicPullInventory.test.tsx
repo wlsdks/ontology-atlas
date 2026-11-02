@@ -270,3 +270,13 @@ it('finds a PR beyond the first page and returns to the same filtered row', asyn
   fireEvent.change(screen.getByRole('textbox', { name: 'findPr' }), { target: { value: 'nothing matches' } });
   expect(screen.getByText('noPrMatch')).toBeVisible();
 });
+
+it('finds a PR in a small loaded inventory', async () => {
+  bridge.read.mockResolvedValue(page(Array.from({ length: 10 }, (_, index) => version(index + 1, String(index)))));
+  render(<PublicPullInventory data={data} memory="small-inventory" />);
+  fireEvent.click(await screen.findByRole('button', { name: 'readPrs' }));
+  const search = await screen.findByRole('textbox', { name: 'findPr' });
+  fireEvent.change(search, { target: { value: '#10' } });
+  expect(screen.getByRole('button', { name: /PR 10/ })).toBeVisible();
+  expect(screen.queryByRole('button', { name: /PR 1 #1\b/ })).toBeNull();
+});
