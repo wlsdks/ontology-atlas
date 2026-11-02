@@ -1,0 +1,1 @@
+{ "gate": "comment-bytes.src-shared", "raise": 39, "why": "The image reader rejects animation because its repeated frame decoding is outside the verified resource bound." }

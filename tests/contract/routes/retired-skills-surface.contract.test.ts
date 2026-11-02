@@ -17,6 +17,7 @@ describe("retired Skills product surface", () => {
       "architecture",
       // Library now contains Sources, Wiki, and the former Docs ontology workbench.
       "library",
+      "planning",
       // Automations owns schedule management; Map and Library remain execution contexts.
       "automations",
       "insights",

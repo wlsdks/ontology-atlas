@@ -60,6 +60,8 @@ Empty folders and concepts without relationships reveal their start actions when
 
 Library service setup is app-only: Atlas confirms folder and keychain saves before activation. A browser offers the app or Add files without collecting service tokens. Local setup does not verify service access. Library check history lists executed checks first; recorded sleep gaps are available through an explicit display control.
 
+Planning reads a selected project's Markdown and bounded PNG/JPEG images in place in the macOS app. It keeps originals unchanged, refreshes the observed list, and offers an explicit return after opening source history or the ontology map. The app verifies the opened folder's identity after its descriptor is acquired; it cannot detect replacement before that point, other names or open descriptors sharing file bytes, or secrets inside documents. Browser and non-macOS desktop folder access, WebP and AVIF preview remain unavailable pending separate verification.
+
 ## Quick start
 
 1. **Install** the app from the [download page](https://ontologyatlas.com/en/download/), or open the [browser version](https://ontologyatlas.com/en/topology/).

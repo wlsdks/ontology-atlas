@@ -54,6 +54,7 @@ export const DEFAULT_ROUTES = [
   "/ko/agents/?tab=mcp",
   "/ko/agents/?tab=models",
   "/ko/library/",
+  "/ko/planning/",
   "/ko/automations/",
   // 404 is two pages, with and without a locale prefix; both are swept.
   "/ko/this-route-does-not-exist/",

@@ -20,6 +20,7 @@ import {
   LineChart,
   Map as MapIcon,
   Newspaper,
+  NotebookPen,
 } from "lucide-react";
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
@@ -138,6 +139,7 @@ export function AppNavRail({
     { id: "map", href: contextHrefs?.map ?? DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
+    { id: "planning", href: DESTINATION_HREF.planning, label: t("planning"), Icon: NotebookPen },
     { id: "automations", href: DESTINATION_HREF.automations, label: t("automations"), Icon: CalendarClock },
     /* `LineChart`, not `BarChart3`: a bar chart shares the Library icon's silhouette at 20px. */
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: LineChart },

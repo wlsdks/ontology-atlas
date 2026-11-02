@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { DESTINATION_IDS, destinationsForVaultShape } from './destinations';
 
 describe('destinationsForVaultShape', () => {
-  it('hides the map group for a wiki without a map, keeping agents, MCP and history', () => {
+  it('hides the map group for a wiki without a map while keeping planning and other standalone destinations', () => {
     expect([...destinationsForVaultShape({ map: false, wiki: true })].sort()).toEqual(
-      ['agents', 'automations', 'git', 'library'].sort(),
+      ['agents', 'automations', 'git', 'library', 'planning'].sort(),
     );
   });
 

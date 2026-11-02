@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
-import { useToast } from "@/shared/ui";
+import { Button, useToast } from "@/shared/ui";
 import { WaitStage } from "@/shared/ui/status/wait-stage";
 import { useTranslations } from "next-intl";
 import {
@@ -38,6 +38,7 @@ import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-contex
 import { buildTopologyReturnHref } from "@/entities/knowledge-graph";
 import { useHydrated } from "@/shared/lib/render-timing/use-hydrated";
 import { LibraryRoundsProvider } from "@/views/library";
+import { clearPlanningReturn, getPlanningReturn, getPlanningReturnServer, subscribePlanningReturn } from "@/shared/lib/planning/navigation";
 
 /**
  * Releases a route crossfade after commit and before paint, when the View Transitions API
@@ -130,8 +131,9 @@ function ShellColumn({ children }: { children: ReactNode }) {
           inert={mapPending !== null}
           aria-busy={mapPending !== null}
           aria-hidden={mapPending !== null ? true : undefined}
-          className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
+          className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
         >
+          <PlanningReturnBar />
           <VaultRouteIdentityBoundary pathname={pathname}>
             {children}
           </VaultRouteIdentityBoundary>
@@ -145,6 +147,15 @@ function ShellColumn({ children }: { children: ReactNode }) {
 
     </div>
   );
+}
+
+function PlanningReturnBar() {
+  const pending = useSyncExternalStore(subscribePlanningReturn, getPlanningReturn, getPlanningReturnServer);
+  const pathname = usePathname() ?? "/";
+  const router = useRouter();
+  const t = useTranslations("planning");
+  if (!pending || resolveActiveNavDestination(pathname) === "planning") return null;
+  return <div className="border-b border-[color:var(--color-border-soft)] px-4 py-2"><Button variant="ghost" onClick={() => { clearPlanningReturn(); router.push("/planning/"); }}>{t("backPlanning")}</Button></div>;
 }
 
 /** Is this the locale root that owns the installed app's first-run/restore branch? */
@@ -187,7 +198,7 @@ function VaultRouteIdentityBoundary({
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
   const destination = resolveActiveNavDestination(pathname);
-  const sourceOnlyDestination = destination === "changes" || destination === "agents";
+  const sourceOnlyDestination = destination === "changes" || destination === "agents" || destination === "planning";
   // Resolve the remembered folder before exposing controls that a restore would replace.
   const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
   const desktopWithoutVault = desktop && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
@@ -315,16 +326,16 @@ function AppNavRailSlot() {
     },
     disabled: gateway,
     hrefOverrides: { docs: contextHrefs?.docs, map: mapReturnHref },
-    visible: desktopWithoutVault ? new Set<DestinationId>(["changes", "agents"]) : visibleDestinations,
+    visible: desktopWithoutVault ? new Set<DestinationId>(["changes", "agents", "planning"]) : visibleDestinations,
   });
 
   // The shell fills the utility tier by default so no page can forget it; git is a
   // destination, not a tile here.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
-  const sourceOnlyDestination = ["changes", "agents"].includes(resolveActiveNavDestination(pathname) ?? "");
+  const sourceOnlyDestination = ["changes", "agents", "planning"].includes(resolveActiveNavDestination(pathname) ?? "");
   const sourceOnly = desktopWithoutVault && sourceOnlyDestination;
-  const shownDestinations = sourceOnly ? new Set<DestinationId>(["changes", "agents"]) : visibleDestinations;
+  const shownDestinations = sourceOnly ? new Set<DestinationId>(["changes", "agents", "planning"]) : visibleDestinations;
   const railHidden = hidden || gateway || (desktopWithoutVault && !sourceOnlyDestination);
 
   return (

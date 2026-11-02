@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { AUDITED_ROUTES } from "../audited-routes";
 import { waitForPageSettled } from "../settle";
+import planning from "../../../messages/ko/planning.json";
+import type { Page } from "@playwright/test";
 
 /**
  * Accessibility ratchet over axe-core WCAG 2.x A/AA rules. A ratchet rather than zero, so the gate is
@@ -42,6 +44,14 @@ const MIN_RULES_PASSED_PER_ROUTE = 15;
  * why a screen is empty before lowering it.
  */
 const MIN_MAIN_ELEMENTS_PER_ROUTE = 13;
+
+async function isPlanningUnsupported(page: Page): Promise<boolean> {
+  const state = page.locator('main [data-planning-state="unsupported"]');
+  return (await state.isVisible()) &&
+    (await page.getByRole('heading', { level: 1, name: planning.title }).isVisible()) &&
+    (await state.getByText(planning.browserUnavailable, { exact: true }).isVisible()) &&
+    (await page.getByRole('button', { name: planning.chooseFolder }).count()) === 0;
+}
 
 test("accessibility ratchet: zero new rule violations and no growth in existing counts", async ({ page }) => {
   // Routes went 8 → 17. At 2.5s of settle time per route plus the axe run, this
@@ -96,7 +106,8 @@ test("accessibility ratchet: zero new rule violations and no growth in existing 
     const mainElements = await page.evaluate(
       () => document.querySelectorAll("main *").length,
     );
-    if (mainElements < MIN_MAIN_ELEMENTS_PER_ROUTE) {
+    const unsupportedPlanning = route === '/ko/planning/' && await isPlanningUnsupported(page);
+    if (mainElements < (unsupportedPlanning ? 7 : MIN_MAIN_ELEMENTS_PER_ROUTE)) {
       emptyBodies.push(`  ${route}: elements in <main>: ${mainElements}`);
     }
 
@@ -153,4 +164,20 @@ test("accessibility ratchet: zero new rule violations and no growth in existing 
     `Accessibility violations fell, so lower this file's BASELINE with them; otherwise the difference ` +
       `stays as room to get worse again.\n${slack.join("\n")}`,
   ).toEqual([]);
+});
+
+test('the concise Planning exception rejects missing or falsely identified content', async ({ page }) => {
+  await page.goto('/ko/planning/?guides=off');
+  await waitForPageSettled(page);
+  expect(await isPlanningUnsupported(page)).toBe(true);
+  await page.locator('main h1').evaluate((element) => element.remove());
+  expect(await isPlanningUnsupported(page)).toBe(false);
+  await page.reload();
+  await waitForPageSettled(page);
+  await page.getByText(planning.browserUnavailable, { exact: true }).evaluate((element) => element.remove());
+  expect(await isPlanningUnsupported(page)).toBe(false);
+  await page.reload();
+  await waitForPageSettled(page);
+  await page.locator('[data-planning-state="unsupported"]').evaluate((element) => element.setAttribute('data-planning-state', 'ready'));
+  expect(await isPlanningUnsupported(page)).toBe(false);
 });
