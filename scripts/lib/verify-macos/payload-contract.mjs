@@ -174,6 +174,9 @@ export function validateWebviewVerifyPayload(payload, {
   if (/\/changes\/?$/.test(webviewPath)) {
     if (payload.markers.briefingSurface !== true) return "WebView did not report a rendered briefing surface";
     if (payload.markers.briefingRepositoryControl !== true) return "WebView did not report a visible briefing repository control";
+  } else if (/\/planning\/?$/.test(webviewPath)) {
+    if (payload.markers.planningSurface !== true) return "WebView did not report a rendered planning surface";
+    if (payload.markers.planningFolderControl !== true) return "WebView did not report an enabled planning folder control";
   } else if (/\/library\/?$/.test(webviewPath)) {
     const librarySurfaceError = validateLibrarySurfaceEvidence(payload.markers, {
       requireOntology: webviewUrl.searchParams.get("tab") === "ontology",

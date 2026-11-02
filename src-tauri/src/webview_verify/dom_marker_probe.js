@@ -338,6 +338,8 @@
                                   libraryNav: Boolean(document.querySelector('nav a[href*="/library"]')),
                                   briefingSurface: aiSettingsVisible(document.querySelector('main[data-briefing-surface] h1')),
                                   briefingRepositoryControl: aiSettingsVisible(document.querySelector('main[data-briefing-surface] header h1 + span + button:not([disabled]):not([data-testid="briefing-settings"])')),
+                                  planningSurface: aiSettingsVisible(document.querySelector('main[data-planning-surface] h1')),
+                                  planningFolderControl: aiSettingsVisible(document.querySelector('main[data-planning-surface] button[data-planning-choose]:not([disabled])')),
                                   librarySurface: Boolean(
                                     aiSettingsVisible(libraryWorkspace) &&
                                     librarySelectedTab &&

@@ -144,6 +144,38 @@ test("payload contract · Planning checks the destination and folder action in e
   }
 });
 
+test("payload contract · Planning requires its rendered surface and enabled folder action without a vault", () => {
+  const payload = validPayload({
+    href: "tauri://localhost/ko/planning/",
+    bodyText: "기획 문서\n폴더 선택",
+    markers: { ontologyNav: false, libraryNav: false, planningSurface: true, planningFolderControl: true },
+  });
+  assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/planning/" }), null);
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningSurface: false } }, { expectedPath: "/ko/planning/" }), /planning surface/i);
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningFolderControl: false } }, { expectedPath: "/ko/planning/" }), /planning.*folder/i);
+});
+
+test("Planning probe requires a visible heading and an enabled folder action", () => {
+  const probe = readFileSync(new URL("../../src-tauri/src/webview_verify/dom_marker_probe.js", import.meta.url), "utf8");
+  const dom = new JSDOM('<main data-planning-surface><h1>Planning</h1><button data-planning-choose>Choose folder</button></main>', { url: "https://localhost/ko/planning/", runScripts: "outside-only" });
+  dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({ width: 100, height: 30 });
+  Object.defineProperty(dom.window.HTMLElement.prototype, "innerText", { get() { return this.textContent; } });
+  const markers = () => JSON.parse(dom.window.eval(probe)).markers;
+  assert.equal(markers().planningSurface, true);
+  assert.equal(markers().planningFolderControl, true);
+  const button = dom.window.document.querySelector("button");
+  button.disabled = true;
+  assert.equal(markers().planningFolderControl, false);
+  button.disabled = false;
+  button.style.display = "none";
+  assert.equal(markers().planningFolderControl, false);
+  button.remove();
+  assert.equal(markers().planningFolderControl, false);
+  dom.window.document.querySelector("h1").remove();
+  assert.equal(markers().planningSurface, false);
+  dom.window.close();
+});
+
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
   // Body samples are truncated; the route title already proves app identity.
