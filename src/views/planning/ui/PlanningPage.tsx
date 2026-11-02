@@ -11,6 +11,8 @@ import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { Button, Disclosure, PageHeaderBar, RowButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { PlanningFolderStage } from './PlanningFolderStage';
 
 const panel = 'rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]';
 
@@ -203,23 +205,10 @@ export function PlanningPage() {
     <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
     <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" data-planning-choose className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
-    <div className={`mx-auto w-full max-w-7xl px-4 py-5 pb-8 sm:px-6 lg:px-10 ${available && !selection ? 'flex flex-1 flex-col' : 'space-y-4'}`}>
+    <div className={!selection ? `${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}` : 'mx-auto w-full max-w-7xl space-y-4 px-4 py-5 pb-8 sm:px-6 lg:px-10'}>
       {available === null ? <p role="status">{t('checkingSupport')}</p>
         : available === false ? <section data-planning-state="unsupported" className={`${panel} space-y-3 p-6`}><p>{t('chooseBody')}</p><p>{t('browserUnavailable')}</p></section>
-        : !selection ? <section data-planning-state="no-folder" className="my-auto mx-auto grid w-full max-w-4xl items-center gap-8 py-10 md:grid-cols-[minmax(0,1fr)_15rem] md:gap-12">
-          <div className="min-w-0">
-            <div aria-hidden className="mb-5 inline-flex rounded-card border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] p-3 text-[color:var(--color-indigo-accent)]"><FolderOpen size={ICON_SIZE.lg} /></div>
-            <h2 className="text-display leading-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('chooseTitle')}</h2>
-            <p className="mt-3 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('chooseBody')}</p>
-            {status === 'unavailable' && <p role="alert" className="mt-4">{t('folderUnavailable')}</p>}
-            <Button size="lg" data-planning-choose className="mt-6" onClick={() => void choose()}><FolderOpen size={ICON_SIZE.lg} />{t('chooseFolder')}</Button>
-            <Disclosure className="mt-5 max-w-prose [&>button]:min-h-10 max-[769px]:[&>button]:min-h-11" summary={t('details')}><p className="pt-2 text-body text-[color:var(--color-text-secondary)]">{t('limits')}</p></Disclosure>
-          </div>
-          <div className="hidden space-y-5 border-l border-[color:var(--color-border-soft)] py-2 pl-6 md:block">
-            <div className="flex items-center gap-3 text-[color:var(--color-text-secondary)]"><FileText size={ICON_SIZE.lg} aria-hidden /><span className="text-body-lg">Markdown <span className="text-[color:var(--color-text-tertiary)]">.md</span></span></div>
-            <div className="flex items-center gap-3 text-[color:var(--color-text-secondary)]"><FileImage size={ICON_SIZE.lg} aria-hidden /><span className="text-body">PNG · JPG · WebP · AVIF</span></div>
-          </div>
-        </section>
+        : !selection ? <PlanningFolderStage onChoose={() => void choose()} unavailable={status === 'unavailable'} />
         : <>
           <div className={`${panel} flex flex-wrap items-center justify-between gap-3 p-4`}>
             <div className="min-w-0 space-y-1 text-body"><p className="break-all text-[color:var(--color-text-primary)]">{t('folderLabel', { folder: selection.path })} · {t('readOnly')}</p><p className="text-[color:var(--color-text-secondary)]">{status === 'checking' ? t('checking') : checkedAt ? t('observedAt', { time: new Date(checkedAt).toLocaleString() }) : t('loading')} · {t('observationLimit')}</p></div>
