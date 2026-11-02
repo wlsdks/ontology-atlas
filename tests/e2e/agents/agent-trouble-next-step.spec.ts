@@ -11,7 +11,7 @@ async function openDockWithFailingStart(page: Page, startError: string) {
   await page.setViewportSize({ width: 1512, height: 982 });
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { startError });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /Open my folder/i }).click();
   /*
    * ⚠️ **Opening a folder lands on the map, and the walk has to wait for it.** Navigating

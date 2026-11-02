@@ -1,6 +1,5 @@
 {
   "title": "企画ドキュメント",
-  "chooseTitle": "企画フォルダを選択",
   "chooseBody": "Markdownとデザイン画像を元の場所で読みます。ファイルの移動や編集はしません。",
   "chooseFolder": "フォルダを選択",
   "limits": "選択フォルダを開いた後の置換を確認します。それ以前の置換、別のパスと共有されたファイル、文書内の秘密は検出できません。",
@@ -48,5 +47,8 @@
   "imageRecovered": "{image}：画像を再び確認できました。",
   "folderRecovered": "フォルダーを再び確認しました。",
   "imageBlocked": "{image}：{reason}",
-  "imageUnnamed": "画像{line}:{column}"
+  "imageUnnamed": "画像{line}:{column}",
+  "startTitle": "企画とデザインをひとつに",
+  "startBody": "プロジェクトフォルダを開いて、Markdown文書とデザイン画像をまとめて確認できます。",
+  "designImages": "デザイン画像"
 }

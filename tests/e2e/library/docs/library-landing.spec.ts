@@ -158,7 +158,7 @@ test.describe("A folder of pages and no nodes opens on the Library", () => {
   });
 
   test("opening the folder lands on the Library with the page listed", async ({ page }) => {
-    await page.goto("/en/docs/");
+    await page.goto("/en/");
     await page.waitForLoadState("networkidle");
     const door = page.getByRole("button", { name: /^Open my folder/ });
     await door.first().waitFor({ timeout: 25_000 });
@@ -215,7 +215,7 @@ test.describe("the Library guide raises itself once per machine", () => {
       }
     }, FIRST_RUN_SEEN_ENTRIES);
     await installDesktopBridge(page);
-    await page.goto("/en/docs/");
+    await page.goto("/en/");
     await page.waitForLoadState("networkidle");
     const door = page.getByRole("button", { name: /^Open my folder/ });
     await door.first().waitFor({ timeout: 25_000 });

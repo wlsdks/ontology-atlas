@@ -15,7 +15,7 @@ test('a long retained question stays inside the inquiry at 200 percent text on a
     'wiki/answers/retained.md': wiki(title, 'sources/refund-handling.md', digest(refund), 'Approval queues a restoration job.')
       .replace('status: draft', 'status: draft\nanswer_thread: wiki/answers/retained'),
   } });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /^Open my folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
@@ -40,7 +40,7 @@ test('keeps a short positive inquiry centered and expanded evidence reachable', 
     'sources/inventory-state.md': inventory,
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
   } });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /^Open my folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
@@ -77,7 +77,7 @@ test('keeps the report scroll viewport and focused citations above mobile naviga
     'sources/refund-handling.md': refund,
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
   } });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', { name: /^Open my folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');

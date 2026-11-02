@@ -220,5 +220,8 @@
   "previewMultipleRequests": "モデルへのリクエストは最大{count}回",
   "previewOverview": "原文を分割して読み、選んだ原文を最大{bytes}バイト再送して概要を作ります。",
   "previewDetails": "リクエストの詳細",
-  "previewCancel": "キャンセル"
+  "previewCancel": "キャンセル",
+  "startTitle": "何が変わったか、ひと目で",
+  "startBody": "PR、コミット、変更ファイルを分けて確認できます。ローカルのGitリポジトリを開いて始めましょう。",
+  "startHint": "PRの閲覧は公開GitHubリポジトリに対応しています。"
 }

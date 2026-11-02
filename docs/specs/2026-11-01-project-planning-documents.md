@@ -64,9 +64,9 @@ All keys below use the proposed `planning` namespace unless a namespace is state
 
 | State | Web | macOS app |
 |---|---|---|
-| First entry / no folder | `chooseTitle`, `chooseBody`; `chooseFolder` when directory selection is available | `chooseTitle`, `chooseBody`; `chooseFolder` |
+| First entry / no folder | `startTitle`, `startBody`, `readOnly`; `chooseFolder` when directory selection is available. A help button exposes `chooseBody` and `limits`. | Same copy and help when directory selection is available |
 | Directory selection unavailable | `browserUnavailable`; the current reader is available in the macOS app | Non-macOS desktop apps and failed capability checks show `browserUnavailable`; only macOS exposes the native picker |
-| Picker cancelled | Existing selection remains; otherwise `chooseTitle`, `chooseFolder` | Existing selection remains; otherwise `chooseTitle`, `chooseFolder` |
+| Picker cancelled | Existing selection remains; otherwise `startTitle`, `chooseFolder` | Existing selection remains; otherwise `startTitle`, `chooseFolder` |
 | Reading folder | `loading`; preserve selection and offer `refresh` when settled | `loading`; preserve selection and offer `refresh` when settled |
 | Complete empty folder | `empty`, `chooseFolder`, `refresh` | `empty`, `chooseFolder`, `refresh` |
 | File list and reader | `folderLabel`, `findFile`, `refresh`, `pathLabel`, `observedAt`, `observationLimit`; choose a row or clear search | `folderLabel`, `findFile`, `refresh`, `pathLabel`, `observedAt`, `observationLimit`; choose a row or clear search |
@@ -91,7 +91,9 @@ These are proposed exact English strings and message locations, not catalog entr
 |---|---|---|
 | `navRail.planning` | Desktop navigation | Planning |
 | `title` | Screen heading | Planning documents |
-| `chooseTitle` | First entry | Choose a planning folder |
+| `startTitle` | First-entry headline | Your plans and designs, together |
+| `startBody` | First-entry guidance | Open a project folder to read Markdown documents and design images in one place. |
+| `designImages` | Supported file category beside Markdown | Design images |
 | `chooseBody` | Folder selection | Read Markdown and design images where they already live. Atlas does not move or edit these files. |
 | `chooseFolder` | Folder selection and recovery | Choose folder |
 | `limits` | Folder boundary | Atlas checks for replacement after opening the selected folder. It cannot detect earlier replacement, files shared with other paths, or secrets within document contents. |
@@ -130,6 +132,8 @@ These are proposed exact English strings and message locations, not catalog entr
 | `unsupported` | Unsupported file or unsafe image | This file cannot be displayed here. Choose a supported Markdown document or image. |
 
 ## Edge cases
+
+- The first-entry document and design-image illustration represents supported file categories, not loaded files. It settles after one entrance and responds only to focus or hover on the folder action. Reduced motion removes its travel. Reading boundaries remain available through a keyboard-accessible help button before choosing a folder.
 
 - Empty, one-file and the recorded 833-Markdown-path folder must be distinguishable from partial enumeration. Large or deep folders use bounded listing and explicitly report omissions; no particular capacity or latency is promised before measurement.
 - Unicode and Hangul input, encoded spaces, mixed case, duplicate file names and literal relative paths retain the exact selected file. In-root `../` image links work; traversals leaving the selected root do not. Absolute paths, `file:` URLs and remote images in documents are not followed. After the selected root has been established, symlink components inside it are never followed; a legitimate canonical alias encountered while establishing the selected root is a separate, identity-checked case described below.
