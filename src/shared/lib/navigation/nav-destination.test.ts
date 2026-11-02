@@ -27,6 +27,7 @@ describe('stripLocalePrefix', () => {
 
   it('is used by the ladders it feeds', () => {
     expect(resolveActiveNavDestination('/ko/git/')).toBe('git');
+    expect(resolveActiveNavDestination('/ko/planning/')).toBe('planning');
     expect(isGatewayRoute('/en/download/')).toBe(true);
   });
 });

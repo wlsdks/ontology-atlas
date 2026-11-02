@@ -174,7 +174,8 @@
       "copyDocUrl": "現在の文書のURLをクリップボードにコピー",
       "tagFilter": "タグチップをクリックしてツリーを絞り込み",
       "modeToggle": "モードの切り替え：そのモードの文書だけを表示",
-      "goTo_changes": "変更ブリーフィングへ移動"
+      "goTo_changes": "変更ブリーフィングへ移動",
+      "goTo_planning": "企画へ移動"
     },
     "keys": {
       "drag": "ドラッグ",

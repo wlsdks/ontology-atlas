@@ -42,6 +42,7 @@ area: architecture
 │ ├─ /ontology/insights      relationships + evidence        │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /changes                source change briefing      │
+│ ├─ /planning               selected project documents  │
 │ ├─ /agents                 agents · MCP, two tabs      │
 │ ├─ /mcp                    compatibility → /agents      │
 │ ├─ /projects               project list                │
@@ -714,6 +715,9 @@ until a local manifest, or the first part of one, exists.
                            where every ?role= deep link still lands. ?view=structure,
                            ?view=coverage and ?view=sensors rewrite to overview.
                            Never an ontology map
+/planning                  session-only, read-only project-folder reader; native reads use a
+                           Planning-specific root descriptor and never add source/vault grants.
+                           The browser displays an unsupported state pending separate proof.
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
@@ -813,10 +817,10 @@ Its finite mascot consumes that same feed and appears in the status lane only
 for observed read/completion events; it adds no polling or idle simulation.
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows eight destinations: Map,
-Architecture, Library, Automations, Insights, Projects, Agents, and Git. Agents carries
+different list of buttons.** The desktop rail shows Map,
+Architecture, Library, Planning, Automations, Insights, Projects, Agents, Changes and Git. Agents carries
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
-bar shows five persistent destinations: Map, Architecture, Library, Insights, and Projects;
+bar shows Map, Architecture, Library, Planning, Insights, and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Check history;
 Bookmarks live inside Ontology alongside Concept documents;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves

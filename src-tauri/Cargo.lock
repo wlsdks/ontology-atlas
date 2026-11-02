@@ -2633,6 +2633,8 @@ dependencies = [
  "log",
  "notify-debouncer-full",
  "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
  "rfd",
  "serde",
  "serde_json",
@@ -2646,6 +2648,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-plugin-window-state",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

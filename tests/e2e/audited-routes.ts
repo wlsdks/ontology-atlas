@@ -41,6 +41,7 @@ export const AUDITED_ROUTES = [
   "/ko/agents/?tab=models",
   // Measures the no-folder state, the only one a ratchet without a vault can reach.
   "/ko/library/",
+  "/ko/planning/",
   // Without a native folder root the browser cannot run the local clock;
   // this audits the no-folder state.
   "/ko/automations/",

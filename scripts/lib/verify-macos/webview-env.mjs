@@ -83,6 +83,11 @@ const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
   /Review summary|Wiki|검토 요약|위키/i,
 ];
 
+const WEBVIEW_PLANNING_WORKBENCH_MARKERS = [
+  /Planning documents|企画ドキュメント|기획 문서|规划文档/i,
+  /Choose folder|フォルダを選択|폴더 선택|选择文件夹/i,
+];
+
 /**
  * The verifier can open any packaged route. Do not make non-topology routes
  * repeat map copy merely to satisfy a launch gate; require two route-owned,
@@ -95,6 +100,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = nu
     const routeIs = (route) => new RegExp(`/${prefix}/${route}/?$`).test(pathname);
     if (routeIs("agents")) {
       return WEBVIEW_AGENTS_WORKBENCH_MARKERS;
+    }
+    if (routeIs("planning")) {
+      return WEBVIEW_PLANNING_WORKBENCH_MARKERS;
     }
     if (routeIs("changes")) {
       return [/\S/];

@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon } from 'lucide-react';
+import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon, NotebookPen } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useMapReadingContext } from '@/shared/lib/navigation/map-reading-context';
@@ -47,6 +47,7 @@ const TABS: ReadonlyArray<TabItem> = [
       map: MapIcon,
       architecture: Blocks,
       library: Library,
+      planning: NotebookPen,
       // `LineChart`, not `BarChart3` (see `AppNavRail.tsx`).
       insights: LineChart,
       projects: FolderKanban,
@@ -58,7 +59,7 @@ const WIKI_ONLY_TABS: ReadonlyArray<TabItem> = WIKI_ONLY_MOBILE_DESTINATION_IDS.
   id,
   href: DESTINATION_HREF[id],
   labelKey: id,
-  icon: Library,
+  icon: id === 'planning' ? NotebookPen : Library,
 }));
 
 export function BottomTabBar() {
@@ -84,15 +85,16 @@ export function BottomTabBar() {
     isDesktopApp: desktopRuntime === true,
   });
 
-  if ((desktopRuntime === true && !vault.manifest && !vault.partialTotal) || shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
+  const activeId = resolveActiveNavDestination(pathname);
+  const desktopWithoutVault = desktopRuntime === true && !vault.manifest && !vault.partialTotal;
+  if ((desktopWithoutVault && activeId !== 'planning') || shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
     return null;
   }
 
-  const activeId = resolveActiveNavDestination(pathname);
   const visible = destinationsForVaultShape(vault.manifest ? describeVaultShape(vault.manifest.docs) : null);
   const mapTabs = TABS.filter((tab) => visible.has(tab.id));
   const shapeTabs = mapTabs.length > 0 ? mapTabs : WIKI_ONLY_TABS;
-  const tabs = shapeTabs.map((tab) => {
+  const tabs = (desktopWithoutVault ? shapeTabs.filter((tab) => tab.id === 'planning') : shapeTabs).map((tab) => {
     if (tab.id === 'projects' && soleProjectHref) return { ...tab, href: soleProjectHref };
     if (tab.id === 'map' && activeId !== 'map' && readingContext.selectedId) {
       return { ...tab, href: buildTopologyReturnHref(readingContext.selectedId) };
@@ -109,7 +111,7 @@ export function BottomTabBar() {
       data-tabbar-surface-token="--topology-bottom-tab-surface"
       data-tabbar-border-token="--topology-bottom-tab-border"
       aria-label={t('primaryAriaLabel')}
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-elevation-dock-bottom)] lg:hidden"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-start overflow-x-auto border-t border-[color:var(--topology-bottom-tab-border)] bg-[color:var(--topology-bottom-tab-surface)] pb-[env(safe-area-inset-bottom)] shadow-[var(--shadow-elevation-dock-bottom)] sm:justify-around lg:hidden"
     >
       {tabs.map((tab) => {
         const Icon = tab.icon;
@@ -122,8 +124,8 @@ export function BottomTabBar() {
             data-active={active ? 'true' : 'false'}
             className={
               active
-                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-text-soft)] transition-colors active:bg-[color:var(--color-indigo-a08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
-                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
+                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-text-soft)] transition-colors active:bg-[color:var(--color-indigo-a08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
+                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
             }
           >
             {active ? (
@@ -155,7 +157,7 @@ export function BottomTabBar() {
           href="/download/"
           title={tRail('getAppTitle')}
           data-testid="bottom-tab-get-app"
-          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
+          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
         >
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
             <Download size={ICON_SIZE.lg} aria-hidden />
