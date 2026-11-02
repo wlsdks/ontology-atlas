@@ -90,7 +90,7 @@ protocol only for an actual review. Motion proof follows one
 ## Maintenance
 
 Change the owner once and adjust adapters only for host differences. Run
-`pnpm agents:check` and `pnpm checks:changed -- --run` after instruction
-changes. For a discovery or enforcement change, plant a failing case and restore
+`pnpm agents:check` after instruction changes and select any other checks from
+`pnpm checks:changed` for the actual risk. For a discovery or enforcement change, plant a failing case and restore
 a passing one through `/gate-probe`. Never weaken a check to admit a missing
 skill.

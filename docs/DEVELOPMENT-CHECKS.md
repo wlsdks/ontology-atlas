@@ -13,18 +13,18 @@ area: process
 
 ## Default gate
 
-Start every change with the planner, and let it run what it recommends:
+Start with the planner to inventory candidates without running them:
 
 ```bash
-pnpm checks:changed -- --run
+pnpm checks:changed
 ```
 
-It reads the Git diff (tracked and untracked), prints the direct sibling
-checks first and the escalation gates after, and stops at the first failure.
-Do not hand-pick from its list. Escalate to `pnpm test:run`, `pnpm lint`,
-`pnpm build`, broad Playwright, or desktop packaging only when a shared
-contract, routing, configuration, release surface, or user workflow requires
-it; the entries below name that condition per area.
+It reads the Git diff (tracked and untracked), printing direct sibling checks
+and escalation candidates. Select the smallest checks that cover the actual
+change and its relevant failure modes; state what ran and any remaining risk.
+Escalate to `pnpm test:run`, `pnpm lint`, `pnpm build`, broad Playwright, or
+desktop packaging when a failure, shared contract, routing, configuration,
+release surface, or user workflow requires it. Keep required CI unchanged.
 
 ## Where CI internals live
 
