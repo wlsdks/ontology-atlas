@@ -125,7 +125,6 @@ function ShellColumn({ children }: { children: ReactNode }) {
           containing block for pages' fixed surfaces otherwise. The rail is not captured, so it
           keeps painting and taking presses while the pane fades.
         */}
-        {/* Keep Planning's scrolling content above the fixed narrow-screen navigation. */}
         <div
           data-testid="app-shell-body-slot"
           data-app-shell-pane=""
