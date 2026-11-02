@@ -34,14 +34,10 @@ decisions and approval while their content and conditions still hold.
 Check `git status`; preserve unrelated changes and active processes. Use native
 search and targeted file reads for source and change-impact questions.
 
-Run `pnpm checks:changed` to inventory possible checks, then run the smallest
-set that directly proves the changed behavior and its relevant failure modes.
-Treat recommendations as candidates, not automatic local obligations; expand
-only for an observed failure, changed shared contract, or named risk. Do not
-repeat passing checks without new evidence, run broad local suites by default,
-or reduce required CI. This rule takes precedence over conflicting scoped test
-instructions. Report what ran and any unverified risk; never claim unperformed
-proof. `.claude/rules/testing.md` owns test shape and escalation examples.
+Use `pnpm checks:changed` for candidates; run only checks needed for the
+change and its risks. Escalate on evidence, keep required CI, and do not repeat
+passing checks. This overrides conflicting test instructions.
+`.claude/rules/testing.md` owns test shape. Report evidence and limits.
 
 A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
