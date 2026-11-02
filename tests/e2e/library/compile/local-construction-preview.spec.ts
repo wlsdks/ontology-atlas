@@ -20,7 +20,7 @@ test('opens a source disclosure before transfer and keeps its controls reachable
     if (internals) internals = wrap(internals);
     Object.defineProperty(w, '__TAURI_INTERNALS__', { configurable:true, get:()=>internals, set:value=>{internals=wrap(value);} });
   });
-  await page.goto('/en/docs/');
+  await page.goto('/en/');
   await page.getByRole('button', {name:/^Open my folder/}).first().click();
   await page.getByTestId('topology-vault-agent-toggle').click();
   await page.getByTestId('construction-action').click();

@@ -94,7 +94,7 @@ function responseToolNames(snapshot: LocalCompileHarnessSnapshot): string[] {
 async function openLocalCompile(page: Page, selectPage = false, options: Parameters<typeof installLocalCompileHarness>[1] = {}): Promise<LocalCompileHarness> {
   await seedFirstRunSeen(page);
   const harness = await installLocalCompileHarness(page, options);
-  await page.goto("/en/docs/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/en/?guides=off", { waitUntil: "domcontentloaded" });
   await page.getByRole("button", { name: /Open my folder/i }).click();
   await expect(page.getByRole("heading", { name: "Map", level: 1 })).toBeVisible({
     timeout: 30_000,

@@ -33,7 +33,7 @@ test("a current source write-up revises an outdated related page; approval updat
       JSON.stringify({ choices: [{ finish_reason: "stop", message: { role: "assistant", content: "Revised answer proposed." } }] }),
     ],
   });
-  await browser.goto("/en/docs/?guides=off");
+  await browser.goto("/en/?guides=off");
   await browser.getByRole("button", { name: /Open my folder/i }).click();
   await browser.getByTestId("app-nav-rail-item-library").click();
   await browser.getByTestId("library-workspace-sources").click();
