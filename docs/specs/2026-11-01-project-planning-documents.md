@@ -133,7 +133,7 @@ These are proposed exact English strings and message locations, not catalog entr
 
 ## Edge cases
 
-- The first-entry folder drawing represents supported file categories, not loaded files. It settles after one entrance and responds only to focus or hover on the folder action. Reduced motion removes its travel. Reading boundaries remain available through a keyboard-accessible help button before choosing a folder.
+- The first-entry document and design-image illustration represents supported file categories, not loaded files. It settles after one entrance and responds only to focus or hover on the folder action. Reduced motion removes its travel. Reading boundaries remain available through a keyboard-accessible help button before choosing a folder.
 
 - Empty, one-file and the recorded 833-Markdown-path folder must be distinguishable from partial enumeration. Large or deep folders use bounded listing and explicitly report omissions; no particular capacity or latency is promised before measurement.
 - Unicode and Hangul input, encoded spaces, mixed case, duplicate file names and literal relative paths retain the exact selected file. In-root `../` image links work; traversals leaving the selected root do not. Absolute paths, `file:` URLs and remote images in documents are not followed. After the selected root has been established, symlink components inside it are never followed; a legitimate canonical alias encountered while establishing the selected root is a separate, identity-checked case described below.
