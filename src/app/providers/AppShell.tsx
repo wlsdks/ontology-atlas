@@ -385,7 +385,7 @@ function AppUpdateSurface() {
 function NoVaultRailEntry() {
   const t = useTranslations("vaultSwitch");
   return <Link href="/" data-testid="vault-open-rail-tile" aria-label={t("choose.title")}
-    className={controlClass({ shape: 'card', className: 'group mb-2 w-full flex-col gap-1 border-0 px-0 py-1' })}>
+    className={controlClass({ shape: 'card', hoverSurface: 'lift', hoverInk: 'strong', className: 'group mb-2 w-full flex-col gap-1 border-0 px-0 py-1' })}>
     <span className="flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)] group-hover:text-[color:var(--color-text-primary)]">
       <FolderOpen size={ICON_SIZE.md} aria-hidden />
     </span>

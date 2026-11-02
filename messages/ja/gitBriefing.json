@@ -222,6 +222,6 @@
   "previewDetails": "リクエストの詳細",
   "previewCancel": "キャンセル",
   "startTitle": "何が変わったか、ひと目で",
-  "startBody": "PR、コミット、変更ファイルを分けて確認できます。ローカルの Git リポジトリを開いて始めましょう。",
-  "startHint": "PR の閲覧は公開 GitHub リポジトリに対応しています。"
+  "startBody": "PR、コミット、変更ファイルを分けて確認できます。ローカルのGitリポジトリを開いて始めましょう。",
+  "startHint": "PRの閲覧は公開GitHubリポジトリに対応しています。"
 }

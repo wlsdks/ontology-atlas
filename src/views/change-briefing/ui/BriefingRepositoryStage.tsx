@@ -9,7 +9,6 @@ import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
 import { Button } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-/** A diagram of reading modes, never a preview of repository results. */
 export function BriefingRepositoryStage({ onChoose }: { onChoose: () => void }) {
   const t = useTranslations('gitBriefing');
   const review = useTranslations('prBriefing');
@@ -27,8 +26,8 @@ export function BriefingRepositoryStage({ onChoose }: { onChoose: () => void }) 
     transition={reduced ? MOTION.fast : MOTION.expressive}
     className="my-auto grid w-full items-center gap-8 py-6 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10">
     <div className="min-w-0">
-      <h2 className="max-w-sm break-keep text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
-      <p className="mt-4 max-w-sm break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
+      <h2 className="max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
+      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
       <Button size="lg" className="mt-7" data-briefing-choose onClick={onChoose}
         onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}

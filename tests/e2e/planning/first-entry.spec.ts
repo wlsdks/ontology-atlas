@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import planning from '../../../messages/ko/planning.json';
+import { waitFrames } from '../settle';
 import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from '../motion-sampler';
 
@@ -29,8 +30,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(stage).toBeVisible();
     await expect(stage).toHaveAttribute('data-reduced-motion', String(reducedMotion === 'reduce'));
     await expect(stage).toHaveCSS('opacity', '1');
-    // measurement window: retain a quiet tail after the entrance in the frame sampler.
-    await page.waitForTimeout(150);
+    await waitFrames(page, 18);
     expectSmoothMotion(await stopSmoothness(page, '[data-planning-state="no-folder"]'), { still: reducedMotion === 'reduce' });
 
     const choose = page.getByRole('button', { name: planning.chooseFolder });
@@ -38,8 +38,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     const resting = await paper.evaluate((element) => getComputedStyle(element).transform);
     await choose.focus();
     if (reducedMotion === 'reduce') {
-      // measurement window: observe reduced motion through a full focus-response interval.
-      await page.waitForTimeout(300);
+      await waitFrames(page, 36);
       expect(await paper.evaluate((element) => getComputedStyle(element).transform)).toBe(resting);
     } else {
       await expect.poll(() => paper.evaluate((element) => getComputedStyle(element).transform)).not.toBe(resting);

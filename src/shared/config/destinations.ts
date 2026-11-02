@@ -26,7 +26,6 @@ export const DESTINATION_IDS = [
 
 export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 
-/** These destinations provide their own folder entry before a vault is connected. */
 export const FOLDER_OPTIONAL_DESTINATIONS: ReadonlySet<DestinationId> = new Set(['library', 'planning', 'agents', 'changes']);
 
 /*

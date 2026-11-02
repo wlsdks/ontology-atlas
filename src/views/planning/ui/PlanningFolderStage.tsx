@@ -27,8 +27,8 @@ export function PlanningFolderStage({ onChoose, unavailable }: { onChoose: () =>
     className="my-auto grid w-full items-center gap-8 py-6 md:grid-cols-[minmax(0,1fr)_22rem] md:gap-10"
   >
     <div className="min-w-0">
-      <h2 className="max-w-sm break-keep text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
-      <p className="mt-4 max-w-sm break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
+      <h2 className="max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
+      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
       {unavailable && <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p>}
       <Button size="lg" data-planning-choose className="mt-7"
         onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
