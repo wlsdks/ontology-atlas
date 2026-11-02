@@ -300,7 +300,7 @@ export function ChangeBriefingPage() {
     refresh();
   }
   if (native && !root) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
-    <PageHeaderBar frame="page" title={git('title')} actions={<IconButton label={git('briefingSettings')} data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden /></IconButton>} />
+    <PageHeaderBar frame="page" title={git('title')} actions={<IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden /></IconButton>} />
     <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage onChoose={() => void chooseRepository()} /></div>
     <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
   </main>;

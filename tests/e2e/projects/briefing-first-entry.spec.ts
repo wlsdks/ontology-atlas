@@ -23,6 +23,8 @@ test('unconnected desktop keeps Library reachable and repository cancellation re
   await expect(library).toBeVisible();
   await library.click();
   await expect(page).toHaveURL(/\/library/);
+  await expect(page.locator('[data-library-state="no-folder"]')).toBeVisible();
+  await expect(page.getByTestId('library-open-vault')).toBeVisible();
   await expect(page.getByTestId('vault-open-rail-tile')).toBeVisible();
   await page.locator('[data-testid="app-nav-rail"] a[href*="/changes"]').click();
   await expect(stage).toBeVisible();
