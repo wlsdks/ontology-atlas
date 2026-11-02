@@ -198,7 +198,7 @@ export function PlanningPage() {
     <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
     <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 pb-28 sm:px-6 lg:px-10">
+    <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 pb-8 sm:px-6 lg:px-10">
       {available === null ? <p role="status">{t('checkingSupport')}</p>
         : available === false ? <section data-planning-state="unsupported" className={`${panel} space-y-3 p-6`}><p>{t('chooseBody')}</p><p>{t('browserUnavailable')}</p></section>
         : !selection ? <section className={`${panel} space-y-4 p-6`}><h2 className="text-title font-[var(--font-weight-strong)]">{t('chooseTitle')}</h2><p className="max-w-3xl text-body text-[color:var(--color-text-secondary)]">{t('chooseBody')}</p>{status === 'unavailable' && <p role="alert">{t('folderUnavailable')}</p>}{available && <Button variant="outline" className="max-[769px]:min-h-11" onClick={() => void choose()}>{t('chooseFolder')}</Button>}<Disclosure className="max-w-3xl [&>button]:min-h-10 max-[769px]:[&>button]:min-h-11" summary={t('details')}><p className="pt-2 text-body text-[color:var(--color-text-secondary)]">{t('limits')}</p></Disclosure></section>

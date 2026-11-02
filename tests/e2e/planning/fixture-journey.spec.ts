@@ -37,7 +37,7 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
           win.opens++;
           if (win.holdOpen) await new Promise<void>((resolve) => { win.releaseOpen = resolve; });
         }
-        const contents = args?.path === 'image.png' ? bytes() : Array.from(new TextEncoder().encode('![design](image.png)'));
+        const contents = args?.path === 'image.png' ? bytes() : Array.from(new TextEncoder().encode('![design](image.png)\n\n' + 'A paragraph of the planning document.\n\n'.repeat(12)));
         return [...new TextEncoder().encode('a'.repeat(32)), ...contents];
       }
       if (cmd === 'planning_read_file') {
@@ -66,6 +66,16 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await history.scrollIntoViewIfNeeded();
   const historyBox = await history.boundingBox();
   expect(historyBox!.y + historyBox!.height).toBeLessThanOrEqual(navigation!.y + 1);
+  await page.getByTestId('app-shell-body-slot').evaluate((slot) => { slot.scrollTop = slot.scrollHeight; });
+  await expect.poll(async () => {
+    const slot = await page.getByTestId('app-shell-body-slot').boundingBox();
+    const action = await page.getByRole('button', { name: planning.openMap }).boundingBox();
+    return slot!.y + slot!.height - (action!.y + action!.height);
+  }).toBeLessThanOrEqual(40);
+  await history.focus();
+  await expect(history).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: planning.openMap })).toBeFocused();
   await page.setViewportSize(originalViewport);
   const visualStatus = (await page.getByText(planning.imageChecked).elementHandle())!;
   const alert = page.locator('[data-planning-image-alert]');

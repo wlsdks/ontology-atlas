@@ -132,7 +132,7 @@ function ShellColumn({ children }: { children: ReactNode }) {
           inert={mapPending !== null}
           aria-busy={mapPending !== null}
           aria-hidden={mapPending !== null ? true : undefined}
-          className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${resolveActiveNavDestination(pathname) === "planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
+          className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${stripLocalePrefix(pathname).replace(/\/+$/, "") === "/planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
         >
           <PlanningReturnBar />
           <VaultRouteIdentityBoundary pathname={pathname}>
