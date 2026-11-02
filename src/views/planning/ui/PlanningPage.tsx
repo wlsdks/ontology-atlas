@@ -182,7 +182,7 @@ export function PlanningPage() {
       setFolderNotice(null);
       writePlanningMemory({ selection: next, selected: null, scroll: 0, identity: null, changed: false, returnFocus: null });
       selectedRef.current = null;
-      setSelection(next); setSelected(null); setInventory(null); setContent(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
+      setSelection(next); setSelected(null); setSearch(''); setInventory(null); setContent(null); setImageBytes(null); setCheckedAt(null); setFileFailed(false); setFileChanged(false);
     } catch { setStatus('unavailable'); }
   };
   const openFile = (path: string) => {
@@ -227,7 +227,7 @@ export function PlanningPage() {
                 {inventory && files.length === 0 && <p className="py-3 text-body text-[color:var(--color-text-secondary)]">{search ? t('noMatches') : inventory.partial ? t('partial') : t('empty')}</p>}</div>
             </section>
             <section ref={reader} onScroll={(event) => { if (pendingScroll.current === null) writePlanningMemory({ ...readPlanningMemory(), scroll: event.currentTarget.scrollTop }); }} className={`${panel} min-w-0 overflow-auto p-5 sm:p-6 lg:max-h-[70vh]`}>
-              {!selected ? <p className="text-body text-[color:var(--color-text-secondary)]">{t('selectFile')}</p> : <div className="space-y-5">
+              {!selected ? <div className="flex min-h-48 flex-col items-center justify-center gap-3 text-center text-body text-[color:var(--color-text-secondary)]"><FileText size={24} aria-hidden /><p>{t('selectFile')}</p></div> : <div className="space-y-5">
                 <p className="break-all text-body text-[color:var(--color-text-secondary)]">{t('pathLabel', { path: selected })}</p>
                 {fileChanged ? <p role="alert">{t('fileChanged')}</p> : fileFailed ? <p role="alert">{t('fileUnavailable')}</p> : selected.toLowerCase().endsWith('.md') ? content !== null && <PlanningMarkdown key={selected} document={selected} text={content} readImage={readImage} observation={observation} imageUnavailable={t('imageUnavailable')} unsupported={t('unsupported')} imageLimit={t('imageLimit')} /> : imageBytes && <PlanningStandaloneImage key={selected} path={selected} bytes={imageBytes} alt={selected} unavailable={t('imageUnavailable')} unsupported={t('unsupported')} observation={observation} />}
               </div>}

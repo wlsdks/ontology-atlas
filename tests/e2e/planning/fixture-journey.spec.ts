@@ -476,6 +476,36 @@ test('file names lead the list while relative paths disambiguate and remain sear
   await expect(page.getByText(planning.historyBrief)).toBeVisible();
 });
 
+test('switching folders clears the old folder search, while cancelling preserves it', async ({ page }) => {
+  await installDesktopRailRuntime(page);
+  await page.addInitScript(() => {
+    const win = window as unknown as { __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const original = win.__TAURI_INTERNALS__.invoke;
+    let picks = 0;
+    win.__TAURI_INTERNALS__.invoke = async (cmd, args) => {
+      if (cmd === 'planning_supported') return true;
+      if (cmd === 'planning_pick_folder') {
+        picks++;
+        if (picks === 2) return null;
+        return { generation: picks, folder: `folder-${picks}`, path: `/tmp/folder-${picks}` };
+      }
+      if (cmd === 'planning_scan') return { files: [{ path: args?.generation === 1 ? 'old.md' : 'new.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } };
+      return original(cmd, args);
+    };
+  });
+  await page.goto('/ko/planning/');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await expect(page.getByRole('button', { name: 'old.md' })).toBeVisible();
+  const search = page.getByRole('textbox', { name: planning.findFile });
+  await search.fill('old');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await expect(search).toHaveValue('old');
+  await page.getByRole('button', { name: '폴더 선택' }).click();
+  await expect(page.getByText('폴더: /tmp/folder-3')).toBeVisible();
+  await expect(search).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'new.md' })).toBeVisible();
+});
+
 test('late inventory from a previous folder never replaces the new selection', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
