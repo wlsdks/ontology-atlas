@@ -186,7 +186,7 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
 test('a readable folder does not hide an unreadable or replaced document', async ({ page }) => {
   await installDesktopRailRuntime(page);
   await page.addInitScript(() => {
-    const win = window as unknown as { mode: 'unavailable' | 'changed' | 'ready'; now: number; lastScan: number; __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
+    const win = window as unknown as { mode: 'unavailable' | 'changed' | 'ready'; now: number; lastScan: number; releaseDocument?: () => void; __TAURI_INTERNALS__: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } };
     const original = win.__TAURI_INTERNALS__.invoke;
     win.mode = 'unavailable';
     win.now = Date.now();
@@ -196,7 +196,8 @@ test('a readable folder does not hide an unreadable or replaced document', async
       if (cmd === 'planning_pick_folder') return { generation: 1, folder: 'docs', path: '/tmp/docs' };
       if (cmd === 'planning_scan') { win.lastScan = win.now += 60_000; return { files: [{ path: 'plan.md', size: 1, modified_seconds: 1 }], skipped: 0, partial: false, visited: 1, limit_reached: false, depth_limited: false, unknown_remainder: false, omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 } }; }
       if (cmd === 'planning_open_document') {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await new Promise<void>((resolve) => { win.releaseDocument = resolve; });
+        delete win.releaseDocument;
         win.now += 120_000;
         if (win.mode === 'unavailable') throw new Error('unavailable');
         if (win.mode === 'changed') throw new Error('file-changed');
@@ -209,17 +210,24 @@ test('a readable folder does not hide an unreadable or replaced document', async
   await page.getByRole('button', { name: '폴더 선택' }).click();
   const folderObservation = page.getByText(planning.observedAt.split('{time}')[0], { exact: false });
   await expect(folderObservation).toBeVisible();
+  const releaseDocument = async () => {
+    await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseDocument?: () => void }).releaseDocument))).toBe(true);
+    await page.evaluate(() => (window as unknown as { releaseDocument: () => void }).releaseDocument());
+  };
   await page.getByRole('button', { name: 'plan.md' }).click();
+  await releaseDocument();
   await expect(page.getByText(planning.fileUnavailable)).toBeVisible();
   await expect(folderObservation).toBeVisible();
   await expect(folderObservation).toContainText(await page.evaluate(() => new Date((window as unknown as { lastScan: number }).lastScan).toLocaleString()));
   await expect(page.getByRole('button', { name: planning.openHistory })).toBeDisabled();
   await page.evaluate(() => { (window as unknown as { mode: string }).mode = 'ready'; });
   await page.getByRole('button', { name: planning.refresh }).click();
+  await releaseDocument();
   await expect(page.getByRole('heading', { name: 'Recovered plan' })).toBeVisible();
   await expect(page.getByRole('button', { name: planning.openHistory })).toBeEnabled();
   await page.evaluate(() => { (window as unknown as { mode: string }).mode = 'changed'; });
   await page.getByRole('button', { name: planning.refresh }).click();
+  await releaseDocument();
   await expect(page.getByText(planning.fileChanged)).toBeVisible();
   await expect(folderObservation).toBeVisible();
   await expect(page.getByRole('button', { name: planning.openHistory })).toBeDisabled();
