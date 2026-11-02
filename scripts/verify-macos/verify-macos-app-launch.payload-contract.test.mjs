@@ -148,10 +148,11 @@ test("payload contract · Planning requires its rendered surface and enabled fol
   const payload = validPayload({
     href: "tauri://localhost/ko/planning/",
     bodyText: "기획 문서\n폴더 선택",
-    markers: { ontologyNav: false, libraryNav: false, planningSurface: true, planningFolderControl: true },
+    markers: { ontologyNav: false, libraryNav: false, planningSurface: true, planningHeading: "기획 문서", planningFolderControl: true },
   });
   assert.equal(validateWebviewVerifyPayload(payload, { expectedPath: "/ko/planning/" }), null);
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningSurface: false } }, { expectedPath: "/ko/planning/" }), /planning surface/i);
+  assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningHeading: "Other" } }, { expectedPath: "/ko/planning/" }), /planning heading/i);
   assert.match(validateWebviewVerifyPayload({ ...payload, markers: { ...payload.markers, planningFolderControl: false } }, { expectedPath: "/ko/planning/" }), /planning.*folder/i);
 });
 
@@ -167,11 +168,31 @@ test("Planning probe requires a visible heading and an enabled folder action", (
   button.disabled = true;
   assert.equal(markers().planningFolderControl, false);
   button.disabled = false;
+  button.setAttribute("aria-disabled", "true");
+  assert.equal(markers().planningFolderControl, false);
+  button.removeAttribute("aria-disabled");
   button.style.display = "none";
   assert.equal(markers().planningFolderControl, false);
+  button.style.display = "";
+  const main = dom.window.document.querySelector("main");
+  main.setAttribute("inert", "");
+  assert.equal(markers().planningFolderControl, false);
+  main.removeAttribute("inert");
+  main.setAttribute("hidden", "");
+  assert.equal(markers().planningFolderControl, false);
+  main.removeAttribute("hidden");
+  main.setAttribute("aria-hidden", "true");
+  assert.equal(markers().planningFolderControl, false);
+  main.removeAttribute("aria-hidden");
+  main.style.opacity = "0";
+  assert.equal(markers().planningFolderControl, false);
+  main.style.opacity = "";
+  const heading = main.querySelector("h1");
+  heading.textContent = "";
+  assert.equal(markers().planningSurface, false);
   button.remove();
   assert.equal(markers().planningFolderControl, false);
-  dom.window.document.querySelector("h1").remove();
+  heading.remove();
   assert.equal(markers().planningSurface, false);
   dom.window.close();
 });

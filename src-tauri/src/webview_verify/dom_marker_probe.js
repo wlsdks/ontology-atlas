@@ -50,6 +50,17 @@
                                   rect.width > 0 &&
                                   rect.height > 0;
                               };
+                              const planningVisible = (el) => {
+                                if (!aiSettingsVisible(el)) return false;
+                                for (let node = el; node; node = node.parentElement) {
+                                  if (node.matches('[hidden], [inert], [aria-hidden="true"]')) return false;
+                                  const style = getComputedStyle(node);
+                                  if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || "1") <= 0.01) return false;
+                                }
+                                return true;
+                              };
+                              const planningHeading = document.querySelector('main[data-planning-surface] h1');
+                              const planningHeadingText = (planningHeading?.textContent || "").trim();
                               const libraryWorkspace = document.querySelector('[data-testid="library-workspace"]');
                               const librarySelectedTab = libraryWorkspace?.querySelector('[role="tab"][aria-selected="true"]');
                               const librarySelectedPanelId = librarySelectedTab?.getAttribute("aria-controls") || "";
@@ -338,8 +349,9 @@
                                   libraryNav: Boolean(document.querySelector('nav a[href*="/library"]')),
                                   briefingSurface: aiSettingsVisible(document.querySelector('main[data-briefing-surface] h1')),
                                   briefingRepositoryControl: aiSettingsVisible(document.querySelector('main[data-briefing-surface] header h1 + span + button:not([disabled]):not([data-testid="briefing-settings"])')),
-                                  planningSurface: aiSettingsVisible(document.querySelector('main[data-planning-surface] h1')),
-                                  planningFolderControl: aiSettingsVisible(document.querySelector('main[data-planning-surface] button[data-planning-choose]:not([disabled])')),
+                                  planningSurface: planningVisible(planningHeading) && planningHeadingText.length > 0,
+                                  planningHeading: planningHeadingText,
+                                  planningFolderControl: planningVisible(document.querySelector('main[data-planning-surface] button[data-planning-choose]:not([disabled]):not([aria-disabled="true"])')),
                                   librarySurface: Boolean(
                                     aiSettingsVisible(libraryWorkspace) &&
                                     librarySelectedTab &&
