@@ -35,7 +35,14 @@ define_class!(
             let urls = panel.URLs();
             let path = if urls.len() == 1 {
                 urls.objectAtIndex(0).path().map(|value| PathBuf::from(value.to_string()))
-            } else { None };
+            } else {
+                panel.directoryURL().and_then(|url| url.path()).map(|value| PathBuf::from(value.to_string()))
+            };
+            let _ = self.ivars().binding.borrow_mut().observe(path.as_deref());
+        }
+        #[unsafe(method(panel:didChangeToDirectoryURL:))]
+        fn directory_changed(&self, _panel: &AnyObject, url: Option<&NSURL>) {
+            let path = url.and_then(|value| value.path()).map(|value| PathBuf::from(value.to_string()));
             let _ = self.ivars().binding.borrow_mut().observe(path.as_deref());
         }
         #[unsafe(method(panel:validateURL:error:))]
@@ -84,6 +91,15 @@ pub(super) fn choose_folder(error_message: &str) -> Result<Option<(PathBuf, File
     unsafe {
         panel.setDelegate(Some(ProtocolObject::from_ref(&*delegate)));
     }
+    let initial = panel
+        .directoryURL()
+        .and_then(|url| url.path())
+        .map(|value| PathBuf::from(value.to_string()));
+    let _ = delegate
+        .ivars()
+        .binding
+        .borrow_mut()
+        .observe(initial.as_deref());
     let response = panel.runModal();
     if response != NSModalResponseOK {
         return delegate.ivars().binding.borrow_mut().finish(false, None);

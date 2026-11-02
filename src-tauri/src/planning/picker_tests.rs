@@ -44,8 +44,9 @@ fn accepted_selection_keeps_opened_identity_and_legitimate_tmp_alias() {
     );
     let mut binding = PickerBinding::default();
     binding.observe(Some(&alias)).unwrap();
-    assert!(binding.validate(&alias));
-    let (canonical, fd) = binding.finish(true, Some(&alias)).unwrap().unwrap();
+    binding.observe(Some(&f.first)).unwrap();
+    assert!(binding.validate(&f.first));
+    let (canonical, fd) = binding.finish(true, Some(&f.first)).unwrap().unwrap();
     assert_eq!(canonical, f.first);
     assert!(fd.metadata().unwrap().is_dir());
 }
@@ -82,6 +83,7 @@ fn replacement_after_event_or_after_validation_is_rejected() {
     assert!(binding.finish(true, Some(&f.first)).is_err());
     fs::remove_file(&f.first).unwrap();
     fs::rename(f.base.join("old"), &f.first).unwrap();
+    let mut binding = PickerBinding::default();
     binding.observe(Some(&f.first)).unwrap();
     assert!(binding.validate(&f.first));
     fs::rename(&f.first, f.base.join("old")).unwrap();
@@ -100,6 +102,44 @@ fn repeated_event_for_same_path_cannot_replace_a_previously_opened_identity() {
     assert!(binding.observe(Some(&f.first)).is_err());
     assert!(!binding.validate(&f.first));
     assert!(binding.finish(true, Some(&f.first)).is_err());
+}
+
+#[test]
+fn rejected_replacement_stays_rejected_after_selecting_another_folder() {
+    let f = Fixture::new();
+    let alias = PathBuf::from(
+        f.first
+            .to_string_lossy()
+            .replacen("/private/tmp/", "/tmp/", 1),
+    );
+    let mut binding = PickerBinding::default();
+    binding.observe(Some(&alias)).unwrap();
+    fs::rename(&f.first, f.base.join("old")).unwrap();
+    symlink(&f.second, &f.first).unwrap();
+    assert!(!binding.validate(&alias));
+    binding.observe(Some(&f.second)).unwrap();
+    assert!(binding.observe(Some(&f.first)).is_err());
+    assert!(!binding.validate(&f.first));
+}
+
+#[test]
+fn missing_parent_during_alias_validation_stays_rejected_after_recreation() {
+    let f = Fixture::new();
+    let alias = PathBuf::from(
+        f.first
+            .to_string_lossy()
+            .replacen("/private/tmp/", "/tmp/", 1),
+    );
+    let mut binding = PickerBinding::default();
+    binding.observe(Some(&alias)).unwrap();
+    let moved = f.base.with_extension("moved");
+    fs::rename(&f.base, &moved).unwrap();
+    assert!(!binding.validate(&f.first));
+    fs::create_dir_all(&f.first).unwrap();
+    fs::create_dir_all(&f.second).unwrap();
+    binding.observe(Some(&f.second)).unwrap();
+    assert!(binding.observe(Some(&f.first)).is_err());
+    fs::remove_dir_all(moved).unwrap();
 }
 
 #[test]
