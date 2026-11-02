@@ -1,6 +1,5 @@
 {
   "title": "Planning documents",
-  "chooseTitle": "Choose a planning folder",
   "chooseBody": "Read Markdown and design images where they already live. Atlas does not move or edit these files.",
   "chooseFolder": "Choose folder",
   "limits": "Atlas checks for replacement after opening the selected folder. It cannot detect earlier replacement, files shared with other paths, or secrets within document contents.",
@@ -48,5 +47,8 @@
   "imageRecovered": "Image recovered: {image}",
   "folderRecovered": "Folder checked again.",
   "imageBlocked": "{image}: {reason}",
-  "imageUnnamed": "Image {line}:{column}"
+  "imageUnnamed": "Image {line}:{column}",
+  "startTitle": "Your plans and designs, together",
+  "startBody": "Open a project folder to read Markdown documents and design images in one place.",
+  "designImages": "Design images"
 }

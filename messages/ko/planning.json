@@ -1,6 +1,5 @@
 {
   "title": "기획 문서",
-  "chooseTitle": "기획 폴더 선택",
   "chooseBody": "기존 위치의 마크다운과 디자인 이미지를 읽습니다. 파일을 옮기거나 수정하지 않습니다.",
   "chooseFolder": "폴더 선택",
   "limits": "선택 폴더를 연 이후의 교체는 확인합니다. 열기 전의 교체, 다른 경로와 공유된 파일, 문서 내용 속 비밀은 확인할 수 없습니다.",
@@ -48,5 +47,8 @@
   "imageRecovered": "{image}: 이미지 확인이 복구됐습니다.",
   "folderRecovered": "폴더를 다시 확인했습니다.",
   "imageBlocked": "{image}: {reason}",
-  "imageUnnamed": "이미지 {line}:{column}"
+  "imageUnnamed": "이미지 {line}:{column}",
+  "startTitle": "기획과 디자인을 한곳에서",
+  "startBody": "프로젝트 폴더를 열어 마크다운 문서와 디자인 시안을 함께 살펴보세요.",
+  "designImages": "디자인 이미지"
 }
