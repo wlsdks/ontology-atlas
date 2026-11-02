@@ -5,6 +5,36 @@ import { crc32, deflateSync } from 'node:zlib';
 
 afterEach(() => vi.restoreAllMocks());
 describe('untrusted Planning Markdown', () => {
+  it('does not expose URL credentials or query strings placed in image alternative text', async () => {
+    const read = vi.fn();
+    const secret = 'https://NAME:PASSWORD@example.com/a.png?token=TOPSECRET';
+    const text = `![${secret}](${secret}) ![Preview ${secret}](${secret}) ![example.com/image.png?TOPSECRET](https://example.com/image.png?TOPSECRET) ![example.com/image.png#TOPSECRET](https://example.com/image.png#TOPSECRET)`;
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(view.container.querySelectorAll('[data-planning-image-alert]')).toHaveLength(4));
+    expect(view.container.textContent).not.toMatch(/NAME|PASSWORD|TOPSECRET|example\.com/);
+    expect(read).not.toHaveBeenCalled();
+    view.unmount();
+  });
+  it('uses a safe accessible name when a local image has URL credentials in its alternative text', async () => {
+    const png = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:safe') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    const text = '![https://NAME:PASSWORD@example.com/a?token=TOPSECRET](local.png) ![](local.png) ![결제 화면 #1](local.png)';
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={vi.fn(async () => png)} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(view.container.querySelector('img')).toHaveAttribute('alt', 'local.png'));
+    await waitFor(() => expect(view.container.querySelectorAll('img')).toHaveLength(3));
+    expect(view.container.querySelectorAll('img')[1]).toHaveAttribute('alt', '');
+    expect(view.container.querySelectorAll('img')[2]).toHaveAttribute('alt', '결제 화면 #1');
+    expect(view.container.innerHTML).not.toMatch(/NAME|PASSWORD|TOPSECRET|example\.com/);
+    view.unmount();
+  });
+  it('names each local image that cannot be read', async () => {
+    const read = vi.fn(async () => { throw new Error('missing'); });
+    const view = render(<PlanningMarkdown document="plan.md" text="![Payment](missing-a.png) ![Delivery](missing-b.png)" readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    await waitFor(() => expect(screen.getByText('Payment: unavailable', { selector: '[data-planning-image-state]' })).toBeVisible());
+    expect(screen.getByText('Delivery: unavailable', { selector: '[data-planning-image-state]' })).toBeVisible();
+    view.unmount();
+  });
   it('opens only in-root relative images and never emits live external links or HTML', async () => {
     const png = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
     const read = vi.fn(async () => png);
@@ -17,12 +47,19 @@ describe('untrusted Planning Markdown', () => {
     await waitFor(() => expect(screen.getByAltText('local')).toHaveAttribute('src', 'blob:planning-test'));
     expect(read).toHaveBeenCalledTimes(1);
     expect(read).toHaveBeenCalledWith('images/mock.png');
-    expect(screen.getByText('unsupported')).toBeVisible();
+    expect(screen.getByText('webp: unsupported', { selector: '[data-planning-image-state]' })).toBeVisible();
     expect(view.container.querySelector('a')).toBeNull();
     expect(view.container.querySelector('script')).toBeNull();
     expect(view.container.querySelectorAll('img')).toHaveLength(1);
     view.unmount();
     await waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:planning-test'));
+  });
+  it('names an unsupported standalone image and announces its status', async () => {
+    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked', attention: (name: string) => `attention: ${name}`, recovered: (name: string) => `recovered: ${name}`, blocked: (name: string, reason: string) => `${name}: ${reason}`, unnamed: (line: number, column: number) => `Image ${line}:${column}` };
+    const view = render(<PlanningStandaloneImage path="design.svg" bytes={new Uint8Array()} alt="Wireframe" unavailable="unavailable" unsupported="unsupported" observation={observation} />);
+    expect(screen.getByText('Wireframe: unsupported', { selector: '[data-planning-image-state]' })).toBeVisible();
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Wireframe: unsupported'));
+    view.unmount();
   });
   it('shares repeated images, limits document references, and revokes the shared URL on exit', async () => {
     const png = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,13,73,72,68,82,0,0,0,1,0,0,0,1,8,6,0,0,0,0,0,0,0]);
@@ -60,7 +97,7 @@ describe('untrusted Planning Markdown', () => {
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:bounded') });
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     const view = render(<PlanningMarkdown document="plan.md" text="![one](1.png) ![two](2.png) ![three](3.png)" readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
-    await waitFor(() => expect(screen.getByText('limit')).toBeVisible());
+    await waitFor(() => expect(screen.getByText('three: limit')).toBeVisible());
     expect(screen.getAllByRole('img')).toHaveLength(2);
     view.unmount();
   });
@@ -87,7 +124,7 @@ describe('untrusted Planning Markdown', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revoke });
     Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true, value: vi.fn() });
     vi.spyOn(HTMLImageElement.prototype, 'decode').mockImplementation(() => new Promise<void>((resolve) => decodeResolvers.push(resolve)));
-    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked', attention: (name: string) => `attention: ${name}`, recovered: (name: string) => `recovered: ${name}` };
+    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked', attention: (name: string) => `attention: ${name}`, recovered: (name: string) => `recovered: ${name}`, blocked: (name: string, reason: string) => `${name}: ${reason}`, unnamed: (line: number, column: number) => `Image ${line}:${column}` };
     const props = { path: 'design.png', alt: 'design', unavailable: 'unavailable', unsupported: 'unsupported', observation };
     const view = render(<PlanningStandaloneImage {...props} bytes={image(0)} />);
     await waitFor(() => expect(decodeResolvers).toHaveLength(1));
@@ -115,10 +152,10 @@ describe('untrusted Planning Markdown', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true, value: vi.fn() });
     const decode = vi.spyOn(HTMLImageElement.prototype, 'decode').mockRejectedValueOnce(new Error('temporary')).mockResolvedValue();
-    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked', attention: (name: string) => `attention: ${name}`, recovered: (name: string) => `recovered: ${name}` };
+    const observation = { revision: 1, status: 'ready' as const, checking: 'checking', unconfirmed: 'unconfirmed', checked: 'checked', attention: (name: string) => `attention: ${name}`, recovered: (name: string) => `recovered: ${name}`, blocked: (name: string, reason: string) => `${name}: ${reason}`, unnamed: (line: number, column: number) => `Image ${line}:${column}` };
     const props = { path: 'design.png', bytes, alt: 'design', unavailable: 'unavailable', unsupported: 'unsupported' };
     const view = render(<PlanningStandaloneImage {...props} observation={observation} />);
-    await waitFor(() => expect(screen.getByText('unavailable')).toBeVisible());
+    await waitFor(() => expect(screen.getByText('design: unavailable')).toBeVisible());
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('attention: design'));
     expect(decode).toHaveBeenCalledTimes(1);
     view.rerender(<PlanningStandaloneImage {...props} observation={{ ...observation, revision: 2 }} />);
@@ -130,7 +167,7 @@ describe('untrusted Planning Markdown', () => {
     expect(screen.getByRole('status')).toHaveTextContent('recovered: design');
     view.rerender(<PlanningStandaloneImage {...props} observation={{ ...observation, revision: 2 }} />);
     fireEvent.error(screen.getByAltText('design'));
-    expect(screen.getByText('unavailable')).toBeVisible();
+    expect(screen.getByText('design: unavailable')).toBeVisible();
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('attention: design'));
     view.rerender(<PlanningStandaloneImage {...props} observation={{ ...observation, revision: 3 }} />);
     await waitFor(() => expect(screen.getByAltText('design')).toHaveAttribute('src', 'blob:3'));
@@ -158,7 +195,7 @@ describe('untrusted Planning Markdown', () => {
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     const text = '![a](1.png) ![repeat](1.png) ![b](2.png) ![c](3.png) ![d](4.png) ![over](5.png)';
     const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={read} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
-    await waitFor(() => expect(screen.getByText('limit')).toBeVisible());
+    await waitFor(() => expect(screen.getByText('over: limit')).toBeVisible());
     expect(screen.getAllByRole('img')).toHaveLength(5);
     expect(read).toHaveBeenCalledTimes(5);
     view.unmount();

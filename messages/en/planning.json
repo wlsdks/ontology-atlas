@@ -46,5 +46,7 @@
   "checkingSlow": "This check is taking longer than expected. Use Refresh folder to try again.",
   "imageAttention": "Image needs attention: {image}",
   "imageRecovered": "Image recovered: {image}",
-  "folderRecovered": "Folder checked again."
+  "folderRecovered": "Folder checked again.",
+  "imageBlocked": "{image}: {reason}",
+  "imageUnnamed": "Image {line}:{column}"
 }

@@ -46,5 +46,7 @@
   "checkingSlow": "文件夹检查耗时较长，可以刷新文件夹重试。",
   "imageAttention": "{image}：图片需要检查。",
   "imageRecovered": "{image}：图片已恢复。",
-  "folderRecovered": "已重新检查文件夹。"
+  "folderRecovered": "已重新检查文件夹。",
+  "imageBlocked": "{image}：{reason}",
+  "imageUnnamed": "图片 {line}:{column}"
 }

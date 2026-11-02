@@ -46,5 +46,7 @@
   "checkingSlow": "フォルダーの確認に時間がかかっています。フォルダーを更新して再試行できます。",
   "imageAttention": "{image}：画像の確認が必要です。",
   "imageRecovered": "{image}：画像を再び確認できました。",
-  "folderRecovered": "フォルダーを再び確認しました。"
+  "folderRecovered": "フォルダーを再び確認しました。",
+  "imageBlocked": "{image}：{reason}",
+  "imageUnnamed": "画像{line}:{column}"
 }
