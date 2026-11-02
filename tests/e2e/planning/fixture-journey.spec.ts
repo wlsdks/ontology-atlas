@@ -57,6 +57,16 @@ test('refresh keeps current images visible until revalidated bytes are ready', a
   await page.getByRole('button', { name: 'plan.md' }).click();
   const image = page.getByAltText('design');
   await expect(image).toBeVisible();
+  const originalViewport = page.viewportSize()!;
+  await page.setViewportSize({ width: 600, height: 900 });
+  const body = await page.getByTestId('app-shell-body-slot').boundingBox();
+  const navigation = await page.locator('[data-tabbar="primary"]').boundingBox();
+  expect(body!.y + body!.height).toBeLessThanOrEqual(navigation!.y + 1);
+  const history = page.getByRole('button', { name: planning.openHistory });
+  await history.scrollIntoViewIfNeeded();
+  const historyBox = await history.boundingBox();
+  expect(historyBox!.y + historyBox!.height).toBeLessThanOrEqual(navigation!.y + 1);
+  await page.setViewportSize(originalViewport);
   const visualStatus = (await page.getByText(planning.imageChecked).elementHandle())!;
   const alert = page.locator('[data-planning-image-alert]');
   await expect(alert).toHaveAttribute('role', 'status');

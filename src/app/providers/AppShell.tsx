@@ -125,13 +125,14 @@ function ShellColumn({ children }: { children: ReactNode }) {
           containing block for pages' fixed surfaces otherwise. The rail is not captured, so it
           keeps painting and taking presses while the pane fades.
         */}
+        {/* Keep Planning's scrolling content above the fixed narrow-screen navigation. */}
         <div
           data-testid="app-shell-body-slot"
           data-app-shell-pane=""
           inert={mapPending !== null}
           aria-busy={mapPending !== null}
           aria-hidden={mapPending !== null ? true : undefined}
-          className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
+          className={`flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0 ${resolveActiveNavDestination(pathname) === "planning" ? "max-lg:mb-[var(--topology-mobile-bottom-tab-reserve)]" : ""}`}
         >
           <PlanningReturnBar />
           <VaultRouteIdentityBoundary pathname={pathname}>
