@@ -173,7 +173,10 @@ export function PlanningPage() {
   const choose = async () => {
     try {
       const next = await choosePlanningFolder(t('folderUnavailable'));
-      if (!next) return;
+      if (!next) {
+        document.querySelector<HTMLButtonElement>('[data-planning-choose]')?.focus({ preventScroll: true });
+        return;
+      }
       sequence.current++;
       activeRequest.current = null;
       pendingRecheck.current = false;
