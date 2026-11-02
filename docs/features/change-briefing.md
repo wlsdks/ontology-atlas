@@ -12,6 +12,8 @@ The Briefing destination is a read-only prototype for catching up on a connected
 source repository without reading each commit in another Git application.
 The existing Git destination remains scoped to vault documents and checkpoints.
 
+Without a chosen repository, Briefing shows a dedicated entry with one Git folder action and a diagram of its PR, commit and file reading modes. The diagram contains no repository results. Cancelling the picker restores focus to the action. PR reading remains limited to public GitHub repositories.
+
 Choose a project and a daily, weekly, monthly or yearly calendar period, move
 back or forward, or open the date control to choose an anchor or apply inclusive custom dates. The initial period is this
 week; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine

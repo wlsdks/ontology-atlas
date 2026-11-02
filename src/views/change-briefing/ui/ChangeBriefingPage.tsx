@@ -10,12 +10,12 @@ import { isGitBridgeAvailable } from '@/shared/lib/git/tauri-git';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { readArrivalMemory, writeArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory-store';
 import { getTauriVaultRootPath, pickTauriSourceDirectory } from '@/shared/lib/vault-folder/tauri-vault-fs';
-import { Button, Dialog, Disclosure, IconButton, RowButton, Select } from '@/shared/ui';
+import { Button, Dialog, Disclosure, IconButton, PageHeaderBar, RowButton, Select } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { PAGE_TITLE } from '@/shared/ui/tokens/page-frame';
+import { PAGE_TITLE, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
 import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, type BriefingPeriod } from '../model/briefing-model';
 import { useBriefing } from '../model/use-briefing';
 import { BriefingPatch } from './BriefingPatch';
@@ -25,6 +25,7 @@ import { BriefingNarrative, type BriefingReadingMode } from './BriefingNarrative
 import { BriefingSettings } from './BriefingSettings';
 import { BriefingOverview } from './BriefingOverview';
 import { CommitInventory } from './CommitInventory';
+import { BriefingRepositoryStage } from './BriefingRepositoryStage';
 import { PublicPullInventory } from './PublicPullInventory';
 
 const subscribe = () => () => {};
@@ -286,13 +287,30 @@ export function ChangeBriefingPage() {
   }
   const validData = data && (data.status === 'measured' || data.status === 'partial');
   const status = !native ? 'webTitle' : !root ? null : !range ? 'invalidRange' : error ? 'readError' : loading ? 'loading' : data?.status === 'stale' ? 'stale' : data?.status === 'no-history' ? 'noHistory' : !validData ? 'sourceUnavailable' : !data.commits.length && data.status !== 'partial' ? 'empty' : null;
+  async function chooseRepository() {
+    const path = await pickTauriSourceDirectory(git('chooseRepository'));
+    if (!path) {
+      mainRef.current?.querySelector<HTMLButtonElement>('[data-briefing-choose]')?.focus({ preventScroll: true });
+      return;
+    }
+    setSourceChoice(path);
+    setSection('prs');
+    setCommitExplain(false);
+    setMode('summary');
+    refresh();
+  }
+  if (native && !root) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    <PageHeaderBar frame="page" title={git('title')} actions={<IconButton label={git('briefingSettings')} data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden /></IconButton>} />
+    <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage onChoose={() => void chooseRepository()} /></div>
+    <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
+  </main>;
   return <main ref={mainRef} id="main" data-briefing-surface className="h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
     <div className="mx-auto max-w-screen-xl space-y-4 px-4 pt-6 md:px-8 md:pt-8">
       <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
           <h1 tabIndex={-1} className={native ? "text-title font-[var(--font-weight-strong)]" : PAGE_TITLE}>{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span>
-          {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={root ? 'ghost' : 'primary'} size="sm" aria-label={git(root ? 'changeRepository' : 'chooseRepository')} onClick={() => { void pickTauriSourceDirectory(git('chooseRepository')).then(path => { if (path) { setSourceChoice(path); setSection('prs'); setCommitExplain(false); setMode('summary'); refresh(); } }); }}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>}
+          {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={root ? 'ghost' : 'primary'} size="sm" aria-label={git(root ? 'changeRepository' : 'chooseRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>}
         </div>
         {native && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>}
         </div>
