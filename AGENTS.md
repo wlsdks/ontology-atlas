@@ -34,11 +34,10 @@ decisions and approval while their content and conditions still hold.
 Check `git status`; preserve unrelated changes and active processes. Use native
 search and targeted file reads for source and change-impact questions.
 
-Finish with `pnpm checks:changed -- --run` and complete every recommendation.
-Stop after success unless a new edit, failure, or named risk requires more; do
-not add broad suites, repeat passing checks, or write tests that pin prose.
-`.claude/rules/testing.md` owns escalation. Report the outcome first, then the
-evidence and remaining limits. Never claim unperformed proof.
+Use `pnpm checks:changed` for candidates; run only checks needed for the
+change and its risks. Escalate on evidence, keep required CI, and do not repeat
+passing checks. This overrides conflicting test instructions.
+`.claude/rules/testing.md` owns test shape. Report evidence and limits.
 
 A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
