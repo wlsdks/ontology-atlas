@@ -11,6 +11,8 @@ import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { Button, Disclosure, PageHeaderBar, RowButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { PlanningFolderStage } from './PlanningFolderStage';
 
 const panel = 'rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]';
 
@@ -173,7 +175,10 @@ export function PlanningPage() {
   const choose = async () => {
     try {
       const next = await choosePlanningFolder(t('folderUnavailable'));
-      if (!next) return;
+      if (!next) {
+        document.querySelector<HTMLButtonElement>('[data-planning-choose]')?.focus({ preventScroll: true });
+        return;
+      }
       sequence.current++;
       activeRequest.current = null;
       pendingRecheck.current = false;
@@ -196,14 +201,14 @@ export function PlanningPage() {
   const go = (path: string, focus: 'history' | 'map') => { writePlanningMemory({ ...readPlanningMemory(), returnFocus: focus }); beginPlanningReturn(); router.push(path); };
   const observation = { revision: imageRevision, status: status === 'idle' ? 'checking' as const : status, checking: t('imageChecking'), unconfirmed: t('imageUnconfirmed'), checked: t('imageChecked'), attention: (name: string) => t('imageAttention', { image: name }), recovered: (name: string) => t('imageRecovered', { image: name }), blocked: (name: string, reason: string) => t('imageBlocked', { image: name, reason }), unnamed: (line: number, column: number) => t('imageUnnamed', { line, column }) };
   const files = inventory?.files.filter((file) => file.path.toLocaleLowerCase().includes(search.toLocaleLowerCase())) ?? [];
-  return <main data-planning-surface className="min-h-full">
+  return <main data-planning-surface className="flex min-h-full flex-col">
     <span role="alert" data-planning-folder-alert className="sr-only">{folderNotice === 'failure' ? t('folderUnavailable') : ''}</span>
     <span role="status" data-planning-folder-recovery className="sr-only">{folderNotice === 'recovered' ? t('folderRecovered') : ''}</span>
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" data-planning-choose className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
-    <div className="mx-auto max-w-7xl space-y-4 px-4 py-5 pb-8 sm:px-6 lg:px-10">
+    <div className={!selection ? `${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}` : 'mx-auto w-full max-w-7xl space-y-4 px-4 py-5 pb-8 sm:px-6 lg:px-10'}>
       {available === null ? <p role="status">{t('checkingSupport')}</p>
         : available === false ? <section data-planning-state="unsupported" className={`${panel} space-y-3 p-6`}><p>{t('chooseBody')}</p><p>{t('browserUnavailable')}</p></section>
-        : !selection ? <section className={`${panel} space-y-4 p-6`}><h2 className="text-title font-[var(--font-weight-strong)]">{t('chooseTitle')}</h2><p className="max-w-3xl text-body text-[color:var(--color-text-secondary)]">{t('chooseBody')}</p>{status === 'unavailable' && <p role="alert">{t('folderUnavailable')}</p>}{available && <Button variant="outline" data-planning-choose className="max-[769px]:min-h-11" onClick={() => void choose()}>{t('chooseFolder')}</Button>}<Disclosure className="max-w-3xl [&>button]:min-h-10 max-[769px]:[&>button]:min-h-11" summary={t('details')}><p className="pt-2 text-body text-[color:var(--color-text-secondary)]">{t('limits')}</p></Disclosure></section>
+        : !selection ? <PlanningFolderStage onChoose={() => void choose()} unavailable={status === 'unavailable'} />
         : <>
           <div className={`${panel} flex flex-wrap items-center justify-between gap-3 p-4`}>
             <div className="min-w-0 space-y-1 text-body"><p className="break-all text-[color:var(--color-text-primary)]">{t('folderLabel', { folder: selection.path })} · {t('readOnly')}</p><p className="text-[color:var(--color-text-secondary)]">{status === 'checking' ? t('checking') : checkedAt ? t('observedAt', { time: new Date(checkedAt).toLocaleString() }) : t('loading')} · {t('observationLimit')}</p></div>

@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { useRouter, usePathname } from "@/i18n/navigation";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/keyboard/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { settleRouteViewTransition } from "@/shared/lib/navigation/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/desktop-shell/tauri-external-link";
+import { FolderOpen } from "lucide-react";
+import { controlClass } from "@/shared/ui/control-class";
+import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Button, useToast } from "@/shared/ui";
 import { WaitStage } from "@/shared/ui/status/wait-stage";
 import { useTranslations } from "next-intl";
@@ -18,7 +21,7 @@ import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
 import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
 import { describeVaultShape } from "@/shared/lib/vault-folder/vault-shape";
-import { destinationsForVaultShape, type DestinationId } from "@/shared/config/destinations";
+import { destinationsForVaultShape, FOLDER_OPTIONAL_DESTINATIONS } from "@/shared/config/destinations";
 import { applyGuideOverride } from "@/shared/lib/preferences/first-run-seen";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
@@ -198,7 +201,7 @@ function VaultRouteIdentityBoundary({
     (vault.status === "opening" || vault.status === "loading") &&
     !localReady;
   const destination = resolveActiveNavDestination(pathname);
-  const sourceOnlyDestination = destination === "changes" || destination === "agents" || destination === "planning";
+  const sourceOnlyDestination = destination !== null && FOLDER_OPTIONAL_DESTINATIONS.has(destination);
   // Resolve the remembered folder before exposing controls that a restore would replace.
   const sourceRestorePending = desktop && sourceOnlyDestination && !localReady && !vault.restoreAttempted;
   const desktopWithoutVault = desktop && workbenchDestination && !sourceOnlyDestination && !vault.manifest && !vault.partialTotal;
@@ -326,16 +329,16 @@ function AppNavRailSlot() {
     },
     disabled: gateway,
     hrefOverrides: { docs: contextHrefs?.docs, map: mapReturnHref },
-    visible: desktopWithoutVault ? new Set<DestinationId>(["changes", "agents", "planning"]) : visibleDestinations,
+    visible: desktopWithoutVault ? FOLDER_OPTIONAL_DESTINATIONS : visibleDestinations,
   });
 
   // The shell fills the utility tier by default so no page can forget it; git is a
   // destination, not a tile here.
   const utilityTier =
     settingsSlot ?? <AppSettingsMenu mode={dataSourceMode} triggerVariant="rail-tile" />;
-  const sourceOnlyDestination = ["changes", "agents", "planning"].includes(resolveActiveNavDestination(pathname) ?? "");
+  const sourceOnlyDestination = FOLDER_OPTIONAL_DESTINATIONS.has(resolveActiveNavDestination(pathname)!);
   const sourceOnly = desktopWithoutVault && sourceOnlyDestination;
-  const shownDestinations = sourceOnly ? new Set<DestinationId>(["changes", "agents", "planning"]) : visibleDestinations;
+  const shownDestinations = sourceOnly ? FOLDER_OPTIONAL_DESTINATIONS : visibleDestinations;
   const railHidden = hidden || gateway || (desktopWithoutVault && !sourceOnlyDestination);
 
   return (
@@ -345,7 +348,7 @@ function AppNavRailSlot() {
          * Registered by the shell so the folder name shows on every destination, including the
          * ones a wiki-only vault has.
          */
-        vaultSlot={<VaultSwitchRailTile />}
+        vaultSlot={desktopWithoutVault ? <NoVaultRailEntry /> : <VaultSwitchRailTile />}
         settingsSlot={utilityTier}
         hidden={railHidden}
         contextHrefs={
@@ -377,4 +380,15 @@ function AppUpdateSurface() {
       onDismiss={update.dismiss}
     />
   );
+}
+
+function NoVaultRailEntry() {
+  const t = useTranslations("vaultSwitch");
+  return <Link href="/" data-testid="vault-open-rail-tile" aria-label={t("choose.title")}
+    className={controlClass({ shape: 'card', className: 'group mb-2 w-full flex-col gap-1 border-0 px-0 py-1' })}>
+    <span className="flex h-[var(--app-nav-rail-tile-height)] w-[var(--app-nav-rail-tile-width)] items-center justify-center rounded-card border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)] group-hover:text-[color:var(--color-text-primary)]">
+      <FolderOpen size={ICON_SIZE.md} aria-hidden />
+    </span>
+    <span className="w-full truncate text-center text-[length:var(--app-nav-rail-label-size)] leading-caption text-[color:var(--color-text-secondary)]">{t("choose.openAction")}</span>
+  </Link>;
 }

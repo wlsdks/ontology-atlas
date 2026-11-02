@@ -220,5 +220,8 @@
   "previewMultipleRequests": "最多 {count} 次模型请求",
   "previewOverview": "分批读取原文，再发送最多 {bytes} 字节的所选原文来生成概要。",
   "previewDetails": "请求详情",
-  "previewCancel": "取消"
+  "previewCancel": "取消",
+  "startTitle": "一眼看清变化",
+  "startBody": "分别查看 PR、提交和变更文件。打开本地 Git 仓库即可开始。",
+  "startHint": "PR 阅读支持公开的 GitHub 仓库。"
 }
