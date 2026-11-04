@@ -316,7 +316,7 @@
   --gateway-page-max: 1920px;
   /*
    * One section is one thought; the shared interval is its punctuation, so it must not vary per
-   * section. 80px, 112px from 1440 (90rem), used as is.
+   * section.
    */
   --gateway-section-gap: 80px;
   /*
@@ -750,7 +750,6 @@
 }
 
 
-/* The wide-screen value of `--gateway-section-gap` (the base is set in `@theme` above). */
 @media (min-width: 90rem) {
   :root {
     --gateway-section-gap: 112px;

@@ -426,8 +426,7 @@ function lastChange(repoPaths, vaultPaths) {
 
 const PLANNING_ROOT = `${FAKE_SOURCE_ROOT}/docs`;
 const PLANNING_DIR = path.join(REPO, "docs");
-// The walker of `src-tauri/src/planning/scan.rs`, rule for rule: the same denied and pruned names,
-// dotfiles, extensions, depth limit and entry budget, with `visited` counting every entry examined.
+// Mirrors `src-tauri/src/planning/scan.rs`.
 const PLANNING_MAX_DEPTH = 12;
 const PLANNING_ENTRY_BUDGET = 10_000;
 const PLANNING_DENIED = [
@@ -450,7 +449,6 @@ const supportedFile = (name) => {
   const dot = name.lastIndexOf(".");
   return dot >= 0 && PLANNING_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
 };
-// `PathBuf` orders component by component, so `a/b` precedes `a-b`.
 const comparePaths = (left, right) => {
   const a = left.split("/");
   const b = right.split("/");
@@ -648,9 +646,6 @@ function makeBridge(overlay, unstubbed) {
         return { path: input.relativePath, diff: "", untracked: false, tooLarge: false };
       case "git_paths_last_change":
         return lastChange(input.repoPaths, input.vaultPaths);
-      // The project source (this repository) as the harness and Analysis screens read it through
-      // the project binding.
-      // A missing path is the native code `harness-path-missing`, which the scan reads as absent.
       case "list_harness_source_directory": {
         const { full } = realPath(FAKE_SOURCE_ROOT, input.relativePath);
         if (!existsSync(full)) throw new Error("harness-path-missing");
@@ -763,8 +758,6 @@ const SCREENS = [
     name: "insights",
     route: "/ontology/insights/",
     async prepare(page) {
-      // The Analysis board draws its claim cards and the lines between them once the vault is
-      // read; wait for cards, then for the relationship lines, not for a fixed time.
       await page.waitForFunction(
         () =>
           document.querySelectorAll('[data-testid="analysis-board"] [data-testid="analysis-claim"]').length > 0 &&

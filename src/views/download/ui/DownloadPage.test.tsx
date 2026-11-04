@@ -121,7 +121,6 @@ const IntlWrapper = ({ children }: { children: ReactNode }) => (
   </NextIntlClientProvider>
 );
 
-/** Every filled (indigo) call to action on the whole page, in document order. */
 function filledIds() {
   return Array.from(
     document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'),
@@ -270,7 +269,6 @@ describe('DownloadPage', () => {
           expect.stringMatching(/_windows_x64-setup\.exe$/),
         );
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        // The trust line lives in the hero and again in the closing, beside the same button.
         expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
         expect(screen.getByTestId('gateway-closing-trust')).toHaveTextContent(
           enMessages.download.trustLineWindows,

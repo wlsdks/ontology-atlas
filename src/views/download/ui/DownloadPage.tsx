@@ -430,7 +430,6 @@ function DownloadActions({
   );
 }
 
-/** The fact needed before pressing, about the winning file; hero and closing share this one piece. */
 function TrustLine({
   testId,
   className,
