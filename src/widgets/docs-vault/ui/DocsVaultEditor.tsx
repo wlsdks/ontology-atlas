@@ -40,7 +40,7 @@ import {
   RELATION_LABEL_KEY,
   type MentionRelationId,
 } from '../lib/mention-relation';
-import { Chip, IconButton, RowButton, Surface, OntologyMapKindGlyph } from '@/shared/ui';
+import { Button, Chip, Dialog, IconButton, RowButton, Surface, OntologyMapKindGlyph } from '@/shared/ui';
 
 interface Props {
   doc: VaultDoc;
@@ -184,6 +184,7 @@ export function DocsVaultEditor({
    */
   const [error, setError] = useState<FailureCopy | null>(null);
   const [saving, setSaving] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
   const [legacyDraftConflict, setLegacyDraftConflict] = useState(false);
@@ -420,19 +421,20 @@ export function DocsVaultEditor({
 
   const requestClose = useCallback(() => {
     if (saving) return;
-    if (
-      dirty &&
-      typeof window !== 'undefined' &&
-      !window.confirm(t('discardConfirm'))
-    ) {
+    if (dirty) {
+      setDiscardOpen(true);
       return;
     }
-    if (dirty) {
-      clearEditorDraft(vaultScope, doc.slug);
-      setDraftSavedAt(null);
-    }
     onClose();
-  }, [dirty, doc.slug, onClose, saving, t, vaultScope]);
+  }, [dirty, onClose, saving]);
+
+  const discardChanges = useCallback(() => {
+    pendingDraftRef.current = null;
+    clearEditorDraft(vaultScope, doc.slug);
+    setDraftSavedAt(null);
+    setDiscardOpen(false);
+    onClose();
+  }, [doc.slug, onClose, vaultScope]);
 
   useEffect(() => {
     // Data-loss guard: a poll gives `getDocContent` a new identity; with unsaved edits do not
@@ -542,6 +544,7 @@ export function DocsVaultEditor({
   // Cmd+S / Ctrl+S to save; Cmd+B/I/K formatting shortcuts.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if (discardOpen) return;
       if (!(e.metaKey || e.ctrlKey)) {
         if (e.key === 'Escape') requestClose();
         return;
@@ -563,7 +566,7 @@ export function DocsVaultEditor({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [doSave, insertLink, requestClose, wrapSelection]);
+  }, [discardOpen, doSave, insertLink, requestClose, wrapSelection]);
 
   const loading = loadedSlug !== doc.slug;
   /* Deferred like the viewer's skeleton so switching documents does not flash it for a frame. */
@@ -611,6 +614,15 @@ export function DocsVaultEditor({
   }
   return (
     <div className="flex h-full flex-col">
+      <Dialog open={discardOpen} onClose={() => setDiscardOpen(false)} labelledBy="docs-discard-title" size="sm">
+        <h2 id="docs-discard-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
+          {t('discardConfirm')}
+        </h2>
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="ghost" onClick={() => setDiscardOpen(false)}>{t('discardKeep')}</Button>
+          <Button variant="primary" onClick={discardChanges}>{t('discardAction')}</Button>
+        </div>
+      </Dialog>
       <div className="flex flex-none items-center gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-4 py-2 text-label">
         <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
           {t.rich('editorEyebrow', {

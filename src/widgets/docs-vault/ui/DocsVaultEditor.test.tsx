@@ -336,12 +336,12 @@ describe('DocsVaultEditor', () => {
 
   it('asks before closing with unsaved changes', async () => {
     const onClose = vi.fn();
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    render(
+    const onSave = vi.fn();
+    const view = render(
       <DocsVaultEditor vaultScope={VAULT_SCOPE}
         doc={doc}
         getDocContent={async () => 'initial'}
-        onSave={vi.fn()}
+        onSave={onSave}
         onClose={onClose}
       />,
     );
@@ -350,14 +350,21 @@ describe('DocsVaultEditor', () => {
     fireEvent.change(editor, { target: { value: 'unsaved' } });
     fireEvent.click(screen.getByRole('button', { name: /취소/ }));
 
-    expect(confirmSpy).toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
-
-    confirmSpy.mockReturnValue(true);
+    fireEvent.keyDown(window, { key: 's', metaKey: true });
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: '계속 편집' }));
+    expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /취소/ }));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue('unsaved')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /취소/ }));
+    fireEvent.click(screen.getByRole('button', { name: '변경 버리기' }));
     expect(onClose).toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
+    view.unmount();
+    expect(window.localStorage.getItem(draftKey)).toBeNull();
   });
 
   it('gives the markdown textarea an accessible name', async () => {
