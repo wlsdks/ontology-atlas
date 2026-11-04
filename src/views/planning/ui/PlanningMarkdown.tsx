@@ -23,6 +23,12 @@ async function prepareImage(url: string): Promise<boolean> {
   try { await image.decode(); return true; } catch { return false; }
 }
 
+const LEADING_FRONTMATTER = /^\uFEFF?---\r?\n(?:[\s\S]*?\r?\n)?---[ \t]*(?:\r?\n|$)/;
+function blankLeadingFrontmatterKeepingLineNumbers(text: string): string {
+  const block = LEADING_FRONTMATTER.exec(text)?.[0];
+  return block ? '\n'.repeat(block.split('\n').length - 1) + text.slice(block.length) : text;
+}
+
 type MarkdownNode = { type: string; value?: string; children?: MarkdownNode[] };
 function imageLimitPlugin(message: string) {
   return () => (tree: MarkdownNode) => {
@@ -264,5 +270,5 @@ export function PlanningMarkdown({ document, text, readImage, imageUnavailable, 
     img: ({ src, alt, node }) => <LocalImage document={document} src={typeof src === 'string' ? src : ''} alt={alt ?? ''} line={node?.position?.start.line ?? 1} column={node?.position?.start.column ?? 1} unavailable={imageUnavailable} unsupported={unsupported} limited={imageLimit} resources={resources} />,
     table: ({ children }) => <div className="max-w-full overflow-x-auto"><table>{children}</table></div>,
   }), [document, imageUnavailable, unsupported, imageLimit, resources]);
-  return <div className={`min-w-0 max-w-prose break-words ${MARKDOWN_PROSE_CLASS}`}><ImageRevision.Provider value={observation ?? { ...defaultObservation, revision }}><ReactMarkdown skipHtml remarkPlugins={[remarkGfm, imageLimitPlugin(imageLimit)]} components={components}>{text}</ReactMarkdown></ImageRevision.Provider></div>;
+  return <div className={`min-w-0 max-w-prose break-words ${MARKDOWN_PROSE_CLASS}`}><ImageRevision.Provider value={observation ?? { ...defaultObservation, revision }}><ReactMarkdown skipHtml remarkPlugins={[remarkGfm, imageLimitPlugin(imageLimit)]} components={components}>{blankLeadingFrontmatterKeepingLineNumbers(text)}</ReactMarkdown></ImageRevision.Provider></div>;
 }
