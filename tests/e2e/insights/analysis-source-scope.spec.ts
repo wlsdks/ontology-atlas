@@ -76,7 +76,7 @@ test('source scopes intersect search and recorded gaps without losing the select
   await expect(page.getByTestId('analysis-source-scope-status')).toContainText('1 capability');
   await later.click();
   await expect(heading).toHaveText('Ability 15');
-  await chooseSourceScope(page, 'Path missing · 1');
+  await chooseSourceScope(page, 'Source path missing · 1');
   await expect(page.getByTestId('analysis-source-scope-status')).toContainText('0 capabilities');
   await page.getByRole('radio', { name: /^All 16$/ }).click();
   await expect(page.getByTestId('analysis-source-scope-status')).toContainText('1 capability');
