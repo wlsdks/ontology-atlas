@@ -414,10 +414,10 @@ describe('permission options — the app picks the one that ends with this call'
 /**
  * The registry version must match the re-read `src/permissions/options/*.ts` builders;
  * otherwise these arrays could pass while describing an adapter nobody runs.
- * v0.95.0 (ebfbfbdaa9c2) keeps the ids and kinds, adding allowContextReset to ExitPlanMode.
+ * v0.95.0 (ebfbfbdaa9c2) added allowContextReset to ExitPlanMode; 0.100.0 is byte-identical.
  */
 // options.ts retains allow_once ordering and the defaultToNo decline-first variant.
-const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.95.0';
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.100.0';
 
 describe('transcribed adapter version', () => {
   it('reads the option builders from the version the app actually launches', () => {

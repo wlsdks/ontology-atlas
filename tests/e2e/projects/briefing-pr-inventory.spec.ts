@@ -44,6 +44,7 @@ test('opens period files from a PR and returns to the same original', async ({ p
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
   await page.getByRole('button', { name: /Make checkout confirmation clear/ }).click();
   await page.getByRole('button', { name: 'View files touched in this period' }).click();
+  await expect(page.getByRole('heading', { name: 'Read code changes for the whole period' })).toBeVisible();
   await expect(page.getByText('These are files touched in the selected period, not a verified list of files changed by this PR.')).toBeVisible();
   await expect(page.getByTestId('briefing-file-list').getByText('service.ts')).toBeVisible();
   await page.getByTestId('briefing-file-list').getByText('service.ts').click();
@@ -73,6 +74,7 @@ test('opens only a commit’s recorded paths and returns to that commit', async 
   await page.getByRole('radio', { name: 'Commits', exact: true }).click();
   await page.getByRole('button', { name: /revert previous rule/ }).click();
   await page.getByRole('button', { name: 'View files touched by this commit' }).click();
+  await expect(page.getByRole('heading', { name: 'Files touched by this commit' })).toBeVisible();
   await expect(page.getByTestId('briefing-file-list').getByText('service.ts')).toBeVisible();
   await expect(page.getByTestId('briefing-file-list').getByText('unmapped.ts')).toHaveCount(0);
   await page.getByTestId('briefing-file-list').getByText('service.ts').click();

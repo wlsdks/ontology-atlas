@@ -54,6 +54,7 @@
   "filesTab": "파일",
   "filesScope": "선택한 기간의 첫 번째 부모 커밋에서 변경된 파일입니다. 파일을 열면 선택한 기간의 시작과 끝을 비교합니다.",
   "filesFromCommit": "이 커밋에서 변경된 파일 보기",
+  "commitFilesHeading": "이 커밋에서 변경된 파일",
   "filesFromPr": "이 기간에 변경된 파일 보기",
   "filesFromPrNote": "선택한 기간에 변경된 파일이며, 이 PR에서 변경된 파일로 검증된 목록은 아닙니다.",
   "fileComparison": "기간 양 끝 비교",

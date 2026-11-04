@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use crate::acp::bounded_command::bounded_output;
 
 /// Change the hash and file names with the version; contract tests catch a mismatch.
-pub(crate) const MANAGED_NODE_VERSION: &str = "v24.18.0";
+pub(crate) const MANAGED_NODE_VERSION: &str = "v24.22.1";
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct ManagedNodeArtifact {
@@ -22,33 +22,33 @@ pub(crate) struct ManagedNodeArtifact {
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArtifact {
     platform: "darwin-arm64",
-    filename: "node-v24.18.0-darwin-arm64.tar.gz",
-    sha256: "e1a97e14c99c803e96c7339403282ea05a499c32f8d83defe9ef5ec66f979ed1",
-    bytes: 52087559,
+    filename: "node-v24.22.1-darwin-arm64.tar.gz",
+    sha256: "89c682593d76cd44233fa53b1563264e7de9cbb189cad169135c5b4fadfbc0a7",
+    bytes: 53062778,
 });
 
 #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArtifact {
     platform: "darwin-x64",
-    filename: "node-v24.18.0-darwin-x64.tar.gz",
-    sha256: "dfd0dbd3e721503434df7b7205e719f61b3a3a31b2bcf9729b8b91fea240f080",
-    bytes: 53282687,
+    filename: "node-v24.22.1-darwin-x64.tar.gz",
+    sha256: "d132557e7ee2b85af08b0c8c34338e65c6430f2238d01f727728ef42dc83b035",
+    bytes: 54382566,
 });
 
 #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArtifact {
     platform: "win-x64",
-    filename: "node-v24.18.0-win-x64.zip",
-    sha256: "0ae68406b42d7725661da979b1403ec9926da205c6770827f33aac9d8f26e821",
-    bytes: 37176245,
+    filename: "node-v24.22.1-win-x64.zip",
+    sha256: "d2046d28c2c3dcd211ac5145c0bf30e2047ef9dfb306693c8c6e2eccd8b95fa5",
+    bytes: 37748064,
 });
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub(crate) const MANAGED_NODE: Option<ManagedNodeArtifact> = Some(ManagedNodeArtifact {
     platform: "linux-x64",
-    filename: "node-v24.18.0-linux-x64.tar.gz",
-    sha256: "783130984963db7ba9cbd01089eaf2c2efb055c7c1693c943174b967b3050cb8",
-    bytes: 57224421,
+    filename: "node-v24.22.1-linux-x64.tar.gz",
+    sha256: "eb6728e77c576a35162c122c45ccadf224d89ff00abc8dae46cc2897c6002d7c",
+    bytes: 58290700,
 });
 
 #[cfg(not(any(
@@ -64,9 +64,15 @@ pub(crate) fn managed_node_root(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("runtimes").join("node")
 }
 
+fn managed_node_install_dir(app_data_dir: &Path, artifact: &ManagedNodeArtifact) -> PathBuf {
+    managed_node_root(app_data_dir)
+        .join(MANAGED_NODE_VERSION)
+        .join(artifact.platform)
+}
+
 pub(crate) fn managed_node_bin_dir(app_data_dir: &Path) -> Option<PathBuf> {
     let artifact = MANAGED_NODE?;
-    let root = managed_node_root(app_data_dir).join(artifact.platform);
+    let root = managed_node_install_dir(app_data_dir, &artifact);
     // Windows archives put `node.exe` and `npm.cmd` at the root, with no `bin/`.
     Some(if cfg!(windows) {
         root
@@ -147,9 +153,11 @@ pub(crate) fn ensure_managed_node(
     let _ = std::fs::remove_file(&archive);
 
     let unpacked = root.join(format!("node-{MANAGED_NODE_VERSION}-{}", artifact.platform));
-    let target = root.join(artifact.platform);
+    let target = managed_node_install_dir(app_data_dir, &artifact);
     if unpacked.exists() {
         let _ = std::fs::remove_dir_all(&target);
+        std::fs::create_dir_all(target.parent().unwrap_or(&root))
+            .map_err(|err| format!("node-dir-failed:{err}"))?;
         std::fs::rename(&unpacked, &target).map_err(|err| format!("node-move-failed:{err}"))?;
     }
 
@@ -308,6 +316,26 @@ mod tests {
         if let Some(bin) = managed_node_bin_dir(app_data) {
             assert!(bin.starts_with(app_data), "outside app data: {bin:?}");
         }
+    }
+
+    #[test]
+    fn only_the_pinned_version_counts_as_installed() {
+        let Some(artifact) = MANAGED_NODE else { return };
+        let app_data =
+            std::env::temp_dir().join(format!("atlas-node-pinned-{}", std::process::id()));
+        let node = if cfg!(windows) { "node.exe" } else { "node" };
+        let place = |dir: PathBuf| {
+            let bin = if cfg!(windows) { dir } else { dir.join("bin") };
+            std::fs::create_dir_all(&bin).unwrap();
+            std::fs::write(bin.join(node), b"").unwrap();
+        };
+        let root = managed_node_root(&app_data);
+        place(root.join(artifact.platform));
+        place(root.join("v0.0.0").join(artifact.platform));
+        assert!(!managed_node_present(&app_data), "an unpinned install was used");
+        place(root.join(MANAGED_NODE_VERSION).join(artifact.platform));
+        assert!(managed_node_present(&app_data));
+        let _ = std::fs::remove_dir_all(&app_data);
     }
 
     #[test]
