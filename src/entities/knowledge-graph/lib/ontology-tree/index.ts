@@ -10,6 +10,7 @@ export {
 } from "./reachability";
 export {
   filterTreeByQuery,
+  countMatchingTreeNodes,
   filterTreeByNodeIds,
   filterTreeExcludeKind,
 } from "./filter-tree";

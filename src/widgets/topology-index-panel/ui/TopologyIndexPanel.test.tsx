@@ -76,6 +76,7 @@ const labels = {
   fold: "Collapse",
   foldAria: "Collapse INDEX",
   searchPlaceholder: "Search concepts",
+  searchMatches: "Matching concepts",
   censusConcepts: "concepts",
   sourceDocuments: "documents",
   sourceDocumentsPartialTitle: "partially read",
@@ -566,9 +567,14 @@ describe("TopologyIndexPanel", () => {
 
     // The matched leaf and its ancestors stay visible: filterTreeByQuery keeps ancestors.
     expect(screen.getByText("Agent Brief")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Matching concepts: 1");
     expect(screen.getByText("MCP Server")).toBeInTheDocument();
     // sibling capability with no matching descendant is pruned out.
     expect(screen.queryByText("CLI Developer Entry")).not.toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "no such concept" } });
+    expect(screen.getByRole("status")).toHaveTextContent(labels.emptyHint);
+    fireEvent.change(search, { target: { value: "" } });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("Escape in the search field with a query clears it and stops the keypress (search-scoped, not a canvas deselect)", () => {

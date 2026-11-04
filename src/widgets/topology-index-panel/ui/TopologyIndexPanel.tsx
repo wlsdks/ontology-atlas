@@ -18,6 +18,7 @@ import { TabBar } from "@/shared/ui/controls/tab-bar";
 import {
   filterTreeByNodeIds,
   filterTreeByQuery,
+  countMatchingTreeNodes,
   type DomainCensusRow,
   type OntologyTreeBuildResult,
 } from "@/entities/knowledge-graph";
@@ -60,6 +61,7 @@ interface TopologyIndexPanelLabels {
   fold: string;
   foldAria: string;
   searchPlaceholder: string;
+  searchMatches: string;
   censusConcepts: string;
   censusRelations: string;
   censusDomains: string;
@@ -312,6 +314,10 @@ export function TopologyIndexPanel({
     if (lensActive && recentChanges) return filterTreeByNodeIds(treeResult.roots, recentChanges.ids);
     return treeResult.roots;
   }, [treeResult.roots, isFiltering, trimmedQuery, lensActive, recentChanges]);
+  const matchCount = useMemo(
+    () => isFiltering ? countMatchingTreeNodes(treeResult.roots, trimmedQuery) : 0,
+    [treeResult.roots, isFiltering, trimmedQuery],
+  );
   const maxDomainDescendantCount = useMemo(() => {
     // The meter's denominator comes from the same source of truth — with a census, the largest BFS total.
     if (domainCensus && domainCensus.size > 0) {
@@ -549,6 +555,12 @@ export function TopologyIndexPanel({
         />
       </div>
 
+      {isFiltering && matchCount > 0 ? (
+        <p role="status" className="mb-3 shrink-0 text-label leading-label text-[color:var(--map-panel-text-secondary)]">
+          {labels.searchMatches}: {matchCount}
+        </p>
+      ) : null}
+
       {recentChanges ? (
         <div className="mb-3 shrink-0 border-b border-[color:var(--map-panel-zone-divider)]">
           <TabBar
@@ -631,7 +643,7 @@ export function TopologyIndexPanel({
         }}
       >
         {visibleRoots.length === 0 ? (
-          <p className="py-2 text-label text-[color:var(--map-panel-text-quaternary)]">
+          <p role={isFiltering ? "status" : undefined} className="py-2 text-label text-[color:var(--map-panel-text-quaternary)]">
             {lensActive ? labels.recentEmptyHint : labels.emptyHint}
           </p>
         ) : (
