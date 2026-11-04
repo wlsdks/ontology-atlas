@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-10-24T01:59:46.374Z",
+  "npmDependencyCutoff": "2026-11-04T04:48:47.115Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.95.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.100.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.2.2",
+        "package": "@agentclientprotocol/codex-acp@2.5.0",
         "args": []
       }
     },
@@ -90,17 +90,19 @@
     {
       "id": "autohand",
       "name": "Autohand Code",
-      "description": "Autohand Code - AI coding agent powered by Autohand AI",
-      "website": "https://www.autohand.ai/cli/",
+      "description": "Autohand Code CLI with native ACP support",
+      "website": "https://github.com/autohandai/code-cli/blob/main/docs/guides/ACP.md",
       "license": "Apache-2.0",
       "verified": false,
       "icon": "/acp-icons/autohand.svg",
       "brandInk": null,
       "cli": null,
       "launch": {
-        "kind": "npx",
-        "package": "@autohandai/autohand-acp@0.2.1",
-        "args": []
+        "kind": "binary",
+        "command": "autohand",
+        "args": [
+          "--acp"
+        ]
       }
     },
     {
@@ -133,7 +135,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.73",
+        "package": "cline@3.0.74",
         "args": [
           "--acp"
         ]
@@ -151,25 +153,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.174.0",
-        "args": [
-          "--acp"
-        ]
-      }
-    },
-    {
-      "id": "github-copilot-cli",
-      "name": "Copilot",
-      "description": "GitHub's AI pair programmer",
-      "website": "https://github.com/features/copilot/cli/",
-      "license": "proprietary",
-      "verified": false,
-      "icon": "/acp-icons/github-copilot-cli.svg",
-      "brandInk": "#000000",
-      "cli": "copilot",
-      "launch": {
-        "kind": "npx",
-        "package": "@github/copilot@1.0.103",
+        "package": "@tencent-ai/codebuddy-code@2.179.3",
         "args": [
           "--acp"
         ]
@@ -215,7 +199,7 @@
       "name": "crow-cli",
       "description": "Minimal ACP Native Coding Agent",
       "website": "https://crow-ai.dev",
-      "license": "Apache-2.0",
+      "license": "MIT",
       "verified": false,
       "icon": "/acp-icons/crow-cli.svg",
       "brandInk": null,
@@ -284,7 +268,7 @@
       "id": "dimcode",
       "name": "DimCode",
       "description": "A coding agent that puts leading models at your command.",
-      "website": "https://dimcode.dev/docs/acp.html",
+      "website": "https://dimagent.cn/",
       "license": "proprietary",
       "verified": false,
       "icon": "/acp-icons/dimcode.svg",
@@ -292,7 +276,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.5.21",
+        "package": "dimcode@0.5.24",
         "args": [
           "acp"
         ]
@@ -310,7 +294,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.23",
+        "package": "dirac-cli@0.5.24",
         "args": [
           "--acp"
         ]
@@ -328,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.248.0",
+        "package": "droid@1.2.0",
         "args": [
           "exec",
           "--output-format",
@@ -366,7 +350,25 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.65.0",
+        "package": "@google/gemini-cli@0.66.0",
+        "args": [
+          "--acp"
+        ]
+      }
+    },
+    {
+      "id": "github-copilot-cli",
+      "name": "GitHub Copilot",
+      "description": "GitHub's AI pair programmer",
+      "website": "https://github.com/features/copilot/cli/",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/github-copilot-cli.svg",
+      "brandInk": "#000000",
+      "cli": "copilot",
+      "launch": {
+        "kind": "npx",
+        "package": "@github/copilot@1.0.105",
         "args": [
           "--acp"
         ]
@@ -384,7 +386,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.15.0",
+        "package": "glm-acp-agent@1.17.0",
         "args": []
       }
     },
@@ -434,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.70",
+        "package": "@xai-official/grok@1.0.74",
         "args": [
           "agent",
           "stdio"
@@ -490,7 +492,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.8.17",
+        "package": "@kilocode/cli@7.8.18",
         "args": [
           "acp"
         ]
@@ -530,6 +532,25 @@
         "command": "kimi",
         "args": [
           "acp"
+        ]
+      }
+    },
+    {
+      "id": "kiro",
+      "name": "Kiro CLI",
+      "description": "The Kiro coding agent",
+      "website": "https://kiro.dev/docs/cli/acp/",
+      "license": "proprietary",
+      "verified": false,
+      "icon": "/acp-icons/kiro.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "binary",
+        "command": "kirocli/bin/kiro-cli",
+        "args": [
+          "acp",
+          "--agent-engine=v3"
         ]
       }
     },
@@ -597,7 +618,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.59",
+        "package": "@compass-ai/nova@1.1.62",
         "args": [
           "acp"
         ]
@@ -703,7 +724,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.26.0",
+        "package": "@qwen-code/qwen-code@0.26.6",
         "args": [
           "--acp",
           "--experimental-skills"
@@ -722,7 +743,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@smbcloud/sigit@1.7.4",
+        "package": "@smbcloud/sigit@1.7.7",
         "args": []
       }
     },

@@ -21,7 +21,7 @@ function choice(id: string, name = id, metaKind: string | null = null): AcpChoic
 
 describe('current adapter mode transcription', () => {
   it.each([false, true])('keeps only approval-required Codex modes with AIR metadata %s', (air) => {
-    // v2.2.2 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
+    // v2.5.0 src/AgentMode.ts: all() and toSessionMode(); kinds are sent only to AIR.
     const modes = [
       choice('read-only', 'Read-only', air ? 'standard' : null),
       choice('workspace-write', 'Workspace access', air ? 'standard' : null),
@@ -32,7 +32,7 @@ describe('current adapter mode transcription', () => {
   });
 
   it('keeps the manual and plan modes in the current non-AIR Claude list', () => {
-    // v0.95.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
+    // v0.100.0 src/session-mode.ts: buildAvailableModes(true), without AIR-only kinds.
     const modes = [
       choice('default', 'Manual'),
       choice('acceptEdits', 'Accept edits'),
@@ -160,16 +160,15 @@ describe('work mode list: nothing that removes the gate is offered', () => {
  */
 const TRANSCRIBED_FROM = {
   /**
-   * 0.95.0: `buildAvailableModes` still builds the same five ids, but `_meta.kind` is
-   * now sent only to the adapter's own AIR client, so Atlas receives no kind and `mode-safety.ts`
-   * judges by id alone; every gate-removing id is on its measured list.
+   * 0.100.0: `buildAvailableModes` builds the same five ids; `_meta.kind` goes only to the AIR
+   * client, so `mode-safety.ts` judges by id. Ultracode is a config option Atlas never reads.
    */
-  claude: '@agentclientprotocol/claude-agent-acp@0.95.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.100.0',
   /**
-   * 2.2.2 src/AgentMode.ts restores readOnly and adds workspace-write; Atlas excludes the
-   * latter because its workspaceWrite sandbox permits edits before an approval request.
+   * 2.5.0 src/AgentMode.ts keeps readOnly and workspace-write; Atlas excludes the latter
+   * because its workspaceWrite sandbox permits edits before an approval request.
    */
-  codexLaunch: '@agentclientprotocol/codex-acp@2.2.2',
+  codexLaunch: '@agentclientprotocol/codex-acp@2.5.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');

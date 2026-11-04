@@ -5,6 +5,15 @@ import { crc32, deflateSync } from 'node:zlib';
 
 afterEach(() => vi.restoreAllMocks());
 describe('untrusted Planning Markdown', () => {
+  it('reads a leading frontmatter block as metadata, not as a heading', () => {
+    const text = '---\ntitle: Checkout plan\nstatus: draft\n---\n\n# Checkout\n\nBody text.\n\n---\n\nAfter the rule.';
+    const view = render(<PlanningMarkdown document="plan.md" text={text} readImage={vi.fn()} imageUnavailable="unavailable" unsupported="unsupported" imageLimit="limit" />);
+    expect(view.container.textContent).not.toMatch(/title:|status:/);
+    expect(view.container.querySelectorAll('h1, h2')).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Checkout');
+    expect(view.container.querySelectorAll('hr')).toHaveLength(1);
+    view.unmount();
+  });
   it('does not expose URL credentials or query strings placed in image alternative text', async () => {
     const read = vi.fn();
     const secret = 'https://NAME:PASSWORD@example.com/a.png?token=TOPSECRET';

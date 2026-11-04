@@ -277,7 +277,7 @@ describe('agent doctor screen', () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
     ]);
-    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.18.0/node-v24.18.0-darwin-arm64.tar.gz (e1a97e14c99c)');
+    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.22.1/node-v24.22.1-darwin-arm64.tar.gz (89c682593d76)');
     renderHarness();
 
     fireEvent.click(screen.getByTestId('agent-doctor-scan'));
@@ -285,7 +285,7 @@ describe('agent doctor screen', () => {
 
     const card = screen.getByTestId('agent-doctor-node-plan').textContent ?? '';
     expect(card).toContain('https://nodejs.org/dist/');
-    expect(card).toContain('e1a97e14c99c');
+    expect(card).toContain('89c682593d76');
     expect(screen.getByTestId('agent-doctor-install-node')).toBeVisible();
   });
 
@@ -307,7 +307,7 @@ describe('agent doctor screen', () => {
     diagnoseAgent.mockResolvedValue([
       { id: 'launcher', state: 'problem', fixable: false, blocked: false },
     ]);
-    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.18.0/x.tar.gz (abc123)');
+    nodeInstallPlan.mockResolvedValue('https://nodejs.org/dist/v24.22.1/x.tar.gz (abc123)');
     installManagedNode.mockResolvedValue([ok('launcher')]);
     renderHarness();
 

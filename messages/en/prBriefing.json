@@ -54,6 +54,7 @@
   "filesTab": "Files",
   "filesScope": "Files touched by first-parent commits in the selected period. Opening a file compares the selected period's endpoints.",
   "filesFromCommit": "View files touched by this commit",
+  "commitFilesHeading": "Files touched by this commit",
   "filesFromPr": "View files touched in this period",
   "filesFromPrNote": "These are files touched in the selected period, not a verified list of files changed by this PR.",
   "fileComparison": "Period endpoint comparison",
