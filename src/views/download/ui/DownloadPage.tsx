@@ -27,7 +27,6 @@ import {
   releasePageUrl,
   windowsAsset,
 } from '../lib/release-state';
-import { SECTION_GAP } from '../lib/section-gap';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { useOpensLine } from '../lib/use-opens-line';
 import { GatewayFx } from './GatewayFx';
@@ -111,7 +110,7 @@ export function DownloadPage() {
           data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
-            SECTION_GAP,
+            'mt-[var(--gateway-section-gap)]',
             'shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
             bottomTabBarPresent &&
               'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
@@ -213,8 +212,8 @@ function HeroSection({
 
   /**
    * Every branch keeps all four destinations reachable. Windows' unsigned status is stated before
-   * pressing, in the trust line or beside a demoted label; this line is the only place it lives,
-   * so shortening the copy deletes the fact.
+   * pressing, in the trust line or beside a demoted label; `TrustLine` is the only place it lives (hero and
+   * closing), so shortening the copy deletes the fact.
    */
   const rise = (extra: string) => cn('gateway-rise', extra, heroIn && 'is-in');
 
@@ -286,16 +285,11 @@ function HeroSection({
             webOpensLine={webOpensLine}
           />
 
-          <p
-            data-testid="gateway-hero-trust"
-            className={cn(
-              rise('gateway-t400'),
-              'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
-            )}
-          >
-            {/* The fact needed before pressing, about the winning file. */}
-            {heroWindowsPrimary ? t('trustLineWindows') : t('trustLine')}
-          </p>
+          <TrustLine
+            testId="gateway-hero-trust"
+            className={cn(rise('gateway-t400'), 'mt-5')}
+            windowsPrimary={heroWindowsPrimary}
+          />
         </div>
 
       </div>
@@ -436,6 +430,27 @@ function DownloadActions({
   );
 }
 
+/** The fact needed before pressing, about the winning file; hero and closing share this one piece. */
+function TrustLine({
+  testId,
+  className,
+  windowsPrimary,
+}: {
+  testId: string;
+  className?: string;
+  windowsPrimary: boolean;
+}) {
+  const t = useTranslations('download');
+  return (
+    <p
+      data-testid={testId}
+      className={cn('break-keep text-body leading-body text-[color:var(--color-text-tertiary)]', className)}
+    >
+      {windowsPrimary ? t('trustLineWindows') : t('trustLine')}
+    </p>
+  );
+}
+
 function ClosingSection({
   published,
   primaryAsset,
@@ -454,7 +469,7 @@ function ClosingSection({
     <section
       data-testid="gateway-closing"
       aria-labelledby="gateway-closing-title"
-      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full')}
+      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <h2
@@ -471,8 +486,9 @@ function ClosingSection({
           windowsInstaller={windowsInstaller}
           windowsPrimary={windowsPrimary}
         />
+        <TrustLine testId="gateway-closing-trust" className="mt-5" windowsPrimary={windowsPrimary} />
         <FactsStrip
-          scope="closing"
+          scope="gateway-closing"
           className="mt-7"
           published={published}
           primaryAsset={primaryAsset}
@@ -500,7 +516,7 @@ function FactsStrip({
   sizeOnCta,
   heroIn,
 }: {
-  scope?: 'gateway' | 'closing';
+  scope?: 'gateway' | 'gateway-closing';
   className?: string;
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
@@ -691,7 +707,7 @@ function ScreensSection() {
     <section
       id="screens"
       data-testid="gateway-screens-section"
-      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
+      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <ScreensStage intro={<SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />} />
@@ -708,7 +724,7 @@ function DemoSection() {
     <section
       id="demo"
       data-testid="gateway-demo-section"
-      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
+      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full scroll-mt-24')}
     >
       {/* The stage is narrower than the column, so from 90rem the head stands beside it instead of centring. `pb-9` discounts the caption. */}
       <div

@@ -316,9 +316,9 @@
   --gateway-page-max: 1920px;
   /*
    * One section is one thought; the shared interval is its punctuation, so it must not vary per
-   * section.
+   * section. 80px, 112px from 1440 (90rem), used as is.
    */
-  --gateway-section-gap: 160px;
+  --gateway-section-gap: 80px;
   /*
    * Proportional stage width: floor 48rem (equals 40vw at 1920, so nothing moves below it), slope
    * 40vw, cap 80rem (the demo clip is 1512px wide). Gates:
@@ -749,3 +749,10 @@
    */
 }
 
+
+/* The wide-screen value of `--gateway-section-gap` (the base is set in `@theme` above). */
+@media (min-width: 90rem) {
+  :root {
+    --gateway-section-gap: 112px;
+  }
+}

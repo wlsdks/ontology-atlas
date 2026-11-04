@@ -121,6 +121,13 @@ const IntlWrapper = ({ children }: { children: ReactNode }) => (
   </NextIntlClientProvider>
 );
 
+/** Every filled (indigo) call to action on the whole page, in document order. */
+function filledIds() {
+  return Array.from(
+    document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'),
+  ).map((el) => el.getAttribute('data-testid'));
+}
+
 function renderDownloadPage() {
   return render(<IntlWrapper>{<DownloadPage />}</IntlWrapper>);
 }
@@ -173,11 +180,7 @@ describe('DownloadPage', () => {
       expect(primary).toHaveAttribute('href', '/topology');
       expect(primary).toHaveTextContent(/Try it in the browser/i);
       expect(primary.className).toMatch(/--color-indigo-brand/);
-      expect(
-        Array.from(
-          screen.getByTestId('gateway-hero').querySelectorAll('a[class*="--color-indigo-brand"]'),
-        ),
-      ).toHaveLength(1);
+      expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
     });
 
     it('keeps operator-only release-pipeline status off the public page', () => {
@@ -205,8 +208,7 @@ describe('DownloadPage', () => {
       // 13,002,342 B in decimal MB, as Finder reports.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
       expect(screen.getAllByText(/macOS 12 or later · Apple Silicon/).length).toBeGreaterThan(0);
-      const filled = Array.from(screen.getByTestId('gateway-hero').querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
-      expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
+      expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
     });
 
     it('ends with the same download link as the hero, before the footer', () => {
@@ -242,6 +244,7 @@ describe('DownloadPage', () => {
       const web = screen.getByTestId('gateway-hero-web-cta');
       expect(web).toHaveAttribute('href', '/topology');
       expect(web).toHaveTextContent(/playground/i);
+      expect(filledIds()).toEqual(['gateway-hero-cta', 'gateway-closing-cta']);
 
       const row = primary.parentElement!;
       expect(row.querySelectorAll(':scope > a')).toHaveLength(3);
@@ -267,8 +270,11 @@ describe('DownloadPage', () => {
           expect.stringMatching(/_windows_x64-setup\.exe$/),
         );
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        // The hero trust line is the one place it lives.
-        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(1);
+        // The trust line lives in the hero and again in the closing, beside the same button.
+        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
+        expect(screen.getByTestId('gateway-closing-trust')).toHaveTextContent(
+          enMessages.download.trustLineWindows,
+        );
         // The checksum is the Windows file's, and it opens the release page.
         const sha = screen.getByTestId('gateway-facts-sha');
         expect(sha).toHaveAccessibleName(/_windows_x64-setup\.exe/);
@@ -306,11 +312,12 @@ describe('DownloadPage', () => {
 
 
   /* The only slots left for the signing fact, so this is its last line of defence. */
-  it('states the signing status that is true today, once, in the hero', () => {
+  it('states the signing status that is true today, once in the hero and once in the closing', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(1);
+    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/Signed and notarized by Apple/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(2);
 
     expect(screen.queryByText(/Not signed yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Open Anyway/i)).not.toBeInTheDocument();
@@ -357,7 +364,8 @@ describe('DownloadPage', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(1);
+    expect(within(screen.getByTestId('gateway-hero')).getAllByText(/no Atlas backend/i)).toHaveLength(1);
+    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(2);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Chromium on the web does open a folder.
     expect(
