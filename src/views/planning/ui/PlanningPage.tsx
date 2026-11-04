@@ -217,10 +217,9 @@ export function PlanningPage() {
           {status === 'checking' && slowId === checkingId && <p role="status" className="text-body text-[color:var(--color-text-secondary)]">{t('checkingSlow')}</p>}
           {status === 'unavailable' && <p aria-live="off">{t('folderUnavailable')}</p>}
           <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 text-body text-[color:var(--color-text-secondary)]">
-            {inventory && <p role="status">{t('visited', { count: inventory.visited })} {inventory.limit_reached && t('budgetLimit')} {inventory.depth_limited && t('depthLimit')} {inventory.omitted.unreadable > 0 && t('unreadable', { count: inventory.omitted.unreadable })} {inventory.unknown_remainder && t('unknownRemaining')}</p>}
+            {inventory && <div className="flex min-h-10 flex-col justify-center gap-1 max-[769px]:min-h-11"><p role="status">{t('visited', { count: inventory.visited })} {inventory.limit_reached && t('budgetLimit')} {inventory.depth_limited && t('depthLimit')} {inventory.omitted.unreadable > 0 && t('unreadable', { count: inventory.omitted.unreadable })} {inventory.unknown_remainder && t('unknownRemaining')}</p>{inventory.skipped > 0 && <p data-planning-omitted>{t('omitted', { count: inventory.skipped })} {inventory.omitted.linked > 0 && t('linkedOmitted', { count: inventory.omitted.linked })}</p>}</div>}
             <Disclosure className="max-w-3xl [&>button]:min-h-10 max-[769px]:[&>button]:min-h-11" summary={t('details')}><div className="space-y-2 pt-2"><p>{t('chooseBody')}</p><p>{t('limits')}</p><p>{t('noContentSearch')}</p><p>{t('historyLimit')}</p><p>{t('comparisonLimit')}</p></div></Disclosure>
           </div>
-          {inventory && inventory.skipped > 0 && <p className="text-caption text-[color:var(--color-text-secondary)]">{t('omitted', { count: inventory.skipped })} {inventory.omitted.linked > 0 && t('linkedOmitted', { count: inventory.omitted.linked })}</p>}
           <div className="grid min-h-[18rem] gap-4 lg:grid-cols-[minmax(16rem,20rem)_minmax(0,1fr)]">
             <section className={`${panel} min-w-0 space-y-3 p-4`} aria-label={t('findFile')}>
               <Input label={t('findFile')} value={search} onChange={(event) => setSearch(event.target.value)} className="w-full" />
