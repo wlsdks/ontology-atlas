@@ -161,6 +161,8 @@
     "saveIdentityUid": "この行(uid)は、名前を変えても文書を同じものと認識するための永続的なIDなので、削除も変更もできません。uidの行を元に戻すと保存できます。",
     "saveIdentityHistory": "この行(merged_uids)は、この文書に統合された文書の記録なので、ここでは編集できません。その行を元に戻すと保存できます。",
     "discardConfirm": "未保存の変更を破棄してエディタを閉じますか？",
+    "discardKeep": "編集を続ける",
+    "discardAction": "変更を破棄",
     "linkText": "リンクテキスト",
     "placeholder": "テキスト",
     "tbBold": "太字 ⌘B",

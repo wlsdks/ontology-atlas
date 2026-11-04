@@ -161,6 +161,8 @@
     "saveIdentityUid": "This line (uid) is the permanent id that keeps the document recognizable even after a rename, so it cannot be removed or changed. Restore the uid line and the save will go through.",
     "saveIdentityHistory": "This line (merged_uids) records the documents merged into this one, so it cannot be edited here. Restore that line and the save will go through.",
     "discardConfirm": "Discard unsaved changes and close the editor?",
+    "discardKeep": "Keep editing",
+    "discardAction": "Discard changes",
     "linkText": "Link text",
     "placeholder": "Text",
     "tbBold": "Bold ⌘B",
