@@ -31,11 +31,13 @@
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, lstatSync, readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
+
+import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FAKE_SOURCE_ROOT = "/work/ontology-atlas";
@@ -426,117 +428,10 @@ function lastChange(repoPaths, vaultPaths) {
 
 const PLANNING_ROOT = `${FAKE_SOURCE_ROOT}/docs`;
 const PLANNING_DIR = path.join(REPO, "docs");
-// Mirrors `src-tauri/src/planning/scan.rs`.
-const PLANNING_MAX_DEPTH = 12;
-const PLANNING_ENTRY_BUDGET = 10_000;
-const PLANNING_DENIED = [
-  "credential", "secret", "password", "passwd", "token", "apikey", "api-key", "api_key",
-  "id_rsa", "id_ed25519", "id_dsa", "id_ecdsa", ".env", ".pem", ".key", ".p12", ".pfx",
-  ".keystore", ".jks", ".htpasswd",
-];
-const PLANNING_PRUNED = new Set([
-  "node_modules", "target", "dist", "build", "out", "coverage", "vendor", "Pods", "DerivedData",
-  "__pycache__", "venv",
-]);
-const PLANNING_EXTENSIONS = new Set(["md", "png", "jpg", "jpeg", "webp", "avif"]);
-const PLANNING_BUNDLE = /\.(app|bundle|framework)$/i;
-
-const allowedComponent = (name) => {
-  const lower = name.toLowerCase();
-  return !name.startsWith(".") && !PLANNING_DENIED.some((word) => lower.includes(word)) && !PLANNING_PRUNED.has(name);
-};
-const supportedFile = (name) => {
-  const dot = name.lastIndexOf(".");
-  return dot >= 0 && PLANNING_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
-};
-const comparePaths = (left, right) => {
-  const a = left.split("/");
-  const b = right.split("/");
-  for (let i = 0; i < Math.min(a.length, b.length); i += 1) {
-    const order = Buffer.compare(Buffer.from(a[i]), Buffer.from(b[i]));
-    if (order) return order;
-  }
-  return a.length - b.length;
-};
-
 const BRIEFING_ANCHOR = "2026-10-28";
 
-let planningCache = null;
-function planningInventory() {
-  if (planningCache) return planningCache;
-  const result = {
-    files: [],
-    skipped: 0,
-    partial: false,
-    visited: 0,
-    limit_reached: false,
-    depth_limited: false,
-    unknown_remainder: false,
-    omitted: { excluded: 0, linked: 0, symlink: 0, unsupported: 0, unreadable: 0 },
-  };
-  let seen = 0;
-  const walk = (relative, depth) => {
-    if (depth > PLANNING_MAX_DEPTH) {
-      result.partial = true;
-      result.depth_limited = true;
-      return;
-    }
-    let entries;
-    try {
-      entries = readdirSync(path.join(PLANNING_DIR, relative)).sort((x, y) => Buffer.compare(Buffer.from(x), Buffer.from(y)));
-    } catch {
-      result.partial = true;
-      result.omitted.unreadable += 1;
-      return;
-    }
-    const remaining = Math.max(PLANNING_ENTRY_BUDGET - seen, 0);
-    if (entries.length > remaining) {
-      entries = entries.slice(0, remaining);
-      result.partial = true;
-      result.limit_reached = true;
-    }
-    for (const name of entries) {
-      if (seen >= PLANNING_ENTRY_BUDGET) {
-        result.partial = true;
-        result.limit_reached = true;
-        break;
-      }
-      seen += 1;
-      if (!allowedComponent(name)) {
-        result.omitted.excluded += 1;
-        continue;
-      }
-      const child = relative ? `${relative}/${name}` : name;
-      const stat = lstatSync(path.join(PLANNING_DIR, child));
-      if (stat.isSymbolicLink()) {
-        result.omitted.symlink += 1;
-      } else if (stat.isDirectory()) {
-        if (PLANNING_BUNDLE.test(name)) result.omitted.excluded += 1;
-        else walk(child, depth + 1);
-      } else if (stat.isFile()) {
-        if (!supportedFile(name)) result.omitted.unsupported += 1;
-        else if (stat.nlink !== 1) result.omitted.linked += 1;
-        else result.files.push({ path: child, size: stat.size, modified_seconds: Math.floor(MTIME / 1000) });
-      } else {
-        result.omitted.excluded += 1;
-      }
-    }
-  };
-  walk("", 0);
-  result.files.sort((x, y) => comparePaths(x.path, y.path));
-  result.visited = seen;
-  result.unknown_remainder = result.partial;
-  const { excluded, linked, symlink, unsupported } = result.omitted;
-  result.skipped = excluded + linked + symlink + unsupported;
-  planningCache = result;
-  return result;
-}
-
-function planningBytes(relativePath) {
-  const full = path.resolve(PLANNING_DIR, String(relativePath));
-  if (!full.startsWith(`${PLANNING_DIR}${path.sep}`)) throw new Error("outside-folder");
-  return readFileSync(full);
-}
+const planningInventory = () => walkPlanningFolder(PLANNING_DIR, Math.floor(MTIME / 1000));
+const planningBytes = (relativePath) => readPlanningFile(PLANNING_DIR, relativePath);
 
 function changeBriefing(startEpoch, endEpoch) {
   const raw = git(
@@ -659,10 +554,8 @@ function makeBridge(overlay, unstubbed) {
         const text = readFileSync(full, "utf8");
         return { text, lastModified: MTIME, bytes: Buffer.byteLength(text) };
       }
-      case "harness_source_path_exists": {
-        const { full } = realPath(FAKE_SOURCE_ROOT, input.relativePath);
-        return existsSync(full);
-      }
+      case "harness_source_path_exists":
+        return existsSync(realPath(FAKE_SOURCE_ROOT, input.relativePath).full);
       case "read_vault_text_files":
         return (input.relativePaths ?? []).map((relativePath) => {
           try {
@@ -678,8 +571,7 @@ function makeBridge(overlay, unstubbed) {
           status: "measured",
           vaultChanges: lastChange([], input.vaultPaths).map((row) => ({ ...row, dirty: false })),
           sourceChanges: lastChange(input.sourcePaths, []).map((row) => ({ ...row, dirty: false })),
-          omittedVaultPaths: [],
-          omittedSourcePaths: [],
+          omittedVaultPaths: [], omittedSourcePaths: [],
         };
       case "planning_supported":
         return true;
