@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Captures the six app screens the gateway's screens stage shows, once per locale
+ * Captures the app screens the gateway's screens stage shows, once per locale
  * (`public/gateway/<screen>.<locale>.png`, Korean and English in one run).
  *
  * Why a script and not a hand-taken screenshot: these screens only exist inside the desktop app
@@ -36,6 +36,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
+
+import { MAP_SCREEN } from "./map-screen.mjs";
+import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const FAKE_SOURCE_ROOT = "/work/ontology-atlas";
@@ -424,6 +427,56 @@ function lastChange(repoPaths, vaultPaths) {
   return out;
 }
 
+const PLANNING_ROOT = `${FAKE_SOURCE_ROOT}/docs`;
+const PLANNING_DIR = path.join(REPO, "docs");
+const BRIEFING_ANCHOR = "2026-10-28";
+
+const planningInventory = () => walkPlanningFolder(PLANNING_DIR, Math.floor(MTIME / 1000));
+const planningBytes = (relativePath) => readPlanningFile(PLANNING_DIR, relativePath);
+
+function changeBriefing(startEpoch, endEpoch) {
+  const raw = git(
+    "log",
+    "--first-parent",
+    "--diff-merges=first-parent",
+    "--name-only",
+    "--format=%x1e%H%x1f%ct%x1f%s%x1f%B%x1f",
+    `--since-as-filter=@${startEpoch - 1}`,
+    `--until=@${endEpoch - 1}`,
+    "HEAD",
+    "--",
+  );
+  const commits = raw
+    .split("\x1e")
+    .filter((block) => block.trim())
+    .map((block) => {
+      const [hash, committed, subject, message, rest] = block.split("\x1f");
+      return {
+        hash,
+        subject,
+        message: message.trim(),
+        messageComplete: true,
+        committedAt: new Date(Number(committed) * 1000).toISOString(),
+        paths: rest.split("\n").filter((line) => line.trim()),
+      };
+    });
+  const head = git("rev-parse", "HEAD").trim();
+  const tip = commits[0]?.hash ?? null;
+  const base = tip ? git("rev-parse", `${commits.at(-1).hash}^`).trim() : null;
+  return {
+    status: commits.length ? "measured" : "no-history",
+    sourceRoot: FAKE_SOURCE_ROOT,
+    snapshot: sha256(`${head}:${startEpoch}:${endEpoch}`),
+    head,
+    base,
+    tip,
+    commits,
+    netPaths: tip ? git("diff", "--name-only", base, tip).split("\n").filter(Boolean) : null,
+    limit: 200,
+    partialReasons: [],
+  };
+}
+
 function makeBridge(overlay, unstubbed) {
   const vaultRootOf = (input) => input.rootPath ?? input.vaultPath ?? FAKE_VAULT_ROOT;
   return async (command, input = {}) => {
@@ -451,7 +504,7 @@ function makeBridge(overlay, unstubbed) {
       case "write_vault_text_file":
       case "create_vault_text_file": {
         const { rel } = realPath(vaultRootOf(input), input.relativePath);
-        overlay.set(rel, String(input.contents ?? input.text ?? ""));
+        overlay.set(rel, String(input.content ?? input.contents ?? input.text ?? ""));
         return null;
       }
       case "vault_fingerprint":
@@ -489,6 +542,61 @@ function makeBridge(overlay, unstubbed) {
         return { path: input.relativePath, diff: "", untracked: false, tooLarge: false };
       case "git_paths_last_change":
         return lastChange(input.repoPaths, input.vaultPaths);
+      case "list_harness_source_directory": {
+        const { full } = realPath(FAKE_SOURCE_ROOT, input.relativePath);
+        if (!existsSync(full)) throw new Error("harness-path-missing");
+        if (!statSync(full).isDirectory()) throw new Error("harness-not-a-directory");
+        return listDirectory(FAKE_SOURCE_ROOT, input.relativePath, overlay).filter((entry) => !entry.name.startsWith(".env"));
+      }
+      case "read_harness_source_text": {
+        const { full } = realPath(FAKE_SOURCE_ROOT, input.relativePath);
+        if (!existsSync(full)) throw new Error("harness-path-missing");
+        if (!statSync(full).isFile()) throw new Error("harness-not-a-file");
+        const text = readFileSync(full, "utf8");
+        return { text, lastModified: MTIME, bytes: Buffer.byteLength(text) };
+      }
+      case "harness_source_path_exists":
+        return existsSync(realPath(FAKE_SOURCE_ROOT, input.relativePath).full);
+      case "read_vault_text_files":
+        return (input.relativePaths ?? []).map((relativePath) => {
+          try {
+            return { relativePath, text: readText(vaultRootOf(input), relativePath, overlay), lastModified: MTIME, error: null };
+          } catch (error) {
+            return { relativePath, text: null, lastModified: null, error: String(error.message ?? error) };
+          }
+        });
+      case "read_vault_text_tail":
+        return readText(vaultRootOf(input), input.relativePath, overlay).split("\n").slice(-input.maxLines).join("\n");
+      case "git_bound_evidence_dates":
+        return {
+          status: "measured",
+          vaultChanges: lastChange([], input.vaultPaths).map((row) => ({ ...row, dirty: false })),
+          sourceChanges: lastChange(input.sourcePaths, []).map((row) => ({ ...row, dirty: false })),
+          omittedVaultPaths: [], omittedSourcePaths: [],
+        };
+      case "planning_supported":
+        return true;
+      case "planning_pick_folder":
+        return { generation: 1, folder: "docs", path: PLANNING_ROOT };
+      case "planning_scan":
+        return planningInventory();
+      case "planning_read_file":
+        return { binary: planningBytes(input.path) };
+      case "planning_open_document":
+        return {
+          binary: Buffer.concat([
+            Buffer.from(createHash("md5").update(planningBytes(input.path)).digest("hex")),
+            planningBytes(input.path),
+          ]),
+        };
+      case "git_change_briefing":
+        return changeBriefing(input.startEpoch, input.endEpoch);
+      case "git_briefing_repositories":
+        return [];
+      case "git_briefing_saved_pull_descriptions":
+        return { status: "unsupported", pulls: null, omitted: 0, ignored: 0 };
+      case "git_change_briefing_patch":
+        return { status: "unavailable", patch: "", truncated: false };
       case "plugin:event|listen":
         return Number(input.handler);
       case "plugin:event|unlisten":
@@ -517,7 +625,7 @@ function makeBridge(overlay, unstubbed) {
   };
 }
 
-// ─── The six screens ───────────────────────────────────────────────────────
+// ─── The eight screens ───────────────────────────────────────────────────────
 
 /**
  * Each screen: where to go and what to wait for before the shutter. `prepare` runs after the
@@ -543,14 +651,10 @@ const SCREENS = [
     name: "insights",
     route: "/ontology/insights/",
     async prepare(page) {
-      // The brief's four cores settle on their own clocks — the guidance core scans the whole
-      // project source — and a cell still `reading` prints a loading word. Wait for all four to
-      // have an answer, not for a fixed time.
       await page.waitForFunction(
-        () => {
-          const cells = [...document.querySelectorAll("[data-brief-availability]")];
-          return cells.length >= 4 && cells.every((cell) => cell.getAttribute("data-brief-availability") !== "reading");
-        },
+        () =>
+          document.querySelectorAll('[data-testid="analysis-board"] [data-testid="analysis-claim"]').length > 0 &&
+          document.querySelectorAll('[data-testid="analysis-board"] [data-testid="analysis-witness"]').length > 0,
         undefined,
         { timeout: 180_000, polling: 250 },
       );
@@ -581,12 +685,34 @@ const SCREENS = [
       await page.waitForTimeout(3000);
     },
   },
+  {
+    name: "planning",
+    route: "/planning/",
+    async prepare(page) {
+      await page.locator("[data-planning-choose]").first().click();
+      await page.getByRole("button", { name: "FEATURES.md", exact: true }).click();
+      await page.getByRole("heading", { level: 1 }).nth(1).waitFor().catch(() => {});
+      await page.waitForTimeout(2500);
+    },
+  },
+  {
+    name: "changes",
+    route: "/changes/",
+    async prepare(page) {
+      await page.getByTestId("briefing-range").locator("xpath=following-sibling::button[2]").click();
+      await page.locator("input[type=date]").fill(BRIEFING_ANCHOR);
+      await page.keyboard.press("Escape");
+      await page.getByTestId("briefing-commits").click();
+      await page.waitForTimeout(2500);
+    },
+  },
 ];
 
 async function installRuntime(context, bridge) {
   await context.exposeBinding("__atlasCaptureBridge", async (_source, command, input) => {
     try {
-      return { ok: true, value: await bridge(command, input) };
+      const value = await bridge(command, input);
+      return { ok: true, value: value?.binary ? { base64: value.binary.toString("base64") } : value };
     } catch (error) {
       return { ok: false, message: error instanceof Error ? error.message : String(error) };
     }
@@ -604,6 +730,10 @@ async function installRuntime(context, bridge) {
       async invoke(command, input = {}) {
         const answer = await window.__atlasCaptureBridge(command, input);
         if (!answer.ok) throw new Error(answer.message);
+        if (command === "planning_read_file" || command === "planning_open_document") {
+          const bytes = Uint8Array.from(atob(answer.value.base64), (char) => char.charCodeAt(0));
+          return bytes.buffer;
+        }
         if (command !== "read_vault_binary_file") return answer.value;
         const raw = atob(answer.value.base64);
         const stamped = new Uint8Array(8 + raw.length);
@@ -633,6 +763,7 @@ async function main() {
       colorScheme: "dark",
       locale: BROWSER_LOCALE[locale] ?? locale,
       reducedMotion: "reduce",
+      timezoneId: "UTC",
     });
     await installRuntime(context, makeBridge(buildOverlay(locale), unstubbed));
     const page = await context.newPage();
@@ -644,14 +775,15 @@ async function main() {
     await page.getByTestId("first-run-open").click();
     await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
 
-    for (const screen of SCREENS) {
-      if (ONLY && !ONLY.has(screen.name)) continue;
+    for (const screen of [...SCREENS, MAP_SCREEN]) {
+      if (ONLY ? !ONLY.has(screen.name) : screen.explicit) continue;
+      if (screen.locales && !screen.locales.includes(locale)) continue;
       await page.goto(`${BASE_URL}/${locale}${screen.route}`);
       await page.waitForLoadState("networkidle");
       await screen.prepare(page);
       // The pointer rests off the picture so no hover state is captured.
       await page.mouse.move(VIEWPORT.width - 2, VIEWPORT.height - 2);
-      const file = path.join(OUT_DIR, `${screen.name}.${locale}.png`);
+      const file = screen.out ? path.join(REPO, screen.out) : path.join(OUT_DIR, `${screen.name}.${locale}.png`);
       await page.screenshot({ path: file });
       console.log(`captured ${path.relative(REPO, file)}`);
     }

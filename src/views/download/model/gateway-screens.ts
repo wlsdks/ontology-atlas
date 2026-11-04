@@ -9,9 +9,11 @@ export const GATEWAY_SCREEN_LOCALES = ['ko', 'en'] as const;
 export const GATEWAY_SCREEN_FILES = [
   'harness',
   'library',
+  'planning',
   'automations',
   'insights',
   'projects',
+  'changes',
   'git',
 ] as const;
 export type GatewayScreenFile = (typeof GATEWAY_SCREEN_FILES)[number];

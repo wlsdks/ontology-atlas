@@ -10,9 +10,11 @@ export type SurfaceHref =
   | '/topology'
   | '/architecture'
   | '/library'
+  | '/planning'
   | '/automations'
   | '/ontology/insights'
   | '/projects'
+  | '/changes'
   | '/git';
 
 /**

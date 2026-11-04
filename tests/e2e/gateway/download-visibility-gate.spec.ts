@@ -78,6 +78,7 @@ test.describe("download — every drawing stops out of view", () => {
 
   test("the conduction figure waits at rest until 90% is visible, runs on down to 20%, and pauses at 19%", async ({ page }) => {
     await open(page);
+    await page.setViewportSize({ width: 1440, height: 700 });
     const figure = page.getByTestId("download-conduction-figure");
     await showFigureShare(page, 0.85);
     await waitFrames(page, 4);
