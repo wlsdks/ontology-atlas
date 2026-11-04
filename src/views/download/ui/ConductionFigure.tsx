@@ -40,7 +40,7 @@ export function ConductionSection({ graph }: { graph: StageGraph }) {
   return (
     <section
       data-testid="gateway-conduction-section"
-      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)] w-full')}
+      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <ConductionFigure graph={graph} />
