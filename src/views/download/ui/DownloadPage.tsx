@@ -27,6 +27,7 @@ import {
   releasePageUrl,
   windowsAsset,
 } from '../lib/release-state';
+import { SECTION_GAP } from '../lib/section-gap';
 import { useStageGraph } from '../lib/use-stage-graph';
 import { useOpensLine } from '../lib/use-opens-line';
 import { GatewayFx } from './GatewayFx';
@@ -44,7 +45,6 @@ import type { StageGraph } from '../lib/stage-graph';
  * (`shared/lib/public-pages/gateway-frame.ts`, `tests/e2e/gateway/download-gateway-grid.spec.ts`).
  */
 
-const SECTION_GAP = 'mt-[var(--gateway-section-gap)]';
 const THIRD_PARTY_LICENSES_HREF = withBasePath('/third-party-licenses.txt');
 
 /**
@@ -95,6 +95,13 @@ export function DownloadPage() {
         <ChangeSection graph={graph} />
         <ScreensSection />
         <StartSection />
+        <ClosingSection
+          published={published}
+          primaryAsset={primaryAsset}
+          windowsInstaller={windowsInstaller}
+          windowsPrimary={windowsPrimary}
+          fileWins={winner === 'file' && published && primaryAsset !== null}
+        />
 
         <div
           data-testid="download-bottom-band"
@@ -216,49 +223,6 @@ function HeroSection({
     { text: t('heroTitleLine2') },
   ];
 
-  const macLink = primaryAsset ? (
-    <a
-      href={primaryAsset.downloadUrl}
-      data-testid={heroWindowsPrimary ? 'gateway-hero-mac' : 'gateway-hero-cta'}
-      className={cn(
-        buttonVariants(heroWindowsPrimary ? { variant: 'outline', size: 'lg' } : { size: 'lg' }),
-        heroWindowsPrimary && 'px-4 sm:px-6',
-        HERO_CTA_WRAP,
-      )}
-    >
-      <Download size={ICON_SIZE.lg} aria-hidden />
-      {t('primaryCtaPublished')}
-      <AssetSize bytes={primaryAsset.sizeBytes} onFill={!heroWindowsPrimary} />
-    </a>
-  ) : null;
-  /* As the outlined control the unsigned marker rides on the button: it is needed before downloading. */
-  const windowsLink = windowsInstaller ? (
-    <a
-      href={windowsInstaller.downloadUrl}
-      data-testid={heroWindowsPrimary ? 'gateway-hero-cta' : 'gateway-hero-windows'}
-      className={cn(
-        buttonVariants(heroWindowsPrimary ? { size: 'lg' } : { variant: 'outline', size: 'lg' }),
-        !heroWindowsPrimary && 'px-4 sm:px-6',
-        HERO_CTA_WRAP,
-      )}
-    >
-      <Download size={ICON_SIZE.lg} aria-hidden />
-      {heroWindowsPrimary ? (
-        <>
-          {t('windowsDownloadCta')}
-          <AssetSize bytes={windowsInstaller.sizeBytes} onFill />
-        </>
-      ) : (
-        <>
-          {t('heroWindowsCta')}
-          <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
-            {t('windowsUnsignedShort')}
-          </span>
-        </>
-      )}
-    </a>
-  ) : null;
-
   return (
     /* As tall as its copy, not the viewport, or the fold holds an empty band instead of the demo. */
     <section
@@ -311,39 +275,16 @@ function HeroSection({
           </p>
 
           {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
-          <div className={cn(rise('gateway-t320'), 'mt-9 flex flex-wrap items-center gap-3')}>
-            {fileWins ? (
-              <>
-                {heroWindowsPrimary ? windowsLink : null}
-                {macLink}
-                {heroWindowsPrimary ? null : windowsLink}
-              </>
-            ) : (
-              <Link
-                href="/topology"
-                data-testid="gateway-hero-cta"
-                className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
-              >
-                {t('webCta')}
-              </Link>
-            )}
-            {/* The browser route is always open. */}
-            {fileWins ? (
-              <Link
-                ref={setWebCta}
-                href="/topology"
-                data-testid="gateway-hero-web-cta"
-                className={cn(
-                  buttonVariants({ variant: 'ghost', size: 'lg' }),
-                  // Opening a line, the text starts at the column edge; the margin keeps the wrap decision.
-                  webOpensLine ? 'mr-8 px-0 sm:mr-12' : 'px-4 sm:px-6',
-                  HERO_CTA_WRAP,
-                )}
-              >
-                {t('heroPlaygroundCta')}
-              </Link>
-            ) : null}
-          </div>
+          <DownloadActions
+            scope="hero"
+            className={cn(rise('gateway-t320'), 'mt-9')}
+            fileWins={fileWins}
+            primaryAsset={primaryAsset}
+            windowsInstaller={windowsInstaller}
+            windowsPrimary={heroWindowsPrimary}
+            webRef={setWebCta}
+            webOpensLine={webOpensLine}
+          />
 
           <p
             data-testid="gateway-hero-trust"
@@ -381,11 +322,176 @@ function HeroSection({
   );
 }
 
+const TEST_IDS = {
+  hero: {
+    cta: 'gateway-hero-cta',
+    mac: 'gateway-hero-mac',
+    windows: 'gateway-hero-windows',
+  },
+  closing: {
+    cta: 'gateway-closing-cta',
+    mac: 'gateway-closing-mac',
+    windows: 'gateway-closing-windows',
+  },
+} as const;
+
+function DownloadActions({
+  scope,
+  className,
+  fileWins,
+  primaryAsset,
+  windowsInstaller,
+  windowsPrimary,
+  webRef,
+  webOpensLine = false,
+}: {
+  scope: 'hero' | 'closing';
+  className?: string;
+  fileWins: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsInstaller: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
+  webRef?: (node: HTMLAnchorElement | null) => void;
+  webOpensLine?: boolean;
+}) {
+  const t = useTranslations('download');
+  const id = TEST_IDS[scope];
+
+  const macLink = primaryAsset ? (
+    <a
+      href={primaryAsset.downloadUrl}
+      data-testid={windowsPrimary ? id.mac : id.cta}
+      className={cn(
+        buttonVariants(windowsPrimary ? { variant: 'outline', size: 'lg' } : { size: 'lg' }),
+        windowsPrimary && 'px-4 sm:px-6',
+        HERO_CTA_WRAP,
+      )}
+    >
+      <Download size={ICON_SIZE.lg} aria-hidden />
+      {t('primaryCtaPublished')}
+      <AssetSize bytes={primaryAsset.sizeBytes} onFill={!windowsPrimary} />
+    </a>
+  ) : null;
+  /* As the outlined control the unsigned marker rides on the button: it is needed before downloading. */
+  const windowsLink = windowsInstaller ? (
+    <a
+      href={windowsInstaller.downloadUrl}
+      data-testid={windowsPrimary ? id.cta : id.windows}
+      className={cn(
+        buttonVariants(windowsPrimary ? { size: 'lg' } : { variant: 'outline', size: 'lg' }),
+        !windowsPrimary && 'px-4 sm:px-6',
+        HERO_CTA_WRAP,
+      )}
+    >
+      <Download size={ICON_SIZE.lg} aria-hidden />
+      {windowsPrimary ? (
+        <>
+          {t('windowsDownloadCta')}
+          <AssetSize bytes={windowsInstaller.sizeBytes} onFill />
+        </>
+      ) : (
+        <>
+          {t('heroWindowsCta')}
+          <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t('windowsUnsignedShort')}
+          </span>
+        </>
+      )}
+    </a>
+  ) : null;
+
+  return (
+    <div className={cn('flex flex-wrap items-center gap-3', className)}>
+      {fileWins ? (
+        <>
+          {windowsPrimary ? windowsLink : null}
+          {macLink}
+          {windowsPrimary ? null : windowsLink}
+        </>
+      ) : (
+        <Link
+          href="/topology"
+          data-testid={id.cta}
+          className={cn(buttonVariants({ size: 'lg' }), HERO_CTA_WRAP)}
+        >
+          {t('webCta')}
+        </Link>
+      )}
+      {fileWins && scope === 'hero' ? (
+        <Link
+          ref={webRef}
+          href="/topology"
+          data-testid="gateway-hero-web-cta"
+          className={cn(
+            buttonVariants({ variant: 'ghost', size: 'lg' }),
+            // Opening a line, the text starts at the column edge; the margin keeps the wrap decision.
+            webOpensLine ? 'mr-8 px-0 sm:mr-12' : 'px-4 sm:px-6',
+            HERO_CTA_WRAP,
+          )}
+        >
+          {t('heroPlaygroundCta')}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function ClosingSection({
+  published,
+  primaryAsset,
+  windowsInstaller,
+  windowsPrimary,
+  fileWins,
+}: {
+  published: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsInstaller: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
+  fileWins: boolean;
+}) {
+  const t = useTranslations('download');
+  return (
+    <section
+      data-testid="gateway-closing"
+      aria-labelledby="gateway-closing-title"
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full')}
+    >
+      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <h2
+          id="gateway-closing-title"
+          className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
+        >
+          {t('closingTitle')}
+        </h2>
+        <DownloadActions
+          scope="closing"
+          className="mt-6"
+          fileWins={fileWins}
+          primaryAsset={primaryAsset}
+          windowsInstaller={windowsInstaller}
+          windowsPrimary={windowsPrimary}
+        />
+        <FactsStrip
+          scope="closing"
+          className="mt-7"
+          published={published}
+          primaryAsset={primaryAsset}
+          windowsAsset={windowsInstaller}
+          windowsPrimary={windowsPrimary}
+          sizeOnCta={fileWins}
+          heroIn
+        />
+      </div>
+    </section>
+  );
+}
+
 /**
  * Release facts for the file the CTA points at, taking the page's one platform decision, or a
  * visitor checks another file's checksum. Unpublished, size and checksum rows do not exist.
  */
 function FactsStrip({
+  scope = 'gateway',
   className,
   published,
   primaryAsset,
@@ -394,6 +500,7 @@ function FactsStrip({
   sizeOnCta,
   heroIn,
 }: {
+  scope?: 'gateway' | 'closing';
   className?: string;
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
@@ -469,7 +576,7 @@ function FactsStrip({
       text: t('factChangelogValue', { tag }),
       href: '/changelog' as const,
       external: false,
-      testId: 'gateway-facts-changelog',
+      testId: `${scope}-facts-changelog`,
       code: false,
     },
     {
@@ -477,7 +584,7 @@ function FactsStrip({
       text: t('factSourceValue'),
       href: GITHUB_REPO_URL,
       external: true,
-      testId: 'gateway-facts-source',
+      testId: `${scope}-facts-source`,
       // A path, so mono.
       code: true,
     },
@@ -489,7 +596,7 @@ function FactsStrip({
           every row shares a start line. A container query, since the column decides the fit. 54rem:
           four equal columns hold the widest fact (the Korean requirements value, 173px). */}
       <div
-        data-testid="gateway-facts"
+        data-testid={`${scope}-facts`}
         className={cn(
           PAGE_COLUMN,
           '@container/gateway-facts border-t border-[color:var(--color-border-soft)] py-5',
@@ -513,7 +620,7 @@ function FactsStrip({
                     target="_blank"
                     rel="noreferrer noopener"
                     aria-label={fact.name}
-                    data-testid="gateway-facts-sha"
+                    data-testid={`${scope}-facts-sha`}
                     className={cn(FACT_LINK, 'font-mono')}
                   >
                     <span aria-hidden data-external-link-marker>
@@ -527,7 +634,7 @@ function FactsStrip({
               </dd>
             </div>
           ))}
-          {links.map((link, index) => (
+          {(scope === 'gateway' ? links : []).map((link, index) => (
             <div
               key={link.label}
               className={cn('min-w-0', index === 0 && '@min-[66rem]/gateway-facts:ml-auto')}
@@ -635,7 +742,7 @@ function DemoPrompt({ text, label }: { text: string; label: string }) {
       <blockquote className="mt-1.5 break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-body leading-body text-[color:var(--color-text-secondary)]">
         {text.split('`').map((part, i) =>
           i % 2 === 1 ? (
-            <code key={i} className="break-words font-mono text-[color:var(--color-text-primary)] sm:whitespace-nowrap">
+            <code key={i} className="font-mono text-[color:var(--color-text-primary)] [overflow-wrap:anywhere]">
               {part}
             </code>
           ) : (

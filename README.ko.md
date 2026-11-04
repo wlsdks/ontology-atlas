@@ -45,14 +45,28 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 <td width="50%"><img src="public/gateway/library.ko.png" alt="자료실: 왼쪽에 원문이 있고, 그 원문으로 쓴 위키 페이지와 그 페이지가 가리키는 개념이 이어져요" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 페이지가 나와요.</td>
 </tr>
 <tr>
-<td><img src="public/gateway/git.ko.png" alt="Git: 아직 커밋하지 않은 개념 변경과 그 마크다운 diff" /><br /><b>Git</b> — 커밋하기 전에 정확한 마크다운 diff를 봐요.</td>
-<td><img src="public/gateway/insights.ko.png" alt="분석: 위쪽에는 측정값, 아래쪽에는 고칠 것을 종류별로 묶어서" /><br /><b>분석</b> — 점수가 아니라 측정으로, 다음에 고칠 것.</td>
+<td width="50%"><img src="public/gateway/planning.ko.png" alt="기획: 왼쪽에 프로젝트 폴더의 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 프로젝트 폴더의 마크다운을 복사하지 않고 그 자리에서 읽어요.</td>
+<td width="50%"><img src="public/gateway/changes.ko.png" alt="브리핑: 한 주 동안의 커밋과 각 커밋의 날짜" /><br /><b>브리핑</b> — 기간 동안 무엇이 바뀌었는지 풀 리퀘스트, 커밋, 파일로 나눠 봐요.</td>
 </tr>
 <tr>
-<td><img src="public/gateway/harness.ko.png" alt="하네스: 저장소가 코딩 에이전트에게 말해 두고, 막고, 지켜보는 것" /><br /><b>하네스</b> — 저장소가 에이전트에게 말해 두고, 막고, 지켜보는 것.</td>
-<td><img src="public/gateway/automations.ko.png" alt="자동화: 폴더를 최신으로 유지하는 예약 점검" /><br /><b>자동화</b> — 폴더를 최신으로 유지하는 예약 점검.</td>
+<td width="50%"><img src="public/gateway/insights.ko.png" alt="분석: 책임 사이의 관계와 각 주장 옆의 근거" /><br /><b>분석</b> — 무엇이 무엇에 기대는지, 근거와 함께 봐요.</td>
+<td width="50%"><img src="public/gateway/git.ko.png" alt="Git: 아직 커밋하지 않은 개념 변경과 그 마크다운 diff" /><br /><b>Git</b> — 커밋하기 전에 정확한 마크다운 diff를 봐요.</td>
+</tr>
+<tr>
+<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 저장소가 코딩 에이전트에게 말해 두고, 막고, 지켜보는 것" /><br /><b>하네스</b> — 저장소가 에이전트에게 말해 두고, 막고, 지켜보는 것.</td>
+<td width="50%"><img src="public/gateway/automations.ko.png" alt="자동화: 폴더를 최신으로 유지하는 예약 점검" /><br /><b>자동화</b> — 폴더를 최신으로 유지하는 예약 점검.</td>
 </tr>
 </table>
+
+**v1.9의 새 기능:** 저장소의 풀 리퀘스트, 커밋, 파일을 따로 읽는 Git·PR 브리핑과, 프로젝트 폴더의 마크다운을 그 자리에서 읽는 기획. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에서 확인하세요.
+
+시작하기 전에 알아 두면 좋은 것:
+
+- 지도의 선은 선언된 관계이지 실행 영향의 증거가 아니에요. 범례가 모든 표시와 방향을 설명해요. [지도](docs/features/map/flat-dial.md)
+- 빈 폴더에서는 시작 동작이 나타나고, 시작이 실패하면 파일을 덮어쓰지 않고 다시 시도할 수 있어요. 팝업 투어는 없어졌어요. [첫 실행](docs/features/first-run.md)
+- 자료실 설정과 점검은 앱에서 해요. 브라우저에서는 앱을 받거나 파일을 추가할 수 있어요. [자료실](docs/features/library/workspace.md)
+- 기획은 읽기 전용이고, macOS 앱에서 고른 폴더에서 동작해요. 마크다운과 PNG/JPEG 이미지를 보여 줘요. [기획](docs/specs/2026-11-01-project-planning-documents.md)
+- 폴더를 연결하기 전에도 앱은 자료실, 기획, 에이전트, 브리핑을 열어 둬요. [기능 목록](docs/FEATURES.md)
 
 ## 빠른 시작
 

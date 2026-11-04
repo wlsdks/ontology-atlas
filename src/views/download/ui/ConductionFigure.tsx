@@ -6,6 +6,7 @@ import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
+import { SECTION_GAP } from '../lib/section-gap';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { IconButton } from '@/shared/ui/controls/controls';
@@ -40,7 +41,7 @@ export function ConductionSection({ graph }: { graph: StageGraph }) {
   return (
     <section
       data-testid="gateway-conduction-section"
-      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)] w-full')}
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <ConductionFigure graph={graph} />

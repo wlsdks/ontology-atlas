@@ -41,14 +41,28 @@
 <td width="50%"><img src="public/gateway/library.en.png" alt="资料库：左侧是来源，另有据此撰写的 Wiki 页面，以及这些页面提到的概念" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来。</td>
 </tr>
 <tr>
-<td><img src="public/gateway/git.en.png" alt="Git：尚未保存的概念更改及其精确的 Markdown diff" /><br /><b>Git</b> — 保存前就能看到精确的 Markdown diff。</td>
-<td><img src="public/gateway/insights.en.png" alt="分析：上方是测量结果，下方按类型分组列出要修的问题" /><br /><b>分析</b> — 靠测量而不是打分，告诉你下一步该修什么。</td>
+<td width="50%"><img src="public/gateway/planning.en.png" alt="规划：左侧是项目文件夹中的 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 就地阅读项目文件夹里的 Markdown，不复制。</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="简报：一周内的提交及其日期" /><br /><b>简报</b> — 一段时间内改了什么，按拉取请求、提交和文件分开看。</td>
 </tr>
 <tr>
-<td><img src="public/gateway/harness.en.png" alt="Harness：仓库向编码智能体告知、拦截和监测的内容" /><br /><b>Harness</b> — 仓库向智能体告知、拦截和监测的内容。</td>
-<td><img src="public/gateway/automations.en.png" alt="自动化：让文件夹保持最新的定时检查" /><br /><b>自动化</b> — 让文件夹保持最新的定时检查。</td>
+<td width="50%"><img src="public/gateway/insights.en.png" alt="分析：职责之间的关系，以及每个主张旁边的依据" /><br /><b>分析</b> — 哪些部分依赖哪些部分，依据就在旁边。</td>
+<td width="50%"><img src="public/gateway/git.en.png" alt="Git：尚未保存的概念更改及其精确的 Markdown diff" /><br /><b>Git</b> — 保存前就能看到精确的 Markdown diff。</td>
+</tr>
+<tr>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：仓库向编码智能体告知、拦截和监测的内容" /><br /><b>Harness</b> — 仓库向智能体告知、拦截和监测的内容。</td>
+<td width="50%"><img src="public/gateway/automations.en.png" alt="自动化：让文件夹保持最新的定时检查" /><br /><b>自动化</b> — 让文件夹保持最新的定时检查。</td>
 </tr>
 </table>
+
+**v1.9 新增：** 把仓库的拉取请求、提交和文件分开阅读的 Git 与 PR 简报，以及就地阅读项目文件夹中 Markdown 的规划。详见[发布页](https://github.com/wlsdks/ontology-atlas/releases)。
+
+开始之前值得知道的几点：
+
+- 地图上的线是已声明的关系，不是运行时影响的证明；图例会说明每个标记和方向。[地图](docs/features/map/flat-dial.md)
+- 空文件夹会给出起步操作，起步失败后可以重试，不会覆盖已有文件。弹窗式导览已取消。[首次运行](docs/features/first-run.md)
+- 资料库的设置和检查需要在应用中进行；浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
+- 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/specs/2026-11-01-project-planning-documents.md)
+- 连接文件夹之前，应用也会保持资料库、规划、智能体和简报可用。[功能清单](docs/FEATURES.md)
 
 ## 快速开始
 

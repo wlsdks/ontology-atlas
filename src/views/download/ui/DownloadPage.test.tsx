@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -174,7 +174,9 @@ describe('DownloadPage', () => {
       expect(primary).toHaveTextContent(/Try it in the browser/i);
       expect(primary.className).toMatch(/--color-indigo-brand/);
       expect(
-        Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"]')),
+        Array.from(
+          screen.getByTestId('gateway-hero').querySelectorAll('a[class*="--color-indigo-brand"]'),
+        ),
       ).toHaveLength(1);
     });
 
@@ -203,8 +205,20 @@ describe('DownloadPage', () => {
       // 13,002,342 B in decimal MB, as Finder reports.
       expect(appleSilicon).toHaveTextContent(/13\.0 MB/);
       expect(screen.getAllByText(/macOS 12 or later · Apple Silicon/).length).toBeGreaterThan(0);
-      const filled = Array.from(document.querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
+      const filled = Array.from(screen.getByTestId('gateway-hero').querySelectorAll('a[class*="--color-indigo-brand"], button[class*="--color-indigo-brand"]'));
       expect(filled.map((el) => el.getAttribute('data-testid'))).toEqual(['gateway-hero-cta']);
+    });
+
+    it('ends with the same download link as the hero, before the footer', () => {
+      renderDownloadPage();
+
+      const closing = screen.getByTestId('gateway-closing');
+      const link = within(closing).getByTestId('gateway-closing-cta');
+      expect(link).toHaveAttribute('href', screen.getByTestId('gateway-hero-cta').getAttribute('href'));
+      expect(
+        closing.compareDocumentPosition(screen.getByTestId('download-bottom-band')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it('hero holds exactly the Mac control, the Windows file, and the playground — one filled winner', () => {
@@ -400,9 +414,11 @@ describe('DownloadPage', () => {
     expect(tabs.map((tab) => tab.textContent)).toEqual([
       'Harness',
       'Library',
+      'Planning',
       'Automations',
       'Insights',
       'Projects',
+      'Briefing',
       'Git',
     ]);
 

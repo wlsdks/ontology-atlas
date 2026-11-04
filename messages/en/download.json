@@ -54,8 +54,8 @@
   },
   "screens": {
     "eyebrow": "Screens",
-    "title": "One folder, read seven ways",
-    "sub": "The same Markdown folder opens as seven screens in the app. Press a name to see that screen; Map opens live in this browser.",
+    "title": "One folder, read on every screen",
+    "sub": "The same Markdown folder opens as a screen for each job in the app. Press a name to see that screen; Map opens live in this browser.",
     "listLabel": "Screens of the app",
     "mapLink": "Map, opens the live map in this browser",
     "mapHint": "in the browser",
@@ -64,10 +64,13 @@
     "caption": {
       "architecture": "This repository's own agent setup, read from its files: what agents are told, what stops them, what runs afterwards. Captured from the app.",
       "library": "A sample library of five sources and six pages beside this repository's ontology. The page whose source changed is marked before you open it. Captured from the app.",
+      "planning": "The docs folder of this repository, read in place: a file list on the left, FEATURES.md open on the right. Nothing is copied or edited. Captured from the app.",
       "automations": "A weekday check of that sample library, and the run that found one page's source had changed. Captured from the app.",
       "insights": "This repository's ontology on one brief: what is current, what went stale, and what nobody has checked yet. Captured from the app.",
       "projects": "Ontology Atlas on one page: its domains, concepts, library and harness together. Captured from the app.",
+      "changes": "One week of this repository's history, listed as commits: what changed, in which files. Captured from the app.",
       "git": "The Git history of this repository's ontology folder, read as the concepts each step changed. Captured from the app."
     }
-  }
+  },
+  "closingTitle": "Ready to open your own folder?"
 }

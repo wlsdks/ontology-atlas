@@ -41,14 +41,28 @@
 <td width="50%"><img src="public/gateway/library.en.png" alt="資料室：左にソース、それらから書いた Wiki ページ、そのページが挙げる概念" /><br /><b>資料室</b> — 文書を入れると、出典つきの Wiki ページが出てきます。</td>
 </tr>
 <tr>
-<td><img src="public/gateway/git.en.png" alt="Git：未保存の概念の変更と、その Markdown の diff" /><br /><b>Git</b> — 保存する前に、正確な Markdown の diff を確認できます。</td>
-<td><img src="public/gateway/insights.en.png" alt="分析：上に測定値、下に直すべきものを種類別にまとめて表示" /><br /><b>分析</b> — 点数ではなく測定値で、次に直すべきものを示します。</td>
+<td width="50%"><img src="public/gateway/planning.en.png" alt="企画：左にプロジェクトフォルダの Markdown ファイル一覧、右に開いた文書" /><br /><b>企画</b> — プロジェクトフォルダの Markdown を、コピーせずその場で読みます。</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="ブリーフィング：1 週間分のコミットと、それぞれの日時" /><br /><b>ブリーフィング</b> — 期間中に何が変わったかを、プルリクエスト、コミット、ファイルに分けて見ます。</td>
 </tr>
 <tr>
-<td><img src="public/gateway/harness.en.png" alt="ハーネス：リポジトリがコーディングエージェントに伝え、止め、見守っているもの" /><br /><b>ハーネス</b> — リポジトリがエージェントに伝え、止め、見守っているもの。</td>
-<td><img src="public/gateway/automations.en.png" alt="自動化：フォルダを最新に保つ定期チェック" /><br /><b>自動化</b> — フォルダを最新に保つ定期チェック。</td>
+<td width="50%"><img src="public/gateway/insights.en.png" alt="分析：責務どうしの関係と、各主張の横に並ぶ根拠" /><br /><b>分析</b> — 何が何に依存しているかを、根拠とともに見ます。</td>
+<td width="50%"><img src="public/gateway/git.en.png" alt="Git：未保存の概念の変更と、その Markdown の diff" /><br /><b>Git</b> — 保存する前に、正確な Markdown の diff を確認できます。</td>
+</tr>
+<tr>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="ハーネス：リポジトリがコーディングエージェントに伝え、止め、見守っているもの" /><br /><b>ハーネス</b> — リポジトリがエージェントに伝え、止め、見守っているもの。</td>
+<td width="50%"><img src="public/gateway/automations.en.png" alt="自動化：フォルダを最新に保つ定期チェック" /><br /><b>自動化</b> — フォルダを最新に保つ定期チェック。</td>
 </tr>
 </table>
+
+**v1.9 の新機能：** リポジトリのプルリクエスト、コミット、ファイルを別々に読む Git・PR ブリーフィングと、プロジェクトフォルダの Markdown をその場で読む企画。[リリース](https://github.com/wlsdks/ontology-atlas/releases)をご覧ください。
+
+始める前に知っておくと役立つこと：
+
+- マップの線は宣言された関係であり、実行時の影響の証明ではありません。凡例がすべての印と向きを説明します。[マップ](docs/features/map/flat-dial.md)
+- 空のフォルダでは開始操作が表示され、開始に失敗してもファイルを上書きせずにやり直せます。ポップアップのツアーは廃止しました。[初回起動](docs/features/first-run.md)
+- 資料室の設定とチェックはアプリで行います。ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
+- 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/specs/2026-11-01-project-planning-documents.md)
+- フォルダを接続する前でも、アプリは資料室、企画、エージェント、ブリーフィングを開けるようにしています。[機能一覧](docs/FEATURES.md)
 
 ## クイックスタート
 

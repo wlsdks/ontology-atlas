@@ -28,7 +28,7 @@ const read = (file: string, locale: string) =>
 
 describe('gateway screen captures — one set per locale', () => {
   it('there are registered screens — it does not pass empty-handed', () => {
-    expect(GATEWAY_SCREEN_FILES.length).toBe(6);
+    expect(GATEWAY_SCREEN_FILES.length).toBe(8);
     expect([...GATEWAY_SCREEN_LOCALES].sort()).toEqual(['en', 'ko']);
   });
 

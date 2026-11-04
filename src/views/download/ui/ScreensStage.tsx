@@ -15,15 +15,26 @@ import { type GatewayScreenFile, gatewayScreenSrc } from '../model/gateway-scree
 import { SurfaceCapture, type SurfaceHref } from './SurfaceCapture';
 
 /** The map runs live in the browser, so its row links there instead of showing a capture. */
-const CAPTURED = ['architecture', 'library', 'automations', 'insights', 'projects', 'git'] as const;
+const CAPTURED = [
+  'architecture',
+  'library',
+  'planning',
+  'automations',
+  'insights',
+  'projects',
+  'changes',
+  'git',
+] as const;
 type CapturedId = (typeof CAPTURED)[number];
 
 const SCREENS: Record<CapturedId, { file: GatewayScreenFile; href: SurfaceHref }> = {
   architecture: { file: 'harness', href: '/architecture' },
   library: { file: 'library', href: '/library' },
+  planning: { file: 'planning', href: '/planning' },
   automations: { file: 'automations', href: '/automations' },
   insights: { file: 'insights', href: '/ontology/insights' },
   projects: { file: 'projects', href: '/projects' },
+  changes: { file: 'changes', href: '/changes' },
   git: { file: 'git', href: '/git' },
 };
 

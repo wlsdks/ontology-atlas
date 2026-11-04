@@ -5,6 +5,7 @@ import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { cn } from '@/shared/lib/cn';
+import { SECTION_GAP } from '../lib/section-gap';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 import { IconButton } from '@/shared/ui/controls/controls';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -42,7 +43,7 @@ export function ShowpieceSection({
       id={id}
       data-testid={testId}
       data-showpiece-underline={underline}
-      className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)] w-full scroll-mt-24')}
+      className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <p className="flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">

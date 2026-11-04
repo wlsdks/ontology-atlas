@@ -45,24 +45,28 @@ reject each change as a Markdown diff.
 <td width="50%"><img src="public/gateway/library.en.png" alt="Library: sources on the left, the wiki pages written from them, and the concepts those pages name" /><br /><b>Library</b> — documents in, cited wiki pages out.</td>
 </tr>
 <tr>
-<td><img src="public/gateway/git.en.png" alt="Git: an unsaved concept change with its exact Markdown diff" /><br /><b>Git</b> — the exact Markdown diff before you save.</td>
-<td><img src="public/gateway/insights.en.png" alt="Insights: measurements above, the things to fix grouped by kind below" /><br /><b>Insights</b> — what to fix next, by measurement, not a score.</td>
+<td width="50%"><img src="public/gateway/planning.en.png" alt="Planning: a project folder's Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — read a project folder's Markdown in place, without copying it.</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="Briefing: one week of commits, each with its date" /><br /><b>Briefing</b> — what changed in a period, as pull requests, commits and files.</td>
 </tr>
 <tr>
-<td><img src="public/gateway/harness.en.png" alt="Harness: what the repository tells, blocks and watches for its coding agents" /><br /><b>Harness</b> — what your repository tells, blocks and watches for agents.</td>
-<td><img src="public/gateway/automations.en.png" alt="Automations: scheduled checks that keep the folder current" /><br /><b>Automations</b> — scheduled checks that keep the folder current.</td>
+<td width="50%"><img src="public/gateway/insights.en.png" alt="Analysis: relationships between responsibilities, with the evidence beside each claim" /><br /><b>Analysis</b> — which parts depend on which, with the evidence beside each claim.</td>
+<td width="50%"><img src="public/gateway/git.en.png" alt="Git: an unsaved concept change with its exact Markdown diff" /><br /><b>Git</b> — the exact Markdown diff before you save.</td>
+</tr>
+<tr>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness: what the repository tells, blocks and watches for its coding agents" /><br /><b>Harness</b> — what your repository tells, blocks and watches for agents.</td>
+<td width="50%"><img src="public/gateway/automations.en.png" alt="Automations: scheduled checks that keep the folder current" /><br /><b>Automations</b> — scheduled checks that keep the folder current.</td>
 </tr>
 </table>
 
-Flat maps show domain labels with spaced outward capability branches and thin directed dependencies. Mark sizes and detail fade with the available row spacing as you zoom. Implementation elements form compact groups beside their capability, with readable names and membership stems. The overview limits crossing lines; inspecting an endpoint reveals its recorded connections and explicitly labelled bundle counts. Gentle local curves and screen-sized arrows keep direction legible. Individual relationship explanations and declaring documents remain available in relation review. A persistent bright outline distinguishes the selection, while amber exclamation marks mean evidence needs rechecking; the map key explains both marks and direction. Larger maps keep the same branch grammar with shorter previews and stable column groups. More/collapse controls disclose actual capabilities; focused areas keep that grammar and a labelled return to the full map. The Concepts panel separates searching, selecting and expanding the tree. Below 1280 px it temporarily folds beside an inspector and returns when that inspector closes; it can still be reopened explicitly. Project details keep dated source checks under **Check record**.
+**New in v1.9:** Git and pull request briefings, which read a repository's pull requests, commits and files in separate views, and Planning, which reads a project folder's Markdown in place. See the [releases](https://github.com/wlsdks/ontology-atlas/releases).
 
-Empty folders and concepts without relationships reveal their start actions when returning to Map from another screen. Starter creation keeps a persistent retry action after a write failure, including partial creation. Retrying preserves existing files and writes the missing starter files; completion produces one success notification. Popup tours are retired. Folder opening guidance, contextual help and keyboard help remain. Returning from a concept's full reading view keeps that concept selected on the map. Returning through primary navigation restores the selected map concept and Concepts search for the same opened folder, in memory for this session. Ordinary unsent chat text survives screen changes in memory for the same opened folder; restoring it never sends a request.
+A few things worth knowing before you start:
 
-Before a vault is connected, the installed app keeps Library, Planning, Agents and Briefing reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
-
-Library service setup is app-only: Atlas confirms folder and keychain saves before activation. A browser offers the app or Add files without collecting service tokens. Local setup does not verify service access. Library check history lists executed checks first; recorded sleep gaps are available through an explicit display control.
-
-Planning reads a selected project's Markdown and bounded PNG/JPEG images in place in the macOS app. It keeps originals unchanged, refreshes the observed list, and offers an explicit return after opening source history or the ontology map. The app verifies the opened folder's identity after its descriptor is acquired; it cannot detect replacement before that point, other names or open descriptors sharing file bytes, or secrets inside documents. Browser and non-macOS desktop folder access, WebP and AVIF preview remain unavailable pending separate verification.
+- The map shows declared relationships, not proof of runtime impact; its key explains every mark and direction. [Map](docs/features/map/flat-dial.md)
+- An empty folder offers its start actions, and a failed start can be retried without overwriting files. Popup tours are retired. [First run](docs/features/first-run.md)
+- Library setup and checks need the app; a browser offers the app or adding files. [Library](docs/features/library/workspace.md)
+- Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/specs/2026-11-01-project-planning-documents.md)
+- Before a folder is connected, the app keeps Library, Planning, Agents and Briefing reachable. [Features](docs/FEATURES.md)
 
 ## Quick start
 
