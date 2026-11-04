@@ -48,7 +48,7 @@ export function BriefingOriginFiles({ data, root, project, kind, paths, onBack, 
   }
   return <section className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <h2 tabIndex={-1} data-origin-files-heading className="text-title font-[var(--font-weight-strong)]">{git('readPeriodCode')}</h2>
+      <h2 tabIndex={-1} data-origin-files-heading className="text-title font-[var(--font-weight-strong)]">{kind === 'prs' ? git('readPeriodCode') : t('commitFilesHeading')}</h2>
       <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" onClick={onBack}>{t(kind === 'prs' ? 'backToPr' : 'backToCommit')}</Button>
     </div>
     {kind === 'prs' && <p className="text-body text-[color:var(--color-text-secondary)]">{t('filesFromPrNote')}</p>}
