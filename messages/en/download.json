@@ -66,7 +66,7 @@
       "library": "A sample library of five sources and six pages beside this repository's ontology. The page whose source changed is marked before you open it. Captured from the app.",
       "planning": "The docs folder of this repository, read in place: a file list on the left, FEATURES.md open on the right. Nothing is copied or edited. Captured from the app.",
       "automations": "A weekday check of that sample library, and the run that found one page's source had changed. Captured from the app.",
-      "insights": "This repository's ontology on one brief: what is current, what went stale, and what nobody has checked yet. Captured from the app.",
+      "insights": "The Analysis screen on this repository's ontology: product links between responsibilities as a board, and the evidence for the selected link beside it. Captured from the app.",
       "projects": "Ontology Atlas on one page: its domains, concepts, library and harness together. Captured from the app.",
       "changes": "One week of this repository's history, listed as commits: what changed, in which files. Captured from the app.",
       "git": "The Git history of this repository's ontology folder, read as the concepts each step changed. Captured from the app."
