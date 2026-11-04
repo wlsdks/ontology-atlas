@@ -22,7 +22,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
 
-![Online Store プロジェクトを選んだ Ontology Atlas の macOS アプリ。そのプロジェクトのドメイン名が周囲に並び、無関係なものは薄くなり、インスペクターにプロジェクトの記録とコードの根拠の状態が表示されている](docs/assets/readme/topology-overview.png)
+![このリポジトリ自身のオントロジーを表す Ontology Atlas のマップ。Ontology Atlas プロジェクトを選ぶと、ドメインと機能が周囲に並び、左に概念の一覧、右にプロジェクトの記録とコードの根拠の状態が表示されている](docs/assets/readme/topology-overview.png)
 
 ## なぜ Atlas か
 

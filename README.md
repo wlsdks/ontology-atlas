@@ -22,7 +22,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
 
-![The Ontology Atlas macOS app with the Online Store project selected: its domains named around it, everything unrelated receding, and the inspector showing the project record and its code-evidence state](docs/assets/readme/topology-overview.png)
+![The Ontology Atlas map of this repository's own ontology with the Ontology Atlas project selected: its domains and capabilities laid out around it, a concept list on the left, and the project record with its code-evidence state on the right](docs/assets/readme/topology-overview.png)
 
 ## Why
 

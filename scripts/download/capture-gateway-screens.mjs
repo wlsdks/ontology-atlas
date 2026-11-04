@@ -37,6 +37,7 @@ import { fileURLToPath } from "node:url";
 
 import { chromium } from "@playwright/test";
 
+import { MAP_SCREEN } from "./map-screen.mjs";
 import { readPlanningFile, walkPlanningFolder } from "./planning-inventory.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -774,14 +775,15 @@ async function main() {
     await page.getByTestId("first-run-open").click();
     await page.getByTestId("app-nav-rail").waitFor({ timeout: 60_000 });
 
-    for (const screen of SCREENS) {
-      if (ONLY && !ONLY.has(screen.name)) continue;
+    for (const screen of [...SCREENS, MAP_SCREEN]) {
+      if (ONLY ? !ONLY.has(screen.name) : screen.explicit) continue;
+      if (screen.locales && !screen.locales.includes(locale)) continue;
       await page.goto(`${BASE_URL}/${locale}${screen.route}`);
       await page.waitForLoadState("networkidle");
       await screen.prepare(page);
       // The pointer rests off the picture so no hover state is captured.
       await page.mouse.move(VIEWPORT.width - 2, VIEWPORT.height - 2);
-      const file = path.join(OUT_DIR, `${screen.name}.${locale}.png`);
+      const file = screen.out ? path.join(REPO, screen.out) : path.join(OUT_DIR, `${screen.name}.${locale}.png`);
       await page.screenshot({ path: file });
       console.log(`captured ${path.relative(REPO, file)}`);
     }

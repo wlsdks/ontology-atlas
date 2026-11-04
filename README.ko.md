@@ -22,7 +22,7 @@
 
 <p align="center"><a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-5e6ad2.svg" /></a> <a href="https://github.com/wlsdks/ontology-atlas/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/wlsdks/ontology-atlas?color=5e6ad2" /></a> <a href="https://mcpservers.org/servers/wlsdks/ontology-atlas"><img src="https://mcpservers.org/badge.svg" alt="Listed on mcpservers.org" height="20" /></a> <a href="https://stackmap.shipwithai.xyz/repos/wlsdks/ontology-atlas"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstackmap.shipwithai.xyz%2Fapi%2Fbadge%2Fontology-atlas.json" alt="On StackMap" height="20" /></a></p>
 
-![Online Store 프로젝트를 고른 Ontology Atlas macOS 앱: 그 프로젝트의 도메인 이름이 둘레에 놓이고, 관계없는 것은 흐려지며, 오른쪽 패널에 프로젝트 기록과 코드 근거 상태가 보여요](docs/assets/readme/topology-overview.png)
+![이 저장소 자체의 온톨로지를 보여 주는 Ontology Atlas 지도: Ontology Atlas 프로젝트를 고르면 도메인과 역량이 둘레에 놓이고, 왼쪽에 개념 목록, 오른쪽에 프로젝트 기록과 코드 근거 상태가 보여요](docs/assets/readme/topology-overview.png)
 
 ## 왜 Atlas인가
 
