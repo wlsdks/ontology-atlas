@@ -27,7 +27,7 @@
   "imageUnavailable": "This image could not be displayed.",
   "unsupported": "This file cannot be displayed here.",
   "selectFile": "Choose a document or image",
-  "omitted": "Excluded entries: {count}.",
+  "omitted": "Excluded entries: {count}",
   "noContentSearch": "Search matches file and folder names, not file contents.",
   "visited": "Entries checked: {count}",
   "budgetLimit": "Stopped after 10,000 entries.",

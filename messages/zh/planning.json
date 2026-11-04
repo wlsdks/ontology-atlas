@@ -27,7 +27,7 @@
   "imageUnavailable": "无法显示此图片。",
   "unsupported": "无法在此显示此文件。",
   "selectFile": "选择文档或图片",
-  "omitted": "已排除的项目：{count} 个。",
+  "omitted": "已排除的项目：{count} 个",
   "noContentSearch": "仅搜索文件和文件夹名称，不搜索文件内容。",
   "visited": "已检查的项目：{count} 个",
   "budgetLimit": "检查 10,000 个项目后已停止。",
