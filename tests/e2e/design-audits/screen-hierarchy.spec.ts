@@ -39,7 +39,7 @@ type RouteMeasurement = {
   accentTokens: number;
   /** Rendered elements whose background colour was inspected — 0 means the scanner died. */
   considered: number;
-  filled: { token: string; testid: string | null; text: string; w: number; h: number }[];
+  filled: { token: string; testid: string | null; text: string; w: number; h: number; top: number; bottom: number }[];
 };
 
 /**
@@ -223,7 +223,7 @@ async function measureRoute(
       // Fold to the control — do not count a button and a filled span inside it twice.
       const byControl = new Map<
         Element,
-        { token: string; testid: string | null; text: string; w: number; h: number }
+        { token: string; testid: string | null; text: string; w: number; h: number; top: number; bottom: number }
       >();
       let considered = 0;
       for (const el of document.querySelectorAll("*")) {
@@ -242,6 +242,8 @@ async function measureRoute(
           text: (ctl.textContent || "").trim().slice(0, 28),
           w: Math.round(b.width),
           h: Math.round(b.height),
+          top: b.top,
+          bottom: b.bottom,
         });
       }
 
@@ -282,6 +284,8 @@ const TITLE_EXEMPT_ROUTES = new Set(TITLE_EXEMPT.map((e) => e.route));
  * **Exceptions to ② — same discipline.**
  */
 const ACCENT_EXEMPT: ReadonlyArray<{ route: string; why: string }> = [
+  { route: "/ko/", why: "The same download action appears in the hero and at the end of a long page; a guard verifies their separation." },
+  { route: "/ko/download/", why: "The same download action appears in the hero and at the end of a long page; a guard verifies their separation." },
   /*
    * The edit screen has a sticky header CTA, so its end-of-form button is `outline`; the create
    * screen has no sticky bar, so its button is the only primary CTA and stays filled.
@@ -373,6 +377,18 @@ test.describe("screen hierarchy: every audited route", () => {
         `${route}: a drawn title now exists; remove this line from TITLE_EXEMPT and turn the rule on`,
       ).toBe(0);
       expect(m.titlePx, `${route}: a baseline now exists, so the exception is stale`).toBe(0);
+    }
+  });
+
+  test("repeated download actions remain on separate screens", async ({ page }) => {
+    for (const route of ACCENT_EXEMPT_ROUTES) {
+      const m = await measureRoute(page, route);
+      expect(m.filled.map((f) => f.testid)).toEqual(["gateway-hero-cta", "gateway-closing-cta"]);
+      expect(m.filled[1].top - m.filled[0].bottom).toBeGreaterThanOrEqual(page.viewportSize()!.height);
+      const links = page.locator('[data-testid="gateway-hero-cta"], [data-testid="gateway-closing-cta"]');
+      const href = await links.nth(0).getAttribute("href");
+      expect(href).toBeTruthy();
+      expect(href).toBe(await links.nth(1).getAttribute("href"));
     }
   });
 
