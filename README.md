@@ -102,6 +102,8 @@ A project's source-path repair opens the affected concept and recorded relative 
 
 Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning. Analysis filters capabilities by changed, missing or unchecked source evidence while keeping the selected claim open.
 
+The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
+
 Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
 
 ## Local-first
@@ -179,7 +181,7 @@ implementation still require exhaustive CI.
 | `pnpm review:facts -- --base=<ref>` | The mechanical facts a reviewer would otherwise count by hand: line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm seo:check` | After `pnpm build`: every sitemap URL in `out/` canonicalizes to itself, `/` and each locale root point at `/{locale}/download/`, and titles and descriptions are unique per locale |
 | `pnpm typecheck` | Types across every file, with Next's generated route and page types |
-| `pnpm ui:audit -- --url=<base> --route=<path>` | Rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
+| `pnpm ui:audit -- --url=<base> --route=<path> [--setup=<module.mjs>]` | Prepare an interactive state with an optional local module, then measure rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
 
 Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
 

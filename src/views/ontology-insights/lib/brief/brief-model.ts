@@ -83,6 +83,7 @@ export function briefTotals(cores: readonly BriefCore[]): BriefTotals | null {
 
 /** One named thing under a line: concept, path, when it moved and when the concept's document last moved. */
 export interface BriefLineDetail {
+  kind?: 'unreviewed';
   name: string;
   /** The concept's vault document slug, what `get_concept` takes; `null` when it owns no document. */
   slug: string | null;

@@ -72,6 +72,11 @@ function isAgentWritten(createdBy: string | null | undefined): boolean {
   return typeof createdBy === 'string' && (createdBy.startsWith('agent:') || createdBy.startsWith('model:'));
 }
 
+export function unreviewedConcepts(input: Pick<OntologyBriefInput, 'nodes' | 'docs'>): OntologyBriefNode[] {
+  return input.nodes.filter(node => isMapConcept(node) && isAgentWritten(node.createdBy)
+    && !(node.docSlug ? input.docs.get(node.docSlug)?.reviewedBy : undefined));
+}
+
 export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
   const concepts = input.nodes.filter(isMapConcept);
   let current = 0;
@@ -79,15 +84,14 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
   let unknown = 0;
   let missing = 0;
   let folderOnly = 0;
-  let agentUnreviewed = 0;
+  const agentUnreviewed = new Set(unreviewedConcepts(input).map(node => node.id));
   let changedSince = 0;
   // The concepts the headline may call unknown, as a set: the three lines describe overlapping sets of the same
   // concepts, so their sum overcounts. Each line keeps its own count.
   const unknownConcepts = new Set<string>();
   for (const node of concepts) {
     const doc = node.docSlug ? input.docs.get(node.docSlug) : undefined;
-    if (isAgentWritten(node.createdBy) && !doc?.reviewedBy) {
-      agentUnreviewed += 1;
+    if (agentUnreviewed.has(node.id)) {
       unknownConcepts.add(node.id);
     }
     if (doc && isAfter(doc.updatedAt, input.anchorMs)) changedSince += 1;
@@ -109,7 +113,7 @@ export function buildOntologyBrief(input: OntologyBriefInput): BriefCore {
     { id: 'ontology-evidence-folder-only', count: folderOnly, state: 'unknown' },
     // Without the Git bridge every concept is unchecked; in the app only pathless ones remain.
     { id: 'ontology-evidence-unchecked', count: unknown, state: 'unknown' },
-    { id: 'ontology-agent-unreviewed', count: agentUnreviewed, state: 'unknown' },
+    { id: 'ontology-agent-unreviewed', count: agentUnreviewed.size, state: 'unknown' },
     { id: 'ontology-unmatched', count: input.unmatchedCount, state: 'unknown' },
     { id: 'ontology-changed-since', count: changedSince, state: 'current' },
     // Work already listed on its own tab, not a belief that went wrong.

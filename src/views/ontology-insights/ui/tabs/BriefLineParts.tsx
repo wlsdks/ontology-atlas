@@ -93,11 +93,13 @@ export function LineDisclosure({
 }) {
   const [open, setOpen] = useState(false);
   const detailId = useId();
+  const [visibleCount, setVisibleCount] = useState(DETAIL_ROWS);
   const t = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const locale = useLocale();
   const sentence = t(`line.${line.id}`, { count: line.count });
-  const shown = details.slice(0, DETAIL_ROWS);
+  const unreviewed = line.id === 'ontology-agent-unreviewed';
+  const shown = details.slice(0, unreviewed ? visibleCount : DETAIL_ROWS);
   // Judging drift is reading work for the coding agent: the request names the rows' concepts, files and dates
   // and asks for a judgement and a proposal, never a write.
   const handoff = line.id === 'ontology-evidence-moved' ? buildDriftHandoff({ rows: details, locale }) : null;
@@ -109,7 +111,7 @@ export function LineDisclosure({
         aria-controls={detailId}
         data-testid={`brief-line-open-${line.id}`}
         onClick={() => setOpen((value) => !value)}
-        className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'gap-1.5 text-left' })}
+        className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor gap-1.5 text-left' })}
       >
         <ChevronRight size={ICON_SIZE.sm} aria-hidden className={cn('mt-1 shrink-0 self-start transition-transform', open && 'rotate-90')} />
         <span className="min-w-0 break-keep">{sentence}</span>
@@ -118,18 +120,18 @@ export function LineDisclosure({
         <ul className="flex flex-col gap-1.5 border-l border-[color:var(--color-divider)] pl-3" data-testid={`brief-line-rows-${line.id}`}>
           {shown.map((row, index) => (
             <li key={`${row.name}-${row.path}-${index}`} className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <Link href={row.href} className={controlClass({ shape: 'link', className: 'text-[color:var(--color-indigo-text-strong)]' })}>
+              <Link href={row.href} title={row.kind === 'unreviewed' ? row.path : undefined} className={controlClass({ shape: 'link', className: 'atlas-touch-floor text-[color:var(--color-indigo-text-strong)]' })}>
                 {row.name}
               </Link>
-              <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code>
-              <span className="text-label text-[color:var(--color-text-quaternary)]">
+              {row.kind !== 'unreviewed' ? <code className="min-w-0 break-all font-mono text-label text-[color:var(--color-text-tertiary)]">{row.path}</code> : null}
+              {row.kind !== 'unreviewed' ? <span className="text-label text-[color:var(--color-text-quaternary)]">
                 {row.at
                   ? t('detailMoved', {
                       moved: format.relativeTime(new Date(row.at), nowMs),
                       doc: row.docAt ? format.relativeTime(new Date(row.docAt), nowMs) : t('detailDocUnknown'),
                     })
                   : t('detailGone')}
-              </span>
+              </span> : null}
             </li>
           ))}
         </ul>
@@ -147,7 +149,9 @@ export function LineDisclosure({
           total={details.length}
           shown={shown.length}
           label={(hidden) => t('detailHidden', { count: hidden })}
-          route={href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
+          route={unreviewed ? <Button variant="ghost" size="sm" className="atlas-touch-floor" onClick={() => setVisibleCount(count => count + DETAIL_ROWS)} data-testid={`brief-line-more-${line.id}`}>
+            {t('detailShowMore')}
+          </Button> : href ? <DestinationLink href={href} className="text-[color:var(--color-indigo-text-strong)]" onOpenTab={onOpenTab}>{destinationLabel(href, t)}</DestinationLink> : null}
           className="mt-2 pl-3"
           data-testid={`brief-line-hidden-${line.id}`}
         />

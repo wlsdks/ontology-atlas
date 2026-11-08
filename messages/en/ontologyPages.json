@@ -37,6 +37,7 @@
       },
       "detailMoved": "changed {moved} · document {doc}",
       "detailDocUnknown": "not recorded",
+      "detailShowMore": "Show more",
       "detailGone": "the file is gone",
       "detailHidden": "{count, plural, one {# more} other {# more}}",
       "askAgent": "Ask the agent",

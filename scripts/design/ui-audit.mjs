@@ -2,7 +2,7 @@
 import { chromium } from "@playwright/test";
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { CHECKS, formatFinding, formatSummary, parseRampNames, shouldFail } from "../lib/design/ui-audit-checks.mjs";
 import { auditPage, FREEZE_CSS } from "../lib/design/ui-audit-probe.mjs";
@@ -26,11 +26,15 @@ function parseArgs(argv) {
       opts.scope = value;
     }
     else if (key === "json") opts.json = true;
+    else if (key === "setup") {
+      if (!value.trim()) throw new Error("--setup needs a module path");
+      opts.setup = path.resolve(value);
+    }
     else if (key === "shots") opts.shots = path.resolve(value);
     else if (arg !== "--") throw new Error(`unknown argument: ${arg}`);
   }
   if (!opts.url || opts.routes.length === 0) {
-    throw new Error("usage: pnpm ui:audit -- --url=<base> --route=<path> [--route=...] [--widths=..] [--height=900] [--wait=<selector>] [--scope=<selector>] [--json] [--shots=<dir>]");
+    throw new Error("usage: pnpm ui:audit -- --url=<base> --route=<path> [--route=...] [--widths=..] [--height=900] [--wait=<selector>] [--scope=<selector>] [--setup=<module.mjs>] [--json] [--shots=<dir>]");
   }
   return opts;
 }
@@ -46,6 +50,8 @@ function readRampNames() {
 
 const opts = parseArgs(process.argv.slice(2));
 const rampNames = readRampNames();
+const prepare = opts.setup ? (await import(pathToFileURL(opts.setup).href)).default : null;
+if (opts.setup && typeof prepare !== "function") throw new Error("--setup must export a default async function (page, { url, route, width, height })");
 if (opts.shots) mkdirSync(opts.shots, { recursive: true });
 
 const browser = await chromium.launch({ headless: true });
@@ -55,7 +61,8 @@ try {
     for (const width of opts.widths) {
       const context = await browser.newContext({ viewport: { width, height: opts.height }, reducedMotion: "reduce", isMobile: width <= 768, hasTouch: width <= 768 });
       const page = await context.newPage();
-      await page.goto(`${opts.url}${route}`, { waitUntil: "networkidle" });
+      if (prepare) await prepare(page, { url: opts.url, route, width, height: opts.height });
+      else await page.goto(`${opts.url}${route}`, { waitUntil: "networkidle" });
       if (opts.wait) await page.waitForSelector(opts.wait);
       await page.addStyleTag({ content: FREEZE_CSS });
       await page.waitForTimeout(100);

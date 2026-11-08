@@ -37,6 +37,7 @@
       },
       "detailMoved": "{moved}에 바뀜 · 문서는 {doc}",
       "detailDocUnknown": "기록 없음",
+      "detailShowMore": "더 보기",
       "detailGone": "파일이 없어요",
       "detailHidden": "{count, number}개 더",
       "askAgent": "에이전트에게 맡기기",
