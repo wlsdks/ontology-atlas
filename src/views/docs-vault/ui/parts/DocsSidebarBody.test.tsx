@@ -52,9 +52,12 @@ function renderSidebar(
     showCollectionChooser?: boolean;
     showCreateDocument?: boolean;
     activeTag?: string;
+    tags?: Record<string, string[]>;
+    visibleSlugs?: string[];
   } = {},
 ) {
   const manifest = makeManifest(docs);
+  if (overrides.tags) manifest.tags = overrides.tags;
   if (overrides.tree) manifest.tree = overrides.tree;
   const onSelect = vi.fn();
   const onCreateNewDoc = vi.fn();
@@ -80,7 +83,7 @@ function renderSidebar(
         }
         showCollectionChooser={overrides.showCollectionChooser}
         showCreateDocument={overrides.showCreateDocument}
-        visibleDocSlugs={new Set(docs.map((d) => d.slug))}
+        visibleDocSlugs={new Set(overrides.visibleSlugs ?? docs.map((d) => d.slug))}
         onSelect={onSelect}
         onCollectionChange={() => {}}
         onTogglePin={() => {}}
@@ -182,13 +185,29 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
   });
 
   it("keeps the search count visible with an active tag", () => {
-    renderSidebar([makeDoc("payment", "결제 문서", new Date().toISOString())], { activeTag: "test" });
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "결제 주문", new Date().toISOString()),
+    ], { activeTag: "test", tags: { test: ["order"] }, visibleSlugs: ["payment"] });
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
+    fireEvent.change(screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder), {
+      target: { value: "결제" },
+    });
+    expect(screen.getByText("검색 결과 0개")).toBeInTheDocument();
+    expect(screen.getByText(/#test/)).toBeInTheDocument();
+  });
+
+  it("counts search results within both the active tag and visible collection", () => {
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "결제 주문", new Date().toISOString()),
+      makeDoc("hidden", "결제 숨김", new Date().toISOString()),
+    ], { activeTag: "test", tags: { test: ["payment", "hidden"] }, visibleSlugs: ["payment", "order"] });
     fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
     fireEvent.change(screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder), {
       target: { value: "결제" },
     });
     expect(screen.getByText("검색 결과 1개")).toBeInTheDocument();
-    expect(screen.getByText(/#test/)).toBeInTheDocument();
   });
 
   it("shows the three collection icons and switches on click", () => {

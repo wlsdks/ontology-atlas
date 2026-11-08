@@ -266,9 +266,11 @@ export function DocsSidebarBody({
   const queryMatchCount = useMemo(() => {
     if (!normalizedTreeQuery) return manifest.docs.length;
     return manifest.docs.filter((doc) =>
+      visibleDocSlugs.has(doc.slug) &&
+      (!activeTagSlugs || activeTagSlugs.has(doc.slug)) &&
       matchesDocsTreeQuery(doc, normalizedTreeQuery),
     ).length;
-  }, [manifest.docs, normalizedTreeQuery]);
+  }, [manifest.docs, normalizedTreeQuery, visibleDocSlugs, activeTagSlugs]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
 
   // Exclusive single selection, so `radiogroup` rather than `tablist` (see below). The container
