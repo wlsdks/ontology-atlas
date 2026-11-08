@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -42,15 +42,25 @@ export function builtFrom(digest, { cwd = process.cwd() } = {}) {
   return existsSync(join(cwd, 'out', 'index.html')) && existsSync(stamp) && readFileSync(stamp, 'utf8').trim() === digest;
 }
 
-function main() {
-  if (builtFrom(buildInputsDigest())) {
-    console.log('[build:static] out/ is already built from these exact inputs; skipping the build.');
+export function runStaticBuild({
+  cwd = process.cwd(), env = process.env, log = console.log,
+  build = () => spawnSync('pnpm', ['build'], { cwd, env, stdio: 'inherit' }).status ?? 1,
+} = {}) {
+  const digest = buildInputsDigest({ cwd, env });
+  if (builtFrom(digest, { cwd })) {
+    log('[build:static] out/ is already built from these exact inputs; skipping the build.');
     return 0;
   }
-  const build = spawnSync('pnpm', ['build'], { stdio: 'inherit' });
-  if (build.status !== 0) return build.status ?? 1;
-  writeFileSync(STAMP, `${buildInputsDigest()}\n`);
+  const stamp = join(cwd, STAMP);
+  rmSync(stamp, { force: true });
+  const status = build();
+  if (status !== 0) return status;
+  if (buildInputsDigest({ cwd, env }) !== digest) {
+    log('[build:static] inputs changed during the build; output is not certified. Run again after edits settle.');
+    return 1;
+  }
+  writeFileSync(stamp, `${digest}\n`);
   return 0;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(main());
+if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(runStaticBuild());

@@ -102,6 +102,8 @@ A project's source-path repair opens the affected concept and recorded relative 
 
 Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning. Analysis filters capabilities by changed, missing or unchecked source evidence while keeping the selected claim open.
 
+The full project editor confirms leaving unsaved changes inside the app, so Cancel and Back work in the macOS WebView as well as the browser.
+
 The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
 
 Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
@@ -155,7 +157,7 @@ implementation still require exhaustive CI.
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
-| `pnpm build:static` | The static export in `out/`, rebuilt only when a build input changed since the last build |
+| `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
 | `pnpm checks:changed` | Which gates this change needs |
 | `pnpm conflicts:scan` | Which open pull requests change the same files as this branch, and whether a trial merge conflicts |

@@ -1103,6 +1103,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: none; run `OATLAS_VAULT=../docs/ontology npm run verify` from `mcp/` for the package-local path, or `pnpm cli:mcp-verify -- --help` for usage
 **Fix**: Increase `--timeout-ms` per the printed retry hint, or pass an explicit `--vault <path>` / `OATLAS_VAULT` when the target vault is not the default
 
+### Static build reuse
+
+**Run**: `pnpm test:build:static`
+**Proves**: Reuse requires matching source inputs; a failed build or inputs changed during a build cannot certify its output.
+**Escalate**: `pnpm build:static` for the real export.
+**Fix**: Let source edits settle and rerun the build; never stamp output for inputs it may not contain.
+
 ### Static deploy safety
 
 **Run**: `pnpm build`

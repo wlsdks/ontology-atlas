@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-import { buildInputsDigest, builtFrom, isBuildInput } from './build-static-export.mjs';
+import { buildInputsDigest, builtFrom, isBuildInput, runStaticBuild } from './build-static-export.mjs';
 
 describe('which files the static export is built from', () => {
   const CASES = [
@@ -51,5 +51,36 @@ describe('build stamp', () => {
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe('build input stability', () => {
+  it('refuses to certify output when a source changes during the build, then caches a stable rebuild', () => {
+    const root = mkdtempSync(join(tmpdir(), 'build-static-race-'));
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: root });
+      writeFileSync(join(root, '.gitignore'), 'out/\n');
+      mkdirSync(join(root, 'src'));
+      writeFileSync(join(root, 'src/a.ts'), 'before');
+      const env = {};
+      const log = () => {};
+      const result = runStaticBuild({ cwd: root, env, log, build: () => {
+        mkdirSync(join(root, 'out'));
+        writeFileSync(join(root, 'out/index.html'), 'built before');
+        writeFileSync(join(root, 'src/a.ts'), 'after');
+        return 0;
+      } });
+      assert.equal(result, 1);
+      assert.equal(builtFrom(buildInputsDigest({ cwd: root, env }), { cwd: root }), false);
+      let builds = 0;
+      const build = () => { builds++; writeFileSync(join(root, 'out/index.html'), 'built after'); return 0; };
+      assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
+      assert.equal(runStaticBuild({ cwd: root, env, log, build }), 0);
+      assert.equal(builds, 1);
+      writeFileSync(join(root, 'src/a.ts'), 'failed edit');
+      assert.equal(runStaticBuild({ cwd: root, env, log, build: () => 1 }), 1);
+      writeFileSync(join(root, 'src/a.ts'), 'after');
+      assert.equal(builtFrom(buildInputsDigest({ cwd: root, env }), { cwd: root }), false);
+    } finally { rmSync(root, { recursive: true, force: true }); }
   });
 });
