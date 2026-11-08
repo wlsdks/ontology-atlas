@@ -520,3 +520,21 @@ describe("a count that has not landed", () => {
     expect(screen.getByTestId("brief-since")).not.toHaveAttribute("aria-busy");
   });
 });
+
+it("opens every unreviewed concept without labeling it as a missing source file", () => {
+  const details = Array.from({ length: 7 }, (_, i) => ({
+    kind: 'unreviewed' as const, name: `Review candidate ${i + 1}`, slug: `elements/candidate-${i + 1}`,
+    path: `elements/candidate-${i + 1}.md`, at: null, docAt: null, href: `/topology/?p=elements%2Fcandidate-${i + 1}`,
+  }));
+  mount(brief({
+    ontology: core({ core: 'ontology', headline: 7, lines: [{ id: 'ontology-agent-unreviewed', count: 7, state: 'unknown' }] }),
+    details: new Map([['ontology-agent-unreviewed', details]]),
+  }));
+  fireEvent.click(screen.getByTestId('brief-line-open-ontology-agent-unreviewed'));
+  expect(screen.getByRole('link', { name: 'Review candidate 1' })).toHaveAttribute('href', '/topology/?p=elements%2Fcandidate-1');
+  expect(screen.queryByRole('link', { name: 'Review candidate 7' })).toBeNull();
+  expect(screen.queryByText(ko.ontologyPages.insights.brief.detailGone)).toBeNull();
+  fireEvent.click(screen.getByTestId('brief-line-more-ontology-agent-unreviewed'));
+  expect(screen.getByRole('link', { name: 'Review candidate 7' })).toHaveAttribute('href', '/topology/?p=elements%2Fcandidate-7');
+  expect(screen.queryByTestId('brief-line-hidden-ontology-agent-unreviewed')).toBeNull();
+});

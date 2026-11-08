@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProjectEditorPage } from "./ProjectEditorPage";
 
@@ -33,7 +33,10 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 vi.mock("@/features/project-edit", () => ({
-  ProjectForm: () => <div data-testid="project-form" />,
+  ProjectForm: ({ onDirtyChange, onCancel }: { onDirtyChange: (dirty: boolean) => void; onCancel: () => void }) => <div data-testid="project-form">
+    <button onClick={() => onDirtyChange(true)}>Change field</button>
+    <button onClick={onCancel}>Cancel form</button>
+  </div>,
 }));
 
 vi.mock("@/features/project-data-source", () => ({
@@ -75,6 +78,7 @@ vi.mock("@/shared/ui", async (importOriginal) => ({
 
 describe("ProjectEditorPage loading contract", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mocks.loaded = false;
     mocks.projects = [{ slug: "ontology-atlas" }] as never[];
   });
@@ -123,4 +127,48 @@ describe("ProjectEditorPage loading contract", () => {
     expect(screen.getByTestId("project-form")).toBeInTheDocument();
     expect(screen.queryByText("loadErrorEdit")).not.toBeInTheDocument();
   });
+});
+
+async function mountEditableProject() {
+  vi.clearAllMocks();
+  mocks.loaded = true;
+  mocks.projects = [{ slug: 'project', name: 'Project', tags: [], stack: [], links: [], dependencies: [] }] as never[];
+  render(<ProjectEditorPage mode="edit" slug="project" returnTo="/project/project/" />);
+  await screen.findByTestId('project-form');
+}
+
+it('keeps unsaved edits until the person chooses to discard in the app', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await mountEditableProject();
+  fireEvent.click(screen.getByText('Change field'));
+  fireEvent.click(screen.getByText('Cancel form'));
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  expect(mocks.router.push).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'keepEditing' }));
+  expect(mocks.router.push).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByTestId('project-editor-back-link'));
+  fireEvent.click(screen.getByRole('button', { name: 'discardAndLeave' }));
+  expect(mocks.router.push).toHaveBeenCalledExactlyOnceWith('/project/project/');
+  expect(confirm).not.toHaveBeenCalled();
+  confirm.mockRestore();
+});
+
+it('remembers the requested duplicate destination after discard', async () => {
+  await mountEditableProject();
+  fireEvent.click(screen.getByText('Change field'));
+  fireEvent.click(screen.getByTestId('project-editor-duplicate'));
+  expect(mocks.router.push).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'discardAndLeave' }));
+  expect(mocks.router.push).toHaveBeenCalledExactlyOnceWith('/project/new/?from=project&returnTo=%2Fproject%2Fproject%2F');
+});
+
+it('returns immediately when unchanged and leaves modified clicks native', async () => {
+  await mountEditableProject();
+  fireEvent.click(screen.getByText('Cancel form'));
+  expect(mocks.router.push).toHaveBeenCalledExactlyOnceWith('/project/project/');
+  mocks.router.push.mockClear();
+  fireEvent.click(screen.getByText('Change field'));
+  expect(fireEvent.click(screen.getByTestId('project-editor-duplicate'), { metaKey: true })).toBe(true);
+  expect(mocks.router.push).not.toHaveBeenCalled();
+  expect(screen.queryByRole('dialog')).toBeNull();
 });

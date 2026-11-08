@@ -177,6 +177,9 @@
   "editor": {
     "documentTitleEdit": "Edit project · Ontology Atlas",
     "documentTitleNew": "New project · Ontology Atlas",
+    "discardTitle": "Discard unsaved changes?",
+    "keepEditing": "Keep editing",
+    "discardAndLeave": "Discard and leave",
     "confirmDiscardChanges": "You have unsaved changes. Leave anyway?",
     "loadErrorEdit": "Project not found.",
     "loadErrorDuplicate": "The project to duplicate could not be found.",

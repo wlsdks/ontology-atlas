@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { computeCanonicalCensus } from '@/entities/knowledge-graph';
-import { buildOntologyBrief, evidenceAvailability } from './ontology-brief';
+import { buildOntologyBrief, evidenceAvailability, unreviewedConcepts } from './ontology-brief';
 
 const anchorMs = Date.parse('2026-09-18T00:00:00Z');
 
@@ -121,5 +121,18 @@ describe('evidenceAvailability', () => {
 
   it('never tells a browser it is reading', () => {
     expect(evidenceAvailability({ ...base, bridge: false, walkPending: true })).toBe('app-only');
+  });
+});
+
+describe('unreviewedConcepts', () => {
+  it('names exactly the counted agent concepts without a review, including missing documents', () => {
+    const candidates = [...nodes,
+      { id: 'elements/model', kind: 'element', createdBy: 'model:test', docSlug: null },
+      { id: 'documents/agent-note', kind: 'document', createdBy: 'agent:test', docSlug: null },
+    ];
+    const selected = unreviewedConcepts({ nodes: candidates, docs });
+    expect(selected.map(node => node.id)).toEqual(['capabilities/pay', 'elements/model']);
+    const result = buildOntologyBrief({ nodes: candidates, docs, evidence: null, repairCount: 0, unmatchedCount: 0, anchorMs });
+    expect(result.lines.find(line => line.id === 'ontology-agent-unreviewed')?.count).toBe(selected.length);
   });
 });

@@ -177,6 +177,9 @@
   "editor": {
     "documentTitleEdit": "프로젝트 편집 · Ontology Atlas",
     "documentTitleNew": "새 프로젝트 · Ontology Atlas",
+    "discardTitle": "변경사항을 버릴까요?",
+    "keepEditing": "계속 편집",
+    "discardAndLeave": "버리고 나가기",
     "confirmDiscardChanges": "저장하지 않은 변경사항이 있어요. 정말 나갈까요?",
     "loadErrorEdit": "프로젝트를 찾을 수 없어요.",
     "loadErrorDuplicate": "복제할 프로젝트를 찾을 수 없어요.",

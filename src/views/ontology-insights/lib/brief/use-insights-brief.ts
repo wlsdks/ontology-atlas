@@ -36,7 +36,7 @@ import {
 import { buildEvidenceDetails } from './evidence-details';
 import { buildAgentBrief } from './agent-brief';
 import { buildHarnessBrief } from './harness-brief';
-import { buildOntologyBrief, type OntologyBriefNode } from './ontology-brief';
+import { buildOntologyBrief, unreviewedConcepts, type OntologyBriefNode } from './ontology-brief';
 import { buildWikiBrief } from './wiki-brief';
 import { buildSinceList, type SinceRow } from './since-list';
 import type { BriefCore } from './brief-model';
@@ -347,17 +347,23 @@ export function useInsightsBrief({
     [mode, vault.agentActivityLog, vault.acpWorkReceipts, anchor.anchorMs],
   );
 
-  // The evidence lines name what they count, so a reader reaches the file and date without the agent's summary.
-  const details = useMemo(
-    () =>
-      evidence
-        ? buildEvidenceDetails({
-            rows: evidence.rows,
-            titleById: new Map(nodes.map((node) => [node.id, node.title ?? node.id] as const)),
-          })
-        : new Map<string, BriefLineDetail[]>(),
-    [evidence, nodes],
-  );
+  // Each disclosure names exactly the concepts its line counts, even without a source connection.
+  const details = useMemo(() => {
+    const result = evidence
+      ? buildEvidenceDetails({ rows: evidence.rows, titleById: new Map(nodes.map(node => [node.id, node.title ?? node.id])) })
+      : new Map<string, BriefLineDetail[]>();
+    const titleBySlug = new Map(docs.map(doc => [doc.slug, resolveLocaleDisplayName(doc.frontmatter, locale, doc.title)]));
+    result.set('ontology-agent-unreviewed', unreviewedConcepts({ nodes, docs: docFacts }).map(node => ({
+      kind: 'unreviewed',
+      name: (node.docSlug ? titleBySlug.get(node.docSlug) : undefined) ?? node.title ?? node.id,
+      slug: node.docSlug ?? null,
+      path: node.docSlug ? `${node.docSlug}.md` : node.id,
+      at: null,
+      docAt: null,
+      href: `/topology/?p=${encodeURIComponent(node.id)}`,
+    })));
+    return result;
+  }, [evidence, nodes, docFacts, docs, locale]);
 
   const sinceList = useMemo(
     () =>

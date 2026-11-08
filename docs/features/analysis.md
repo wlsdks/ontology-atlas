@@ -14,6 +14,15 @@ another, and which declarations support that connection? It requires no agent
 run, concept dropdown, camera movement or source setup to read existing claims.
 The bundled example is explicitly labeled.
 
+## Review summary
+
+The review summary's agent-unreviewed line expands into the exact concepts it
+counts. It includes agent- and model-authored map concepts without a recorded
+`reviewed_by`, even when source evidence cannot be checked. Five names appear
+first; Show more reveals the next five without leaving the summary. Each name
+opens that concept on the map. Names use the interface language when recorded; hovering a name exposes its
+document path, without suggesting that a source file is missing. Opening or expanding the list never writes a review mark.
+
 ## Relationships and evidence
 
 The project board owns the screen. Each recorded responsibility is one row,

@@ -37,6 +37,7 @@
       },
       "detailMoved": "変更{moved} · 文書{doc}",
       "detailDocUnknown": "記録なし",
+      "detailShowMore": "さらに表示",
       "detailGone": "ファイルなし",
       "detailHidden": "ほか{count}件",
       "askAgent": "エージェントに聞く",

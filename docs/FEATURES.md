@@ -76,6 +76,10 @@ or Belongs to domain. Directed groups say Depends on only when their complete
 relation types support that reading; mixed types remain neutrally labelled.
 Saved analysis history separates list failures from selected-artifact failures,
 ignores stale reads, and presents a localized remedy with optional technical details.
+The full project editor confirms leaving unsaved changes inside the app, so Cancel and Back work in the macOS WebView as well as the browser.
+
+The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
+
 Analysis can narrow capabilities by source changes, missing paths or unchecked
 evidence alongside name search and recorded gaps, preserving the selected claim.
 
