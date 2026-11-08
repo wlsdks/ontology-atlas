@@ -84,7 +84,7 @@
   "reachNone": "ほかのロールに依存しない",
   "ladderDirection": "矢印は依存の向きを示します。あるロールのコードが、別のロールのコードを使うという意味です。",
   "reachInline": "依存してよい先：{targets}",
-  "layerConcepts": "このロールのレビュー済み概念：{count}",
+  "layerConcepts": "このロールに記録された概念：{count}",
   "conceptCount": "概念{count}件",
   "moduleCount": "モジュール{count}件",
   "legendViolated": "前回の確認でルール違反と判定された接続",

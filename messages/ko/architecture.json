@@ -84,7 +84,7 @@
   "reachNone": "아무 역할에도 의존하지 않아요",
   "ladderDirection": "화살표는 의존 방향이에요. 의존은 한 역할의 코드가 다른 역할의 코드를 가져다 쓰는 것이에요.",
   "reachInline": "{targets}에 의존 가능",
-  "layerConcepts": "이 역할의 리뷰된 개념 {count}개",
+  "layerConcepts": "이 역할에 기록된 개념 {count}개",
   "conceptCount": "개념 {count}개",
   "moduleCount": "모듈 {count}개",
   "legendViolated": "지난 검사에서 규칙을 어긴 것으로 잡힌 연결",

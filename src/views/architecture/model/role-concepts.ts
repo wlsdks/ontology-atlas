@@ -1,9 +1,9 @@
 import { createArchitecturePathMatcher, type ArchitectureProfile } from '@/entities/architecture-profile';
 
 /**
- * Reviewed concepts whose `path` falls inside a role's globs, kept apart from source modules so the
- * meaning layer and the source layer stay two named things. A join of two reviewed stores; no
- * source is read.
+ * Concepts recorded with a `path` inside a role's globs, kept apart from source modules.
+ * This joins profile declarations and vault records; it does not read source or establish
+ * concept review status.
  */
 
 export interface RoleConcept {
@@ -11,9 +11,9 @@ export interface RoleConcept {
   title: string;
   kind: 'capability' | 'element';
   path: string;
-  /** Reviewed `dependencies` targets (slugs) — real vault relations, never inferred. */
+  /** Declared `dependencies` targets (slugs) — real vault relations, never inferred. */
   dependsOn: string[];
-  /** Reviewed `relates` targets (slugs). */
+  /** Declared `relates` targets (slugs). */
   relatesTo: string[];
 }
 

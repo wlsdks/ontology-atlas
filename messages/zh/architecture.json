@@ -84,7 +84,7 @@
   "reachNone": "不依赖其他角色",
   "ladderDirection": "箭头指向依赖的方向：一个角色的代码使用另一个角色的代码。",
   "reachInline": "可依赖 {targets}",
-  "layerConcepts": "此角色中已审阅的概念：{count}",
+  "layerConcepts": "此角色中记录的概念：{count}",
   "conceptCount": "{count} 个概念",
   "moduleCount": "{count} 个模块",
   "legendViolated": "上次检查标为违反规则的连接",

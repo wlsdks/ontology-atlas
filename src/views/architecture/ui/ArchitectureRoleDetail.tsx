@@ -59,7 +59,7 @@ export function ArchitectureRoleDetail({
   reach: readonly string[];
   /** Source modules the role's globs contain, or `null` where this surface cannot list source. */
   modules: readonly RoleSourceModule[] | null;
-  /** Reviewed concepts whose `path` sits inside the role's globs. */
+  /** Recorded concepts whose `path` sits inside the role's globs. */
   concepts: readonly RoleConcept[];
   /** Slugs taking part in any reviewed relation — the preview shows these first. */
   edgeParticipants: ReadonlySet<string>;
@@ -248,7 +248,7 @@ export function ArchitectureRoleDetail({
         </div>
       </div>
 
-      {/* The meaning layer: reviewed concepts, never mixed with the source modules above. */}
+      {/* The meaning layer: recorded concepts, never mixed with the source modules above. */}
       <div
         ref={setConceptGridNode}
         className="border-t border-[color:var(--color-divider)] px-[var(--card-pad)] pb-[var(--card-pad)] pt-3"

@@ -63,7 +63,7 @@ export function ArchitectureFlow({
    * `null` when this surface has no listing (browser, unbound project, still loading).
    */
   modules: Readonly<Record<string, RoleSourceModule[]>> | null;
-  /** The labeled meaning layer: reviewed concepts whose `path` sits inside the role's globs. */
+  /** The labeled meaning layer: recorded concepts whose `path` sits inside the role's globs. */
   concepts: Readonly<Record<string, RoleConcept[]>>;
   /** Measured crossings from the persisted record; undefined draws no traffic rather than guessing. */
   roleTraffic?: readonly ArchitectureRoleEdge[];
