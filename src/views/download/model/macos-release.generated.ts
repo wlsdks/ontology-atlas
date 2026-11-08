@@ -55,16 +55,16 @@ export interface WindowsRelease {
 export const MACOS_RELEASE: MacosRelease = {
   published: true,
   prerelease: false,
-  tag: "v1.9.1",
-  publishedAt: "2026-11-04T07:40:21Z",
-  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v1.9.1",
+  tag: "v1.9.3",
+  publishedAt: "2026-11-08T23:44:19Z",
+  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v1.9.3",
   assets: [
     {
       arch: "aarch64",
-      fileName: "ontology-atlas_1.9.1_aarch64.dmg",
-      sizeBytes: 106175220,
-      sha256: "14d29aa661d1a901086f1b92a9c1380636412bedfc1478d0e7b7a32786e1e829",
-      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.9.1/ontology-atlas_1.9.1_aarch64.dmg",
+      fileName: "ontology-atlas_1.9.3_aarch64.dmg",
+      sizeBytes: 108254610,
+      sha256: "f7ea208d40658c330f2d6f78003740cfa12c4d55c4c76534ddf6ede3f8ec0377",
+      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.9.3/ontology-atlas_1.9.3_aarch64.dmg",
     },
   ],
 };
@@ -72,16 +72,16 @@ export const MACOS_RELEASE: MacosRelease = {
 export const WINDOWS_RELEASE: WindowsRelease = {
   published: true,
   prerelease: false,
-  tag: "v1.9.1",
-  publishedAt: "2026-11-04T07:40:21Z",
-  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v1.9.1",
+  tag: "v1.9.3",
+  publishedAt: "2026-11-08T23:44:19Z",
+  releaseUrl: "https://github.com/wlsdks/ontology-atlas/releases/tag/v1.9.3",
   assets: [
     {
       arch: "x64",
-      fileName: "ontology-atlas_1.9.1_windows_x64-setup.exe",
-      sizeBytes: 91564857,
-      sha256: "e4b43d862ba48c8cbec1cc6c06da85657447b63f80f16fc941898e80f0d497b3",
-      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.9.1/ontology-atlas_1.9.1_windows_x64-setup.exe",
+      fileName: "ontology-atlas_1.9.3_windows_x64-setup.exe",
+      sizeBytes: 93642331,
+      sha256: "8ef4fc0b9f5cec326332798643bb2f297b1199255ae20504fce5442bd136a263",
+      downloadUrl: "https://github.com/wlsdks/ontology-atlas/releases/download/v1.9.3/ontology-atlas_1.9.3_windows_x64-setup.exe",
       signed: false,
     },
   ],
