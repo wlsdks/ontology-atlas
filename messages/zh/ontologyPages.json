@@ -37,6 +37,7 @@
       },
       "detailMoved": "变更于 {moved} · 文档 {doc}",
       "detailDocUnknown": "未记录",
+      "detailShowMore": "显示更多",
       "detailGone": "文件已不存在",
       "detailHidden": "另有 {count} 项",
       "askAgent": "询问智能体",

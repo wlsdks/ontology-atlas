@@ -1,3 +1,8 @@
+import { execFile } from "node:child_process";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
 
 import { FREEZE_CSS, auditPage } from "../../../scripts/lib/design/ui-audit-probe.mjs";
@@ -216,4 +221,38 @@ test('does not sample outside the viewport for one-pixel edge slivers', async ({
   });
   const covered = await auditPage(page, { width: 390, rampNames: RAMP_NAMES });
   expect(covered.findings.occluded.map((value: { selector: string }) => value.selector).sort()).toEqual(['body > button#bottom', 'body > button#right']);
+});
+
+test("the audit CLI measures prepared interactive states and keeps failures blocking", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "atlas-ui-audit-"));
+  const setup = path.join(dir, "setup.mjs");
+  const run = async (source: string) => {
+    await writeFile(setup, source);
+    try {
+      const result = await promisify(execFile)(process.execPath, ["scripts/design/ui-audit.mjs", "--url=http://127.0.0.1", "--route=/", "--widths=1512", "--scope=#stage", `--setup=${setup}`, "--json"]);
+      return { code: 0, ...result };
+    } catch (error) {
+      return error as { code: number; stdout: string; stderr: string };
+    }
+  };
+  const source = (covered: boolean) => `export default async (page) => {
+    await page.setContent('<div id="stage"><button style="width:100px;height:48px">Open</button></div>');
+    await page.getByRole('button', {name:'Open'}).click();
+    await page.locator('#stage').evaluate(el => {
+      el.innerHTML = '<button style="width:100px;height:48px">Prepared</button>${covered ? '<div style="position:fixed;inset:0;background:white"></div>' : ''}';
+    });
+  };`;
+  try {
+    const clean = await run(source(false));
+    expect(clean.code, clean.stderr).toBe(0);
+    expect(JSON.parse(clean.stdout)[0].measuredElements).toBeGreaterThan(0);
+    const covered = await run(source(true));
+    expect(covered.code).toBe(1);
+    expect(JSON.parse(covered.stdout)[0].findings.occluded).toHaveLength(1);
+    const empty = await run("export default async page => { await page.setContent('<div id=stage></div>'); }");
+    expect(empty.code).not.toBe(0);
+    const broken = await run("export default async () => { throw new Error('Setup failed'); }");
+    expect(broken.code).not.toBe(0);
+    expect(broken.stderr).toContain('Setup failed');
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });

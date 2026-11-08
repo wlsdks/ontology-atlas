@@ -195,3 +195,33 @@ test("the brief puts the first three counted lines on top and the rest behind on
     await expect(page.getByTestId("brief-lines").locator(`[data-brief-line="${id}"]`)).toHaveCount(0);
   }
 });
+
+test("unreviewed concept names use the interface language and lead to their exact map selection", async ({ page }) => {
+  const fixture = { ...SEED };
+  for (let i = 1; i <= 7; i++) {
+    fixture[`elements/review-${i}.md`] = FRONT([
+      `uid: 6f1d41a2-1111-4aaa-9aaa-00000000002${i}`, 'kind: element',
+      `slug: elements/review-${i}`, `title: Candidate ${i}`, `display_ko: 검토 대상 ${i}`, 'created_by: model:test',
+      ...(i === 7 ? ['reviewed_by: human:test'] : []),
+    ]) + `# Candidate ${i}\n`;
+  }
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, fixture);
+  await page.goto('/ko/topology/?guides=off');
+  await page.getByTestId('first-run-starter-open').click();
+  await page.getByTestId('vault-guide-pick-existing').click();
+  await expect(page.getByTestId('topology-index-panel')).toContainText('Brief Shop');
+  await page.goto('/ko/ontology/insights/?tab=brief&guides=off');
+  const toggle = page.getByTestId('brief-line-open-ontology-agent-unreviewed');
+  await expect(toggle).toContainText('7개');
+  await toggle.click();
+  const rows = page.getByTestId('brief-line-rows-ontology-agent-unreviewed');
+  await expect(rows.getByRole('link')).toHaveCount(5);
+  await expect(rows.getByRole('link', { name: '검토 대상 1', exact: true })).toBeVisible();
+  await page.getByTestId('brief-line-more-ontology-agent-unreviewed').click();
+  await expect(rows.getByRole('link')).toHaveCount(7);
+  await expect(rows.getByRole('link', { name: '검토 대상 7', exact: true })).toHaveCount(0);
+  await rows.getByRole('link', { name: '검토 대상 6', exact: true }).click();
+  await expect(page).toHaveURL(/p=element%3Areview-6/);
+  await expect(page.getByRole('heading', { name: '검토 대상 6', exact: true })).toBeVisible();
+});

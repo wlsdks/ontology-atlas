@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
@@ -23,7 +23,7 @@ import {
   type ProjectInput,
 } from "@/entities/project";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
-import { controlClass, useToast } from "@/shared/ui";
+import { Button, Dialog, controlClass, useToast } from "@/shared/ui";
 
 interface Props {
   mode: "create" | "edit";
@@ -83,10 +83,12 @@ function EditorContent({
   const [loading, setLoading] = useState(Boolean(targetSlug));
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const confirmDiscardChanges = useCallback(() => {
-    if (!isDirty) return true;
-    return window.confirm(t("confirmDiscardChanges"));
-  }, [isDirty, t]);
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
+  const navigate = (href: string) => {
+    if (isDirty) setPendingHref(href);
+    else router.push(href);
+  };
 
   useEffect(() => {
     if (!targetSlug) return;
@@ -160,22 +162,15 @@ function EditorContent({
     router.push(safeReturnTo);
   };
 
-  const handleCancel = () => {
-    if (!confirmDiscardChanges()) return;
-    router.push(safeReturnTo);
-  };
+  const handleCancel = () => navigate(safeReturnTo);
 
   const handleNavigateWithGuard = (
     event: MouseEvent<HTMLAnchorElement>,
     href: string,
   ) => {
-    if (!confirmDiscardChanges()) {
-      event.preventDefault();
-      return;
-    }
-
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
     event.preventDefault();
-    router.push(href);
+    navigate(href);
   };
 
   useEffect(() => {
@@ -379,6 +374,20 @@ function EditorContent({
         </section>
       </div>
       </main>
+      <Dialog open={pendingHref !== null} onClose={() => setPendingHref(null)} labelledBy="project-discard-title" size="sm" testId="project-discard-dialog">
+        <h2 id="project-discard-title" className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{t('discardTitle')}</h2>
+        <p className="mt-3 text-body text-[color:var(--color-text-secondary)]">{t('confirmDiscardChanges')}</p>
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
+          <Button variant="ghost" className="atlas-touch-floor" onClick={() => setPendingHref(null)}>{t('keepEditing')}</Button>
+          <Button variant="primary" className="atlas-touch-floor" onClick={() => {
+            if (pendingHref === null) return;
+            const href = pendingHref;
+            setPendingHref(null);
+            setIsDirty(false);
+            router.push(href);
+          }}>{t('discardAndLeave')}</Button>
+        </div>
+      </Dialog>
     </div>
   );
 }

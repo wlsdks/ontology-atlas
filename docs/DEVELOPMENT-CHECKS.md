@@ -1026,10 +1026,10 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 ### Rendered UI audit
 
-**Run**: `pnpm ui:audit -- --url=<base> --route=<path> [--scope=<selector>]`
-**Proves**: Geometry, reachability, contrast and scroll reserve in the rendered page, or one explicitly scoped visible region. A scoped audit refuses missing, ambiguous and hidden subjects and reports a nonzero element inventory. Any audit refuses an empty visible inventory.
-**Escalate**: `pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts` for collector changes; the planted cover must remain detectable even when outside the scope.
-**Fix**: Correct actual layout findings. Scope a modal to distinguish its controls from intentionally covered background controls.
+**Run**: `pnpm ui:audit -- --url=<base> --route=<path> [--scope=<selector>] [--setup=<module.mjs>]`
+**Proves**: Geometry, reachability, contrast and scroll reserve of a nonempty visible region. Optional setup exports `default async (page, { url, route, width, height })` and owns navigation. Setup errors and invalid scopes fail.
+**Escalate**: `pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts` for collector or setup changes.
+**Fix**: Correct measured layout defects; scope modals to exclude their intentionally blocked background.
 
 ### Repo link and citation integrity
 
@@ -1102,6 +1102,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The source-checkout CLI can spawn and verify the local MCP server against a real vault within a bounded timeout, run from the repo root
 **Escalate**: none; run `OATLAS_VAULT=../docs/ontology npm run verify` from `mcp/` for the package-local path, or `pnpm cli:mcp-verify -- --help` for usage
 **Fix**: Increase `--timeout-ms` per the printed retry hint, or pass an explicit `--vault <path>` / `OATLAS_VAULT` when the target vault is not the default
+
+### Static build reuse
+
+**Run**: `pnpm test:build:static`
+**Proves**: Reuse requires matching source inputs; a failed build or inputs changed during a build cannot certify its output.
+**Escalate**: `pnpm build:static` for the real export.
+**Fix**: Let source edits settle and rerun the build; never stamp output for inputs it may not contain.
 
 ### Static deploy safety
 

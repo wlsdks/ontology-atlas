@@ -93,7 +93,7 @@ Section labels are engraved (mono uppercase caption + hairline), matching the ce
 - dates: ISO 8601 YYYY-MM-DD, `launchedAt >= startedAt`
 
 #### Actions
-- Save & continue · Save & return · Cancel (with dirty-state guard via `beforeunload` + router intercept)
+- Save & continue · Save & return · Cancel. Unsaved Cancel, Back and Duplicate actions open an in-app confirmation: Keep editing preserves the form; Discard and leave follows the requested destination. Modified link clicks keep native new-tab behavior. `beforeunload` still guards a browser unload.
 - **Delete** (edit-only) — isolated in a single dashed-border danger row at the bottom of the form (2026-07-18; dashed border is the destructive-action category signal, matching the design system rule); no other delete affordance on this page
 - Form nav pills jump to sections (edit only)
 - Top sticky + bottom save bar (edit only — create has the bottom row only)

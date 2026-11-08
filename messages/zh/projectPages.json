@@ -177,6 +177,9 @@
   "editor": {
     "documentTitleEdit": "编辑项目 · Ontology Atlas",
     "documentTitleNew": "新建项目 · Ontology Atlas",
+    "discardTitle": "放弃未保存的更改？",
+    "keepEditing": "继续编辑",
+    "discardAndLeave": "放弃并离开",
     "confirmDiscardChanges": "有未保存的更改。仍要离开吗？",
     "loadErrorEdit": "找不到该项目。",
     "loadErrorDuplicate": "找不到要复制的项目。",
