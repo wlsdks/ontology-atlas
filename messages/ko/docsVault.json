@@ -401,7 +401,8 @@
   "newDocDialog": {
     "title": "새 문서",
     "subtitle": "이 문서가 어떤 종류의 개념인지 먼저 고르세요. 저장될 폴더와 시작 내용이 그 종류를 따라가요.",
-    "cancel": "취소"
+    "cancel": "취소",
+    "create": "만들기"
   },
   "fileActions": {
     "rename": "이름 바꾸기",

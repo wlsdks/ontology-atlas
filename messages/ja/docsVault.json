@@ -401,7 +401,8 @@
   "newDocDialog": {
     "title": "新規文書",
     "subtitle": "まず、この文書がどの種類の概念かを選んでください。フォルダと初期内容はその選択に従います。",
-    "cancel": "キャンセル"
+    "cancel": "キャンセル",
+    "create": "作成"
   },
   "fileActions": {
     "rename": "名前を変更",
