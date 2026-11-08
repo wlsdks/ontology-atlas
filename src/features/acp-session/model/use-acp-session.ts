@@ -15,7 +15,7 @@ import {
 } from '@/shared/lib/agent-chat/tauri-acp';
 
 import { GATED_SESSION_MODE } from './runtime-wiring/runtime-gate';
-import { modeKeepsGate } from './session-choices/mode-safety';
+import { isPermissionProfileMode, modeKeepsGate } from './session-choices/mode-safety';
 import { investigationPermissionVerified, type InvestigationSendGuard } from './investigation/guard';
 import { readReportedPlan, type ReportedPlan } from './investigation/reported-plan';
 import { isDiagnosticStderr } from './trouble/acp-trouble';
@@ -80,7 +80,7 @@ export type AcpEvent =
       detail?: string;
       /**
        * The mode the adapter moved this session into, verbatim as the adapter names it. Present
-       * only on `mode-moved`. Not translated: it is the id the tool itself shows, and inventing a
+       * only on mode-change notices. Not translated: it is the id the tool itself shows, and inventing a
        * friendly name for a mode this app refuses to offer would name something nobody can pick.
        */
       mode?: string;
@@ -585,7 +585,7 @@ export function useAcpSession({
       push({
         kind: 'notice',
         id: nextEventId(),
-        text: 'mode-moved',
+        text: isPermissionProfileMode(modeId) ? 'profile-mode-moved' : 'mode-moved',
         mode: modeId,
         serverGate: vaultWriteConsentOn(mcpServers),
       });
@@ -1152,6 +1152,7 @@ export function useAcpSession({
   }, [setChoices]);
 
   const chooseMode = useCallback(async (modeId: string) => {
+    if (!modeKeepsGate(modeId)) return;
     const client = clientRef.current;
     const sessionId = sessionIdRef.current;
     if (!client || !sessionId) return;

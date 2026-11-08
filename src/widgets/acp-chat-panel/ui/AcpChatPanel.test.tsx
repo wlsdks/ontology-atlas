@@ -3672,6 +3672,20 @@ describe('dying while answering and being fully finished are different statement
     expect(screen.queryByText('notice.gateOff')).toBeNull();
   });
 
+  it.each([false, true])('states profile uncertainty with server consent %s', async (serverGate) => {
+    render(<AcpChatPanel runtimeId="claude-acp" runtimeLabel="Claude Code" vaultRoot="/vault"
+      mcpServers={[{ name: 'atlas-vault', env: serverGate ? [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }] : [] }]} />);
+    await waitFor(() => expect(bridge.sent.some(m => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some(m => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', { sessionId: 's-1', modes: {
+      currentModeId: 'permission-profile:local', availableModes: [{ id: 'default', name: 'Manual' }],
+    } });
+    const key = serverGate ? 'notice.profileModeMovedServerGate' : 'notice.profileModeMoved';
+    await waitFor(() => expect(screen.getByText(`${key}:{"mode":"permission-profile:local"}`)).toBeInTheDocument());
+    expect(screen.queryByText(/notice\.modeMoved/)).toBeNull();
+  });
+
   it('dying while no turn is running does not say that, so no event is invented', async () => {
     await bootSession();
     bridge.exit?.(0);
