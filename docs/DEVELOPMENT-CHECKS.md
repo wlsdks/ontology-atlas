@@ -1027,9 +1027,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Rendered UI audit
 
 **Run**: `pnpm ui:audit -- --url=<base> --route=<path> [--scope=<selector>] [--setup=<module.mjs>]`
-**Proves**: Geometry, reachability, contrast and scroll reserve in the rendered page, or one explicitly scoped visible region. A scoped audit refuses missing, ambiguous and hidden subjects and reports a nonzero element inventory. Any audit refuses an empty visible inventory. An optional local setup module exports `default async (page, { url, route, width, height })`; it owns navigation and prepares an interactive state before the unchanged audit runs. Setup errors fail the command.
-**Escalate**: `pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts` for collector changes; the planted cover must remain detectable even when outside the scope.
-**Fix**: Correct actual layout findings. Scope a modal to distinguish its controls from intentionally covered background controls.
+**Proves**: Geometry, reachability, contrast and scroll reserve of a nonempty visible region. Optional setup exports `default async (page, { url, route, width, height })` and owns navigation. Setup errors and invalid scopes fail.
+**Escalate**: `pnpm exec playwright test tests/e2e/design-audits/ui-audit-probe.spec.ts` for collector or setup changes.
+**Fix**: Correct measured layout defects; scope modals to exclude their intentionally blocked background.
 
 ### Repo link and citation integrity
 
