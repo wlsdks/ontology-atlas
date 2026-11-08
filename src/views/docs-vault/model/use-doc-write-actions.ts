@@ -285,37 +285,25 @@ export function useDocWriteActions({
   } | null>(null);
   const commitCreateDoc = useCallback(
     async (slug: string, markdown: string) => {
-      try {
-        await localVault.createDoc(slug, markdown);
-        setSelectedSlug(slug);
-        setRecentSlugs(pushRecentDoc(recentKey, slug));
-        setEditing(true);
-        replaceUrlState({ slug, view: 'doc' });
-      } catch (err) {
-        window.alert(
-          t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }),
-        );
-      }
+      await localVault.createDoc(slug, markdown);
+      setSelectedSlug(slug);
+      setRecentSlugs(pushRecentDoc(recentKey, slug));
+      setEditing(true);
+      replaceUrlState({ slug, view: 'doc' });
     },
-    [localVault, recentKey, replaceUrlState, setRecentSlugs, t, setEditing, setSelectedSlug],
+    [localVault, recentKey, replaceUrlState, setRecentSlugs, setEditing, setSelectedSlug],
   );
   const handleCreateNewDocWithKind = useCallback(
-    async (kind: NewDocKind) => {
-      setNewDocKindDialogOpen(false);
-      if (typeof window === 'undefined') return;
-      const title = window.prompt(t('dialog.newDocTitlePrompt'));
-      if (!title || !title.trim()) return;
+    async (kind: NewDocKind, title: string): Promise<string | undefined> => {
       let slug: string;
       let markdown: string;
       try {
         ({ slug, markdown } = buildNewNodeDoc({ title, kind }));
       } catch {
-        window.alert(t('dialog.invalidSlug'));
-        return;
+        return t('dialog.invalidSlug');
       }
       if (manifest.docs.some((d) => d.slug === slug)) {
-        window.alert(t('dialog.renameAlreadyExists', { slug }));
-        return;
+        return t('dialog.renameAlreadyExists', { slug });
       }
       const candidates = manifest.docs.map((d) => ({
         slug: d.slug,
@@ -327,7 +315,11 @@ export function useDocWriteActions({
         setPendingSimilarDoc({ slug, markdown, match });
         return;
       }
-      await commitCreateDoc(slug, markdown);
+      try {
+        await commitCreateDoc(slug, markdown);
+      } catch (err) {
+        return t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) });
+      }
     },
     [manifest, commitCreateDoc, t],
   );
@@ -343,8 +335,10 @@ export function useDocWriteActions({
     if (!pendingSimilarDoc) return;
     const { slug, markdown } = pendingSimilarDoc;
     setPendingSimilarDoc(null);
-    void commitCreateDoc(slug, markdown);
-  }, [pendingSimilarDoc, commitCreateDoc]);
+    void commitCreateDoc(slug, markdown).catch((err: unknown) => {
+      toast.show(t('dialog.createFailed', { message: err instanceof Error ? err.message : String(err) }), 'error');
+    });
+  }, [pendingSimilarDoc, commitCreateDoc, toast, t]);
 
   const handleInsertToc = useCallback(async () => {
     if (!canEditCurrent || !selectedSlug) return;

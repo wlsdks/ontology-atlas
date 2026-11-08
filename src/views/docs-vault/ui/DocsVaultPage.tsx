@@ -669,7 +669,7 @@ function DocsVaultContent({
 
       <NewDocKindDialog
         open={newDocKindDialogOpen}
-        onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
+        onSelect={handleCreateNewDocWithKind}
         onClose={() => setNewDocKindDialogOpen(false)}
       />
       <RenameDocDialog

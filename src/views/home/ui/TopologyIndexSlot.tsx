@@ -236,6 +236,7 @@ export function TopologyIndexSlot({
                     fold: t("index.fold"),
                     foldAria: t("index.foldAria"),
                     searchPlaceholder: t("index.searchPlaceholder"),
+                    searchMatches: t("index.searchMatches"),
                     censusConcepts: t("index.censusConcepts"),
                     sourceDocuments: t("index.sourceDocuments"),
                     sourceDocumentsPartialTitle: t("index.sourceDocumentsPartialTitle"),

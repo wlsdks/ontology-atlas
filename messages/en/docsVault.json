@@ -401,7 +401,8 @@
   "newDocDialog": {
     "title": "New document",
     "subtitle": "Pick what kind of concept this document is first: its folder and starter content follow that choice.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "create": "Create"
   },
   "fileActions": {
     "rename": "Rename",

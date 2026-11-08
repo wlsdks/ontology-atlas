@@ -1,4 +1,4 @@
-import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../../messages/en.json";
@@ -49,14 +49,33 @@ describe("NewDocKindDialog", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onSelect with the chosen kind", () => {
+  it("asks for a title after choosing a kind and submits both", () => {
     renderWithTrigger();
     const onSelect = vi.fn();
     render(<NewDocKindDialog open onSelect={onSelect} onClose={() => {}} />);
 
     fireEvent.click(screen.getByText("Domain"));
 
-    expect(onSelect).toHaveBeenCalledWith("domain");
+    expect(onSelect).not.toHaveBeenCalled();
+    const title = screen.getByRole("textbox");
+    fireEvent.change(title, { target: { value: "Example domain" } });
+    fireEvent.submit(title.closest("form")!);
+    expect(onSelect).toHaveBeenCalledWith("domain", "Example domain");
+  });
+
+  it("keeps the title open when creation is refused", async () => {
+    renderWithTrigger();
+    const onSelect = vi.fn().mockResolvedValue("Already exists");
+    const onClose = vi.fn();
+    render(<NewDocKindDialog open onSelect={onSelect} onClose={onClose} />);
+
+    fireEvent.click(screen.getByText("Element"));
+    const title = screen.getByRole("textbox");
+    fireEvent.change(title, { target: { value: "Existing" } });
+    fireEvent.submit(title.closest("form")!);
+    await waitFor(() => expect(screen.getByText("Already exists")).toBeInTheDocument());
+    expect(title).toHaveValue("Existing");
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("wraps Tab from the last focusable to the first", () => {
