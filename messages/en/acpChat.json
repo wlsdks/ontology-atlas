@@ -308,6 +308,8 @@
   "notice": {
     "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly.",
     "diedMidTurn": "The agent stopped in the middle of answering. What you see is everything that arrived. Start a new chat above and ask again.",
+    "profileModeMoved": "The tool moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits.",
+    "profileModeMovedServerGate": "The tool moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits. Changes made through Atlas tools still stop at the server for your approval.",
     "modeMoved": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
     "modeMovedServerGate": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
     "autoAllowed": "{detail} was written without asking: it fits the wiki page contract.",

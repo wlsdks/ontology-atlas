@@ -1,7 +1,7 @@
 {
   "source": "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json",
   "registryVersion": "1.0.0",
-  "npmDependencyCutoff": "2026-11-04T04:48:47.115Z",
+  "npmDependencyCutoff": "2026-11-08T22:14:49.549Z",
   "agents": [
     {
       "id": "claude-acp",
@@ -15,7 +15,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.100.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.101.0",
         "args": []
       }
     },
@@ -31,7 +31,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@2.5.0",
+        "package": "@agentclientprotocol/codex-acp@2.6.0",
         "args": []
       }
     },
@@ -81,7 +81,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@augmentcode/auggie@0.36.0",
+        "package": "@augmentcode/auggie@0.37.0",
         "args": [
           "--acp"
         ]
@@ -153,7 +153,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.179.3",
+        "package": "@tencent-ai/codebuddy-code@2.181.0",
         "args": [
           "--acp"
         ]
@@ -312,7 +312,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@1.2.0",
+        "package": "droid@1.6.0",
         "args": [
           "exec",
           "--output-format",
@@ -350,7 +350,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.66.0",
+        "package": "@google/gemini-cli@0.67.0",
         "args": [
           "--acp"
         ]
@@ -368,7 +368,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.105",
+        "package": "@github/copilot@1.0.107",
         "args": [
           "--acp"
         ]
@@ -436,7 +436,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.74",
+        "package": "@xai-official/grok@1.0.79",
         "args": [
           "agent",
           "stdio"
@@ -492,7 +492,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.8.18",
+        "package": "@kilocode/cli@7.8.27",
         "args": [
           "acp"
         ]
@@ -519,8 +519,8 @@
     },
     {
       "id": "kimi",
-      "name": "Kimi CLI",
-      "description": "Moonshot AI's coding assistant",
+      "name": "Kimi CLI (Legacy)",
+      "description": "Archived by Moonshot AI. Use Kimi Code instead",
       "website": "https://moonshotai.github.io/kimi-cli/",
       "license": "MIT",
       "verified": false,
@@ -530,6 +530,24 @@
       "launch": {
         "kind": "binary",
         "command": "kimi",
+        "args": [
+          "acp"
+        ]
+      }
+    },
+    {
+      "id": "kimi-code",
+      "name": "Kimi Code",
+      "description": "Moonshot AI's next-gen coding agent",
+      "website": "https://moonshotai.github.io/kimi-code/",
+      "license": "MIT",
+      "verified": false,
+      "icon": "/acp-icons/kimi-code.svg",
+      "brandInk": null,
+      "cli": null,
+      "launch": {
+        "kind": "npx",
+        "package": "@moonshot-ai/kimi-code@2.5.2",
         "args": [
           "acp"
         ]
@@ -618,7 +636,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@compass-ai/nova@1.1.62",
+        "package": "@compass-ai/nova@1.1.64",
         "args": [
           "acp"
         ]
@@ -724,7 +742,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.26.6",
+        "package": "@qwen-code/qwen-code@0.27.0",
         "args": [
           "--acp",
           "--experimental-skills"
@@ -743,7 +761,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@smbcloud/sigit@1.7.7",
+        "package": "@smbcloud/sigit@1.7.10",
         "args": []
       }
     },

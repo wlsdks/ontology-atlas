@@ -653,6 +653,20 @@ describe('vault server: says it is plugged in only when it is', () => {
 });
 
 describe('Codex permission floor: applies read-only before the conversation is ready', () => {
+  it('replaces an initial local profile with acknowledged read-only before readiness', async () => {
+    bridge.sessionModes = { currentModeId: 'permission-profile:local', availableModes: [
+      { id: 'permission-profile:local', name: 'Local' }, { id: 'read-only', name: 'Read only' },
+    ] };
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault' }));
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => { bridge.release?.(); await first; });
+    expect(result.current.status).toBe('ready');
+    expect(result.current.choices.currentModeId).toBe('read-only');
+    expect(result.current.choices.modes.map(mode => mode.id)).toEqual(['read-only']);
+    await act(async () => { await result.current.stop(); });
+  });
+
   it('applies read-only mode on every new session and does not become ready on failure', async () => {
     const { result } = renderHook(() =>
       useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault' }),
@@ -1114,6 +1128,21 @@ describe('the adapter moves the session itself', () => {
       );
     });
   }
+
+  it('rejects direct profile selection and reports an unsolicited profile move as unverified', async () => {
+    const { result } = await started();
+    const before = bridge.sent.filter(message => message.method === 'session/set_mode').length;
+    await act(async () => { await result.current.chooseMode('permission-profile:local'); });
+    expect(bridge.sent.filter(message => message.method === 'session/set_mode')).toHaveLength(before);
+    expect(result.current.choices.currentModeId).toBe('default');
+    moveTo('permission-profile:local');
+    expect(result.current.choices.currentModeId).toBe('permission-profile:local');
+    expect(result.current.choices.modes.map(mode => mode.id)).toEqual(['default', 'plan']);
+    expect(result.current.events.find(event => event.kind === 'notice')).toMatchObject({
+      text: 'profile-mode-moved', mode: 'permission-profile:local', serverGate: false,
+    });
+    await act(async () => { await result.current.stop(); });
+  });
 
   it('follows a clamp into a gate-removing mode and stops claiming the gate stands', async () => {
     const { result } = await started();

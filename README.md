@@ -102,6 +102,8 @@ A project's source-path repair opens the affected concept and recorded relative 
 
 Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning. Analysis filters capabilities by changed, missing or unchecked source evidence while keeping the selected claim open.
 
+Codex's locally configured permission profiles are excluded from the in-app mode picker because their effective approval behavior is not disclosed. Read-only startup stays required; an unsolicited move into a profile is reported as unverified, without claiming the runtime was stopped.
+
 The full project editor confirms leaving unsaved changes inside the app, so Cancel and Back work in the macOS WebView as well as the browser.
 
 The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
