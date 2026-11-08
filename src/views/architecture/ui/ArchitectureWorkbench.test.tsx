@@ -427,7 +427,7 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /* Reviewed concepts are the meaning layer, separate from source modules, answering the selection alike. */
-  it("answers a selection with the role's reviewed concepts, labeled as concepts", () => {
+  it("answers a selection with the role's recorded concepts, labeled as concepts", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -457,7 +457,7 @@ describe('ArchitectureWorkbench', () => {
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
-    expect(detail).toHaveTextContent('Reviewed concepts in this role');
+    expect(detail).toHaveTextContent(en.architecture.layerConcepts.replace('{count}', '1'));
     expect(detail).toHaveTextContent('Home');
   });
 

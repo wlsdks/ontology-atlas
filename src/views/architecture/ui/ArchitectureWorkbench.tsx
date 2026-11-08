@@ -125,7 +125,7 @@ export function ArchitectureWorkbench({
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   recordsLoaded?: boolean;
-  /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
+  /** Per profile slug, the recorded concepts joined into each role (the click-open detail). */
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
   agentRoute?: ArchitectureAgentRoute;
   agentLabel?: string | null;
