@@ -44,6 +44,13 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
   scripts: Record<string, string>;
 };
 
+it("builds Apple Silicon releases on the supported macOS 15 runner", () => {
+  const macosJob = workflow.split('  build-macos:')[1]?.split('\n  build-windows:')[0] ?? '';
+  expect(macosJob).toContain('runs-on: ${{ matrix.runner }}');
+  const runners = [...macosJob.matchAll(/^\s+runner: (\S+)$/gm)].map(match => match[1]);
+  expect(runners).toEqual(['macos-15']);
+});
+
 describe("the bundled MCP dependencies must be reproducible", () => {
   /**
    * `mcp/`'s `package-lock.json` is **npm's** and pnpm does not read it. Without a
