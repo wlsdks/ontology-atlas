@@ -161,6 +161,8 @@
     "saveIdentityUid": "这一行（uid）是文档的永久 ID，即使重命名也能认出它，所以不能删除或修改。恢复 uid 这一行后就能保存。",
     "saveIdentityHistory": "这一行（merged_uids）记录了被合并进来的文档，所以不能在这里编辑。恢复这一行后就能保存。",
     "discardConfirm": "放弃未保存的更改并关闭编辑器？",
+    "discardKeep": "继续编辑",
+    "discardAction": "放弃更改",
     "linkText": "链接文字",
     "placeholder": "文字",
     "tbBold": "粗体 ⌘B",

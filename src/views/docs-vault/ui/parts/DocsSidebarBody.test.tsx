@@ -51,9 +51,13 @@ function renderSidebar(
     collectionCounts?: Record<DocsVaultCollection, number>;
     showCollectionChooser?: boolean;
     showCreateDocument?: boolean;
+    activeTag?: string;
+    tags?: Record<string, string[]>;
+    visibleSlugs?: string[];
   } = {},
 ) {
   const manifest = makeManifest(docs);
+  if (overrides.tags) manifest.tags = overrides.tags;
   if (overrides.tree) manifest.tree = overrides.tree;
   const onSelect = vi.fn();
   const onCreateNewDoc = vi.fn();
@@ -67,7 +71,7 @@ function renderSidebar(
         recentSlugs={[]}
         selectedSlug={null}
         docsBySlug={new Map(docs.map((d) => [d.slug, d]))}
-        activeTag={null}
+        activeTag={overrides.activeTag ?? null}
         manifest={manifest}
         collection={overrides.collection ?? "guides"}
         collectionCounts={
@@ -79,7 +83,7 @@ function renderSidebar(
         }
         showCollectionChooser={overrides.showCollectionChooser}
         showCreateDocument={overrides.showCreateDocument}
-        visibleDocSlugs={new Set(docs.map((d) => d.slug))}
+        visibleDocSlugs={new Set(overrides.visibleSlugs ?? docs.map((d) => d.slug))}
         onSelect={onSelect}
         onCollectionChange={() => {}}
         onTogglePin={() => {}}
@@ -155,7 +159,9 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
       koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
     );
     fireEvent.change(search, { target: { value: "결제" } });
-    expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+    expect(screen.getByText("검색 결과 1개")).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "결과 없는 검색어" } });
+    expect(screen.getByText("검색 결과 0개")).toBeInTheDocument();
   });
 
   it("matches the visible localized name and reports the same count", () => {
@@ -176,6 +182,32 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     );
 
     expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+  });
+
+  it("keeps the search count visible with an active tag", () => {
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "결제 주문", new Date().toISOString()),
+    ], { activeTag: "test", tags: { test: ["order"] }, visibleSlugs: ["payment"] });
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
+    fireEvent.change(screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder), {
+      target: { value: "결제" },
+    });
+    expect(screen.getByText("검색 결과 0개")).toBeInTheDocument();
+    expect(screen.getByText(/#test/)).toBeInTheDocument();
+  });
+
+  it("counts search results within both the active tag and visible collection", () => {
+    renderSidebar([
+      makeDoc("payment", "결제 문서", new Date().toISOString()),
+      makeDoc("order", "결제 주문", new Date().toISOString()),
+      makeDoc("hidden", "결제 숨김", new Date().toISOString()),
+    ], { activeTag: "test", tags: { test: ["payment", "hidden"] }, visibleSlugs: ["payment", "order"] });
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
+    fireEvent.change(screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder), {
+      target: { value: "결제" },
+    });
+    expect(screen.getByText("검색 결과 1개")).toBeInTheDocument();
   });
 
   it("shows the three collection icons and switches on click", () => {

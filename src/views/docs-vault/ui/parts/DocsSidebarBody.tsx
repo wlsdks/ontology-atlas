@@ -266,9 +266,11 @@ export function DocsSidebarBody({
   const queryMatchCount = useMemo(() => {
     if (!normalizedTreeQuery) return manifest.docs.length;
     return manifest.docs.filter((doc) =>
+      visibleDocSlugs.has(doc.slug) &&
+      (!activeTagSlugs || activeTagSlugs.has(doc.slug)) &&
       matchesDocsTreeQuery(doc, normalizedTreeQuery),
     ).length;
-  }, [manifest.docs, normalizedTreeQuery]);
+  }, [manifest.docs, normalizedTreeQuery, visibleDocSlugs, activeTagSlugs]);
   const collectionOptions: DocsVaultCollection[] = ["all", "guides", "ontology"];
 
   // Exclusive single selection, so `radiogroup` rather than `tablist` (see below). The container
@@ -426,12 +428,10 @@ export function DocsSidebarBody({
         {treeTools}
       </div>
       )}
-      {/* Only what a control cannot say: typed search text and tags. Collection name and count are on the active chip. */}
-      {normalizedTreeQuery || activeTag ? (
+      {/* The filter chip already shows the count or tag; show the count separately only when both are active. */}
+      {normalizedTreeQuery && activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
-          {normalizedTreeQuery
-            ? t("treeSearchCount", { count: queryMatchCount })
-            : t("treeFiltered", { tag: activeTag as string })}
+          {t("treeSearchCount", { count: queryMatchCount })}
         </p>
       ) : null}
       {searchExpanded ? (
