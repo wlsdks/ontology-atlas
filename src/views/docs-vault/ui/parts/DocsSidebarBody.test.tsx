@@ -51,6 +51,7 @@ function renderSidebar(
     collectionCounts?: Record<DocsVaultCollection, number>;
     showCollectionChooser?: boolean;
     showCreateDocument?: boolean;
+    activeTag?: string;
   } = {},
 ) {
   const manifest = makeManifest(docs);
@@ -67,7 +68,7 @@ function renderSidebar(
         recentSlugs={[]}
         selectedSlug={null}
         docsBySlug={new Map(docs.map((d) => [d.slug, d]))}
-        activeTag={null}
+        activeTag={overrides.activeTag ?? null}
         manifest={manifest}
         collection={overrides.collection ?? "guides"}
         collectionCounts={
@@ -155,7 +156,9 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
       koMessages.vaultWidgets.parts.sidebar.searchPlaceholder,
     );
     fireEvent.change(search, { target: { value: "결제" } });
-    expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+    expect(screen.getByText("검색 결과 1개")).toBeInTheDocument();
+    fireEvent.change(search, { target: { value: "결과 없는 검색어" } });
+    expect(screen.getByText("검색 결과 0개")).toBeInTheDocument();
   });
 
   it("matches the visible localized name and reports the same count", () => {
@@ -176,6 +179,16 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     );
 
     expect(screen.getAllByText("검색 결과 1개").length).toBeGreaterThan(0);
+  });
+
+  it("keeps the search count visible with an active tag", () => {
+    renderSidebar([makeDoc("payment", "결제 문서", new Date().toISOString())], { activeTag: "test" });
+    fireEvent.click(screen.getByTestId("docs-sidebar-search-toggle"));
+    fireEvent.change(screen.getByPlaceholderText(koMessages.vaultWidgets.parts.sidebar.searchPlaceholder), {
+      target: { value: "결제" },
+    });
+    expect(screen.getByText("검색 결과 1개")).toBeInTheDocument();
+    expect(screen.getByText(/#test/)).toBeInTheDocument();
   });
 
   it("shows the three collection icons and switches on click", () => {

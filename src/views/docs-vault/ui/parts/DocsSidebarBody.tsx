@@ -426,12 +426,10 @@ export function DocsSidebarBody({
         {treeTools}
       </div>
       )}
-      {/* Only what a control cannot say: typed search text and tags. Collection name and count are on the active chip. */}
-      {normalizedTreeQuery || activeTag ? (
+      {/* The filter chip already shows the count or tag; show the count separately only when both are active. */}
+      {normalizedTreeQuery && activeTag ? (
         <p className="flex-none px-3 pt-1.5 text-caption text-[color:var(--color-text-quaternary)]">
-          {normalizedTreeQuery
-            ? t("treeSearchCount", { count: queryMatchCount })
-            : t("treeFiltered", { tag: activeTag as string })}
+          {t("treeSearchCount", { count: queryMatchCount })}
         </p>
       ) : null}
       {searchExpanded ? (
