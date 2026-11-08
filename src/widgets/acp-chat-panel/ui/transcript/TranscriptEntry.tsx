@@ -261,7 +261,11 @@ export const TranscriptEntry = memo(function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
-      {event.text === 'mode-moved'
+      {event.text === 'profile-mode-moved'
+        ? t(event.serverGate ? 'notice.profileModeMovedServerGate' : 'notice.profileModeMoved', {
+            mode: event.mode ?? '',
+          })
+        : event.text === 'mode-moved'
         ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {
             mode: event.mode ?? '',
           })

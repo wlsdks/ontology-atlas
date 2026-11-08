@@ -946,6 +946,13 @@ describe('applyCurrentMode — the adapter moved the session, not the person', (
     expect(next.unverifiedModeIds).toEqual([]);
   });
 
+  it('reflects a local permission profile without reoffering it', () => {
+    const next = applyCurrentMode(base, 'permission-profile:local');
+    expect(next.currentModeId).toBe('permission-profile:local');
+    expect(next.modes).toEqual(base.modes);
+    expect(next.unverifiedModeIds).toEqual([]);
+  });
+
   it('shows a mode nobody advertised, marked unchecked — the dropdown must not go blank', () => {
     const next = applyCurrentMode(base, 'brand-new');
     expect(next.currentModeId).toBe('brand-new');

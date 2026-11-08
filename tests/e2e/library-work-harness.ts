@@ -62,6 +62,7 @@ interface HarnessWindow extends Window {
   };
   __atlasLibraryWorkHarness?: {
     emitRead(): void;
+    moveMode(modeId: string): void;
     emitWait(): void;
     emitWrite(): void;
     finish(): void;
@@ -92,6 +93,7 @@ export interface LibraryWorkHarnessSnapshot {
 export interface LibraryWorkHarness {
   snapshot(page: Page): Promise<LibraryWorkHarnessSnapshot>;
   read(page: Page): Promise<void>;
+  moveMode(page: Page, modeId: string): Promise<void>;
   wait(page: Page): Promise<void>;
   write(page: Page): Promise<void>;
   finish(page: Page): Promise<void>;
@@ -435,7 +437,7 @@ export async function installLibraryWorkHarness(
       fixtureWindow.isTauri = true;
       fixtureWindow.__TAURI_INTERNALS__ = { transformCallback: (callback: EventCallback) => { const id = callbackId++; callbacks.set(id, callback); return id; }, invoke };
       fixtureWindow.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: (event: string, id: number) => { listeners.get(event)?.delete(id); callbacks.delete(id); } };
-      fixtureWindow.__atlasLibraryWorkHarness = { emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
+      fixtureWindow.__atlasLibraryWorkHarness = { moveMode: (modeId: string) => update({ sessionUpdate: "current_mode_update", currentModeId: modeId }), emitRead, emitWait, emitWrite, finish, answer, stream, streamed: () => ({ ...streamProgress }), think, mutateSource: write, snapshot: () => ({ files: { ...files }, writes: [...writes], calls: [...calls], events: [...events], scenario: initialScenario }) };
     },
     { initialFiles: options.files ?? VAULT_FILES, initialScenario: scenario, vaultRoot: VAULT_ROOT, runtimes, modes, currentModeId, architecturePage: ARCHITECTURE_PAGE, permissionFile: options.permissionFile, permissionText: options.permissionText, permissionInput: options.permissionInput, permissionKind: options.permissionKind ?? 'wiki', writeMode: options.writeMode ?? 'ask', filePermission: options.filePermission ?? false, mcpBinary: LIBRARY_WORK_MCP_BINARY, localResponses: options.localResponses, pastSessions: options.pastSessions ?? [], slashCommands: options.slashCommands ?? [], startError: options.startError },
   );
@@ -456,6 +458,7 @@ export async function installLibraryWorkHarness(
     }));
     await call(currentPage, "emitWrite");
   }, finish: (currentPage) => call(currentPage, "finish"),
+  moveMode: (currentPage, modeId) => currentPage.evaluate((id) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.moveMode(id), modeId),
   answer: (currentPage, text) => currentPage.evaluate((text) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.answer(text), text),
   stream: (currentPage, chunks, { perSecond, endTurn = false }) => currentPage.evaluate(
     ({ chunks, perSecond, endTurn }) => (window as unknown as HarnessWindow).__atlasLibraryWorkHarness?.stream(chunks, perSecond, endTurn),

@@ -183,3 +183,18 @@ describe('measured adapter — codex-acp 1.9.0', () => {
     expect(out.unverified).toEqual([]);
   });
 });
+
+
+describe('local permission profiles do not establish an approval boundary', () => {
+  it.each(['permission-profile:readonly', ' Permission-Profile:배포 ', 'permission-profile:'])('excludes %s even with safe-looking metadata', (id) => {
+    expect(partitionModes([{ id, metaKind: 'standard' }])).toEqual({ offered: [], unverified: [], dropped: 0 });
+  });
+
+  it('excludes a nonempty profile catalogue while retaining built-in and ordinary unknown modes', () => {
+    const profiles = Array.from({ length: 256 }, (_, i) => ({ id: `permission-profile:local-${i}` }));
+    expect(profiles).toHaveLength(256);
+    const out = partitionModes([...profiles, { id: 'read-only' }, { id: 'new-mode' }]);
+    expect(out.offered.map(item => item.id)).toEqual(['read-only', 'new-mode']);
+    expect(out.unverified).toEqual(['new-mode']);
+  });
+});

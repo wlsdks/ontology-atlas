@@ -1,7 +1,6 @@
 /**
  * The safety decision for the working-mode list separates the known from the unknown.
- * Measured to remove the gate: never shown. Measured fine: shown. Not yet measured: shown,
- * stated as unknown.
+ * Gate-removing modes and local permission profiles are hidden; other unknown modes are labelled.
  */
 
 export interface AcpModeChoice {
@@ -58,6 +57,10 @@ const VERIFIED_SAFE_KINDS = new Set(['standard', 'plan']);
 const normalize = (id: unknown): string =>
   typeof id === 'string' ? id.trim().toLowerCase() : '';
 
+export function isPermissionProfileMode(modeId: string): boolean {
+  return normalize(modeId).startsWith('permission-profile:');
+}
+
 export interface ModePartition<T extends AcpModeChoice = AcpModeChoice> {
   /** What is offered to the screen — the measured and the unmeasured together. */
   offered: T[];
@@ -88,7 +91,7 @@ export function partitionModes<T extends AcpModeChoice>(
       continue;
     }
     const kind = normalize(mode?.metaKind);
-    if (GATE_REMOVING.has(key) || GATE_REMOVING_KINDS.has(kind)) continue;
+    if (isPermissionProfileMode(key) || GATE_REMOVING.has(key) || GATE_REMOVING_KINDS.has(kind)) continue;
     offered.push(mode);
     // A stated kind is judged too: an unmeasured one makes an otherwise measured id unverified.
     const measured = VERIFIED_SAFE.has(key) && (kind.length === 0 || VERIFIED_SAFE_KINDS.has(kind));
