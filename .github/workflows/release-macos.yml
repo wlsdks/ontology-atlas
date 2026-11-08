@@ -114,7 +114,7 @@ jobs:
       matrix:
         include:
           - arch: aarch64
-            runner: macos-14
+            runner: macos-15
     env:
       TAURI_ARCH: ${{ matrix.arch }}
       RELEASE_TAG: ${{ needs.admit-release.outputs.release_tag }}
