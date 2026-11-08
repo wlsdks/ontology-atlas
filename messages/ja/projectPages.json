@@ -177,6 +177,9 @@
   "editor": {
     "documentTitleEdit": "プロジェクトを編集 · Ontology Atlas",
     "documentTitleNew": "新規プロジェクト · Ontology Atlas",
+    "discardTitle": "変更を破棄しますか？",
+    "keepEditing": "編集を続ける",
+    "discardAndLeave": "破棄して移動",
     "confirmDiscardChanges": "未保存の変更があります。このまま離れますか？",
     "loadErrorEdit": "プロジェクトが見つかりません。",
     "loadErrorDuplicate": "複製元のプロジェクトが見つかりませんでした。",
