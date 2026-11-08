@@ -84,7 +84,7 @@
   "reachNone": "depends on no other role",
   "ladderDirection": "An arrow points the way a dependency runs: one role's code using another role's code.",
   "reachInline": "may depend on {targets}",
-  "layerConcepts": "Reviewed concepts in this role: {count}",
+  "layerConcepts": "Recorded concepts in this role: {count}",
   "conceptCount": "{count, plural, one {# concept} other {# concepts}}",
   "moduleCount": "{count, plural, one {# module} other {# modules}}",
   "legendViolated": "a connection the last check flagged as a rule violation",
