@@ -247,11 +247,13 @@ fn push_only_refuses_commands_from_repository_config_includes() {
     let head = scratch.git(&["rev-parse", "HEAD"]);
     let marker = scratch.work.join("command-ran");
     let include = scratch.work.join(".git").join("atlas-test.conf");
-    fs::write(
-        &include,
-        format!("[core]\n\tsshCommand = touch {}\n", marker.display()),
-    )
-    .unwrap();
+    scratch.git(&[
+        "config",
+        "--file",
+        &include.to_string_lossy(),
+        "core.sshCommand",
+        &format!("touch '{}'", marker.display()),
+    ]);
     scratch.git(&["config", "--local", "include.path", "atlas-test.conf"]);
     scratch.git(&[
         "remote",
