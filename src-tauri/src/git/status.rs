@@ -2,8 +2,8 @@ use serde::Serialize;
 
 use super::changes::{find_staged_outside_vault, get_full_porcelain_status, get_porcelain_status};
 use super::repo::{
-    divergence_counts, find_repo_root, get_current_branch, get_head_short_hash, get_remote_url,
-    get_upstream_ref, is_head_detached, vault_pathspec,
+    divergence_counts, find_repo_root, get_current_branch, get_head_hash, get_head_short_hash,
+    get_remote_url, get_upstream_ref, is_head_detached, vault_pathspec,
 };
 use super::runner::validate_vault_dir;
 
@@ -32,6 +32,8 @@ pub struct GitStatusResult {
     detached: bool,
     /// `None` before the first commit.
     head_short_hash: Option<String>,
+    /// The complete commit identity used to bind a push to the status the person saw.
+    head_hash: Option<String>,
 }
 
 /// Reports `initialized:false` outside a repo instead of an error, since auto-init is forbidden.
@@ -51,6 +53,7 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
             has_origin: false,
             detached: false,
             head_short_hash: None,
+            head_hash: None,
         });
     };
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -75,5 +78,6 @@ pub fn git_status(vault_path: String) -> Result<GitStatusResult, String> {
         has_origin: get_remote_url(&repo_root, "origin").is_some(),
         detached: is_head_detached(&repo_root),
         head_short_hash: get_head_short_hash(&repo_root),
+        head_hash: get_head_hash(&repo_root),
     })
 }

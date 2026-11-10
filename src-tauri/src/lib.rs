@@ -319,6 +319,7 @@ pub fn run() {
             git::setup::git_init,
             git::remote::git_set_remote,
             git::snapshot::git_snapshot,
+            git::snapshot::git_push_only,
             git::commits::git_history,
             git::briefing::git_change_briefing,
             git::briefing::git_change_briefing_patch,
