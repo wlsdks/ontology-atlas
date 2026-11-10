@@ -59,6 +59,33 @@ async function switchAndSample(page: Page) {
 }
 
 test.describe("selection indicator", () => {
+  for (const width of [1920, 2560]) {
+    test(`aligns the library selection at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1200 });
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.goto("/ko/library/?tab=ontology&guides=off");
+      const strip = page.getByTestId("library-workspace-tabs");
+      const indicator = strip.locator("[data-selection-indicator]");
+
+      for (const tab of ["ontology", "rounds", "ontology"]) {
+        const selected = page.getByTestId(`library-workspace-${tab}`);
+        await selected.click();
+        await expect(selected).toHaveAttribute("aria-selected", "true");
+        await expect.poll(async () => {
+          const actual = await indicator.boundingBox();
+          const expected = await selected.boundingBox();
+          if (!actual || !expected) return Infinity;
+          return Math.max(
+            Math.abs(actual.x - expected.x),
+            Math.abs(actual.y - expected.y),
+            Math.abs(actual.width - expected.width),
+            Math.abs(actual.height - expected.height),
+          );
+        }).toBeLessThan(1.5);
+      }
+    });
+  }
+
   test("places without a layout shift, then slides between tabs on the control spring", async ({ page }) => {
     await installSampler(page);
     await page.goto(TABS);
