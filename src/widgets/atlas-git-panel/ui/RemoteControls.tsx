@@ -141,7 +141,7 @@ export function LocationLine({
       */}
       {upstream ? (
         <Fragment key="tracked">
-          {/* "identical" appears only when there are no numbers — it says why both buttons are disabled. */}
+          {/* Equality is relative to the last checked remote ref. */}
           {same ? (
             <span
               data-testid="atlas-git-divergence"
@@ -154,12 +154,12 @@ export function LocationLine({
             >
               {t("divergeSame")}
             </span>
-          ) : (
+          ) : known ? (
             <span data-testid="atlas-git-divergence" className="sr-only">
-              {t("divergeAhead", { ahead: ahead ?? 0 })}{" "}
-              {t("divergeBehind", { behind: behind ?? 0 })}
+              {t("divergeAhead", { ahead })}{" "}
+              {t("divergeBehind", { behind })}
             </span>
-          )}
+          ) : null}
           {/* Fetch, Pull and Push keep the git terms; translating them blurs what happens. */}
           <div data-testid="atlas-git-remote-actions" className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center">
           <RemoteActionButton
@@ -173,7 +173,7 @@ export function LocationLine({
           <RemoteActionButton
             id="pull"
             label={behind && behind > 0 ? `${t("remotePull")} ${behind}` : t("remotePull")}
-            hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remoteSameHint")}
+            hint={behind && behind > 0 ? t("remotePullHint", { behind }) : t("remotePullUnknownHint")}
             busy={remoteBusy === "pull"}
             disabled={remoteBusy !== null}
             onClick={onRemoteAction}
@@ -186,7 +186,9 @@ export function LocationLine({
                 ? t("remotePushCommitsFirstHint", { count: pendingCount })
                 : ahead && ahead > 0
                   ? t("remotePushHint", { ahead })
-                  : t("remoteSameHint")
+                  : ahead === 0
+                    ? t("remotePushNoneHint")
+                    : t("remotePushUnknownHint")
             }
             busy={remoteBusy === "push"}
             disabled={remoteBusy !== null}
