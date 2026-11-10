@@ -1,6 +1,6 @@
 {
   "keyCapability": "○ 역량",
-  "keyDependency": "→ 필요로 하는 곳",
+  "keyDependency": "→ 필요한 대상",
   "keyStale": "! 노란색 · 근거 재확인 필요",
   "keySelection": "밝은 항목 · 선택과 직접 연결",
   "units": "역량 {capabilities, number} · 요소 {elements, number}",
