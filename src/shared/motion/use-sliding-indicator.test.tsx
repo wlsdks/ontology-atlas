@@ -14,7 +14,7 @@ const BOXES: Record<string, DOMRect> = {
   b: rect(172, 50, 80, 40),
 };
 
-function Probe({ active, shape }: { active: string; shape: "underline-x" | "surface-y" }) {
+function Probe({ active, shape }: { active: string; shape: "underline-x" | "surface-x" | "surface-y" }) {
   const { containerRef, itemRef, indicatorStyle, placed, animated } = useSlidingIndicator(active, shape);
   return (
     <div ref={containerRef} data-box="strip">
@@ -56,6 +56,26 @@ describe("useSlidingIndicator", () => {
     render(<Probe active="b" shape="surface-y" />);
     const style = screen.getByTestId("indicator").style;
     expect([style.width, style.height, style.transform]).toEqual(["80px", "40px", "translate(72px, 0px)"]);
+  });
+
+  it("aligns the surface in the container's coordinates when the UI is zoomed", () => {
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      return this.dataset.box === "strip" ? rect(110, 55, 440, 44) : rect(209, 66, 88, 44);
+    });
+    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(400);
+    vi.spyOn(HTMLElement.prototype, "clientLeft", "get").mockReturnValue(2);
+    vi.spyOn(HTMLElement.prototype, "clientTop", "get").mockReturnValue(3);
+    vi.spyOn(HTMLElement.prototype, "scrollLeft", "get").mockReturnValue(5);
+    vi.spyOn(HTMLElement.prototype, "scrollTop", "get").mockReturnValue(7);
+
+    render(<Probe active="b" shape="surface-x" />);
+    const style = screen.getByTestId("indicator").style;
+    const coordinates = style.transform.match(/translate\(([-.\d]+)px, ([-.\d]+)px\)/);
+    expect(coordinates).not.toBeNull();
+    expect(Number(coordinates?.[1])).toBeCloseTo(93);
+    expect(Number(coordinates?.[2])).toBeCloseTo(14);
+    expect(Number.parseFloat(style.width)).toBeCloseTo(80);
+    expect(Number.parseFloat(style.height)).toBeCloseTo(40);
   });
 
   it("moves on the control spring", () => {

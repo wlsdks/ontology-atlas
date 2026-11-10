@@ -63,11 +63,12 @@ export function useSlidingIndicator(
     }
     const c = container.getBoundingClientRect();
     const r = el.getBoundingClientRect();
+    const scale = container.offsetWidth > 0 && c.width > 0 ? c.width / container.offsetWidth : 1;
     const next = {
-      x: r.left - c.left - container.clientLeft + container.scrollLeft,
-      y: r.top - c.top - container.clientTop + container.scrollTop,
-      w: r.width,
-      h: r.height,
+      x: (r.left - c.left) / scale - container.clientLeft + container.scrollLeft,
+      y: (r.top - c.top) / scale - container.clientTop + container.scrollTop,
+      w: r.width / scale,
+      h: r.height / scale,
     };
     setBox((prev) => (sameBox(prev, next) ? prev : next));
   }, [activeKey, container, group]);
