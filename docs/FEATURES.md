@@ -213,6 +213,8 @@ Planning reads Markdown and bounded PNG/JPEG images in place from a folder selec
 Frontmatter readers preserve quoted mapping keys and nested quoted strings.
 Local field edits retain unrelated source; MCP rewrites refuse malformed data
 loss and allow explicit whole-field repair when ownership is unambiguous.
+In the desktop Git screen, sending already recorded commits never creates a
+commit from later file changes; a stale folder or branch is re-read for review.
 
 Decided in `docs/DECISIONS.md`; the enforceable version is
 `.claude/rules/surfaces.md`. It is one codebase and one build — the app loads
