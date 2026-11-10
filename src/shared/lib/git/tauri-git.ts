@@ -110,6 +110,8 @@ export interface GitStatusResult {
   detached?: boolean;
   /** Short hash of the commit HEAD names; `null` before the first commit. Absent means unknown. */
   headShortHash?: string | null;
+  /** Full HEAD identity for a push bound to this status read. */
+  headHash?: string | null;
 }
 
 /** Rust `PushOutcome` — a failed push is guidance, not a crash: the commit is already local. */
@@ -118,6 +120,27 @@ interface GitPushOutcome {
   remoteUrl: string | null;
   message: string | null;
   guidance: string | null;
+}
+
+interface GitPushOnlyOutcome {
+  pushed: boolean;
+  upstreamSet: boolean;
+  message: string | null;
+  guidance: string | null;
+}
+
+/** Push the displayed commit without adding or committing any working files. */
+export async function gitPushOnly(
+  vaultPath: string,
+  expectedBranch: string,
+  expectedHead: string,
+  expectedUpstream: string | null,
+  setUpstream: boolean,
+): Promise<GitPushOnlyOutcome | null> {
+  const invoke = getInvoke();
+  return invoke ? invoke<GitPushOnlyOutcome>('git_push_only', {
+    vaultPath, expectedBranch, expectedHead, expectedUpstream, setUpstream,
+  }) : null;
 }
 
 /** Rust `GitSnapshotResult`. */

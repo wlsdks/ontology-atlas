@@ -281,6 +281,8 @@ export function AtlasGitPanel({
     setPushOptIn,
     remoteState,
     currentBranch,
+    headHash: status?.headHash ?? null,
+    upstream: status?.upstream ?? null,
     setOriginJustSaved,
   });
   useFollowVaultChanges({

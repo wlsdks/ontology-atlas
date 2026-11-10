@@ -62,6 +62,7 @@
 - 空文件夹会给出起步操作，起步失败后可以重试，不会覆盖已有文件。弹窗式导览已取消。[首次运行](docs/features/first-run.md)
 - 资料库的设置和检查需要在应用中进行；浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
 - 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/specs/2026-11-01-project-planning-documents.md)
+- Git 的仅发送操作不会提交新的文件更改；文件夹或分支状态变化时，可以重新查看。[Git](docs/features/git.md)
 - 连接文件夹之前，应用也会保持资料库、规划、智能体和简报可用。[功能清单](docs/FEATURES.md)
 
 ## 快速开始
