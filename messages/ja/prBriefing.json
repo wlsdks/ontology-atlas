@@ -54,7 +54,7 @@
   "filesTab": "ファイル",
   "filesScope": "選択した期間の第一親コミットで変更されたファイルです。ファイルを開くと、選択期間の両端を比較します。",
   "filesFromCommit": "このコミットで変更されたファイルを見る",
-  "commitFilesHeading": "このコミットで変更されたファイル",
+  "commitFilesHeading": "ファイル：このコミット · コード比較：選択期間全体",
   "filesFromPr": "この期間に変更されたファイルを見る",
   "filesFromPrNote": "これは選択期間に変更されたファイルであり、このPRのファイルとして検証された一覧ではありません。",
   "fileComparison": "期間の両端を比較",

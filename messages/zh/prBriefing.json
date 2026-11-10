@@ -54,7 +54,7 @@
   "filesTab": "文件",
   "filesScope": "所选期间第一父提交中涉及的文件。打开文件时比较所选期间的两个端点。",
   "filesFromCommit": "查看此提交涉及的文件",
-  "commitFilesHeading": "此提交涉及的文件",
+  "commitFilesHeading": "文件：此提交 · 代码比较：整个所选期间",
   "filesFromPr": "查看此期间涉及的文件",
   "filesFromPrNote": "这些是所选期间涉及的文件，并非经过验证的此 PR 文件列表。",
   "fileComparison": "期间端点比较",
