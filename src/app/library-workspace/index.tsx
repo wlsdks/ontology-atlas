@@ -111,6 +111,7 @@ export function LibraryWorkspace() {
   const headerRef = useRef<HTMLDivElement | null>(null);
   const viewsBesideTabsRef = useRef<HTMLDivElement | null>(null);
   const viewsBesideTabsWidth = useRef(0);
+  const splitAtHeaderWidth = useRef(0);
   const [tabsNeedTheWholeHeader, setTabsNeedTheWholeHeader] = useState(false);
   useLayoutEffect(() => {
     const header = headerRef.current;
@@ -120,7 +121,10 @@ export function LibraryWorkspace() {
       const beside = viewsBesideTabsRef.current;
       if (beside) {
         viewsBesideTabsWidth.current = beside.offsetWidth;
-        if (tabs.scrollWidth > tabs.clientWidth + 0.5) setTabsNeedTheWholeHeader(true);
+        if (tabs.scrollWidth > tabs.clientWidth + 0.5) {
+          splitAtHeaderWidth.current = header.clientWidth;
+          setTabsNeedTheWholeHeader(true);
+        }
         return;
       }
       const row = header.querySelector<HTMLElement>('[data-page-header-row]');
@@ -129,7 +133,9 @@ export function LibraryWorkspace() {
       const shown = [...row.children].filter((child) => (child as HTMLElement).offsetWidth > 0);
       const used = shown.reduce((sum, child) => sum + (child as HTMLElement).offsetWidth, 0) + (parseFloat(style.columnGap) || 0) * Math.max(0, shown.length - 1);
       const free = row.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) - used;
-      if (free >= viewsBesideTabsWidth.current) setTabsNeedTheWholeHeader(false);
+      if (header.clientWidth > splitAtHeaderWidth.current + 1 && free >= viewsBesideTabsWidth.current) {
+        setTabsNeedTheWholeHeader(false);
+      }
     };
     place();
     const observer = new ResizeObserver(place);
