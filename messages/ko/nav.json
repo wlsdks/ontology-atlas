@@ -154,8 +154,8 @@
         "login-needed": "로그인 필요",
         "login-unknown": "로그인 확인 못 함"
       },
-      "guardedExplainer": "앱 안 대화는 지금 {names}에서만 열려요. 나머지 도구는 연결 설정만 돼요.",
-      "guardedExplainerNone": "앱 안 대화를 열 수 있는 도구가 아직 없어요. 감지된 도구는 연결 설정에만 쓸 수 있어요.",
+      "guardedExplainer": "지금 앱 안에서 대화를 시도할 수 있는 도구는 {names}예요. 일부 도구는 연결 설정에만 쓸 수 있어요.",
+      "guardedExplainerNone": "지금 앱 안에서 대화를 시도할 수 있는 도구가 없어요. 일부 도구는 연결 설정에만 쓸 수 있어요.",
       "unknownExplainer": "「확인 못 함」은 도구가 없다는 뜻이 아니라 Atlas가 이 컴퓨터에서 찾아낼 방법을 아직 모른다는 뜻이에요. 설치 안내를 쓰거나 MCP로 연결할 수 있지만, 앱 안 대화는 쓰기 전에 먼저 묻는 것이 확인된 도구에서만 열려요.",
       "installGuide": "설치 방법",
       "openChat": "이 도구로 대화 열기",

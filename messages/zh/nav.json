@@ -154,8 +154,8 @@
         "login-needed": "需要登录",
         "login-unknown": "登录状态未知"
       },
-      "guardedExplainer": "目前只有 {names} 能打开应用内对话，其他工具仅用于连接设置。",
-      "guardedExplainerNone": "暂时没有工具能打开应用内对话。检测到的工具仍可用于连接设置。",
+      "guardedExplainer": "现在可以尝试用 {names} 打开应用内对话。部分工具只能用于连接设置。",
+      "guardedExplainerNone": "目前没有可以尝试打开应用内对话的工具。部分工具只能用于连接设置。",
       "unknownExplainer": "“无法检查”不代表工具不存在，而是 Atlas 还不知道如何在这台电脑上找到它。你可以按安装指南操作或通过 MCP 连接，但应用内对话只会用已确认会在写入前询问的工具打开。",
       "installGuide": "安装方法",
       "openChat": "用此工具打开对话",
