@@ -298,7 +298,7 @@ export function ActionDock({
       {upstream || remoteState === "unknown" ? (
         <p className="flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]">
           <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" />
-          {t("scopeNotice")}
+          <span>{t("scopeNotice")} {upstream ? t("pullScopeNotice") : null}</span>
         </p>
       ) : remoteState === "no-remote" ? (
         <p

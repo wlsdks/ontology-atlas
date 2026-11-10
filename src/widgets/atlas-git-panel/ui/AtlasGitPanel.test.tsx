@@ -833,7 +833,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("보내기 2");
-    expect(screen.getByTestId("atlas-git-remote-pull")).toHaveTextContent("받아오기 1");
+    expect(screen.getByRole("button", { name: "받아오기 · 전체 저장소 1" })).toBeEnabled();
     // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
@@ -859,6 +859,38 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     expect(await screen.findByTestId("atlas-git-remote-pull")).toBeEnabled();
     expect(screen.getByTestId("atlas-git-remote-push")).toBeEnabled();
+    expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("마지막으로 확인한 원격 상태와 같음");
+  });
+
+  it("names the repository-wide Pull and does not invent unknown counts", async () => {
+    installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: null, behind: null } });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    expect(await screen.findByRole("button", { name: "받아오기 · 전체 저장소" })).toBeEnabled();
+    expect(screen.queryByTestId("atlas-git-divergence")).toBeNull();
+    expect(screen.getByText(/받아오면 저장소 전체 파일이 바뀔 수 있어요/)).toBeVisible();
+  });
+
+  it.each([
+    { ahead: null, behind: null, hint: "보낼 커밋 수를 확인하지 못했어요" },
+    { ahead: 0, behind: 1, hint: "마지막으로 확인한 원격 기준 보낼 커밋이 없어요" },
+  ])("describes Push for ahead=$ahead and behind=$behind", async ({ ahead, behind, hint }) => {
+    installDesktopGit({
+      status: { ...STATUS_WITH_CHANGES, changedCount: 0, ahead, behind },
+      diff: { count: 0, files: [], diff: "" },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const button = await screen.findByTestId("atlas-git-remote-push");
+    fireEvent.focus(button);
+    expect(await screen.findByTestId("atlas-git-remote-push-hint")).toHaveTextContent(hint);
+  });
+
+  it("describes the repository-wide Pull on keyboard focus", async () => {
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    const button = await screen.findByTestId("atlas-git-remote-pull");
+    fireEvent.focus(button);
+    await screen.findByTestId("atlas-git-remote-pull-hint");
+    expect(button).toHaveAccessibleDescription(/저장소 전체 파일이 바뀔 수 있어요/);
   });
 
   it("marks the unpushed range in the list", async () => {
@@ -868,7 +900,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     const text = sections.map((el) => el.textContent).join(" ");
     expect(text).toContain("아직 안 보냄 1");
     // Steps that exist only on the remote are not in local history, so they are **guidance, not a row**.
-    expect(screen.getByTestId("atlas-git-behind-row")).toHaveTextContent("2");
+    expect(screen.getByTestId("atlas-git-behind-row")).toHaveAccessibleName(/저장소 전체 파일이 바뀔 수 있어요/);
   });
 
   it("calls git_fetch only when Fetch is pressed", async () => {
