@@ -154,8 +154,8 @@
         "login-needed": "Sign in needed",
         "login-unknown": "Sign-in not checked"
       },
-      "guardedExplainer": "In-app chat opens only with {names} for now. The other tools are for connection setup only.",
-      "guardedExplainerNone": "No tool can open an in-app chat yet. Detected tools can still be used for connection setup.",
+      "guardedExplainer": "You can try an in-app chat with {names} now. Some tools can only be used for connection setup.",
+      "guardedExplainerNone": "No tool is currently available to start an in-app chat. Some tools can only be used for connection setup.",
       "unknownExplainer": "\"Could not check\" does not mean the tool is absent; it means Atlas does not yet know how to find it on this computer. You can follow the install guide or connect over MCP, but the in-app chat opens only with a tool confirmed to ask before writing.",
       "installGuide": "How to install",
       "openChat": "Open a chat with this tool",
