@@ -265,6 +265,7 @@ export function DesktopBody({
         note={t("scopeNotice")}
       >
         <div className="flex flex-col gap-3" data-testid="atlas-git-load-error">
+          <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
           <Button
             variant="outline"
             size="sm"

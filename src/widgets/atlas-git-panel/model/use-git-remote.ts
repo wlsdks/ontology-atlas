@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import type { NativeErrorLookup } from "@/shared/lib/desktop-shell/native-error";
-import { gitErrorMessage, gitFetch, gitPull, gitSetRemote, gitSnapshot } from "@/shared/lib/git/tauri-git";
+import { gitErrorMessage, gitFetch, gitPull, gitPushOnly, gitSetRemote } from "@/shared/lib/git/tauri-git";
 import type { GitRemoteState, RemoteAction } from "../lib/remote-state";
 import type { Translator } from "../lib/translator";
 
@@ -14,6 +14,8 @@ export function useGitRemote({
   setPushOptIn,
   remoteState,
   currentBranch,
+  headHash,
+  upstream,
   setOriginJustSaved,
 }: {
   vaultPath: string | null;
@@ -25,6 +27,8 @@ export function useGitRemote({
   setPushOptIn: (optIn: boolean) => void;
   remoteState: GitRemoteState;
   currentBranch: string;
+  headHash: string | null;
+  upstream: string | null;
   setOriginJustSaved: (saved: boolean) => void;
 }) {
   /**
@@ -58,10 +62,7 @@ export function useGitRemote({
   const runRemote = useCallback(
     async (kind: RemoteAction) => {
       if (!vaultPath) return;
-      /*
-       * Push never commits unconfirmed: `git_snapshot(push:true)` records pending changes first,
-       * so with changes Push opens the commit confirm with the send ticked.
-       */
+      /* Changes already visible require the existing commit confirmation. */
       if (kind === "push" && hasChanges) {
         setPushOptIn(true);
         setConfirming(true);
@@ -80,33 +81,33 @@ export function useGitRemote({
           const r = await gitPull(vaultPath);
           if (r) notice = t("remoteDonePull", { summary: r.summary });
         } else {
-          /*
-           * Push is `git_snapshot(push:true)`; with nothing to record it returns a
-           * no-changes result (`committed:false`) and only sends existing commits.
-           */
-          /* On a branch `origin` has never seen this is the first send, the only place an upstream is set. */
+          /* The native push-only path cannot record changes that appeared after this read. */
           const firstSend = remoteState === "never-sent";
-          const r = await gitSnapshot(vaultPath, { push: true, ...(firstSend ? { setUpstream: true } : {}) });
-          if (r?.push?.pushed)
+          if (!currentBranch || !headHash) throw "push-state-changed";
+          const r = await gitPushOnly(vaultPath, currentBranch, headHash, upstream, firstSend);
+          if (r?.pushed && !r.upstreamSet && r.message) failure = gitErrorMessage(r.message, nativeErrors);
+          else if (r?.pushed)
             notice = firstSend
               ? t("remoteDoneFirstSend", { branch: currentBranch })
               : t("remoteDonePush");
           // The reason first, in the reader's language; the bare git command is the
           // fallback for a push failure Rust had no code for.
-          else if (r?.push?.message) failure = gitErrorMessage(r.push.message, nativeErrors);
-          else if (r?.push?.guidance) failure = r.push.guidance;
+          else if (r?.message) failure = gitErrorMessage(r.message, nativeErrors);
+          else if (r?.guidance) failure = r.guidance;
         }
         /* Announced after the re-read, so the notice never stands beside stale counts. */
         await refresh();
       } catch (err) {
         failure = gitErrorMessage(err, nativeErrors);
+        // A stale branch or folder is actionable only after its status is read again.
+        await refresh();
       } finally {
         setRemoteActionNotice(notice);
         setRemoteActionError(failure);
         setRemoteBusy(null);
       }
     },
-    [vaultPath, refresh, t, nativeErrors, remoteSummary, hasChanges, setConfirming, setPushOptIn, remoteState, currentBranch],
+    [vaultPath, refresh, t, nativeErrors, remoteSummary, hasChanges, setConfirming, setPushOptIn, remoteState, currentBranch, headHash, upstream],
   );
 
   /** Register a remote: stores the address and never sends; sending is its own press. */

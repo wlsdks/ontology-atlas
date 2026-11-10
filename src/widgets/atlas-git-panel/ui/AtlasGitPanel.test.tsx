@@ -57,6 +57,7 @@ const STATUS_WITH_CHANGES = {
   stagedOutsideVault: [],
   ahead: 2,
   behind: 1,
+  headHash: "1a2b3c4d5e6f7890",
 };
 
 const DIFF_WITH_CHANGES = {
@@ -115,6 +116,7 @@ function installDesktopGit({
   diff = DIFF_WITH_CHANGES,
   history = HISTORY,
   snapshot = { committed: true, subject: "s", summary: "s", push: null },
+  pushOnly = { pushed: true, upstreamSet: true, message: null, guidance: null },
   init = {
     initialized: true,
     reason: null,
@@ -146,6 +148,7 @@ function installDesktopGit({
   diff?: unknown;
   history?: unknown;
   snapshot?: unknown;
+  pushOnly?: unknown;
   init?: unknown;
   setRemote?: unknown;
   probe?: unknown;
@@ -156,7 +159,7 @@ function installDesktopGit({
 } = {}) {
   tauriApiMock.runtimeAvailable = true;
   tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) => {
-    if (command === "git_status") return status;
+    if (command === "git_status") return typeof status === "function" ? status() : status;
     if (command === "git_diff") return diff;
     if (command === "git_commit_diff") return { count: 0, files: [], diff: COMMIT_PATCH };
     if (command === "git_history")
@@ -164,6 +167,7 @@ function installDesktopGit({
         ? history(Number(args?.limit ?? 0), (args?.path as string | undefined) ?? undefined)
         : history;
     if (command === "git_snapshot") return snapshot;
+    if (command === "git_push_only") return typeof pushOnly === "function" ? pushOnly(args) : pushOnly;
     if (command === "git_init") return init;
     if (command === "git_set_remote") return setRemote;
     if (command === "git_probe") return probe;
@@ -912,9 +916,9 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     expect(push).not.toBeDisabled();
     fireEvent.click(push);
     await waitFor(() => {
-      const calls = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_snapshot");
+      const calls = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_push_only");
       expect(calls).toHaveLength(1);
-      expect(calls[0][1]).toMatchObject({ push: true });
+      expect(calls[0][1]).toMatchObject({ expectedBranch: "main", expectedUpstream: "origin/main", setUpstream: false });
     });
   });
 
@@ -2393,8 +2397,11 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     expect(hint).toHaveTextContent("git push -u origin feature-x");
 
     fireEvent.click(push);
-    await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
-    expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+    await waitFor(() => expect(tauriApiMock.invoke).toHaveBeenCalledWith("git_push_only", {
+      vaultPath: "/repo/vault", expectedBranch: "feature-x", expectedHead: "1a2b3c4d5e6f7890",
+      expectedUpstream: null, setUpstream: true,
+    }));
+    expect(snapshotInvokeCalls()).toHaveLength(0);
     expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
       "feature-x 브랜치를 origin에 보냈어요",
     );
@@ -2418,6 +2425,46 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
     await waitFor(() => expect(snapshotInvokeCalls()).toHaveLength(1));
     expect(snapshotInvokeCalls()[0][1]).toMatchObject({ push: true, setUpstream: true });
+  });
+
+  it("refreshes a changed branch after refusing the stale push", async () => {
+    let changed = false;
+    installDesktopGit({
+      status: () => changed ? { ...NEVER_SENT, branch: "other" } : NEVER_SENT,
+      diff: CLEAN,
+      pushOnly: () => { changed = true; throw "push-state-changed"; },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    expect(await screen.findByTestId("atlas-git-remote-error")).toHaveTextContent("보내지 않았어요");
+    await waitFor(() => expect(screen.getByTestId("atlas-git-location")).toHaveTextContent("other"));
+    expect(snapshotInvokeCalls()).toHaveLength(0);
+  });
+
+  it("says a first send succeeded even when tracking setup failed", async () => {
+    installDesktopGit({
+      status: NEVER_SENT,
+      diff: CLEAN,
+      pushOnly: { pushed: true, upstreamSet: false, message: "push-tracking-not-set", guidance: null },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    expect(await screen.findByTestId("atlas-git-remote-error")).toHaveTextContent("커밋은 보냈지만");
+    expect(screen.queryByTestId("atlas-git-remote-notice")).toBeNull();
+  });
+
+  it("keeps the send outcome visible when the following status read fails", async () => {
+    let sent = false;
+    installDesktopGit({
+      status: () => { if (sent) throw "git-command-failed"; return NEVER_SENT; },
+      diff: CLEAN,
+      pushOnly: () => { sent = true; return { pushed: true, upstreamSet: false, message: "push-tracking-not-set", guidance: null }; },
+    });
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-push"));
+    const loadError = await screen.findByTestId("atlas-git-load-error");
+    expect(loadError).toHaveTextContent("커밋은 보냈지만");
+    expect(within(loadError).getByTestId("atlas-git-retry")).toBeInTheDocument();
   });
 
   it("a detached HEAD names the commit, says sending needs a branch, and offers no send and no remote form", async () => {
@@ -2653,14 +2700,14 @@ describe("AtlasGitPanel — a saved remote is not a dead end", () => {
     // Once sent, git reports the upstream, and the first send gives way to Fetch, Pull and Push.
     const answer = tauriApiMock.invoke.getMockImplementation()!;
     tauriApiMock.invoke.mockImplementation(async (command: string, args?: Record<string, unknown>) =>
-      command === "git_status" && snapshotInvokeCalls().length > 0 ? STATUS_WITH_CHANGES : answer(command, args),
+      command === "git_status" && tauriApiMock.invoke.mock.calls.some(([c]) => c === "git_push_only") ? STATUS_WITH_CHANGES : answer(command, args),
     );
     act(() => firstSend.focus());
     fireEvent.click(firstSend);
     await waitFor(() => {
-      const calls = snapshotInvokeCalls();
+      const calls = tauriApiMock.invoke.mock.calls.filter(([c]) => c === "git_push_only");
       expect(calls).toHaveLength(1);
-      expect(calls[0][1]).toMatchObject({ push: true, setUpstream: true });
+      expect(calls[0][1]).toMatchObject({ expectedBranch: "main", setUpstream: true });
     });
     const notice = await screen.findByTestId("atlas-git-remote-notice");
     expect(notice).toHaveTextContent("main 브랜치를 origin에 보냈어요");

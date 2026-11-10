@@ -17,6 +17,7 @@ import {
   gitErrorMessage,
   gitHistory,
   gitPull,
+  gitPushOnly,
   gitSnapshot,
   gitStatus,
   isGitBridgeAvailable,
@@ -40,7 +41,18 @@ describe('tauri git bridge', () => {
     expect(await gitHistory('/v')).toBeNull();
     expect(await gitDiff('/v')).toBeNull();
     expect(await gitPull('/v')).toBeNull();
+    expect(await gitPushOnly('/v', 'main', 'abc', 'origin/main', false)).toBeNull();
     expect(tauriApiMock.invoke).not.toHaveBeenCalled();
+  });
+
+  it('binds a push-only request to the displayed branch, commit and upstream', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    tauriApiMock.invoke.mockResolvedValue({ pushed: true, upstreamSet: true });
+    await gitPushOnly('/v', 'main', 'abc', 'origin/main', false);
+    expect(tauriApiMock.invoke).toHaveBeenCalledWith('git_push_only', {
+      vaultPath: '/v', expectedBranch: 'main', expectedHead: 'abc',
+      expectedUpstream: 'origin/main', setUpstream: false,
+    });
   });
 
   it('invokes git_status with the camelCase vaultPath arg', async () => {

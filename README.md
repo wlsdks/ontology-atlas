@@ -66,6 +66,7 @@ A few things worth knowing before you start:
 - An empty folder offers its start actions, and a failed start can be retried without overwriting files. Popup tours are retired. [First run](docs/features/first-run.md)
 - Library setup and checks need the app; a browser offers the app or adding files. [Library](docs/features/library/workspace.md)
 - Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/specs/2026-11-01-project-planning-documents.md)
+- Git's send-only action does not commit new file changes; it asks you to review a stale folder or branch again. [Git](docs/features/git.md)
 - Before a folder is connected, the app keeps Library, Planning, Agents and Briefing reachable. [Features](docs/FEATURES.md)
 
 ## Quick start
