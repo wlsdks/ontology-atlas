@@ -17,6 +17,35 @@ const STEPS = Array.from({ length: 11 }, (_, i) => ({
   files: [{ path: "domains/order.md", status: "modified", kind: "domain", slug: "domains/order", renamedFrom: null }],
 }));
 
+test("repository-wide pull is visible and the remote row accepts both keyboard activations", async ({ page }) => {
+  await page.setViewportSize({ width: 1040, height: 720 });
+  await installDesktopRailRuntime(page, {}, undefined, { commits: STEPS, gitStatus: { ahead: 0, behind: 1 } });
+  await page.addInitScript(() => {
+    const runtime = (window as unknown as { __TAURI_INTERNALS__: { invoke: (command: string, args: unknown) => Promise<unknown> }; __pullCount: number });
+    const original = runtime.__TAURI_INTERNALS__.invoke;
+    runtime.__pullCount = 0;
+    runtime.__TAURI_INTERNALS__.invoke = (command, args) => {
+      if (command === "git_pull") {
+        runtime.__pullCount += 1;
+        return Promise.resolve({ ok: true, upstream: "origin/main", summary: "updated" });
+      }
+      return original(command, args);
+    };
+  });
+  await mountDesktopVault(page);
+  await page.getByTestId("app-nav-rail-item-git").click();
+  await expect(page.getByRole("button", { name: "Pull · entire repository 1" })).toBeVisible();
+  const row = page.getByTestId("atlas-git-behind-row");
+  await expect(row).toContainText("files anywhere in the repository may change");
+  await row.focus();
+  await page.keyboard.press("Enter");
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __pullCount: number }).__pullCount)).toBe(1);
+  await expect(page.getByTestId("atlas-git-remote-notice")).toBeVisible();
+  await row.focus();
+  await page.keyboard.press("Space");
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __pullCount: number }).__pullCount)).toBe(2);
+});
+
 test("at the minimum app window (1040x720), the stacked document reading pane keeps a height and presses down", async ({ page }) => {
   await page.setViewportSize({ width: 1040, height: 720 });
   const changes = [

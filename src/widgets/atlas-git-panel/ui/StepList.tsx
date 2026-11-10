@@ -252,10 +252,10 @@ export function StepList({
             <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
               {t("remoteOnlyWhen")}
             </span>
-            <span className="truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t("remoteOnlyTitle", { count: behind })}
             </span>
-            <span className="truncate text-label text-[color:var(--color-text-tertiary)]">
+            <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
               {t("remoteOnlyHint")}
             </span>
           </button>
