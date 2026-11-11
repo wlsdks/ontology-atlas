@@ -1,4 +1,5 @@
 import {
+  ACROSS_RULE_BAND,
   NARROW_LADDER_EDGE,
   OBSERVATION_LANE_GAP,
   PAD_X,
@@ -17,50 +18,30 @@ import { captionLineRoom, splitLinesByWidthAt } from '../../model/summary-lines'
 import type { ArchitectureSketchProps, FlowAxis } from './types';
 
 const BOX_W = 148;
-/** The wide-workbench face; the compact width stays the fallback when an expanded role set would not fit. */
 const BOX_W_ROOMY = 220;
 const BOX_H_ACROSS_SPLIT = 90;
 const OBSERVATION_BOX_H = 44;
-/* 180 fits the widest measured receipt line (156px) and keeps seven roles across at 1920 (1628 of 1756px). */
+/* Fits the widest receipt line (156px) with seven roles across at 1920. */
 const BOX_W_LEDGER = 180;
-/** Split contract/observation faces may yield this far once their long receipt line is separate. */
+/** How far a split face may yield while a dock is open. */
 const BOX_W_LEDGER_FIT = 160;
 const BOX_W_LEDGER_ROOMY = 240;
-/** A box grows only when it carries a ledger line; without a receipt it keeps its size. */
 const BOX_H = 72;
-/*
- * The receipt is one line and the sentence two; the row gap pays for it so seven rows fit
- * 1512x945 with the inspector open: 7×82 + 6×12 + 2×20 = 686.
- * Gate: `tests/e2e/harness/architecture-role-ledger.spec.ts`, which fails at 90px.
- */
+/* One receipt line taller than `BOX_H`; `architecture-role-ledger.spec.ts` fails at 90. */
 const BOX_H_LEDGER = 82;
-const ROW_GAP_LEDGER = 12;
 /* The across split face has room for a third caption line without the per-face lane label. */
 const SUMMARY_LINES_ACROSS = 3;
 const COL_GAP = 52;
-/** The narrowest readable handoff between fixed-size roles while a desktop dock is open. */
+/** The narrowest readable handoff between faces while a dock is open. */
 const MIN_COL_GAP = 20;
-const ROW_GAP_PLAIN = 26;
 const PAD_Y = 26;
-/*
- * The contract face grows into spare card width so role sentences finish instead of ellipsizing.
- * 560 is derived: the dogfood profile's longest sentence estimates at 472px and `captionLineRoom`
- * spends 24 on padding, leaving 64px of headroom. Longer sentences wrap as before.
- */
+/* The contract face grows into spare width so role sentences finish: the dogfood profile's longest estimates at 472px, plus 24 of padding. */
 const PAIRED_CONTRACT_W_MAX = 560;
-/*
- * The gutter carries the observation sentence: its room is
- * `observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES`, less 22 in `placeEdgeSentences`.
- * 160 fits the dogfood profile's longest observation sentence (179px) with 55px of headroom.
- */
+/* Fits the dogfood profile's longest observation sentence (179px) beside its arrow. */
 const PAIRED_GUTTER_W_MAX = 160;
-/* The connector gap seats the adjacent rule's sentence beside its arrow: a 12px line with air on each side under the collision pad. */
+/* Seats a 12px sentence beside its arrow with air on each side of the collision pad. */
 const PAIRED_ROW_GAP = 24;
-/*
- * Before hiding a role the ladder drops the sentence's second line, keeping 280/72/240 widths.
- * 22 is the narrowest gap a 12px sentence clears with the 4px collision pad; at 20
- * `placeEdgeSentences` drops it. Seven roles: 4 + 20 + 7x58 + 6x22 + 4 = 566.
- */
+/* The narrowest gap a 12px sentence clears with the 4px collision pad; tight rows also drop the second summary line. */
 const PAIRED_ROW_GAP_TIGHT = 22;
 const PAIRED_PAD_Y_TIGHT = 4;
 const BOX_H_PAIRED_TIGHT = 58;
@@ -71,8 +52,13 @@ const PLANE_HEAD_ROOM = 8;
 const PAIRED_FIXED_W =
   PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
 const PAIRED_MIN_W = PAIRED_FIXED_W + PAIRED_SIDE_ROOM_MIN * 2;
-/* With a ledger the field gives back padding, so a seven-role chain fits without a scrollbar for empty ground down to a 905px WebView. */
+const PAIRED_ROW_SPAN_MAX = PAIRED_CONTRACT_W_MAX / 2 + PAIRED_GUTTER_W_MAX + PAIRED_OBSERVATION_W / 2;
+/** The contract lane of a ladder not measured yet, once the profile declares a skip. */
+const PAIRED_SIDE_ROOM_UNMEASURED = 180;
+/* With a ledger the field gives back padding, so seven roles fit a 905px WebView without scrolling. */
 const PAD_Y_LEDGER = 12;
+
+type LaneClaim = { lane: number; countLane: number };
 
 export function solveSketchFrame({
   graph,
@@ -82,6 +68,7 @@ export function solveSketchFrame({
   restHeight,
   roleSummary,
   hasStamp,
+  ruleSentenceRoom,
 }: {
   graph: ArchitectureSketchProps['graph'];
   ledgers: ArchitectureSketchProps['ledgers'];
@@ -90,13 +77,14 @@ export function solveSketchFrame({
   restHeight: number;
   roleSummary: ArchitectureSketchProps['roleSummary'];
   hasStamp: boolean;
+  /** The ground the profile's sentences need; `heldLane` is the lane once rank skips wait for a choice. Never read from a record. */
+  ruleSentenceRoom: LaneClaim & { waiting: LaneClaim; rowSpan: number; skipDepth: number };
 }) {
-  /* One height for every box: mixed heights read as two kinds of thing, and the lane arithmetic assumes one. */
+  /* One height for every box: mixed heights read as two kinds of thing. */
   const hasLedger = graph.boxes.some((box) => ledgers[box.id] !== undefined);
   const compactBoxW = hasLedger ? BOX_W_LEDGER : BOX_W;
   const roomyBoxW = hasLedger ? BOX_W_LEDGER_ROOMY : BOX_W_ROOMY;
   const ranks = graph.columns;
-  const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const naturalAcross = PAD_X * 2 + ranks * compactBoxW + (ranks - 1) * COL_GAP;
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
   /* The ladder's height includes the plane head room and ledge, or a canvas 11px short would choose rows it must scroll. */
@@ -119,7 +107,6 @@ export function solveSketchFrame({
     (ranks - 1) * PAIRED_ROW_GAP_TIGHT +
     planeVerticalRoom;
   const pairedRowsFit =
-    lanes === 1 &&
     axisWidth >= PAIRED_MIN_W &&
     restHeight > 0 &&
     restHeight >= pairedTightH;
@@ -131,19 +118,18 @@ export function solveSketchFrame({
   const roomyAcross = PAD_X * 2 + ranks * roomyBoxW + (ranks - 1) * COL_GAP;
   const usesRoomyBoxes = axis === 'across' && axisWidth > 0 && roomyAcross <= axisWidth;
   const preferredBoxW = usesRoomyBoxes ? roomyBoxW : compactBoxW;
-  /* An opening dock first eases each face within a readable range, keeping the 52px sentence handoff; `boxWidth` follows the transition, so it is continuous. */
+  /* An opening dock eases each face within a readable range; `boxWidth` follows the transition, so it is continuous. */
   const fittedAcrossBoxW =
     ranks > 0 && boxWidth > 0
       ? (boxWidth - PAD_X * 2 - (ranks - 1) * COL_GAP) / ranks
       : preferredBoxW;
   const minimumAcrossBoxW = hasLedger ? BOX_W_LEDGER_FIT : BOX_W;
-  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
-  /* A phone gets the narrow ladder: one lane, the face up to 280px, rule sentences beside their arrows. */
-  const usesNarrowLadder = axis === 'down' && lanes === 1 && !usesPairedDown && boxWidth > 0;
+  const usesPairedDown = axis === 'down' && axisWidth >= PAIRED_MIN_W;
+  /* A phone gets the narrow ladder: the face up to 280px, rule sentences beside their arrows. */
+  const usesNarrowLadder = axis === 'down' && !usesPairedDown;
   const narrowFaceW = usesNarrowLadder
     ? Math.max(BOX_W, Math.min(PAIRED_CONTRACT_W, boxWidth - PAD_X * 2 - NARROW_LADDER_EDGE))
     : preferredBoxW;
-  /* An across chain grows its faces with the canvas up to the roomy face. */
   const boxW =
     axis === 'across'
       ? Math.max(minimumAcrossBoxW, Math.min(usesRoomyBoxes ? preferredBoxW : roomyBoxW, fittedAcrossBoxW))
@@ -160,49 +146,101 @@ export function solveSketchFrame({
   /* No receipt and no measured crossing: one empty state for the column. Partial receipts keep per-role faces. */
   const observationEmpty =
     splitsEvidence && !hasLedger && !graph.edges.some((edge) => edge.kind === 'traffic');
-  const groundSpare = (trailLane: number) =>
-    usesPairedDown && boxWidth > 0
-      ? Math.max(0, boxWidth - PAIRED_FIXED_W - PAIRED_SIDE_ROOM_MIN - trailLane)
-      : 0;
-  const contractWAt = (trailLane: number) =>
-    Math.min(PAIRED_CONTRACT_W_MAX, PAIRED_CONTRACT_W + groundSpare(trailLane));
-  /* The skip lane is held, empty or observed, wherever it cuts no description that fits without it. */
-  const heldW = contractWAt(PAIRED_TRAIL_ROOM_MAX);
-  const freeW = contractWAt(PAIRED_SIDE_ROOM_MIN);
   const laneLines = usesTightLadder ? 1 : SUMMARY_LINES;
   const cutAt = (width: number, text: string) =>
     splitLinesByWidthAt(text, captionLineRoom(width), laneLines, SUMMARY_FONT_PX).at(-1)?.endsWith('…') ?? false;
-  const holdsSkipLane =
-    heldW === freeW ||
-    graph.boxes.every((box) => {
+  /* Bands join what was observed; their room is held before, so a landing record moves no face. */
+  const reservesPlaneRoom = usesPairedDown && ranks > 1;
+  const planeRoom = reservesPlaneRoom ? PLANE_EDGE : 0;
+  const laneFloor = Math.max(planeRoom, PAIRED_SIDE_ROOM_MIN);
+  const declaresRuleSkip = graph.edges.some((edge) => edge.kind === 'permitted' && edge.columnSpan > 1);
+  const hasTrafficSkip = graph.edges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1);
+  const laneShare = (trailLane: number) => (PAIRED_SIDE_ROOM_MIN + trailLane) / 2;
+  /* O(roles): two gutter passes over the role summaries. */
+  const ladderOn = (width: number, claim: LaneClaim, observesSkip = hasTrafficSkip) => {
+    /* A drawn skip's sentences claim their lanes before the face grows: a cut rule or count says nothing, while a cut description keeps its title. */
+    const laneWithin = (need: number) => Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_TRAIL_ROOM_MAX, need));
+    const ruleLane = laneWithin(claim.lane);
+    const countLane = laneWithin(claim.countLane);
+    const isMeasured = usesPairedDown && width > 0;
+    const ladderAt = (gutterNeed: number) => {
+      const gutterFloor = Math.max(
+        PAIRED_GUTTER_W,
+        Math.min(PAIRED_GUTTER_W_MAX, gutterNeed, PAIRED_GUTTER_W + width - PAIRED_MIN_W),
+      );
+      /* Both lanes share the ground a held skip lane reserves; a rule lane deeper than its share takes the difference before the face grows. */
+      const groundSpare = (trailLane: number) =>
+        isMeasured
+          ? Math.max(
+              0,
+              width -
+                PAIRED_FIXED_W -
+                (gutterFloor - PAIRED_GUTTER_W) -
+                Math.max(ruleLane, laneShare(trailLane)) -
+                Math.max(countLane, laneShare(trailLane)),
+            )
+          : 0;
+      const contractWAt = (trailLane: number) =>
+        Math.min(PAIRED_CONTRACT_W_MAX, PAIRED_CONTRACT_W + groundSpare(trailLane));
+      /* The skip lane is held, empty or observed, wherever it cuts no description that fits without it. */
+      const heldW = contractWAt(PAIRED_TRAIL_ROOM_MAX);
+      const freeW = contractWAt(PAIRED_SIDE_ROOM_MIN);
+      const holdsSkipLane =
+        heldW === freeW ||
+        graph.boxes.every((box) => {
+          const text = roleSummary(box.id);
+          return text === null || cutAt(freeW, text) || !cutAt(heldW, text);
+        });
+      const needsLane =
+        holdsSkipLane || observesSkip;
+      const trailLane = needsLane ? PAIRED_TRAIL_ROOM_MAX : PAIRED_SIDE_ROOM_MIN;
+      const contractW = contractWAt(trailLane);
+      /* The face takes its share first, then the gutter; both capped. */
+      const gutterW = Math.min(
+        PAIRED_GUTTER_W_MAX,
+        gutterFloor + Math.max(0, groundSpare(trailLane) - (contractW - PAIRED_CONTRACT_W)),
+      );
+      return { needsLane, contractW, gutterW, trailNeed: Math.max(countLane, laneShare(trailLane)) };
+    };
+    /* A narrower face lets its rule sentence reach further over the gutter, so the gutter is solved at the narrowest face and again at the face that leaves. */
+    const gutterNeedAt = (contractW: number) =>
+      ruleSentenceRoom.rowSpan - contractW / 2 - PAIRED_OBSERVATION_W / 2;
+    const { needsLane, contractW, gutterW, trailNeed } = ladderAt(gutterNeedAt(ladderAt(gutterNeedAt(PAIRED_CONTRACT_W)).contractW));
+    const laneGround = isMeasured
+      ? Math.max(0, width - (PAD_X * 2 + contractW + gutterW + PAIRED_OBSERVATION_W))
+      : PAIRED_SIDE_ROOM_UNMEASURED * 2;
+    /* Faces stand on the card's centre line unless a lane needs more than half the ground, the rule lane first; neither takes the other's floor. */
+    const leadRoom = isMeasured
+      ? Math.max(
+          laneFloor,
+          Math.min(Math.max(ruleLane, Math.min(laneGround / 2, laneGround - countLane)), laneGround - laneFloor),
+        )
+      : Math.max(laneFloor, declaresRuleSkip ? PAIRED_SIDE_ROOM_UNMEASURED : 0);
+    const trailRoom = Math.max(laneFloor, laneGround - leadRoom);
+    const ruleLaneReadsWhole = leadRoom >= claim.lane;
+    const observationLaneKeepsShare = trailRoom >= Math.max(trailNeed, claim.countLane);
+    const rowGapSpansItsSentences =
+      contractW / 2 + gutterW + PAIRED_OBSERVATION_W / 2 >= Math.min(ruleSentenceRoom.rowSpan, PAIRED_ROW_SPAN_MAX);
+    const cutsNoDescriptionTheCapReads = graph.boxes.every((box) => {
       const text = roleSummary(box.id);
-      return text === null || cutAt(freeW, text) || !cutAt(heldW, text);
+      return text === null || !cutAt(contractW, text) || cutAt(PAIRED_CONTRACT_W_MAX, text);
     });
-  const observationNeedsLane =
-    holdsSkipLane || graph.edges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1);
-  const pairedGroundSpare = groundSpare(observationNeedsLane ? PAIRED_TRAIL_ROOM_MAX : PAIRED_SIDE_ROOM_MIN);
-  const pairedContractW = contractWAt(observationNeedsLane ? PAIRED_TRAIL_ROOM_MAX : PAIRED_SIDE_ROOM_MIN);
-  /* The face takes its share first, then the gutter; both capped. */
-  const pairedGutterW = Math.min(
-    PAIRED_GUTTER_W_MAX,
-    PAIRED_GUTTER_W + Math.max(0, pairedGroundSpare - (pairedContractW - PAIRED_CONTRACT_W)),
-  );
-  /** The ladder's own width at this canvas: padding, the grown face, the gutter, the observation. */
-  const pairedFixedW =
-    PAD_X * 2 + pairedContractW + pairedGutterW + PAIRED_OBSERVATION_W;
+    const costsNoSentence =
+      ruleLaneReadsWhole && observationLaneKeepsShare && rowGapSpansItsSentences && cutsNoDescriptionTheCapReads;
+    return { needsLane, contractW, gutterW, leadRoom, trailRoom, costsNoSentence };
+  };
+  /* Rest width, a record's skip lane: neither a dock nor a record withdraws a resting skip. */
+  const restsRuleSkips = usesPairedDown && ladderOn(axisWidth, ruleSentenceRoom, true).costsNoSentence;
+  const {
+    needsLane: observationNeedsLane,
+    contractW: pairedContractW,
+    gutterW: pairedGutterW,
+    leadRoom: pairedLeadRoom,
+    trailRoom: pairedTrailRoom,
+  } = ladderOn(boxWidth, restsRuleSkips ? ruleSentenceRoom : ruleSentenceRoom.waiting);
   const contractBoxW = usesPairedDown ? pairedContractW : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
-  const rowGap = usesPairedDown
-    ? usesTightLadder
-      ? PAIRED_ROW_GAP_TIGHT
-      : PAIRED_ROW_GAP
-    : usesNarrowLadder
-      ? PAIRED_ROW_GAP
-      : axis === 'down'
-        ? 8
-        : hasLedger
-          ? ROW_GAP_LEDGER
-          : ROW_GAP_PLAIN;
+  const rowGap = usesTightLadder ? PAIRED_ROW_GAP_TIGHT : PAIRED_ROW_GAP;
   const padY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
@@ -212,10 +250,7 @@ export function solveSketchFrame({
       : hasLedger
         ? PAD_Y_LEDGER
         : PAD_Y;
-  /*
-   * One source for the chrome row's vertical rhythm: headings sit on the ladder's top padding and
-   * faces are placed from the same `padY`.
-   */
+  /* Headings sit on the ladder's top padding; faces are placed from the same `padY`. */
   const laneHeadingY = padY + 14;
   const boxH = axis === 'across' && splitsEvidence
     ? BOX_H_ACROSS_SPLIT
@@ -225,8 +260,6 @@ export function solveSketchFrame({
         : BOX_H
     : usesNarrowLadder
       ? BOX_H
-    : axis === 'down'
-      ? 64
       : hasLedger
         ? BOX_H_LEDGER
         : BOX_H;
@@ -234,7 +267,7 @@ export function solveSketchFrame({
   const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
   /* The tight row pays with the sentence's second line, not the face width. */
   const summaryLineCount =
-    usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder)
+    usesTightLadder
       ? 1
       : axis === 'across' && splitsEvidence
         ? SUMMARY_LINES_ACROSS
@@ -247,21 +280,21 @@ export function solveSketchFrame({
           Math.min(COL_GAP, (boxWidth - PAD_X * 2 - ranks * boxW) / (ranks - 1)),
         )
       : COL_GAP;
+  /* A rule skip turns under the contract faces, so the gap holds its run and sentence above the observation row's own line. */
+  const acrossLaneGap = Math.max(
+    OBSERVATION_LANE_GAP,
+    ruleSentenceRoom.skipDepth > 0 ? ruleSentenceRoom.skipDepth + ACROSS_RULE_BAND : 0,
+  );
   const observationOffset = axis === 'across' && splitsEvidence
-    ? boxH + OBSERVATION_LANE_GAP
+    ? boxH + acrossLaneGap
     : usesPairedDown
       ? contractBoxW + pairedGutterW
       : 0;
 
-  /* Bands join what was observed; their room is held before, so a landing record moves no face. */
-  const reservesPlaneRoom = usesPairedDown && ranks > 1;
   const usesLayerPlanes = reservesPlaneRoom && !observationEmpty;
-  const planeRoom = reservesPlaneRoom ? PLANE_EDGE : 0;
-  const planeTrailRoom = planeRoom;
   const planeHeadRoom = reservesPlaneRoom ? PLANE_HEAD_ROOM : 0;
   return {
     ranks,
-    lanes,
     axisWidth,
     axis,
     usesRoomyBoxes,
@@ -271,9 +304,10 @@ export function solveSketchFrame({
     ladderDensity,
     splitsEvidence,
     observationEmpty,
-    pairedContractW,
     pairedGutterW,
-    pairedFixedW,
+    pairedLeadRoom,
+    pairedTrailRoom,
+    restsRuleSkips,
     contractBoxW,
     observationBoxW,
     rowGap,
@@ -284,9 +318,9 @@ export function solveSketchFrame({
     summaryLineCount,
     colGap,
     observationOffset,
+    acrossLaneGap,
     usesLayerPlanes,
     planeRoom,
-    planeTrailRoom,
     planeHeadRoom,
     pairedHeaderH,
     saysRuleOnce: usesPairedDown && saysRuleOnce,

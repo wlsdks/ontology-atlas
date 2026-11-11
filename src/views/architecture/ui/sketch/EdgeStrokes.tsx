@@ -1,7 +1,8 @@
 import { Fragment, type CSSProperties } from 'react';
 
 import type { ArchitectureGraph as Graph } from '../../model/graph-layout';
-import { skipSwing } from './geometry';
+import { edgePath, OPPOSED_PAIR_OFFSET, opposedPairOffset } from './edge-path';
+import { narrowSkipSwing, skipSwing } from './geometry';
 import {
   EDGE_STROKE,
   RECEDED_STROKE_OPACITY,
@@ -51,6 +52,7 @@ export function EdgeStrokes({
 }) {
   const rankOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
   const lastRank = Math.max(0, graph.columns - 1);
+  const edgeKeys = new Set(graph.edges.map((edge) => `${edge.kind}:${edge.from}>${edge.to}`));
   return (
     <>
       {graph.edges.map((edge) => {
@@ -63,23 +65,29 @@ export function EdgeStrokes({
         const drawn = visibleEdges.includes(edge);
         const edgeBoxW = usesObservationLane ? observationBoxW : contractBoxW;
         const edgeBoxH = usesObservationLane ? observationBoxH : boxH;
-        const trackY = (at: Placed) => at.y + edgeBoxH / 2;
-        /* Rule and traffic strokes sit six units apart on the compact downward layout, or traffic overpaints the rule. */
-        const trackOffset = axis === 'down' && !splitsEvidence
-          ? edge.kind === 'permitted'
-            ? -6
-            : 6
-          : 0;
-        const sx = axis === 'across' ? a.x + edgeBoxW : a.x + edgeBoxW / 2 + trackOffset;
-        const sy = axis === 'across' ? trackY(a) : a.y + edgeBoxH;
-        const tx = axis === 'across' ? b.x : b.x + edgeBoxW / 2 + trackOffset;
-        const ty = axis === 'across' ? trackY(b) : b.y;
+        const key = `${edge.kind}:${edge.from}>${edge.to}`;
+        const oppositeKey = `${edge.kind}:${edge.to}>${edge.from}`;
+        const opposed = edgeKeys.has(oppositeKey);
+        const lane = skipLane.get(key) ?? 0;
+        /* A declared rule keeps one width; measured traffic's width carries its count. */
+        const isDeclared = edge.kind === 'permitted';
+        /* A ladder's skip leaves the side of its face: rules on the left, measured imports on the right. */
+        const leavesSide = axis === 'down' && edge.columnSpan > 1;
+        /* Of an opposed pair of skips the one on the outer lane stands outside, so the two never cross. */
+        const standsOutside = (skipLane.get(oppositeKey) ?? 0) < lane;
+        /* Rule and traffic share the narrow ladder's centre line, and an opposed pair shares one gap: each stroke stands off it. */
+        const sharesLine = axis === 'down' && !splitsEvidence;
+        const trackOffset =
+          (sharesLine ? (isDeclared ? -6 : 6) : 0) +
+          (opposed && !leavesSide
+            ? ((edge.columnSpan > 1 ? standsOutside : edge.climbs) ? 1 : -1) * opposedPairOffset(sharesLine)
+            : 0);
+        /* Two opposed side arcs nest: the inner one's ends sit nearer each other. */
+        const portShift = opposed && leavesSide ? (standsOutside ? -1 : 1) * OPPOSED_PAIR_OFFSET : 0;
         const receded = selected !== null && selected !== edge.from && selected !== edge.to;
         /* Choosing either end of a violation raises it; nothing moves while nothing is selected. */
         const raised = selected !== null && (selected === edge.from || selected === edge.to);
 
-        /* A declared rule keeps one width; measured traffic's width carries its count. */
-        const isDeclared = edge.kind === 'permitted';
         const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
         /* A mask, so the arrowhead arrives with its line. */
         const arrivalMask =
@@ -87,38 +95,26 @@ export function EdgeStrokes({
         const swing =
           edge.columnSpan <= 1
             ? 0
-            : skipSwing(edge.columnSpan, skipLane.get(`${edge.from}>${edge.to}`) ?? 0, (axis === 'across' ? edgeBoxH : edgeBoxW) / 2);
-        const lead = axis === 'across' ? colGap : rowGap;
-        const d = (() => {
-          if (edge.columnSpan <= 1) {
-            return axis === 'across'
-              ? `M ${sx} ${sy} C ${sx + lead * 0.6} ${sy}, ${tx - lead * 0.6} ${ty}, ${tx} ${ty}`
-              : `M ${sx} ${sy} C ${sx} ${sy + lead * 0.6}, ${tx} ${ty - lead * 0.6}, ${tx} ${ty}`;
-          }
-          if (axis === 'across') {
-            const midY = Math.max(sy, ty) + swing;
-            return `M ${sx} ${sy} C ${sx + colGap} ${sy}, ${sx + colGap} ${midY}, ${
-              (sx + tx) / 2
-            } ${midY} C ${tx - colGap} ${midY}, ${tx - colGap} ${ty}, ${tx} ${ty}`;
-          }
-          if (usesPairedDown) {
-            /* On the ladder a skip leaves the face's side, not its foot, clearing the adjacent sentence's row gap. */
-            const negative = isDeclared;
-            const edgeX = (face: Placed) => (negative ? face.x : face.x + edgeBoxW);
-            const psx = edgeX(a);
-            const psy = a.y + edgeBoxH / 2;
-            const ptx = edgeX(b);
-            const pty = b.y + edgeBoxH / 2;
-            const apex = negative
-              ? Math.min(a.x, b.x) - (swing - edgeBoxW / 2)
-              : Math.max(a.x, b.x) + edgeBoxW + (swing - edgeBoxW / 2);
-            return `M ${psx} ${psy} C ${apex} ${psy}, ${apex} ${pty}, ${ptx} ${pty}`;
-          }
-          const midX = Math.max(sx, tx) + swing;
-          return `M ${sx} ${sy} C ${sx} ${sy + rowGap}, ${midX} ${sy + rowGap}, ${midX} ${
-            (sy + ty) / 2
-          } C ${midX} ${ty - rowGap}, ${tx} ${ty - rowGap}, ${tx} ${ty}`;
-        })();
+            : axis === 'across'
+              ? skipSwing(edge.columnSpan, lane, edgeBoxH / 2)
+              : usesPairedDown
+                ? skipSwing(edge.columnSpan, lane, edgeBoxW / 2)
+                : narrowSkipSwing(lane, edgeBoxW / 2);
+        const d = edgePath({
+          axis,
+          skipSide: isDeclared ? 'left' : 'right',
+          portShift,
+          from: a,
+          to: b,
+          boxW: edgeBoxW,
+          boxH: edgeBoxH,
+          columnSpan: edge.columnSpan,
+          climbs: edge.climbs,
+          trackOffset,
+          swing,
+          colGap,
+          rowGap,
+        });
 
         return (
           <Fragment key={`${edge.kind}-${edge.from}-${edge.to}`}>
@@ -139,7 +135,7 @@ export function EdgeStrokes({
               />
             </mask>
           ) : null}
-          {/* The halo marks the climb up the stack. It has no data-edge-* identity, so stroke counts stay one per crossing; only selection changes its intensity. */}
+          {/* The halo has no data-edge-* identity, so stroke counts stay one per crossing; only selection changes its intensity. */}
           {violated && drawn ? (
             <path
               d={d}

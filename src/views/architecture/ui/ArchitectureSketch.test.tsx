@@ -1,16 +1,13 @@
 import { act, render, screen } from '@testing-library/react';
-import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/architecture-profile';
 import {
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
-import { buildArchitectureGraph } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
-import { ArchitectureSketch } from './ArchitectureSketch';
+import { atXl, sketch, withGeometry } from '../../../../tests/helpers/architecture-sketch';
 
 const OBSERVED_TRAFFIC: ArchitectureRoleEdge[] = [
   { fromRole: 'adapter', toRole: 'application', count: 12 },
@@ -18,83 +15,13 @@ const OBSERVED_TRAFFIC: ArchitectureRoleEdge[] = [
   { fromRole: 'port', toRole: 'domain', count: 4 },
 ];
 
-function sketch(
-  ledgers: Record<string, RoleLedger> = {},
-  violatedPairs = new Set<string>(),
-  traffic: readonly ArchitectureRoleEdge[] = [],
-  profileFrontmatter: unknown = HEXAGONAL_PROFILE_FRONTMATTER,
-  selected: string | null = null,
-  extra: Partial<ComponentProps<typeof ArchitectureSketch>> = {},
-) {
-  const graph = buildArchitectureGraph(
-    buildArchitectureLayout(parseArchitectureProfile(profileFrontmatter as never)),
-    traffic,
-  );
-  return (
-    <ArchitectureSketch
-      graph={graph}
-      ledgers={ledgers}
-      roleSummary={() => null}
-      edgeSentence={(edge) =>
-        edge.kind === 'permitted'
-          ? `${edge.from} may depend on ${edge.to}`
-          : `${edge.from} reaches ${edge.to} in ${edge.count ?? 0} imports`
-      }
-      violatedPairs={violatedPairs}
-      ledgerStatusLabel={(ledger) =>
-        ledger.state === 'clean' ? 'no violations out' : `${ledger.violated} violated`
-      }
-      ledgerImportsLabel={(count) => `${count} imports out`}
-      deltaUnknownLabel="not observed yet"
-      contractTrackLabel="Contract"
-      observationTrackLabel="Observation"
-      observationStamp={null}
-      deltaTrackLabel="Delta"
-      deltaColumnHint="Each mark says what that role's own outgoing imports did."
-      observationMissingLabel="Not inspected"
-      observationEmptyTitle="Source not inspected yet"
-      observationEmptyBody="Inspect source has an agent read the real imports and fill this in for each role."
-      lowerOnlyRuleLabel="Each role may depend only on roles below it."
-      selected={selected}
-      roleInspectorOpen={false}
-      onSelect={() => {}}
-      roleLabel={(id) => id}
-      moduleCountLabel={(n) => `${n} modules`}
-      conceptCountLabel={(n) => `${n} concepts`}
-      moduleCounts={null}
-      conceptCounts={{}}
-      hiddenRightLabel={(count) => `${count} more to the right`}
-      hiddenLeftLabel={(count) => `${count} more to the left`}
-      hiddenAboveLabel={(count) => `${count} more above`}
-      hiddenBelowLabel={(count) => `${count} more below`}
-      {...extra}
-    />
-  );
-}
-
 function draw(...args: Parameters<typeof sketch>) {
   return render(sketch(...args));
 }
 
-/* jsdom lays nothing out, so a test that needs a measured canvas stubs element geometry around its run. */
-function withGeometry(geometry: Record<string, number>, run: () => void) {
-  const originals = Object.fromEntries(
-    Object.keys(geometry).map((key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]),
-  );
-  for (const [key, value] of Object.entries(geometry))
-    Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value });
-  try {
-    run();
-  } finally {
-    for (const [key, descriptor] of Object.entries(originals))
-      if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-  }
-}
-
 describe('the count of what is below', () => {
   it('sits over the fade and takes no height from the scroller it counts against', () => {
-    /* A flow-row pill took the height that decided whether it should appear; jsdom lays nothing out, so geometry is stubbed and the pill's placement asserted. */
+    /* jsdom lays nothing out, so geometry is stubbed and the pill's placement asserted. */
     withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 100, scrollHeight: 700 }, () => {
       draw();
     });
@@ -160,10 +87,7 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
-      /*
-       * The empty column holds the skip lane a record will need, so a landing record moves no face:
-       * 1200 = 56 padding + 424 contract + 72 gutter + 240 observation + 204 on each side.
-       */
+      /* The empty column holds the skip lane a record will need: 1200 = 56 padding + 424 + 72 + 240 + 204 on each side. */
       expect(graph).toHaveAttribute('width', '1200');
       /* 8 + 20 + 16 + 7×72 + 6×24 + 8, plus the bands' 8px head room and 3px ledge. */
       expect(graph).toHaveAttribute('height', '711');
@@ -374,109 +298,42 @@ describe('the evidence split plane', () => {
 
   /* An across chain at 1920 cut every role sentence; the ladder rows win whenever the canvas is tall enough. */
   it('prefers the comparison ladder over an across chain when the rows fit the height', () => {
-    /* The height rule applies only at xl, where the canvas column is height-bounded. */
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: query.includes('1280'),
-      media: query,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      dispatchEvent: () => false,
-    })) as typeof window.matchMedia;
-    const geometry: Record<string, number> = {
-      clientWidth: 1792,
-      scrollWidth: 1792,
-      clientHeight: 918,
-      scrollHeight: 918,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
+    atXl(() =>
+      withGeometry({ clientWidth: 1792, scrollWidth: 1792, clientHeight: 918, scrollHeight: 918 }, () => {
+        draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+        const graph = screen.getByTestId('architecture-graph');
+        expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+        expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+        expect(graph).toHaveAttribute('data-ladder-density', 'roomy');
+        const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
+        expect(sentences).toHaveLength(6);
+        expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(true);
+        expect(screen.getByTestId('architecture-lower-only-sentence')).toBeInTheDocument();
+      }),
     );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
-      draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
-      const graph = screen.getByTestId('architecture-graph');
-      expect(graph).toHaveAttribute('data-architecture-axis', 'down');
-      expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
-      expect(graph).toHaveAttribute('data-ladder-density', 'roomy');
-      const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
-      expect(sentences).toHaveLength(6);
-      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(true);
-      expect(screen.getByTestId('architecture-lower-only-sentence')).toBeInTheDocument();
-    } finally {
-      window.matchMedia = originalMatchMedia;
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
   });
 
   /* At 1280x800 the roomy rows do not fit; faces and connector space yield before any role is hidden. */
   it('tightens the ladder rows rather than hiding a role when the canvas is short', () => {
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: query.includes('1280'),
-      media: query,
-      onchange: null,
-      addListener: () => undefined,
-      removeListener: () => undefined,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-      dispatchEvent: () => false,
-    })) as typeof window.matchMedia;
-    const geometry: Record<string, number> = {
-      clientWidth: 1792,
-      scrollWidth: 1792,
-      clientHeight: 600,
-      scrollHeight: 600,
-    };
-    const originals = Object.fromEntries(
-      Object.keys(geometry).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
+    atXl(() =>
+      withGeometry({ clientWidth: 1792, scrollWidth: 1792, clientHeight: 600, scrollHeight: 600 }, () => {
+        draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+        const graph = screen.getByTestId('architecture-graph');
+        expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+        expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+        expect(graph).toHaveAttribute('data-ladder-density', 'tight');
+        /* 4 + 20 + 16 + 7x58 + 6x22 + 4, plus 8px head room and a 3px ledge: exactly `pairedTightH`. */
+        expect(graph).toHaveAttribute('height', '593');
+        const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
+        expect(boxes).toHaveLength(7);
+        expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
+        const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
+        expect(sentences).toHaveLength(6);
+        expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(
+          true,
+        );
+      }),
     );
-    try {
-      for (const [key, value] of Object.entries(geometry)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
-      draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
-      const graph = screen.getByTestId('architecture-graph');
-      expect(graph).toHaveAttribute('data-architecture-axis', 'down');
-      expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
-      expect(graph).toHaveAttribute('data-ladder-density', 'tight');
-      /* 4 + 20 + 16 + 7x58 + 6x22 + 4, plus 8px head room and a 3px ledge: exactly `pairedTightH`. */
-      expect(graph).toHaveAttribute('height', '593');
-      const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
-      expect(boxes).toHaveLength(7);
-      expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
-      const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
-      expect(sentences).toHaveLength(6);
-      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'said-once')).toBe(
-        true,
-      );
-    } finally {
-      window.matchMedia = originalMatchMedia;
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
   });
 
   it('expands into aligned contract and observation lanes only when the full role set fits', () => {
@@ -496,17 +353,8 @@ describe('the evidence split plane', () => {
       expect(screen.getByTestId('architecture-role-index-domain')).toHaveTextContent('04');
       expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(4);
       expect(container.querySelectorAll('[data-architecture-port="contract"]')).toHaveLength(3);
-      expect(container.querySelectorAll('[data-port-direction="incoming"]')).toHaveLength(0);
-      expect(
-        container.querySelector(
-          '[data-graph-box="adapter"] [data-port-direction="outgoing"]',
-        ),
-      ).not.toBeNull();
-      expect(
-        container.querySelector(
-          '[data-graph-box="domain"] [data-port-direction="outgoing"]',
-        ),
-      ).toBeNull();
+      expect(container.querySelector('[data-graph-box="adapter"] [data-architecture-port]')).not.toBeNull();
+      expect(container.querySelector('[data-graph-box="domain"] [data-architecture-port]')).toBeNull();
       expect(screen.getByTestId('architecture-graph-box-domain')).toHaveAttribute(
         'data-box-height',
         '90',
@@ -613,41 +461,10 @@ describe('the evidence split plane', () => {
   });
 });
 
-/**
- * The import direction is drawn as depth: a stack of planes says "this one is under that one".
- * These gates hold that the stack is ordered and steps by one constant, every role sits inside its
- * layer's plane, and the one upward import carries a halo that answers when its role is chosen.
- */
+/* Import direction is drawn as depth: one ordered stack of planes, every role inside its layer's plane, and a halo on the upward import. */
 describe('the layer planes', () => {
-  const LADDER_GEOMETRY: Record<string, number> = {
-    clientWidth: 1200,
-    scrollWidth: 1200,
-    clientHeight: 700,
-    scrollHeight: 700,
-  };
-
-  function withLadderCanvas(body: () => void) {
-    const originals = Object.fromEntries(
-      Object.keys(LADDER_GEOMETRY).map((key) => [
-        key,
-        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-      ]),
-    );
-    try {
-      for (const [key, value] of Object.entries(LADDER_GEOMETRY)) {
-        Object.defineProperty(HTMLElement.prototype, key, {
-          configurable: true,
-          get: () => value,
-        });
-      }
-      body();
-    } finally {
-      for (const [key, descriptor] of Object.entries(originals)) {
-        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
-        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
-      }
-    }
-  }
+  const withLadderCanvas = (body: () => void) =>
+    withGeometry({ clientWidth: 1200, scrollWidth: 1200, clientHeight: 700, scrollHeight: 700 }, body);
 
   const FSD_ROLES = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
   const CLEAN: RoleLedger = { state: 'clean', violated: 0, outgoing: 1, sampleLimited: false, importsOut: 12 };

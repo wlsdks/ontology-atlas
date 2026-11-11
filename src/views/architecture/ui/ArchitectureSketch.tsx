@@ -10,19 +10,20 @@ import { MOTION, STAGGER } from '@/shared/motion/tokens';
 import { badgeClass } from '@/shared/ui/badge-class';
 
 import type { ArchitectureGraph as Graph } from '../model/graph-layout';
-import type { SentenceEdge } from '../model/edge-sentences';
+import { ruleSentenceRoom, type SentenceEdge } from '../model/edge-sentences';
+import { OPPOSED_PAIR_OFFSET } from './sketch/edge-path';
 import { EdgeSentences } from './sketch/EdgeSentences';
 import { EdgeStrokes } from './sketch/EdgeStrokes';
 import { solveSketchFrame } from './sketch/frame';
 import {
-  OBSERVATION_LANE_GAP,
+  ACROSS_SKIP_SENTENCE_ROOM,
+  NARROW_LADDER_EDGE,
   PAD_X,
-  PAIRED_OBSERVATION_W,
-  PAIRED_SIDE_ROOM_MIN,
-  PAIRED_TRAIL_ROOM_MAX,
   PLANE_INSET_Y,
   SKIP_DROP,
   SKIP_STEP,
+  skipLanes,
+  skipSwing,
 } from './sketch/geometry';
 import { AcrossLaneHeadings, PairedLaneHeadings } from './sketch/LaneHeadings';
 import { LayerPlanes } from './sketch/LayerPlanes';
@@ -33,12 +34,7 @@ import type { ArchitectureSketchProps } from './sketch/types';
 import { useEdgeSentenceLayout } from './sketch/use-edge-sentence-layout';
 import { useSketchPlacement } from './sketch/use-sketch-placement';
 
-const PAIRED_SIDE_ROOM_MAX = 180;
-/* Rooms use the edge sentence's own `text-label` glyph estimate (`edge-sentences.ts`). */
-const SENTENCE_LEAD_MAX = 380;
 const SENTENCE_TOP_ROOM = 44;
-const SENTENCE_TRAIL_ROOM = 260;
-const SENTENCE_CHAR_PX = 5.5;
 
 const HIDDEN_COUNT_BADGE_CLASS = badgeClass({
   shape: 'pill',
@@ -46,9 +42,50 @@ const HIDDEN_COUNT_BADGE_CLASS = badgeClass({
     'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
 });
 
-/** At rest the canvas draws the spine; a skip is about one role, so it arrives when that role is selected or is violated. */
-function isEdgeDrawn(edge: { from: string; to: string; columnSpan: number }, selected: string | null, violatedPairs: ReadonlySet<string>): boolean {
-  return edge.columnSpan <= 1 || selected === edge.from || selected === edge.to || violatedPairs.has(`${edge.from}>${edge.to}`);
+/** A track with this many rank skips or fewer draws them at rest, each on its own lane. */
+const SKIPS_DRAWN_AT_REST = 3;
+
+type EdgeKind = Graph['edges'][number]['kind'];
+const NO_TRACK: ReadonlySet<EdgeKind> = new Set();
+const NO_PAIRS: ReadonlySet<string> = new Set();
+
+function tracksDrawnWhole(edges: Graph['edges']): ReadonlySet<EdgeKind> {
+  const skips = { permitted: 0, traffic: 0 };
+  for (const edge of edges) if (edge.rankSpan > 1) skips[edge.kind] += 1;
+  return new Set((['permitted', 'traffic'] as const).filter((kind) => skips[kind] <= SKIPS_DRAWN_AT_REST));
+}
+
+/** A stroke between neighbouring ranks always stands; on a crowded track a rank skip arrives when its role is selected or it is violated. */
+function isEdgeDrawn(
+  edge: { from: string; to: string; kind: EdgeKind; rankSpan: number },
+  selected: string | null,
+  violatedPairs: ReadonlySet<string>,
+  drawnWhole: ReadonlySet<EdgeKind>,
+): boolean {
+  return (
+    edge.rankSpan <= 1 ||
+    drawnWhole.has(edge.kind) ||
+    selected === edge.from ||
+    selected === edge.to ||
+    violatedPairs.has(`${edge.from}>${edge.to}`)
+  );
+}
+
+function sentenceEdgeOf(
+  edge: Graph['edges'][number],
+  selected: string | null,
+  violatedPairs: ReadonlySet<string>,
+  drawnWhole: ReadonlySet<EdgeKind>,
+): SentenceEdge {
+  return {
+    from: edge.from,
+    to: edge.to,
+    kind: edge.kind,
+    count: edge.count,
+    columnSpan: edge.columnSpan,
+    violated: violatedPairs.has(`${edge.from}>${edge.to}`),
+    drawn: isEdgeDrawn(edge, selected, violatedPairs, drawnWhole),
+  };
 }
 
 /** The architecture in one <svg>: one face per role; a declared rule is a fixed-width stroke and measured traffic's width carries its count. */
@@ -91,15 +128,30 @@ export function ArchitectureSketch({
   const [boxWidth, setBoxWidth] = useState(0);
   /* Measured against the width at rest, so a selection opening the dock may cut the chain but never turn it; the chosen box scrolls into view. */
   const [restWidth, setRestWidth] = useState(0);
-  /*
-   * The comparison ladder is chosen by the height it needs, read at rest from the column holding
-   * the canvas and its hidden-count row (so the count cannot flip the axis). Across stays the
-   * answer for a short canvas and for parallel lanes.
-   */
+  /* The ladder is chosen by the height it needs, read at rest from the column holding the canvas, so the hidden-count row cannot flip the axis. */
   const [restHeight, setRestHeight] = useState(0);
+  const drawnWholeOnLadder = useMemo(() => tracksDrawnWhole(graph.edges), [graph.edges]);
+  /* Read from the profile alone, with rank skips resting and with them waiting: no selection and no record moves this ground. */
+  const ruleRoom = useMemo(() => {
+    /* Under `lower-only` the rule is said once under its heading, so no rule sentence holds ground. */
+    const spoken = graph.policy === 'lower-only' ? [] : graph.edges.filter((edge) => edge.kind === 'permitted');
+    const roomWith = (resting: ReadonlySet<EdgeKind>) => {
+      const lanes = skipLanes(graph.edges, true, (edge) => isEdgeDrawn(edge, null, NO_PAIRS, resting));
+      const laneOf = (edge: { kind: string; from: string; to: string }) =>
+        lanes.get(`${edge.kind}:${edge.from}>${edge.to}`) ?? 0;
+      const outerLaneOfMeasuredPair = (ruleLane: number) => ruleLane * 2 + 1;
+      return ruleSentenceRoom({
+        rules: spoken.map((edge) => sentenceEdgeOf(edge, null, NO_PAIRS, resting)),
+        sentenceOf: edgeSentence,
+        arcDepthOf: (edge) => skipSwing(edge.columnSpan, laneOf(edge), 0),
+        pairArcDepthOf: (edge) => skipSwing(edge.columnSpan, outerLaneOfMeasuredPair(laneOf(edge)), 0),
+        opposedPairOffset: OPPOSED_PAIR_OFFSET,
+      });
+    };
+    return { ...roomWith(drawnWholeOnLadder), waiting: roomWith(NO_TRACK) };
+  }, [graph.edges, graph.policy, edgeSentence, drawnWholeOnLadder]);
   const {
     ranks,
-    lanes,
     axisWidth,
     axis,
     usesRoomyBoxes,
@@ -109,9 +161,10 @@ export function ArchitectureSketch({
     ladderDensity,
     splitsEvidence,
     observationEmpty,
-    pairedContractW,
     pairedGutterW,
-    pairedFixedW,
+    pairedLeadRoom,
+    pairedTrailRoom,
+    restsRuleSkips,
     contractBoxW,
     observationBoxW,
     rowGap,
@@ -122,9 +175,9 @@ export function ArchitectureSketch({
     summaryLineCount,
     colGap,
     observationOffset,
+    acrossLaneGap,
     usesLayerPlanes,
     planeRoom,
-    planeTrailRoom,
     planeHeadRoom,
     pairedHeaderH,
     saysRuleOnce,
@@ -137,7 +190,23 @@ export function ArchitectureSketch({
     restHeight,
     roleSummary,
     hasStamp: observationStamp !== null,
+    ruleSentenceRoom: ruleRoom,
   });
+
+  /* Only the paired ladder gives each track a side lane of its own, and a rule's rank skips rest there only with their sentences whole. */
+  const drawnWhole = useMemo(
+    () =>
+      !usesPairedDown
+        ? NO_TRACK
+        : restsRuleSkips
+          ? drawnWholeOnLadder
+          : new Set([...drawnWholeOnLadder].filter((kind) => kind !== 'permitted')),
+    [usesPairedDown, restsRuleSkips, drawnWholeOnLadder],
+  );
+  const drawnAtRest = useCallback(
+    (edge: Graph['edges'][number]) => isEdgeDrawn(edge, null, violatedPairs, drawnWhole),
+    [violatedPairs, drawnWhole],
+  );
 
   /* Hover answers locally; only selection dims the graph. */
   const [hovered, setHovered] = useState<string | null>(null);
@@ -145,55 +214,14 @@ export function ArchitectureSketch({
   const focus = selected ?? hovered;
 
   const toSentenceEdge = useCallback(
-    (edge: Graph['edges'][number]): SentenceEdge => ({
-      from: edge.from,
-      to: edge.to,
-      kind: edge.kind,
-      count: edge.count,
-      columnSpan: edge.columnSpan,
-      violated: violatedPairs.has(`${edge.from}>${edge.to}`),
-      drawn: isEdgeDrawn(edge, selected, violatedPairs),
-    }),
-    [violatedPairs, selected],
+    (edge: Graph['edges'][number]) => sentenceEdgeOf(edge, selected, violatedPairs, drawnWhole),
+    [violatedPairs, selected, drawnWhole],
   );
-  const leadRoom = useMemo(() => {
-    if (axis === 'across') return graph.edges.length === 0 ? 0 : SENTENCE_TOP_ROOM;
-    const longest = graph.edges
-      .filter((edge) => edge.columnSpan <= 1)
-      .reduce((most, edge) => Math.max(most, edgeSentence(toSentenceEdge(edge)).length), 0);
-    return longest === 0 ? 0 : Math.min(SENTENCE_LEAD_MAX, Math.ceil(longest * SENTENCE_CHAR_PX) + 32);
-  }, [axis, graph.edges, edgeSentence, toSentenceEdge]);
-  const needsDownObservationRoom =
-    axis === 'down' && graph.edges.some((edge) => edge.kind === 'traffic');
-  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1) || needsDownObservationRoom
-    ? axis === 'across'
-      ? 28
-      : SENTENCE_TRAIL_ROOM
-    : 0;
-  /* Side lanes go where the arcs are: the contract lane needs room only when the profile declares a skip. */
-  const contractNeedsLane = graph.edges.some(
-    (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
-  );
-  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - pairedFixedW) : PAIRED_SIDE_ROOM_MAX * 2;
-  /* The drawing is centred: once the face has its width, leftover lane ground is split evenly while each lane keeps its floor. */
-  const pairedCentredLane = usesPairedDown && boxWidth > 0
-    ? Math.max(0, boxWidth - 2 * PAD_X - pairedContractW - pairedGutterW - PAIRED_OBSERVATION_W) / 2
-    : 0;
-  /* The plane floor comes out of the lead room first and the trail room is measured from what is left, so canvases with slack keep their width. */
-  const pairedLeadRoom = Math.max(
-    planeRoom,
-    pairedCentredLane,
-    contractNeedsLane
-      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM_MAX, pairedSlack / 2))
-      : PAIRED_SIDE_ROOM_MIN,
-  );
-  const pairedTrailRoom = Math.max(
-    planeTrailRoom,
-    PAIRED_SIDE_ROOM_MIN,
-    Math.min(Math.max(PAIRED_TRAIL_ROOM_MAX, pairedCentredLane), pairedSlack - pairedLeadRoom),
-  );
-  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : usesNarrowLadder ? 0 : leadRoom;
-  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : usesNarrowLadder ? 0 : trailRoom;
+  /* An across chain seats its sentences on tiers above the faces and its skips' sentences under their arcs. */
+  const acrossLeadRoom = graph.edges.length === 0 ? 0 : SENTENCE_TOP_ROOM;
+  const acrossTrailRoom = graph.edges.some((edge) => edge.columnSpan > 1) ? ACROSS_SKIP_SENTENCE_ROOM : 0;
+  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : axis === 'down' ? 0 : acrossLeadRoom;
+  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : axis === 'down' ? 0 : acrossTrailRoom;
 
   const {
     placed,
@@ -277,7 +305,7 @@ export function ArchitectureSketch({
   }, [actionSeated, onObservationEmptyActionSeated]);
   useLayoutEffect(() => () => onObservationEmptyActionSeated?.(false), [onObservationEmptyActionSeated]);
 
-  /* A canvas that scrolls must say so: macOS hides its overlay scrollbar. Read on the node itself through a callback ref, since an effect fires while the ref is null. */
+  /* A canvas that scrolls must say so: macOS hides its overlay scrollbar. Read through a callback ref, since an effect fires while the ref is null. */
   const [covered, setCovered] = useState<{
     left: boolean;
     right: boolean;
@@ -377,10 +405,7 @@ export function ArchitectureSketch({
     },
     [readCoveredEdges],
   );
-  /*
-   * Mouse press-and-drag pans the canvas (touch already pans natively). Past the threshold the drag
-   * swallows the click once, so a pan does not also select the node under the cursor.
-   */
+  /* Mouse press-and-drag pans the canvas; past the threshold the drag swallows the click once, so a pan does not also select the node under the cursor. */
   const pan = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
   const swallowClick = useRef(false);
   const PAN_THRESHOLD = 4;
@@ -449,6 +474,7 @@ export function ArchitectureSketch({
     edgeSentence,
     contractTrackLabel,
     observationTrackLabel,
+    observationStamp,
     axis,
     usesPairedDown,
     usesNarrowLadder,
@@ -464,6 +490,7 @@ export function ArchitectureSketch({
     observationOffset,
     focus,
     toSentenceEdge,
+    drawnAtRest,
     layoutLeadRoom,
     layoutTrailRoom,
     placed,
@@ -473,35 +500,36 @@ export function ArchitectureSketch({
   });
 
   /* Per render O(B·E + E²): per-role port filters and per-sentence edges.find / visibleEdges.includes are linear scans over tens of edges. */
-  const visibleEdges = graph.edges.filter((edge) => isEdgeDrawn(edge, selected, violatedPairs));
+  const visibleEdges = graph.edges.filter((edge) => isEdgeDrawn(edge, selected, violatedPairs, drawnWhole));
   /* Skip room depends on the profile, not the selection, so the page does not move under a click. */
   const deepestSkip = graph.edges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
   const skipRoom = deepestSkip <= 1 ? 0 : SKIP_DROP + deepestSkip * SKIP_STEP;
-  const alongExtent =
+  const width =
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * colGap
-      : padY * 2 + ranks * boxH + (ranks - 1) * rowGap +
+      : PAD_X * 2 +
+        contractBoxW +
+        (usesPairedDown ? pairedGutterW + observationBoxW : NARROW_LADDER_EDGE) +
+        layoutLeadRoom +
+        layoutTrailRoom;
+  const height =
+    axis === 'across'
+      ? padY * 2 +
+        boxH +
+        skipRoom +
+        layoutLeadRoom +
+        layoutTrailRoom +
+        (splitsEvidence ? acrossLaneGap + observationBoxH : 0)
+      : padY * 2 +
+        ranks * boxH +
+        (ranks - 1) * rowGap +
         (usesPairedDown ? pairedHeaderH : 0) +
         /* Band head room and ledge, held before the bands exist. */
         (planeHeadRoom > 0 ? planeHeadRoom + PLANE_INSET_Y : 0);
-  const acrossExtent =
-    axis === 'across'
-      ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom + leadRoom + trailRoom
-      : PAD_X * 2 +
-        lanes * contractBoxW +
-        (lanes - 1) * colGap +
-        (usesPairedDown ? pairedGutterW + observationBoxW : 0) +
-        (usesPairedDown ? 0 : skipRoom) +
-        layoutLeadRoom +
-        layoutTrailRoom;
-  const width = axis === 'across' ? alongExtent : acrossExtent;
-  const height = axis === 'across'
-    ? acrossExtent + (splitsEvidence ? OBSERVATION_LANE_GAP + observationBoxH : 0)
-    : alongExtent;
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
-      {/* Left, right and above counts take a row shown only while something is hidden: a fade or a macOS overlay scrollbar alone does not say the drawing continues. */}
+      {/* Left, right and above counts take a row shown only while something is hidden: a fade alone does not say the drawing continues. */}
       {covered.hiddenLeft === 0 && covered.hiddenRight === 0 ? null : (
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenLeft === 0 ? null : (
@@ -523,7 +551,7 @@ export function ArchitectureSketch({
         </div>
       )}
 
-      {/* The drawing keeps its size and the canvas scrolls: scaling an SVG scales its text off the type ramp (`.claude/rules/design.md`: a diagram scrolls in its own container). */}
+      {/* The drawing keeps its size and the canvas scrolls: scaling an SVG scales its text off the type ramp. */}
       <div
         ref={attachScroller}
         onScroll={readCoveredEdges}
@@ -531,10 +559,10 @@ export function ArchitectureSketch({
         onPointerMove={onPanMove}
         onPointerUp={onPanEnd}
         onPointerCancel={onPanEnd}
-        /* A thin persistent scrollbar, with `DocsQuickDrawer`'s values, because macOS hides the overlay one and the fade alone was not perceived. The mask still softens clipped ink. */
+        /* A thin persistent scrollbar with `DocsQuickDrawer`'s values: macOS hides the overlay one. The mask softens clipped ink. */
         className={cn(
           covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
-          /* `safe center`: centre while the drawing fits, start once it does not, so a wide chain's left edge stays reachable; unsupported, it falls back to start. */
+          /* `safe center`: centre while the drawing fits, start once it does not, so a wide chain's left edge stays reachable. */
           '[justify-content:safe_center]',
           /* The ladder centres in its height as the across chain does in its width; `safe` keeps the top reachable. */
           axis === 'down'
@@ -710,7 +738,7 @@ export function ArchitectureSketch({
         ) : null}
         </div>
       </div>
-      {/* The below count overlays the bottom fade instead: a row there would take the height it counts against. The strip is two insets tall (coveredMask) so the badge covers no opaque ink. */}
+      {/* The below count overlays the bottom fade: a row there would take the height it counts against. */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">
           <span
