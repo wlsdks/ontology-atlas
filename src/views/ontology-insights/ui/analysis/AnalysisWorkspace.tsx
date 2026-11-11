@@ -11,7 +11,7 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { SourceDateRecovery } from './SourceDateRecovery';
 import { useOntologyEvidence } from '../../lib/use-ontology-evidence';
 import { Link } from '@/i18n/navigation';
-import { Button, Chip, Disclosure, IconButton, OntologyMapKindGlyph, Select } from '@/shared/ui';
+import { Chip, Disclosure, IconButton, OntologyMapKindGlyph, Select } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { controlClass } from '@/shared/ui/control-class';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
@@ -140,7 +140,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
       {swap(body)}
     </div>
     {selectedNodes.length ? <div className={styles.inspectAction}>
-      {mode === 'local' && inspection.runnable && agentReady ? <Button data-testid="analysis-inspect-selected" variant="outline" size="sm" className="atlas-touch-floor" onClick={() => onInspect(inspection.text)}>{t('inspectSelected')}</Button> : null}
+      {mode === 'local' && inspection.runnable && agentReady ? <Chip data-testid="analysis-inspect-selected" size="md" tone="onAccent" className="atlas-touch-floor" onClick={() => onInspect(inspection.text)}>{t('inspectSelected')}</Chip> : null}
       <CopyAgentTextButton key={inspection.text} testId="analysis-copy-selected" compact label={t(mode === 'static' ? 'copySampleFact' : 'copySelectedCheck')} copiedLabel={t('copiedSelected')} text={inspection.text} />
       <Disclosure summary={t('reviewSelectedRequest')} summaryTestId="analysis-selected-request-toggle"><pre data-testid="analysis-selected-request" className="whitespace-pre-wrap break-words text-label leading-prose text-[color:var(--color-text-secondary)]">{inspection.text}</pre></Disclosure>
     </div> : null}
