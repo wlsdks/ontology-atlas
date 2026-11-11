@@ -35,7 +35,8 @@ for (const width of [1512] as const) {
     expect(title && kind && close && domain && updated, "a header part is not drawn").toBeTruthy();
     if (!title || !kind || !close || !domain || !updated) return;
 
-    expect(kind.font, "kind and domain chip type sizes differ").toBe(domain.font);
+    expect(domain.font, "row 2 sets its date and its domain chip in different type sizes").toBe(updated.font);
+    expect(kind.font, "the kind label must stay the quiet line above the name").toBeLessThanOrEqual(domain.font);
     expect(close.height, "the close control remains reachable").toBeGreaterThanOrEqual(32);
     expect(Math.abs(close.right - domain.right), "the two rows end on different right edges").toBeLessThanOrEqual(0.5);
     expect(Math.abs(kind.centre - close.centre), "row 1 controls are not centred on one line").toBeLessThanOrEqual(0.5);
