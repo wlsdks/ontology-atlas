@@ -38,7 +38,7 @@ export const rules = [
     matches: [
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/AnalysisWorkspace\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/analysis\/ProjectBoard\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/(ConnectionExplorer|ClaimList)\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/analysis\.module\.css$/,
       /^src\/shared\/ui\/fields\/segmented-control\.tsx$/,
     ],
@@ -52,8 +52,8 @@ export const rules = [
       /^src\/views\/ontology-insights\/ui\/OntologyInsightsPage\.tsx$/,
       /^src\/views\/ontology-insights\/ui\/analysis\/AnalysisWorkspace\.tsx$/,
       /^src\/views\/ontology-insights\/lib\/analysis-board\.ts$/,
-      /^src\/views\/ontology-insights\/ui\/analysis\/ProjectBoard\.tsx$/,
-      /^src\/views\/ontology-insights\/ui\/analysis\/board-layout\.ts$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/ConnectionExplorer\.tsx$/,
+      /^src\/views\/ontology-insights\/ui\/analysis\/pair-lines\.ts$/,
     ],
   },
 ];

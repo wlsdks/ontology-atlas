@@ -280,6 +280,7 @@
       "implementation": "記録された実装",
       "anchorMissing": "実装の根拠が未記録です",
       "noGaps": "この範囲には記録の不足が報告されていません。ソースの現在の状態と意味の承認は別に確認する必要があります。",
+      "showAllCapabilities": "能力{count}件をすべて表示",
       "inspectionBasis": "能力{total}件中{inspected}件の文書検査結果があります。未検査の文書を正常とは数えません。",
       "dependsOn": "次の概念に依存すると記録されています",
       "why": "関係のメモ",
@@ -358,7 +359,12 @@
       "showLessItems": "折りたたむ",
       "capabilityFilter": "能力の表示範囲",
       "sourceScope": "ソースの状態",
-      "sourceScopeOptions": {"all": "すべてのソース · {count}", "moved": "ソース変更 · {count}", "missing": "ソースパスが見つかりません · {count}", "unknown": "未確認 · {count}"},
+      "sourceScopeOptions": {
+        "all": "すべてのソース · {count}",
+        "moved": "ソース変更 · {count}",
+        "missing": "ソースパスが見つかりません · {count}",
+        "unknown": "未確認 · {count}"
+      },
       "sourceScopeMatches": "条件に合う機能は{count}件です。選択した主張は開いたままです。",
       "connectedElements": "接続された実装要素",
       "openElementDocument": "{name}の文書を開く",
@@ -376,10 +382,29 @@
       "pathChanged": "{date}に変更",
       "pathGone": "見つかりません",
       "pathUndated": "日付未確認",
-      "board": "プロジェクトボード",
+      "board": "確認する機能の一覧",
       "laneEmpty": "記録された能力なし",
-      "cardGaps": "記録の不足{count}件",
-      "markerGap": "名前の横の数字は記録の不足数"
+      "pairList": "責務間の関係一覧",
+      "pairLabel": "{from} → {to} · 依存の宣言{count}件",
+      "pairDeclarations": "依存の宣言{count}件",
+      "pairDeclarationsShown": "{count}件中{shown}件を表示",
+      "pairNoMatch": "一致する能力を含む関係はありません。",
+      "pairSource": "必要とする側",
+      "pairTarget": "提供する側",
+      "pairWholeDomain": "責務全体",
+      "gapShort": {
+        "document": "文書なし",
+        "anchor": "実装の根拠なし",
+        "definition": "定義が不明確",
+        "boundary": "境界の記載なし",
+        "uncertainty": "未確認事項の記載なし"
+      },
+      "declaringDocument": "宣言した文書",
+      "recordedRoles": "実装要素{count}件",
+      "recordedPaths": "ソースパス{count}件",
+      "pairGrouping": "つながりのまとめ方",
+      "pairGroupingNeeds": "何に依存するか",
+      "pairGroupingProvides": "誰が依存するか"
     }
   }
 }

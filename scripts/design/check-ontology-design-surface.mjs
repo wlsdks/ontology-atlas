@@ -93,7 +93,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     files: [
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
       "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx",
-      "src/views/ontology-insights/ui/analysis/ProjectBoard.tsx",
+      "src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx",
       "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx",
     ],
     markers: [

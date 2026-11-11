@@ -16,7 +16,8 @@ relates: [capabilities/vault-graph-query]
 A workbench where a person compares declared product relationships with their declaring documents, recorded implementation, and remaining evidence gaps.
 
 ## Includes
-- A project board: each recorded responsibility is a row, its capabilities are cards, and each arrow names one declared cross-responsibility dependency between real concepts. Selecting a declaration keeps its source document and recorded rationale alongside it.
+- A connection explorer: a list of responsibility pairs with their declaration counts, grouped either by the responsibility that needs another or by the one that is needed. A selected pair draws its capabilities on two sides, and each arrow names one declared cross-responsibility dependency between real concepts. Selecting a declaration keeps its source document and recorded rationale under the drawing.
+- A list of capabilities under their responsibility that names each recorded gap in words and, in a local folder, a moved or missing source mark.
 - Inspection of a selected capability's recorded implementation roles or path, documentary findings, and source state. Missing evidence is not proof that implementation is absent.
 - Source-state scopes combine with name search and recorded gaps while keeping the selected claim open. Counts cover capabilities; unavailable or unmeasured evidence stays unchecked, and a source change does not accept or reject the recorded meaning.
 - Exact document and correction entries that return to the selected claim, with visible keyboard focus.
@@ -29,17 +30,18 @@ A workbench where a person compares declared product relationships with their de
 - Agent guidance coverage by domain, which Harness At a glance owns.
 - Writing, moving, or deleting saved explanation runs under `.ontology-atlas/analyses/`.
 - The retired global repair catalog, duplicate ranking, dependency-cycle dashboard, unmatched-name board, and document freshness census.
+- Drawing every responsibility and every declaration at once; one pair is drawn at a time.
 - Inferring runtime impact, implementation correctness, or accepted meaning from a declared edge, path, date, or clean structure.
 - Sending an agent request, repairing a document, or accepting meaning without the person's explicit action.
 
 ## Evidence
 - `src/views/ontology-insights/ui/OntologyInsightsPage.tsx` owns the three sections and legacy URL entry, including the retired Guidance and Written explanations addresses.
-- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `ProjectBoard.tsx`, `lib/analysis-board.ts`, and `lib/analysis-model.ts` build the board and exact evidence continuation.
+- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `ConnectionExplorer.tsx`, `ClaimList.tsx`, `lib/analysis-board.ts`, and `lib/analysis-model.ts` build the pair groups, the drawing and the exact evidence continuation.
 - `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx` exposes stored canonical references and relationship notes in the declaring document.
 - `src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx` keeps explicit agent requests separate from the graph and shows the retired-section notice; `lib/count-saved-explanations.ts` counts saved runs without writing.
 
 ## Uncertainty
-- Re-read against the 2026-10-21 three-section change and inspected in a local static build at 1512 and 390 pixels. The installed macOS app has not been walked for this change.
+- Re-read against the 2026-11-12 connection-explorer change and inspected in a local build at 1512, 1040 and 390 pixels with the bundled example. The installed macOS app has not been walked for this change, and no vault larger than the example was drawn.
 - An actual external agent explanation run was not exercised. Native request behavior has fixture coverage.
 - On the web, saved explanations are no longer readable inside Atlas; only the app's agent panel and an agent over MCP read them.
 - Legacy repair helpers remain in the repository and their tests. The current page does not import them; removing the former containment and import-derived dependency claims does not delete or qualify those concepts.
