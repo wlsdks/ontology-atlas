@@ -170,7 +170,7 @@ export function HarnessOverviewMatrix({
                   size: 'md',
                   hoverSurface: 'lift',
                   active: openKey === pathKey,
-                  className: cn(TILE_BASE, 'text-body text-[color:var(--color-text-tertiary)]'),
+                  className: cn(TILE_BASE, 'text-[color:var(--color-text-tertiary)]'),
                 }),
                 openKey !== pathKey && HOVER_FILL,
               )}

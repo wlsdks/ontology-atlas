@@ -19,14 +19,6 @@ function renderButton() {
   );
 }
 
-function renderCompactButton() {
-  return render(
-    <NextIntlClientProvider locale="ko" messages={koMessages}>
-      <CopyAgentTextButton label="복사" copiedLabel="복사됨" text="payload" compact />
-    </NextIntlClientProvider>,
-  );
-}
-
 /** Token usage guard: the button uses indigo tokens only, never a raw literal. */
 describe("CopyAgentTextButton text color tokens", () => {
   beforeEach(() => {
@@ -46,12 +38,12 @@ describe("CopyAgentTextButton text color tokens", () => {
     expect(button.className).not.toContain("rgba(211, 215, 255");
   });
 
-  it("keeps the compact button at a 32px hit target or larger on mobile", () => {
-    renderCompactButton();
-    const button = screen.getByRole("button");
-    const classTokens = button.className.split(/\s+/);
+  it("takes its height and type from the chip value layer", () => {
+    renderButton();
+    const classTokens = screen.getByRole("button").className.split(/\s+/);
     expect(classTokens).toContain("min-h-8");
-    expect(classTokens).not.toContain("py-1");
+    expect(classTokens).toContain("text-body");
+    expect(classTokens).not.toContain("text-label");
   });
 
   it("confirms a copy with an icon and live region without widening the label", async () => {

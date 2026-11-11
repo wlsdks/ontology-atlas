@@ -57,6 +57,13 @@ export interface SelectProps {
   "data-testid"?: string;
 }
 
+/** A trigger's height and the type that height sets, one pair per size. */
+export const SELECT_SIZE_CLASS = {
+  sm: "h-[var(--control-h-sm)] text-body",
+  md: "h-[var(--control-h-md)] text-body",
+  lg: "h-[var(--control-h-lg)] text-body-lg",
+} as const;
+
 const ANCHOR_GAP = 4;
 const VIEWPORT_PAD = 8;
 /**
@@ -489,11 +496,8 @@ export function Select({
           CONTROL_TRANSITION,
           CONTROL_PRESS_TRAVEL,
           CONTROL_DISABLED_CLASS,
-          size === "sm"
-            ? cn("h-[var(--control-h-sm)] text-label", quiet ? "gap-1 px-1.5" : "px-2")
-            : size === "md"
-              ? "h-[var(--control-h-md)] text-body-lg"
-              : "h-[var(--control-h-lg)] text-body-lg",
+          SELECT_SIZE_CLASS[size],
+          size === "sm" && (quiet ? "gap-1 px-1.5" : "px-2"),
         )}
       >
         <span

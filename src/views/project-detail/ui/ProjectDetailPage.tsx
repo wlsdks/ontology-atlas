@@ -857,7 +857,7 @@ export function ProjectDetailPage({
                   <Link
                     key={candidate.slug}
                     href={getProjectRuntimeDetailHref(candidate.slug)}
-                    className={controlClass({ shape: "card", size: "lg", tone: "secondary", className: "gap-3 px-3 py-3 text-body-lg hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)]" })}
+                    className={controlClass({ shape: "card", size: "lg", tone: "secondary", className: "gap-3 px-3 py-3 hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)]" })}
                   >
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

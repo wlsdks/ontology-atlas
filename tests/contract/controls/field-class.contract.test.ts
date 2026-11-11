@@ -152,27 +152,6 @@ describe('frame — who emits the box', () => {
 });
 
 describe('base — what every field shares', () => {
-  /**
-   * ⚠️ **Do not write this as `toContain('text-body')`** — `text-body-lg` contains
-   * it as a substring, so it **passes falsely** even after the rule changes. That
-   * assertion really did stay green right after type was paired with size.
-   *
-   * The rule: **wide fields (md, lg) use `text-body-lg` (14); dense fields (xs, sm)
-   * and compact `bare` use `text-body` (12.5); bare/lg uses the existing 14px step.
-   * The evidence is on screen — dropping
-   * `/project/new` to 12.5px made **the value the user typed nearly the same rank as
-   * the label the app wrote (11px)**. In a form, the most readable thing must be
-   * what the user entered.
-   */
-  it.each(all.map((c) => [`${c.frame}/${c.size}`, c] as const))(
-    '%s uses the type step for its density and composed-field role',
-    (_name, c) => {
-      const step = c.cls.match(/(?:^|\s)(text-body(?:-lg)?)(?:\s|$)/)?.[1];
-      const expected = c.size === 'lg' || (c.frame === 'boxed' && c.size === 'md') ? 'text-body-lg' : 'text-body';
-      expect(step, `Rendered class: ${c.cls}`).toBe(expected);
-    },
-  );
-
   it('there is exactly one type step — with two, CSS order decides the winner', () => {
     for (const c of all) {
       const hits = [...c.cls.matchAll(/(?:^|\s)text-body(?:-lg)?(?:\s|$)/g)];

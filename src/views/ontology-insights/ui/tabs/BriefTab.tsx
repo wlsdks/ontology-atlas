@@ -542,7 +542,7 @@ function BriefSinceList({ rows, total, soleKind, nowMs, counting }: { rows: read
               {row.href ? (
                 <Link
                   href={row.href}
-                  className={controlClass({ shape: 'row', size: 'md', hoverSurface: 'lift', className: `-mx-1.5 w-auto gap-3 px-1.5 text-body ${INSIGHTS_LIST_ROW}` })}
+                  className={controlClass({ shape: 'row', size: 'md', hoverSurface: 'lift', className: `-mx-1.5 w-auto gap-3 px-1.5 ${INSIGHTS_LIST_ROW}` })}
                 >
                   {body}
                 </Link>

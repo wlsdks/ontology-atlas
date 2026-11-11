@@ -300,7 +300,7 @@ function EditorContent({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t("openPublicAria")}
-                  className={controlClass({ shape: "chip", size: "lg", className: "h-9 gap-2 border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] text-body-lg hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]" })}
+                  className={controlClass({ shape: "chip", size: "lg", className: "h-9 gap-2 border-[color:var(--color-indigo-a24)] bg-[color:var(--color-indigo-a08)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-indigo-a12)]" })}
                 >
                   <ArrowUpRight size={ICON_SIZE.md} />
                   {t("openPublicLabel")}
@@ -320,7 +320,7 @@ function EditorContent({
                       )}&returnTo=${encodeURIComponent(safeReturnTo)}`,
                     )
                   }
-                  className={controlClass({ shape: "chip", size: "lg", className: "h-9 gap-2 border-[color:var(--color-divider)] text-body-lg hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]" })}
+                  className={controlClass({ shape: "chip", size: "lg", className: "h-9 gap-2 border-[color:var(--color-divider)] hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]" })}
                 >
                   <CopyPlus size={ICON_SIZE.md} />
                   {t("duplicateLabel")}

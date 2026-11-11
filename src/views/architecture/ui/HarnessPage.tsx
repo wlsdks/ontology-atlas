@@ -256,7 +256,7 @@ function HarnessPageInner() {
               variant="ghost"
               size="sm"
               data-testid="harness-overview-retry"
-              className="border-[color:var(--color-border-soft)] text-body text-[color:var(--color-text-secondary)]"
+              className="border-[color:var(--color-border-soft)] text-[color:var(--color-text-secondary)]"
               onClick={rereadHarness}
             >
               <RefreshCw size={ICON_SIZE.sm} aria-hidden />

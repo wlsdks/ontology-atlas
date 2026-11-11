@@ -112,7 +112,7 @@ export function SettingsNav({
                     shape: 'row',
                     size: 'md',
                     tone: active ? 'accentOnTint' : 'default',
-                    className: `w-auto shrink-0 gap-2 whitespace-nowrap rounded-card px-3 py-2 text-body sm:w-full sm:whitespace-normal ${
+                    className: `w-auto shrink-0 gap-2 whitespace-nowrap rounded-card px-3 py-2 sm:w-full sm:whitespace-normal ${
                       active ? 'bg-[color:var(--color-indigo-line-a13)]' : NAV_ROW_HOVER
                     }`,
                   })}

@@ -160,7 +160,7 @@ function DomainRow({
                         size: "sm",
                         // A fixed row height, so "how many" reads as length; the link fills the li.
                         className:
-                          "-mx-1.5 h-full w-[calc(100%+0.75rem)] gap-1.5 px-1.5 py-0 text-body text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
+                          "-mx-1.5 h-full w-[calc(100%+0.75rem)] gap-1.5 px-1.5 py-0 text-[color:var(--color-text-secondary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]",
                       })}
                     >
                       <OntologyMapKindGlyph kind="capability" size={13} />

@@ -278,7 +278,7 @@ export function CadencePicker({
                   size: "xs",
                   hoverInk: "strong",
                   className: cn(
-                    "absolute top-0 min-w-6 -translate-x-1/2 justify-center border-transparent px-1 text-label leading-label tabular-nums",
+                    "absolute top-0 min-w-6 -translate-x-1/2 justify-center border-transparent px-1 leading-label tabular-nums",
                     tick === index
                       ? "font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]"
                       : "text-[color:var(--color-text-quaternary)]",

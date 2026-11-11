@@ -461,7 +461,7 @@ export function SourceSummary({
                         tone: "muted",
                         hoverInk: "strong",
                         hoverSurface: "lift",
-                        className: `atlas-touch-floor w-full gap-2 ${PANE_ROW_INSET} text-body`,
+                        className: `atlas-touch-floor w-full gap-2 ${PANE_ROW_INSET}`,
                       })}
                     >
                       <Hash size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />

@@ -122,23 +122,16 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      */
     size: {
       /**
-       * Micro tier — command tags, micro badges, kbd-class controls. **Differs
-       * from `sm` on chips only** (inset `px-1.5`, caption, micro radius).
-       * Height stays on the 24 floor (`min-h-6`): the ramp says below 24 is out
-       * of spec, so this step opens inset, type and radius rather than height.
-       * On other shapes it is an alias of `sm` (no inventing values with zero
-       * consumers — the contract asserts the aliasing).
-       *
-       * Justification: "there is no step below sm" appears in the ratchet ledger
-       * for **three consecutive rounds** (features 4 · remainder re-measurement
-       * 14 · primitive round re-confirmation). Repeat count, not instinct.
+       * Micro tier for command tags and kbd-class controls. Differs from `sm` on chips only: inset
+       * `px-1.5` and the micro radius, on the same 24px floor and its `label` type. On other shapes
+       * it is an alias of `sm`, which the contract asserts.
        */
       xs: '',
-      /** Ramp floor 24px — the WCAG 2.5.8 minimum target. `text-caption`/`px-2`. */
+      /** On a chip, the ramp floor 24px (the WCAG 2.5.8 minimum target) with `text-label`. */
       sm: '',
-      /** `--control-h-md` 32px — the measured mode. `px-2.5`/`text-label`. */
+      /** On a chip, `--control-h-md` 32px with `text-body`: the measured mode. */
       md: '',
-      /** The same 32px with type and inset one step up. `px-3`/`text-body`. */
+      /** On a chip, the same 32px and type with a wider inset. */
       lg: '',
     },
     /**
@@ -273,18 +266,18 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     { shape: 'row', stacked: false, class: 'rounded-chip' },
     // ── Size: "large" means something different per shape. Give a square `px` and it stops being square.
     /*
-     * Chip — 24 / 32 / 32. `md` has a natural height of 30 that `min-h-8` lifts
-     * to 32; `lg` drops `py` one step (1.5 → 1) to reach a natural 30 and stands
-     * on the same 32. `min-h` only ever raises, so keeping `py-1.5` would leave 34.
+     * Chip — 24 / 32 / 32, and the height picks the type: `label` at 24, `body` from 28 to 36,
+     * `body-lg` from 40. `min-h` only ever raises, so the padding keeps each natural height under
+     * its floor.
      *
      * Chip radius — micro (4px) on `xs`, chip (6px) elsewhere. Consumer bytes are
      * the evidence: every inventoried micro tag wore `rounded` (4px), and no site
      * moved a radius during the migration.
      */
-    { shape: 'chip', size: 'xs', class: 'rounded-micro min-h-6 gap-1 px-1.5 py-0.5 text-caption' },
+    { shape: 'chip', size: 'xs', class: 'rounded-micro min-h-6 gap-1 px-1.5 py-0.5 text-label' },
     { shape: 'chip', size: ['sm', 'md', 'lg'], class: 'rounded-chip' },
-    { shape: 'chip', size: 'sm', class: 'min-h-6 px-2 py-1 text-caption' },
-    { shape: 'chip', size: 'md', class: 'min-h-8 px-2.5 py-1.5 text-label' },
+    { shape: 'chip', size: 'sm', class: 'min-h-6 px-2 py-0.5 text-label' },
+    { shape: 'chip', size: 'md', class: 'min-h-8 px-2.5 py-1 text-body' },
     { shape: 'chip', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     { shape: 'icon', size: ['xs', 'sm'], class: 'h-6 w-6' },
     { shape: 'icon', size: 'md', class: 'h-7 w-7' },
@@ -296,11 +289,11 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * (44, `--touch-target-min`). With 0 consumers that move
      * is also 0 — the step was put on the ramp before anything could adopt 42.
      */
-    { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1.5 text-label' },
+    { shape: 'row', size: ['xs', 'sm'], class: 'min-h-7 gap-1.5 px-2 py-1 text-body' },
     { shape: 'row', size: 'md', class: 'min-h-9 gap-2 px-2.5 py-2 text-body' },
     { shape: 'row', size: 'lg', class: 'min-h-11 gap-2.5 px-3 py-2.5 text-body-lg' },
-    { shape: 'pill', size: ['xs', 'sm'], class: 'min-h-6 px-2 py-1 text-caption' },
-    { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-label' },
+    { shape: 'pill', size: ['xs', 'sm'], class: 'min-h-6 px-2 py-0.5 text-label' },
+    { shape: 'pill', size: 'md', class: 'min-h-8 px-2.5 py-0.5 text-body' },
     { shape: 'pill', size: 'lg', class: 'min-h-8 px-3 py-1 text-body' },
     /*
      * Card — 32 / 36 / 40 (+4 steps, all inside the height vocabulary). Found by
@@ -311,7 +304,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * exceed the floor, so they move 0. `lg` keeps its natural 40 =
      * `--control-h-lg`.
      */
-    { shape: 'card', size: ['xs', 'sm'], class: 'min-h-8 gap-1.5 px-2.5 py-1.5 text-label' },
+    { shape: 'card', size: ['xs', 'sm'], class: 'min-h-8 gap-1.5 px-2.5 py-1 text-body' },
     { shape: 'card', size: 'md', class: 'min-h-9 gap-1.5 px-3 py-1.5 text-body' },
     { shape: 'card', size: 'lg', class: 'min-h-10 gap-2 px-3.5 py-2 text-body-lg' },
     { shape: 'tile', size: ['xs', 'sm'], class: 'gap-1.5 px-2 py-2 text-caption' },
@@ -324,7 +317,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     // 2.5.8 floor (24).
     { shape: 'segment', size: ['xs', 'sm'], class: 'min-h-6 gap-1 px-1 py-0.5 text-label' },
     { shape: 'segment', size: 'md', class: 'min-h-6 px-2 py-1 text-label' },
-    { shape: 'segment', size: 'lg', class: 'min-h-8 px-3 py-1.5 text-body' },
+    { shape: 'segment', size: 'lg', class: 'min-h-7 px-3 py-1 text-body' },
 
     { shape: 'chip', active: false, class: 'border-[color:var(--color-border-soft)]' },
     { shape: 'pill', active: false, class: 'border-[color:var(--color-border-soft)]' },
@@ -480,11 +473,11 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
      */
     { frame: 'boxed', multiline: false, size: 'xs', class: 'h-7 rounded-micro px-2 text-body' },
     { frame: 'boxed', multiline: false, size: 'sm', class: 'h-7 rounded-chip px-2 text-body' },
-    { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5 text-body-lg' },
+    { frame: 'boxed', multiline: false, size: 'md', class: 'h-8 rounded-chip px-2.5 text-body' },
     { frame: 'boxed', multiline: false, size: 'lg', class: 'h-10 rounded-chip px-3 text-body-lg' },
     { frame: 'boxed', multiline: true, size: 'xs', class: 'min-h-7 rounded-micro px-2 py-1.5 text-body' },
     { frame: 'boxed', multiline: true, size: 'sm', class: 'min-h-7 rounded-chip px-2 py-1.5 text-body' },
-    { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5 text-body-lg' },
+    { frame: 'boxed', multiline: true, size: 'md', class: 'min-h-8 rounded-chip px-2.5 py-1.5 text-body' },
     { frame: 'boxed', multiline: true, size: 'lg', class: 'min-h-10 rounded-chip px-3 py-2 text-body-lg' },
     { frame: 'bare', size: 'lg', class: 'text-body-lg leading-body-lg' },
   ],

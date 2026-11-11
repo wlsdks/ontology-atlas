@@ -580,7 +580,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className={controlClass({ shape: "chip", size: "lg", tone: "accentOnTint", className: "h-10 justify-center gap-1.5 border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)]" })}
+                        className={controlClass({ shape: "chip", size: "lg", tone: "accentOnTint", className: "h-10 justify-center gap-1.5 text-body-lg border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)]" })}
                       >
                         <BookOpen size={ICON_SIZE.sm} />
                         {t("openDocsVault")}
@@ -591,7 +591,7 @@ export function ProjectDrawer({
                        */}
                       <Link
                         href={buildOntologyNodeHref(`project:${project.slug}`)}
-                        className={controlClass({ shape: "chip", size: "lg", tone: "secondary", className: "h-10 justify-center border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]" })}
+                        className={controlClass({ shape: "chip", size: "lg", tone: "secondary", className: "h-10 justify-center text-body-lg border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]" })}
                       >
                         {t("openOntology")}
                       </Link>
@@ -770,7 +770,7 @@ export function ProjectDrawer({
                                 size: "md",
                                 tone: active ? "default" : "muted",
                                 className: cn(
-                                  "px-3 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-08)]",
+                                  "px-3",
                                   active
                                     ? "border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-a12)]"
                                     : "border-[color:var(--color-divider)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]",

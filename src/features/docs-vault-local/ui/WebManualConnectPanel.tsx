@@ -71,7 +71,7 @@ function PathField({
         onChange={(event) => onChange(event.target.value)}
         data-testid={testId}
         aria-invalid={issueMessage ? true : undefined}
-        className={fieldClass({ size: "md", className: "w-full font-mono text-label" })}
+        className={fieldClass({ size: "md", className: "w-full font-mono" })}
       />
       {issueMessage ? (
         <p
