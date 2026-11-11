@@ -782,7 +782,7 @@ export function LibrarySection({
                           hoverSurface: "lift",
                           active: hitOpen,
                           /* The touch floor, because this control rests at 28px while the rows above it are 36. */
-                          className: `atlas-touch-floor w-full ${INDEX_ROW_INSET} pl-8 text-label`,
+                          className: `atlas-touch-floor w-full ${INDEX_ROW_INSET} pl-8`,
                         })}
                       >
                         {/*

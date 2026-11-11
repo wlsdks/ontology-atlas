@@ -378,7 +378,7 @@ export function GlobalSearch({
                   setSelectedKinds(new Set());
                   setSelectedProjectIds(new Set());
                 }}
-                className={controlClass({ shape: "pill", tone: "secondary", className: "ml-auto shrink-0 px-2 py-0.5 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] hover:text-[color:var(--color-text-secondary)]" })}
+                className={controlClass({ shape: "pill", size: "sm", tone: "secondary", className: "ml-auto shrink-0 uppercase tracking-[var(--tracking-caps-10)] hover:text-[color:var(--color-text-secondary)]" })}
               >
                 {t('clearFilter')}
               </button>

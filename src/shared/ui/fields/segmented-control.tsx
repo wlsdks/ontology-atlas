@@ -13,7 +13,7 @@ import { controlClass, type ControlSize } from "../control-class";
  * is `shared/lib/keyboard/use-roving-radio-group`; this file applies the two measured containers
  * (`well`, `chips`). Busy never disables the group, which would drop its only tab stop.
  * The `well` needs `border-soft`, since the overlay-1 surface alone is invisible, and `p-px`, which
- * keeps it 28/36 tall on the control-height ramp. A selected segment answers no hover, because
+ * keeps it 28/32 tall on the control-height ramp. A selected segment answers no hover, because
  * the hover axes never emit under `active`.
  */
 
@@ -38,7 +38,7 @@ export type SegmentedControlProps<T extends string | number | boolean> = Segment
   value: T;
   options: ReadonlyArray<SegmentedOption<T>>;
   onChange: (next: T) => void;
-  /** Defaults to lg (32px, 44px under coarse pointers). */
+  /** Defaults to lg (a 32px well, 44px under coarse pointers). */
   size?: Extract<ControlSize, "md" | "lg">;
   /** `well` is a joined well; `chips` is a wrapping row of detached chips. */
   variant?: "well" | "chips";

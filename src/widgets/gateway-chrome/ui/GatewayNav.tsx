@@ -154,7 +154,7 @@ export function GatewayNav() {
               data-testid="gateway-x-placeholder"
               aria-disabled="true"
               title={tNav('xPending')}
-              className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
+              className="inline-flex size-8 cursor-not-allowed items-center justify-center rounded-chip text-[color:var(--color-text-quaternary)]"
             >
               <XMark size={15} aria-hidden />
               <span className="sr-only">{tNav('xPending')}</span>
@@ -183,7 +183,6 @@ const GATEWAY_ICON_LINK = controlClass({
   tone: 'muted',
   hoverInk: 'strong',
   hoverSurface: 'lift',
-  className: 'size-9',
 });
 
 function GatewayNavLink({
@@ -203,8 +202,7 @@ function GatewayNavLink({
       className={controlClass({ shape: 'chip', size: 'md', className: cn(
         // `touch-hit-expand` widens the hit area to 44px on coarse pointers without moving the
         // visible box.
-        'touch-hit-expand h-9 whitespace-nowrap px-2.5',
-        'text-body leading-body',
+        'touch-hit-expand whitespace-nowrap',
         // The border shows at rest so the chip reads as a control before the hand arrives.
         active
           ? 'border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-primary)]'

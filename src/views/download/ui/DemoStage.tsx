@@ -105,7 +105,7 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
           hidden={started}
           onClick={play}
           data-testid={`demo-play-${clip.id}`}
-          className={controlClass({ shape: "row", stacked: true, className: "absolute inset-0 justify-center bg-[color:var(--color-backdrop-medium)] text-body leading-body" })}
+          className={controlClass({ shape: "row", stacked: true, className: "absolute inset-0 justify-center bg-[color:var(--color-backdrop-medium)] leading-body" })}
         >
           <span className="rounded-chip border border-[color:var(--color-border-strong)] bg-[color:var(--color-elevated)] px-4 py-2">
             {t('demoPlay')}

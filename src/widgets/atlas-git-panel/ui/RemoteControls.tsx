@@ -332,7 +332,7 @@ export function RemoteSetup({
           placeholder={t("remoteFieldPlaceholder")}
           data-testid="atlas-git-remote-input"
           onChange={(event) => setRemoteUrl(event.target.value)}
-          className={fieldClass({ size: "md", className: "min-w-[220px] flex-1 font-mono text-label" })}
+          className={fieldClass({ size: "md", className: "min-w-[220px] flex-1 font-mono" })}
         />
         <button
           type="button"

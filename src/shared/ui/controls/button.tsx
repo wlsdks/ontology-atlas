@@ -6,7 +6,6 @@ import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-cl
 const buttonVariants = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'text-body-lg leading-caption',
     'font-[var(--font-weight-signature)]',
     'border border-transparent',
     'select-none',
@@ -37,14 +36,13 @@ const buttonVariants = cva(
           'border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a08)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)] hover:bg-[color:var(--color-danger-a12)] active:bg-[color:var(--color-danger-a12)] active:shadow-[var(--shadow-control-press)] disabled:border-[color:var(--color-overlay-3)] disabled:bg-[color:var(--color-overlay-1)] disabled:text-[color:var(--color-text-primary)]',
       },
       /*
-       * Every size wears the chip radius so a Button matches chips and fields of its height;
-       * only content boxes wear theirs. Type stays `text-body-lg` to match a 32px field's value
-       * text.
+       * Every size wears the chip radius and the type of its height, so a Button matches chips
+       * and fields beside it; only content boxes wear their own radius.
        */
       size: {
-        sm: 'h-8 px-3.5 rounded-chip',
-        md: 'h-10 px-4.5 rounded-chip',
-        lg: 'h-11 px-6 rounded-chip',
+        sm: 'h-8 px-3.5 rounded-chip text-body leading-caption',
+        md: 'h-10 px-4.5 rounded-chip text-body-lg leading-caption',
+        lg: 'h-11 px-6 rounded-chip text-body-lg leading-caption',
       },
     },
     defaultVariants: {
