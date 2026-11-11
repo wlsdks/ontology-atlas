@@ -29,39 +29,36 @@ test('multi-project scope and expanded declarations remain explicit and bounded'
   await expect(page.getByTestId('analysis-scope')).toContainText('2 projects');
   await expect(page.getByTestId('analysis-scope')).not.toContainText('Project A');
   await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', '96');
-  const orders = page.getByRole('region', { name: 'Orders', exact: true });
-  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
-  await expect.poll(() => page.evaluate(() => {
-    const more = document.querySelector('[data-board-node="more:lane:domain:orders"]')!.getBoundingClientRect();
-    return [...document.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')].filter(path => {
-      const start = new DOMPoint(path.getPointAtLength(0).x, path.getPointAtLength(0).y).matrixTransform(path.getScreenCTM()!);
-      return start.x >= more.left - 1 && start.x <= more.right + 1 && Math.abs(start.y - more.bottom) <= 1;
-    }).length;
-  })).toBe(1);
+  const sources = page.locator('[data-side="from"]').getByTestId('analysis-claim');
+  await expect(sources).toHaveCount(8);
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(8);
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
-  for (let press = 0; press < 13; press++) await next.click();
-  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 14 of 96');
+  for (let press = 0; press < 8; press++) await next.click();
+  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 9 of 96');
   await expect(next).toBeFocused();
-  await expect(orders.getByTestId('analysis-claim')).toHaveCount(12);
-  await expect(orders.locator('[data-endpoint="from"]')).toBeVisible();
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(13);
-  const more = orders.getByRole('button', { name: 'Show 84 more', exact: true });
-  await more.click();
-  await expect(orders.getByTestId('analysis-claim')).toHaveCount(96);
-  await expect(orders.getByRole('button', { name: 'Show less', exact: true })).toBeFocused();
+  await expect(sources).toHaveCount(8);
+  await expect(page.locator('[data-endpoint="from"]')).toBeVisible();
+  await expect(page.getByTestId('analysis-witness')).toHaveCount(8);
+  await page.getByRole('button', { name: 'Show 88 more', exact: true }).click();
+  await expect(sources).toHaveCount(96);
+  await expect(page.getByRole('button', { name: 'Show less', exact: true })).toBeFocused();
   await expect(page.getByTestId('analysis-witness')).toHaveCount(96);
 });
 
-test('a saved declaration reopens with focus on its source', async ({ page }) => {
+test('a saved declaration from another pair reopens on that pair with focus on its source', async ({ page }) => {
   await page.goto('/en/ontology/insights/?guides=off');
-  const edge = await page.getByTestId('analysis-witness').nth(3).getAttribute('data-edge');
+  const pair = page.getByTestId('analysis-pair').nth(4);
+  await pair.click();
+  await expect(pair).toHaveAttribute('aria-pressed', 'true');
+  const pairId = await pair.getAttribute('data-pair');
+  const edge = await page.getByTestId('analysis-witness').last().getAttribute('data-edge');
   await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
   await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge!);
+  await expect(page.locator('[data-testid="analysis-pair"][aria-pressed="true"]')).toHaveAttribute('data-pair', pairId!);
   await expect(page.locator('[data-endpoint="from"][aria-pressed="true"]')).toBeFocused();
 });
 
-test('a saved declaration from a whole responsibility settles focus once on its heading', async ({ page }) => {
+test('a saved declaration from a whole responsibility settles focus on that responsibility', async ({ page }) => {
   const files = {
     'p.md': fixtureDocument('project', 'p', 'Project', 1, 'domains: [domains/orders, domains/stock]'),
     'domains/orders.md': fixtureDocument('domain', 'domains/orders', 'Orders', 2, 'capabilities: [capabilities/a, capabilities/b]\ndepends_on: [capabilities/stock]'),
@@ -79,8 +76,9 @@ test('a saved declaration from a whole responsibility settles focus once on its 
   const edge = 'domain:orders--depends_on-->capability:stock';
   await page.goto(`/en/ontology/insights/?guides=off&review=${encodeURIComponent(`relation:${edge}`)}`);
   await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge);
-  await expect(page.locator('[data-endpoint="from"]')).toHaveCount(0);
-  await expect(page.getByTestId('analysis-finding-heading')).toBeFocused();
+  const whole = page.locator('[data-endpoint="from"]');
+  await expect(whole).toContainText('Whole responsibility');
+  await expect(whole).toBeFocused();
   const step = page.getByTestId('analysis-declaration-step');
   const before = await step.textContent();
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
@@ -107,43 +105,21 @@ test('the selected line meets both cards after the entrance under normal motion'
   })).toBeLessThanOrEqual(1);
 });
 
-test('a line that skips a one-row lane crosses it in a channel, never over a card', async ({ page }) => {
-  await page.setViewportSize({ width: 1512, height: 916 });
-  await page.goto('/en/ontology/insights/?guides=off');
-  await expect(page.locator('[data-board-pass]').first()).toBeAttached();
-  await waitForAnimationsDone(page.getByTestId('analysis-board'));
-  await expect.poll(() => page.getByTestId('analysis-board').evaluate(board => {
-    const inside = (x: number, y: number, box: DOMRect) => x > box.left && x < box.right && y > box.top && y < box.bottom;
-    const lanes = [...board.querySelectorAll<HTMLElement>('[data-board-lane]')].map(lane => {
-      const cards = [...lane.querySelectorAll('[data-board-node]')].map(node => node.getBoundingClientRect());
-      const claimTops = [...lane.querySelectorAll('[data-testid="analysis-claim"]')].map(node => Math.round(node.getBoundingClientRect().top));
-      return { box: lane.getBoundingClientRect(), cards, oneRow: new Set(claimTops).size === 1 };
-    });
-    let skipped = 0, covered = 0;
-    for (const hit of board.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')) {
-      const matrix = hit.getScreenCTM()!, length = hit.getTotalLength();
-      const points = Array.from({ length: 97 }, (_, i) => new DOMPoint(hit.getPointAtLength(length * i / 96).x, hit.getPointAtLength(length * i / 96).y).matrixTransform(matrix));
-      const ends = new Set([points[0]!, points.at(-1)!].map(point => lanes.findIndex(lane => inside(point.x, point.y, lane.box))));
-      lanes.forEach((lane, index) => {
-        if (ends.has(index) || !lane.oneRow || !points.some(point => inside(point.x, point.y, lane.box))) return;
-        skipped++;
-        if (points.some(point => lane.cards.some(card => inside(point.x, point.y, card)))) covered++;
-      });
-    }
-    return { skipped: skipped > 0, covered };
-  })).toEqual({ skipped: true, covered: 0 });
-});
-
-test('every line layer clips against card cut-outs defined in its own svg', async ({ page }) => {
+test('every drawn line stays in the gutter between the two columns of cards', async ({ page }) => {
   await page.goto('/en/ontology/insights/?guides=off');
   await expect(page.locator('[data-connection="selected"]')).toBeAttached();
+  await waitForAnimationsDone(page.getByTestId('analysis-board'));
   await expect.poll(() => page.getByTestId('analysis-board').evaluate(board => {
-    const clipped = [...board.querySelectorAll<SVGGElement>('[clip-path]')];
-    return board.querySelectorAll(':scope > svg').length === 1 && clipped.length > 0 && clipped.every(group => {
-      const clip = document.getElementById(group.getAttribute('clip-path')!.match(/#([^)]+)/)?.[1] ?? '');
-      return clip instanceof SVGClipPathElement && clip.ownerSVGElement === group.ownerSVGElement;
-    });
-  })).toBe(true);
+    const boxes = (side: string) => [...board.querySelectorAll(`[data-side="${side}"] [data-testid="analysis-claim"]`)].map(card => card.getBoundingClientRect());
+    const gutter = { left: Math.max(...boxes('from').map(box => box.right)), right: Math.min(...boxes('to').map(box => box.left)) };
+    const hits = [...board.querySelectorAll<SVGPathElement>('[data-testid="analysis-witness"]')];
+    const outside = hits.filter(hit => {
+      const matrix = hit.getScreenCTM()!, length = hit.getTotalLength();
+      return Array.from({ length: 49 }, (_, i) => new DOMPoint(hit.getPointAtLength(length * i / 48).x, hit.getPointAtLength(length * i / 48).y).matrixTransform(matrix))
+        .some(point => point.x < gutter.left - 1 || point.x > gutter.right + 1);
+    }).length;
+    return { drawn: hits.length > 0, outside };
+  })).toEqual({ drawn: true, outside: 0 });
 });
 
 test('two-hundred-percent text keeps nodes, evidence and controls inside the reading width', async ({ page }) => {

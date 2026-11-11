@@ -358,7 +358,12 @@
       "showLessItems": "收起",
       "capabilityFilter": "能力显示范围",
       "sourceScope": "源码状态",
-      "sourceScopeOptions": {"all": "全部源码 · {count}", "moved": "源码已更改 · {count}", "missing": "源码路径缺失 · {count}", "unknown": "未检查 · {count}"},
+      "sourceScopeOptions": {
+        "all": "全部源码 · {count}",
+        "moved": "源码已更改 · {count}",
+        "missing": "源码路径缺失 · {count}",
+        "unknown": "未检查 · {count}"
+      },
       "sourceScopeMatches": "符合条件的能力有 {count} 个。所选声明保持打开。",
       "connectedElements": "已连接的实现要素",
       "openElementDocument": "打开 {name} 文档",
@@ -376,10 +381,26 @@
       "pathChanged": "{date} 已更改",
       "pathGone": "未找到",
       "pathUndated": "日期未核对",
-      "board": "项目看板",
+      "board": "待确认的能力列表",
       "laneEmpty": "未记录能力",
-      "cardGaps": "{count} 处记录缺项",
-      "markerGap": "名称旁的数字是记录缺项数"
+      "pairList": "职责之间的关系列表",
+      "pairLabel": "{from} → {to} · {count} 条依赖声明",
+      "pairDeclarations": "{count} 条依赖声明",
+      "pairSource": "依赖方",
+      "pairTarget": "被依赖方",
+      "pairWholeDomain": "整个职责",
+      "gapShort": {
+        "document": "没有文档",
+        "anchor": "没有实现依据",
+        "definition": "定义不明确",
+        "boundary": "缺少边界",
+        "uncertainty": "未记录未确认内容",
+        "none": "没有已报告的缺口"
+      },
+      "declaringDocument": "声明所在文档",
+      "pairGrouping": "连接的分组方式",
+      "pairGroupingNeeds": "依赖谁",
+      "pairGroupingProvides": "被谁依赖"
     }
   }
 }
