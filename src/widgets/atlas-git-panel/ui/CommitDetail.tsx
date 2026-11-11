@@ -412,7 +412,7 @@ export function CommitDetail({
             /* An empty lens stays in the strip to say its zero, but cannot be chosen. */
             disabled={(id === "concepts" ? concepts.length : files.length) === 0}
             onClick={() => setLens(id)}
-            className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
+            className={controlClass({ shape: "segment", size: "md", tone: "muted", className: "-mb-px min-h-9 gap-1.5 text-body rounded-none border-b-2 border-transparent px-2.5 hover:text-[color:var(--color-text-primary)] aria-selected:border-[color:var(--color-indigo-brand)] aria-selected:font-[var(--font-weight-signature)] aria-selected:text-[color:var(--color-text-primary)]" })}
           >
             {id === "concepts" ? t("changedConcepts") : t("changedFiles")}
             <b className="font-normal tabular-nums text-[color:var(--color-text-quaternary)]">
