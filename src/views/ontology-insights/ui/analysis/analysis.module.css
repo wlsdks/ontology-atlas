@@ -10,7 +10,11 @@
 .listSearchStatus:has(> p:empty:only-child) { min-height: 0; }
 .countBasis { border-top: 1px solid var(--color-divider); margin-top: 1.5rem; padding-top: 0.75rem; }
 
-.boardToolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; margin-bottom: 1.25rem; }
+.boardToolbar { display: grid; grid-template-columns: minmax(0, 16rem) auto; align-items: center; justify-content: space-between; column-gap: 1.5rem; margin-bottom: 1.25rem; }
+.boardToolbar > .listSearch { display: contents; }
+.boardToolbar > :last-child { grid-area: 1 / 2; }
+.boardToolbar .listSearchStatus { grid-area: 2 / 1 / auto / -1; justify-content: flex-start; gap: 0.75rem; }
+.boardToolbar .listSearchStatus:not(:has(> p:empty:only-child)) { margin-top: 0.5rem; }
 
 .explorer { display: grid; grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr); gap: 2rem; align-items: start; }
 .pairNav { position: sticky; top: calc(var(--page-header-bar-h) + 1rem); display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; max-height: calc(100dvh - var(--pair-nav-rest-top) - var(--page-end-pad)); }
@@ -105,6 +109,10 @@
  .scopeBar { flex-wrap: wrap; }
  .layout { grid-template-columns: minmax(0,1fr); }
  .inspector[data-placement="side"] { position: static; max-height: none; scroll-margin-top: calc(var(--page-header-bar-h) + 1rem); border-left: 0; border-top: 1px solid var(--color-divider); padding: 1.25rem 0 0; }
+}
+@container (max-width: 36rem) {
+ .boardToolbar { grid-template-columns: minmax(0, 1fr); }
+ .boardToolbar > :last-child { grid-area: 3 / 1; margin-top: 0.75rem; }
 }
 @container (max-width: 34rem) {
  .claimRow { grid-template-columns: minmax(0,1fr) auto; row-gap: 0.125rem; }

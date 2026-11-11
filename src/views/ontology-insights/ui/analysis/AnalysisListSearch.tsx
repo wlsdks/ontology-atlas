@@ -19,7 +19,7 @@ export function AnalysisListSearch({ value, onChange, label, matches, total, tes
       onKeyDown={event => { if (event.key === 'Escape' && value) { event.preventDefault(); event.stopPropagation(); clear(); } }} />
     <div className={styles.listSearchStatus}>
       <p role="status" aria-atomic="true" className="text-label text-[color:var(--color-text-secondary)]">{!value.trim() ? null : matches ? t('searchMatches', { count: matches, total }) : t('noSearchResults')}</p>
-      {value ? <button type="button" onClick={clear} data-testid={`${testId}-clear`} className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor' })}>{t('clearSearch')}</button> : null}
+      {value ? <button type="button" onClick={clear} data-testid={`${testId}-clear`} className={controlClass({ shape: 'link', size: 'md', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide' })}>{t('clearSearch')}</button> : null}
     </div>
   </div>;
 }
