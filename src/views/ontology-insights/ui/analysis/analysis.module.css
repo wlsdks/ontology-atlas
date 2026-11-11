@@ -32,7 +32,7 @@
 .pairRowCount { flex: none; min-width: 1.25rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); font-variant-numeric: tabular-nums; text-align: right; }
 .pairRow[aria-pressed="true"] .pairRowCount { color: var(--color-text-primary); }
 
-.pairStage { scroll-margin-top: calc(var(--page-header-bar-h) + 1rem); min-width: 0; padding: 1.5rem 1.75rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-overlay-1); }
+.pairStage { scroll-margin-top: calc(var(--page-header-bar-h) + 1rem); min-width: 0; padding: 1.5rem 1.75rem; border: 1px solid var(--color-border-soft); border-radius: var(--radius-panel); background: var(--color-panel); }
 .pairDiagram { position: relative; display: grid; grid-template-columns: minmax(0, 22rem) minmax(5rem, 1fr) minmax(0, 22rem); gap: 1.25rem 0; align-items: center; }
 .pairColumnTitle { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; align-self: start; color: var(--color-text-primary); font-size: var(--text-title); line-height: var(--leading-title); font-weight: var(--font-weight-strong); }
 .pairColumnRole { color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); font-weight: 400; }
