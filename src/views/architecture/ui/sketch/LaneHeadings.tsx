@@ -1,5 +1,6 @@
 import { cn } from '@/shared/lib/cn';
 
+import { stampSuffix } from '../../model/edge-sentences';
 import { PAD_X, RULE_SENTENCE_ROW_H } from './geometry';
 import type { ArchitectureSketchProps, EmptyPanel } from './types';
 
@@ -46,7 +47,7 @@ export function AcrossLaneHeadings({
             data-testid="architecture-observation-stamp"
             className="fill-[color:var(--color-text-tertiary)] font-normal normal-case"
           >
-            {` · ${observationStamp}`}
+            {stampSuffix(observationStamp)}
           </tspan>
         ) : null}
       </text>

@@ -5,19 +5,16 @@ import type { ArchitectureSketchProps, EmptyPanel, FlowAxis, Placed } from './ty
 
 function boxOrigin(
   axis: FlowAxis,
-  rank: number,
-  lane: number,
+  column: number,
   boxH: number,
   boxW: number,
   rowGap: number,
   padY: number,
   colGap: number,
 ): { x: number; y: number } {
-  const along = rank * (axis === 'across' ? boxW + colGap : boxH + rowGap);
-  const across = lane * (axis === 'across' ? boxH + rowGap : boxW + colGap);
   return axis === 'across'
-    ? { x: PAD_X + along, y: padY + across }
-    : { x: PAD_X + across, y: padY + along };
+    ? { x: PAD_X + column * (boxW + colGap), y: padY }
+    : { x: PAD_X, y: padY + column * (boxH + rowGap) };
 }
 
 export function useSketchPlacement({
@@ -60,7 +57,7 @@ export function useSketchPlacement({
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      const at = boxOrigin(axis, box.column, box.slot, boxH, contractBoxW, rowGap, padY, colGap);
+      const at = boxOrigin(axis, box.column, boxH, contractBoxW, rowGap, padY, colGap);
       map.set(box.id, {
         id: box.id,
         x: at.x + (axis === 'down' ? layoutLeadRoom : 0),
@@ -154,7 +151,7 @@ export function useSketchPlacement({
   /** The first x the empty column claims, so a rule sentence beside an arrow stops short of it. */
   const emptyColumnLeft = emptyColumn?.x ?? null;
 
-  /* Box ends in SVG units, which are CSS pixels since the drawing is not scaled. Derived, never a ref written during render. */
+  /* Box ends in SVG units, which are CSS pixels since the drawing is not scaled. */
   const boxEnd = useMemo(
     () => ({
       /* A roomy role's lowest face (its observation card) is the boundary the hidden count measures, since the group is the role. */

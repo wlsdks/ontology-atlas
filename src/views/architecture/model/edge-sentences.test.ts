@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { placeEdgeSentences, type SentenceEdge } from './edge-sentences';
+import { ruleSentenceRoom, placeEdgeSentences, type SentenceEdge } from './edge-sentences';
 
 /* A seven-role chain at the shipped geometry: 180×82 boxes, 12px gap, chain runs down. */
 const IDS = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
@@ -10,6 +10,9 @@ function chainDown(leftGround: number) {
   const placed = new Map(IDS.map((id, i) => [id, { x: leftGround, y: 20 + i * (BOX.boxH + BOX.rowGap) }]));
   return placed;
 }
+
+/* The ladder's own pitch: the fixture chain is 12px apart, the ladder leaves 24. */
+const ladderDown = (x: number) => new Map(IDS.map((id, i) => [id, { x, y: 20 + i * (BOX.boxH + 24) }]));
 
 function chainAcross() {
   return new Map(IDS.map((id, i) => [id, { x: 28 + i * (BOX.boxW + BOX.colGap), y: 80 }]));
@@ -27,24 +30,8 @@ const sentence = (e: SentenceEdge) =>
   e.kind === 'permitted' ? `${e.from} may depend on ${e.to}` : `${e.from} reaches ${e.to} in ${e.count} imports`;
 
 describe('placeEdgeSentences', () => {
-  it('puts every adjacent sentence left of a downward chain, right-aligned, on its own gap', () => {
-    const placed = chainDown(400);
-    const out = placeEdgeSentences({
-      axis: 'down', edges: spine, placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
-    });
-    expect(out).toHaveLength(6);
-    for (const s of out) {
-      expect(s.hidden).toBeUndefined();
-      expect(s.anchor).toBe('end');
-      expect(s.x).toBe(400 - 20);
-      expect(s.rect!.x + s.rect!.width).toBeLessThanOrEqual(380);
-    }
-    expect(new Set(out.map((s) => s.y)).size).toBe(6);
-  });
-
   it('seats an adjacent rule beside its own arrow on the comparison ladder', () => {
-    /* The ladder's own pitch: the fixture chain is 12px apart, the ladder leaves 24. */
-    const placed = new Map(IDS.map((id, i) => [id, { x: 400, y: 20 + i * (BOX.boxH + 24) }]));
+    const placed = ladderDown(400);
     const out = placeEdgeSentences({
       axis: 'down',
       edges: [spine[0]],
@@ -54,7 +41,6 @@ describe('placeEdgeSentences', () => {
       swingOf: () => 0,
       leadRoom: 180,
       trailRoom: 180,
-      adjacentSeat: 'connector',
       connectorRoom: BOX.boxW / 2 + 72 + 240,
       sentenceOf: sentence,
     });
@@ -68,7 +54,7 @@ describe('placeEdgeSentences', () => {
   });
 
   it('seats a measured count beside its own observation arrow on the ladder', () => {
-    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const placed = ladderDown(600);
     const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
     const [s] = placeEdgeSentences({
       axis: 'down',
@@ -79,7 +65,6 @@ describe('placeEdgeSentences', () => {
       swingOf: () => 0,
       leadRoom: 180,
       trailRoom: 180,
-      adjacentSeat: 'connector',
       connectorSide: 'left',
       /* Half a face plus a wide gutter: enough for the Latin fixture sentence in full. */
       connectorRoom: BOX.boxW / 2 + 150,
@@ -156,16 +141,15 @@ describe('placeEdgeSentences', () => {
   });
 
   it('ellipsizes to the room it has and never crosses a box', () => {
-    const placed = chainDown(140);
     const out = placeEdgeSentences({
-      axis: 'down', edges: spine, placed, ...BOX, swingOf: () => 0, leadRoom: 140, trailRoom: 300,
+      axis: 'down', edges: spine, placed: ladderDown(140), ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 140, trailRoom: 300,
+      connectorRoom: 160,
       sentenceOf: (e) => `${e.from} may depend on ${e.to} and this clause runs long`,
     });
     for (const s of out) {
       expect(s.hidden).toBeUndefined();
       expect(s.text.endsWith('…')).toBe(true);
-      expect(s.rect!.x).toBeGreaterThanOrEqual(0);
-      expect(s.rect!.x + s.rect!.width).toBeLessThanOrEqual(140 - 20);
+      expect(s.rect!.x + s.rect!.width).toBeLessThanOrEqual(140 + BOX.boxW / 2 + 160);
     }
   });
 
@@ -177,25 +161,6 @@ describe('placeEdgeSentences', () => {
       axis: 'down', edges: [traffic, rule], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
     });
     expect(out.map((s) => `${s.kind}:${s.key}`).sort()).toEqual(['permitted:views>widgets', 'traffic:views>widgets']);
-  });
-
-  it('puts a rule left and matching observed traffic right so both remain visible', () => {
-    const placed = chainDown(400);
-    const rule: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false };
-    const traffic: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false };
-    const out = placeEdgeSentences({
-      axis: 'down', edges: [traffic, rule], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
-    });
-    const drawn = out.filter((s) => s.hidden === undefined);
-    expect(drawn).toHaveLength(2);
-    expect(drawn.find((s) => s.kind === 'permitted')).toMatchObject({
-      anchor: 'end',
-      x: 380,
-    });
-    expect(drawn.find((s) => s.kind === 'traffic')).toMatchObject({
-      anchor: 'start',
-      x: 600,
-    });
   });
 
   it('seats a skip\'s sentence past every drawn arc that runs by it, not only its own', () => {
@@ -230,11 +195,11 @@ describe('placeEdgeSentences', () => {
   });
 
   it('lets an invisible sentence hold no ground against a visible one', () => {
-    const placed = chainDown(400);
     const drawn: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false, drawn: true };
     const ghost: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false, drawn: false };
     const out = placeEdgeSentences({
-      axis: 'down', edges: [ghost, drawn], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
+      axis: 'down', edges: [ghost, drawn], placed: ladderDown(400), ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 400, trailRoom: 300,
+      connectorRoom: 300, sentenceOf: sentence,
     });
     expect(out.find((s) => s.text.includes('314'))?.hidden).toBeUndefined();
   });
@@ -303,13 +268,57 @@ describe('placeEdgeSentences', () => {
 
 describe('placeEdgeSentences across lanes', () => {
   it('lets a count sentence give way to a rule sentence another lane already holds', () => {
-    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const placed = ladderDown(600);
     const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
-    const settings = { axis: 'down' as const, placed, ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 180, trailRoom: 180, adjacentSeat: 'connector' as const, connectorSide: 'left' as const, connectorRoom: BOX.boxW / 2 + 150, sentenceOf: sentence };
+    const settings = { axis: 'down' as const, placed, ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 180, trailRoom: 180, connectorSide: 'left' as const, connectorRoom: BOX.boxW / 2 + 150, sentenceOf: sentence };
     const free = placeEdgeSentences({ ...settings, edges: [traffic] })[0];
     expect(free.hidden).toBeUndefined();
     const ruleRect = { x: free.rect!.x - 40, y: free.rect!.y, width: 60, height: free.rect!.height };
     const yielding = placeEdgeSentences({ ...settings, edges: [traffic], occupied: [ruleRect] })[0];
     expect(yielding.hidden === 'collision' || yielding.text.length < free.text.length).toBe(true);
+  });
+});
+
+describe('a contested seat', () => {
+  it('goes to the violation, and the busier clean count reads on the line below', () => {
+    const placed = chainDown(400);
+    const clean: SentenceEdge = { from: 'app', to: 'widgets', kind: 'traffic', count: 900, columnSpan: 2, violated: false };
+    const violation: SentenceEdge = { from: 'widgets', to: 'app', kind: 'traffic', count: 1, columnSpan: 2, violated: true };
+    const out = placeEdgeSentences({
+      axis: 'down', edges: [clean, violation], placed, ...BOX, swingOf: () => 120, leadRoom: 400, trailRoom: 400, sentenceOf: sentence,
+    });
+    const seatOf = (edge: SentenceEdge) => out.find((placement) => placement.from === edge.from)!;
+    expect(seatOf(clean).hidden).toBeUndefined();
+    expect(seatOf(violation).y).toBeLessThan(seatOf(clean).y);
+  });
+});
+
+describe('ruleSentenceRoom', () => {
+  const roomFor = (rules: SentenceEdge[]) =>
+    ruleSentenceRoom({ rules, sentenceOf: sentence, arcDepthOf: () => 30, pairArcDepthOf: () => 44, opposedPairOffset: 6 });
+  const ownSkip: SentenceEdge = { from: 'routing', to: 'views', kind: 'permitted', columnSpan: 2, violated: false };
+
+  it('holds both lanes for a skip the profile draws at rest, and neither for one it does not draw', () => {
+    const drawn = roomFor([...spine, ownSkip]);
+    expect(drawn.lane).toBeGreaterThan(30);
+    expect(drawn.countLane).toBeGreaterThan(44);
+    const waiting = roomFor([...spine, { ...ownSkip, drawn: false }]);
+    expect([waiting.lane, waiting.countLane]).toEqual([0, 0]);
+  });
+
+  it('holds a row gap only where a rule is spoken beside its arrow', () => {
+    expect(roomFor([ownSkip]).rowSpan).toBe(0);
+    expect(roomFor(spine).rowSpan).toBeGreaterThan(0);
+  });
+
+  it('adds the stand-off of an opposed pair of rules to the row gap they share', () => {
+    const [first] = spine;
+    const back: SentenceEdge = { ...first, from: first.to, to: first.from };
+    expect(roomFor([first, back]).rowSpan - roomFor([first]).rowSpan).toBe(6);
+  });
+
+  it('deepens the across gap by the stand-off of an opposed pair of rule skips', () => {
+    const back: SentenceEdge = { ...ownSkip, from: ownSkip.to, to: ownSkip.from };
+    expect(roomFor([ownSkip, back]).skipDepth - roomFor([ownSkip]).skipDepth).toBe(6);
   });
 });

@@ -189,8 +189,8 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
   chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
   rule sentence sits beside the arrow it describes, in the 24px gap between the
-  two faces it joins. A canvas too short for the rows, or a profile with parallel
-  lanes, still draws the across chain. The ladder needs only its faces plus 48px of
+  two faces it joins. A canvas too short for the rows still draws the across
+  chain. The ladder needs only its faces plus 48px of
   side lane each side, so a tablet canvas from 744px draws it too. A canvas too
   short for those rows but tall enough for tighter ones draws the same comparison
   on 58px faces with one summary line and a 22px gap, so a 1280×800 laptop shows
@@ -210,6 +210,40 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   arrow reading to the canvas edge. A short-canvas across chain grows its faces
   with the canvas up to the roomy 220px, names each row once above its first face
   instead of on every face, and gives its captions three lines.
+- **Every role has its own row, and a stroke is drawn the way it runs** (2026-11-12).
+  Roles the rules cannot order stand on consecutive rows and share one numeral
+  (`01, 02, 02, 02, 03`), so a fan is the same ladder as a chain, and the across chain
+  is left to a canvas too short for the rows. A stroke leaves the edge of its face that
+  looks at its target, so a crossing that climbs the chain starts at the face's top
+  instead of striking through the rows it passes. Two rules, or two imports, that oppose
+  each other between neighbours stand 6px either side of their line (3px on the narrow
+  ladder, where a rule and an import already share it). A skip leaves the face's side on
+  both ladders, rules on the left and imports on the right: an arc on the paired ladder,
+  a shallow bracket (16px, plus 10px per nested lane) inside the phone's edge air.
+  Opposed skips nest by lane. A rule between neighbouring ranks is always drawn, as a
+  side arc where it passes a sibling, so a fan shows every rule it declares. A
+  paired-ladder track with at most three skips past a rank draws those at rest too; rule
+  skips rest only on a canvas where that costs no sentence: both lanes read whole, the
+  row gaps span their sentences, and no role description is cut that the widest face
+  reads. That is judged with the dock closed and the skip lane a record would take, so
+  neither an opening dock nor a landing record withdraws them; of three rule skips about
+  one midpoint, one sentence still waits for its role.
+  Any other skip arrives when its role is chosen or it is violated. On the across chain
+  a skip turns inside the column gap and runs under its row of faces. Where the profile
+  declares a rule skip, the gap above the observation row opens to the run's depth plus
+  64px, so the run, its sentence and the two count lines over the observation faces each
+  have a line, and the joint on each pillar stays 24px above its observation face. The
+  across observation heading is measured with its date, so a count sentence reads a line
+  clear of it, and the sentence under an opposed pair of across skips reads clear of the
+  outer run. The sentences of the rule skips drawn at rest claim their ground from the
+  profile alone, never from a record or a selection: the contract lane for the rules, the
+  observation lane for the counts of their pairs (either direction, four digits, nested
+  as a pair), and the span between the two lanes' arrows where a rule shares a row gap
+  with the count of its pair, up to the 160px gutter cap. Both lanes claim before the
+  face grows. In a row gap a count reads from its own arrow as far across as a rule does.
+  The faces stand on the card's centre line unless a lane needs more than half the ground
+  beside them, the rule lane first, and neither lane takes the other's 48px floor. A
+  sentence longer than the ground it lands in is shortened.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale

@@ -6,7 +6,7 @@ import type { ArchitectureGraph as Graph } from '../../model/graph-layout';
 import type { RoleLedger } from '../../model/role-ledger';
 import { balanceLinesByWidthAt, captionLineRoom, splitLinesByWidthAt } from '../../model/summary-lines';
 import { ConnectionPort } from './ConnectionPort';
-import { SUMMARY_FONT_PX, SUMMARY_LINES } from './geometry';
+import { ACROSS_JOINT_RISE, SUMMARY_FONT_PX, SUMMARY_LINES } from './geometry';
 import { EDGE_STROKE, RECEDED_ROLE_OPACITY } from './ink';
 import type { ArchitectureSketchProps, ArrivalPhase, FlowAxis, Placed } from './types';
 
@@ -24,6 +24,11 @@ const LEDGER_GLYPH: Record<RoleLedger['state'], string> = {
   violated: '⊘',
   'no-source': '○',
 };
+
+/** The face edges a role's drawn strokes leave from: ahead along the chain, back against it, or both. */
+function tailEnds(outgoing: readonly { climbs: boolean }[]): boolean[] {
+  return [false, true].filter((climbs) => outgoing.some((edge) => edge.climbs === climbs));
+}
 
 export function RoleFaces({
   graph,
@@ -116,7 +121,7 @@ export function RoleFaces({
   const leading = roomy ? SPLIT_SUMMARY_LEADING : SUMMARY_LEADING;
   return (
     <>
-      {graph.boxes.map((box, boxIndex) => {
+      {graph.boxes.map((box) => {
         const at = placed.get(box.id);
         const observedAt = observedPlaced.get(box.id);
         if (!at) return null;
@@ -150,6 +155,8 @@ export function RoleFaces({
         const observationOutgoing = visibleEdges.filter(
           (edge) => edge.kind === 'traffic' && edge.from === box.id,
         );
+        /* A ladder's skip leaves the side of its face, where its port sits; every other stroke leaves along the chain. */
+        const leavesSide = (edge: { columnSpan: number }) => axis === 'down' && edge.columnSpan > 1;
         const portProps = (lane: 'contract' | 'observation', face: Placed, faceW: number, faceH: number) =>
           ({ axis, at: face, boxW: faceW, boxH: faceH, lane, active: focus === box.id });
         /* Budgeted by characters, because an SVG text node does not wrap or ellipsize. */
@@ -231,7 +238,7 @@ export function RoleFaces({
             style={{ opacity: receded ? RECEDED_ROLE_OPACITY : 1 }}
             className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible_.architecture-node-face]:stroke-[color:var(--color-indigo-focus-ring)] [&:focus-visible_.architecture-node-face]:[stroke-width:2px]"
           >
-            {/* A transparent first rect makes the whole two-face role footprint the hit target, so pointer automation aimed at the group's centre lands on it. */}
+            {/* A transparent first rect makes the whole two-face footprint the hit target. */}
             <rect
               x={at.x}
               y={at.y}
@@ -272,13 +279,18 @@ export function RoleFaces({
               data-node-selected={isSelected ? 'true' : 'false'}
             />
             {/* A side port marks where a skip leaves; its head arrives bare. */}
-            {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && edge.from === box.id) ? (
-              <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" side="left" />
+            {contractOutgoing.some((edge) => leavesSide(edge) && edge.kind === 'permitted') ? (
+              <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} side="left" />
+            ) : null}
+            {contractOutgoing.some((edge) => leavesSide(edge) && edge.kind === 'traffic') ? (
+              <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} side="right" />
             ) : null}
             {/* The spine meets both faces bare: 18px of clear line on roomy rows, 16 on tight. */}
-            {contractOutgoing.length > 0 && !usesPairedDown ? (
-              <ConnectionPort {...portProps('contract', at, contractBoxW, boxH)} direction="outgoing" />
-            ) : null}
+            {usesPairedDown
+              ? null
+              : tailEnds(contractOutgoing.filter((edge) => !leavesSide(edge))).map((climbs) => (
+                  <ConnectionPort key={String(climbs)} {...portProps('contract', at, contractBoxW, boxH)} climbs={climbs} />
+                ))}
             {splitsEvidence ? (
               <text
                 x={at.x + 14}
@@ -293,7 +305,7 @@ export function RoleFaces({
                     : 'fill-[color:var(--color-text-tertiary)]',
                 )}
               >
-                {String(boxIndex + 1).padStart(2, '0')}
+                {String(box.rank + 1).padStart(2, '0')}
               </text>
             ) : null}
             <text
@@ -397,15 +409,14 @@ export function RoleFaces({
                     role="img"
                     aria-label={ledger ? ledgerStatusLabel(ledger) : deltaUnknownLabel}
                   >
-                    {/* The tick is scoped: like the role face (`role-ledger.ts`), it carries the edge-shaped sentence,
-                       so it never reads as a per-role result. */}
+                    {/* Like the role face (`role-ledger.ts`), the tick carries the edge-shaped sentence, so it never reads as a per-role result. */}
                     <title>{ledger ? ledgerStatusLabel(ledger) : deltaUnknownLabel}</title>
                     {ledger ? LEDGER_GLYPH[ledger.state] : '○'}
                   </text>
                 ) : (
                   <circle
                     cx={at.x + contractBoxW / 2}
-                    cy={(at.y + boxH + observedAt.y) / 2}
+                    cy={observedAt.y - ACROSS_JOINT_RISE}
                     r={2.5}
                     fill={ledger ? EDGE_STROKE : 'var(--color-canvas)'}
                     stroke={ledger ? EDGE_STROKE : 'var(--color-text-quaternary)'}
@@ -459,12 +470,18 @@ export function RoleFaces({
                   data-testid={`architecture-observation-box-${box.id}`}
                   data-observation-state={ledger?.state ?? 'missing'}
                 />
-                {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && edge.from === box.id) ? (
-                  <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" side="right" />
+                {observationOutgoing.some(leavesSide) ? (
+                  <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} side="right" />
                 ) : null}
-                {observationOutgoing.length > 0 && !usesPairedDown ? (
-                  <ConnectionPort {...portProps('observation', observedAt, observationBoxW, observationBoxH)} direction="outgoing" />
-                ) : null}
+                {usesPairedDown
+                  ? null
+                  : tailEnds(observationOutgoing).map((climbs) => (
+                      <ConnectionPort
+                        key={String(climbs)}
+                        {...portProps('observation', observedAt, observationBoxW, observationBoxH)}
+                        climbs={climbs}
+                      />
+                    ))}
                 <text
                   x={observedAt.x + observationBoxW / 2}
                   y={
