@@ -1,7 +1,16 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
+import { controlClass } from "@/shared/ui/control-class";
 import { readGlobalCss } from "../../../scripts/lib/design/global-css.mjs";
+
+/** The height and type step a value-layer class emits. */
+function stepOf(cls: string) {
+  return {
+    heightPx: Number(/(?:^|\s)min-h-(\d+)(?:\s|$)/.exec(cls)?.[1]) * 4,
+    type: /(?:^|\s)(text-(?:caption|label|body-lg|body))(?:\s|$)/.exec(cls)?.[1],
+  };
+}
 
 /**
  * The settings sheet has one type dialect: labels and captions are 12.5px (`text-body`), values,
@@ -149,36 +158,29 @@ describe("\"pick one value\" inside one sheet has one spec", () => {
    * code in this sheet had already picked the right values, and only `Choice` still
    * carried its old dimensions.
    */
-  /**
-   * Do not pin the source class string: the check asserts the same height (`h-8`) and type step
-   * (`text-body`), as a literal or through `controlClass({ className })`.
-   */
   it("radio chip, segment and notification chip use the same height and the same step", () => {
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const activity = sourceWithoutComments("AgentActivitySettings.tsx");
 
-    /*
-     * The 32px guarantee is measured where it is produced: both adapters delegate to the primitive
-     * and its two shapes sit on the same height step.
-     */
     expect(
       primitives.match(/<SegmentedControl\b/g)?.length ?? 0,
       "the two \"pick one value\" controls of the settings sheet (Choice and SegmentSwitch) lost the value layer delegation",
     ).toBeGreaterThanOrEqual(2);
+    expect(activity, "the notification chip left the value layer's chip md").toMatch(/shape: 'chip',\s*size: 'md'/);
 
-    const valueLayer = sourceAtPath("src/shared/ui/control-class.ts");
-    for (const shape of ["chip", "segment"]) {
-      expect(
-        valueLayer,
-        `${shape} lg lost the 32px step (min-h-8), which breaks the premise that both containers have the same height`,
-      ).toMatch(new RegExp(`shape: '${shape}', size: 'lg', class: '[^']*min-h-8`));
-    }
-
-    expect(activity).toMatch(/\bh-8\b/);
-
-    // Type step — the chip is `text-body` (12.5). The segment differs only in weight, same step.
-    expect(primitives).toMatch(/\btext-body\b/);
-    expect(activity).toMatch(/\btext-body\b/);
+    // A well frames its segments with a 1px border and a 1px inset on each side.
+    const WELL_FRAME_PX = 4;
+    const chip = stepOf(controlClass({ shape: "chip", size: "lg" }));
+    const segment = stepOf(controlClass({ shape: "segment", size: "lg" }));
+    const notification = stepOf(controlClass({ shape: "chip", size: "md" }));
+    expect(chip.heightPx, "the radio chip left the 32px step").toBe(32);
+    expect(segment.heightPx + WELL_FRAME_PX, "a chip row and a segmented well stand at different heights").toBe(chip.heightPx);
+    expect(notification.heightPx, "the notification chip left the radio chip's height").toBe(chip.heightPx);
+    expect([chip.type, segment.type, notification.type], "the three controls set different type steps").toEqual([
+      "text-body",
+      "text-body",
+      "text-body",
+    ]);
 
     /*
      * Check no off-ramp height slipped in. **`min-h-` is excluded** — the row
@@ -247,9 +249,10 @@ describe("the LNB does not borrow chrome dimensions", () => {
 
     // Inset — `px-3 py-2`, one step tighter than the setting rows.
     expect(lnb, "the LNB inset went back to the chrome dimensions (px-2.5 py-1.5)").toMatch(/\bpx-3 py-2\b/);
-    /* Type uses the row label step (`text-body`) so the nav stays a quiet index below each pane head. */
-    expect(lnb, "LNB text is not at the row title step (text-body)").toMatch(/\btext-body\b(?!-)/);
-    expect(lnb, "the LNB got bigger than the section title again").not.toMatch(/\btext-body-lg\b/);
+    /* Type comes from the row step the item names, so the nav stays a quiet index below each pane head. */
+    expect(lnb, "the LNB item left the value layer's row md").toMatch(/shape: 'row',\s*size: 'md'/);
+    expect(stepOf(controlClass({ shape: "row", size: "md" })).type, "LNB text is not at the row title step").toBe("text-body");
+    expect(lnb, "the LNB names its own type step again").not.toMatch(/\btext-(?:label|body|body-lg|title)\b/);
     const primitives = sourceWithoutComments("settings-primitives.tsx");
     const head = primitives.slice(primitives.indexOf("export function SettingsPaneHead"));
     expect(head.length, "SettingsPaneHead is missing, so the spec of one head per section is gone").toBeGreaterThan(40);

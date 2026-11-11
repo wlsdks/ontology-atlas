@@ -142,7 +142,7 @@ export function LineDisclosure({
                 {t('askAgent')}
               </Button>
             ) : null}
-            <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} compact />
+            <CopyAgentTextButton label={t('copyRequest')} copiedLabel={t('copiedRequest')} text={handoff} />
           </div>
         ) : null}
         <HiddenCountLine

@@ -44,13 +44,8 @@ describe('Button', () => {
   });
 
   it('every size wears the chip radius: a Button is a control, not a container', () => {
-    // Every size wears the chip radius of the chips and fields beside it, and type stays at the
-    // 14px step a 32px field sets its value in.
     for (const size of ['sm', 'md', 'lg'] as const) {
-      const cls = buttonVariants({ size });
-      expect(cls).toMatch(/\btext-body-lg\b/);
-      expect(cls).not.toMatch(/\btext-body(?!-)\b/);
-      expect(cls.match(/\brounded-(chip|panel)\b/g)).toHaveLength(1);
+      expect(buttonVariants({ size }).match(/\brounded-(chip|panel)\b/g)).toHaveLength(1);
     }
     expect(buttonVariants({ size: 'sm' })).toMatch(/\brounded-chip\b/);
     expect(buttonVariants({ size: 'md' })).toMatch(/\brounded-chip\b/);

@@ -349,7 +349,7 @@ function MissingFolderRow({
           onClick={() => onForget(row.record)}
           disabled={busy}
           aria-label={[t('forgetFolder', { name: row.name }), row.path].filter(Boolean).join(' · ')}
-          className="atlas-touch-floor text-label text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+          className="atlas-touch-floor text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
         >
           {t('forget')}
         </Button>
