@@ -52,7 +52,7 @@ export function LayerPlanes({
                 : undefined
             }
             data-testid={`architecture-layer-plane-${box.id}`}
-            data-layer-rank={box.column}
+            data-layer-rank={box.rank}
           >
             <rect
               x={x}

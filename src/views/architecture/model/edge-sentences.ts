@@ -1,7 +1,7 @@
 import { splitSummaryLines } from './summary-lines';
 
 /**
- * Where each stroke's sentence sits (dock strings verbatim): beside or left of a downward chain, on
+ * Where each stroke's sentence sits (dock strings verbatim): beside its arrow on a downward chain, on
  * alternating tiers above an across one, skips beyond their arc. A candidate that touches a box or an
  * earlier sentence is dropped and reported as `hidden`, never cropped.
  */
@@ -15,16 +15,13 @@ export interface SentenceEdge {
   count?: number;
   columnSpan: number;
   violated: boolean;
-  /**
-   * Whether the stroke is drawn now (a skip appears only on selection or when violated); default true.
-   * An undrawn stroke places last and holds no ground.
-   */
+  /** Whether the stroke is drawn now; default true. An undrawn stroke places last and holds no ground. */
   drawn?: boolean;
 }
 
 export interface SentencePlacement {
   key: string;
-  /** A rule and a measurement can join the same pair, so the kind is part of the placement's identity; keyed on the pair alone, React leaves a stale sentence. */
+  /** A rule and a measurement can join one pair, so the kind is part of the placement's identity. */
   kind: SentenceEdge['kind'];
   from: string;
   to: string;
@@ -55,25 +52,16 @@ export interface SentenceLayoutInput {
   trailRoom: number;
   /** Downward skip arcs can leave either side so paired evidence rails never cross each other. */
   skipSide?: 'negative' | 'positive';
-  /**
-   * Where an adjacent pair's sentence sits on a downward chain: `lead` left of the column (compact
-   * ladder), or `connector` beside the arrow it describes, in the gap between the two faces.
-   */
-  adjacentSeat?: 'lead' | 'connector';
-  /** Ground beside the arrow that a `connector` sentence may use, in SVG units. */
+  /** Ground beside its arrow that an adjacent pair's sentence may use on a downward chain, in SVG units. */
   connectorRoom?: number;
-  /**
-   * Which side of the arrow a `connector` sentence reads on. The observation lane reads left because
-   * its right side is where the skip arcs travel.
-   */
+  /** Which side of the arrow that sentence reads on; the observation lane reads left, away from its skip arcs. */
   connectorSide?: 'right' | 'left' | 'split';
+  /** How far an opposed adjacent pair's arrows stand off the centre line; their sentence clears the nearer one. */
+  opposedPairOffset?: number;
   /** Rectangles another lane already holds; a later lane gives way, as a later sentence does. */
   occupied?: readonly { x: number; y: number; width: number; height: number }[];
   sentenceOf: (edge: SentenceEdge) => string;
-  /**
-   * The role a reader is pointing at or has chosen. Its strokes' sentences place first, so a
-   * skip revealed by focus is never silenced by a resting sentence that has receded anyway.
-   */
+  /** The role a reader points at or has chosen; its strokes' sentences place first. */
   focus?: string | null;
 }
 
@@ -81,9 +69,10 @@ export interface SentenceLayoutInput {
 const CHAR_PX = 5.5;
 const WIDE_CHAR_PX = 9.3;
 const LINE_H = 12;
-/** Air between a sentence and the box or stroke it belongs to. */
-const GAP_TO_BOX = 20;
+/** Air between a sentence and the stroke it belongs to. */
 const GAP_TO_ARC = 10;
+/** Air a sentence keeps from the far edge of the ground it reads in. */
+const GROUND_EDGE_AIR = 12;
 const TIER_1 = 16;
 const TIER_2 = 32;
 const MIN_CHARS = 12;
@@ -92,6 +81,8 @@ const LANE_HEADING_CHAR_PX = 7.5;
 const LANE_HEADING_WIDE_CHAR_PX = 11;
 const LANE_HEADING_ASCENT = 10;
 const LANE_HEADING_H = 13;
+
+export const stampSuffix = (stamp: string | null) => (stamp ? ` · ${stamp}` : '');
 
 export function laneHeadingRect(text: string, x: number, baseline: number) {
   const width = [...text].reduce(
@@ -143,9 +134,9 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     leadRoom,
     trailRoom,
     skipSide = 'positive',
-    adjacentSeat = 'lead',
     connectorRoom = 0,
     connectorSide = 'right',
+    opposedPairOffset = 0,
     occupied = [],
     sentenceOf,
     focus = null,
@@ -155,17 +146,18 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
   /* O(E log E + E·(E + C·(B + E))) for E edges, B boxes, C budget retries: greedy first-fit over flat rectangle arrays, no spatial index. */
-  /* Drawn first, then focus, rules, shorter spans, busier traffic: the sentence a reader needs wins a contested place. */
+  /* Drawn first, then focus, violations, rules, shorter spans, busier traffic: the sentence a reader needs wins a contested place. */
   const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
   const isDrawn = (e: SentenceEdge) => e.drawn !== false;
-  /*
-   * A skip's sentence sits outside every drawn arc whose run covers its midpoint, not only its own:
-   * arcs are the one obstacle the rectangle check cannot see.
-   */
+  /* A skip's sentence sits outside every drawn arc whose run covers its midpoint: arcs are the one obstacle the rectangle check cannot see. */
   const alongOf = (p: { x: number; y: number }) => (axis === 'down' ? p.y : p.x);
   const alongSize = axis === 'down' ? boxH : boxW;
+  const pairs = new Set(edges.map((edge) => `${edge.kind}:${edge.from}>${edge.to}`));
+  const isOpposed = (edge: SentenceEdge) => pairs.has(`${edge.kind}:${edge.to}>${edge.from}`);
+  /* Under an across chain the outer stroke of an opposed pair runs its stand-off deeper. */
+  const runDepth = (arc: SentenceEdge) => swingOf(arc) + (axis === 'across' && isOpposed(arc) ? opposedPairOffset : 0);
   const clearSwing = (edge: SentenceEdge, mid: number): number => {
-    let swing = swingOf(edge);
+    let swing = runDepth(edge);
     for (const other of edges) {
       if (other === edge || other.columnSpan <= 1 || !isDrawn(other)) continue;
       const oa = placed.get(other.from);
@@ -173,14 +165,16 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       if (!oa || !ob) continue;
       const lo = Math.min(alongOf(oa), alongOf(ob)) + alongSize;
       const hi = Math.max(alongOf(oa), alongOf(ob));
-      if (mid > lo && mid < hi) swing = Math.max(swing, swingOf(other));
+      if (mid > lo && mid < hi) swing = Math.max(swing, runDepth(other));
     }
     return swing;
   };
+  const arrowClearance = (edge: SentenceEdge) => GAP_TO_ARC + (isOpposed(edge) ? opposedPairOffset : 0);
   const ordered = [...edges].sort(
     (a, b) =>
       (isDrawn(a) ? 0 : 1) - (isDrawn(b) ? 0 : 1) ||
       (touchesFocus(a) ? 0 : 1) - (touchesFocus(b) ? 0 : 1) ||
+      (a.violated ? 0 : 1) - (b.violated ? 0 : 1) ||
       (a.kind === 'permitted' ? 0 : 1) - (b.kind === 'permitted' ? 0 : 1) ||
       a.columnSpan - b.columnSpan ||
       (b.count ?? 0) - (a.count ?? 0),
@@ -207,24 +201,15 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       if (!isSkip) {
         /* When a rule and traffic join the same roles, the rule reads on the left and the traffic on the right, or the rule wins the collision and hides the count. */
         const isTraffic = edge.kind === 'traffic';
-        if (adjacentSeat === 'connector') {
-          /* Beside the arrow: the words start right of the lower face's centre line and run over the gap. */
-          const centre = Math.min(a.x, b.x) + boxW / 2;
-          /* `split`, the one-lane ladder: the rule reads right of the arrow and the count left of it. */
-          const side =
-            connectorSide === 'split' ? (isTraffic ? 'left' : 'right') : connectorSide;
-          x = side === 'left' ? centre - GAP_TO_ARC : centre + GAP_TO_ARC;
-          y = (sy + ty) / 2 + 4;
-          anchor = side === 'left' ? 'end' : 'start';
-          roomPx = connectorRoom - GAP_TO_ARC - 12;
-        } else {
-          x = isTraffic
-            ? Math.max(a.x, b.x) + boxW + GAP_TO_BOX
-            : Math.min(a.x, b.x) - GAP_TO_BOX;
-          y = (sy + ty) / 2 + 4;
-          anchor = isTraffic ? 'start' : 'end';
-          roomPx = (isTraffic ? trailRoom : leadRoom) - GAP_TO_BOX - 12;
-        }
+        /* Beside the arrow: the words start right of the lower face's centre line and run over the gap. */
+        const centre = Math.min(a.x, b.x) + boxW / 2;
+        /* `split`, the one-lane ladder: the rule reads right of the arrow and the count left of it. */
+        const side = connectorSide === 'split' ? (isTraffic ? 'left' : 'right') : connectorSide;
+        const clearance = arrowClearance(edge);
+        x = side === 'left' ? centre - clearance : centre + clearance;
+        y = (sy + ty) / 2 + 4;
+        anchor = side === 'left' ? 'end' : 'start';
+        roomPx = connectorRoom - clearance - GROUND_EDGE_AIR;
       } else {
         const clear = clearSwing(edge, (sy + ty) / 2);
         const negative = skipSide === 'negative';
@@ -233,12 +218,14 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
           : Math.max(a.x, b.x) + boxW / 2 + clear;
         x = swingX + (negative ? -GAP_TO_ARC : GAP_TO_ARC);
         y = (sy + ty) / 2 + 4;
+        /* Two skips over the same rows share a midpoint; the later one reads on the line below. */
+        altY = y + LINE_H + 4;
         anchor = negative ? 'end' : 'start';
         roomPx =
           (negative ? leadRoom : trailRoom) -
           Math.max(0, clear - boxW / 2) -
           GAP_TO_ARC -
-          12;
+          GROUND_EDGE_AIR;
       }
     } else {
       const sx = a.x + boxW;
@@ -300,4 +287,78 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text, x, y, anchor, rect });
   }
   return out;
+}
+
+/** Air kept between a rule sentence and the count sentence it shares a row gap with. */
+const ROW_SENTENCE_AIR = 8;
+/** The count a row gap is sized for before any record exists: four digits. */
+const ROW_COUNT_PLACEHOLDER = 9999;
+
+/**
+ * The ground a profile's spoken rules hold: for the skips drawn, the contract lane past the deepest and
+ * the observation lane their pairs' counts read in; the span between the two lanes' arrows where a rule
+ * shares a row gap with its pair's count; the deepest skip of all. Never read from a record. O(E).
+ */
+export function ruleSentenceRoom({
+  rules,
+  sentenceOf,
+  arcDepthOf,
+  pairArcDepthOf,
+  opposedPairOffset,
+}: {
+  rules: readonly SentenceEdge[];
+  sentenceOf: (edge: SentenceEdge) => string;
+  /** From the face's side edge to a skip's apex. */
+  arcDepthOf: (edge: SentenceEdge) => number;
+  /** The same, for the outer stroke of its measured pair. */
+  pairArcDepthOf: (edge: SentenceEdge) => number;
+  opposedPairOffset: number;
+}): { lane: number; countLane: number; rowSpan: number; skipDepth: number } {
+  const permitted = new Set(rules.map((rule) => `${rule.from}>${rule.to}`));
+  const reachOf = (edge: SentenceEdge) => GAP_TO_ARC + estimatedTextWidth(sentenceOf(edge));
+  const countOf = (from: string, to: string, columnSpan: number): SentenceEdge => ({
+    from,
+    to,
+    kind: 'traffic',
+    count: ROW_COUNT_PLACEHOLDER,
+    columnSpan,
+    violated: !permitted.has(`${from}>${to}`),
+  });
+  const widestCountReach = (rule: SentenceEdge) =>
+    Math.max(
+      reachOf(countOf(rule.from, rule.to, rule.columnSpan)),
+      reachOf(countOf(rule.to, rule.from, rule.columnSpan)),
+    );
+  const rowSpan = rules
+    .filter((rule) => rule.columnSpan <= 1)
+    .reduce(
+      (widest, rule) =>
+        Math.max(
+          widest,
+          reachOf(rule) +
+            (permitted.has(`${rule.to}>${rule.from}`) ? opposedPairOffset : 0) +
+            ROW_SENTENCE_AIR +
+            opposedPairOffset +
+            widestCountReach(rule),
+        ),
+      0,
+    );
+  const skips = rules.filter((rule) => rule.columnSpan > 1 && rule.drawn !== false);
+  const laneFor = (depthOf: (rule: SentenceEdge) => number, reachOfSentence: (rule: SentenceEdge) => number) =>
+    skips.length === 0
+      ? 0
+      : Math.ceil(Math.max(...skips.map(depthOf)) + GROUND_EDGE_AIR + Math.max(...skips.map(reachOfSentence)));
+  const skipDepth = rules.reduce(
+    (deepest, rule) =>
+      rule.columnSpan > 1
+        ? Math.max(deepest, arcDepthOf(rule) + (permitted.has(`${rule.to}>${rule.from}`) ? opposedPairOffset : 0))
+        : deepest,
+    0,
+  );
+  return {
+    lane: laneFor(arcDepthOf, reachOf),
+    countLane: laneFor(pairArcDepthOf, widestCountReach),
+    rowSpan: Math.ceil(rowSpan),
+    skipDepth,
+  };
 }

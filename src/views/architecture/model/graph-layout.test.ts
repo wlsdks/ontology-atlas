@@ -14,7 +14,7 @@ const hex = () =>
   buildArchitectureLayout(parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER as never));
 
 describe('buildArchitectureGraph', () => {
-  it('keeps parallel rule and traffic edges in the predecessor weighting', () => {
+  it('stands roles the rules cannot order in declaration order, each in its own column', () => {
     const graph = buildArchitectureGraph({
       policy: 'explicit', nodes: [], rows: [['left', 'right'], ['single', 'weighted']],
       edges: [
@@ -25,11 +25,15 @@ describe('buildArchitectureGraph', () => {
       ],
     }, [{ fromRole: 'left', toRole: 'weighted', count: 1 }]);
 
-    expect(graph.boxes.filter(box => box.column === 1).map(box => box.id))
-      .toEqual(['weighted', 'single']);
+    expect(graph.boxes.map((box) => [box.id, box.column, box.rank])).toEqual([
+      ['left', 0, 0],
+      ['right', 1, 0],
+      ['single', 2, 1],
+      ['weighted', 3, 1],
+    ]);
   });
 
-  it('puts one column per rank, left to right', () => {
+  it('puts a chain one column per rank, left to right', () => {
     const graph = buildArchitectureGraph(fsd(), []);
     expect(graph.columns).toBe(7);
     const columnOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
@@ -112,16 +116,15 @@ describe('buildArchitectureGraph', () => {
     expect(byPair.get('adapter>domain')?.columnSpan).toBe(3);
   });
 
-  it('gives every box a slot, and never two boxes the same slot in one column', () => {
-    const graph = buildArchitectureGraph(fsd(), []);
-    const perColumn = new Map<number, number[]>();
-    for (const box of graph.boxes) {
-      perColumn.set(box.column, [...(perColumn.get(box.column) ?? []), box.slot]);
-    }
-    for (const [, slots] of perColumn) {
-      expect(new Set(slots).size).toBe(slots.length);
-      expect(Math.min(...slots)).toBe(0);
-    }
+  it('marks a stroke that runs against the chain as climbing, whichever kind it is', () => {
+    const graph = buildArchitectureGraph(fsd(), [
+      { fromRole: 'shared', toRole: 'views', count: 3 },
+      { fromRole: 'views', toRole: 'shared', count: 9 },
+    ]);
+    const byPair = new Map(graph.edges.map((edge) => [`${edge.kind}:${edge.from}>${edge.to}`, edge]));
+    expect(byPair.get('traffic:shared>views')).toMatchObject({ climbs: true, columnSpan: 4 });
+    expect(byPair.get('traffic:views>shared')).toMatchObject({ climbs: false, columnSpan: 4 });
+    expect(graph.edges.filter((edge) => edge.kind === 'permitted').every((edge) => !edge.climbs)).toBe(true);
   });
 
   it("gives the chain's two ends the standard's terminator shape, and the rest a process", () => {
@@ -152,30 +155,30 @@ describe('buildArchitectureGraph', () => {
   });
 });
 
-describe('a fan cannot be saved by turning', () => {
-  it('is as wide drawn down as drawn across, so the covered-edge affordances stay necessary', () => {
-    /*
-     * A fan is three lanes wide whichever way the chain runs, so `the drawing is never cut` holds for
-     * chains only. Asserted here because neither sample vault has this shape.
-     */
-    const graph = buildArchitectureGraph(
+describe('a fan is laid as one chain', () => {
+  const fan = () =>
+    buildArchitectureGraph(
       buildArchitectureLayout(parseArchitectureProfile(FAN_PROFILE_FRONTMATTER as never)),
-      [],
+      [{ fromRole: 'catalog', toRole: 'billing', count: 2 }],
     );
 
-    const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
-    expect(lanes, 'the fixture must actually fan for this to mean anything').toBeGreaterThan(1);
+  it('gives every role its own column while the siblings keep one rank', () => {
+    const graph = fan();
+    expect(graph.columns).toBe(graph.boxes.length);
+    expect(new Set(graph.boxes.map((box) => box.column)).size).toBe(graph.boxes.length);
+    expect(graph.boxes.map((box) => [box.id, box.rank])).toEqual([
+      ['shell', 0],
+      ['billing', 1],
+      ['catalog', 1],
+      ['shipping', 1],
+      ['core', 2],
+    ]);
+  });
 
-    /* Box and gap sizes come from the drawing; the point is the ratio, not the pixels. */
-    const BOX_W = 148;
-    const BOX_H = 62;
-    const COL_GAP = 52;
-    const ROW_GAP = 26;
-    const across = 28 * 2 + graph.columns * BOX_W + (graph.columns - 1) * COL_GAP;
-    const down = 28 * 2 + lanes * BOX_W + (lanes - 1) * COL_GAP;
-    const downHeight = 26 * 2 + graph.columns * BOX_H + (graph.columns - 1) * ROW_GAP;
-
-    expect(down, 'turning it does not narrow it').toBeGreaterThanOrEqual(across * 0.9);
-    expect(downHeight, 'and the height it saves is not the axis that was short').toBeLessThan(down);
+  it('measures a stroke by the faces it passes, so a sibling crossing is adjacent and can climb', () => {
+    const byPair = new Map(fan().edges.map((edge) => [`${edge.kind}:${edge.from}>${edge.to}`, edge]));
+    expect(byPair.get('permitted:shell>shipping')).toMatchObject({ columnSpan: 3, climbs: false });
+    expect(byPair.get('permitted:billing>core')).toMatchObject({ columnSpan: 3, climbs: false });
+    expect(byPair.get('traffic:catalog>billing')).toMatchObject({ columnSpan: 1, climbs: true });
   });
 });
