@@ -87,13 +87,10 @@ test('source scopes intersect search and recorded gaps without losing the select
   await page.getByTestId('analysis-retry-source').click();
   await chooseSourceScope(page, 'Source changed · 0');
   await expect(page.getByTestId('analysis-source-scope-status')).toContainText('0 capabilities');
-  await expect(page.getByTestId('analysis-claim')).toHaveCount(12);
-  await expect(page.getByRole('button', { name: 'Show 4 more', exact: true })).toBeVisible();
+  await expect(page.getByTestId('analysis-claim')).toHaveCount(1);
   await expect(heading).toHaveText('Ability 15');
-  await page.getByRole('button', { name: 'Show 4 more', exact: true }).click();
+  await chooseSourceScope(page, 'All sources · 16');
   await expect(page.getByTestId('analysis-claim')).toHaveCount(16);
-  await page.getByRole('button', { name: 'Show less', exact: true }).click();
-  await expect(page.getByTestId('analysis-claim')).toHaveCount(12);
   await expect(heading).toHaveText('Ability 15');
 });
 

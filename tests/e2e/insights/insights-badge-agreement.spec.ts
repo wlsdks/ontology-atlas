@@ -1,19 +1,21 @@
 import { expect, test } from '@playwright/test';
 
-/** The declaration count must name exactly the lines a reader can inspect. */
-test('the declaration count agrees with the drawn lines and each line opens its declaration', async ({ page }) => {
+/** Every count must name exactly the lines a reader can inspect. */
+test('each pair count agrees with the lines it draws and the counts sum to the declaration total', async ({ page }) => {
   await page.goto('/ko/ontology/insights/');
   const total = Number(await page.getByTestId('analysis-workspace').getAttribute('data-analysis-cross-count'));
   expect(total).toBeGreaterThan(1);
-  await expect(page.getByTestId('analysis-declaration-step')).toContainText(`/ ${total}`);
-  const lines = page.getByTestId('analysis-witness');
-  await expect(lines).toHaveCount(total);
-  for (const index of [0, Math.floor(total / 2), total - 1]) {
-    const line = lines.nth(index);
-    const edge = await line.getAttribute('data-edge');
-    await line.dispatchEvent('click');
+  const pairs = page.getByTestId('analysis-pair');
+  await expect(pairs.first()).toBeVisible();
+  const counts = await pairs.evaluateAll(rows => rows.map(row => Number((row as HTMLElement).dataset.declarations)));
+  expect(counts.reduce((sum, count) => sum + count, 0)).toBe(total);
+  for (const index of [0, Math.floor(counts.length / 2), counts.length - 1]) {
+    await pairs.nth(index).click();
+    const lines = page.getByTestId('analysis-witness');
+    await expect(lines).toHaveCount(counts[index]!);
+    const edge = await lines.last().getAttribute('data-edge');
+    await lines.last().dispatchEvent('click');
     await expect(page.locator('[data-connection="selected"] [data-edge]')).toHaveAttribute('data-edge', edge!);
-    await expect(page.getByTestId('analysis-declaration-step')).toContainText(`/ ${total}`);
     await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toHaveAttribute('href', /slug=/);
   }
 });
