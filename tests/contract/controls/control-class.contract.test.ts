@@ -539,15 +539,14 @@ describe('controlClass — the eighth shape and the three axes', () => {
 
   it('chip micro tier — the radius is micro, the height stays on the 24 floor', () => {
     /*
-     * The micro tier opens **inset, type, and radius** — not height. Never creating a
-     * step below 24 (WCAG 2.5.8) is the ladder's first discipline. The 4px radius is
+     * The micro tier opens **inset and radius** — not height, and not type, which the height
+     * picks. Never creating a step below 24 (WCAG 2.5.8) is the ladder's first discipline. The 4px radius is
      * not an invention but an inventory: at registration time `rounded-sm` (59) plus
      * suffix-less `rounded` (37) = 96 places were already on 4px.
      */
     const cls = controlClass({ shape: 'chip', size: 'xs' });
     expect(cls).toContain('rounded-micro');
     expect(cls).toContain('min-h-6');
-    expect(cls).toContain('text-caption');
     expect(cls, 'the inset of chip/xs is one step below sm (px-2)').toContain('px-1.5');
   });
 

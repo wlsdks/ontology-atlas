@@ -126,7 +126,9 @@ The canonical Don'ts live in `docs/DESIGN-SYSTEM.md`, section "Absolute rules (D
 ## Dimensional regularity
 
 Cards in one row share a height. Repeated icon buttons, chips and fields use one
-size step per role; a size difference must encode hierarchy or state.
+size step per role; a size difference must encode hierarchy or state. A control's
+height picks its type (`docs/DESIGN-SYSTEM.md`, "Type follows height"): choose a
+size, never a `text-*` step, on a primitive.
 
 ## Changing the specification requires `design-contract`
 

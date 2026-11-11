@@ -70,17 +70,12 @@ export function DetailActionMenu({
         aria-label={label}
         data-testid={triggerTestId}
         onClick={() => onOpenChange(!open)}
-        /*
-         * The icon-only trigger is the 32px icon step (`lg`) to match the 32px `Button sm` and `Edit`
-         * chip in its row. The labelled trigger sets its word in the primary `Button sm`'s type
-         * (`text-body-lg`) so "Edit" is not smaller than the primary beside it.
-         */
+        // The icon-only trigger is the 32px icon step (`lg`), the height of the `Button sm` in its row.
         className={controlClass({
           shape: iconOnly ? "icon" : "chip",
           size: iconOnly ? "lg" : "md",
           tone: "default",
           className:
-            (iconOnly ? "" : "py-1 text-body-lg ") +
             "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
         })}
       >

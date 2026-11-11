@@ -279,7 +279,7 @@ export function DocsVaultAuditModal({
                   <div className="col-span-2 ml-[48px] flex min-w-0 flex-wrap items-center gap-1.5 sm:col-span-1 sm:ml-0 sm:flex-col sm:items-end">
                     <Link
                       href={cell.href}
-                      className={controlClass({ shape: "chip", tone: "secondary", className: "h-7 min-w-0 border-[color:var(--color-divider)] px-2 text-label hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]" })}
+                      className={controlClass({ shape: "chip", size: "sm", tone: "secondary", className: "min-w-0 border-[color:var(--color-divider)] hover:border-[color:var(--color-indigo-line-a40)] hover:text-[color:var(--color-text-primary)]" })}
                     >
                       {cell.cta}
                     </Link>

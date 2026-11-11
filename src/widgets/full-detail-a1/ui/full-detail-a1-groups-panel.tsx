@@ -35,7 +35,7 @@ export interface FullDetailA1GroupsLabels {
   emptyGroup: (title: string) => string;
 }
 
-const ROW_CLASS = controlClass({ shape: "chip", className: "flex min-w-0 gap-2 border-transparent px-1.5 py-1 text-left text-body text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-text-quaternary)] hover:text-[color:var(--map-panel-text-primary)]" });
+const ROW_CLASS = controlClass({ shape: "chip", className: "flex min-w-0 gap-2 border-transparent px-1.5 py-1 text-left text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-text-quaternary)] hover:text-[color:var(--map-panel-text-primary)]" });
 const COUNT_CLASS = "shrink-0 font-mono text-label text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]";
 
 function Row({

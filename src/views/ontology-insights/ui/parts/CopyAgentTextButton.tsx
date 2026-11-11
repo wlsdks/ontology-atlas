@@ -13,13 +13,11 @@ export function CopyAgentTextButton({
   label,
   copiedLabel,
   text,
-  compact = false,
   testId,
 }: {
   label: string;
   copiedLabel: string;
   text: string;
-  compact?: boolean;
   testId?: string;
 }) {
   const t = useTranslations("ontologyPages.insights");
@@ -46,12 +44,7 @@ export function CopyAgentTextButton({
         className={controlClass({
           shape: "chip",
           size: "md",
-          className: [
-            // The class `text-label`, not `text-caption`: the smallest step is reserved for one uppercase eyebrow (`design.md`).
-            "shrink-0 justify-center text-label",
-            toneClass,
-            compact ? "min-h-8 px-2.5 py-1.5" : "min-h-9 px-3 py-2",
-          ].join(" "),
+          className: `shrink-0 justify-center ${toneClass}`,
         })}
         aria-label={ariaLabel}
         data-testid={testId}

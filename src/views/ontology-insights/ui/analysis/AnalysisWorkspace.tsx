@@ -141,8 +141,8 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     </div>
     {selectedNodes.length ? <div className={styles.inspectAction}>
       {mode === 'local' && inspection.runnable && agentReady ? <Chip data-testid="analysis-inspect-selected" size="md" tone="onAccent" className="atlas-touch-floor" onClick={() => onInspect(inspection.text)}>{t('inspectSelected')}</Chip> : null}
-      <CopyAgentTextButton key={inspection.text} testId="analysis-copy-selected" compact label={t(mode === 'static' ? 'copySampleFact' : 'copySelectedCheck')} copiedLabel={t('copiedSelected')} text={inspection.text} />
-      <Disclosure summary={t('reviewSelectedRequest')} summaryTestId="analysis-selected-request-toggle"><pre data-testid="analysis-selected-request" className="whitespace-pre-wrap break-words text-label leading-prose text-[color:var(--color-text-secondary)]">{inspection.text}</pre></Disclosure>
+      <CopyAgentTextButton key={inspection.text} testId="analysis-copy-selected" label={t(mode === 'static' ? 'copySampleFact' : 'copySelectedCheck')} copiedLabel={t('copiedSelected')} text={inspection.text} />
+      <Disclosure summary={t('reviewSelectedRequest')} summaryClassName="text-body" summaryTestId="analysis-selected-request-toggle"><pre data-testid="analysis-selected-request" className="whitespace-pre-wrap break-words text-label leading-prose text-[color:var(--color-text-secondary)]">{inspection.text}</pre></Disclosure>
     </div> : null}
     <p className={styles.evidenceLimit}>{t('limitsShort')}</p>
   </aside>;

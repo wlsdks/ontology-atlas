@@ -84,8 +84,8 @@ export function AgentActivitySettings() {
                       tone: on ? 'accentOnTint' : 'muted',
                       hoverInk: on ? 'none' : 'secondary',
                       className: on
-                        ? 'h-8 border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)] px-2.5 text-body'
-                        : 'h-8 border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 text-body',
+                        ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)]'
+                        : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]',
                     })}
                   >
                     {tEvent(EVENT_LABEL_KEY[kind])}
