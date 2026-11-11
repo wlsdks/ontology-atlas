@@ -2,33 +2,41 @@ import { expect, test } from '@playwright/test';
 
 const dimmed = '[data-dimmed] [data-testid="analysis-claim"]';
 
-test('capability search marks matches on the board without hiding the project or changing the fact', async ({ page }) => {
+test('capability search keeps the connections that involve a match and selects the matching declaration', async ({ page }) => {
   await page.goto('/ko/ontology/insights/?guides=off');
   const search = page.getByTestId('analysis-claim-search');
   const heading = page.getByTestId('analysis-finding-heading');
   const documentLink = page.getByTestId('analysis-evidence').getByRole('link').first();
   const cards = page.getByTestId('analysis-claim');
+  const rows = page.getByTestId('analysis-pair');
   await expect(cards.first()).toBeVisible();
   const total = await cards.count();
+  const allRows = await rows.count();
   const before = { heading: await heading.textContent(), href: await documentLink.getAttribute('href') };
   await search.fill('주문');
   await expect(page.locator(dimmed)).not.toHaveCount(0);
   await expect(cards).toHaveCount(total);
-  const lit = await page.locator('li:not([data-dimmed]) > [data-testid="analysis-claim"]:not([aria-pressed="true"])').allTextContents();
-  expect(lit.length).toBeGreaterThan(0);
-  for (const name of lit) expect(name).toContain('주문');
+  for (const name of await page.locator(dimmed).allTextContents()) expect(name).not.toContain('주문');
   await expect(heading).toHaveText(before.heading!);
   await expect(documentLink).toHaveAttribute('href', before.href!);
+  await search.fill('재고 선점');
+  await expect(rows).not.toHaveCount(allRows);
+  await rows.first().click();
+  await expect(heading).toContainText('재고 선점');
+  await expect(page.locator('[data-testid="analysis-claim"][aria-pressed="true"]').filter({ hasText: '재고 선점' })).toHaveCount(1);
   await search.fill('no-such-capability');
+  await expect(rows).toHaveCount(0);
+  const shown = await cards.count();
   const pressed = await page.locator('[data-testid="analysis-claim"][aria-pressed="true"]').count();
   expect(pressed).toBeGreaterThan(0);
-  await expect(page.locator(dimmed)).toHaveCount(total - pressed);
+  await expect(page.locator(dimmed)).toHaveCount(shown - pressed);
   await expect(page.locator('[data-dimmed] [aria-pressed="true"]')).toHaveCount(0);
   await expect(search).not.toHaveAttribute('aria-invalid', 'true');
   await search.press('Escape');
   await expect(search).toHaveValue('');
   await expect(search).toBeFocused();
   await expect(page.locator(dimmed)).toHaveCount(0);
+  await expect(rows).toHaveCount(allRows);
 });
 
 test('a searched capability stays selected after its search is cleared', async ({ page }) => {

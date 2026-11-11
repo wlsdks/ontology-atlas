@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useLocalVault } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { useSurfaceSwap, useSwapHeight } from '@/shared/lib/render-timing/use-presence';
+import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { SourceDateRecovery } from './SourceDateRecovery';
 import { useOntologyEvidence } from '../../lib/use-ontology-evidence';
 import { Link } from '@/i18n/navigation';
@@ -46,10 +47,13 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
   const [claimId, setClaimId] = useState<string | null>(initialClaim ?? null);
   const [claimQuery, setClaimQuery] = useState('');
   const graphStage = useRef<HTMLDivElement>(null);
+  const evidencePanel = useRef<HTMLElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
   const findingHeading = useRef<HTMLHeadingElement>(null);
   const pendingClaimFocus = useRef<string | null>(initialClaim && model.claims.some(item => item.node.id === initialClaim) ? initialClaim : null);
   const pendingEdgeFocus = useRef(Boolean(initialEdge && board.links.some(link => link.edge.id === initialEdge)));
-  const [onlyGaps, setOnlyGaps] = useState(initialQuestion === 'evidence' && !initialClaim);
+  const [gapsChoice, setOnlyGaps] = useState<boolean | null>(initialQuestion === 'evidence' && !initialClaim ? null : false);
+  const onlyGaps = gapsChoice ?? model.gaps.length > 0;
   const [sourceScope, setSourceScope] = useState<AnalysisSourceScope>('all');
   const link = board.links.find(candidate => candidate.edge.id === edgeId) ?? board.links[0] ?? null;
   const edge = link?.edge ?? null;
@@ -89,7 +93,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     <div><dt>{t('declaringDocument')}</dt><dd>{docsOf(item).map(doc => <Link key={doc.slug} href={href(doc.slug)} aria-label={`${t('openDeclaration')} · ${doc.path}`} className={controlClass({ hoverInk: 'strong', shape: 'link', size: 'lg', tone: 'accent', className: 'atlas-touch-floor break-all' })}>{doc.path}</Link>)}{!docsOf(item).length ? <p>{t('documentMissing')}</p> : null}</dd></div>
     <div><dt>{t('why')}</dt><dd><p className="leading-prose">{item.label || t('rationaleShort')}</p>{!item.label ? <p className={styles.factNote}>{t('readBeforeRelying')}</p> : null}</dd></div>
     <div><dt>{t('implementation')}</dt><dd>{implemented?.roles.length ? <p className="leading-prose">{implemented.roles.slice(0, 3).map(name).join(' · ')}</p> : <p className="text-[color:var(--color-text-secondary)]">{implemented?.paths[0] ?? t('anchorMissing')}</p>}{implemented && implemented.roles.length > 3 ? <p className={styles.factNote}>{t('moreRoles', { count: implemented.roles.length - 3 })}</p> : null}{implemented ? <Chip size="md" tone="secondary" hoverSurface="lift" hoverBorder="strong" className="atlas-touch-floor mt-2" data-testid="analysis-open-implementation" onClick={inspectImplementation}>{t('inspectImplementation')}</Chip> : null}</dd></div>
-  </dl> : chosen ? <ClaimEvidence claim={chosen} href={href} local={mode === 'local'} pathNotes={new Map(source.evidence?.rows.filter(row => row.id === chosen.node.id).flatMap(row => [...row.moved.map(file => [file.path, t('pathChanged', { date: file.changedAt.slice(0, 10) })] as const), ...row.gone.map(path => [path, t('pathGone')] as const), ...row.undated.map(path => [path, t('pathUndated')] as const)]))} /> : !model.claims.length ? <p className="text-body">{t('noClaim')}</p> : onlyGaps && !model.gaps.length ? <p className="text-body">{t('noGaps')}</p> : null; };
+  </dl> : chosen ? <ClaimEvidence claim={chosen} href={href} local={mode === 'local'} pathNotes={new Map(source.evidence?.rows.filter(row => row.id === chosen.node.id).flatMap(row => [...row.moved.map(file => [file.path, t('pathChanged', { date: file.changedAt.slice(0, 10) })] as const), ...row.gone.map(path => [path, t('pathGone')] as const), ...row.undated.map(path => [path, t('pathUndated')] as const)]))} /> : !model.claims.length ? <p className="text-body">{t('noClaim')}</p> : null; };
   const swap = (render: (key: string) => ReactNode) => <div className={styles.swapSlot}>{leavingKey ? <div key={`out:${leavingKey}`} inert aria-hidden="true" className="motion-swap-out">{render(leavingKey)}</div> : null}<div key={selectionKey} className="motion-swap-in">{render(selectionKey)}</div></div>;
   useLayoutEffect(() => {
     const stage = graphStage.current;
@@ -102,7 +106,11 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     if (target) { target.focus(); target.scrollIntoView({ block: 'nearest', inline: 'nearest' }); pendingClaimFocus.current = null; }
   }, [evidenceQuestion, edge?.id, claim?.node.id]);
   function selectEdge(next: string) { captureInspector(); setEdgeId(next); }
-  function selectClaim(next: string) { captureInspector(); setClaimId(next); }
+  function selectClaim(next: string) {
+    captureInspector(); setClaimId(next);
+    const detail = evidencePanel.current, list = graphStage.current;
+    if (detail?.scrollIntoView && list && detail.offsetTop > list.offsetTop) detail.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
   function inspectImplementation() {
     if (!implementationClaim) return;
     pendingClaimFocus.current = implementationClaim.node.id;
@@ -115,9 +123,10 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     const next = pairLinks[stepIndex + delta];
     return <IconButton label={label} size="lg" tone="muted" hoverInk={next ? 'strong' : undefined} hoverSurface={next ? 'lift' : undefined} aria-disabled={!next || undefined} onClick={next ? () => selectEdge(next.edge.id) : undefined} className="atlas-touch-floor aria-disabled:cursor-not-allowed aria-disabled:opacity-55">{icon}</IconButton>;
   };
+  const allClear = evidenceQuestion && onlyGaps && model.claims.length > 0 && !model.gaps.length;
   const search = <AnalysisListSearch value={claimQuery} onChange={setClaimQuery} label={t('findCapability')} matches={matches?.size ?? 0} total={model.claims.length} testId="analysis-claim-search" />;
   const countBasis = <Disclosure summary={t('countBasis')} className={styles.countBasis}><p className="text-body leading-prose text-[color:var(--color-text-secondary)]">{t('countDetails', { total: model.dependencyCount, cross: model.crossCount, internal: model.internal, unassigned: model.unassigned })}</p><p className="mt-3 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('inspectionBasis', { inspected: model.inspected, total: model.claims.length })}</p><p className="mt-3 text-body leading-prose text-[color:var(--color-text-secondary)]">{t('anchorSummary', { anchored: model.anchored, total: model.claims.length })}</p><div className="mt-3 flex flex-wrap gap-3">{relationTypes.map(row => <span key={row.type} className="text-label text-[color:var(--color-text-tertiary)]">{relationLabel(row.type)} · {row.count}</span>)}</div></Disclosure>;
-  const inspector = <aside className={styles.inspector} data-placement={evidenceQuestion ? 'side' : 'below'} data-testid="analysis-evidence">
+  const inspector = <aside ref={evidencePanel} className={styles.inspector} data-placement={evidenceQuestion ? 'side' : 'below'} data-testid="analysis-evidence">
     <div className={styles.inspectorHeading}>
       <h2 ref={findingHeading} tabIndex={-1} data-testid="analysis-finding-heading" className="min-w-0 text-title outline-none font-[var(--font-weight-strong)]">{!evidenceQuestion && edge ? <>{name(model.byId.get(edge.from)!)} <span className="text-[color:var(--color-text-tertiary)]">→</span> {name(model.byId.get(edge.to)!)}</> : claim ? name(claim.node) : t('evidenceQuestion')}</h2>
       {!evidenceQuestion && pairLinks.length > 1 && edge ? <div role="group" aria-label={t('chooseDeclaration')} className="flex shrink-0 items-center">
@@ -144,7 +153,7 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
     </div>
     {missingSelection ? <p role="status" data-testid="analysis-missing-selection" className="mb-3 text-body text-[color:var(--color-text-secondary)]">{t('selectionMissing')}</p> : null}
     {!pair && question === 'relationships' ? <p className="mb-4 text-body text-[color:var(--color-text-secondary)]">{t('noDependencies', { count: model.dependencyCount })}</p> : null}
-    <div className={styles.layout} data-testid="analysis-layout" data-question={evidenceQuestion ? 'evidence' : 'relationships'}>
+    <div className={styles.layout} data-testid="analysis-layout" data-question={evidenceQuestion ? 'evidence' : 'relationships'} data-detail={allClear ? 'none' : undefined}>
       <div ref={graphStage} className={styles.stage}>
         {evidenceQuestion ? <>
           <div className={styles.boardToolbar}>
@@ -155,11 +164,12 @@ export function AnalysisWorkspace({ agentReady, onInspect, active, nodes, edges,
             </div>
           </div>
           {sourceScope !== 'all' ? <p role="status" aria-atomic="true" data-testid="analysis-source-scope-status" className="mb-3 text-label text-[color:var(--color-text-secondary)]">{t('sourceScopeMatches', { count: matchingCount })}</p> : null}
-          <ClaimList board={board} selectedClaim={claim?.node.id ?? null} markers={markers} matches={matches} onlyGaps={onlyGaps} vaultKey={vaultKey} onSelectClaim={selectClaim} />
+          <ClaimList board={board} selectedClaim={claim?.node.id ?? null} markers={markers} matches={matches} onlyGaps={onlyGaps} vaultKey={vaultKey} onSelectClaim={selectClaim}
+            empty={allClear ? <div className={styles.listEmpty} data-testid="analysis-no-gaps"><p>{t('noGaps')}</p><Chip size="md" tone="secondary" hoverSurface="lift" hoverBorder="strong" onClick={() => openEvidence(false)}>{t('showAllCapabilities', { count: model.claims.length })}</Chip></div> : null} />
         </> : <ConnectionExplorer board={board} selectedEdge={edge?.id ?? null} matches={matches} vaultKey={vaultKey} onSelectEdge={selectEdge} search={search} detail={inspector} footer={countBasis} />}
 {evidenceQuestion ? countBasis : null}
       </div>
-      {evidenceQuestion ? inspector : null}
+      {evidenceQuestion && !allClear ? inspector : null}
     </div>
   </section>;
 }

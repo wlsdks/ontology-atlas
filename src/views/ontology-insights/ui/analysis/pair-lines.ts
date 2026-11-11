@@ -12,22 +12,18 @@ export function pairLines(links: readonly PairEnds[], boxes: ReadonlyMap<string,
     const from = boxes.get(link.from), to = boxes.get(link.to);
     return from && to ? [{ link, from, to }] : [];
   });
-  const ports = (near: 'from' | 'to', far: 'from' | 'to') => {
-    const sharing = new Map<string, typeof placed>();
-    for (const row of placed) {
-      const rows = sharing.get(row.link[near]);
-      if (rows) rows.push(row); else sharing.set(row.link[near], [row]);
-    }
-    const y = new Map<string, number>();
-    for (const rows of sharing.values()) {
-      rows.sort((a, b) => centre(a[far]) - centre(b[far]) || a.link.id.localeCompare(b.link.id, 'en'));
-      const box = rows[0]![near], span = box.bottom - box.top - 2 * PORT_INSET_PX;
-      rows.forEach((row, index) => y.set(row.link.id, box.top + PORT_INSET_PX + span * (index + 1) / (rows.length + 1)));
-    }
-    return y;
-  };
-  const leaving = ports('from', 'to'), arriving = ports('to', 'from');
-  return placed.map(({ link, from, to }) => ({ id: link.id, x1: from.right, y1: leaving.get(link.id)!, x2: to.left, y2: arriving.get(link.id)! }));
+  const leavingTogether = new Map<string, typeof placed>();
+  for (const row of placed) {
+    const rows = leavingTogether.get(row.link.from);
+    if (rows) rows.push(row); else leavingTogether.set(row.link.from, [row]);
+  }
+  const leaving = new Map<string, number>();
+  for (const rows of leavingTogether.values()) {
+    rows.sort((a, b) => centre(a.to) - centre(b.to) || a.link.id.localeCompare(b.link.id, 'en'));
+    const box = rows[0]!.from, span = box.bottom - box.top - 2 * PORT_INSET_PX;
+    rows.forEach((row, index) => leaving.set(row.link.id, box.top + PORT_INSET_PX + span * (index + 1) / (rows.length + 1)));
+  }
+  return placed.map(({ link, from, to }) => ({ id: link.id, x1: from.right, y1: leaving.get(link.id)!, x2: to.left, y2: centre(to) }));
 }
 
 const round = (value: number) => Math.round(value * 10) / 10;

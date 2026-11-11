@@ -280,6 +280,7 @@
       "implementation": "記録された実装",
       "anchorMissing": "実装の根拠が未記録です",
       "noGaps": "この範囲には記録の不足が報告されていません。ソースの現在の状態と意味の承認は別に確認する必要があります。",
+      "showAllCapabilities": "能力{count}件をすべて表示",
       "inspectionBasis": "能力{total}件中{inspected}件の文書検査結果があります。未検査の文書を正常とは数えません。",
       "dependsOn": "次の概念に依存すると記録されています",
       "why": "関係のメモ",
@@ -386,6 +387,8 @@
       "pairList": "責務間の関係一覧",
       "pairLabel": "{from} → {to} · 依存の宣言{count}件",
       "pairDeclarations": "依存の宣言{count}件",
+      "pairDeclarationsShown": "{count}件中{shown}件を表示",
+      "pairNoMatch": "一致する能力を含む関係はありません。",
       "pairSource": "必要とする側",
       "pairTarget": "提供する側",
       "pairWholeDomain": "責務全体",
@@ -394,10 +397,11 @@
         "anchor": "実装の根拠なし",
         "definition": "定義が不明確",
         "boundary": "境界の記載なし",
-        "uncertainty": "未確認事項の記載なし",
-        "none": "報告された不足なし"
+        "uncertainty": "未確認事項の記載なし"
       },
       "declaringDocument": "宣言した文書",
+      "recordedRoles": "実装要素{count}件",
+      "recordedPaths": "ソースパス{count}件",
       "pairGrouping": "つながりのまとめ方",
       "pairGroupingNeeds": "何に依存するか",
       "pairGroupingProvides": "誰が依存するか"

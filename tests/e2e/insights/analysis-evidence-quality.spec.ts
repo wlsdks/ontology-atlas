@@ -10,6 +10,7 @@ const uid = (n: number) => `f0000000-0000-4000-8000-${String(n).padStart(12, '0'
 const fixtureDocument = (kind: string, slug: string, title: string, n: number, fields: string) => `---\nuid: ${uid(n)}\nkind: ${kind}\nslug: ${slug}\ntitle: ${title}\n${fields}\n---\n${title} performs its recorded responsibility in this example.\n`;
 
 test('multi-project scope and expanded declarations remain explicit and bounded', async ({ page }) => {
+  await page.setViewportSize({ width: 1040, height: 720 });
   await seedFirstRunSeen(page);
   const files: Record<string, string> = {
     'a.md': fixtureDocument('project', 'a', 'Project A', 1, 'domains: [domains/orders]'),
@@ -30,19 +31,27 @@ test('multi-project scope and expanded declarations remain explicit and bounded'
   await expect(page.getByTestId('analysis-scope')).not.toContainText('Project A');
   await expect(page.getByTestId('analysis-workspace')).toHaveAttribute('data-analysis-cross-count', '96');
   const sources = page.locator('[data-side="from"]').getByTestId('analysis-claim');
-  await expect(sources).toHaveCount(8);
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(8);
+  const witnesses = page.getByTestId('analysis-witness');
+  await expect(sources).toHaveCount(5);
+  await expect(witnesses).toHaveCount(5);
+  await expect(page.getByTestId('analysis-pair-count')).toHaveText('5 of 96 shown');
+  await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeInViewport({ ratio: 1 });
   const next = page.getByRole('button', { name: 'Next declaration', exact: true });
-  for (let press = 0; press < 8; press++) await next.click();
-  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 9 of 96');
+  for (let press = 0; press < 5; press++) await next.click();
+  await expect(page.getByTestId('analysis-declaration-step')).toContainText('Declaration 6 of 96');
   await expect(next).toBeFocused();
-  await expect(sources).toHaveCount(8);
+  await expect(sources).toHaveCount(5);
   await expect(page.locator('[data-endpoint="from"]')).toBeVisible();
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(8);
-  await page.getByRole('button', { name: 'Show 88 more', exact: true }).click();
+  await expect(witnesses).toHaveCount(5);
+  await page.getByRole('button', { name: 'Show 91 more', exact: true }).click();
   await expect(sources).toHaveCount(96);
-  await expect(page.getByRole('button', { name: 'Show less', exact: true })).toBeFocused();
-  await expect(page.getByTestId('analysis-witness')).toHaveCount(96);
+  const showLess = page.getByRole('button', { name: 'Show less', exact: true });
+  await expect(showLess).toBeFocused();
+  await expect(witnesses).toHaveCount(96);
+  await showLess.click();
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await expect(sources).toHaveCount(8);
+  await expect(witnesses).toHaveCount(8);
 });
 
 test('a saved declaration from another pair reopens on that pair with focus on its source', async ({ page }) => {

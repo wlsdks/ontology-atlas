@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { OntologyMapKindGlyph } from '@/shared/ui';
@@ -13,9 +14,9 @@ import styles from './analysis.module.css';
 export type BoardMarker = 'moved' | 'missing';
 const name = (node: KnowledgeGraphNode) => node.display ?? node.title;
 
-export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, vaultKey, onSelectClaim }: {
+export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, vaultKey, onSelectClaim, empty }: {
   board: AnalysisBoard; selectedClaim: string | null; markers: ReadonlyMap<string, BoardMarker>; matches: ReadonlySet<string> | null; onlyGaps: boolean; vaultKey: string;
-  onSelectClaim: (claimId: string) => void;
+  onSelectClaim: (claimId: string) => void; empty: ReactNode;
 }) {
   const t = useTranslations('ontologyPages.insights.analysis');
   const { moveFocus, setRoving, stopOf } = useSelectionRoving('[data-testid="analysis-board"]', '[data-testid="analysis-claim"]');
@@ -26,6 +27,7 @@ export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, va
   const tabStop = stopOf(shownIds, selectedClaim);
 
   return <div className={styles.claimList} data-testid="analysis-board" data-mode="evidence" role="group" aria-label={t('board')}>
+    {lanes.length ? null : empty}
     {lanes.map(({ lane, claims }, index) => {
       const motion = stagger(lane.id, index), laneName = lane.domain ? name(lane.domain) : t('laneUnassigned');
       return <section key={lane.id} data-board-lane={lane.id} aria-labelledby={`claim-lane-${index}`} className={`${styles.claimLane} ${motion.className ?? ''}`} style={motion.style}>
@@ -44,7 +46,7 @@ export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, va
                 aria-label={[name(claim.node), state].filter(Boolean).join(' · ')} onClick={() => onSelectClaim(id)} onFocus={() => setRoving(id)} onKeyDown={moveFocus}
                 className={controlClass({ shape: 'row', size: 'md', tone: pressed ? 'strong' : 'secondary', active: pressed, hoverSurface: 'lift', hoverInk: 'strong', className: styles.claimRow })}>
                 <span className={styles.claimName} title={name(claim.node)}>{name(claim.node)}</span>
-                <span className={styles.claimGaps} data-clean={!gaps.length || undefined}>{gaps.length ? gaps.join(' · ') : t('gapShort.none')}</span>
+                <span className={styles.claimGaps} data-clean={!gaps.length || undefined}>{gaps.length ? gaps.join(' · ') : [claim.roles.length ? t('recordedRoles', { count: claim.roles.length }) : null, claim.paths.length ? t('recordedPaths', { count: claim.paths.length }) : null].filter(Boolean).join(' · ')}</span>
                 {marker ? <span className={styles.claimSource} data-marker={marker}><span className={styles.boardMarker} data-marker={marker} aria-hidden="true" />{t(`sourceShort.${marker}`)}</span> : null}
               </button>
             </li>;

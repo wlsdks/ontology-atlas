@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import type { KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { OntologyMapKindGlyph } from '@/shared/ui';
@@ -8,16 +8,19 @@ import { controlClass } from '@/shared/ui/control-class';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { useStaggerOnce } from '@/shared/motion/stagger';
-import type { AnalysisBoard, BoardLink, PairGrouping } from '../../lib/analysis-board';
+import { declarationsThatFit, laneAnchor, type AnalysisBoard, type BoardLink, type PairGrouping } from '../../lib/analysis-board';
 import { pairArrow, pairCurve, pairLines, type CardBox, type PairLine } from './pair-lines';
 import { useSelectionRoving } from './selection-roving';
 import styles from './analysis.module.css';
 
 const name = (node: KnowledgeGraphNode) => node.display ?? node.title;
 const firstSeen = (ids: readonly string[]) => [...new Set(ids)];
-const CARD_LIMIT = 8;
-const withinLimit = (ids: readonly string[], chosen: string) => ids.length <= CARD_LIMIT ? [...ids]
-  : ids.indexOf(chosen) < CARD_LIMIT ? ids.slice(0, CARD_LIMIT) : [...ids.slice(0, CARD_LIMIT - 1), chosen];
+const CARDS_PER_SIDE = { roomy: 8, short: 5 };
+const roomyViewport = () => typeof window.matchMedia === 'function' ? window.matchMedia('(min-height: 840px)') : null;
+const watchRoomyViewport = (onChange: () => void) => { const query = roomyViewport(); query?.addEventListener('change', onChange); return () => query?.removeEventListener('change', onChange); };
+const isRoomyViewport = () => roomyViewport()?.matches ?? false;
+const assumeShortViewport = () => false;
+
 const sameLines = (a: readonly PairLine[], b: readonly PairLine[]) => a.length === b.length && a.every((line, index) => {
   const other = b[index]!;
   return line.id === other.id && line.x1 === other.x1 && line.y1 === other.y1 && line.x2 === other.x2 && line.y2 === other.y2;
@@ -37,23 +40,28 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
   const [lines, setLines] = useState<PairLine[]>([]);
   const [hover, setHover] = useState<string | null>(null);
   const [shown, setShown] = useState<{ pairId: string | null; edgeId: string | null; arriving: boolean }>({ pairId: null, edgeId: null, arriving: true });
-  const groups = board.groups[grouping];
+  const cardsPerSide = useSyncExternalStore(watchRoomyViewport, isRoomyViewport, assumeShortViewport) ? CARDS_PER_SIDE.roomy : CARDS_PER_SIDE.short;
+  const searched = (link: BoardLink) => Boolean(matches) && (matches!.has(link.from) || matches!.has(link.to));
+  const groups = board.groups[grouping].flatMap(group => {
+    const listed = matches ? group.pairs.filter(pair => pair.links.some(searched)) : group.pairs;
+    return listed.length ? [{ anchor: group.anchor, pairs: listed, declarations: listed.reduce((sum, pair) => sum + pair.links.length, 0) }] : [];
+  });
   const pairs = useMemo(() => board.groups.needs.flatMap(group => group.pairs), [board.groups]);
   const busiest = Math.max(1, ...pairs.map(pair => pair.links.length));
   const selected = board.links.find(link => link.edge.id === selectedEdge) ?? board.links[0]!;
   const current = pairs.find(pair => pair.pair.id === selected.pairId)!;
   if (shown.edgeId !== selected.edge.id) setShown({ pairId: current.pair.id, edgeId: selected.edge.id, arriving: shown.pairId !== current.pair.id });
   const { moveFocus, setRoving, stopOf } = useSelectionRoving('nav', '[data-testid="analysis-pair"]');
-  const rowStop = stopOf(new Set(pairs.map(pair => pair.pair.id)), current.pair.id);
+  const rowStop = stopOf(new Set(groups.flatMap(group => group.pairs.map(pair => pair.pair.id))), current.pair.id);
+  const cards = useSelectionRoving('[data-pair-diagram]', '[data-pair-card]');
   const stagger = useStaggerOnce({ vaultKey, listKey: `analysis-pairs:${grouping}`, ids: groups.map(group => group.anchor.id) });
-  const claimNames = useMemo(() => new Map(board.lanes.flatMap(lane => lane.claims.map(claim => [claim.node.id, name(claim.node)] as const))), [board.lanes]);
   const expanded = expandedPair === current.pair.id;
-  const allSources = firstSeen(current.links.map(link => link.from)), allTargets = firstSeen(current.links.map(link => link.to));
-  const sources = expanded ? allSources : withinLimit(allSources, selected.from), targets = expanded ? allTargets : withinLimit(allTargets, selected.to);
-  const hiddenCards = allSources.length - sources.length + allTargets.length - targets.length;
-  const cardShown = new Set([...sources, ...targets]);
-  const drawn = current.links.filter(link => cardShown.has(link.from) && cardShown.has(link.to));
-  const linksOf = (id: string) => current.links.filter(link => link.from === id || link.to === id);
+  const fitting = declarationsThatFit(current.links, cardsPerSide, selected.edge.id, searched);
+  const drawn = expanded ? current.links : fitting;
+  const hiddenDeclarations = current.links.length - fitting.length;
+  const sources = firstSeen(drawn.map(link => link.from)), targets = firstSeen(drawn.map(link => link.to));
+  const cardStop = cards.stopOf(new Set([...sources, ...targets]), selected.from);
+  const linksOf = (id: string) => drawn.filter(link => link.from === id || link.to === id);
   const endsKey = drawn.map(link => `${link.edge.id}\0${link.from}\0${link.to}`).join('|');
 
   useLayoutEffect(() => {
@@ -79,10 +87,13 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
   const lineOf = new Map(lines.map(line => [line.id, line]));
   const active = lineOf.get(selected.edge.id);
 
-  function selectPair(edgeId: string) {
-    onSelectEdge(edgeId);
-    const stacked = stage.current && nav.current && stage.current.offsetTop > nav.current.offsetTop;
-    if (stacked) stage.current!.scrollIntoView?.({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
+  function selectPair(links: readonly BoardLink[]) {
+    onSelectEdge((links.find(searched) ?? links[0]!).edge.id);
+    const panel = stage.current;
+    if (!panel?.scrollIntoView || !nav.current) return;
+    const stacked = panel.offsetTop > nav.current.offsetTop;
+    const underHeader = panel.getBoundingClientRect().top < parseFloat(getComputedStyle(panel).scrollMarginTop);
+    if (stacked || underHeader) panel.scrollIntoView({ block: 'start', behavior: reducedMotion ? 'auto' : 'smooth' });
   }
 
   function selectFromCard(id: string) {
@@ -91,15 +102,16 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
   }
 
   function card(id: string, domain: KnowledgeGraphNode, side: 'from' | 'to', index: number) {
-    const whole = !claimNames.has(id), label = whole ? name(domain) : claimNames.get(id)!;
+    const concept = board.endpoints.get(id), whole = id === laneAnchor(domain.id), label = name(concept ?? domain);
     const pressed = selected[side] === id;
-    const dimmed = Boolean(matches && !whole && !matches.has(id)) && !pressed;
+    const dimmed = Boolean(matches) && !linksOf(id).some(searched) && !pressed;
     return <li key={id} data-dimmed={dimmed || undefined} data-related={!pressed && hover !== null && linksOf(id).some(hot) || undefined}>
       <button type="button" data-pair-card={id} data-testid="analysis-claim" data-analysis-claim-id={id} data-endpoint={pressed ? side : undefined} aria-pressed={pressed}
         aria-label={`${label} · ${t('nodeDeclarations', { count: linksOf(id).length })}`} title={label} onClick={() => selectFromCard(id)} {...hoverProps(id)}
+        tabIndex={id === cardStop ? 0 : -1} onFocus={() => { cards.setRoving(id); setHover(id); }} onKeyDown={cards.moveFocus}
         style={{ '--structure-item-delay': `calc(var(--motion-stagger) * ${Math.min(index, 6)})` } as CSSProperties}
         className={controlClass({ shape: 'card', size: 'md', tone: pressed ? 'accentOnTint' : 'secondary', active: pressed, hoverSurface: 'lift', hoverBorder: 'strong', className: `${styles.pairCard} structure-item-in` })}>
-        {whole ? <OntologyMapKindGlyph kind="domain" size={14} /> : null}
+        {concept && concept.kind === 'capability' ? null : <OntologyMapKindGlyph kind={concept?.kind ?? 'domain'} size={14} />}
         <span className="min-w-0 truncate">{label}</span>
         {whole ? <span className={styles.pairCardNote}>{t('pairWholeDomain')}</span> : null}
       </button>
@@ -118,10 +130,9 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
             <ul>
               {group.pairs.map(({ pair, links }) => {
                 const pressed = pair.id === current.pair.id;
-                const quiet = Boolean(matches) && !links.some(link => matches!.has(link.from) || matches!.has(link.to));
-                return <li key={pair.id} data-dimmed={quiet && !pressed || undefined}>
+                return <li key={pair.id}>
                   <button type="button" data-testid="analysis-pair" data-pair={pair.id} data-declarations={links.length} aria-pressed={pressed} aria-label={t('pairLabel', { from: name(pair.from), to: name(pair.to), count: links.length })}
-                    tabIndex={pair.id === rowStop ? 0 : -1} onFocus={() => setRoving(pair.id)} onKeyDown={moveFocus} onClick={() => selectPair(links[0]!.edge.id)}
+                    tabIndex={pair.id === rowStop ? 0 : -1} onFocus={() => setRoving(pair.id)} onKeyDown={moveFocus} onClick={() => selectPair(links)}
                     className={controlClass({ shape: 'row', size: 'md', tone: pressed ? 'strong' : 'secondary', active: pressed, hoverSurface: 'lift', hoverInk: 'strong', className: styles.pairRow })}>
                     <span className={styles.pairRowArrow} aria-hidden="true">{grouping === 'needs' ? '→' : '←'}</span>
                     <span className="min-w-0 flex-1 truncate">{name(grouping === 'needs' ? pair.to : pair.from)}</span>
@@ -133,22 +144,23 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
             </ul>
           </section>;
         })}
+        {matches && matches.size > 0 && !groups.length ? <p className={styles.pairListEmpty}>{t('pairNoMatch')}</p> : null}
       </nav>
     </div>
     <div className={styles.pairMain}>
     <div ref={stage} className={styles.pairStage}>
     <section key={current.pair.id} aria-label={t('pairLabel', { from: name(current.pair.from), to: name(current.pair.to), count: current.links.length })}>
-      <div ref={diagram} className={styles.pairDiagram}>
-        <p className={styles.pairColumnTitle}><span className={styles.pairColumnRole}>{t('pairSource')}</span><span className="flex min-w-0 items-center gap-2"><OntologyMapKindGlyph kind="domain" size={16} /><span className="min-w-0 truncate">{name(current.pair.from)}</span></span></p>
-        <p className={styles.pairCount}>{t('pairDeclarations', { count: current.links.length })}</p>
-        <p className={styles.pairColumnTitle}><span className={styles.pairColumnRole}>{t('pairTarget')}</span><span className="flex min-w-0 items-center gap-2"><OntologyMapKindGlyph kind="domain" size={16} /><span className="min-w-0 truncate">{name(current.pair.to)}</span></span></p>
+      <div ref={diagram} className={styles.pairDiagram} data-pair-diagram>
+        <p className={styles.pairColumnTitle}><span className={styles.pairColumnRole}>{t('pairSource')}</span><span className={styles.pairTitleRow}><OntologyMapKindGlyph kind="domain" size={16} /><span className="min-w-0 truncate">{name(current.pair.from)}</span></span></p>
+        <p className={`${styles.pairColumnTitle} ${styles.pairTargetTitle}`}><span className={styles.pairColumnRole}>{t('pairTarget')}</span><span className={styles.pairTitleRow}><OntologyMapKindGlyph kind="domain" size={16} /><span className="min-w-0 truncate">{name(current.pair.to)}</span>
+          <span className={styles.pairCount} data-testid="analysis-pair-count">{drawn.length < current.links.length ? t('pairDeclarationsShown', { shown: drawn.length, count: current.links.length }) : t('pairDeclarations', { count: current.links.length })}</span></span></p>
         <ul className={styles.pairCards} data-side="from">{sources.map((id, index) => card(id, current.pair.from, 'from', index))}</ul>
         <ul className={styles.pairCards} data-side="to">{targets.map((id, index) => card(id, current.pair.to, 'to', index + sources.length))}</ul>
         <svg className={styles.pairLines} data-hovering={hover !== null && drawn.some(hot) || undefined} aria-hidden="true">
           <g className={styles.lineGroups}>
             {drawn.map(link => {
               const line = lineOf.get(link.edge.id);
-              return line ? <g key={link.edge.id} data-edge={link.edge.id} data-tone={hot(link) ? 'hot' : 'pair'} className={hot(link) ? styles.hotConnection : styles.connection}>
+              return line ? <g key={link.edge.id} data-edge={link.edge.id} data-tone={hot(link) ? 'hot' : 'pair'} data-dimmed={Boolean(matches) && !searched(link) || undefined} className={hot(link) ? styles.hotConnection : styles.connection}>
                 <path pathLength={1} className={`structure-link-in ${styles.pairLineIn}`} d={pairCurve(line)} />
                 <polygon className={`structure-link-land ${styles.pairArrowIn}`} points={pairArrow(line)} />
               </g> : null;
@@ -163,10 +175,10 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
           </g> : null}
         </svg>
       </div>
-      {hiddenCards > 0 || expanded && Math.max(allSources.length, allTargets.length) > CARD_LIMIT ? <button type="button" data-testid="analysis-pair-more" aria-expanded={expanded}
+      {hiddenDeclarations > 0 ? <button type="button" data-testid="analysis-pair-more" aria-expanded={expanded}
         onClick={() => setExpandedPair(expanded ? null : current.pair.id)}
         className={controlClass({ shape: 'chip', size: 'md', tone: 'secondary', hoverSurface: 'lift', hoverInk: 'strong', className: `atlas-touch-floor ${styles.pairMore}` })}>
-        {expanded ? t('showLessItems') : t('showMoreItems', { count: hiddenCards })}
+        {expanded ? t('showLessItems') : t('showMoreItems', { count: hiddenDeclarations })}
       </button> : null}
     </section>
     {detail}

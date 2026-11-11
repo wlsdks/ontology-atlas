@@ -280,6 +280,7 @@
       "implementation": "Recorded implementation",
       "anchorMissing": "No implementation anchor recorded",
       "noGaps": "No recorded gaps in this set. Source currentness and accepted meaning remain separate questions.",
+      "showAllCapabilities": "View all {count} capabilities",
       "inspectionBasis": "Document checks available for {inspected} of {total} capabilities. Unchecked documents are not clean results.",
       "dependsOn": "declares that it depends on",
       "why": "Relationship note",
@@ -324,7 +325,7 @@
         "no-history": "Source · Git dates unavailable; inspect the document and its recorded paths",
         "partial": "Source · some dates are unknown; inspect the unchecked claims"
       },
-      "nodeDeclarations": "{count} dependency declarations shown in this graph",
+      "nodeDeclarations": "{count, plural, one {# dependency declaration} other {# dependency declarations}} drawn here",
       "chooseDeclaration": "Choose a declaration",
       "gapsFilter": "Gaps {count}",
       "allFilter": "All {count}",
@@ -386,18 +387,21 @@
       "pairList": "Connections between responsibilities",
       "pairLabel": "{from} → {to} · {count, plural, one {# dependency declaration} other {# dependency declarations}}",
       "pairDeclarations": "{count, plural, one {# declaration} other {# declarations}}",
-      "pairSource": "Needs",
-      "pairTarget": "Provides",
+      "pairDeclarationsShown": "{shown} of {count} shown",
+      "pairNoMatch": "No connection involves a matching capability.",
+      "pairSource": "Dependent",
+      "pairTarget": "Provider",
       "pairWholeDomain": "Whole responsibility",
       "gapShort": {
         "document": "No document",
         "anchor": "No implementation anchor",
         "definition": "Definition unclear",
         "boundary": "Boundary missing",
-        "uncertainty": "Unknowns not recorded",
-        "none": "No reported gap"
+        "uncertainty": "Unknowns not recorded"
       },
       "declaringDocument": "Declared in",
+      "recordedRoles": "{count, plural, one {# implementation element} other {# implementation elements}}",
+      "recordedPaths": "{count, plural, one {# source path} other {# source paths}}",
       "pairGrouping": "Group connections by",
       "pairGroupingNeeds": "Needs",
       "pairGroupingProvides": "Needed by"

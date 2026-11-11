@@ -8,7 +8,7 @@ export interface BoardLink { edge: KnowledgeGraphEdge; pairId: string; from: str
 export interface BoardPair { pair: AnalysisPair; links: BoardLink[] }
 export type PairGrouping = 'needs' | 'provides';
 export interface BoardPairGroup { anchor: KnowledgeGraphNode; declarations: number; pairs: BoardPair[] }
-export interface AnalysisBoard { lanes: BoardLane[]; groups: Record<PairGrouping, BoardPairGroup[]>; links: BoardLink[] }
+export interface AnalysisBoard { lanes: BoardLane[]; groups: Record<PairGrouping, BoardPairGroup[]>; links: BoardLink[]; endpoints: ReadonlyMap<string, KnowledgeGraphNode> }
 
 export const UNASSIGNED_LANE = 'lane:unassigned';
 export const laneAnchor = (domainId: string) => `lane:${domainId}`;
@@ -30,7 +30,7 @@ export function buildAnalysisBoard(model: AnalysisModel): AnalysisBoard {
     for (const claim of claims) for (const role of claim.roles) if (!owners.has(role.id)) owners.set(role.id, claim.node.id);
     return [domainId, owners] as const;
   }));
-  const ownerIn = (nodeId: string, domainId: string) => claimIndex.has(nodeId) ? nodeId : roleOwners.get(domainId)?.get(nodeId) ?? laneAnchor(domainId);
+  const ownerIn = (nodeId: string, domainId: string) => claimIndex.has(nodeId) ? nodeId : roleOwners.get(domainId)?.get(nodeId) ?? (nodeId === domainId ? laneAnchor(domainId) : nodeId);
   const rank = (id: string) => claimIndex.get(id) ?? -1;
 
   const pairs: BoardPair[] = model.pairs.map(pair => ({
@@ -56,5 +56,17 @@ export function buildAnalysisBoard(model: AnalysisModel): AnalysisBoard {
 
   const lanes: BoardLane[] = model.domains.map(domain => ({ id: laneAnchor(domain.id), domain, claims: laneClaims.get(domain.id)! }));
   if (unassigned.length) lanes.push({ id: UNASSIGNED_LANE, domain: null, claims: unassigned });
-  return { lanes, groups: { needs, provides: groupBy(pair => pair.to, pair => pair.from) }, links: needs.flatMap(group => group.pairs.flatMap(pair => pair.links)) };
+  const links = needs.flatMap(group => group.pairs.flatMap(pair => pair.links));
+  const endpoints = new Map(links.flatMap(link => [link.from, link.to]).flatMap(id => { const node = model.byId.get(id); return node ? [[id, node] as const] : []; }));
+  return { lanes, groups: { needs, provides: groupBy(pair => pair.to, pair => pair.from) }, links, endpoints };
+}
+
+export function declarationsThatFit(links: readonly BoardLink[], cardsPerSide: number, selectedEdge: string, searched: (link: BoardLink) => boolean) {
+  const threeLinearPasses = [(link: BoardLink) => link.edge.id === selectedEdge, searched, () => true];
+  const from = new Set<string>(), to = new Set<string>(), kept = new Set<string>();
+  for (const comesNow of threeLinearPasses) for (const link of links) {
+    if (!comesNow(link) || kept.has(link.edge.id) || !from.has(link.from) && from.size >= cardsPerSide || !to.has(link.to) && to.size >= cardsPerSide) continue;
+    from.add(link.from); to.add(link.to); kept.add(link.edge.id);
+  }
+  return links.filter(link => kept.has(link.edge.id));
 }

@@ -280,6 +280,7 @@
       "implementation": "기록된 구현",
       "anchorMissing": "구현 근거 미기록",
       "noGaps": "이 범위에 보고된 기록의 빈틈은 없어요. 소스의 현재 상태와 의미의 승인은 별도로 확인해야 해요.",
+      "showAllCapabilities": "역량 {count}개 모두 보기",
       "inspectionBasis": "역량 {total}개 중 {inspected}개의 문서 검사 결과가 있어요. 검사하지 않은 문서를 정상으로 세지 않아요.",
       "dependsOn": "다음 개념에 의존한다고 기록되어 있어요",
       "why": "관계 메모",
@@ -386,6 +387,8 @@
       "pairList": "책임 사이의 연결 목록",
       "pairLabel": "{from} → {to} · 의존 선언 {count}개",
       "pairDeclarations": "의존 선언 {count}개",
+      "pairDeclarationsShown": "{count}개 중 {shown}개 표시",
+      "pairNoMatch": "일치하는 역량이 들어 있는 연결이 없어요.",
       "pairSource": "필요로 하는 쪽",
       "pairTarget": "제공하는 쪽",
       "pairWholeDomain": "책임 전체",
@@ -394,10 +397,11 @@
         "anchor": "구현 근거 없음",
         "definition": "정의 불명확",
         "boundary": "경계 누락",
-        "uncertainty": "미확인 내용 누락",
-        "none": "보고된 빈틈 없음"
+        "uncertainty": "미확인 내용 누락"
       },
       "declaringDocument": "선언한 문서",
+      "recordedRoles": "구현 요소 {count}개",
+      "recordedPaths": "소스 경로 {count}개",
       "pairGrouping": "연결을 묶는 기준",
       "pairGroupingNeeds": "무엇에 의존하나",
       "pairGroupingProvides": "누가 의존하나"

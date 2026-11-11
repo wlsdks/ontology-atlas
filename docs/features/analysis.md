@@ -39,11 +39,14 @@ the selected pair stays in view.
 Selecting a pair draws it: the capabilities of the needing responsibility on
 the left, those of the providing one on the right, and one directed line per
 declaration. An implementation element's dependency is drawn from the
-capability that owns it, and a dependency declared by a responsibility itself
-gets a card named for the whole responsibility. Eight cards show per side, the
-selected endpoints always among them; a named remainder action opens the rest,
-and lines are drawn only between cards that are shown. Lines follow measured
-DOM geometry when labels wrap or text grows.
+capability that records it as a role, a dependency declared by a responsibility
+itself gets a card named for the whole responsibility, and any other declaring
+concept gets a card under its own name and kind. Declarations are shown until a
+side holds eight cards, or five in a window shorter than 840px: the selected
+declaration first, then searched ones. Every shown card has a line, the count
+then reads "n of N shown", and a named remainder action opens the rest. Lines
+leave a card from separate points and reach a card on one arrowhead. They
+follow measured DOM geometry when labels wrap or text grows.
 
 The selected declaration draws in indigo from its source to its target.
 Hovering or focusing a card picks out that card's lines and partner cards.
@@ -52,11 +55,13 @@ declarations. Under the diagram the selected declaration names its two
 concepts, its declaring document, its relationship note, the recorded
 implementation and the source state. A "Declaration n of N" stepper beside that
 heading reaches every declaration of the selected pair by keyboard. A saved
-declaration reopens on its pair with focus on its source card. The pair list,
-the diagram and the declaring document are visible together at the minimum app
-viewport; in a narrower container the list stacks above the diagram and
-choosing a pair brings the diagram into view. A missing structured relationship
-note does not prove that the Markdown body has no explanation.
+declaration reopens on its pair with focus on its source card. The cards are
+one Tab stop, walked with the list's keys. The pair list, the diagram and the
+declaring document are visible together at the minimum app viewport, also for
+a pair at the display limit. In a narrower container the list stacks above the
+diagram; choosing a pair brings the diagram into view whenever it is stacked or
+has scrolled under the page header. A missing structured relationship note does
+not prove that the Markdown body has no explanation.
 
 Ownership follows recorded containment to the nearest domain on each parent
 path. A dependency whose endpoint has missing or ambiguous responsibility is
@@ -69,7 +74,8 @@ evidence and gaps instead.
 The evidence question lists capabilities under their responsibility; a
 capability with no responsibility or more than one sits in a last group named
 for both cases. Each row names the capability, each of its recorded gaps in
-words, and, in a local folder, a moved or missing source mark. A project title
+words or, with none recorded, how many implementation elements and source paths
+it records, and, in a local folder, a moved or missing source mark. A project title
 is used only for exactly one recorded project; a multi-project graph identifies
 the entire folder. A recorded implementation anchor is a source `path` or a
 normalized containment relation to a real element document. A reference-only
@@ -77,12 +83,16 @@ element or reverse containment does not count. An implementation role without a
 source path remains an anchor in the ontology; it is not checked code. Document,
 anchor, definition, boundary and uncertainty gaps are distinct facts. A document
 without an available `meaningFindings` array is unchecked, not clean. Capability
-search narrows the list to matching rows, and quiets the non-matching cards and
-pairs of the relationship question, without changing the selected evidence or
-the counts; clearing or pressing Escape returns focus to the search field, and a
-selection made from a match stays selected. The All or Recorded gaps scope is an
-exclusive keyboard-operable control that names each scope's count and narrows
-the list. The list is one Tab stop that follows the selected capability, walked
+search narrows the list to matching rows. In the relationship question it lists
+only the pairs with a declaration that touches a match, a listed pair opens on
+its first such declaration, and cards and lines off those declarations are
+quieted; the selected evidence does not change until a pair is chosen. Clearing
+or pressing Escape returns focus to the search field, and a selection made from
+a match stays selected. The All or Recorded gaps scope is an exclusive
+keyboard-operable control that names each scope's count and narrows the list.
+Recorded gaps opens first when a gap is recorded, otherwise All; choosing it
+with none recorded says so in place and offers the full list. Below the
+stacking width, choosing a capability brings its evidence into view. The list is one Tab stop that follows the selected capability, walked
 with ArrowUp, ArrowDown, Home and End. The share of capabilities with an anchor
 lives under the count-basis disclosure.
 

@@ -16,6 +16,12 @@ describe('pairLines', () => {
     expect(y1['to-upper']).toBeLessThan(y1['to-lower']!);
   });
 
+  it('lands every line that reaches one card on a single arrowhead', () => {
+    const boxes = new Map([['upper', box(0, 0)], ['lower', box(0, 80)], ['b', box(300, 40)]]);
+    const lines = pairLines([{ id: 'one', from: 'upper', to: 'b' }, { id: 'two', from: 'lower', to: 'b' }], boxes);
+    expect(lines.map(line => line.y2)).toEqual([58, 58]);
+  });
+
   it('skips a link whose card is not on screen', () => {
     expect(pairLines([{ id: 'e', from: 'a', to: 'gone' }], new Map([['a', box(0, 0)]]))).toEqual([]);
   });

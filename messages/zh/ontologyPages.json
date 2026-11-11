@@ -280,6 +280,7 @@
       "implementation": "已记录的实现",
       "anchorMissing": "尚未记录实现依据",
       "noGaps": "此范围内没有报告记录缺项。源码当前状态与含义批准仍需分别检查。",
+      "showAllCapabilities": "查看全部 {count} 项能力",
       "inspectionBasis": "{total} 个能力中有 {inspected} 个具有文档检查结果。未检查的文档不算正常结果。",
       "dependsOn": "记录声明其依赖以下概念",
       "why": "关系备注",
@@ -386,6 +387,8 @@
       "pairList": "职责之间的关系列表",
       "pairLabel": "{from} → {to} · {count} 条依赖声明",
       "pairDeclarations": "{count} 条依赖声明",
+      "pairDeclarationsShown": "共 {count} 条，显示 {shown} 条",
+      "pairNoMatch": "没有包含匹配能力的关系。",
       "pairSource": "依赖方",
       "pairTarget": "被依赖方",
       "pairWholeDomain": "整个职责",
@@ -394,10 +397,11 @@
         "anchor": "没有实现依据",
         "definition": "定义不明确",
         "boundary": "缺少边界",
-        "uncertainty": "未记录未确认内容",
-        "none": "没有已报告的缺口"
+        "uncertainty": "未记录未确认内容"
       },
       "declaringDocument": "声明所在文档",
+      "recordedRoles": "{count} 个实现要素",
+      "recordedPaths": "{count} 条源码路径",
       "pairGrouping": "连接的分组方式",
       "pairGroupingNeeds": "依赖谁",
       "pairGroupingProvides": "被谁依赖"
