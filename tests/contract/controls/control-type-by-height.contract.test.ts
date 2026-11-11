@@ -9,7 +9,7 @@ import { controlClass, fieldClass, type ControlShape, type ControlSize, type Fie
 import { buttonVariants } from '@/shared/ui/controls/button';
 import { SELECT_SIZE_CLASS } from '@/shared/ui/fields/select';
 import { readGlobalCss } from '../../../scripts/lib/design/global-css.mjs';
-import { classNameOf, readClassSource, stringsOf, type ClassSource } from '../lib/jsx-class-source';
+import { classModuleLoader, classNameOf, readClassSource, stringsOf, type ClassSource } from '../lib/jsx-class-source';
 
 /**
  * A control's height picks its type: `label` at 24px, `body` from 28 to 36, `body-lg` from 40.
@@ -101,11 +101,22 @@ const HAND_TYPE_EXCEPTIONS: Array<{ file: string; type: TypeStep; reason: string
     type: 'title',
     reason: 'the round title renames in place, so the control is the heading',
   },
+  {
+    file: 'src/features/agent-activity/ui/AgentActivityChip.tsx',
+    type: 'label',
+    reason: 'a map chrome chip wears the chrome label step at the chrome tile height',
+  },
 ];
 
-const JSX_PRIMITIVES = new Set(['Button', 'Chip', 'Input', 'Select', 'Textarea']);
+/** A hand `min-h` is a floor under content that may stack on a row, a card or a multi-line field. */
+const ONE_LINE_SHAPES = new Set<string>(['chip', 'pill', 'segment']);
+const ONE_LINE_TAGS = new Set(['Button', 'Chip', 'Input', 'Select']);
 
-type Site = { file: string; line: number; label: string; classes: string[]; layerType: TypeStep | undefined };
+const JSX_PRIMITIVES = new Set(['Button', 'Chip', 'RowButton', 'Input', 'Select', 'Textarea']);
+const JSX_SHAPES: Record<string, ControlShape> = { Chip: 'chip', RowButton: 'row' };
+const LOAD_MODULE = classModuleLoader();
+
+type Site = { file: string; line: number; label: string; classes: string[]; layerType: TypeStep | undefined; oneLine: boolean };
 
 function literal(node: ts.Expression | undefined): string | undefined {
   return node && ts.isStringLiteralLike(node) ? node.text : undefined;
@@ -138,6 +149,20 @@ function callLayerType(callee: string, options: ts.ObjectLiteralExpression): Typ
   return shape ? layerPair(controlClass({ shape: shape as ControlShape, size: size as ControlSize })).type : undefined;
 }
 
+function jsxLayerType(tag: string, size: string | undefined, element: ts.JsxOpeningLikeElement): TypeStep | undefined {
+  const sized = size ?? (element.attributes.properties.some((entry) => ts.isJsxAttribute(entry) && entry.name.getText() === 'size') ? undefined : 'md');
+  if (!sized) return undefined;
+  if (tag === 'Button') return sized in SELECT_SIZE_CLASS ? layerPair(buttonVariants({ size: sized as 'sm' | 'md' | 'lg' })).type : undefined;
+  const shape = JSX_SHAPES[tag];
+  return shape ? layerPair(controlClass({ shape, size: sized as ControlSize })).type : undefined;
+}
+
+function isOneLineCall(callee: string, options: ts.ObjectLiteralExpression): boolean {
+  if (callee === 'fieldClass') return property(options, 'multiline') === undefined;
+  const shapeNode = property(options, 'shape');
+  return ONE_LINE_SHAPES.has(literal(shapeNode) ?? (shapeNode ? '' : 'chip'));
+}
+
 function isTypedCall(callee: string, source: ClassSource, options: ts.ObjectLiteralExpression): boolean {
   if (callee === 'fieldClass') return literal(property(options, 'frame')) !== 'bare';
   const shapeNode = property(options, 'shape');
@@ -160,8 +185,9 @@ function readSites(file: string): Site[] {
             file,
             line: line(node),
             label: callee,
-            classes: stringsOf(resolved, className),
+            classes: stringsOf(resolved, className, true, LOAD_MODULE),
             layerType: callLayerType(callee, options),
+            oneLine: isOneLineCall(callee, options),
           });
         }
       }
@@ -175,10 +201,9 @@ function readSites(file: string): Site[] {
           file,
           line: line(node),
           label: tag,
-          classes: stringsOf(resolved, className),
-          layerType: tag === 'Button' && (!size || size in SELECT_SIZE_CLASS)
-            ? layerPair(buttonVariants({ size: (size ?? 'md') as 'sm' | 'md' | 'lg' })).type
-            : undefined,
+          classes: stringsOf(resolved, className, true, LOAD_MODULE),
+          layerType: jsxLayerType(tag, size, node),
+          oneLine: ONE_LINE_TAGS.has(tag),
         });
       }
     }
@@ -207,11 +232,11 @@ function isExcepted(site: Site): boolean {
   );
 }
 
-function handSizeOffence(site: Pick<Site, 'classes' | 'layerType'>): string | null {
+function handSizeOffence(site: Pick<Site, 'classes' | 'layerType' | 'oneLine'>): string | null {
   const { types, heights } = readSize(site.classes);
   const hand = heights.find((height) => height.exact) ?? heights[0];
   if (types.length === 0) {
-    if (!hand?.exact || !onLadder(hand.px) || !site.layerType) return null;
+    if (!hand || !onLadder(hand.px) || !site.layerType || !(hand.exact || site.oneLine)) return null;
     const wanted = typeForHeight(hand.px);
     return wanted === site.layerType ? null : `sets ${hand.px}px by hand but keeps text-${site.layerType}; add text-${wanted}`;
   }
@@ -225,24 +250,29 @@ describe('a call site names a type step only for a height it sets by hand', () =
   const sites = sourceFiles('src').flatMap(readSites);
 
   it('reads the call sites of the typed primitives', () => {
-    // Measured 564 sites; the floor only proves the scan is not idle.
+    // Measured 614 sites, 465 of them one-line; the floors only prove the scan is not idle.
     expect(sites.length).toBeGreaterThan(400);
+    expect(sites.filter((site) => site.oneLine).length).toBeGreaterThan(300);
     expect(new Set(sites.map((site) => site.label))).toEqual(
-      new Set(['controlClass', 'fieldClass', 'Button', 'Chip', 'Input', 'Select', 'Textarea']),
+      new Set(['controlClass', 'fieldClass', 'Button', 'Chip', 'RowButton', 'Input', 'Select', 'Textarea']),
     );
   });
 
   it('judges a hand type and a hand height by the rule', () => {
-    const layerType = 'body' as const;
-    expect(handSizeOffence({ classes: ['w-full justify-center'], layerType })).toBeNull();
-    expect(handSizeOffence({ classes: ['h-10 text-body-lg'], layerType })).toBeNull();
-    expect(handSizeOffence({ classes: ['sm:text-label max-[769px]:min-h-11'], layerType })).toBeNull();
-    expect(handSizeOffence({ classes: ['min-h-14'], layerType })).toBeNull();
-    expect(handSizeOffence({ classes: ['text-label'], layerType })).toMatch(/without a hand height/);
-    expect(handSizeOffence({ classes: ['min-h-8', 'text-label'], layerType })).toMatch(/wears text-body/);
-    expect(handSizeOffence({ classes: ['h-[var(--control-h-lg)] text-body'], layerType })).toMatch(/wears text-body-lg/);
-    expect(handSizeOffence({ classes: ['h-10 justify-center'], layerType })).toMatch(/add text-body-lg/);
-    expect(handSizeOffence({ classes: ['min-h-14 text-body'], layerType })).toMatch(/off the 24 to 44 ladder/);
+    const oneLine = { layerType: 'body', oneLine: true } as const;
+    const stacking = { layerType: 'body', oneLine: false } as const;
+    expect(handSizeOffence({ classes: ['w-full justify-center'], ...oneLine })).toBeNull();
+    expect(handSizeOffence({ classes: ['h-10 text-body-lg'], ...oneLine })).toBeNull();
+    expect(handSizeOffence({ classes: ['sm:text-label max-[769px]:min-h-11'], ...oneLine })).toBeNull();
+    expect(handSizeOffence({ classes: ['min-h-14'], ...oneLine })).toBeNull();
+    expect(handSizeOffence({ classes: ['min-h-11'], ...stacking })).toBeNull();
+    expect(handSizeOffence({ classes: ['text-label'], ...oneLine })).toMatch(/without a hand height/);
+    expect(handSizeOffence({ classes: ['min-h-8', 'text-label'], ...oneLine })).toMatch(/wears text-body/);
+    expect(handSizeOffence({ classes: ['h-[var(--control-h-lg)] text-body'], ...oneLine })).toMatch(/wears text-body-lg/);
+    expect(handSizeOffence({ classes: ['h-10 justify-center'], ...stacking })).toMatch(/add text-body-lg/);
+    expect(handSizeOffence({ classes: ['min-h-10'], ...oneLine })).toMatch(/add text-body-lg/);
+    expect(handSizeOffence({ classes: ['min-h-11 text-body'], ...stacking })).toMatch(/wears text-body-lg/);
+    expect(handSizeOffence({ classes: ['min-h-14 text-body'], ...oneLine })).toMatch(/off the 24 to 44 ladder/);
   });
 
   it('finds no call site whose hand size breaks the rule', () => {
