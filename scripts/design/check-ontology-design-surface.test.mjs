@@ -94,7 +94,7 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(root, "src/views/ontology-insights/ui/OntologyInsightsPage.tsx", '<main data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence" role="tabpanel"><TabBar /><AnalysisWorkspace /></main>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref<button data-testid="analysis-inspect-selected" onClick={() => onInspect(inspection.text)} /><CopyControl testId="analysis-copy-selected" /></aside>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", '<div data-testid="analysis-board"><path data-testid="analysis-witness" /></div>');
+  writeFixture(root, "src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx", '<div data-testid="analysis-board"><path data-testid="analysis-witness" /></div>');
   writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", '<InsightsAgentDock /> planInsightsAgentPrompt');
   writeFixture(
     root,
@@ -275,7 +275,7 @@ test("ontology design surface does not accept a workbench marker that survives o
 for (const [file, missing] of [
   ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", /relationship-analysis/],
   ["src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", /analysis-evidence/],
-  ["src/views/ontology-insights/ui/analysis/ProjectBoard.tsx", /analysis-board|analysis-witness/],
+  ["src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx", /analysis-board|analysis-witness/],
   ["src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", /InsightsAgentDock/],
 ]) {
   test(`ontology design surface rejects missing relationship or authority subject: ${file}`, () => {

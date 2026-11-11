@@ -1303,7 +1303,7 @@ describe('focused check suggestions', () => {
       'src/views/ontology-insights/lib/analysis-board.ts',
       'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
       'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx',
-      'src/views/ontology-insights/ui/analysis/ProjectBoard.tsx',
+      'src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx',
     ];
     const command = 'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts';
     const result = suggestFocusedChecks(paths);
