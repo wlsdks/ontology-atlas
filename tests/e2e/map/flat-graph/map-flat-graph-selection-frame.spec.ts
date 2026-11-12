@@ -16,13 +16,13 @@ const CURVE_STEPS = 48;
 /** Rounding of a box edge to canvas pixels. */
 const EDGE_PX = 0.5;
 
-/** Domains of busy hubs whose neighbours carry long names, and a dependency across each domain pair. */
+/** Domains of busy hubs whose neighbours carry long names, short enough that a domain fits 1512 wide at the zoom that reads it clear, and a dependency across each domain pair. */
 function generatedVault(): Record<string, string> {
   const files: Record<string, string> = {};
   const body = (title: string) => `\n# ${title}\n\n${title} keeps one boundary of the product honest.\n`;
   const domain = (d: number) => `domains/${DOMAINS[d % DOMAINS.length]}`;
   const capability = (d: number, c: number) => `capabilities/${DOMAINS[d % DOMAINS.length]}-${c}`;
-  const title = (d: number, c: number) => (c === 0 ? `${DOMAINS[d]} hub` : `${DOMAINS[d]} step ${c} with a long descriptive name`);
+  const title = (d: number, c: number) => (c === 0 ? `${DOMAINS[d]} hub` : `${DOMAINS[d]} step ${c} named at length`);
   files["atlas.md"] = `---\nkind: project\ntitle: Atlas\nslug: atlas\ndomains: [${DOMAINS.map((_, d) => domain(d)).join(", ")}]\n---\n${body("Atlas")}`;
   DOMAINS.forEach((name, d) => {
     const capabilities = Array.from({ length: CAPABILITIES_PER_DOMAIN }, (_, c) => capability(d, c));
@@ -122,6 +122,16 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
       .filter((t) => t.id !== null && lit.has(t.id) && !t.backed)
       .flatMap((t) => lines.filter((s) => crossesBox(s, t.box)).map((s) => `${t.role}:${t.id} x ${s.flowKey}`));
     expect(crossed, "unbacked lit names a lit line runs through").toEqual([]);
+
+    const crowded = named.flatMap((t, i) => named.slice(i + 1).filter((u) => u.id !== t.id && overlaps(t.box, u.box)).map((u) => `${t.role}:${t.id} x ${u.role}:${u.id}`));
+    expect(crowded, "lit in-domain names overlapping one another").toEqual([]);
+    const [ringGap, discGap, maxRatio] = await page.evaluate(() =>
+      ["--map-graph-selected-ring-gap-px", "--map-graph-selected-disc-gap-px", "--map-camera-max-zoom-ratio"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
+    expect(discGap).toBeGreaterThan(0);
+    expect(dial.zoomRatio, "this vault frames the hub below the zoom band's top").toBeLessThan(maxRatio!);
+    const ring = dial.discs.find((d) => d.id === id)!;
+    const home = dial.discs.find((d) => d.id === domainId)!;
+    expect(Math.hypot(ring.x - home.x, ring.y - home.y) - ring.r - ringGap! - home.r, "selection ring to its domain disc").toBeGreaterThanOrEqual(discGap! - EDGE_PX);
 
     const title = dial.texts.find((t) => t.role === "domain" && t.id === domainId)!;
     const selected = dial.texts.filter((t) => t.id === id);
