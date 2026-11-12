@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
-import { BrandWaitingMark } from './brand-waiting-mark';
+import { BrandCompanion, type CompanionLabels } from './brand-companion';
 
-export function BrandPortrait({ expression }: { expression: 'welcome' | 'curious' }) {
-  if (expression === 'welcome') return <BrandWaitingMark active motion="greeting" />;
+export function BrandPortrait(props: { expression: 'welcome'; labels: CompanionLabels } | { expression: 'curious' }) {
+  const { expression } = props;
+  if (props.expression === 'welcome') return <BrandCompanion labels={props.labels} />;
   return (
     <Image
       src={withBasePath(`/brand/mascot-${expression}.png`)}

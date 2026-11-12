@@ -83,7 +83,7 @@ retaining evidence-bound motion and raster tier constraints (`docs/DECISIONS.md:
 2. When the person reads any README or visits the existing gateway/download,
    Atlas presents compass identity and Moru without changing the promise or CTA facts.
 3. When the person enters folder selection, Atlas uses the existing welcome slot:
-   one finite greeting per screen entry, then still; re-renders do not restart it.
+   continuous bounded decorative play, with pointer/keyboard pause and reduced-motion stillness; re-renders do not restart it.
 4. When the person starts a real pending operation, Moru accompanies the existing
    status/cancel controls without progress percentages, read claims, or predictions.
 5. When the person's feed verifies a read, Atlas keeps the finite entrance/read
@@ -99,7 +99,7 @@ retaining evidence-bound motion and raster tier constraints (`docs/DECISIONS.md:
 | State | Web | macOS app |
 |---|---|---|
 | Public identity | Atlas name; existing `download.primaryCtaPublished` / `download.webCta` conditions; choose CTA | Out of scope — installed app does not offer its own download |
-| Empty / greeting | `firstRun.title`; `firstRun.openTitle`; finite welcome then still | Same keys/actions; existing chooser may use `vaultSwitch.choose.title` |
+| Empty / greeting | `firstRun.title`; `firstRun.openTitle`; bounded decorative playground | Same keys/actions; existing chooser may use `vaultSwitch.choose.title` |
 | Loading / pending | Existing operation status/action, e.g. `firstRun.busy`; await folder result | `acpChat.starting.title` / `acpChat.firstRun.title`; wait or `acpChat.stop` |
 | Verified entry / read | `agentActivity.mascot.detected` then `.reading`; inspect existing agent-work control | Same keys/actions; finite motion then still |
 | Verified completion | `agentActivity.mascot.success`; inspect result; gesture ends | Same key/action; no meaning-acceptance claim |
@@ -115,7 +115,7 @@ Runtime art mapping (other catalogue clips have service contexts, not new app st
 
 | Context | Named source and playback | Still / transition |
 |---|---|---|
-| First-run welcome | `wave`, one twenty-four-frame native 64px cycle (3600ms) on entry | Neutral first/last frame; no restart on re-render |
+| First-run / download welcome | Native 128px `wave`, `tail`, `hop`, `blink`, `dance` in a bounded playground | Continuous play; explicit pause, visibility and reduced-motion guards |
 | Actual pending | `blink`; `connect` for tool preparation, `source-read` for Compile; existing guarded cadence | Neutral; active=false removes the mark |
 | Verified entrance (`walk`) | `wave`, finite 1920ms entrance | Neutral shared endpoint before read |
 | Verified read (`read`) | `source-read`, one twenty-four-frame finite cycle (1920ms) | Neutral; text retains read state after motion ends |
@@ -154,7 +154,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
 
 - Empty, one-concept, and largest available dense vault: identical motion rules;
   no per-node instances, graph-ink overlap, blocked controls, or extra focus stops.
-- First run/re-renders: one greeting per entry; folder actions work immediately.
+- First run/re-renders: continuous decorative play stays inside its measured area; folder actions work immediately.
 - Hangul input: preserve composer input, focus, and keyboard behavior.
 - Moved/renamed/unreadable folder: keep path/access failure and picker recovery.
 - Concurrent edits or stale/missing heartbeat: keep conflict/unknown and evidence;
@@ -195,7 +195,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    silence occurs, **then** pending art disappears and input/status/recovery remain
    usable, without false completion. Check waiting-mark tests and an installed-app
    start/Stop/reconnect walk as the recovery proof.
-7. **Given** greeting/work sequences, **when** reduced motion, offscreen, hidden,
+7. **Given** decorative play/work sequences, **when** reduced motion, offscreen, hidden,
    and repeated-render cases occur, **then** motion stops as specified without
    lost text/focus or teleporting transitions. Check changed-sequence motion capture,
    `brand-waiting-mark.test.tsx`, and `reduced-motion-equivalent.contract.test.ts`.
@@ -219,3 +219,8 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
 ## Owner question
 
 None — character, name, compass family, and surfaces are authorized; compass refinement and pixel QA are acceptance work. Retained sources provide a way back.
+
+The 2026-11-13 owner correction replaces the finite entry greeting and static
+download portrait with native 128px decorative play. Copy keys `moru.pause`,
+`moru.resume` and `moru.still` name the character toggle in all four locales.
+The stage owns travel bounds; work-state authority and navigation stay unchanged.
