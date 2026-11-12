@@ -263,6 +263,19 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     expect(namesAt(model, layout, 0.5, null, null, 0).ids.has(element)).toBe(false);
   });
 
+  it("names the agent's element while a domain is pointed at", () => {
+    const elements = layout.clusters.flatMap((c) => c.items.flatMap((it) => it.elementIds));
+    const unnamed = [...model.domainById.keys()].flatMap((domain) => {
+      const attention = cachedGraphAttention(model, domain, false);
+      return elements.filter((element) => !admittedNames({
+        model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 0.5, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: domain, attentionKey: attention.key, agentFocusId: element,
+        selected: false, named: attention.named, reach: attention.reach, lines: attention.lines, discRadius: () => 4, elementSpacingPx: 0,
+      }).ids.has(element)).map((element) => `${element} under ${domain}`);
+    });
+    expect(unnamed).toEqual([]);
+  });
+
   it("only adds names as the zoom grows", () => {
     const steps = [0.5, 0.71, 1, 1.41, 2].map((s) => namesAt(model, layout, s, null).ids);
     for (let k = 1; k < steps.length; k += 1) for (const id of steps[k - 1]!) expect(steps[k]!.has(id), id).toBe(true);

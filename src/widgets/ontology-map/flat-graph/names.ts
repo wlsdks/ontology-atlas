@@ -573,7 +573,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group));
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const yields = input.lit !== null && cand.id !== input.focusId;
+      const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || offTitles(at, group))) : [];
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const pool = apart.length > 0 ? apart : yields && cand.element ? [] : clear.length > 0 ? clear : tries;
