@@ -1,9 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 
+import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
+import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
+import type { VaultManifest } from "@/entities/docs-vault";
+import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
+
 import { computeConcentricLayout } from "../../model/layout/layout";
 import { resolveDialTokens } from "../../dial/tokens";
-import type { DialMemory, DialWorldInput } from "../../dial/types";
+import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
+import { resolveFlatGraphTokens } from "../../flat-graph/tokens";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import {
   buildTopologyWorld,
@@ -19,6 +26,7 @@ import {
   dialFocusFrame,
   isSpineNode,
   recomputeWorldGeometry,
+  type TopologyWorld,
   type WorldNode,
   containmentLevelFor } from "./topology-world";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
@@ -609,5 +617,77 @@ describe("buildTopologyWorld with the Flat dial", () => {
     it("builds no dial for a graph without a domain", () => {
         const world = buildTopologyWorld([mapNode("p", "project"), mapNode("c", "capability")], [edge("p", "c", "contains")], fullTokens, "disc", input(null));
         expect(world.dial).toBeNull();
+    });
+});
+
+describe("buildTopologyWorld with the Flat graph", () => {
+    const css = new Map<string, string>();
+    for (const file of ["app/styles/map-graph-tokens.css", "app/styles/tokens.css", "app/styles/base-map-tokens.css", "app/styles/map-dial-tokens.css"]) {
+        for (const m of readFileSync(file, "utf8").matchAll(/(--[\w-]+):\s*([^;]+);/g)) if (!css.has(m[1]!)) css.set(m[1]!, m[2]!.trim());
+    }
+    const graph = resolveFlatGraphTokens((v) => css.get(v) ?? "");
+    const dialTokens = resolveDialTokens((v) => (v === "--map-panel-text-primary" ? "#f4f4f8" : css.get(v) ?? ""));
+    const mapTokens = {
+        radiusProject: 20, radiusDomain: 14, radiusCapability: 8, radiusElement: 5,
+        layoutRingDomain: 250, layoutRingCapability: 145, layoutRingElement: 90,
+        edgeBowContains: 70, edgeBowDepends: 92, edgeBlendContains: 0.46, edgeBlendDepends: 0.62, starCount: 2,
+    } as unknown as OntologyMapTokens;
+    const labels: DialLabels = {
+        units: (c, e) => `${c} capabilities · ${e} elements`, stale: (n) => `${n} stale`, orphans: (n) => `${n} unplaced`, more: (n) => `+${n}`,
+        ring: () => "", reading: () => "", settling: () => "", linksShown: () => "",
+    };
+    const input = (memory: DialMemory | null): DialWorldInput => ({
+        graph, graphAreaPx: { width: 1600, height: 900 }, labels, tokens: dialTokens, rememberOrder: true, memory,
+        measureText: (text, font) => text.length * (Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1]) || 12) * 0.6,
+    });
+    type Read = { nodes: OntologyMapNode[]; edges: OntologyMapEdge[] };
+    const readOf = (manifest: unknown, keep: (kind: string, at: number) => boolean = () => true): Read => {
+        const derived = deriveOntologyFromVault(manifest as VaultManifest);
+        const nodes = (derived.nodes as { id: string; kind: string; title?: string }[])
+            .filter((n, at) => ["project", "domain", "capability", "element"].includes(n.kind) && keep(n.kind, at))
+            .map((n): OntologyMapNode => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as OntologyMapNode["kind"], size: 1, x: 0, y: 0, isHub: false, ownerKey: null, recentlyUpdated: false, fullDegree: 0, descendantCount: 0 }));
+        const ids = new Set(nodes.map((n) => n.id));
+        const edges = (derived.edges as { from: string; to: string; type: string }[])
+            .filter((e) => ids.has(e.from) && ids.has(e.to))
+            .map((e): OntologyMapEdge => ({ source: e.from, target: e.to, relationType: e.type, relationQuality: null, evidenceCount: 0, kind: isContainmentRelation(e.type) ? "contains" : "depends", declaredBySlug: null }));
+        return { nodes, edges };
+    };
+    const folder = readOf(dogfoodManifest);
+    const partOf = (every: number) => readOf(dogfoodManifest, (kind, at) => (kind !== "capability" && kind !== "element") || at % every === 0);
+
+    /**
+     * One page session, with fresh module memory, as the map lifecycle drives it: whatever showed
+     * before the pick, then each provisional read hands its memory to the next and only the end settles.
+     */
+    async function open(shownBefore: Read | null, reads: readonly Read[], stored: DialMemory | null) {
+        vi.resetModules();
+        const { buildTopologyWorld: build } = await import("./topology-world");
+        const { claimDialOrderFolder } = await import("../../dial/order");
+        const { claimFlatGraphFolder, settleFlatGraph } = await import("../../flat-graph/scene");
+        const { labelFontFamily } = await import("../../render/labels");
+        if (shownBefore) build(shownBefore.nodes, shownBefore.edges, mapTokens, "disc", input(null));
+        claimDialOrderFolder("folder");
+        claimFlatGraphFolder("folder");
+        let provisional: DialMemory | null = null;
+        let world: TopologyWorld | null = null;
+        reads.forEach((read, at) => {
+            world = build(read.nodes, read.edges, mapTokens, "disc", input(provisional ?? stored));
+            const settled = at === reads.length - 1;
+            settleFlatGraph(world.dial!.model, world.dial!.scene.graph!, settled ? "settled" : "provisional", labelFontFamily());
+            provisional = settled ? null : world.dial!.scene.memory;
+        });
+        return world!.dial!.scene;
+    }
+
+    it("draws one folder as one picture however it was opened: after the bundled sample, streamed, or reopened", async () => {
+        const oneShot = await open(null, [folder], null);
+        const afterSample = await open(readOf(storefrontManifest), [folder], null);
+        const streamed = await open(null, [partOf(4), partOf(2), folder], null);
+        const reopened = await open(null, [folder], afterSample.memory);
+        for (const [how, scene] of Object.entries({ afterSample, streamed, reopened })) {
+            const drift = Math.max(...[...oneShot.positions].map(([id, at]) => Math.hypot(scene.positions.get(id)!.x - at.x, scene.positions.get(id)!.y - at.y)));
+            expect.soft(drift, `${how}: farthest drift from the one-shot open`).toBeLessThan(1e-6);
+            expect.soft(new Map(scene.graph!.hueByDomain), `${how}: hue per domain`).toEqual(new Map(oneShot.graph!.hueByDomain));
+        }
     });
 });
