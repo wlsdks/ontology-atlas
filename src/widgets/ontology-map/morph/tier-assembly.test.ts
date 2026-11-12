@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { MOTION } from "@/shared/motion/tokens";
 import {
   armTierAssembly,
   carryTierAssembly,
@@ -147,7 +148,9 @@ describe("Flat first-open timing", () => {
     expect(FLAT_TIER_TIMING.totalMs).toBeLessThanOrEqual(700);
     expect(leftAt.d).toBeLessThan(leftAt.near!);
     expect(leftAt.near).toBeLessThan(leftAt.far!);
-    expect(leftAt.far).toBeLessThan(leftAt.e!);
+    expect(leftAt.near).toBeLessThan(leftAt.e!);
+    expect(leftAt.far).toBeLessThanOrEqual(leftAt.e!);
+    expect(leftAt.near! - leftAt.d!, "a frame up to --motion-base apart still shows domains leave first").toBeGreaterThanOrEqual(MOTION.base.duration * 1000);
     expect(stepTierAssembly(world, FLAT_TIER_TIMING.totalMs)).toBe(false);
     expect(world.nodes.map((n) => n.x)).toEqual([0, 100, 110, 160, 165]);
   });
