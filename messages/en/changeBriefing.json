@@ -24,8 +24,6 @@
   "invalidRange": "Choose valid dates with the start on or before the end.",
   "loading": "Reading local source history…",
   "refresh": "Refresh briefing",
-  "webTitle": "Source history needs the installed app",
-  "webBody": "Open an ontology folder in the installed app to read its connected source repository's history.",
   "noVault": "Open a folder to read its connected source history.",
   "noProject": "This folder has no project to read source history for.",
   "sourceUnavailable": "The connected source folder is unavailable. Check its connection and folder permission, then retry.",

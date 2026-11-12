@@ -1,7 +1,7 @@
 {
   "file": "src/views/automations/ui/AutomationsPage.tsx",
-  "count": 2,
+  "count": 1,
   "claim": "standard-button",
   "proof": "buttonVariants",
-  "why": "\"Get the app\" (primary sm) and \"Open Library check history\" (ghost sm) navigate and sit beside `<Button>` controls, so they must press alike. Both are `<Link>` through `buttonVariants`; `control-class.ts` does not replace standard buttons."
+  "why": "\"Open Library check history\" (ghost sm) navigates and sits beside `<Button>` controls, so it must press alike. It is a `<Link>` through `buttonVariants`; `control-class.ts` does not replace standard buttons."
 }

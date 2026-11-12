@@ -6,12 +6,17 @@ import { useTranslations } from 'next-intl';
 import { CircleHelp, FileImage, FileText, FolderOpen, LockKeyhole } from 'lucide-react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
-import { Button, IconButton } from '@/shared/ui';
+import { Button, GetAppLink, IconButton } from '@/shared/ui';
 import { Tooltip } from '@/shared/ui/hints/tooltip';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { PlanningSourceArtwork } from './PlanningSourceArtwork';
 
-export function PlanningFolderStage({ onChoose, unavailable }: { onChoose: () => void; unavailable: boolean }) {
+type PlanningDoor =
+  | { kind: 'choose'; onChoose: () => void; unavailable: boolean }
+  | { kind: 'unsupported'; offersApp: boolean };
+
+export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
+  const nav = useTranslations('navRail');
   const t = useTranslations('planning');
   const reduced = usePrefersReducedMotion();
   const [hovered, setHovered] = useState(false);
@@ -19,7 +24,8 @@ export function PlanningFolderStage({ onChoose, unavailable }: { onChoose: () =>
   const engaged = !reduced && (hovered || focused);
 
   return <motion.section
-    data-planning-state="no-folder"
+    data-testid="planning-stage"
+    data-planning-state={door.kind === 'choose' ? 'no-folder' : 'unsupported'}
     data-reduced-motion={reduced}
     initial={reduced ? false : OVERLAY_RISE}
     animate={OVERLAY_SETTLED}
@@ -28,12 +34,15 @@ export function PlanningFolderStage({ onChoose, unavailable }: { onChoose: () =>
   >
     <div className="min-w-0">
       <h2 className="max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
-      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
-      {unavailable && <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p>}
-      <Button size="lg" data-planning-choose className="mt-7"
+      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t(door.kind === 'choose' ? 'startBody' : 'browserUnavailable')}</p>
+      {door.kind === 'choose' && door.unavailable && <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p>}
+      {(door.kind === 'choose' || door.offersApp) && <div className="mt-7 flex"
         onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onClick={onChoose}
-      ><FolderOpen size={ICON_SIZE.lg} aria-hidden />{t('chooseFolder')}</Button>
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
+        {door.kind === 'choose'
+          ? <Button size="lg" data-planning-choose onClick={door.onChoose}><FolderOpen size={ICON_SIZE.lg} aria-hidden />{t('chooseFolder')}</Button>
+          : <GetAppLink data-testid="planning-get-app">{nav('getApp')}</GetAppLink>}
+      </div>}
       <div className="mt-3 flex items-center gap-2 text-body text-[color:var(--color-text-secondary)]">
         <LockKeyhole size={ICON_SIZE.sm} aria-hidden /><span>{t('readOnly')}</span>
         <Tooltip side="bottom" align="start" toggleOnPress panelClassName="w-72 max-w-[calc(100vw-2rem)] whitespace-normal break-words"

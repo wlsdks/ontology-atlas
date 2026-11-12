@@ -1,9 +1,8 @@
 {
   "title": "Git and PR briefing",
   "sourcePrompt": "Choose a Git repository to catch up on its commits and PR descriptions. An ontology is optional.",
-  "chooseRepository": "Choose Git repository",
-  "webTitle": "Git and PR briefing needs the installed app",
-  "webBody": "Choose a repository folder in the installed app to read local Git history and create an explanation with your connected model.",
+  "chooseRepository": "选择 Git 仓库",
+  "webBody": "在已安装的应用中选择仓库文件夹，即可读取本地 Git 历史，并用已连接的模型生成说明。",
   "sourceUnavailable": "This repository is unavailable or its folder permission expired. Choose it again; your dates are kept.",
   "noHistory": "This folder has no readable Git history. Choose another repository or retry after its first commit.",
   "loading": "Reading the selected repository and period…",

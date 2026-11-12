@@ -167,32 +167,32 @@ reachable. The rail still provides escape from an unavailable state.
 
 | State | Web | macOS app |
 |---|---|---|
-| No vault/project | `webTitle`, `webBody`; existing navigation | `noVault` or `noProject`; `openProjects` |
-| Missing grant/binding, moved/unreadable source | `webTitle`, `webBody`; open installed app externally | `sourceUnavailable`; `openProjects`, then `retry` |
-| No readable committed history | `webTitle`, `webBody` | `noHistory`; choose another project or retry |
-| Loading | `webTitle`, `webBody` | `loading`; selected dates/project remain visible; obsolete response ignored |
+| No vault/project | `gitBriefing.startTitle`, `gitBriefing.webBody`; existing navigation | `noVault` or `noProject`; `openProjects` |
+| Missing grant/binding, moved/unreadable source | `gitBriefing.startTitle`, `gitBriefing.webBody`; open installed app externally | `sourceUnavailable`; `openProjects`, then `retry` |
+| No readable committed history | `gitBriefing.startTitle`, `gitBriefing.webBody` | `noHistory`; choose another project or retry |
+| Loading | `gitBriefing.startTitle`, `gitBriefing.webBody` | `loading`; selected dates/project remain visible; obsolete response ignored |
 | Ready | No synthetic history or fixture pretending to be real | `totals`, `coverage`, `groupingNote`; group selection opens `evidence` |
-| Empty | `webTitle`, `webBody` | `empty`, `emptyHint`; all period controls remain usable |
+| Empty | `gitBriefing.startTitle`, `gitBriefing.webBody` | `empty`, `emptyHint`; all period controls remain usable |
 | Invalid custom range | No local history controls offered | `invalidRange`; keep both inputs and fix dates before reading |
-| Error | `webTitle`, `webBody` | `readError`; `retry`, keeping dates/project |
-| Concurrent source change | `webTitle`, `webBody` | `stale`; `refresh`, no mismatched snapshot displayed |
-| Partial/capped | `webTitle`, `webBody` | `partial`, `limit`; keep returned evidence and narrow dates |
-| No matching anchors | `webTitle`, `webBody` | `unmapped`, `unmappedHint`; inspect all returned paths/messages |
-| Unmapped source-area overview | `webTitle`, `webBody` | `sourceAreas`, `sourceAreaNote`; choose an area with its full path/commit counts |
-| Unmapped source area selected | `webTitle`, `webBody` | `sourceAreaNote`, `allUnmapped`; only that area's paths/messages/patch choices; whole-unmapped count retained |
-| Long file or commit-message list | `webTitle`, `webBody` | `showMoreFiles` or `showMoreCommits` after each 40 rows; full counts remain visible |
-| Reverted net changes | `webTitle`, `webBody` | `netEmpty`; touched-file/commit counts remain visible |
-| Endpoint read unavailable | `webTitle`, `webBody` | `netUnavailable`; paths/messages remain inspectable |
-| File patch not selected | `webTitle`, `webBody` | `patchSelect`; choose a file with `patchAction` |
-| Long file comparison reading | `webTitle`, `webBody` | Sticky filename/basis and `groupFiles` navigation; `previousFile`, `nextFile`, `filePosition`, `chooseFile` stay reachable; no group sequence for an outside-group endpoint path |
-| File patch loading | `webTitle`, `webBody` | `patchLoading`; keep source scope and file list visible |
-| Text patch ready | `webTitle`, `webBody` | `patchTitle`, `patchBasis`; read plain-text changed lines inside Atlas |
-| Text patch truncated | `webTitle`, `webBody` | `patchTruncated`; bounded 32 KiB prefix, choose another file |
-| Binary patch | `webTitle`, `webBody` | `patchBinary`; paths/messages remain available |
-| File patch unavailable | `webTitle`, `webBody` | `patchUnavailable`, `patchRetry`; preserve paths/messages |
-| File has no endpoint difference | `webTitle`, `webBody` | `patchNoDifference`; inspect touch evidence or choose another file |
-| Root commit patch | `webTitle`, `webBody` | `initialTree`, `patchBasis`; read added text against empty tree |
-| Largest measured source | `webTitle`, `webBody` | Same ready/partial states, bounded at 2,000 commits plus explicit byte/path limits; lead records measured counts and capture before claiming proof |
+| Error | `gitBriefing.startTitle`, `gitBriefing.webBody` | `readError`; `retry`, keeping dates/project |
+| Concurrent source change | `gitBriefing.startTitle`, `gitBriefing.webBody` | `stale`; `refresh`, no mismatched snapshot displayed |
+| Partial/capped | `gitBriefing.startTitle`, `gitBriefing.webBody` | `partial`, `limit`; keep returned evidence and narrow dates |
+| No matching anchors | `gitBriefing.startTitle`, `gitBriefing.webBody` | `unmapped`, `unmappedHint`; inspect all returned paths/messages |
+| Unmapped source-area overview | `gitBriefing.startTitle`, `gitBriefing.webBody` | `sourceAreas`, `sourceAreaNote`; choose an area with its full path/commit counts |
+| Unmapped source area selected | `gitBriefing.startTitle`, `gitBriefing.webBody` | `sourceAreaNote`, `allUnmapped`; only that area's paths/messages/patch choices; whole-unmapped count retained |
+| Long file or commit-message list | `gitBriefing.startTitle`, `gitBriefing.webBody` | `showMoreFiles` or `showMoreCommits` after each 40 rows; full counts remain visible |
+| Reverted net changes | `gitBriefing.startTitle`, `gitBriefing.webBody` | `netEmpty`; touched-file/commit counts remain visible |
+| Endpoint read unavailable | `gitBriefing.startTitle`, `gitBriefing.webBody` | `netUnavailable`; paths/messages remain inspectable |
+| File patch not selected | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchSelect`; choose a file with `patchAction` |
+| Long file comparison reading | `gitBriefing.startTitle`, `gitBriefing.webBody` | Sticky filename/basis and `groupFiles` navigation; `previousFile`, `nextFile`, `filePosition`, `chooseFile` stay reachable; no group sequence for an outside-group endpoint path |
+| File patch loading | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchLoading`; keep source scope and file list visible |
+| Text patch ready | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchTitle`, `patchBasis`; read plain-text changed lines inside Atlas |
+| Text patch truncated | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchTruncated`; bounded 32 KiB prefix, choose another file |
+| Binary patch | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchBinary`; paths/messages remain available |
+| File patch unavailable | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchUnavailable`, `patchRetry`; preserve paths/messages |
+| File has no endpoint difference | `gitBriefing.startTitle`, `gitBriefing.webBody` | `patchNoDifference`; inspect touch evidence or choose another file |
+| Root commit patch | `gitBriefing.startTitle`, `gitBriefing.webBody` | `initialTree`, `patchBasis`; read added text against empty tree |
+| Largest measured source | `gitBriefing.startTitle`, `gitBriefing.webBody` | Same ready/partial states, bounded at 2,000 commits plus explicit byte/path limits; lead records measured counts and capture before claiming proof |
 
 ## Copy
 
@@ -225,8 +225,6 @@ New strings needed by implementation return to this spec/catalogue before use.
 | `invalidRange` | Period controls | Choose valid dates with the start on or before the end. |
 | `loading` | Briefing and evidence states | Reading local source history… |
 | `refresh` | Briefing and evidence states | Refresh briefing |
-| `webTitle` | Briefing and evidence states | Source history needs the installed app |
-| `webBody` | Briefing and evidence states | Open an ontology folder in the installed app to read its connected source repository's history. |
 | `noVault` | Briefing and evidence states | Open a folder to read its connected source history. |
 | `noProject` | Briefing and evidence states | This folder has no project to read source history for. |
 | `sourceUnavailable` | Briefing and evidence states | The connected source folder is unavailable. Check its connection and folder permission, then retry. |
