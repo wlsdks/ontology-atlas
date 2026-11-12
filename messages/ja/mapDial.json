@@ -24,7 +24,7 @@
   "keyNeededBy": "この能力への依存元",
   "keyRelates": "関連",
   "keyBroader": "上位概念",
-  "noDomain": "ドメインなし {count, number}",
+  "noDomain": "ドメインなし{count, number}",
   "reachNeeds": "{count, number}件に依存",
   "reachNeededBy": "{count, number}件が依存"
 }
