@@ -59,6 +59,16 @@ const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const framePlan: FramePlan = { lights: [], segments: [], arcs: [], focusArcs: [], dots: [], glows: [], discs: [], domains: [], project: null, selection: null, agentRing: null, names: [] };
+const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
+
+/** A drawn dot answers before a name drawn over it: rows are hit last-first, so dots go last. */
+function dotRow(p: DialPick): DialRowPick {
+  const row = dotRows.take();
+  row.id = p.id;
+  row.box.minX = p.x - p.r; row.box.maxX = p.x + p.r; row.box.minY = p.y - p.r; row.box.maxY = p.y + p.r;
+  return row;
+}
+
 const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0 }));
 
 function segment(x0: number, y0: number, x1: number, y1: number, ink: string, width: number, alpha: number): Segment {
@@ -216,7 +226,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     return graphDiscRadiusPx("element", 0, P, g);
   };
 
-  for (const p of [segments, dots, discs, glows, pickPool]) p.reset();
+  for (const p of [segments, dots, discs, glows, pickPool, dotRows]) p.reset();
   const plan = framePlan;
   for (const list of [plan.lights, plan.segments, plan.arcs, plan.focusArcs, plan.dots, plan.glows, plan.discs, plan.domains, plan.names]) list.length = 0;
   plan.project = null;
@@ -392,6 +402,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     const at = screenAt(el);
     if (at && alphas.get(el) === 1 && onScreen(at, W, H, ELEMENT_PICK_PX)) picks.push(pick(el, at.x, at.y, Math.max(ELEMENT_PICK_PX, radiusAt(el, growth))));
   }
+  const elementPicks = picks.length;
   for (const d of plan.discs) picks.push(pick(d.id, d.x, d.y, d.r));
   for (const d of plan.domains) picks.push(pick(d.id, d.x, d.y, d.r));
   if (plan.project) picks.push(pick(plan.project.id, plan.project.x, plan.project.y, plan.project.r));
@@ -403,6 +414,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     labelBoxes.push({ nodeId: n.name.id, text: n.name.text, minX: box.minX + pad, maxX: box.maxX - pad, minY: box.minY + pad, maxY: box.maxY - pad });
     if (n.ink > P.sinkInk && n.name.role !== "units") rows.push({ id: n.name.id, box });
   }
+  for (let i = 0; i < elementPicks; i += 1) rows.push(dotRow(picks[i]!));
 
   return { plan, alphas, picks, rows, labelBoxes, drawnFlows, presence, tier: (dotAlpha > 0.5 ? "element" : "circuit") as DialFrameResult["tier"] };
 }
