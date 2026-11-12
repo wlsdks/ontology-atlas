@@ -11,6 +11,7 @@ import type { ExpandStructure } from "@/shared/lib/preferences/appearance-prefer
 import { computeDensityGate, type DensityGateParentGeometry } from "../../model/layout/density-gate";
 import {
   readContainmentTree,
+  directCapabilityRelations,
   rollDirectedDomainFlows,
   rollDomainDependencies,
   rollRelatesCapabilityPairs,
@@ -754,7 +755,7 @@ function buildDialWorld(
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges) });
+  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directCapabilityRelations(tree, treeEdges) });
   const model = placeDial ? placeDial(built) : built;
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
   if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
@@ -763,7 +764,7 @@ function buildDialWorld(
     const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: labelFontFamily() });
     const scene = buildFlatGraphScene(model, order, input.graph.layout, flatGraphPins(model), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx });
     const pad = paint.domainNamePx;
-    return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad } };
+    return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad }, labels: input.labels };
   }
   const scene = layoutDial(model, order, input.tokens, input.memory);
   return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };

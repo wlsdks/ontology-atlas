@@ -288,5 +288,5 @@ export function reportFlatDial(props: FlatDialFrameProps, summary: DialFrameSumm
 
 function sameSummary(a: DialFrameSummary | null, b: DialFrameSummary | null): boolean {
   if (a === null || b === null) return a === b;
-  return a.concepts === b.concepts && a.domains === b.domains && a.tier === b.tier && a.linksShown === b.linksShown && a.linksTotal === b.linksTotal;
+  return a.concepts === b.concepts && a.domains === b.domains && a.tier === b.tier && a.linksShown === b.linksShown && a.linksTotal === b.linksTotal && a.lineKinds === b.lineKinds;
 }

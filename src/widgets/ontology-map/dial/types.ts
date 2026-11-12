@@ -1,4 +1,4 @@
-import type { DirectedDomainFlow } from "../model/containment-tree";
+import type { CapabilityRelation, DirectedDomainFlow } from "../model/containment-tree";
 
 export type DialKind = "project" | "domain" | "capability" | "element";
 export type DialEvidence = "current" | "stale" | "unknown";
@@ -9,6 +9,7 @@ export interface Box { minX: number; minY: number; maxX: number; maxY: number;
 export interface Pad { left: number; right: number; top: number; bottom: number;
 }
 export interface DialLabels { units(capabilities: number, elements: number): string; stale(count: number): string; orphans(count: number): string; more(count: number): string; moreMembers?(count: number): string; lessMembers?(count: number): string; connectionCount?(count: number): string; ring(min: number, max: number | null): string; reading(read: number, total: number): string; settling(): string; linksShown(shown: number, total: number): string; evidenceUnmeasured?(): string;
+  noDomain?(count: number): string; reachNeeds?(count: number): string; reachNeededBy?(count: number): string;
 }
 export interface DialTokens {
   pitch: number;
@@ -97,6 +98,8 @@ export interface DialModel {
   flows: DirectedDomainFlow[]; flowByKey: ReadonlyMap<string, DirectedDomainFlow>;
   capabilityDependencies: DialCapabilityDependency[]; capabilityRelates: { a: string; b: string;
     }[]; orphanIds: string[];
+  /** Edges a capability states itself, unrolled: the detail panel's connections. */
+  capabilityRelations?: CapabilityRelation[];
   dependents: ReadonlyMap<string, number>;
 }
 export interface DialEvidenceView { measured: boolean; stateOf(id: string): DialEvidence; staleByDomain: ReadonlyMap<string, number>;
@@ -121,6 +124,8 @@ export interface DialWorld {
     model: DialModel;
     scene: DialScene;
     overviewPadPx: Pad;
+    /** The labels the graph's names were built with, for camera code that must make room for them. */
+    labels?: DialLabels | null;
 }
 export interface DialWorldInput { graph?: import("../flat-graph/types").FlatGraphTokens | null; graphAreaPx?: { width: number; height: number } | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
 }
@@ -151,6 +156,8 @@ interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: numbe
 export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMark[]; squares: SquareMark[]; ticks: TickMark[]; rails: RailMark[]; glyphs: GlyphMark[]; texts: TextMark[]; numerals: NumeralMark[]; leaders: LeaderMark[];
 }
 export interface DialPick { id: string; x: number; y: number; r: number;
+  /** A disc that owns every point inside it, ahead of any name or element dot drawn over it. */
+  solid?: boolean;
 }
 export interface DialRowAction { type: "branch-members"; domainId: string; direction: "more" | "less" }
 export interface DialRowPick {

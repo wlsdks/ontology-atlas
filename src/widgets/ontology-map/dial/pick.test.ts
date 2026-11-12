@@ -51,6 +51,20 @@ describe("pickDial", () => {
     expect(pickDial(picks, [], 8, 0, HIT_TOUCH_SLACK_PX)).toBe("far");
   });
 
+  it("gives a solid disc every point inside it, over an element dot drawn on it, and the dot only the name rows outside discs", () => {
+    const element = disc("element", 6, 0, 8);
+    const cap = { ...disc("cap", 0, 0, 11), solid: true };
+    const domain = { ...disc("domain", 60, 0, 16), solid: true };
+    const name = row("other-name", -20, -4, 80, 4);
+    const elementRow = row("element", -2, -8, 14, 8);
+    const picks = [element, cap, domain];
+    const rows = [name, elementRow];
+    for (const x of [0, 6, 10]) expect(pickDial(picks, rows, x, 0, HIT_TOUCH_SLACK_PX), `x ${x}`).toBe("cap");
+    expect(pickDial(picks, rows, 60, 0, HIT_TOUCH_SLACK_PX)).toBe("domain");
+    expect(pickDial(picks, rows, 13, 0, HIT_TOUCH_SLACK_PX)).toBe("element");
+    expect(pickDial(picks, rows, 30, 0, HIT_TOUCH_SLACK_PX)).toBe("other-name");
+  });
+
   it("returns null outside every disc, slack ring and row", () => {
     expect(pickDial([disc("cap", 0, 0, 4)], [row("r", 50, 50, 60, 60)], 30, 30, HIT_TOUCH_SLACK_PX)).toBeNull();
     expect(pickDial([], [], 0, 0, HIT_TOUCH_SLACK_PX)).toBeNull();
