@@ -4,7 +4,10 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
-export type NameRole = "project" | "domain" | "units" | "capability" | "element";
+export type NameRole = "project" | "domain" | "units" | "orphans" | "capability" | "element" | "reach";
+
+/** One run of a line drawn left-aligned at `dx` from the line's anchor; a digit gets its own cell. */
+export interface NamePiece { text: string; dx: number }
 
 /** A name in screen pixels relative to its concept's live position; `box` is relative too. */
 export interface PlacedName {
@@ -16,6 +19,8 @@ export interface PlacedName {
   dy: number;
   align: CanvasTextAlign;
   box: Box;
+  /** Set when the line's figures must align as table columns: canvas text has no `tnum`. */
+  pieces?: readonly NamePiece[];
 }
 
 export interface NameAdmission {
@@ -37,6 +42,11 @@ export interface NameInput {
   staleByDomain: ReadonlyMap<string, number> | null;
   lit: ReadonlySet<string> | null;
   focusId: string | null;
+  /** Whether the focus is selected: a selected capability is named large, with its reach beneath. */
+  selected: boolean;
+  /** Concepts a lit picture names even where their name must overlap another. */
+  named: ReadonlySet<string>;
+  reach: { needs: number; neededBy: number } | null;
   /** The concept a connected agent is working on: always named, like the focus. */
   agentFocusId: string | null;
   attentionKey: string;
@@ -68,12 +78,18 @@ class Occupancy {
   }
 
   hits(b: Box): boolean {
+    return this.count(b, 1) > 0;
+  }
+
+  /** Boxes `b` overlaps, counted up to `limit`; a box in several cells counts once per cell. */
+  count(b: Box, limit = Infinity): number {
+    let n = 0;
     for (const key of this.keys(b)) {
       for (const o of this.cells.get(key) ?? []) {
-        if (b.minX < o.maxX && b.maxX > o.minX && b.minY < o.maxY && b.maxY > o.minY) return true;
+        if (b.minX < o.maxX && b.maxX > o.minX && b.minY < o.maxY && b.maxY > o.minY && (n += 1) >= limit) return n;
       }
     }
-    return false;
+    return n;
   }
 
   add(b: Box): void {
@@ -148,21 +164,125 @@ function projectName(input: NameInput): PlacedName | null {
   };
 }
 
-function sideNames(input: NameInput, id: string, role: "capability" | "element", text: string): PlacedName[] {
+function sideNames(input: NameInput, id: string, role: "capability" | "element", text: string): PlacedName[][] {
   const { tokens: t, measureText, fontFamily } = input;
+  if (input.selected && id === input.focusId) return selectedNames(input, id, role, text);
   const px = role === "capability" ? t.capNamePx : t.elementNamePx;
-  const f = font(input.lit?.has(id) ? FONT_WEIGHT.signature : 400, px, fontFamily);
+  const weight = role === "capability" ? FONT_WEIGHT.emphasis : input.lit?.has(id) ? FONT_WEIGHT.signature : 400;
+  const f = font(weight, px, fontFamily);
   const w = measureText(text, f);
   const r = role === "capability" ? input.discRadius(id) : t.elementDotPx * input.growth;
   const x = r + t.nameGapPx;
   const half = px / 2 + t.namePadPx;
+  const sides: PlacedName[][] = [
+    [{ id, role, text, font: f, dx: x, dy: 0, align: "left", box: { minX: x - t.namePadPx, maxX: x + w + t.namePadPx, minY: -half, maxY: half } }],
+    [{ id, role, text, font: f, dx: -x, dy: 0, align: "right", box: { minX: -x - w - t.namePadPx, maxX: -x + t.namePadPx, minY: -half, maxY: half } }],
+  ];
+  if (!input.named.has(id)) return sides;
+  const below = x + px / 2;
+  const centred = (dy: number): PlacedName[] => [{ id, role, text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }];
+  return [...sides, centred(below), centred(-below)];
+}
+
+/** Text runs with each digit centred in a cell as wide as the widest digit, so figures align as `tnum` would. */
+function tabularPieces(text: string, f: string, measureText: MeasureText): { pieces: NamePiece[]; width: number } {
+  let cell = 0;
+  for (let d = 0; d <= 9; d += 1) cell = Math.max(cell, measureText(String(d), f));
+  const pieces: NamePiece[] = [];
+  let x = 0;
+  let run = "";
+  const flush = () => {
+    if (!run) return;
+    pieces.push({ text: run, dx: x });
+    x += measureText(run, f);
+    run = "";
+  };
+  for (const ch of text) {
+    if (ch < "0" || ch > "9") {
+      run += ch;
+      continue;
+    }
+    flush();
+    pieces.push({ text: ch, dx: x + (cell - measureText(ch, f)) / 2 });
+    x += cell;
+  }
+  flush();
+  return { pieces, width: x };
+}
+
+/** The reach line's text: zero sides are left out, and nothing at all is null. */
+export function reachText(labels: DialLabels | null, reach: { needs: number; neededBy: number } | null): string | null {
+  if (!labels || !reach) return null;
+  const parts: string[] = [];
+  if (reach.needs > 0 && labels.reachNeeds) parts.push(labels.reachNeeds(reach.needs));
+  if (reach.neededBy > 0 && labels.reachNeededBy) parts.push(labels.reachNeededBy(reach.neededBy));
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/**
+ * How far the selected concept's name block reaches sideways from its centre: disc, gap and the
+ * wider of its name and reach line. A camera that keeps the selection clear of a panel needs this
+ * much room on the side the name may take.
+ */
+export function selectedBlockReachPx(
+  input: Pick<NameInput, "tokens" | "labels" | "measureText" | "fontFamily">,
+  text: string,
+  reach: { needs: number; neededBy: number } | null,
+  discPx: number,
+): number {
+  const { tokens: t, measureText, fontFamily } = input;
+  const nameW = measureText(text, font(FONT_WEIGHT.strong, t.selectedNamePx, fontFamily));
+  const line = reachText(input.labels, reach);
+  const lineW = line ? measureText(line, font(400, t.captionPx, fontFamily)) : 0;
+  return discPx + t.nameGapPx + Math.max(nameW, lineW) + t.namePadPx;
+}
+
+/**
+ * The selected concept's name at the selected size, with its reach line beneath, tried right, left,
+ * below and above its disc. Each try is one block, so the two lines never part.
+ */
+function selectedNames(input: NameInput, id: string, role: "capability" | "element", text: string): PlacedName[][] {
+  const { tokens: t, measureText, fontFamily } = input;
+  const px = t.selectedNamePx;
+  const nameFont = font(FONT_WEIGHT.strong, px, fontFamily);
+  const nameW = measureText(text, nameFont);
+  const line = reachText(input.labels, input.reach);
+  const lineFont = font(400, t.captionPx, fontFamily);
+  const figures = line ? tabularPieces(line, lineFont, measureText) : null;
+  const lineW = figures?.width ?? 0;
+  const lineH = figures ? t.captionGapPx + t.captionPx : 0;
+  const r = input.discRadius(id);
+  const pad = t.namePadPx;
+  const block = (align: CanvasTextAlign, x: number, top: number): PlacedName[] => {
+    const nameY = top + px / 2;
+    const lineY = nameY + px / 2 + t.captionGapPx + t.captionPx / 2;
+    const span = (w: number) => (align === "left" ? [x, x + w] : align === "right" ? [x - w, x] : [x - w / 2, x + w / 2]) as [number, number];
+    const [nameMin, nameMax] = span(nameW);
+    const out: PlacedName[] = [{
+      id, role, text, font: nameFont, dx: x, dy: nameY, align,
+      box: { minX: nameMin - pad, maxX: nameMax + pad, minY: nameY - px / 2 - pad, maxY: nameY + px / 2 + pad },
+    }];
+    if (line && figures) {
+      const [lineMin, lineMax] = span(lineW);
+      out.push({
+        id, role: "reach", text: line, font: lineFont, dx: x, dy: lineY, align,
+        box: { minX: lineMin - pad, maxX: lineMax + pad, minY: lineY - t.captionPx / 2 - pad, maxY: lineY + t.captionPx / 2 + pad },
+        pieces: figures.pieces.map((p) => ({ text: p.text, dx: lineMin - x + p.dx })),
+      });
+    }
+    return out;
+  };
+  const side = r + t.nameGapPx;
+  const height = px + lineH;
   return [
-    { id, role, text, font: f, dx: x, dy: 0, align: "left", box: { minX: x - t.namePadPx, maxX: x + w + t.namePadPx, minY: -half, maxY: half } },
-    { id, role, text, font: f, dx: -x, dy: 0, align: "right", box: { minX: -x - w - t.namePadPx, maxX: -x + t.namePadPx, minY: -half, maxY: half } },
+    block("left", side, -px / 2),
+    block("right", -side, -px / 2),
+    block("center", 0, side),
+    block("center", 0, -side - height),
   ];
 }
 
-interface Candidate { id: string; tries: () => PlacedName[] }
+interface Candidate { id: string; tries: () => PlacedName[][] }
 
 function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Candidate[] {
   const { model, layout } = input;
@@ -185,20 +305,51 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Cand
   const agentCandidate: Candidate[] = agent === null || !layout.positions.has(agent) || model.domainById.has(agent) || agent === model.projectId ? []
     : model.capabilityById.has(agent) ? [capCandidate({ id: agent, label: model.capabilityById.get(agent)!.label })]
       : layout.orphanIds.includes(agent) ? orphans.filter((o) => o.id === agent) : [elementCandidate(agent)];
+  const focusElement = litElements.filter((id) => id === input.focusId).map(elementCandidate);
   return [
+    ...focusElement,
     ...agentCandidate,
     ...litCaps.map(capCandidate),
-    ...litElements.map(elementCandidate),
+    ...litElements.filter((id) => id !== input.focusId).map(elementCandidate),
     ...rest.map(capCandidate),
     ...orphans,
     ...elementIds.filter((id) => !lit?.has(id)).map(elementCandidate),
   ];
 }
 
+/** The concepts outside every domain, captioned once under their group with the count. */
+function orphanCaption(input: NameInput, scale: number): PlacedName | null {
+  const { layout, tokens: t, labels, measureText, fontFamily } = input;
+  const first = layout.orphanIds[0];
+  if (first === undefined || !labels) return null;
+  const at = layout.positions.get(first)!;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const id of layout.orphanIds) {
+    const p = layout.positions.get(id)!;
+    minX = Math.min(minX, p.x);
+    maxX = Math.max(maxX, p.x);
+    maxY = Math.max(maxY, p.y);
+  }
+  const count = layout.orphanIds.length;
+  const text = labels.noDomain?.(count) ?? labels.orphans(count);
+  const f = font(400, t.captionPx, fontFamily);
+  const w = measureText(text, f);
+  const r = Math.max(...layout.orphanIds.map((id) => input.discRadius(id)));
+  const dx = ((minX + maxX) / 2 - at.x) * scale;
+  const dy = (maxY - at.y) * scale + r + t.nameGapPx + t.captionPx / 2;
+  return {
+    id: first, role: "orphans", text, font: f, dx, dy, align: "center",
+    box: { minX: dx - w / 2 - t.namePadPx, maxX: dx + w / 2 + t.namePadPx, minY: dy - t.captionPx / 2 - t.namePadPx, maxY: dy + t.captionPx / 2 + t.namePadPx },
+  };
+}
+
 function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null, ceiling: ReadonlySet<string> | null): NameAdmission {
   const { model, layout, tokens } = input;
   const scale = stepScale(step, tokens.zoomStepsPerOctave);
   const grid = new Occupancy(CELL_PX / scale);
+  const titles = new Occupancy(CELL_PX / scale);
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const discs: [string, number][] = [];
@@ -216,24 +367,42 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   };
   const project = projectName(input);
   if (project) place(project);
-  for (const c of layout.clusters) for (const n of domainBlock(input, c.domainId)) place(n);
+  for (const c of layout.clusters) {
+    for (const n of domainBlock(input, c.domainId)) {
+      titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+      place(n);
+    }
+  }
+  const caption = orphanCaption(input, scale);
+  if (caption) {
+    grid.add(worldBox(layout.positions.get(caption.id)!, caption.box, scale));
+    names.push(caption);
+  }
   const pending = candidates(input, degreeOf(model));
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
   const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const reach = tokens.domainNamePx / lowest;
-  const inside = (at: Point, rel: Box) => {
-    const b = worldBox(at, rel, lowest);
+  const inside = (at: Point, group: readonly PlacedName[]) => group.every((n) => {
+    const b = worldBox(at, n.box, lowest);
     const e = layout.extent;
     return b.minX >= e.minX - reach && b.maxX <= e.maxX + reach && b.minY >= e.minY - reach && b.maxY <= e.maxY + reach;
-  };
+  });
+  const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
+  const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
+  // A forced name keeps off every domain title when any try can, then takes the least crowded try.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
-    const fit = tries.find((n) => inside(at, n.box) && !grid.hits(worldBox(at, n.box, scale))) ?? (force ? tries[0] : undefined);
-    if (fit) place(fit);
+    let fit = tries.find((group) => inside(at, group) && !hits(grid, at, group));
+    if (!fit && force && tries.length > 0) {
+      const clear = tries.filter((group) => !hits(titles, at, group));
+      fit = (clear.length > 0 ? clear : tries).reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best));
+    }
+    if (fit) for (const n of fit) place(n);
   };
   if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
+  for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id)) tryPlace(cand, true);
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;
     tryPlace(cand, cand.id === input.focusId || cand.id === input.agentFocusId);
@@ -274,6 +443,20 @@ function nearest(map: ReadonlyMap<number, NameAdmission>, step: number, below: b
   return best;
 }
 
+const NO_NAMES: ReadonlySet<string> = new Set();
+
+/** The disc a selected capability, element or orphan draws at, never smaller than its own. */
+export function selectedDiscRadius(base: number, tokens: Pick<FlatGraphPaintTokens, "selectedDiscPx">, growth: number): number {
+  return Math.max(base, tokens.selectedDiscPx * growth);
+}
+
+function withSelectedRadius(input: NameInput): NameInput {
+  const focus = input.focusId;
+  if (!input.selected || focus === null || input.model.domainById.has(focus) || focus === input.model.projectId) return input;
+  const own = input.discRadius;
+  return { ...input, discRadius: (id) => (id === focus ? selectedDiscRadius(own(id), input.tokens, input.growth) : own(id)) };
+}
+
 /**
  * Names admitted at the camera's quantised zoom step, cached per step so pan and drag never
  * re-run admission. Without attention, a step's names include every name of the nearest admitted
@@ -292,13 +475,13 @@ export function admittedNames(input: NameInput): NameAdmission {
     const hit = cache.focus.get(focusKey);
     if (hit) return hit;
     if (cache.focus.size >= FOCUS_CACHE_MAX) cache.focus.clear();
-    const made = admit(input, step, null, null);
+    const made = admit(withSelectedRadius(input), step, null, null);
     cache.focus.set(focusKey, made);
     return made;
   }
   const hit = cache.rest.get(step);
   if (hit) return hit;
-  const restInput = { ...input, lit: null, focusId: null, agentFocusId: null };
+  const restInput = { ...input, lit: null, focusId: null, agentFocusId: null, selected: false, named: NO_NAMES, reach: null };
   const made = admit(restInput, step, nearest(cache.rest, step, true)?.ids ?? null, nearest(cache.rest, step, false)?.ids ?? null);
   cache.rest.set(step, made);
   return made;

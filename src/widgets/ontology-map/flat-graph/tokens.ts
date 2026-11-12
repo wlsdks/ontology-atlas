@@ -15,6 +15,8 @@ const PAINT_KEYS: readonly (keyof FlatGraphPaintTokens)[] = [
   "arcWidthGain", "arcWidthMaxPx", "arcGlowPx", "arcGlowAlpha", "arcHeadPx", "arcTrimPx", "restBudget", "sinkInk",
   "dotSpacingFromPx", "dotSpacingFullPx", "elementNameSpacingPx", "zoomStepsPerOctave", "projectNamePx", "domainNamePx",
   "captionPx", "capNamePx", "elementNamePx", "nameGapPx", "captionGapPx", "nameHaloPx", "domainNameHaloPx", "namePadPx",
+  "restHue", "selectedDiscPx", "selectedRingGapPx", "selectedRingPx", "selectedNamePx", "lineBow", "lineAlpha", "lineTaperPx",
+  "lineHairPx", "lineDotPx", "lineDotGapPx", "lineDoubleGapPx",
 ];
 
 /** CSS custom property names, derived from the keys so a renamed key and its token move together. */
@@ -30,6 +32,7 @@ const INK_VARS: readonly { key: Exclude<keyof FlatGraphInks, "hues">; cssVar: st
   { key: "project", cssVar: "--map-graph-project" },
   { key: "discFill", cssVar: "--map-graph-disc-fill" },
   { key: "arc", cssVar: "--map-graph-arc" },
+  { key: "reach", cssVar: "--map-graph-reach" },
   { key: "nameStrong", cssVar: "--map-graph-name-strong" },
   { key: "name", cssVar: "--map-graph-name" },
   { key: "halo", cssVar: "--map-graph-halo" },

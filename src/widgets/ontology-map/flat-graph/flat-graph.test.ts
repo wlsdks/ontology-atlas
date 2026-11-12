@@ -11,8 +11,10 @@ import { isContainmentRelation } from "@/entities/knowledge-graph";
 
 import {
   readContainmentTree,
+  rollBroaderCapabilityPairs,
   rollDirectedDomainFlows,
   rollDomainDependencies,
+  rollRelatesCapabilityPairs,
   rollRelatesDomainPairs,
   type TreeInputEdge,
   type TreeInputNode,
@@ -20,11 +22,12 @@ import {
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
-import { cachedGraphAttention, graphInkMix, inkUnder, transitionShare, type GraphTransition } from "./attention";
+import { selectionNudgeTarget } from "../model/camera/flat-selection-camera";
+import { cachedGraphAttention, graphInkMix, inkUnder, resolveGraphAttention, transitionShare, type GraphTransition } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { graphDiscRadiusPx } from "./marks";
-import { admittedNames, type PlacedName } from "./names";
+import { admittedNames, reachText, selectedBlockReachPx, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphLayout } from "./types";
@@ -47,7 +50,9 @@ function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  return buildDialModel({ tree, dependencies, flows, elementIds });
+  return buildDialModel({
+    tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), broader: rollBroaderCapabilityPairs(tree, treeEdges),
+  });
 }
 
 function vaultModel(manifest: unknown): DialModel {
@@ -91,6 +96,7 @@ function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focus
   return admittedNames({
     model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
     elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
+    selected: attention.selected, named: attention.named, reach: attention.reach,
     discRadius: () => 4, elementSpacingPx,
   });
 }
@@ -357,5 +363,74 @@ describe("attention crossfade", () => {
     const key = {};
     graphInkMix(key, cachedGraphAttention(model, null, false), 0, true);
     expect(shareOf(graphInkMix(key, cachedGraphAttention(model, a!, false), 10, true))).toBe(TOKENS.paint.sinkInk);
+  });
+});
+
+describe("selection reach", () => {
+  const nodes: Node[] = [
+    { id: "p", kind: "project" }, { id: "d1", kind: "domain" }, { id: "d2", kind: "domain" },
+    ...["a", "b", "c", "e", "f", "g"].map((id) => ({ id, kind: "capability" })), { id: "x", kind: "element" }, { id: "y", kind: "element" },
+  ];
+  const contains = (from: string, to: string): Edge => ({ from, to, type: "contains" });
+  const edges: Edge[] = [
+    contains("p", "d1"), contains("p", "d2"), contains("d1", "a"), contains("d1", "b"), contains("d1", "c"),
+    contains("d2", "e"), contains("d2", "f"), contains("d2", "g"), contains("a", "x"), contains("c", "y"),
+    { from: "a", to: "e", type: "depends_on" },
+    { from: "e", to: "a", type: "depends_on" },
+    { from: "y", to: "a", type: "depends_on" },
+    { from: "c", to: "a", type: "depends_on" },
+    { from: "b", to: "a", type: "depends_on" },
+    { from: "a", to: "b", type: "related_to" },
+    { from: "a", to: "g", type: "related_to" },
+    { from: "a", to: "f", type: "is_a" },
+  ];
+  const model = modelOf(nodes, edges);
+
+  it("draws each relation of the focus as its kind, once per far capability and direction", () => {
+    const lines = resolveGraphAttention(model, "a", true).lines.map((l) => `${l.kind}:${l.from}>${l.to}`).sort();
+    expect(lines).toEqual(["broader:a>f", "neededBy:b>a", "neededBy:c>a", "neededBy:e>a", "needs:a>e", "relates:a>g"]);
+  });
+
+  it("counts distinct capabilities on each side of the reach, and an element focus reaches through its capability", () => {
+    expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 1, neededBy: 3 });
+    expect(resolveGraphAttention(model, "c", true).reach).toEqual({ needs: 1, neededBy: 0 });
+    const element = resolveGraphAttention(model, "x", true);
+    expect(element.reach).toBeNull();
+    expect(element.lines.length).toBe(6);
+    expect(resolveGraphAttention(model, "d1", false).lines).toEqual([]);
+  });
+
+  it("writes the reach line without a zero side", () => {
+    const labels = { ...LABELS, reachNeeds: (n: number) => `needs ${n}`, reachNeededBy: (n: number) => `needed by ${n}` };
+    expect(reachText(labels, { needs: 2, neededBy: 0 })).toBe("needs 2");
+    expect(reachText(labels, { needs: 0, neededBy: 0 })).toBeNull();
+  });
+
+  it("names every lit endpoint and the selection even at a crowded zoom, and keeps the selection off every domain name", () => {
+    const layout = layoutOf(model);
+    for (const scale of [0.25, 0.5, 1]) {
+      const admitted = namesAt(model, layout, scale, "a", null, 0);
+      for (const id of ["a", "b", "c", "e", "f", "g"]) expect(admitted.ids.has(id), `${id} at ${scale}`).toBe(true);
+      const boxAt = (n: PlacedName) => {
+        const at = layout.positions.get(n.id)!;
+        return { minX: at.x * scale + n.box.minX, maxX: at.x * scale + n.box.maxX, minY: at.y * scale + n.box.minY, maxY: at.y * scale + n.box.maxY };
+      };
+      const titles = admitted.names.filter((n) => n.role === "domain").map(boxAt);
+      for (const s of admitted.names.filter((n) => n.id === "a").map(boxAt)) {
+        for (const t of titles) expect(s.minX < t.maxX && t.minX < s.maxX && s.minY < t.maxY && t.minY < s.maxY, `selection on a title at ${scale}`).toBe(false);
+      }
+    }
+  });
+
+  it("slides a covered selection only sideways and only until its name block clears the panel", () => {
+    const camera = { tx: 0, ty: 40, tscale: 1.3 };
+    const side = selectedBlockReachPx({ tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" }, "Order placement", { needs: 5, neededBy: 4 }, 12);
+    const margin = { left: side, right: side };
+    const insets = { left: 300, right: 420 };
+    const target = selectionNudgeTarget(camera, { x: 520 }, 1920, insets, margin)!;
+    expect(target.tscale).toBe(camera.tscale);
+    expect(target.ty).toBe(camera.ty);
+    expect((520 - target.tx) * target.tscale + 1920 / 2 + side).toBeCloseTo(1920 - insets.right, 6);
+    expect(selectionNudgeTarget(camera, { x: 0 }, 1920, insets, margin)).toBeNull();
   });
 });

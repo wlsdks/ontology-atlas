@@ -27,6 +27,7 @@ import {
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
+  type FlatDialState,
 } from "@/widgets/ontology-map";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
@@ -171,6 +172,8 @@ export function TopologyMapRenderer({
   const labelFontAdopted = useBodyLabelFont();
   const dialLabelsInFont = useMemo(() => (labelFontAdopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFontAdopted]);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
+  const [flatLineKinds, setFlatLineKinds] = useState<number | null>(null);
+  const handleFlatDialChange = useCallback((state: FlatDialState) => setFlatLineKinds(state.summary?.lineKinds ?? null), []);
   const [hexFailed, setHexFailed] = useState(false);
   const layoutView: MapLayoutView = hexBoard && !hexFailed ? "hex" : view3d ? mapArrangement : structure ? "structure" : "flat";
   const expandedParents =
@@ -269,6 +272,7 @@ export function TopologyMapRenderer({
             flatRingMemory={flatRingMemory}
             dialLabels={dialLabelsInFont}
             evidenceStates={dialEvidence}
+            onFlatDialChange={handleFlatDialChange}
             impactLens={impactLensActive}
             loadProgress={arriving ? loadProgress : null}
             placingTierRead={placingTierRead}
@@ -350,7 +354,7 @@ export function TopologyMapRenderer({
           )}
         </div>
       ) : null}
-      {morph.surface === "map" && !view3d && !morph.overlay ? <TopologyFlatKey evidence={mapEvidence} selected={canvasSelectedSlug !== null} /> : null}
+      {morph.surface === "map" && !view3d && !morph.overlay ? <TopologyFlatKey evidence={mapEvidence} selected={canvasSelectedSlug !== null} lineKinds={flatLineKinds} /> : null}
       {morph.overlay ? (
         <MapLayoutMorphOverlay
           key={morph.overlay.id}

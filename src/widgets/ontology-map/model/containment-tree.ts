@@ -213,6 +213,20 @@ export function rollRelatesDomainPairs(tree: ContainmentTree, edges: readonly Tr
   return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
 }
 
+/** `is_a` edges between two capabilities, narrower first, as their element ends resolve. O(E log E). */
+export function rollBroaderCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { from: string; to: string }[] {
+  const { capabilityOf } = domainResolver(tree);
+  const pairs = new Map<string, { from: string; to: string }>();
+  for (const e of edges) {
+    if (e.kind === "contains" || e.relationType !== "is_a") continue;
+    const from = capabilityOf(e.source);
+    const to = capabilityOf(e.target);
+    if (!from || !to || from === to) continue;
+    pairs.set(`${from}>${to}`, { from, to });
+  }
+  return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
+}
+
 export function rollRelatesCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { a: string; b: string }[] {
   const { capabilityOf } = domainResolver(tree);
   const pairs = new Map<string, { a: string; b: string }>();

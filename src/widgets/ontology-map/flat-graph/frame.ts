@@ -8,30 +8,27 @@ import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
 import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import { cachedGraphAttention, graphInkMix, inkUnder, transitionInk, transitionShare, type GraphAttention, type GraphTransition } from "./attention";
+import {
+  cachedGraphAttention, FLAT_LINE_BITS, graphInkMix, inkUnder, transitionInk, transitionShare, type GraphAttention, type GraphLineKind, type GraphTransition,
+} from "./attention";
 import { directItemId } from "./layout";
 import {
   arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
-import { admittedNames, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
 const DRAWN_INK = 0.02;
-const FOCUS_BOW = 0.16;
-const FOCUS_LINK_ALPHA = 0.55;
-const FOCUS_LINK_WIDTH_PX = 1.2;
-const FOCUS_LINK_GLOW_ALPHA = 0.16;
 const FOCUS_GLOW_ALPHA = 0.4;
 const FOCUS_RIM_PX = 2.4;
-const PROJECT_RIM_PX = 2.2;
 const ARROW_SPREAD = 0.5;
+const TAPER_STEPS = 18;
+const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 const DOT_ALPHA = 0.7;
 const LIT_DOT_SHARE = 1.5;
 const LIGHT_SINK_GAIN = 1.4;
-const SELECTION_GAP_PX = 5;
-const SELECTION_RING_PX = 1.5;
 const AGENT_RING_WIDTH_PX = 1;
 const PIP_SHARE = 0.3;
 const PIP_MIN_PX = 2;
@@ -43,7 +40,10 @@ const measureText = createMeasureText();
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
-interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number }
+/** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
+interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number }
+const LINE_KINDS: readonly GraphLineKind[] = ["needs", "neededBy", "relates", "broader"];
+const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
 interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number }
@@ -95,7 +95,7 @@ const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
-const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0 }));
+const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC }));
 const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -171,13 +171,14 @@ function light(x: number, y: number, r: number, ink: string, alpha: number): Lig
   return l;
 }
 
-function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd: number, width: number, alpha: number, head: boolean, glowAlpha: number): Arc | null {
+function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd: number, width: number, alpha: number, head: boolean, glowAlpha: number, kind: number): Arc | null {
   const arc = arcMarks.take();
   if (!arcPathInto(arc.path, from, to, bow, trimStart, trimEnd)) return null;
   if (arc.width !== width) arc.width = width;
   if (arc.alpha !== alpha) arc.alpha = alpha;
   arc.head = head;
   if (arc.glow !== glowAlpha) arc.glow = glowAlpha;
+  if (arc.kind !== kind) arc.kind = kind;
   return arc;
 }
 
@@ -309,6 +310,12 @@ interface FrameState {
   focusness: number;
   required: ReadonlySet<string>;
   evidence: DialEvidenceView | null;
+  /** The selected capability, element or orphan, drawn at the selected radius; null otherwise. */
+  selectedId: string | null;
+  selectedR: number;
+  /** How far the project's own focus shows: its spokes and glow. */
+  projectShare: number;
+  lineKinds: number;
 }
 const F = { stamp: 0 } as FrameState;
 
@@ -323,14 +330,29 @@ function hueOf(domainId: string | null | undefined): string {
  */
 const scratch = new Float64Array(1);
 
-function loadInk(id: string): void {
+function loadInkAt(id: string, rest: number): void {
   const input = F.input;
   const attention = F.attention;
   const sink = F.P.sinkInk;
-  const focus = F.settled ? (attention.lit === null || attention.lit.has(id) ? 1 : sink) : transitionInk(F.transition, id, sink);
+  const focus = F.settled ? inkUnder(attention, id, sink, rest) : transitionInk(F.transition, id, sink, rest);
   const brightened = attention.selected && id === input.hoveredNodeId ? 1 : focus;
   const lens = F.contextMode ? input.contextInkAlphas?.get(id) ?? 1 : 1;
   scratch[0] = brightened * lens * input.appearOf(id);
+}
+
+/** A concept's ink for its name and light: full at rest. */
+function loadInk(id: string): void {
+  loadInkAt(id, 1);
+}
+
+/** A concept's ink for its disc, dot and links: `restHue` of the hue at rest, full when lit. */
+function loadMarkInk(id: string): void {
+  loadInkAt(id, F.P.restHue);
+}
+
+/** How far a concept's glow shows: only the lit set of a hover or selection glows. */
+function loadGlowShare(id: string): void {
+  scratch[0] = F.settled ? inkUnder(F.attention, id, 0, 0) : transitionInk(F.transition, id, 0, 0);
 }
 
 function inkOf(id: string): number {
@@ -371,6 +393,11 @@ function radiusNow(id: string): number {
   return F.radii.get(id) ?? radiusAt(id, F.growth);
 }
 
+/** The drawn radius: the selected concept's grows to the selected radius with the attention mix. */
+function discRadius(id: string): number {
+  return id === F.selectedId ? F.selectedR : radiusNow(id);
+}
+
 function segmentOnScreen(a: Point, b: Point): boolean {
   return !(Math.max(a.x, b.x) < -CULL_PX || Math.min(a.x, b.x) > F.W + CULL_PX || Math.max(a.y, b.y) < -CULL_PX || Math.min(a.y, b.y) > F.H + CULL_PX);
 }
@@ -397,8 +424,9 @@ function radiusAt(id: string, g: number): number {
 }
 
 function loadNameInk(n: PlacedName): void {
-  if (n.role === "project" || n.role === "domain" || n.role === "units") {
+  if (n.role === "project" || n.role === "domain" || n.role === "units" || n.role === "orphans" || n.role === "reach") {
     loadInk(n.id);
+    if (n.role === "units" || n.role === "orphans") scratch[0] = scratch[0]! * F.P.restHue;
     return;
   }
   const input = F.input;
@@ -421,7 +449,8 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>): void {
   const { P, attention } = F;
   const inks = F.tokens.inks;
   const domainId = n.role === "domain" || n.role === "units" ? n.id : F.model.domainOf.get(n.id) ?? null;
-  const strong = n.role === "domain" || n.role === "project" || n.id === attention.focusId;
+  const childSelected = n.role === "domain" && attention.selected && attention.focusId !== n.id && F.model.domainOf.get(attention.focusId ?? "") === n.id;
+  const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && n.id === attention.focusId);
   const color = n.role === "units" ? hueOf(domainId) : strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
@@ -436,11 +465,16 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>): void {
   L.names.add(mark);
 }
 
+/** A glow under one disc of the hovered or selected set; the rest picture draws none. */
 function addGlow(d: Disc, isProject: boolean): void {
   const { P, growth } = F;
+  if (isProject) scratch[0] = F.projectShare;
+  else loadGlowShare(d.id);
+  const share = scratch[0]!;
+  if (share <= DRAWN_INK) return;
   const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth;
   const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
-  const alpha = Math.min(1, P.glowAlpha * focusGain) * d.ink * d.ink;
+  const alpha = Math.min(1, P.glowAlpha * focusGain) * d.ink * d.ink * share;
   const g = glows.take();
   if (g.x !== d.x) g.x = d.x;
   if (g.y !== d.y) g.y = d.y;
@@ -489,17 +523,17 @@ function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: n
   const at = screenOf(c.domainId);
   const domainHidden = lensHidden(c.domainId);
   alphas.set(c.domainId, domainHidden ? 0 : 1);
-  loadInk(c.domainId);
+  loadMarkInk(c.domainId);
   const ink = scratch[0]!;
-  if (projectAt && !contextMode && segmentOnScreen(projectAt, at)) {
+  if (projectAt && !contextMode && F.projectShare > DRAWN_INK && segmentOnScreen(projectAt, at)) {
     const s = segmentBetween(projectAt, at, F.tokens.inks.project, false);
-    const alpha = P.linkDomainAlpha * Math.min(ink, projectInk);
+    const alpha = P.linkDomainAlpha * F.projectShare * Math.min(ink, projectInk);
     if (s.alpha !== alpha) s.alpha = alpha;
     L.segments.add(s);
   }
   if (!domainHidden && onScreen(at)) {
     const d = discAt(c.domainId, at, hue, c.domainId === attention.focusId, "current");
-    const r = radiusNow(c.domainId);
+    const r = discRadius(c.domainId);
     if (d.r !== r) d.r = r;
     if (d.ink !== ink) d.ink = ink;
     L.domains.add(d);
@@ -512,7 +546,7 @@ function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: n
       continue;
     }
     const itemAt = screenOf(it.id);
-    loadInk(it.id);
+    loadMarkInk(it.id);
     const itemInk = scratch[0]!;
     const itemHidden = lensHidden(it.id);
     alphas.set(it.id, itemHidden ? 0 : 1);
@@ -524,7 +558,7 @@ function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: n
     }
     if (!itemHidden && onScreen(itemAt)) {
       const d = discAt(it.id, itemAt, hue, it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
-      const r = radiusNow(it.id);
+      const r = discRadius(it.id);
       if (d.r !== r) d.r = r;
       if (d.ink !== itemInk) d.ink = itemInk;
       L.discs.add(d);
@@ -553,7 +587,7 @@ function markExpandedItems(lit: ReadonlySet<string> | null, required: ReadonlySe
 function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   const { P, input, attention, contextMode } = F;
   const alphas = cacheFor(alphaCache, F.layout);
-  loadInk(it.direct ? it.domainId : it.id);
+  loadMarkInk(it.direct ? it.domainId : it.id);
   const itemInk = scratch[0]!;
   for (let i = 0; i < it.elementIds.length; i += 1) {
     const el = it.elementIds[i]!;
@@ -563,7 +597,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     alphas.set(el, 1);
     shownElements.add(el);
     const elAt = screenOf(el);
-    loadInk(el);
+    loadMarkInk(el);
     const elInk = scratch[0]!;
     if (!contextMode && segmentOnScreen(itemAt, elAt)) {
       const s = segmentBetween(itemAt, elAt, hue, true);
@@ -573,7 +607,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     }
     if (onScreen(elAt)) {
       const d = dots.take();
-      const r = radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
+      const r = el === F.selectedId ? F.selectedR : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
       const alpha = DOT_ALPHA * shown;
       if (d.x !== elAt.x) d.x = elAt.x;
       if (d.y !== elAt.y) d.y = elAt.y;
@@ -611,6 +645,18 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   F.dotAlpha = dotAlpha;
   F.focusness = focusness;
   F.evidence = measured ? evidence : null;
+  const selected = contextMode ? null : input.focusedNodeId;
+  F.selectedId = selected !== null && selected !== model.projectId && !model.domainById.has(selected) ? selected : null;
+  if (F.selectedId !== null) {
+    const own = radiusNow(F.selectedId);
+    const grown = selectedDiscRadius(own, P, growth);
+    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
+    const r = own + (grown - own) * share;
+    if (F.selectedR !== r) F.selectedR = r;
+  }
+  const projectShare = transitionShare(transition, projectFocusShare);
+  if (F.projectShare !== projectShare) F.projectShare = projectShare;
+  F.lineKinds = 0;
 
   for (let pIndex = 0; pIndex < POOLS.length; pIndex += 1) {
     const p = POOLS[pIndex]!;
@@ -644,10 +690,12 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   const projectAt = project ? screenOf(project) : null;
   if (project && projectAt) {
     alphas.set(project, 1);
-    L.project.add(disc(project, projectAt, radiusAt(project, growth), inks.project, inkOf(project), false, "current"));
+    loadMarkInk(project);
+    L.project.add(disc(project, projectAt, radiusAt(project, growth), inks.project, scratch[0]!, project === attention.focusId, "current"));
   }
 
-  const projectInk = project ? inkOf(project) : 0;
+  if (project) loadMarkInk(project);
+  const projectInk = project ? scratch[0]! : 0;
   for (let cIndex = 0; cIndex < layout.clusters.length; cIndex += 1) planCluster(layout.clusters[cIndex]!, projectAt, projectInk);
   for (let idIndex = 0; idIndex < layout.orphanIds.length; idIndex += 1) {
     const id = layout.orphanIds[idIndex]!;
@@ -656,8 +704,8 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     alphas.set(id, hidden ? 0 : 1);
     if (hidden || !onScreen(at)) continue;
     const d = discAt(id, at, inks.name, id === attention.focusId, "current");
-    const r = radiusNow(id);
-    loadInk(id);
+    const r = discRadius(id);
+    loadMarkInk(id);
     const ink = scratch[0]!;
     if (d.r !== r) d.r = r;
     if (d.ink !== ink) d.ink = ink;
@@ -678,16 +726,17 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
       if (!a || !b) continue;
       const width = Math.min(P.arcWidthMaxPx, P.arcWidthBasePx + P.arcWidthGain * arc.count);
       const alpha = Math.min(P.arcAlphaMax, P.arcAlphaBase + P.arcAlphaGain * arc.count) * restAlpha * Math.min(inkOf(arc.from), inkOf(arc.to));
-      const mark = arcMark(a, b, P.arcBow, radiusAt(arc.from, growth), radiusAt(arc.to, growth) + P.arcTrimPx, width, alpha, true, P.arcGlowAlpha * restAlpha);
+      const mark = arcMark(a, b, P.arcBow, radiusAt(arc.from, growth), radiusAt(arc.to, growth) + P.arcTrimPx, width, alpha, true, P.arcGlowAlpha * restAlpha, REST_ARC);
       if (!mark) continue;
       L.arcs.add(mark);
+      F.lineKinds |= FLAT_LINE_BITS.rest;
       const key = flowKeyOf(model, arc.from, arc.to);
       if (key !== undefined && !drawnFlowKeys.has(key)) drawnFlowKeys.add(key);
     }
   }
   if (!contextMode) {
-    if (previous !== attention) focusLinks(previous, 1 - mix);
-    focusLinks(attention, mix);
+    if (previous !== attention) focusLinks(previous, 1 - mix, false);
+    focusLinks(attention, mix, true);
   }
   L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal();
 
@@ -710,7 +759,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     const at = screenAt(selectedId);
     if (at) {
       const pulse = input.selectionPulse?.nodeId === selectedId ? input.selectionPulse.scaleFactor : 1;
-      plan.selection = ring(selectionRing, at.x, at.y, (radiusAt(selectedId, growth) + SELECTION_GAP_PX) * pulse, mix, inks.project);
+      plan.selection = ring(selectionRing, at.x, at.y, (discRadius(selectedId) + P.selectedRingGapPx) * pulse, mix, inks.project);
     }
   }
 
@@ -725,6 +774,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    selected: attention.selected, named: attention.named, reach: attention.reach,
     discRadius: stepRadius(stepGrowth), elementSpacingPx,
   });
   for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) planName(admission.names[nIndex]!, alphas);
@@ -782,7 +832,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     label.text = n.name.text;
     setBox(label, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
     labelBoxes.add(label);
-    if (n.ink > P.sinkInk && n.name.role !== "units") {
+    if (n.ink > P.sinkInk && n.name.role !== "units" && n.name.role !== "orphans" && n.name.role !== "reach") {
       const row = nameRows.take();
       row.id = n.name.id;
       setBox(row.box, ox + n.name.box.minX, ox + n.name.box.maxX, oy + n.name.box.minY, oy + n.name.box.maxY);
@@ -795,6 +845,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
 }
 
 const litShare = (a: GraphAttention): number => (a.lit ? 1 : 0);
+const projectFocusShare = (a: GraphAttention): number => (a.focusId !== null && a.focusId === F.model.projectId ? 1 : 0);
 const hubFonts = new Map<string, string>();
 
 function hubCaptionFont(px: number, family: string): string {
@@ -815,18 +866,23 @@ function stepRadius(growth: number): (id: string) => number {
   return stepRadiusFn;
 }
 
-function focusLinks(att: GraphAttention, share: number): void {
+/** The focus's relations as kinded lines; a taper's point stops short of the disc it reaches. */
+function focusLinks(att: GraphAttention, share: number, current: boolean): void {
   if (share <= DRAWN_INK) return;
   const P = F.P;
-  for (let linkIndex = 0; linkIndex < att.links.length; linkIndex += 1) {
-    const link = att.links[linkIndex]!;
-    const from = link[0];
-    const to = link[1];
-    const a = screenAt(from);
-    const b = screenAt(to);
+  for (let lineIndex = 0; lineIndex < att.lines.length; lineIndex += 1) {
+    const line = att.lines[lineIndex]!;
+    const a = screenAt(line.from);
+    const b = screenAt(line.to);
     if (!a || !b) continue;
-    const mark = arcMark(a, b, FOCUS_BOW, radiusAt(from, F.growth), radiusAt(to, F.growth) + P.arcTrimPx / 2, FOCUS_LINK_WIDTH_PX, FOCUS_LINK_ALPHA * share, false, FOCUS_LINK_GLOW_ALPHA * share);
-    if (mark) L.focusArcs.add(mark);
+    const kind = LINE_KINDS.indexOf(line.kind) + 1;
+    const tapered = line.kind === "needs" || line.kind === "neededBy";
+    const trimEnd = discRadius(line.to) + (tapered ? P.arcTrimPx / 2 : 0);
+    const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha * share, false, 0, kind);
+    if (!mark) continue;
+    L.focusArcs.add(mark);
+    if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind];
   }
 }
 
@@ -858,6 +914,73 @@ function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: st
       ctx.stroke();
     }
   }
+}
+
+/**
+ * Fills a quadratic as a taper: `width` across at its start, a point at its end, so direction
+ * reads without an arrowhead or a second hue.
+ */
+function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number): void {
+  const { a, c, b } = path;
+  ctx.beginPath();
+  for (let side = 1; side >= -1; side -= 2) {
+    for (let k = 0; k <= TAPER_STEPS; k += 1) {
+      const t = side === 1 ? k / TAPER_STEPS : 1 - k / TAPER_STEPS;
+      const u = 1 - t;
+      const x = u * u * a.x + 2 * u * t * c.x + t * t * b.x;
+      const y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
+      const tx = u * (c.x - a.x) + t * (b.x - c.x);
+      const ty = u * (c.y - a.y) + t * (b.y - c.y);
+      const len = Math.hypot(tx, ty) || 1;
+      const half = side * ((width / 2) * u + TAPER_TIP_PX * t);
+      if (side === 1 && k === 0) ctx.moveTo(x - (ty / len) * half, y + (tx / len) * half);
+      else ctx.lineTo(x - (ty / len) * half, y + (tx / len) * half);
+    }
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number): void {
+  const { a, c, b } = path;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const ox = (-dy / len) * offset;
+  const oy = (dx / len) * offset;
+  ctx.beginPath();
+  ctx.moveTo(a.x + ox, a.y + oy);
+  ctx.quadraticCurveTo(c.x + ox, c.y + oy, b.x + ox, b.y + oy);
+  ctx.stroke();
+}
+
+const lineDash = [0, 0];
+
+/** The focus's lines: a taper per dependency, a dotted hairline per relation, a double hairline toward a broader concept. */
+function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens: FlatGraphTokens): void {
+  const P = tokens.paint;
+  for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
+    const arc = arcs[arcIndex]!;
+    const kind = LINE_KINDS[arc.kind - 1];
+    ctx.globalAlpha = arc.alpha;
+    if (kind === "needs" || kind === "neededBy") {
+      ctx.fillStyle = kind === "needs" ? tokens.inks.arc : tokens.inks.reach;
+      fillTaper(ctx, arc.path, arc.width);
+      continue;
+    }
+    ctx.strokeStyle = tokens.inks.arc;
+    ctx.lineWidth = arc.width;
+    if (kind === "relates") {
+      if (lineDash[1] !== P.lineDotGapPx) lineDash[1] = P.lineDotGapPx;
+      ctx.setLineDash(lineDash);
+      strokeQuad(ctx, arc.path, 0);
+      ctx.setLineDash(NO_DASH);
+      continue;
+    }
+    strokeQuad(ctx, arc.path, P.lineDoubleGapPx / 2);
+    strokeQuad(ctx, arc.path, -P.lineDoubleGapPx / 2);
+  }
+  ctx.globalAlpha = 1;
 }
 
 const inkCodes = new Map<string, number>();
@@ -907,7 +1030,7 @@ const dotBuckets = buckets<Dot>();
 
 function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], tokens: FlatGraphTokens, ground: string, warning: string, kind: "domain" | "capability" | "project", growth: number): void {
   const P = tokens.paint;
-  const rimPx = kind === "project" ? PROJECT_RIM_PX : kind === "domain" ? P.domainRimPx : P.capRimPx;
+  const rimPx = kind === "capability" ? P.capRimPx : P.domainRimPx;
   const discLists = group(discBuckets, marks, discKey);
   for (let listIndex = 0; listIndex < discLists.size; listIndex += 1) {
     const list = discLists.items[listIndex]!;
@@ -986,7 +1109,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.strokeStyle = tokens.inks.arc;
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
-  strokeArcs(ctx, plan.focusArcs, tokens.inks.arc, P.arcHeadPx);
+  paintLines(ctx, plan.focusArcs, tokens);
   const dotLists = group(dotBuckets, plan.dots, dotKey);
   for (let listIndex = 0; listIndex < dotLists.size; listIndex += 1) {
     const list = dotLists.items[listIndex]!;
@@ -1024,7 +1147,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   if (plan.selection && plan.selection.alpha > DRAWN_INK) {
     ctx.globalAlpha = plan.selection.alpha;
     ctx.strokeStyle = plan.selection.ink;
-    ctx.lineWidth = SELECTION_RING_PX;
+    ctx.lineWidth = P.selectedRingPx;
     ctx.beginPath();
     ctx.arc(plan.selection.x, plan.selection.y, plan.selection.r, 0, Math.PI * 2);
     ctx.stroke();
@@ -1038,10 +1161,15 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
     ctx.globalAlpha = n.ink;
     ctx.lineWidth = n.halo;
     ctx.strokeStyle = tokens.inks.halo;
-    ctx.strokeText(n.name.text, n.x, n.y);
+    const pieces = n.name.pieces;
+    if (pieces) {
+      ctx.textAlign = "left";
+      for (let pIndex = 0; pIndex < pieces.length; pIndex += 1) ctx.strokeText(pieces[pIndex]!.text, n.x + pieces[pIndex]!.dx, n.y);
+    } else ctx.strokeText(n.name.text, n.x, n.y);
     ctx.globalAlpha = 1;
     ctx.fillStyle = sunk(n.color, ground, n.ink);
-    ctx.fillText(n.name.text, n.x, n.y);
+    if (pieces) for (let pIndex = 0; pIndex < pieces.length; pIndex += 1) ctx.fillText(pieces[pIndex]!.text, n.x + pieces[pIndex]!.dx, n.y);
+    else ctx.fillText(n.name.text, n.x, n.y);
   }
   ctx.restore();
 }
@@ -1125,7 +1253,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const text = probeTexts.take();
-    text.id = n.name.id; text.role = n.name.role; text.text = n.name.text; text.align = n.name.align; text.font = n.name.font;
+    text.id = n.name.id; text.role = n.name.role === "reach" ? "status" : n.name.role; text.text = n.name.text; text.align = n.name.align; text.font = n.name.font;
     if (text.x !== n.x) text.x = n.x;
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
@@ -1176,7 +1304,7 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
     entered: null, resolved: true,
     budget: { shown: built.plan.arcs.length, total: directed, perEndCap: 0 },
     stubs: [],
-  });
+  }, F.lineKinds);
   return result;
 }
 
