@@ -149,7 +149,8 @@ title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
 (`is_a` included), a zero side left out. A selected domain's reach line takes
-its caption's row under its name, in the same words, counting partner domains,
+its caption's row under its name, in the same words, counting partner domains
+joined by `depends_on` alone (`is_a` and `related_to` leave a domain's reach),
 and equals the two domain counts its detail panel shows; the panel still lists
 the membership the caption counted. A partner domain's title that a lit
 domain line would run through takes the side above its disc when no lit line
@@ -173,8 +174,9 @@ none sits on a lit disc; the selection's ring keeps
 the domain named. A domain selection never zooms, because its picture is its
 reach: it pans its disc and member star clear of the detail panel by the frame
 margin and, when every partner domain's disc and name fit in the free map at
-the current zoom, pans them all in; otherwise it keeps as many partners in view
-as panning allows, nearest first. A zoom
+the current zoom, pans them all in; otherwise it pans in the partners nearest
+to it, in order of distance, up to the first one that no longer fits with them,
+so a farther partner may still land in view while a nearer one stays out. A zoom
 that reads no better than the view the click left is never taken, so a click
 stays a small move and the rest of the map stays in view. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
