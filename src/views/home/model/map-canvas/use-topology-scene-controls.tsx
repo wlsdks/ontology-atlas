@@ -201,6 +201,9 @@ export function useTopologySceneControls({
       settling: () => tDial("settling"),
       linksShown: (shown, total) => tDial("linksShown", { shown, total }),
       evidenceUnmeasured: () => tDial("evidenceUnmeasured"),
+      noDomain: (count) => tDial("noDomain", { count }),
+      reachNeeds: (count) => tDial("reachNeeds", { count }),
+      reachNeededBy: (count) => tDial("reachNeededBy", { count }),
     }),
     [tDial],
   );

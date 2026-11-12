@@ -22,9 +22,9 @@
     --map-graph-title-drop-px: 46;
     --map-graph-title-half-px: 84;
 
-    --map-graph-project-disc-px: 22;
-    --map-graph-project-core-px: 13;
-    --map-graph-project-glow-px: 46;
+    --map-graph-project-disc-px: 16;
+    --map-graph-project-core-px: 9;
+    --map-graph-project-glow-px: 34;
     --map-graph-domain-disc-px: 16;
     --map-graph-domain-core-px: 10;
     --map-graph-domain-glow-px: 34;
@@ -75,10 +75,23 @@
     --map-graph-name-halo-px: 3;
     --map-graph-domain-name-halo-px: 5;
     --map-graph-name-pad-px: 3;
+    --map-graph-rest-hue: 0.66;
+    --map-graph-selected-disc-px: 11;
+    --map-graph-selected-ring-gap-px: 5;
+    --map-graph-selected-ring-px: 1.5;
+    --map-graph-selected-name-px: 15;
+    --map-graph-line-bow: 0.16;
+    --map-graph-line-alpha: 0.9;
+    --map-graph-line-taper-px: 3.4;
+    --map-graph-line-hair-px: 1;
+    --map-graph-line-dot-px: 1.2;
+    --map-graph-line-dot-gap-px: 4;
+    --map-graph-line-double-gap-px: 2.6;
 
     --map-graph-project: #9aa2ff;
     --map-graph-disc-fill: #0b0c12;
     --map-graph-arc: #cfd3ff;
+    --map-graph-reach: #eeaa86;
     --map-graph-name-strong: #f4f5f9;
     --map-graph-name: #c9cdd8;
     --map-graph-halo: #07080c;

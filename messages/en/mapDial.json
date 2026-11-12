@@ -1,6 +1,6 @@
 {
-  "keyCapability": "○ Capability",
-  "keyDependency": "→ Depends on",
+  "keyCapability": "Capability",
+  "keyDependency": "Depends on",
   "keyStale": "! Amber · evidence needs rechecking",
   "keySelection": "Bright · selected and directly connected",
   "units": "{capabilities, plural, one {# capability} other {# capabilities}} · {elements, plural, one {# element} other {# elements}}",
@@ -19,5 +19,12 @@
   "legendStale": "stale",
   "moreMembers": "View {count, number} more",
   "lessMembers": "Collapse {count, number} revealed capabilities",
-  "connectionCount": "{count, plural, one {# connection} other {# connections}}"
+  "connectionCount": "{count, plural, one {# connection} other {# connections}}",
+  "keyNeeds": "What it needs",
+  "keyNeededBy": "What needs it",
+  "keyRelates": "Related",
+  "keyBroader": "Broader concept",
+  "noDomain": "No domain · {count, number}",
+  "reachNeeds": "needs {count, number}",
+  "reachNeededBy": "needed by {count, number}"
 }
