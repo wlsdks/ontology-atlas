@@ -13,14 +13,13 @@ test.use({ viewport: VIEWPORT });
 
 test.beforeEach(async ({ page }) => {
   await seedFirstRunSeen(page);
-  await useDogfoodSample(page);
 });
 
 type FrameWindow = Window & { __graphFrameAt?: number };
 
 const readDial = (page: Page) => page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
 
-async function openGraph(page: Page): Promise<DialProbe> {
+async function openGraph(page: Page, query = ""): Promise<DialProbe> {
   await page.addInitScript(() => {
     const w = window as FrameWindow;
     w.__graphFrameAt = 0;
@@ -30,7 +29,7 @@ async function openGraph(page: Page): Promise<DialProbe> {
       callback(t);
     });
   });
-  await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
+  await page.goto(`/en/topology/?${query}guides=off&e2e=1`, { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page, { timeout: 90_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
   await waitForMapStill(page);
@@ -50,6 +49,7 @@ test("Flat draws the domain graph: every capability is pointable, names never ov
   test.setTimeout(180_000);
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await useDogfoodSample(page);
   const dial = await openGraph(page);
   const capabilityIds = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability" && !n.hidden).map((n) => n.id));
 
@@ -76,6 +76,7 @@ test("Flat draws the domain graph: every capability is pointable, names never ov
 
 test("pointing at a domain sinks every other domain; selecting a capability names it and keeps its reach lit", async ({ page }) => {
   test.setTimeout(180_000);
+  await useDogfoodSample(page);
   const rest = await openGraph(page);
   const restInk = new Map(rest.discs.map((d) => [d.id, d.ink]));
   const target = [...rest.clusters].sort((a, b) => b.capabilityIds.length - a.capabilityIds.length)[0]!;
@@ -105,4 +106,22 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   expect(selected.textOverlaps, "no admitted name crosses another under a selection").toBe(0);
   const selectedInk = new Map(selected.discs.map((d) => [d.id, d.ink]));
   expect(selectedInk.get(target.domainId), "the selected capability's domain stays lit").toBe(restInk.get(target.domainId));
+});
+
+test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
+  test.setTimeout(180_000);
+  const dial = await openGraph(page, "mode=path&pathFrom=domain%3Afulfillment&pathTo=capability%3Acarrier-integration&");
+  await expect(page.getByTestId("ontology-map")).toHaveAttribute("data-map-lens", "path");
+  await waitForMapStill(page);
+  const nodes = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability"));
+  const discs = new Set((await readDial(page)).discs.map((d) => d.id));
+  const outside = nodes.filter((n) => n.alpha === 0);
+  expect(dial.owns).toBe(true);
+  expect(outside.length, "the lens leaves capabilities outside it").toBeGreaterThan(0);
+  expect(outside.filter((n) => discs.has(n.id)).map((n) => n.id), "no disc outside the lens").toEqual([]);
+  for (const n of outside.slice(0, 8)) {
+    const at = await canvasPoint(page, n);
+    await page.mouse.move(at.x, at.y);
+    expect(await hovered(page), `${n.id} is outside the lens`).not.toBe(n.id);
+  }
 });

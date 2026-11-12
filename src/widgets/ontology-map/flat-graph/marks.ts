@@ -75,53 +75,62 @@ export function rgbaOf(hex: string, alpha: number): string {
 }
 
 const INK_LEVELS = 32;
-const mixed = new Map<string, string>();
+const mixed = new Map<string, Map<string, string[]>>();
 
 /** The ink pre-mixed over the ground at a quantised share, so a sunk disc stays opaque. */
 export function sunk(ink: string, ground: string, share: number): string {
   const level = Math.round(Math.min(1, Math.max(0, share)) * INK_LEVELS);
   if (level >= INK_LEVELS) return ink;
-  const key = `${ink}|${ground}|${level}`;
-  let hit = mixed.get(key);
-  if (!hit) {
-    hit = mixOver(ink, ground, level / INK_LEVELS);
-    mixed.set(key, hit);
-  }
-  return hit;
+  let byGround = mixed.get(ink);
+  if (!byGround) mixed.set(ink, (byGround = new Map()));
+  let levels = byGround.get(ground);
+  if (!levels) byGround.set(ground, (levels = []));
+  return (levels[level] ??= mixOver(ink, ground, level / INK_LEVELS));
 }
 
 export function inkLevel(share: number): number {
   return Math.round(Math.min(1, Math.max(0, share)) * INK_LEVELS) / INK_LEVELS;
 }
 
-const SPRITE_PX = 64;
+const GLOW_SPRITE_PX = 64;
+const LIGHT_SPRITE_PX = 256;
 const GLOW_STOPS: readonly [number, number][] = [[0, 1], [0.22, 0.72], [0.45, 0.34], [0.7, 0.1], [1, 0]];
-const sprites = new Map<string, CanvasImageSource | null>();
+const glowSprites = new Map<string, CanvasImageSource | null>();
+const lightSprites = new Map<string, CanvasImageSource | null>();
 
-/** A cached radial glow per ink, drawn with drawImage so no frame pays for a blur. */
-export function glowSprite(ink: string): CanvasImageSource | null {
-  if (sprites.has(ink)) return sprites.get(ink)!;
+function radialSprite(cache: Map<string, CanvasImageSource | null>, ink: string, stops: readonly (readonly [number, number])[], px: number): CanvasImageSource | null {
+  if (cache.has(ink)) return cache.get(ink)!;
   let sprite: CanvasImageSource | null = null;
   if (typeof document !== "undefined") {
     const canvas = document.createElement("canvas");
-    canvas.width = SPRITE_PX;
-    canvas.height = SPRITE_PX;
+    canvas.width = px;
+    canvas.height = px;
     const ctx = canvas.getContext("2d");
     if (ctx) {
-      const half = SPRITE_PX / 2;
+      const half = px / 2;
       const g = ctx.createRadialGradient(half, half, 0, half, half, half);
-      for (const [at, alpha] of GLOW_STOPS) g.addColorStop(at, rgbaOf(ink, alpha));
+      for (const [at, alpha] of stops) g.addColorStop(at, rgbaOf(ink, alpha));
       ctx.fillStyle = g;
-      ctx.fillRect(0, 0, SPRITE_PX, SPRITE_PX);
+      ctx.fillRect(0, 0, px, px);
       sprite = canvas;
     }
   }
-  sprites.set(ink, sprite);
+  cache.set(ink, sprite);
   return sprite;
 }
 
+/** A cached radial glow per ink, drawn with drawImage so no frame pays for a blur. */
+export function glowSprite(ink: string): CanvasImageSource | null {
+  return radialSprite(glowSprites, ink, GLOW_STOPS, GLOW_SPRITE_PX);
+}
+
+/** A cached cluster light per hue at full strength; a frame scales it and sets `globalAlpha`. */
+export function lightSprite(ink: string): CanvasImageSource | null {
+  return radialSprite(lightSprites, ink, LIGHT_STOPS, LIGHT_SPRITE_PX);
+}
+
 /** Stops of an edgeless falloff: a Gaussian sampled densely enough that 8-bit steps do not band. */
-export const LIGHT_STOPS: readonly [number, number][] = Array.from({ length: 13 }, (_, i) => {
+const LIGHT_STOPS: readonly [number, number][] = Array.from({ length: 13 }, (_, i) => {
   const t = i / 12;
   return [t, Math.exp(-4.2 * t * t) * (1 - t)] as [number, number];
 });

@@ -53,6 +53,7 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
       const node = world.nodeById.get(id);
       return node ? toScreen(node.x, node.y) : null;
     },
+    nodeAt: (id) => world.nodeById.get(id),
     toScreen, scale, zoomRatio: frame.zoomRatio,
     viewportWidth, viewportHeight,
     freeRect: {
@@ -71,8 +72,10 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
     domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,
   };
   const result = graphTokens ? paintFlatGraphFrame(input, graphTokens) : paintDialFrame(input);
-  effectiveAlphaByIdReused.clear();
-  passState.effectiveAlphaWorld = new WeakRef(world);
+  if (passState.effectiveAlphaWorld?.deref() !== world) {
+    effectiveAlphaByIdReused.clear();
+    passState.effectiveAlphaWorld = new WeakRef(world);
+  }
   for (const node of world.nodes)
     effectiveAlphaByIdReused.set(node.id, result.alphas.get(node.id) ?? 0);
   passState.drawnLabelBoxes = result.labelBoxes;
