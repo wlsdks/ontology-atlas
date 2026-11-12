@@ -318,6 +318,9 @@ interface FrameState {
   /** The selected capability, element or orphan, drawn at the selected radius; null otherwise. */
   selectedId: string | null;
   selectedR: number;
+  /** The concept a change just deselected, shrinking back from the selected radius; null otherwise. */
+  leavingId: string | null;
+  leavingR: number;
   /** How far the project's own focus shows: its spokes and glow. */
   projectShare: number;
   lineKinds: number;
@@ -401,7 +404,7 @@ function radiusNow(id: string): number {
 
 /** The drawn radius: the selected concept's grows to the selected radius with the attention mix. */
 function discRadius(id: string): number {
-  return id === F.selectedId ? F.selectedR : radiusNow(id);
+  return id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : radiusNow(id);
 }
 
 function segmentOnScreen(a: Point, b: Point): boolean {
@@ -620,7 +623,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     }
     if (onScreen(elAt)) {
       const d = dots.take();
-      const r = el === F.selectedId ? F.selectedR : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
+      const r = el === F.selectedId || el === F.leavingId ? discRadius(el) : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
       const alpha = DOT_ALPHA * shown;
       if (d.x !== elAt.x) d.x = elAt.x;
       if (d.y !== elAt.y) d.y = elAt.y;
@@ -670,6 +673,13 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const r = own + (grown - own) * share;
     if (F.selectedR !== r) F.selectedR = r;
   }
+  const left = motion.previous.focusId;
+  F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
+  if (F.leavingId !== null) {
+    const own = radiusNow(F.leavingId);
+    const r = own + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
+    if (F.leavingR !== r) F.leavingR = r;
+  }
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
@@ -695,8 +705,10 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   for (let cIndex = 0; cIndex < layout.clusters.length; cIndex += 1) {
     const c = layout.clusters[cIndex]!;
     const ink = inkOf(c.domainId);
-    const x = c.centre.x * input.scale + origin.x;
-    const y = c.centre.y * input.scale + origin.y;
+    const home = layout.positions.get(c.domainId) ?? c.centre;
+    const domainAt = screenOf(c.domainId);
+    const x = domainAt.x + (c.centre.x - home.x) * input.scale;
+    const y = domainAt.y + (c.centre.y - home.y) * input.scale;
     const r = c.footprint * input.scale * P.lightReach;
     const alpha = P.lightAlpha * Math.min(1, ink * LIGHT_SINK_GAIN) * (contextMode ? P.sinkInk : 1);
     if (!lensHidden(c.domainId) && alpha > 0.002 && x + r > 0 && y + r > 0 && x - r < F.W && y - r < F.H) L.lights.add(light(x, y, r, hueOf(c.domainId), alpha));
@@ -775,6 +787,9 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       const pulse = input.selectionPulse?.nodeId === selectedId ? input.selectionPulse.scaleFactor : 1;
       plan.selection = ring(selectionRing, at.x, at.y, (discRadius(selectedId) + P.selectedRingGapPx) * pulse, mix, inks.project);
     }
+  } else if (F.leavingId !== null && !contextMode) {
+    const at = screenAt(F.leavingId);
+    if (at) plan.selection = ring(selectionRing, at.x, at.y, F.leavingR + P.selectedRingGapPx, 1 - mix, inks.project);
   }
 
   const agentId = contextMode ? null : input.agentFocusNodeId;

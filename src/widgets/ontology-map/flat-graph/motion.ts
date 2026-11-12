@@ -92,6 +92,8 @@ const LINE_LEAD = 0.5;
  */
 export class GraphMotion {
   current: GraphAttention;
+  /** The attention this change left; a selected disc in it shrinks back on the base clock. */
+  previous: GraphAttention;
   changedAt = Number.NEGATIVE_INFINITY;
   startAt = Number.NEGATIVE_INFINITY;
   endAt = Number.NEGATIVE_INFINITY;
@@ -119,6 +121,7 @@ export class GraphMotion {
 
   constructor(initial: GraphAttention) {
     this.current = initial;
+    this.previous = initial;
     for (const line of initial.lines) this.currentKeys.add(line.key);
   }
 
@@ -275,6 +278,7 @@ export class GraphMotion {
     for (const line of attention.lines) this.currentKeys.add(line.key);
     const sameLitFocus = this.current.lit !== null && this.current.focusId === attention.focusId;
     const pointed = attention.lit !== null && !attention.selected && !sameLitFocus;
+    this.previous = this.current;
     this.current = attention;
     this.changedAt = now;
     this.exiting = attention.lit === null;
