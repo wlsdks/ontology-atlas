@@ -16,7 +16,7 @@ command and tool contracts by their READMEs. When a feature file and the code
 disagree, the code wins; a feature file's history is its Git log
 (`pnpm doc:history -- <path>`).
 
-The cream-hooded planet traveler is the shared mascot across brand and in-app surfaces. Its waiting and verified-work poses remain tied to their existing activity states; see [Brand](design/brand.md).
+The compass identifies Atlas in app/browser icons and gateway chrome. Moru, the gray-and-indigo pixel seal, accompanies existing welcome, pending and verified-work states; see [Brand](design/brand.md).
 
 Compact MCP/CLI task handoffs carry whole uncertainty statements, per-document
 omissions and project-inclusive full-body recovery; see [MCP server](features/mcp-server.md).
@@ -29,10 +29,10 @@ Initial repository analysis distinguishes authored Markdown from literal example
 Document excerpts report omitted prose with an exact, hash-bound source read;
 truncated evidence requires review and does not authorize meaning writes.
 
-The folder entry uses a static welcome portrait, and the missing-page screen
-uses a curious map-search portrait in its existing icon slot. These expressions
-leave the screen's labels and actions authoritative. Walking, reading and
-completion artwork share the same traveler proportions and equipment.
+The folder entry plays one finite Moru greeting, then rests. The missing-page
+screen uses a static curious portrait in its existing icon slot. These expressions
+leave labels and actions authoritative. Connection, Compile and verified-read
+artwork follows the corresponding existing state, with visibility and reduced-motion guards.
 
 Agent setup names the connected vault in its post-change sync guidance, including
 when the vault and codebase are separate folders.

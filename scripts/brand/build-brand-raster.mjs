@@ -1,16 +1,4 @@
-/**
- * Raster-first brand baker.
- *
- * A browser canvas composites the native 64/32/16 mascot masters without image
- * smoothing, then stamps the exact PWA, Open Graph, macOS, Windows, README, and
- * in-app raster set. No vector approximation of the mascot exists.
- *
- * Usage:
- *   node scripts/brand/build-brand-assets.mjs
- *   node scripts/brand/build-brand-raster.mjs
- *   open http://127.0.0.1:8231/ in the repository browser
- *   node scripts/brand/install-brand-icons.mjs
- */
+/** Compose pixel Moru and smoothly scaled compass rasters. */
 import { randomUUID } from 'node:crypto';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { createServer } from 'node:http';
@@ -22,6 +10,7 @@ import {
   readMascotMasters,
   readMascotPresentationMaster,
   readMascotPortraits,
+  readCompassMaster,
 } from './build-brand-assets.mjs';
 
 const PORT = 8231;
@@ -30,46 +19,46 @@ const MAX_SAVE_BODY_BYTES = 64 * 1024 * 1024;
 
 /** [output name, master, physical size, plate treatment]. */
 export const ICON_RASTER_PLAN = Object.freeze([
-  ['icon-1024', 'presentation', 1024, 'squircle'],
-  ['icon-512', 'presentation', 512, 'squircle'],
-  ['icon-256', 'presentation', 256, 'squircle'],
-  ['icon-128', 'presentation', 128, 'squircle'],
-  ['icon-64', 'full', 64, 'squircle'],
-  ['icon-48', 'compact', 48, 'squircle'],
-  ['icon-32', 'compact', 32, 'squircle'],
-  ['icon-16', 'micro', 16, 'squircle'],
+  ['icon-1024', 'compass', 1024, 'squircle'],
+  ['icon-512', 'compass', 512, 'squircle'],
+  ['icon-256', 'compass', 256, 'squircle'],
+  ['icon-128', 'compass', 128, 'squircle'],
+  ['icon-64', 'compass', 64, 'squircle'],
+  ['icon-48', 'compass', 48, 'squircle'],
+  ['icon-32', 'compass', 32, 'squircle'],
+  ['icon-16', 'compass', 16, 'squircle'],
   // Retina partners keep the same logical drawing at twice the physical pixels.
-  ['micro-32', 'micro', 32, 'squircle'],
-  ['compact-64', 'compact', 64, 'squircle'],
-  ['tile-310', 'full', 310, 'squircle'],
-  ['tile-284', 'full', 284, 'squircle'],
-  ['tile-150', 'full', 150, 'squircle'],
-  ['tile-142', 'full', 142, 'squircle'],
-  ['tile-107', 'full', 107, 'squircle'],
-  ['tile-89', 'full', 89, 'squircle'],
-  ['tile-71', 'full', 71, 'squircle'],
-  ['tile-50', 'compact', 50, 'squircle'],
-  ['tile-44', 'compact', 44, 'squircle'],
-  ['tile-30', 'micro', 30, 'squircle'],
-  ['apple-180', 'full', 180, 'full-bleed'],
+  ['micro-32', 'compass', 32, 'squircle'],
+  ['compact-64', 'compass', 64, 'squircle'],
+  ['tile-310', 'compass', 310, 'squircle'],
+  ['tile-284', 'compass', 284, 'squircle'],
+  ['tile-150', 'compass', 150, 'squircle'],
+  ['tile-142', 'compass', 142, 'squircle'],
+  ['tile-107', 'compass', 107, 'squircle'],
+  ['tile-89', 'compass', 89, 'squircle'],
+  ['tile-71', 'compass', 71, 'squircle'],
+  ['tile-50', 'compass', 50, 'squircle'],
+  ['tile-44', 'compass', 44, 'squircle'],
+  ['tile-30', 'compass', 30, 'squircle'],
+  ['apple-180', 'compass', 180, 'full-bleed'],
   // Mobile packaging trees are not a delivery surface, but their committed PNGs must follow the
   // current mark.
-  ['mobile-20', 'micro', 20, 'squircle'],
-  ['mobile-29', 'micro', 29, 'squircle'],
-  ['mobile-40', 'compact', 40, 'squircle'],
-  ['mobile-58', 'compact', 58, 'squircle'],
-  ['mobile-60', 'compact', 60, 'squircle'],
-  ['mobile-72', 'full', 72, 'squircle'],
-  ['mobile-76', 'full', 76, 'squircle'],
-  ['mobile-80', 'full', 80, 'squircle'],
-  ['mobile-87', 'full', 87, 'squircle'],
-  ['mobile-96', 'full', 96, 'squircle'],
-  ['mobile-120', 'full', 120, 'squircle'],
-  ['mobile-144', 'full', 144, 'squircle'],
-  ['mobile-152', 'full', 152, 'squircle'],
-  ['mobile-167', 'full', 167, 'squircle'],
-  ['mobile-180', 'full', 180, 'squircle'],
-  ['mobile-192', 'full', 192, 'squircle'],
+  ['mobile-20', 'compass', 20, 'squircle'],
+  ['mobile-29', 'compass', 29, 'squircle'],
+  ['mobile-40', 'compass', 40, 'squircle'],
+  ['mobile-58', 'compass', 58, 'squircle'],
+  ['mobile-60', 'compass', 60, 'squircle'],
+  ['mobile-72', 'compass', 72, 'squircle'],
+  ['mobile-76', 'compass', 76, 'squircle'],
+  ['mobile-80', 'compass', 80, 'squircle'],
+  ['mobile-87', 'compass', 87, 'squircle'],
+  ['mobile-96', 'compass', 96, 'squircle'],
+  ['mobile-120', 'compass', 120, 'squircle'],
+  ['mobile-144', 'compass', 144, 'squircle'],
+  ['mobile-152', 'compass', 152, 'squircle'],
+  ['mobile-167', 'compass', 167, 'squircle'],
+  ['mobile-180', 'compass', 180, 'squircle'],
+  ['mobile-192', 'compass', 192, 'squircle'],
 ]);
 
 /** Transparent standalone marks consumed inside the app and by brand lockups. */
@@ -167,7 +156,7 @@ export function createBrandRasterServer({
           name: BRAND_NAME,
           tagline: BRAND_TAGLINE,
           palette: MASCOT_PALETTE,
-          masters: { ...readMascotMasters(), presentation: readMascotPresentationMaster(), ...readMascotPortraits() },
+          masters: { ...readMascotMasters(), presentation: readMascotPresentationMaster(), ...readMascotPortraits(), compass: readCompassMaster() },
           iconPlan: ICON_RASTER_PLAN,
           markPlan: MARK_RASTER_PLAN,
           lockupPlan: LOCKUP_RASTER_PLAN,

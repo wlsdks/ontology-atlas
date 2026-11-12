@@ -283,10 +283,10 @@ Spend the loudest motion where it is rarest: hover and typing take ink or a smal
 
 ## Brand
 
-The pixel mascot is the one shipping identity (contract `docs/design/brand.md`; art `assets/brand/mascot/`; runtime `src/shared/ui/marks/brand-mark.tsx`). It does not replace project hexagons (topology kind marks carrying typed data), and the rail repeats no mark.
+The compass is the app identity; Moru is the pixel companion (contract `docs/design/brand.md`; sources `assets/brand/moru/`; runtime `src/shared/ui/marks/brand-mark.tsx`). It does not replace project hexagons (topology kind marks carrying typed data), and the rail repeats no mark.
 
 - Three separately authored grids (`full` 64, `compact` 32, `micro` 16): never derive a miniature by downscaling the master; only whole-number nearest-neighbour scaling is allowed.
-- The raster palette (near-black, ivory, chartreuse `#C6F000`, suit highlight) is licensed only inside committed mascot rasters and brand compositions; chartreuse is never an application token, status colour, control fill or data colour.
+- Moru's navy, stone gray, ivory and indigo palette belongs only inside mascot rasters and brand compositions; it never becomes application tokens, status colours, control fills or data colours.
 - **Truthful motion.** The persistent presence runs one finite path only when `Agent Work Visibility` supplies verified read-like tool state and a terminal completion; pose, `data-mascot-state` and the `role=status` text share one mapping. No idle loop, inferred work or glow. `BrandWaitingMark` (pending operations) never implies progress or completion.
 
 ## Absolute rules (Don'ts)
