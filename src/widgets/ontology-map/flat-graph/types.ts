@@ -150,6 +150,8 @@ export interface FlatGraphFrame {
 }
 
 export interface FlatGraphMemory {
+  /** The font family the titles were measured in; a layout fitted to one face never pins another. */
+  face: string;
   positions: ReadonlyMap<string, Point>;
   signatureByDomain: ReadonlyMap<string, string>;
   hueByDomain: ReadonlyMap<string, number>;

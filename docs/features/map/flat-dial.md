@@ -29,7 +29,11 @@ Hues follow the circular domain order. Past eight domains a hue repeats, but
 never on two neighbouring clusters while a free hue exists. A domain keeps its
 hue for the session.
 
-The layout is deterministic. ForceAtlas2 places domains around the hub, each
+The layout is deterministic: the domain order, positions and hues come from
+the folder's content and the free map's size alone, so a folder draws the same
+picture however fast or in whatever batches its files were read, whichever map
+showed before it, and whether the product font arrived before or after the
+read. ForceAtlas2 places domains around the hub, each
 sized by the footprint its capabilities and elements need. A second pass places
 each domain's capabilities with partner domains as weak far anchors, so a
 capability leans toward the domains it depends on yet stays nearer its own
