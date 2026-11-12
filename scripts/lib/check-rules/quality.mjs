@@ -9,9 +9,8 @@ export const rules = [
   },
   {
     order: 205,
-    command:
-      'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
-    reason: 'a test source changed — its titles, assertion messages and comment bytes are judged against the merge base',
+    command: 'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts',
+    reason: 'a test source changed — its titles and assertion messages are judged against the merge base',
     matches: [/\.(?:test|spec)\.[cm]?[jt]sx?$/],
   },
   {

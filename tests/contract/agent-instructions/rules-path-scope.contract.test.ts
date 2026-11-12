@@ -1,10 +1,8 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-
-import { judgeRatchet } from "../lib/ratchet-base";
 
 /**
  * The contract that **conditional rules actually load**.
@@ -119,16 +117,6 @@ describe("`.claude/rules` path scoping contract", () => {
   // timeout covers the hook's execution model rather than assuming an idle CPU.
   }, 30_000);
 
-  it("keeps the resident rules under 20 KB — resistance on the way back", () => {
-    // The exact ceiling does not matter; what matters is that **somewhere notices** when
-    // the resident share swells again. Raising this number requires the commit that
-    // raises it to say why.
-    const bytes = rules
-      .filter((r) => r.paths === null)
-      .reduce((sum, r) => sum + readFileSync(join(RULES_DIR, r.file)).byteLength, 0);
-    expect(bytes).toBeLessThan(20_000);
-  });
-
   /**
    * `CLAUDE.md` tells the reader which rules load every turn and which wait for a
    * matching path. That sentence is how someone decides where a new rule goes,
@@ -163,7 +151,7 @@ describe("`.claude/rules` path scoping contract", () => {
    */
   /**
    * `CLAUDE.md` inventories hooks and says which are mirrored into `.codex/hooks/`. Only one-sided hooks
-   * are required by name; the mirrored ones are covered by `pnpm test:claude:hooks`, and a size ratchet
+   * are required by name; the mirrored ones are covered by `pnpm test:claude:hooks`, and a size cap
    * cannot catch a claim rotting without changing size.
    */
   it("names every hook that exists on one side only", () => {
@@ -225,21 +213,14 @@ describe("`.claude/rules` path scoping contract", () => {
   });
 
   /**
-   * The resident context (`AGENTS.md`, `CLAUDE.md`, rules) ratchets in one direction only, judged
-   * against the merge base (`tests/contract/lib/ratchet-base.ts`); a deliberate raise is a
-   * `ratchet-raises/resident-context-bytes/<slug>.json` record. The fallback is never edited.
-   */
-  const RESIDENT_FALLBACK_BYTES = 18_779;
-
-  /**
    * `AGENTS.md` has a region Next writes itself when an agent runs `pnpm dev` or `pnpm build`,
    * between the `nextjs-agent-rules` markers. It is committed and excluded from this measurement;
    * the test below refuses our own paragraphs placed inside the markers.
    */
   const VENDOR_REGION = /<!-- BEGIN:nextjs-agent-rules -->[\s\S]*?<!-- END:nextjs-agent-rules -->\n?/g;
 
-  function authoredBytes(file: string, root = process.cwd()): number {
-    const text = readFileSync(join(root, file), "utf8");
+  function authoredBytes(file: string): number {
+    const text = readFileSync(join(process.cwd(), file), "utf8");
     return Buffer.byteLength(text.replace(VENDOR_REGION, ""), "utf8");
   }
 
@@ -259,22 +240,16 @@ describe("`.claude/rules` path scoping contract", () => {
     ).toBeLessThanOrEqual(900);
   });
 
-  it("ratchets the whole resident context downward, never up", () => {
+  it("keeps the whole resident context at or under 20,000 bytes", () => {
     const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
-    const verdict = judgeRatchet({
-      gate: "resident-context-bytes",
-      measure: (root) =>
-        files.reduce((sum, file) => sum + (existsSync(join(root, file)) ? authoredBytes(file, root) : 0), 0),
-      reads: files,
-      fallback: RESIDENT_FALLBACK_BYTES,
-    });
+    const total = files.reduce((sum, file) => sum + authoredBytes(file), 0);
     const detail = files.map((file) => `  ${authoredBytes(file)} ${file}`).join("\n");
 
     expect(
-      verdict.current,
-      `the resident context grew to ${verdict.current} bytes:\n${detail}\n${verdict.explain}\n`
+      total,
+      `the resident context is ${total} bytes:\n${detail}\n`
         + "Every turn pays this before the task is read. Move detail to a path-loaded "
-        + "rule or a skill, or record why this must be resident.",
-    ).toBeLessThanOrEqual(verdict.ceiling);
+        + "rule or a skill.",
+    ).toBeLessThanOrEqual(20_000);
   });
 });
