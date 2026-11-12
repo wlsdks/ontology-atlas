@@ -1,1 +1,0 @@
-{ "gate": "comment-bytes.src-shared", "raise": 143, "why": "The Git bridge documents the full commit identity and the push-only command so callers do not route a send through snapshot recording." }
