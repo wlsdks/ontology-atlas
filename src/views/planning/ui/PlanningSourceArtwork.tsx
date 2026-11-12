@@ -21,7 +21,7 @@ export function PlanningSourceArtwork({ active, reduced, imageLabel }: { active:
       <div className="space-y-4 p-5">
         <div className="flex items-center gap-2"><span className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]">#</span><span className="h-2 w-3/4 rounded-micro bg-[color:var(--color-text-tertiary)]" /></div>
         <div className="space-y-2"><div className="h-1.5 rounded-micro bg-[color:var(--color-overlay-3)]" /><div className="h-1.5 rounded-micro bg-[color:var(--color-overlay-3)]" /><div className="h-1.5 w-2/3 rounded-micro bg-[color:var(--color-overlay-3)]" /></div>
-        <div className="space-y-2 border-l border-[color:var(--color-indigo-line-a35)] py-1 pl-3"><div className="h-1.5 w-4/5 rounded-micro bg-[color:var(--color-indigo-a32)]" /><div className="h-1.5 w-3/5 rounded-micro bg-[color:var(--color-indigo-a22)]" /></div>
+        <div className="space-y-2 border-l border-[color:var(--color-indigo-line-a35)] py-1 pl-3"><div className="h-1.5 w-4/5 rounded-micro bg-[color:var(--color-indigo-a32)]" /><div className="h-1.5 w-3/5 rounded-micro bg-[color:var(--color-indigo-a32)]" /></div>
         <div className="text-caption text-[color:var(--color-text-tertiary)]">.md</div>
       </div>
     </motion.div>

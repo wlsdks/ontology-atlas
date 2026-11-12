@@ -33,10 +33,10 @@ export function PlanningFolderStage({ door }: { door: PlanningDoor }) {
     className="my-auto grid w-full items-center gap-8 py-6 md:grid-cols-[minmax(0,1fr)_22rem] md:gap-10"
   >
     <div className="min-w-0">
-      <h2 className="max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
-      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t(door.kind === 'choose' ? 'startBody' : 'browserUnavailable')}</p>
+      <h2 className={door.kind === 'choose' ? 'max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]' : 'max-w-sm text-title font-[var(--font-weight-signature)]'}>{t('startTitle')}</h2>
+      <p className={`${door.kind === 'choose' ? 'mt-4' : 'mt-2'} max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]`}>{t(door.kind === 'choose' ? 'startBody' : 'browserUnavailable')}</p>
       {door.kind === 'choose' && door.unavailable && <p role="alert" className="mt-4 text-body text-[color:var(--color-text-primary)]">{t('folderUnavailable')}</p>}
-      {(door.kind === 'choose' || door.offersApp) && <div className="mt-7 flex"
+      {(door.kind === 'choose' || door.offersApp) && <div className={`${door.kind === 'choose' ? 'mt-7' : 'mt-5'} flex`}
         onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
         {door.kind === 'choose'
