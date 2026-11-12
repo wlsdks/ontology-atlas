@@ -117,6 +117,23 @@ export interface FlatGraphLayout {
   extent: Box;
 }
 
+/** A domain's name and caption block under its disc, in screen px about the domain's centre. */
+export interface FlatGraphTitle {
+  halfWidthPx: number;
+  topPx: number;
+  bottomPx: number;
+}
+
+/**
+ * Where the overview shows the graph: the screen area the fit fills, each domain's title block,
+ * and the largest capability disc, so the layout can keep members off the titles at that scale.
+ */
+export interface FlatGraphFrame {
+  areaPx: { width: number; height: number } | null;
+  titles: ReadonlyMap<string, FlatGraphTitle>;
+  capDiscPx: number;
+}
+
 export interface FlatGraphMemory {
   positions: ReadonlyMap<string, Point>;
   signatureByDomain: ReadonlyMap<string, string>;

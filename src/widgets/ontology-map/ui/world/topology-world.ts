@@ -23,10 +23,12 @@ import { dialOverviewPad } from "../../dial/fit";
 import { layoutDial } from "../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
 import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
+import { domainTitleBlocks } from "../../flat-graph/names";
 import { buildFlatGraphScene, flatGraphPins } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
 import { fireflySeed } from "../../render/edge-fireflies";
+import { labelFontFamily } from "../../render/labels";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../OntologyMap";
 
@@ -757,8 +759,10 @@ function buildDialWorld(
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
   if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
   if (input.graph) {
-    const scene = buildFlatGraphScene(model, order, input.graph.layout, flatGraphPins(model));
-    const pad = input.graph.paint.domainNamePx;
+    const paint = input.graph.paint;
+    const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: labelFontFamily() });
+    const scene = buildFlatGraphScene(model, order, input.graph.layout, flatGraphPins(model), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx });
+    const pad = paint.domainNamePx;
     return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad } };
   }
   const scene = layoutDial(model, order, input.tokens, input.memory);

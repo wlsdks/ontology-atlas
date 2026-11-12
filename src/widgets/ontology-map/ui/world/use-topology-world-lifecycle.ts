@@ -20,7 +20,7 @@ import { createForceSimulation, type ForceSimulation } from "../../model/layout/
 import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import { computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen } from "../camera/topology-camera-math";
+import { computeOverviewCameraTarget, computeOverviewFitScale, hasAnyNodeOnScreen, overviewEntryArea } from "../camera/topology-camera-math";
 import type { UseTopologyLoopArgs } from "../loop/topology-loop-contract";
 import {
   overviewBoundsFor,
@@ -35,6 +35,7 @@ import { readDialTokens } from "../../dial/tokens";
 import { claimDialOrderFolder } from "../../dial/order";
 import { claimFlatGraphFolder, settleFlatGraph } from "../../flat-graph/scene";
 import { readFlatGraphTokens } from "../../flat-graph/tokens";
+import type { FlatGraphTokens } from "../../flat-graph/types";
 import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
 
@@ -91,9 +92,12 @@ interface Dependencies {
 
 const SIM_AFTER_ASSEMBLY_MS = 400;
 
-function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
+type GraphArea = (graph: FlatGraphTokens) => { width: number; height: number } | null;
+
+function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null, areaOf: GraphArea): DialWorldInput | null {
   try {
-    return { graph: readFlatGraphTokens(), labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
+    const graph = readFlatGraphTokens();
+    return { graph, graphAreaPx: areaOf(graph), labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
   } catch {
     return null;
   }
@@ -277,7 +281,14 @@ export function useTopologyWorldLifecycle({
       placed = { state: step.state, held: step.held };
       return step.model;
     };
-    const world = buildTopologyWorld(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored), placeDial);
+    const graphArea: GraphArea = (graph) => {
+      const measured = viewportRef.current;
+      const size = measured.width > 0 && measured.height > 0 ? measured : containerRef.current?.getBoundingClientRect();
+      if (!size || size.width <= 0 || size.height <= 0) return null;
+      const pad = graph.paint.domainNamePx;
+      return overviewEntryArea(size.width, size.height, overviewFitTokens(cameraTokens(tokens)), { padPx: { left: pad, right: pad, top: pad, bottom: pad } });
+    };
+    const world = buildTopologyWorld(live.nodes, live.edges, tokens, expand.structure, dialWorldInput(dialLabels, provisionalMemoryRef.current ?? stored, graphArea), placeDial);
     const firstPlacement = world.dial != null && placementStateRef.current === "reading" && placed.state !== "reading";
     placementStateRef.current = placed.state;
     if (world.dial) {

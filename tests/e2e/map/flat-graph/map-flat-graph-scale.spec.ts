@@ -55,6 +55,20 @@ function namesOutside(dial: DialProbe): string[] {
     .map((t) => `${t.role}:${t.id} ${Math.round(t.box.minX)}..${Math.round(t.box.maxX)} in ${Math.round(r.minX)}..${Math.round(r.maxX)}`);
 }
 
+function discsOnTitles(dial: DialProbe): string[] {
+  const titles = dial.texts.filter((t) => t.id !== null && (t.role === "domain" || t.role === "units"));
+  const hits: string[] = [];
+  for (const t of titles) {
+    for (const d of dial.discs) {
+      if (d.id === t.id) continue;
+      const nx = Math.min(t.box.maxX, Math.max(t.box.minX, d.x));
+      const ny = Math.min(t.box.maxY, Math.max(t.box.minY, d.y));
+      if (Math.hypot(d.x - nx, d.y - ny) < d.r) hits.push(`${d.id} on ${t.role}:${t.id}`);
+    }
+  }
+  return hits;
+}
+
 test("at 2,000 concepts a pan paints per drawn mark, never per concept, and a resting map draws nothing", async ({ page }) => {
   test.setTimeout(240_000);
   await page.setViewportSize({ width: 1920, height: 1080 });
@@ -90,7 +104,7 @@ test("at 2,000 concepts a pan paints per drawn mark, never per concept, and a re
 });
 
 for (const source of ["dogfood", "storefront", "synth"] as const) {
-  test(`at a laptop width every ${source} name stays inside the free map`, async ({ page }) => {
+  test(`at a laptop width every ${source} name stays inside the free map and no disc sits on a domain title`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: 1512, height: 900 });
     if (source === "dogfood") await useDogfoodSample(page);
@@ -98,5 +112,6 @@ for (const source of ["dogfood", "storefront", "synth"] as const) {
     const dial = await open(page, source === "synth" ? "synth=2000&synthDeps=1&" : "");
     expect(dial.texts.length).toBeGreaterThan(0);
     expect(namesOutside(dial)).toEqual([]);
+    expect(discsOnTitles(dial)).toEqual([]);
   });
 }

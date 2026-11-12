@@ -18,7 +18,7 @@ import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
-import { computeOverviewCameraTarget } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/topology-camera-math";
 import { lastDrawnNodeAlphas } from "../ui/frame-draw/topology-frame-draw";
 import { overviewBoundsFor, overviewFitTokens } from "../ui/camera/topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
@@ -221,13 +221,16 @@ function predictOntologyMapMarks({
   if (box.width <= 0 || box.height <= 0 || nodes.length === 0) return null;
   const dialTokens = readDialTokensOrNull();
   const graphTokens = readFlatGraphTokensOrNull();
-  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { graph: graphTokens, labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: dialMemory ?? null } : null);
+  const fitTokens = overviewFitTokens(measuredCameraTokens(host, tokens));
+  const pad = graphTokens?.paint.domainNamePx ?? 0;
+  const graphAreaPx = graphTokens ? overviewEntryArea(box.width, box.height, fitTokens, { padPx: { left: pad, right: pad, top: pad, bottom: pad } }) : null;
+  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { graph: graphTokens, graphAreaPx, labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: dialMemory ?? null } : null);
   const bounds = overviewBoundsFor(overviewFit, world, tokens, expandedParents, null);
   const target = computeOverviewCameraTarget(
     bounds,
     box.width,
     box.height,
-    overviewFitTokens(measuredCameraTokens(host, tokens)), world.nodes.length, dialOverviewFit(world));
+    fitTokens, world.nodes.length, dialOverviewFit(world));
   const camera: CameraAxes = {
     x: { value: target.tx, velocity: 0 },
     y: { value: target.ty, velocity: 0 },

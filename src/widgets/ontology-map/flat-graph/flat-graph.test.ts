@@ -158,6 +158,25 @@ describe("domain hues", () => {
 describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
   const layout = layoutOf(model);
 
+  it.each([[1700, 900], [1100, 860], [760, 820]])("keeps every capability disc off every domain title in a %ix%i fit", (width, height) => {
+    const titles = new Map(model.domains.map((d) => [d.id, { halfWidthPx: 70 + (d.label.length % 5) * 12, topPx: 18, bottomPx: 64 }]));
+    const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, { areaPx: { width, height }, titles, capDiscPx: TOKENS.paint.capDiscMaxPx });
+    const e = fitted.extent;
+    const scale = Math.min(1, width / (e.maxX - e.minX), height / (e.maxY - e.minY));
+    const discPx = TOKENS.paint.capDiscMaxPx / scale;
+    const hits: string[] = [];
+    for (const c of fitted.clusters) {
+      const t = titles.get(c.domainId)!;
+      const box = { minX: c.centre.x - t.halfWidthPx / scale, maxX: c.centre.x + t.halfWidthPx / scale, minY: c.centre.y + t.topPx / scale, maxY: c.centre.y + t.bottomPx / scale };
+      for (const [id, at] of fitted.itemAt) {
+        const nx = Math.min(box.maxX, Math.max(box.minX, at.x));
+        const ny = Math.min(box.maxY, Math.max(box.minY, at.y));
+        if (Math.hypot(at.x - nx, at.y - ny) < discPx) hits.push(`${id} on ${c.domainId}`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+
   it("is deterministic", () => {
     const again = layoutOf(model);
     expect([...again.positions]).toEqual([...layout.positions]);

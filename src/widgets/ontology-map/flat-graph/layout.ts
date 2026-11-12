@@ -4,7 +4,7 @@ import forceAtlas2 from "graphology-layout-forceatlas2";
 import type { Box, DialModel, Point } from "../dial/types";
 import { assignDomainHues } from "./hue";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
-import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins } from "./types";
+import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./types";
 
 const HUB_ID = "\u0000hub";
 const TITLE_LEFT = "\u0000title-left";
@@ -19,6 +19,15 @@ const COMPACT_ROUNDS = 40;
 const COMPACT_PULL = 0.04;
 const COMPACT_SEPARATIONS = 6;
 const MAX_STRETCH = 2;
+const MIN_ASPECT = 0.6;
+const MAX_ASPECT = 2.6;
+/** Layout passes that grow the title reservation until it covers the names at the fitted scale. */
+const TITLE_PASSES = 6;
+const TITLE_PASS_MARGIN = 1.04;
+/** A steeper secant means the titles alone outgrow the area; the reservation then follows the last fit. */
+const MAX_TITLE_SLOPE = 0.9;
+const TITLE_CLEAR_ROUNDS = 8;
+const TITLE_CLEAR_SEPARATIONS = 6;
 
 const FORCE_SETTINGS = {
   gravity: 1,
@@ -138,14 +147,19 @@ function layoutCluster(
   degree: ReadonlyMap<string, number>,
   pinned: ReadonlyMap<string, Point>,
   centre: Point | null,
+  title: Box,
+  memberClearance: number,
   tokens: FlatGraphLayoutTokens,
 ): LocalCluster {
   const reach = new Map(items.map((it) => [it.id, Math.max(tokens.capSpacing / 2, elementFanRadius(it.elementIds.length, tokens))]));
   const ranked = [...items].sort((a, b) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id));
   const estimate = estimateFootprint(items, tokens);
   const bodies: Body[] = [{ id: domainId, x: 0, y: 0, r: tokens.domainClearance, fixed: true }];
-  bodies.push({ id: TITLE_LEFT, x: -tokens.titleHalfPx / 2, y: tokens.titleDropPx, r: tokens.titleHalfPx / 2, fixed: true });
-  bodies.push({ id: TITLE_RIGHT, x: tokens.titleHalfPx / 2, y: tokens.titleDropPx, r: tokens.titleHalfPx / 2, fixed: true });
+  const titleW = title.maxX - title.minX;
+  const titleMidY = (title.minY + title.maxY) / 2;
+  const titleR = Math.max(titleW / 4, (title.maxY - title.minY) / 2);
+  bodies.push({ id: TITLE_LEFT, x: title.minX + titleW / 4, y: titleMidY, r: titleR, fixed: true });
+  bodies.push({ id: TITLE_RIGHT, x: title.maxX - titleW / 4, y: titleMidY, r: titleR, fixed: true });
   let anyPinned = false;
   ranked.forEach((it, k) => {
     const pin = centre && pinned.get(it.id);
@@ -200,15 +214,47 @@ function layoutCluster(
   }
   const relaxed = bodies.filter((b) => !b.id.startsWith(ANCHOR_PREFIX));
   separate(relaxed, 0, tokens.relaxRounds);
+  const clearance = (b: Body) => Math.max(b.r, memberClearance);
+  const memberBodies = relaxed.filter((b) => members.has(b.id));
+  for (let round = 0; round < TITLE_CLEAR_ROUNDS && clearBox(memberBodies, title, clearance); round += 1) separate(relaxed, 0, TITLE_CLEAR_SEPARATIONS);
+  clearBox(memberBodies, title, clearance);
   const offsets = new Map<string, Point>();
-  let footprint = Math.hypot(tokens.titleHalfPx, tokens.titleDropPx) + tokens.titleHalfPx / 2;
-  footprint = Math.max(footprint, tokens.domainClearance);
+  let footprint = Math.max(tokens.domainClearance, ...[title.minX, title.maxX].flatMap((x) => [title.minY, title.maxY].map((y) => Math.hypot(x, y))));
   for (const b of relaxed) {
     if (!members.has(b.id)) continue;
     offsets.set(b.id, { x: b.x, y: b.y });
     footprint = Math.max(footprint, Math.hypot(b.x, b.y) + reach.get(b.id)!);
   }
   return { items, offsets, reach, footprint };
+}
+
+/**
+ * Pushes each movable body out of a fixed box the shortest way, keeping `clearance(body)` from its
+ * edge; reports whether any moved. O(n).
+ */
+function clearBox(bodies: readonly Body[], box: Box, clearance: (b: Body) => number): boolean {
+  let moved = false;
+  for (const b of bodies) {
+    if (b.fixed) continue;
+    const r = clearance(b);
+    const nx = Math.min(box.maxX, Math.max(box.minX, b.x));
+    const ny = Math.min(box.maxY, Math.max(box.minY, b.y));
+    const d = Math.hypot(b.x - nx, b.y - ny);
+    if (d >= r) continue;
+    if (d > 1e-6) {
+      b.x = nx + ((b.x - nx) / d) * r;
+      b.y = ny + ((b.y - ny) / d) * r;
+    } else {
+      const exits = [b.y - box.minY, box.maxY - b.y, b.x - box.minX, box.maxX - b.x];
+      const way = exits.indexOf(Math.min(...exits));
+      if (way === 0) b.y = box.minY - r;
+      else if (way === 1) b.y = box.maxY + r;
+      else if (way === 2) b.x = box.minX - r;
+      else b.x = box.maxX + r;
+    }
+    moved = true;
+  }
+  return moved;
 }
 
 function circularSeed(order: readonly string[], radii: ReadonlyMap<string, number>, tokens: FlatGraphLayoutTokens): Map<string, Point> {
@@ -227,15 +273,16 @@ function placeDomains(
   radii: ReadonlyMap<string, number>,
   pins: FlatGraphPins | null,
   tokens: FlatGraphLayoutTokens,
+  aspect: number,
 ): Map<string, Point> {
   const pinned = pins?.positions ?? new Map<string, Point>();
   const seeds = circularSeed(order, radii, tokens);
-  for (const [id, at] of pins?.seeds ?? []) if (seeds.has(id)) seeds.set(id, { x: at.x / tokens.aspect, y: at.y });
+  for (const [id, at] of pins?.seeds ?? []) if (seeds.has(id)) seeds.set(id, { x: at.x / aspect, y: at.y });
   const hasHub = model.projectId !== null;
   const bodies: Body[] = order.map((id) => {
     const pin = pinned.get(id);
     const at = pin ?? seeds.get(id)!;
-    return { id, x: pin ? at.x / tokens.aspect : at.x, y: at.y, r: radii.get(id)!, fixed: !!pin };
+    return { id, x: pin ? at.x / aspect : at.x, y: at.y, r: radii.get(id)!, fixed: !!pin };
   });
   if (hasHub) bodies.push({ id: HUB_ID, x: 0, y: 0, r: tokens.hubClearance, fixed: true });
   const springs: Spring[] = hasHub ? order.map((id) => ({ a: HUB_ID, b: id, weight: 1 })) : [];
@@ -245,7 +292,7 @@ function placeDomains(
     const pin = pinned.get(id);
     if (pin) return [id, { ...pin }] as const;
     const at = placed.get(id) ?? seeds.get(id)!;
-    return [id, { x: at.x * tokens.aspect, y: at.y }] as const;
+    return [id, { x: at.x * aspect, y: at.y }] as const;
   }));
 }
 
@@ -255,6 +302,7 @@ function spreadDomains(
   pinned: ReadonlyMap<string, Point>,
   hasHub: boolean,
   tokens: FlatGraphLayoutTokens,
+  aspect: number,
 ): void {
   const ids = [...centres.keys()].sort(byId);
   const anyPinned = ids.some((id) => pinned.has(id));
@@ -275,12 +323,12 @@ function spreadDomains(
   if (hasHub) bodies.push({ id: HUB_ID, x: 0, y: 0, r: tokens.hubClearance, fixed: true });
   if (!anyPinned) {
     for (let round = 0; round < COMPACT_ROUNDS; round += 1) {
-      for (const b of bodies) if (!b.fixed) { b.x *= 1 - COMPACT_PULL; b.y *= 1 - COMPACT_PULL * tokens.aspect; }
+      for (const b of bodies) if (!b.fixed) { b.x *= 1 - COMPACT_PULL; b.y *= 1 - COMPACT_PULL * aspect; }
       separate(bodies, tokens.clusterGap, COMPACT_SEPARATIONS);
     }
   }
   separate(bodies, tokens.clusterGap, PUSH_ROUNDS);
-  if (!anyPinned) stretchToAspect(bodies.filter((b) => b.id !== HUB_ID), tokens.aspect);
+  if (!anyPinned) stretchToAspect(bodies.filter((b) => b.id !== HUB_ID), aspect);
   for (const b of bodies) if (b.id !== HUB_ID) centres.set(b.id, { x: b.x, y: b.y });
 }
 
@@ -357,18 +405,56 @@ function grow(box: Box, p: Point, r: number): void {
   box.maxY = Math.max(box.maxY, p.y + r);
 }
 
+function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
+  return { halfWidthPx: tokens.titleHalfPx, topPx: tokens.titleDropPx - tokens.titleHalfPx / 2, bottomPx: tokens.titleDropPx + tokens.titleHalfPx / 2 };
+}
+
 /**
  * Places a domain graph in world space. Domains go through ForceAtlas2 around the project, each
  * domain's capabilities through a local ForceAtlas2 with partner domains as weak far anchors, and
  * elements on a closed-form golden-angle fan. A pinned id keeps its position and enters every pass
- * fixed. Cost: O(I·D²) for domains plus O(I·n²) per domain of n items; elements are O(E).
+ * fixed. With a frame, the clusters spread to its aspect and every domain's title block is kept
+ * clear at the scale the fit will show, re-run at most `TITLE_PASSES` times as that scale settles.
+ * Cost: O(P·(I·D² + I·n²)) for P passes, D domains and n items per domain; elements are O(E).
  */
-export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null): FlatGraphLayout {
+export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  const area = frame?.areaPx ?? null;
+  const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
+  const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
+  let worldPerPx = 1;
+  let layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx);
+  let shown = shownOf(layout);
+  let before = { at: worldPerPx, shown };
+  for (let pass = 1; pass < TITLE_PASSES && shown > worldPerPx; pass += 1) {
+    const slope = pass === 1 ? 0 : (shown - before.shown) / Math.max(1e-6, worldPerPx - before.at);
+    const fixedPoint = slope < MAX_TITLE_SLOPE ? (shown - slope * worldPerPx) / (1 - slope) : shown;
+    before = { at: worldPerPx, shown };
+    worldPerPx = Math.max(shown, fixedPoint) * TITLE_PASS_MARGIN;
+    layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx);
+    shown = shownOf(layout);
+  }
+  return layout;
+}
+
+function placeGraph(
+  model: DialModel,
+  order: readonly string[],
+  tokens: FlatGraphLayoutTokens,
+  pins: FlatGraphPins | null,
+  frame: FlatGraphFrame | null,
+  aspect: number,
+  worldPerPx: number,
+): FlatGraphLayout {
   const pinned = pins?.positions ?? new Map<string, Point>();
+  const titleOf = (id: string): Box => {
+    const t = frame?.titles.get(id) ?? fallbackTitle(tokens);
+    return { minX: -t.halfWidthPx * worldPerPx, maxX: t.halfWidthPx * worldPerPx, minY: t.topPx * worldPerPx, maxY: t.bottomPx * worldPerPx };
+  };
+  const memberClearance = (frame?.capDiscPx ?? 0) * worldPerPx;
   const domainIds = order.filter((id) => model.domainById.has(id));
   const itemsByDomain = new Map(domainIds.map((id) => [id, itemsOf(model, id)] as const));
   const estimates = new Map(domainIds.map((id) => [id, estimateFootprint(itemsByDomain.get(id)!, tokens)] as const));
-  const centres = placeDomains(model, domainIds, estimates, pins, tokens);
+  const centres = placeDomains(model, domainIds, estimates, pins, tokens, aspect);
   const degree = crossDegree(model);
   const partnersOf = new Map<string, Map<string, number>>(domainIds.map((id) => [id, new Map()]));
   for (const f of model.flows) {
@@ -383,9 +469,9 @@ export function layoutFlatGraph(model: DialModel, order: readonly string[], toke
       const o = centres.get(other)!;
       return { domainId: other, angle: Math.atan2(o.y - c.y, o.x - c.x), weight };
     });
-    locals.set(id, layoutCluster(model, id, itemsByDomain.get(id)!, outward, partners, degree, pinned, pinned.has(id) ? c : null, tokens));
+    locals.set(id, layoutCluster(model, id, itemsByDomain.get(id)!, outward, partners, degree, pinned, pinned.has(id) ? c : null, titleOf(id), memberClearance, tokens));
   }
-  spreadDomains(centres, new Map(domainIds.map((id) => [id, locals.get(id)!.footprint])), pinned, model.projectId !== null, tokens);
+  spreadDomains(centres, new Map(domainIds.map((id) => [id, locals.get(id)!.footprint])), pinned, model.projectId !== null, tokens, aspect);
 
   const positions = new Map<string, Point>();
   const itemAt = new Map<string, Point>();
@@ -407,8 +493,9 @@ export function layoutFlatGraph(model: DialModel, order: readonly string[], toke
       grow(extent, at, local.reach.get(it.id)!);
     }
     grow(extent, centre, tokens.domainClearance / 2);
-    grow(extent, { x: centre.x - tokens.titleHalfPx / 2, y: centre.y + tokens.titleDropPx }, tokens.titleHalfPx / 2);
-    grow(extent, { x: centre.x + tokens.titleHalfPx / 2, y: centre.y + tokens.titleDropPx }, tokens.titleHalfPx / 2);
+    const title = titleOf(id);
+    grow(extent, { x: centre.x + title.minX, y: centre.y + title.minY }, 0);
+    grow(extent, { x: centre.x + title.maxX, y: centre.y + title.maxY }, 0);
     clusters.push({ domainId: id, centre, footprint: local.footprint, hue: 0, items: local.items });
   }
 

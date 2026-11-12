@@ -2,7 +2,7 @@ import type { DialPlacementState } from "../dial/placement";
 import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
 import { directItemId, layoutFlatGraph } from "./layout";
 import { byId } from "./seed";
-import type { FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory, FlatGraphPins } from "./types";
+import type { FlatGraphFrame, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory, FlatGraphPins } from "./types";
 
 let remembered: FlatGraphMemory | null = null;
 let rememberedFolder: string | null = null;
@@ -67,8 +67,8 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout): void {
   };
 }
 
-export function buildFlatGraphScene(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null): DialScene {
-  const graph = layoutFlatGraph(model, order, tokens, pins);
+export function buildFlatGraphScene(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
+  const graph = layoutFlatGraph(model, order, tokens, pins, frame);
   const itemById = new Map<string, DialItem>();
   const clusters: DialCluster[] = graph.clusters.map((c) => {
     const items = c.items.map((it) => {

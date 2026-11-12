@@ -2,7 +2,7 @@ import type { MeasureText } from "../dial/label-marks";
 import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { byId } from "./seed";
-import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
 export type NameRole = "project" | "domain" | "units" | "capability" | "element";
 
@@ -93,7 +93,9 @@ function font(weight: number, px: number, family: string): string {
   return `${weight} ${px}px ${family}`;
 }
 
-function domainBlock(input: NameInput, domainId: string): PlacedName[] {
+type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measureText" | "fontFamily" | "staleByDomain" | "discRadius">;
+
+function domainBlock(input: DomainBlockInput, domainId: string): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
   const r = input.discRadius(domainId);
@@ -117,6 +119,21 @@ function domainBlock(input: NameInput, domainId: string): PlacedName[] {
     });
   }
   return out;
+}
+
+/** Each domain's name and caption block at the overview, which the layout keeps clear of members. O(D). */
+export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" | "discRadius">): Map<string, FlatGraphTitle> {
+  const blocks = new Map<string, FlatGraphTitle>();
+  const block: DomainBlockInput = { ...input, staleByDomain: null, discRadius: () => input.tokens.domainDiscPx };
+  for (const d of input.model.domains) {
+    const boxes = domainBlock(block, d.id).map((n) => n.box);
+    blocks.set(d.id, {
+      halfWidthPx: Math.max(...boxes.map((b) => Math.max(-b.minX, b.maxX))),
+      topPx: Math.min(...boxes.map((b) => b.minY)),
+      bottomPx: Math.max(...boxes.map((b) => b.maxY)),
+    });
+  }
+  return blocks;
 }
 
 function projectName(input: NameInput): PlacedName | null {

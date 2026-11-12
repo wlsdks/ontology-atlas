@@ -122,7 +122,7 @@ export interface DialWorld {
     scene: DialScene;
     overviewPadPx: Pad;
 }
-export interface DialWorldInput { graph?: import("../flat-graph/types").FlatGraphTokens | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
+export interface DialWorldInput { graph?: import("../flat-graph/types").FlatGraphTokens | null; graphAreaPx?: { width: number; height: number } | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
 }
 
 export interface StripMark { flowKey: string; role: "chord" | "stub" | "relates"; ink: number; ax: number; ay: number; cx: number; cy: number; bx: number; by: number; w0: number; w1: number; gapT0: number; gapT1: number; dashed: boolean; headStart: boolean; headEnd: boolean; headSize: number;
