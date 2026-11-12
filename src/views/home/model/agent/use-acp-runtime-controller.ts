@@ -1,7 +1,7 @@
 import { isGuardedRuntime, type InvestigationSendGuard } from "@/features/acp-session";
 import type { GrayAreaSnapshot } from '@/shared/lib/project-source/tauri-gray-area';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/agent-chat/tauri-acp";
-import { useChatWidth } from "@/widgets/acp-chat-panel";
+import { keptAwayRuntimeId, useChatWidth } from "@/widgets/acp-chat-panel";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const ACP_SESSION_START_AFTER_REFLOW_MS = 240;
@@ -62,7 +62,7 @@ export function useAcpRuntimeController(setAcpChatOpen: (open: boolean) => void)
         }));
       setAcpRuntimes(usable);
       setAcpRuntimeId((current) => {
-        const preferred = requestedAcpRuntimeRef.current ?? current;
+        const preferred = requestedAcpRuntimeRef.current ?? current ?? keptAwayRuntimeId();
         return preferred && usable.some((runtime) => runtime.id === preferred)
           ? preferred
           : (usable[0]?.id ?? null);

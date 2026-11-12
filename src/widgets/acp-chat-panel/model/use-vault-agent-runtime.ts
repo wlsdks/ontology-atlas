@@ -10,6 +10,7 @@ import {
   vaultSelfReadSlot,
 } from "@/features/acp-session";
 import { useVaultConnectors } from "@/features/mcp-connectors";
+import { keptAwayRuntimeId } from "./kept-panels";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/agent-chat/tauri-acp";
 
@@ -106,9 +107,10 @@ export function useVaultAgentRuntime(
       if (cancelled) return;
       const usable = selectVaultAgentRuntimes(list);
       setRuntimes(usable);
-      setRuntimeId((current) =>
-        current && usable.some((runtime) => runtime.id === current) ? current : (usable[0]?.id ?? null),
-      );
+      setRuntimeId((current) => {
+        const preferred = current ?? keptAwayRuntimeId();
+        return preferred && usable.some((runtime) => runtime.id === preferred) ? preferred : (usable[0]?.id ?? null);
+      });
     };
     void detectAcpRuntimes()
       .then((fast) => {
