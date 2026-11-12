@@ -1188,17 +1188,25 @@ function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, ma
 }
 
 /**
- * A rounded veil of the canvas ground just around each backed name's glyphs, over the lines and
- * under every disc and name: it dims the lines and the light beneath rather than cutting them out.
- * Whole pixels keep the rectangle's arguments small integers.
+ * A rounded veil of the canvas ground just around each backed name's glyphs, feathered at its
+ * edge, over the lines and under every disc and name: it dims the lines and the light beneath
+ * rather than cutting them out. Whole pixels keep the rectangle's arguments small integers.
  */
 function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], ground: string, P: FlatGraphPaintTokens): void {
-  ctx.fillStyle = ground;
   const insetX = P.namePadPx - P.backingPadXPx;
   const insetY = P.namePadPx - P.backingPadYPx;
+  let feathered = false;
   for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
     const n = marks[nIndex]!;
     if (n.name.backed !== true) continue;
+    if (!feathered) {
+      feathered = true;
+      ctx.save();
+      ctx.fillStyle = ground;
+      ctx.shadowColor = ground;
+      // shadowBlur ignores the transform, so it is scaled to the backing store's pixels here.
+      ctx.shadowBlur = P.backingFeatherPx * ctx.getTransform().a;
+    }
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const box = n.name.box;
@@ -1209,7 +1217,7 @@ function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], gr
     ctx.roundRect(x, y, (Math.ceil(ox + box.maxX - insetX) - x) | 0, (Math.ceil(oy + box.maxY - insetY) - y) | 0, P.backingRadiusPx);
     ctx.fill();
   }
-  ctx.globalAlpha = 1;
+  if (feathered) ctx.restore();
 }
 
 function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
