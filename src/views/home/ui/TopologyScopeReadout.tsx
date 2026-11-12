@@ -48,6 +48,12 @@ const SELECTION_SHAPES = [
   ["broader", "keyBroader"],
 ] as const;
 
+/** A domain's lines join domains, so their key names domains. */
+const DOMAIN_SELECTION_SHAPES = [
+  ["needs", "keyDomainNeeds"],
+  ["neededBy", "keyDomainNeededBy"],
+] as const;
+
 /**
  * The marks on screen now, each beside a drawn sample: at rest the capability disc and the
  * domain arcs, under a selection the kinds of line it draws. `lineKinds` holds `FLAT_LINE_BITS`;
@@ -57,7 +63,8 @@ export function TopologyFlatKey({ evidence, selected, lineKinds }: { evidence: M
   const t = useTranslations("mapDial");
   const stale = [...evidence.states.values()].some((state) => state === "stale");
   const bits = lineKinds ?? FLAT_LINE_BITS.rest;
-  const lines = SELECTION_SHAPES.filter(([shape]) => (bits & FLAT_LINE_BITS[shape]) !== 0);
+  const betweenDomains = (bits & FLAT_LINE_BITS.domains) !== 0;
+  const lines = (betweenDomains ? DOMAIN_SELECTION_SHAPES : SELECTION_SHAPES).filter(([shape]) => (bits & FLAT_LINE_BITS[shape]) !== 0);
   const restArcs = (bits & FLAT_LINE_BITS.rest) !== 0;
   return (
     <div data-testid="topology-flat-key" data-line-kinds={bits}className="pointer-events-none absolute bottom-12 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex">

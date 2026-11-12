@@ -22,6 +22,8 @@
   "connectionCount": "接続{count, number}件",
   "keyNeeds": "この能力の依存先",
   "keyNeededBy": "この能力への依存元",
+  "keyDomainNeeds": "このドメインの依存先",
+  "keyDomainNeededBy": "このドメインへの依存元",
   "keyRelates": "関連",
   "keyBroader": "上位概念",
   "noDomain": "ドメインなし{count, number}",
