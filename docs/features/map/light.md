@@ -31,6 +31,12 @@ and fades; the selected concept keeps its own glow. Selecting another concept
 replaces the light; clearing the selection ends it. A selection that was already
 there when the map opened, such as a deep link, does not light.
 
+The Flat graph's selection is the one exception to source-to-target: its lines
+answer "if I touch this, what moves?", so once they have drawn, each carries
+one light from what is needed toward what needs it, and from the selection
+outward along a related line. Its lines already end at the discs, so it adds
+no arrival bloom and the whole selection rests within 900 ms.
+
 The branch map ends the travelling light at the drawn connection port. It
 omits the broad arrival bloom so a domain card's text and surface stay clear.
 The travelling head fades at the port on the existing arrival clock.
@@ -43,8 +49,8 @@ seconds. The path's static ink remains afterwards. Each relation lights in its
 own direction, as it does for a selection: when the walk crosses a directional
 relation backwards, that hop keeps its place in the sequence and still lights
 from the relation's source to its target, and the stop it leads to blooms when
-the hop is due. A travelling light on a directional relation means one thing
-everywhere: from its source to its target.
+the hop is due. Outside the Flat graph's selection, a travelling light on a directional
+relation means one thing: from its source to its target.
 
 The path lights on the frame it appears, so picking a source and then a target
 lights it at once. A path that appears while a concept is selected, or while
