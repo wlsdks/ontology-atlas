@@ -30,8 +30,9 @@ each domain's capabilities with partner domains as weak far anchors, so a
 capability leans toward the domains it depends on yet stays nearer its own
 domain than any other. The clusters then spread to the overview's aspect, so
 the first fit fills the free map. Concepts outside every domain sit in an
-empty corner. Every concept keeps a disc or dot and a pick target, whether or
-not its name has room.
+empty corner. Every domain and capability keeps a disc and a pick target,
+whether or not its name has room; an element dot answers the pointer once it
+is drawn. A concept outside an open lens draws nothing and answers nothing.
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
@@ -64,8 +65,8 @@ They read as texture under the clusters. The hidden ones still count in
 
 Hovering or selecting lights a set and sinks everything else toward the
 canvas. A domain lights itself and its members. A capability lights its
-domain, its elements, and the capabilities it needs, is used by or relates
-to, joined by thin curves. An element lights its capability's set. The project
+domain, its elements, the capabilities it needs or is used by, joined by
+thin curves, and the capabilities it relates to. An element lights its capability's set. The project
 stays lit. Resting arcs give way while a set is lit. The inks crossfade over
 `--motion-fast` and jump at once with reduced motion. Names keep their places;
 lit capability names join the admitted set.
@@ -99,9 +100,11 @@ project states that limitation.
 
 ## Performance bars
 
-A settled map draws no frames. Glows are cached sprites and the sunk inks are
-pre-mixed, so a frame is a fixed set of fills per ink. Level of detail for
-2,000- and 10,000-concept folders is not yet tuned.
+A settled map draws no frames. Cluster light and disc glows are cached
+sprites, the sunk inks are pre-mixed, and paths are grouped by ink, so a
+frame's canvas calls grow with the drawn discs and names rather than the
+folder. Mark objects are reused across frames. Level of detail for 2,000- and
+10,000-concept folders is not yet tuned.
 
 ## Hand-off to an agent
 
