@@ -332,6 +332,7 @@ export function TopologyMapRenderer({
                 hiddenDependencies={hiddenDependencyCount}
               />
             }
+            flatKey={morph.surface === "map" && !morph.overlay ? <TopologyFlatKey evidence={mapEvidence} selected={canvasSelectedSlug !== null} lineKinds={flatLineKinds} /> : null}
             detailPanelVisible={nodePanelMounted}
             footprint={footprint}
             expand={expand}
@@ -340,7 +341,6 @@ export function TopologyMapRenderer({
           )}
         </div>
       ) : null}
-      {morph.surface === "map" && !view3d && !morph.overlay ? <TopologyFlatKey evidence={mapEvidence} selected={canvasSelectedSlug !== null} lineKinds={flatLineKinds} /> : null}
       {morph.overlay ? (
         <MapLayoutMorphOverlay
           key={morph.overlay.id}

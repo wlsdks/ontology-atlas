@@ -67,7 +67,7 @@ export function TopologyFlatKey({ evidence, selected, lineKinds }: { evidence: M
   const lines = (betweenDomains ? DOMAIN_SELECTION_SHAPES : SELECTION_SHAPES).filter(([shape]) => (bits & FLAT_LINE_BITS[shape]) !== 0);
   const restArcs = (bits & FLAT_LINE_BITS.rest) !== 0;
   return (
-    <div data-testid="topology-flat-key" data-line-kinds={bits}className="pointer-events-none absolute bottom-12 left-[calc(var(--map-safe-inset-left)*1px+16px)] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+16px))] z-20 hidden justify-center md:flex">
+    <div data-testid="topology-flat-key" data-line-kinds={bits}className="pointer-events-none absolute bottom-12 left-[max(calc(var(--map-safe-inset-left)*1px+16px),calc(var(--map-live-inset-left,0px)+var(--map-graph-frame-margin-px)*1px))] right-[max(calc(var(--map-safe-inset-right)*1px),calc(var(--map-live-inset-right,0px)+var(--map-graph-frame-margin-px)*1px))] z-20 hidden justify-center md:flex">
       <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-label text-[color:var(--color-text-tertiary)]">
         <span className="inline-flex items-center gap-1.5"><KeySample shape="capability" />{t("keyCapability")}</span>
         {restArcs ? <span className="inline-flex items-center gap-1.5"><KeySample shape="rest" />{t("keyDependency")}</span> : null}
