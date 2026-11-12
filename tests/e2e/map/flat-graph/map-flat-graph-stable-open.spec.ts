@@ -60,8 +60,8 @@ async function settledPicture(page: Page): Promise<Picture> {
     return dial?.owns === true && (dial as DialProbe).placement.state === "settled" && drawn === marks && document.querySelector("[data-vault-load-progress]") === null;
   }, MARKS, { timeout: 120_000 });
   await page.evaluate(async () => {
-    const family = getComputedStyle(document.body).fontFamily;
-    await Promise.all([400, 510, 560, 650].map((weight) => document.fonts.load(`${weight} 12px ${family}`)));
+    const family = getComputedStyle(document.documentElement).getPropertyValue("--font-sans").trim();
+    await Promise.allSettled([400, 510, 560, 650].map((weight) => document.fonts.load(`${weight} 12px ${family}`)));
     await document.fonts.ready;
   });
   await waitForMapStill(page);
