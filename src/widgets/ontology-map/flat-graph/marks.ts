@@ -1,7 +1,7 @@
 import { mixOver } from "../dial/ink";
 import type { DialModel, Point } from "../dial/types";
 import { byId } from "./seed";
-import type { FlatGraphPaintTokens } from "./types";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
 
 export type GraphKind = "project" | "domain" | "capability" | "element";
 
@@ -45,6 +45,43 @@ export function restArcs(model: DialModel, budget: number): readonly RestArc[] {
     byBudget.set(budget, hit);
   }
   return hit;
+}
+
+const starReachCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
+
+/**
+ * World distance from a domain's disc to its farthest member mark: where the domain's own lines
+ * leave its lit star, so they never run under its members. O(members) once per layout.
+ */
+export function domainStarReach(layout: FlatGraphLayout, domainId: string): number {
+  let byDomain = starReachCache.get(layout);
+  if (!byDomain) {
+    byDomain = new Map();
+    for (const c of layout.clusters) {
+      const home = layout.positions.get(c.domainId) ?? c.centre;
+      let reach = 0;
+      const reachTo = (id: string) => {
+        const at = layout.itemAt.get(id) ?? layout.positions.get(id);
+        if (at) reach = Math.max(reach, Math.hypot(at.x - home.x, at.y - home.y));
+      };
+      for (const it of c.items) {
+        reachTo(it.id);
+        for (const el of it.elementIds) reachTo(el);
+      }
+      byDomain.set(c.domainId, reach);
+    }
+    starReachCache.set(layout, byDomain);
+  }
+  return byDomain.get(domainId) ?? 0;
+}
+
+/** The least share of a domain line its end trims leave drawn. */
+const DOMAIN_LINE_KEPT = 0.3;
+
+/** The factor that scales a line's two end trims down until they leave `DOMAIN_LINE_KEPT` of it drawn. */
+export function domainLineTrimScale(length: number, trimStart: number, trimEnd: number): number {
+  const trims = trimStart + trimEnd;
+  return trims > 0 ? Math.min(1, ((1 - DOMAIN_LINE_KEPT) * length) / trims) : 1;
 }
 
 export interface ArcPath { a: Point; c: Point; b: Point; tip: Point; angle: number }

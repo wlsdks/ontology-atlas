@@ -116,6 +116,17 @@ test("selecting a domain counts its partner domains under its name as the panel 
   const dial = await readDial(page);
   expect(await domainLines(page, dial), "every partner's line still draws, on screen or running off its edge").toEqual(ORDERS_LINES);
 
+  const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
+  const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs
+    .filter((d) => members.has(d.id))
+    .filter((d) => Array.from({ length: 33 }, (_, k) => k / 32).some((t) => {
+      const x = (1 - t) ** 2 * s.ax + 2 * (1 - t) * t * s.cx + t * t * s.bx;
+      const y = (1 - t) ** 2 * s.ay + 2 * (1 - t) * t * s.cy + t * t * s.by;
+      return Math.hypot(x - d.x, y - d.y) < d.r;
+    }))
+    .map((d) => `${s.flowKey} under ${d.id}`));
+  expect(under, "a domain's lines leave outside its own member star").toEqual([]);
+
   const figures = (text: string) => (text.match(/\d+/g) ?? []).map(Number);
   const reach = dial.texts.filter((t) => t.id === orders.id && t.role === "status");
   expect(reach.length, "one count line under the selected domain").toBe(1);

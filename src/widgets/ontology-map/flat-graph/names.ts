@@ -2,6 +2,7 @@ import type { MeasureText } from "../dial/label-marks";
 import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import type { GraphLine } from "./attention";
+import { domainLineTrimScale, domainStarReach } from "./marks";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
@@ -126,7 +127,8 @@ const LINE_SAMPLES = 12;
 
 /**
  * The focus's lines as world polylines bowed as the frame draws them. Disc trims are left out: a
- * name box starts outside its disc, so the trimmed ends never reach one.
+ * name box starts outside its disc, so the trimmed ends never reach one. A domain line starts
+ * outside its own member star, as the frame draws it.
  */
 function linePolylines(lines: readonly GraphLine[], layout: FlatGraphLayout, bow: number): Float64Array[] {
   const out: Float64Array[] = [];
@@ -136,9 +138,19 @@ function linePolylines(lines: readonly GraphLine[], layout: FlatGraphLayout, bow
     if (!a || !b) continue;
     const cx = (a.x + b.x) / 2 - (b.y - a.y) * bow;
     const cy = (a.y + b.y) / 2 + (b.x - a.x) * bow;
+    let t0 = 0;
+    let t1 = 1;
+    if (layout.clusterByDomain.has(line.from) && layout.clusterByDomain.has(line.to)) {
+      const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const own = line.kind === "needs" ? line.from : line.to;
+      const star = domainStarReach(layout, own);
+      const trim = star * domainLineTrimScale(length, star, 0);
+      if (own === line.from) t0 = trim / length;
+      else t1 = 1 - trim / length;
+    }
     const pts = new Float64Array((LINE_SAMPLES + 1) * 2);
     for (let k = 0; k <= LINE_SAMPLES; k += 1) {
-      const t = k / LINE_SAMPLES;
+      const t = t0 + ((t1 - t0) * k) / LINE_SAMPLES;
       const u = 1 - t;
       pts[k * 2] = u * u * a.x + 2 * u * t * cx + t * t * b.x;
       pts[k * 2 + 1] = u * u * a.y + 2 * u * t * cy + t * t * b.y;
