@@ -11,6 +11,9 @@ Rows older than the last two runs live in
 [BASELINE-HISTORY.md](BASELINE-HISTORY.md); read it only when a comparison needs
 a measurement the rows below do not carry.
 
+Readers after 2026-11-12 run on Opus; their rows are not comparable with the
+Sonnet-reader rows before that date.
+
 ## Summary
 
 | Date | Target shape | Build (turns · cost · wall · nodes) | Sealed handoff (six questions) | Cited facts verified / invented |
