@@ -35,8 +35,6 @@
     "desktop:release-rehearsal": "node scripts/desktop-release/release-rehearsal.mjs",
     "desktop:release-preflight": "pnpm desktop:check && pnpm notice:check && pnpm licenses:check && pnpm docs-vault:check && pnpm download:release-facts:check && pnpm vault:validate && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm mcp:build-binary && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
     "desktop:goal-audit": "node scripts/desktop-release/check-desktop-goal-audit.mjs",
-    "skills:audit": "node scripts/harness/audit-claude-skills.mjs",
-    "test:skills:audit": "node --test scripts/harness/audit-claude-skills.test.mjs",
     "test:desktop:runtime": "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
     "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/vault-folder/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/local-vault/agent-config-status.test.ts && pnpm mcp:build-binary && cargo test --manifest-path src-tauri/Cargo.toml",
     "desktop:release-secrets": "node scripts/desktop-release/check-macos-release-secrets.mjs",

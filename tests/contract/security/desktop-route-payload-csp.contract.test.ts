@@ -22,7 +22,7 @@ import { connectSrcIsExact, DESKTOP_CONNECT_SRC_TOKENS } from "../../../scripts/
  * evidence. The **cause** is one line of `tauri.conf.json`, and that line is readable with no
  * engine at all. `pnpm desktop:check` reads the same list — this file exists because
  * `checks:changed` does not recommend `desktop:check` for every diff that can reach the
- * config (`docs/DEVELOPMENT-CHECKS.md`), and a blocker's cause should be guarded by the lane
+ * config (`scripts/lib/check-rules/`), and a blocker's cause should be guarded by the lane
  * that always runs.
  */
 describe("the installed app may fetch its own route payloads", () => {
