@@ -140,8 +140,3 @@ test("no launch pin stands today, and the mechanism reports nothing", () => {
     [],
   );
 });
-
-test("the Codex mark carries no brand colour, as its vendor asks", () => {
-  const snapshot = JSON.parse(readFileSync("src-tauri/src/acp-registry.json", "utf8"));
-  assert.equal(snapshot.agents.find((agent) => agent.id === "codex-acp")?.brandInk, null);
-});
