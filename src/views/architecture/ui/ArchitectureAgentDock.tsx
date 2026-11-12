@@ -169,6 +169,7 @@ export function ArchitectureAgentDock({
               (openingRequest !== null || conversationActive) &&
               frameSettled
             }
+            resumeLatest
             putAway={!open}
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, analysisContext.scope.profileSlug])}
