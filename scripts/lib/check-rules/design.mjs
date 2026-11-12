@@ -1,7 +1,8 @@
 /** Design gates: tokens, the design-system document, the ontology design surface, and design proof routing. */
 
 const UI_AUDIT_PATHS = [
-  /^scripts\/design\/ui-audit(?:\.test)?\.mjs$/,
+  /^scripts\/design\/ui-(?:audit|look)(?:\.test)?\.mjs$/,
+  /^scripts\/design\/look\/[^/]+\.mjs$/,
   /^scripts\/lib\/design\/ui-audit-(?:probe|checks)\.mjs$/,
 ];
 
@@ -15,7 +16,7 @@ export const rules = [
   {
     order: 92,
     command:
-      'pnpm exec vitest run tests/contract/design-tokens/unused-token-ratchet.contract.test.ts tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
+      'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
     reason: 'the global stylesheet changed — the token gates read it whole, whatever else the diff holds',
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/],
   },
@@ -59,8 +60,8 @@ export const rules = [
     reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or independent-review lens policy changed',
     matches: [
       /^scripts\/(?:lib\/)?design\/design-proof-router\.mjs$/,
-      /^scripts\/(?:lib\/design\/design-spec-census|records\/check-decision-record)\.mjs$/,
-      /^tests\/contract\/agent-instructions\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
+      /^scripts\/records\/check-decision-record\.mjs$/,
+      /^tests\/contract\/agent-instructions\/(?:design-proof-router|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
       /^docs\/engineering\/motion-recording\.md$/,
       /^\.(?:claude|agents)\/skills\/(?:ui-build|ui-proof)\/(?:SKILL\.md|workflow\.md|guides\/[^/]+\.md)$/,

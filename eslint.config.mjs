@@ -113,7 +113,7 @@ const inlineSizeSelectors = [
 /*
  * Only `button`/`summary` with a literal `cursor-pointer` are flagged: the base rule in
  * `app/globals.css` already sets it. Other cursor uses (options, labels, cards, SVG) are
- * legitimate; `cn()` output is covered by tests/e2e/design-audits/cursor-affordance.spec.ts.
+ * legitimate.
  */
 const cursorAffordanceSelectors = [
   {
@@ -536,7 +536,7 @@ export const arbitrarySizeSelectors = [
       'No hard-coded line height (template literal). Use utilities from the --leading-* ramp tokens.',
   },
   // A ramp token through an arbitrary length gains the size but loses that step's paired
-  // line-height. Mismatches in general: tests/contract/typography/type-ramp-leading-pair.contract.test.ts. No
+  // line-height. No
   // literal utility syntax in messages: the Tailwind v4 scanner reads this file.
   {
     selector: 'Literal[value=/text-\\[length:var\\(--text-/]',

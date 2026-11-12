@@ -1,7 +1,0 @@
-{
-  "file": "src/shared/ui/fields/select.tsx",
-  "count": 1,
-  "claim": "value-layer-peer",
-  "proof": "--control-h-md",
-  "why": "The select trigger reads the value layer's control height ladder (`--control-h-md` and `--control-h-lg`) directly and carries the form field contract with `w-full` and `rounded-card`."
-}

@@ -20,6 +20,7 @@ import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import { resolveViewportReframeMode } from "../../model/camera/viewport-reframe";
+import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { landTierAssembly } from "../../morph/tier-assembly";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
@@ -147,7 +148,7 @@ export function useTopologyCameraNavigation({
    */
   const spotlightFitImplementation = (motion: SpotlightMotion = "tween"): boolean => {
     const ids = spotlightIdsRef.current;
-    if (ids === null || ids.size === 0) return true; // No debt to record.
+    if (ids === null || ids.size === 0 || !spotlightRevealsHidden(mapLensKindRef.current, ids.size)) return true; // No debt to record.
     const tokens = readOntologyMapTokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -306,7 +307,7 @@ export function useTopologyCameraNavigation({
       focused: focused !== null,
       pairFocused: selectedEdgeRef.current !== null,
       realmActive,
-      spotlightActive: (spotlightIdsRef.current?.size ?? 0) > 0,
+      spotlightActive: spotlightIdsRef.current !== null && spotlightIdsRef.current.size > 0 && spotlightRevealsHidden(mapLensKindRef.current, spotlightIdsRef.current.size),
     });
 
     if (mode === "preserve") return false;

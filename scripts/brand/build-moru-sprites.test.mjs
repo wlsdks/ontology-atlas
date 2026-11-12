@@ -22,7 +22,8 @@ test('near-neutral warm ivory stays ivory instead of becoming gray belly speckle
 });
 
 test('small neutral source variations form clean gray clusters instead of mottled skin', () => {
-  for (const rgb of [[198, 196, 190], [204, 202, 196], [215, 214, 209], [219, 212, 200], [224, 216, 200]]) assert.deepEqual(moruColor(...rgb), [214, 211, 201]);
+  const skin = moruColor(214, 211, 201);
+  for (const rgb of [[198, 196, 190], [204, 202, 196], [215, 214, 209], [219, 212, 200], [224, 216, 200]]) assert.deepEqual(moruColor(...rgb), skin);
 });
 
 test('a tail detaching during a stretch does not move or resize the body anchor', () => {
@@ -49,11 +50,16 @@ test('the chorus retains complete opaque musical notes above the seals', async (
 test('every catalogue export has complete frames, clear margins and a shared neutral loop seam', async () => {
   const root = 'assets/brand/moru';
   const manifest = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
-  assert.equal(Object.keys(manifest.clips).length, 50);
-  assert.equal(Object.values(manifest.clips).filter(c => c.kind === 'authored').length, 34);
-  assert.equal(Object.keys(manifest.poses).length, 16);
+  const spec = JSON.parse(await readFile(`${root}/moru-source.json`, 'utf8'));
+  const declared = Object.fromEntries([...spec.authored, ...spec.compositions].map(c => [c.id, c]));
+  assert.ok(spec.authored.length && spec.compositions.length && spec.poses.names.length, 'source inventory is empty');
+  assert.deepEqual(Object.keys(manifest.clips).sort(), Object.keys(declared).sort(), 'export inventory does not match the retained sources');
+  assert.deepEqual(Object.keys(manifest.poses).sort(), [...spec.poses.names].sort(), 'static poses are missing');
   for (const [name, clip] of Object.entries(manifest.clips)) {
-    assert.equal(clip.frames, clip.kind === 'authored' ? 24 : 47, `${name}: source pose count`);
+    const source = declared[name];
+    const count = source.sequence ? source.sequence.reduce((n, id) => n + declared[id].frames, 1 - source.sequence.length) : source.frames;
+    assert.equal(clip.kind, source.sequence ? 'composed' : 'authored', `${name}: wrong authorship label`);
+    assert.equal(clip.frames, count, `${name}: source poses were lost`);
     assert.equal(clip.durationsMs.length, clip.frames, `${name}: missing frame timing`);
     for (const [file, size] of [[clip.sprite64, 64], [clip.sprite, 128]]) {
       const { data, info } = await sharp(`${root}/${file}`).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

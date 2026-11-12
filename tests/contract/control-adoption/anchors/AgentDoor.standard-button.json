@@ -1,7 +1,0 @@
-{
-  "file": "src/views/library/ui/parts/agent/AgentDoor.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The door out of a blocked Library step navigates to `/agents`, so it is a `<Link>` through `buttonVariants` (outline, sm). It stands beside the Ask `<Button>` and must read as the same control at a different tag."
-}

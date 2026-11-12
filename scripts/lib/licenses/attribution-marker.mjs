@@ -14,10 +14,6 @@ export function parseAttributionMarker(commentText) {
   return match ? { url: match[1], license: match[2], holder: match[3] } : null;
 }
 
-export function isAttributionMarker(commentText) {
-  return parseAttributionMarker(commentText) !== null;
-}
-
 const sortKey = (marker) => `${marker.path}\0${marker.url ?? marker.malformed}`;
 const bySortKey = (a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0);
 

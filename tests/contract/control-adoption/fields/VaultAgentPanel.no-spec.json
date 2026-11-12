@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx",
-  "count": 1,
-  "claim": "no-spec",
-  "proof": "invisible pointer-events-none absolute",
-  "why": "The composer's hidden mirror exists only to measure `scrollHeight` for auto height. It is a measuring device, not a control, so it has no spec to wear.",
-  "conditional": "When CSS replaces the JavaScript auto-grow and the mirror is removed, delete this row."
-}

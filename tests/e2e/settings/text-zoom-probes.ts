@@ -1,11 +1,6 @@
 /**
- * Shared instruments for the two text-zoom specs.
- *
- * `tests/e2e/settings/text-zoom-ramp.spec.ts` measures the **type** with the root set in script;
  * `tests/e2e/settings/text-zoom-layout.spec.ts` measures the **layout** with the browser launched at a
- * 32px default font size. They are separate files because Playwright refuses `launchOptions`
- * inside a `describe` — it forces a new worker — and separate specs are also the honest shape:
- * the two techniques are not interchangeable, and the reason is written in both doc blocks.
+ * 32px default font size.
  */
 
 /** The four routes both specs sweep. */

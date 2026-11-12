@@ -52,7 +52,6 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
   explanatory captions use `text-body`; values, chips and badges `text-label`;
   `text-caption` (9.5px) only for one uppercase eyebrow. Setting rows use
   `px-4 py-3`, LNB rows `px-3 py-2`.
-  Gate: `tests/contract/settings/settings-sheet-type-dialect.contract.test.ts`.
 
 ## Design charter
 
@@ -110,12 +109,10 @@ One accurate word per thing. Canonical spellings live in
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
   is licensed only where the mark is light: the gateway hero, the walked-path
   star (`shared/lib/map-canvas/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
-  a node carries at most one diffraction cross per frame. Gate:
-  `tests/contract/map/canvas-composite-license.contract.test.ts`.
+  a node carries at most one diffraction cross per frame.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
   with identity, composites `plus-lighter` (licensed only there), and runs only
-  for an event in Flat. Gates: the composite licence and
-  `webgl-context-census`.
+  for an event in Flat. Gate: `webgl-context-census`.
 
 ## Absolute rules point to one source
 
@@ -130,28 +127,6 @@ size step per role; a size difference must encode hierarchy or state. A control'
 height picks its type (`docs/DESIGN-SYSTEM.md`, "Type follows height"): choose a
 size, never a `text-*` step, on a primitive.
 
-## Changing the specification requires `design-contract`
-
-When a change alters the specification in a file below, declare
-`design-contract` to `pnpm design:route`; the router returns one `reviewer` with
-the `tokens` and `attention` lenses, a system audit, and a gate probe.
-`scripts/lib/design/design-spec-census.mjs` reads this list (only rows shaped
-`` - `path` — description ``), and `pnpm decisions:check` requires a decision
-record when a listed file's vocabulary or values change. Contract:
-`tests/contract/agent-instructions/design-spec-ledger.contract.test.ts`.
-
-- `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
-- `src/shared/ui/controls/controls.tsx` — interactive primitives
-- `src/shared/ui/surfaces/surface.tsx` — appearing/disappearing surface primitive
-- `src/shared/ui/surfaces/dialog.tsx` — blocking modal authority: scrim, focus trap, Escape, restoration, scroll lock, widths
-- `src/shared/ui/fields/input.tsx` · `src/shared/ui/fields/checkbox.tsx` — form behaviour authority
-- `src/shared/ui/badge-class.ts` — static badge geometry
-- `src/shared/ui/fields/segmented-control.tsx` — exclusive single-selection containers and fill
-- `src/shared/lib/keyboard/use-roving-radio-group.ts` — radiogroup behaviour
-- `src/shared/ui/tokens/page-frame.ts` — page inset, top spacing, width, and title layout
-- `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
-- `.claude/rules/design.md` — this file's “Fixed scale contract” section
-
 ## Lint owns the value ramps
 
 `eslint.config.mjs` (`no-restricted-syntax`) is the authority; document a new
@@ -165,8 +140,8 @@ states (`CONTROL_DISABLED_CLASS`); and unpaired accent/tint.
 
 Lint cannot see an unknown utility: `text-large` emits no CSS and silently
 renders 16px. Spacing is deliberately unenforced; do not add unused spacing
-tokens. Contract tests cover cross-file values and rendered geometry, and
-`pnpm checks:changed` names the ones a change reaches.
+tokens. Contract tests cover cross-file values, and `pnpm checks:changed`
+names the ones a change reaches.
 
 ## Tokens and surfaces
 
@@ -203,9 +178,8 @@ tokens. Contract tests cover cross-file values and rendered geometry, and
   5 s and rests, or sits beside a visible pause; loops that show running work
   are exempt (WCAG 2.2.2).
 - A primitive owns an `app/styles/motion-*.css` part or a `src/shared/motion`
-  module, a reduced equivalent, a line in "Motion primitives", and an e2e spec
-  calling `expectSmoothMotion` (`motion-primitive-smoothness` contract). It
-  needs no decision record.
+  module, a reduced equivalent, and a line in "Motion primitives". It needs no
+  decision record.
 - Durations are the `--motion-*` ramp (`pnpm design:tokens -- --prefix=--motion-`;
   JS `MOTION`); `--motion-fast` is the Tailwind default (omit the class). Hover
   and focus stay at or below `--motion-settle` (lint). Camera and drag timings

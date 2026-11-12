@@ -109,7 +109,7 @@ wrapper `w-full`; do not style the inner field separately.
 Use `badgeClass({ shape: 'micro' | 'tag' | 'pill' })`. Geometry is canonical;
 colour and tracking remain contextual because the inventory found sixty colour
 combinations with no majority. Passing geometry through `className` defeats the
-primitive and fails `static-badge-adoption-ratchet`.
+primitive.
 
 ### Complete form example
 
@@ -172,8 +172,7 @@ for rejection.
 - One input is one event; related stages begin in one frame.
 - The user-invoked surface moves first, not only its background.
 - Smoothness first: animate compositor properties, keep every frame interval
-  under 50 ms, let the next input settle the motion, and call
-  `expectSmoothMotion` in the primitive's spec (`docs/DESIGN-SYSTEM.md`,
+  under 50 ms, and let the next input settle the motion (`docs/DESIGN-SYSTEM.md`,
   "Smoothness first"). Run it headed with `MAP_PERF_BARS=1` for the 50 ms bar
   (`docs/engineering/motion-recording.md`).
 - Global CSS already handles reduced motion; do not create a conflicting local
@@ -193,8 +192,6 @@ than one failure mode changed.
 
 ## 6. Gates that will stop the change
 
-- `control-adoption-ratchet`
-- `surface-motion-ratchet`
 - `contrast-ratchet`
 - `a11y-ratchet`
 - `disabled-affordance`

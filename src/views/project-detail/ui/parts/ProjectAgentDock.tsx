@@ -13,7 +13,7 @@ import type { ProjectAgentOpeningRequest, ProjectAgentRuntime } from "../../lib/
 /**
  * The guarded ACP conversation docked to a project page. The process starts after the frame's
  * width settles, or startup stalls the animation. Closing only hides the frame (inert, zero
- * width); the running turn stays mounted until the page is left.
+ * width); a running turn outlives the page (`AcpChatPanelKeeper`).
  */
 export function ProjectAgentDock({
   open,
@@ -179,6 +179,7 @@ export function ProjectAgentDock({
           <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
           <AcpChatPanel
             key={runtime.id}
+            keepKey={`project:${vaultRoot}:${runtime.id}`}
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
             runtimes={runtimes}

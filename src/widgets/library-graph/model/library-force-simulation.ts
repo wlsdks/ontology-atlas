@@ -106,7 +106,7 @@ export const LIBRARY_FIT_PADDING = 64;
 const ORPHAN_RING_GAP = 56;
 /*
  * Not scaled up for a small folder: at 1.55× the 1040×720 canvas drops below the zoom
- * ceiling and one folder wears two mark sizes (`library-graph-picture.spec.ts`), and smaller
+ * ceiling and one folder wears two mark sizes, and smaller
  * steps only add air between groups (measured over four fixtures at three windows).
  */
 /** Ring radius when there is no connected mass to stand off from — a folder of loose files. */

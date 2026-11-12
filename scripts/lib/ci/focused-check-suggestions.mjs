@@ -176,17 +176,11 @@ export function suggestFocusedChecks(paths = [], { deletedPaths = [], commentOnl
 function directSourceLanguageSuggestions(paths) {
   const sourcePaths = paths.filter(isSupportedSourcePath);
   const citingPaths = paths.filter((path) => isSupportedSourcePath(path) || path.endsWith('.md'));
-  const untestedSourcePaths = sourcePaths.filter((path) => !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
   return [
     ...(sourcePaths.length ? [{
       command: 'pnpm source:language',
       reason: 'source comments are English-only across current code, tests, and prototypes',
       paths: sourcePaths,
-    }] : []),
-    ...(untestedSourcePaths.length ? [{
-      command: 'pnpm exec vitest run tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
-      reason: 'comment bytes may only fall in each source area this change touches',
-      paths: untestedSourcePaths,
     }] : []),
     ...(citingPaths.length ? [{
       command: 'pnpm docs:comment-refs',
@@ -434,7 +428,7 @@ export function formatFocusedCheckSuggestions({ paths = [], commands = [], escal
   ];
   if (commands.length === 0) {
     lines.push('First checks: no focused mapping; do not jump to the full suite by default.');
-    lines.push('Choose the nearest area from docs/DEVELOPMENT-CHECKS.md, then escalate only for concrete uncovered risk.');
+    lines.push('Run the sibling test of each changed file, then escalate only for concrete uncovered risk (.claude/rules/testing.md).');
   } else {
     lines.push('First checks:');
     for (const suggestion of commands) {

@@ -22,7 +22,7 @@ die() { printf 'sealed-reader: %s\n' "$1" >&2; exit 1; }
 target=""
 questions=""
 out=""
-model="sonnet"
+model="opus"
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --out) [ "$#" -ge 2 ] || die "--out needs a value"; out="$2"; shift 2 ;;

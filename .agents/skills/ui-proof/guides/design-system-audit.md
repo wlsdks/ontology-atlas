@@ -90,7 +90,7 @@ duplicated the specification.
 
 A new token needs name, value, consumers, and a reason existing steps cannot work.
 One consumer is insufficient; name it when the second real consumer appears.
-Unused tokens are misinformation and fail `unused-token-ratchet`.
+Unused tokens are misinformation.
 
 ## Report
 

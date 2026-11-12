@@ -63,8 +63,8 @@ export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
  * Where a surface starts, as a name, so entrance distances cannot drift between copies.
  *
  * Two grammars: the overlay grammar (`dialog.tsx`) is opacity plus an 8px rise; hand-built
- * modal sheets arrive from 12px with a hair of scale. `framer-entrance-grammar.contract.test.ts`
- * refuses a third. Each resting state is exported beside its start so `scale` returns to 1.
+ * modal sheets arrive from 12px with a hair of scale.
+ * Each resting state is exported beside its start so `scale` returns to 1.
  */
 export const OVERLAY_RISE = { opacity: 0, y: 8 } as const;
 
@@ -90,8 +90,7 @@ export const SHEET_RISE_REDUCED = { opacity: 0, y: 0, scale: 1 } as const;
  * Leaving is not arriving rewound: framer's `exit` otherwise reuses the entry `transition`
  * backwards. CSS exits run at `calc(var(--motion-base) * 0.67)` = 120ms, the ramp's fast
  * step. The curve accelerates away instead of slowing on screen, as the inspector's movement
- * exit (topologyChromeOut) does; CSS fades stay on --motion-ease. The exit contract
- * (`framer-exit-asymmetry.contract.test.ts`) requires this name at every exit; the input
+ * exit (topologyChromeOut) does; CSS fades stay on --motion-ease. The input
  * lockout lives in `useExitLockout`, so this stays a numeric `{ duration, ease }`.
  */
 export const EXIT_TRANSITION = {

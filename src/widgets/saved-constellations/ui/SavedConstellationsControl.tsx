@@ -434,8 +434,7 @@ export function SavedConstellationsControl({ handle, candidates, selectedSlug, i
         id={listId}
         aria-labelledby={listHeadingId}
         /*
-         * Hangs from its trigger, clamped inside the toolbar box so it never covers INDEX
-         * (tests/e2e/map/selection/map-constellation-popover-bounds.spec.ts).
+         * Hangs from its trigger, clamped inside the toolbar box so it never covers INDEX.
          */
         origin={listPlacement ? `${listPlacement.originX}px top` : 'top left'}
         style={listPlacement ? { left: listPlacement.left, top: listPlacement.top, width: listPlacement.width } : undefined}

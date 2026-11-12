@@ -6,16 +6,15 @@ import { describe, expect, it } from "vitest";
 import { readSkillProcedure } from "../../helpers/read-skill-procedure";
 
 /**
- * Every component name exported by a file in the spec watch list (`PRIMITIVE_EXPORT_FILES` in
- * `design-spec-census.mjs`) must appear in the `/ui-build` signpost, so a new primitive demands its
- * name. Both host entrypoints must reach the shared procedure.
+ * Every component name exported by a primitive-layer file must appear in the `/ui-build` signpost,
+ * so a new primitive demands its name. Both host entrypoints must reach the shared procedure.
  */
 
 const ROOT = process.cwd();
 
 /**
- * Primitive-layer files whose routing the signpost owns: `PRIMITIVE_EXPORT_FILES` plus `button.tsx`
- * and `select.tsx`, whose value axes live in `control-class.ts` but which a screen builder must reach.
+ * Primitive-layer files whose routing the signpost owns, including `button.tsx` and `select.tsx`,
+ * whose value axes live in `control-class.ts` but which a screen builder must reach.
  */
 const PRIMITIVE_FILES = [
   "src/shared/ui/controls/controls.tsx",

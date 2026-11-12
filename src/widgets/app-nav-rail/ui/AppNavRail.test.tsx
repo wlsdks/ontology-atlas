@@ -123,10 +123,6 @@ describe("AppNavRail", () => {
     ).toBeNull();
   });
 
-  /**
-   * How the map reacts to this signal is measured by `tests/e2e/map/frame-loop/nav-yield-map-frames.spec.ts`; this
-   * checks the rail fires it.
-   */
   it('emits the navigation signal only on clicks that actually navigate', () => {
     renderRail();
     const insights = screen.getByTestId("app-nav-rail-item-insights");

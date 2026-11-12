@@ -11,7 +11,7 @@ import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences"
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
 import { DOME_RING_ALPHA } from "../../model/dome-view/ink";
 import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import { DEFAULT_TIER_REVEAL } from "../../model/visibility/tier-visibility";
+import { DEFAULT_TIER_REVEAL, spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { labelZoomScale } from "../../render/labels";
 import { worldToScreen } from "../camera/topology-camera-math";
 import { passState, ZERO_DOME_FRAME, domeNodeFrameReused } from "./frame-state";
@@ -30,6 +30,7 @@ type ResolvedDefaults = { [K in DefaultedKey]-?: Exclude<FrameDrawParams[K], und
 
 interface FrameLens {
   spotlightLensActive: boolean;
+  spotlightRevealActive: boolean;
   pathLensActive: boolean;
   constellationLensActive: boolean;
   recentSpotlightActive: boolean;
@@ -68,6 +69,7 @@ export function beginFrame(params: FrameDrawParams): FrameInputs {
     domeRamp = 0, domeRings = null, domeRingAlpha = DOME_RING_ALPHA, tierNameBoxes = null,
     domeTierRaisedKind = null, domeControlFor = null, domeLight = null, trailLensRamp, dial = null } = params;
   const spotlightLensActive = spotlightIds !== null && spotlightRamp > 0.001 && colorFocusedNodeId === null && colorSelectedEdge === null;
+  const spotlightRevealActive = spotlightLensActive && spotlightRevealsHidden(mapLensKind, spotlightIds.size);
   const pathLensActive = spotlightLensActive && mapLensKind === "path";
   const constellationLensActive = spotlightLensActive && mapLensKind === "constellation";
   const recentSpotlightActive = spotlightLensActive && mapLensKind === "recent";
@@ -129,7 +131,7 @@ export function beginFrame(params: FrameDrawParams): FrameInputs {
     trailLensOpenedAtMs, trailLensIds, tierReveal, glyphStyle, backgroundVariant, paintAnimatedBackground,
     expand, clusterBarLabels, domeFrame, domeRamp, domeRings, domeRingAlpha, tierNameBoxes,
     domeTierRaisedKind, domeControlFor, domeLight, dial,
-    spotlightLensActive, pathLensActive, constellationLensActive, recentSpotlightActive, spotlightSink,
+    spotlightLensActive, spotlightRevealActive, pathLensActive, constellationLensActive, recentSpotlightActive, spotlightSink,
     trailLensKeepIds, trailLensActive, trailRamp, trailGlint, trailGlintLegs, isTrailKept,
     lensNodeEgoState, realmDepthOf, realmParallaxOffsetFor, domeOn, neural, domeFrameFor, nodeFrameAt,
     gridOrigin, footprintScale, labelScale, bgOrigin,

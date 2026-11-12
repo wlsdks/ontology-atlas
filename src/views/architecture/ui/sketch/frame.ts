@@ -27,7 +27,7 @@ const BOX_W_LEDGER = 180;
 const BOX_W_LEDGER_FIT = 160;
 const BOX_W_LEDGER_ROOMY = 240;
 const BOX_H = 72;
-/* One receipt line taller than `BOX_H`; `architecture-role-ledger.spec.ts` fails at 90. */
+/* One receipt line taller than `BOX_H`. */
 const BOX_H_LEDGER = 82;
 /* The across split face has room for a third caption line without the per-face lane label. */
 const SUMMARY_LINES_ACROSS = 3;

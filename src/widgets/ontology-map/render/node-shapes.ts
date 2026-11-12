@@ -498,7 +498,6 @@ function minCornerRadius(kind: NodeShapeDrawState["kind"], r: number): number {
 /**
  * The walked path's star: the node, emitting. Composites with `lighter` so light adds on a dark
  * canvas; the face is never filled so the numeral stays readable (the bloom is an annulus).
- * Licence for the composite: `tests/contract/map/canvas-composite-license.contract.test.ts`.
  */
 export function drawNodeStar(ctx: CanvasRenderingContext2D, kind: NodeShapeDrawState["kind"], x: number, y: number, radius: number, farT: number, ink: string, lit: number, swell = 1,
 /** How much of the interior burns — 0 for a lit node, 1 for a star. See `StarEmissionState`. */

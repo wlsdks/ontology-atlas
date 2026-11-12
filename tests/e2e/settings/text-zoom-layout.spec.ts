@@ -21,7 +21,7 @@ async function openOntologyAudit(page: import("@playwright/test").Page) {
 /**
  * **The browser's own text-size setting, at 200% — the layout half.**
  *
- * Its sibling `text-zoom-ramp.spec.ts` sets the root in script, which is exact for the type
+ * Setting the root in script is exact for the type
  * and wrong for everything else: `rem` inside a **media query** resolves against the root
  * element's *initial* font size — the browser's own default — and an author-set
  * `html { font-size }` cannot move it. Tailwind v4's breakpoints are `rem`

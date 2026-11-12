@@ -35,9 +35,9 @@ outputs satisfy the equivalent manual packaging steps; do not repeat evaluation
 or ask for the same acceptance twice. Repair invalid inputs before continuing;
 a helper rejection is not permission to bypass a failed gate.
 
-When this skill directory provides `scripts/qualification-handoff.mjs`, resolve
-that path relative to the parent skill directory (`../` from this guide), never relative
-to the repository root, and reuse the resolved path for the whole run. Use its
+When `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs` is
+present, resolve it from the Atlas source checkout that carries this skill,
+never from the target repository root, and reuse the resolved path for the whole run. Use its
 `coverage`, `seal`, `hidden`,
 `audit`, `join`, `accept`, and `release` stages instead of recreating canonical JSON, digests,
 CQ witness projection, or lifecycle comparison code in scratch. Read its

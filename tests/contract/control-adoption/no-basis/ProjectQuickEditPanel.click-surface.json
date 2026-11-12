@@ -1,8 +1,0 @@
-{
-  "file": "src/features/project-quick-edit/ui/ProjectQuickEditPanel.tsx",
-  "count": 1,
-  "family": "button",
-  "claim": "click-surface",
-  "proof": "--color-scrim-a58",
-  "why": "The quick-edit sheet's scrim, `absolute inset-0 bg-[var(--color-scrim-a58)]`, exists to close the sheet on an outside press. None of the value layer's shapes would change what is visible."
-}

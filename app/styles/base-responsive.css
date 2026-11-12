@@ -55,8 +55,7 @@
 
   /*
    * Prose links are not controls: no `display`, `line-height` or `font-size`, since line boxes belong
-   * to the prose parent (inline-flex links overflow at 320px). UA focus is preserved. Gate:
-   * `tests/contract/typography/prose-link.contract.test.ts`.
+   * to the prose parent (inline-flex links overflow at 320px). UA focus is preserved.
    */
   .prose-link {
     text-decoration-line: underline;

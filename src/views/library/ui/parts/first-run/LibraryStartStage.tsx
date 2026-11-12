@@ -61,8 +61,7 @@ export function LibraryStartStage({
           is the one this stage exists to offer, so it is `strong` where its sibling is
           `muted` — the same device step two of the guide uses for Compile, and for the
           same reason recorded there: an indigo tint pair is a hand-written hover the value
-          layer deliberately does not carry, and the `hover-axis-adoption-ratchet` counts
-          every new one. The stage's emphasis is its title; the doors are two ways on.
+          layer deliberately does not carry. The stage's emphasis is its title; the doors are two ways on.
         */}
         <button
           type="button"

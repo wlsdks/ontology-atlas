@@ -158,6 +158,7 @@ export function ArchitectureAgentDock({
             onClose={onClose}
             conversation={runtime && vaultRoot ? <AcpChatPanel
             key={`${vaultRoot}:${runtime.id}`}
+            keepKey={`architecture:${vaultRoot}:${runtime.id}`}
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
             runtimes={runtimes}
@@ -169,6 +170,7 @@ export function ArchitectureAgentDock({
               (openingRequest !== null || conversationActive) &&
               frameSettled
             }
+            resumeLatest
             putAway={!open}
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, analysisContext.scope.profileSlug])}

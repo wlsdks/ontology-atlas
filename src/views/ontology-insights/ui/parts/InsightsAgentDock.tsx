@@ -152,6 +152,7 @@ export function InsightsAgentDock({
             onRequest={(text, parentId) => { setParentRunId(parentId); setParentRequestText(parentId ? text : null); setOpeningRequest({ text, nonce: ++requestSerial.current, scopeKey: JSON.stringify([vaultRoot, 'meaning']) }); }}
             conversation={<AcpChatPanel
             key={`${vaultRoot}:${runtime.id}`}
+            keepKey={`insights:${vaultRoot}:${runtime.id}`}
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
             runtimes={runtimes}
@@ -161,6 +162,7 @@ export function InsightsAgentDock({
             sessionEnabled={
               open && enabledRequestNonce === (prefillRequest?.nonce ?? null)
             }
+            resumeLatest
             putAway={!open}
             prefillRequest={prefillRequest}
             openingRequest={openingRequest}

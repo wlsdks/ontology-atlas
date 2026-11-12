@@ -39,7 +39,7 @@ export function WikiPageHeader({
 
   /*
    * `pb-2` gives the byline room below; `compactTop` keeps a tight top so a retained answer's Summary
-   * stays above 45% of the 1040x720 window (`library-answer-comparison-rows.spec.ts`).
+   * stays above 45% of the 1040x720 window.
    */
   return (
     <header

@@ -28,16 +28,8 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
     <>
       <DownloadPage />
       {/*
-       * ⚠️ **This comes after the page root, not before it.**
-       *
-       * `tests/e2e/design-audits/scroll-end-gap.spec.ts` measures on the premise that the shell body slot's
-       * `firstElementChild` is the page root. Putting this `<script>` first makes it that first
-       * child, and being zero-height the gate correctly reports "the page root is collapsed
-       * (box 0 < content 1589)" — measured: CI failed at two viewport widths.
-       *
-       * The spec's assumption is right: the slot's first child is the page. So a non-visual
-       * sibling stands after it. JSON-LD is read by search engines wherever it sits in the
-       * document, so the ordering costs nothing.
+       * After the page root, not before it: the slot's first child is the page. JSON-LD is read
+       * by search engines wherever it sits in the document, so the ordering costs nothing.
        */}
       <JsonLd data={downloadStructuredData(locale, t('descriptions.download'))} />
     </>

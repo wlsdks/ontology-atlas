@@ -116,12 +116,6 @@
       "witness": "resetStaggerSessionForTests"
     },
     {
-      "key": "frontend:runtime:exports:src/shared/ui/tokens/reading-measure.ts:PROSE_MEASURE_PX",
-      "reason": "Three layout specs hold the rendered column to this default-root measure; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/typography/prose-measure-calibration.spec.ts",
-      "witness": "PROSE_MEASURE_PX"
-    },
-    {
       "key": "frontend:runtime:exports:src/views/download/ui/showpiece-player.ts:TEST_ENV",
       "reason": "Figure tests build tracks against a fixed environment instead of computed styles jsdom cannot resolve; test files are not runtime entries, so the lane cannot see this consumer.",
       "consumer": "src/views/download/ui/ChangeFigure.test.tsx",
@@ -350,6 +344,12 @@
       "witness": "swift"
     },
     {
+      "key": "scripts:runtime:exports:scripts/design/look/open-vault.mjs:default",
+      "reason": "ui:look hands this module to ui:audit --setup, which imports it dynamically and calls its default export.",
+      "consumer": "scripts/design/ui-look.mjs",
+      "witness": "scripts/design/look/open-vault.mjs"
+    },
+    {
       "key": "scripts:runtime:exports:scripts/lib/dogfood-walk/rpc-client.mjs:SERVER",
       "reason": "The dogfood-walk summaries test locates the server through this constant; the export is consumed outside its Knip scope, where the lane cannot see it.",
       "consumer": "scripts/lib/dogfood-walk/summaries.test.mjs",
@@ -382,13 +382,13 @@
     {
       "key": "scripts:runtime:files:scripts/design/measure-a11y.mjs:scripts/design/measure-a11y.mjs",
       "reason": "Manual axe census precedes a11y-ratchet baseline decisions.",
-      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "consumer": "tests/e2e/design-audits/a11y-ratchet.spec.ts",
       "witness": "scripts/design/measure-a11y.mjs"
     },
     {
       "key": "scripts:runtime:files:scripts/design/measure-contrast.mjs:scripts/design/measure-contrast.mjs",
-      "reason": "Manual contrast instrument shares the CI contrast collector and has a documented design-check consumer.",
-      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "reason": "Manual contrast instrument shares the CI contrast collector; its route list is held by a contract.",
+      "consumer": "tests/contract/routes/contrast-sweep-coverage.contract.test.ts",
       "witness": "scripts/design/measure-contrast.mjs"
     },
     {

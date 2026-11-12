@@ -1,7 +1,0 @@
-{
-  "file": "src/shared/ui/controls/tab-bar.tsx",
-  "count": 1,
-  "claim": "value-layer-peer",
-  "proof": "--tabbar-underline",
-  "why": "The underline tab primitive owns a different notation: radius 0, `items-baseline`, `pb-[11px]` and `border-b-[length:var(--tabbar-underline)]`. `segment` is defined by zero border and cannot draw it."
-}

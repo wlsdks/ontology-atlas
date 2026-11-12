@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/app-settings-menu/ui/AgentSetupSection.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The MCP tab's web-only \"Get the app\" door matches the same door on the Agents and Models tabs: the primary sm standard button. It navigates, so it is a `<Link>` styled through `buttonVariants`; `control-class.ts` does not replace standard buttons."
-}

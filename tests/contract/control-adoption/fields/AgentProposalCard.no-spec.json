@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx",
-  "count": 4,
-  "claim": "no-spec",
-  "proof": "accent-[color:var(--color-indigo-brand)]",
-  "why": "Two checkboxes and their labels. The checkbox contract fixes their size and target.",
-  "conditional": "When the checkbox contract is removed, move this row to the debt list."
-}

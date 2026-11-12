@@ -169,7 +169,7 @@ export const VOCABULARY = {
   },
 };
 
-export function concept(id, table = VOCABULARY) {
+function concept(id, table = VOCABULARY) {
   const entry = table[id];
   if (!entry) throw new Error(`unknown vocabulary concept "${id}"`);
   return entry;

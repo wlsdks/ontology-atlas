@@ -189,8 +189,8 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    design audit and `/en/download/` + `/ko/download/` browser walk.
 5. **Given** pending, verified read, early completion, quiet, and stale work,
    **when** transitions occur, **then** only the specified pose/status appears.
-   Check `mascot-state.test.ts`, `AgentMascotPresence.test.tsx`, and
-   `tests/e2e/agents/agent-mascot-presence.spec.ts`; completion never accepts meaning.
+   Check `mascot-state.test.ts`, `AgentMascotPresence.test.tsx`, and the
+   affected-state browser/native walk; completion never accepts meaning.
 6. **Given** pending work, **when** Stop, permission, first answer, failure, or
    silence occurs, **then** pending art disappears and input/status/recovery remain
    usable, without false completion. Check waiting-mark tests and an installed-app

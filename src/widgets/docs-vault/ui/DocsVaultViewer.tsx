@@ -393,7 +393,7 @@ export function DocsVaultViewer({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              /* A prose link stays display:inline so it wraps (`prose-link.contract.test.ts`). */
+              /* A prose link stays display:inline so it wraps. */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >
@@ -438,7 +438,7 @@ export function DocsVaultViewer({
               href={resolved.url}
               target="_blank"
               rel="noreferrer noopener"
-              /* A prose link stays display:inline so it wraps (`prose-link.contract.test.ts`). */
+              /* A prose link stays display:inline so it wraps. */
               className="prose-link decoration-[color:var(--color-indigo-line-a40)] hover:decoration-[color:var(--color-indigo-accent)]"
               {...rest}
             >

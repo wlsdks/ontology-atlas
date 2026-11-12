@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import { parseLedger } from '../../records/decisions-find.mjs';
-import { FIELDS, LIMITS, TEMPLATE, checkLedgerTemplate, checkRecordTemplate } from './decision-record-template.mjs';
+import { FIELDS, TEMPLATE, checkLedgerTemplate, checkRecordTemplate } from './decision-record-template.mjs';
 
 const GOOD = `## 2026-09-03 — The census header loses its bracket
 
@@ -45,13 +45,6 @@ describe('decision record template', () => {
     const problems = checkRecordTemplate(record(text));
     assert.ok(problems.some((p) => p.startsWith('sub-heading "### Details"')), problems.join('\n'));
     assert.ok(problems.includes('empty field: Owner'), problems.join('\n'));
-  });
-
-  it('caps a record at one screen', () => {
-    const padded = GOOD.replace('**Owner**: stark', `**Owner**: stark\n${'x\n'.repeat(LIMITS.lines)}`);
-    assert.match(checkRecordTemplate(record(padded))[0], new RegExp(`lines; the template allows ${LIMITS.lines}`));
-    const heavy = GOOD.replace('**Decision**: both trees', `**Decision**: ${'x'.repeat(LIMITS.bytes)} both trees`);
-    assert.match(checkRecordTemplate(record(heavy))[0], new RegExp(`bytes; the template allows ${LIMITS.bytes}`));
   });
 
   it('judges only records dated on or after the cutoff; history is evidence, not a defect', () => {

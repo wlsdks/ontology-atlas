@@ -1,7 +1,0 @@
-{
-  "file": "src/views/gateway-doc/ui/GatewayDocPage.tsx",
-  "count": 1,
-  "claim": "prose",
-  "proof": "prose-link",
-  "why": "The markdown `a` override in the gateway reading components (`PROSE_COMPONENTS`) follows the same prose link contract: it renders inside body text."
-}

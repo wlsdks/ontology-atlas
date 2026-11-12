@@ -145,4 +145,5 @@ export interface AcpChatPanelProps {
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
   captureTaskBaseline?: (turn: AcpTurnStart) => Promise<TaskBaselineCaptureResult>;
   meaningTransitionContext?: MeaningTransitionContext;
+  onBusyChange?: (busy: boolean) => void;
 }
