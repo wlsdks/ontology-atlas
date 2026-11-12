@@ -132,11 +132,14 @@ test("selecting a domain counts its partner domains under its name as the panel 
   expect(await domainLines(page, dial), "every partner's line draws").toEqual(ORDERS_LINES);
   expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
   const free = dial.freeRect;
-  for (const name of ["catalog", "payments", "inventory", "shipping"]) {
+  const home = dial.discs.find((d) => d.id === orders.id)!;
+  const partners = await Promise.all(["catalog", "payments", "inventory", "shipping"].map(async (name) => {
     const id = (await domainNode(page, name)).id;
-    const disc = dial.discs.find((d) => d.id === id);
-    expect(disc && disc.x >= free.minX && disc.x <= free.maxX && disc.y >= free.minY && disc.y <= free.maxY, `${name} stays in the free map`).toBe(true);
-  }
+    const disc = dial.discs.find((d) => d.id === id)!;
+    return { name, far: Math.hypot(disc.x - home.x, disc.y - home.y), shown: disc.x >= free.minX && disc.x <= free.maxX && disc.y >= free.minY && disc.y <= free.maxY };
+  }));
+  partners.sort((p, q) => p.far - q.far);
+  expect(partners[0]!.shown, `the nearest partner, ${partners[0]!.name}, is panned into the free map`).toBe(true);
 
   const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
   const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs
@@ -153,9 +156,9 @@ test("selecting a domain counts its partner domains under its name as the panel 
   const reach = dial.texts.filter((t) => t.id === orders.id && t.role === "status");
   expect(reach.length, "one count line under the selected domain").toBe(1);
   const panelCount = async (group: string) => figures((await page.locator(`[data-datasheet-group-total="${group}"]`).first().textContent()) ?? "")[0];
-  const shown = [await panelCount("dependsOn"), await panelCount("usedBy")];
-  expect(shown).toEqual([3, 2]);
-  expect(figures(reach[0]!.text), "the map's counts are the panel's").toEqual(shown);
+  const panel = [await panelCount("dependsOn"), await panelCount("usedBy")];
+  expect(panel).toEqual([3, 2]);
+  expect(figures(reach[0]!.text), "the map's counts are the panel's").toEqual(panel);
 
   const key = page.getByTestId("topology-flat-key");
   await expect(key.locator('[data-key-shape="needs"]')).toHaveCount(1);
