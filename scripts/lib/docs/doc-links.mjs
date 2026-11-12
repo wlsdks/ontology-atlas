@@ -198,13 +198,15 @@ export function collectProseDocRefs(markdown) {
  * that it opens when clicked, in a historical document too.
  *
  * Measured: without this exclusion, historical documents alone produce 24 hits,
- * burying the 3 in current documents.
+ * burying the 3 in current documents. Record fragments are immutable, so a
+ * dated document they cite can leave the tree without editing them.
  */
 export function isHistoricalDoc(relativePath) {
   const normalized = relativePath.split('\\').join('/');
   return (
     /(^|\/)CHANGELOG\.md$/.test(normalized) ||
     normalized === 'docs/DECISIONS.md' ||
+    /^docs\/records\/[^/]+\/.+\.md$/.test(normalized) ||
     /^docs\/(archive|audits|plans|prototypes)\//.test(normalized) ||
     /^docs\/benchmark\/results\//.test(normalized)
   );

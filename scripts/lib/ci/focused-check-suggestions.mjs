@@ -179,7 +179,7 @@ function directSourceLanguageSuggestions(paths) {
   return [
     ...(sourcePaths.length ? [{
       command: 'pnpm source:language',
-      reason: 'source comments are English-only across current code, tests, and prototypes',
+      reason: 'source comments are English-only across current code and tests',
       paths: sourcePaths,
     }] : []),
     ...(citingPaths.length ? [{

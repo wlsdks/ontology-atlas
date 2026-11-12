@@ -435,7 +435,7 @@ Left ReaderLens analysis panel + right popover rail + top utility lane +
 bottom hint covering the canvas width. Label culling and camera fit read this value to center the graph in the "visible area" (Design Guardian readability +
 camera rejection). Equivalent v2 of the deleted TopologyMapCanvas px string version — here it is a unitless number (canvas 2D getComputedStyle).
 
-RATIO-SYSTEM §4 datasheet 352px scale-up gratitude: safeInsetRight is
+The 352px datasheet does not widen it: safeInsetRight is
 only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
     /*
      * Each side lane is the chrome on that side plus 52 of air (left 24+300+52, right 24+36+52), so the

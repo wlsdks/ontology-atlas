@@ -1,6 +1,6 @@
 /**
  * Full-detail agent handoff: one suggested MCP/CLI call chain, the same string the copy button
- * copies (`docs/prototypes/detail-a1-datasheet.html`).
+ * copies.
  */
 import type { FullDetailReachDepth } from "./full-detail-reach";
 

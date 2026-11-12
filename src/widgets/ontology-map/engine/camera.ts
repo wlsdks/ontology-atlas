@@ -1,6 +1,5 @@
 /**
- * Camera composition — the B2+ prototype's `camera` object + `updateCamera()`
- * (`docs/prototypes/topology-b2plus.html` §8, §11), wiring together
+ * Camera composition, wiring together
  * `spring.ts` (per-axis critically-damped integration), `momentum.ts`
  * (flick-release landing projection) and `hysteresis.ts` (click-vs-drag
  * gate, consumed by `interaction/pointer-state-machine.ts`, not here).
@@ -82,8 +81,7 @@ const PAN_BOUNDS_VELOCITY_TAU_SECONDS =
   -REFERENCE_FRAME_SECONDS / Math.log(PAN_BOUNDS_VELOCITY_RETENTION_PER_REFERENCE_FRAME);
 
 /**
- * Prototype `panBounds = bbox(allNodes, 320)` (`docs/prototypes/topology-
- * b2plus.html` line 602) — generous slack past the world's own node bbox.
+ * `panBounds = bbox(allNodes, 320)` — generous slack past the world's own node bbox.
  * No assigned `--map-*` token yet (same "no token" precedent as
  * `topology-pointer-move.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`).
  */

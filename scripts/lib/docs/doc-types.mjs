@@ -54,7 +54,6 @@ export const DOC_AREAS = Object.freeze([
 ]);
 
 const LIVING_STATUS = Object.freeze(['current', 'draft', 'superseded', 'historical']);
-const PLAN_STATUS = Object.freeze(['active', 'done', 'abandoned']);
 
 /**
  * Each kind: where it lives, what its frontmatter must carry, what it may carry,
@@ -64,7 +63,7 @@ const PLAN_STATUS = Object.freeze(['active', 'done', 'abandoned']);
  */
 export const DOC_TYPES = Object.freeze({
   authority: { folders: [''], required: [], optional: ['decisions', 'contract_version'] },
-  index: { folders: ['', 'features', 'plans', 'launch'], required: [], optional: [] },
+  index: { folders: ['', 'features'], required: [], optional: [] },
   guide: { folders: ['guide'], required: [], optional: ['gateway'] },
   feature: { folders: ['features', 'features/*'], required: ['routes'], optional: ['decisions'] },
   contract: {
@@ -75,9 +74,6 @@ export const DOC_TYPES = Object.freeze({
   design: { folders: ['design'], required: [], optional: ['enforced_by', 'decisions'] },
   runbook: { folders: ['', 'engineering', 'records'], required: [], optional: [] },
   spec: { folders: ['specs'], required: ['date', 'decisions'], optional: ['contract_version'] },
-  plan: { folders: ['', 'plans'], required: [], optional: ['decisions'] },
-  launch: { folders: ['launch'], required: [], optional: [] },
-  finding: { folders: ['benchmark'], required: ['date', 'question'], optional: [] },
 });
 
 /** Keys every living document carries. */
@@ -109,8 +105,8 @@ const FORBIDDEN_KEYS = Object.freeze([
   'version',
 ]);
 
-export function statusValues(docType) {
-  return docType === 'plan' ? PLAN_STATUS : LIVING_STATUS;
+export function statusValues() {
+  return LIVING_STATUS;
 }
 
 export function isForbiddenKey(key) {
@@ -159,12 +155,6 @@ export function newDocPath(docType, { slug, area, date, featureDirs = [] }) {
       return `docs/engineering/${slug}.md`;
     case 'spec':
       return `docs/specs/${date}-${slug}.md`;
-    case 'plan':
-      return `docs/plans/${slug}.md`;
-    case 'launch':
-      return `docs/launch/${slug}.md`;
-    case 'finding':
-      return `docs/benchmark/FINDINGS-${slug}-${date}.md`;
     default:
       throw new Error(`doc_type must be one of ${Object.keys(DOC_TYPES).filter((type) => type !== 'index').join(', ')}`);
   }

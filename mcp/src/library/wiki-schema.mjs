@@ -502,7 +502,8 @@ function readDeclaredSources(frontmatter) {
  * facts: `dangling-wikilink` (a `[[wiki/…]]` target not in the folder), `orphan-page` (no
  * inbound link, two or more pages only), `shared-source-unlinked` (pages written
  * from one primary source that do not link each other).
- * Why these three: docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md.
+ * Why these three: they are the folder faults (missing cross-references, unlinked
+ * pages from one source) a script can decide while every single page validates.
  *
  * @param {Array<{ path: string, raw: string }>} pages every page, template excluded,
  *   each with a vault-relative `path` (`wiki/<slug>.md`)

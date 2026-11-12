@@ -747,7 +747,7 @@ function DemoSection() {
 }
 
 /**
- * The request the take was filmed on (`docs/launch/demo-scenario.md` §3), so a visitor can read
+ * The request the take was filmed on, so a visitor can read
  * what the agent answers. The chat scene's user-bubble shape: it is what a person typed.
  */
 function DemoPrompt({ text, label }: { text: string; label: string }) {

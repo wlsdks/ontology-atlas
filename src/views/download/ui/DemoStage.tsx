@@ -25,7 +25,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
       className="min-w-0 max-w-[var(--gateway-stage-max)]"
     >
       <DemoPlayer clip={clip} />
-      {/* Rewrite this sentence with every new take: no gate knows what was filmed (`docs/launch/demo-scenario.md`). */}
+      {/* Rewrite this sentence with every new take: no gate knows what was filmed. */}
       <p
         data-testid="demo-provisional-note"
         className="mt-3.5 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]"
