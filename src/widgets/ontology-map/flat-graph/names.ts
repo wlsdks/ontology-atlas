@@ -201,10 +201,19 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   if (project) place(project);
   for (const c of layout.clusters) for (const n of domainBlock(input, c.domainId)) place(n);
   const pending = candidates(input, degreeOf(model));
+  // The overview fit pads the extent by the domain name size; a name past that pad would leave the
+  // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
+  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
+  const reach = tokens.domainNamePx / lowest;
+  const inside = (at: Point, rel: Box) => {
+    const b = worldBox(at, rel, lowest);
+    const e = layout.extent;
+    return b.minX >= e.minX - reach && b.maxX <= e.maxX + reach && b.minY >= e.minY - reach && b.maxY <= e.maxY + reach;
+  };
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
-    const fit = tries.find((n) => !grid.hits(worldBox(at, n.box, scale))) ?? (force ? tries[0] : undefined);
+    const fit = tries.find((n) => inside(at, n.box) && !grid.hits(worldBox(at, n.box, scale))) ?? (force ? tries[0] : undefined);
     if (fit) place(fit);
   };
   if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
