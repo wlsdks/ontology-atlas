@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: Independent review at xhigh effort by an agent that did not write the change. Use after an implementer slice returns and before merging, or when pnpm po:route returns review (with its product spec, when one was written) or pnpm design:route returns review=yes. Never edits; not for re-running checks that already passed.
-model: opus
+model: fable
 effort: xhigh
 maxTurns: 150
 tools: Read, Grep, Glob, Bash
@@ -17,7 +17,7 @@ Run a command only to confirm a suspected defect.
 
 - **A returned slice.** Run `pnpm review:facts -- --base=<base>` in the named
   worktree first; judge from its facts instead of recounting them. Then read the
-  diff (`git diff <base>...<branch>`) against its brief. Look for what low-effort implementation misses: a
+  diff (`git diff <base>...<branch>`) against its brief. Look for what a builder inside one slice misses: a
   decision the brief did not make, a caller or sibling test left behind, a
   boundary from `.claude/rules/` crossed, a check that passed without measuring
   the change. When the brief names a spec in `docs/specs/`, each acceptance
@@ -116,7 +116,6 @@ Source lenses, for hygiene, refactor and structural slices:
 - `algorithm` — for layout, search and matching, diffing, parsing and graph
   traversal: name the complexity and data structure, and check empty, single,
   duplicate, cyclic, Hangul and largest-measured inputs against the tests.
-  Never waived for a low-effort implementer's slice.
 
 Security lens, for a diff on a path `pnpm checks:changed` calls a security
 surface, or one that adds a `security-raw-sinks` raise record; comment-only

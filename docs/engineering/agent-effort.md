@@ -7,31 +7,24 @@ area: harness
 
 # Agent model and effort routing
 
-Size the task before starting, then give it to the model that does it well
-enough at the lowest cost. Owner rule (2026-10-09): decided development runs
-on Sonnet, information gathering on Haiku, planning, debugging and review on
-Opus at `xhigh`, and only a one-way or security-critical judgment on Fable.
+Owner rule (2026-11-12): the harness runs on two models. Opus builds and
+debugs; Fable plans, specs, reviews and gives design verdicts.
 
 | Task | Agent | Model · effort | Turn cap |
 |---|---|---|---|
 | decide, plan small changes, talk to the owner | lead session | the owner's choice · xhigh from `.claude/settings.json` | none |
-| find files, symbols, docs, release notes, web facts | `researcher` | Haiku · low | 60 |
-| build one decided slice from `/delegate` | `implementer` | Sonnet · medium | 150 |
-| slice work a cheaper builder can do without judgment | `planner` | Opus · xhigh | 200 |
-| the product spec of a one-way product change | `product-planner` | Opus · xhigh | 250 |
+| build one slice from `/delegate`, deciding inside its owned files | `implementer` | Opus · high | 150 |
 | root cause of a reproduced failure or flake, then the fix | `investigator` | Opus · xhigh | 250 |
-| independent review of a diff or a routed decision | `reviewer` | Opus · xhigh | 150 |
-| design verdict with edits, when the owner asks | `design-guardian` | Opus · xhigh | 300 |
-| a one-way, security or release decision that must not be wrong | `reviewer` with `model: fable` on the Agent call | Fable | 150 |
+| slices for a change that crosses modules: file ownership, cross-slice decisions, order, acceptance | `planner` | Fable · xhigh | 200 |
+| the product spec of a one-way product change | `product-planner` | Fable · xhigh | 250 |
+| independent review of a diff or a routed decision | `reviewer` | Fable · xhigh | 150 |
+| design verdict with edits, when the owner asks | `design-guardian` | Fable · xhigh | 300 |
 
 The Agent tool's `model` and `effort` arguments override an agent's own for
-one call: raise a review to Fable, or lower a mechanical sweep to Haiku or a
-simple review to `high`. Built-in agents (Explore, general-purpose, Plan) run
-on the lead's model even with `CLAUDE_CODE_SUBAGENT_MODEL` set (measured
-2026-10-09: Explore stayed on Opus), so pass `model` on the call or use
-`researcher` for lookups. `researcher` sets `omitClaudeMd` and starts at about
-5K tokens of context, against about 27K for an agent that loads the repository
-instructions.
+one call, for example a simple review at `high`. Built-in agents (Explore,
+general-purpose, Plan) run on the lead's model even with
+`CLAUDE_CODE_SUBAGENT_MODEL` set (measured 2026-10-09: Explore stayed on
+Opus). Lookups go to Explore with `model: opus` on the call.
 
 ## Token budget
 
@@ -75,8 +68,8 @@ feature and redesign missions, not failures. Those go to `planner`, then
 
 ## If it fails
 
-- Implementer slices come back wrong: the plan left a decision open. Send it
-  back to `planner` before raising the implementer to `medium`.
+- Implementer slices come back wrong: a decision that crosses slices was left
+  open. Send that decision back to `planner`; do not narrow the builder's brief.
 - A plan or review misses something `max` would have caught: raise that one
   agent to `max`, compare a few runs, and keep the level you measured better.
 - Codex briefs in `.agents/agents/` inherit the caller's model and effort;
