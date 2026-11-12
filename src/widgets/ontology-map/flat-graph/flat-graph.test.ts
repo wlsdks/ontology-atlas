@@ -1,0 +1,249 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
+import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
+import type { VaultManifest } from "@/entities/docs-vault";
+import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
+
+import {
+  readContainmentTree,
+  rollDirectedDomainFlows,
+  rollDomainDependencies,
+  rollRelatesDomainPairs,
+  type TreeInputEdge,
+  type TreeInputNode,
+} from "../model/containment-tree";
+import { buildDialModel } from "../dial/dial-model";
+import { circularDomainOrder } from "../dial/order";
+import type { DialLabels, DialModel } from "../dial/types";
+import { cachedGraphAttention, inkUnder } from "./attention";
+import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
+import { layoutFlatGraph } from "./layout";
+import { graphDiscRadiusPx } from "./marks";
+import { admittedNames, type PlacedName } from "./names";
+import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
+import type { FlatGraphLayout } from "./types";
+
+const KINDS = new Set(["project", "domain", "capability", "element"]);
+type Node = { id: string; kind: string; title?: string };
+type Edge = { from: string; to: string; type: string };
+
+function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+  const treeNodes: TreeInputNode[] = nodes
+    .filter((n) => KINDS.has(n.kind))
+    .map((n) => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as TreeInputNode["kind"] }));
+  const treeEdges: TreeInputEdge[] = edges.map((e) => ({
+    source: e.from,
+    target: e.to,
+    kind: isContainmentRelation(e.type) ? "contains" : "depends",
+    relationType: e.type,
+  }));
+  const tree = readContainmentTree(treeNodes, treeEdges);
+  const dependencies = rollDomainDependencies(tree, treeEdges);
+  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
+  const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
+  return buildDialModel({ tree, dependencies, flows, elementIds });
+}
+
+function vaultModel(manifest: unknown): DialModel {
+  const d = deriveOntologyFromVault(manifest as VaultManifest);
+  return modelOf(d.nodes as Node[], d.edges as Edge[]);
+}
+
+function cssValues(): Map<string, string> {
+  const values = new Map<string, string>();
+  for (const file of ["app/styles/map-graph-tokens.css", "app/styles/tokens.css", "app/styles/base-map-tokens.css"]) {
+    const css = readFileSync(join(process.cwd(), file), "utf8");
+    for (const m of css.matchAll(/(--[\w-]+):\s*([^;]+);/g)) if (!values.has(m[1]!)) values.set(m[1]!, m[2]!.trim());
+  }
+  return values;
+}
+
+const TOKENS = resolveFlatGraphTokens((v) => cssValues().get(v) ?? "");
+const VAULTS = [
+  ["dogfood", vaultModel(dogfoodManifest)],
+  ["storefront", vaultModel(storefrontManifest)],
+] as const;
+
+function layoutOf(model: DialModel): FlatGraphLayout {
+  return layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null);
+}
+
+const LABELS: DialLabels = {
+  units: (c, e) => `${c} capabilities · ${e} elements`,
+  stale: (n) => `${n} stale`,
+  orphans: (n) => `${n} unplaced`,
+  more: (n) => `+${n}`,
+  ring: () => "",
+  reading: () => "",
+  settling: () => "",
+  linksShown: () => "",
+};
+const measure = (text: string, font: string) => text.length * (Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1]) || 12) * 0.6;
+
+function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string | null) {
+  const attention = cachedGraphAttention(model, focusId, focusId !== null);
+  return admittedNames({
+    model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+    elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key,
+    discRadius: () => 4, elementSpacingPx: TOKENS.paint.elementNameSpacingPx * 2,
+  });
+}
+
+function overlapping(names: readonly PlacedName[], layout: FlatGraphLayout, scale: number): string[] {
+  const pad = TOKENS.paint.namePadPx;
+  const boxes = names.map((n) => {
+    const at = layout.positions.get(n.id) ?? { x: 0, y: 0 };
+    const x = at.x * scale;
+    const y = at.y * scale;
+    return { id: `${n.role}:${n.id}`, minX: x + n.box.minX + pad, maxX: x + n.box.maxX - pad, minY: y + n.box.minY + pad, maxY: y + n.box.maxY - pad };
+  });
+  const hits: string[] = [];
+  for (let i = 0; i < boxes.length; i += 1) {
+    for (let j = i + 1; j < boxes.length; j += 1) {
+      const a = boxes[i]!;
+      const b = boxes[j]!;
+      if (a.minX < b.maxX - 0.5 && b.minX < a.maxX - 0.5 && a.minY < b.maxY - 0.5 && b.minY < a.maxY - 0.5) hits.push(`${a.id} × ${b.id}`);
+    }
+  }
+  return hits;
+}
+
+describe("flat graph tokens", () => {
+  it("resolves every token from the stylesheets and names one hue per index", () => {
+    expect(TOKENS.inks.hues).toHaveLength(DOMAIN_HUE_COUNT);
+    expect(DOMAIN_HUE_VARS).toHaveLength(DOMAIN_HUE_COUNT);
+    expect(new Set(TOKENS.inks.hues).size).toBe(DOMAIN_HUE_COUNT);
+  });
+
+  it("refuses a missing token by name", () => {
+    const values = cssValues();
+    values.delete("--map-graph-cap-spacing");
+    expect(() => resolveFlatGraphTokens((v) => values.get(v) ?? "")).toThrow(/--map-graph-cap-spacing/);
+  });
+});
+
+describe("domain hues", () => {
+  const ring = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+  const neighbours = (a: string, b: string) => {
+    const d = Math.abs(ring.indexOf(a) - ring.indexOf(b));
+    return d === 1 || d === ring.length - 1;
+  };
+
+  it("gives adjacent domains different hues past eight domains", () => {
+    const hues = assignDomainHues(ring, neighbours, null);
+    for (const id of ring) expect(hues.get(id)).toBeLessThan(DOMAIN_HUE_COUNT);
+    ring.forEach((id, k) => expect(hues.get(id)).not.toBe(hues.get(ring[(k + 1) % ring.length]!)));
+  });
+
+  it("keeps a remembered hue and gives a new domain the lowest index its neighbours leave free", () => {
+    const hues = assignDomainHues(["a", "b", "c"], () => true, new Map([["a", 5], ["c", 0]]));
+    expect(hues.get("a")).toBe(5);
+    expect(hues.get("c")).toBe(0);
+    expect(hues.get("b")).toBe(1);
+  });
+});
+
+describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
+  const layout = layoutOf(model);
+
+  it("is deterministic", () => {
+    const again = layoutOf(model);
+    expect([...again.positions]).toEqual([...layout.positions]);
+    expect([...again.hueByDomain]).toEqual([...layout.hueByDomain]);
+  });
+
+  it("places every concept and keeps it inside the extent", () => {
+    const ids = [
+      ...(model.projectId ? [model.projectId] : []),
+      ...model.domains.map((d) => d.id),
+      ...model.capabilityById.keys(),
+      ...[...model.capabilityById.values()].flatMap((c) => c.elementIds),
+      ...model.domains.flatMap((d) => d.directElementIds),
+      ...model.orphanIds,
+    ];
+    for (const id of ids) {
+      const at = layout.positions.get(id);
+      expect(at, id).toBeDefined();
+      expect(at!.x).toBeGreaterThanOrEqual(layout.extent.minX);
+      expect(at!.x).toBeLessThanOrEqual(layout.extent.maxX);
+      expect(at!.y).toBeGreaterThanOrEqual(layout.extent.minY);
+      expect(at!.y).toBeLessThanOrEqual(layout.extent.maxY);
+    }
+  });
+
+  it("keeps each capability nearer its own domain than any other", () => {
+    for (const cluster of layout.clusters) {
+      for (const item of cluster.items.filter((it) => !it.direct)) {
+        const at = layout.positions.get(item.id)!;
+        const own = Math.hypot(at.x - cluster.centre.x, at.y - cluster.centre.y);
+        for (const other of layout.clusters) {
+          if (other === cluster) continue;
+          expect(Math.hypot(at.x - other.centre.x, at.y - other.centre.y), `${item.id} near ${other.domainId}`).toBeGreaterThan(own);
+        }
+      }
+    }
+  });
+
+  it("gives neighbouring clusters different hues", () => {
+    const ids = layout.clusters.map((c) => c.domainId);
+    for (let k = 0; k + 1 < ids.length && ids.length <= DOMAIN_HUE_COUNT; k += 1) {
+      expect(layout.hueByDomain.get(ids[k]!)).not.toBe(layout.hueByDomain.get(ids[k + 1]!));
+    }
+  });
+
+  it("holds a pinned domain and its capabilities in place", () => {
+    const domain = layout.clusters[0]!;
+    const cap = domain.items.find((it) => !it.direct)!;
+    const pinnedAt = { x: domain.centre.x + 40, y: domain.centre.y - 30 };
+    const capAt = { x: pinnedAt.x + 70, y: pinnedAt.y + 10 };
+    const pinned = layoutFlatGraph(model, layout.clusters.map((c) => c.domainId), TOKENS.layout, {
+      positions: new Map([[domain.domainId, pinnedAt], [cap.id, capAt]]),
+      seeds: new Map(),
+      hueByDomain: new Map([[domain.domainId, 6]]),
+    });
+    expect(pinned.positions.get(domain.domainId)).toEqual(pinnedAt);
+    expect(pinned.positions.get(cap.id)).toEqual(capAt);
+    expect(pinned.hueByDomain.get(domain.domainId)).toBe(6);
+  });
+
+  it("admits names without overlap at rest and under a focus", () => {
+    for (const scale of [0.5, 1, 2]) expect(overlapping(namesAt(model, layout, scale, null).names, layout, scale)).toEqual([]);
+    const cap = layout.clusters[0]!.items.find((it) => !it.direct)!.id;
+    const focused = namesAt(model, layout, 1, cap);
+    expect(focused.ids.has(cap)).toBe(true);
+    expect(overlapping(focused.names, layout, 1)).toEqual([]);
+  });
+
+  it("only adds names as the zoom grows", () => {
+    const steps = [0.5, 0.71, 1, 1.41, 2].map((s) => namesAt(model, layout, s, null).ids);
+    for (let k = 1; k < steps.length; k += 1) for (const id of steps[k - 1]!) expect(steps[k]!.has(id), id).toBe(true);
+  });
+});
+
+describe("attention and discs", () => {
+  const model = VAULTS[1][1];
+
+  it("lights a capability's domain and reach and sinks the rest", () => {
+    const cap = [...model.capabilityById.keys()].sort()[0]!;
+    const attention = cachedGraphAttention(model, cap, true);
+    const domain = model.capabilityById.get(cap)!.domainId;
+    expect(attention.lit?.has(cap)).toBe(true);
+    expect(attention.lit?.has(domain)).toBe(true);
+    const outside = model.domains.find((d) => !attention.lit?.has(d.id))!;
+    expect(inkUnder(attention, outside.id, TOKENS.paint.sinkInk)).toBe(TOKENS.paint.sinkInk);
+    expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
+  });
+
+  it("grows capability discs with the square root of their element count within the token range", () => {
+    const r = (m: number) => graphDiscRadiusPx("capability", m, TOKENS.paint, 1);
+    expect(r(0)).toBe(TOKENS.paint.capDiscMinPx);
+    expect(r(4)).toBeGreaterThan(r(1));
+    expect(r(4) - r(0)).toBeCloseTo(2 * (r(1) - r(0)));
+    expect(r(10_000)).toBe(TOKENS.paint.capDiscMaxPx);
+  });
+});
