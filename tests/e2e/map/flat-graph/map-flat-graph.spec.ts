@@ -11,6 +11,11 @@ const IDLE_WINDOW_MS = 3_000;
 
 test.use({ viewport: VIEWPORT });
 
+test.beforeEach(async ({ page }) => {
+  await seedFirstRunSeen(page);
+  await useDogfoodSample(page);
+});
+
 type FrameWindow = Window & { __graphFrameAt?: number };
 
 const readDial = (page: Page) => page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
@@ -25,8 +30,6 @@ async function openGraph(page: Page): Promise<DialProbe> {
       callback(t);
     });
   });
-  await seedFirstRunSeen(page);
-  await useDogfoodSample(page);
   await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "domcontentloaded" });
   await waitForMapSettled(page, { timeout: 90_000 });
   await page.waitForFunction(() => window.__atlasMap?.dial?.()?.owns === true, undefined, { timeout: 90_000 });
