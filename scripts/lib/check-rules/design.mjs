@@ -1,7 +1,8 @@
 /** Design gates: tokens, the design-system document, the ontology design surface, and design proof routing. */
 
 const UI_AUDIT_PATHS = [
-  /^scripts\/design\/ui-audit(?:\.test)?\.mjs$/,
+  /^scripts\/design\/ui-(?:audit|look)(?:\.test)?\.mjs$/,
+  /^scripts\/design\/look\/[^/]+\.mjs$/,
   /^scripts\/lib\/design\/ui-audit-(?:probe|checks)\.mjs$/,
 ];
 
