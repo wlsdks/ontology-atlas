@@ -352,7 +352,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     // (seed 0 for fresh nodes / 1 for existing set upstream). Reuses the ego
     // reveal's rise τ so a new node resolves with the same cadence content does.
     const previousAppear = appearById.get(node.id) ?? 1;
-    const assemblyAppear = tierAssemblyAppear(world, node.kind, now);
+    const assemblyAppear = tierAssemblyAppear(world, node.kind, now, node.id);
     appearById.set(
       node.id,
       assemblyAppear ??

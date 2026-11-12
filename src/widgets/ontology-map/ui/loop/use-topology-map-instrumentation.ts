@@ -28,7 +28,7 @@ import type {
   TopologyPointerHandlers,
 } from "../input/topology-pointer-types";
 import { lastTierPlanes } from "../frame-loop/topology-presentation-frame-stage";
-import { describeLastDialFrame } from "../../dial/frame/frame";
+import { describeLastDialFrame, lastDialFrame } from "../../dial/frame/frame";
 import type { DialProbe } from "../../dial/types";
 import { requestOntologyMapFrame } from "../frame-loop/use-topology-frame-loop";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
@@ -481,6 +481,8 @@ export function useTopologyMapInstrumentation({
                 const { width, height } = viewportRef.current;
                 return describeLastDialFrame(width, height) ?? { owns: false };
             },
+            /** Whether the drawn attention motion has landed; cheap enough to poll every frame. */
+            dialMotionSettled: () => lastDialFrame()?.branchMembersAnimating !== true,
             relationCaptions: () => lastDrawnRelationCaptions(),
             /** Strata's planes as the last frame drew them — what the tier names are placed against. */
             tierPlanes: () => lastTierPlanes(),

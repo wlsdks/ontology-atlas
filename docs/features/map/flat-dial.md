@@ -82,9 +82,20 @@ Hovering or selecting lights a set and sinks everything else toward the
 canvas. A domain lights itself and its members. A capability lights its
 domain, its elements and every capability it needs, is needed by, relates to
 or sits under (`broader`). An element lights its capability's set. The project
-sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. The inks crossfade over
-`--motion-fast` and jump at once with reduced motion. Names keep their places;
+sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. Names keep their places;
 lit capability names join the admitted set.
+
+The lit set arrives as a wave: the focus first, then the rest of the set in
+order of distance from it, while everything else sinks. Each line draws from its
+source end toward its target, landing as its far concept lights. A pointer that
+rests on a concept for less than 80 ms lights nothing, so sweeping across the
+map does not flicker. Pointing or selecting elsewhere moves straight from the
+picture on screen to the new one: the old lines retract toward their source
+while the new ones draw. Leaving (deselect, Escape, the pointer leaving) retracts
+the lines and returns the rest picture faster than it arrived. After a selection's
+lines have drawn, one small light runs once along each, from what is needed
+toward what needs it, then the map rests and draws no frame. With reduced
+motion every state lands at once and no light travels.
 
 Only the hovered or selected capability draws its own lines: the relations it
 states itself, the same connections its detail panel lists, one per far concept
@@ -111,7 +122,9 @@ detail panel's two directed totals, what it depends on and what depends on it
 (`is_a` included), a zero side left out. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click opens the detail panel over the selection, the camera slides sideways at
-the same scale until that name block clears the panel.
+the same scale until that name block clears the panel, on the canvas spring. A
+second selection mid-slide retargets it from where the camera is; a press or
+drag stops it at once.
 
 ## Zoom
 
@@ -132,6 +145,17 @@ the selected root.
 Within a session, an unchanged domain keeps its position and its capabilities'
 positions across rebuilds; a changed domain only seeds the new layout. Hues
 are kept the same way. Opening another folder clears this memory.
+
+The map waits for the name font before its first frame, at most one second,
+because names size the layout: a map drawn in the fallback face would be laid
+out again when the font arrived and move every mark it had just shown.
+
+The first time a folder opens in a session, the map assembles once, within
+about 700 ms: domains leave the project, each domain's capabilities grow out
+of it nearest first, element dots follow, and each name fades in once its mark
+has landed. Each domain's light travels with it. Returning to the map from
+another screen shows the settled picture at once, and any press lands the
+assembly immediately.
 
 ## Evidence
 
