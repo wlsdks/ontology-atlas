@@ -18,7 +18,6 @@ type MotionWindow = Window & { __frames: number[]; __motion: MotionSample[] };
 
 async function open(page: Page): Promise<DialProbe> {
   await seedFirstRunSeen(page);
-  await useDogfoodSample(page);
   await page.addInitScript(() => {
     const w = window as unknown as MotionWindow;
     w.__frames = [];
@@ -52,6 +51,7 @@ const resetSamples = (page: Page) => page.evaluate(() => {
 
 test("after a selection the attention motion lands and the map stops drawing", async ({ page }) => {
   test.setTimeout(120_000);
+  await useDogfoodSample(page);
   const dial = await open(page);
   const disc = dial.discs.find((d) => dial.clusters.some((c) => c.capabilityIds.includes(d.id)))!;
   const at = await canvasPoint(page, disc);
@@ -80,6 +80,7 @@ test("after a selection the attention motion lands and the map stops drawing", a
 test("under reduced motion every lit state is complete on its first frame", async ({ page }) => {
   test.setTimeout(120_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await useDogfoodSample(page);
   const dial = await open(page);
   const domain = dial.clusters[0]!;
   const capability = dial.discs.find((d) => domain.capabilityIds.includes(d.id))!;
