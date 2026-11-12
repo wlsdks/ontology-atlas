@@ -535,7 +535,8 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
       const at = layout.positions.get(c.domainId)!;
       const above = blockAbove(block);
-      if (crossed(at, block) && !crossed(at, above)) block = above;
+      const onDisc = above.some((n) => grid.hits(worldBox(at, n.box, scale)));
+      if (crossed(at, block) && !crossed(at, above) && !onDisc) block = above;
     }
     for (const n of block) {
       titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));

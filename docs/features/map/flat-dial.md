@@ -152,8 +152,9 @@ detail panel's two directed totals, what it depends on and what depends on it
 its caption's row under its name, in the same words, counting partner domains,
 and equals the two domain counts its detail panel shows; the panel still lists
 the membership the caption counted. A partner domain's title that a lit
-domain line would run through takes the side above its disc when that side is
-clear, so the line meets the disc. While a
+domain line would run through takes the side above its disc when no lit line
+crosses that side and no disc sits under it, so the line meets the disc;
+otherwise it stays below on a backing. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the

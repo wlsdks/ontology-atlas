@@ -530,6 +530,37 @@ describe("domain reach", () => {
     expect(reachLines(false).map((n) => n.role)).toEqual(["units"]);
     expect(selected[0]!.box, "the reach line takes the caption's row").toEqual(expect.objectContaining({ minY: reachLines(false)[0]!.box.minY }));
   });
+
+  it("raises a partner domain's title only where it clears every disc, on every bundled vault", () => {
+    let raised = 0;
+    const onDiscs: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const radius = (id: string) => (vault.domainById.has(id) ? graphDiscRadiusPx("domain", 0, TOKENS.paint, 1)
+        : graphDiscRadiusPx("capability", vault.capabilityById.get(id)?.elementIds.length ?? 0, TOKENS.paint, 1));
+      const discs = layout.clusters.flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]);
+      for (const focus of vault.domainById.keys()) for (const selected of [true, false]) for (const scale of [0.5, 1, 2]) {
+        const att = resolveGraphAttention(vault, focus, selected);
+        const admitted = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+          elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: focus, attentionKey: att.key, agentFocusId: null,
+          selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: radius, elementSpacingPx: 0,
+        });
+        for (const n of admitted.names.filter((n) => n.id !== focus && vault.domainById.has(n.id) && n.dy < 0)) {
+          raised += 1;
+          const at = layout.positions.get(n.id)!;
+          const box = { minX: at.x * scale + n.box.minX, maxX: at.x * scale + n.box.maxX, minY: at.y * scale + n.box.minY, maxY: at.y * scale + n.box.maxY };
+          for (const id of discs) {
+            const p = layout.positions.get(id)!;
+            const r = radius(id);
+            if (box.minX < p.x * scale + r && p.x * scale - r < box.maxX && box.minY < p.y * scale + r && p.y * scale - r < box.maxY) onDiscs.push(`${name} ${focus} ${scale}: ${n.role} of ${n.id} on ${id}`);
+          }
+        }
+      }
+    }
+    expect(raised, "some partner title rises").toBeGreaterThan(0);
+    expect(onDiscs).toEqual([]);
+  });
 });
 
 describe("name sides under lit lines", () => {
