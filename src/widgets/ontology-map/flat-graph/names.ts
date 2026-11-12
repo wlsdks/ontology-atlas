@@ -247,6 +247,27 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
   return out;
 }
 
+/**
+ * A domain block moved above its disc, its lines in the same order: where a partner domain's title
+ * goes when a lit domain line would run through it below, so the line meets the disc.
+ */
+function blockAbove(block: readonly PlacedName[]): PlacedName[] {
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const n of block) {
+    top = Math.min(top, n.box.minY);
+    bottom = Math.max(bottom, n.box.maxY);
+  }
+  const shift = -(top + bottom);
+  return block.map((n) => ({ ...n, dy: n.dy + shift, box: { ...n.box, minY: n.box.minY + shift, maxY: n.box.maxY + shift } }));
+}
+
+/** Whether a domain's title may take the side above its disc: a far end of a focused domain's lines. */
+function titleMayRise(input: Pick<NameInput, "model" | "focusId" | "named">, domainId: string): boolean {
+  const focus = input.focusId;
+  return focus !== null && focus !== domainId && input.model.domainById.has(focus) && input.named.has(domainId);
+}
+
 /** The selected domain's reach line, null for any other domain or picture. */
 function domainReachLine(input: Pick<NameInput, "selected" | "focusId" | "labels" | "reach">, domainId: string): string | null {
   return input.selected && input.focusId === domainId ? reachText(input.labels, input.reach) : null;
@@ -399,7 +420,11 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   const r = input.discRadius(id);
   const ring = input.selected && id === input.focusId ? r + t.selectedRingGapPx + t.selectedRingPx : r;
   const boxes: Box[] = [{ minX: -ring, maxX: ring, minY: -ring, maxY: ring }];
-  if (model.domainById.has(id)) boxes.push(...domainBlock(input, id, domainReachLine(input, id)).map((n) => n.box));
+  if (model.domainById.has(id)) {
+    const block = domainBlock(input, id, domainReachLine(input, id));
+    boxes.push(...block.map((n) => n.box));
+    if (titleMayRise(input, id)) boxes.push(...blockAbove(block).map((n) => n.box));
+  }
   else {
     const cap = model.capabilityById.get(id);
     const label = cap?.label ?? input.elementLabel(id);
@@ -494,8 +519,19 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   };
   const project = projectName(input);
   if (project) place(project);
+  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
+  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
+  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
+  const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens.lineBow) : [];
+  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   for (const c of layout.clusters) {
-    for (const n of domainBlock(input, c.domainId, domainReachLine(input, c.domainId))) {
+    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId));
+    if (titleMayRise(input, c.domainId) && polylines.length > 0) {
+      const at = layout.positions.get(c.domainId)!;
+      const above = blockAbove(block);
+      if (crossed(at, block) && !crossed(at, above)) block = above;
+    }
+    for (const n of block) {
       titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
       place(n);
     }
@@ -508,7 +544,6 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const pending = candidates(input, degreeOf(model));
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
-  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const reach = tokens.domainNamePx / lowest;
   const inside = (at: Point, group: readonly PlacedName[]) => group.every((n) => {
     const b = worldBox(at, n.box, lowest);
@@ -517,10 +552,6 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   });
   const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
-  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
-  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
-  const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens.lineBow) : [];
-  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   const selectedId = input.selected ? input.focusId : null;
   const offTitles = (id: string, at: Point, group: readonly PlacedName[]) => {
     const gap = id === selectedId ? tokens.selectedTitleGapPx : 0;
