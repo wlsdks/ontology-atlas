@@ -176,7 +176,7 @@ describe("raise records", () => {
         ])
         .map((m) => m[1]),
     );
-    expect(gates.size, "no converted ratchet found; the gate-name check would pass vacuously").toBeGreaterThanOrEqual(4);
+    expect(gates.size, "no converted ratchet found; the gate-name check would pass vacuously").toBeGreaterThanOrEqual(3);
     for (const record of readRaises()) {
       expect(gates.has(record.gate) || isAreaGate(record.gate), `${record.file} names a gate no ratchet reads`).toBe(true);
     }

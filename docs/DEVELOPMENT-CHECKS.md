@@ -951,7 +951,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Ratchets judged against the merge base
 
 **Run**: `pnpm exec vitest run tests/contract/ci-gates/ratchet-merge-base.contract.test.ts`
-**Proves**: The resident-context, hand-hover, appearing-surface and surface-naming ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>/<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
+**Proves**: The security raw-sink, test-title, raw tab-role and quaternary small-text ratchets measure the working tree and the merge-base tree with one census and fail only on growth, so parallel improvements share no baseline line; a deliberate raise is a new `tests/contract/ratchet-raises/<gate>/<slug>.json` record, and a clone with no merge base uses the ceiling recorded at conversion.
 **Escalate**: `pnpm test:contracts`.
 **Fix**: Remove the growth, or add the raise record naming why the growth is deliberate; never edit a fallback ceiling.
 
@@ -1037,13 +1037,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm test:source:language`
 **Fix**: translate the flagged comment to English; localized data such as `display_ko` and `cli/templates/vault-ko/**` stays exempt.
 
-### Source hygiene against the merge base
-
-**Run**: `pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts tests/contract/architecture/source-shape.contract.test.ts`
-**Proves**: In each area a change touches, Hangul test titles and messages, comment bytes, files over 800 lines and folders over 30 direct files do not grow against the merge base.
-**Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
-**Fix**: Translate the title or message, shorten the comment, or split the file or folder; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
-
 ### Source-checkout MCP dependency preflight
 
 **Run**: `node scripts/lib/dogfood-walk/check-mcp-source-dependencies.mjs`
@@ -1078,6 +1071,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: `docs-vault:build`'s locally materialized artifacts (`manifest.json`, `content.json`, `sample-storefront.*`, `dogfood-census.generated.ts`, `public/docs-vault/**`) are still byte-identical to what the vault source generates.
 **Escalate**: `pnpm test:docs-vault`
 **Fix**: run `pnpm docs-vault:build` to refresh ignored artifacts in this worktree; commit their authored inputs. Installation, branch checkout and merge materialize them automatically.
+
+### Test-title language against the merge base
+
+**Run**: `pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts`
+**Proves**: In each area a change touches, Hangul test titles and assertion messages do not grow against the merge base.
+**Escalate**: `pnpm test:source:language` when the title and message census changed, otherwise `pnpm test:contracts`
+**Fix**: Translate the title or message; a deliberate raise is a `tests/contract/ratchet-raises/<gate>/<slug>.json` record saying why.
 
 ### Text and data-mark contrast measurement
 

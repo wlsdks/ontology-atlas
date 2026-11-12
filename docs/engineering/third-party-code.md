@@ -56,9 +56,8 @@ and one that excuses nothing fails the gate.
    ISC, Zlib or Unlicense source. Put exactly
    `// Adapted from <url> (<SPDX>, © <holder>)` on the line above the adapted
    function, then run `pnpm notice:build`, which lists it in both notices.
-   That comment is a required license marker, not a removable comment: the
-   comment-bytes ratchet does not count it, and deleting it breaches the
-   source's license.
+   That comment is a required license marker, not a removable comment:
+   deleting it breaches the source's license.
 3. Never paste from lygia, Shadertoy (even code marked MIT), Stack Overflow,
    iquilezles.org, Gephi, or any source without a license.
 4. Do not reproduce Microsoft's patented ordered-bundle or layered-graph
