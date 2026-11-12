@@ -33,12 +33,14 @@ vi.mock("@/shared/lib/agent-chat/tauri-acp", () => ({
 }));
 
 import { ProjectAgentDock } from "./ProjectAgentDock";
+import { AcpChatPanelKeeper } from "@/widgets/acp-chat-panel";
 
 const RUNTIME = { id: "claude-acp", label: "Claude Agent" };
 
 function dock(open: boolean) {
   return (
     <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AcpChatPanelKeeper />
       <ProjectAgentDock
         open={open}
         projectName="Atlas"
