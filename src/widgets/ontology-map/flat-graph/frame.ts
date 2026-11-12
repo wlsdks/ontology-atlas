@@ -440,7 +440,8 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
 
 const pool = emptyDialFrameMarks();
 
-function fillProbeMarks(marks: DialFrameMarks, plan: FramePlan, tokens: FlatGraphTokens): void {
+/** Records the painted inks, sinking included, so the probe sees what the eye sees. */
+function fillProbeMarks(marks: DialFrameMarks, plan: FramePlan, tokens: FlatGraphTokens, ground: string): void {
   for (const key of ["inks", "strips", "discs", "squares", "ticks", "rails", "glyphs", "texts", "numerals", "leaders", "plates", "extraTexts"] as const) marks[key].length = 0;
   const inkIndex = (ink: string) => {
     const at = marks.inks.indexOf(ink);
@@ -449,7 +450,7 @@ function fillProbeMarks(marks: DialFrameMarks, plan: FramePlan, tokens: FlatGrap
     return marks.inks.length - 1;
   };
   const fill = inkIndex(tokens.inks.discFill);
-  for (const d of [...plan.discs, ...plan.domains]) marks.discs.push({ id: d.id, x: d.x, y: d.y, r: d.r, fill, rim: inkIndex(d.hue), dashed: d.state === "unknown", lineWidth: tokens.paint.capRimPx });
+  for (const d of [...plan.discs, ...plan.domains]) marks.discs.push({ id: d.id, x: d.x, y: d.y, r: d.r, fill, rim: inkIndex(sunk(d.hue, ground, d.ink)), dashed: d.state === "unknown", lineWidth: tokens.paint.capRimPx });
   const arcInk = inkIndex(tokens.inks.arc);
   plan.arcs.forEach((arc, i) => {
     const strip: StripMark = {
@@ -462,7 +463,7 @@ function fillProbeMarks(marks: DialFrameMarks, plan: FramePlan, tokens: FlatGrap
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const text: TextMark = {
-      id: n.name.id, role: n.name.role, text: n.name.text, x: n.x, y: n.y, align: n.name.align, font: n.name.font, ink: inkIndex(n.color),
+      id: n.name.id, role: n.name.role, text: n.name.text, x: n.x, y: n.y, align: n.name.align, font: n.name.font, ink: inkIndex(sunk(n.color, ground, n.ink)),
       box: { minX: ox + n.name.box.minX, maxX: ox + n.name.box.maxX, minY: oy + n.name.box.minY, maxY: oy + n.name.box.maxY }, parts: null,
     };
     marks.texts.push(text);
@@ -488,7 +489,7 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };
   else paintPlan(input.ctx, built.plan, tokens, ground, warning, zoomGrowth(input.zoomRatio, tokens.paint));
-  fillProbeMarks(pool, built.plan, tokens);
+  fillProbeMarks(pool, built.plan, tokens, ground);
   const directed = restArcs(model, Number.POSITIVE_INFINITY).length;
   const result: DialFrameResult = {
     branchScene: undefined,

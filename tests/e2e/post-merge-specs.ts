@@ -14,7 +14,6 @@ export const POST_MERGE_SPECS = [
   // Frame, motion and performance instruments sampling wall-clock time
   "map/camera/camera-transition.spec.ts",
   "map/3d/map-3d-grip.spec.ts",
-  "map/flat-dial/map-flat-dial-frame-work.spec.ts",
   "map/frame-loop/map-frame-allocation.spec.ts",
   "map/hex-board/map-hex-frame-work.spec.ts",
   "map/frame-loop/map-hover-release.spec.ts",
