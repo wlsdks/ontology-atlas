@@ -81,12 +81,59 @@ function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: 
   return lo - anchor.lo <= hi - anchor.hi ? clamp(centred, lo - anchor.lo, hi - anchor.hi) : (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2;
 }
 
+/** Zoom samples per octave in the zoom-in search, then bisection steps toward the first clear sample. */
+const ZOOM_SAMPLES_PER_OCTAVE = 8;
+const ZOOM_REFINE_STEPS = 4;
+
+/** What a selection's zoom-in may do: how far in the band reaches, and whether a zoom reads clear. */
+export interface SelectionZoomIn {
+  maxScale: number;
+  clearAt(scale: number): boolean;
+}
+
+/** The camera at `scale` that keeps the selection's screen point from `camera` and then pans `marks` in by the least move. */
+function framedAt(camera: CameraTarget, marks: readonly FramedMark[], scale: number, viewport: { width: number; height: number }, free: FreeMapRect, margin: number): CameraTarget {
+  const anchor = marks[0]!;
+  const tx0 = anchor.x - ((anchor.x - camera.tx) * camera.tscale) / scale;
+  const ty0 = anchor.y - ((anchor.y - camera.ty) * camera.tscale) / scale;
+  const toScreenX = viewport.width / 2 - tx0 * scale;
+  const toScreenY = viewport.height / 2 - ty0 * scale;
+  const shifted = (span: { lo: number; hi: number }, by: number) => ({ lo: span.lo + by, hi: span.hi + by });
+  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), free.minX + margin, free.maxX - margin);
+  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), free.minY + margin, free.maxY - margin);
+  return { tx: tx0 - dx / scale, ty: ty0 - dy / scale, tscale: scale };
+}
+
+/**
+ * The smallest scale above `from` that `zoom` reads clear, at most `cap`; `cap` when none does.
+ * Bounded: ZOOM_SAMPLES_PER_OCTAVE × octaves to the cap plus ZOOM_REFINE_STEPS calls of `clearAt`.
+ */
+function clearingScale(from: number, cap: number, zoom: SelectionZoomIn): number {
+  let below = from;
+  for (let k = 1; ; k += 1) {
+    const s = Math.min(cap, from * 2 ** (k / ZOOM_SAMPLES_PER_OCTAVE));
+    if (zoom.clearAt(s)) {
+      let clear = s;
+      for (let i = 0; i < ZOOM_REFINE_STEPS; i += 1) {
+        const mid = (below + clear) / 2;
+        if (zoom.clearAt(mid)) clear = mid;
+        else below = mid;
+      }
+      return clear;
+    }
+    if (s >= cap) return cap;
+    below = s;
+  }
+}
+
 /**
  * The camera that frames a selection inside the free map, `margin` clear of every edge. `sets` go
  * from most to least wanted, each starting with the selection: the first that fits at the current
  * scale is panned in; when none fits, the last zooms out as little as it needs, never below
- * `floorScale` and never in. The selection keeps its screen point through the zoom, and the pan is
- * the least that frames. Null when the view already frames it. O(marks) per scale tried.
+ * `floorScale`. The selection keeps its screen point through any zoom, and the pan is the least
+ * that frames. When the panned view does not read clear, it then zooms in about the selection, in
+ * the same move, to the smallest scale `zoom` reads clear, capped by the band and by the last set
+ * still fitting. Null when the view already frames it. O(marks) per scale tried.
  */
 export function selectionFrameTarget(
   camera: CameraTarget,
@@ -95,6 +142,7 @@ export function selectionFrameTarget(
   free: FreeMapRect,
   margin: number,
   floorScale: number,
+  zoom: SelectionZoomIn | null = null,
 ): CameraTarget | null {
   const usable = sets.filter((set) => set.length > 0);
   const last = usable.at(-1);
@@ -119,16 +167,23 @@ export function selectionFrameTarget(
       scale = fits;
     }
   }
-  const anchor = marks[0]!;
-  const tx0 = anchor.x - ((anchor.x - camera.tx) * now) / scale;
-  const ty0 = anchor.y - ((anchor.y - camera.ty) * now) / scale;
-  const toScreenX = viewport.width / 2 - tx0 * scale;
-  const toScreenY = viewport.height / 2 - ty0 * scale;
-  const shifted = (span: { lo: number; hi: number }, by: number) => ({ lo: span.lo + by, hi: span.hi + by });
-  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), free.minX + margin, free.maxX - margin);
-  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), free.minY + margin, free.maxY - margin);
-  if (scale === now && Math.abs(dx) <= 0.5 && Math.abs(dy) <= 0.5) return null;
-  return { tx: tx0 - dx / scale, ty: ty0 - dy / scale, tscale: scale };
+  let target = framedAt(camera, marks, scale, viewport, free, margin);
+  if (zoom && scale < zoom.maxScale && fitsAt(last, scale, width, height) && !zoom.clearAt(scale)) {
+    let cap = zoom.maxScale;
+    if (!fitsAt(last, cap, width, height)) {
+      let fits = scale;
+      let fails = cap;
+      for (let i = 0; i < FIT_STEPS; i += 1) {
+        const mid = (fits + fails) / 2;
+        if (fitsAt(last, mid, width, height)) fits = mid;
+        else fails = mid;
+      }
+      cap = fits;
+    }
+    if (cap > scale) target = framedAt(target, last, clearingScale(scale, cap, zoom), viewport, free, margin);
+  }
+  const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
+  return target.tscale === now && !moved ? null : target;
 }
 
 /** Selections that follow one another without a reader move share the view the first one left. */

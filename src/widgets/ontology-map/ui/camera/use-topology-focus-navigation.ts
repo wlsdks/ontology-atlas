@@ -240,7 +240,7 @@ export function useTopologyFocusNavigation({
         const node = world.nodeById.get(focusedSlug);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;
-        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current * tokens.overviewEntryRatio);
+        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current);
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
         const leash = leashFor(width, height, measured);

@@ -134,9 +134,16 @@ concept inside that domain, with every side their names may take, inside the
 free map (clear of the explorer, the detail panel, the tool row and the key)
 and `--map-graph-frame-margin-px` from each of those edges. When the whole lit
 reach fits at the current zoom it frames the whole reach; far ends in other
-domains otherwise may stay off screen. The camera never zooms in; when the
-domain's lit set does not fit it zooms out only as far as it needs and never
-below the opening fit. The move is the least pan that frames, on the canvas
+domains otherwise may stay off screen. When the domain's lit set does not fit
+it zooms out only as far as it needs and never below the opening fit. When the
+framed view does not read clear (two lit names in the domain overlap, a lit
+name sits on a lit disc, or the selection's ring is nearer its domain disc
+than `--map-graph-selected-disc-gap-px`), it zooms in about the selection to
+the least zoom that reads clear, at most the zoom band's top and as far as the
+domain's lit set still fits; a domain selection does the same for its
+members. A view that already reads clear never zooms in. The search samples
+eight zooms per octave, then bisects four times: one name admission each. The
+move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting a click selection leaves the
 camera where it is.

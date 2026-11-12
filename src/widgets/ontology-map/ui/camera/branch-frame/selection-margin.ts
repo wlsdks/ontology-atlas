@@ -13,6 +13,9 @@ import { graphDiscRadiusPx } from "../../../flat-graph/marks";
 import { nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
+import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
+import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
+import { graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
 
@@ -29,7 +32,8 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
  */
 function graphSelectionFrame(
-  world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect, floorScale: number,
+  world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
+  band: { entryScale: number; maxScale: number },
 ): CameraTarget | null {
   const { model } = dial;
   const paint = readFlatGraphTokens().paint;
@@ -41,10 +45,13 @@ function graphSelectionFrame(
     const own = graphDiscRadiusPx(cap || !model.domainOf.has(of) ? "capability" : "element", cap?.elementIds.length ?? 0, paint, growth);
     return of === id ? selectedDiscRadius(own, paint, growth) : own;
   };
+  const measureText = createMeasureText();
+  const fontFamily = labelFontFamily();
+  const elementLabel = (of: string) => world.nodeById.get(of)?.label ?? null;
   const input: NameReachInput = {
-    model, tokens: paint, labels: dial.labels ?? null, measureText: createMeasureText(), fontFamily: labelFontFamily(), growth,
+    model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily, growth,
     selected: true, focusId: id, named: attention.named, lit: attention.lit, reach: attention.reach, discRadius: radius,
-    elementLabel: (of) => world.nodeById.get(of)?.label ?? null, staleByDomain: staleBound(model),
+    elementLabel, staleByDomain: staleBound(model),
   };
   const domainId = model.domainById.has(id) ? id : model.domainOf.get(id) ?? null;
   const near = new Set([id]);
@@ -64,7 +71,11 @@ function graphSelectionFrame(
     const node = world.nodeById.get(of);
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
-  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, floorScale);
+  const zoom = graphSelectionZoom({
+    model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
+    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, domainId, ...band,
+  });
+  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
 }
 
 /**
@@ -73,13 +84,16 @@ function graphSelectionFrame(
  */
 export function selectionSlideTarget(
   world: TopologyWorld, dial: DialWorld | null | undefined, id: string, camera: CameraTarget, viewport: { width: number; height: number },
-  insets: { safeInsetLeft: number; safeInsetRight: number; safeInsetTop: number; safeInsetBottom: number }, floorScale: number,
+  insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax">,
+  overviewScale: number,
 ): CameraTarget | null {
   const node = world.nodeById.get(id);
   if (!node) return null;
   if (dial?.scene.graph && id !== dial.model.projectId) {
     const free = { minX: insets.safeInsetLeft, maxX: viewport.width - insets.safeInsetRight, minY: insets.safeInsetTop, maxY: viewport.height - insets.safeInsetBottom };
-    return graphSelectionFrame(world, dial, id, camera, viewport, free, floorScale);
+    const entryScale = overviewScale * insets.overviewEntryRatio;
+    const maxScale = computeEffectiveCameraScaleMax(entryScale, insets.cameraMaxZoomRatio, insets.cameraScaleMax, world.dialScaleMax ?? undefined);
+    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale });
   }
   const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
   return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));

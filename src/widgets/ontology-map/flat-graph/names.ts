@@ -571,6 +571,11 @@ function withSelectedRadius(input: NameInput): NameInput {
   return { ...input, discRadius: (id) => (id === focus ? selectedDiscRadius(own(id), input.tokens, input.growth) : own(id)) };
 }
 
+/** One admission at the input's zoom, outside the per-step cache: a camera weighing a zoom it has not shown yet. */
+export function admitNamesAt(input: NameInput): NameAdmission {
+  return admit(withSelectedRadius(input), zoomStep(input.scale, input.tokens.zoomStepsPerOctave), null, null);
+}
+
 /**
  * Names admitted at the camera's quantised zoom step, cached per step so pan and drag never
  * re-run admission. Without attention, a step's names include every name of the nearest admitted

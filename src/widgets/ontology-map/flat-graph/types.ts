@@ -83,6 +83,8 @@ export interface FlatGraphPaintTokens {
   selectedTitleGapPx: number;
   /** Clearance a selection's framing keeps from every edge of the free map, the detail panel included. */
   frameMarginPx: number;
+  /** Least air between a selection's ring and its domain disc that a selection's framing zooms in for. */
+  selectedDiscGapPx: number;
   lineBow: number;
   lineAlpha: number;
   lineTaperPx: number;

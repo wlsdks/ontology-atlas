@@ -104,4 +104,19 @@ describe("flat selection framing", () => {
     const zoomedOut = { tx: 0, ty: 0, tscale: 0.3 };
     expect(selectionFrameTarget(zoomedOut, [huge], viewport, free, margin, 0.5)!.tscale).toBe(0.3);
   });
+
+  it("zooms in about the selection only when the panned view does not read clear, to the least clear zoom, capped by the band and the fit", () => {
+    const near = [mark(500, 0), mark(560, 30), mark(620, -40)];
+    const clearFrom = (from: number) => ({ maxScale: 4, clearAt: (s: number) => s >= from });
+    expect(selectionFrameTarget({ tx: 520, ty: 0, tscale: 1 }, [near], viewport, free, margin, 0.5, clearFrom(1))).toBeNull();
+    const zoomed = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, clearFrom(1.5))!;
+    expect(zoomed.tscale).toBeGreaterThanOrEqual(1.5);
+    expect(zoomed.tscale).toBeLessThan(1.5 * 2 ** (1 / 8));
+    expect(inside(zoomed, near)).toBe(true);
+    const capped = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, clearFrom(100))!;
+    expect(inside(capped, near)).toBe(true);
+    expect(inside({ ...capped, tscale: capped.tscale * 1.01 }, near)).toBe(false);
+    const banded = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, { maxScale: 1.2, clearAt: () => false })!;
+    expect(banded.tscale).toBeCloseTo(1.2, 9);
+  });
 });
