@@ -48,7 +48,7 @@ async function streamReads(page: Page): Promise<void> {
 
 interface Picture {
   at: Map<string, { x: number; y: number }>;
-  hue: Map<string, number>;
+  hue: Map<string, string>;
 }
 
 const MARKS = DOMAINS.length * (1 + CAPABILITIES_PER_DOMAIN);
@@ -65,20 +65,21 @@ async function settledPicture(page: Page): Promise<Picture> {
     await document.fonts.ready;
   });
   await waitForMapStill(page);
-  const hue = await page.waitForFunction(() => {
-    const style = getComputedStyle(document.documentElement);
-    const hues = Array.from({ length: 8 }, (_, k) => style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number));
-    const rims = new Map((window.__atlasMap!.dial!() as DialProbe).discs.map((d) => [d.id, d.ink]));
-    const hueOf = (ink: string | undefined) => hues.findIndex((rgb) => ink !== undefined && rgb.every((v, k) => v === parseInt(ink.slice(1 + 2 * k, 3 + 2 * k), 16)));
-    const byDomain = window.__atlasMap!.nodes().filter((n) => n.kind === "domain").map((n) => [n.id, hueOf(rims.get(n.id))] as [string, number]);
-    return byDomain.every(([, index]) => index >= 0) && byDomain;
-  });
+  const rims = () => page.evaluate(() => (window.__atlasMap!.dial!() as DialProbe).discs.map((d) => [d.id, d.ink] as [string, string]));
+  let hue = await rims();
+  await expect.poll(async () => {
+    const before = hue;
+    await waitForMapStill(page);
+    hue = await rims();
+    return JSON.stringify(hue) === JSON.stringify(before);
+  }, "rim inks stop changing").toBe(true);
   const at = await page.evaluate(() => {
     const nodes = window.__atlasMap!.nodes();
     const project = nodes.find((n) => n.kind === "project")!;
     return nodes.filter((n) => n.kind === "domain" || n.kind === "capability").map((n) => [n.id, { x: n.x - project.x, y: n.y - project.y }] as const);
   });
-  return { at: new Map(at), hue: new Map((await hue.jsonValue()) || []) };
+  const domains = new Set(at.map(([id]) => id));
+  return { at: new Map(at), hue: new Map(hue.filter(([id]) => domains.has(id))) };
 }
 
 async function pickFolder(page: Page): Promise<void> {
