@@ -142,9 +142,10 @@ framed view does not read clear (two lit names in the domain overlap, a lit
 name sits on a lit disc, or the selection's ring is nearer its domain disc
 than `--map-graph-selected-disc-gap-px`), it zooms in about the selection to
 the least zoom that reads clear, at most the zoom band's top and as far as the
-domain's lit set still fits; a domain selection does the same for its
-members. A view that already reads clear never zooms in. The search samples
-eight zooms per octave, then bisects four times: one name admission each. The
+domain's lit set, its names on the sides they take there, still fits; a domain
+selection does the same for its members. A view that already reads clear never
+zooms in. The fit bisects eight times and the search samples eight zooms per
+octave, then bisects four times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting a click selection leaves the
