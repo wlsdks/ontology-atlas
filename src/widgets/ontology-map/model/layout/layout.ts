@@ -1,6 +1,5 @@
 /**
- * Deterministic concentric-ring layout (prototype `docs/prototypes/topology-b2plus.html`
- * §4; `docs/design/ontology-map.md` §4 P2): the project at the origin, domains
+ * Deterministic concentric-ring layout (`docs/design/ontology-map.md` §4 P2): the project at the origin, domains
  * on `--map-layout-ring-domain`, capabilities fanned on `--map-layout-ring-capability` round
  * their domain, elements on `--map-layout-ring-element` round their capability. The same
  * radius on both axes at every ring (no aspect stretch). Positions never depend on the

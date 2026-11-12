@@ -1,6 +1,6 @@
 /**
  * INDEX expanded or collapsed state: URL `?index=` (deep-link intent) wins over the stored
- * preference, which wins over the "expanded" default (docs/prototypes/hub-b3-immersive.html). Pure
+ * preference, which wins over the "expanded" default. Pure
  * so the merge is testable without HomePage.
  */
 

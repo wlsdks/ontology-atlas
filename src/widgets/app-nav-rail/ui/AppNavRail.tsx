@@ -95,7 +95,7 @@ function rememberRailRouteFocus(
 }
 
 /**
- * The 64px left nav rail (`docs/prototypes/chrome-rail-combined.html`): global destinations plus
+ * The 64px left nav rail: global destinations plus
  * the settings tile, shown from `lg`; below it `BottomTabBar` takes over.
  */
 export function AppNavRail({

@@ -4,8 +4,7 @@ import { cn } from '@/shared/lib/cn';
 import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
 
 /**
- * The square icon button of the chrome system (mockup
- * docs/prototypes/index-panel-v2-full.html). Presentational; it enforces the `--chrome-*`
+ * The square icon button of the chrome system. Presentational; it enforces the `--chrome-*`
  * tokens and a required name, rendering a next-intl `Link` with `href`. Chrome surfaces use it
  * rather than rebuilding one inline (docs/DESIGN-SYSTEM.md, chrome grammar).
  */

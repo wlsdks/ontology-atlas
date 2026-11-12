@@ -1,8 +1,7 @@
 /**
  * Altitude tier: one continuous `farT` in [0,1] drives every visual axis (fill and stroke
  * tier, corner morph, label alpha, edge width), never a discrete far/near branch
- * (`docs/design/ontology-map.md` §3.1; prototype `docs/prototypes/topology-b2plus.html`
- * §8b). `farT` is 0 at or above `FAR_HIGH` (`--map-altitude-far-high-ratio`) and 1 at or
+ * (`docs/design/ontology-map.md` §3.1). `farT` is 0 at or above `FAR_HIGH` (`--map-altitude-far-high-ratio`) and 1 at or
  * below `FAR_LOW` (`--map-altitude-far-low-ratio`).
  */
 

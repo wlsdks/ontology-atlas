@@ -136,7 +136,7 @@
     --color-scrim-a50: rgba(0, 0, 0, 0.5);
     --color-scrim-a58: rgba(0, 0, 0, 0.58);
 
-    /* RATIO-SYSTEM §3 Tab pattern — 2px indigo underline thickness for the active tab.
+    /* Tab pattern — 2px indigo underline thickness for the active tab.
        Page-level ratio tokens (--page-max etc.) have a single source: the :root block above. */
     --tabbar-underline: 2px;
     /* Tab strip overflow edge fade — the mask width that says "more this way" when the tabs
@@ -248,8 +248,7 @@
     --topology-utility-lane-count-text: var(--color-indigo-accent);
 
     /*
-     * Chrome system (feat/chrome-system, approved draft docs/prototypes/index-panel-v2-full.html
-     * upon approval). "machined tile" syntax — 44px square tiles/chips, 10px radius,
+     * Chrome system: "machined tile" syntax — 44px square tiles/chips, 10px radius,
      * 24px alignment rail — single source for all surfaces consuming this(ChromeTile · ChromeChip, later
      * left nav rail). Unlike the above --topology-chrome-*(circular pill only,
      * 999px radius), the shape syntax differs so values are not shared — only shadow/
@@ -449,12 +448,11 @@
       var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
     );
     /* Settings gear (formerly OntologyMapSettingsGear — settings integration after 2026-07-24,
-       AppSettingsMenu trigger, chrome-datasheet-final.html draft) —
+       AppSettingsMenu trigger) —
        one row below the "?" button on the right utility rail. Shares hide conditions with fit/filter stack (createNodeOpen/selectedRelationActive/blocking-overlay/
        selectedNodeFocusActive), so it hides while datasheet is visible — same convention as before where entire right rail replaces with datasheet at that moment.
        Desktop only (primary scope: 1512/1920 live verification) — phone top requires separate pass due to complex state branching for "?" (phone-help-position-contract), excluded from this scope. */
-    /* Owner chrome-recomposition spec (2026-07-18, docs/prototypes/
-       chrome-recomposition.html): the top chrome is a reserved lane
+    /* The top chrome is a reserved lane
        (brand pill · single engraved census · utility rail) — INDEX, this
        datasheet, and the collapsed INDEX tab all start below it, matching
        `--topology-index-top` below. Keep the two in sync.
@@ -564,7 +562,7 @@
        the cadence rail owes the hand. Licensed on **a released drag only**, on the moving
        object's own position, over `--motion-settle` (240ms, the spec's clock). Reduced motion
        never reaches it: the consumer drops the transition entirely and the thumb is already
-       there. Spec: `docs/specs/2026-09-21-round-cadence-and-scope.md` §2.2. */
+       there. */
     --motion-ease-drag-release: cubic-bezier(0.2, 0.9, 0.3, 1.15);
 
     /*

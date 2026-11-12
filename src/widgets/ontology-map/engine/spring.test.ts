@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { stepSpring, type SpringAxisState } from "./spring";
 
 /**
- * Spec for `stepSpring` — ported from the B2+ prototype's `updateCamera()` /
- * `stepSpring()` (`docs/prototypes/topology-b2plus.html`). `stepSpring`
+ * Spec for `stepSpring`. `stepSpring`
  * currently throws (unimplemented) so every test below is RED until the lead
  * implements it against this file.
  *

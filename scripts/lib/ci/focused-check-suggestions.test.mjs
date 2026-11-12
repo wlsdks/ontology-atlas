@@ -183,7 +183,7 @@ describe('focused check suggestions', () => {
       'src/shared/lib/example.ts',
       'src-tauri/src/example.rs',
       'app/globals.css',
-      'docs/prototypes/example.html',
+      'public/example.html',
       '.github/workflows/checks.yml',
       '.claude/hooks/example.sh',
       '.env.example',

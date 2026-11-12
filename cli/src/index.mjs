@@ -666,7 +666,7 @@ async function runInit(targetArg, opts = {}) {
     ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
   ].join(' ');
 
-  // Local-only telemetry baseline for every init (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+  // Local-only telemetry baseline for every init (lib/telemetry.mjs).
   stampInitCompleted(target);
 
   if (quickStart) {
@@ -757,7 +757,7 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
   return 0;
 }
 
-// `init --quick-start` (docs/plans/PRODUCT-PLAN-2026-07.md §9): scaffold, bootstrap through `runBootstrap`,
+// `init --quick-start`: scaffold, bootstrap through `runBootstrap`,
 // .mcp.json, an absorb suggestion when CLAUDE.md/AGENTS.md exists (never auto-absorbed), and a next-steps
 // block of at most three lines.
 async function runQuickStart({ target, cwdVaultArg }) {

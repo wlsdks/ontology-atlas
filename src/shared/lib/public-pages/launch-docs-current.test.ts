@@ -18,22 +18,10 @@ const FEATURE_DOCS = [
 
 // Archived documents preserve what was true at the time, so they are out of scope for
 // current-surface gates.
-const CURRENT_SURFACE_DOCS = [
-  'README.md',
-  ...FEATURE_DOCS,
-  'docs/launch/README.md',
-  'docs/launch/HN-POST.md',
-  'docs/launch/REDDIT-POSTS.md',
-  'docs/launch/X-THREAD.md',
-  'docs/launch/DEMO-GIF-STORYBOARD.md',
-];
+const CURRENT_SURFACE_DOCS = ['README.md', ...FEATURE_DOCS];
 
 /** Documents checked for demo links that promise the map but point at the site root. */
-const DEMO_LINK_DOCS = [
-  'README.md',
-  'docs/launch/HN-POST.md',
-  'docs/launch/DEMO-GIF-STORYBOARD.md',
-] as const;
+const DEMO_LINK_DOCS = ['README.md'] as const;
 
 /**
  * The source of truth for the MCP inventory is the live `tools/list`. Collecting

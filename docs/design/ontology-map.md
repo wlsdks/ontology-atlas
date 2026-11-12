@@ -14,8 +14,8 @@ area: map
 > engine. Use `docs/engineering/tech-stack.md`, `docs/design/topology-focus-and-scale.md`,
 > `docs/FEATURES.md`, and current source for maintenance.
 >
-> Input: `docs/prototypes/topology-b2plus.html` (approved B2+ "Circuit × Constellation"
-> prototype) · the superseded Phase 0 measurement (recoverable from Git; its adapter
+> Input: the approved B2+ "Circuit × Constellation" prototype (recoverable from Git) ·
+> the superseded Phase 0 measurement (recoverable from Git; its adapter
 > contract is preserved below) ·
 > the Sigma v3 feature study (investigated, not adopted; recoverable from Git) ·
 > `docs/design/interaction.md`

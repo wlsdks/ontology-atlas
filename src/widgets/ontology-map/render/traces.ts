@@ -1,7 +1,5 @@
 /**
- * Edge (trace) geometry + paint — ported from the B2+ prototype's
- * `buildEdges()`/`bezierPoint()`/`drawEdge()`/`drawPulses()`
- * (`docs/prototypes/topology-b2plus.html` §5, §12-13).
+ * Edge (trace) geometry + paint.
  *
  * "Board-router feel" (design doc's phrase): every `contains`/`depends`
  * bow is precomputed once from real polar geometry, so it never re-routes —

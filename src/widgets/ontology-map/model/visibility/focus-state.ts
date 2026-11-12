@@ -1,6 +1,6 @@
 /**
- * Focus and ego state plus hover-ripple emphasis (`docs/design/ontology-map.md` §3.2, §3.6;
- * prototype `docs/prototypes/topology-b2plus.html` §9, §11, §13). A click sets a durable
+ * Focus and ego state plus hover-ripple emphasis (`docs/design/ontology-map.md` §3.2, §3.6).
+ * A click sets a durable
  * focus: the ego set reads `center`/`neighbor` and the rest `dim`, drawn with opaque dim
  * tokens, never alpha. Hover only raises emphasis and is suppressed while a focus holds, so
  * a click is always safe. `interaction/pointer-state-machine.ts` turns pointer events into

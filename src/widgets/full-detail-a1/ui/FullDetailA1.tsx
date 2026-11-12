@@ -34,7 +34,7 @@ import { FullDetailA1GroupsPanel } from "./full-detail-a1-groups-panel";
 import { FullDetailA1ReachPanel } from "./full-detail-a1-reach-panel";
 
 /**
- * The full-detail surface (`docs/prototypes/detail-a1-datasheet.html`): header, four
+ * The full-detail surface: header, four
  * direction groups, reach sentence, agent handoff and body. Shared by the topology datasheet's full
  * detail and the `/ontology` node detail, both fed by `buildFullDetailGroups`
  * and `buildFullDetailReachModel` so numbers cannot drift.

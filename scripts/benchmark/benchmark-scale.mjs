@@ -163,7 +163,7 @@ try {
   md += `## Interpretation\n\n`;
   md += `- Δ shell calls: ${on.shellCalls - off.shellCalls} (negative = MCP saved exec calls)\n`;
   md += `- Δ MCP calls: ${on.mcpCalls - off.mcpCalls} (positive = MCP path actually exercised)\n`;
-  md += `- Compare with 23-node dogfood A3 (\`docs/benchmark/results/2026-05-04-codex.md\`):\n`;
+  md += `- Compare with the 23-node dogfood A3 run:\n`;
   md += `  - 23-node OFF/ON: 5 shell / 1 MCP\n`;
   md += `  - ${N}-node OFF/ON: ${off.shellCalls} shell / ${on.mcpCalls} MCP\n\n`;
   md += `Correctness/hallucinations need human grading against \`${today}-codex-scale-N${N}-{off,on}.txt\`.\n`;

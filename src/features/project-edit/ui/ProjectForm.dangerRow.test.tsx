@@ -6,7 +6,7 @@ import { TaxonomyProvider } from "@/features/taxonomy";
 import type { Project } from "@/entities/project";
 import { ProjectForm } from "./ProjectForm";
 
-/** The dashed danger row renders only in edit mode with a delete handler (docs/prototypes/project-forms-final.html). */
+/** The dashed danger row renders only in edit mode with a delete handler. */
 
 const project: Project = {
   slug: "ontology-atlas",

@@ -904,7 +904,7 @@ describe("OntologyMapDetailPanel — viewport clamp (P3-③)", () => {
 
 });
 
-describe("OntologyMapDetailPanel: evidence group promotion (RATIO-SYSTEM section 4)", () => {
+describe("OntologyMapDetailPanel: evidence group promotion", () => {
   it("renders an evidence group with its row's title when evidence rows exist", () => {
     renderPanel(undefined, {
       rows: [{ id: "capabilities/product-owner-operating-system", title: "product-owner-operating-system", path: "capabilities/" }],
