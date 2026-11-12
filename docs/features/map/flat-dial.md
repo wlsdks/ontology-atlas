@@ -88,7 +88,8 @@ They read as texture under the clusters. The hidden ones still count in
 ## Focus
 
 Hovering or selecting lights a set and sinks everything else toward the
-canvas. A domain lights itself and its members. A capability lights its
+canvas. A domain lights itself, its members and every domain it needs or is
+needed by; those domains light their own disc and name, not their members. A capability lights its
 domain, its elements and every capability it needs, is needed by, relates to
 or sits under (`broader`). An element lights its capability's set. The project
 sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. Names keep their places;
@@ -106,7 +107,7 @@ lines have drawn, one small light runs once along each, from what is needed
 toward what needs it, then the map rests and draws no frame. With reduced
 motion every state lands at once and no light travels.
 
-Only the hovered or selected capability draws its own lines: the relations it
+A hovered or selected capability draws only its own lines: the relations it
 states itself, the same connections its detail panel lists, one per far concept
 and direction. Its elements' relations are not rolled up into it.
 
@@ -119,7 +120,18 @@ and direction. Its elements' relations are not rolled up into it.
 - **Broader** (`is_a`): a double hairline toward the broader concept.
 
 Direction is the taper and kind the stroke pattern, so no reading rests on hue
-alone. A recorded reason
+alone.
+
+A hovered or selected domain draws its reach at domain level: the partner
+domains its detail panel lists, one taper per partner and direction in the same
+two inks, so a pair that depends both ways draws two tapers bowed apart. A
+domain taper stands for every `depends_on` relation between the two domains in
+that direction and widens with their count, from `--map-graph-line-taper-px` by
+`--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`.
+It leaves or lands just outside the domain's own member star, so it never runs
+under its lit members, and reaches the partner's disc. When a selection's zoom
+leaves a partner off screen, its taper runs off the edge toward it. The key
+names the two kinds as domains it needs and domains that need it. A recorded reason
 (`relation_notes`) does not reach the map's edges yet, so lines carry no mark
 for it.
 
@@ -129,7 +141,9 @@ or above it, at least `--map-graph-selected-title-gap-px` from every domain
 title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
-(`is_a` included), a zero side left out. While a
+(`is_a` included), a zero side left out. A selected domain's reach line sits
+under its caption in the same words, counting partner domains, and equals the
+two domain counts its detail panel shows. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the
