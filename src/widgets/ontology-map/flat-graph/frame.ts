@@ -454,18 +454,18 @@ function loadNameInk(n: PlacedName): void {
 }
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
-function planName(n: PlacedName, alphas: ReadonlyMap<string, number>): void {
+function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: number, wasFocus: boolean): void {
   const at = screenAt(n.id);
   if (!at || alphas.get(n.id) === 0) return;
   if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
   loadNameInk(n);
-  const ink = scratch[0]!;
+  const ink = scratch[0]! * share;
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
   const domainId = n.role === "domain" || n.role === "units" ? n.id : F.model.domainOf.get(n.id) ?? null;
   const childSelected = n.role === "domain" && attention.selected && attention.focusId !== n.id && F.model.domainOf.get(attention.focusId ?? "") === n.id;
-  const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && n.id === attention.focusId);
+  const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && (wasFocus || n.id === attention.focusId));
   const color = n.role === "units" ? hueOf(domainId) : strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
@@ -799,14 +799,27 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   }
 
   const fontFamily = labelFontFamily();
-  const admission = admittedNames({
+  const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
-    lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
-    selected: attention.selected, named: attention.named, reach: attention.reach,
+    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    selected: a.selected, named: a.named, reach: a.reach,
     discRadius: stepRadius, elementSpacingPx,
   });
-  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) planName(admission.names[nIndex]!, alphas);
+  const admission = admitUnder(attention);
+  const leaving = F.leavingId;
+  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) {
+    const n = admission.names[nIndex]!;
+    planName(n, alphas, n.id === leaving ? mix : 1, false);
+  }
+  // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
+  if (leaving !== null) {
+    const before = admitUnder(motion.previous);
+    for (let nIndex = 0; nIndex < before.names.length; nIndex += 1) {
+      const n = before.names[nIndex]!;
+      if (n.id === leaving) planName(n, alphas, 1 - mix, true);
+    }
+  }
   const hub = plan.project[0];
   if (hub) {
     const placement = dialPlacementOf(input.dial);
@@ -899,6 +912,7 @@ function focusLinks(motion: GraphMotion): void {
   const P = F.P;
   // A selection the map opened with (a deep link, a rebuilt world) changed nothing here, so it does not light.
   const chorded = motion.current.selected && motion.settled && Number.isFinite(motion.changedAt) && !F.input.reducedMotion;
+  const devicePxPerCss = F.W > 0 ? F.input.ctx.canvas.width / F.W : 1;
   for (let lineIndex = 0; lineIndex < motion.drawnCount; lineIndex += 1) {
     const { line, reach, current } = motion.drawn[lineIndex]!;
     if (reach <= DRAWN_INK) continue;
@@ -911,6 +925,8 @@ function focusLinks(motion: GraphMotion): void {
     const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
     const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
+    const { a: start, b: end } = mark.path;
+    if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
     mark.key = line.key;
     if (mark.reach !== reach) mark.reach = reach;
     L.focusArcs.add(mark);
