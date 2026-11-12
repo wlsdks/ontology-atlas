@@ -122,7 +122,7 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[44のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[50のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -137,6 +137,12 @@ MoruはAtlasのピクセルアザラシのキャラクターで、コンパス�
 <img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="魚と遊ぶモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="踊るモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="モルたちのダンス" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="照れるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="友達とボールで遊ぶモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="3匹の子モルと寄り添うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨の日に傘を差すモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="雪を見上げるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="そよ風を楽しむモル" />
 
 
 </details>

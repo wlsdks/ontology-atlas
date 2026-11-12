@@ -122,7 +122,7 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[44个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[50个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -137,6 +137,12 @@ Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[4
 <img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="和鱼儿玩耍的 Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="跳舞的 Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru 一起跳舞" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="害羞微笑的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="和朋友玩球的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="和三只小 Moru 依偎" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨天撑伞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="看雪花的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="感受微风的 Moru" />
 
 
 </details>

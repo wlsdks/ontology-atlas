@@ -185,7 +185,7 @@ export async function buildMoru() {
     for (let i = 0; i < data.length; i += 4) { const visible = data[i] > 100 && data[i + 3] > 200; data.fill(0, i, i + 3); data[i + 3] = visible ? 255 : 0; }
     await put(`${canonical}/mascot-tray-template-${size}.png`, await raw(data, 16).resize(size, size, { kernel: 'nearest' }).png().toBuffer());
   }
-  const manifest = { name: 'Moru', version: 4, nativeCell: 128, palette: COLORS.map(x => `#${x}`), clips, poses, compass: 'icons/atlas-compass-1024.png', runtime: { greeting: 'wave', waiting: 'blink', connect: 'connect', compile: 'source-read', walk: 'wave', read: 'source-read', success: 'dance' }, scope: 'Local design catalogue. Only explicitly mapped and observed runtime states play in the app; no animation grants approval or accepts meaning.' };
+  const manifest = { name: 'Moru', version: spec.version, nativeCell: 128, palette: COLORS.map(x => `#${x}`), clips, poses, compass: 'icons/atlas-compass-1024.png', runtime: { greeting: 'wave', waiting: 'blink', connect: 'connect', compile: 'source-read', walk: 'wave', read: 'source-read', success: 'dance' }, scope: 'Local design catalogue. Only explicitly mapped and observed runtime states play in the app; no animation grants approval or accepts meaning.' };
   await put(join(ROOT, 'moru.json'), JSON.stringify(manifest, null, 2) + '\n');
   await put(join(ROOT, 'preview-data.js'), `globalThis.moruManifest = ${JSON.stringify(manifest)};\n`);
   console.log(`[moru] ${spec.authored.length} authored clips + ${spec.compositions.length} compositions; ${Object.keys(poses).length} poses; compass 16–1024px`);

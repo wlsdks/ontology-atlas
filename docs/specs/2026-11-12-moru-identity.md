@@ -59,9 +59,9 @@ full character's face. Owner selection does not prove unfamiliar users recognize
 | Moru as every app/OS/browser mark | One character everywhere; small face carries both identity and expression | Existing pipeline is close, local assets; loses the selected independent compass role |
 | Compass identity plus Moru companion | Stable app identification and expressive company in existing slots | Moderate fan-out, entirely local; chosen |
 
-The first slice covers all requested surfaces and **44 distinct named animation clips
+The first slice covers all requested surfaces and **50 distinct named animation clips
 and 16 static expressions/poses**. The owner's later request sets a 30–50 range;
-28 clips are authored motions and 16 are explicitly labelled compositions.
+34 clips are authored motions and 16 are explicitly labelled compositions.
 Sizes/formats do not count
 as new clips or poses. Each clip records its authored source or constituent poses
 and timing; compositions are labelled. Keep references, prompts, masters, exports,
@@ -177,7 +177,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    no unintended indigo eye edge, clipping, jitter, or ground-contact drift.
    Check preview captures and `brand-asset-parity.contract.test.ts`; preserve eye evidence.
 2. **Given** the catalogue, **when** manifest and preview are inspected, **then**
-   44 distinct clips and 16 static poses resolve to project sources and
+   50 distinct clips and 16 static poses resolve to project sources and
    exports, with compositions/timing identified. Open every clip in `assets/brand/moru/preview.html` at 64px and 128px.
 3. **Given** current consumers, **when** pipeline/parity checks run, **then**
    compass symbols and Moru slots consistently replace traveler art; compass at

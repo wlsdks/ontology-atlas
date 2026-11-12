@@ -31,7 +31,7 @@ a curled forked left tail with an ivory notch. Preserve the selected silhouette.
 Moru is a character, not an ontology kind, assistant persona or work detector.
 
 The complete project pack is [assets/brand/moru](../../assets/brand/moru/):
-28 authored twenty-four-frame motions, 16 explicitly labelled composed sequences and
+34 authored twenty-four-frame motions, 16 explicitly labelled composed sequences and
 16 static poses. Sizes/formats never count as additional designs.
 Open [preview.html](../../assets/brand/moru/preview.html) locally to play, pause,
 scrub frames, inspect 64/128px exports, and download individual assets.
@@ -164,7 +164,7 @@ The repository [license](../../LICENSE) remains unchanged.
 - Brand parity/presence contracts cover the three character tiers, independent
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
-  a nonempty 44-clip inventory, frame count, hard alpha, margins and loop seams.
+  a nonempty 50-clip inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite greeting behavior.
 - Motion approval additionally requires a real recording through

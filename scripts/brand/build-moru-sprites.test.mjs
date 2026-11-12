@@ -49,8 +49,8 @@ test('the chorus retains complete opaque musical notes above the seals', async (
 test('every catalogue export has complete frames, clear margins and a shared neutral loop seam', async () => {
   const root = 'assets/brand/moru';
   const manifest = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
-  assert.equal(Object.keys(manifest.clips).length, 44);
-  assert.equal(Object.values(manifest.clips).filter(c => c.kind === 'authored').length, 28);
+  assert.equal(Object.keys(manifest.clips).length, 50);
+  assert.equal(Object.values(manifest.clips).filter(c => c.kind === 'authored').length, 34);
   assert.equal(Object.keys(manifest.poses).length, 16);
   for (const [name, clip] of Object.entries(manifest.clips)) {
     assert.equal(clip.frames, clip.kind === 'authored' ? 24 : 47, `${name}: source pose count`);

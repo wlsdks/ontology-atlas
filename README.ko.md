@@ -133,7 +133,7 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 44개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 50개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -148,6 +148,12 @@ pnpm checks:changed -- --run
 <img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="물고기와 노는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="춤추는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="모루들의 합동 춤" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="수줍게 웃는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="친구와 공놀이하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="새끼 모루 셋과 안기는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="비 오는 날 우산 쓴 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="눈송이를 바라보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="산들바람을 느끼는 모루" />
 
 
 </details>
