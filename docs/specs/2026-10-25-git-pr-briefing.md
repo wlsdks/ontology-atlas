@@ -117,7 +117,7 @@ No synthetic history is presented as native evidence on the web.
 
 | State | Web | macOS app |
 |---|---|---|
-| First run / no ontology | `webTitle`, `webBody`; get app | Visible `title` entry on launch chooser; `sourcePrompt`, `chooseRepository` in Changes |
+| First run / no ontology | The start stage with `startTitle` and `webBody`; get app | Visible `title` entry on launch chooser; `sourcePrompt`, `chooseRepository` in Changes |
 | Model recovery without ontology | `webBody`; get app | `openFolder` opens an ontology folder; standalone exit remains available. |
 | Connection audit | `webBody`; get app | `sourceAudit`; no-vault connection checks are recorded in Atlas app data on this device without repository text. |
 | Model selection | `webBody`; get app | `chooseModel` opens Models; `back` returns with repository/dates. |
@@ -178,7 +178,6 @@ quotations retain their original language. Keys below are namespace-relative; re
 | `title` | Page | Git and PR briefing |
 | `sourcePrompt` | First run | Choose a Git repository to catch up on its commits and PR descriptions. An ontology is optional. |
 | `chooseRepository` | Repository control | Choose Git repository |
-| `webTitle` | Web limit | Git and PR briefing needs the installed app |
 | `webBody` | Web limit | Choose a repository folder in the installed app to read local Git history and create an explanation with your connected model. |
 | `sourceUnavailable` | Folder failure | This repository is unavailable or its folder permission expired. Choose it again; your dates are kept. |
 | `noHistory` | History absence | This folder has no readable Git history. Choose another repository or retry after its first commit. |

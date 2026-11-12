@@ -1,7 +1,7 @@
 'use client';
 
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
-import { Download, MessageSquare, RefreshCw, Search } from 'lucide-react';
+import { MessageSquare, RefreshCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
@@ -11,7 +11,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { buttonVariants, Chip, Dialog, EmptyState, InfoHint, Surface } from '@/shared/ui';
+import { Chip, Dialog, EmptyState, GetAppLink, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { TermHint } from '@/shared/ui/hints/term-hint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -123,16 +123,8 @@ export function AcpRuntimeSettings({
           description={<span className="block">{t('webCaption')}</span>}
           action={
             <>
-              <Link
-                href="/download/"
-                data-testid="app-settings-runtimes-get-app"
-                /* The tab's only way forward: the standard primary button every web-only door wears. */
-                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
-              >
-                <Download size={ICON_SIZE.md} aria-hidden />
-                {t('webGetApp')}
-              </Link>
-              {/* A link, not a button: MCP is another destination, and the Mac app stays the one first press. */}
+              {/* The tab's only way forward; MCP below is another destination, so it stays a link. */}
+              <GetAppLink data-testid="app-settings-runtimes-get-app">{t('webGetApp')}</GetAppLink>
               <Link
                 href={DESTINATION_HREF.mcp}
                 data-testid="app-settings-runtimes-mcp-link"

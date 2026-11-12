@@ -1,7 +1,7 @@
 {
   "file": "src/views/architecture/ui/HarnessPage.tsx",
-  "count": 2,
+  "count": 1,
   "claim": "standard-button",
   "proof": "buttonVariants",
-  "why": "The Harness web-only and no-source doors, \"Get the Mac app\" and \"Connect a source folder\", are each the page's one way forward. They navigate, so they are `<Link>` through `cn(buttonVariants({ variant: \"primary\", size: \"sm\" }), …)`; `control-class.ts` does not replace standard buttons."
+  "why": "The Harness no-source door, \"Connect a source folder\", is the page's one way forward. It navigates, so it is a `<Link>` through `cn(buttonVariants({ variant: \"primary\", size: \"sm\" }), …)`; `control-class.ts` does not replace standard buttons."
 }

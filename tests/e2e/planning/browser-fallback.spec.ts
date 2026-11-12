@@ -9,6 +9,7 @@ test('unproven browser access stays unavailable at narrow and desktop widths', a
     await expect(page.getByRole('heading', { name: planning.title })).toBeVisible();
     await expect(page.getByText(planning.browserUnavailable)).toBeVisible();
     await expect(page.getByRole('button', { name: planning.chooseFolder })).toHaveCount(0);
+    await expect(page.getByTestId('planning-get-app')).toHaveAttribute('href', /\/download\//);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   }
 });
@@ -32,6 +33,7 @@ for (const response of ['unsupported', 'failed', 'malformed'] as const) {
     await page.goto('/ko/planning/');
     await expect(page.getByText(planning.browserUnavailable)).toBeVisible();
     await expect(page.getByRole('button', { name: planning.chooseFolder })).toHaveCount(0);
+    await expect(page.getByTestId('planning-get-app'), 'the app never offers its own download').toHaveCount(0);
     expect(await page.evaluate(() => (window as unknown as { planningPickerCalls: number }).planningPickerCalls)).toBe(0);
   });
 }

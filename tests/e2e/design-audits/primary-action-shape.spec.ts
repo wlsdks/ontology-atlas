@@ -22,6 +22,26 @@ const DOORS: readonly { name: string; url: string; door: (page: Page) => Locator
     door: (page) => page.getByTestId("app-settings-runtimes-get-app"),
   },
   {
+    name: "Planning",
+    url: "/ko/planning/?guides=off",
+    door: (page) => page.getByTestId("planning-get-app"),
+  },
+  {
+    name: "Briefing",
+    url: "/ko/changes/?guides=off",
+    door: (page) => page.getByTestId("briefing-get-app"),
+  },
+  {
+    name: "Git",
+    url: "/ko/git/?guides=off",
+    door: (page) => page.getByTestId("atlas-git-web-get-app"),
+  },
+  {
+    name: "Rounds",
+    url: "/ko/library/?tab=rounds&guides=off",
+    door: (page) => page.getByTestId("library-rounds-get-app"),
+  },
+  {
     name: "Models",
     url: "/ko/agents/?tab=models&guides=off",
     door: (page) => page.getByTestId("ai-connection-download-link"),

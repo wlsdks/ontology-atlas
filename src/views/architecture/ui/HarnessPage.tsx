@@ -13,7 +13,7 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
-import { Button, buttonVariants, Chip, EmptyState, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
+import { Button, buttonVariants, Chip, EmptyState, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
@@ -362,7 +362,7 @@ function HarnessPageInner() {
                 <div className="min-w-0 max-w-prose">
                   <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
                   <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
-                  <Link href="/download/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide mt-4')}>{t('browserAction')}</Link>
+                  <GetAppLink className="mt-4">{t('browserAction')}</GetAppLink>
                 </div>
               </>} />
             )}

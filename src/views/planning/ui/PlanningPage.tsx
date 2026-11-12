@@ -7,6 +7,7 @@ import { FileImage, FileText, FolderOpen, RefreshCw } from 'lucide-react';
 import { choosePlanningFolder, openPlanningDocument, planningAvailable, readPlanningFile, scanPlanningFolder, type PlanningInventory, type PlanningSelection } from '@/shared/lib/planning/bridge';
 import { beginPlanningReturn, clearPlanningReturn } from '@/shared/lib/planning/navigation';
 import { readPlanningMemory, writePlanningMemory } from '@/shared/lib/planning/memory';
+import { isDesktopShell } from '@/shared/lib/desktop-shell/desktop-shell';
 import { PlanningMarkdown, PlanningStandaloneImage } from './PlanningMarkdown';
 import { Button, Disclosure, PageHeaderBar, RowButton } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
@@ -207,8 +208,8 @@ export function PlanningPage() {
     <PageHeaderBar frame="page" title={t('title')} actions={available && selection ? <Button variant="outline" data-planning-choose className="max-[769px]:min-h-11" onClick={() => void choose()}><FolderOpen size={16} />{t('chooseFolder')}</Button> : undefined} />
     <div className={!selection ? `${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}` : 'mx-auto w-full max-w-7xl space-y-4 px-4 py-5 pb-8 sm:px-6 lg:px-10'}>
       {available === null ? <p role="status">{t('checkingSupport')}</p>
-        : available === false ? <section data-planning-state="unsupported" className={`${panel} space-y-3 p-6`}><p>{t('chooseBody')}</p><p>{t('browserUnavailable')}</p></section>
-        : !selection ? <PlanningFolderStage onChoose={() => void choose()} unavailable={status === 'unavailable'} />
+        : available === false ? <PlanningFolderStage door={{ kind: 'unsupported', offersApp: !isDesktopShell() }} />
+        : !selection ? <PlanningFolderStage door={{ kind: 'choose', onChoose: () => void choose(), unavailable: status === 'unavailable' }} />
         : <>
           <div className={`${panel} flex flex-wrap items-center justify-between gap-3 p-4`}>
             <div className="min-w-0 space-y-1 text-body"><p className="break-all text-[color:var(--color-text-primary)]">{t('folderLabel', { folder: selection.path })} · {t('readOnly')}</p><p className="text-[color:var(--color-text-secondary)]">{status === 'checking' ? t('checking') : checkedAt ? t('observedAt', { time: new Date(checkedAt).toLocaleString() }) : t('loading')} · {t('observationLimit')}</p></div>

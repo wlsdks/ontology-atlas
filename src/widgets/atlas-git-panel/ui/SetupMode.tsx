@@ -4,7 +4,6 @@
 // and throw "Illegal constructor"; an alias cannot collide with a global.
 import {
   Check,
-  Download,
   FolderOpen,
   ShieldCheck,
 } from "lucide-react";
@@ -12,7 +11,7 @@ import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
 import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import { buttonVariants } from "@/shared/ui";
+import { buttonVariants, GetAppLink } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import type { Translator } from "../lib/translator";
@@ -343,14 +342,7 @@ export function WebSetup({
       body={t("webDesktopHint")}
       note={t("scopeNotice")}
     >
-      <Link
-        href="/download"
-        data-testid="atlas-git-web-get-app"
-        className={cn(buttonVariants({ variant: "primary", size: "sm" }), SETUP_ACTION_PLACEMENT, "self-start")}
-      >
-        <Download size={ICON_SIZE.md} aria-hidden />
-        {t("webGetApp")}
-      </Link>
+      <GetAppLink data-testid="atlas-git-web-get-app" className="shrink-0 self-start">{t("webGetApp")}</GetAppLink>
 
       {/* What changed this time — the **basis** for the action, so it sits below the primary action. */}
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
