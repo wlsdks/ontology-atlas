@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  useEffect,
-  useEffectEvent,
   useId,
   useMemo,
   useState,
@@ -24,7 +22,7 @@ import {
 } from "@/entities/knowledge-graph";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
-import { treeAncestorIds } from "../lib/reveal-row";
+import { closedAncestorHolding } from "../lib/selection-path";
 import { useIndexRootWindow } from "../lib/use-index-root-window";
 import {
   flattenVisibleRowIds,
@@ -65,11 +63,9 @@ interface TopologyIndexPanelLabels {
   censusConcepts: string;
   censusRelations: string;
   censusDomains: string;
-  /** The unit word after the document count in the source line — "documents". */
-  sourceDocuments: string;
-  /** Hover explanation when the folder walk stopped before the end of the tree. */
-  sourceDocumentsPartialTitle: string;
   sourceDocumentsReading?: string;
+  /** Hidden text on the closed row that holds the selection. */
+  holdsSelection: string;
   capabilitiesShort: string;
   elementsShort: string;
   /** What those two kind names mean — see `TopologyIndexTreeRowLabels.subcountsTitle`. */
@@ -102,18 +98,12 @@ interface TopologyIndexPanelLabels {
    *  the document library, where the per-document explanation and repair already live. */
   brokenDocsLabel: string;
   brokenDocsAction: string;
-  /**
-   * "This project has no code folder attached": one quiet line whose press opens that project,
-   * where the fix lives; no folder is chosen here.
-   */
-  sourceUnboundLabel: string;
-  /** The eyebrow over the list of things to tidy (uncataloged, broken, unbound rows). */
+  /** The eyebrow over the list of things to tidy (uncataloged and broken rows). */
   tidyHeading: string;
   /** Says the map inside the picked project was opened, so the substitution is never silent. */
   openedInsideLabel: string;
   /** Accessible name for the control that closes that notice once it has been read. */
   openedInsideDismiss: string;
-  sourceUnboundAction: string;
   /** A quiet hint that element rows are absent in plain mode; renders only with `plainMode`. */
   plainHint?: string;
 }
@@ -146,10 +136,11 @@ export interface TopologyIndexPanelProps {
   uncatalogedDocCount?: number;
   /** Documents carrying at least one error-severity validation issue. At 0 the row is absent. */
   brokenDocCount?: number;
-  /** The node id of a project with no code folder bound. null means the row does not exist. */
+  /**
+   * The node id of a project with no code folder bound, for the first-run door only; the project's
+   * own panel carries the remedy.
+   */
   unboundProjectNodeId?: string | null;
-  /** Opens that project so its code folder can be connected; falls back to `onSelect`. */
-  onOpenUnboundSource?: (id: string) => void;
   /** The vault holds no project node at all — distinct from "every project already has code bound". */
   noProjectsYet?: boolean;
   /** Truthy when "open a folder" opened the map inside the folder that was picked. */
@@ -183,17 +174,10 @@ export interface TopologyIndexPanelProps {
   /** Shows maintenance controls only for an opened vault. */
   vaultLoaded?: boolean;
   /**
-   * Basename of the folder the concepts were read from, null in sample mode; a basename because the
-   * File System Access API offers nothing more, and both surfaces must say the same thing.
+   * Basename of the folder being read; a basename because the File System Access API offers
+   * nothing more. Shown only with `sourceLoadProgress`: at rest the rail names the folder.
    */
   sourceName?: string | null;
-  /** Markdown documents read out of that folder. `null` while the manifest is not built yet. */
-  sourceDocumentCount?: number | null;
-  /**
-   * Whether the walk stopped early
-   * (`VaultManifest.walkTruncated`); `entities/docs-vault/model/types.ts` requires the count to say so in place, as `N+`.
-   */
-  sourceDocumentCountPartial?: boolean;
   sourceLoadProgress?: { read: number; total: number } | null;
 }
 
@@ -220,11 +204,8 @@ export function TopologyIndexPanel({
   uncatalogedDocCount,
   brokenDocCount,
   unboundProjectNodeId = null,
-  onOpenUnboundSource,
   noProjectsYet = false,
   sourceName = null,
-  sourceDocumentCount = null,
-  sourceDocumentCountPartial = false,
   sourceLoadProgress = null,
   openedInsidePickedFolder = null,
   agentAvailable = false,
@@ -279,25 +260,8 @@ export function TopologyIndexPanel({
       openIds: nextOpenIds,
     });
   }
+  // Only the person opens rows: a selection marks the closed row holding it instead.
   const openIds = treeOpenState.openIds;
-  /*
-   * The tree follows the selection: each new selection opens the rows above it once, a later fold
-   * is respected, and a row not built yet is revealed when it arrives.
-   */
-  const [revealedSelection, setRevealedSelection] = useState<string | null>(null);
-  if (selectedId !== revealedSelection) {
-    // Walked only while a reveal is owed, not on every render of a large tree.
-    const ancestors = selectedId ? treeAncestorIds(treeResult.roots, selectedId) : null;
-    if (selectedId === null || ancestors !== null) {
-      setRevealedSelection(selectedId);
-      if (ancestors?.some((id) => !openIds.has(id))) {
-        setTreeOpenState((current) => ({
-          ...current,
-          openIds: new Set([...current.openIds, ...ancestors]),
-        }));
-      }
-    }
-  }
   // The lens narrows the tree only while search is empty; with `lensProp` it is controlled by
   // `?recent=`.
   const [lensLocal, setLensLocal] = useState<IndexLens>("all");
@@ -329,7 +293,10 @@ export function TopologyIndexPanel({
     return computeMaxDomainDescendantCount(domains);
   }, [treeResult.roots, domainCensus]);
 
+  // Search and the lens show every narrowed row open; a toggle there would silently change the
+  // open set the tree returns to.
   const toggleOpen = (nodeId: string) => {
+    if (isFiltering || lensActive) return;
     setTreeOpenState((current) => {
       const next = new Set(current.openIds);
       if (next.has(nodeId)) next.delete(nodeId);
@@ -342,12 +309,8 @@ export function TopologyIndexPanel({
 
   // Roving tabindex over the visible rows (the same `isOpen` as the auto-expansion); arrow keys are
   // handled on the tree container.
-  const [rootRange, rootListRef, bringRow, tabStopFor] = useIndexRootWindow(visibleRoots);
-  const revealRow = useEffectEvent((nodeId: string) => bringRow(nodeId, "reveal"));
-  // A revealed row is scrolled into the tree's own view, also when a search ends.
-  useEffect(() => {
-    if (revealedSelection) revealRow(revealedSelection);
-  }, [revealedSelection, isFiltering]);
+  // A tabIndex=-1 row still accepts focus(); it becomes the entry point on the next render.
+  const [rootRange, rootListRef, focusRow, tabStopFor] = useIndexRootWindow(visibleRoots);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const orderedRowIds = useMemo(
     () => flattenVisibleRowIds(visibleRoots, isOpen),
@@ -355,11 +318,13 @@ export function TopologyIndexPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [visibleRoots, openIds, isFiltering, lensActive],
   );
-  const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectedId);
+  const selectionHolderId = useMemo(
+    () => (selectedId ? closedAncestorHolding(visibleRoots, selectedId, isOpen) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visibleRoots, selectedId, openIds, isFiltering, lensActive],
+  );
+  const resolvedActiveRowId = resolveActiveRowId(orderedRowIds, activeRowId, selectionHolderId ?? selectedId);
   const tabStopRowId = tabStopFor(resolvedActiveRowId);
-
-  // A tabIndex=-1 row still accepts focus(); it becomes the entry point on the next render.
-  const focusRow = (nodeId: string) => bringRow(nodeId, "focus");
 
   const handleTreeKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
     const key = event.key;
@@ -403,16 +368,6 @@ export function TopologyIndexPanel({
       label: labels.brokenDocsLabel,
       action: labels.brokenDocsAction,
       href: "/docs/",
-    });
-  }
-  if (vaultLoaded && unboundProjectNodeId) {
-    const unboundId = unboundProjectNodeId;
-    tidyRows.push({
-      key: "unbound",
-      testId: "topology-index-source-unbound",
-      label: labels.sourceUnboundLabel,
-      action: labels.sourceUnboundAction,
-      onClick: () => (onOpenUnboundSource ?? onSelect)(unboundId),
     });
   }
   const tidyHeadingId = useId();
@@ -482,11 +437,7 @@ export function TopologyIndexPanel({
           <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>
       </button>
-      {/*
-       * Which folder these rows came from, under the panel's name so it shows at every width; only
-       * with a folder open.
-       */}
-      {sourceName ? (
+      {sourceName && sourceLoadProgress ? (
         <p
           data-testid="topology-index-source"
           className="mb-3 flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--map-panel-text-quaternary)]"
@@ -497,28 +448,13 @@ export function TopologyIndexPanel({
           >
             {sourceName}
           </span>
-          {sourceLoadProgress ? (
-            <>
-              <span aria-hidden>·</span>
-              <span
-                className="shrink-0 tabular-nums"
-                data-vault-load-progress={`${sourceLoadProgress.read}/${sourceLoadProgress.total}`}
-              >
-                {labels.sourceDocumentsReading}
-              </span>
-            </>
-          ) : sourceDocumentCount === null ? null : (
-            <>
-              <span aria-hidden>·</span>
-              <span
-                className="shrink-0"
-                title={sourceDocumentCountPartial ? labels.sourceDocumentsPartialTitle : undefined}
-              >
-                {sourceDocumentCount}
-                {sourceDocumentCountPartial ? "+" : ""} {labels.sourceDocuments}
-              </span>
-            </>
-          )}
+          <span aria-hidden>·</span>
+          <span
+            className="shrink-0 tabular-nums"
+            data-vault-load-progress={`${sourceLoadProgress.read}/${sourceLoadProgress.total}`}
+          >
+            {labels.sourceDocumentsReading}
+          </span>
         </p>
       ) : null}
       <p data-testid="topology-index-census" className="sr-only">
@@ -663,6 +599,7 @@ export function TopologyIndexPanel({
                   onToggleOpen={toggleOpen}
                   onSelect={onSelect}
                   selectedId={selectedId}
+                  selectionHolderId={selectionHolderId}
                   activeRowId={tabStopRowId}
                   changedSlugs={changedSlugs}
                   agentAttributedNodeId={recentChanges?.agentAttributedNodeId ?? null}

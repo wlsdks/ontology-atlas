@@ -9,8 +9,6 @@ const ROOT_ROW_ESTIMATE_PX = 36;
 /** Enough rows for a tall panel, so the first paint does not build hundreds that leave at once. */
 const FIRST_RENDER_ROOTS = 40;
 
-type RowAction = "focus" | "reveal";
-
 function renderedRow(list: HTMLElement | null, nodeId: string): HTMLElement | null {
   for (const row of list?.querySelectorAll<HTMLElement>("[data-index-row]") ?? []) {
     if (row.dataset.indexRow === nodeId) return row;
@@ -18,15 +16,10 @@ function renderedRow(list: HTMLElement | null, nodeId: string): HTMLElement | nu
   return null;
 }
 
-function act(row: HTMLElement, action: RowAction): void {
-  if (action === "focus") row.focus();
-  else row.scrollIntoView?.({ block: "nearest" });
-}
-
 /**
  * Only the top-level rows in view are in the DOM (`useWindowedRows`): a folder with hundreds of
  * parentless concepts made the INDEX most of its page (492 top-level rows, 6,497 elements at
- * 12,000 concepts). A row outside the window is scrolled in before it is focused or revealed, and
+ * 12,000 concepts). A row outside the window is scrolled in before it is focused, and
  * the tab stop moves to a rendered row while its own is scrolled away. Open branches render whole.
  * A tuple, so the window stays a value and the ref a ref to the lint.
  */
@@ -50,31 +43,31 @@ export function useIndexRootWindow(roots: readonly OntologyTreeNode[]) {
     });
     return index;
   }, [roots]);
-  const pendingRef = useRef<{ nodeId: string; action: RowAction } | null>(null);
+  const pendingFocusRef = useRef<string | null>(null);
 
-  const bringRow = useCallback(
-    (nodeId: string, action: RowAction) => {
+  const focusRow = useCallback(
+    (nodeId: string) => {
       const row = renderedRow(listRef.current, nodeId);
       if (row) {
-        pendingRef.current = null;
-        act(row, action);
+        pendingFocusRef.current = null;
+        row.focus();
         return;
       }
       const rootIndex = rootIndexById.get(nodeId);
       if (rootIndex === undefined) return;
-      pendingRef.current = { nodeId, action };
+      pendingFocusRef.current = nodeId;
       scrollToRoot(rootIndex);
     },
     [listRef, rootIndexById, scrollToRoot],
   );
 
   useEffect(() => {
-    const pending = pendingRef.current;
+    const pending = pendingFocusRef.current;
     if (!pending) return;
-    const row = renderedRow(listRef.current, pending.nodeId);
+    const row = renderedRow(listRef.current, pending);
     if (!row) return;
-    pendingRef.current = null;
-    act(row, pending.action);
+    pendingFocusRef.current = null;
+    row.focus();
   });
 
   /** The row that carries the tab stop: the active one, or the first rendered while it is not. */
@@ -88,5 +81,5 @@ export function useIndexRootWindow(roots: readonly OntologyTreeNode[]) {
     [rootIndexById, roots, range.end, range.start],
   );
 
-  return [range, listRef, bringRow, tabStopFor] as const;
+  return [range, listRef, focusRow, tabStopFor] as const;
 }
