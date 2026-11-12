@@ -41,8 +41,8 @@ assets, wording, layout signature, styling, or palette.
 5. Route every colour and dimension through canonical tokens. Canvas reads CSS
    once through `getComputedStyle` and caches it.
 6. Reuse `--topology-*`; a new token ships with product reason and marker/test.
-7. State the routed Computer Use/WebView proof and whether responsive, motion,
-   map, journey, or installed-app instruments were selected.
+7. State the `/ui-proof` rows run and whether responsive, motion, map, journey,
+   or installed-app instruments were among them.
 8. Record rejected directions and why.
 
 ## Required verdict packet
@@ -54,7 +54,7 @@ Design Guardian verdict:
 - Typed fact: <kind/slug/relation/evidence/quality/gate/path/handoff>.
 - Tokens: <reused> / <new + reason> / <gap>.
 - Motion: <state>, reduced-motion=<replacement>.
-- Evidence: Computer Use=<app/window + tree + screenshot>, routed instruments=<results>.
+- Evidence: Computer Use=<app/window + tree + screenshot>, /ui-proof instruments=<results>.
 - Surface stack: transient=<0/1/grouped>, blocking=<none/dimmed/blocked>.
 - Handoff: MCP=<action>, CLI=<fallback>.
 - Verdict: Do not design / Investigate first / Shape a design slice / Build and verify.
@@ -76,6 +76,6 @@ equivalent.
 Apply the correction the owner chose, or something smaller; never a union of proposals.
 Leave a supported design unchanged; require an evidence-backed correction only when a defect exists.
 
-**Remeasure after applying.** Rerun only the route proofs invalidated by the
+**Remeasure after applying.** Rerun only the `/ui-proof` rows invalidated by the
 guardian's last-mile edit. Do not repeat unrelated responsive, motion,
 performance, or installed-app work; never waive a proof the edit can affect.

@@ -8,10 +8,10 @@ by sight. An unlocalized feeling cannot become a reliable fix, while imagined
 defects damage healthy code. The fixed order is: measure → list violations →
 attach screenshots as evidence.
 
-Run only when `pnpm design:route` includes `design-audit`. Audit its returned
-scope: one affected state for a local change, affected map state for topology,
-or the full surface for a structural change. Copy-only, pure logic, motion-only,
-and topology-gesture-only work use their own routed proof.
+Run when the `/ui-proof` row names `pnpm ui:audit`. Audit one affected state
+for a local change, the affected map state for topology, or the full surface
+for a structural change. Copy-only, pure logic, motion-only, and
+topology-gesture-only work use their own row.
 
 ## 0. Fix the state
 

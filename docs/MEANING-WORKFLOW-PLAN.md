@@ -43,7 +43,7 @@ without the user's authorization. Preserve source licenses and notices.
 - Record before/after and a deliberately failing case where the claim could
   become misleading. Do not add prose-pinning tests or weaken a gate to pass.
 - Run every recommendation from `checks:changed`; UI proof follows
-  `design:route`, and changed gates follow `gate-probe`. Changes to construction
+  the `/ui-proof` table, and changed gates follow `gate-probe`. Changes to construction
   rules or content-affecting MCP reads/writes use the ontology field-trial
   protocol. Pure evaluation reporting is not a completed construction trial.
 - Before each comparative run or user study, freeze its critical questions/errors,
