@@ -1,0 +1,6 @@
+{
+  "tool": "built-in image_gen",
+  "target": "moru-yawn-edit-target-v2.png",
+  "output": "moru-yawn-corrected-v3.png",
+  "prompt": "Use case: precise-object-edit. Image 1 is our own Moru yawn-pose PNG, the edit target. Correct ONLY the facial anatomy while keeping the exact approved low round gray seal identity, closed paired eyelids, body pose, indigo flippers and curled forked LEFT tail with ivory notch, two navy whisker strokes each side, proportions, pixel style and color palette. The nose MUST be a small SOLID FILLED NAVY DIAMOND, not hollow and not a plus. Add a separate tiny dark oval yawning mouth BELOW the nose, with a clear gap between nose and mouth; no teeth, tongue, pink or extra colors. It should look adorably sleepy. Preserve the rest of the pose. Crisp carefully clustered pixel art, solid flat gray #d6d3c9, ivory #fff1d7, navy #171923, indigo #6d73d2/#50569c; no blur, grain, gradients, glow, ground, shadows, words or symbols. One centered full character in a transparent square PNG, generous padding. Do not crop the tail or flippers. Keep the same outline character, no redesign."
+}

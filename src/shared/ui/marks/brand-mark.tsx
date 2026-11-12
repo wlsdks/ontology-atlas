@@ -26,8 +26,16 @@ export interface BrandMarkProps
   > {
   /** Square, in CSS pixels; prefer an integer multiple of the native tier. */
   size?: number;
-  /** full=64px traveler · compact=32px hood and planet · micro=16px hood. */
+  /** full=64px Moru · compact=32px face · micro=16px simplified face. */
   detail?: BrandMarkDetail;
+}
+
+export function AtlasSymbol({ size = 32, ...props }: Omit<BrandMarkProps, 'detail'>) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={withBasePath('/brand/atlas-symbol.png')} width={size} height={size}
+      alt="Ontology Atlas" draggable={false} decoding="async" {...props} />
+  );
 }
 
 export function BrandMark({

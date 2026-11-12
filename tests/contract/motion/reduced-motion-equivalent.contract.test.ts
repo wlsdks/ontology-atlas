@@ -16,6 +16,7 @@ const CSS = readGlobalCss();
  * here with its reason, so a new surface defaults to red.
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
+  "atlas-moru-greeting": "The finite welcome becomes the neutral seal pose; the folder title, picker and keyboard actions remain unchanged.",
   "map-wait-orbit": "The loading scene's decorative orbit travel stops under reduced motion. The stationary planes, core, live status, and return action remain; map-navigation-wait.spec.ts checks every orbit's animation and transform.",
   "atlas-waiting-mark":
     "The native character remains visible beside the parent's unchanged status and Stop action; reduced motion removes the decorative frame steps and hops.",
@@ -126,7 +127,7 @@ describe('reduced-motion equivalent contract', () => {
   const requiresEquivalent = animatedClasses.filter((cls) => !(cls in INTENTIONALLY_STILL));
 
   it('the waiting character keeps its first native pose without animation or travel under reduced motion', () => {
-    const waiting = allRules.filter((rule) => rule.selector.trim() === '.atlas-waiting-mark');
+    const waiting = allRules.filter((rule) => rule.selector.split(',').some((selector) => selector.trim() === '.atlas-waiting-mark'));
     expect(waiting).toHaveLength(1);
     expect(waiting[0].body).toMatch(/animation:\s*none\s*!important\s*;/);
     expect(waiting[0].body).toMatch(/background-position:\s*0 0\s*!important\s*;/);

@@ -1,0 +1,767 @@
+{
+  "version": 3,
+  "authored": [
+    {
+      "id": "blink",
+      "source": "source/motion-v3/smooth-01.png",
+      "generatedFile": "exec-3bc19749-bfcd-4d08-ae06-f731a580a340.png",
+      "label": "Blink",
+      "context": "An actual wait, without a progress claim.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1800,
+        60,
+        60,
+        60,
+        80,
+        100,
+        80,
+        60,
+        60,
+        80,
+        120,
+        1500
+      ]
+    },
+    {
+      "id": "wave",
+      "source": "source/motion-v3/smooth-01.png",
+      "generatedFile": "exec-3bc19749-bfcd-4d08-ae06-f731a580a340.png",
+      "label": "Hello",
+      "context": "A finite welcome or verified entrance.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1000,
+        120,
+        140,
+        160,
+        180,
+        240,
+        200,
+        240,
+        180,
+        160,
+        180,
+        1000
+      ]
+    },
+    {
+      "id": "tail",
+      "source": "source/motion-v3/smooth-02.png",
+      "generatedFile": "exec-4ea81c65-d2a7-4102-9722-5a94d982bde9.png",
+      "label": "Tail wiggle",
+      "context": "Gentle anticipation; catalogue gesture.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1200,
+        180,
+        180,
+        180,
+        220,
+        240,
+        220,
+        180,
+        180,
+        180,
+        200,
+        1200
+      ]
+    },
+    {
+      "id": "doze",
+      "source": "source/motion-v3/smooth-02.png",
+      "generatedFile": "exec-4ea81c65-d2a7-4102-9722-5a94d982bde9.png",
+      "label": "Doze",
+      "context": "Rest only; never show during active work.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1200,
+        200,
+        240,
+        280,
+        360,
+        500,
+        500,
+        360,
+        280,
+        240,
+        200,
+        1300
+      ]
+    },
+    {
+      "id": "hop",
+      "source": "source/motion-v3/smooth-03.png",
+      "generatedFile": "exec-f6d87d7a-5531-4a67-9269-751675dbdaf1.png",
+      "label": "Little hop",
+      "context": "A brief celebration after observed completion.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1000,
+        140,
+        120,
+        90,
+        80,
+        140,
+        140,
+        90,
+        100,
+        120,
+        180,
+        1100
+      ]
+    },
+    {
+      "id": "tilt",
+      "source": "source/motion-v3/smooth-03.png",
+      "generatedFile": "exec-f6d87d7a-5531-4a67-9269-751675dbdaf1.png",
+      "label": "Curious tilt",
+      "context": "Looking closely at a recorded concept.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1200,
+        160,
+        180,
+        220,
+        240,
+        400,
+        400,
+        220,
+        180,
+        160,
+        200,
+        1100
+      ]
+    },
+    {
+      "id": "stretch",
+      "source": "source/motion-v3/smooth-04.png",
+      "generatedFile": "exec-a304f71c-9b9c-426d-96e5-08916a4bc6b3.png",
+      "label": "Stretch",
+      "context": "Returning to the folder; catalogue gesture.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1000,
+        240,
+        260,
+        280,
+        320,
+        600,
+        600,
+        320,
+        260,
+        240,
+        220,
+        1200
+      ]
+    },
+    {
+      "id": "clap",
+      "source": "source/motion-v3/smooth-04.png",
+      "generatedFile": "exec-a304f71c-9b9c-426d-96e5-08916a4bc6b3.png",
+      "label": "Pat-pat",
+      "context": "Brief celebration of verified completion, not accepted meaning.",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1000,
+        120,
+        120,
+        120,
+        100,
+        100,
+        160,
+        140,
+        100,
+        140,
+        180,
+        1100
+      ]
+    },
+    {
+      "id": "folder-open",
+      "label": "folder open",
+      "context": "folder open: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-05.png",
+      "generatedFile": "exec-cc03d48c-3aff-4986-b7cb-3ce39c8b3295.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "source-read",
+      "label": "source read",
+      "context": "source read: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-05.png",
+      "generatedFile": "exec-cc03d48c-3aff-4986-b7cb-3ce39c8b3295.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "search",
+      "label": "search",
+      "context": "search: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-06.png",
+      "generatedFile": "exec-00a36cd6-8ac8-4285-95c6-bed5ccf9449f.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "follow-link",
+      "label": "follow link",
+      "context": "follow link: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-06.png",
+      "generatedFile": "exec-00a36cd6-8ac8-4285-95c6-bed5ccf9449f.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "compare",
+      "label": "compare",
+      "context": "compare: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-07.png",
+      "generatedFile": "exec-74a5523f-cebd-4244-8e32-075d51d87378.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "review-proposal",
+      "label": "review proposal",
+      "context": "review proposal: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-07.png",
+      "generatedFile": "exec-74a5523f-cebd-4244-8e32-075d51d87378.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "await-permission",
+      "label": "await permission",
+      "context": "await permission: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-08.png",
+      "generatedFile": "exec-05c1ecb1-febc-4a77-a01e-e1fa581a8fdf.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1200,
+        220,
+        240,
+        260,
+        300,
+        420,
+        420,
+        300,
+        260,
+        240,
+        220,
+        1500
+      ]
+    },
+    {
+      "id": "uncertain",
+      "label": "uncertain",
+      "context": "uncertain: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-08.png",
+      "generatedFile": "exec-05c1ecb1-febc-4a77-a01e-e1fa581a8fdf.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1200,
+        220,
+        240,
+        260,
+        300,
+        420,
+        420,
+        300,
+        260,
+        240,
+        220,
+        1500
+      ]
+    },
+    {
+      "id": "stop",
+      "label": "stop",
+      "context": "stop: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-09.png",
+      "generatedFile": "exec-24ed3ad1-2a71-44d3-a9f2-1b7966801c88.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "retry",
+      "label": "retry",
+      "context": "retry: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-09.png",
+      "generatedFile": "exec-24ed3ad1-2a71-44d3-a9f2-1b7966801c88.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "save",
+      "label": "save",
+      "context": "save: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-10.png",
+      "generatedFile": "exec-5f863656-879f-4eb6-8bcd-1cad47c9f761.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "refresh",
+      "label": "refresh",
+      "context": "refresh: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-10.png",
+      "generatedFile": "exec-5f863656-879f-4eb6-8bcd-1cad47c9f761.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "connect",
+      "label": "connect",
+      "context": "connect: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-11.png",
+      "generatedFile": "exec-78235259-2b3a-43de-90b1-68eec8cba653.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "reply-ready",
+      "label": "reply ready",
+      "context": "reply ready: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-11.png",
+      "generatedFile": "exec-78235259-2b3a-43de-90b1-68eec8cba653.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "no-results",
+      "label": "no results",
+      "context": "no results: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-12.png",
+      "generatedFile": "exec-87e361f3-2350-43ff-9437-fc4e0692c7eb.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 0,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    },
+    {
+      "id": "rest-return",
+      "label": "rest return",
+      "context": "rest return: play only beside the corresponding observed service state.",
+      "source": "source/motion-v3/smooth-12.png",
+      "generatedFile": "exec-87e361f3-2350-43ff-9437-fc4e0692c7eb.png",
+      "columns": 4,
+      "rows": 6,
+      "offset": 12,
+      "frames": 12,
+      "durationsMs": [
+        1100,
+        180,
+        200,
+        220,
+        240,
+        300,
+        300,
+        240,
+        220,
+        200,
+        180,
+        1200
+      ]
+    }
+  ],
+  "compositions": [
+    {
+      "id": "arrival",
+      "label": "arrival",
+      "sequence": [
+        "wave",
+        "blink"
+      ]
+    },
+    {
+      "id": "welcome-back",
+      "label": "welcome back",
+      "sequence": [
+        "rest-return",
+        "wave"
+      ]
+    },
+    {
+      "id": "folder-scan",
+      "label": "folder scan",
+      "sequence": [
+        "folder-open",
+        "source-read"
+      ]
+    },
+    {
+      "id": "search-evidence",
+      "label": "search evidence",
+      "sequence": [
+        "search",
+        "source-read"
+      ]
+    },
+    {
+      "id": "trace-inspect",
+      "label": "trace inspect",
+      "sequence": [
+        "follow-link",
+        "tilt"
+      ]
+    },
+    {
+      "id": "review-pause",
+      "label": "review pause",
+      "sequence": [
+        "review-proposal",
+        "await-permission"
+      ]
+    },
+    {
+      "id": "permission-return",
+      "label": "permission return",
+      "sequence": [
+        "await-permission",
+        "blink"
+      ]
+    },
+    {
+      "id": "stop-and-retry",
+      "label": "stop and retry",
+      "sequence": [
+        "stop",
+        "retry"
+      ]
+    },
+    {
+      "id": "retry-inspect",
+      "label": "retry inspect",
+      "sequence": [
+        "retry",
+        "source-read"
+      ]
+    },
+    {
+      "id": "saved-and-refreshed",
+      "label": "saved and refreshed",
+      "sequence": [
+        "save",
+        "refresh"
+      ]
+    },
+    {
+      "id": "answer-arrives",
+      "label": "answer arrives",
+      "sequence": [
+        "source-read",
+        "reply-ready"
+      ]
+    },
+    {
+      "id": "empty-try-again",
+      "label": "empty try again",
+      "sequence": [
+        "no-results",
+        "retry"
+      ]
+    },
+    {
+      "id": "work-finished",
+      "label": "work finished",
+      "sequence": [
+        "source-read",
+        "clap"
+      ]
+    },
+    {
+      "id": "relation-review",
+      "label": "relation review",
+      "sequence": [
+        "follow-link",
+        "compare"
+      ]
+    },
+    {
+      "id": "quiet-break",
+      "label": "quiet break",
+      "sequence": [
+        "stretch",
+        "doze"
+      ]
+    },
+    {
+      "id": "happy-return",
+      "label": "happy return",
+      "sequence": [
+        "hop",
+        "wave"
+      ]
+    }
+  ],
+  "poses": {
+    "source": "source/moru-poses-source-v1.png",
+    "columns": 4,
+    "rows": 4,
+    "names": [
+      "attentive",
+      "hello",
+      "resting",
+      "tilt-right",
+      "tilt-left",
+      "flippers-together",
+      "happy-hop",
+      "soft-landing",
+      "pancake",
+      "yawn",
+      "cozy-curl",
+      "upright-stretch",
+      "peeking",
+      "bashful",
+      "compact-portrait",
+      "micro-portrait"
+    ],
+    "overrides": {
+      "yawn": {
+        "source": "source/moru-yawn-corrected-v3.png",
+        "columns": 1,
+        "rows": 1,
+        "index": 0
+      }
+    }
+  },
+  "compass": "source/atlas-compass-source-v3.png"
+}

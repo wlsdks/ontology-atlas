@@ -9,7 +9,7 @@ import { stripLocalePrefix } from '@/shared/lib/navigation/nav-destination';
 import { GITHUB_REPO_URL, xProfileUrl } from '@/shared/config/social-links';
 import { GithubMark, XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
-import { BrandMark } from '@/shared/ui/marks/brand-mark';
+import { AtlasSymbol } from '@/shared/ui/marks/brand-mark';
 
 /**
  * Top chrome for the gateway surfaces (`/`, `/download`, `/guide`, `/changelog`). At the root it
@@ -61,8 +61,7 @@ export function GatewayNav() {
           href="/"
           className={controlClass({ hoverInk: 'strong', shape: "link", className: "touch-hit-expand gap-2" })}
         >
-          <BrandMark
-            detail="compact"
+          <AtlasSymbol
             size={32}
             alt=""
             aria-hidden="true"
