@@ -36,8 +36,9 @@ capability leans toward the domains it depends on yet stays nearer its own
 domain than any other. The clusters then spread to the overview's aspect, so
 the first fit fills the free map. Concepts outside every domain sit in an
 empty corner. Every domain and capability keeps a disc and a pick target,
-whether or not its name has room; an element dot answers the pointer once it
-is drawn. A concept outside an open lens draws nothing and answers nothing.
+whether or not its name has room, and a pointer inside a disc picks that disc
+even where an element dot is drawn over it. An element dot answers the pointer
+once it is drawn, ahead of a name but only outside every disc. A concept outside an open lens draws nothing and answers nothing.
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once

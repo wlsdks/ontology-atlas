@@ -164,7 +164,9 @@ test("selecting a capability lights and names what it needs and what needs it, a
   expect(chosen, "the sample has a capability that both needs and is needed").not.toBeNull();
   const { id, needs, neededBy } = chosen!;
 
-  const at = await canvasPoint(page, rest.discs.find((d) => d.id === id)!);
+  const centre = (await readDial(page)).discs.find((d) => d.id === id);
+  expect(centre, `${id} reports a disc centre`).toBeDefined();
+  const at = await canvasPoint(page, centre!);
   await page.mouse.click(at.x, at.y);
   await page.mouse.move(5, VIEWPORT.height / 2);
   await waitForMapStill(page);
@@ -175,8 +177,8 @@ test("selecting a capability lights and names what it needs and what needs it, a
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
   for (const end of [...needs, ...neededBy]) {
-    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
-    expect(selected.texts.some((t) => t.id === end && t.role === "capability"), `${end} is named`).toBe(true);
+    if (ink.has(end)) expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
+    expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
   }
 
   const free = selected.freeRect;

@@ -101,7 +101,7 @@ const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", 
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const labelBoxPool = markPool<LabelBox>(() => ({ nodeId: "", text: "", minX: 0, minY: 0, maxX: 0, maxY: 0 }));
-const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0 }));
+const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0, solid: false }));
 const POOLS = [segments, dots, discs, glows, lights, arcMarks, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool];
 const selectionRing: Ring = { x: 0, y: 0, r: 0, alpha: 0, ink: "" };
 const agentRing: Ring = { x: 0, y: 0, r: 0, alpha: 1, ink: "" };
@@ -142,6 +142,7 @@ function elementPick(id: string, at: Point): DialPick {
   const p = pickPool.take();
   p.id = id;
   const r = Math.max(ELEMENT_PICK_PX, radiusNow(id));
+  p.solid = false;
   if (p.x !== at.x) p.x = at.x;
   if (p.y !== at.y) p.y = at.y;
   if (p.r !== r) p.r = r;
@@ -510,6 +511,7 @@ function discAt(id: string, at: Point, hue: string, focus: boolean, state: Disc[
 function pickOf(d: Disc): DialPick {
   const p = pickPool.take();
   p.id = d.id;
+  p.solid = true;
   if (p.x !== d.x) p.x = d.x;
   if (p.y !== d.y) p.y = d.y;
   if (p.r !== d.r) p.r = d.r;

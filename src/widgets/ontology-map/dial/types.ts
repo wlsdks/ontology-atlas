@@ -156,6 +156,8 @@ interface LeaderMark { id: string; x0: number; y0: number; x1: number; y1: numbe
 export interface DialMarks { inks: string[]; strips: StripMark[]; discs: DiscMark[]; squares: SquareMark[]; ticks: TickMark[]; rails: RailMark[]; glyphs: GlyphMark[]; texts: TextMark[]; numerals: NumeralMark[]; leaders: LeaderMark[];
 }
 export interface DialPick { id: string; x: number; y: number; r: number;
+  /** A disc that owns every point inside it, ahead of any name or element dot drawn over it. */
+  solid?: boolean;
 }
 export interface DialRowAction { type: "branch-members"; domainId: string; direction: "more" | "less" }
 export interface DialRowPick {
