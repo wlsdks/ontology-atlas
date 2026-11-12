@@ -105,7 +105,7 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
 /**
  * The lit set: a domain lights itself and its members, a capability its domain, elements and every
  * capability it needs, is needed by, relates to or sits under, an element its capability's set.
- * The project stays lit; pointing at the project lights nothing and only brings back its spokes.
+ * The project sinks with the rest; pointing at the project lights nothing and brings back its spokes.
  * O(relations) per call; the frame caches by key.
  */
 export function resolveGraphAttention(model: DialModel, focusId: string | null, selected: boolean): GraphAttention {
@@ -115,7 +115,6 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
   const lit = new Set<string>();
   const named = new Set<string>([focusId]);
   let lines: GraphLine[] = [];
-  if (model.projectId !== null) lit.add(model.projectId);
   if (model.domainById.has(focusId)) domainMembers(model, focusId, lit);
   else if (model.capabilityById.has(focusId)) lines = capabilityReach(model, focusId, lit, named);
   else {

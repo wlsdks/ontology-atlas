@@ -77,7 +77,7 @@ Hovering or selecting lights a set and sinks everything else toward the
 canvas. A domain lights itself and its members. A capability lights its
 domain, its elements and every capability it needs, is needed by, relates to
 or sits under (`broader`). An element lights its capability's set. The project
-stays lit. Resting arcs give way while a set is lit. The inks crossfade over
+sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. The inks crossfade over
 `--motion-fast` and jump at once with reduced motion. Names keep their places;
 lit capability names join the admitted set.
 

@@ -42,6 +42,15 @@ async function canvasPoint(page: Page, at: { x: number; y: number }): Promise<{ 
   return { x: box.x + at.x, y: box.y + at.y };
 }
 
+/** The eight domain hues as the canvas writes them: a disc rim in one of these is lit at full hue. */
+const domainHues = (page: Page) => page.evaluate(() => {
+  const style = getComputedStyle(document.documentElement);
+  return Array.from({ length: 8 }, (_, k) => {
+    const [r, g, b] = style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number);
+    return `#${[r, g, b].map((n) => n!.toString(16).padStart(2, "0")).join("")}`;
+  });
+});
+
 const hovered = (page: Page) =>
   page.evaluate(() => new Promise<string | null>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(window.__atlasMap!.hover())))));
 
@@ -90,7 +99,8 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   await waitForMapStill(page);
   const lit = await readDial(page);
   const litInk = new Map(lit.discs.map((d) => [d.id, d.ink]));
-  for (const id of own) if (restInk.has(id)) expect(litInk.get(id), `${id} stays lit`).toBe(restInk.get(id));
+  const hues = await domainHues(page);
+  for (const id of own) if (restInk.has(id)) expect(hues, `${id} is lit at its full hue`).toContain(litInk.get(id));
   const sunkCount = foreign.filter((id) => litInk.get(id) !== restInk.get(id)).length;
   expect(sunkCount, "every foreign capability sinks").toBe(foreign.length);
 
@@ -105,7 +115,7 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   expect(selected.texts.some((t) => t.id === capability && t.role === "capability"), "the selected capability is named").toBe(true);
   expect(selected.textOverlaps, "no admitted name crosses another under a selection").toBe(0);
   const selectedInk = new Map(selected.discs.map((d) => [d.id, d.ink]));
-  expect(selectedInk.get(target.domainId), "the selected capability's domain stays lit").toBe(restInk.get(target.domainId));
+  expect(hues, "the selected capability's domain stays lit").toContain(selectedInk.get(target.domainId));
 });
 
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
@@ -135,19 +145,14 @@ test("selecting a capability lights and names what it needs and what needs it, a
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   const rest = await openGraph(page);
-  const hues = await page.evaluate(() => {
-    const style = getComputedStyle(document.documentElement);
-    return Array.from({ length: 8 }, (_, k) => {
-      const [r, g, b] = style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number);
-      return `#${[r, g, b].map((n) => n!.toString(16).padStart(2, "0")).join("")}`;
-    });
-  });
+  const hues = await domainHues(page);
   let chosen: { id: string; needs: string[]; neededBy: string[] } | null = null;
   for (const disc of rest.discs) {
     if (!rest.clusters.some((c) => c.capabilityIds.includes(disc.id))) continue;
     const at = await canvasPoint(page, disc);
     await page.mouse.move(at.x, at.y);
     if ((await hovered(page)) !== disc.id) continue;
+    await waitForMapStill(page);
     const dial = await readDial(page);
     const needs = linesOf(dial, "needs").map(([, to]) => to);
     const neededBy = linesOf(dial, "neededBy").map(([from]) => from);

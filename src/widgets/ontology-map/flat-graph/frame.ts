@@ -38,7 +38,7 @@ const ELEMENT_PICK_PX = 4;
 const measureText = createMeasureText();
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
-interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number }
+interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
 interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string }
@@ -91,7 +91,7 @@ class FrameList<T> {
 }
 
 const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, alpha: 0 }));
-const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 }));
+const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
@@ -616,6 +616,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
       d.hue = hue;
       if (d.ink !== elInk) d.ink = elInk;
       if (d.alpha !== alpha) d.alpha = alpha;
+      d.lit = lit;
       L.dots.add(d);
     }
   }
@@ -1024,6 +1025,28 @@ const level = (share: number): number => Math.round(Math.min(1, Math.max(0, shar
 const discKey = (d: Disc): number => (((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
 const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 2 + (s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
 const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
+const dotLit = (d: Dot): boolean => d.lit;
+const dotUnlit = (d: Dot): boolean => !d.lit;
+
+/** Lit element dots paint over the discs: a selected disc grows over its own elements' ring. */
+function paintDots(ctx: CanvasRenderingContext2D, marks: readonly Dot[], ground: string, keep: (d: Dot) => boolean): void {
+  const dotLists = group(dotBuckets, marks, dotKey, keep);
+  for (let listIndex = 0; listIndex < dotLists.size; listIndex += 1) {
+    const list = dotLists.items[listIndex]!;
+    const first = list.items[0]!;
+    ctx.globalAlpha = first.alpha;
+    ctx.fillStyle = sunk(first.hue, ground, first.ink);
+    ctx.beginPath();
+    for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
+      const d = list.items[dIndex]!;
+      ctx.moveTo(d.x + d.r, d.y);
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
 const dotKey = (d: Dot): number => ((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.alpha)) | 0;
 const NO_DASH: number[] = [];
 const discBuckets = buckets<Disc>();
@@ -1112,20 +1135,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
   paintLines(ctx, plan.focusArcs, tokens);
-  const dotLists = group(dotBuckets, plan.dots, dotKey);
-  for (let listIndex = 0; listIndex < dotLists.size; listIndex += 1) {
-    const list = dotLists.items[listIndex]!;
-    const first = list.items[0]!;
-    ctx.globalAlpha = first.alpha;
-    ctx.fillStyle = sunk(first.hue, ground, first.ink);
-    ctx.beginPath();
-    for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
-      const d = list.items[dIndex]!;
-      ctx.moveTo(d.x + d.r, d.y);
-      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-    }
-    ctx.fill();
-  }
+  paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
     const glow = plan.glows[glowIndex]!;
     if (glow.alpha <= 0.004) continue;
@@ -1138,6 +1148,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   paintDiscs(ctx, plan.discs, tokens, ground, warning, "capability", growth);
   paintDiscs(ctx, plan.domains, tokens, ground, warning, "domain", growth);
   if (plan.project.length > 0) paintDiscs(ctx, plan.project, tokens, ground, warning, "project", growth);
+  paintDots(ctx, plan.dots, ground, dotLit);
   if (plan.agentRing) {
     ctx.globalAlpha = 1;
     ctx.strokeStyle = plan.agentRing.ink;
