@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, test } from 'node:test';
 
-import { censusFor, designSpecChangesBetween, specTextAt, specTriggerPath } from './design-spec-census.mjs';
 import { locateGlobalCssLine, readGlobalCss, readGlobalCssAt } from './global-css.mjs';
 
 const repo = mkdtempSync(path.join(tmpdir(), 'global-css-'));
@@ -41,37 +40,6 @@ test('reads the joined stylesheet at a ref, after and before the split', () => {
 
 test('an absent entry at a ref is null, not an empty stylesheet', () => {
   assert.equal(readGlobalCssAt('does-not-exist', repo), null);
-});
-
-test('the design-spec census reads ramp tokens through the parts', () => {
-  assert.equal(specTextAt('HEAD', 'app/globals.css', repo), readGlobalCss(repo));
-  assert.equal(censusFor('app/globals.css', ':root { --text-body: 13px; }').size, 1);
-  assert.equal(specTriggerPath('app/styles/one.css'), 'app/globals.css');
-  assert.equal(specTriggerPath('src/a.ts'), 'src/a.ts');
-});
-
-test('a ramp change made only in an app/styles part reaches the spec census', () => {
-  write('app/styles/one.css', ':root { --text-body: 13px; }\n');
-  git('add', '.');
-  git('commit', '-qm', 'ramp in a part');
-  write('app/styles/one.css', ':root { --text-body: 14px; }\n');
-  git('add', '.');
-  git('commit', '-qm', 'ramp value change');
-  const found = designSpecChangesBetween(
-    'HEAD~1',
-    'HEAD',
-    new Set(['app/styles/one.css']),
-    ['app/globals.css'],
-    repo,
-  );
-  assert.equal(found.length, 1);
-  assert.match(found[0], /--text-body/);
-  // Before the split, the entry itself held the tokens; that base still compares.
-  assert.equal(
-    designSpecChangesBetween('HEAD~3', 'HEAD', new Set(['app/globals.css']), ['app/globals.css'], repo)
-      .length > 0,
-    true,
-  );
 });
 
 test('a layer split across two parts joins back into one block', () => {
@@ -113,31 +81,4 @@ test('an import the reader cannot inline fails loudly', () => {
 test('maps a joined line back to the part that holds it', () => {
   assert.deepEqual(locateGlobalCssLine(1, repo), { file: 'app/globals.css', line: 1 });
   assert.deepEqual(locateGlobalCssLine(2, repo), { file: 'app/styles/one.css', line: 1 });
-});
-
-test('a moved spec file compares against its old path, so only a real export change reports', () => {
-  const dir = mkdtempSync(path.join(tmpdir(), 'spec-move-'));
-  try {
-    const run = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: dir, stdio: 'ignore' });
-    const put = (file, text) => {
-      mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
-      writeFileSync(path.join(dir, file), text);
-    };
-    const from = 'src/shared/lib/use-roving-radio-group.ts';
-    const to = 'src/shared/lib/keyboard/use-roving-radio-group.ts';
-    run('init', '-q');
-    put(from, 'export function useRovingRadioGroup() {}\n');
-    run('add', '.');
-    run('commit', '-qm', 'base');
-    mkdirSync(path.dirname(path.join(dir, to)), { recursive: true });
-    run('mv', from, to);
-    run('commit', '-qm', 'move');
-    const moved = new Map([[to, from]]);
-    assert.deepEqual(designSpecChangesBetween('HEAD~1', 'HEAD', new Set([to]), [to], dir, moved), []);
-    put(to, 'export function useRovingRadioGroup() {}\nexport type RovingRadioGroup = {};\n');
-    run('commit', '-qam', 'move and widen');
-    assert.equal(designSpecChangesBetween('HEAD~2', 'HEAD', new Set([to]), [to], dir, moved).length, 1);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
 });

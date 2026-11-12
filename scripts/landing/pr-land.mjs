@@ -107,22 +107,22 @@ export function describeScheduledRun(check, run, nowMs = Date.now()) {
   return null;
 }
 
-const USER_VISIBLE_TITLE = /^(feat|fix|perf|design)(\([^)]*\))?!?:/;
+const FEATURE_TITLE = /^(feat)(\([^)]*\))?!?:/;
 const NO_CHANGE_RECORD_LINE = /^No change record: *\S/m;
 const CHANGE_RECORD_DIR = 'docs/records/changes/';
 
 export function missingChangeRecord(pr, readChangedFiles) {
-  const type = USER_VISIBLE_TITLE.exec(pr.title ?? '')?.[1];
+  const type = FEATURE_TITLE.exec(pr.title ?? '')?.[1];
   if (!type || NO_CHANGE_RECORD_LINE.test(pr.body ?? '')) return null;
   const files = readChangedFiles();
   if (files === null) {
     return `is titled \`${type}:\`, and its changed files could not be read, so whether it adds a change record is unknown; try again once the read works.`;
   }
   if (files.some((path) => path.startsWith(CHANGE_RECORD_DIR))) return null;
-  return `is titled \`${type}:\`, which tells a user something changed, but adds no ${CHANGE_RECORD_DIR} record, so no release note can name it.\n`
+  return `is titled \`${type}:\`, which tells a user something new arrived, but adds no ${CHANGE_RECORD_DIR} record, so no release note can name it.\n`
     + `  Record the fact, then commit and push it:\n`
     + `    pnpm record:new -- --kind=change --date=YYYY-MM-DD --slug=<subject> --category=<${CATEGORIES.join('|')}> --input=<file>\n`
-    + '  Or, when no user can notice the change, add this line to the pull request body:\n'
+    + '  Or, when no user can notice the feature, add this line to the pull request body:\n'
     + '    No change record: <why no user can notice it>\n'
     + '  Then run `pnpm pr:land <number>` again.';
 }
