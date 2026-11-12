@@ -52,12 +52,11 @@ interface Options {
     ReturnType<typeof useTopologyGraphProjection>,
     | "projectBySlug"
     | "ontologyMapGraph"
-    | "spotlightIds"
     | "resolvedRealmSlug"
     | "localGraphProjects"
   >;
   topologyVaultReadModel: Pick<ReturnType<typeof useTopologyVaultReadModel>, "selectedOntologyNode" | "ontologyInsight" | "vault">;
-  topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "drawerProject" | "routedConstellation">;
+  topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "drawerProject" | "routedConstellation" | "spotlightLitIds">;
 }
 export function useTopologySceneControls({
   pathSourceSlug, pathTargetSlug, analysisMode, expandAllActive, setRouteState, setExpandAllActive,
@@ -66,9 +65,9 @@ export function useTopologySceneControls({
   topologyVaultReadModel, topologyGraphProjection, topologyRouteControls, topologyPreferences,
   topologyAuthoring, topologyCanvasFocus
 }: Options) {
-  const { drawerProject, routedConstellation } = topologyExplorationLenses;
+  const { drawerProject, routedConstellation, spotlightLitIds } = topologyExplorationLenses;
   const { selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
-  const { projectBySlug, ontologyMapGraph, spotlightIds, resolvedRealmSlug, localGraphProjects } = topologyGraphProjection;
+  const { projectBySlug, ontologyMapGraph, resolvedRealmSlug, localGraphProjects } = topologyGraphProjection;
   const { expandedParentSet } = topologyRouteControls;
   const { activeLocale, t, relationVocabulary, tKinds } = topologyPreferences;
   const { setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
@@ -93,7 +92,7 @@ export function useTopologySceneControls({
         ? routedConstellation.memberSlugs
         : expandAllActive
           ? allMapNodeIds
-          : spotlightIds;
+          : spotlightLitIds;
   const mapLensKind =
     analysisMode === "path"
       ? "path" as const

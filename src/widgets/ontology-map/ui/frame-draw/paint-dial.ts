@@ -7,6 +7,7 @@ import { paintDialMarks } from "../../dial/frame/paint";
 import type { DialFrameMarks } from "../../dial/frame/marks";
 import type { DialFrameResult } from "../../dial/types";
 import { tierAssemblyAppear } from "../../morph/tier-assembly";
+import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { passState, effectiveAlphaByIdReused } from "./frame-state";
 import type { FrameInputs } from "./frame-begin";
 
@@ -34,7 +35,8 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
   const pulse = !reducedMotion && selectionPulse !== null
     ? computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta)
     : null;
-  const requiredBranchIds = new Set([...(frame.spotlightIds ?? []), ...(frame.trailLensKeepIds ?? [])]);
+  const revealedIds = frame.spotlightIds !== null && spotlightRevealsHidden(frame.mapLensKind, frame.spotlightIds.size) ? frame.spotlightIds : [];
+  const requiredBranchIds = new Set([...revealedIds, ...(frame.trailLensKeepIds ?? [])]);
   for (const edge of [frame.selectedEdge, frame.previewEdge]) {
     if (edge) { requiredBranchIds.add(edge.sourceId); requiredBranchIds.add(edge.targetId); }
   }
@@ -106,7 +108,7 @@ export function paintDial(frame: FrameInputs): boolean {
     edgeSelected: selectedEdge !== null,
     edgePreviewed: previewEdge !== null,
     trailLensOpen: trailLensKeepIds !== null,
-    spotlightActive: spotlightIds !== null && spotlightIds.size > 0,
+    spotlightActive: spotlightIds !== null && spotlightIds.size > 0 && spotlightRevealsHidden(frame.mapLensKind, spotlightIds.size),
     pathLensActive: pathEdgeIds !== null && pathEdgeIds.size > 0,
     impactLensActive: dial?.impactLens === true,
     focusedIsElement: focusedNodeId !== null && world.nodeById.get(focusedNodeId)?.kind === "element",

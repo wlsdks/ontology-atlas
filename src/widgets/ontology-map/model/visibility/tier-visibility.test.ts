@@ -326,3 +326,13 @@ describe("classifyZoomTier (corner readout orientation)", () => {
     expect(classifyZoomTier(ZOOMED_OUT, C)).not.toBe("element");
   });
 });
+
+describe("spotlightRevealsHidden", () => {
+  it("lets a small recent lens and every other lens reveal, and stops a recent lens that would cover the map", async () => {
+    const { RECENT_SPOTLIGHT_REVEAL_MAX, spotlightRevealsHidden } = await import("./tier-visibility");
+    expect(spotlightRevealsHidden("recent", RECENT_SPOTLIGHT_REVEAL_MAX)).toBe(true);
+    expect(spotlightRevealsHidden("recent", RECENT_SPOTLIGHT_REVEAL_MAX + 1)).toBe(false);
+    expect(spotlightRevealsHidden("all", 5000)).toBe(true);
+    expect(spotlightRevealsHidden("path", 5000)).toBe(true);
+  });
+});
