@@ -33,6 +33,8 @@ import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import { createMeasureText } from "../../dial/fit";
 import { readDialTokens } from "../../dial/tokens";
 import { claimDialOrderFolder } from "../../dial/order";
+import { claimFlatGraphFolder } from "../../flat-graph/scene";
+import { readFlatGraphTokens } from "../../flat-graph/tokens";
 import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
 
@@ -91,7 +93,7 @@ const SIM_AFTER_ASSEMBLY_MS = 400;
 
 function dialWorldInput(labels: DialLabels | null, memory: DialMemory | null): DialWorldInput | null {
   try {
-    return { labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
+    return { graph: readFlatGraphTokens(), labels, tokens: readDialTokens(), measureText: createMeasureText(), rememberOrder: true, memory };
   } catch {
     return null;
   }
@@ -263,7 +265,10 @@ export function useTopologyWorldLifecycle({
     containerRef.current?.setAttribute(
       "data-stage-pan-click-cancel-px",
       String(tokens.hysteresisPx));
-    if (dataSourceKey !== null) claimDialOrderFolder(dataSourceKey);
+    if (dataSourceKey !== null) {
+      claimDialOrderFolder(dataSourceKey);
+      claimFlatGraphFolder(dataSourceKey);
+    }
     const ringMemory = dataSourceKey === null ? null : flatRingMemory;
     const stored = ringMemory?.current() ?? null;
     let placed = { state: "settled" as DialPlacementState, held: 0 };

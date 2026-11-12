@@ -23,6 +23,7 @@ import { dialOverviewPad } from "../../dial/fit";
 import { layoutDial } from "../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
 import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
+import { buildFlatGraphScene, flatGraphPins, rememberFlatGraph } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
 import { fireflySeed } from "../../render/edge-fireflies";
@@ -755,6 +756,12 @@ function buildDialWorld(
   const model = placeDial ? placeDial(built) : built;
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
   if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
+  if (input.graph) {
+    const scene = buildFlatGraphScene(model, order, input.graph.layout, flatGraphPins(model));
+    if (input.rememberOrder && scene.graph) rememberFlatGraph(model, scene.graph);
+    const pad = input.graph.paint.domainNamePx;
+    return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad } };
+  }
   const scene = layoutDial(model, order, input.tokens, input.memory);
   return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
 }

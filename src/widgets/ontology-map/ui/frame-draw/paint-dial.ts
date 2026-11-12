@@ -5,7 +5,10 @@ import { clearDialFrame, dialOwnsFlatPaint, paintDialFrame } from "../../dial/fr
 import { readDialTokens } from "../../dial/tokens";
 import { paintDialMarks } from "../../dial/frame/paint";
 import type { DialFrameMarks } from "../../dial/frame/marks";
-import type { DialFrameResult } from "../../dial/types";
+import type { DialFrameInput, DialFrameResult } from "../../dial/types";
+import { paintDeferredFlatGraph, paintFlatGraphFrame } from "../../flat-graph/frame";
+import { readFlatGraphTokens } from "../../flat-graph/tokens";
+import type { FlatGraphTokens } from "../../flat-graph/types";
 import { tierAssemblyAppear } from "../../morph/tier-assembly";
 import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { passState, effectiveAlphaByIdReused } from "./frame-state";
@@ -17,8 +20,10 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
   if (!dial)
     return null;
   let dialTokens;
+  let graphTokens: FlatGraphTokens | null = null;
   try {
     dialTokens = readDialTokens();
+    if (dial.scene.graph) graphTokens = readFlatGraphTokens();
   }
   catch {
     clearDialFrame();
@@ -40,7 +45,7 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
   for (const edge of [frame.selectedEdge, frame.previewEdge]) {
     if (edge) { requiredBranchIds.add(edge.sourceId); requiredBranchIds.add(edge.targetId); }
   }
-  const result = paintDialFrame({
+  const input: DialFrameInput = {
     requiredBranchIds, contextInkAlphas,
     contextAlphas, deferPaint: contextAlphas !== undefined,
     ctx, dial, worldKey: world,
@@ -64,7 +69,8 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
     elementLabel: (id) => world.nodeById.get(id)?.label ?? null,
     now, reducedMotion,
     domainAppear: tierAssemblyAppear(world, "domain", now) ?? 1,
-  });
+  };
+  const result = graphTokens ? paintFlatGraphFrame(input, graphTokens) : paintDialFrame(input);
   effectiveAlphaByIdReused.clear();
   passState.effectiveAlphaWorld = new WeakRef(world);
   for (const node of world.nodes)
@@ -76,7 +82,8 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
 }
 
 export function prepareBranchContext(frame: FrameInputs, alphas: ReadonlyMap<string, number>): DialFrameResult | null {
-  if (!(frame.realmDial ?? frame.world.dial)?.scene.branches || frame.domeOn || (!frame.realmDial && (frame.realmDepthById !== null || frame.wardingRing !== null))) return null;
+  const scene = (frame.realmDial ?? frame.world.dial)?.scene;
+  if (!(scene?.branches || scene?.graph) || frame.domeOn || (!frame.realmDial && (frame.realmDepthById !== null || frame.wardingRing !== null))) return null;
   const contextAlphas = new Map(alphas);
   const contextInkAlphas = new Map(alphas);
   if (frame.pathLensActive || frame.constellationLensActive) {
@@ -90,7 +97,8 @@ export function prepareBranchContext(frame: FrameInputs, alphas: ReadonlyMap<str
 
 export function paintBranchContext(frame: FrameInputs, result: DialFrameResult) {
   const marks = result.marks as DialFrameMarks;
-  paintDialMarks(frame.ctx, marks, frame.tokens, { now: frame.now, reducedMotion: frame.reducedMotion, numeralHaloPx: readDialTokens().numeralHaloPx });
+  if ((frame.realmDial ?? frame.world.dial)?.scene.graph) paintDeferredFlatGraph(frame.ctx, frame.zoomRatio);
+  else paintDialMarks(frame.ctx, marks, frame.tokens, { now: frame.now, reducedMotion: frame.reducedMotion, numeralHaloPx: readDialTokens().numeralHaloPx });
   const insets = frame.panelInsets ?? { left: 0, right: 0 };
   return {
     reservations: (marks.blocks ?? []).map((block) => ({ bbox: block.box, priority: 100, ownerId: block.id })),
@@ -103,6 +111,7 @@ export function paintDial(frame: FrameInputs): boolean {
   const { world, realmDepthById, wardingRing, selectedEdge, previewEdge, spotlightIds, pathEdgeIds, dial,
     focusedNodeId, relationCaptions, hoveredNodeId, trailLensKeepIds, domeOn } = frame;
   const dialOwns = (frame.realmDial ?? world.dial) != null && dialOwnsFlatPaint({
+    graphScene: (frame.realmDial ?? world.dial)?.scene.graph !== undefined,
     hasDial: !domeOn,
     realmActive: !frame.realmDial && (realmDepthById !== null || wardingRing !== null),
     edgeSelected: selectedEdge !== null,
