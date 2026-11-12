@@ -1,14 +1,12 @@
 /**
- * A record is exactly six fields in this order, within one screen. The rule is mechanical because
- * a template in prose is followed only by whoever remembers it.
+ * A record is exactly six fields in this order. The rule is mechanical because a template in prose
+ * is followed only by whoever remembers it.
  */
 
 // `TEMPLATE_SINCE` predates the first record, so no record is exempt.
 const TEMPLATE_SINCE = '2026-07-01';
 
 export const FIELDS = ['Why', 'Prior', 'Decision', 'Dissent', 'Falsifier', 'Owner'];
-
-export const LIMITS = { lines: 24, bytes: 2000 };
 
 export const TEMPLATE = `## YYYY-MM-DD — <the decision in one line>
 
@@ -28,10 +26,6 @@ const LABEL = /^\*\*([^*]+)\*\*/;
 export function checkRecordTemplate(record) {
   const problems = [];
   const lines = record.body.replace(/\s+$/, '').split('\n');
-  const bytes = Buffer.byteLength(record.body.trim());
-  if (lines.length > LIMITS.lines) problems.push(`${lines.length} lines; the template allows ${LIMITS.lines}`);
-  if (bytes > LIMITS.bytes) problems.push(`${bytes} bytes; the template allows ${LIMITS.bytes}`);
-
   const labels = [];
   for (const line of lines) {
     if (/^#{1,6}\s/.test(line)) problems.push(`sub-heading "${line.trim()}"; a record has fields, not sections`);

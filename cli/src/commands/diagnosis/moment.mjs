@@ -1,4 +1,4 @@
-// `ontology-atlas moment [vault]`: time from init/absorb to the first agent read,
+// `ontology-atlas moment [vault]`: time from init/absorb to the first agent read (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9),
 // from `.ontology-atlas/telemetry.local.json` (../lib/telemetry.mjs). `--mark` records it by hand for agents calling
 // MCP read tools directly, which stay uninstrumented because they declare readOnlyHint: true.
 
@@ -37,7 +37,7 @@ export function runMoment(args) {
 }
 
 function render(summary) {
-  process.stdout.write(`${COLORS.bold}moment${COLORS.reset} ${COLORS.dim}Slice 0 magic-moment readout${COLORS.reset}\n\n`);
+  process.stdout.write(`${COLORS.bold}moment${COLORS.reset} ${COLORS.dim}first-brief timing readout${COLORS.reset}\n\n`);
 
   if (!summary.hasBaseline) {
     process.stdout.write(
@@ -108,7 +108,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas moment [vault] [--mark] [--json]\n\n` +
-      `  Prints the Slice 0 magic-moment north star:\n` +
+      `  Prints the time from setup to the first agent brief:\n` +
       `  the elapsed time from ${COLORS.bold}init${COLORS.reset}/${COLORS.bold}absorb --write${COLORS.reset} to the first ` +
       `${COLORS.bold}agent-brief${COLORS.reset} run afterward,\n` +
       `  target ≤5 minutes. All data lives in ${COLORS.dim}.ontology-atlas/telemetry.local.json${COLORS.reset}: local\n` +

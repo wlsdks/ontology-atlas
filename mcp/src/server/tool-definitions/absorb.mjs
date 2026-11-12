@@ -11,7 +11,7 @@ import { POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA } from '../tool-schemas/post-write
 export const ABSORB_DOCUMENT_TOOL = {
   name: 'absorb_document',
   description:
-    'Slice 0 (PRODUCT-PLAN-2026-07.md §4/§9) — the "absorption tool". Converts a CLAUDE.md/AGENTS.md-style ' +
+    'Converts a CLAUDE.md/AGENTS.md-style ' +
     'markdown file into typed vault nodes so a tech lead\'s existing agent-instruction file stops needing ' +
     'dual maintenance. Splits the file by `##` sections and classifies each:\n' +
     '  - rule/policy/decision sections → `kind: document` nodes with a `role: policy` frontmatter extra.\n' +

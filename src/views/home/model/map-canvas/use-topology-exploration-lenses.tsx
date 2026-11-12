@@ -6,6 +6,7 @@ import { resolveNodeDocument } from "@/entities/knowledge-graph";
 import { type ConstellationCandidate } from "@/features/saved-constellations";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { buildContainmentParentMap, deriveDeeplinkAncestorExpansion } from "../route-state/url-state";
+import { deriveSpotlightLens } from "./spotlight-lens";
 
 interface Options {
   routeState: import("@/views/home/model/route-state/url-state").HomeRouteState;
@@ -51,21 +52,14 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
     activeConstellation?.id === routeState.constellationIntent ? activeConstellation : null;
   const [constellationFitToken, setConstellationFitToken] = useState(0);
 
-  // Merges every changed node's ancestor chain as a derived expansion, or a changed node hides in
-  // a cluster chip.
   // Derived from `?recent=` without touching `?open=`, so links stay reproducible and lens-off
   // restores the user's own.
-  const spotlightExpandedParents = useMemo(() => {
+  const spotlightLens = useMemo(() => {
     if (!spotlightIds || spotlightIds.size === 0 || ontologyMapGraph.edges.length === 0) return null;
-    const parentOf = buildContainmentParentMap(ontologyMapGraph.edges);
-    const merged = new Set(expandedParentSet);
-    for (const id of spotlightIds) {
-      for (const ancestor of deriveDeeplinkAncestorExpansion(id, parentOf, [])) {
-        merged.add(ancestor);
-      }
-    }
-    return merged;
+    return deriveSpotlightLens(spotlightIds, buildContainmentParentMap(ontologyMapGraph.edges), expandedParentSet);
   }, [spotlightIds, ontologyMapGraph, expandedParentSet]);
+  const spotlightExpandedParents = spotlightLens?.expandedParents ?? null;
+  const spotlightLitIds = spotlightLens?.litIds ?? spotlightIds;
 
   // The canvas wants a node id; project deep links send a bare slug, so projects resolve through
   // the same rule. Without a node the bare slug is kept and the canvas drops it to "nothing
@@ -99,6 +93,6 @@ export function useTopologyExplorationLenses({ routeState, setRouteState, topolo
   }, [canvasSelectedSlug, ontologyMapGraph, setRouteState, foldsApply]);
   return {
     routedConstellation, setActiveConstellation, drawerProject, constellationCandidates,
-    setConstellationFitToken, constellationFitToken, spotlightExpandedParents
+    setConstellationFitToken, constellationFitToken, spotlightExpandedParents, spotlightLitIds
   };
 }

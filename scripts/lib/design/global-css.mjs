@@ -54,7 +54,7 @@ export function readGlobalCss(root = process.cwd()) {
 }
 
 /** A repo file's text at a Git ref, or null when it is absent there. */
-export function showFileAt(ref, file, root = process.cwd()) {
+function showFileAt(ref, file, root = process.cwd()) {
   try {
     return execFileSync('git', ['show', `${ref}:${file}`], {
       cwd: root,

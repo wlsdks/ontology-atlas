@@ -11,7 +11,7 @@ export function computeNodeAlpha(frame: FrameInputs, focus: FrameFocus) {
   const { world, previewEdge, clusteredIds, realmTierKinds, zoomRatio, tierReveal, focusedNodeId,
     selectedEdge, spotlightIds, spotlightRamp, expandRevealById, bornNodeIds, appearById,
     egoRevealById, realmOutsideReturnAlphaById, focusRampById, tokens, agentFocusNodeId,
-    emphasisById, clusterChips, spotlightLensActive, trailLensActive, isTrailKept, domeOn } = frame;
+    emphasisById, clusterChips, spotlightRevealActive, trailLensActive, isTrailKept, domeOn } = frame;
   const { neighborsOfFocusedRaw, neighborsOfFocused, lod } = focus;
   if (passState.effectiveAlphaWorld?.deref() !== world) {
     effectiveAlphaByIdReused.clear();
@@ -43,7 +43,7 @@ export function computeNodeAlpha(frame: FrameInputs, focus: FrameFocus) {
       previewEndpoint ||
       (focusedNodeId !== null && (node.id === focusedNodeId || neighborsOfFocused.has(node.id)));
     const spotlightReveal =
-      spotlightLensActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
+      spotlightRevealActive && spotlightIds !== null && spotlightIds.has(node.id) ? spotlightRamp : 0;
     const chipExpandReveal = expandRevealById?.get(node.id) ?? 0;
     const bornReveal = bornNodeIds?.has(node.id)
       ? Math.min(1, Math.max(0, appearById?.get(node.id) ?? 1))

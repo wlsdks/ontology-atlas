@@ -428,7 +428,7 @@ export function formatFocusedCheckSuggestions({ paths = [], commands = [], escal
   ];
   if (commands.length === 0) {
     lines.push('First checks: no focused mapping; do not jump to the full suite by default.');
-    lines.push('Choose the nearest area from docs/DEVELOPMENT-CHECKS.md, then escalate only for concrete uncovered risk.');
+    lines.push('Run the sibling test of each changed file, then escalate only for concrete uncovered risk (.claude/rules/testing.md).');
   } else {
     lines.push('First checks:');
     for (const suggestion of commands) {
