@@ -86,12 +86,12 @@ const LABELS: DialLabels = {
 };
 const measure = (text: string, font: string) => text.length * (Number(/(\d+(?:\.\d+)?)px/.exec(font)?.[1]) || 12) * 0.6;
 
-function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string | null) {
+function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string | null, agentFocusId: string | null = null, elementSpacingPx = TOKENS.paint.elementNameSpacingPx * 2) {
   const attention = cachedGraphAttention(model, focusId, focusId !== null);
   return admittedNames({
     model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
-    elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key,
-    discRadius: () => 4, elementSpacingPx: TOKENS.paint.elementNameSpacingPx * 2,
+    elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
+    discRadius: () => 4, elementSpacingPx,
   });
 }
 
@@ -218,6 +218,13 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     const focused = namesAt(model, layout, 1, cap);
     expect(focused.ids.has(cap)).toBe(true);
     expect(overlapping(focused.names, layout, 1)).toEqual([]);
+  });
+
+  it("always names the concept an agent is working on, even an element too dense to name", () => {
+    const element = layout.clusters.flatMap((c) => c.items.flatMap((it) => it.elementIds))[0]!;
+    const admitted = namesAt(model, layout, 0.5, null, element, 0);
+    expect(admitted.ids.has(element)).toBe(true);
+    expect(namesAt(model, layout, 0.5, null, null, 0).ids.has(element)).toBe(false);
   });
 
   it("only adds names as the zoom grows", () => {

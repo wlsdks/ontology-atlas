@@ -6,6 +6,7 @@ import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
 import type { Box, DialFrameInput, DialFrameResult, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
+import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, graphInkMix, inkUnder, transitionShare, type GraphAttention, type GraphTransition } from "./attention";
 import {
@@ -30,6 +31,7 @@ const LIT_DOT_SHARE = 1.5;
 const LIGHT_SINK_GAIN = 1.4;
 const SELECTION_GAP_PX = 5;
 const SELECTION_RING_PX = 1.5;
+const AGENT_RING_WIDTH_PX = 1;
 const PIP_SHARE = 0.3;
 const PIP_MIN_PX = 2;
 const UNKNOWN_DASH = [2, 2];
@@ -56,7 +58,7 @@ const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "",
 const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 }));
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
-const framePlan: FramePlan = { lights: [], segments: [], arcs: [], focusArcs: [], dots: [], glows: [], discs: [], domains: [], project: null, selection: null, names: [] };
+const framePlan: FramePlan = { lights: [], segments: [], arcs: [], focusArcs: [], dots: [], glows: [], discs: [], domains: [], project: null, selection: null, agentRing: null, names: [] };
 const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0 }));
 
 function segment(x0: number, y0: number, x1: number, y1: number, ink: string, width: number, alpha: number): Segment {
@@ -127,6 +129,7 @@ interface FramePlan {
   domains: Disc[];
   project: Disc | null;
   selection: { x: number; y: number; r: number; alpha: number } | null;
+  agentRing: { x: number; y: number; r: number; ink: string } | null;
   names: Name[];
 }
 
@@ -218,6 +221,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   for (const list of [plan.lights, plan.segments, plan.arcs, plan.focusArcs, plan.dots, plan.glows, plan.discs, plan.domains, plan.names]) list.length = 0;
   plan.project = null;
   plan.selection = null;
+  plan.agentRing = null;
   const alphas = cacheFor(alphaCache, layout);
   if (alphas.size === 0) for (const id of model.domainOf.keys()) alphas.set(id, 0);
   const picks = framePicks;
@@ -264,7 +268,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
       }
       for (const el of it.elementIds) {
         const lit = attention.lit?.has(el) === true;
-        const shown = lensHidden(el) ? 0 : Math.max(dotAlpha, lit ? focusness : 0, required.has(el) ? 1 : 0);
+        const shown = lensHidden(el) ? 0 : Math.max(dotAlpha, lit ? focusness : 0, required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
         alphas.set(el, shown > DRAWN_INK ? 1 : 0);
         if (shown <= DRAWN_INK) continue;
         const elAt = screenOf(el);
@@ -335,11 +339,17 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     }
   }
 
+  const agentId = contextMode ? null : input.agentFocusNodeId;
+  const agentAt = agentId ? screenAt(agentId) : undefined;
+  if (agentId && agentAt && alphas.get(agentId) !== 0) {
+    plan.agentRing = { x: agentAt.x, y: agentAt.y, r: radiusAt(agentId, growth) + AGENT_FOCUS_RING_OFFSET, ink: input.mapTokens.amberHub };
+  }
+
   const fontFamily = labelFontFamily();
   const admission = admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
-    lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key,
+    lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     discRadius: (id) => radiusAt(id, stepGrowth), elementSpacingPx,
   });
   const nameInk = (n: PlacedName): number => {
@@ -550,6 +560,14 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   paintDiscs(ctx, plan.discs, tokens, ground, warning, "capability", growth);
   paintDiscs(ctx, plan.domains, tokens, ground, warning, "domain", growth);
   if (plan.project) paintDiscs(ctx, [plan.project], tokens, ground, warning, "project", growth);
+  if (plan.agentRing) {
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = plan.agentRing.ink;
+    ctx.lineWidth = AGENT_RING_WIDTH_PX;
+    ctx.beginPath();
+    ctx.arc(plan.agentRing.x, plan.agentRing.y, plan.agentRing.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   if (plan.selection && plan.selection.alpha > DRAWN_INK) {
     ctx.globalAlpha = plan.selection.alpha;
     ctx.strokeStyle = tokens.inks.project;

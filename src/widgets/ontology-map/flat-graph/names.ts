@@ -37,6 +37,8 @@ export interface NameInput {
   staleByDomain: ReadonlyMap<string, number> | null;
   lit: ReadonlySet<string> | null;
   focusId: string | null;
+  /** The concept a connected agent is working on: always named, like the focus. */
+  agentFocusId: string | null;
   attentionKey: string;
   discRadius(id: string): number;
   elementSpacingPx: number;
@@ -162,7 +164,12 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Cand
   const orphans = layout.orphanIds.filter((id) => !lit || lit.has(id)).map((id): Candidate => ({
     id, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
   }));
+  const agent = input.agentFocusId;
+  const agentCandidate: Candidate[] = agent === null || !layout.positions.has(agent) || model.domainById.has(agent) || agent === model.projectId ? []
+    : model.capabilityById.has(agent) ? [capCandidate({ id: agent, label: model.capabilityById.get(agent)!.label })]
+      : layout.orphanIds.includes(agent) ? orphans.filter((o) => o.id === agent) : [elementCandidate(agent)];
   return [
+    ...agentCandidate,
     ...litCaps.map(capCandidate),
     ...litElements.map(elementCandidate),
     ...rest.map(capCandidate),
@@ -203,7 +210,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;
-    tryPlace(cand, cand.id === input.focusId);
+    tryPlace(cand, cand.id === input.focusId || cand.id === input.agentFocusId);
   }
   return { step, names, ids };
 }
@@ -223,7 +230,13 @@ function degreeOf(model: DialModel): Map<string, number> {
   return hit;
 }
 
-interface NameCache { key: string; rest: Map<number, NameAdmission>; focus: Map<string, NameAdmission> }
+interface NameCache {
+  font: string;
+  elementNames: boolean;
+  stale: ReadonlyMap<string, number> | null;
+  rest: Map<number, NameAdmission>;
+  focus: Map<string, NameAdmission>;
+}
 const FOCUS_CACHE_MAX = 32;
 const caches = new WeakMap<FlatGraphLayout, NameCache>();
 
@@ -242,14 +255,14 @@ function nearest(map: ReadonlyMap<number, NameAdmission>, step: number, below: b
  */
 export function admittedNames(input: NameInput): NameAdmission {
   const step = zoomStep(input.scale, input.tokens.zoomStepsPerOctave);
-  const key = `${input.fontFamily}|${input.elementSpacingPx >= input.tokens.elementNameSpacingPx ? 1 : 0}|${input.staleByDomain?.size ?? 0}`;
+  const elementNames = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   let cache = caches.get(input.layout);
-  if (!cache || cache.key !== key) {
-    cache = { key, rest: new Map(), focus: new Map() };
+  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain) {
+    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, rest: new Map(), focus: new Map() };
     caches.set(input.layout, cache);
   }
-  if (input.lit !== null) {
-    const focusKey = `${step}|${input.attentionKey}`;
+  if (input.lit !== null || input.agentFocusId !== null) {
+    const focusKey = `${step}|${input.attentionKey}|${input.agentFocusId ?? ""}`;
     const hit = cache.focus.get(focusKey);
     if (hit) return hit;
     if (cache.focus.size >= FOCUS_CACHE_MAX) cache.focus.clear();
@@ -259,7 +272,7 @@ export function admittedNames(input: NameInput): NameAdmission {
   }
   const hit = cache.rest.get(step);
   if (hit) return hit;
-  const restInput = { ...input, lit: null, focusId: null };
+  const restInput = { ...input, lit: null, focusId: null, agentFocusId: null };
   const made = admit(restInput, step, nearest(cache.rest, step, true)?.ids ?? null, nearest(cache.rest, step, false)?.ids ?? null);
   cache.rest.set(step, made);
   return made;
