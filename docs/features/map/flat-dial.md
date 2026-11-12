@@ -161,6 +161,10 @@ Within a session, an unchanged domain keeps its position and its capabilities'
 positions across rebuilds; a changed domain only seeds the new layout. Hues
 are kept the same way. Opening another folder clears this memory.
 
+The map waits for the name font before its first frame, at most one second,
+because names size the layout: a map drawn in the fallback face would be laid
+out again when the font arrived and move every mark it had just shown.
+
 The first time a folder opens in a session, the map assembles once, within
 about 700 ms: domains leave the project, each domain's capabilities grow out
 of it nearest first, element dots follow, and each name fades in once its mark

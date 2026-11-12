@@ -23,15 +23,17 @@ export interface TierTiming {
 const DOME_TIMING: TierTiming = { delayMs: TIER_DELAY_MS, riseMs: TIER_RISE_MS, staggerMs: 0, totalMs: TIER_ASSEMBLE_TOTAL_MS };
 
 const FAST_MS = MOTION.fast.duration * 1000;
+const BASE_MS = MOTION.base.duration * 1000;
 const FLAT_RISE_MS = MOTION.slow.duration * 1000;
-const FLAT_ELEMENT_DELAY_MS = FAST_MS + MOTION.base.duration * 1000;
+const FLAT_ELEMENT_DELAY_MS = FAST_MS + BASE_MS;
 
 /**
  * The Flat graph's first open as one moment: domains leave the project at once, capabilities grow
- * out of their domain nearest first, and element dots follow once every capability is under way.
+ * out of their domain nearest first, and element dots leave with the farthest capability. Capabilities
+ * wait `--motion-base`, so even a runner drawing every 180 ms shows domains leave first.
  */
 export const FLAT_TIER_TIMING: TierTiming = {
-  delayMs: { project: 0, domain: 0, capability: FAST_MS, element: FLAT_ELEMENT_DELAY_MS },
+  delayMs: { project: 0, domain: 0, capability: BASE_MS, element: FLAT_ELEMENT_DELAY_MS },
   riseMs: FLAT_RISE_MS,
   staggerMs: FAST_MS,
   totalMs: FLAT_ELEMENT_DELAY_MS + FLAT_RISE_MS,

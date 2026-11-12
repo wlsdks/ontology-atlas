@@ -123,10 +123,25 @@ async function adopt(): Promise<boolean> {
   return true;
 }
 
+let adoptionSettled = false;
+
 /** Resolves true once the product family became the label family, so the caller can repaint once. */
 export function adoptBodyLabelFont(): Promise<boolean> {
-  adopting ??= adopt();
+  adopting ??= adopt().then((adopted) => {
+    adoptionSettled = true;
+    return adopted;
+  });
   return adopting;
+}
+
+/** Whether adoption has finished, adopted or not: from then no later label face can change a layout. */
+export function bodyLabelFontSettled(): boolean {
+  return adoptionSettled;
+}
+
+/** Whether names are already measured in the product family. */
+export function bodyLabelFontAdopted(): boolean {
+  return labelFamily !== null;
 }
 
 /**
