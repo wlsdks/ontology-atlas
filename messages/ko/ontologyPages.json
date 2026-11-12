@@ -195,7 +195,7 @@
         "sourceExcerpt": "“구독을 취소해도 다음 결제일까지는 이용할 수 있다.”",
         "pageEyebrow": "위키 페이지 예시",
         "pageExampleTitle": "구독 취소",
-        "pageExampleBody": "남은 이용 기간은 유지됩니다. 결정의 근거는 원문으로 연결됩니다.",
+        "pageExampleBody": "남은 이용 기간은 유지돼요. 결정의 근거는 원문으로 연결돼요.",
         "body": "원문을 정리한 페이지와 점검 결과를 함께 살펴봐요.",
         "exampleLabel": "예시 · 내 폴더의 데이터가 아니에요",
         "pauseAnimation": "예시 애니메이션 일시 정지",
@@ -365,7 +365,7 @@
         "missing": "소스 경로 누락 · {count}",
         "unknown": "미확인 · {count}"
       },
-      "sourceScopeMatches": "기준에 맞는 역량 {count}개 · 선택한 주장은 유지됩니다.",
+      "sourceScopeMatches": "기준에 맞는 역량 {count}개 · 선택한 주장은 유지돼요.",
       "connectedElements": "연결된 구현 요소",
       "openElementDocument": "{name} 문서 열기",
       "noElementLinks": "연결된 구현 요소가 없어요",
