@@ -113,6 +113,9 @@ export class GraphMotion {
   private readonly index = new Map<string, number>();
   private fromLit = new Float64Array(256);
   private fromSink = new Float64Array(256);
+  /** Per concept, the longest drawn line leaving it this frame: its source stays at least this lit. */
+  private hold = new Float64Array(256);
+  private readonly anchored: number[] = [];
   private fromLines = new Map<string, HeldLine>();
   private readonly currentKeys = new Set<string>();
   private readonly fromShares = new Float64Array(2);
@@ -193,6 +196,11 @@ export class GraphMotion {
     const p = this.conceptProgress(id, lit);
     out[0] = fromLit + (targetLit - fromLit) * p;
     out[1] = fromSink + (targetSink - fromSink) * p;
+    const held = i === undefined ? 0 : this.hold[i]!;
+    if (held > out[0]) {
+      out[0] = held;
+      out[1] = Math.min(out[1], 1 - held);
+    }
     return out;
   }
 
@@ -211,11 +219,13 @@ export class GraphMotion {
     if (!current) return from * (1 - eased(EXIT_CURVE, elapsed / FLAT_MOTION.exitMs));
     if (from >= 1) return 1;
     const far = line.from === this.current.focusId ? line.to : line.from;
-    const delay = (this.delays.get(far) ?? 0) * LINE_LEAD;
+    const delay = Math.max(this.delays.get(line.from) ?? 0, (this.delays.get(far) ?? 0) * LINE_LEAD);
     return from + (1 - from) * eased(ENTRY_CURVE, (elapsed - delay) / FLAT_MOTION.drawMs);
   }
 
   private planLines(): void {
+    for (let i = 0; i < this.anchored.length; i += 1) this.hold[this.anchored[i]!] = 0;
+    this.anchored.length = 0;
     let n = 0;
     const lines = this.current.lines;
     for (let i = 0; i < lines.length; i += 1) {
@@ -238,6 +248,9 @@ export class GraphMotion {
     slot.line = line;
     if (slot.reach !== reach) slot.reach = reach;
     slot.current = current;
+    const source = this.slotOf(line.from);
+    if (this.hold[source] === 0) this.anchored.push(source);
+    if (reach > this.hold[source]!) this.hold[source] = reach;
     return n + 1;
   }
 
@@ -249,10 +262,13 @@ export class GraphMotion {
     if (i >= this.fromLit.length) {
       const lit = new Float64Array(this.fromLit.length * 2);
       const sink = new Float64Array(this.fromSink.length * 2);
+      const hold = new Float64Array(this.hold.length * 2);
       lit.set(this.fromLit);
       sink.set(this.fromSink);
+      hold.set(this.hold);
       this.fromLit = lit;
       this.fromSink = sink;
+      this.hold = hold;
     }
     return i;
   }

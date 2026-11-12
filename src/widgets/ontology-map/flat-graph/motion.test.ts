@@ -97,6 +97,34 @@ describe("Flat attention motion", () => {
     expect(old.at(-1)).toBe(0);
   });
 
+  it("keeps every drawn line one span from its source end, never longer than its source is lit", () => {
+    const neededBy = (from: string, to: string): GraphLine => ({ from, to, kind: "neededBy", key: `neededBy:${from}>${to}` });
+    const fromA = attention("a", ["a", "near", "far"], [line("a", "near"), neededBy("far", "a")], true);
+    const fromB = attention("b", ["b", "far", "other"], [line("b", "far"), neededBy("other", "b")], true);
+    const motion = motionAtRest();
+    const previous = new Map<string, number>();
+    const check = (now: number) => {
+      for (let i = 0; i < motion.drawnCount; i += 1) {
+        const { line: drawn, reach, current } = motion.drawn[i]!;
+        expect(reach, `${drawn.key} at ${now}`).toBeGreaterThan(0);
+        expect(reach, `${drawn.key} at ${now}`).toBeLessThanOrEqual(1);
+        expect(motion.litShare(drawn.from), `${drawn.key}'s source at ${now}`).toBeGreaterThanOrEqual(reach - 1e-9);
+        const was = previous.get(`${current}|${drawn.key}`);
+        if (was !== undefined) expect(current ? reach >= was : reach <= was, `${drawn.key} at ${now}`).toBe(true);
+        previous.set(`${current}|${drawn.key}`, reach);
+      }
+    };
+    for (let now = 1_000; now <= 2_000; now += 1) {
+      motion.advance(fromA, now, false, delaysOf);
+      check(now);
+    }
+    previous.clear();
+    for (let now = 2_000; now <= 3_000; now += 1) {
+      motion.advance(fromB, now, false, delaysOf);
+      check(now);
+    }
+  });
+
   it("leaves faster than it arrives", () => {
     const motion = motionAtRest();
     let enteredAt = Number.NaN;
