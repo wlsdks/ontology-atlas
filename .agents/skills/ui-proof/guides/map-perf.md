@@ -1,8 +1,8 @@
 # Map performance
 
-Run when `pnpm design:route` includes `map-perf`. It proves the changed topology
-gesture's work cost; add the separate `motion` change fact when temporal output
-also changed.
+Run for the `/ui-proof` row "map drag, pan, zoom, hit test, frame loop". It
+proves the changed topology gesture's work cost; run the motion row as well
+when temporal output also changed.
 
 This skill exists because a 2026-07-31 node-drag report was dismissed six times
 while the measurement was actually panning the background. The two gestures look

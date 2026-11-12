@@ -1,7 +1,7 @@
 # Motion verification
 
 Use the [shared recording procedure](../../../../docs/engineering/motion-recording.md)
-when motion proof is requested or selected by `pnpm design:route`.
+when motion proof is requested or the `/ui-proof` motion row applies.
 
 A real source at **60 fps minimum** and its original timestamps are required;
 upsampling a slower source does not establish smoothness. Use native 120 fps

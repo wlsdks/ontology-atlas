@@ -59,11 +59,8 @@ function domainCommands(result) {
 describe('focused check suggestions', () => {
   it('routes shared skill procedures and recording guidance to their existing checks', () => {
     const subjects = [
-      ['.agents/skills/ui-build/workflow.md', 'pnpm test:design-gates'],
-      ['.agents/skills/ui-proof/guides/motion-verify.md', 'pnpm test:design-gates'],
-      ['docs/engineering/motion-recording.md', 'pnpm test:design-gates'],
-      ['.agents/skills/product-check/workflow.md', 'pnpm test:po'],
-      ['.agents/skills/product-check/workflow.md', 'pnpm po:pilot -- --check'],
+      ['.agents/skills/ui-build/workflow.md', 'pnpm exec vitest run tests/contract/agent-instructions/design-build-recipe.contract.test.ts'],
+      ['.agents/skills/ui-proof/guides/motion-verify.md', 'pnpm exec vitest run tests/contract/agent-instructions/design-build-recipe.contract.test.ts'],
       ['.agents/skills/ontology-bootstrap/workflow.md', 'pnpm test:dogfood:script-refs'],
     ];
     assert.ok(subjects.length > 0);
@@ -1634,61 +1631,6 @@ describe('focused check suggestions', () => {
     }
   });
 
-  it('routes every active PO policy surface to the outcome-router and sunset contracts', () => {
-    const commands = ['pnpm test:po', 'pnpm po:pilot -- --check'];
-    const paths = [
-      'scripts/lib/records/po-risk-router.mjs',
-      'scripts/records/po-risk-router.mjs',
-      'scripts/lib/records/po-pilot.mjs',
-      'scripts/records/po-pilot.mjs',
-      'scripts/records/check-decision-record.mjs',
-      'tests/contract/agent-instructions/po-route.contract.test.ts',
-      'tests/contract/agent-instructions/reviewer-wiring.contract.test.ts',
-      'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
-      'docs/PO-PILOT.md',
-      '.claude/skills/product-check/SKILL.md',
-      '.agents/skills/product-check/SKILL.md',
-      '.claude/agents/reviewer.md',
-      '.agents/agents/reviewer.md',
-      'AGENTS.md',
-      'package.json',
-    ];
-
-    assert.ok(paths.length > 0, 'the PO policy path inventory must not be empty');
-    for (const path of paths) {
-      const suggested = commandNames(suggestFocusedChecks([path]));
-      for (const command of commands) {
-        assert.ok(suggested.includes(command), `${path} must recommend ${command}`);
-      }
-    }
-  });
-
-  it('routes every active design policy surface to the fact-derived proof contracts', () => {
-    const paths = [
-      'scripts/lib/design/design-proof-router.mjs',
-      'scripts/design/design-proof-router.mjs',
-      'scripts/records/check-decision-record.mjs',
-      'tests/contract/agent-instructions/design-proof-router.contract.test.ts',
-      'tests/contract/agent-instructions/reviewer-wiring.contract.test.ts',
-      'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
-      '.claude/skills/ui-build/SKILL.md',
-      '.agents/skills/ui-proof/SKILL.md',
-      '.claude/agents/design-guardian.md',
-      '.agents/agents/reviewer.md',
-      '.claude/rules/design.md',
-      'AGENTS.md',
-      'package.json',
-    ];
-
-    assert.ok(paths.length > 0, 'the design policy path inventory must not be empty');
-    for (const path of paths) {
-      assert.ok(
-        commandNames(suggestFocusedChecks([path])).includes('pnpm test:design-gates'),
-        `${path} must recommend the design gate contracts`,
-      );
-    }
-  });
-
   it('suggests docs contracts when the shared package contract test changes', () => {
     const result = suggestFocusedChecks([
       'scripts/packaging/check-package-contracts.mjs',
@@ -1803,9 +1745,9 @@ describe('agent-file surface', () => {
       'AGENTS.md',
       'src/AGENTS.md',
       '.claude/agents/reviewer.md',
-      '.claude/skills/product-check/SKILL.md',
+      '.claude/skills/ui-build/SKILL.md',
       '.claude/settings.json',
-      '.agents/skills/product-check/SKILL.md',
+      '.agents/skills/ui-build/SKILL.md',
       '.agents/agents/reviewer.md',
       '.codex/hooks.json',
       '.mcp.json',
@@ -1861,8 +1803,8 @@ describe('agent-file surface', () => {
       '.claude/rules/forbidden.md',
       '.claude/settings.json',
       '.gitignore',
-      '.claude/skills/product-check/SKILL.md',
-      '.agents/skills/product-check/SKILL.md',
+      '.claude/skills/ui-build/SKILL.md',
+      '.agents/skills/ui-build/SKILL.md',
     ]) {
       assert.ok(
         domainCommands(suggestFocusedChecks([path])).includes(contract),

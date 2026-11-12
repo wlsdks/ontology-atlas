@@ -11,7 +11,7 @@ Screenshots prove only that an animation reaches sampled states. Jank and frozen
 frames hide between them. Record the real macOS display, extract uniform frames,
 inspect a phase strip, then measure adjacent-frame change.
 
-Run whenever `pnpm design:route` includes `motion-verify`. This is the completion
+Run for every timing, easing, animation, or camera-travel change (`/ui-proof`). This is the completion
 proof for temporal output, not an optional craft review.
 
 ## Preconditions

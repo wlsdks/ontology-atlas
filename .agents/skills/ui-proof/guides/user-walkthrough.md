@@ -1,7 +1,7 @@
 # User walkthrough
 
-Screen reviews do not prove a journey. When `pnpm design:route` includes this
-skill, walk its declared scope: the changed path for a local journey change, the
+Screen reviews do not prove a journey. When the `/ui-proof` row names this
+guide, walk its scope: the changed path for a local journey change, the
 agent-handoff path for a handoff change, or the continuous north-star path for a
 new surface.
 
@@ -87,8 +87,8 @@ automation alone does not satisfy the design evidence contract.
 
 ## Where results go
 
-- Stalls become direct-use evidence for `/product-check` and the `reviewer`'s
-  `evidence` lens.
+- Stalls become direct-use evidence in the pull request and, when a reviewer
+  is due, for the `reviewer`'s `evidence` lens.
 - Hierarchy and interaction findings feed the `reviewer`'s `attention` and
   `reversibility` lenses.
 - A clean walkthrough does not justify “Build and verify”; it proves only that

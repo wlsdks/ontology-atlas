@@ -12,7 +12,7 @@ this skill asks whether the system is enforceable.
 
 ## Scope and requested action
 
-Use the scope returned by `pnpm design:route`, or the user's explicit audit
+Use the routes in `tests/e2e/audited-routes.ts`, or the user's explicit audit
 scope. "Every" below refers to that scope, not every screen in the repository.
 An audit request produces findings and repair proposals. Apply repairs only
 when the task also authorizes them; the repair order below does not itself
