@@ -1188,21 +1188,26 @@ function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, ma
 }
 
 /**
- * The canvas ground under each backed name's box, over the lines and under every disc and name, so
- * a backing hides only lines. Whole pixels keep the rectangle's arguments small integers.
+ * A rounded veil of the canvas ground just around each backed name's glyphs, over the lines and
+ * under every disc and name: it dims the lines and the light beneath rather than cutting them out.
+ * Whole pixels keep the rectangle's arguments small integers.
  */
-function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], ground: string): void {
+function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], ground: string, P: FlatGraphPaintTokens): void {
   ctx.fillStyle = ground;
+  const insetX = P.namePadPx - P.backingPadXPx;
+  const insetY = P.namePadPx - P.backingPadYPx;
   for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
     const n = marks[nIndex]!;
     if (n.name.backed !== true) continue;
     const ox = n.x - n.name.dx;
     const oy = n.y - n.name.dy;
     const box = n.name.box;
-    const x = Math.floor(ox + box.minX) | 0;
-    const y = Math.floor(oy + box.minY) | 0;
-    ctx.globalAlpha = n.ink;
-    ctx.fillRect(x, y, (Math.ceil(ox + box.maxX) - x) | 0, (Math.ceil(oy + box.maxY) - y) | 0);
+    const x = Math.floor(ox + box.minX + insetX) | 0;
+    const y = Math.floor(oy + box.minY + insetY) | 0;
+    ctx.globalAlpha = n.ink * P.backingAlpha;
+    ctx.beginPath();
+    ctx.roundRect(x, y, (Math.ceil(ox + box.maxX - insetX) - x) | 0, (Math.ceil(oy + box.maxY - insetY) - y) | 0, P.backingRadiusPx);
+    ctx.fill();
   }
   ctx.globalAlpha = 1;
 }
@@ -1225,7 +1230,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
   paintLines(ctx, plan.focusArcs, tokens);
-  paintBackings(ctx, plan.names, ground);
+  paintBackings(ctx, plan.names, ground, P);
   paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
     const glow = plan.glows[glowIndex]!;

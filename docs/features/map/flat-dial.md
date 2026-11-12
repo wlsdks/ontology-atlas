@@ -51,8 +51,10 @@ and every far end of its lines are always named; a forced name keeps off every
 domain title when any placement can. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
-crossed, the name keeps the first free side and draws on a backing in the
-canvas ground colour as large as its text, so no line runs through its glyphs;
+crossed, the name keeps the first free side and draws on a backing: a
+rounded veil of the canvas ground just around its glyphs, translucent enough
+that the domain light beneath dims rather than being cut out, and opaque
+enough that no line reads through the glyphs;
 a lit domain name a line crosses is backed the same way. Placement is checked
 against each lit line's drawn curve over the whole zoom step, so the result
 holds at any zoom inside the step, and costs O(lit names × lit lines).
