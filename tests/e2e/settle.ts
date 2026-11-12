@@ -65,6 +65,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         camera?: () => { x: number; y: number; scale: number; width: number; height: number } | null;
         cameraTarget?: () => { x: number; y: number; scale: number };
         nodes?: () => ProbeNode[];
+        dialMotionSettled?: () => boolean;
         dome?: () => {
           yaw: number;
           pitch: number;
@@ -91,6 +92,7 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         }
       }
       if (argument.what === "layout") {
+        if (probe.dialMotionSettled?.() === false) settling = true;
         const nodes = probe.nodes?.() ?? [];
         if (nodes.length === 0) return false;
         signature += `|${nodes

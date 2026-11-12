@@ -1,5 +1,3 @@
-import { easeOutCubic } from "../model/camera/camera-easing";
-import { MOTION } from "@/shared/motion/tokens";
 import type { DialModel } from "../dial/types";
 
 /** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */
@@ -158,50 +156,4 @@ export function cachedGraphAttention(model: DialModel, focusId: string | null, s
 /** Ink of one concept under an attention: `rest` with nothing lit, full when lit, `sink` otherwise. */
 export function inkUnder(attention: GraphAttention, id: string, sink: number, rest = 1): number {
   return attention.lit === null ? rest : attention.lit.has(id) ? 1 : sink;
-}
-
-const FOCUS_MS = MOTION.fast.duration * 1000;
-
-/**
- * A crossfade toward `current`. It starts from the picture that was showing: `previous` reached
- * `carried` of the way from `older`, so a retarget mid-fade continues from there instead of
- * snapping to the fully lit or fully sunk previous attention.
- */
-export interface GraphTransition { mix: number; current: GraphAttention; previous: GraphAttention; older: GraphAttention; carried: number }
-interface InkClock extends GraphTransition { key: string; changedAt: number }
-const clocks = new WeakMap<object, InkClock>();
-
-const mixAt = (changedAt: number, now: number, reducedMotion: boolean): number =>
-  reducedMotion ? 1 : easeOutCubic(Math.min(1, Math.max(0, (now - changedAt) / FOCUS_MS)));
-
-/** Advances the crossfade for one world; reduced motion lands at once on the same picture. */
-export function graphInkMix(worldKey: object, attention: GraphAttention, now: number, reducedMotion: boolean): GraphTransition {
-  let clock = clocks.get(worldKey);
-  if (!clock) {
-    clock = { key: attention.key, changedAt: -Infinity, mix: 1, current: attention, previous: attention, older: attention, carried: 1 };
-    clocks.set(worldKey, clock);
-  } else if (clock.key !== attention.key) {
-    clock.carried = mixAt(clock.changedAt, now, reducedMotion);
-    clock.older = clock.previous;
-    clock.previous = clock.current;
-    clock.key = attention.key;
-    clock.changedAt = now;
-  }
-  clock.current = attention;
-  clock.mix = mixAt(clock.changedAt, now, reducedMotion);
-  return clock;
-}
-
-/** `transitionShare` of `inkUnder` without a closure, for the per-concept paths of a frame. */
-export function transitionInk(t: GraphTransition, id: string, sink: number, rest = 1): number {
-  const previous = inkUnder(t.previous, id, sink, rest);
-  const from = t.carried >= 1 || t.older === t.previous ? previous : inkUnder(t.older, id, sink, rest) + (previous - inkUnder(t.older, id, sink, rest)) * t.carried;
-  const current = inkUnder(t.current, id, sink, rest);
-  return t.mix >= 1 ? current : from + (current - from) * t.mix;
-}
-
-/** The share a transition shows of `of(attention)` for each attention it blends. */
-export function transitionShare(t: GraphTransition, of: (attention: GraphAttention) => number): number {
-  const from = t.carried >= 1 || t.older === t.previous ? of(t.previous) : of(t.older) + (of(t.previous) - of(t.older)) * t.carried;
-  return t.mix >= 1 ? of(t.current) : from + (of(t.current) - from) * t.mix;
 }

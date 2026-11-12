@@ -32,6 +32,8 @@ export interface AtlasMapNode {
 export interface AtlasMapProbe {
   camera: () => AtlasMapCamera | null;
   dial?: () => DialProbe | { owns: false };
+  /** False while a Flat attention motion (wave, line draw, retract) is still running. */
+  dialMotionSettled?: () => boolean;
   /**
    * Where the camera is heading, as opposed to where it is. Timing-free, so a
    * test can ask "did this aim the camera at the right place" without sampling
