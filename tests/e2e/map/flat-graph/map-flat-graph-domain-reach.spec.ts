@@ -100,6 +100,20 @@ test("pointing at a domain draws one line per partner domain and direction, and 
   }
   expect(hues, "an unconnected domain sinks").not.toContain(ink.get((await domainNode(page, "returns")).id));
   await expect(page.getByTestId("topology-flat-key").locator("[data-key-shape]")).toHaveCount(2);
+
+  const widths = (d: DialProbe) => Object.fromEntries(d.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).map((s) => [s.flowKey, s.widthPx]));
+  const atFit = widths(dial);
+  expect(Math.max(...Object.values(atFit)), "a two-relation taper is wider than a one-relation one").toBeGreaterThan(Math.min(...Object.values(atFit)));
+  for (let k = 0; k < 4; k += 1) await page.mouse.wheel(0, -120);
+  await waitForMapStill(page, { what: "camera" });
+  const zoomed = await domainNode(page, "orders");
+  await page.mouse.move(box.x + zoomed.x, box.y + zoomed.y);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.hover())).toBe(orders.id);
+  await waitForMapStill(page);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
+  const closer = await readDial(page);
+  expect(closer.zoomRatio, "the wheel zoomed in").toBeGreaterThan(dial.zoomRatio * 1.2);
+  expect(widths(closer), "a line keeps its screen width at every zoom").toEqual(atFit);
 });
 
 test("selecting a domain counts its partner domains under its name as the panel does, names both line kinds, then rests", async ({ page }) => {

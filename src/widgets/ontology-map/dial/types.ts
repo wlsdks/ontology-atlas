@@ -235,6 +235,8 @@ export interface DialProbe {
     })[]; squares: number; strips: { flowKey: string; role: StripMark["role"]; ink: string;
       /** The strip's quadratic: start, control and end in canvas pixels. */
       ax: number; ay: number; cx: number; cy: number; bx: number; by: number;
+      /** Width at the start, in screen pixels. */
+      widthPx: number;
     }[];
   ledger: { domainId: string; shown: number; total: number; more: number; leaderCrossings: number;
     } | null;
