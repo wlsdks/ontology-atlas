@@ -108,7 +108,7 @@ Overview first, zoom and filter, details on demand (`docs/design/topology-focus-
 
 Deviation is a defect.
 
-- Chrome fields, tiles and chips are `--chrome-tile-size` tall; chrome labels use `text-label`; the rail icon is one step, `--app-nav-rail-icon-size`.
+- Chrome fields, tiles and chips are `--chrome-tile-size` tall; chrome labels use `text-body`, the step every other 36px control wears; the rail icon is one step, `--app-nav-rail-icon-size`.
 - No UI zoom below 2400px; `.topology-ui-scale` is 1.1 only from 2400px.
 - Faces: self-hosted Pretendard Variable (`--font-sans`) and JetBrains Mono (`--font-mono`); weights 400, 510, 560, 650 only. No CJK font file ships (`app/styles/lang-cjk.css` names installed OS faces).
 - A size step carries its own leading (the companion, for example `--text-body--line-height`); changing only the size breaks the pair. Text that inherits the 16px root has escaped the ramp.
@@ -173,7 +173,7 @@ Heights come from one ladder, and a height outside it is a deviation: 24 (no tok
 
 - The ladder defines height and padding fits inside it, never the reverse.
 - Single-line horizontal shapes (chip, pill, segment, row, card) and squares (icon) declare a ladder `min-h-*`, never a hard `h-*` (it clips wrapped controls). `xs` lowers inset and radius but keeps the 24 floor and its type.
-- **Type follows height.** A control's resting height picks its type: `label` at 24, `body` from 28 to 36, `body-lg` at 40 and 44. The value layer, `Button` and `Select` carry the pair, so two controls of one height never differ in type; a multi-line field takes the step of its floor, so text is typed at the size it is read back in. A call site names a type step only beside a height it sets by hand, and then that height's step. On a row or a card a hand `min-h` is a floor under content that may stack, judged only beside a hand type step. Outside the rule: `link` (it reads at the size of the text around it), `icon` and `tile` (no label inside the box), chrome labels (`text-label` at 36, "Scale fixed contract"), `TabBar` labels (`body` at every strip height) and the coarse-pointer floor, which raises a control to 44 and leaves its type. Gate: `control-type-by-height`.
+- **Type follows height.** A control's resting height picks its type: `label` at 24, `body` from 28 to 36, `body-lg` at 40 and 44. The value layer, `Button` and `Select` carry the pair, so two controls of one height never differ in type; a multi-line field takes the step of its floor, so text is typed at the size it is read back in. A call site names a type step only beside a height it sets by hand, and then that height's step. On a row or a card a hand `min-h` is a floor under content that may stack, judged only beside a hand type step. Outside the rule: `link` (it reads at the size of the text around it), `icon` and `tile` (no label inside the box), `TabBar` labels (`body` at every strip height) and the coarse-pointer floor, which raises a control to 44 and leaves its type. Gate: `control-type-by-height`.
 - Vertically stacked controls (tile, rail item) take the ladder on their inner tile, not the sum with label and gap. Inline prose links are exempt. A height not on the ladder means fixing the ladder, not adding an axis (`control-class`, `control-height-ladder-scope`).
 
 ### Links, touch floor, disabled

@@ -63,7 +63,7 @@ const DISABLED_CLASS =
  */
 const LABELLED_TILE_CLASS = TILE_CLASS.replace(
   'size-[var(--chrome-tile-size)]',
-  'chrome-tile-labelled h-[var(--chrome-tile-size)] min-w-[var(--chrome-tile-size)] px-[calc((var(--chrome-tile-size)-var(--chrome-icon))/2-1px)] text-label tracking-label',
+  'chrome-tile-labelled h-[var(--chrome-tile-size)] min-w-[var(--chrome-tile-size)] px-[calc((var(--chrome-tile-size)-var(--chrome-icon))/2-1px)] text-body tracking-body',
 );
 
 const ACTIVE_CLASS =

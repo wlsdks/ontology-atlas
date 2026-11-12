@@ -312,7 +312,7 @@ export function AgentActivityChip({
               <span
                 data-testid="agent-activity-status"
                 className={cn(
-                  'flex min-w-0 max-w-48 items-baseline text-[color:var(--color-text-primary)]',
+                  'flex min-w-0 max-w-56 items-baseline text-[color:var(--color-text-primary)]',
                   compact ? 'sr-only' : 'max-xl:sr-only',
                 )}
               >
