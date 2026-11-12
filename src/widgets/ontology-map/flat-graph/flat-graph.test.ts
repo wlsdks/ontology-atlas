@@ -19,6 +19,7 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
+import { readDomainUsage } from "../model/domain-usage";
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
@@ -35,7 +36,7 @@ const KINDS = new Set(["project", "domain", "capability", "element"]);
 type Node = { id: string; kind: string; title?: string };
 type Edge = { from: string; to: string; type: string };
 
-function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+function treeInputOf(nodes: readonly Node[], edges: readonly Edge[]): { treeNodes: TreeInputNode[]; treeEdges: TreeInputEdge[] } {
   const treeNodes: TreeInputNode[] = nodes
     .filter((n) => KINDS.has(n.kind))
     .map((n) => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as TreeInputNode["kind"] }));
@@ -45,6 +46,11 @@ function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
     kind: isContainmentRelation(e.type) ? "contains" : "depends",
     relationType: e.type,
   }));
+  return { treeNodes, treeEdges };
+}
+
+function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+  const { treeNodes, treeEdges } = treeInputOf(nodes, edges);
   const tree = readContainmentTree(treeNodes, treeEdges);
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
@@ -398,7 +404,6 @@ describe("selection reach", () => {
     const element = resolveGraphAttention(model, "x", true);
     expect(element.reach).toBeNull();
     expect(element.lines.length).toBe(7);
-    expect(resolveGraphAttention(model, "d1", false).lines).toEqual([]);
   });
 
   it("writes the reach line without a zero side", () => {
@@ -421,6 +426,75 @@ describe("selection reach", () => {
         for (const t of titles) expect(s.minX < t.maxX && t.minX < s.maxX && s.minY < t.maxY && t.minY < s.maxY, `selection on a title at ${scale}`).toBe(false);
       }
     }
+  });
+});
+
+describe("domain reach", () => {
+  const nodes: Node[] = [
+    { id: "p", kind: "project" }, ...["d1", "d2", "d3", "d4"].map((id) => ({ id, kind: "domain" })),
+    ...["a", "b", "e", "f", "g", "h"].map((id) => ({ id, kind: "capability" })), { id: "z", kind: "element" },
+  ];
+  const contains = (from: string, to: string): Edge => ({ from, to, type: "contains" });
+  const edges: Edge[] = [
+    contains("p", "d1"), contains("p", "d2"), contains("p", "d3"), contains("p", "d4"),
+    contains("d1", "a"), contains("d1", "b"), contains("d2", "e"), contains("d2", "f"), contains("d3", "g"), contains("d4", "h"), contains("g", "z"),
+    { from: "a", to: "e", type: "depends_on" },
+    { from: "b", to: "e", type: "depends_on" },
+    { from: "e", to: "a", type: "depends_on" },
+    { from: "z", to: "a", type: "depends_on" },
+    { from: "a", to: "h", type: "related_to" },
+  ];
+  const model = modelOf(nodes, edges);
+  const drawn = (id: string, selected: boolean) =>
+    resolveGraphAttention(model, id, selected).lines.map((l) => `${l.kind}:${l.from}>${l.to}x${l.weight}`).sort();
+
+  it("draws one line per partner domain and direction, weighted by the relations between them, and both ways for a two-way pair", () => {
+    expect(drawn("d1", true)).toEqual(["neededBy:d2>d1x1", "neededBy:d3>d1x1", "needs:d1>d2x2"]);
+    expect(drawn("d1", false)).toEqual(drawn("d1", true));
+    expect(drawn("d4", true), "a relates-only pair draws no line").toEqual([]);
+  });
+
+  it("lights the partner domains but not their members, and counts domains on each side", () => {
+    const att = resolveGraphAttention(model, "d1", true);
+    expect(att.reach).toEqual({ needs: 1, neededBy: 2 });
+    for (const id of ["d1", "a", "b", "d2", "d3"]) expect(att.lit!.has(id), id).toBe(true);
+    for (const id of ["e", "f", "g", "z", "d4", "h"]) expect(att.lit!.has(id), id).toBe(false);
+    expect([...att.named].sort()).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("counts exactly the partner domains the detail panel lists, on every bundled vault", () => {
+    for (const manifest of [dogfoodManifest, storefrontManifest]) {
+      const d = deriveOntologyFromVault(manifest as unknown as VaultManifest);
+      const { treeNodes, treeEdges } = treeInputOf(d.nodes as Node[], d.edges as Edge[]);
+      const vault = modelOf(d.nodes as Node[], d.edges as Edge[]);
+      let partnered = 0;
+      for (const id of vault.domainById.keys()) {
+        const panel = readDomainUsage(treeNodes, treeEdges, id)!;
+        const att = resolveGraphAttention(vault, id, true);
+        expect(att.reach, id).toEqual({ needs: panel.needs.length, neededBy: panel.usedBy.length });
+        const weights = (kind: "needs" | "neededBy") => att.lines.filter((l) => l.kind === kind).map((l) => `${l.from === id ? l.to : l.from}x${l.weight}`).sort();
+        expect(weights("needs"), id).toEqual(panel.needs.map((r) => `${r.domainId}x${r.links}`).sort());
+        expect(weights("neededBy"), id).toEqual(panel.usedBy.map((r) => `${r.domainId}x${r.links}`).sort());
+        if (att.lines.length > 0) partnered += 1;
+      }
+      expect(partnered, "the vault has domains with partners").toBeGreaterThan(0);
+    }
+  });
+
+  it("writes the reach line under the selected domain's caption only", () => {
+    const layout = layoutOf(model);
+    const labels = { ...LABELS, reachNeeds: (n: number) => `needs ${n}`, reachNeededBy: (n: number) => `needed by ${n}` };
+    const reachLines = (selected: boolean) => {
+      const att = resolveGraphAttention(model, "d1", selected);
+      return admittedNames({
+        model, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: att.focusId, attentionKey: att.key, agentFocusId: null,
+        selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => 4, elementSpacingPx: 0,
+      }).names.filter((n) => n.role === "reach");
+    };
+    const selected = reachLines(true);
+    expect(selected.map((n) => [n.id, n.text])).toEqual([["d1", "needs 1 · needed by 2"]]);
+    expect(reachLines(false)).toEqual([]);
   });
 });
 

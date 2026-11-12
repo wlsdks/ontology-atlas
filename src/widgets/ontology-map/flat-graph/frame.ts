@@ -923,7 +923,7 @@ function focusLinks(motion: GraphMotion): void {
     const kind = LINE_KINDS.indexOf(line.kind) + 1;
     const tapered = line.kind === "needs" || line.kind === "neededBy";
     const trimEnd = discRadius(line.to) + (tapered ? P.arcTrimPx / 2 : 0);
-    const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    const width = tapered ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
     const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
     const { a: start, b: end } = mark.path;
@@ -931,7 +931,7 @@ function focusLinks(motion: GraphMotion): void {
     mark.key = line.key;
     if (mark.reach !== reach) mark.reach = reach;
     L.focusArcs.add(mark);
-    if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind];
+    if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (F.model.domainById.has(line.from) && F.model.domainById.has(line.to) ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }
 }

@@ -6,7 +6,7 @@ import { FLAT_MOTION, GraphMotion, waveDelays } from "./motion";
 const SINK = 0.14;
 const REST = 0.66;
 
-const line = (from: string, to: string): GraphLine => ({ from, to, kind: "needs", key: `needs:${from}>${to}` });
+const line = (from: string, to: string): GraphLine => ({ from, to, kind: "needs", key: `needs:${from}>${to}`, weight: 1 });
 const rest: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: new Set() };
 
 function attention(focusId: string, lit: string[], lines: GraphLine[], selected = false): GraphAttention {
@@ -98,7 +98,7 @@ describe("Flat attention motion", () => {
   });
 
   it("keeps every drawn line one span from its source end, never longer than its source is lit", () => {
-    const neededBy = (from: string, to: string): GraphLine => ({ from, to, kind: "neededBy", key: `neededBy:${from}>${to}` });
+    const neededBy = (from: string, to: string): GraphLine => ({ from, to, kind: "neededBy", key: `neededBy:${from}>${to}`, weight: 1 });
     const fromA = attention("a", ["a", "near", "far"], [line("a", "near"), neededBy("far", "a")], true);
     const fromB = attention("b", ["b", "far", "other"], [line("b", "far"), neededBy("other", "b")], true);
     const motion = motionAtRest();

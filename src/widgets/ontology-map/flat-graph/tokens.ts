@@ -16,7 +16,7 @@ const PAINT_KEYS: readonly (keyof FlatGraphPaintTokens)[] = [
   "dotSpacingFromPx", "dotSpacingFullPx", "elementNameSpacingPx", "zoomStepsPerOctave", "projectNamePx", "domainNamePx",
   "captionPx", "capNamePx", "elementNamePx", "nameGapPx", "captionGapPx", "nameHaloPx", "domainNameHaloPx", "namePadPx",
   "restHue", "selectedDiscPx", "selectedRingGapPx", "selectedRingPx", "selectedNamePx", "selectedTitleGapPx", "frameMarginPx", "selectedDiscGapPx", "selectZoomMaxRatio", "backingRadiusPx", "backingPadXPx", "backingPadYPx", "backingAlpha", "backingFeatherPx", "lineBow", "lineAlpha", "lineTaperPx",
-  "lineHairPx", "lineDotPx", "lineDotGapPx", "lineDoubleGapPx",
+  "lineTaperGainPx", "lineTaperMaxPx", "lineHairPx", "lineDotPx", "lineDotGapPx", "lineDoubleGapPx",
 ];
 
 /** CSS custom property names, derived from the keys so a renamed key and its token move together. */

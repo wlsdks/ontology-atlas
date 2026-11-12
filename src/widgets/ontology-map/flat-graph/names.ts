@@ -198,7 +198,8 @@ function font(weight: number, px: number, family: string): string {
 
 type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measureText" | "fontFamily" | "staleByDomain" | "discRadius">;
 
-function domainBlock(input: DomainBlockInput, domainId: string): PlacedName[] {
+/** A domain's name and caption, and for a selected domain its reach line beneath them. */
+function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
   const r = input.discRadius(domainId);
@@ -220,8 +221,23 @@ function domainBlock(input: DomainBlockInput, domainId: string): PlacedName[] {
       id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
       box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
     });
+    if (reachLine) {
+      const figures = tabularPieces(reachLine, captionFont, measureText);
+      const lineY = y + t.captionPx + t.captionGapPx;
+      const min = -figures.width / 2;
+      out.push({
+        id: domainId, role: "reach", text: reachLine, font: captionFont, dx: 0, dy: lineY, align: "center",
+        box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: lineY - t.captionPx / 2 - t.namePadPx, maxY: lineY + t.captionPx / 2 + t.namePadPx },
+        pieces: figures.pieces.map((p) => ({ text: p.text, dx: min + p.dx })),
+      });
+    }
   }
   return out;
+}
+
+/** The selected domain's reach line, null for any other domain or picture. */
+function domainReachLine(input: Pick<NameInput, "selected" | "focusId" | "labels" | "reach">, domainId: string): string | null {
+  return input.selected && input.focusId === domainId ? reachText(input.labels, input.reach) : null;
 }
 
 /** Each domain's name and caption block at the overview, which the layout keeps clear of members. O(D). */
@@ -371,7 +387,7 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   const r = input.discRadius(id);
   const ring = input.selected && id === input.focusId ? r + t.selectedRingGapPx + t.selectedRingPx : r;
   const boxes: Box[] = [{ minX: -ring, maxX: ring, minY: -ring, maxY: ring }];
-  if (model.domainById.has(id)) boxes.push(...domainBlock(input, id).map((n) => n.box));
+  if (model.domainById.has(id)) boxes.push(...domainBlock(input, id, domainReachLine(input, id)).map((n) => n.box));
   else {
     const cap = model.capabilityById.get(id);
     const label = cap?.label ?? input.elementLabel(id);
@@ -467,7 +483,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const project = projectName(input);
   if (project) place(project);
   for (const c of layout.clusters) {
-    for (const n of domainBlock(input, c.domainId)) {
+    for (const n of domainBlock(input, c.domainId, domainReachLine(input, c.domainId))) {
       titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
       place(n);
     }

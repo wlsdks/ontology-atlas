@@ -96,6 +96,9 @@ export interface FlatGraphPaintTokens {
   lineBow: number;
   lineAlpha: number;
   lineTaperPx: number;
+  /** A taper standing for several relations widens this much per relation past the first, up to the max. */
+  lineTaperGainPx: number;
+  lineTaperMaxPx: number;
   lineHairPx: number;
   lineDotPx: number;
   lineDotGapPx: number;
