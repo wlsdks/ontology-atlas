@@ -26,6 +26,8 @@ export const POST_MERGE_SPECS = [
   "app-shell/route-transition-input.spec.ts",
   // Every route at every width
   "design-audits/focus-ring-contrast.spec.ts",
+  "design-audits/hover-contrast.spec.ts",
+  "gray-area/text-scale.spec.ts",
   "design-audits/overflow-sweep.spec.ts",
   "design-audits/responsive-overflow-audit.spec.ts",
   // Motion curves and frame samples on shared building blocks
@@ -44,7 +46,6 @@ export const POST_MERGE_SPECS = [
   "map/map-open-folder-stays-named.spec.ts",
   // Hex board placement and glide
   "map/hex-board/map-hex-relief.spec.ts",
-  // 3D view pixel and ink placement
   // Map free-area and label placement
   "map/labels/map-label-collision.spec.ts",
   // Width, locale and text-size sweeps
@@ -54,6 +55,4 @@ export const POST_MERGE_SPECS = [
   // Layout and visual geometry of single screens
   "library/answers/library-question-desk.spec.ts",
   "git/git-workbench-stacked-floor.spec.ts",
-  // Placement halves of map specs whose behaviour moved to map-canvas-focus and map-escape-from-chrome
-  // Geometry halves split from specs whose behaviour stays on the gate
 ] as const;

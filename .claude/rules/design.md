@@ -112,8 +112,7 @@ One accurate word per thing. Canonical spellings live in
   a node carries at most one diffraction cross per frame.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
   with identity, composites `plus-lighter` (licensed only there), and runs only
-  for an event in Flat. Gates: the composite licence and
-  `webgl-context-census`.
+  for an event in Flat. Gate: `webgl-context-census`.
 
 ## Absolute rules point to one source
 
@@ -163,8 +162,8 @@ states (`CONTROL_DISABLED_CLASS`); and unpaired accent/tint.
 
 Lint cannot see an unknown utility: `text-large` emits no CSS and silently
 renders 16px. Spacing is deliberately unenforced; do not add unused spacing
-tokens. Contract tests cover cross-file values and rendered geometry, and
-`pnpm checks:changed` names the ones a change reaches.
+tokens. Contract tests cover cross-file values, and `pnpm checks:changed`
+names the ones a change reaches.
 
 ## Tokens and surfaces
 

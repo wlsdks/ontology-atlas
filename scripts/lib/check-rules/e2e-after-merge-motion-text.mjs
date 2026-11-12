@@ -1,5 +1,13 @@
 export const rules = [
   {
+    order: 5102,
+    command: 'pnpm exec playwright test tests/e2e/gray-area/text-scale.spec.ts',
+    reason: 'the gray-area inspector at larger text sizes changed',
+    matches: [
+      /^src\/features\/gray-area\/ui\/GrayAreaInspector\.tsx$/,
+    ],
+  },
+  {
     order: 5101,
     command: 'pnpm exec playwright test tests/e2e/typography/cjk-font-fallback.spec.ts',
     reason: 'the Japanese and Chinese font stack changed',

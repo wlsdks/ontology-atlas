@@ -172,8 +172,7 @@ for rejection.
 - One input is one event; related stages begin in one frame.
 - The user-invoked surface moves first, not only its background.
 - Smoothness first: animate compositor properties, keep every frame interval
-  under 50 ms, let the next input settle the motion, and call
-  `expectSmoothMotion` in the primitive's spec (`docs/DESIGN-SYSTEM.md`,
+  under 50 ms, and let the next input settle the motion (`docs/DESIGN-SYSTEM.md`,
   "Smoothness first"). Run it headed with `MAP_PERF_BARS=1` for the 50 ms bar
   (`docs/engineering/motion-recording.md`).
 - Global CSS already handles reduced motion; do not create a conflicting local

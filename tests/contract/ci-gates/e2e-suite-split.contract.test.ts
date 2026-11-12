@@ -116,6 +116,7 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'app-shell/route-cycle-leak.spec.ts',
   'app-shell/route-transition-input.spec.ts',
   'design-audits/focus-ring-contrast.spec.ts',
+  'design-audits/hover-contrast.spec.ts',
   'design-audits/responsive-overflow-audit.spec.ts',
   'map/3d/map-3d-grip.spec.ts',
   'map/3d/map-3d-lit-strata.spec.ts',
