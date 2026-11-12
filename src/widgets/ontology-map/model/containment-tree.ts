@@ -275,7 +275,6 @@ export function domainPartners(
   for (const flow of flows) {
     if (flow.a !== domainId && flow.b !== domainId) continue;
     const partner = flow.a === domainId ? flow.b : flow.a;
-    if (partner === domainId) continue;
     const outgoing = flow.a === domainId ? flow.ab : flow.ba;
     const incoming = flow.a === domainId ? flow.ba : flow.ab;
     if (outgoing > 0) needs.push({ domainId: partner, links: outgoing });
