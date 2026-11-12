@@ -88,10 +88,6 @@ export function sunk(ink: string, ground: string, share: number): string {
   return (levels[level] ??= mixOver(ink, ground, level / INK_LEVELS));
 }
 
-export function inkLevel(share: number): number {
-  return Math.round(Math.min(1, Math.max(0, share)) * INK_LEVELS) / INK_LEVELS;
-}
-
 const GLOW_SPRITE_PX = 64;
 const LIGHT_SPRITE_PX = 256;
 const GLOW_STOPS: readonly [number, number][] = [[0, 1], [0.22, 0.72], [0.45, 0.34], [0.7, 0.1], [1, 0]];
