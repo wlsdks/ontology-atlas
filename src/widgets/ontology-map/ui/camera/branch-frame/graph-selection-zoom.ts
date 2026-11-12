@@ -44,9 +44,9 @@ function onDisc(b: Box, x: number, y: number, r: number): boolean {
 }
 
 /**
- * Whether a zoom reads a selection clear: every concept in `near` is named, no two of those names
- * overlap or sit on one of their discs, and the selection's ring keeps `selectedDiscGapPx` from its
- * domain disc; and what `near` covers there, each name on the side it takes. One name admission
+ * How well a zoom reads a selection, in order: no two names in `near` overlap or sit on one of its
+ * discs; the selection's ring keeps `selectedDiscGapPx` from its domain disc; how many of `near`
+ * are named. And what `near` covers there, each name on the side it takes. One name admission
  * per zoom step asked, as the frame would admit it there.
  */
 export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoomIn {
@@ -102,9 +102,8 @@ export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoo
     const focusMark = marks.get(focus);
     return focusMark ? [focusMark, ...[...marks.values()].filter((m) => m !== focusMark)] : [...marks.values()];
   };
-  const namesClear = (scale: number) => {
+  const namesApart = (scale: number) => {
     const admission = admissionAt(scale);
-    for (const id of near) if (!admission.ids.has(id)) return false;
     const pad = paint.namePadPx;
     const glyphs = admission.names.filter((n) => near.has(n.id)).map((n) => {
       const p = at(n.id)!;
@@ -121,5 +120,12 @@ export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoo
     }
     return true;
   };
-  return { maxScale: input.maxScale, clearAt: (scale) => ringClear(scale) && namesClear(scale), marksAt };
+  const namedCount = (scale: number) => {
+    const ids = admissionAt(scale).ids;
+    let count = 0;
+    for (const id of near) if (ids.has(id)) count += 1;
+    return count;
+  };
+  const scoreAt = (scale: number) => [namesApart(scale) ? 1 : 0, ringClear(scale) ? 1 : 0, namedCount(scale)];
+  return { maxScale: input.maxScale, scoreAt, marksAt };
 }

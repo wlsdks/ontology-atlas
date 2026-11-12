@@ -138,14 +138,19 @@ and `--map-graph-frame-margin-px` from each of those edges. When the whole lit
 reach fits at the current zoom it frames the whole reach; far ends in other
 domains otherwise may stay off screen. When the domain's lit set does not fit
 it zooms out only as far as it needs and never below the opening fit. When the
-framed view does not read clear (two lit names in the domain overlap, a lit
-name sits on a lit disc, or the selection's ring is nearer its domain disc
-than `--map-graph-selected-disc-gap-px`), it zooms in about the selection to
-the least zoom that reads clear, at most the zoom band's top and as far as the
-domain's lit set, its names on the sides they take there, still fits; a domain
-selection does the same for its members. A view that already reads clear never
-zooms in. The fit bisects eight times and the search samples eight zooms per
-octave, then bisects four times: at most one name admission per zoom step. The
+framed view does not read clear, it zooms in about the selection, at most
+`--map-graph-select-zoom-max-ratio` times the zoom of the click, never past the
+zoom band's top, and only as far as the domain's lit set, its names on the
+sides they take there, still fits. Within that range it takes the smallest zoom
+that reads best, judged in order: no two lit names in the domain overlap and
+none sits on a lit disc; the selection's ring keeps
+`--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
+the domain named. A domain selection is judged the same way for its members,
+and a member that cannot be named at any of those zooms stays unnamed. A zoom
+that reads no better than the view the click left is never taken, so a click
+stays a small move and the rest of the map stays in view. The fit bisects
+eight times and the search samples eight zooms per octave, then bisects four
+times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting a click selection leaves the

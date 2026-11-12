@@ -41,7 +41,7 @@ function generatedVault(): Record<string, string> {
  * Opens the folder and clicks the hub drawn furthest right in the free map, where the detail panel
  * opening on the right covers its domain unless the camera frames it.
  */
-async function selectHubNearPanel(page: Page): Promise<{ id: string; dial: DialProbe }> {
+async function selectHubNearPanel(page: Page): Promise<{ id: string; dial: DialProbe; clickedZoom: number }> {
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, generatedVault());
   await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "networkidle" });
@@ -60,12 +60,13 @@ async function selectHubNearPanel(page: Page): Promise<{ id: string; dial: DialP
       .filter((n) => n.kind === "capability" && n.id.endsWith("-0") && n.x > free.minX && n.x < free.maxX && n.y > free.minY && n.y < free.maxY)
       .sort((a, b) => b.x - a.x)[0]!;
   });
+  const clickedZoom = await page.evaluate(() => (window.__atlasMap!.dial!() as DialProbe).zoomRatio);
   await page.mouse.click(box.x + at.x, box.y + at.y);
   await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, at.id);
   await page.mouse.move(box.x + 2, box.y + box.height - 2);
   await waitForMapStill(page, { what: "camera" });
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
-  return { id: at.id, dial: await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe) };
+  return { id: at.id, clickedZoom, dial: await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe) };
 }
 
 const overlaps = (a: Box, b: Box) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
@@ -96,7 +97,7 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
   test(`at ${viewport.width} wide a selected capability's domain and lit neighbours are named inside the free map, clear of the panel and of its lines`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
-    const { id, dial } = await selectHubNearPanel(page);
+    const { id, dial, clickedZoom } = await selectHubNearPanel(page);
     const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
     expect(margin).toBeGreaterThan(0);
     const panel = await page.evaluate(() => window.__atlasMap!.obstacleInsets());
@@ -125,9 +126,12 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
 
     const crowded = named.flatMap((t, i) => named.slice(i + 1).filter((u) => u.id !== t.id && overlaps(t.box, u.box)).map((u) => `${t.role}:${t.id} x ${u.role}:${u.id}`));
     expect(crowded, "lit in-domain names overlapping one another").toEqual([]);
-    const [ringGap, discGap, maxRatio] = await page.evaluate(() =>
-      ["--map-graph-selected-ring-gap-px", "--map-graph-selected-disc-gap-px", "--map-camera-max-zoom-ratio"].map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
+    const [ringGap, discGap, maxRatio, selectZoom] = await page.evaluate(() =>
+      ["--map-graph-selected-ring-gap-px", "--map-graph-selected-disc-gap-px", "--map-camera-max-zoom-ratio", "--map-graph-select-zoom-max-ratio"]
+        .map((v) => Number(getComputedStyle(document.documentElement).getPropertyValue(v))));
     expect(discGap).toBeGreaterThan(0);
+    expect(selectZoom).toBeGreaterThan(1);
+    expect(dial.zoomRatio, "a selection zooms in no further than its ratio of the zoom it was made at").toBeLessThanOrEqual(clickedZoom * selectZoom! + 1e-6);
     expect(dial.zoomRatio, "this vault frames the hub below the zoom band's top").toBeLessThan(maxRatio!);
     const ring = dial.discs.find((d) => d.id === id)!;
     const home = dial.discs.find((d) => d.id === domainId)!;

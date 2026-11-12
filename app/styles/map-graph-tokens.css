@@ -83,6 +83,7 @@
     --map-graph-selected-title-gap-px: 8;
     --map-graph-frame-margin-px: 24;
     --map-graph-selected-disc-gap-px: 28;
+    --map-graph-select-zoom-max-ratio: 2;
     --map-graph-backing-radius-px: 6;
     --map-graph-backing-pad-x-px: 1;
     --map-graph-backing-pad-y-px: 0;

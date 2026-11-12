@@ -73,7 +73,8 @@ function graphSelectionFrame(
   });
   const zoom = graphSelectionZoom({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
-    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, domainId, ...band,
+    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, domainId,
+    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, camera.tscale * paint.selectZoomMaxRatio),
   });
   return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
 }

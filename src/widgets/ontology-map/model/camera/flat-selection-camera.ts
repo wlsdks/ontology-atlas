@@ -81,20 +81,26 @@ function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: 
   return lo - anchor.lo <= hi - anchor.hi ? clamp(centred, lo - anchor.lo, hi - anchor.hi) : (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2;
 }
 
-/** Zoom samples per octave in the zoom-in search, then bisection steps toward the first clear sample. */
+/** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
 const ZOOM_REFINE_STEPS = 4;
 /** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
 const ZOOM_FIT_STEPS = 8;
 
 /**
- * What a selection's zoom-in may do: how far in the band reaches, whether a zoom reads clear, and
- * the marks that must stay framed there, with names on the sides they would take at that zoom.
+ * What a selection's zoom-in may do: how far it may reach, how well a zoom reads (scores compared
+ * entry by entry, higher better), and the marks that must stay framed there, with names on the
+ * sides they would take at that zoom.
  */
 export interface SelectionZoomIn {
   maxScale: number;
-  clearAt(scale: number): boolean;
+  scoreAt(scale: number): readonly number[];
   marksAt(scale: number): readonly FramedMark[];
+}
+
+function compareScores(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return a[i]! - b[i]!;
+  return 0;
 }
 
 /** The camera at `scale` that keeps the selection's screen point from `camera` and then pans `marks` in by the least move. */
@@ -111,25 +117,32 @@ function framedAt(camera: CameraTarget, marks: readonly FramedMark[], scale: num
 }
 
 /**
- * The smallest scale above `from` that `zoom` reads clear, at most `cap`; `cap` when none does.
- * Bounded: ZOOM_SAMPLES_PER_OCTAVE × octaves to the cap plus ZOOM_REFINE_STEPS calls of `clearAt`.
+ * The smallest scale in `[from, cap]` with the best score `zoom` gives there; `from` when no zoom
+ * scores better, so no zoom is spent for nothing. Bounded: 1 + ZOOM_SAMPLES_PER_OCTAVE × octaves
+ * to the cap + ZOOM_REFINE_STEPS calls of `scoreAt`.
  */
-function clearingScale(from: number, cap: number, zoom: SelectionZoomIn): number {
+function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
+  let best = zoom.scoreAt(from);
+  let bestAt = from;
   let below = from;
-  for (let k = 1; ; k += 1) {
+  let previous = from;
+  for (let k = 1; previous < cap; k += 1) {
     const s = Math.min(cap, from * 2 ** (k / ZOOM_SAMPLES_PER_OCTAVE));
-    if (zoom.clearAt(s)) {
-      let clear = s;
-      for (let i = 0; i < ZOOM_REFINE_STEPS; i += 1) {
-        const mid = (below + clear) / 2;
-        if (zoom.clearAt(mid)) clear = mid;
-        else below = mid;
-      }
-      return clear;
+    const score = zoom.scoreAt(s);
+    if (compareScores(score, best) > 0) {
+      best = score;
+      bestAt = s;
+      below = previous;
     }
-    if (s >= cap) return cap;
-    below = s;
+    previous = s;
   }
+  if (bestAt === from) return from;
+  for (let i = 0; i < ZOOM_REFINE_STEPS; i += 1) {
+    const mid = (below + bestAt) / 2;
+    if (compareScores(zoom.scoreAt(mid), best) >= 0) bestAt = mid;
+    else below = mid;
+  }
+  return bestAt;
 }
 
 /**
@@ -138,8 +151,8 @@ function clearingScale(from: number, cap: number, zoom: SelectionZoomIn): number
  * scale is panned in; when none fits, the last zooms out as little as it needs, never below
  * `floorScale`. The selection keeps its screen point through any zoom, and the pan is the least
  * that frames. When the panned view does not read clear, it then zooms in about the selection, in
- * the same move, to the smallest scale `zoom` reads clear, capped by the band and by its marks
- * still fitting with their names where they would land. Null when the view already frames it.
+ * the same move, to the smallest scale with the best score `zoom` gives, at most `zoom.maxScale`
+ * and as far as its marks still fit with their names where they would land. Null when the view already frames it.
  * O(marks) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes.
  */
 export function selectionFrameTarget(
@@ -176,7 +189,7 @@ export function selectionFrameTarget(
   }
   let target = framedAt(camera, marks, scale, viewport, free, margin);
   const fitsThere = (s: number) => fitsAt(zoom!.marksAt(s), s, width, height);
-  if (zoom && scale < zoom.maxScale && fitsThere(scale) && !zoom.clearAt(scale)) {
+  if (zoom && scale < zoom.maxScale && fitsThere(scale)) {
     let cap = zoom.maxScale;
     if (!fitsThere(cap)) {
       let fits = scale;
@@ -188,10 +201,8 @@ export function selectionFrameTarget(
       }
       cap = fits;
     }
-    if (cap > scale) {
-      const clear = clearingScale(scale, cap, zoom);
-      target = framedAt(target, zoom.marksAt(clear), clear, viewport, free, margin);
-    }
+    const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
+    if (best > scale) target = framedAt(target, zoom.marksAt(best), best, viewport, free, margin);
   }
   const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
   return target.tscale === now && !moved ? null : target;

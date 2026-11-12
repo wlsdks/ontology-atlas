@@ -85,6 +85,8 @@ export interface FlatGraphPaintTokens {
   frameMarginPx: number;
   /** Least air between a selection's ring and its domain disc that a selection's framing zooms in for. */
   selectedDiscGapPx: number;
+  /** The most a selection's framing zooms in, as a multiple of the zoom the reader clicked at. */
+  selectZoomMaxRatio: number;
   /** A backed name's backing: corner radius, padding around the glyphs, the ground's alpha in it, and the blur its edge fades over. */
   backingRadiusPx: number;
   backingPadXPx: number;
