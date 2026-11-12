@@ -1,3 +1,4 @@
+import { circularDomainOrder } from "../dial/order";
 import type { DialPlacementState } from "../dial/placement";
 import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
 import { directItemId, layoutFlatGraph } from "./layout";
@@ -24,11 +25,12 @@ function domainSignature(model: DialModel, domainId: string): string {
 
 /**
  * Positions this session already showed: an unchanged domain keeps its own and its members'
- * places, a changed one starts its single re-run from where it stood. Pins are not stored yet.
+ * places, a changed one starts its single re-run from where it stood. Names measured in another
+ * face (the product font arriving after the folder settled) pin nothing. Pins are not stored yet.
  */
-export function flatGraphPins(model: DialModel): FlatGraphPins | null {
+export function flatGraphPins(model: DialModel, face: string): FlatGraphPins | null {
   const memory = remembered;
-  if (memory === null) return null;
+  if (memory === null || memory.face !== face) return null;
   const positions = new Map<string, Point>();
   const seeds = new Map<string, Point>();
   for (const d of model.domains) {
@@ -54,20 +56,26 @@ export function flatGraphPins(model: DialModel): FlatGraphPins | null {
  * Remembers a graph only once its folder has settled: a provisional build mid-read never pins the
  * next one, so a streamed read and a one-shot open of the same folder land on the same picture.
  */
-export function settleFlatGraph(model: DialModel, layout: FlatGraphLayout, state: DialPlacementState): void {
-  if (state === "settled") rememberFlatGraph(model, layout);
+export function settleFlatGraph(model: DialModel, layout: FlatGraphLayout, state: DialPlacementState, face: string): void {
+  if (state === "settled") rememberFlatGraph(model, layout, face);
 }
 
-function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout): void {
+function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: string): void {
   const positions = new Map([...layout.positions, ...layout.itemAt]);
   remembered = {
+    face,
     positions,
     signatureByDomain: new Map(model.domains.map((d) => [d.id, domainSignature(model, d.id)])),
     hueByDomain: layout.hueByDomain,
   };
 }
 
-export function buildFlatGraphScene(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
+/**
+ * Domains go round in the content's own circular order, never a remembered one: an order kept from
+ * a partial read, the bundled sample or an earlier session would seed the layout and the hues.
+ */
+export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
+  const { order } = circularDomainOrder(model, null);
   const graph = layoutFlatGraph(model, order, tokens, pins, frame);
   const itemById = new Map<string, DialItem>();
   const clusters: DialCluster[] = graph.clusters.map((c) => {
