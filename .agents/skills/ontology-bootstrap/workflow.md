@@ -53,9 +53,9 @@ already exposes its own dogfood MCP is especially easy to mistake for the new
 vault.
 
 For an in-session scratch run that cannot restart in the target folder, prepare
-`scripts/rooted-mcp-read.mjs` before the first measured call. Resolve the script
-relative to the directory containing this `SKILL.md`, never relative to the
-repository root. Run its `schema` discovery once, author the input from the
+`.agents/skills/ontology-bootstrap/scripts/rooted-mcp-read.mjs` before the first
+measured call. Resolve it from the Atlas source checkout that carries this
+skill, never from the target repository root. Run its `schema` discovery once, author the input from the
 emitted JSON Schema and example. The bootstrap invocation is the resolved script
 with the single positional argument `schema`; do not add `--schema`, `--output`,
 or use an empty invocation. Then make one `--input` / `--output` call for
