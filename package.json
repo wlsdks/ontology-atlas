@@ -325,7 +325,8 @@
       "js-yaml@>=4.0.0 <4.3.2": "4.3.2",
       "vite@<8.1.6": "8.1.6",
       "source-map-js@<1.2.2": "1.2.2",
-      "handlebars@>=4.0.0 <4.7.10": "4.7.10"
+      "handlebars@>=4.0.0 <4.7.10": "4.7.10",
+      "minimatch@>=7.0.0 <11.0.1": "11.0.1"
     },
     "patchedDependencies": {
       "three@0.185.1": "patches/three@0.185.1.patch"
