@@ -13,6 +13,8 @@ export interface GraphLine {
   from: string;
   to: string;
   kind: GraphLineKind;
+  /** `kind:from>to`, built once so a frame can report the line without allocating. */
+  key: string;
 }
 
 export interface GraphAttention {
@@ -58,7 +60,7 @@ export function capabilityLines(model: DialModel, capabilityId: string): GraphLi
     if (seen.has(`${far}|${kind}`) || (!directed && seen.has(far))) return;
     seen.add(`${far}|${kind}`);
     seen.add(far);
-    lines.push({ from, to, kind });
+    lines.push({ from, to, kind, key: `${kind}:${from}>${to}` });
   };
   for (const dep of model.capabilityDependencies) {
     if (dep.from === capabilityId) add(dep.from, dep.to, "needs");

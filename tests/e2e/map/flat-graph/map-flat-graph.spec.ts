@@ -125,3 +125,61 @@ test("under a path lens a concept outside the lens draws no disc and answers no 
     expect(await hovered(page), `${n.id} is outside the lens`).not.toBe(n.id);
   }
 });
+
+const linesOf = (dial: DialProbe, kind: "needs" | "neededBy") =>
+  dial.strips.filter((s) => s.flowKey.startsWith(`${kind}:`)).map((s) => s.flowKey.slice(kind.length + 1).split(">") as [string, string]);
+const overlap = (a: { minX: number; maxX: number; minY: number; maxY: number }, b: typeof a) =>
+  a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
+
+test("selecting a capability lights and names what it needs and what needs it, and keeps its name clear of the panel and the domain names", async ({ page }) => {
+  test.setTimeout(180_000);
+  await useDogfoodSample(page);
+  const rest = await openGraph(page);
+  const hues = await page.evaluate(() => {
+    const style = getComputedStyle(document.documentElement);
+    return Array.from({ length: 8 }, (_, k) => {
+      const [r, g, b] = style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number);
+      return `#${[r, g, b].map((n) => n!.toString(16).padStart(2, "0")).join("")}`;
+    });
+  });
+  let chosen: { id: string; needs: string[]; neededBy: string[] } | null = null;
+  for (const disc of rest.discs) {
+    if (!rest.clusters.some((c) => c.capabilityIds.includes(disc.id))) continue;
+    const at = await canvasPoint(page, disc);
+    await page.mouse.move(at.x, at.y);
+    if ((await hovered(page)) !== disc.id) continue;
+    const dial = await readDial(page);
+    const needs = linesOf(dial, "needs").map(([, to]) => to);
+    const neededBy = linesOf(dial, "neededBy").map(([from]) => from);
+    if (needs.length > 0 && neededBy.length > 0) {
+      chosen = { id: disc.id, needs, neededBy };
+      break;
+    }
+  }
+  expect(chosen, "the sample has a capability that both needs and is needed").not.toBeNull();
+  const { id, needs, neededBy } = chosen!;
+
+  const at = await canvasPoint(page, rest.discs.find((d) => d.id === id)!);
+  await page.mouse.click(at.x, at.y);
+  await page.mouse.move(5, VIEWPORT.height / 2);
+  await waitForMapStill(page);
+  expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
+  const selected = await readDial(page);
+  expect(linesOf(selected, "needs").map(([from, to]) => `${from}>${to}`).sort()).toEqual(needs.map((to) => `${id}>${to}`).sort());
+  expect(linesOf(selected, "neededBy").map(([from, to]) => `${from}>${to}`).sort()).toEqual(neededBy.map((from) => `${from}>${id}`).sort());
+
+  const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
+  for (const end of [...needs, ...neededBy]) {
+    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
+    expect(selected.texts.some((t) => t.id === end && t.role === "capability"), `${end} is named`).toBe(true);
+  }
+
+  const free = selected.freeRect;
+  const own = selected.texts.filter((t) => t.id === id && t.role !== "domain");
+  expect(own.length, "the selection is named").toBeGreaterThan(0);
+  const domainNames = selected.texts.filter((t) => t.role === "domain");
+  for (const t of own) {
+    expect(t.box.minX >= free.minX && t.box.maxX <= free.maxX && t.box.minY >= free.minY && t.box.maxY <= free.maxY, `${t.text} sits inside the free map`).toBe(true);
+    for (const d of domainNames) expect(overlap(t.box, d.box), `${t.text} touches ${d.text}`).toBe(false);
+  }
+});

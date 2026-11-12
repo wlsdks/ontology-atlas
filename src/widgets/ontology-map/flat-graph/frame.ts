@@ -41,7 +41,7 @@ interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: 
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
-interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number }
+interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string }
 const LINE_KINDS: readonly GraphLineKind[] = ["needs", "neededBy", "relates", "broader"];
 const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
@@ -95,7 +95,7 @@ const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
-const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC }));
+const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "" }));
 const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -179,6 +179,7 @@ function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd
   arc.head = head;
   if (arc.glow !== glowAlpha) arc.glow = glowAlpha;
   if (arc.kind !== kind) arc.kind = kind;
+  arc.key = "";
   return arc;
 }
 
@@ -881,6 +882,7 @@ function focusLinks(att: GraphAttention, share: number, current: boolean): void 
     const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
     const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha * share, false, 0, kind);
     if (!mark) continue;
+    mark.key = line.key;
     L.focusArcs.add(mark);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind];
   }
@@ -1207,6 +1209,29 @@ function probeDisc(d: Disc, fill: number, ground: string, tokens: FlatGraphToken
   probeDiscList.add(mark);
 }
 
+/** A resting arc or focus line as the probe's strip; a focus line's key is `kind:from>to`, a taper's end width 0. */
+function probeStrip(arc: Arc, key: string, ink: number, headSize: number): void {
+  const { path, width } = arc;
+  const kind = arc.kind === REST_ARC ? null : LINE_KINDS[arc.kind - 1];
+  const end = kind === "needs" || kind === "neededBy" ? 0 : width;
+  const strip = probeStrips.take();
+  strip.flowKey = key;
+  strip.role = kind === "relates" ? "relates" : "chord";
+  strip.dashed = kind === "relates";
+  strip.headEnd = kind === null;
+  strip.ink = ink;
+  if (strip.ax !== path.a.x) strip.ax = path.a.x;
+  if (strip.ay !== path.a.y) strip.ay = path.a.y;
+  if (strip.cx !== path.c.x) strip.cx = path.c.x;
+  if (strip.cy !== path.c.y) strip.cy = path.c.y;
+  if (strip.bx !== path.b.x) strip.bx = path.b.x;
+  if (strip.by !== path.b.y) strip.by = path.b.y;
+  if (strip.w0 !== width) strip.w0 = width;
+  if (strip.w1 !== end) strip.w1 = end;
+  if (strip.headSize !== headSize) strip.headSize = headSize;
+  probeStripList.add(strip);
+}
+
 /** Records the painted inks, sinking included, so the probe sees what the eye sees. */
 function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string): void {
   for (let listIndex = 0; listIndex < UNUSED_PROBE_LISTS.length; listIndex += 1) {
@@ -1230,22 +1255,11 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     probeDisc(d, fill, ground, tokens);
   }
   const arcInk = inkIndex(tokens.inks.arc);
-  const headSize = tokens.paint.arcHeadPx;
-  for (let i = 0; i < plan.arcs.length; i += 1) {
-    const { path, width } = plan.arcs[i]!;
-    const strip = probeStrips.take();
-    strip.flowKey = (arcKeys[i] ??= `arc:${i}`);
-    strip.ink = arcInk;
-    if (strip.ax !== path.a.x) strip.ax = path.a.x;
-    if (strip.ay !== path.a.y) strip.ay = path.a.y;
-    if (strip.cx !== path.c.x) strip.cx = path.c.x;
-    if (strip.cy !== path.c.y) strip.cy = path.c.y;
-    if (strip.bx !== path.b.x) strip.bx = path.b.x;
-    if (strip.by !== path.b.y) strip.by = path.b.y;
-    if (strip.w0 !== width) strip.w0 = width;
-    if (strip.w1 !== width) strip.w1 = width;
-    if (strip.headSize !== headSize) strip.headSize = headSize;
-    probeStripList.add(strip);
+  const reachInk = inkIndex(tokens.inks.reach);
+  for (let i = 0; i < plan.arcs.length; i += 1) probeStrip(plan.arcs[i]!, (arcKeys[i] ??= `arc:${i}`), arcInk, tokens.paint.arcHeadPx);
+  for (let i = 0; i < plan.focusArcs.length; i += 1) {
+    const arc = plan.focusArcs[i]!;
+    probeStrip(arc, arc.key, LINE_KINDS[arc.kind - 1] === "neededBy" ? reachInk : arcInk, 0);
   }
   const pad = tokens.paint.namePadPx;
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
