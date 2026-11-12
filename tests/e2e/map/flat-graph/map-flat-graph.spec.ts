@@ -172,12 +172,18 @@ test("selecting a capability lights and names what it needs and what needs it, a
   await waitForMapStill(page);
   expect(await page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
   const selected = await readDial(page);
-  expect(linesOf(selected, "needs").map(([from, to]) => `${from}>${to}`).sort()).toEqual(needs.map((to) => `${id}>${to}`).sort());
-  expect(linesOf(selected, "neededBy").map(([from, to]) => `${from}>${to}`).sort()).toEqual(neededBy.map((from) => `${from}>${id}`).sort());
+  // A selection may zoom in until its domain reads clear: far ends in other domains may leave the
+  // screen and far-end elements come onto it, so the lit picture is checked for what is drawn.
+  const selectedNeeds = linesOf(selected, "needs");
+  const selectedNeededBy = linesOf(selected, "neededBy");
+  expect(selectedNeeds.map(([from, to]) => `${from}>${to}`)).toEqual(expect.arrayContaining(needs.map((to) => `${id}>${to}`)));
+  expect(selectedNeededBy.map(([from, to]) => `${from}>${to}`)).toEqual(expect.arrayContaining(neededBy.map((from) => `${from}>${id}`)));
+  expect(selectedNeeds.every(([from]) => from === id) && selectedNeededBy.every(([, to]) => to === id), "every lit line runs to or from the selection").toBe(true);
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
   for (const end of [...needs, ...neededBy]) {
-    if (ink.has(end)) expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
+    if (!ink.has(end)) continue;
+    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
     expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
   }
 
