@@ -22,15 +22,15 @@ import {
   MapLayoutMorphOverlay,
   OntologyMap,
   PLAIN_TIER_REVEAL,
-  adoptBodyLabelFont,
   capabilityTierRead,
   conceptDegrees,
   containmentParents,
   predictMapLayoutTarget,
   type FlatDialState,
 } from "@/widgets/ontology-map";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useVaultLoadProgress } from "@/entities/vault-session";
+import { useBodyLabelFont } from "../model/map-canvas/use-body-label-font";
 import { useFlatRingMemory } from "../model/map-canvas/use-flat-ring-memory";
 import { readHexRelief } from "@/shared/lib/preferences/appearance-preferences";
 import { readHexPlacement } from "../model/map-canvas/hex-board-placement-store";
@@ -116,20 +116,6 @@ export interface TopologyMapRendererProps {
   impactLensActive: boolean;
 }
 
-function useBodyLabelFont(): boolean {
-  const [adopted, setAdopted] = useState(false);
-  useEffect(() => {
-    let live = true;
-    void adoptBodyLabelFont().then((changed) => {
-      if (live && changed) setAdopted(true);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
-  return adopted;
-}
-
 export function TopologyMapRenderer({
   localGraphRoot, mapEntryTicket, expandAllActive, mapAssemblesOnOpen, combinedFitToken, growthReplayToken, setGrowthReplaying,
   topologyRelayoutToken, setTopologyVisibleCount, footprintVisitedIds, footprintLensActiveRef,
@@ -169,8 +155,8 @@ export function TopologyMapRenderer({
   const missingStructureDocuments = useMemo(() => new Set(ontologyInsight?.nodes.filter(node => node.hasOwnDocument === false).map(node => node.id)), [ontologyInsight]);
   const evidenceStates = mapEvidence.availability === "measured" ? mapEvidence.states : null;
   const dialEvidence = mapEvidence.availability === "reading" ? null : mapEvidence.states;
-  const labelFontAdopted = useBodyLabelFont();
-  const dialLabelsInFont = useMemo(() => (labelFontAdopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFontAdopted]);
+  const labelFont = useBodyLabelFont();
+  const dialLabelsInFont = useMemo(() => (labelFont.adopted && dialLabels ? { ...dialLabels } : dialLabels), [dialLabels, labelFont.adopted]);
   const [hiddenDependencyCount, setHiddenDependencyCount] = useState(0);
   const [flatLineKinds, setFlatLineKinds] = useState<number | null>(null);
   const handleFlatDialChange = useCallback((state: FlatDialState) => setFlatLineKinds(state.summary?.lineKinds ?? null), []);
@@ -265,7 +251,7 @@ export function TopologyMapRenderer({
               indexExpanded={renderedIndexState === "expanded"}
               loading={arriving}
             />
-          ) : (
+          ) : !labelFont.ready ? null : (
           <OntologyMap
             nodes={nodes}
             edges={edges}
