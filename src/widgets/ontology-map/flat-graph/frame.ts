@@ -213,6 +213,7 @@ const frameChords = new FrameList<DialChordLight>();
 const shownElements = new FrameList<string>();
 const expandedItems = new Set<string>();
 const NO_IDS: ReadonlySet<string> = new Set();
+const NO_LINES: GraphAttention["lines"] = [];
 
 /** Disc radii at one growth, kept until the zoom changes it. */
 function radiusCacheFor(layout: FlatGraphLayout, growth: number): Map<string, number> {
@@ -803,7 +804,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
-    selected: a.selected, named: a.named, reach: a.reach,
+    selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
     discRadius: stepRadius, elementSpacingPx,
   });
   const admission = admitUnder(attention);
@@ -1186,6 +1187,39 @@ function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, ma
   ctx.drawImage(sprite, Math.round(mark.x - mark.r) | 0, Math.round(mark.y - mark.r) | 0, size, size);
 }
 
+/**
+ * A rounded veil of the canvas ground just around each backed name's glyphs, feathered at its
+ * edge, over the lines and under every disc and name: it dims the lines and the light beneath
+ * rather than cutting them out. Whole pixels keep the rectangle's arguments small integers.
+ */
+function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], ground: string, P: FlatGraphPaintTokens): void {
+  const insetX = P.namePadPx - P.backingPadXPx;
+  const insetY = P.namePadPx - P.backingPadYPx;
+  let feathered = false;
+  for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
+    const n = marks[nIndex]!;
+    if (n.name.backed !== true) continue;
+    if (!feathered) {
+      feathered = true;
+      ctx.save();
+      ctx.fillStyle = ground;
+      ctx.shadowColor = ground;
+      // shadowBlur ignores the transform, so it is scaled to the backing store's pixels here.
+      ctx.shadowBlur = P.backingFeatherPx * ctx.getTransform().a;
+    }
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const box = n.name.box;
+    const x = Math.floor(ox + box.minX + insetX) | 0;
+    const y = Math.floor(oy + box.minY + insetY) | 0;
+    ctx.globalAlpha = n.ink * P.backingAlpha;
+    ctx.beginPath();
+    ctx.roundRect(x, y, (Math.ceil(ox + box.maxX - insetX) - x) | 0, (Math.ceil(oy + box.maxY - insetY) - y) | 0, P.backingRadiusPx);
+    ctx.fill();
+  }
+  if (feathered) ctx.restore();
+}
+
 function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
   const P = tokens.paint;
   ctx.save();
@@ -1204,6 +1238,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
   paintLines(ctx, plan.focusArcs, tokens);
+  paintBackings(ctx, plan.names, ground, P);
   paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
     const glow = plan.glows[glowIndex]!;
@@ -1260,7 +1295,7 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
 const probeStripList = new FrameList(pool.strips);
@@ -1351,6 +1386,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.x !== n.x) text.x = n.x;
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
+    text.backed = n.name.backed === true;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
     probeTextList.add(text);
   }

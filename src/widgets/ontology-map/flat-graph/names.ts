@@ -1,6 +1,7 @@
 import type { MeasureText } from "../dial/label-marks";
 import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import type { GraphLine } from "./attention";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
@@ -21,6 +22,8 @@ export interface PlacedName {
   box: Box;
   /** Set when the line's figures must align as table columns: canvas text has no `tnum`. */
   pieces?: readonly NamePiece[];
+  /** A lit name a lit line crosses on every side it may take: it draws on the canvas ground. */
+  backed?: boolean;
 }
 
 export interface NameAdmission {
@@ -47,6 +50,8 @@ export interface NameInput {
   /** Concepts a lit picture names even where their name must overlap another. */
   named: ReadonlySet<string>;
   reach: { needs: number; neededBy: number } | null;
+  /** The focus's lines; lit names take a side none of them crosses. */
+  lines: readonly GraphLine[];
   /** The concept a connected agent is working on: always named, like the focus. */
   agentFocusId: string | null;
   attentionKey: string;
@@ -103,6 +108,88 @@ class Occupancy {
 
 function worldBox(at: Point, rel: Box, scale: number): Box {
   return { minX: at.x + rel.minX / scale, maxX: at.x + rel.maxX / scale, minY: at.y + rel.minY / scale, maxY: at.y + rel.maxY / scale };
+}
+
+/** The world box a screen box covers anywhere between two scales: each edge moves monotonically with 1 / scale. */
+function sweptBox(at: Point, rel: Box, lo: number, hi: number): Box {
+  const a = worldBox(at, rel, lo);
+  const b = worldBox(at, rel, hi);
+  return { minX: Math.min(a.minX, b.minX), maxX: Math.max(a.maxX, b.maxX), minY: Math.min(a.minY, b.minY), maxY: Math.max(a.maxY, b.maxY) };
+}
+
+function grown(b: Box, px: number): Box {
+  return { minX: b.minX - px, maxX: b.maxX + px, minY: b.minY - px, maxY: b.maxY + px };
+}
+
+/** Segments per lit line: the frame's bow strays under a pixel from a twelve-chord polyline at any lit length on screen. */
+const LINE_SAMPLES = 12;
+
+/**
+ * The focus's lines as world polylines bowed as the frame draws them. Disc trims are left out: a
+ * name box starts outside its disc, so the trimmed ends never reach one.
+ */
+function linePolylines(lines: readonly GraphLine[], layout: FlatGraphLayout, bow: number): Float64Array[] {
+  const out: Float64Array[] = [];
+  for (const line of lines) {
+    const a = layout.positions.get(line.from) ?? layout.itemAt.get(line.from);
+    const b = layout.positions.get(line.to) ?? layout.itemAt.get(line.to);
+    if (!a || !b) continue;
+    const cx = (a.x + b.x) / 2 - (b.y - a.y) * bow;
+    const cy = (a.y + b.y) / 2 + (b.x - a.x) * bow;
+    const pts = new Float64Array((LINE_SAMPLES + 1) * 2);
+    for (let k = 0; k <= LINE_SAMPLES; k += 1) {
+      const t = k / LINE_SAMPLES;
+      const u = 1 - t;
+      pts[k * 2] = u * u * a.x + 2 * u * t * cx + t * t * b.x;
+      pts[k * 2 + 1] = u * u * a.y + 2 * u * t * cy + t * t * b.y;
+    }
+    out.push(pts);
+  }
+  return out;
+}
+
+/** Liang–Barsky: whether the segment from (x0, y0) to (x1, y1) enters `b`. */
+export function segmentCrossesBox(x0: number, y0: number, x1: number, y1: number, b: Box): boolean {
+  let enter = 0;
+  let leave = 1;
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const edges: [number, number][] = [[-dx, x0 - b.minX], [dx, b.maxX - x0], [-dy, y0 - b.minY], [dy, b.maxY - y0]];
+  for (const [p, q] of edges) {
+    if (p === 0) {
+      if (q < 0) return false;
+      continue;
+    }
+    const r = q / p;
+    if (p < 0) enter = Math.max(enter, r);
+    else leave = Math.min(leave, r);
+    if (enter > leave) return false;
+  }
+  return true;
+}
+
+/** Whether any lit line runs through `b`: O(lines × LINE_SAMPLES). */
+function linesCross(polylines: readonly Float64Array[], b: Box): boolean {
+  for (const pts of polylines) {
+    for (let k = 0; k < LINE_SAMPLES; k += 1) {
+      if (segmentCrossesBox(pts[k * 2]!, pts[k * 2 + 1]!, pts[k * 2 + 2]!, pts[k * 2 + 3]!, b)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The first try, in the tries' fixed order, that `free` accepts and no lit line crosses; failing
+ * that, the first `free` try, which then draws backed. Null when no try is free.
+ */
+export function chooseSide<T>(tries: readonly T[], free: (t: T) => boolean, crossed: (t: T) => boolean): { side: T; backed: boolean } | null {
+  let fallback: T | null = null;
+  for (const t of tries) {
+    if (!free(t)) continue;
+    if (!crossed(t)) return { side: t, backed: false };
+    fallback ??= t;
+  }
+  return fallback === null ? null : { side: fallback, backed: true };
 }
 
 function font(weight: number, px: number, family: string): string {
@@ -164,7 +251,9 @@ function projectName(input: NameInput): PlacedName | null {
   };
 }
 
-function sideNames(input: NameInput, id: string, role: "capability" | "element", text: string): PlacedName[][] {
+type NameShape = Pick<NameInput, "tokens" | "measureText" | "fontFamily" | "selected" | "focusId" | "discRadius" | "growth" | "named" | "lit" | "labels" | "reach">;
+
+function sideNames(input: NameShape, id: string, role: "capability" | "element", text: string): PlacedName[][] {
   const { tokens: t, measureText, fontFamily } = input;
   if (input.selected && id === input.focusId) return selectedNames(input, id, role, text);
   const px = role === "capability" ? t.capNamePx : t.elementNamePx;
@@ -220,28 +309,10 @@ export function reachText(labels: DialLabels | null, reach: { needs: number; nee
 }
 
 /**
- * How far the selected concept's name block reaches sideways from its centre: disc, gap and the
- * wider of its name and reach line. A camera that keeps the selection clear of a panel needs this
- * much room on the side the name may take.
- */
-export function selectedBlockReachPx(
-  input: Pick<NameInput, "tokens" | "labels" | "measureText" | "fontFamily">,
-  text: string,
-  reach: { needs: number; neededBy: number } | null,
-  discPx: number,
-): number {
-  const { tokens: t, measureText, fontFamily } = input;
-  const nameW = measureText(text, font(FONT_WEIGHT.strong, t.selectedNamePx, fontFamily));
-  const line = reachText(input.labels, reach);
-  const lineW = line ? measureText(line, font(400, t.captionPx, fontFamily)) : 0;
-  return discPx + t.nameGapPx + Math.max(nameW, lineW) + t.namePadPx;
-}
-
-/**
  * The selected concept's name at the selected size, with its reach line beneath, tried right, left,
  * below and above its disc. Each try is one block, so the two lines never part.
  */
-function selectedNames(input: NameInput, id: string, role: "capability" | "element", text: string): PlacedName[][] {
+function selectedNames(input: NameShape, id: string, role: "capability" | "element", text: string): PlacedName[][] {
   const { tokens: t, measureText, fontFamily } = input;
   const px = t.selectedNamePx;
   const nameFont = font(FONT_WEIGHT.strong, px, fontFamily);
@@ -280,6 +351,34 @@ function selectedNames(input: NameInput, id: string, role: "capability" | "eleme
     block("center", 0, side),
     block("center", 0, -side - height),
   ];
+}
+
+export type NameReachInput = NameShape & Pick<NameInput, "model" | "elementLabel" | "staleByDomain">;
+
+function union(boxes: readonly Box[]): Box {
+  return {
+    minX: Math.min(...boxes.map((b) => b.minX)), maxX: Math.max(...boxes.map((b) => b.maxX)),
+    minY: Math.min(...boxes.map((b) => b.minY)), maxY: Math.max(...boxes.map((b) => b.maxY)),
+  };
+}
+
+/**
+ * Screen pixels around a concept's centre that its disc, selection ring and every side its name
+ * may take can cover: what a camera framing a lit set keeps on screen before admission has run.
+ */
+export function nameReachBox(input: NameReachInput, id: string): Box {
+  const { model, tokens: t } = input;
+  const r = input.discRadius(id);
+  const ring = input.selected && id === input.focusId ? r + t.selectedRingGapPx + t.selectedRingPx : r;
+  const boxes: Box[] = [{ minX: -ring, maxX: ring, minY: -ring, maxY: ring }];
+  if (model.domainById.has(id)) boxes.push(...domainBlock(input, id).map((n) => n.box));
+  else {
+    const cap = model.capabilityById.get(id);
+    const label = cap?.label ?? input.elementLabel(id);
+    const role = cap || !model.domainOf.has(id) ? "capability" : "element";
+    if (label) for (const group of sideNames(input, id, role, label)) for (const n of group) boxes.push(n.box);
+  }
+  return union(boxes);
 }
 
 interface Candidate { id: string; tries: () => PlacedName[][] }
@@ -390,13 +489,25 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   });
   const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
-  // A forced name keeps off every domain title when any try can, then takes the least crowded try.
+  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
+  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
+  const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens.lineBow) : [];
+  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
+  const selectedId = input.selected ? input.focusId : null;
+  const offTitles = (id: string, at: Point, group: readonly PlacedName[]) => {
+    const gap = id === selectedId ? tokens.selectedTitleGapPx : 0;
+    return !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
+  };
+  // A lit name takes the first side no lit line crosses; a forced name then keeps off every domain
+  // title when any try can and takes the least crowded try.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
-    let fit = tries.find((group) => inside(at, group) && !hits(grid, at, group));
+    const lit = polylines.length > 0 && input.lit!.has(cand.id);
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (cand.id !== selectedId || offTitles(cand.id, at, group));
+    let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const clear = tries.filter((group) => !hits(titles, at, group));
+      const clear = tries.filter((group) => offTitles(cand.id, at, group));
       fit = (clear.length > 0 ? clear : tries).reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best));
     }
     if (fit) for (const n of fit) place(n);
@@ -406,6 +517,9 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;
     tryPlace(cand, cand.id === input.focusId || cand.id === input.agentFocusId);
+  }
+  if (polylines.length > 0) {
+    for (const n of names) if (input.lit!.has(n.id) && crossed(layout.positions.get(n.id)!, [n])) n.backed = true;
   }
   return { step, names, ids };
 }
@@ -457,6 +571,11 @@ function withSelectedRadius(input: NameInput): NameInput {
   return { ...input, discRadius: (id) => (id === focus ? selectedDiscRadius(own(id), input.tokens, input.growth) : own(id)) };
 }
 
+/** One admission at the input's zoom, outside the per-step cache: a camera weighing a zoom it has not shown yet. */
+export function admitNamesAt(input: NameInput): NameAdmission {
+  return admit(withSelectedRadius(input), zoomStep(input.scale, input.tokens.zoomStepsPerOctave), null, null);
+}
+
 /**
  * Names admitted at the camera's quantised zoom step, cached per step so pan and drag never
  * re-run admission. Without attention, a step's names include every name of the nearest admitted
@@ -481,7 +600,7 @@ export function admittedNames(input: NameInput): NameAdmission {
   }
   const hit = cache.rest.get(step);
   if (hit) return hit;
-  const restInput = { ...input, lit: null, focusId: null, agentFocusId: null, selected: false, named: NO_NAMES, reach: null };
+  const restInput = { ...input, lit: null, focusId: null, agentFocusId: null, selected: false, named: NO_NAMES, reach: null, lines: [] };
   const made = admit(restInput, step, nearest(cache.rest, step, true)?.ids ?? null, nearest(cache.rest, step, false)?.ids ?? null);
   cache.rest.set(step, made);
   return made;

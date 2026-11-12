@@ -15,7 +15,7 @@ const PAINT_KEYS: readonly (keyof FlatGraphPaintTokens)[] = [
   "arcWidthGain", "arcWidthMaxPx", "arcGlowPx", "arcGlowAlpha", "arcHeadPx", "arcTrimPx", "restBudget", "sinkInk",
   "dotSpacingFromPx", "dotSpacingFullPx", "elementNameSpacingPx", "zoomStepsPerOctave", "projectNamePx", "domainNamePx",
   "captionPx", "capNamePx", "elementNamePx", "nameGapPx", "captionGapPx", "nameHaloPx", "domainNameHaloPx", "namePadPx",
-  "restHue", "selectedDiscPx", "selectedRingGapPx", "selectedRingPx", "selectedNamePx", "lineBow", "lineAlpha", "lineTaperPx",
+  "restHue", "selectedDiscPx", "selectedRingGapPx", "selectedRingPx", "selectedNamePx", "selectedTitleGapPx", "frameMarginPx", "selectedDiscGapPx", "selectZoomMaxRatio", "backingRadiusPx", "backingPadXPx", "backingPadYPx", "backingAlpha", "backingFeatherPx", "lineBow", "lineAlpha", "lineTaperPx",
   "lineHairPx", "lineDotPx", "lineDotGapPx", "lineDoubleGapPx",
 ];
 
