@@ -756,15 +756,18 @@ function buildDialWorld(
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
   const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges) });
   const model = placeDial ? placeDial(built) : built;
-  const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
-  if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);
+  const remember = input.rememberOrder && model.domains.length > 0;
   if (input.graph) {
     const paint = input.graph.paint;
-    const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: labelFontFamily() });
-    const scene = buildFlatGraphScene(model, order, input.graph.layout, flatGraphPins(model), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx });
+    const face = labelFontFamily();
+    const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face });
+    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx });
+    if (remember) rememberDialOrder(scene.order);
     const pad = paint.domainNamePx;
     return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad } };
   }
+  const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
+  if (remember) rememberDialOrder(order);
   const scene = layoutDial(model, order, input.tokens, input.memory);
   return { model, scene, overviewPadPx: dialOverviewPad(scene, model, input.labels, input.measureText, input.tokens) };
 }

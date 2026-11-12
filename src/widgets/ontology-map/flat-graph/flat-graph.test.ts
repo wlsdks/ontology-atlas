@@ -27,7 +27,7 @@ import { graphDiscRadiusPx } from "./marks";
 import { admittedNames, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
-import type { FlatGraphLayout } from "./types";
+import type { FlatGraphFrame, FlatGraphLayout } from "./types";
 
 const KINDS = new Set(["project", "domain", "capability", "element"]);
 type Node = { id: string; kind: string; title?: string };
@@ -289,22 +289,23 @@ describe("session memory", () => {
     const kept = new Set(nodes.filter((n, i) => (n.kind !== "capability" && n.kind !== "element") || i % every === 0).map((n) => n.id));
     return modelOf(nodes.filter((n) => kept.has(n.id)), edges.filter((e) => kept.has(e.from) && kept.has(e.to)));
   };
-  const build = (model: DialModel) => buildFlatGraphScene(model, circularDomainOrder(model, null).order, TOKENS.layout, flatGraphPins(model)).graph!;
+  const FACE = "sans-serif";
+  const build = (model: DialModel) => buildFlatGraphScene(model, TOKENS.layout, flatGraphPins(model, FACE)).graph!;
 
-  it("lands a streamed read on the same positions and hues as a one-shot open", () => {
+  it("pins nothing measured in another face, so names settling in the product font land on a fresh open's picture", () => {
     const full = modelOf(nodes, edges);
-    claimFlatGraphFolder("one-shot");
-    const oneShot = build(full);
-    settleFlatGraph(full, oneShot, "settled");
-    claimFlatGraphFolder("streamed");
-    for (const every of [4, 2]) {
-      const model = partOf(every);
-      settleFlatGraph(model, build(model), "provisional");
-    }
-    const streamed = build(full);
-    settleFlatGraph(full, streamed, "settled");
-    expect([...streamed.positions]).toEqual([...oneShot.positions]);
-    expect([...streamed.hueByDomain]).toEqual([...oneShot.hueByDomain]);
+    const frameAt = (charPx: number): FlatGraphFrame => ({
+      areaPx: { width: 1600, height: 900 },
+      titles: new Map(full.domains.map((d) => [d.id, { halfWidthPx: d.label.length * charPx, topPx: 18, bottomPx: 64 }])),
+      capDiscPx: TOKENS.paint.capDiscMaxPx,
+    });
+    claimFlatGraphFolder("face-fresh");
+    const fresh = buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "product"), frameAt(7)).graph!;
+    claimFlatGraphFolder("face-late");
+    settleFlatGraph(full, buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "fallback"), frameAt(5)).graph!, "settled", "fallback");
+    const late = buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "product"), frameAt(7)).graph!;
+    expect([...late.positions]).toEqual([...fresh.positions]);
+    expect([...late.hueByDomain]).toEqual([...fresh.hueByDomain]);
   });
 
   it("gives every domain its own hue on a one-shot open, a streamed read, and after another folder's memory", () => {
@@ -319,11 +320,11 @@ describe("session memory", () => {
     claimFlatGraphFolder("distinct-one-shot");
     expect(distinct(build(full))).toBe(full.domains.length);
     claimFlatGraphFolder("distinct-streamed");
-    settleFlatGraph(partial, build(partial), "provisional");
+    settleFlatGraph(partial, build(partial), "provisional", FACE);
     expect(distinct(build(full))).toBe(full.domains.length);
     claimFlatGraphFolder("distinct-replaced");
     const other = modelOf(nodes, edges);
-    settleFlatGraph(other, build(other), "settled");
+    settleFlatGraph(other, build(other), "settled", FACE);
     expect(distinct(build(full))).toBe(full.domains.length);
   });
 
@@ -331,7 +332,7 @@ describe("session memory", () => {
     claimFlatGraphFolder("hues");
     const before = partOf(2);
     const first = build(before);
-    settleFlatGraph(before, first, "settled");
+    settleFlatGraph(before, first, "settled", FACE);
     const after = build(modelOf(nodes, edges));
     for (const [domainId, hue] of first.hueByDomain) expect(after.hueByDomain.get(domainId), domainId).toBe(hue);
   });
