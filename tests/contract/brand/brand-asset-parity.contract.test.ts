@@ -43,7 +43,7 @@ describe('pixel mascot brand parity', () => {
     }
   });
 
-  it('motion is three finite six-frame rows, not an ambient animation catalogue', () => {
+  it('motion is three finite twenty-four-frame rows, not an ambient animation catalogue', () => {
     const rows = readMascotMotionRows();
     expect(Object.keys(rows)).toEqual(['walk', 'read', 'success']);
     for (const [state, row] of Object.entries(rows)) {
@@ -71,10 +71,7 @@ describe('pixel mascot brand parity', () => {
 
   it('OS icon plans keep the same art at one logical size across density', () => {
     const plan = new Map(ICON_RASTER_PLAN.map(([name, detail]) => [name, detail]));
-    expect(plan.get('icon-16')).toBe('micro');
-    expect(plan.get('micro-32')).toBe('micro');
-    expect(plan.get('icon-32')).toBe('compact');
-    expect(plan.get('compact-64')).toBe('compact');
-    expect(plan.get('icon-64')).toBe('full');
+    expect(plan.size).toBeGreaterThan(0);
+    for (const detail of plan.values()) expect(detail).toBe('compass');
   });
 });

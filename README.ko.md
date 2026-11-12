@@ -131,6 +131,27 @@ pnpm checks:changed -- --run
 전체 검사 안내는 [개발 검사](docs/DEVELOPMENT-CHECKS.md)에 있어요. 저장소 명령 표는
 영어 README의 [Contributing](README.md#contributing)에 있어요.
 
+## Moru
+
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 44개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>모루의 움직임 보기</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="자료를 읽는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="사람의 결정을 기다리는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="확인된 완료를 반기는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="노래하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="물고기와 노는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="춤추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="모루들의 합동 춤" />
+
+
+</details>
+
 ## 라이선스
 
 [MIT](LICENSE). 서드파티 고지는 [NOTICE.md](NOTICE.md)에, 라이선스 전문은 [public/third-party-licenses.txt](public/third-party-licenses.txt)에 있어요. 픽셀 마스코트와 그 출처는 [브랜드](docs/design/brand.md)에 설명돼 있어요.

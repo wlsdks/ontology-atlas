@@ -7,15 +7,22 @@ export const BRAND_TAGLINE = 'Understand your codebase.';
 
 /** Fixed inside mascot pixels only; these values are not an application palette. */
 export const MASCOT_PALETTE = Object.freeze({
-  outline: '#101025',
-  face: '#FFF0CA',
-  signal: '#65BDE9',
-  suitHighlight: '#286DD0',
+  outline: '#171923',
+  face: '#FFF1D7',
+  signal: '#6D73D2',
+  suitHighlight: '#50569C',
 });
+
+export function readCompassMaster(root = process.cwd()) {
+  const bytes = readFileSync(join(root, 'assets/brand/moru/icons/atlas-compass-1024.png'));
+  const dimensions = pngDimensions(bytes);
+  if (dimensions.width !== 1024 || dimensions.height !== 1024 || bytes[25] !== 6) throw new Error('Compass master must be 1024x1024 RGBA');
+  return { ...dimensions, base64: bytes.toString('base64') };
+}
 
 /**
  * Each small size is separately authored. Scaling the 64px figure down is a
- * regression: the body and planet collapse before the face does.
+ * regression: the full seal's face needs optical simplification at small sizes.
  */
 export const MASCOT_MASTERS = Object.freeze({
   full: Object.freeze({
@@ -60,21 +67,21 @@ export function readMascotPortraits(root = process.cwd()) {
 export const MASCOT_MOTION_ROWS = Object.freeze({
   walk: Object.freeze({
     path: 'assets/brand/mascot/mascot-walk-row-64.png',
-    width: 384,
+    width: 1536,
     height: 64,
-    frames: 6,
+    frames: 24,
   }),
   read: Object.freeze({
     path: 'assets/brand/mascot/mascot-read-row-64.png',
-    width: 384,
+    width: 1536,
     height: 64,
-    frames: 6,
+    frames: 24,
   }),
   success: Object.freeze({
     path: 'assets/brand/mascot/mascot-success-row-64.png',
-    width: 384,
+    width: 1536,
     height: 64,
-    frames: 6,
+    frames: 24,
   }),
 });
 
@@ -90,6 +97,13 @@ export const MASCOT_TRAY_TEMPLATES = Object.freeze({
     height: 32,
   }),
 });
+
+/** Decorative context is selected by the existing operation, independently of verified work. */
+const MASCOT_CONTEXT_ROWS = Object.freeze(Object.fromEntries(
+  ['waiting', 'connect', 'compile', 'greeting'].map(state => [state, Object.freeze({
+    path: `assets/brand/mascot/mascot-${state}-row-64.png`, width: 1536, height: 64, frames: 24,
+  })]),
+));
 
 /**
  * Logical-size selection, before Retina multiplication. A 16pt Retina icon uses
@@ -139,9 +153,9 @@ export function readMascotPresentationMaster(root = process.cwd()) {
   return { ...spec, base64: bytes.toString('base64') };
 }
 
-export function readMascotMotionRows(root = process.cwd()) {
+export function readMascotMotionRows(root = process.cwd(), includeContext = false) {
   return Object.fromEntries(
-    Object.entries(MASCOT_MOTION_ROWS).map(([state, spec]) => {
+    Object.entries(includeContext ? { ...MASCOT_MOTION_ROWS, ...MASCOT_CONTEXT_ROWS } : MASCOT_MOTION_ROWS).map(([state, spec]) => {
       const bytes = readFileSync(join(root, spec.path));
       const dimensions = pngDimensions(bytes);
       if (dimensions.width !== spec.width || dimensions.height !== spec.height) {

@@ -46,10 +46,35 @@ it('does not mount or subscribe while no operation is pending', () => {
   expect(mediaListeners.size).toBe(0);
 });
 
+it('finishes the welcome once without restarting on re-render or visibility changes', () => {
+  const { rerender } = render(<BrandWaitingMark active motion="greeting" />);
+  const mark = screen.getByTestId('brand-waiting-mark');
+  expect(mark).toHaveAttribute('data-waiting-motion', 'paused');
+  act(() => observers[0].reveal(true));
+  expect(mark).toHaveAttribute('data-waiting-motion', 'running');
+  fireEvent.animationEnd(mark);
+  expect(mark).toHaveAttribute('data-waiting-motion', 'still');
+  rerender(<BrandWaitingMark active motion="greeting" />);
+  act(() => observers[0].reveal(false));
+  act(() => observers[0].reveal(true));
+  fireEvent(document, new Event('visibilitychange'));
+  expect(mark).toHaveAttribute('data-waiting-motion', 'still');
+});
+
+it('keeps a reduced-motion greeting still even when the preference is later lifted', () => {
+  reduced = true;
+  render(<BrandWaitingMark active motion="greeting" />);
+  const mark = screen.getByTestId('brand-waiting-mark');
+  expect(mark).toHaveAttribute('data-waiting-motion', 'still');
+  act(() => { reduced = false; for (const listener of mediaListeners) listener(); });
+  act(() => observers[0].reveal(true));
+  expect(mark).toHaveAttribute('data-waiting-motion', 'still');
+});
+
 it('server-renders visible full-screen waits ready for CSS-only motion without subscribing', () => {
   const html = renderToString(<BrandWaitingMark active initialVisibility="visible" />);
   expect(html).toContain('data-waiting-motion="running"');
-  expect(html).toContain('/brand/mascot-walk-row.png');
+  expect(html).toContain('/brand/mascot-waiting-row.png');
   expect(observers).toHaveLength(0);
   expect(mediaListeners.size).toBe(0);
 });

@@ -75,23 +75,23 @@ describe('mascot motion continuity', () => {
     Object.entries(MASCOT_MOTION_ROWS).map(([state, spec]) => [state, decodeRgbaPng(spec.path)]),
   ) as Record<keyof typeof MASCOT_MOTION_ROWS, ReturnType<typeof decodeRgbaPng>>;
 
-  it('uses one five-transition clock for six poses', () => {
+  it('uses twenty-three transitions for twenty-four work poses', () => {
     const fastMs = Number(CSS.match(/--motion-fast:\s*(\d+)ms/)?.[1]);
     expect(fastMs).toBe(120);
-    expect(MASCOT_WALK_MS).toBe(fastMs * 5);
+    expect(MASCOT_WALK_MS).toBe(fastMs * 16);
     expect(CSS).toMatch(
-      /--atlas-mascot-sequence-duration:\s*calc\(var\(--motion-fast\) \* 5\)/,
+      /--atlas-mascot-sequence-duration:\s*calc\(var\(--motion-fast\) \* 16\)/,
     );
-    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(5, end\)/g)).toHaveLength(1);
+    expect(CSS.match(/var\(--atlas-mascot-sequence-duration\) steps\(23, end\)/g)).toHaveLength(1);
     expect(Object.keys(rows).length).toBeGreaterThan(0);
     for (const row of Object.values(rows)) {
-      expect({ width: row.width, height: row.height }).toEqual({ width: 384, height: 64 });
+      expect({ width: row.width, height: row.height }).toEqual({ width: 1536, height: 64 });
     }
   });
 
   it('joins WALK to READ and READ to SUCCESS with identical boundary pixels', () => {
-    expect(frame(rows.walk, 5)).toEqual(frame(rows.read, 0));
-    expect(frame(rows.success, 0)).toEqual(frame(rows.read, 5));
+    expect(frame(rows.walk, 23)).toEqual(frame(rows.read, 0));
+    expect(frame(rows.success, 0)).toEqual(frame(rows.read, 23));
     expect(frame(rows.success, 1)).not.toEqual(frame(rows.success, 0));
   });
 

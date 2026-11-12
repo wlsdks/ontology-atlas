@@ -159,6 +159,7 @@ implementation still require exhaustive CI.
 |---|---|
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
+| `pnpm brand:sprites` | Rebuild Moru sprites, 44 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
@@ -189,6 +190,27 @@ implementation still require exhaustive CI.
 | `pnpm ui:audit -- --url=<base> --route=<path> [--setup=<module.mjs>]` | Prepare an interactive state with an optional local module, then measure rendered facts per width: horizontal overflow, occluded or unreachable controls, small touch targets, off-ramp type/radius/shadow values, low contrast, unequal repeated sets, scroll-end reserve |
 
 Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
+
+</details>
+
+## Moru
+
+Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [44 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>Open motion samples</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="Moru greeting" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="Moru reading source" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="Moru waiting for a person" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="Moru celebrating observed completion" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="Moru singing" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="Moru and a fish" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="Moru dancing" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru chorus" />
+
 
 </details>
 

@@ -64,7 +64,7 @@ a composition.
 - Achromatic base, indigo protagonist. Gradients, glass, glow, scale hover,
   overshoot and extra hues are allowed (2026-09-08), each through a ramp token
   and naming the fact or state it carries.
-- The pixel mascot's raster colours, including chartreuse `#C6F000`, never
+- The pixel mascot's raster colours never
   become CSS tokens or UI colours (`docs/design/brand.md`).
 - Signal tones are warning amber, error red and success emerald; success marks
   a real success state only.

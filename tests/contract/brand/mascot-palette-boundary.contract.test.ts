@@ -37,21 +37,22 @@ describe('mascot palette boundary', () => {
       path: path.relative(ROOT, absolute),
       source: readFileSync(absolute, 'utf8'),
     }));
+    expect(files.length).toBeGreaterThan(0);
     expect(
       mascotPaletteLeaks(files),
-      'Mascot cream/cyan/blue is identity raster ink, never a UI token, status, control, or data colour.',
+      'Moru ivory/indigo is identity raster ink, never a UI token, status, control, or data colour.',
     ).toEqual([]);
   });
 
   it('probe distinguishes an invalid CSS token from a valid raster-source declaration', () => {
     expect(
       mascotPaletteLeaks([
-        { path: 'app/globals.css', source: ':root { --color-mascot: #65BDE9; }' },
+        { path: 'app/globals.css', source: ':root { --color-mascot: #6D73D2; }' },
       ]),
-    ).toEqual(['app/globals.css: #65bde9']);
+    ).toEqual(['app/globals.css: #6d73d2']);
     expect(
       mascotPaletteLeaks([
-        { path: 'scripts/brand/build-brand-assets.mjs', source: "signal: '#65BDE9'" },
+        { path: 'scripts/brand/build-brand-assets.mjs', source: "signal: '#6D73D2'" },
       ].filter(({ path: file }) => APP_SOURCE_ROOTS.some((root) => file.startsWith(`${root}/`)))),
     ).toEqual([]);
   });

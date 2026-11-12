@@ -120,6 +120,27 @@ pnpm checks:changed -- --run
 
 `pnpm pr:land <number>` 会合并一个已评审的 pull request，并保留它原有的提交。完整的检查说明见[开发检查](docs/DEVELOPMENT-CHECKS.md)。仓库命令表见英文 README 的 [Contributing](README.md#contributing)。
 
+## Moru
+
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[44个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>查看Moru的动作</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="打招呼的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="阅读资料的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="等待用户决定的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="庆祝已确认完成的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="唱歌的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="和鱼儿玩耍的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="跳舞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru 一起跳舞" />
+
+
+</details>
+
 ## 许可证
 
 [MIT](LICENSE)。第三方声明见 [NOTICE.md](NOTICE.md)，许可证全文见 [public/third-party-licenses.txt](public/third-party-licenses.txt)。像素吉祥物及其素材来源见[品牌](docs/design/brand.md)。

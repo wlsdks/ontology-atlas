@@ -91,52 +91,75 @@
   /*
    * Pixel mascot — one truthful finite sequence, never an ambient loop.
    *
-   * The art owns a 6×64px frame row. Five frame transitions therefore end at
-   * -320px rather than -384px, which would expose an empty seventh cell after a
-   * finite animation. The
-   * local 600ms sequence is five existing 120ms fast steps, not a new app-wide
-   * duration token.
+   * Twenty-four native poses use sixteen fast beats and twenty-three steps.
+   * The final cell stays visible at -1472px.
    */
-  @keyframes atlasMascotSprite6 {
+  @keyframes atlasMascotSprite24 {
     from {
       background-position-x: 0;
     }
 
     to {
-      background-position-x: -320px;
+      background-position-x: -1472px;
     }
   }
 
-  .atlas-mascot-presence {
-    --atlas-mascot-sequence-duration: calc(var(--motion-fast) * 5);
+  .atlas-mascot-presence,
+  .atlas-moru-greeting {
+    --atlas-mascot-sequence-duration: calc(var(--motion-fast) * 16);
   }
 
   .atlas-mascot-sprite {
     background-position: 0 0;
     background-repeat: no-repeat;
-    background-size: 384px 64px;
+    background-size: 1536px 64px;
     image-rendering: pixelated;
-    animation: atlasMascotSprite6 var(--atlas-mascot-sequence-duration) steps(5, end) both;
+    animation: atlasMascotSprite24 var(--atlas-mascot-sequence-duration) steps(23, end) both;
   }
 
-  /* WAIT accompanies an actual pending operation, independently of the verified
-     READ/SUCCESS presence. Eight existing base beats form one step/hop/settle
-     cycle. Only the first four native 64px poses are used; no art is rescaled. */
+  .atlas-moru-greeting {
+    --atlas-mascot-sequence-duration: calc(var(--motion-expressive) * 6);
+    animation-play-state: paused;
+  }
+  .atlas-moru-greeting[data-waiting-motion='running'] { animation-play-state: running; }
+  .atlas-moru-greeting[data-waiting-motion='paused'] { animation-play-state: paused; }
+  .atlas-moru-greeting[data-waiting-motion='still'] { animation: none; background-position: 0 0; }
+
+  /* WAIT accompanies an actual pending operation. Twenty-four native poses carry the
+     gesture; the long neutral hold keeps it quieter than the operation text. */
   @keyframes atlasWaitingStep {
-    0%, 50%, 100% { background-position-x: 0; transform: translate(0, 0); }
-    12.5% { background-position-x: -64px; transform: translate(-2px, 0); }
-    25% { background-position-x: -128px; transform: translate(-2px, -4px); }
-    37.5%, 87.5% { background-position-x: -64px; transform: translate(0, 0); }
-    62.5% { background-position-x: -192px; transform: translate(2px, 0); }
-    75% { background-position-x: -128px; transform: translate(2px, -4px); }
+    0%, 50%, 100% { background-position-x: 0; }
+    52% { background-position-x: -64px; }
+    54% { background-position-x: -128px; }
+    56% { background-position-x: -192px; }
+    58% { background-position-x: -256px; }
+    60% { background-position-x: -320px; }
+    62% { background-position-x: -384px; }
+    64% { background-position-x: -448px; }
+    66% { background-position-x: -512px; }
+    68% { background-position-x: -576px; }
+    70% { background-position-x: -640px; }
+    72% { background-position-x: -704px; }
+    74% { background-position-x: -768px; }
+    76% { background-position-x: -832px; }
+    78% { background-position-x: -896px; }
+    80% { background-position-x: -960px; }
+    82% { background-position-x: -1024px; }
+    84% { background-position-x: -1088px; }
+    86% { background-position-x: -1152px; }
+    88% { background-position-x: -1216px; }
+    90% { background-position-x: -1280px; }
+    92% { background-position-x: -1344px; }
+    94% { background-position-x: -1408px; }
+    96% { background-position-x: -1472px; }
   }
 
   .atlas-waiting-mark {
     background-repeat: no-repeat;
     background-position: 0 0;
-    background-size: 384px 64px;
+    background-size: 1536px 64px;
     image-rendering: pixelated;
-    animation: atlasWaitingStep calc(var(--motion-base) * 8) steps(1, end) infinite;
+    animation: atlasWaitingStep calc(var(--motion-base) * 24) steps(1, end) infinite;
     animation-play-state: paused;
   }
 
@@ -144,6 +167,7 @@
      exists on unzoomed fallbacks and portals, where applying its inverse alone
      would shrink the native art. Keep sprite cells and busy micro marks at 1:1. */
   .topology-ui-scale .atlas-waiting-mark,
+  .topology-ui-scale .atlas-moru-greeting,
   .topology-ui-scale .atlas-inline-waiting-mark {
     zoom: calc(1 / var(--topology-ui-scale-factor));
   }
@@ -169,7 +193,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .atlas-waiting-mark {
+    .atlas-waiting-mark,
+    .atlas-moru-greeting {
       animation: none !important;
       background-position: 0 0 !important;
       transform: none !important;

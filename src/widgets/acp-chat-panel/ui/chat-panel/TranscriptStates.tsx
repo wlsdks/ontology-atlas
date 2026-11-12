@@ -23,7 +23,7 @@ export function StartingState({ t, download, suggestions, seatedRequestWaiting }
       aria-live="polite"
       className="agent-panel-stage-swap m-auto grid w-full max-w-[40ch] justify-items-center gap-2 text-center"
     >
-      <BrandWaitingMark active />
+      <BrandWaitingMark active motion="connect" />
       <p className="break-keep text-body leading-prose text-[color:var(--color-text-secondary)]">
         {t(download ? 'firstRun.title' : 'starting.title')}
       </p>

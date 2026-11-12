@@ -44,7 +44,7 @@ test('verified read work appears beside its status in READ and terminal state re
     await page.addInitScript(() => {
       const nativeSetTimeout = window.setTimeout.bind(window);
       window.setTimeout = ((handler: TimerHandler, timeout?: number, ...args: unknown[]) =>
-        nativeSetTimeout(handler, timeout === 600 ? 6_000 : timeout, ...args)) as typeof window.setTimeout;
+        nativeSetTimeout(handler, timeout === 1920 ? 6_000 : timeout, ...args)) as typeof window.setTimeout;
     });
   }
   await seedFirstRunSeen(page);
@@ -60,13 +60,13 @@ test('verified read work appears beside its status in READ and terminal state re
   const mascot = page.getByTestId('agent-mascot-presence');
   await expect(mascot).toBeVisible({ timeout: 30_000 });
   if (evidenceDir) {
-    for (let frame = 0; frame < 6; frame += 1) {
+    for (let frame = 0; frame < 24; frame += 1) {
       await mascot.evaluate((element, currentTime) => {
         for (const animation of element.getAnimations({ subtree: true })) {
           animation.pause();
           animation.currentTime = currentTime;
         }
-      }, frame * 120);
+      }, frame * (1920 / 23));
       await mascot.screenshot({
         path: `${evidenceDir}/walk-frame-${String(frame + 1).padStart(2, '0')}.png`,
       });
