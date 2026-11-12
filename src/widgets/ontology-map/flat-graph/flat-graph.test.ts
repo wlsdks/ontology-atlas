@@ -141,7 +141,13 @@ describe("domain hues", () => {
     ring.forEach((id, k) => expect(hues.get(id)).not.toBe(hues.get(ring[(k + 1) % ring.length]!)));
   });
 
-  it("keeps a remembered hue and gives a new domain the lowest index its neighbours leave free", () => {
+  it("gives eight or fewer domains eight distinct hues while memory holds other domains", () => {
+    const eight = ring.slice(0, DOMAIN_HUE_COUNT);
+    const hues = assignDomainHues(eight, () => false, new Map([["x", 0], ["y", 3]]));
+    expect(new Set(eight.map((id) => hues.get(id))).size).toBe(eight.length);
+  });
+
+  it("keeps a remembered hue and gives a new domain the least-used index its neighbours leave free", () => {
     const hues = assignDomainHues(["a", "b", "c"], () => true, new Map([["a", 5], ["c", 0]]));
     expect(hues.get("a")).toBe(5);
     expect(hues.get("c")).toBe(0);
@@ -280,6 +286,26 @@ describe("session memory", () => {
     settleFlatGraph(full, streamed, "settled");
     expect([...streamed.positions]).toEqual([...oneShot.positions]);
     expect([...streamed.hueByDomain]).toEqual([...oneShot.hueByDomain]);
+  });
+
+  it("gives every domain its own hue on a one-shot open, a streamed read, and after another folder's memory", () => {
+    const bundled = deriveOntologyFromVault(dogfoodManifest as unknown as VaultManifest);
+    const own = bundled.nodes as Node[];
+    const ownEdges = bundled.edges as Edge[];
+    const full = modelOf(own, ownEdges);
+    const caps = own.filter((n) => n.kind === "capability");
+    const half = new Set(own.filter((n) => n.kind !== "capability" || caps.indexOf(n) % 2 === 0).map((n) => n.id));
+    const partial = modelOf(own.filter((n) => half.has(n.id)), ownEdges.filter((e) => half.has(e.from) && half.has(e.to)));
+    const distinct = (layout: FlatGraphLayout) => new Set(layout.hueByDomain.values()).size;
+    claimFlatGraphFolder("distinct-one-shot");
+    expect(distinct(build(full))).toBe(full.domains.length);
+    claimFlatGraphFolder("distinct-streamed");
+    settleFlatGraph(partial, build(partial), "provisional");
+    expect(distinct(build(full))).toBe(full.domains.length);
+    claimFlatGraphFolder("distinct-replaced");
+    const other = modelOf(nodes, edges);
+    settleFlatGraph(other, build(other), "settled");
+    expect(distinct(build(full))).toBe(full.domains.length);
   });
 
   it("keeps every domain's hue when a changed folder pins no position", () => {

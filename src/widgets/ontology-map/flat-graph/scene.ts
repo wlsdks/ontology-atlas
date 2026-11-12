@@ -7,9 +7,12 @@ import type { FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphMemory, FlatGraph
 let remembered: FlatGraphMemory | null = null;
 let rememberedFolder: string | null = null;
 
-/** A different folder forgets the session's positions, so one folder never pins another. */
+/**
+ * A different folder forgets the session's positions, so one folder never pins another; that
+ * includes the bundled map shown before any folder was claimed.
+ */
 export function claimFlatGraphFolder(folder: string): void {
-  if (rememberedFolder !== null && rememberedFolder !== folder) remembered = null;
+  if (rememberedFolder !== folder) remembered = null;
   rememberedFolder = folder;
 }
 
