@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { MOTION } from "@/shared/motion/tokens";
 import {
   armTierAssembly,
   carryTierAssembly,
   claimTierAssembly,
+  FLAT_TIER_TIMING,
   isTierAssembling,
   landTierAssembly,
   settleTierAssembly,
@@ -119,6 +121,38 @@ describe("tier assembly", () => {
     expect(tierAssemblyAppear(world, "project", 0)).toBe(1);
     expect(tierAssemblyAppear(world, "capability", TIER_DELAY_MS.capability)).toBe(0);
     expect(tierAssemblyAppear({}, "domain", 0)).toBeNull();
+  });
+});
+
+describe("Flat first-open timing", () => {
+  function flatWorld() {
+    const spec: Array<[string, TierKind, string | null, number, number]> = [
+      ["p", "project", null, 0, 0],
+      ["d", "domain", "p", 100, 0],
+      ["near", "capability", "d", 110, 0],
+      ["far", "capability", "d", 160, 0],
+      ["e", "element", "far", 165, 0],
+    ];
+    const nodes = spec.map(([id, kind, parentId, x, y]) => ({ id, kind, parentId, x, y }));
+    return { nodes, nodeById: new Map(nodes.map((n) => [n.id, n])), bounds: { minX: 0, minY: 0, maxX: 165, maxY: 0 }, spineBounds: { minX: 0, minY: 0, maxX: 100, maxY: 0 } };
+  }
+
+  it("is one moment of at most 700 ms: domains, then capabilities nearest first, then elements", () => {
+    const world = flatWorld();
+    armTierAssembly(world, key(), false, FLAT_TIER_TIMING);
+    stepTierAssembly(world, 0);
+    const leftAt: Record<string, number> = {};
+    for (let t = 0; t <= FLAT_TIER_TIMING.totalMs; t += 4) {
+      for (const id of ["d", "near", "far", "e"]) if (leftAt[id] === undefined && (tierAssemblyAppear(world, world.nodeById.get(id)!.kind, t, id) ?? 0) > 0) leftAt[id] = t;
+    }
+    expect(FLAT_TIER_TIMING.totalMs).toBeLessThanOrEqual(700);
+    expect(leftAt.d).toBeLessThan(leftAt.near!);
+    expect(leftAt.near).toBeLessThan(leftAt.far!);
+    expect(leftAt.near).toBeLessThan(leftAt.e!);
+    expect(leftAt.far).toBeLessThanOrEqual(leftAt.e!);
+    expect(leftAt.near! - leftAt.d!, "a frame up to --motion-base apart still shows domains leave first").toBeGreaterThanOrEqual(MOTION.base.duration * 1000);
+    expect(stepTierAssembly(world, FLAT_TIER_TIMING.totalMs)).toBe(false);
+    expect(world.nodes.map((n) => n.x)).toEqual([0, 100, 110, 160, 165]);
   });
 });
 

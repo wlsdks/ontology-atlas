@@ -23,7 +23,7 @@ import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { selectionNudgeTarget } from "../model/camera/flat-selection-camera";
-import { cachedGraphAttention, graphInkMix, inkUnder, resolveGraphAttention, transitionShare, type GraphTransition } from "./attention";
+import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { graphDiscRadiusPx } from "./marks";
@@ -341,29 +341,6 @@ describe("session memory", () => {
     settleFlatGraph(before, first, "settled", FACE);
     const after = build(modelOf(nodes, edges));
     for (const [domainId, hue] of first.hueByDomain) expect(after.hueByDomain.get(domainId), domainId).toBe(hue);
-  });
-});
-
-describe("attention crossfade", () => {
-  const model = VAULTS[1][1];
-  const [a, b] = model.domains.map((d) => d.id);
-  const foreign = model.domains.find((d) => d.id !== a && d.id !== b)!.id;
-  const shareOf = (t: GraphTransition) => transitionShare(t, (att) => inkUnder(att, foreign, TOKENS.paint.sinkInk));
-
-  it("continues from the picture showing when a fast pointer retargets mid-fade", () => {
-    const key = {};
-    graphInkMix(key, cachedGraphAttention(model, null, false), 0, false);
-    graphInkMix(key, cachedGraphAttention(model, a!, false), 1_000, false);
-    const before = shareOf(graphInkMix(key, cachedGraphAttention(model, a!, false), 1_030, false));
-    const after = shareOf(graphInkMix(key, cachedGraphAttention(model, b!, false), 1_030, false));
-    expect(before).toBeGreaterThan(TOKENS.paint.sinkInk + 0.1);
-    expect(after).toBeCloseTo(before, 6);
-  });
-
-  it("lands at once under reduced motion", () => {
-    const key = {};
-    graphInkMix(key, cachedGraphAttention(model, null, false), 0, true);
-    expect(shareOf(graphInkMix(key, cachedGraphAttention(model, a!, false), 10, true))).toBe(TOKENS.paint.sinkInk);
   });
 });
 

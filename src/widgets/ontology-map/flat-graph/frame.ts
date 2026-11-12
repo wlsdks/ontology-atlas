@@ -3,19 +3,19 @@ import { createMeasureText } from "../dial/fit";
 import { emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "../dial/frame/marks";
 import { dialChordPresence, recordDialFrame } from "../dial/frame/frame";
 import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
-import type { Box, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
+import type { Box, DialChordLight, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
 import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import {
-  cachedGraphAttention, FLAT_LINE_BITS, graphInkMix, inkUnder, transitionInk, transitionShare, type GraphAttention, type GraphLineKind, type GraphTransition,
-} from "./attention";
+import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
   arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
+import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -41,7 +41,7 @@ interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: 
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
-interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string }
+interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string; reach: number }
 const LINE_KINDS: readonly GraphLineKind[] = ["needs", "neededBy", "relates", "broader"];
 const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
@@ -95,14 +95,15 @@ const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0,
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
-const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "" }));
+const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1 }));
+const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
 const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const labelBoxPool = markPool<LabelBox>(() => ({ nodeId: "", text: "", minX: 0, minY: 0, maxX: 0, maxY: 0 }));
 const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0, solid: false }));
-const POOLS = [segments, dots, discs, glows, lights, arcMarks, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool];
+const POOLS = [segments, dots, discs, glows, lights, arcMarks, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool, chordPool];
 const selectionRing: Ring = { x: 0, y: 0, r: 0, alpha: 0, ink: "" };
 const agentRing: Ring = { x: 0, y: 0, r: 0, alpha: 1, ink: "" };
 
@@ -181,6 +182,7 @@ function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd
   if (arc.glow !== glowAlpha) arc.glow = glowAlpha;
   if (arc.kind !== kind) arc.kind = kind;
   arc.key = "";
+  if (arc.reach !== 1) arc.reach = 1;
   return arc;
 }
 
@@ -207,6 +209,7 @@ const framePicks = new FrameList<DialPick>();
 const frameRows = new FrameList<DialRowPick>();
 const frameLabelBoxes = new FrameList<LabelBox>();
 const drawnFlowKeys = new FrameList<string>();
+const frameChords = new FrameList<DialChordLight>();
 const shownElements = new FrameList<string>();
 const expandedItems = new Set<string>();
 const NO_IDS: ReadonlySet<string> = new Set();
@@ -294,7 +297,7 @@ interface FrameState {
   layout: FlatGraphLayout;
   tokens: FlatGraphTokens;
   P: FlatGraphPaintTokens;
-  transition: GraphTransition;
+  motion: GraphMotion;
   attention: GraphAttention;
   settled: boolean;
   contextMode: boolean;
@@ -315,6 +318,9 @@ interface FrameState {
   /** The selected capability, element or orphan, drawn at the selected radius; null otherwise. */
   selectedId: string | null;
   selectedR: number;
+  /** The concept a change just deselected, shrinking back from the selected radius; null otherwise. */
+  leavingId: string | null;
+  leavingR: number;
   /** How far the project's own focus shows: its spokes and glow. */
   projectShare: number;
   lineKinds: number;
@@ -336,7 +342,8 @@ function loadInkAt(id: string, rest: number): void {
   const input = F.input;
   const attention = F.attention;
   const sink = F.P.sinkInk;
-  const focus = F.settled ? inkUnder(attention, id, sink, rest) : transitionInk(F.transition, id, sink, rest);
+  F.motion.see(id);
+  const focus = F.settled ? inkUnder(attention, id, sink, rest) : F.motion.ink(id, sink, rest);
   const brightened = attention.selected && id === input.hoveredNodeId ? 1 : focus;
   const lens = F.contextMode ? input.contextInkAlphas?.get(id) ?? 1 : 1;
   scratch[0] = brightened * lens * input.appearOf(id);
@@ -354,7 +361,7 @@ function loadMarkInk(id: string): void {
 
 /** How far a concept's glow shows: only the lit set of a hover or selection glows. */
 function loadGlowShare(id: string): void {
-  scratch[0] = F.settled ? inkUnder(F.attention, id, 0, 0) : transitionInk(F.transition, id, 0, 0);
+  scratch[0] = F.settled ? inkUnder(F.attention, id, 0, 0) : F.motion.litShare(id);
 }
 
 function inkOf(id: string): number {
@@ -397,7 +404,7 @@ function radiusNow(id: string): number {
 
 /** The drawn radius: the selected concept's grows to the selected radius with the attention mix. */
 function discRadius(id: string): number {
-  return id === F.selectedId ? F.selectedR : radiusNow(id);
+  return id === F.selectedId ? F.selectedR : id === F.leavingId ? F.leavingR : radiusNow(id);
 }
 
 function segmentOnScreen(a: Point, b: Point): boolean {
@@ -425,34 +432,40 @@ function radiusAt(id: string, g: number): number {
   return r;
 }
 
+/** A name waits for its mark: it fades in once the first open has nearly set its concept down. */
+function nameLanded(id: string): number {
+  return tierNameAlpha(F.input.appearOf(id), FLAT_TIER_TIMING.riseMs);
+}
+
 function loadNameInk(n: PlacedName): void {
   if (n.role === "project" || n.role === "domain" || n.role === "units" || n.role === "orphans" || n.role === "reach") {
     loadInk(n.id);
-    if (n.role === "units" || n.role === "orphans") scratch[0] = scratch[0]! * F.P.restHue;
+    const landed = nameLanded(n.id);
+    scratch[0] = scratch[0]! * (n.role === "units" || n.role === "orphans" ? F.P.restHue * landed : landed);
     return;
   }
   const input = F.input;
   const attention = F.attention;
-  const focus = F.settled ? inkUnder(attention, n.id, 0) : transitionInk(F.transition, n.id, 0);
+  const focus = F.settled ? inkUnder(attention, n.id, 0) : F.motion.ink(n.id, 0, 1);
   const brightened = attention.selected && n.id === input.hoveredNodeId ? 1 : focus;
   const lens = F.contextMode ? input.contextInkAlphas?.get(n.id) ?? 1 : 1;
   const elementShare = n.role === "element" && attention.lit?.has(n.id) !== true ? F.dotAlpha : 1;
-  scratch[0] = brightened * lens * elementShare * input.appearOf(n.id);
+  scratch[0] = brightened * lens * elementShare * nameLanded(n.id);
 }
 
 /** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
-function planName(n: PlacedName, alphas: ReadonlyMap<string, number>): void {
+function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: number, wasFocus: boolean): void {
   const at = screenAt(n.id);
   if (!at || alphas.get(n.id) === 0) return;
   if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
   loadNameInk(n);
-  const ink = scratch[0]!;
+  const ink = scratch[0]! * share;
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
   const domainId = n.role === "domain" || n.role === "units" ? n.id : F.model.domainOf.get(n.id) ?? null;
   const childSelected = n.role === "domain" && attention.selected && attention.focusId !== n.id && F.model.domainOf.get(attention.focusId ?? "") === n.id;
-  const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && n.id === attention.focusId);
+  const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && (wasFocus || n.id === attention.focusId));
   const color = n.role === "units" ? hueOf(domainId) : strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
@@ -610,7 +623,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     }
     if (onScreen(elAt)) {
       const d = dots.take();
-      const r = el === F.selectedId ? F.selectedR : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
+      const r = el === F.selectedId || el === F.leavingId ? discRadius(el) : radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
       const alpha = DOT_ALPHA * shown;
       if (d.x !== elAt.x) d.x = elAt.x;
       if (d.y !== elAt.y) d.y = elAt.y;
@@ -624,8 +637,9 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   }
 }
 
-function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: GraphTransition) {
-  const { current: attention, previous, mix } = transition;
+function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: GraphMotion) {
+  const attention = motion.current;
+  const mix = motion.baseMix;
   const { model, scene } = input.dial;
   const layout = scene.graph!;
   const P = tokens.paint;
@@ -634,15 +648,15 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   const growth = zoomGrowth(input.zoomRatio, P);
   const origin = input.toScreen(0, 0);
   F.input = input; F.model = model; F.layout = layout; F.tokens = tokens; F.P = P;
-  F.transition = transition; F.attention = attention;
-  F.settled = mix >= 1 || (previous === attention && transition.older === attention);
+  F.motion = motion; F.attention = attention;
+  F.settled = motion.settled;
   F.contextMode = contextMode; F.scale = input.scale; F.originX = origin.x; F.originY = origin.y;
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth); F.orphans = orphansOf(layout);
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
   stepGrowthNow[0] = stepGrowth;
-  const focusness = transitionShare(transition, litShare);
+  const focusness = motion.share(MOTION_SHARE.focus, attention.lit ? 1 : 0);
   const evidence = input.evidence ? dialEvidenceView(model, input.evidence) : null;
   const measured = evidence?.measured === true;
   const elementSpacingPx = scene.medianElementPitch * input.scale;
@@ -659,7 +673,14 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     const r = own + (grown - own) * share;
     if (F.selectedR !== r) F.selectedR = r;
   }
-  const projectShare = transitionShare(transition, projectFocusShare);
+  const left = motion.previous.focusId;
+  F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
+  if (F.leavingId !== null) {
+    const own = radiusNow(F.leavingId);
+    const r = own + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
+    if (F.leavingR !== r) F.leavingR = r;
+  }
+  const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
   F.lineKinds = 0;
 
@@ -684,8 +705,10 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   for (let cIndex = 0; cIndex < layout.clusters.length; cIndex += 1) {
     const c = layout.clusters[cIndex]!;
     const ink = inkOf(c.domainId);
-    const x = c.centre.x * input.scale + origin.x;
-    const y = c.centre.y * input.scale + origin.y;
+    const home = layout.positions.get(c.domainId) ?? c.centre;
+    const domainAt = screenOf(c.domainId);
+    const x = domainAt.x + (c.centre.x - home.x) * input.scale;
+    const y = domainAt.y + (c.centre.y - home.y) * input.scale;
     const r = c.footprint * input.scale * P.lightReach;
     const alpha = P.lightAlpha * Math.min(1, ink * LIGHT_SINK_GAIN) * (contextMode ? P.sinkInk : 1);
     if (!lensHidden(c.domainId) && alpha > 0.002 && x + r > 0 && y + r > 0 && x - r < F.W && y - r < F.H) L.lights.add(light(x, y, r, hueOf(c.domainId), alpha));
@@ -739,11 +762,9 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
       if (key !== undefined && !drawnFlowKeys.has(key)) drawnFlowKeys.add(key);
     }
   }
-  if (!contextMode) {
-    if (previous !== attention) focusLinks(previous, 1 - mix, false);
-    focusLinks(attention, mix, true);
-  }
-  L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal();
+  frameChords.restart();
+  if (!contextMode) focusLinks(motion);
+  L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal(); frameChords.seal();
 
   for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
     const d = plan.domains[dIndex]!;
@@ -766,6 +787,9 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
       const pulse = input.selectionPulse?.nodeId === selectedId ? input.selectionPulse.scaleFactor : 1;
       plan.selection = ring(selectionRing, at.x, at.y, (discRadius(selectedId) + P.selectedRingGapPx) * pulse, mix, inks.project);
     }
+  } else if (F.leavingId !== null && !contextMode) {
+    const at = screenAt(F.leavingId);
+    if (at) plan.selection = ring(selectionRing, at.x, at.y, F.leavingR + P.selectedRingGapPx, 1 - mix, inks.project);
   }
 
   const agentId = contextMode ? null : input.agentFocusNodeId;
@@ -775,14 +799,27 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   }
 
   const fontFamily = labelFontFamily();
-  const admission = admittedNames({
+  const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
-    lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
-    selected: attention.selected, named: attention.named, reach: attention.reach,
+    lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    selected: a.selected, named: a.named, reach: a.reach,
     discRadius: stepRadius, elementSpacingPx,
   });
-  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) planName(admission.names[nIndex]!, alphas);
+  const admission = admitUnder(attention);
+  const leaving = F.leavingId;
+  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) {
+    const n = admission.names[nIndex]!;
+    planName(n, alphas, n.id === leaving ? mix : 1, false);
+  }
+  // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
+  if (leaving !== null) {
+    const before = admitUnder(motion.previous);
+    for (let nIndex = 0; nIndex < before.names.length; nIndex += 1) {
+      const n = before.names[nIndex]!;
+      if (n.id === leaving) planName(n, alphas, 1 - mix, true);
+    }
+  }
   const hub = plan.project[0];
   if (hub) {
     const placement = dialPlacementOf(input.dial);
@@ -849,8 +886,6 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   return { plan, alphas, picks: picks.seal(), rows: rows.seal(), labelBoxes: labelBoxes.seal(), presence, tier: (dotAlpha > 0.5 ? "element" : "circuit") as DialFrameResult["tier"] };
 }
 
-const litShare = (a: GraphAttention): number => (a.lit ? 1 : 0);
-const projectFocusShare = (a: GraphAttention): number => (a.focusId !== null && a.focusId === F.model.projectId ? 1 : 0);
 const hubFonts = new Map<string, string>();
 
 function hubCaptionFont(px: number, family: string): string {
@@ -868,12 +903,19 @@ function stepRadius(id: string): number {
   return radiusAt(id, stepGrowthNow[0]!);
 }
 
-/** The focus's relations as kinded lines; a taper's point stops short of the disc it reaches. */
-function focusLinks(att: GraphAttention, share: number, current: boolean): void {
-  if (share <= DRAWN_INK) return;
+/**
+ * The focus's relations as kinded lines, each drawn `reach` of the way from its source end; a
+ * taper's point stops short of the disc it reaches. A selection's fully drawn lines also become the
+ * light layer's chords.
+ */
+function focusLinks(motion: GraphMotion): void {
   const P = F.P;
-  for (let lineIndex = 0; lineIndex < att.lines.length; lineIndex += 1) {
-    const line = att.lines[lineIndex]!;
+  // A selection the map opened with (a deep link, a rebuilt world) changed nothing here, so it does not light.
+  const chorded = motion.current.selected && motion.settled && Number.isFinite(motion.changedAt) && !F.input.reducedMotion;
+  const devicePxPerCss = F.W > 0 ? F.input.ctx.canvas.width / F.W : 1;
+  for (let lineIndex = 0; lineIndex < motion.drawnCount; lineIndex += 1) {
+    const { line, reach, current } = motion.drawn[lineIndex]!;
+    if (reach <= DRAWN_INK) continue;
     const a = screenAt(line.from);
     const b = screenAt(line.to);
     if (!a || !b) continue;
@@ -881,12 +923,33 @@ function focusLinks(att: GraphAttention, share: number, current: boolean): void 
     const tapered = line.kind === "needs" || line.kind === "neededBy";
     const trimEnd = discRadius(line.to) + (tapered ? P.arcTrimPx / 2 : 0);
     const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
-    const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha * share, false, 0, kind);
+    const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
+    const { a: start, b: end } = mark.path;
+    if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
     mark.key = line.key;
+    if (mark.reach !== reach) mark.reach = reach;
     L.focusArcs.add(mark);
     if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind];
+    if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }
+}
+
+/** A chord runs the way impact travels: from what is needed, or the broader concept, toward what rests on it. */
+function chordOf(arc: Arc, symmetric: boolean): DialChordLight {
+  const chord = chordPool.take();
+  const { a, c, b } = arc.path;
+  const start = symmetric ? a : b;
+  const end = symmetric ? b : a;
+  chord.key = arc.key;
+  if (chord.a.x !== start.x) chord.a.x = start.x;
+  if (chord.a.y !== start.y) chord.a.y = start.y;
+  if (chord.c.x !== c.x) chord.c.x = c.x;
+  if (chord.c.y !== c.y) chord.c.y = c.y;
+  if (chord.b.x !== end.x) chord.b.x = end.x;
+  if (chord.b.y !== end.y) chord.b.y = end.y;
+  if (chord.widthPx !== arc.width) chord.widthPx = arc.width;
+  return chord;
 }
 
 function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: string, headPx: number): void {
@@ -923,12 +986,12 @@ function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: st
  * Fills a quadratic as a taper: `width` across at its start, a point at its end, so direction
  * reads without an arrowhead or a second hue.
  */
-function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number): void {
+function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number, reach: number): void {
   const { a, c, b } = path;
   ctx.beginPath();
   for (let side = 1; side >= -1; side -= 2) {
     for (let k = 0; k <= TAPER_STEPS; k += 1) {
-      const t = side === 1 ? k / TAPER_STEPS : 1 - k / TAPER_STEPS;
+      const t = (side === 1 ? k / TAPER_STEPS : 1 - k / TAPER_STEPS) * reach;
       const u = 1 - t;
       const x = u * u * a.x + 2 * u * t * c.x + t * t * b.x;
       const y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
@@ -944,16 +1007,22 @@ function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number):
   ctx.fill();
 }
 
-function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number): void {
+/** Strokes the first `reach` of a quadratic: its own sub-curve, so a drawing line keeps its final bow. */
+function strokeQuad(ctx: CanvasRenderingContext2D, path: ArcPath, offset: number, reach: number): void {
   const { a, c, b } = path;
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const len = Math.hypot(dx, dy) || 1;
   const ox = (-dy / len) * offset;
   const oy = (dx / len) * offset;
+  const u = 1 - reach;
+  const cx = a.x + (c.x - a.x) * reach;
+  const cy = a.y + (c.y - a.y) * reach;
+  const ex = u * u * a.x + 2 * u * reach * c.x + reach * reach * b.x;
+  const ey = u * u * a.y + 2 * u * reach * c.y + reach * reach * b.y;
   ctx.beginPath();
   ctx.moveTo(a.x + ox, a.y + oy);
-  ctx.quadraticCurveTo(c.x + ox, c.y + oy, b.x + ox, b.y + oy);
+  ctx.quadraticCurveTo(cx + ox, cy + oy, ex + ox, ey + oy);
   ctx.stroke();
 }
 
@@ -968,7 +1037,7 @@ function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens:
     ctx.globalAlpha = arc.alpha;
     if (kind === "needs" || kind === "neededBy") {
       ctx.fillStyle = kind === "needs" ? tokens.inks.arc : tokens.inks.reach;
-      fillTaper(ctx, arc.path, arc.width);
+      fillTaper(ctx, arc.path, arc.width, arc.reach);
       continue;
     }
     ctx.strokeStyle = tokens.inks.arc;
@@ -976,12 +1045,12 @@ function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens:
     if (kind === "relates") {
       if (lineDash[1] !== P.lineDotGapPx) lineDash[1] = P.lineDotGapPx;
       ctx.setLineDash(lineDash);
-      strokeQuad(ctx, arc.path, 0);
+      strokeQuad(ctx, arc.path, 0, arc.reach);
       ctx.setLineDash(NO_DASH);
       continue;
     }
-    strokeQuad(ctx, arc.path, P.lineDoubleGapPx / 2);
-    strokeQuad(ctx, arc.path, -P.lineDoubleGapPx / 2);
+    strokeQuad(ctx, arc.path, P.lineDoubleGapPx / 2, arc.reach);
+    strokeQuad(ctx, arc.path, -P.lineDoubleGapPx / 2, arc.reach);
   }
   ctx.globalAlpha = 1;
 }
@@ -1291,6 +1360,18 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
   probeTextList.seal();
 }
 
+const UNSETTLED_MIX = 0.999;
+const waveCache = new WeakMap<GraphAttention, { layout: FlatGraphLayout; delays: ReadonlyMap<string, number> }>();
+
+/** One attention's wave delays over this layout's positions, kept while the layout stands. */
+function wavesOf(attention: GraphAttention, layout: FlatGraphLayout): ReadonlyMap<string, number> {
+  const hit = waveCache.get(attention);
+  if (hit && hit.layout === layout) return hit.delays;
+  const delays = waveDelays(attention, (id) => layout.positions.get(id) ?? layout.itemAt.get(id), FLAT_MOTION.waveMs);
+  waveCache.set(attention, { layout, delays });
+  return delays;
+}
+
 /** Paints the deferred lens-context frame once the classic edges are down. */
 export function paintDeferredFlatGraph(ctx: CanvasRenderingContext2D, zoomRatio: number): void {
   if (!deferred) return;
@@ -1304,9 +1385,11 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const contextMode = input.contextAlphas !== undefined;
   const focusId = contextMode ? null : input.focusedNodeId ?? input.hoveredNodeId;
   const attention = cachedGraphAttention(model, focusId, !contextMode && input.focusedNodeId !== null);
-  const transition = graphInkMix(input.worldKey, attention, input.now, input.reducedMotion);
-  const mix = transition.mix;
-  const built = buildPlan(input, tokens, transition);
+  const motion = graphMotionOf(input.worldKey, attention);
+  const layout = input.dial.scene.graph!;
+  motion.advance(attention, input.now, input.reducedMotion, (a) => wavesOf(a, layout));
+  const mix = motion.settled ? 1 : Math.min(motion.progress, UNSETTLED_MIX);
+  const built = buildPlan(input, tokens, motion);
   const ground = input.mapTokens.canvasBgNear;
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };
@@ -1316,11 +1399,11 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const drawn = drawnFlowKeys.items;
   const result: DialFrameResult = {
     branchScene: undefined,
-    branchMembersAnimating: mix < 1,
+    branchMembersAnimating: motion.active,
     contextOnly: contextMode,
     drawnCount: built.plan.discs.length + built.plan.domains.length + built.plan.dots.length + built.plan.project.length,
     tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows, labelBoxes: built.labelBoxes,
-    light: { attentionKey: attention.key, focused: attention.selected, inkMix: mix, chords: [] },
+    light: { attentionKey: attention.key, focused: attention.selected, inkMix: mix, chords: frameChords.items },
     inkMix: mix, chordPresence: built.presence, marks: pool,
   };
   recordDialFrame(input, result, {
