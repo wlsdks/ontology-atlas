@@ -20,7 +20,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname } from 'node:path';
-import { MASCOT_MOTION_ROWS, MASCOT_TRAY_TEMPLATES } from './build-brand-assets.mjs';
+import { readMascotMotionRows, MASCOT_TRAY_TEMPLATES } from './build-brand-assets.mjs';
 
 const PNG = '.qa-scratch/brand/png';
 const ICONSET = '.qa-scratch/brand/AtlasIcon.iconset';
@@ -82,6 +82,7 @@ const COPY_PLAN = [
   ['public/logo.png', 'icon-1024'],
   ['public/brand/icon-light.png', 'icon-light'],
   ['public/brand/icon-dark.png', 'icon-dark'],
+  ['public/brand/atlas-symbol.png', 'icon-128'],
   ['public/brand/mascot-full.png', 'mark-full'],
   ['public/brand/mascot-compact.png', 'mark-compact'],
   ['public/brand/mascot-micro.png', 'mark-micro'],
@@ -163,7 +164,7 @@ written.push('src-tauri/icons/icon.icns');
 written.push(put('src-tauri/icons/icon.ico', buildIco(ICO_PLAN.map(([s, n]) => [s, read(n)]))));
 written.push(put('app/favicon.ico', readFileSync('src-tauri/icons/icon.ico')));
 for (const [path, src] of COPY_PLAN) written.push(put(path, read(src)));
-for (const [state, spec] of Object.entries(MASCOT_MOTION_ROWS)) {
+for (const [state, spec] of Object.entries(readMascotMotionRows(process.cwd(), true))) {
   written.push(put(`public/brand/mascot-${state}-row.png`, readFileSync(spec.path)));
 }
 written.push(

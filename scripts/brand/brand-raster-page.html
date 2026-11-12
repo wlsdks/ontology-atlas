@@ -63,6 +63,13 @@
     const drawIcon = (detail, size, treatment, tone = 'brand') => {
       const element = canvas(size, size);
       const context = element.getContext('2d');
+      if (detail === 'compass') {
+        if (treatment === 'full-bleed') { context.fillStyle = '#171923'; context.fillRect(0, 0, size, size); }
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(masters.compass, 0, 0, size, size);
+        return element;
+      }
       platePath(context, size, treatment);
       if (tone === 'light') {
         context.fillStyle = '#F7F5E6';
@@ -92,7 +99,7 @@
       const element = canvas(width, height);
       const context = element.getContext('2d');
       const markBox = Math.min(height, Math.round(width * 0.22));
-      drawMascot(context, 'full', { x: 0, y: 0, width: markBox, height });
+      context.drawImage(drawIcon('compass', markBox, 'squircle'), 0, 0);
       const gap = Math.round(height * 0.18);
       const textX = markBox + gap;
       const wordSize = Math.round(height * 0.34);
@@ -145,8 +152,8 @@
     for (const [name, width, height, tone, withTagline] of data.lockupPlan) {
       outputs[name] = png(drawLockup(width, height, tone, withTagline));
     }
-    outputs['icon-light'] = png(drawIcon('presentation', 512, 'squircle', 'light'));
-    outputs['icon-dark'] = png(drawIcon('presentation', 512, 'squircle', 'dark'));
+    outputs['icon-light'] = png(drawIcon('compass', 512, 'squircle', 'light'));
+    outputs['icon-dark'] = png(drawIcon('compass', 512, 'squircle', 'dark'));
     outputs['og-image'] = png(drawOg());
 
     const response = await fetch('/save?token=' + encodeURIComponent(saveToken), {

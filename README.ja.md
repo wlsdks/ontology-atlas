@@ -120,6 +120,33 @@ pnpm checks:changed -- --run
 
 `pnpm pr:land <number>` は、レビュー済みのプルリクエストをマージし、元のコミットをそのまま残します。検査の全体は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。リポジトリのコマンド表は、英語版 README の [Contributing](README.md#contributing) にあります。
 
+## Moru
+
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[50のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>Moruの動きを見る</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="挨拶するMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="資料を読むMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="人の判断を待つMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="確認済みの完了を喜ぶMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="歌うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="魚と遊ぶモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="踊るモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="モルたちのダンス" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="照れるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="友達とボールで遊ぶモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="3匹の子モルと寄り添うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨の日に傘を差すモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="雪を見上げるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="そよ風を楽しむモル" />
+
+
+</details>
+
 ## ライセンス
 
 [MIT](LICENSE)。サードパーティの告知は [NOTICE.md](NOTICE.md)、ライセンス全文は [public/third-party-licenses.txt](public/third-party-licenses.txt) にあります。ピクセルマスコットとその出典については[ブランド](docs/design/brand.md)をご覧ください。

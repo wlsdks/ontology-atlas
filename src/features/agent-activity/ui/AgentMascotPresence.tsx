@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
+import { MOTION } from '@/shared/motion';
 import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
 import {
   isVerifiedMascotCompletion,
@@ -17,8 +18,8 @@ const ROW_SOURCE: Readonly<Record<Exclude<AgentMascotState, 'hidden'>, string>> 
 };
 
 /** The terminal pose remains long enough to be read after its finite frame cycle. */
-export const MASCOT_SUCCESS_HOLD_MS = 1_200;
-export const MASCOT_WALK_MS = 600;
+export const MASCOT_WALK_MS = Math.round(MOTION.fast.duration * 1_000) * 16;
+export const MASCOT_SUCCESS_HOLD_MS = MASCOT_WALK_MS + Math.round(MOTION.expressive.duration * 1_000);
 
 /**
  * A finite WALK/READ sequence for verified read work. SUCCESS requires that
