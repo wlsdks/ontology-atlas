@@ -120,20 +120,21 @@ and direction. Its elements' relations are not rolled up into it.
 - **Broader** (`is_a`): a double hairline toward the broader concept.
 
 Direction is the taper and kind the stroke pattern, so no reading rests on hue
-alone.
+alone. A recorded reason
+(`relation_notes`) does not reach the map's edges yet, so lines carry no mark
+for it.
 
 A hovered or selected domain draws its reach at domain level: the partner
 domains its detail panel lists, one taper per partner and direction in the same
 two inks, so a pair that depends both ways draws two tapers bowed apart. A
 domain taper stands for every `depends_on` relation between the two domains in
 that direction and widens with their count, from `--map-graph-line-taper-px` by
-`--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`.
-It leaves or lands just outside the domain's own member star, so it never runs
-under its lit members, and reaches the partner's disc. When a selection's zoom
-leaves a partner off screen, its taper runs off the edge toward it. The key
-names the two kinds as domains it needs and domains that need it. A recorded reason
-(`relation_notes`) does not reach the map's edges yet, so lines carry no mark
-for it.
+`--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`,
+the same screen width at every zoom. It leaves or lands just outside the
+domain's own member star, so it never runs under its lit members, and reaches
+the partner's disc. A partner the camera cannot pan into view keeps its taper,
+which runs off the edge toward it. The key names the two kinds as domains it
+needs and domains that need it.
 
 A selected capability, element or orphan grows to `--map-graph-selected-disc-px`
 with one ring, and its name takes `--map-graph-selected-name-px` beside, below
@@ -159,8 +160,11 @@ sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. A domain selection is judged the same way for its members,
-and a member that cannot be named at any of those zooms stays unnamed. A zoom
+the domain named. A domain selection never zooms, because its picture is its
+reach: it pans its disc and member star clear of the detail panel by the frame
+margin and, when every partner domain's disc and name fit in the free map at
+the current zoom, pans them all in; otherwise it keeps as many partners in view
+as panning allows, nearest first. A zoom
 that reads no better than the view the click left is never taken, so a click
 stays a small move and the rest of the map stays in view. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four

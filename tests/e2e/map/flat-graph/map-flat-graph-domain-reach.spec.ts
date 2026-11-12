@@ -107,6 +107,7 @@ test("selecting a domain counts its partner domains under its name as the panel 
   await openVault(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
   const orders = await domainNode(page, "orders");
+  const clickedZoom = (await readDial(page)).zoomRatio;
   await page.mouse.click(box.x + orders.x, box.y + orders.y);
   await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, orders.id);
   await page.mouse.move(box.x + 2, box.y + box.height - 2);
@@ -114,7 +115,14 @@ test("selecting a domain counts its partner domains under its name as the panel 
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
 
   const dial = await readDial(page);
-  expect(await domainLines(page, dial), "every partner's line still draws, on screen or running off its edge").toEqual(ORDERS_LINES);
+  expect(await domainLines(page, dial), "every partner's line draws").toEqual(ORDERS_LINES);
+  expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
+  const free = dial.freeRect;
+  for (const name of ["catalog", "payments", "inventory", "shipping"]) {
+    const id = (await domainNode(page, name)).id;
+    const disc = dial.discs.find((d) => d.id === id);
+    expect(disc && disc.x >= free.minX && disc.x <= free.maxX && disc.y >= free.minY && disc.y <= free.maxY, `${name} stays in the free map`).toBe(true);
+  }
 
   const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
   const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs

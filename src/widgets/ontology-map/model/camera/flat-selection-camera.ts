@@ -208,6 +208,20 @@ export function selectionFrameTarget(
   return target.tscale === now && !moved ? null : target;
 }
 
+/**
+ * A domain selection's framing sets, most wanted first: its near set with every partner, then with
+ * one fewer each time, the partner farthest from the selection dropped first, down to the near set
+ * alone. Framed at the current zoom, it keeps as many partners in view as panning allows. O(partners²).
+ */
+export function reachFrameSets(near: readonly FramedMark[], partners: readonly FramedMark[]): FramedMark[][] {
+  const at = near[0];
+  if (!at) return [];
+  const nearestFirst = [...partners].sort((p, q) => Math.hypot(p.x - at.x, p.y - at.y) - Math.hypot(q.x - at.x, q.y - at.y));
+  const sets: FramedMark[][] = [];
+  for (let kept = nearestFirst.length; kept >= 0; kept -= 1) sets.push([...near, ...nearestFirst.slice(0, kept)]);
+  return sets;
+}
+
 /** Selections that follow one another without a reader move share the view the first one left. */
 export function recordSelectionCamera(
   memory: SelectionCamera | null,
