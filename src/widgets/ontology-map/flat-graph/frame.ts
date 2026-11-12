@@ -1187,14 +1187,24 @@ function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, ma
   ctx.drawImage(sprite, Math.round(mark.x - mark.r) | 0, Math.round(mark.y - mark.r) | 0, size, size);
 }
 
-/** The canvas ground under a backed name's box, on whole pixels so the rectangle's arguments stay small integers. */
-function paintBacking(ctx: CanvasRenderingContext2D, n: Name): void {
-  const ox = n.x - n.name.dx;
-  const oy = n.y - n.name.dy;
-  const box = n.name.box;
-  const x = Math.floor(ox + box.minX) | 0;
-  const y = Math.floor(oy + box.minY) | 0;
-  ctx.fillRect(x, y, (Math.ceil(ox + box.maxX) - x) | 0, (Math.ceil(oy + box.maxY) - y) | 0);
+/**
+ * The canvas ground under each backed name's box, over the lines and under every disc and name, so
+ * a backing hides only lines. Whole pixels keep the rectangle's arguments small integers.
+ */
+function paintBackings(ctx: CanvasRenderingContext2D, marks: readonly Name[], ground: string): void {
+  ctx.fillStyle = ground;
+  for (let nIndex = 0; nIndex < marks.length; nIndex += 1) {
+    const n = marks[nIndex]!;
+    if (n.name.backed !== true) continue;
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const box = n.name.box;
+    const x = Math.floor(ox + box.minX) | 0;
+    const y = Math.floor(oy + box.minY) | 0;
+    ctx.globalAlpha = n.ink;
+    ctx.fillRect(x, y, (Math.ceil(ox + box.maxX) - x) | 0, (Math.ceil(oy + box.maxY) - y) | 0);
+  }
+  ctx.globalAlpha = 1;
 }
 
 function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
@@ -1215,6 +1225,7 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
   paintLines(ctx, plan.focusArcs, tokens);
+  paintBackings(ctx, plan.names, ground);
   paintDots(ctx, plan.dots, ground, dotUnlit);
   for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
     const glow = plan.glows[glowIndex]!;
@@ -1252,10 +1263,6 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
     ctx.font = n.name.font;
     ctx.textAlign = n.name.align;
     ctx.globalAlpha = n.ink;
-    if (n.name.backed === true) {
-      ctx.fillStyle = ground;
-      paintBacking(ctx, n);
-    }
     ctx.lineWidth = n.halo;
     ctx.strokeStyle = tokens.inks.halo;
     const pieces = n.name.pieces;
