@@ -3,10 +3,16 @@
 The author never approves its own slice, and nothing is deleted until `main`
 provably has it. This is the order that keeps both promises cheap.
 
-## 1. Brief one reviewer
+## 1. Read the slice; brief one reviewer when one is due
 
-Give the review to one agent that did not write the change, with
-the current host's reviewer brief; never review it yourself. The brief carries:
+Read a returned slice yourself against its brief. One reviewer is due, even
+for a change you wrote, when the change is one-way (the `AGENTS.md` workflow
+table), adds or removes a primary surface or changes navigation or grouping,
+or touches a path `pnpm checks:changed` calls a security surface. Token and
+primitive changes get the rendered inventory (`/ui-proof`), not a reviewer.
+
+Give a due review to one agent that did not write the change, with
+the current host's reviewer brief. The brief carries:
 
 - **Kind**: returned slice, with the pull request number, branch, worktree path
   (read-only) and the diff to read: `git diff origin/main...<branch>`.
@@ -23,8 +29,8 @@ the current host's reviewer brief; never review it yourself. The brief carries:
 |---|---|
 | any returned slice | the returned-slice checks in the reviewer brief |
 | hygiene, refactor, or structure | `self-explaining` and `lean`; `algorithm` for layout, search and matching, diffing, parsing, or graph traversal |
-| rendered UI | the lenses `pnpm design:route` returned, with the `/ui-build` captures |
-| product behaviour | the lenses `pnpm po:route` returned |
+| a new or removed primary surface | `attention`, `reversibility`, `responsive-bands`, and `motion`, `map-marks`, `installed-app` or `agent-action` where the surface has them, with the `/ui-build` captures |
+| a one-way change | `moment`, `evidence`, `boundaries`, `smallest-slice`; `spec` when a spec was written |
 | a path `pnpm checks:changed` calls a security surface, or a `security-raw-sinks` raise record | `security`; comment-only hunks skip it |
 
 In a campaign of many slices the pilot slice goes first; its findings become

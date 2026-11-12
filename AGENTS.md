@@ -49,21 +49,22 @@ session scratchpad. Skill design: `docs/engineering/agent-instructions.md`.
 
 | Task | Entry and required scope |
 |---|---|
-| Mechanical maintenance | Technical checks only; skip product routing |
-| Product behavior, UX, public contract, or authority change | `/product-check`; one `reviewer` only when it returns review or the owner asks |
-| UI, interaction, topology, responsive, motion, or macOS workbench | After the product check, `/ui-build` (it runs `pnpm design:route`); `/ui-proof` runs the proof steps the route returns |
-| Any automated gate change | `/gate-probe` |
+| Mechanical maintenance | Technical checks only |
+| One-way change: a public MCP, CLI or vault contract; a route added or removed; what leaves the machine; what an agent may write or approve; first-contact positioning | `pnpm decisions:find`; the person, moment and proof in the pull request; one `reviewer`; one decision record |
+| Any other product behavior or copy | Build it and verify the behavior |
+| UI, interaction, topology, responsive, motion, or macOS workbench | `/ui-build`: build from the primitives and look at each slice with `pnpm ui:look`; `/ui-proof` only for the classes its table lists |
+| A new or changed automated gate | `/gate-probe` |
 | Initial ontology or explicit rebuild | `/ontology-bootstrap`; general code analysis alone does not request construction |
 | Meaningful code change in an existing vault | `/ontology-sync` |
 | Requested extraction from prose or wiki | `/ontology-extract`; a wiki page only through the user's registered third-party MCP |
 | Construction rules or MCP behavior that can change vault quality | `/ontology-field-trial`; wording-only changes that keep evidence/approval/write contracts skip it |
 | Authorized parallel work | `/delegate` |
-| Returned or ready branches | `/merge`; your own branch with no review due merges with `pnpm pr:land` |
+| Returned or ready branches | `/merge`; your own branch merges with `pnpm pr:land` |
 
 Delegate only large, independent, parallelizable work; finish what a handful of
 tool calls can do yourself, and never delegate to verify or double-check your
-own work. Plan, review and judge on the strongest model; build a decided slice
-and gather facts on cheaper ones. Disclose shared-context reviews. Subagents do not stash,
+own work. Opus builds and investigates; Fable plans, specs, reviews and gives
+design verdicts (`docs/engineering/agent-effort.md`). Disclose shared-context reviews. Subagents do not stash,
 delete worktrees, or run `git add -A`.
 
 Before reversing an existing product or architecture choice, find

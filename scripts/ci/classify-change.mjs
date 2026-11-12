@@ -9,7 +9,7 @@
  * projects a change reaches, and this module assigns those checks to CI lanes.
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { verifyReviewedMainPush } from './reviewed-main-push.mjs';
 import { loadTestReach } from '../lib/import-graph/test-reach.mjs';
@@ -23,7 +23,6 @@ import {
 
 export const FULL_LANE_COMMANDS = Object.freeze({
   gates: Object.freeze([
-    'pnpm po:pilot -- --check',
     'pnpm typecheck',
     'pnpm lint',
     'pnpm check:tokens',
@@ -722,10 +721,6 @@ if (process.argv[1]?.endsWith('classify-change.mjs')) {
       eventName, ref: process.env.GITHUB_REF, sha: head,
       currentTreeSha: git(['rev-parse', 'HEAD^{tree}']),
     });
-    // A source tree is immutable; the pilot's calendar deadline is not.
-    if (proof.skip && spawnSync(process.execPath, ['scripts/records/po-pilot.mjs', '--check'], {
-      stdio: 'inherit', timeout: 10_000,
-    }).status !== 0) proof = { skip: false, reason: 'standing PO policy needs fresh verification' };
     console.log(`[ci-impact] main-push reuse: ${proof.reason}`);
   } else if (eventName === 'pull_request' && base && process.env.GITHUB_ACTIONS === 'true' &&
       files.some((path) => /^scripts\/(?:lib\/)?ci\/reviewed-main-push(?:\.test)?\.mjs$/.test(path))) {

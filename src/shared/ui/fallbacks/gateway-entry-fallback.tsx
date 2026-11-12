@@ -5,8 +5,8 @@ import { controlClass } from '@/shared/ui/control-class';
 /**
  * The server-rendered fallback for `/`: under static export it is the whole page for anything
  * without JS (link previews, crawlers), so it must say what the gateway says. It reuses the
- * gateway's own sentences; new positioning copy would go
- * through `pnpm po:route`. `MapEntryFallback` stays where the map description is true. Both
+ * gateway's own sentences; new positioning copy is a one-way change under `AGENTS.md`.
+ * `MapEntryFallback` stays where the map description is true. Both
  * links are real destinations, so the gateway works with no JS.
  */
 export async function GatewayEntryFallback({ locale }: { locale: string }) {

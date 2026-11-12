@@ -1,8 +1,8 @@
 # Responsive sweep
 
-Run only when `pnpm design:route` includes `responsive-sweep`. Use its scope:
-affected bands for a breakpoint-local change, the full matrix for a new surface
-or information architecture.
+Run only when the `/ui-proof` row names it: affected bands for a
+breakpoint-local change, the full matrix for a new surface or information
+architecture.
 
 - A **breakpoint** is a width where layout changes (`md` 768px, `lg` 1024px).
 - A **rect** is the measured `getBoundingClientRect()` geometry.

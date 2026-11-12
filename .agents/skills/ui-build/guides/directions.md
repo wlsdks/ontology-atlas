@@ -36,9 +36,9 @@ Different values inside the same shape are adjustments, not directions.
 
 ## When
 
-Run only when `pnpm design:route` returns `directions=yes`: a new surface,
-information architecture, primary interaction model, or primary attention
-model. Do not invoke it for generic “non-trivial” work, token swaps, copy edits,
+Run only for a new or removed primary surface, or a change to information
+architecture, navigation or grouping, the primary interaction model, or the
+primary attention model. Do not invoke it for generic “non-trivial” work, token swaps, copy edits,
 spacing/layout fixes inside a selected shape, responsive repairs, or motion
 tuning.
 
@@ -97,9 +97,9 @@ or inspecting the current baseline. An already selected direction proceeds to
 
 1. Record the selected direction in one implementation-grade sentence.
 2. Implement only that sentence and retain rejected directions as history.
-3. Give the built direction to one `reviewer` only when the same route says
-   `review=yes`; it reviews the chosen direction rather than selecting one.
-4. Run only the route's proof packet. Every rendered result includes the
+3. A new or removed primary surface goes to one `reviewer`; it reviews the
+   chosen direction rather than selecting one.
+4. Run the `/ui-proof` row for that class. Every rendered result includes the
    `/ui-build` §0-B render-loop packet; motion includes a real screen
    recording.
 

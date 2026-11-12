@@ -22,23 +22,25 @@ history review; verify its current role and use it:
 The existing height family begins at `--control-h-`. A value invented without
 searching does not extend the system; it creates another one.
 
-## 0-A. Route specification changes
+## 0-A. Specification changes
 
-Declare `design-contract` to `pnpm design:route` when changing:
+A specification change is any change to:
 
 - `src/shared/ui/control-class.ts` axes, options, or defaults;
 - `src/shared/ui/controls/controls.tsx` or `surface.tsx` primitive guarantees;
 - type, leading, radius, shadow, or colour ramps in `app/styles/` (imported by `app/globals.css`);
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 
-The router selects one `reviewer` with the `tokens` and `attention` lenses, a
-design-system audit, and `/gate-probe`. A one-author specification is taste, not a system.
+It is proved by the rendered inventory, not by a second opinion: `pnpm ui:look`
+over every route in `tests/e2e/audited-routes.ts` and the design-system audit
+(`/ui-proof`, row "token, ramp, primitive interface"). A changed gate also runs
+`/gate-probe`.
 
 ## 0. Choose the shape before building
 
-Run `pnpm design:route` with every observable change class. Read the
-[directions guide](guides/directions.md) only when its result says
-`directions=yes`; value changes inside a selected shape do not pay for divergence.
+Read the [directions guide](guides/directions.md) only for a new or removed
+primary surface, or a change to navigation or grouping; value changes inside a
+selected shape do not pay for divergence.
 
 When a product spec governs the change, the §0-B loop captures every
 States row the change touches, and new text uses only the message keys its Copy
@@ -47,23 +49,22 @@ build.
 
 ## 0-B. Render while building
 
-When the route includes `final-capture` (copy only), take one fresh capture of
-the affected state after the change. When it includes `computer-use-loop`, do
-not finish a whole screen from
-code or imagination before looking at it.
+A words-only change takes one fresh `pnpm ui:look` capture of the affected state
+after the change. Anything else is not finished as a whole screen from code or
+imagination before looking at it.
 
-1. Capture the exact baseline state through the computer-use capability.
+1. Capture the baseline: `pnpm ui:look -- --route=<route> --widths=<widths>`
+   prints one PNG path per route and width, with a vault open.
 2. Implement one coherent visual slice: one hierarchy, state, or interaction.
-3. Render it in the actual browser, WebView, or installed app.
-4. Request a fresh Computer Use accessibility tree and screenshot; inspect both.
-5. If pixels or the tree expose a geometry question, measure the DOM's computed
-   styles and rects in the browser.
-6. Fix the observed defect before starting the next slice, then repeat.
+3. Capture the same route and widths again and open the PNG.
+4. If the pixels raise a geometry question, add `--audit` or measure the DOM's
+   computed styles and rects in the browser.
+5. Fix the observed defect before starting the next slice, then repeat.
 
-Keep baseline, material checkpoint, and final screenshot paths. A material
+Keep baseline, material checkpoint, and final capture paths. A material
 checkpoint is the smallest visual result that can be judged on its own, not
-every CSS line. Browser automation localizes DOM geometry; it does not replace
-the actual-window Computer Use evidence.
+every CSS line. A window, menu, Tauri bridge or WKWebView state is captured in
+the installed app through Computer Use instead.
 
 ## 1. Controls
 
@@ -180,9 +181,8 @@ for rejection.
 
 ## 5. Measure after building
 
-Prove it with `/ui-proof`, running the steps `pnpm design:route` returned in §0. Every rendered design class includes the completed
-render loop in §0-B; the final proof points to its baseline, material
-checkpoints, and final state.
+Prove it with `/ui-proof` for the classes its table lists. The final proof
+points to the §0-B baseline, material checkpoints, and final capture.
 
 `motion` always includes the `motion-verify` step against a real macOS screen recording.
 Static screenshots, duration tokens, and headless frames do not replace it.

@@ -60,9 +60,9 @@ export function commandsForLane({
   if (lane === 'gates') {
     const commands = plan.full
       ? [...FULL_LANE_COMMANDS.gates]
-      : ['pnpm po:pilot -- --check', ...plan.lanes.gates.commands];
+      : [...plan.lanes.gates.commands];
     if (eventName === 'pull_request' && base) {
-      commands.splice(1, 0, `pnpm decisions:check -- --base=${shellArgument(base)}`);
+      commands.unshift(`pnpm decisions:check -- --base=${shellArgument(base)}`);
     }
     return collapseCoveredContractCommands(unique(
       platform === 'darwin'
