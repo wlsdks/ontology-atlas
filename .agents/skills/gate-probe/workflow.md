@@ -56,9 +56,10 @@ expect(measured, 'the collector measured nothing').toBeGreaterThan(3);
 
 ## 5. Document it
 
-For a new command, add it to `docs/DEVELOPMENT-CHECKS.md` and mention it in
-`README.md`. For an existing command, update those entries only if its scope or
-invocation changed; adding a regression case does not require duplicate entries.
+For a new command, add a `scripts/lib/check-rules/` row so `pnpm checks:changed`
+recommends it, and a row in the `README.md` command table. For an existing
+command, update those rows only if its scope or invocation changed; adding a
+regression case does not require duplicate rows.
 When a contract covers a layer lint cannot see, register that layer in the design
 rule table too.
 
