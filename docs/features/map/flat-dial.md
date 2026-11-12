@@ -131,8 +131,9 @@ domain taper stands for every `depends_on` relation between the two domains in
 that direction and widens with their count, from `--map-graph-line-taper-px` by
 `--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`,
 the same screen width at every zoom. It leaves or lands just outside the
-domain's own member star, so it never runs under its lit members, and reaches
-the partner's disc. A partner the camera cannot pan into view keeps its taper,
+domain's own member star, so it never runs under its lit members, fading in
+from transparent over `--map-graph-line-fade-px` behind a round cap so it
+emerges from the cluster's light, and reaches the partner's disc. A partner the camera cannot pan into view keeps its taper,
 which runs off the edge toward it. The key names the two kinds as domains it
 needs and domains that need it.
 

@@ -99,6 +99,8 @@ export interface FlatGraphPaintTokens {
   /** A taper standing for several relations widens this much per relation past the first, up to the max. */
   lineTaperGainPx: number;
   lineTaperMaxPx: number;
+  /** Screen length over which a domain line's end outside its member star fades in from transparent. */
+  lineFadePx: number;
   lineHairPx: number;
   lineDotPx: number;
   lineDotGapPx: number;
