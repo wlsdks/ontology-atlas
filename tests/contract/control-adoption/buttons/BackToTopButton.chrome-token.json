@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/doc-reading-pane/ui/BackToTopButton.tsx",
-  "count": 1,
-  "claim": "chrome-token",
-  "proof": "--chrome-tile-size",
-  "why": "The floating \"back to top\" control in the document reader sizes itself with `h-[var(--chrome-tile-size)]`, the chrome contract. The registration approves only that size claim, not the `rounded-full` dialect."
-}

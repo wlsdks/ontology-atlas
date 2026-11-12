@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/public-quick-actions/ui/PublicQuickActions.tsx",
-  "count": 2,
-  "claim": "no-spec",
-  "proof": "className=\"inline-flex\"",
-  "why": "Two positioning wrappers that shrink-wrap a `<Button>`. They carry only `inline-flex`, which the value layer leaves to the caller's `className` (placement, width, order)."
-}

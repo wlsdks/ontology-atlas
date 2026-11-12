@@ -239,8 +239,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   same continuous morph — nodes travel, they do not cut — and the choice is
   remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
   overlapping node pairs at 1512x982, and none of them are same-tier. Geometry:
-  `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/strata.ts`; gates:
-  `tests/e2e/map/3d/map-3d-strata-drawing.spec.ts` and
+  `buildStrataTargets` in `src/widgets/ontology-map/model/dome-view/strata.ts`; gate:
   `tests/contract/map/strata-fit-fill.contract.test.ts`.
 - **The lit 3D map** (2026-09-25) — Strata and Neural are drawn as light in the
   canvas-2D engine. Each Strata plane is a translucent floor in its kind's colour
@@ -292,8 +291,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   pointing). With 8,422 dependencies, three in four inside a domain, and
   evidence 85% stale, it takes 7.7 ms and 1,086 calls (119, 116 and 73 fps). The
   sample vault and anything below the threshold draw pixel-identically. Model:
-  `src/widgets/ontology-map/model/dome-view/strata-lod.ts`; gate:
-  `tests/e2e/map/3d/map-3d-strata-lod.spec.ts`.
+  `src/widgets/ontology-map/model/dome-view/strata-lod.ts`.
 - **Neural composition and readable 3D connections** — Neural uses deterministic
   relation communities as a layout aid, with tighter local groups, lit cell bodies,
   and shallow connection arcs. Group proximity is inferred layout, not a new domain
@@ -318,5 +316,4 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the canvas ground, containment lines (Cone / Strata / Cloud): at device pixel
   ratio 2, 1.26 / 1.33 / 1.14 : 1 before the floor and 2.44 / 2.26 / 2.51 : 1
   now; at ratio 1, 1.29 / 1.25 / 1.27 : 1 before and 2.72 / 2.33 / 2.52 : 1 now.
-  The 2D map is untouched at either ratio. Gate:
-  `tests/e2e/map/3d/map-3d-relation-ink.spec.ts`, which reads the canvas back at both.
+  The 2D map is untouched at either ratio.

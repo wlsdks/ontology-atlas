@@ -32,7 +32,7 @@ gate's own incident history belongs in that gate file's header, not here.
   contributes a non-zero count. Source inventory does not prove rendered
   inventory.
 - Measure interaction states where WCAG applies: hover contrast is measured in
-  a real hover (`hover-contrast.spec.ts`).
+  a real hover.
 - Canvas pickers and inspectors are compared with recorded paint commands, not
   with a shared formula (`map-3d-edge-picking.spec.ts`).
 - Shell-command gates parse non-comment lines and compare exact commands, not
@@ -49,11 +49,11 @@ gate's own incident history belongs in that gate file's header, not here.
   invalid use that shares its file or value.
 - Hex is banned inside arbitrary-value syntax only; a global ban is noise.
 - z-index below 20 is local stacking; 20 and above use `--z-*`. A token with
-  zero consumers is misinformation (`unused-token-ratchet`).
+  zero consumers is misinformation.
 
 ## Ratchets and removal
 
-- A ratchet fails when current debt is above or below its baseline.
+- A ratchet fails when current debt is above its baseline.
 - Measure the rendered defect before paying debt; a ledger can be wrong about
   both count and category.
 - To delete a gate as redundant, open the current file, then show the

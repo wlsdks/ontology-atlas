@@ -8,7 +8,7 @@ describe('HeroAtlas renderer', () => {
     expect(rendererOptions('?hero=three').preserveDrawingBuffer).toBe(false);
   });
 
-  it('keeps it under ?e2e=1, for download-gateway-grid.spec.ts', () => {
+  it('keeps it under ?e2e=1', () => {
     expect(rendererOptions('?hero=three&e2e=1').preserveDrawingBuffer).toBe(true);
   });
 });

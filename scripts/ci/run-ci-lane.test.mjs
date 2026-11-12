@@ -143,13 +143,13 @@ test('unmapped browser work retains the PR smoke sweep and its shard', () => {
 
 test('smoke keeps the mapped specs that run after merge, once, on the first shard', () => {
   const plan = buildImpactPlan({ files: [
-    'src/features/agent-activity/ui/AgentMascotPresence.tsx',
+    'src/views/library/ui/parts/questions/LibraryQuestionDesk.tsx',
     'src/views/guide/ui/GuidePage.tsx',
   ] });
   assert.equal(plan.lanes.e2e.mode, 'smoke');
   const first = commandsForLane({ lane: 'e2e', plan, shard: '1/3' });
   assert.equal(first.length, 2);
-  assert.match(first[1], /tests\/e2e\/agents\/agent-mascot-presence\.spec\.ts .*--project=post-merge --pass-with-no-tests --output=output\/playwright\/mapped-post-merge$/);
+  assert.match(first[1], /tests\/e2e\/library\/answers\/library-question-desk\.spec\.ts .*--project=post-merge --pass-with-no-tests --output=output\/playwright\/mapped-post-merge$/);
   assert.equal(commandsForLane({ lane: 'e2e', plan, shard: '2/3' }).length, 1);
 });
 

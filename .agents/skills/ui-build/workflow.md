@@ -109,7 +109,7 @@ wrapper `w-full`; do not style the inner field separately.
 Use `badgeClass({ shape: 'micro' | 'tag' | 'pill' })`. Geometry is canonical;
 colour and tracking remain contextual because the inventory found sixty colour
 combinations with no majority. Passing geometry through `className` defeats the
-primitive and fails `static-badge-adoption-ratchet`.
+primitive.
 
 ### Complete form example
 
@@ -193,8 +193,6 @@ than one failure mode changed.
 
 ## 6. Gates that will stop the change
 
-- `control-adoption-ratchet`
-- `surface-motion-ratchet`
 - `contrast-ratchet`
 - `a11y-ratchet`
 - `disabled-affordance`

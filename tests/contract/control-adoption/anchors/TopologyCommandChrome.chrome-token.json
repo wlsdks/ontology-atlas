@@ -1,8 +1,0 @@
-{
-  "file": "src/views/home/ui/TopologyCommandChrome.tsx",
-  "count": 1,
-  "claim": "chrome-token",
-  "proof": "--chrome-tile-size",
-  "why": "The git tile of the map chrome (narrow widths only) is 36px via `size-[var(--chrome-tile-size)]` and rises to `max(36px, --touch-target-min)` on coarse pointers. The value layer cannot express pointer-conditional sizes.",
-  "conditional": "When the value layer gains a pointer-conditional size axis, delete this row and move the tile onto it."
-}

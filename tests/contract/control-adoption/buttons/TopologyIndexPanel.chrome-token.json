@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx",
-  "count": 1,
-  "claim": "chrome-token",
-  "proof": "[@media(pointer:coarse)]",
-  "why": "The recent-change window radio chips need three things the chip ramp lacks: a uniform `min-w-12` width, panel-scoped `--map-panel-*` ink, and the `--chrome-radius-inner` chrome radius instead of `rounded-chip`.",
-  "conditional": "When the value layer gains a uniform-width axis and panel-scoped ink, delete this row and move the chips onto it."
-}

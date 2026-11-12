@@ -170,7 +170,6 @@ export function View3dMenu({
               className={controlClass({
                 shape: 'row',
                 size: 'md',
-                // Hover comes from the value layer (`hover-axis-adoption-ratchet`).
                 hoverSurface: 'lift',
                 active,
                 className: 'w-full flex-col items-start gap-0.5 px-2.5 py-2 text-left',

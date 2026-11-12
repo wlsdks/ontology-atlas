@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx",
-  "count": 1,
-  "claim": "shape-gap",
-  "proof": "flex-col",
-  "why": "The vertical handle that opens the map INDEX panel stacks its content vertically, which no `row` shape of the value layer can lay out.",
-  "conditional": "When more than six vertically stacked controls exist, delete this row together with the `BottomTabBar` row and add the orientation axis."
-}

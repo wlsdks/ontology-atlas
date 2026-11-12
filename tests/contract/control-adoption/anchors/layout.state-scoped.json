@@ -1,7 +1,0 @@
-{
-  "file": "app/[locale]/layout.tsx",
-  "count": 1,
-  "claim": "state-scoped",
-  "proof": "focus:not-sr-only",
-  "why": "The skip-to-content link is `sr-only` normally, and its whole spec (radius, border, inset, type, color) sits under the `focus:` prefix. `controlClass()` returns unprefixed strings, so it cannot supply that."
-}

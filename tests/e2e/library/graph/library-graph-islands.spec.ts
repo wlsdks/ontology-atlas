@@ -6,7 +6,7 @@ import { stubDirectoryPicker } from "../../vault-picker-stub";
 
 /**
  * The folder is 450 marks, past `ISLANDS_MIN_MARKS` (400). The a11y opener model cannot press a
- * painted island, so the island bar's checks live here; `surface-motion-ratchet` cites it.
+ * painted island, so the island bar's checks live here.
  */
 function bigFolder(): Record<string, string> {
   const files: Record<string, string> = {

@@ -314,7 +314,7 @@ export function VaultStartSteps({
         {current === "agent" && acpRuntimeLabel ? (
           <div
             data-testid="start-step-runtime"
-            /* No box: the mark carries its own plate (`static-card-adoption-ratchet`). */
+            /* No box: the mark carries its own plate. */
             className="mt-3 flex items-center gap-2.5"
           >
             <VendorMark src={acpRuntimeIcon} ink={acpRuntimeInk} />

@@ -197,5 +197,4 @@ required by the product.
 | Every generated/public/platform output is planned | `brand-assets-present.contract.test.ts` |
 | Reduced motion preserves static state and text | `reduced-motion-equivalent.contract.test.ts` |
 | Motion claims only verified work | `mascot-state.test.ts` and `AgentMascotPresence.test.tsx` |
-| Palette stays raster-only; motion clocks, status-lane placement, and pose boundaries stay aligned | `mascot-palette-boundary.contract.test.ts` and `mascot-motion.contract.test.ts` |
 | macOS tray template is exact RGBA 1×/2× art | brand parity/presence contracts plus native Rust test |

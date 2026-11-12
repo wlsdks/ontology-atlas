@@ -635,8 +635,7 @@ describe('inbox: three tabs', () => {
 });
 
 /**
- * The target node link must not float above neighbouring text; the cause is in
- * `tests/contract/layout/agent-bar-link-alignment.contract.test.ts`.
+ * The target node link must not float above neighbouring text.
  */
 describe('bottom bar: target link alignment', () => {
   it('keeps the flex of the shape, which breaks if the truncate axis is used', () => {

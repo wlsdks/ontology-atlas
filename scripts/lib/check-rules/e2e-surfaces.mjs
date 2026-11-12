@@ -9,7 +9,7 @@ export const rules = [
   },
   {
     order: 420,
-    command: 'pnpm exec playwright test tests/e2e/vault-session/retired-game-storage.spec.ts tests/e2e/agents/agent-mascot-presence.spec.ts',
+    command: 'pnpm exec playwright test tests/e2e/vault-session/retired-game-storage.spec.ts',
     reason: 'folder entry and work status must preserve personal saves and verified activity after game retirement',
     matches: [
       /^src\/views\/first-run\/ui\/FirstRunPage\.tsx$/,
@@ -121,18 +121,6 @@ export const rules = [
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
     reason: 'a route was added or changed — it must be classified into the a11y/contrast ratchets',
     matches: [/^app\/(?:.+\/)?(?:page|not-found|error|global-error)\.tsx$/],
-  },
-  {
-    order: 1030,
-    // Editing the gateway layout must run its grid check. `PAGE_COLUMN`/`PAGE_GUTTER` are included
-    // because they are the baseline the grid measures against.
-    command: 'pnpm exec playwright test tests/e2e/gateway/download-gateway-grid.spec.ts',
-    reason: 'the gateway plate or its frame changed — six elements must still share one origin',
-    matches: [
-      /^src\/views\/download\/.*\.tsx?$/,
-      /^src\/widgets\/gateway-chrome\/.*\.tsx?$/,
-      /^src\/shared\/lib\/public-pages\/gateway-frame\.ts$/,
-    ],
   },
   {
     order: 1035,

@@ -16,7 +16,6 @@ export const PAGE_GUTTER =
 
 /**
  * The one column inside the origin, pinned left, capped at `--gateway-page-max`. With each side
- * padded by (vw-1920)/2 the column fills the rest, so no `mx-auto`. Gate:
- * `tests/contract/layout/gateway-column-width.contract.test.ts`.
+ * padded by (vw-1920)/2 the column fills the rest, so no `mx-auto`.
  */
 export const PAGE_COLUMN = 'w-full max-w-[var(--gateway-page-max)]';

@@ -7,8 +7,7 @@ import koMessages from "../../../../messages/ko.json";
 import { DocReadingPane } from "./DocReadingPane";
 
 /**
- * The scroll-end reserve owed to the back-to-top pill; the pixel proof is
- * the e2e spec `tests/e2e/design-audits/scroll-end-gap.spec.ts`, and this covers the check-results page e2e cannot
+ * The scroll-end reserve owed to the back-to-top pill, on the check-results page e2e cannot
  * open.
  */
 function renderPane(withBackToTop: boolean) {

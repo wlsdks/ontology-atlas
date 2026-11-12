@@ -26,7 +26,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * One reading page for `/guide` and `/changelog`: the prose measure (`--measure-prose`, derived in
- * `app/globals.css`, held by `tests/e2e/typography/prose-measure-calibration.spec.ts`), `leading-prose`
+ * `app/globals.css`), `leading-prose`
  * (`.claude/rules/design.md`), wide section gaps, and the neutrals-plus-indigo palette.
  */
 export interface GatewayDocPageProps {

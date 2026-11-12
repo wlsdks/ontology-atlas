@@ -1,8 +1,0 @@
-{
-  "file": "src/views/project-detail/ui/ProjectDetailPage.tsx",
-  "count": 1,
-  "claim": "no-spec",
-  "proof": "className=\"sr-only\"",
-  "why": "An invisible transport input that receives the review JSON from the browser's local file picker. The adjacent `Button` owns the visible control; styling this input as a field would give one action two visual controls.",
-  "conditional": "When a shared File System Access picker primitive exists, delete this native input together with its row."
-}

@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/atlas-git-panel/ui/ActionDock.tsx",
-  "count": 2,
-  "claim": "no-spec",
-  "proof": "accent-[var(--color-indigo-accent)]",
-  "why": "The push opt-in checkbox and its label. The checkbox contract fixes their size and target.",
-  "conditional": "When the checkbox contract is removed, move this row to the debt list."
-}

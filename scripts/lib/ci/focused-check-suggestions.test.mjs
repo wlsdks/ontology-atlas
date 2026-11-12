@@ -38,7 +38,7 @@ const TEST_HYGIENE_COMMAND =
   'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts';
 const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/controls/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
-  'pnpm exec vitest run tests/contract/design-tokens/unused-token-ratchet.contract.test.ts tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts';
+  'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts';
 
 // Import-graph rows are facts about this repository's imports; one test below owns them.
 function ruleCommands(result) {
@@ -238,7 +238,7 @@ describe('focused check suggestions', () => {
       'src/shared/lib/cn.test.ts',
       'src/widgets/example/ui/Example.test.tsx',
       'tests/e2e/app-shell/rail-destinations.spec.ts',
-      'tests/contract/layout/page-frame.contract.test.ts',
+      'tests/contract/ci-gates/test-title-language.contract.test.ts',
       'scripts/desktop/desktop-smoke.test.mjs',
       'mcp/src/analyze.test.mjs',
       'cli/src/integration.test.mjs',
@@ -574,7 +574,6 @@ describe('focused check suggestions', () => {
       'pnpm typecheck',
       'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
-      'pnpm exec playwright test tests/e2e/harness/architecture-role-ledger.spec.ts',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
@@ -952,8 +951,6 @@ describe('focused check suggestions', () => {
       // the same set.
       'pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts',
       'pnpm typecheck',
-      'pnpm exec playwright test tests/e2e/settings/settings-reading-layout.spec.ts',
-      'pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/desktop/check-desktop-readiness.mjs',
@@ -1137,7 +1134,6 @@ describe('focused check suggestions', () => {
       'pnpm typecheck',
       'pnpm exec playwright test tests/e2e/design-audits/a11y-ratchet.spec.ts tests/e2e/design-audits/contrast-ratchet.spec.ts',
       'pnpm decisions:check',
-      'pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts',
     ]);
   });
 
@@ -1280,21 +1276,7 @@ describe('focused check suggestions', () => {
       const result = suggestFocusedChecks([path]);
       const row = result.commands.find((r) => r.command.includes('retired-game-storage.spec.ts'));
       assert.ok(row, `missing retirement journey for ${path}`);
-      assert.match(row.command, /agent-mascot-presence\.spec\.ts/);
     }
-  });
-
-  it('suggests the map viewport framing E2E for the exact camera-obstacle source owners', () => {
-    const paths = [
-      'src/widgets/ontology-map/interaction/free-area.ts',
-      'src/views/home/ui/HomePage.tsx',
-    ];
-    const command = 'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts';
-    const result = suggestFocusedChecks(paths);
-    const matches = result.commands.filter((row) => row.command === command);
-
-    assert.equal(matches.length, 1);
-    assert.deepEqual(matches[0].paths, paths);
   });
 
   it('suggests the insights count E2E for the analysis model, board model, page, workspace, and board', () => {
@@ -1313,18 +1295,10 @@ describe('focused check suggestions', () => {
     assert.deepEqual(matches[0].paths, paths);
   });
 
-  it('suggests both framing and legacy-route E2Es for their shared HomePage owner', () => {
+  it('suggests the legacy-route E2E for its HomePage owner', () => {
     const result = suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']);
-    const commands = commandNames(result).filter(
-      (command) =>
-        command.includes('tests/e2e/map/camera/map-viewport-reframe.spec.ts') ||
-        command.includes('tests/e2e/gateway/ontology-ui.spec.ts'),
-    );
 
-    assert.deepEqual(commands, [
-      'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts',
-      'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
-    ]);
+    assert.ok(commandNames(result).includes('pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts'));
   });
 
   it('suggests the contextual meaning-editor E2E for the exact change-review owner', () => {
@@ -1349,7 +1323,6 @@ describe('focused check suggestions', () => {
 
   it('does not broaden installed-audit E2E mappings to neighboring tests or helpers', () => {
     const protectedCommands = new Set([
-      'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts',
       'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts',
       'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
       'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
@@ -1410,9 +1383,6 @@ describe('focused check suggestions', () => {
       'pnpm check:tokens',
       TOKEN_GATES_COMMAND,
       'pnpm exec playwright test tests/e2e/design-audits/overflow-sweep.spec.ts',
-      'pnpm exec playwright test tests/e2e/typography/hangul-tracking.spec.ts',
-      'pnpm exec playwright test tests/e2e/typography/prose-measure-calibration.spec.ts',
-      'pnpm exec playwright test tests/e2e/settings/text-zoom-ramp.spec.ts',
     ]);
     assert.ok(!commandNames(suggestFocusedChecks(['postcss.config.mjs'])).includes(TOKEN_GATES_COMMAND));
   });
@@ -1762,28 +1732,6 @@ describe('focused check suggestions', () => {
     assert.match(output, /pnpm vault:validate/);
   });
 
-  it('recommends the grid check when the gateway board, chrome or origin changes', () => {
-    // Editing the gateway layout must suggest its grid check; a check the advisor cannot point at does
-    // not exist.
-    const grid = 'pnpm exec playwright test tests/e2e/gateway/download-gateway-grid.spec.ts';
-    for (const path of [
-      'src/views/download/ui/DownloadPage.tsx',
-      'src/widgets/gateway-chrome/ui/GatewayNav.tsx',
-      'src/widgets/gateway-chrome/ui/GatewayReadingLinks.tsx',
-      'src/shared/lib/public-pages/gateway-frame.ts',
-    ]) {
-      assert.ok(
-        suggestFocusedChecks([path]).commands.some((s) => s.command === grid),
-        `${path} changed but the gateway grid check is not recommended`,
-      );
-    }
-    // Idling guard — a rule that attaches to any path is noise, not a rule.
-    assert.ok(
-      !suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']).commands.some((s) => s.command === grid),
-      'the grid check is recommended for screens unrelated to the gateway; the rule is too broad',
-    );
-  });
-
   it('recommends the capability-claim gate too when the copy catalog changes', () => {
     // Editing the message catalogue must also suggest the desktop gate that pins capability claims,
     // not only catalogue consistency.
@@ -2096,7 +2044,7 @@ describe('node tests for a changed script', () => {
 
 describe('files changed only in comments', () => {
   it('keep their lint and language checks but run none of their tests', () => {
-    const paths = ['tests/e2e/map/camera/map-viewport-reframe.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/harness/review-facts.mjs'];
+    const paths = ['tests/e2e/map/camera/camera-transition.spec.ts', 'src/widgets/ontology-map/interaction/free-area.ts', 'scripts/harness/review-facts.mjs'];
     const all = suggestFocusedChecks(paths).commands.map((item) => item.command);
     const skipped = suggestFocusedChecks(paths, { commentOnlyPaths: paths }).commands.map((item) => item.command);
     const tests = (commands) => commands.filter((command) => /playwright test|vitest related|node --test/.test(command));

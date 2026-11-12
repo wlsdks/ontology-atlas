@@ -1,8 +1,0 @@
-{
-  "file": "src/views/download/ui/DownloadPage.tsx",
-  "count": 4,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The four download CTAs (the hero Mac and Windows links and the two web links) are standard buttons: `cn(buttonVariants({…}), …)`, filled for the primary choice and outlined otherwise. `control-class.ts` does not replace standard buttons.",
-  "conditional": "The outlined web link widens its inset with `px-4 sm:px-6`; this registration does not approve that override."
-}

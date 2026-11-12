@@ -1,7 +1,0 @@
-{
-  "file": "src/shared/ui/controls/chrome-tile.tsx",
-  "count": 1,
-  "claim": "value-layer-peer",
-  "proof": "--chrome-tile-size",
-  "why": "The `<Link>` branch of the `ChromeTile` primitive. The `<button>` branch of the same primitive is registered with the buttons, so each registry holds one row."
-}

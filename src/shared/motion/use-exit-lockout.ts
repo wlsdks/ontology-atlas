@@ -7,8 +7,8 @@ import type { TargetAndTransition, VariantLabels } from 'framer-motion';
 import { EXIT_TRANSITION } from './tokens';
 
 /**
- * Stops a framer `exit` target taking pointer input from its first exit frame
- * (`framer-exit-asymmetry.contract.test.ts`), outside framer's value system: a string value
+ * Stops a framer `exit` target taking pointer input from its first exit frame,
+ * outside framer's value system: a string value
  * such as `pointerEvents` in an exit set keeps `AnimatePresence` from ever completing
  * under jsdom on the Linux CI runner, while passing locally, even with a zero-duration
  * transition.

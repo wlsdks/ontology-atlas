@@ -129,7 +129,7 @@ export function Dialog({
             data-testid={testId}
             data-overlay-spring="true"
             {...transientSurface("sheet")}
-            // No ring on programmatic container focus (`dialog-focus-ring.spec.ts`).
+            // No ring on programmatic container focus.
             className={cn(
               "relative rounded-panel border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-4 shadow-[var(--shadow-elevation-3)] focus:outline-none",
               size !== "viewport" && "w-[min(var(--dialog-w-sm),calc(100vw-2rem))]",

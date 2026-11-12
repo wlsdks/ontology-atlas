@@ -28,8 +28,7 @@ changing what those pages show or how they are built.
   (16px) at `--leading-prose`, under a `--text-hero` page title. At 1920 a
   guide line ran 97 characters at the median and 105 at most (2026-10-15),
   inside the 78-step measure's band (80 to 92 scaled by 78/66, about 95 to
-  109); `prose-measure-calibration.spec.ts` measures the Library reader, not
-  the guide.
+  109).
 
 ## Where it lives
 
