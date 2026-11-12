@@ -639,6 +639,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth); F.orphans = orphansOf(layout);
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
+  stepGrowthNow[0] = stepGrowth;
   const focusness = transitionShare(transition, litShare);
   const evidence = input.evidence ? dialEvidenceView(model, input.evidence) : null;
   const measured = evidence?.measured === true;
@@ -777,7 +778,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: G
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     selected: attention.selected, named: attention.named, reach: attention.reach,
-    discRadius: stepRadius(stepGrowth), elementSpacingPx,
+    discRadius: stepRadius, elementSpacingPx,
   });
   for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) planName(admission.names[nIndex]!, alphas);
   const hub = plan.project[0];
@@ -856,16 +857,13 @@ function hubCaptionFont(px: number, family: string): string {
   return font;
 }
 
-let stepRadiusGrowth = Number.NaN;
-let stepRadiusFn: (id: string) => number = () => 0;
-
-/** The name admission's disc radius at one zoom step; one function per step, not per frame. */
-function stepRadius(growth: number): (id: string) => number {
-  if (growth !== stepRadiusGrowth) {
-    stepRadiusGrowth = growth;
-    stepRadiusFn = (id) => radiusAt(id, growth);
-  }
-  return stepRadiusFn;
+/**
+ * The name admission's disc radius at this frame's zoom step. A module function, not a closure: a
+ * closure kept across frames would hold the frame that made it, and through it an unmounted canvas.
+ */
+const stepGrowthNow = new Float64Array(1);
+function stepRadius(id: string): number {
+  return radiusAt(id, stepGrowthNow[0]!);
 }
 
 /** The focus's relations as kinded lines; a taper's point stops short of the disc it reaches. */
