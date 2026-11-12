@@ -185,3 +185,38 @@ describe("topology ink contrast contract", () => {
     }
   });
 });
+
+describe("Flat graph inks", () => {
+  const rgbHex = (name: string): string => {
+    const parts = readRaw(name).split(/\s+/).map(Number);
+    expect(parts, `--${name} is an "r g b" triple`).toHaveLength(3);
+    return `#${parts.map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+  };
+  const hueOf = (hex: string): number => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const max = Math.max(r, g, b);
+    const d = max - Math.min(r, g, b);
+    if (d === 0) return 0;
+    const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return (h * 60 + 360) % 360;
+  };
+  const hueGap = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
+  /** A domain hue may not read as a status: it keeps this many degrees from amber and red. */
+  const STATUS_HUE_GAP = 15;
+  const DOMAIN_HUES = Array.from({ length: 8 }, (_, i) => `color-domain-${i + 1}-rgb`);
+
+  it("each domain hue clears the non-text floor and stays apart from the status hues", () => {
+    const statuses = [readToken("color-status-warning"), readToken("color-status-danger")].map(hueOf);
+    for (const token of DOMAIN_HUES) {
+      const hex = rgbHex(token);
+      expect(contrast(hex, CANVAS), token).toBeGreaterThanOrEqual(MIN_CONTRAST);
+      for (const status of statuses) expect(hueGap(hueOf(hex), status), `${token} vs status hue`).toBeGreaterThanOrEqual(STATUS_HUE_GAP);
+    }
+  });
+
+  it("names on the graph clear the text floor", () => {
+    for (const token of ["map-graph-name-strong", "map-graph-name"]) {
+      expect(contrast(readToken(token), CANVAS), token).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
+    }
+  });
+});

@@ -1,0 +1,86 @@
+/*
+ * Flat map as a hue-lit force graph (src/widgets/ontology-map/flat-graph). Layout values are world
+ * units, which equal screen pixels at the overview of a mid-sized folder; `-px` values are screen
+ * pixels at the overview and grow with zoom up to `growth-max`. Domain hues: `--color-domain-*-rgb`.
+ */
+@layer base {
+  :root {
+    --map-graph-cap-spacing: 26;
+    --map-graph-domain-clearance: 58;
+    --map-graph-cluster-gap: 56;
+    --map-graph-hub-clearance: 190;
+    --map-graph-aspect: 1.6;
+    --map-graph-element-pitch: 10;
+    --map-graph-element-hole: 22;
+    --map-graph-orphan-pitch: 22;
+    --map-graph-flow-weight: 0.6;
+    --map-graph-anchor-weight: 0.12;
+    --map-graph-anchor-reach: 3;
+    --map-graph-domain-iterations: 400;
+    --map-graph-capability-iterations: 240;
+    --map-graph-relax-rounds: 60;
+    --map-graph-title-drop-px: 46;
+    --map-graph-title-half-px: 84;
+
+    --map-graph-project-disc-px: 22;
+    --map-graph-project-core-px: 13;
+    --map-graph-project-glow-px: 46;
+    --map-graph-domain-disc-px: 16;
+    --map-graph-domain-core-px: 10;
+    --map-graph-domain-glow-px: 34;
+    --map-graph-domain-rim-px: 2;
+    --map-graph-cap-disc-min-px: 3;
+    --map-graph-cap-disc-gain-px: 2.8;
+    --map-graph-cap-disc-max-px: 12;
+    --map-graph-cap-core-inset-px: 3.5;
+    --map-graph-cap-core-min-px: 1.6;
+    --map-graph-cap-rim-px: 1.4;
+    --map-graph-cap-glow-px: 8;
+    --map-graph-element-dot-px: 1.9;
+    --map-graph-growth-max: 1.7;
+    --map-graph-shrink-min: 0.6;
+    --map-graph-glow-alpha: 0.22;
+    --map-graph-core-alpha: 0.85;
+    --map-graph-link-domain-alpha: 0.2;
+    --map-graph-link-cap-alpha: 0.32;
+    --map-graph-link-element-alpha: 0.16;
+    --map-graph-link-cap-width-px: 1.1;
+    --map-graph-link-element-width-px: 0.7;
+    --map-graph-light-alpha: 0.2;
+    --map-graph-light-reach: 1.8;
+    --map-graph-arc-bow: 0.14;
+    --map-graph-arc-alpha-base: 0.04;
+    --map-graph-arc-alpha-gain: 0.004;
+    --map-graph-arc-alpha-max: 0.12;
+    --map-graph-arc-width-base-px: 0.8;
+    --map-graph-arc-width-gain: 0.02;
+    --map-graph-arc-width-max-px: 1.2;
+    --map-graph-arc-glow-px: 4;
+    --map-graph-arc-glow-alpha: 0;
+    --map-graph-arc-head-px: 4;
+    --map-graph-arc-trim-px: 8;
+    --map-graph-rest-budget: 40;
+    --map-graph-sink-ink: 0.14;
+    --map-graph-dot-spacing-from-px: 3;
+    --map-graph-dot-spacing-full-px: 5;
+    --map-graph-element-name-spacing-px: 22;
+    --map-graph-zoom-steps-per-octave: 4;
+    --map-graph-project-name-px: 15;
+    --map-graph-domain-name-px: 19;
+    --map-graph-caption-px: 11;
+    --map-graph-cap-name-px: 11.5;
+    --map-graph-element-name-px: 11;
+    --map-graph-name-gap-px: 6;
+    --map-graph-caption-gap-px: 4;
+    --map-graph-name-halo-px: 3;
+    --map-graph-domain-name-halo-px: 5;
+    --map-graph-name-pad-px: 3;
+
+    --map-graph-project: #9aa2ff;
+    --map-graph-disc-fill: #0b0c12;
+    --map-graph-arc: #cfd3ff;
+    --map-graph-name-strong: #f4f5f9;
+    --map-graph-name: #c9cdd8;
+    --map-graph-halo: #07080c;
+  }
+}

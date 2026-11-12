@@ -114,7 +114,7 @@ export interface DialMemory { branchOrder?: readonly string[]; order: string[]; 
     }>;
     itemOrder: ReadonlyMap<string, string[]>;
 }
-export interface DialScene { branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
+export interface DialScene { graph?: import("../flat-graph/types").FlatGraphLayout; branches?: boolean; branchPreviewRows?: number; order: string[]; rings: DialRing[]; clusters: DialCluster[]; clusterByDomain: ReadonlyMap<string, DialCluster>; itemById: ReadonlyMap<string, DialItem>; orphans: { ids: string[]; centre: Point; pitch: number; radius: number;
     }; axisAngle: number; extent: Box; positions: ReadonlyMap<string, Point>; medianElementPitch: number; memory: DialMemory;
 }
 export interface DialWorld {
@@ -122,7 +122,7 @@ export interface DialWorld {
     scene: DialScene;
     overviewPadPx: Pad;
 }
-export interface DialWorldInput { labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
+export interface DialWorldInput { graph?: import("../flat-graph/types").FlatGraphTokens | null; graphAreaPx?: { width: number; height: number } | null; labels: DialLabels | null; tokens: DialTokens; measureText: (text: string, font: string) => number; rememberOrder: boolean; memory: DialMemory | null;
 }
 
 export interface StripMark { flowKey: string; role: "chord" | "stub" | "relates"; ink: number; ax: number; ay: number; cx: number; cy: number; bx: number; by: number; w0: number; w1: number; gapT0: number; gapT1: number; dashed: boolean; headStart: boolean; headEnd: boolean; headSize: number;
@@ -163,6 +163,7 @@ export interface DialChordLight { key: string; sourceDomain: string; targetDomai
 export interface DialLightFrame { attentionKey: string; focused: boolean; inkMix: number; chords: DialChordLight[];
 }
 export interface DialOwnershipInput {
+    graphScene?: boolean;
     hasDial: boolean; realmActive: boolean; edgeSelected: boolean; edgePreviewed: boolean; trailLensOpen: boolean; spotlightActive: boolean; pathLensActive: boolean; impactLensActive: boolean; focusedIsElement: boolean; focusedRelationsCaptioned: boolean; brushedIsElement: boolean;
 }
 export interface DialFrameInput {
@@ -170,7 +171,7 @@ export interface DialFrameInput {
   contextInkAlphas?: ReadonlyMap<string, number>;
   contextAlphas?: ReadonlyMap<string, number>; deferPaint?: boolean;
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
-  nodeScreen(id: string): Point | null; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
+  nodeScreen(id: string): Point | null; nodeAt?(id: string): Point | undefined; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
   viewportWidth: number; viewportHeight: number; freeRect: Box;
   mapTokens: import("../tokens/read-map-tokens").OntologyMapTokens; dialTokens: DialTokens; labels: DialLabels | null; evidence: ReadonlyMap<string, DialEvidence> | null;
   hoveredNodeId: string | null; focusedNodeId: string | null; agentFocusNodeId: string | null;

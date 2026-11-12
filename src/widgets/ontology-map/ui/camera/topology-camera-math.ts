@@ -318,6 +318,28 @@ export interface OverviewFitOptions {
   labelBottomAllowance?: number;
 }
 
+/** The screen area the overview fit fills: the viewport less its chrome insets and the fit's pad. */
+function overviewFitArea(
+  viewportWidth: number,
+  viewportHeight: number,
+  tokens: SafeInsetTokens,
+  fit?: OverviewFitOptions,
+): { width: number; height: number } {
+  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx, fit?.labelBottomAllowance);
+  return { width: Math.max(1, viewportWidth - insets.left - insets.right), height: Math.max(1, viewportHeight - insets.top - insets.bottom) };
+}
+
+/** The world-to-screen area the overview's entry camera shows: the fit area at the entry ratio. */
+export function overviewEntryArea(
+  viewportWidth: number,
+  viewportHeight: number,
+  tokens: SafeInsetTokens & Pick<OntologyMapTokens, "overviewEntryRatio">,
+  fit?: OverviewFitOptions,
+): { width: number; height: number } {
+  const area = overviewFitArea(viewportWidth, viewportHeight, tokens, fit);
+  return { width: area.width * tokens.overviewEntryRatio, height: area.height * tokens.overviewEntryRatio };
+}
+
 export function computeOverviewFitScale(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },
   viewportWidth: number,
@@ -331,9 +353,7 @@ export function computeOverviewFitScale(
   nodeCount?: number,
   fit?: OverviewFitOptions,
 ): number {
-  const insets = readSafeInsets(tokens, viewportWidth, viewportHeight, fit?.padPx, fit?.labelBottomAllowance);
-  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
-  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const { width: effW, height: effH } = overviewFitArea(viewportWidth, viewportHeight, tokens, fit);
   const maxScale =
     nodeCount !== undefined && nodeCount <= SMALL_GRAPH_NODE_MAX
       ? Math.min(tokens.cameraScaleMax, tokens.cameraSmallGraphScaleMax)

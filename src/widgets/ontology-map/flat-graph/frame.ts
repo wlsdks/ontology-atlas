@@ -1,0 +1,1180 @@
+import { dialEvidenceView } from "../dial/dial-model";
+import { createMeasureText } from "../dial/fit";
+import { emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "../dial/frame/marks";
+import { dialChordPresence, recordDialFrame } from "../dial/frame/frame";
+import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
+import type { Box, DialEvidenceView, DialFrameInput, DialFrameResult, DialModel, DialPick, DialRowPick, Point, StripMark, TextMark } from "../dial/types";
+import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
+import { labelFontFamily } from "../render/labels";
+import { AGENT_FOCUS_RING_OFFSET } from "../render/node-shapes";
+import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import { cachedGraphAttention, graphInkMix, inkUnder, transitionInk, transitionShare, type GraphAttention, type GraphTransition } from "./attention";
+import { directItemId } from "./layout";
+import {
+  arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+} from "./marks";
+import { admittedNames, stepScale, zoomStep, type PlacedName } from "./names";
+import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
+
+const CULL_PX = 80;
+const DRAWN_INK = 0.02;
+const FOCUS_BOW = 0.16;
+const FOCUS_LINK_ALPHA = 0.55;
+const FOCUS_LINK_WIDTH_PX = 1.2;
+const FOCUS_LINK_GLOW_ALPHA = 0.16;
+const FOCUS_GLOW_ALPHA = 0.4;
+const FOCUS_RIM_PX = 2.4;
+const PROJECT_RIM_PX = 2.2;
+const ARROW_SPREAD = 0.5;
+const ARROW_WIDTH_PX = 1.3;
+const DOT_ALPHA = 0.7;
+const LIT_DOT_SHARE = 1.5;
+const LIGHT_SINK_GAIN = 1.4;
+const SELECTION_GAP_PX = 5;
+const SELECTION_RING_PX = 1.5;
+const AGENT_RING_WIDTH_PX = 1;
+const PIP_SHARE = 0.3;
+const PIP_MIN_PX = 2;
+const UNKNOWN_DASH = [2, 2];
+const ELEMENT_PICK_PX = 4;
+
+const measureText = createMeasureText();
+
+interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
+interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number }
+interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
+interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number }
+interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
+interface Light { x: number; y: number; r: number; ink: string; alpha: number }
+interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number }
+interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
+type LabelBox = DialFrameResult["labelBoxes"][number];
+
+/**
+ * A frame reuses last frame's mark objects in the same order. Storing a double into an object
+ * field allocates, so every numeric write below is skipped when the value is unchanged: a still,
+ * awake frame allocates nothing per concept.
+ */
+function markPool<T>(make: () => T): { take(): T; reset(): void } {
+  const items: T[] = [];
+  let used = 0;
+  return { take: () => (items[used++] ??= make()), reset: () => { used = 0; } };
+}
+
+/**
+ * A list rebuilt every frame, written by index and cut once: `length = 0` releases the backing
+ * store in V8, so the next frame's pushes would allocate it again. An unchanged length keeps it.
+ */
+class FrameList<T> {
+  constructor(readonly items: T[] = []) {}
+  size = 0;
+  restart(): void {
+    this.size = 0;
+  }
+  add(item: T): void {
+    if (this.size < this.items.length) this.items[this.size] = item;
+    else this.items.push(item);
+    this.size += 1;
+  }
+  has(item: T): boolean {
+    for (let i = 0; i < this.size; i += 1) if (this.items[i] === item) return true;
+    return false;
+  }
+  indexOf(item: T): number {
+    for (let i = 0; i < this.size; i += 1) if (this.items[i] === item) return i;
+    return -1;
+  }
+  seal(): T[] {
+    if (this.items.length !== this.size) this.items.length = this.size;
+    return this.items;
+  }
+}
+
+const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, alpha: 0 }));
+const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0 }));
+const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
+const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
+const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
+const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0 }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
+const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
+const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
+const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
+const labelBoxPool = markPool<LabelBox>(() => ({ nodeId: "", text: "", minX: 0, minY: 0, maxX: 0, maxY: 0 }));
+const pickPool = markPool<DialPick>(() => ({ id: "", x: 0, y: 0, r: 0 }));
+const POOLS = [segments, dots, discs, glows, lights, arcMarks, names, hubNames, dotRows, nameRows, labelBoxPool, pickPool];
+const selectionRing: Ring = { x: 0, y: 0, r: 0, alpha: 0, ink: "" };
+const agentRing: Ring = { x: 0, y: 0, r: 0, alpha: 1, ink: "" };
+
+function setBox(box: Box, minX: number, maxX: number, minY: number, maxY: number): void {
+  if (box.minX !== minX) box.minX = minX;
+  if (box.maxX !== maxX) box.maxX = maxX;
+  if (box.minY !== minY) box.minY = minY;
+  if (box.maxY !== maxY) box.maxY = maxY;
+}
+
+function ring(into: Ring, x: number, y: number, r: number, alpha: number, ink: string): Ring {
+  if (into.x !== x) into.x = x;
+  if (into.y !== y) into.y = y;
+  if (into.r !== r) into.r = r;
+  if (into.alpha !== alpha) into.alpha = alpha;
+  into.ink = ink;
+  return into;
+}
+
+/** A drawn dot answers before a name drawn over it: rows are hit last-first, so dots go last. */
+function dotRow(p: DialPick): DialRowPick {
+  const row = dotRows.take();
+  row.id = p.id;
+  const box = row.box;
+  const minX = p.x - p.r;
+  const maxX = p.x + p.r;
+  const minY = p.y - p.r;
+  const maxY = p.y + p.r;
+  if (box.minX !== minX) box.minX = minX;
+  if (box.maxX !== maxX) box.maxX = maxX;
+  if (box.minY !== minY) box.minY = minY;
+  if (box.maxY !== maxY) box.maxY = maxY;
+  return row;
+}
+
+function elementPick(id: string, at: Point): DialPick {
+  const p = pickPool.take();
+  p.id = id;
+  const r = Math.max(ELEMENT_PICK_PX, radiusNow(id));
+  if (p.x !== at.x) p.x = at.x;
+  if (p.y !== at.y) p.y = at.y;
+  if (p.r !== r) p.r = r;
+  return p;
+}
+
+function disc(id: string, at: Point, r: number, hue: string, ink: number, focus: boolean, state: Disc["state"]): Disc {
+  const d = discs.take();
+  d.id = id;
+  if (d.x !== at.x) d.x = at.x;
+  if (d.y !== at.y) d.y = at.y;
+  if (d.r !== r) d.r = r;
+  d.hue = hue;
+  if (d.ink !== ink) d.ink = ink;
+  d.focus = focus;
+  d.state = state;
+  return d;
+}
+
+function light(x: number, y: number, r: number, ink: string, alpha: number): Light {
+  const l = lights.take();
+  if (l.x !== x) l.x = x;
+  if (l.y !== y) l.y = y;
+  if (l.r !== r) l.r = r;
+  l.ink = ink;
+  if (l.alpha !== alpha) l.alpha = alpha;
+  return l;
+}
+
+function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd: number, width: number, alpha: number, head: boolean, glowAlpha: number): Arc | null {
+  const arc = arcMarks.take();
+  if (!arcPathInto(arc.path, from, to, bow, trimStart, trimEnd)) return null;
+  if (arc.width !== width) arc.width = width;
+  if (arc.alpha !== alpha) arc.alpha = alpha;
+  arc.head = head;
+  if (arc.glow !== glowAlpha) arc.glow = glowAlpha;
+  return arc;
+}
+
+function nameMark(name: PlacedName, x: number, y: number, ink: number, color: string, halo: number): Name {
+  const n = names.take();
+  n.name = name;
+  if (n.x !== x) n.x = x;
+  if (n.y !== y) n.y = y;
+  if (n.ink !== ink) n.ink = ink;
+  n.color = color;
+  if (n.halo !== halo) n.halo = halo;
+  return n;
+}
+
+interface StampedPoint extends Point { stamp: number }
+const ORIGIN: Point = { x: 0, y: 0 };
+const screenCache = new WeakMap<FlatGraphLayout, Map<string, StampedPoint>>();
+const alphaCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
+const orphanCache = new WeakMap<FlatGraphLayout, ReadonlySet<string>>();
+const radiusCaches = new WeakMap<FlatGraphLayout, { growth: number; radii: Map<string, number> }>();
+const flowKeyCache = new WeakMap<DialModel, Map<string, Map<string, string>>>();
+const linkProbeCache = new WeakMap<DialModel, DialMarksResult["flows"]["links"]>();
+const framePicks = new FrameList<DialPick>();
+const frameRows = new FrameList<DialRowPick>();
+const frameLabelBoxes = new FrameList<LabelBox>();
+const drawnFlowKeys = new FrameList<string>();
+const shownElements = new FrameList<string>();
+const expandedItems = new Set<string>();
+const NO_IDS: ReadonlySet<string> = new Set();
+
+/** Disc radii at one growth, kept until the zoom changes it. */
+function radiusCacheFor(layout: FlatGraphLayout, growth: number): Map<string, number> {
+  const hit = radiusCaches.get(layout);
+  if (hit && hit.growth === growth) return hit.radii;
+  const radii = new Map<string, number>();
+  radiusCaches.set(layout, { growth, radii });
+  return radii;
+}
+
+/** One map per layout, overwritten every frame: every id is written each frame or read through its stamp. */
+function cacheFor<V>(cache: WeakMap<FlatGraphLayout, Map<string, V>>, layout: FlatGraphLayout): Map<string, V> {
+  let map = cache.get(layout);
+  if (!map) {
+    map = new Map();
+    cache.set(layout, map);
+  }
+  return map;
+}
+
+function orphansOf(layout: FlatGraphLayout): ReadonlySet<string> {
+  let set = orphanCache.get(layout);
+  if (!set) orphanCache.set(layout, (set = new Set(layout.orphanIds)));
+  return set;
+}
+
+/** The flow a domain pair belongs to, either way round; built once per model. */
+function flowKeyOf(model: DialModel, a: string, b: string): string | undefined {
+  let byFrom = flowKeyCache.get(model);
+  if (!byFrom) {
+    byFrom = new Map();
+    for (const f of model.flows) {
+      for (const [u, v] of [[f.a, f.b], [f.b, f.a]] as const) {
+        let to = byFrom.get(u);
+        if (!to) byFrom.set(u, (to = new Map()));
+        to.set(v, f.key);
+      }
+    }
+    flowKeyCache.set(model, byFrom);
+  }
+  return byFrom.get(a)?.get(b);
+}
+
+function linkProbes(model: DialModel): DialMarksResult["flows"]["links"] {
+  let links = linkProbeCache.get(model);
+  if (!links) linkProbeCache.set(model, (links = model.flows.map((f) => ({ key: f.key, u: f.a, v: f.b, uv: f.ab, vu: f.ba, total: f.total, relatesOnly: f.relatesOnly, attended: false }))));
+  return links;
+}
+
+interface FramePlan {
+  lights: Light[];
+  segments: Segment[];
+  arcs: Arc[];
+  focusArcs: Arc[];
+  dots: Dot[];
+  glows: Glow[];
+  discs: Disc[];
+  domains: Disc[];
+  project: Disc[];
+  selection: Ring | null;
+  agentRing: Ring | null;
+  names: Name[];
+}
+const L = {
+  lights: new FrameList<Light>(), segments: new FrameList<Segment>(), arcs: new FrameList<Arc>(), focusArcs: new FrameList<Arc>(),
+  dots: new FrameList<Dot>(), glows: new FrameList<Glow>(), discs: new FrameList<Disc>(), domains: new FrameList<Disc>(),
+  project: new FrameList<Disc>(), names: new FrameList<Name>(),
+};
+const framePlan: FramePlan = {
+  lights: L.lights.items, segments: L.segments.items, arcs: L.arcs.items, focusArcs: L.focusArcs.items, dots: L.dots.items,
+  glows: L.glows.items, discs: L.discs.items, domains: L.domains.items, project: L.project.items, selection: null, agentRing: null,
+  names: L.names.items,
+};
+const PLAN_LISTS = [L.lights, L.segments, L.arcs, L.focusArcs, L.dots, L.glows, L.discs, L.domains, L.project, L.names];
+
+let deferred: { plan: FramePlan; tokens: FlatGraphTokens; ground: string; warning: string } | null = null;
+
+/** One frame's inputs, rewritten in place each frame so the helpers below need no per-frame closures. */
+interface FrameState {
+  input: DialFrameInput;
+  model: DialModel;
+  layout: FlatGraphLayout;
+  tokens: FlatGraphTokens;
+  P: FlatGraphPaintTokens;
+  transition: GraphTransition;
+  attention: GraphAttention;
+  settled: boolean;
+  contextMode: boolean;
+  scale: number;
+  originX: number;
+  originY: number;
+  W: number;
+  H: number;
+  growth: number;
+  stamp: number;
+  screen: Map<string, StampedPoint>;
+  radii: Map<string, number>;
+  orphans: ReadonlySet<string>;
+  dotAlpha: number;
+  focusness: number;
+  required: ReadonlySet<string>;
+  evidence: DialEvidenceView | null;
+}
+const F = { stamp: 0 } as FrameState;
+
+function hueOf(domainId: string | null | undefined): string {
+  const index = domainId ? F.layout.hueByDomain.get(domainId) : undefined;
+  return index === undefined ? F.tokens.inks.name : F.tokens.inks.hues[index] ?? F.tokens.inks.name;
+}
+
+/**
+ * Hot helpers hand doubles back through this slot and take objects, not numbers: a double argument
+ * or return value allocates whenever the optimiser does not inline the call.
+ */
+const scratch = new Float64Array(1);
+
+function loadInk(id: string): void {
+  const input = F.input;
+  const attention = F.attention;
+  const sink = F.P.sinkInk;
+  const focus = F.settled ? (attention.lit === null || attention.lit.has(id) ? 1 : sink) : transitionInk(F.transition, id, sink);
+  const brightened = attention.selected && id === input.hoveredNodeId ? 1 : focus;
+  const lens = F.contextMode ? input.contextInkAlphas?.get(id) ?? 1 : 1;
+  scratch[0] = brightened * lens * input.appearOf(id);
+}
+
+function inkOf(id: string): number {
+  loadInk(id);
+  return scratch[0]!;
+}
+
+function screenOf(id: string): StampedPoint {
+  const home = F.input.nodeAt?.(id) ?? F.layout.positions.get(id) ?? F.layout.itemAt.get(id) ?? ORIGIN;
+  let at = F.screen.get(id);
+  if (!at) {
+    at = { x: 0, y: 0, stamp: 0 };
+    F.screen.set(id, at);
+  }
+  const x = home.x * F.scale + F.originX;
+  const y = home.y * F.scale + F.originY;
+  if (at.x !== x) at.x = x;
+  if (at.y !== y) at.y = y;
+  at.stamp = F.stamp;
+  return at;
+}
+
+function screenAt(id: string): StampedPoint | undefined {
+  const at = F.screen.get(id);
+  return at && at.stamp === F.stamp ? at : undefined;
+}
+
+function onScreen(p: Point): boolean {
+  return p.x > -CULL_PX && p.y > -CULL_PX && p.x < F.W + CULL_PX && p.y < F.H + CULL_PX;
+}
+
+function pickable(p: Point): boolean {
+  return p.x > -ELEMENT_PICK_PX && p.y > -ELEMENT_PICK_PX && p.x < F.W + ELEMENT_PICK_PX && p.y < F.H + ELEMENT_PICK_PX;
+}
+
+/** The radius at this frame's growth; a cached value is returned as stored, so it never allocates. */
+function radiusNow(id: string): number {
+  return F.radii.get(id) ?? radiusAt(id, F.growth);
+}
+
+function segmentOnScreen(a: Point, b: Point): boolean {
+  return !(Math.max(a.x, b.x) < -CULL_PX || Math.min(a.x, b.x) > F.W + CULL_PX || Math.max(a.y, b.y) < -CULL_PX || Math.min(a.y, b.y) > F.H + CULL_PX);
+}
+
+function lensHidden(id: string): boolean {
+  return F.contextMode && (F.input.contextAlphas!.get(id) ?? 0) < HITTABLE_MIN_TIER_ALPHA;
+}
+
+function radiusOf(id: string, g: number): number {
+  const { model, P } = F;
+  if (id === model.projectId) return graphDiscRadiusPx("project", 0, P, g);
+  if (model.domainById.has(id)) return graphDiscRadiusPx("domain", 0, P, g);
+  if (model.capabilityById.has(id) || F.orphans.has(id)) return graphDiscRadiusPx("capability", model.capabilityById.get(id)?.elementIds.length ?? 0, P, g);
+  return graphDiscRadiusPx("element", 0, P, g);
+}
+
+function radiusAt(id: string, g: number): number {
+  if (g !== F.growth) return radiusOf(id, g);
+  const known = F.radii.get(id);
+  if (known !== undefined) return known;
+  const r = radiusOf(id, g);
+  F.radii.set(id, r);
+  return r;
+}
+
+function loadNameInk(n: PlacedName): void {
+  if (n.role === "project" || n.role === "domain" || n.role === "units") {
+    loadInk(n.id);
+    return;
+  }
+  const input = F.input;
+  const attention = F.attention;
+  const focus = F.settled ? inkUnder(attention, n.id, 0) : transitionInk(F.transition, n.id, 0);
+  const brightened = attention.selected && n.id === input.hoveredNodeId ? 1 : focus;
+  const lens = F.contextMode ? input.contextInkAlphas?.get(n.id) ?? 1 : 1;
+  const elementShare = n.role === "element" && attention.lit?.has(n.id) !== true ? F.dotAlpha : 1;
+  scratch[0] = brightened * lens * elementShare * input.appearOf(n.id);
+}
+
+/** One admitted name, when its concept draws, its box reaches the viewport and its ink shows. */
+function planName(n: PlacedName, alphas: ReadonlyMap<string, number>): void {
+  const at = screenAt(n.id);
+  if (!at || alphas.get(n.id) === 0) return;
+  if (at.x + n.box.maxX < 0 || at.x + n.box.minX > F.W || at.y + n.box.maxY < 0 || at.y + n.box.minY > F.H) return;
+  loadNameInk(n);
+  const ink = scratch[0]!;
+  if (ink <= DRAWN_INK) return;
+  const { P, attention } = F;
+  const inks = F.tokens.inks;
+  const domainId = n.role === "domain" || n.role === "units" ? n.id : F.model.domainOf.get(n.id) ?? null;
+  const strong = n.role === "domain" || n.role === "project" || n.id === attention.focusId;
+  const color = n.role === "units" ? hueOf(domainId) : strong ? inks.nameStrong : inks.name;
+  const mark = names.take();
+  mark.name = n;
+  const x = at.x + n.dx;
+  const y = at.y + n.dy;
+  const halo = n.role === "domain" ? P.domainNameHaloPx : P.nameHaloPx;
+  if (mark.x !== x) mark.x = x;
+  if (mark.y !== y) mark.y = y;
+  if (mark.ink !== ink) mark.ink = ink;
+  mark.color = color;
+  if (mark.halo !== halo) mark.halo = halo;
+  L.names.add(mark);
+}
+
+function addGlow(d: Disc, isProject: boolean): void {
+  const { P, growth } = F;
+  const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth;
+  const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
+  const alpha = Math.min(1, P.glowAlpha * focusGain) * d.ink * d.ink;
+  const g = glows.take();
+  if (g.x !== d.x) g.x = d.x;
+  if (g.y !== d.y) g.y = d.y;
+  if (g.r !== halo) g.r = halo;
+  g.ink = d.hue;
+  if (g.alpha !== alpha) g.alpha = alpha;
+  L.glows.add(g);
+}
+
+function segmentBetween(a: Point, b: Point, ink: string, toElement: boolean): Segment {
+  const s = segments.take();
+  if (s.x0 !== a.x) s.x0 = a.x;
+  if (s.y0 !== a.y) s.y0 = a.y;
+  if (s.x1 !== b.x) s.x1 = b.x;
+  if (s.y1 !== b.y) s.y1 = b.y;
+  s.ink = ink;
+  s.toElement = toElement;
+  return s;
+}
+
+function discAt(id: string, at: Point, hue: string, focus: boolean, state: Disc["state"]): Disc {
+  const d = discs.take();
+  d.id = id;
+  if (d.x !== at.x) d.x = at.x;
+  if (d.y !== at.y) d.y = at.y;
+  d.hue = hue;
+  d.focus = focus;
+  d.state = state;
+  return d;
+}
+
+function pickOf(d: Disc): DialPick {
+  const p = pickPool.take();
+  p.id = d.id;
+  if (p.x !== d.x) p.x = d.x;
+  if (p.y !== d.y) p.y = d.y;
+  if (p.r !== d.r) p.r = d.r;
+  return p;
+}
+
+/** One domain's disc, its capability discs and links, and any element fan that draws. O(members). */
+function planCluster(c: FlatGraphCluster, projectAt: Point | null, projectInk: number): void {
+  const { P, attention, contextMode } = F;
+  const alphas = cacheFor(alphaCache, F.layout);
+  const hue = hueOf(c.domainId);
+  const at = screenOf(c.domainId);
+  const domainHidden = lensHidden(c.domainId);
+  alphas.set(c.domainId, domainHidden ? 0 : 1);
+  loadInk(c.domainId);
+  const ink = scratch[0]!;
+  if (projectAt && !contextMode && segmentOnScreen(projectAt, at)) {
+    const s = segmentBetween(projectAt, at, F.tokens.inks.project, false);
+    const alpha = P.linkDomainAlpha * Math.min(ink, projectInk);
+    if (s.alpha !== alpha) s.alpha = alpha;
+    L.segments.add(s);
+  }
+  if (!domainHidden && onScreen(at)) {
+    const d = discAt(c.domainId, at, hue, c.domainId === attention.focusId, "current");
+    const r = radiusNow(c.domainId);
+    if (d.r !== r) d.r = r;
+    if (d.ink !== ink) d.ink = ink;
+    L.domains.add(d);
+  }
+  const evidence = F.evidence;
+  for (let i = 0; i < c.items.length; i += 1) {
+    const it = c.items[i]!;
+    if (it.direct) {
+      if (F.dotAlpha > DRAWN_INK || expandedItems.has(it.id)) planElements(it, at, hue);
+      continue;
+    }
+    const itemAt = screenOf(it.id);
+    loadInk(it.id);
+    const itemInk = scratch[0]!;
+    const itemHidden = lensHidden(it.id);
+    alphas.set(it.id, itemHidden ? 0 : 1);
+    if (!contextMode && segmentOnScreen(at, itemAt)) {
+      const s = segmentBetween(at, itemAt, hue, false);
+      const alpha = P.linkCapAlpha * Math.min(ink, itemInk);
+      if (s.alpha !== alpha) s.alpha = alpha;
+      L.segments.add(s);
+    }
+    if (!itemHidden && onScreen(itemAt)) {
+      const d = discAt(it.id, itemAt, hue, it.id === attention.focusId, evidence !== null ? evidence.stateOf(it.id) : "current");
+      const r = radiusNow(it.id);
+      if (d.r !== r) d.r = r;
+      if (d.ink !== itemInk) d.ink = itemInk;
+      L.discs.add(d);
+    }
+    if (F.dotAlpha > DRAWN_INK || expandedItems.has(it.id)) planElements(it, itemAt, hue);
+  }
+}
+
+/** The items whose element fans draw although dots are hidden: lit, required or the agent's. O(lit). */
+function markExpandedItems(lit: ReadonlySet<string> | null, required: ReadonlySet<string>, agentId: string | null): void {
+  expandedItems.clear();
+  const model = F.model;
+  const add = (id: string) => {
+    const owner = model.capabilityOf.get(id);
+    if (owner !== undefined) expandedItems.add(owner);
+    else if (!model.capabilityById.has(id) && !model.domainById.has(id)) {
+      const domain = model.domainOf.get(id);
+      if (domain) expandedItems.add(directItemId(domain));
+    }
+  };
+  if (lit) for (const id of lit) add(id);
+  for (const id of required) add(id);
+  if (agentId) add(agentId);
+}
+
+function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
+  const { P, input, attention, contextMode } = F;
+  const alphas = cacheFor(alphaCache, F.layout);
+  loadInk(it.direct ? it.domainId : it.id);
+  const itemInk = scratch[0]!;
+  for (let i = 0; i < it.elementIds.length; i += 1) {
+    const el = it.elementIds[i]!;
+    const lit = attention.lit?.has(el) === true;
+    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    if (shown <= DRAWN_INK) continue;
+    alphas.set(el, 1);
+    shownElements.add(el);
+    const elAt = screenOf(el);
+    loadInk(el);
+    const elInk = scratch[0]!;
+    if (!contextMode && segmentOnScreen(itemAt, elAt)) {
+      const s = segmentBetween(itemAt, elAt, hue, true);
+      const alpha = P.linkElementAlpha * Math.min(itemInk, elInk) * shown;
+      if (s.alpha !== alpha) s.alpha = alpha;
+      L.segments.add(s);
+    }
+    if (onScreen(elAt)) {
+      const d = dots.take();
+      const r = radiusNow(el) * (lit ? LIT_DOT_SHARE : 1);
+      const alpha = DOT_ALPHA * shown;
+      if (d.x !== elAt.x) d.x = elAt.x;
+      if (d.y !== elAt.y) d.y = elAt.y;
+      if (d.r !== r) d.r = r;
+      d.hue = hue;
+      if (d.ink !== elInk) d.ink = elInk;
+      if (d.alpha !== alpha) d.alpha = alpha;
+      L.dots.add(d);
+    }
+  }
+}
+
+function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: GraphTransition) {
+  const { current: attention, previous, mix } = transition;
+  const { model, scene } = input.dial;
+  const layout = scene.graph!;
+  const P = tokens.paint;
+  const inks = tokens.inks;
+  const contextMode = input.contextAlphas !== undefined;
+  const growth = zoomGrowth(input.zoomRatio, P);
+  const origin = input.toScreen(0, 0);
+  F.input = input; F.model = model; F.layout = layout; F.tokens = tokens; F.P = P;
+  F.transition = transition; F.attention = attention;
+  F.settled = mix >= 1 || (previous === attention && transition.older === attention);
+  F.contextMode = contextMode; F.scale = input.scale; F.originX = origin.x; F.originY = origin.y;
+  F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
+  F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth); F.orphans = orphansOf(layout);
+  const step = zoomStep(input.scale, P.zoomStepsPerOctave);
+  const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
+  stepGrowthNow[0] = stepGrowth;
+  const focusness = transitionShare(transition, litShare);
+  const evidence = input.evidence ? dialEvidenceView(model, input.evidence) : null;
+  const measured = evidence?.measured === true;
+  const elementSpacingPx = scene.medianElementPitch * input.scale;
+  const dotAlpha = smoothstep(P.dotSpacingFromPx, P.dotSpacingFullPx, elementSpacingPx);
+  F.dotAlpha = dotAlpha;
+  F.focusness = focusness;
+  F.evidence = measured ? evidence : null;
+
+  for (let pIndex = 0; pIndex < POOLS.length; pIndex += 1) {
+    const p = POOLS[pIndex]!;
+    p.reset();
+  }
+  const plan = framePlan;
+  for (let listIndex = 0; listIndex < PLAN_LISTS.length; listIndex += 1) PLAN_LISTS[listIndex]!.restart();
+  plan.selection = null;
+  plan.agentRing = null;
+  const alphas = cacheFor(alphaCache, layout);
+  if (alphas.size === 0) for (const id of model.domainOf.keys()) alphas.set(id, 0);
+  for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) alphas.set(shownElements.items[elIndex]!, 0);
+  shownElements.restart();
+  const picks = framePicks;
+  picks.restart();
+  const required = input.requiredBranchIds ?? NO_IDS;
+  F.required = required;
+  markExpandedItems(contextMode ? null : attention.lit, required, input.agentFocusNodeId);
+
+  for (let cIndex = 0; cIndex < layout.clusters.length; cIndex += 1) {
+    const c = layout.clusters[cIndex]!;
+    const ink = inkOf(c.domainId);
+    const x = c.centre.x * input.scale + origin.x;
+    const y = c.centre.y * input.scale + origin.y;
+    const r = c.footprint * input.scale * P.lightReach;
+    const alpha = P.lightAlpha * Math.min(1, ink * LIGHT_SINK_GAIN) * (contextMode ? P.sinkInk : 1);
+    if (!lensHidden(c.domainId) && alpha > 0.002 && x + r > 0 && y + r > 0 && x - r < F.W && y - r < F.H) L.lights.add(light(x, y, r, hueOf(c.domainId), alpha));
+  }
+
+  const project = model.projectId !== null && layout.positions.has(model.projectId) ? model.projectId : null;
+  const projectAt = project ? screenOf(project) : null;
+  if (project && projectAt) {
+    alphas.set(project, 1);
+    L.project.add(disc(project, projectAt, radiusAt(project, growth), inks.project, inkOf(project), false, "current"));
+  }
+
+  const projectInk = project ? inkOf(project) : 0;
+  for (let cIndex = 0; cIndex < layout.clusters.length; cIndex += 1) planCluster(layout.clusters[cIndex]!, projectAt, projectInk);
+  for (let idIndex = 0; idIndex < layout.orphanIds.length; idIndex += 1) {
+    const id = layout.orphanIds[idIndex]!;
+    const at = screenOf(id);
+    const hidden = lensHidden(id);
+    alphas.set(id, hidden ? 0 : 1);
+    if (hidden || !onScreen(at)) continue;
+    const d = discAt(id, at, inks.name, id === attention.focusId, "current");
+    const r = radiusNow(id);
+    loadInk(id);
+    const ink = scratch[0]!;
+    if (d.r !== r) d.r = r;
+    if (d.ink !== ink) d.ink = ink;
+    L.discs.add(d);
+  }
+  L.lights.seal(); L.project.seal(); L.segments.seal(); L.domains.seal(); L.discs.seal(); L.dots.seal();
+  shownElements.seal();
+
+  const presence = dialChordPresence(input.dialTokens, input.domainAppear);
+  const restAlpha = (1 - focusness) * presence;
+  drawnFlowKeys.restart();
+  if (!contextMode && restAlpha > DRAWN_INK) {
+    const rest = restArcs(model, P.restBudget);
+    for (let arcIndex = 0; arcIndex < rest.length; arcIndex += 1) {
+      const arc = rest[arcIndex]!;
+      const a = screenAt(arc.from);
+      const b = screenAt(arc.to);
+      if (!a || !b) continue;
+      const width = Math.min(P.arcWidthMaxPx, P.arcWidthBasePx + P.arcWidthGain * arc.count);
+      const alpha = Math.min(P.arcAlphaMax, P.arcAlphaBase + P.arcAlphaGain * arc.count) * restAlpha * Math.min(inkOf(arc.from), inkOf(arc.to));
+      const mark = arcMark(a, b, P.arcBow, radiusAt(arc.from, growth), radiusAt(arc.to, growth) + P.arcTrimPx, width, alpha, true, P.arcGlowAlpha * restAlpha);
+      if (!mark) continue;
+      L.arcs.add(mark);
+      const key = flowKeyOf(model, arc.from, arc.to);
+      if (key !== undefined && !drawnFlowKeys.has(key)) drawnFlowKeys.add(key);
+    }
+  }
+  if (!contextMode) {
+    if (previous !== attention) focusLinks(previous, 1 - mix);
+    focusLinks(attention, mix);
+  }
+  L.arcs.seal(); L.focusArcs.seal(); drawnFlowKeys.seal();
+
+  for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
+    const d = plan.domains[dIndex]!;
+    addGlow(d, false);
+  }
+  for (let dIndex = 0; dIndex < plan.discs.length; dIndex += 1) {
+    const d = plan.discs[dIndex]!;
+    addGlow(d, false);
+  }
+  for (let dIndex = 0; dIndex < plan.project.length; dIndex += 1) {
+    const d = plan.project[dIndex]!;
+    addGlow(d, true);
+  }
+  L.glows.seal();
+
+  const selectedId = input.focusedNodeId;
+  if (selectedId && !contextMode) {
+    const at = screenAt(selectedId);
+    if (at) {
+      const pulse = input.selectionPulse?.nodeId === selectedId ? input.selectionPulse.scaleFactor : 1;
+      plan.selection = ring(selectionRing, at.x, at.y, (radiusAt(selectedId, growth) + SELECTION_GAP_PX) * pulse, mix, inks.project);
+    }
+  }
+
+  const agentId = contextMode ? null : input.agentFocusNodeId;
+  const agentAt = agentId ? screenAt(agentId) : undefined;
+  if (agentId && agentAt && alphas.get(agentId) !== 0) {
+    plan.agentRing = ring(agentRing, agentAt.x, agentAt.y, radiusAt(agentId, growth) + AGENT_FOCUS_RING_OFFSET, 1, input.mapTokens.amberHub);
+  }
+
+  const fontFamily = labelFontFamily();
+  const admission = admittedNames({
+    model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
+    elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
+    lit: contextMode ? null : attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
+    discRadius: stepRadius, elementSpacingPx,
+  });
+  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) planName(admission.names[nIndex]!, alphas);
+  const hub = plan.project[0];
+  if (hub) {
+    const placement = dialPlacementOf(input.dial);
+    let line = 0;
+    const hubLine = (text: string | null | undefined) => {
+      if (!text) return;
+      const font = hubCaptionFont(P.captionPx, fontFamily);
+      const w = measureText(text, font);
+      const dy = hub.r + P.nameGapPx + P.captionPx / 2 + line * (P.captionPx + P.captionGapPx);
+      line += 1;
+      const name = hubNames.take();
+      name.id = hub.id; name.text = text; name.font = font;
+      if (name.dy !== dy) name.dy = dy;
+      setBox(name.box, -w / 2 - P.namePadPx, w / 2 + P.namePadPx, dy - P.captionPx / 2 - P.namePadPx, dy + P.captionPx / 2 + P.namePadPx);
+      L.names.add(nameMark(name, hub.x, hub.y + dy, inkOf(hub.id), inks.name, P.nameHaloPx));
+    };
+    hubLine(dialPlacementLine(placement.state, placement.progress, input.labels));
+    if (evidence !== null && !evidence.measured) hubLine(input.labels?.evidenceUnmeasured?.());
+  }
+
+  L.names.seal();
+
+  if (plan.dots.length > 0) for (let elIndex = 0; elIndex < shownElements.size; elIndex += 1) {
+    const el = shownElements.items[elIndex]!;
+    const at = screenAt(el);
+    if (at && pickable(at)) picks.add(elementPick(el, at));
+  }
+  const elementPicks = picks.size;
+  for (let dIndex = 0; dIndex < plan.discs.length; dIndex += 1) {
+    const d = plan.discs[dIndex]!;
+    picks.add(pickOf(d));
+  }
+  for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
+    const d = plan.domains[dIndex]!;
+    picks.add(pickOf(d));
+  }
+  for (let dIndex = 0; dIndex < plan.project.length; dIndex += 1) {
+    const d = plan.project[dIndex]!;
+    picks.add(pickOf(d));
+  }
+  const rows = frameRows;
+  rows.restart();
+  const labelBoxes = frameLabelBoxes;
+  labelBoxes.restart();
+  const pad = P.namePadPx;
+  for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
+    const n = plan.names[nIndex]!;
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const label = labelBoxPool.take();
+    label.nodeId = n.name.id;
+    label.text = n.name.text;
+    setBox(label, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
+    labelBoxes.add(label);
+    if (n.ink > P.sinkInk && n.name.role !== "units") {
+      const row = nameRows.take();
+      row.id = n.name.id;
+      setBox(row.box, ox + n.name.box.minX, ox + n.name.box.maxX, oy + n.name.box.minY, oy + n.name.box.maxY);
+      rows.add(row);
+    }
+  }
+  for (let i = 0; i < elementPicks; i += 1) rows.add(dotRow(picks.items[i]!));
+
+  return { plan, alphas, picks: picks.seal(), rows: rows.seal(), labelBoxes: labelBoxes.seal(), presence, tier: (dotAlpha > 0.5 ? "element" : "circuit") as DialFrameResult["tier"] };
+}
+
+const litShare = (a: GraphAttention): number => (a.lit ? 1 : 0);
+const hubFonts = new Map<string, string>();
+
+function hubCaptionFont(px: number, family: string): string {
+  let font = hubFonts.get(family);
+  if (font === undefined) hubFonts.set(family, (font = `${FONT_WEIGHT.signature} ${px}px ${family}`));
+  return font;
+}
+
+/**
+ * The name admission's disc radius at this frame's zoom step. A module function, not a closure: a
+ * closure kept across frames would hold the frame that made it, and through it an unmounted canvas.
+ */
+const stepGrowthNow = new Float64Array(1);
+function stepRadius(id: string): number {
+  return radiusAt(id, stepGrowthNow[0]!);
+}
+
+function focusLinks(att: GraphAttention, share: number): void {
+  if (share <= DRAWN_INK) return;
+  const P = F.P;
+  for (let linkIndex = 0; linkIndex < att.links.length; linkIndex += 1) {
+    const link = att.links[linkIndex]!;
+    const from = link[0];
+    const to = link[1];
+    const a = screenAt(from);
+    const b = screenAt(to);
+    if (!a || !b) continue;
+    const mark = arcMark(a, b, FOCUS_BOW, radiusAt(from, F.growth), radiusAt(to, F.growth) + P.arcTrimPx / 2, FOCUS_LINK_WIDTH_PX, FOCUS_LINK_ALPHA * share, false, FOCUS_LINK_GLOW_ALPHA * share);
+    if (mark) L.focusArcs.add(mark);
+  }
+}
+
+function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: string, headPx: number): void {
+  for (let arcIndex = 0; arcIndex < arcs.length; arcIndex += 1) {
+    const arc = arcs[arcIndex]!;
+    const { a, c, b } = arc.path;
+    if (arc.glow > 0.002) {
+      ctx.globalAlpha = arc.glow * Math.min(1, arc.alpha * 4);
+      ctx.lineWidth = arc.width + 4;
+      ctx.strokeStyle = ink;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.quadraticCurveTo(c.x, c.y, b.x, b.y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = arc.alpha;
+    ctx.lineWidth = arc.width;
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(c.x, c.y, b.x, b.y);
+    ctx.stroke();
+    if (arc.head) {
+      ctx.lineWidth = ARROW_WIDTH_PX;
+      ctx.beginPath();
+      ctx.moveTo(b.x - Math.cos(arc.path.angle - ARROW_SPREAD) * headPx, b.y - Math.sin(arc.path.angle - ARROW_SPREAD) * headPx);
+      ctx.lineTo(b.x, b.y);
+      ctx.lineTo(b.x - Math.cos(arc.path.angle + ARROW_SPREAD) * headPx, b.y - Math.sin(arc.path.angle + ARROW_SPREAD) * headPx);
+      ctx.stroke();
+    }
+  }
+}
+
+const inkCodes = new Map<string, number>();
+const inkCode = (ink: string): number => {
+  let code = inkCodes.get(ink);
+  if (code === undefined) inkCodes.set(ink, (code = inkCodes.size));
+  return code;
+};
+const GROUP_LEVELS = 64;
+
+interface Buckets<T> {
+  byKey: Map<number, FrameList<T>>;
+  all: FrameList<T>[];
+  filled: FrameList<FrameList<T>>;
+}
+const buckets = <T>(): Buckets<T> => ({ byKey: new Map(), all: [], filled: new FrameList() });
+
+/** Buckets marks by a numeric paint key, in first-seen key order; every list is reused across frames. */
+function group<T>(into: Buckets<T>, items: readonly T[], key: (item: T) => number, keep?: (item: T) => boolean): FrameList<FrameList<T>> {
+  for (let bIndex = 0; bIndex < into.all.length; bIndex += 1) into.all[bIndex]!.restart();
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+    const item = items[itemIndex]!;
+    if (keep && !keep(item)) continue;
+    const k = key(item);
+    let list = into.byKey.get(k);
+    if (!list) {
+      into.byKey.set(k, (list = new FrameList<T>()));
+      into.all.push(list);
+    }
+    list.add(item);
+  }
+  const out = into.filled;
+  out.restart();
+  for (let bIndex = 0; bIndex < into.all.length; bIndex += 1) if (into.all[bIndex]!.size > 0) out.add(into.all[bIndex]!);
+  return out;
+}
+
+const level = (share: number): number => Math.round(Math.min(1, Math.max(0, share)) * (GROUP_LEVELS - 1)) | 0;
+const discKey = (d: Disc): number => (((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
+const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 2 + (s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
+const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
+const dotKey = (d: Dot): number => ((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.alpha)) | 0;
+const NO_DASH: number[] = [];
+const discBuckets = buckets<Disc>();
+const segmentBuckets = buckets<Segment>();
+const dotBuckets = buckets<Dot>();
+
+function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], tokens: FlatGraphTokens, ground: string, warning: string, kind: "domain" | "capability" | "project", growth: number): void {
+  const P = tokens.paint;
+  const rimPx = kind === "project" ? PROJECT_RIM_PX : kind === "domain" ? P.domainRimPx : P.capRimPx;
+  const discLists = group(discBuckets, marks, discKey);
+  for (let listIndex = 0; listIndex < discLists.size; listIndex += 1) {
+    const list = discLists.items[listIndex]!;
+    const first = list.items[0]!;
+    ctx.beginPath();
+    for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
+      const d = list.items[dIndex]!;
+      ctx.moveTo(d.x + d.r, d.y);
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = tokens.inks.discFill;
+    ctx.globalAlpha = Math.min(1, first.ink * 4);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.lineWidth = first.focus ? FOCUS_RIM_PX : rimPx;
+    ctx.strokeStyle = sunk(first.hue, ground, first.ink);
+    ctx.setLineDash(first.state === "unknown" ? UNKNOWN_DASH : NO_DASH);
+    ctx.stroke();
+    ctx.setLineDash(NO_DASH);
+    if (first.state === "unknown") continue;
+    ctx.beginPath();
+    for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
+      const d = list.items[dIndex]!;
+      const core = kind === "project" ? P.projectCorePx * growth : kind === "domain" ? P.domainCorePx * growth : Math.max(P.capCoreMinPx, d.r - P.capCoreInsetPx);
+      ctx.moveTo(d.x + core, d.y);
+      ctx.arc(d.x, d.y, core, 0, Math.PI * 2);
+    }
+    ctx.fillStyle = sunk(first.hue, ground, first.ink * (first.focus ? 1 : P.coreAlpha));
+    ctx.fill();
+  }
+  for (let dIndex = 0; dIndex < marks.length; dIndex += 1) {
+    const d = marks[dIndex]!;
+    if (d.state !== "stale") continue;
+    ctx.beginPath();
+    ctx.arc(d.x + d.r * 0.75, d.y - d.r * 0.75, Math.max(PIP_MIN_PX, d.r * PIP_SHARE), 0, Math.PI * 2);
+    ctx.fillStyle = sunk(warning, ground, d.ink);
+    ctx.fill();
+  }
+}
+
+/** One stroke per paint key; kept out of `paintPlan` so the optimiser passes the coordinates unboxed. */
+function strokeSegments(ctx: CanvasRenderingContext2D, list: FrameList<Segment>, P: FlatGraphPaintTokens): void {
+  const first = list.items[0]!;
+  ctx.globalAlpha = first.alpha;
+  ctx.strokeStyle = first.ink;
+  ctx.lineWidth = first.toElement ? P.linkElementWidthPx : P.linkCapWidthPx;
+  ctx.beginPath();
+  for (let sIndex = 0; sIndex < list.size; sIndex += 1) {
+    const s = list.items[sIndex]!;
+    ctx.moveTo(s.x0, s.y0);
+    ctx.lineTo(s.x1, s.y1);
+  }
+  ctx.stroke();
+}
+
+/** Soft sprites land on whole pixels: fractional `drawImage` arguments allocate on every call. */
+function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, mark: Glow | Light): void {
+  const size = Math.round(mark.r * 2) | 0;
+  ctx.drawImage(sprite, Math.round(mark.x - mark.r) | 0, Math.round(mark.y - mark.r) | 0, size, size);
+}
+
+function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
+  const P = tokens.paint;
+  ctx.save();
+  for (let lIndex = 0; lIndex < plan.lights.length; lIndex += 1) {
+    const l = plan.lights[lIndex]!;
+    const sprite = lightSprite(l.ink);
+    if (!sprite) continue;
+    ctx.globalAlpha = l.alpha;
+    drawSprite(ctx, sprite, l);
+  }
+  ctx.globalAlpha = 1;
+  ctx.lineCap = "round";
+  const segmentLists = group(segmentBuckets, plan.segments, segmentKey, segmentDrawn);
+  for (let listIndex = 0; listIndex < segmentLists.size; listIndex += 1) strokeSegments(ctx, segmentLists.items[listIndex]!, P);
+  ctx.strokeStyle = tokens.inks.arc;
+  ctx.lineJoin = "round";
+  strokeArcs(ctx, plan.arcs, tokens.inks.arc, P.arcHeadPx);
+  strokeArcs(ctx, plan.focusArcs, tokens.inks.arc, P.arcHeadPx);
+  const dotLists = group(dotBuckets, plan.dots, dotKey);
+  for (let listIndex = 0; listIndex < dotLists.size; listIndex += 1) {
+    const list = dotLists.items[listIndex]!;
+    const first = list.items[0]!;
+    ctx.globalAlpha = first.alpha;
+    ctx.fillStyle = sunk(first.hue, ground, first.ink);
+    ctx.beginPath();
+    for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
+      const d = list.items[dIndex]!;
+      ctx.moveTo(d.x + d.r, d.y);
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+  for (let glowIndex = 0; glowIndex < plan.glows.length; glowIndex += 1) {
+    const glow = plan.glows[glowIndex]!;
+    if (glow.alpha <= 0.004) continue;
+    const sprite = glowSprite(glow.ink);
+    if (!sprite) continue;
+    ctx.globalAlpha = glow.alpha;
+    drawSprite(ctx, sprite, glow);
+  }
+  ctx.globalAlpha = 1;
+  paintDiscs(ctx, plan.discs, tokens, ground, warning, "capability", growth);
+  paintDiscs(ctx, plan.domains, tokens, ground, warning, "domain", growth);
+  if (plan.project.length > 0) paintDiscs(ctx, plan.project, tokens, ground, warning, "project", growth);
+  if (plan.agentRing) {
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = plan.agentRing.ink;
+    ctx.lineWidth = AGENT_RING_WIDTH_PX;
+    ctx.beginPath();
+    ctx.arc(plan.agentRing.x, plan.agentRing.y, plan.agentRing.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (plan.selection && plan.selection.alpha > DRAWN_INK) {
+    ctx.globalAlpha = plan.selection.alpha;
+    ctx.strokeStyle = plan.selection.ink;
+    ctx.lineWidth = SELECTION_RING_PX;
+    ctx.beginPath();
+    ctx.arc(plan.selection.x, plan.selection.y, plan.selection.r, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.textBaseline = "middle";
+  ctx.lineJoin = "round";
+  for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
+    const n = plan.names[nIndex]!;
+    ctx.font = n.name.font;
+    ctx.textAlign = n.name.align;
+    ctx.globalAlpha = n.ink;
+    ctx.lineWidth = n.halo;
+    ctx.strokeStyle = tokens.inks.halo;
+    ctx.strokeText(n.name.text, n.x, n.y);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = sunk(n.color, ground, n.ink);
+    ctx.fillText(n.name.text, n.x, n.y);
+  }
+  ctx.restore();
+}
+
+const pool = emptyDialFrameMarks();
+type DiscProbe = DialFrameMarks["discs"][number];
+const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
+const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null }));
+const probeInks = new FrameList(pool.inks);
+const probeDiscList = new FrameList(pool.discs);
+const probeStripList = new FrameList(pool.strips);
+const probeTextList = new FrameList(pool.texts);
+const UNUSED_PROBE_LISTS = [pool.squares, pool.ticks, pool.rails, pool.glyphs, pool.numerals, pool.leaders, pool.plates, pool.extraTexts];
+const arcKeys: string[] = [];
+
+function inkIndex(ink: string): number {
+  const at = probeInks.indexOf(ink);
+  if (at >= 0) return at;
+  probeInks.add(ink);
+  return probeInks.size - 1;
+}
+
+function probeDisc(d: Disc, fill: number, ground: string, tokens: FlatGraphTokens): void {
+  const lineWidth = tokens.paint.capRimPx;
+  const mark = probeDiscs.take();
+  mark.id = d.id;
+  if (mark.x !== d.x) mark.x = d.x;
+  if (mark.y !== d.y) mark.y = d.y;
+  if (mark.r !== d.r) mark.r = d.r;
+  mark.fill = fill;
+  mark.rim = inkIndex(sunk(d.hue, ground, d.ink));
+  mark.dashed = d.state === "unknown";
+  if (mark.lineWidth !== lineWidth) mark.lineWidth = lineWidth;
+  probeDiscList.add(mark);
+}
+
+/** Records the painted inks, sinking included, so the probe sees what the eye sees. */
+function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string): void {
+  for (let listIndex = 0; listIndex < UNUSED_PROBE_LISTS.length; listIndex += 1) {
+    const list = UNUSED_PROBE_LISTS[listIndex]!;
+    if (list.length !== 0) list.length = 0;
+  }
+  probeInks.restart();
+  probeDiscList.restart();
+  probeStripList.restart();
+  probeTextList.restart();
+  probeDiscs.reset();
+  probeStrips.reset();
+  probeTexts.reset();
+  const fill = inkIndex(tokens.inks.discFill);
+  for (let dIndex = 0; dIndex < plan.discs.length; dIndex += 1) {
+    const d = plan.discs[dIndex]!;
+    probeDisc(d, fill, ground, tokens);
+  }
+  for (let dIndex = 0; dIndex < plan.domains.length; dIndex += 1) {
+    const d = plan.domains[dIndex]!;
+    probeDisc(d, fill, ground, tokens);
+  }
+  const arcInk = inkIndex(tokens.inks.arc);
+  const headSize = tokens.paint.arcHeadPx;
+  for (let i = 0; i < plan.arcs.length; i += 1) {
+    const { path, width } = plan.arcs[i]!;
+    const strip = probeStrips.take();
+    strip.flowKey = (arcKeys[i] ??= `arc:${i}`);
+    strip.ink = arcInk;
+    if (strip.ax !== path.a.x) strip.ax = path.a.x;
+    if (strip.ay !== path.a.y) strip.ay = path.a.y;
+    if (strip.cx !== path.c.x) strip.cx = path.c.x;
+    if (strip.cy !== path.c.y) strip.cy = path.c.y;
+    if (strip.bx !== path.b.x) strip.bx = path.b.x;
+    if (strip.by !== path.b.y) strip.by = path.b.y;
+    if (strip.w0 !== width) strip.w0 = width;
+    if (strip.w1 !== width) strip.w1 = width;
+    if (strip.headSize !== headSize) strip.headSize = headSize;
+    probeStripList.add(strip);
+  }
+  const pad = tokens.paint.namePadPx;
+  for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
+    const n = plan.names[nIndex]!;
+    const ox = n.x - n.name.dx;
+    const oy = n.y - n.name.dy;
+    const text = probeTexts.take();
+    text.id = n.name.id; text.role = n.name.role; text.text = n.name.text; text.align = n.name.align; text.font = n.name.font;
+    if (text.x !== n.x) text.x = n.x;
+    if (text.y !== n.y) text.y = n.y;
+    text.ink = inkIndex(sunk(n.color, ground, n.ink));
+    setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
+    probeTextList.add(text);
+  }
+  probeInks.seal();
+  probeDiscList.seal();
+  probeStripList.seal();
+  probeTextList.seal();
+}
+
+/** Paints the deferred lens-context frame once the classic edges are down. */
+export function paintDeferredFlatGraph(ctx: CanvasRenderingContext2D, zoomRatio: number): void {
+  if (!deferred) return;
+  paintPlan(ctx, deferred.plan, deferred.tokens, deferred.ground, deferred.warning, zoomGrowth(zoomRatio, deferred.tokens.paint));
+  deferred = null;
+}
+
+/** Flat as a hue-lit graph: same input and result contract as the dial frame it replaces. */
+export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphTokens): DialFrameResult {
+  const { model } = input.dial;
+  const contextMode = input.contextAlphas !== undefined;
+  const focusId = contextMode ? null : input.focusedNodeId ?? input.hoveredNodeId;
+  const attention = cachedGraphAttention(model, focusId, !contextMode && input.focusedNodeId !== null);
+  const transition = graphInkMix(input.worldKey, attention, input.now, input.reducedMotion);
+  const mix = transition.mix;
+  const built = buildPlan(input, tokens, transition);
+  const ground = input.mapTokens.canvasBgNear;
+  const warning = tokens.inks.warning;
+  if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };
+  else paintPlan(input.ctx, built.plan, tokens, ground, warning, zoomGrowth(input.zoomRatio, tokens.paint));
+  fillProbeMarks(built.plan, tokens, ground);
+  const directed = restArcs(model, Number.POSITIVE_INFINITY).length;
+  const drawn = drawnFlowKeys.items;
+  const result: DialFrameResult = {
+    branchScene: undefined,
+    branchMembersAnimating: mix < 1,
+    contextOnly: contextMode,
+    drawnCount: built.plan.discs.length + built.plan.domains.length + built.plan.dots.length + built.plan.project.length,
+    tier: built.tier, alphas: built.alphas, picks: built.picks, rows: built.rows, labelBoxes: built.labelBoxes,
+    light: { attentionKey: attention.key, focused: attention.selected, inkMix: mix, chords: [] },
+    inkMix: mix, chordPresence: built.presence, marks: pool,
+  };
+  recordDialFrame(input, result, {
+    links: linkProbes(model),
+    drawn,
+    entered: null, resolved: true,
+    budget: { shown: built.plan.arcs.length, total: directed, perEndCap: 0 },
+    stubs: [],
+  });
+  return result;
+}
+
