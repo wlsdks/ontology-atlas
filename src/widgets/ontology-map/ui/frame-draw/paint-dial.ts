@@ -76,8 +76,10 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
     effectiveAlphaByIdReused.clear();
     passState.effectiveAlphaWorld = new WeakRef(world);
   }
-  for (const node of world.nodes)
-    effectiveAlphaByIdReused.set(node.id, result.alphas.get(node.id) ?? 0);
+  for (let i = 0; i < world.nodes.length; i += 1) {
+    const id = world.nodes[i]!.id;
+    effectiveAlphaByIdReused.set(id, result.alphas.get(id) ?? 0);
+  }
   passState.drawnLabelBoxes = result.labelBoxes;
   passState.drawnRelationCaptions = [];
   passState.drawnNodeCount = result.drawnCount;

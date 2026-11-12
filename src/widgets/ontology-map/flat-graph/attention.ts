@@ -126,6 +126,14 @@ export function graphInkMix(worldKey: object, attention: GraphAttention, now: nu
   return clock;
 }
 
+/** `transitionShare` of `inkUnder` without a closure, for the per-concept paths of a frame. */
+export function transitionInk(t: GraphTransition, id: string, sink: number): number {
+  const previous = inkUnder(t.previous, id, sink);
+  const from = t.carried >= 1 || t.older === t.previous ? previous : inkUnder(t.older, id, sink) + (previous - inkUnder(t.older, id, sink)) * t.carried;
+  const current = inkUnder(t.current, id, sink);
+  return t.mix >= 1 ? current : from + (current - from) * t.mix;
+}
+
 /** The share a transition shows of `of(attention)` for each attention it blends. */
 export function transitionShare(t: GraphTransition, of: (attention: GraphAttention) => number): number {
   const from = t.carried >= 1 || t.older === t.previous ? of(t.previous) : of(t.older) + (of(t.previous) - of(t.older)) * t.carried;

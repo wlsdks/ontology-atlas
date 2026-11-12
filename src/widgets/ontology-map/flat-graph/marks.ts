@@ -49,18 +49,37 @@ export function restArcs(model: DialModel, budget: number): readonly RestArc[] {
 
 export interface ArcPath { a: Point; c: Point; b: Point; tip: Point; angle: number }
 
-/** A quadratic bowed to the left of travel, trimmed at both discs; `tip` and `angle` place the head. */
-export function arcPath(from: Point, to: Point, bow: number, trimStart: number, trimEnd: number): ArcPath | null {
+export function emptyArcPath(): ArcPath {
+  const b = { x: 0, y: 0 };
+  return { a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b, tip: b, angle: 0 };
+}
+
+function setPoint(p: Point, x: number, y: number): void {
+  if (p.x !== x) p.x = x;
+  if (p.y !== y) p.y = y;
+}
+
+/**
+ * Writes a quadratic bowed to the left of travel, trimmed at both discs, into `path`; `tip` and
+ * `angle` place the head. Unchanged values are not rewritten, so a still frame allocates nothing.
+ * False when the discs leave no room for a curve.
+ */
+export function arcPathInto(path: ArcPath, from: Point, to: Point, bow: number, trimStart: number, trimEnd: number): boolean {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
-  const length = Math.hypot(dx, dy);
-  if (length <= trimStart + trimEnd + 1) return null;
-  const c = { x: (from.x + to.x) / 2 - dy * bow, y: (from.y + to.y) / 2 + dx * bow };
-  const toStart = Math.hypot(c.x - from.x, c.y - from.y) || 1;
-  const toEnd = Math.hypot(to.x - c.x, to.y - c.y) || 1;
-  const a = { x: from.x + ((c.x - from.x) / toStart) * trimStart, y: from.y + ((c.y - from.y) / toStart) * trimStart };
-  const b = { x: to.x - ((to.x - c.x) / toEnd) * trimEnd, y: to.y - ((to.y - c.y) / toEnd) * trimEnd };
-  return { a, c, b, tip: b, angle: Math.atan2(b.y - c.y, b.x - c.x) };
+  if (Math.hypot(dx, dy) <= trimStart + trimEnd + 1) return false;
+  const cx = (from.x + to.x) / 2 - dy * bow;
+  const cy = (from.y + to.y) / 2 + dx * bow;
+  const toStart = Math.hypot(cx - from.x, cy - from.y) || 1;
+  const toEnd = Math.hypot(to.x - cx, to.y - cy) || 1;
+  const bx = to.x - ((to.x - cx) / toEnd) * trimEnd;
+  const by = to.y - ((to.y - cy) / toEnd) * trimEnd;
+  setPoint(path.c, cx, cy);
+  setPoint(path.a, from.x + ((cx - from.x) / toStart) * trimStart, from.y + ((cy - from.y) / toStart) * trimStart);
+  setPoint(path.b, bx, by);
+  const angle = Math.atan2(by - cy, bx - cx);
+  if (path.angle !== angle) path.angle = angle;
+  return true;
 }
 
 export function hexRgb(hex: string): [number, number, number] {
