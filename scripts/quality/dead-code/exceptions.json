@@ -376,13 +376,13 @@
     {
       "key": "scripts:runtime:files:scripts/design/measure-a11y.mjs:scripts/design/measure-a11y.mjs",
       "reason": "Manual axe census precedes a11y-ratchet baseline decisions.",
-      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "consumer": "tests/e2e/design-audits/a11y-ratchet.spec.ts",
       "witness": "scripts/design/measure-a11y.mjs"
     },
     {
       "key": "scripts:runtime:files:scripts/design/measure-contrast.mjs:scripts/design/measure-contrast.mjs",
-      "reason": "Manual contrast instrument shares the CI contrast collector and has a documented design-check consumer.",
-      "consumer": "docs/DEVELOPMENT-CHECKS.md",
+      "reason": "Manual contrast instrument shares the CI contrast collector; its route list is held by a contract.",
+      "consumer": "tests/contract/routes/contrast-sweep-coverage.contract.test.ts",
       "witness": "scripts/design/measure-contrast.mjs"
     },
     {
