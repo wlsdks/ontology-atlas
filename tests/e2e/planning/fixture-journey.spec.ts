@@ -387,20 +387,20 @@ test('mocked native Planning keeps the selected document across explicit evidenc
     };
   });
   await page.goto('/ko/planning/');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
   await page.getByRole('button', { name: '읽기·이력 범위' }).click();
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeVisible();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeVisible();
   await page.getByRole('button', { name: '읽기·이력 범위' }).click();
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await page.getByRole('button', { name: 'plans/checkout.md' }).click();
   const details = page.getByRole('button', { name: '읽기·이력 범위' });
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
   await details.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeVisible();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeVisible();
   await expect(page.getByText(planning.historyLimit)).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인합니다/)).toBeHidden();
+  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
   await expect(page.getByText(planning.historyBrief)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
   await expect(page.getByAltText('design')).toHaveAttribute('src', /^blob:/);
@@ -423,7 +423,7 @@ test('mocked native Planning keeps the selected document across explicit evidenc
     await page.setViewportSize({ width: 1280, height: 720 });
   }
   await page.evaluate(() => { (window as unknown as { planningText: string }).planningText = '# Checkout plan\n\nUpdated decision'; window.dispatchEvent(new Event('focus')); });
-  await expect(page.getByText(/폴더를 다시 확인하고 있습니다/)).toBeVisible();
+  await expect(page.getByText(/폴더를 다시 확인하고 있어요/)).toBeVisible();
   await expect(page.getByText('Updated decision')).toBeVisible();
   await page.getByRole('button', { name: planning.openHistory }).click();
   await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
@@ -743,7 +743,7 @@ test('highly compressed images stop at the unique pixel budget', async ({ page }
   await page.goto('/ko/planning/');
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await page.getByRole('button', { name: 'plan.md' }).click();
-  await expect(page.getByText('문서 미리보기의 이미지 제한을 초과했습니다.')).toBeVisible();
+  await expect(page.getByText('문서 미리보기의 이미지 제한을 초과했어요.')).toBeVisible();
   await expect.poll(() => page.getByAltText('a', { exact: true }).evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBe(2048);
   expect(await page.getByAltText('a', { exact: true }).getAttribute('src')).toEqual(await page.getByAltText('repeat').getAttribute('src'));
   await expect(page.getByAltText('over')).toHaveCount(0);
