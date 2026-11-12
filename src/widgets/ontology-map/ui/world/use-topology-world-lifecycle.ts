@@ -15,7 +15,7 @@ import {
   type SpringOffset,
 } from "../../expressive/release-offsets";
 import { ARRIVAL_GLIDE_CONCEPT_CEILING } from "../../morph/layout-morph";
-import { armTierAssembly, carryTierAssembly, claimTierAssembly, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../../morph/tier-assembly";
+import { armTierAssembly, carryTierAssembly, claimTierAssembly, FLAT_TIER_TIMING, isTierAssembling, settleTierAssembly, TIER_ASSEMBLE_TOTAL_MS } from "../../morph/tier-assembly";
 import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
 import { initHomeSpring, type HomeSpringState } from "../../model/layout/relayout-home";
 import type { Pulse } from "../../render/edge-fireflies";
@@ -356,7 +356,7 @@ export function useTopologyWorldLifecycle({
     const arrivalStill = grew && arrivalStillRef.current;
         {
       if (armAssembly) {
-        armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        armTierAssembly(world, firstPlacement ? null : dataSourceKey, arrivalStill || (world.dial != null && stored !== null) || window.matchMedia("(prefers-reduced-motion: reduce)").matches, world.dial?.scene.graph ? FLAT_TIER_TIMING : undefined);
         if (!assembleOnOpen) settleTierAssembly(world);
       } else if (!grew) {
         carryTierAssembly(previousWorld, world);
