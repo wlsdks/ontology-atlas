@@ -16,8 +16,15 @@ const CURVE_STEPS = 48;
 /** Rounding of a box edge to canvas pixels. */
 const EDGE_PX = 0.5;
 
-/** Domains of busy hubs whose neighbours carry long names, short enough that a domain fits 1512 wide at the zoom that reads it clear, and a dependency across each domain pair. */
-function generatedVault(): Record<string, string> {
+/** Elements of the hub's first two needs that the hub also needs, so its lit picture names elements. */
+const HUB_ELEMENT_NEEDS = [1, 2];
+
+/**
+ * Domains of busy hubs whose neighbours carry long names, short enough that a domain fits 1512 wide
+ * at the zoom that reads it clear, and a dependency across each domain pair. With `elementNeeds` each
+ * hub also needs its siblings' elements, whose names then compete with the hub's.
+ */
+function generatedVault(elementNeeds = false): Record<string, string> {
   const files: Record<string, string> = {};
   const body = (title: string) => `\n# ${title}\n\n${title} keeps one boundary of the product honest.\n`;
   const domain = (d: number) => `domains/${DOMAINS[d % DOMAINS.length]}`;
@@ -28,8 +35,10 @@ function generatedVault(): Record<string, string> {
     const capabilities = Array.from({ length: CAPABILITIES_PER_DOMAIN }, (_, c) => capability(d, c));
     files[`${domain(d)}.md`] = `---\nkind: domain\ntitle: ${name}\ncapabilities: [${capabilities.join(", ")}]\n---\n${body(name)}`;
     for (let c = 0; c < CAPABILITIES_PER_DOMAIN; c += 1) {
-      const needs = c === 0 ? [...HUB_NEEDS.map((n) => capability(d, n)), capability(d + 1, 1)] : HUB_NEEDED_BY.includes(c) ? [capability(d, 0)] : [];
-      const elements = Array.from({ length: ELEMENTS_PER_CAPABILITY }, (_, e) => `elements/${name}-${c}-${e}`);
+      const elementsOf = (n: number) => Array.from({ length: ELEMENTS_PER_CAPABILITY }, (_, e) => `elements/${name}-${n}-${e}`);
+      const hubNeeds = [...HUB_NEEDS.map((n) => capability(d, n)), capability(d + 1, 1), ...(elementNeeds ? HUB_ELEMENT_NEEDS.flatMap(elementsOf) : [])];
+      const needs = c === 0 ? hubNeeds : HUB_NEEDED_BY.includes(c) ? [capability(d, 0)] : [];
+      const elements = elementsOf(c);
       files[`${capability(d, c)}.md`] = `---\nkind: capability\ntitle: ${title(d, c)}\ndomain: ${domain(d)}\n${needs.length ? `depends_on: [${needs.join(", ")}]\n` : ""}elements: [${elements.join(", ")}]\n---\n${body(title(d, c))}`;
       for (const element of elements) files[`${element}.md`] = `---\nkind: element\ntitle: ${element.slice("elements/".length)}\n---\n${body(element)}`;
     }
@@ -37,13 +46,9 @@ function generatedVault(): Record<string, string> {
   return files;
 }
 
-/**
- * Opens the folder and clicks the hub drawn furthest right in the free map, where the detail panel
- * opening on the right covers its domain unless the camera frames it.
- */
-async function selectHubNearPanel(page: Page): Promise<{ id: string; dial: DialProbe; clickedZoom: number }> {
+async function openVault(page: Page, elementNeeds = false): Promise<void> {
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, generatedVault());
+  await stubDirectoryPicker(page, generatedVault(elementNeeds));
   await page.goto("/en/topology/?guides=off&e2e=1", { waitUntil: "networkidle" });
   await page.getByTestId("first-run-starter-open").click();
   await page.getByTestId("vault-guide-pick-existing").click();
@@ -53,20 +58,28 @@ async function selectHubNearPanel(page: Page): Promise<{ id: string; dial: DialP
     return dial?.owns === true && (dial as DialProbe).placement.state === "settled" && drawn === marks && document.querySelector("[data-vault-load-progress]") === null;
   }, DOMAINS.length * (1 + CAPABILITIES_PER_DOMAIN), { timeout: 120_000 });
   await waitForMapStill(page);
+}
+
+/** The hub drawn furthest right in the free map, where the detail panel opening on the right covers its domain unless the camera frames it. */
+const hubNearPanel = (page: Page) => page.evaluate(() => {
+  const free = (window.__atlasMap!.dial!() as DialProbe).freeRect;
+  return window.__atlasMap!.nodes()
+    .filter((n) => n.kind === "capability" && n.id.endsWith("-0") && n.x > free.minX && n.x < free.maxX && n.y > free.minY && n.y < free.maxY)
+    .sort((a, b) => b.x - a.x)[0]!.id;
+});
+
+/** Clicks a concept where the map draws it now and waits for the selection to frame and rest. */
+async function selectOnMap(page: Page, id: string): Promise<{ dial: DialProbe; clickedZoom: number }> {
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-  const at = await page.evaluate(() => {
-    const free = (window.__atlasMap!.dial!() as DialProbe).freeRect;
-    return window.__atlasMap!.nodes()
-      .filter((n) => n.kind === "capability" && n.id.endsWith("-0") && n.x > free.minX && n.x < free.maxX && n.y > free.minY && n.y < free.maxY)
-      .sort((a, b) => b.x - a.x)[0]!;
-  });
+  const at = await page.evaluate((of) => window.__atlasMap!.nodes().find((n) => n.id === of)!, id);
+  expect(at.x > 0 && at.x < box.width && at.y > 0 && at.y < box.height, `${id} is on the canvas to click`).toBe(true);
   const clickedZoom = await page.evaluate(() => (window.__atlasMap!.dial!() as DialProbe).zoomRatio);
   await page.mouse.click(box.x + at.x, box.y + at.y);
-  await page.waitForFunction((id) => window.__atlasMap!.selection().nodeId === id, at.id);
+  await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId), `clicked ${id} at ${Math.round(at.x)},${Math.round(at.y)}`).toBe(id);
   await page.mouse.move(box.x + 2, box.y + box.height - 2);
   await waitForMapStill(page, { what: "camera" });
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
-  return { id: at.id, clickedZoom, dial: await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe) };
+  return { clickedZoom, dial: await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe) };
 }
 
 const overlaps = (a: Box, b: Box) => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;
@@ -93,11 +106,7 @@ function crossesBox(s: DialProbe["strips"][number], b: Box): boolean {
   return false;
 }
 
-for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
-  test(`at ${viewport.width} wide a selected capability's domain and lit neighbours are named inside the free map, clear of the panel and of its lines`, async ({ page }) => {
-    test.setTimeout(180_000);
-    await page.setViewportSize(viewport);
-    const { id, dial, clickedZoom } = await selectHubNearPanel(page);
+async function expectFramed(page: Page, id: string, dial: DialProbe, clickedZoom: number): Promise<void> {
     const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
     expect(margin).toBeGreaterThan(0);
     const panel = await page.evaluate(() => window.__atlasMap!.obstacleInsets());
@@ -141,5 +150,45 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
     const selected = dial.texts.filter((t) => t.id === id);
     expect(selected.length).toBeGreaterThan(0);
     for (const t of selected) expect(overlaps(t.box, title.box), `${t.role} of the selection on its domain name`).toBe(false);
+
+    const marks = dial.texts.filter((t) => t.id !== null && (t.role === "capability" || t.role === "element" || t.role === "status"));
+    const stacked = marks.flatMap((t, i) => marks.slice(i + 1).filter((u) => u.id !== t.id && overlaps(t.box, u.box)).map((u) => `${t.role}:${t.text} x ${u.role}:${u.text}`));
+    expect(stacked, "capability, element and count names overlapping one another").toEqual([]);
+}
+
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
+  test(`at ${viewport.width} wide a selected capability's domain and lit neighbours are named inside the free map, clear of the panel and of its lines`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize(viewport);
+    await openVault(page);
+    const id = await hubNearPanel(page);
+    const { dial, clickedZoom } = await selectOnMap(page, id);
+    await expectFramed(page, id, dial, clickedZoom);
   });
 }
+
+test("a capability clicked on the map while another is selected frames and names as a fresh selection does, its element names yielding", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await openVault(page, true);
+  const partnerOf = (hub: string) => hub.replace(/([^/:]+)-0$/, (_, name: string) => `${DOMAINS[(DOMAINS.indexOf(name) + 1) % DOMAINS.length]}-1`);
+  const inFreeMap = (id: string) => page.evaluate((of) => {
+    const free = (window.__atlasMap!.dial!() as DialProbe).freeRect;
+    return window.__atlasMap!.nodes().some((n) => n.id === of && n.x > free.minX && n.x < free.maxX && n.y > free.minY && n.y < free.maxY);
+  }, id);
+  const hubs = await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability" && n.id.endsWith("-0")).map((n) => n.id).sort());
+  let hub: string | null = null;
+  for (const candidate of hubs) {
+    if (!(await inFreeMap(partnerOf(candidate)))) continue;
+    await selectOnMap(page, partnerOf(candidate));
+    if (await inFreeMap(candidate)) {
+      hub = candidate;
+      break;
+    }
+  }
+  expect(hub, "a selected capability whose partner hub in the previous domain stays in the free map").not.toBeNull();
+  expect(await page.evaluate(() => window.__atlasMap!.obstacleInsets()?.right ?? 0), "the detail panel is open before the retarget").toBeGreaterThan(0);
+  const { dial, clickedZoom } = await selectOnMap(page, hub!);
+  expect(dial.texts.some((t) => t.role === "element"), "the hub's lit picture names elements").toBe(true);
+  await expectFramed(page, hub!, dial, clickedZoom);
+});

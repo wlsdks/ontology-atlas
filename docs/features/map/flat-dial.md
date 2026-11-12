@@ -46,9 +46,14 @@ once it is drawn, ahead of a name but only outside every disc. A concept outside
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
-elements are far enough apart. Zooming in only adds names. A selected concept
-and every far end of its lines are always named; a forced name keeps off every
-domain title when any placement can. Under a lit picture a lit name tries its
+elements are far enough apart. Zooming in only adds names. A selected concept,
+with its count line, is placed before every other name and always named, then
+the far ends of its lines and the lit capabilities, then lit element names. A
+forced name keeps off every domain title when any placement can, and under a
+lit picture sits on another name only when it is a capability no free side
+holds; a lit element name also keeps the selected title gap
+from every domain title, and one with no free side is left out rather than
+overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a

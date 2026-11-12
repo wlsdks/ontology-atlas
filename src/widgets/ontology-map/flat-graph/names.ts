@@ -437,24 +437,24 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   return union(boxes);
 }
 
-interface Candidate { id: string; tries: () => PlacedName[][] }
+interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 
 function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Candidate[] {
   const { model, layout } = input;
   const lit = input.lit;
   const caps = [...model.capabilityById.values()].filter((c) => layout.positions.has(c.id));
   const rank = (a: { id: string }, b: { id: string }) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
-  const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, tries: () => sideNames(input, c.id, "capability", c.label) });
+  const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, element: false, tries: () => sideNames(input, c.id, "capability", c.label) });
   const showElements = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   const elementIds = showElements ? [...model.capabilityOf.keys(), ...model.domains.flatMap((d) => d.directElementIds)].filter((id) => layout.positions.has(id)).sort(byId) : [];
-  const elementCandidate = (id: string): Candidate => ({ id, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "element", label) : []; } });
+  const elementCandidate = (id: string): Candidate => ({ id, element: true, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "element", label) : []; } });
   const focusFirst = (a: { id: string }, b: { id: string }) => (a.id === input.focusId ? -1 : b.id === input.focusId ? 1 : rank(a, b));
   const litCaps = lit ? caps.filter((c) => lit.has(c.id)).sort(focusFirst) : [];
   const namesElements = lit !== null && input.focusId !== null && !model.domainById.has(input.focusId);
   const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id)).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
   const rest = caps.filter((c) => !lit?.has(c.id)).sort(rank);
   const orphans = layout.orphanIds.filter((id) => !lit || lit.has(id)).map((id): Candidate => ({
-    id, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
+    id, element: false, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
   }));
   const agent = input.agentFocusId;
   const agentCandidate: Candidate[] = agent === null || !layout.positions.has(agent) || model.domainById.has(agent) || agent === model.projectId ? []
@@ -505,6 +505,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const scale = stepScale(step, tokens.zoomStepsPerOctave);
   const grid = new Occupancy(CELL_PX / scale);
   const titles = new Occupancy(CELL_PX / scale);
+  const words = new Occupancy(CELL_PX / scale);
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const discs: [string, number][] = [];
@@ -516,7 +517,9 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   for (const id of layout.orphanIds) discs.push([id, input.discRadius(id)]);
   for (const [id, r] of discs) grid.add(worldBox(layout.positions.get(id)!, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
   const place = (n: PlacedName) => {
-    grid.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+    const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
+    grid.add(box);
+    words.add(box);
     names.push(n);
     ids.add(n.id);
   };
@@ -541,7 +544,9 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   }
   const caption = orphanCaption(input, scale);
   if (caption) {
-    grid.add(worldBox(layout.positions.get(caption.id)!, caption.box, scale));
+    const box = worldBox(layout.positions.get(caption.id)!, caption.box, scale);
+    grid.add(box);
+    words.add(box);
     names.push(caption);
   }
   const pending = candidates(input, degreeOf(model));
@@ -556,25 +561,32 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
   const selectedId = input.selected ? input.focusId : null;
-  const offTitles = (id: string, at: Point, group: readonly PlacedName[]) => {
-    const gap = id === selectedId ? tokens.selectedTitleGapPx : 0;
-    return !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
-  };
-  // A lit name takes the first side no lit line crosses; a forced name then keeps off every domain
-  // title when any try can and takes the least crowded try.
+  const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
+    !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
+  // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other
+  // than the focus may sit on a disc but not on a name, and a forced element with no such side drops.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
     const lit = polylines.length > 0 && input.lit!.has(cand.id);
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (cand.id !== selectedId || offTitles(cand.id, at, group));
+    const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group));
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const clear = tries.filter((group) => offTitles(cand.id, at, group));
-      fit = (clear.length > 0 ? clear : tries).reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best));
+      const yields = input.lit !== null && cand.id !== input.focusId;
+      const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || offTitles(at, group))) : [];
+      const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
+      const pool = apart.length > 0 ? apart : yields && cand.element ? [] : clear.length > 0 ? clear : tries;
+      fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
     if (fit) for (const n of fit) place(n);
   };
+  // The focus wins over every name, then capabilities over elements.
+  const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
   if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
+  for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
+  for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
+  if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id)) tryPlace(cand, false);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id)) tryPlace(cand, true);
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;

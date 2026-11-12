@@ -427,6 +427,26 @@ describe("selection reach", () => {
       }
     }
   });
+
+  it("drops a lit element name with no free side rather than overprint, after the selection and capabilities", () => {
+    const elementIds = Array.from({ length: 8 }, (_, k) => `x${k}`);
+    const crowded = modelOf(
+      [...nodes, ...elementIds.map((id) => ({ id, kind: "element", title: `implementation role ${id}` }))],
+      [...edges, ...elementIds.flatMap((id) => [contains("b", id), { from: id, to: "a", type: "depends_on" }])],
+    );
+    const layout = layoutOf(crowded);
+    const scales = [0.25, 0.5, 1, 2];
+    const admissions = scales.map((scale) => namesAt(crowded, layout, scale, "a"));
+    admissions.forEach((admitted, k) => {
+      const scale = scales[k]!;
+      expect(admitted.ids.has("a"), `selection at ${scale}`).toBe(true);
+      for (const id of ["b", "c", "e", "f", "g"]) expect(admitted.ids.has(id), `capability ${id} at ${scale}`).toBe(true);
+      expect(overlapping(admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project"), layout, scale), `at ${scale}`).toEqual([]);
+    });
+    const namedElements = admissions.map((admitted) => elementIds.filter((id) => admitted.ids.has(id)).length);
+    expect(namedElements[0], "a crowded zoom drops element names").toBeLessThan(elementIds.length);
+    expect(namedElements.at(-1), "a closer zoom names more of them").toBeGreaterThan(namedElements[0]!);
+  });
 });
 
 describe("domain reach", () => {
