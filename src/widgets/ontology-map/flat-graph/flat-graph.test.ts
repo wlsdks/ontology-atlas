@@ -481,7 +481,7 @@ describe("domain reach", () => {
     }
   });
 
-  it("writes the reach line under the selected domain's caption only", () => {
+  it("writes the reach line in the selected domain's caption row only", () => {
     const layout = layoutOf(model);
     const labels = { ...LABELS, reachNeeds: (n: number) => `needs ${n}`, reachNeededBy: (n: number) => `needed by ${n}` };
     const reachLines = (selected: boolean) => {
@@ -490,11 +490,12 @@ describe("domain reach", () => {
         model, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
         elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: att.focusId, attentionKey: att.key, agentFocusId: null,
         selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => 4, elementSpacingPx: 0,
-      }).names.filter((n) => n.role === "reach");
+      }).names.filter((n) => n.id === "d1" && n.role !== "domain");
     };
     const selected = reachLines(true);
-    expect(selected.map((n) => [n.id, n.text])).toEqual([["d1", "needs 1 · needed by 2"]]);
-    expect(reachLines(false)).toEqual([]);
+    expect(selected.map((n) => [n.role, n.text])).toEqual([["reach", "needs 1 · needed by 2"]]);
+    expect(reachLines(false).map((n) => n.role)).toEqual(["units"]);
+    expect(selected[0]!.box, "the reach line takes the caption's row").toEqual(expect.objectContaining({ minY: reachLines(false)[0]!.box.minY }));
   });
 });
 

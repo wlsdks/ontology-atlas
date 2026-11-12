@@ -143,9 +143,12 @@ or above it, at least `--map-graph-selected-title-gap-px` from every domain
 title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
-(`is_a` included), a zero side left out. A selected domain's reach line sits
-under its caption in the same words, counting partner domains, and equals the
-two domain counts its detail panel shows. While a
+(`is_a` included), a zero side left out. A selected domain's reach line takes
+its caption's row under its name, in the same words, counting partner domains,
+and equals the two domain counts its detail panel shows; the panel still lists
+the membership the caption counted. A partner domain's title that a lit
+domain line would run through takes the side above its disc when that side is
+clear, so the line meets the disc. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the

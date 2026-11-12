@@ -210,7 +210,10 @@ function font(weight: number, px: number, family: string): string {
 
 type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measureText" | "fontFamily" | "staleByDomain" | "discRadius">;
 
-/** A domain's name and caption, and for a selected domain its reach line beneath them. */
+/**
+ * A domain's name and caption. A selected domain's reach line takes the caption's row: the layout
+ * keeps members off a two-row title, and the detail panel shows the membership the caption counts.
+ */
 function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
@@ -227,20 +230,20 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
     const units = labels.units(d.capabilityIds.length, d.elementCount);
     const text = stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
     const captionFont = font(400, t.captionPx, fontFamily);
-    const w = measureText(text, captionFont);
     const y = nameY + t.domainNamePx / 2 + t.captionGapPx + t.captionPx / 2;
-    out.push({
-      id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
-      box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
-    });
     if (reachLine) {
       const figures = tabularPieces(reachLine, captionFont, measureText);
-      const lineY = y + t.captionPx + t.captionGapPx;
       const min = -figures.width / 2;
       out.push({
-        id: domainId, role: "reach", text: reachLine, font: captionFont, dx: 0, dy: lineY, align: "center",
-        box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: lineY - t.captionPx / 2 - t.namePadPx, maxY: lineY + t.captionPx / 2 + t.namePadPx },
+        id: domainId, role: "reach", text: reachLine, font: captionFont, dx: 0, dy: y, align: "center",
+        box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
         pieces: figures.pieces.map((p) => ({ text: p.text, dx: min + p.dx })),
+      });
+    } else {
+      const w = measureText(text, captionFont);
+      out.push({
+        id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
+        box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
       });
     }
   }
