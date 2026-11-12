@@ -25,31 +25,20 @@ If the effect is large, this folder becomes evidence in the README. If small, we
 
 Either way, **measurement before further investment**.
 
-> **Read [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) first.** It records
-> what the first real run measured, why three earlier attempts measured nothing,
-> and the one rule that came out of it: *if it would disappear along with the
+> The first real run left one rule: *if it would disappear along with the
 > source, do not put it in the vault.*
 
 ## What's in here
 
 | File | Purpose |
 |---|---|
-| [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. |
 | [`tasks.md`](tasks.md) | 10 retrieval and meaning tasks — 4 categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. |
 | [`rubric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. |
-| [`FINDINGS-2026-09-06-wiki-probe.md`](FINDINGS-2026-09-06-wiki-probe.md) | The sealed five-question probe of compiled wiki pages against the raw folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. |
-| [`FINDINGS-2026-09-06-wiki-accumulation-probe.md`](FINDINGS-2026-09-06-wiki-accumulation-probe.md) | Seven sealed documents compiled all at once and one at a time through the current Compile brief: every reader scores 8/8 or 6.5/8, but in the one-at-a-time wiki 0 of 4 first pages carry the current value or a flag, and `wiki-validate` stays green. With rules g and h in the brief the same rerun reads 4 of 4 and keeps every older figure, at about 2.5× the compile time; with rule i and the folder codes the wiki carries 11 page links, validates clean, and the Lint brief finds one unplanted superseded claim. A fourth pass settles one page per source over one per topic (12/12 both; 60-line pages and 38 links against a 155-line page and 11), proves the permission card's verdict on a live turn, and adds the app-written `wiki/_log.md`. A fifth pass takes the rules to an unseen corpus (10/10, 4/4, clean) and to the same documents in reverse order, where first pages fell to 2/4 until rule h became a per-figure checklist (4/4). |
-| [`FINDINGS-2026-08-31.md`](FINDINGS-2026-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. |
-| [`FINDINGS-2026-08-31-change-flow.md`](FINDINGS-2026-08-31-change-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. |
-| [`FINDINGS-2026-08-31-metric-split.md`](FINDINGS-2026-08-31-metric-split.md) | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. |
-| [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. |
-| [`results/2026-08-31-gb-r3-regrade-summary.md`](results/2026-08-31-gb-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. |
-| [`FINDINGS-2026-08-31-two-graders.md`](FINDINGS-2026-08-31-two-graders.md) | **The gap between the two sides is the same size as the grader changing its mind.** Read before quoting any grade. |
-| [`FINDINGS-2026-08-31-screening-grade.md`](FINDINGS-2026-08-31-screening-grade.md) | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question. A screening pass, not a verdict. |
-| [`results/2026-08-31-gb-r3-blind-packet.md`](results/2026-08-31-gb-r3-blind-packet.md) | The 24 answers with ids instead of side labels, shuffled, ready for a person to grade. |
-| [`results/2026-08-31-gb-r3-screening-grades.md`](results/2026-08-31-gb-r3-screening-grades.md) | The screening grades, per cell, with a note on each. |
-| [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | Four-cell change-flow result with direct Git and Atlas update receipts. |
-| [`results/2026-05-template.md`](results/2026-05-template.md) | Empty matrix (task × agent × mode). Fill in after each measurement run. |
+| [`CONSTRUCTION.md`](CONSTRUCTION.md) | The measured construction protocol, its trials and limits. |
+| [`WIKI-ACCUMULATION-EVAL.md`](WIKI-ACCUMULATION-EVAL.md) | The local wiki revision, retrieval and omission evaluation. |
+
+The runners write transcripts and summaries into `results/`. Dated write-ups
+and earlier run files are in Git history (`git log -- docs/benchmark`).
 
 ## How to measure
 
@@ -102,7 +91,7 @@ Run it as a feasibility check first, then repeat each cell three times:
 
 ```bash
 pnpm benchmark:lifecycle --dry-run
-pnpm benchmark:lifecycle --bypass --run-id=2026-08-31-gb-r3 --repeat=3
+pnpm benchmark:lifecycle --bypass --run-id=YYYY-MM-DD-gb-r3 --repeat=3
 ```
 
 The machine-readable coverage score checks whether a final structured answer
@@ -147,7 +136,7 @@ answers does that — and a reader who knows which side wrote each one will find
 what they expect.
 
 ```bash
-pnpm benchmark:blind-set --run-id=2026-08-31-gb-r3
+pnpm benchmark:blind-set --run-id=YYYY-MM-DD-gb-r3
 ```
 
 This writes a packet where each answer carries an opaque id in a shuffled order,
@@ -164,7 +153,7 @@ the grader cannot guess.
 #### Have a second grader read the same packet
 
 ```bash
-pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3 --repeat=3
+pnpm benchmark:grade --bypass --run-id=YYYY-MM-DD-gb-r3 --repeat=3
 ```
 
 Hands the packet to a separate process — a fresh agent with no memory of this
@@ -175,9 +164,8 @@ prepared vaults, and records its scores in the same shape.
 given the identical packet does not return identical scores, so until that
 wobble is measured a difference between two sides cannot be told apart from the
 grader changing its mind. The command prints the spread beside every average and
-names the noise floor. On `2026-08-31-gb-r3` the floor turned out to be as large
-as the effect being measured — see
-[the two-grader findings](FINDINGS-2026-08-31-two-graders.md).
+names the noise floor. On the first three-repeat lifecycle run the floor turned
+out to be as large as the effect being measured.
 
 Measure the floor at the grain of the claim. Across all 24 answers the readings
 move by 0.041; split into twelve per side, they move by 0.083. The comparison is
@@ -189,7 +177,7 @@ own earlier conclusion — and leaves the rest.
 #### Re-score a saved run without running anything
 
 ```bash
-pnpm benchmark:lifecycle --regrade --run-id=2026-08-31-gb-r3
+pnpm benchmark:lifecycle --regrade --run-id=YYYY-MM-DD-gb-r3
 ```
 
 This reads the answers already on disk, scores them again, and writes
@@ -214,13 +202,12 @@ pnpm benchmark:change-flow --dry-run
 pnpm benchmark:change-flow --bypass --run-id=YYYY-MM-DD-change-rN --repeat=1
 ```
 
-The adopted first feasibility result is [`2026-08-31-change-r7`](results/2026-08-31-change-r7-summary.md): all four cells passed every required
+The adopted first feasibility result is `2026-08-31-change-r7`: all four cells passed every required
 workflow step. Atlas therefore showed **workflow parity**, not a proven code
 quality advantage. The on arm was slower by 28.2 seconds in the greenfield
 subject and 51.1 seconds in the brownfield subject, while adding the reviewed
 capability update. The brownfield cells include deterministic conflict
-recovery. See the [change-flow findings](FINDINGS-2026-08-31-change-flow.md)
-for the protocol, failed diagnostic runs, and falsifiers.
+recovery.
 
 ### Codex automated run
 
@@ -266,7 +253,7 @@ For each task in `tasks.md`:
 2. **Paste the task prompt verbatim** — no follow-ups, no nudging. Whatever the agent answers, that's the answer.
 3. **Save the transcript / screenshot** — for Claude Code, the jsonl is enough. For Codex, copy the conversation.
 4. **Score** per `rubric.md`.
-5. **Fill in** `results/2026-05-template.md` (rename to your run's date if needed).
+5. **Record** the task × agent × mode matrix in a new `results/<date>-<agent>.md`.
 
 ### Run all four cells per task
 
@@ -299,17 +286,22 @@ Results will be summarized in this README and (only with the stated limitations)
 
 ## Current measurement status
 
-| Run | Vault | Agents (n) | Result file | Headline |
-|---|---|---|---|---|
-| 2026-08-31 change flow R7 | two internal fixture proxies | Codex, one fresh repeat per cell | [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | workflow parity 4/4; Atlas update 2/2 on cells; no quality or speed claim |
-| 2026-08-31 lifecycle R3 | two internal fixture proxies | Codex, 3 fresh repeats per cell | [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | required-evidence coverage: greenfield `0.25 → 0.875`; brownfield `0.2834 → 0.7389`; arm integrity 24/24; pilot evidence only |
-| R13/R14 legacy retrieval | self-documented Atlas repository | Claude Code + Codex historical runs | `results/2026-05-04-claude-code.md` · `results/2026-05-04-codex.md` | useful for retrieval diagnostics, not causal Atlas value; see [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) |
+| Run | Vault | Agents (n) | Headline |
+|---|---|---|---|
+| 2026-08-31 change flow R7 | two internal fixture proxies | Codex, one fresh repeat per cell | workflow parity 4/4; Atlas update 2/2 on cells; no quality or speed claim |
+| 2026-08-31 lifecycle R3 | two internal fixture proxies | Codex, 3 fresh repeats per cell | required-evidence coverage: greenfield `0.25 → 0.875`; brownfield `0.2834 → 0.7389`; arm integrity 24/24; pilot evidence only |
+| R13/R14 legacy retrieval | self-documented Atlas repository | Claude Code + Codex historical runs | useful for retrieval diagnostics, not causal Atlas value |
 
 The lifecycle result is deliberately not described as a product win. Atlas was
 slower in this pilot (median +17.2 seconds in greenfield and +33.2 seconds in
 brownfield), so the present signal is about bounded meaning coverage, not
 latency or token savings. The brownfield impact task was a median tie and is a
 named improvement target.
+
+Correction: most of the lifecycle run's first published delta was Atlas concept
+names, which a control arm cannot write (see "The score comes in two halves"
+above), not a comparison. A grader re-reading the same answers moved by about as
+much as the gap between the two sides, so no grade difference is a finding yet.
 
 ### Re-measurement triggers (user runs these manually)
 

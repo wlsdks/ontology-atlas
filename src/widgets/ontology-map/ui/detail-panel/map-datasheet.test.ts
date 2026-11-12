@@ -330,7 +330,7 @@ describe("formatV2HandoffText", () => {
   });
 });
 
-describe("buildV2EvidenceRows: evidence group promotion (RATIO-SYSTEM section 4)", () => {
+describe("buildV2EvidenceRows: evidence group promotion", () => {
   it("splits a folder/slug evidenceId into a readable title + path, mirroring the mockup's doc-link row", () => {
     expect(buildV2EvidenceRows(["capabilities/product-owner-operating-system"])).toEqual([
       {

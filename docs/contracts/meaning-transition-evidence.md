@@ -13,8 +13,7 @@ enforced_by: [src/shared/lib/meaning-transition/meaning-transition.ts]
 `src/shared/lib/meaning-transition/meaning-transition.ts` prepares an immutable in-memory evidence
 candidate and roundtrips it through Markdown. It does not store records, read
 canonical Markdown, authenticate a person, verify Git blobs, or grant permission
-to write. The workbench/controller and durable transition work remain tracked by
-[V4.1](../MEANING-WORKFLOW-PLAN.md#v41--record-the-codemeaning-transition-without-confusing-authorities).
+to write. The workbench/controller and durable transition work remain open.
 
 The candidate retains a bounded task label and digest, exact originating
 vault/session/user-event/permission/tool-call identity, a recoverable proposal

@@ -1,5 +1,5 @@
 // Absorbs a CLAUDE.md/AGENTS.md-style file into typed vault nodes instead of
-// replacing it (docs/plans/PRODUCT-PLAN-2026-07.md §4, §7). Rule, policy and
+// replacing it. Rule, policy and
 // decision sections become `kind: document` nodes with `role: policy`;
 // architecture sections become element/capability suggestions only, never
 // written automatically. Unclassified and injection-suspect sections stay
@@ -156,7 +156,7 @@ export function classifySection({ heading, body }) {
   };
 }
 
-// Injection Tier 1 (PRODUCT-PLAN-2026-07.md §7). A vault body is untrusted
+// Injection Tier 1. A vault body is untrusted
 // data, but ordinary policy prose is full of imperatives ("never use
 // --no-verify"), so only named instruction-hijack phrasing and executable
 // shell/SQL fragments count as suspect.

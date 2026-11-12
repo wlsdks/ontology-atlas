@@ -1,6 +1,5 @@
 /**
- * Click-vs-drag hysteresis threshold — ported from the B2+ prototype's
- * `pointermove` handler (`docs/prototypes/topology-b2plus.html` §9):
+ * Click-vs-drag hysteresis threshold, applied in the `pointermove` handler:
  * ```
  * if (!pointer.dragging && Math.sqrt(ddx*ddx + ddy*ddy) > HYSTERESIS) {
  *   pointer.dragging = true;

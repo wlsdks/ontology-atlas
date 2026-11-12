@@ -199,7 +199,7 @@ export interface TopologyIndexPanelProps {
 
 /**
  * INDEX: the left panel floating over the topology map with `--topology-index-*` tokens
- * (`app/globals.css`, `docs/prototypes/index-panel-v2-full.html`); `TopologyIndexTab` is its
+ * (`app/globals.css`); `TopologyIndexTab` is its
  * collapsed form. Search reuses `filterTreeByQuery` so ancestor-keeping cannot drift between
  * surfaces.
  */
@@ -429,7 +429,7 @@ export function TopologyIndexPanel({
       style={{ width: "var(--topology-index-width)" }}
     >
       {/*
-       * The get-started module (`first-run-v3-flagship.html`): the card and INDEX are exclusive
+       * The get-started module: the card and INDEX are exclusive
        * states, so there is one scroll.
        */}
       <FirstRunStarterModule

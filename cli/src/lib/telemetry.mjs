@@ -1,4 +1,4 @@
-// Local-only magic-moment instrumentation (docs/plans/PRODUCT-PLAN-2026-07.md §4/§7/§9), never transmitted.
+// Local-only magic-moment instrumentation, never transmitted.
 // Records a baseline (init or absorb --write) and the first agent-facing read after it, stamped by the CLI's
 // `agent-brief`; MCP read tools stay unstamped (readOnlyHint), so `moment --mark` records it by hand.
 
@@ -9,12 +9,12 @@ import {
 
 export const TELEMETRY_RELATIVE_PATH = '.ontology-atlas/telemetry.local.json';
 const TELEMETRY_FILENAME = 'telemetry.local.json';
-// North star (docs/plans/PRODUCT-PLAN-2026-07.md §4): moment reached within 5 minutes.
+// North star: moment reached within 5 minutes.
 export const MOMENT_TARGET_MS = 5 * 60 * 1000;
 
 function defaultTelemetry() {
   return {
-    '//': 'local only, never transmitted: see AGENTS.md trust charter (PRODUCT-PLAN-2026-07.md §7)',
+    '//': 'local only, never transmitted: see AGENTS.md trust charter',
     initCompletedAt: null,
     absorbWriteCompletedAt: null,
     moment: null,

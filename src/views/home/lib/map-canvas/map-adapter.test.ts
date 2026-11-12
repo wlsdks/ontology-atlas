@@ -189,8 +189,7 @@ describe("buildOntologyMapGraph — regression: OntologyMap must not be mounted 
     expect(sizeById.get("proj")).toBe(1); // element weight, unchanged
   });
 
-  // The charter (`docs/prototypes/topology-b2plus.html`) is a single amber-ring hub, not every node
-  // past a fan-in threshold.
+  // The map has a single amber-ring hub, not every node past a fan-in threshold.
   it("marks isHub true for only the single highest fan-in node in the whole graph", () => {
     const nodes = [
       node({ id: "core", kind: "capability" }),

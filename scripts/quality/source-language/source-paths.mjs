@@ -26,7 +26,6 @@ export function classifySourcePath(path) {
   ) {
     return 'testFixture';
   }
-  if (path.startsWith('docs/prototypes/')) return 'historicalPrototype';
   return 'current';
 }
 

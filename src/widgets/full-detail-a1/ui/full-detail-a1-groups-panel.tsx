@@ -14,7 +14,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * Four uncapped direction groups; each row has a trace mark (solid containment, dashed depends) and
- * navigates on click (`docs/prototypes/detail-a1-datasheet.html`).
+ * navigates on click.
  */
 
 export interface FullDetailA1GroupsLabels {

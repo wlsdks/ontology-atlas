@@ -248,7 +248,7 @@ and Escape. The record is in `docs/DECISIONS.md` (one list).
   with macOS by the installed app, and reachable as `?install=` on `/mcp` in any browser —
   opens the dialog filled in and waits for the press. An unknown field refuses the whole
   payload, no value survives, and every argument is rendered verbatim — the lesson of
-  CVE-2025-54133, recorded with its sources in `docs/benchmark/MCP-ONE-CLICK-2026-09-07.md`.
+  CVE-2025-54133.
   The app answers that one address and nothing else, a second press routes the window
   already open, and a refused link is logged and dropped rather than followed.
 

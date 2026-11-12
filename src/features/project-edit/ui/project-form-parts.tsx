@@ -155,8 +155,7 @@ export function FormSection({
       className="scroll-mt-28 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[inset_0_1px_0_var(--color-overlay-2)] md:px-5"
     >
       <div className="mb-5">
-        {/* engraved section label — mono uppercase caption + hairline
-            continuation (docs/prototypes/project-forms-final.html `.slabel`) */}
+        {/* engraved section label — mono uppercase caption + hairline continuation */}
         <div className="mb-3 flex items-center gap-2.5">
           <p
             id={headingId}
