@@ -122,7 +122,7 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'map/3d/map-3d-lit-strata.spec.ts',
   'map/camera/camera-transition.spec.ts',
   'map/chrome/map-trail.spec.ts',
-  'map/flat-dial/map-flat-dial-frame-work.spec.ts',
+  'map/flat-graph/map-flat-graph-scale.spec.ts',
   'map/frame-loop/map-frame-allocation.spec.ts',
   'map/frame-loop/map-hover-release.spec.ts',
   'map/frame-loop/map-sleep-frames.spec.ts',

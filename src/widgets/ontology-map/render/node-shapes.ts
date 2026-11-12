@@ -307,7 +307,7 @@ const SELECTION_PULSE_RING_OFFSET = 3;
 /** Hover preview ring sits just outside the body, inside the (mutually-exclusive, hover never fires under focus) selection ring's radius. */
 const HOVER_RING_OFFSET = 3;
 /** Agent-focus ring offset, wider than the hub ring's r+4 so the two never merge on a focused hub. */
-const AGENT_FOCUS_RING_OFFSET = 8;
+export const AGENT_FOCUS_RING_OFFSET = 8;
 export interface PinTick {
     x1: number;
     y1: number;

@@ -7,6 +7,9 @@ import { dialChipRadiusPx, dialDiscRadiusPx } from "../dial/tokens";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
 import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/types";
+import { graphDiscRadiusPx } from "../flat-graph/marks";
+import { readFlatGraphTokens } from "../flat-graph/tokens";
+import type { FlatGraphTokens } from "../flat-graph/types";
 import type { CameraAxes } from "../engine/camera";
 import { measureCanvasInsets, measureEdgeFitObstacle } from "../interaction/free-area";
 import type { DomeNodeFrame, DomeRuntime } from "../model/dome-view/runtime";
@@ -15,7 +18,7 @@ import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { readHexBoardTokensOrNull } from "../tokens/read-hex-board-tokens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
-import { computeOverviewCameraTarget } from "../ui/camera/topology-camera-math";
+import { computeOverviewCameraTarget, overviewEntryArea } from "../ui/camera/topology-camera-math";
 import { lastDrawnNodeAlphas } from "../ui/frame-draw/topology-frame-draw";
 import { overviewBoundsFor, overviewFitTokens } from "../ui/camera/topology-overview-fit";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
@@ -146,7 +149,7 @@ function measuredCameraTokens(
 
 const DIAL_DISCS_DRAWN = 0.5;
 
-function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens, camera: CameraAxes, width: number, height: number, tokens: OntologyMapTokens): MapLayoutMark[] {
+function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens, graphTokens: FlatGraphTokens | null, camera: CameraAxes, width: number, height: number, tokens: OntologyMapTokens): MapLayoutMark[] {
   const { model, scene } = dial;
   const s = camera.scale.value;
   const screen = (p: { x: number; y: number;
@@ -157,6 +160,15 @@ function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens
     const node = world.nodeById.get(id);
     if (node) marks.push({ id, ...screen(at), size, ...markStyle(node.kind, tokens), alpha: 1 });
   };
+  if (scene.graph && graphTokens) {
+    const P = graphTokens.paint;
+    if (model.projectId) push(model.projectId, scene.positions.get(model.projectId) ?? { x: 0, y: 0 }, graphDiscRadiusPx("project", 0, P, 1));
+    for (const c of scene.clusters) {
+      push(c.domainId, scene.positions.get(c.domainId) ?? c.chip, graphDiscRadiusPx("domain", 0, P, 1));
+      for (const it of c.items) if (model.capabilityById.has(it.id)) push(it.id, scene.positions.get(it.id) ?? it, graphDiscRadiusPx("capability", it.elementIds.length, P, 1));
+    }
+    return marks;
+  }
   if (model.projectId) push(model.projectId, scene.positions.get(model.projectId) ?? { x: 0, y: 0 }, dialHubRadiusPx(dialTokens, tokens, s));
   const maxItems = Math.max(1, ...scene.clusters.map((c) => c.items.length));
   const discsDrawn = smoothstep(dialTokens.capOnFrom, dialTokens.capOnFull, dialTokens.pitch * s) > DIAL_DISCS_DRAWN;
@@ -166,6 +178,14 @@ function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens
     for (const it of c.items) if (model.capabilityById.has(it.id)) push(it.id, scene.positions.get(it.id) ?? it, dialDiscRadiusPx(dialTokens, s, it.elementIds.length));
   }
   return marks;
+}
+
+function readFlatGraphTokensOrNull(): FlatGraphTokens | null {
+  try {
+    return readFlatGraphTokens();
+  } catch {
+    return null;
+  }
 }
 
 function readDialTokensOrNull(): DialTokens | null {
@@ -200,19 +220,23 @@ function predictOntologyMapMarks({
   const box = host.getBoundingClientRect();
   if (box.width <= 0 || box.height <= 0 || nodes.length === 0) return null;
   const dialTokens = readDialTokensOrNull();
-  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: dialMemory ?? null } : null);
+  const graphTokens = readFlatGraphTokensOrNull();
+  const fitTokens = overviewFitTokens(measuredCameraTokens(host, tokens));
+  const pad = graphTokens?.paint.domainNamePx ?? 0;
+  const graphAreaPx = graphTokens ? overviewEntryArea(box.width, box.height, fitTokens, { padPx: { left: pad, right: pad, top: pad, bottom: pad } }) : null;
+  const world = buildTopologyWorld(nodes, edges, tokens, expandStructure, dialTokens ? { graph: graphTokens, graphAreaPx, labels: dialLabels ?? null, tokens: dialTokens, measureText: createMeasureText(), rememberOrder: false, memory: dialMemory ?? null } : null);
   const bounds = overviewBoundsFor(overviewFit, world, tokens, expandedParents, null);
   const target = computeOverviewCameraTarget(
     bounds,
     box.width,
     box.height,
-    overviewFitTokens(measuredCameraTokens(host, tokens)), world.nodes.length, dialOverviewFit(world));
+    fitTokens, world.nodes.length, dialOverviewFit(world));
   const camera: CameraAxes = {
     x: { value: target.tx, velocity: 0 },
     y: { value: target.ty, velocity: 0 },
     scale: { value: target.tscale, velocity: 0 },
   };
-  if (world.dial && dialTokens) return dialMarks(world, world.dial, dialTokens, camera, box.width, box.height, tokens);
+  if (world.dial && dialTokens) return dialMarks(world, world.dial, dialTokens, graphTokens, camera, box.width, box.height, tokens);
   const folded = computeFoldedIds(world, expandedParents);
   const drawn = (id: string) => {
     const node = world.nodeById.get(id);

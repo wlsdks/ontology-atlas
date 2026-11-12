@@ -524,10 +524,6 @@
       "seconds": 2.619,
       "tests": 1
     },
-    "map/selection/map-expand-all.spec.ts": {
-      "seconds": 2.905,
-      "tests": 1
-    },
     "map/selection/map-focus-dangling.spec.ts": {
       "seconds": 11.25,
       "tests": 2

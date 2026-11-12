@@ -43,28 +43,17 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-Flat maps use domain label blocks with spaced outward capability branches,
-proportional marks and gradual detail disclosure. Readable cards align their icon,
-title and counts together; connection ends respect the same visible card boundary.
-Larger domain sets use shorter
-previews and stable column groups; long capability names wrap within a bounded column, with the full title
-available on selection. Domain dependencies remain
-aggregated at their domain until capability inspection. Bundle counts appear with
-an explicit connection label while inspecting an endpoint, without bare overview
-numbers. Bounded local curves and screen-sized arrows preserve direction;
-individual relationship explanations and declaring documents remain in relation
-review. Congestion checks use the
-same curves that are painted; omitted overview links remain available on endpoint
-selection, with the total connection count retained. Neutral emphasis marks the
-selection; amber exclamation marks and a compact key explain evidence that needs
-rechecking. Implementation elements sit in compact groups beside their capability,
-with readable square marks, wrapped names and membership stems. An ordinary owned element
-whose name cannot fit leaves no unexplained mark or invisible pointer target.
-A same-scale selection nudge protects the visible branch from its inspector
-when the free span can contain it. More/collapse controls disclose actual capability
-batches with interruptible fading and frame the visible members. Focused areas
-keep the branch grammar, omit a forced-open root collapse control, and offer a
-labelled Full map return that restores the selected root. Concepts
+The full Flat map is a force graph lit by domain: each domain is a soft pool
+of its own hue around a lit disc with a large horizontal name and a count
+caption, its capabilities are smaller discs sized by their element count, and
+elements are dots beside their capability. Resting arcs between domains are
+thin and faint; pointing at a concept lights its reach and sinks the rest.
+Names are admitted per zoom step without overlap and stay inside the free map;
+a selected concept and the concept an agent is working on are always named.
+Within a session an unchanged domain keeps its place and hue. Stale evidence
+carries an amber pip, unknown evidence a dashed hollow disc. Focused areas
+keep the domain branch grammar, omit a forced-open root collapse control, and
+offer a labelled Full map return that restores the selected root. Concepts
 navigation separates selection from tree disclosure. Below 1280 px, selecting a
 concept temporarily folds the index to leave room for its map and inspector;
 closing the inspector restores the preference, and explicit reopening still works.
@@ -130,9 +119,9 @@ Escape also dismisses a review during its opening transition, preserving the
 map selection and path beneath it; nested search and document surfaces close first.
 Analysis requests use the interface language for explanatory prose and findings,
 while keeping identifiers, structured fields and exact quotations unchanged.
-Flat maps keep their branch forms during meaning and relation inspection;
-relation captions still describe the recorded edges. Light is masked from card
-interiors so travelling signals cannot wash out their text.
+During meaning and relation inspection the Flat graph stays under the lens as
+quiet context; a concept outside the lens draws no disc and answers no pointer,
+and relation captions still describe the recorded edges.
 
 The optional companion game and related personal-record screens are retired.
 Existing local saves remain untouched; no replacement viewer or export is provided.
@@ -168,8 +157,8 @@ analysis. Counts, agent-reported tasks, source freshness and meaning acceptance
 are distinct; there is no global completeness score. See the
 [map workflow](features/map/README.md#optional-continued-analysis).
 
-Small Flat maps keep domain blocks in two separated columns when the conversation
-panel reduces the available map area.
+The Flat graph refits into the free map when the conversation panel reduces
+the available area.
 
 The map's maintenance list offers actions only where the destination can show the
 named items; it no longer advertises dusty concepts through the retired global
