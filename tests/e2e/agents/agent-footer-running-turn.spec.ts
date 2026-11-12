@@ -150,7 +150,6 @@ const TWO_TOOLS = {
   pastSessions: [{ sessionId: 'library-acp-session', title: 'Earlier', updatedAt: '2026-09-20T00:00:00.000Z' }],
 } satisfies Parameters<typeof installLibraryWorkHarness>[1];
 
-// CI draws Latin 4px wider than macOS here (79 in a 75 box), and the agent runs only in the macOS app.
 const LINUX_FONT_SLACK_PX = 6;
 
 /** Every shown word on the row, measured as drawn text against its own box. */
