@@ -3,8 +3,7 @@ import { cn } from '@/shared/lib/cn';
 import { CONTROL_PRESS_TRAVEL, CONTROL_TRANSITION } from '@/shared/ui/control-class';
 
 /**
- * The labelled chip tier of the chrome system (mockup
- * docs/prototypes/index-panel-v2-full.html), sharing `ChromeTile`'s surface.
+ * The labelled chip tier of the chrome system, sharing `ChromeTile`'s surface.
  * Presentational. `compact` makes the label `sr-only` and narrows to the tile size; the `badge`
  * stays visible in both modes.
  */

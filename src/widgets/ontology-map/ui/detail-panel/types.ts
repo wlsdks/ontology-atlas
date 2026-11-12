@@ -144,7 +144,7 @@ export interface OntologyMapDetailPanelProps {
   /** A domain's partner domains as the map's flows count them; their rows lead used-by and needs. */
   domainUsage?: DomainUsage | null;
   /** The 「Evidence」 (evidence) group — the node's own backing vault doc(s),
-   * RATIO-SYSTEM §4 promotion. Rows built by `buildV2EvidenceRows`; empty when
+   * promoted to its own group. Rows built by `buildV2EvidenceRows`; empty when
    * the node has no `evidenceIds` (which hides the group entirely, the same
    * convention as usedBy/dependsOn). */
   evidence: { rows: readonly V2EvidenceRow[]; total: number };

@@ -1,6 +1,6 @@
 ---
 name: ui-proof
-description: Prove a rendered UI change with the proof steps `pnpm design:route` returned: `pnpm ui:audit` for geometry, overflow, ramps and contrast, then only the guides for the remaining steps (motion, map performance, journey, design system).
+description: Prove a rendered UI change by the row its change class picks: a `pnpm ui:look` capture, `pnpm ui:audit` for geometry, overflow, ramps and contrast, then only the guides that row names (motion, map performance, journey, design system).
 ---
 
 # ui-proof

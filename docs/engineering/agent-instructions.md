@@ -73,19 +73,18 @@ keep real folders.
 | `pnpm review:facts` | line growth, 800-line files, export and dependency changes, untouched sibling tests, security paths |
 | `pnpm ui:audit` | rendered overflow, occlusion, targets, off-ramp values, contrast, repeated sets, scroll end |
 | `pnpm design:tokens` | the current token ramps |
-| `pnpm po:route`, `pnpm design:route` | how much product review and which UI proof a change needs |
+| `pnpm ui:look` | a screenshot of a route with a vault open, per width |
 | `pnpm brief:new` | a delegation brief's mechanical lines |
 | `pnpm conflicts:scan` | open pull requests touching the same files |
 | `pnpm harness:tokens` | where agent tokens went and which runs broke the budget |
 
-## Product check
+## Product judgment
 
-`/product-check` keeps boundary judgment for changed public behavior,
-contracts, or truth and approval authority; behavior-preserving maintenance
-goes straight to technical checks. It routes through
-[the owner procedure](../PRODUCT-OWNER-OPERATING-SYSTEM.md) and loads its review
-protocol only for an actual review. Motion proof follows one
-[recording procedure](motion-recording.md) for both hosts.
+A one-way change (the `AGENTS.md` workflow table) follows
+[the owner procedure](../PRODUCT-OWNER-OPERATING-SYSTEM.md) and gets one
+`reviewer`; behavior-preserving maintenance goes straight to technical checks.
+Motion proof follows one [recording procedure](motion-recording.md) for both
+hosts.
 
 ## Maintenance
 

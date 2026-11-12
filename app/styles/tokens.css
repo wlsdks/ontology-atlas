@@ -303,8 +303,7 @@
   --tracking-card: -0.015em;
 
   /*
-   * RATIO-SYSTEM (docs/prototypes/RATIO-SYSTEM.md) — page layout rhythm tokens elevated
-   * from "ratio is life" mockup rounds. 1920 baseline: page container
+   * Page layout rhythm tokens. 1920 baseline: page container
    * 1600px centered (160px gutters left/right) + section/card spacing rhythm. First consumer:
    * project-detail rebuild (zone 1 hero · zone 2 domain 3×2 · zone 3
    * body+rail) — other pages adopt progressively.

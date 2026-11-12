@@ -55,7 +55,7 @@ export async function runAgentBrief(args) {
     );
     return 2;
   }
-  // Telemetry proxy for an agent reading the vault (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+  // Telemetry proxy for an agent reading the vault (lib/telemetry.mjs).
   // Best-effort: a telemetry write failure must never break the brief.
   try {
     stampMomentIfFirst(vaultRoot, { source: 'agent-brief' });

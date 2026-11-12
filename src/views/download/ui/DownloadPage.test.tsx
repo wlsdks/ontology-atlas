@@ -478,7 +478,7 @@ describe('DownloadPage', () => {
   it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
     renderDownloadPage();
 
-    // The shoot sends this message verbatim (docs/launch/demo-scenario.md §3); backticks render as code.
+    // The shoot sends this message verbatim; backticks render as code.
     const prompt = screen.getByTestId('gateway-demo-prompt');
     const sentence = enMessages.download.demoAgentPrompt;
     expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));

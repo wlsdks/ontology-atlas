@@ -77,7 +77,7 @@ Domain rows (one per domain, uniform height), in a card in the left track beside
 
 ### `/project/[slug]/edit` — Full editor
 
-`ProjectForm` in `mode="edit"` (640px centered form column + 260px companion column, RATIO-SYSTEM; 4 sections + sticky save bar). **Create and edit no longer share one layout** (2026-07-27) — see `/project/new` below.
+`ProjectForm` in `mode="edit"` (640px centered form column + 260px companion column; 4 sections + sticky save bar). **Create and edit no longer share one layout** (2026-07-27) — see `/project/new` below.
 
 1. **Basics** (always open) — slug (disabled in edit) · name · nameEn · category (taxonomy select) · status (taxonomy select)
 2. **Story** (collapsible) — description (required) · detail (markdown) · tags CSV · stack CSV · linksText (multiline `label|URL`)

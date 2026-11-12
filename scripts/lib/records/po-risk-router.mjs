@@ -1,22 +1,17 @@
 /**
- * Atlas product-decision routing policy.
- *
- * The caller supplies inspectable facts about the change. The policy derives
- * reversibility and the primary risk; accepting those verdicts from the builder
- * would let the same real change self-route to skip, solo, or review.
+ * The retired product-decision routing policy, kept only so the frozen
+ * register docs/PO-PILOT.md can be re-derived and validated when it is parsed.
  */
-
-import { FIELDS } from './decision-record-template.mjs';
 
 const PO_POLICY_VERSION = 4;
 
 /** The one independent agent that judges a review route. */
-export const PO_REVIEWER = 'reviewer';
+const PO_REVIEWER = 'reviewer';
 
 /** Lenses every review applies before the risk-specific lens. */
-export const PO_BASE_LENSES = Object.freeze(['moment', 'evidence']);
+const PO_BASE_LENSES = Object.freeze(['moment', 'evidence']);
 
-export const PO_EVIDENCE_STATES = Object.freeze(['observed', 'inferred', 'unknown']);
+const PO_EVIDENCE_STATES = Object.freeze(['observed', 'inferred', 'unknown']);
 
 export const PO_OUTCOMES = Object.freeze({
   orient: 'a person can find the right product or implementation starting point',
@@ -77,23 +72,6 @@ export const PO_RISK_ROUTES = Object.freeze({
     protects: 'a new or removed surface, expensive scope, or a difficult rollback boundary',
   }),
 });
-
-export const PO_SOLO_FIELDS = Object.freeze([
-  'Prior decision',
-  'Human loss and moment',
-  'Atlas outcome',
-  'Evidence state',
-  'Change signals',
-  'Computed route',
-  'Recovery proof',
-  'Decision',
-]);
-
-// The ledger record is the six-field template `pnpm decisions:check` enforces
-// on every record; route, evidence state, footprint, and delta are typed per
-// run in docs/PO-PILOT.md instead of repeated here. One source, so the review
-// protocol, the operating system, and the gate cannot drift apart.
-export const PO_REVIEW_RECORD_FIELDS = Object.freeze([...FIELDS]);
 
 const RISK_PRIORITY = Object.freeze(['meaning', 'positioning', 'scope']);
 const RETIRED_INPUTS = Object.freeze(['door', 'primaryRisk', 'sovereigntyAffected']);

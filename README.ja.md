@@ -61,7 +61,7 @@
 - マップの線は宣言された関係であり、実行時の影響の証明ではありません。凡例がすべての印と向きを説明します。[マップ](docs/features/map/flat-dial.md)
 - 空のフォルダでは開始操作が表示され、開始に失敗してもファイルを上書きせずにやり直せます。ポップアップのツアーは廃止しました。[初回起動](docs/features/first-run.md)
 - 資料室の設定とチェックはアプリで行います。ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
-- 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/specs/2026-11-01-project-planning-documents.md)
+- 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/FEATURES.md)
 - Git の送信専用操作は新しいファイルの変更をコミットしません。フォルダやブランチの状態が変わった場合は再確認できます。プルはリポジトリ全体のファイルを変更することがあります。[Git](docs/features/git.md)
 - フォルダを接続する前でも、アプリは資料室、企画、エージェント、ブリーフィングを開けるようにしています。[機能一覧](docs/FEATURES.md)
 
@@ -102,7 +102,7 @@ frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つ�
 
 ## 現在の状況
 
-Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas を使うとより良い回答になることはまだ示せておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)）。構築の試験とその失敗、限界は[構築の測定結果](docs/benchmark/CONSTRUCTION.md)にあります。
+Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas を使うとより良い回答になることはまだ示せておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/README.md#current-measurement-status)）。構築の試験とその失敗、限界は[構築の測定結果](docs/benchmark/CONSTRUCTION.md)にあります。
 
 ## ドキュメント
 

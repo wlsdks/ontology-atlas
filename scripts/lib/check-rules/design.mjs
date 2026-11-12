@@ -56,19 +56,11 @@ export const rules = [
   },
   {
     order: 670,
-    command: 'pnpm test:design-gates',
-    reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or independent-review lens policy changed',
+    command: 'pnpm exec vitest run tests/contract/agent-instructions/design-build-recipe.contract.test.ts',
+    reason: 'the /ui-build or /ui-proof procedure changed; every primitive and gate it names must exist',
     matches: [
-      /^scripts\/(?:lib\/)?design\/design-proof-router\.mjs$/,
-      /^scripts\/records\/check-decision-record\.mjs$/,
-      /^tests\/contract\/agent-instructions\/(?:design-proof-router|reviewer-wiring)\.contract\.test\.ts$/,
-      /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
-      /^docs\/engineering\/motion-recording\.md$/,
       /^\.(?:claude|agents)\/skills\/(?:ui-build|ui-proof)\/(?:SKILL\.md|workflow\.md|guides\/[^/]+\.md)$/,
-      /^\.(?:claude|agents)\/agents\/(?:reviewer|design-guardian)\.md$/,
-      /^\.claude\/rules\/design\.md$/,
-      /^AGENTS\.md$/,
-      /^package\.json$/,
+      /^tests\/contract\/agent-instructions\/design-build-recipe\.contract\.test\.ts$/,
     ],
   },
 ];

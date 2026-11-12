@@ -64,8 +64,8 @@ export interface TopologyIndexTreeRowProps {
 }
 
 /**
- * One INDEX tree row and its children, recursive by depth. Row click selects
- * (`docs/prototypes/hub-b3-immersive.html`); the caret is a separate target. Four-column grid
+ * One INDEX tree row and its children, recursive by depth. Row click selects;
+ * the caret is a separate target. Four-column grid
  * (caret, glyph, label, count). Selection and disclosure remain separate actions.
  */
 export function TopologyIndexTreeRow({

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { runMoment } from './moment.mjs';
 import { stampInitCompleted, stampMomentIfFirst } from '../../lib/telemetry.mjs';
 
-// `ontology-atlas moment` (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9); lib/telemetry.mjs says why only
+// `ontology-atlas moment`; lib/telemetry.mjs says why only
 // init, absorb --write and agent-brief are auto-stamped.
 
 let tmp;

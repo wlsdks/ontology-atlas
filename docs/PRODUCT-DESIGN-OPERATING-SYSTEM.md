@@ -7,8 +7,8 @@ area: process
 
 # Product Design Operating System
 
-> Atlas-specific design routing. The PO pass decides whether a product slice is
-> worth doing. This system derives which design work and runtime evidence that
+> Atlas-specific design proof. The `AGENTS.md` workflow table decides whether a
+> slice is one-way. This system says which design work and runtime evidence that
 > slice needs. It does not grade taste and it does not make every UI edit wait
 > for a review.
 
@@ -29,83 +29,40 @@ The design gate protects four Atlas-specific properties:
 Decoration, generic “polish,” and a tidy screen that hides those properties do
 not pass.
 
-## Route from change facts
+## Proof by change class
 
-Run this after the PO pass and before implementation:
-
-```bash
-pnpm design:route -- --change=<change> [--change=<change>] --json
-```
-
-Supply every observable class. Do not supply “small,” “meaningful,” “safe,” or
-a desired proof plan; the router derives directions, independent review and its lenses,
-instruments, and scope.
-
-| Change fact | Use when | Derived design proof |
-|---|---|---|
-| `copy` | only visible words change | changed-path checks + Computer Use render loop; add `responsive` when length or wrapping can alter geometry |
-| `local-visual` | colour, type, spacing, radius, shadow, or local hierarchy changes inside the current system | affected-state design audit + Computer Use render loop |
-| `layout` | geometry changes without a new information architecture | affected-state design audit + Computer Use render loop |
-| `responsive` | breakpoint, reflow, touch, safe area, or scroll reserve changes | affected-state audit + affected bands + Computer Use render loop |
-| `interaction` | visible states, keyboard, modality, discoverability, or reversibility change | affected-state audit + Computer Use render loop |
-| `motion` | timing, easing, animation, camera travel, or reduced-motion output changes | real screen recording through `/ui-proof` + Computer Use render loop |
-| `topology-encoding` | a node/edge mark, relation channel, density rule, or graph-readable fact changes | audit + graph readability + contrast + Computer Use render loop |
-| `topology-gesture` | drag, pan, zoom, hit testing, layout work, or the frame loop changes | `/ui-proof` + Computer Use render loop |
-| `journey` | order, destination, next step, or completion signal changes | changed-path `/ui-proof` + Computer Use render loop |
-| `desktop-shell` | window, menu, AppKit/Tauri bridge, WKWebView, restoration, or lifecycle changes | touched-state installed-app proof + Computer Use render loop |
-| `agent-handoff` | the visible MCP/CLI next action or state-bound handoff changes | agent-handoff walkthrough + Computer Use render loop |
-| `design-contract` | a token, ramp, primitive, design rule, or enforcement contract changes | one reviewer (`tokens`, `attention`) + design-system audit + `/gate-probe` |
-| `new-surface` | a primary user-facing surface is added or removed | directions + one reviewer + full surface, responsive, and journey proof |
-| `information-architecture` | navigation, primary hierarchy, or grouping changes | directions + one reviewer + full surface, responsive, and journey proof |
-| `interaction-model` | the primary way a person selects, edits, confirms, or reverses work changes | directions + one reviewer (`attention`, `reversibility`) + full interaction and journey proof |
-| `attention-model` | the Atlas fact or action that wins attention changes across a primary state | directions + one reviewer (`attention`, `map-marks`) + full-surface proof |
-
-Signals compose. A topology drag animation can declare
-`topology-gesture,motion`; the result includes map performance and a recording,
-but not responsive or installed-app proof unless those facts also changed.
-
-Examples:
-
-```bash
-# Spacing nudge: no directions, review, responsive sweep, or recording.
-pnpm design:route -- --change=local-visual
-
-# Animation timing: recording is required; a full static audit is not inferred.
-pnpm design:route -- --change=motion
-
-# New installed workbench surface: the structural and desktop proofs compose.
-pnpm design:route -- --change=new-surface --change=desktop-shell
-```
-
-The route is an inspectable claim, not omniscience. If the diff shows an omitted
-class, rerun it with the missing fact. `pnpm checks:changed` remains the
-technical baseline.
+Before building, name every class the change touches; the `/ui-proof` table
+(`.agents/skills/ui-proof/workflow.md`) gives each class its look, its measured
+proof, and whether one `reviewer` follows. Do not substitute "small",
+"meaningful", or "safe" for a class. Classes compose: a topology drag animation
+is both a map-gesture and a timing change, so it takes map performance and a
+recording, but not responsive or installed-app proof unless those also changed.
+`pnpm checks:changed` remains the technical baseline.
 
 ## Pixel evidence contract
 
-Every route that changes rendered UI includes `computer-use-loop`, except a
-copy-only route, which includes `final-capture`: one fresh Computer Use capture
-of the affected state after the change, with no baseline or slice loop. Build
-rendered UI in small slices and look at each slice in the real browser, WebView,
-or installed app, through a fresh Computer Use screenshot and accessibility
-tree, before starting the next; do not build a whole screen unobserved. Use DOM
-rect and computed-style measurement for geometry questions. Keep one final
-capture (app/window, route, viewport) for the pull request. `/ui-build` owns
-the step-by-step loop.
+A words-only change takes one fresh `pnpm ui:look` capture of the affected state
+after the change, with no baseline or slice loop. Any other rendered change is
+built in small slices, and each slice is looked at with `pnpm ui:look` before
+the next starts; do not build a whole screen unobserved. Use DOM rect and
+computed-style measurement (`ui:look --audit`) for geometry questions. A window,
+menu, Tauri bridge or WKWebView state is captured in the installed app through
+Computer Use instead. Keep one final capture (route, width, or app window) for
+the pull request. `/ui-build` owns the step-by-step loop.
 
 Do not claim pass when screenshot capture is unavailable, the target is hidden,
 or the image belongs to a different window. Report the capability blocker.
-A design-contract edit with no rendered output does not invent pixels; combine
-`local-visual` when the contract changes appearance. Visible copy is rendered
-output and always uses the loop because wrapping, hierarchy, and action meaning
-can change.
+A token or primitive edit with no rendered output does not invent pixels; add
+the local-visual class when it changes appearance. Visible copy is rendered
+output and always takes its capture because wrapping, hierarchy, and action
+meaning can change.
 
 ## Motion evidence contract
 
 Motion is temporal output. Static screenshots, duration tokens, unit tests, and
 “looks smooth” do not prove it.
 
-Every `motion` route runs `/ui-proof` against a real macOS screen
+Every timing change runs `/ui-proof` against a real macOS screen
 recording, extracts uniform 30 fps frames, inspects a phase strip, and reports
 frame-to-frame stalls and spikes. It also proves the reduced-motion equivalent.
 Headless sequential screenshots are an explicitly named fallback, never a
@@ -117,10 +74,10 @@ continuous transition.
 
 ## Direction threshold
 
-`/ui-build` runs only when the router says `directions=yes`:
+`/ui-build` reads its directions guide only for:
 
-- new primary surface;
-- information architecture;
+- a new or removed primary surface;
+- information architecture, navigation, or grouping;
 - primary interaction model;
 - primary attention model.
 
@@ -130,25 +87,28 @@ breakpoint fixes, and motion tuning do not pay for divergence by default.
 
 ## Independent review
 
-Review runs only when `design:route` says `review.required=true`; it is not a
-generic quality layer. One `reviewer` that did not build the change judges the
-built artifact and proof packet through the routed lenses. The questions each
-lens asks live in `.claude/agents/reviewer.md` and its Codex brief.
+Review runs only for a new or removed primary surface, a navigation or
+grouping change, or a one-way change (`AGENTS.md`); it is not a generic quality
+layer. Token, ramp and primitive changes get the rendered inventory over
+`tests/e2e/audited-routes.ts` instead: a second seat of the same model adds a
+correlated view, not an independent one. One `reviewer` that did not build the
+change judges the built artifact and proof packet. The questions each lens asks
+live in `.claude/agents/reviewer.md` and its Codex brief.
 
-No UI lens always applies: every review starts with `moment` and `evidence`,
-and the router adds only the UI lenses the change facts implicate.
+Every review starts with `moment` and `evidence`; the brief adds only the UI
+lenses the surface has.
 
 The reviewer judges from the `/ui-build` §0-B captures, and for motion from
 a real recording; a missing capture is a finding. The author answers a finding
 once, only on a material conflict, and a one-way disagreement takes one second
-opinion, as in the PO independent review protocol. The owner decides,
+opinion, as in the reviewer brief. The owner decides,
 `design-guardian` applies the chosen correction and reruns only the proofs it
 invalidates, and "unchanged" is a valid verdict.
 
 ## No-Human-Designer Working Mode
 
 When no human designer is present, the accountable builder still cannot approve
-its own unmeasured pixels. The route and instruments provide the independent
+its own unmeasured pixels. The captures and instruments provide the independent
 facts; the owner chooses and `design-guardian` applies the smallest correction.
 If no independent reviewer can run, disclose lost independence. If Computer Use, recording, or a
 required runtime is unavailable, defer that proof rather than judge a diff by
@@ -156,17 +116,16 @@ eye.
 
 ## Build order
 
-1. Run the PO route and name the human ability being restored.
-2. Run `design:route` with every observed design change.
-3. If directed, run `/ui-build` and select one shape.
-4. Build through `/ui-build` using existing primitives and canonical
-   values in `docs/DESIGN-SYSTEM.md`; run the Computer Use render loop after
-   each coherent visual slice.
-5. Run the remaining proof packet returned by the router against the final
-   observed state.
-6. If directed, give one `reviewer` the built artifact, proof packet, and
-   routed lenses.
-7. The owner decides; apply that one decision and remeasure only changed proof.
+1. Name the human ability being restored and every class the change touches.
+2. For a new surface or a navigation or grouping change, run the `/ui-build`
+   directions guide and select one shape.
+3. Build through `/ui-build` using existing primitives and canonical
+   values in `docs/DESIGN-SYSTEM.md`; look at each coherent visual slice with
+   `pnpm ui:look`.
+4. Run the `/ui-proof` rows for those classes against the final observed state.
+5. When a row names one, give one `reviewer` the built artifact, proof packet,
+   and lenses.
+6. The owner decides; apply that one decision and remeasure only changed proof.
 
 The quality bar remains fixed; only irrelevant ceremony is removed.
 
@@ -180,7 +139,7 @@ Public references are principle sources, not visual templates.
   signature; invented quotations; or citing a source that changes no rule.
 - **Translation format:** `Source -> Atlas rule -> verifier`.
 
-The routing shape follows the same public testing principle Atlas already uses:
+The proof shape follows the same public testing principle Atlas already uses:
 test user-visible behavior in the rendered output and isolate the state under
 test ([Playwright best practices](https://playwright.dev/docs/best-practices)).
 Motion remains purposeful, brief, optional, and subordinate to content
@@ -203,12 +162,12 @@ principles but do not justify a second renderer. Reject renderer shopping unless
 an observed Atlas reading failure cannot be solved inside the current contract
 and a PO one-way decision explicitly replaces it.
 
-Topology changes declare separate facts:
+Topology changes name separate classes, each with its own `/ui-proof` row:
 
-- visual channel or density: `topology-encoding`;
-- drag/pan/zoom/layout runtime: `topology-gesture`;
-- temporal camera or focus behavior: `motion`;
-- renderer or canonical design vocabulary: `design-contract`.
+- visual channel or density: map mark, relation channel, density;
+- drag/pan/zoom/layout runtime: map drag, pan, zoom, hit test, frame loop;
+- temporal camera or focus behavior: timing, easing, animation, camera travel;
+- canonical design vocabulary: token, ramp, primitive interface.
 
 That separation prevents a colour adjustment from paying for node-drag
 performance and prevents a fast drag harness from approving unreadable marks.
@@ -235,7 +194,7 @@ Attention layers, Node Spec, motion rules, responsive reserves, and control
 primitives live only in `docs/DESIGN-SYSTEM.md`; token values are printed by
 `pnpm design:tokens`. Implementation rules
 live in `.claude/rules/design.md`; gate archaeology lives in
-`.claude/rules/design-gates.md`. Do not grow this router into a second value
+`.claude/rules/design-gates.md`. Do not grow this document into a second value
 catalog.
 
 ## Responsive and installed-app scope
@@ -245,8 +204,8 @@ the full 600/768/834/1024/1440/1920/2560 matrix for a new surface or information
 architecture. It measures rect intersections, `elementFromPoint` reachability,
 scroll reserve, and screenshots; class-string reasoning is not proof.
 
-Installed macOS app proof is required only when `desktop-shell` is present or a
-different route explicitly depends on WKWebView/window behavior. It covers the
+Installed macOS app proof is required only when a window, menu, Tauri bridge or
+WKWebView state changed, or another class explicitly depends on that behavior. It covers the
 touched state, not an automatic full release build. The proof records the
 installed app route, WebView marker, window identity, lifecycle result, and a
 Computer Use screenshot/accessibility tree.
@@ -259,9 +218,9 @@ restoration, menus, shutdown, or WKWebView-only defects.
 Completion answers four short questions:
 
 1. Which Atlas fact or action became easier to judge?
-2. Which route facts produced the proof packet?
-3. Where are the Computer Use render loop and, for motion, recording results?
+2. Which change classes produced the proof packet?
+3. Where are the `ui:look` captures and, for motion, the recording results?
 4. What remains unproved or was intentionally not run?
 
 Do not summarize omitted instruments as passes. “Not applicable” is valid only
-when the route facts make the omission inspectable.
+when the named classes make the omission inspectable.

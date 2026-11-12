@@ -112,8 +112,8 @@ export function checkDoc(repoPath, raw, { root = ROOT, decisions = decisionIds(r
   if (spec && !typeFitsFolder(docType, repoPath)) {
     report('doc_type', `a ${docType} does not live in ${path.posix.dirname(repoPath)}/ (allowed: ${spec.folders.map((f) => `docs/${f}`).join(', ')})`);
   }
-  if (frontmatter.status !== undefined && !statusValues(docType).includes(frontmatter.status)) {
-    report('status', `"${frontmatter.status}" is not one of ${statusValues(docType).join(', ')}`);
+  if (frontmatter.status !== undefined && !statusValues().includes(frontmatter.status)) {
+    report('status', `"${frontmatter.status}" is not one of ${statusValues().join(', ')}`);
   }
   if (frontmatter.area !== undefined && !DOC_AREAS.includes(frontmatter.area)) {
     report('area', `"${frontmatter.area}" is not one of ${DOC_AREAS.join(', ')}`);
@@ -314,37 +314,13 @@ export function citationProblems(root = ROOT) {
   return problems;
 }
 
-export const STANDING_DATED_DOCS = [
-  'docs/benchmark/FINDINGS-2026-08-25.md',
-  'docs/benchmark/FINDINGS-2026-08-31-change-flow.md',
-  'docs/benchmark/FINDINGS-2026-08-31-metric-split.md',
-  'docs/benchmark/FINDINGS-2026-08-31-screening-grade.md',
-  'docs/benchmark/FINDINGS-2026-08-31-two-graders.md',
-  'docs/benchmark/FINDINGS-2026-08-31.md',
-  'docs/benchmark/FINDINGS-2026-09-02-review-marks.md',
-  'docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md',
-  'docs/benchmark/FINDINGS-2026-09-06-wiki-probe.md',
-  'docs/benchmark/FINDINGS-2026-09-10-wiki-retrieval.md',
-  'docs/benchmark/LIBRARY-ACP-MAINTENANCE-2026-09-11.md',
-  'docs/benchmark/LIBRARY-ACP-SOURCE-FIDELITY-2026-09-11.md',
-  'docs/benchmark/LIBRARY-COMMUNITY-2026-09-11.md',
-  'docs/benchmark/LIBRARY-LOCAL-WIKI-CONTEXT-2026-09-11.md',
-  'docs/benchmark/MCP-ONE-CLICK-2026-09-07.md',
-  'docs/benchmark/STRATA-2026-09-06.md',
-  'docs/benchmark/THREE-PROBE-2026-09-06.md',
-];
-
 const DATED_NAME = /20\d{2}-?[01]\d-?[0-3]\d/;
 const DATED_HOMES = /^docs\/(?:specs|records|ontology|benchmark\/results)\//;
 
 export function datedDocProblems(trackedDocs) {
-  const problems = trackedDocs
-    .filter((file) => DATED_NAME.test(file) && !DATED_HOMES.test(file) && !STANDING_DATED_DOCS.includes(file))
+  return trackedDocs
+    .filter((file) => DATED_NAME.test(file) && !DATED_HOMES.test(file))
     .map((file) => ({ file, key: 'path', message: 'is a new dated document: a plan, audit or note belongs in a commit body or pull request, a spec in docs/specs/' }));
-  for (const file of STANDING_DATED_DOCS) {
-    if (!trackedDocs.includes(file)) problems.push({ file, key: 'path', message: 'is gone: remove it from STANDING_DATED_DOCS in scripts/docs/check-doc-meta.mjs' });
-  }
-  return problems;
 }
 
 export function run(root = ROOT) {

@@ -1,5 +1,5 @@
 /**
- * Node label paint, ported from the B2+ prototype (`docs/prototypes/topology-b2plus.html`).
+ * Node label paint.
  * Project and domain names read at every zoom band; capability and element names ramp with the node's
  * own `revealAlpha`; a selected or hovered node is always full contrast; a dim node is 0.
  */

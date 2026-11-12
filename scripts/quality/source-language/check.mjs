@@ -25,10 +25,6 @@ export const SOURCE_COMMENT_LANGUAGE_BASELINES = Object.freeze({
     unexpectedFiles: 0,
     unexpectedLanguageCodePoints: 0,
   }),
-  historicalPrototype: Object.freeze({
-    unexpectedFiles: 0,
-    unexpectedLanguageCodePoints: 0,
-  }),
 });
 
 /**
@@ -86,7 +82,7 @@ export const SOURCE_STRING_LANGUAGE_ALLOWLIST = Object.freeze([
     id: 'benchmark-korean-prompts',
     path: 'scripts/benchmark/benchmark.mjs',
     why:
-      'The prompts are the measurement stimulus. Transcripts recorded under docs/benchmark/results '
+      'The prompts are the measurement stimulus. Earlier benchmark transcripts '
       + 'were produced with this exact wording, so rewriting them silently breaks comparability.',
     allow: /^\s*"[^"]*",?$/,
   }),
