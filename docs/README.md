@@ -24,7 +24,7 @@ or a test that parses them pins their path.
 | Product direction and shipping behavior | `PRODUCT-DIRECTION.md`, `FEATURES.md` (index of `features/`), `../README.md` |
 | Product and design decisions | `PRODUCT-OWNER-OPERATING-SYSTEM.md`, `PRODUCT-DESIGN-OPERATING-SYSTEM.md`, `records/decisions/` (`pnpm decisions:find`) |
 | Architecture and routes | `ARCHITECTURE.md`, then `package.json`, `next.config.ts`, and `app/layout.tsx` |
-| Ontology model and quality | `ONTOLOGY-ATLAS-SPEC.md`, `ONTOLOGY-QUALITY.md`, `FOUNDATIONS.md`, `GLOSSARY.md`, `MEANING-WORKFLOW-PLAN.md` |
+| Ontology model and quality | `ONTOLOGY-ATLAS-SPEC.md`, `ONTOLOGY-QUALITY.md`, `FOUNDATIONS.md`, `GLOSSARY.md` |
 | Agent and terminal surfaces | `../mcp/README.md`, `../cli/README.md`, `AGENT-GRAPH-WORKFLOW.md` |
 | Verification and release | `DEVELOPMENT-CHECKS.md`, `DESKTOP-MACOS.md`, `TROUBLESHOOTING.md` |
 | Visual rules | `DESIGN-SYSTEM.md` |
@@ -41,9 +41,7 @@ or a test that parses them pins their path.
 | `specs/` | dated feature design specs | yes |
 | `ontology/` | the project's dogfood ontology vault | yes |
 | `records/` | decision, change, release and pilot fragments | `records/README.md` only |
-| `plans/` | plans, historical and one live program | no |
-| `launch/` | marketing copy and the demo shoot | no |
-| `benchmark/`, `prototypes/` | dated evidence and drafts | no |
+| `benchmark/` | the agent benchmark protocol, tasks and rubric | no |
 | `assets/readme/` | images the root README shows | no |
 
 The vault's frontmatter is graph data; use the MCP/CLI rather than manually
@@ -54,10 +52,9 @@ which resolves to their GitHub page.
 
 `DECISIONS.md`, `CHANGELOG.md` and `PO-PILOT.md` are frozen history; new decisions, changes and
 pilot runs are fragments under `records/` written by `pnpm record:new`
-([how](records/README.md)); the PO pilot is closed and its records are frozen. `plans/` and
-`benchmark/` hold dated context, not current instructions. A deleted superseded
-artifact can be recovered from Git when a specific historical question requires
-it.
+([how](records/README.md)); the PO pilot is closed and its records are frozen. Dated plans, findings,
+launch drafts and prototypes are not kept in the tree; Git history recovers
+them when a specific historical question requires it.
 
 ## Updating documentation
 

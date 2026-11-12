@@ -1,4 +1,4 @@
-// `ontology-atlas moment [vault]`: time from init/absorb to the first agent read (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9),
+// `ontology-atlas moment [vault]`: time from init/absorb to the first agent read,
 // from `.ontology-atlas/telemetry.local.json` (../lib/telemetry.mjs). `--mark` records it by hand for agents calling
 // MCP read tools directly, which stay uninstrumented because they declare readOnlyHint: true.
 

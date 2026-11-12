@@ -97,5 +97,4 @@ existing page/folder contract, not entailment or semantic superiority. A newest
 answer may still have an advisory orphan finding until another page links it.
 
 The implementation lives in `src/features/library/lib/questions/answer-revision.ts`,
-`answer-revision-store.ts`, and the Library view. The ongoing qualification scope
-is recorded in [the Library quality program](../plans/LIBRARY-QUALITY-PROGRAM.md).
+`answer-revision-store.ts`, and the Library view.

@@ -18,10 +18,10 @@ import {
   SOURCE_STRING_LANGUAGE_BASELINES,
 } from './check.mjs';
 
-test('classifies current, test, and historical prototype source', () => {
+test('classifies current and test source', () => {
   assert.equal(classifySourcePath('src/example.ts'), 'current');
   assert.equal(classifySourcePath('tests/contract/example.test.ts'), 'testFixture');
-  assert.equal(classifySourcePath('docs/prototypes/example.html'), 'historicalPrototype');
+  assert.equal(classifySourcePath('public/example.html'), 'current');
   assert.equal(isSupportedSourcePath('docs/GUIDE.md'), false);
   assert.equal(isSupportedSourcePath('.githooks/pre-push'), true);
   assert.equal(isSupportedSourcePath('.githooks/post-checkout'), true);
@@ -77,18 +77,17 @@ test('finds Rust, CSS, hash, and HTML comments', () => {
     { path: 'src-tauri/src/lib.rs', content: 'let text = "한국어"; // 러스트 주석\n' },
     { path: 'app/globals.css', content: '/* CSS 주석 */\n.a { color: #fff; }\n' },
     { path: '.github/workflows/checks.yml', content: 'name: checks # 워크플로 주석\n' },
-    { path: 'docs/prototypes/example.html', content: '<!-- 프로토타입 주석 -->\n' },
+    { path: 'public/example.html', content: '<!-- 프로토타입 주석 -->\n' },
   ];
   const result = auditSourceCommentEntries(entries);
   assert.equal(result.unexpectedFiles, 4);
-  assert.equal(result.scopes.current.unexpectedFiles, 3);
-  assert.equal(result.scopes.historicalPrototype.unexpectedFiles, 1);
+  assert.equal(result.scopes.current.unexpectedFiles, 4);
 });
 
 test('finds CSS and JavaScript comments embedded in HTML without reading prose as code', () => {
   const result = auditSourceCommentEntries([
     {
-      path: 'docs/prototypes/embedded.html',
+      path: 'public/embedded.html',
       content: [
         '<!-- owner\'s English note -->',
         '<style>/* CSS 한국어 주석 */</style>',
@@ -143,7 +142,6 @@ test('ratchets every source-comment scope in both directions', () => {
   const audit = auditSourceCommentEntries([
     { path: 'src/current.ts', content: '// 현재 주석\n' },
     { path: 'tests/example.test.ts', content: '// 테스트 주석\n' },
-    { path: 'docs/prototypes/example.html', content: '<!-- 과거 주석 -->\n' },
   ]);
   const exact = Object.fromEntries(
     Object.entries(audit.scopes).map(([scope, value]) => [

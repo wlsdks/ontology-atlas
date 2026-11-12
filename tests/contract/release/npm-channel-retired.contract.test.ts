@@ -55,7 +55,6 @@ const DEAD_INVOCATION: ReadonlyArray<{ id: string; pattern: RegExp }> = [
  * automatically**.
  */
 const TIER_A_GLOBS = [
-  "docs/launch/**/*.md",
   ".github/**/*.md",
   ".github/**/*.yml",
   ".github/**/*.yaml",
@@ -187,7 +186,7 @@ describe("the npm channel is retired: block dead npx instructions", () => {
     );
   });
 
-  it("Tier A: no dead command in launch drafts, issue templates, contributor guide or starters", async () => {
+  it("Tier A: no dead command in issue templates, contributor guide or starters", async () => {
     const { glob } = await import("node:fs/promises");
     const files: string[] = [];
     for (const pattern of TIER_A_GLOBS) {

@@ -65,7 +65,7 @@ A few things worth knowing before you start:
 - The map shows declared relationships, not proof of runtime impact; its key explains every mark and direction. [Map](docs/features/map/flat-dial.md)
 - An empty folder offers its start actions, and a failed start can be retried without overwriting files. Popup tours are retired. [First run](docs/features/first-run.md)
 - Library setup and checks need the app; a browser offers the app or adding files. [Library](docs/features/library/workspace.md)
-- Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/specs/2026-11-01-project-planning-documents.md)
+- Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/FEATURES.md)
 - Git's send-only action does not commit new file changes; it asks you to review a stale folder or branch again. Pull can change files across the repository. [Git](docs/features/git.md)
 - Before a folder is connected, the app keeps Library, Planning, Agents and Briefing reachable. [Features](docs/FEATURES.md)
 
@@ -124,7 +124,7 @@ The installed app's **Briefing** prototype opens a chosen Git repository without
 ## Status
 
 Atlas is early. Our benchmark has not yet shown better answers with Atlas, and
-Atlas was slower ([the correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
+Atlas was slower ([the correction](docs/benchmark/README.md#current-measurement-status)).
 Construction trials, their failures and limits are in
 [the construction measurements](docs/benchmark/CONSTRUCTION.md).
 

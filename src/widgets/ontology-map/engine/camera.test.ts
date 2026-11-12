@@ -104,8 +104,7 @@ describe("stepCamera", () => {
 
   // Regression (QA first-light pass): the prototype's elastic pan-bounds
   // clamp (`updateCamera()`'s `< panBounds.minX` branch, 0.14 pull factor +
-  // 0.85 velocity damping, `docs/prototypes/topology-b2plus.html` lines
-  // 906-915) was never ported when `stepCamera`/`momentum.ts` landed —
+  // 0.85 velocity damping) was never ported when `stepCamera`/`momentum.ts` landed —
   // `momentum.test.ts` even pins a landing target of -14870 world units for
   // a modest 0.5px/ms flick at scale=1. In the prototype that huge target is
   // harmless because this per-frame clamp reins the camera back toward

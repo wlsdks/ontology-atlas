@@ -1,7 +1,6 @@
 /**
  * Camera-space conversions — `worldToScreen`/`screenToWorld`/`fitWorldTarget`/
- * `hitTestWorld` (prototype `worldToScreen()`/`screenToWorld()`/`fitTarget()`/
- * `hitTest()`, `docs/prototypes/topology-b2plus.html` §8/§9).
+ * `hitTestWorld`.
  *
  * Camera convention (`engine/spring.ts`/`engine/momentum.ts` JSDoc):
  * `camera.x`/`camera.y` are the WORLD point the camera is centered on and

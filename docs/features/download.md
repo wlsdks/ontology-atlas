@@ -52,7 +52,7 @@ had become false).
 
 ### `/download` — desktop app download (rebuilt 2026-07-18, Windows beta 2026-08-01)
 
-RATIO-SYSTEM 1600px container / 960px centered utility column.
+1600px page container (`--page-max`) / 960px centered utility column.
 
 #### Header
 - Back link · eyebrow · right-aligned "macOS · DMG · GitHub Release" caption · `LocaleSwitch`

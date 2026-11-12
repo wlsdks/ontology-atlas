@@ -1,7 +1,6 @@
 /**
  * sessionStorage helpers for dismissing the INDEX "get started" module. Not localStorage: looking
- * around is a dismiss, not an opt-out, so the guidance returns in a new session (the approved
- * docstring in `docs/prototypes/first-run-v3-flagship.html`).
+ * around is a dismiss, not an opt-out, so the guidance returns in a new session.
  */
 export const FIRST_RUN_STARTER_DISMISSED_KEY = 'demo:first-run-starter-dismissed:v1';
 

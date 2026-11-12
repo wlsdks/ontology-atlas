@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
-import { checkDoc, citationProblems, contractBumpProblems, datedDocProblems, listLivingDocs, routeExists, run, STANDING_DATED_DOCS } from './check-doc-meta.mjs';
+import { checkDoc, citationProblems, contractBumpProblems, datedDocProblems, listLivingDocs, routeExists, run } from './check-doc-meta.mjs';
 import { createDoc } from './new-doc.mjs';
 import { formerPaths } from './doc-history.mjs';
 import { DOC_TYPES } from '../lib/docs/doc-types.mjs';
@@ -104,7 +104,7 @@ test('doc:new writes a document docs:meta accepts, for every creatable kind', ()
       );
     }
     const created = [];
-    for (const type of ['authority', 'guide', 'feature', 'design', 'runbook', 'spec', 'plan', 'launch']) {
+    for (const type of ['authority', 'guide', 'feature', 'design', 'runbook', 'spec']) {
       created.push(createDoc({ type, area: 'library', slug: `probe-${type}`, date: '2026-09-26', root }));
     }
     assert.throws(() => createDoc({ type: 'feature', area: 'library', slug: 'probe-feature', root }), /EEXIST/);
@@ -169,7 +169,7 @@ test('run reports problems with the file and the key', () => {
 });
 
 test('instruction files cite no retired document; a live citation of a superseded one names its successor', () => {
-  const doc = (status, extra = '') => `---\ntitle: T\ndoc_type: finding\nstatus: ${status}\narea: agents\n${extra}---\n# T\n`;
+  const doc = (status, extra = '') => `---\ntitle: T\ndoc_type: runbook\nstatus: ${status}\narea: agents\n${extra}---\n# T\n`;
   const root = fixture({
     'docs/benchmark/OLD.md': doc('historical'),
     'docs/benchmark/NEW.md': doc('historical'),
@@ -204,8 +204,6 @@ test('instruction files cite no retired document; a live citation of a supersede
 });
 
 test('a new dated document outside specs, records, the vault and benchmark output is a problem', () => {
-  const standing = [...STANDING_DATED_DOCS];
-  assert.deepEqual(datedDocProblems([...standing, 'docs/specs/2026-10-09-x.md', 'docs/benchmark/results/2026-10-09-run.md', 'docs/README.md']), []);
-  assert.deepEqual(datedDocProblems([...standing, 'docs/plans/ROLLOUT-2026-10-09.md']).map((problem) => problem.file), ['docs/plans/ROLLOUT-2026-10-09.md']);
-  assert.deepEqual(datedDocProblems(standing.slice(1)).map((problem) => problem.file), [standing[0]]);
+  assert.deepEqual(datedDocProblems(['docs/specs/2026-10-09-x.md', 'docs/benchmark/results/2026-10-09-run.md', 'docs/README.md']), []);
+  assert.deepEqual(datedDocProblems(['docs/plans/ROLLOUT-2026-10-09.md']).map((problem) => problem.file), ['docs/plans/ROLLOUT-2026-10-09.md']);
 });

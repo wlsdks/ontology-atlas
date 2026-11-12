@@ -481,8 +481,7 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   and a headless `useAcpSession` whose `autoDecide` answers every permission request
   from the scope and can now refuse (`{ reject }`). `LibraryRoundsProvider` mounts it
   once in `AppShell`, above every route; `/library/?tab=rounds` only reads. No Rust
-  change: hashing, the watcher and the ACP commands already existed. Spec:
-  `docs/specs/2026-09-17-library-rounds-design.md`.
+  change: hashing, the watcher and the ACP commands already existed.
 - **Automations (2026-09-20).** `src/views/automations/` is the schedule manager and
   `src/app/automations-workspace/` composes it with the one `LibraryRoundsProvider` clock.
   Its Ontology lane registers `kind: "ontology"` read-only ACP review rounds: the runner may
@@ -975,4 +974,4 @@ timestamps as proof of ordering.
 
 Changes uses `tauri-change-briefing.ts` and `git/briefing/prs/cache.rs` for app-only historical copies of explicitly read public PR descriptions. `public-pr-copies/copies.json` under app-local data is a bounded, versioned disposable envelope, separate from source transfer receipts and ontology truth. It stores no folder grants, model results or commit bodies. Native restore requires a fresh granted source receipt, current selected remote and local merge/introduction proof; its scope hashes canonical folder and filesystem identity, excluding HEAD. Disk-only restore leaves every selected commit remotely unchecked.
 
-Unix storage uses component-wise no-follow directory handles, private regular files, a bounded record-count/byte reader, a dedicated cross-process lock and atomic replacement. Clear changes a persisted generation so an earlier network read cannot repopulate copies; its command has no caller path or source-grant prerequisite. Unsupported safe storage degrades to session-only fresh reads. The web bridge returns absence. See [the retention spec](specs/2026-10-26-reuse-read-pr-originals.md) for limits, reconciliation and recovery proof.
+Unix storage uses component-wise no-follow directory handles, private regular files, a bounded record-count/byte reader, a dedicated cross-process lock and atomic replacement. Clear changes a persisted generation so an earlier network read cannot repopulate copies; its command has no caller path or source-grant prerequisite. Unsupported safe storage degrades to session-only fresh reads. The web bridge returns absence.

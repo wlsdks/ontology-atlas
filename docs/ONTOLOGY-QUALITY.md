@@ -30,8 +30,8 @@ results: `relaxedMinimumCoverage` identifies zero minimum coverage requirements,
 while `maximumForbiddenLeakage: 0` remains a strict upper bound. Raw coverage
 metrics can still be calculated even when their minimum requirement is relaxed.
 None of these fields evaluates the correctness of an independent construction.
-This is the reporting contract in [V1.0](MEANING-WORKFLOW-PLAN.md#v10--make-evaluation-scope-impossible-to-confuse-with-construction-quality),
-not completion of the source-first construction program.
+This is a reporting contract that keeps evaluation scope apart from
+construction quality, not completion of the source-first construction program.
 
 Whole-vault validation establishes scanned shape, reference, and path facts.
 `health` also reports meaning currentness; neither a resolvable path nor a fresh

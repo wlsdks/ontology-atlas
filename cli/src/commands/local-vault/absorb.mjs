@@ -1,4 +1,4 @@
-// `ontology-atlas absorb <file...> [--vault X] [--write]` (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9). Dry-run by default;
+// `ontology-atlas absorb <file...> [--vault X] [--write]`. Dry-run by default;
 // `--write` lands policy sections as documents, only suggests architecture sections, skips injection suspects, and
 // backs up the source before slimming it to a pointer. Logic: `../lib/mcp-bridge/absorb.mjs`, twin of `mcp/src/vault/absorb.mjs` (tests/contract/vault-format/absorb.contract.test.ts).
 
@@ -178,7 +178,7 @@ function runAbsorbWithRuntime(args, runtime) {
       throw error;
     }
 
-    // Local-only telemetry baseline (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+    // Local-only telemetry baseline (lib/telemetry.mjs).
     stampAbsorbWriteCompleted(vaultPath);
 
     process.stdout.write(
