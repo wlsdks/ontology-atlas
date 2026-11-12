@@ -48,7 +48,16 @@ Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
 elements are far enough apart. Zooming in only adds names. A selected concept
 and every far end of its lines are always named; a forced name keeps off every
-domain title when any placement can.
+domain title when any placement can. Under a lit picture a lit name tries its
+sides in a fixed order (right, left, below, above) and takes the first that no
+lit line crosses and no other name or disc occupies. Where every free side is
+crossed, the name keeps the first free side and draws on a backing: a
+rounded veil of the canvas ground just around its glyphs, translucent enough
+that the domain light beneath dims rather than being cut out, and opaque
+enough that no line reads through the glyphs;
+a lit domain name a line crosses is backed the same way. Placement is checked
+against each lit line's drawn curve over the whole zoom step, so the result
+holds at any zoom inside the step, and costs O(lit names × lit lines).
 
 Decision `9cc79e76-48db-4606-9376-c050cb690221` and the branch records it
 built on are overturned by decision `38e33f2e-dd02-4874-bd5f-2b1b5891072e`. Scoped
@@ -116,15 +125,36 @@ for it.
 
 A selected capability, element or orphan grows to `--map-graph-selected-disc-px`
 with one ring, and its name takes `--map-graph-selected-name-px` beside, below
-or above it, clear of every domain title. A capability's reach line sits
+or above it, at least `--map-graph-selected-title-gap-px` from every domain
+title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
 (`is_a` included), a zero side left out. While a
 member is selected its domain's name steps down to the secondary ink. When a
-click opens the detail panel over the selection, the camera slides sideways at
-the same scale until that name block clears the panel, on the canvas spring. A
-second selection mid-slide retargets it from where the camera is; a press or
-drag stops it at once.
+click selects, the camera frames the selection, its domain disc and every lit
+concept inside that domain, with every side their names may take, inside the
+free map (clear of the explorer, the detail panel, the tool row and the key)
+and `--map-graph-frame-margin-px` from each of those edges. When the whole lit
+reach fits at the current zoom it frames the whole reach; far ends in other
+domains otherwise may stay off screen. When the domain's lit set does not fit
+it zooms out only as far as it needs and never below the opening fit. When the
+framed view does not read clear, it zooms in about the selection, at most
+`--map-graph-select-zoom-max-ratio` times the zoom of the click, never past the
+zoom band's top, and only as far as the domain's lit set, its names on the
+sides they take there, still fits. Within that range it takes the smallest zoom
+that reads best, judged in order: no two lit names in the domain overlap and
+none sits on a lit disc; the selection's ring keeps
+`--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
+the domain named. A domain selection is judged the same way for its members,
+and a member that cannot be named at any of those zooms stays unnamed. A zoom
+that reads no better than the view the click left is never taken, so a click
+stays a small move and the rest of the map stays in view. The fit bisects
+eight times and the search samples eight zooms per octave, then bisects four
+times: at most one name admission per zoom step. The
+move is the least pan that frames, with any zoom, as one slide on the canvas
+spring: a second selection mid-slide retargets it from where the camera is,
+and a press or drag stops it at once. Deselecting a click selection leaves the
+camera where it is.
 
 ## Zoom
 

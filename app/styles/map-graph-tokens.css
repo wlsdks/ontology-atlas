@@ -80,6 +80,15 @@
     --map-graph-selected-ring-gap-px: 5;
     --map-graph-selected-ring-px: 1.5;
     --map-graph-selected-name-px: 15;
+    --map-graph-selected-title-gap-px: 8;
+    --map-graph-frame-margin-px: 24;
+    --map-graph-selected-disc-gap-px: 28;
+    --map-graph-select-zoom-max-ratio: 2;
+    --map-graph-backing-radius-px: 6;
+    --map-graph-backing-pad-x-px: 1;
+    --map-graph-backing-pad-y-px: 0;
+    --map-graph-backing-alpha: 0.86;
+    --map-graph-backing-feather-px: 7;
     --map-graph-line-bow: 0.16;
     --map-graph-line-alpha: 0.9;
     --map-graph-line-taper-px: 3.4;

@@ -79,6 +79,20 @@ export interface FlatGraphPaintTokens {
   selectedRingGapPx: number;
   selectedRingPx: number;
   selectedNamePx: number;
+  /** Air between the selected name block and a domain's name. */
+  selectedTitleGapPx: number;
+  /** Clearance a selection's framing keeps from every edge of the free map, the detail panel included. */
+  frameMarginPx: number;
+  /** Least air between a selection's ring and its domain disc that a selection's framing zooms in for. */
+  selectedDiscGapPx: number;
+  /** The most a selection's framing zooms in, as a multiple of the zoom the reader clicked at. */
+  selectZoomMaxRatio: number;
+  /** A backed name's backing: corner radius, padding around the glyphs, the ground's alpha in it, and the blur its edge fades over. */
+  backingRadiusPx: number;
+  backingPadXPx: number;
+  backingPadYPx: number;
+  backingAlpha: number;
+  backingFeatherPx: number;
   lineBow: number;
   lineAlpha: number;
   lineTaperPx: number;

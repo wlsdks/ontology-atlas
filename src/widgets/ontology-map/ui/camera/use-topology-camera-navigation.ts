@@ -1,7 +1,7 @@
 "use client";
 
 import { branchFocusTarget, branchTargetLeash } from "./branch-frame/target";
-import { branchSelectionMargin } from "./branch-frame/selection-margin";
+import { selectionSlideTarget } from "./branch-frame/selection-margin";
 
 import {
   useEffect,
@@ -12,7 +12,7 @@ import {
 import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
-import { recordSelectionCamera, selectionNudgeTarget, type SelectionCamera } from "../../model/camera/flat-selection-camera";
+import { recordSelectionCamera, type SelectionCamera } from "../../model/camera/flat-selection-camera";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
@@ -339,7 +339,7 @@ export function useTopologyCameraNavigation({
       // A click only selected, so a new viewport only re-checks that the panel does not cover the node.
       const node = world.nodeById.get(focused);
       const current = cameraTargetRef.current;
-      const nudge = motion === "tracking" || !node ? null : selectionNudgeTarget(current, node, width, { left: tokens.safeInsetLeft, right: tokens.safeInsetRight }, branchSelectionMargin(world, realmDataRef.current?.dial ?? world.dial, focused, current.tscale, width - tokens.safeInsetLeft - tokens.safeInsetRight));
+      const nudge = motion === "tracking" || !node ? null : selectionSlideTarget(world, realmDataRef.current?.dial ?? world.dial, focused, current, { width, height }, tokens, overviewScaleRef.current);
       if (nudge === null) return false;
       selectionCameraRef.current = recordSelectionCamera(memory, { slug: focused, framed: false, current, landed: nudge, gesture: cameraGestureRevisionRef.current });
       cameraTargetRef.current = nudge;
