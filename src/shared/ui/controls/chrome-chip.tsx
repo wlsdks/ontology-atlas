@@ -18,7 +18,7 @@ export interface ChromeChipProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
 }
 
 const CHIP_CLASS =
-  'inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-label tracking-label text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--chrome-active-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-3.5 [&>svg]:shrink-0' +
+  'inline-flex h-[var(--chrome-tile-size)] items-center justify-center gap-2 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-body tracking-body text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--chrome-active-surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] [&>svg]:size-3.5 [&>svg]:shrink-0' +
   ` ${CONTROL_TRANSITION} ${CONTROL_PRESS_TRAVEL}`;
 
 /**
@@ -27,7 +27,7 @@ const CHIP_CLASS =
  * multiplies. `min-w-0` lets the label truncate in a crowded row.
  */
 export const CHROME_STATUS_CHIP_CLASS =
-  'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] min-w-0 max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-label tracking-label text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
+  'topology-chrome-in pointer-events-auto flex h-[var(--chrome-tile-size)] min-w-0 max-w-full items-center gap-1.5 rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] px-3.5 text-body tracking-body text-[color:var(--color-text-secondary)] shadow-[var(--chrome-shadow)]';
 
 /** What cannot be pressed must not look pressable; the disabled idiom `Button` uses. */
 const DISABLED_CLASS =

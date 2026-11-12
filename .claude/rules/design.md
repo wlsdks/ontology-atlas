@@ -31,7 +31,7 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
 "Line-height ramp".
 
 - Chrome pills and tiles are 36px (`--chrome-tile-size`); chrome labels use
-  `text-label` (11px).
+  `text-body` (12.5px).
 - Rail icons are one 20px step (`--app-nav-rail-icon-size`). The rail has no
   brand mark; above the destinations it carries only the open folder's identity
   and switcher (`features/vault-switch`). Below `lg` no chrome names the folder;

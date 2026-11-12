@@ -676,13 +676,13 @@
   /* Line-height ramp — 7 px values + 2 free, 1:1 pair with type steps. Tailwind v4
      `--leading-*` namespace generates leading-<step> utilities.
 
-     Why independent ramp (tight/snug/normal…) and not size pairs: line height is a property of font size, and real data in this repo already says so — the trend for named utilities is px fixed (leading-4/5/6 = 16/20/24px, 121 instances) and the scale contract already specifies one pair (Chrome label 11px + 16px line height). Also consistent with the Dimension Regularity Charter: **line height is the seed of line box**, so fixing in px ensures rhythm in repeated card sets does not depend on character count/language.
+     Why independent ramp (tight/snug/normal…) and not size pairs: line height is a property of font size, and real data in this repo already says so — the trend for named utilities is px fixed (leading-4/5/6 = 16/20/24px, 121 instances) and the scale contract already specifies one pair (label 11px + 16px line height). Also consistent with the Dimension Regularity Charter: **line height is the seed of line box**, so fixing in px ensures rhythm in repeated card sets does not depend on character count/language.
 
      Values are on a 2px grid, and three pairs (label 16 · body 20 · title 24) have the same values as already used leading-4/5/6 — giving names to what is already the trend, not creating new specs.
 
      Korean sets the upper limit: Korean boxes are tighter than Latin, so same line height reads denser. So shared ramp values are set by **the margin Korean requires**, and Latin follows that margin (Latin is generous with wide line height, Korean is not generous with narrow line height). No locale branching — since the app mixes two languages in one paragraph, branching would misalign line heights within the same paragraph. */
   --leading-caption: 0.875rem; /* Pair: text-caption 9.5px — micro label · transcript */
-  --leading-label: 1rem; /* Pair: text-label 11px — chip · badge · chrome label (16px of the lock contract) */
+  --leading-label: 1rem; /* Pair: text-label 11px — chip · badge */
   --leading-body: 1.25rem; /* Pair: text-body 12.5px — default body · list row */
   --leading-body-lg: 1.375rem; /* Pair: text-body-lg 14px — emphasized body · subtitle */
   --leading-title: 1.5rem; /* Pair: text-title 16px — panel/card title */

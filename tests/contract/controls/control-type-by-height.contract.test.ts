@@ -101,11 +101,6 @@ const HAND_TYPE_EXCEPTIONS: Array<{ file: string; type: TypeStep; reason: string
     type: 'title',
     reason: 'the round title renames in place, so the control is the heading',
   },
-  {
-    file: 'src/features/agent-activity/ui/AgentActivityChip.tsx',
-    type: 'label',
-    reason: 'a map chrome chip wears the chrome label step at the chrome tile height',
-  },
 ];
 
 /** A hand `min-h` is a floor under content that may stack on a row, a card or a multi-line field. */
