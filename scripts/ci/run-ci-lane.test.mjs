@@ -168,7 +168,7 @@ test('a full self-verifying PR still runs the decision ledger gate', () => {
     base: 'origin/main',
     eventName: 'pull_request',
   });
-  assert.ok(commands.includes("pnpm decisions:check -- --base='origin/main'"));
+  assert.equal(commands[0], "pnpm decisions:check -- --base='origin/main'");
 });
 
 test('comparison refs remain one shell argument and malformed shards fail closed', () => {

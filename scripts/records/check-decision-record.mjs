@@ -189,8 +189,8 @@ console.error('[decisions] this change tripped a significant-decision trigger bu
 for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
-[decisions]   1. run /product-check (or pnpm po:route) with one Atlas outcome and every change/boundary fact
-[decisions]   2. if the route is review, give one reviewer the evidence and the lenses the route lists
+[decisions]   1. run pnpm decisions:find <terms> and cite the record this change keeps or overturns
+[decisions]   2. if the change is one-way (AGENTS.md workflow table), give one reviewer the evidence
 [decisions]   3. create a decision fragment with the before-state, decision delta, dissent, and falsifier
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
