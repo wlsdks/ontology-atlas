@@ -897,7 +897,8 @@ function stepRadius(id: string): number {
  */
 function focusLinks(motion: GraphMotion): void {
   const P = F.P;
-  const chorded = motion.current.selected && motion.settled && !F.input.reducedMotion;
+  // A selection the map opened with (a deep link, a rebuilt world) changed nothing here, so it does not light.
+  const chorded = motion.current.selected && motion.settled && Number.isFinite(motion.changedAt) && !F.input.reducedMotion;
   for (let lineIndex = 0; lineIndex < motion.drawnCount; lineIndex += 1) {
     const { line, reach, current } = motion.drawn[lineIndex]!;
     if (reach <= DRAWN_INK) continue;
