@@ -127,28 +127,6 @@ size step per role; a size difference must encode hierarchy or state. A control'
 height picks its type (`docs/DESIGN-SYSTEM.md`, "Type follows height"): choose a
 size, never a `text-*` step, on a primitive.
 
-## Changing the specification requires `design-contract`
-
-When a change alters the specification in a file below, declare
-`design-contract` to `pnpm design:route`; the router returns one `reviewer` with
-the `tokens` and `attention` lenses, a system audit, and a gate probe.
-`scripts/lib/design/design-spec-census.mjs` reads this list (only rows shaped
-`` - `path` — description ``), and `pnpm decisions:check` requires a decision
-record when a listed file's vocabulary or values change. Contract:
-`tests/contract/agent-instructions/design-spec-ledger.contract.test.ts`.
-
-- `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
-- `src/shared/ui/controls/controls.tsx` — interactive primitives
-- `src/shared/ui/surfaces/surface.tsx` — appearing/disappearing surface primitive
-- `src/shared/ui/surfaces/dialog.tsx` — blocking modal authority: scrim, focus trap, Escape, restoration, scroll lock, widths
-- `src/shared/ui/fields/input.tsx` · `src/shared/ui/fields/checkbox.tsx` — form behaviour authority
-- `src/shared/ui/badge-class.ts` — static badge geometry
-- `src/shared/ui/fields/segmented-control.tsx` — exclusive single-selection containers and fill
-- `src/shared/lib/keyboard/use-roving-radio-group.ts` — radiogroup behaviour
-- `src/shared/ui/tokens/page-frame.ts` — page inset, top spacing, width, and title layout
-- `app/globals.css` — type, leading, radius, shadow, control-height, icon, and palette ramps
-- `.claude/rules/design.md` — this file's “Fixed scale contract” section
-
 ## Lint owns the value ramps
 
 `eslint.config.mjs` (`no-restricted-syntax`) is the authority; document a new

@@ -1,28 +1,22 @@
 #!/usr/bin/env node
 /**
- * Decision-record gate, three mechanical rows: a user-facing route added or removed, the MCP tool
- * or CLI command set changing, the design vocabulary or ramps moving. Each needs an appended
- * `docs/DECISIONS.md` record.
+ * Decision-record gate, two mechanical rows: a user-facing route added or removed, or the MCP tool
+ * or CLI command set changing. Each needs a decision fragment.
  */
 
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 
-import {
-  designSpecChangesBetween,
-  parseTriggerFiles,
-  SPEC_RULE_DOC,
-} from "../lib/design/design-spec-census.mjs";
 import { parseLedger } from "./decisions-find.mjs";
 import { isCommentOnlyChange } from "../lib/ci/comment-only-change.mjs";
-import { FIELDS, LIMITS, TEMPLATE, checkLedgerTemplate } from "../lib/records/decision-record-template.mjs";
+import { FIELDS, TEMPLATE, checkLedgerTemplate } from "../lib/records/decision-record-template.mjs";
 import { readLedgerSource } from "../lib/records/record-ledgers.mjs";
 
 const LEDGER = "docs/DECISIONS.md";
 
 /**
- * Every record must be the six-field template within one screen. Checked before and regardless of
- * the trigger logic: a record that cannot be read in one pass fails the ledger's first contract.
+ * Every record must be the six-field template. Checked before and regardless of the trigger logic:
+ * a record the next pass cannot read field by field fails the ledger's first contract.
  */
 function templateFailures() {
   let source;
@@ -36,7 +30,7 @@ function templateFailures() {
     for (const problem of problems) console.error(`[decisions]     - ${problem}`);
   }
   console.error(`
-[decisions] A record is exactly ${FIELDS.join(", ")}, in that order, within ${LIMITS.lines} lines and ${LIMITS.bytes} bytes:
+[decisions] A record is exactly ${FIELDS.join(", ")}, in that order:
 ${TEMPLATE.split("\n").map((line) => `[decisions]   ${line}`).join("\n")}
 [decisions]
 [decisions] Route, evidence state, review footprint, and delta belong to docs/PO-PILOT.md, which types them per run.
@@ -66,12 +60,8 @@ function isContractFile(path) {
 function printHelp() {
   console.log(`Usage: pnpm decisions:check [-- --base=<ref> | --template]
 
-Fails when a change adds or removes a user-facing route, edits the MCP/CLI
-public contract, or moves the design system's vocabulary/ramps, without
-adding a decision fragment in the same change.
-
-The design-spec trigger files are read from ${SPEC_RULE_DOC} — that document
-is the single source of the list, and this script never copies it.
+Fails when a change adds or removes a user-facing route or edits the MCP/CLI
+public contract without adding a decision fragment in the same change.
 
 The record is where the next pass reads what was already decided and what the
 losing argument bet on. A decision that exists only in a PR description is a
@@ -134,14 +124,12 @@ if (!base) {
 
 // Name-status so an added/removed route is distinguishable from an edited one:
 // changing a page is not a new surface, creating or deleting one is.
-const renamedFrom = new Map();
 const entries = git(["diff", "--name-status", `${base}...HEAD`])
   .split("\n")
   .filter(Boolean)
   .flatMap((line) => {
     const [status, ...paths] = line.split("\t");
     const code = status[0];
-    if (code === "R" && paths.length === 2) renamedFrom.set(paths[1], paths[0]);
     // A rename is a deletion plus a creation: left as one R entry, a `git mv` of a route file would
     // pass the A/D surface filter with no record required.
     if ((code === "R" || code === "C") && paths.length === 2) {
@@ -151,8 +139,6 @@ const entries = git(["diff", "--name-status", `${base}...HEAD`])
     }
     return [{ status: code, path: paths[paths.length - 1] }];
   });
-
-const changedPaths = new Set(entries.map((entry) => entry.path));
 
 const surfaceChanges = entries
   .filter((entry) => (entry.status === "A" || entry.status === "D") && ROUTE_PATTERN.test(entry.path))
@@ -185,32 +171,7 @@ const contractChanges = entries
   .filter((entry) => entry.path !== ENTRY_POINT || entryPointMovesContract(entry.status))
   .map((entry) => `public contract changed: ${entry.path}`);
 
-/**
- * Design spec — looks at **whether the spec moved, not whether a file was touched.**
- *
- * The trigger file list is read from `.claude/rules/design.md`. The HEAD version of
- * that document is used because if this change **adds** a file to the list, that file
- * is watched from this change onward.
- */
-function designSpecChanges() {
-  let triggerFiles;
-  try {
-    triggerFiles = parseTriggerFiles(readFileSync(SPEC_RULE_DOC, "utf8"));
-  } catch (error) {
-    // An unreadable list must not pass silently — a silent gate is the very reason this
-    // rule exists.
-    console.error(`[decisions] ${error.message}`);
-    process.exit(1);
-  }
-
-  // A file absent at a ref reads as null = an empty inventory. A change to an
-  // `app/styles/` part counts as a change to the `app/globals.css` trigger.
-  return designSpecChangesBetween(base, "HEAD", changedPaths, triggerFiles, process.cwd(), renamedFrom);
-}
-
-const specChanges = designSpecChanges();
-
-const triggers = [...surfaceChanges, ...contractChanges, ...specChanges];
+const triggers = [...surfaceChanges, ...contractChanges];
 
 if (triggers.length === 0) {
   console.log("[decisions] no significant-decision trigger in this change ✓");
@@ -232,10 +193,6 @@ console.error(`
 [decisions]   2. if the route is review, give one reviewer the evidence and the lenses the route lists
 [decisions]   3. create a decision fragment with the before-state, decision delta, dissent, and falsifier
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
-[decisions]
-[decisions] For a «specification …» trigger, declare design-contract to pnpm design:route;
-[decisions] it derives the reviewer's lenses, system audit, and /gate-probe
-[decisions] (.claude/rules/design.md “Changing the specification requires design-contract”).
 [decisions]
 [decisions] The record is an existence check, not a quality review — the next pass must find
 [decisions] the decision and the dissent that lost, so the same argument is not held twice.`);

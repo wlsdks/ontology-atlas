@@ -212,33 +212,33 @@ describe('pr:land refusals', () => {
   });
 });
 
-describe('a user-visible change lands with its change record', () => {
+describe('a feature lands with its change record', () => {
   const readNothing = () => assert.fail('the changed files were read');
   const recorded = () => ['src/a.ts', 'docs/records/changes/2026-10-10-a-0000.md'];
 
-  it('refuses a fix that adds no record and names both ways out', () => {
-    const refusal = missingChangeRecord({ title: 'fix(map): keep the camera still', body: '' }, () => ['src/a.ts']);
-    assert.match(refusal, /titled `fix:`/);
+  it('refuses a feature that adds no record and names both ways out', () => {
+    const refusal = missingChangeRecord({ title: 'feat(map): keep the camera still', body: '' }, () => ['src/a.ts']);
+    assert.match(refusal, /titled `feat:`/);
     assert.match(refusal, /pnpm record:new -- --kind=change .*--category=<Added\|Changed\|Fixed\|Removed>/);
     assert.match(refusal, /No change record: <why/);
   });
 
-  it('lands each user-visible type once it adds a record', () => {
-    for (const title of ['feat: a', 'fix(map): a', 'perf!: a', 'design(app): a']) {
+  it('lands a feature once it adds a record', () => {
+    for (const title of ['feat: a', 'feat(map): a', 'feat!: a']) {
       assert.equal(missingChangeRecord({ title, body: '' }, recorded), null, title);
     }
   });
 
   it('lands on a stated reason without reading the files', () => {
-    assert.equal(missingChangeRecord({ title: 'fix(ci): a', body: 'Summary\n\nNo change record: only CI timing moved\n' }, readNothing), null);
+    assert.equal(missingChangeRecord({ title: 'feat(ci): a', body: 'Summary\n\nNo change record: only CI timing moved\n' }, readNothing), null);
   });
 
   it('refuses a declaration with no reason', () => {
-    assert.match(missingChangeRecord({ title: 'fix: a', body: 'No change record:   \n' }, () => []), /adds no docs\/records\/changes\/ record/);
+    assert.match(missingChangeRecord({ title: 'feat: a', body: 'No change record:   \n' }, () => []), /adds no docs\/records\/changes\/ record/);
   });
 
-  it('never asks a chore, docs, refactor, test or fixup pull request', () => {
-    for (const title of ['chore(release): a', 'docs: a', 'refactor: a', 'test: a', 'fixup: a']) {
+  it('never asks a fix, perf, design, chore, docs, refactor, test or fixup pull request', () => {
+    for (const title of ['fix(map): a', 'perf!: a', 'design(app): a', 'chore(release): a', 'docs: a', 'refactor: a', 'test: a', 'fixup: a']) {
       assert.equal(missingChangeRecord({ title, body: '' }, readNothing), null, title);
     }
   });

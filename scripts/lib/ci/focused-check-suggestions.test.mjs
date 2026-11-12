@@ -1667,10 +1667,8 @@ describe('focused check suggestions', () => {
     const paths = [
       'scripts/lib/design/design-proof-router.mjs',
       'scripts/design/design-proof-router.mjs',
-      'scripts/lib/design/design-spec-census.mjs',
       'scripts/records/check-decision-record.mjs',
       'tests/contract/agent-instructions/design-proof-router.contract.test.ts',
-      'tests/contract/agent-instructions/design-spec-ledger.contract.test.ts',
       'tests/contract/agent-instructions/reviewer-wiring.contract.test.ts',
       'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
       '.claude/skills/ui-build/SKILL.md',

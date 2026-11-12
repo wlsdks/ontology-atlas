@@ -19,7 +19,8 @@ ignored static imports without requiring MCP dependencies. `pnpm dev` and
 `pnpm build` refresh them again. If installation used `--ignore-scripts`, run
 `pnpm docs-vault:build` before types, lint or tests.
 
-A decision uses the six-field template printed by `pnpm decisions:check -- --template`.
+A decision is a dated heading and the six fields printed by
+`pnpm decisions:check -- --template`, at any length.
 Put that body in a temporary file, then run:
 
 ```sh
@@ -29,9 +30,10 @@ pnpm decisions:find short-subject
 
 A user-visible change is one concrete fact with category `Added`, `Changed`,
 `Fixed` or `Removed`. Internal maintenance belongs in commit messages.
-`pnpm pr:land` refuses a `feat`, `fix`, `perf` or `design` pull request that
-adds no `changes/` record, unless its body carries the line
-`No change record: <why no user can notice it>`.
+`pnpm pr:land` refuses a `feat` pull request that adds no `changes/` record,
+unless its body carries the line `No change record: <why no user can notice it>`.
+Record a visible `fix`, `perf` or `design` change the same way; landing does
+not ask for it.
 
 ```sh
 pnpm record:new -- --kind=change --date=2026-09-13 --slug=short-subject --category=Fixed --input=/tmp/change.txt

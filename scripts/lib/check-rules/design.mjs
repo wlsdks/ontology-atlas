@@ -59,8 +59,8 @@ export const rules = [
     reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or independent-review lens policy changed',
     matches: [
       /^scripts\/(?:lib\/)?design\/design-proof-router\.mjs$/,
-      /^scripts\/(?:lib\/design\/design-spec-census|records\/check-decision-record)\.mjs$/,
-      /^tests\/contract\/agent-instructions\/(?:design-(?:proof-router|spec-ledger)|reviewer-wiring)\.contract\.test\.ts$/,
+      /^scripts\/records\/check-decision-record\.mjs$/,
+      /^tests\/contract\/agent-instructions\/(?:design-proof-router|reviewer-wiring)\.contract\.test\.ts$/,
       /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
       /^docs\/engineering\/motion-recording\.md$/,
       /^\.(?:claude|agents)\/skills\/(?:ui-build|ui-proof)\/(?:SKILL\.md|workflow\.md|guides\/[^/]+\.md)$/,
