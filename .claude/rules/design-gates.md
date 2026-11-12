@@ -49,7 +49,7 @@ gate's own incident history belongs in that gate file's header, not here.
   invalid use that shares its file or value.
 - Hex is banned inside arbitrary-value syntax only; a global ban is noise.
 - z-index below 20 is local stacking; 20 and above use `--z-*`. A token with
-  zero consumers is misinformation (`unused-token-ratchet`).
+  zero consumers is misinformation.
 
 ## Ratchets and removal
 

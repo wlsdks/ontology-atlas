@@ -1,8 +1,0 @@
-{
-  "file": "src/features/project-edit/ui/ProjectForm.tsx",
-  "count": 2,
-  "claim": "no-spec",
-  "proof": "accent-[color:var(--color-indigo-brand)]",
-  "why": "One checkbox and its label. `checkbox-target-size.contract.test.ts` already fixes the checkbox size and target, so a field spec here would compete with it.",
-  "conditional": "When the checkbox contract is removed, delete this row and move the checkbox to the debt list."
-}

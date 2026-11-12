@@ -136,8 +136,7 @@ function collect(files: string[]): Site[] {
          * The floor arrives two ways — as a literal (`min-h-6 atlas-touch-floor`) or from
          * the **value layer** (`fieldLabel({ row: true })`). Not knowing the latter makes
          * this gate **punish progress** the moment the spec moves into the value layer —
-         * the failure hit twice today. What `fieldLabel`'s `row` emits is guarded by its
-         * own contract (`field-class.contract.test.ts`).
+         * the failure hit twice today.
          */
         const viaValueLayer = /fieldLabel\s*\(\s*\{[^}]*\brow:\s*true/.test(labelTag);
         const floor = labelTag.match(AA_FLOOR_CLASS);

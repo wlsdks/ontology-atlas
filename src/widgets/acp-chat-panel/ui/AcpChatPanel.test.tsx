@@ -297,7 +297,6 @@ describe('chat panel: draws only what happened', () => {
     /*
      * Not `flex-1`: a `basis-0 flex-1` slot is served last, so the runtime name takes its full width
      * and clips the mode's word. Content-sized serves the control first; `min-w-0` lets it yield to send.
-     * Proof across the drag range: `agent-composer-footer-width.spec.ts`.
      */
     expect(choices).toHaveClass('flex', 'min-w-0');
     expect(choices).not.toHaveClass('flex-1');

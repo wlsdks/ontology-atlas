@@ -142,4 +142,12 @@ describe("useTopologyAuthoring — the domain a new concept is filed under (D10)
       { value: "domains/agent-access", label: "Agent access" },
     ]);
   });
+
+  it("stamps a concept created on screen as written by a person", async () => {
+    const { result } = renderAuthoring(vi.fn());
+    await act(async () => {
+      await result.current.createNode({ title: "Billing", kind: "capability" });
+    });
+    expect(result.current.createNodeProposal?.markdown).toContain("created_by: human");
+  });
 });

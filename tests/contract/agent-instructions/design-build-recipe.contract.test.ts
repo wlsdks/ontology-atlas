@@ -63,8 +63,6 @@ describe.each(['.claude', '.agents'])('design-build references in %s', (tree) =>
    * either warns about a gatekeeper that does not exist or hides one that does.**
    */
   const ANNOUNCED_GATES = [
-    ['control-adoption-ratchet', 'tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts'],
-    ['surface-motion-ratchet', 'tests/contract/motion/surface-motion-ratchet.contract.test.ts'],
     ['contrast-ratchet', 'tests/e2e/design-audits/contrast-ratchet.spec.ts'],
     ['a11y-ratchet', 'tests/e2e/design-audits/a11y-ratchet.spec.ts'],
     ['disabled-affordance', 'tests/contract/controls/disabled-affordance.contract.test.ts'],

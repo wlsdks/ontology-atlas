@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 /**
  * The hero headline typed one character at a time. Every character is laid out from the first
  * frame and typing only switches ink on, or each keystroke reflows the block. Words, not
- * characters, are `nowrap`, or Korean breaks between syllables (`tests/e2e/typography/korean-word-break.spec.ts`).
+ * characters, are `nowrap`, or Korean breaks between syllables.
  * The name is one `aria-label` from `heroSentence()`; a hidden copy doubled `h1.innerText`.
  */
 
@@ -102,7 +102,7 @@ export function HeroTypewriter({
   /*
    * The count follows the wall clock, not the number of callbacks, so a throttled main thread
    * still finishes on budget. Only a catch-up's newest character lands, or stacked landings narrow
-   * the line (`download-gateway-grid.spec.ts`). `Date.now()` is what the fake timers drive.
+   * the line. `Date.now()` is what the fake timers drive.
    */
   useEffect(() => {
     if (!start || reduced) return;

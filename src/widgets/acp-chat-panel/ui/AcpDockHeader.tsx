@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl';
 import { CloseButton } from '@/shared/ui';
 
 /**
- * The host owns closing: the meaning workbench has its own close band; the chat panel draws none
- * (`control-adoption-ratchet.contract.test.ts`). A dock with no band of its own wears this one.
+ * The host owns closing: the meaning workbench has its own close band; the chat panel draws none.
+ * A dock with no band of its own wears this one.
  */
 export function AcpDockHeader({ title, caption, onClose }: { title: string; caption?: string; onClose: () => void }) {
   const t = useTranslations('acpChat');

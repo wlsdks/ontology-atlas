@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/ontology-map/ui/OntologyMapEdgePanel.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The edge panel's one action is a primary `<Button>` as a button and a `<Link>` through `buttonVariants({ variant: \"primary\", size: \"sm\" })` when it navigates to the editor, so the docked slot looks the same either way."
-}

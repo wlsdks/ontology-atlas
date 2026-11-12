@@ -4,8 +4,7 @@ import { cn } from '@/shared/lib/cn';
 
 /**
  * Single source of class strings for pressable controls: values live here, while behaviour
- * (`type`, accessible name) is a component or lint concern. New controls are held by
- * `tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts`.
+ * (`type`, accessible name) is a component or lint concern.
  */
 
 /**

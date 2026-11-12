@@ -4,7 +4,7 @@ import { installDesktopRailRuntime, mountDesktopVault } from "../desktop-rail-ar
 
 /**
  * The dock mounts only behind the desktop bridge, so the static a11y opener list cannot reach it.
- * The stub never resolves `acp_start`, so the turn stays pending (`surface-motion-ratchet`).
+ * The stub never resolves `acp_start`, so the turn stays pending.
  */
 const RUNTIME = {
   id: "claude-code",

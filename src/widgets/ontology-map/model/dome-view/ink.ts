@@ -40,8 +40,7 @@ export function domeLineWidthFactor(u: number): number {
  * Floor under a resting relation line's `fog alpha × width factor` product (a lit near line
  * has 0.90); stacked, fog and width would draw the far end at 3.5% of the near ink. Past the
  * crossover (u ≈ 0.17) alpha rises as width falls. The near side is unchanged; width, halo,
- * node fog, perspective and draw order still carry depth. The browser gate is
- * the spec `tests/e2e/map/3d/map-3d-relation-ink.spec.ts`.
+ * node fog, perspective and draw order still carry depth.
  */
 const DOME_EDGE_INK_FLOOR = 0.62;
 
@@ -68,7 +67,7 @@ export function domeEdgeFogAlpha(u: number): number {
  * The ink floor reaches the eye only while the stroke covers a device pixel; thinner, the
  * rasteriser splits it across two rows and the peak contrast falls, which on a DPR 1 screen
  * gave back the whole gain. The caller converts this at its rasterising ratio
- * (`domeEdgeMinWidthPx`). Browser gate: `tests/e2e/map/3d/map-3d-relation-ink.spec.ts`.
+ * (`domeEdgeMinWidthPx`).
  */
 export const DOME_EDGE_DEVICE_WIDTH_FLOOR = 1.0;
 

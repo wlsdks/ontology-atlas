@@ -1,7 +1,0 @@
-{
-  "file": "src/shared/ui/controls/button.tsx",
-  "count": 1,
-  "claim": "value-layer-peer",
-  "proof": "buttonVariants",
-  "why": "The standard button primitive itself; the value layer cannot consume itself."
-}

@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/docs-vault/ui/DocsVaultViewer.tsx",
-  "count": 5,
-  "claim": "prose",
-  "proof": "prose-link",
-  "why": "The five markdown `a` overrides (project wikilink, vault wikilink, external http, resolved internal, repo blob) render inside body sentences, so the line box belongs to the prose parent."
-}

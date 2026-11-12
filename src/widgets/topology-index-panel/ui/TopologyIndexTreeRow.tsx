@@ -150,8 +150,7 @@ export function TopologyIndexTreeRow({
         onClick={() => onSelect(node.id)}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        // `min-h-9` (36), a step of the control ladder
-        // (`control-height-ladder-scope.contract.test.ts`); rows with a subcount line are taller.
+        // `min-h-9` (36), a step of the control ladder; rows with a subcount line are taller.
         className={`atlas-touch-floor grid min-h-9 grid-cols-[24px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--map-panel-metric-surface)] text-[color:var(--map-panel-text-primary)]"

@@ -631,8 +631,7 @@ export function DocsVaultEditor({
           })}
         </span>
         {/*
-         * The status chips on this row share one type step
-         * (`tests/contract/typography/editor-status-chip-dialect.contract.test.ts`).
+         * The status chips on this row share one type step.
          */}
         <span
           className={

@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/atlas-git-panel/ui/StepList.tsx",
-  "count": 3,
-  "claim": "chrome-token",
-  "proof": "--git-row-h",
-  "why": "The change rows, the \"rest\" toggle and the `STEP_ROW` grid rows have a height of `clamp(38px, 4.2vh, 48px)`, redefined to 26px at narrow widths and 44px on coarse pointers. The value layer's height vocabulary has only fixed steps, so it cannot express a viewport function."
-}

@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx",
-  "count": 2,
-  "claim": "shape-gap",
-  "proof": "flex-col",
-  "why": "The two bottom tabs stack icon above label, but `row` is defined by horizontal alignment (`items-center` + `text-left`) and cannot produce that layout. Too few places stack this way to justify a new axis.",
-  "conditional": "When more than six vertically stacked controls exist, add an orientation axis to `row` and delete this row."
-}

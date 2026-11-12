@@ -33,9 +33,8 @@ proof for temporal output, not an optional craft review.
 
 CI cannot enforce the 50 ms frame bar. Run the headed bar on the static export
 before approving a primitive: `MAP_PERF_BARS=1 PLAYWRIGHT_STATIC=1 pnpm exec
-playwright test --project=post-merge --headed tests/e2e/motion` (add
-`map-flat-dial-motion.spec.ts` for the map). Put every printed `[smoothness]`
-line in the pull request.
+playwright test --project=post-merge --headed tests/e2e/motion`. Put every
+printed `[smoothness]` line in the pull request.
 
 ## 1. Prepare a deterministic state
 

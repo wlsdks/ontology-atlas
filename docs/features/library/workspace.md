@@ -531,8 +531,6 @@ for. And the canvas stands on the **map's own blueprint grid** (`--map-grid-mino
 canvases in this product share one floor. Every mark still clears the 3:1 non-text floor over
 the worst of that ground — page 12.77:1, source 5.74:1, concept and edge 4.90:1, the selected
 node 3.97:1 over a major grid line — and the grid is 1.07:1 from the canvas it rules.
-`tests/e2e/library/graph/library-graph-picture.spec.ts` holds the occupancy, the band, both fills and the
-name placement at both windows on all three folders.
 
 **A press opens a card beside the mark, and the picture shows where knowledge flows**
 (2026-09-12). A press used to leave for the page, which is the one thing a person cannot
@@ -580,7 +578,6 @@ four picture fixtures at 1512x901, 1040x720 and 1920x1080: the three folders und
 unchanged pixel for pixel (the six-document folder keeps its 97 strict-amber pixels at 1512),
 and the three-hundred-source folder with 480 unverified citations goes from 5,202 amber pixels
 and 15.57% of its ink at the narrowest window to 0, with total graph ink down 9.5-22.4%.
-`tests/e2e/library/graph/library-graph-picture.spec.ts` holds both arms and the three routes back.
 
 **The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
 the action: one cited source is a single **View original** button carrying the file name;

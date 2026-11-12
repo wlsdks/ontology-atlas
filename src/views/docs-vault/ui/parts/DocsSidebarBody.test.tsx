@@ -295,7 +295,7 @@ describe("DocsSidebarBody icon row search toggle and count", () => {
     expect(active.getAttribute("aria-label")).toContain("3");
   });
 
-  /** jsdom has no container queries; `docs-sidebar-head.spec.ts` measures the threshold in a render. */
+  /** jsdom has no container queries. */
   it("draws the active name only when the row is wide enough", () => {
     const docs = [makeDoc("a", "A", new Date().toISOString())];
     renderSidebar(docs, {

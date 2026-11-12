@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/topology-controls/ui/HubRail.tsx",
-  "count": 1,
-  "claim": "shape-gap",
-  "proof": "h-16 w-5",
-  "why": "The hub rail handle on the map's left edge is a 64×20 vertical bar. It fits no height ladder of the value layer's shapes: chips and pills are wide and `icon` is square. It is the app's only edge grab.",
-  "conditional": "When a second edge-grab handle exists, name the shape in the value layer and delete this row."
-}

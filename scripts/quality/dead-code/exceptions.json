@@ -116,12 +116,6 @@
       "witness": "resetStaggerSessionForTests"
     },
     {
-      "key": "frontend:runtime:exports:src/shared/ui/tokens/reading-measure.ts:PROSE_MEASURE_PX",
-      "reason": "Three layout specs hold the rendered column to this default-root measure; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "tests/e2e/typography/prose-measure-calibration.spec.ts",
-      "witness": "PROSE_MEASURE_PX"
-    },
-    {
       "key": "frontend:runtime:exports:src/views/download/ui/showpiece-player.ts:TEST_ENV",
       "reason": "Figure tests build tracks against a fixed environment instead of computed styles jsdom cannot resolve; test files are not runtime entries, so the lane cannot see this consumer.",
       "consumer": "src/views/download/ui/ChangeFigure.test.tsx",

@@ -1,22 +1,5 @@
 export const rules = [
   {
-    order: 5100,
-    command: 'pnpm exec playwright test tests/e2e/agents/acp-working-shimmer.spec.ts',
-    reason: 'the working shimmer on in-flight ACP rows changed',
-    matches: [
-      /^src\/widgets\/acp-chat-panel\/ui\/working-ink\.ts$/,
-      /^app\/styles\/base-foundation\.css$/,
-    ],
-  },
-  {
-    order: 5101,
-    command: 'pnpm exec playwright test tests/e2e/typography/cjk-font-fallback.spec.ts',
-    reason: 'the Japanese and Chinese font stack changed',
-    matches: [
-      /^app\/styles\/lang-cjk\.css$/,
-    ],
-  },
-  {
     order: 5102,
     command: 'pnpm exec playwright test tests/e2e/gray-area/text-scale.spec.ts',
     reason: 'the gray-area inspector at larger text sizes changed',
@@ -25,30 +8,11 @@ export const rules = [
     ],
   },
   {
-    order: 5103,
-    command: 'pnpm exec playwright test tests/e2e/typography/hangul-tracking.spec.ts',
-    reason: 'caps tracking on Hangul text changed',
+    order: 5101,
+    command: 'pnpm exec playwright test tests/e2e/typography/cjk-font-fallback.spec.ts',
+    reason: 'the Japanese and Chinese font stack changed',
     matches: [
-      /^app\/styles\/shell\.css$/,
-      /^app\/styles\/tokens\.css$/,
-    ],
-  },
-  {
-    order: 5104,
-    command: 'pnpm exec playwright test tests/e2e/insights/insights-motion-feedback.spec.ts',
-    reason: 'insights copy feedback and fill motion changed',
-    matches: [
-      /^src\/shared\/motion\/feedback-glyph\.tsx$/,
-      /^app\/styles\/motion-feedback\.css$/,
-    ],
-  },
-  {
-    order: 5105,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-checkbox.spec.ts',
-    reason: 'checkbox state motion changed',
-    matches: [
-      /^src\/shared\/ui\/fields\/checkbox\.tsx$/,
-      /^app\/styles\/motion-checkbox\.css$/,
+      /^app\/styles\/lang-cjk\.css$/,
     ],
   },
   {
@@ -62,15 +26,6 @@ export const rules = [
     ],
   },
   {
-    order: 5107,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-press.spec.ts',
-    reason: 'control press and hover motion changed',
-    matches: [
-      /^src\/shared\/ui\/control-class\.ts$/,
-      /^src\/shared\/ui\/controls\/button\.tsx$/,
-    ],
-  },
-  {
     order: 5108,
     command: 'pnpm exec playwright test tests/e2e/motion-sampler.spec.ts',
     reason: 'the motion sampler instrument changed',
@@ -79,79 +34,11 @@ export const rules = [
     ],
   },
   {
-    order: 5109,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-selection-indicator.spec.ts',
-    reason: 'the sliding selection indicator motion changed',
-    matches: [
-      /^src\/shared\/motion\/use-sliding-indicator\.ts$/,
-      /^src\/shared\/motion\/spring\.ts$/,
-      /^app\/styles\/motion-indicator\.css$/,
-    ],
-  },
-  {
-    order: 5110,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-shared-element.spec.ts',
-    reason: 'the shared-element morph into detail changed',
-    matches: [
-      /^src\/shared\/motion\/shared-element\.ts$/,
-      /^app\/styles\/motion-morph\.css$/,
-      /^src\/widgets\/ontology-map\/ui\/OntologyMapDetailPanel\.tsx$/,
-      /^src\/widgets\/ontology-map\/ui\/detail-panel\/[\w-]+\.tsx?$/,
-    ],
-  },
-  {
-    order: 5111,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-stagger.spec.ts',
-    reason: 'staggered entrance motion changed',
-    matches: [
-      /^src\/shared\/motion\/stagger\.ts$/,
-      /^app\/styles\/motion-stagger\.css$/,
-    ],
-  },
-  {
-    order: 5112,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-surfaces.spec.ts',
-    reason: 'tooltip fade motion changed',
-    matches: [
-      /^src\/shared\/ui\/hints\/tooltip\.tsx$/,
-      /^app\/styles\/motion-surface\.css$/,
-    ],
-  },
-  {
-    order: 5113,
-    command: 'pnpm exec playwright test tests/e2e/motion/motion-work-status.spec.ts',
-    reason: 'work-status and scan progress motion changed',
-    matches: [
-      /^src\/shared\/motion\/work-status\.tsx$/,
-      /^src\/shared\/motion\/work-progress\.tsx$/,
-      /^app\/styles\/motion-work\.css$/,
-      /^src\/views\/architecture\/ui\/HarnessScanProgressPanel\.tsx$/,
-    ],
-  },
-  {
-    order: 5114,
-    command: 'pnpm exec playwright test tests/e2e/typography/prose-measure-calibration.spec.ts',
-    reason: 'the prose line measure changed',
-    matches: [
-      /^src\/shared\/ui\/tokens\/reading-measure\.ts$/,
-      /^app\/styles\/tokens\.css$/,
-    ],
-  },
-  {
     order: 5115,
     command: 'pnpm exec playwright test tests/e2e/settings/settings-text-size.spec.ts',
     reason: 'the text size setting changed',
     matches: [
       /^src\/shared\/lib\/preferences\/text-size\.ts$/,
-      /^app\/styles\/base-responsive\.css$/,
-    ],
-  },
-  {
-    order: 5116,
-    command: 'pnpm exec playwright test tests/e2e/settings/text-zoom-ramp.spec.ts',
-    reason: 'the root-relative type ramp changed',
-    matches: [
-      /^app\/styles\/tokens\.css$/,
       /^app\/styles\/base-responsive\.css$/,
     ],
   },

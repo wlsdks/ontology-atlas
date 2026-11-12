@@ -81,7 +81,7 @@
     /*
      * Trail star ink matches the map's own starfield (`render/starfield.ts`) and collides with no amber
      * or indigo role. `shared/lib/map-canvas/star-emission.ts` explains why the walked star wears no
-     * cross; gate: `tests/contract/map/canvas-composite-license.contract.test.ts`.
+     * cross.
      */
     --color-footprint-trail-star: #ececf0;
     --map-numeral-shadow: #08080a;
@@ -439,8 +439,7 @@ RATIO-SYSTEM §4 datasheet 352px scale-up gratitude: safeInsetRight is
 only read in `computeOverviewFitScale`/`computeOverviewCameraTarget` (fit when no node selected) — `computeFocusCameraTarget` (the only time the datasheet is actually visible, i.e., node selected) does not reference safeInset at all (`topology-camera-math.ts`). Thus even if the datasheet width increases, there is no reason for the "safe area when invisible" value to change, so it remains 120 — we did not mechanically expand left/right padding just because the panel widened. Verified no actual collision via live check on 1512/1920 (`.qa-scratch/datasheet-gear/`). */
     /*
      * Each side lane is the chrome on that side plus 52 of air (left 24+300+52, right 24+36+52), so the
-     * fit centres the drawing between them. `tests/contract/map/map-fit-side-air.contract.test.ts` derives
-     * every lane from the chrome tokens and fails on drift.
+     * fit centres the drawing between them.
      */
     --map-safe-inset-left: 376;
     --map-safe-inset-right: 112;

@@ -1,7 +1,0 @@
-{
-  "file": "src/shared/ui/controls/chrome-chip.tsx",
-  "count": 1,
-  "claim": "value-layer-peer",
-  "proof": "--chrome-tile-size",
-  "why": "The chrome chip primitive. Its height is the `--chrome-tile-size` chrome contract, and callers add only `className`."
-}

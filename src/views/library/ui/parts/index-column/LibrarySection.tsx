@@ -496,7 +496,7 @@ export function LibrarySection({
       <div className={searchHost ? "flex min-w-0 flex-1 flex-col gap-1" : "flex flex-none flex-col gap-1 px-3 pb-2"}>
         {/* The field's words start on the column's text line: the box is drawn here with the chips' edge,
            inset and slot, and the field inside is `bare`. The slot holds a filter mark since the magnifier
-           belongs to Find documents. A `div`, not a `label` (`control-adoption-ratchet`). */}
+           belongs to Find documents. A `div`, not a `label`. */}
         <div data-testid="library-search-box" className="atlas-touch-floor flex h-7 min-w-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-a46)]">
           <IndexGlyph>
             <ListFilter size={ICON_SIZE.sm} aria-hidden className="text-[color:var(--color-text-quaternary)]" />

@@ -343,8 +343,7 @@ test('every drawn stroke says its sentence, and no sentence touches anything', a
   expect(rest.drawn).toBeGreaterThan(0);
   /* Adjacent strokes carry their rule; where a measured count shares the gap the rule wins. */
   expect(rest.drawn).toBeLessThanOrEqual(rest.strokes);
-  /* Every role in a hexagonal profile touches every other, so nothing recedes here; the hover
-     transition is measured on the seven-role profile in architecture-role-ledger.spec.ts. */
+  /* Every role in a hexagonal profile touches every other, so nothing recedes here. */
 });
 
 
