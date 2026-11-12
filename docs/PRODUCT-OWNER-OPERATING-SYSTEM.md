@@ -250,9 +250,8 @@ those gates.
 
 ## Significant decision record
 
-A record is six fields in this order, within 24 lines and 2,000 bytes;
-`pnpm decisions:check` refuses anything else, on every record. Short
-records stay readable before a decision is convened.
+A record is six fields in this order; `pnpm decisions:check` refuses
+anything else, on every record.
 
 ```md
 ## YYYY-MM-DD — <the decision in one line>

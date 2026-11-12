@@ -387,8 +387,8 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Decision ledger triggers
 
 **Run**: `pnpm decisions:check`
-**Proves**: A change tripping a mechanical significant-decision trigger (new/removed page route, edited public CLI/MCP contract, or design-system specification change) has a matching append to `docs/DECISIONS.md`.
-**Escalate**: `pnpm exec vitest run tests/contract/agent-instructions/design-spec-ledger.contract.test.ts` verifies the trigger file list itself is not duplicated and stays non-empty.
+**Proves**: A change tripping a mechanical significant-decision trigger (new/removed page route or edited public CLI/MCP contract) adds a decision fragment under `docs/records/decisions/`, and every record since 2026-07-01 is the six-field template.
+**Escalate**: `pnpm test:decisions`.
 **Fix**: Supply evidence and change/boundary facts to `pnpm po:route -- --help` for a routed review.
 
 ### Demo clip declaration vs shipped asset
@@ -872,7 +872,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Merging a pull request
 
 **Run**: `pnpm test:pr:land`
-**Proves**: against a fake GitHub, queued pull requests merge behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, a `feat`, `fix`, `perf` or `design` pull request needs a change record or a `No change record:` reason, and `--plan` writes nothing; a real Git fixture keeps original commits reachable after merging.
+**Proves**: against a fake GitHub, queued pull requests merge behind one train CI run, conflicts eject one component, a red train bisects, the fast path needs all five rules, a `feat` pull request needs a change record or a `No change record:` reason, and `--plan` writes nothing; a real Git fixture keeps original commits reachable after merging.
 **Escalate**: `pnpm test:claude:hooks` when the landing guard changes, or `pnpm exec vitest run tests/contract/security/workflow-security.contract.test.ts` when a workflow trigger does
 **Fix**: repair `scripts/landing/pr-land.mjs` (I/O) or `scripts/lib/landing/landing-train.mjs` (decisions).
 
