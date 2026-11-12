@@ -3,7 +3,10 @@ import {
   SELECTION_NUDGE_MARGIN_PX,
   deselectCamera,
   recordSelectionCamera,
+  selectionFrameTarget,
   selectionNudgeTarget,
+  type FramedMark,
+  type FreeMapRect,
 } from "./flat-selection-camera";
 
 const view = { tx: 0, ty: 0, tscale: 1 };
@@ -49,5 +52,56 @@ describe("flat selection camera", () => {
     expect(deselectCamera(clicked, view, 0, false)).toEqual({ kind: "stay" });
     expect(deselectCamera(null, view, 0, false)).toEqual({ kind: "overview" });
     expect(deselectCamera(null, view, 0, true)).toEqual({ kind: "stay" });
+  });
+});
+
+describe("flat selection framing", () => {
+  const viewport = { width: 1920, height: 1080 };
+  const free: FreeMapRect = { minX: 390, maxX: 1530, minY: 148, maxY: 984 };
+  const margin = 24;
+  const mark = (x: number, y: number, half = 60): FramedMark => ({ x, y, box: { minX: -half, maxX: half, minY: -20, maxY: 20 } });
+  const screen = (camera: { tx: number; ty: number; tscale: number }, m: FramedMark) => ({
+    minX: (m.x - camera.tx) * camera.tscale + viewport.width / 2 + m.box.minX,
+    maxX: (m.x - camera.tx) * camera.tscale + viewport.width / 2 + m.box.maxX,
+    minY: (m.y - camera.ty) * camera.tscale + viewport.height / 2 + m.box.minY,
+    maxY: (m.y - camera.ty) * camera.tscale + viewport.height / 2 + m.box.maxY,
+  });
+  const inside = (camera: { tx: number; ty: number; tscale: number }, marks: readonly FramedMark[]) => marks.every((m) => {
+    const b = screen(camera, m);
+    return b.minX >= free.minX + margin - 1e-6 && b.maxX <= free.maxX - margin + 1e-6 && b.minY >= free.minY + margin - 1e-6 && b.maxY <= free.maxY - margin + 1e-6;
+  });
+
+  it("pans the selection and its neighbours out from under the panel at the same zoom, by the least slide", () => {
+    const near = [mark(500, 0), mark(560, 30), mark(620, -40)];
+    const target = selectionFrameTarget(view, [near], viewport, free, margin, 0.5)!;
+    expect(target.tscale).toBe(1);
+    expect(inside(target, near)).toBe(true);
+    expect(screen(target, near[2]!).maxX).toBeCloseTo(free.maxX - margin, 6);
+    expect(selectionFrameTarget(target, [near], viewport, free, margin, 0.5)).toBeNull();
+  });
+
+  it("frames the whole reach when it fits at the current zoom, and only the near set when it does not", () => {
+    const near = [mark(100, 0), mark(160, 30)];
+    const far = mark(-500, 0);
+    const whole = selectionFrameTarget(view, [[...near, far], near], viewport, free, margin, 0.5)!;
+    expect(whole.tscale).toBe(1);
+    expect(inside(whole, [...near, far])).toBe(true);
+    const distant = mark(-2_000, 0);
+    expect(selectionFrameTarget(view, [[...near, distant], near], viewport, free, margin, 0.5)).toBeNull();
+  });
+
+  it("zooms out only as far as the near set needs, never below the floor and never in", () => {
+    const near = [mark(0, 0), mark(1_400, 0)];
+    const target = selectionFrameTarget(view, [near], viewport, free, margin, 0.5)!;
+    expect(target.tscale).toBeLessThan(1);
+    expect(target.tscale).toBeGreaterThan(0.5);
+    expect(inside(target, near)).toBe(true);
+    expect(inside({ ...target, tscale: target.tscale * 1.01 }, near)).toBe(false);
+    const huge = [mark(0, 0), mark(9_000, 0)];
+    const floored = selectionFrameTarget(view, [huge], viewport, free, margin, 0.5)!;
+    expect(floored.tscale).toBe(0.5);
+    expect(inside(floored, [huge[0]!])).toBe(true);
+    const zoomedOut = { tx: 0, ty: 0, tscale: 0.3 };
+    expect(selectionFrameTarget(zoomedOut, [huge], viewport, free, margin, 0.5)!.tscale).toBe(0.3);
   });
 });

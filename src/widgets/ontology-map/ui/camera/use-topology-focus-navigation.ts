@@ -12,7 +12,6 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
-  selectionNudgeTarget,
   type SelectionCamera,
   type SelectionSource
 } from "../../model/camera/flat-selection-camera";
@@ -32,7 +31,7 @@ import { realmCameraTarget, realmVisibleBounds, type RealmRuntimeData } from "..
 import { computePathPickBounds, dialFocusFrame, type DialFocusFrame, type TopologyWorld } from "../world/topology-world";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { readDialTokens } from "../../dial/tokens";
-import { branchSelectionMargin } from "./branch-frame/selection-margin";
+import { selectionSlideTarget } from "./branch-frame/selection-margin";
 import { branchFocusTarget, branchTargetLeash } from "./branch-frame/target";
 
 export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialFocusFrame | undefined {
@@ -214,7 +213,9 @@ export function useTopologyFocusNavigation({
       if (!realmActive && focusedSlug === null) {
         selectionCameraRef.current = null;
         focusLeashPxRef.current = null;
-        const back = deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
+        // A Flat graph click selection framed the lit set where the reader reads on; letting go keeps that view.
+        const framedByClick = Boolean(world.dial?.scene.graph) && memory !== null && !memory.framed;
+        const back = framedByClick ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
         if (back.kind === "return") moveCamera(back.target, tokens, memory?.framed ? undefined : "spring");
         // The released leash must not carry on a pan it was holding short, nor pull back its stretch.
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);
@@ -239,8 +240,7 @@ export function useTopologyFocusNavigation({
         const node = world.nodeById.get(focusedSlug);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;
-        const margin = branchSelectionMargin(world, activeDial, focusedSlug, current.tscale, width - measured.safeInsetLeft - measured.safeInsetRight);
-        const nudge = node ? selectionNudgeTarget(current, node, width, { left: measured.safeInsetLeft, right: measured.safeInsetRight }, margin) : null;
+        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current * tokens.overviewEntryRatio);
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
         const leash = leashFor(width, height, measured);

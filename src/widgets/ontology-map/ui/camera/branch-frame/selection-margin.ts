@@ -1,36 +1,93 @@
+import type { CameraTarget } from "../../../engine/camera";
 import { createMeasureText } from "../../../dial/fit";
 import { branchMemberCount } from "../../../dial/branches/member-disclosure";
 import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { readDialTokens } from "../../../dial/tokens";
-import type { DialWorld } from "../../../dial/types";
-import { SELECTION_NUDGE_MARGIN_PX } from "../../../model/camera/flat-selection-camera";
+import type { DialModel, DialWorld } from "../../../dial/types";
+import {
+  SELECTION_NUDGE_MARGIN_PX, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
+} from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
-import { capabilityLines, reachCounts } from "../../../flat-graph/attention";
-import { selectedBlockReachPx, selectedDiscRadius } from "../../../flat-graph/names";
+import { cachedGraphAttention } from "../../../flat-graph/attention";
+import { graphDiscRadiusPx } from "../../../flat-graph/marks";
+import { nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 
-const GRAPH_SELECTION_AIR_PX = 16;
+const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
+
+/** Every capability stale: the widest caption a domain block can draw, whatever the evidence says. */
+function staleBound(model: DialModel): ReadonlyMap<string, number> {
+  let bound = staleBounds.get(model);
+  if (!bound) staleBounds.set(model, (bound = new Map(model.domains.map((d) => [d.id, d.capabilityIds.length]))));
+  return bound;
+}
 
 /**
- * On the Flat graph a selected capability, element or orphan is named large beside its disc with
- * its reach beneath, on either side; the slide leaves room for that block on both.
+ * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
+ * domain with every side their names may take, preferring the whole lit reach when it already
+ * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
  */
-function graphSelectionMargin(world: TopologyWorld, dial: DialWorld, id: string) {
+function graphSelectionFrame(
+  world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect, floorScale: number,
+): CameraTarget | null {
   const { model } = dial;
-  const node = world.nodeById.get(id);
-  if (!node || id === model.projectId || model.domainById.has(id)) return SELECTION_NUDGE_MARGIN_PX;
   const paint = readFlatGraphTokens().paint;
-  const reach = model.capabilityById.has(id) ? reachCounts(capabilityLines(model, id), id) : null;
-  const disc = selectedDiscRadius(0, paint, paint.growthMax);
-  const side = selectedBlockReachPx({ tokens: paint, labels: dial.labels ?? null, measureText: createMeasureText(), fontFamily: labelFontFamily() }, node.label, reach, disc);
-  const margin = Math.max(SELECTION_NUDGE_MARGIN_PX, side + GRAPH_SELECTION_AIR_PX);
-  return { left: margin, right: margin };
+  const growth = paint.growthMax;
+  const attention = cachedGraphAttention(model, id, true);
+  const radius = (of: string) => {
+    if (model.domainById.has(of)) return graphDiscRadiusPx("domain", 0, paint, growth);
+    const cap = model.capabilityById.get(of);
+    const own = graphDiscRadiusPx(cap || !model.domainOf.has(of) ? "capability" : "element", cap?.elementIds.length ?? 0, paint, growth);
+    return of === id ? selectedDiscRadius(own, paint, growth) : own;
+  };
+  const input: NameReachInput = {
+    model, tokens: paint, labels: dial.labels ?? null, measureText: createMeasureText(), fontFamily: labelFontFamily(), growth,
+    selected: true, focusId: id, named: attention.named, lit: attention.lit, reach: attention.reach, discRadius: radius,
+    elementLabel: (of) => world.nodeById.get(of)?.label ?? null, staleByDomain: staleBound(model),
+  };
+  const domainId = model.domainById.has(id) ? id : model.domainOf.get(id) ?? null;
+  const near = new Set([id]);
+  const whole = new Set([id]);
+  if (domainId !== null) near.add(domainId);
+  const owner = model.capabilityOf.get(id);
+  if (owner) near.add(owner);
+  if (model.domainById.has(id)) for (const cap of model.domainById.get(id)!.capabilityIds) near.add(cap);
+  for (const line of attention.lines) {
+    for (const end of [line.from, line.to]) {
+      whole.add(end);
+      if (domainId !== null && model.domainOf.get(end) === domainId) near.add(end);
+    }
+  }
+  for (const of of near) whole.add(of);
+  const marks = (ids: ReadonlySet<string>) => [...ids].flatMap((of): FramedMark[] => {
+    const node = world.nodeById.get(of);
+    return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
+  });
+  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, floorScale);
+}
+
+/**
+ * Where a click selection slides the camera so the detail panel leaves it readable: on the Flat
+ * graph the framing above, elsewhere a sideways nudge until its name clears the panel.
+ */
+export function selectionSlideTarget(
+  world: TopologyWorld, dial: DialWorld | null | undefined, id: string, camera: CameraTarget, viewport: { width: number; height: number },
+  insets: { safeInsetLeft: number; safeInsetRight: number; safeInsetTop: number; safeInsetBottom: number }, floorScale: number,
+): CameraTarget | null {
+  const node = world.nodeById.get(id);
+  if (!node) return null;
+  if (dial?.scene.graph && id !== dial.model.projectId) {
+    const free = { minX: insets.safeInsetLeft, maxX: viewport.width - insets.safeInsetRight, minY: insets.safeInsetTop, maxY: viewport.height - insets.safeInsetBottom };
+    return graphSelectionFrame(world, dial, id, camera, viewport, free, floorScale);
+  }
+  const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
+  return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));
 }
 
 /** Reserve the intended label positions, before collision handling clamps their painted boxes. */
 export function branchSelectionMargin(world: TopologyWorld, dial: DialWorld | null | undefined, id: string, scale: number, freeWidth: number) {
-  if (dial?.scene.graph) return graphSelectionMargin(world, dial, id);
+  if (dial?.scene.graph) return SELECTION_NUDGE_MARGIN_PX;
   const focus = world.nodeById.get(id);
   const cluster = dial?.scene.branches ? dial.scene.clusterByDomain.get(dial.model.domainOf.get(id) ?? id) : null;
   if (!dial || !cluster || !focus) return SELECTION_NUDGE_MARGIN_PX;

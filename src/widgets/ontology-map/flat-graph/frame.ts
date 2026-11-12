@@ -213,6 +213,7 @@ const frameChords = new FrameList<DialChordLight>();
 const shownElements = new FrameList<string>();
 const expandedItems = new Set<string>();
 const NO_IDS: ReadonlySet<string> = new Set();
+const NO_LINES: GraphAttention["lines"] = [];
 
 /** Disc radii at one growth, kept until the zoom changes it. */
 function radiusCacheFor(layout: FlatGraphLayout, growth: number): Map<string, number> {
@@ -803,7 +804,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
-    selected: a.selected, named: a.named, reach: a.reach,
+    selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
     discRadius: stepRadius, elementSpacingPx,
   });
   const admission = admitUnder(attention);
@@ -1186,6 +1187,16 @@ function drawSprite(ctx: CanvasRenderingContext2D, sprite: CanvasImageSource, ma
   ctx.drawImage(sprite, Math.round(mark.x - mark.r) | 0, Math.round(mark.y - mark.r) | 0, size, size);
 }
 
+/** The canvas ground under a backed name's box, on whole pixels so the rectangle's arguments stay small integers. */
+function paintBacking(ctx: CanvasRenderingContext2D, n: Name): void {
+  const ox = n.x - n.name.dx;
+  const oy = n.y - n.name.dy;
+  const box = n.name.box;
+  const x = Math.floor(ox + box.minX) | 0;
+  const y = Math.floor(oy + box.minY) | 0;
+  ctx.fillRect(x, y, (Math.ceil(ox + box.maxX) - x) | 0, (Math.ceil(oy + box.maxY) - y) | 0);
+}
+
 function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatGraphTokens, ground: string, warning: string, growth: number): void {
   const P = tokens.paint;
   ctx.save();
@@ -1241,6 +1252,10 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
     ctx.font = n.name.font;
     ctx.textAlign = n.name.align;
     ctx.globalAlpha = n.ink;
+    if (n.name.backed === true) {
+      ctx.fillStyle = ground;
+      paintBacking(ctx, n);
+    }
     ctx.lineWidth = n.halo;
     ctx.strokeStyle = tokens.inks.halo;
     const pieces = n.name.pieces;
@@ -1260,7 +1275,7 @@ const pool = emptyDialFrameMarks();
 type DiscProbe = DialFrameMarks["discs"][number];
 const probeDiscs = markPool<DiscProbe>(() => ({ id: "", x: 0, y: 0, r: 0, fill: 0, rim: 0, dashed: false, lineWidth: 0 }));
 const probeStrips = markPool<StripMark>(() => ({ flowKey: "", role: "chord", ink: 0, ax: 0, ay: 0, cx: 0, cy: 0, bx: 0, by: 0, w0: 0, w1: 0, gapT0: 0, gapT1: 0, dashed: false, headStart: false, headEnd: true, headSize: 0 }));
-const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null }));
+const probeTexts = markPool<TextMark>(() => ({ id: "", role: "domain", text: "", x: 0, y: 0, align: "center", font: "", ink: 0, box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, parts: null, backed: false }));
 const probeInks = new FrameList(pool.inks);
 const probeDiscList = new FrameList(pool.discs);
 const probeStripList = new FrameList(pool.strips);
@@ -1351,6 +1366,7 @@ function fillProbeMarks(plan: FramePlan, tokens: FlatGraphTokens, ground: string
     if (text.x !== n.x) text.x = n.x;
     if (text.y !== n.y) text.y = n.y;
     text.ink = inkIndex(sunk(n.color, ground, n.ink));
+    text.backed = n.name.backed === true;
     setBox(text.box, ox + n.name.box.minX + pad, ox + n.name.box.maxX - pad, oy + n.name.box.minY + pad, oy + n.name.box.maxY - pad);
     probeTextList.add(text);
   }

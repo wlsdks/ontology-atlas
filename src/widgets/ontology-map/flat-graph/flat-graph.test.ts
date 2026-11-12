@@ -22,12 +22,11 @@ import {
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
-import { selectionNudgeTarget } from "../model/camera/flat-selection-camera";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { graphDiscRadiusPx } from "./marks";
-import { admittedNames, reachText, selectedBlockReachPx, type PlacedName } from "./names";
+import { admittedNames, chooseSide, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -96,7 +95,7 @@ function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focus
   return admittedNames({
     model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
     elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
-    selected: attention.selected, named: attention.named, reach: attention.reach,
+    selected: attention.selected, named: attention.named, reach: attention.reach, lines: attention.lines,
     discRadius: () => 4, elementSpacingPx,
   });
 }
@@ -423,16 +422,64 @@ describe("selection reach", () => {
       }
     }
   });
+});
 
-  it("slides a covered selection only sideways and only until its name block clears the panel", () => {
-    const camera = { tx: 0, ty: 40, tscale: 1.3 };
-    const side = selectedBlockReachPx({ tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" }, "Order placement", { needs: 5, neededBy: 4 }, 12);
-    const margin = { left: side, right: side };
-    const insets = { left: 300, right: 420 };
-    const target = selectionNudgeTarget(camera, { x: 520 }, 1920, insets, margin)!;
-    expect(target.tscale).toBe(camera.tscale);
-    expect(target.ty).toBe(camera.ty);
-    expect((520 - target.tx) * target.tscale + 1920 / 2 + side).toBeCloseTo(1920 - insets.right, 6);
-    expect(selectionNudgeTarget(camera, { x: 0 }, 1920, insets, margin)).toBeNull();
+describe("name sides under lit lines", () => {
+  it("takes the first free side no line crosses, in the fixed order, and backs the first free side when every one is crossed", () => {
+    const sides = ["right", "left", "below", "above"];
+    expect(chooseSide(sides, () => true, (s) => s === "right")).toEqual({ side: "left", backed: false });
+    expect(chooseSide(sides, (s) => s !== "left", (s) => s === "right")).toEqual({ side: "below", backed: false });
+    expect(chooseSide(sides, (s) => s !== "right", () => true)).toEqual({ side: "left", backed: true });
+    expect(chooseSide(sides, () => false, () => false)).toBeNull();
+  });
+
+  it("finds a segment that enters a box, and misses one that passes beside it", () => {
+    const box = { minX: 0, maxX: 10, minY: 0, maxY: 4 };
+    expect(segmentCrossesBox(-5, 2, 15, 2, box)).toBe(true);
+    expect(segmentCrossesBox(5, -10, 5, 10, box)).toBe(true);
+    expect(segmentCrossesBox(-5, 5, 15, 6, box)).toBe(false);
+    expect(segmentCrossesBox(11, 0, 20, 4, box)).toBe(false);
+  });
+
+  const hub: Node[] = [
+    { id: "p", kind: "project" }, { id: "d", kind: "domain" }, { id: "o", kind: "domain" },
+    ...["s", "n1", "n2", "n3", "n4", "n5", "f1", "f2"].map((id) => ({ id, kind: "capability", title: `${id} capability name` })),
+  ];
+  const hubEdges: Edge[] = [
+    { from: "p", to: "d", type: "contains" }, { from: "p", to: "o", type: "contains" },
+    ...["s", "n1", "n2", "n3", "n4", "n5"].map((id) => ({ from: "d", to: id, type: "contains" })),
+    { from: "o", to: "f1", type: "contains" }, { from: "o", to: "f2", type: "contains" },
+    ...["n1", "n2", "n3", "f1"].map((to) => ({ from: "s", to, type: "depends_on" })),
+    ...["n4", "n5", "f2"].map((from) => ({ from, to: "s", type: "depends_on" })),
+  ];
+  const hubModel = modelOf(hub, hubEdges);
+
+  it("keeps every lit name off every lit line unless it draws backed, and the selected name clear of its domain's name", () => {
+    const layout = layoutOf(hubModel);
+    const lines = resolveGraphAttention(hubModel, "s", true).lines;
+    const at = (id: string) => layout.positions.get(id)!;
+    for (const scale of [0.5, 1, 1.6]) {
+      const admitted = namesAt(hubModel, layout, scale, "s");
+      const lit = cachedGraphAttention(hubModel, "s", true).lit!;
+      const boxOf = (n: PlacedName) => ({ minX: at(n.id).x * scale + n.box.minX, maxX: at(n.id).x * scale + n.box.maxX, minY: at(n.id).y * scale + n.box.minY, maxY: at(n.id).y * scale + n.box.maxY });
+      const crossings = admitted.names.filter((n) => lit.has(n.id) && n.backed !== true).flatMap((n) => {
+        const b = boxOf(n);
+        return lines.filter((line) => {
+          const a = at(line.from);
+          const z = at(line.to);
+          const cx = (a.x + z.x) / 2 - (z.y - a.y) * TOKENS.paint.lineBow;
+          const cy = (a.y + z.y) / 2 + (z.x - a.x) * TOKENS.paint.lineBow;
+          const point = (t: number) => ({ x: ((1 - t) ** 2 * a.x + 2 * (1 - t) * t * cx + t * t * z.x) * scale, y: ((1 - t) ** 2 * a.y + 2 * (1 - t) * t * cy + t * t * z.y) * scale });
+          return Array.from({ length: 48 }, (_, k) => [point(k / 48), point((k + 1) / 48)]).some(([p, q]) => segmentCrossesBox(p!.x, p!.y, q!.x, q!.y, b));
+        }).map((line) => `${n.role}:${n.id} × ${line.key} at ${scale}`);
+      });
+      expect(crossings).toEqual([]);
+      const title = boxOf(admitted.names.find((n) => n.role === "domain" && n.id === "d")!);
+      const gap = TOKENS.paint.selectedTitleGapPx;
+      for (const b of admitted.names.filter((n) => n.id === "s").map(boxOf)) {
+        const apart = Math.max(title.minX - b.maxX, b.minX - title.maxX, title.minY - b.maxY, b.minY - title.maxY);
+        expect(apart, `selected name to domain name at ${scale}`).toBeGreaterThanOrEqual(gap - 1e-6);
+      }
+    }
   });
 });

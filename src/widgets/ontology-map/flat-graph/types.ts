@@ -79,6 +79,10 @@ export interface FlatGraphPaintTokens {
   selectedRingGapPx: number;
   selectedRingPx: number;
   selectedNamePx: number;
+  /** Air between the selected name block and a domain's name. */
+  selectedTitleGapPx: number;
+  /** Clearance a selection's framing keeps from every edge of the free map, the detail panel included. */
+  frameMarginPx: number;
   lineBow: number;
   lineAlpha: number;
   lineTaperPx: number;

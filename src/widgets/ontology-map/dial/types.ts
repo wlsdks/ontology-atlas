@@ -148,6 +148,8 @@ export interface GlyphMark { selectionInk?: string; id: string; kind: DialKind; 
 type TextRole = "project" | "domain" | "units" | "capability" | "stub" | "ledger" | "more" | "orphans" | "ring" | "element" | "status";
 export interface TextMark { id: string | null; role: TextRole; text: string; lines?: readonly string[]; lineHeight?: number; x: number; y: number; align: CanvasTextAlign; font: string; ink: number; box: Box; parts: { text: string; ink: number;
     }[] | null;
+  /** Drawn on the canvas ground because a lit line runs under it. */
+  backed?: boolean;
 }
 interface NumeralMark { flowKey: string; text: string; x: number; y: number; ink: number; halo: boolean; font: string; box: Box; parts?: { text: string; ink: number }[] | null; alpha?: number;
 }
@@ -217,7 +219,7 @@ export interface DialProbe {
         state: "reading" | "provisional" | "settled";
         held: number;
     };
-  texts: { id: string | null; role: TextRole; text: string; box: Box; font: string;
+  texts: { id: string | null; role: TextRole; text: string; box: Box; font: string; backed: boolean;
     }[];
   glyphs: DialPick[];
   blocks: { id: string; box: Box; alpha: number }[];
@@ -231,6 +233,8 @@ export interface DialProbe {
         ink: string;
         dashed: boolean;
     })[]; squares: number; strips: { flowKey: string; role: StripMark["role"]; ink: string;
+      /** The strip's quadratic: start, control and end in canvas pixels. */
+      ax: number; ay: number; cx: number; cy: number; bx: number; by: number;
     }[];
   ledger: { domainId: string; shown: number; total: number; more: number; leaderCrossings: number;
     } | null;
