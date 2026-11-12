@@ -28,13 +28,13 @@ export const rules = [
   {
     order: 560,
     command: 'pnpm dev-checks:check',
-    reason: 'the development-checks reference or the README command table changed; entries must fit the template, name real scripts and stay in key order',
+    reason: 'the development-checks reference or the README command table changed; the table stays in command order and every pnpm name is a real script',
     matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/, /^README\.md$/],
   },
   {
     order: 570,
     command: 'pnpm test:dev-checks',
-    reason: 'the development-checks entry template or its gate changed',
+    reason: 'the command-registry gate changed',
     matches: [/^scripts\/lib\/records\/dev-checks-template(?:\.test)?\.mjs$/, /^scripts\/records\/check-dev-checks\.mjs$/],
   },
   {

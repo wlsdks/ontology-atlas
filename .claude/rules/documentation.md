@@ -38,8 +38,8 @@ shapes:
 | Mechanical inventory ratchet | `pnpm docs:language` |
 
 No `assert.match` on prose, no hand-written forbidden-word list, and no pinned
-vault-node count. Register a new docs gate in `docs/DEVELOPMENT-CHECKS.md` and
-mention its command in `README.md`.
+vault-node count. Register a new docs gate with a `scripts/lib/check-rules/`
+row and a row in the `README.md` command table.
 
 ## Records
 
