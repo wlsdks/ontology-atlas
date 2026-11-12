@@ -150,8 +150,11 @@ const TWO_TOOLS = {
   pastSessions: [{ sessionId: 'library-acp-session', title: 'Earlier', updatedAt: '2026-09-20T00:00:00.000Z' }],
 } satisfies Parameters<typeof installLibraryWorkHarness>[1];
 
+// CI draws Latin 4px wider than macOS here (79 in a 75 box), and the agent runs only in the macOS app.
+const LINUX_FONT_SLACK_PX = 6;
+
 /** Every shown word on the row, measured as drawn text against its own box. */
-const cutWords = (page: Page) => page.evaluate(() => {
+const cutWords = (page: Page) => page.evaluate((slackPx) => {
   const pieces: Array<[string, Element | null]> = [
     ['runtime', document.querySelector('[data-testid="acp-chat-runtime"]')],
     ['mode', document.querySelector('[data-testid="acp-chat-mode"]')],
@@ -167,9 +170,9 @@ const cutWords = (page: Page) => page.evaluate(() => {
     range.selectNodeContents(label);
     const text = range.getBoundingClientRect().width;
     const box = label.getBoundingClientRect().width;
-    return text > box + 1 ? [`${name} ${Math.round(text)}/${Math.round(box)}`] : [];
+    return text > box + slackPx ? [`${name} ${Math.round(text)}/${Math.round(box)}`] : [];
   });
-});
+}, LINUX_FONT_SLACK_PX);
 
 async function expectRowClean(page: Page, state: string) {
   await page.evaluate(() => document.fonts.ready);
