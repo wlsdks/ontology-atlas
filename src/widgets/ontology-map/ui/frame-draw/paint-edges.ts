@@ -50,6 +50,8 @@ const EDGE_CULL_MARGIN_PX = 24;
 const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 const HOVER_RECEDE_ALPHA_STEP = 0.3;
+/** Strata at rest keeps containment faint and holds dependencies back until a concept is pointed at or chosen. */
+const STRATA_REST_ALPHA = { contains: 0.42, depends: 0 } as const;
 
 export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, edges: EdgePrep, stage: DomeStage): void {
   const { walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep, devicePixelRatio,
@@ -64,6 +66,7 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
   const { egoCometEdges, edgeAlphaReused, edgeLiftReused, edgeRestDimReused, edgeFocusRamp,
     edgeRevealAt, captionCandidates, isSpineEndpoint, ambientDependsComets } = edges;
   const { domeHaloColor, edgeDrawOrder } = stage;
+  const strataOn = litOn && frame.domeLight?.sampleStage != null;
   const trailKeysLive =
     (walkedEdgeKeys?.size ?? 0) > 0 ||
     (walkedEdgeDirections?.size ?? 0) > 0 ||
@@ -179,6 +182,10 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
       const hoverRecede = hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
       const domeEdgeFogForEdge = (domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift)) *
         (litOn && !domeEdgeExempt ? focusFogFactor((edgeFrameA.u + edgeFrameB.u) / 2, litFocusRamp) : 1);
+      const strataRest = strataOn && !domeEdgeExempt
+        ? STRATA_REST_ALPHA[kind] + (1 - STRATA_REST_ALPHA[kind]) * hoverLift
+        : 1;
+      if (strataRest <= 0.01) continue;
       const edgeAppear = appearById
         ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
         : 1;
@@ -190,7 +197,8 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         edgeAppear *
         filament
         *
-        domeEdgeFogForEdge;
+        domeEdgeFogForEdge *
+        strataRest;
       if (domeHaloWidthPx > 0.05) {
         edgeHaloScratch.color = domeHaloColor;
         edgeHaloScratch.px = domeHaloWidthPx;
