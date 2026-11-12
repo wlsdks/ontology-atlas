@@ -281,8 +281,8 @@ pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 pnpm dogfood:verify
 ```
 
-[docs/DEVELOPMENT-CHECKS.md](../docs/DEVELOPMENT-CHECKS.md) owns the full gate
-list.
+`pnpm checks:changed` names the checks a change needs;
+[docs/DEVELOPMENT-CHECKS.md](../docs/DEVELOPMENT-CHECKS.md) covers CI lanes.
 
 The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 

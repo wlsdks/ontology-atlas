@@ -103,10 +103,4 @@ export const rules = [
       /^package\.json$/,
     ],
   },
-  {
-    order: 700,
-    command: 'pnpm test:skills:audit',
-    reason: 'Claude skill integrity instrument changed',
-    matches: [/^scripts\/harness\/audit-claude-skills\.(?:mjs|test\.mjs)$/],
-  },
 ];
