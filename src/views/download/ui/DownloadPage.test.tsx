@@ -478,7 +478,7 @@ describe('DownloadPage', () => {
   it('quotes the request the take was filmed on, word for word, with its tool names as code', () => {
     renderDownloadPage();
 
-    // The shoot sends this message verbatim (docs/launch/demo-scenario.md §3); backticks render as code.
+    // The shoot sends this message verbatim; backticks render as code.
     const prompt = screen.getByTestId('gateway-demo-prompt');
     const sentence = enMessages.download.demoAgentPrompt;
     expect(prompt.querySelector('blockquote')!.textContent).toBe(sentence.replaceAll('`', ''));
@@ -502,19 +502,16 @@ describe('DownloadPage', () => {
   });
 
   describe('one screen served at two addresses', () => {
-    it('carries the pixel identity in the gateway chrome, and only there', () => {
+    it('keeps compass identity in chrome and Moru outside the graph illustration', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
 
       expect(screen.getByTestId('gateway-brand-mark')).toHaveAttribute(
         'src',
-        '/brand/mascot-compact.png',
+        '/brand/atlas-symbol.png',
       );
-      expect(screen.getByTestId('gateway-brand-mark')).toHaveAttribute(
-        'data-brand-detail',
-        'compact',
-      );
-      // Beside the dome a mascot reads as map data; the chrome's mark is the one mascot.
+      expect(screen.getByTestId('gateway-closing-moru')).toHaveAttribute('src', '/brand/mascot-full.png');
+      // Moru belongs to the closing invitation, clear of the graph's data marks.
       expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });
 

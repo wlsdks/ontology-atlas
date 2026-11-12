@@ -330,7 +330,6 @@ export function auditSourceCommentEntries(entries) {
     scopes: {
       current: emptyScope(),
       testFixture: emptyScope(),
-      historicalPrototype: emptyScope(),
     },
     violations: [],
   };

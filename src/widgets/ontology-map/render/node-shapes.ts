@@ -1,7 +1,5 @@
 /**
- * Node body geometry + paint — ported from the B2+ prototype's
- * `roundedPolygonPath()`/`hexPoints()`/`squarePoints()`/`drawEngraved()`/
- * `drawNode()` (`docs/prototypes/topology-b2plus.html` §12-13).
+ * Node body geometry + paint.
  *
  * Shape-by-kind (unchanged across altitude): project = hex plate, domain =
  * square chip (with pin-tick legs in circuit range), capability = circle
@@ -300,7 +298,7 @@ const DOMAIN_HALF_EXTENT_RATIO = 0.86;
 /** Canvas-emphasis slice — project hexagon decor (double hairline + pin ticks) fades out toward far field, mirroring the domain pin-tick gate. */
 const PROJECT_DECOR_MIN_RADIUS = 8;
 const PROJECT_DECOR_MAX_FAR_T = 0.9;
-/** Inner hairline sits inset at this fraction of the outer body radius (ported ratio from the flagship prototype's double-hex, `docs/prototypes/first-run-v3-flagship.html` — outer circumradius 41, inner 31 ≈ 0.756). */
+/** Inner hairline sits inset at this fraction of the outer body radius (a double hex with outer circumradius 41 and inner 31, ≈ 0.756). */
 const PROJECT_HAIRLINE_INNER_RATIO = 0.75;
 /** Selection ring offsets — the inner ring sits exactly on the body outline (spec §B1's "Node outer edge", the node's outer edge), the outer hairline 6px beyond it. */
 const SELECTION_RING_OUTER_OFFSET = 6;

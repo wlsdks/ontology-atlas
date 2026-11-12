@@ -65,7 +65,7 @@ A few things worth knowing before you start:
 - The map shows declared relationships, not proof of runtime impact; its key explains every mark and direction. [Map](docs/features/map/flat-dial.md)
 - An empty folder offers its start actions, and a failed start can be retried without overwriting files. Popup tours are retired. [First run](docs/features/first-run.md)
 - Library setup and checks need the app; a browser offers the app or adding files. [Library](docs/features/library/workspace.md)
-- Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/specs/2026-11-01-project-planning-documents.md)
+- Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/FEATURES.md)
 - Git's send-only action does not commit new file changes; it asks you to review a stale folder or branch again. Pull can change files across the repository. [Git](docs/features/git.md)
 - Before a folder is connected, the app keeps Library, Planning, Agents and Briefing reachable. [Features](docs/FEATURES.md)
 
@@ -124,7 +124,7 @@ The installed app's **Briefing** prototype opens a chosen Git repository without
 ## Status
 
 Atlas is early. Our benchmark has not yet shown better answers with Atlas, and
-Atlas was slower ([the correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
+Atlas was slower ([the correction](docs/benchmark/README.md#current-measurement-status)).
 Construction trials, their failures and limits are in
 [the construction measurements](docs/benchmark/CONSTRUCTION.md).
 
@@ -160,6 +160,7 @@ implementation still require exhaustive CI.
 |---|---|
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
+| `pnpm brand:sprites` | Rebuild Moru sprites, 50 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
@@ -191,6 +192,33 @@ implementation still require exhaustive CI.
 | `pnpm ui:look -- --route=<path> [--vault=fixture\|sample\|<dir>] [--widths=1440] [--audit]` | Builds and serves the static export on a free port (or uses `--url`), opens each route with a vault attached, and prints one screenshot path per route and width |
 
 Use `--scope=<selector>` to audit one visible modal or region. The selector must match exactly one visible element; the report includes its measured element count.
+
+</details>
+
+## Moru
+
+Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [50 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>Open motion samples</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="Moru greeting" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="Moru reading source" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="Moru waiting for a person" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="Moru celebrating observed completion" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="Moru singing" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="Moru and a fish" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="Moru dancing" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru chorus" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="Moru smiling shyly" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="Moru playing ball with a friend" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="Moru cuddling three pups" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="Moru with an umbrella in the rain" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="Moru watching snowflakes" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="Moru in a little breeze" />
+
 
 </details>
 

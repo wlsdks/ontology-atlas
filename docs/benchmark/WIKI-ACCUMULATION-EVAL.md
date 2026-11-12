@@ -12,8 +12,8 @@ without dropping earlier evidence or a human's note. It exercises the local
 Compile route. It does not evaluate ACP, public MCP ontology construction or
 semantic retrieval across arbitrary languages.
 
-The first [local-model pilot](FINDINGS-2026-09-10-wiki-retrieval.md) records
-successful retrieval alongside failed preservation, with replayable outputs.
+The first local-model pilot showed successful retrieval alongside failed
+preservation.
 
 ```bash
 pnpm evaluate:wiki
@@ -74,8 +74,7 @@ a green report. The fixtures live in
 `scripts/benchmark/evaluate-wiki-accumulation.mjs`; the rubric lives in
 `scripts/lib/benchmark/wiki-accumulation-eval.mjs`.
 
-This extends the earlier
-[sequential accumulation probe](FINDINGS-2026-09-06-wiki-accumulation-probe.md)
-with a repeatable local-model test. It preserves the existing one-page-per-source
+This turns the earlier sequential accumulation probe into a repeatable
+local-model test. It preserves the existing one-page-per-source
 policy and human approval boundary. It does not automatically merge topics,
 resolve contradictions or promote wiki text into ontology truth.

@@ -61,7 +61,7 @@
 - 地图上的线是已声明的关系，不是运行时影响的证明；图例会说明每个标记和方向。[地图](docs/features/map/flat-dial.md)
 - 空文件夹会给出起步操作，起步失败后可以重试，不会覆盖已有文件。弹窗式导览已取消。[首次运行](docs/features/first-run.md)
 - 资料库的设置和检查需要在应用中进行；浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
-- 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/specs/2026-11-01-project-planning-documents.md)
+- 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/FEATURES.md)
 - Git 的仅发送操作不会提交新的文件更改；文件夹或分支状态变化时，可以重新查看。拉取可能更改整个仓库中的文件。[Git](docs/features/git.md)
 - 连接文件夹之前，应用也会保持资料库、规划、智能体和简报可用。[功能清单](docs/FEATURES.md)
 
@@ -102,7 +102,7 @@ frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `ui
 
 ## 当前状态
 
-Atlas 还处在早期。我们的基准测试尚未显示使用 Atlas 能得到更好的回答，而且使用 Atlas更慢（[更正说明](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)）。构建试验及其失败与局限见[构建测量](docs/benchmark/CONSTRUCTION.md)。
+Atlas 还处在早期。我们的基准测试尚未显示使用 Atlas 能得到更好的回答，而且使用 Atlas更慢（[更正说明](docs/benchmark/README.md#current-measurement-status)）。构建试验及其失败与局限见[构建测量](docs/benchmark/CONSTRUCTION.md)。
 
 ## 文档
 
@@ -119,6 +119,33 @@ pnpm checks:changed -- --run
 ```
 
 `pnpm pr:land <number>` 会合并一个已评审的 pull request，并保留它原有的提交。完整的检查说明见[开发检查](docs/DEVELOPMENT-CHECKS.md)。仓库命令表见英文 README 的 [Contributing](README.md#contributing)。
+
+## Moru
+
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[50个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>查看Moru的动作</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="打招呼的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="阅读资料的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="等待用户决定的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="庆祝已确认完成的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="唱歌的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="和鱼儿玩耍的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="跳舞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru 一起跳舞" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="害羞微笑的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="和朋友玩球的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="和三只小 Moru 依偎" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨天撑伞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="看雪花的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="感受微风的 Moru" />
+
+
+</details>
 
 ## 许可证
 

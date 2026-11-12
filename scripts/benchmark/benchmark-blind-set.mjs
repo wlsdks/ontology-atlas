@@ -142,7 +142,7 @@ function main() {
   const argv = process.argv.slice(2);
   const runId = argv.find((arg) => arg.startsWith('--run-id='))?.slice('--run-id='.length);
   if (!runId || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(runId)) {
-    process.stderr.write('[blind-set] needs --run-id=<saved run>, for example --run-id=2026-08-31-gb-r3\n');
+    process.stderr.write('[blind-set] needs --run-id=<saved run>, for example --run-id=YYYY-MM-DD-gb-r3\n');
     process.exitCode = 2;
     return;
   }

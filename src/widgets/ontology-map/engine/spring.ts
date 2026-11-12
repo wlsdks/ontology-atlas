@@ -1,7 +1,5 @@
 /**
- * Semi-implicit (symplectic) Euler critically-damped spring integrator —
- * ported 1:1 from the B2+ prototype's `stepSpring()`
- * (`docs/prototypes/topology-b2plus.html` §8 "canvas + camera").
+ * Semi-implicit (symplectic) Euler critically-damped spring integrator.
  *
  * Contract (`docs/design/ontology-map.md` §2.4, §4 P2):
  * ```

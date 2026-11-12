@@ -75,8 +75,6 @@ separate measurements. Public copy states current mechanisms and their limits;
 development priorities do not become shipped guarantees.
 
 The
-[detailed V1–V4 plan](MEANING-WORKFLOW-PLAN.md) specifies each implementation
-and verification commitment. The
 [PO operating system](PRODUCT-OWNER-OPERATING-SYSTEM.md) turns this product model
 into a bounded recovery proof using the existing five outcomes. The historical
 direction below supplies the retained category and context; v12 governs the
@@ -97,7 +95,7 @@ current value emphasis and workflow priorities where wording differs.
 > The first screen is also split. The public web has an introduction page (the place to bring people in), and the installed app has a first-run screen that opens folders immediately like Obsidian (no marketing copy).
 
 > **[Current Canonical] This document handles product direction, and `docs/DECISIONS.md` handles decision rationale.**
-> `docs/plans/PRODUCT-PLAN-2026-07.md` and other files in `docs/plans/` are historical records preserving intent and review history at the time; they do not indicate current state or execution order.
+> Earlier product plans are history in Git; they do not indicate current state or execution order.
 > **[v9, 2026-07-17]** What the plan at that time defined was four things. ① Split the product into two layers — Layer 1 is core functionality running on your computer, never changing; Layer 2 is Atlas Network (Spec standard · Hub · paid Team Sync created only after demand is confirmed). ② Narrow the primary target to one group: "tech leads of 2-10 person teams." ③ Correct the multiple stakeholders noted in v8 to "those who ask questions after passing the gate." ④ The core differentiator is a feature proving that written content is still valid — catching mismatches between code and docs, placing approval in three stages, and preventing prompt injection. The v2~v8 body of this file is kept for record.
 
 > Written (v2): 2026-05-01
@@ -264,9 +262,6 @@ typed relations, local-first ownership, and human/agent co-authoring are the
 proof of how it works. Agent continuity remains an important benefit, but
 leading with "memory" makes Atlas sound like a conversation-memory store and
 hides the product/implementation meaning that distinguishes it.
-
-Canonical internal note:
-[`docs/launch/positioning.md`](launch/positioning.md).
 
 ### Required product loop
 

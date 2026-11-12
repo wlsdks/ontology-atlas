@@ -1,7 +1,7 @@
 import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph";
 
 /**
- * Domain row subcounts and capacity meter (docs/prototypes/hub-b3-immersive.html), derived from the
+ * Domain row subcounts and capacity meter, derived from the
  * same `buildOntologyTree` result the row renders so the numbers cannot drift.
  */
 export interface DomainSubcounts {

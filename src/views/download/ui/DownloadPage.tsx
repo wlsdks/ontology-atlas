@@ -16,6 +16,7 @@ import { availableDemoClips } from '../model/demo-clips';
 import { HeroTypewriter, heroSentence } from './HeroTypewriter';
 import { buttonVariants } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
+import { BrandMark } from '@/shared/ui/marks/brand-mark';
 import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
@@ -471,6 +472,7 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+        <BrandMark detail="full" size={64} alt="" aria-hidden="true" className="mb-3 size-16" data-testid="gateway-closing-moru" />
         <h2
           id="gateway-closing-title"
           className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
@@ -745,7 +747,7 @@ function DemoSection() {
 }
 
 /**
- * The request the take was filmed on (`docs/launch/demo-scenario.md` §3), so a visitor can read
+ * The request the take was filmed on, so a visitor can read
  * what the agent answers. The chat scene's user-bubble shape: it is what a person typed.
  */
 function DemoPrompt({ text, label }: { text: string; label: string }) {

@@ -79,7 +79,7 @@ ${COLORS.dim} the macOS app carries the MCP server in its own bundle instead.)${
 
 ${COLORS.bold}Usage:${COLORS.reset}
   ontology-atlas init [folder]                Scaffold a new ontology vault (default: ./atlas)
-       --quick-start                          ${COLORS.dim}Slice 0 one-liner: + bootstrap + absorb suggestion + compact next steps${COLORS.reset}
+       --quick-start                          ${COLORS.dim}one-liner: + bootstrap + absorb suggestion + compact next steps${COLORS.reset}
        --documents                            ${COLORS.dim}a folder of documents, not a codebase: sources/ and wiki/ only, no map scaffolding${COLORS.reset}
   ontology-atlas install-shim                 Put ${COLORS.bold}atlas${COLORS.reset} on your PATH so it works from anywhere
        --dir path --force --uninstall --json  ${COLORS.dim}default ~/.local/bin · overwrite · remove · machine output${COLORS.reset}
@@ -112,9 +112,9 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --vault path                           ${COLORS.dim}target vault root (default: cwd)${COLORS.reset}
        --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
        --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
-  ontology-atlas absorb <file...>             ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset} (Slice 0)
+  ontology-atlas absorb <file...>             ${COLORS.green}Absorb CLAUDE.md/AGENTS.md into typed vault nodes${COLORS.reset}
        --vault path --write                   ${COLORS.dim}default dry-run plan · --write lands + rewrites source as slim pointer${COLORS.reset}
-  ontology-atlas moment [vault]               ${COLORS.green}Slice 0 magic-moment readout${COLORS.reset}: init/absorb → first agent-brief elapsed
+  ontology-atlas moment [vault]               ${COLORS.green}first-brief timing readout${COLORS.reset}: init/absorb → first agent-brief elapsed
        --mark --json                          ${COLORS.dim}manual stamp fallback · machine output${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest base)${COLORS.reset}
@@ -300,7 +300,7 @@ function printInitUsage(stream = stderr) {
       `  ontology-atlas init [folder] --quick-start\n` +
       `  ontology-atlas init [folder] --locale=ko\n\n` +
       `Scaffold a local ontology vault. Default folder: ./vault\n\n` +
-      `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner (Slice 0): scaffold + bootstrap from\n` +
+      `${COLORS.bold}--quick-start${COLORS.reset}  no-prompt one-liner: scaffold + bootstrap from\n` +
       `  this repo + .mcp.json (already unconditional) + an absorb suggestion when\n` +
       `  CLAUDE.md/AGENTS.md exists (never auto-absorbed) + a compact next-steps block.\n`,
   );
@@ -666,7 +666,7 @@ async function runInit(targetArg, opts = {}) {
     ...['bootstrap', '.', '--vault', cwdVaultArg].map(shellQuote),
   ].join(' ');
 
-  // Local-only telemetry baseline for every init (docs/plans/PRODUCT-PLAN-2026-07.md §4/§9, lib/telemetry.mjs).
+  // Local-only telemetry baseline for every init (lib/telemetry.mjs).
   stampInitCompleted(target);
 
   if (quickStart) {
@@ -757,7 +757,7 @@ ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.re
   return 0;
 }
 
-// `init --quick-start` (docs/plans/PRODUCT-PLAN-2026-07.md §9): scaffold, bootstrap through `runBootstrap`,
+// `init --quick-start`: scaffold, bootstrap through `runBootstrap`,
 // .mcp.json, an absorb suggestion when CLAUDE.md/AGENTS.md exists (never auto-absorbed), and a next-steps
 // block of at most three lines.
 async function runQuickStart({ target, cwdVaultArg }) {

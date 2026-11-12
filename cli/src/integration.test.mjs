@@ -400,7 +400,7 @@ await test('init — vault config resolves the repository through a canonical pa
  */
 const MCP_VERIFY_TIMEOUT_MS = '30000';
 
-// init --quick-start (docs/plans/PRODUCT-PLAN-2026-07.md §9).
+// init --quick-start.
 
 function makeQuickStartRepoFixture() {
   const repo = mkdtempSync(join(tmpdir(), 'cli-quick-start-'));

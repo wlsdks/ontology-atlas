@@ -32,7 +32,7 @@ export function LocalCompileCard({
         data-testid="library-local-compile-running"
         className="flex items-center gap-2 rounded-panel border border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]"
       >
-        <BrandWaitingMark active />
+        <BrandWaitingMark active motion="compile" />
         <p className="min-w-0 flex-1 text-label leading-body text-[color:var(--color-text-secondary)] [word-break:keep-all]">
           {t("localCompile.runningWith", { model, count: session.targets.length })}{" "}
           {t("localCompile.running")}

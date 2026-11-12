@@ -1,7 +1,6 @@
 /**
- * Full-detail role groups, uncapped: contains, usedBy, dependsOn, belongsTo and related
- * (`docs/prototypes/detail-a1-datasheet.html`). Built from `buildConnections`, with no forked edge
- * scan.
+ * Full-detail role groups, uncapped: contains, usedBy, dependsOn, belongsTo and related.
+ * Built from `buildConnections`, with no forked edge scan.
  */
 import {
   buildConnections,

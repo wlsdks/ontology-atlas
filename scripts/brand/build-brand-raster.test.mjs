@@ -14,7 +14,7 @@ import {
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { MASCOT_PRESENTATION_MASTER, readMascotPresentationMaster } from './build-brand-assets.mjs';
+import { MASCOT_PRESENTATION_MASTER, readCompassMaster, readMascotPresentationMaster } from './build-brand-assets.mjs';
 import {
   RASTER_OUTPUT_NAMES,
   createBrandRasterServer,
@@ -25,10 +25,10 @@ const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 
 describe('large character artwork delivery', () => {
-  it('preserves the detailed artwork and its clear margin in the large platform icon', async () => {
+  it('preserves detailed Moru pixels and clear margins in the Open Graph image', async () => {
     const master = readMascotPresentationMaster();
     const source = await sharp(Buffer.from(master.base64, 'base64')).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const icon = await sharp('src-tauri/icons/icon.png').ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const icon = await sharp('public/og-image.png').extract({ left: 106, top: 123, width: 384, height: 384 }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     const scale = icon.info.width / source.info.width;
     assert.equal(Number.isInteger(scale), true, 'large art must use whole native pixels');
     assert.equal(icon.info.height, source.info.height * scale);
@@ -42,12 +42,27 @@ describe('large character artwork delivery', () => {
         assert.ok(x >= 8 && y >= 8 && x < source.info.width - 8 && y < source.info.height - 8, 'character must clear the platform mask');
         for (const [dx, dy] of [[0, 0], [scale - 1, scale - 1]]) {
           const target = ((y * scale + dy) * icon.info.width + x * scale + dx) * 4;
-          assert.deepEqual(icon.data.subarray(target, target + 4), source.data.subarray(i, i + 4), `large icon lost authored detail at ${x},${y}`);
+          assert.deepEqual(icon.data.subarray(target, target + 4), source.data.subarray(i, i + 4), `Open Graph art lost authored detail at ${x},${y}`);
         }
         measured++;
       }
     }
     assert.ok(measured > 0, 'the character audit measured no painted pixels');
+  });
+
+  it('ships the approved compass in the large platform icon', async () => {
+    const master = readCompassMaster();
+    const source = await sharp(Buffer.from(master.base64, 'base64')).ensureAlpha().raw().toBuffer();
+    const icon = await sharp('src-tauri/icons/icon.png').ensureAlpha().raw().toBuffer();
+    assert.equal(icon.length, source.length);
+    let measured = 0, difference = 0;
+    for (let i = 0; i < source.length; i += 4) {
+      if (source[i + 3] < 250) continue;
+      for (let channel = 0; channel < 4; channel++) difference += Math.abs(source[i + channel] - icon[i + channel]);
+      measured++;
+    }
+    assert.ok(measured > 500_000, 'compass audit measured no substantial icon body');
+    assert.ok(difference / measured < 1, 'platform icon no longer matches the approved compass');
   });
 
   it('rejects a low-resolution sprite substituted for the presentation master', () => {

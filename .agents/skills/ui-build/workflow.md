@@ -42,7 +42,7 @@ Read the [directions guide](guides/directions.md) only for a new or removed
 primary surface, or a change to navigation or grouping; value changes inside a
 selected shape do not pay for divergence.
 
-When a spec in `docs/specs/` governs the change, the §0-B loop captures every
+When a product spec governs the change, the §0-B loop captures every
 States row the change touches, and new text uses only the message keys its Copy
 section lists; a missing state or string goes back to the lead, never into the
 build.

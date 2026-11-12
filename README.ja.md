@@ -61,7 +61,7 @@
 - マップの線は宣言された関係であり、実行時の影響の証明ではありません。凡例がすべての印と向きを説明します。[マップ](docs/features/map/flat-dial.md)
 - 空のフォルダでは開始操作が表示され、開始に失敗してもファイルを上書きせずにやり直せます。ポップアップのツアーは廃止しました。[初回起動](docs/features/first-run.md)
 - 資料室の設定とチェックはアプリで行います。ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
-- 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/specs/2026-11-01-project-planning-documents.md)
+- 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/FEATURES.md)
 - Git の送信専用操作は新しいファイルの変更をコミットしません。フォルダやブランチの状態が変わった場合は再確認できます。プルはリポジトリ全体のファイルを変更することがあります。[Git](docs/features/git.md)
 - フォルダを接続する前でも、アプリは資料室、企画、エージェント、ブリーフィングを開けるようにしています。[機能一覧](docs/FEATURES.md)
 
@@ -102,7 +102,7 @@ frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つ�
 
 ## 現在の状況
 
-Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas を使うとより良い回答になることはまだ示せておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)）。構築の試験とその失敗、限界は[構築の測定結果](docs/benchmark/CONSTRUCTION.md)にあります。
+Atlas はまだ初期段階です。私たちのベンチマークでは、Atlas を使うとより良い回答になることはまだ示せておらず、Atlas のほうが遅くなりました（[訂正記録](docs/benchmark/README.md#current-measurement-status)）。構築の試験とその失敗、限界は[構築の測定結果](docs/benchmark/CONSTRUCTION.md)にあります。
 
 ## ドキュメント
 
@@ -119,6 +119,33 @@ pnpm checks:changed -- --run
 ```
 
 `pnpm pr:land <number>` は、レビュー済みのプルリクエストをマージし、元のコミットをそのまま残します。検査の全体は[開発チェック](docs/DEVELOPMENT-CHECKS.md)にまとまっています。リポジトリのコマンド表は、英語版 README の [Contributing](README.md#contributing) にあります。
+
+## Moru
+
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[50のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>Moruの動きを見る</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="挨拶するMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="資料を読むMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="人の判断を待つMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="確認済みの完了を喜ぶMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="歌うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="魚と遊ぶモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="踊るモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="モルたちのダンス" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="照れるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="友達とボールで遊ぶモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="3匹の子モルと寄り添うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨の日に傘を差すモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="雪を見上げるモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="そよ風を楽しむモル" />
+
+
+</details>
 
 ## ライセンス
 

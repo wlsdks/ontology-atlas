@@ -65,7 +65,7 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 - 지도의 선은 선언된 관계이지 실행 영향의 증거가 아니에요. 범례가 모든 표시와 방향을 설명해요. [지도](docs/features/map/flat-dial.md)
 - 빈 폴더에서는 시작 동작이 나타나고, 시작이 실패하면 파일을 덮어쓰지 않고 다시 시도할 수 있어요. 팝업 투어는 없어졌어요. [첫 실행](docs/features/first-run.md)
 - 자료실 설정과 점검은 앱에서 해요. 브라우저에서는 앱을 받거나 파일을 추가할 수 있어요. [자료실](docs/features/library/workspace.md)
-- 기획은 읽기 전용이고, macOS 앱에서 고른 폴더에서 동작해요. 마크다운과 PNG/JPEG 이미지를 보여 줘요. [기획](docs/specs/2026-11-01-project-planning-documents.md)
+- 기획은 읽기 전용이고, macOS 앱에서 고른 폴더에서 동작해요. 마크다운과 PNG/JPEG 이미지를 보여 줘요. [기획](docs/FEATURES.md)
 - Git의 보내기 전용 동작은 새 파일 변경을 커밋하지 않아요. 폴더나 브랜치의 상태가 달라졌다면 다시 확인할 수 있어요. 받아오기는 저장소 전체의 파일을 바꿀 수 있어요. [Git](docs/features/git.md)
 - 폴더를 연결하기 전에도 앱은 자료실, 기획, 에이전트, 브리핑을 열어 둬요. [기능 목록](docs/FEATURES.md)
 
@@ -109,7 +109,7 @@ frontmatter에 `kind:`가 있는 마크다운 파일 하나가 개념 하나예�
 ## 현재 상태
 
 Atlas는 아직 초기 단계예요. 우리 벤치마크에서는 Atlas를 썼을 때 더 나은 답을 아직
-확인하지 못했고, Atlas 쪽이 더 느렸어요([정정 기록](docs/benchmark/FINDINGS-2026-08-31-metric-split.md)).
+확인하지 못했고, Atlas 쪽이 더 느렸어요([정정 기록](docs/benchmark/README.md#current-measurement-status)).
 구축 실험과 그 실패, 한계는 [구축 측정](docs/benchmark/CONSTRUCTION.md)에 있어요.
 
 ## 문서
@@ -130,6 +130,33 @@ pnpm checks:changed -- --run
 `pnpm pr:land <number>`는 리뷰를 마친 PR을 머지하고 원래 커밋을 그대로 남겨요.
 전체 검사 안내는 [개발 검사](docs/DEVELOPMENT-CHECKS.md)에 있어요. 저장소 명령 표는
 영어 README의 [Contributing](README.md#contributing)에 있어요.
+
+## Moru
+
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 50개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
+
+<details>
+<summary>모루의 움직임 보기</summary>
+
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="자료를 읽는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="사람의 결정을 기다리는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="확인된 완료를 반기는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="노래하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="물고기와 노는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="춤추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="모루들의 합동 춤" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="수줍게 웃는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="친구와 공놀이하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="새끼 모루 셋과 안기는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="비 오는 날 우산 쓴 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="눈송이를 바라보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="산들바람을 느끼는 모루" />
+
+
+</details>
 
 ## 라이선스
 
