@@ -1,7 +1,7 @@
 {
   "file": "src/widgets/atlas-git-panel/ui/SetupMode.tsx",
-  "count": 2,
+  "count": 1,
   "claim": "standard-button",
   "proof": "buttonVariants",
-  "why": "The setup stages' one way forward, \"Get the app\" in the browser and \"Choose a folder\" in the app, is the primary sm standard button beside the setup `<Button>`s. Both navigate, so they are `<Link>`; `control-class.ts` does not replace standard buttons."
+  "why": "The setup stage's one way forward in the app, \"Choose a folder\", is the primary sm standard button beside the setup `<Button>`s. It navigates, so it is a `<Link>`; `control-class.ts` does not replace standard buttons."
 }

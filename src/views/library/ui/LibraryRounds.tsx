@@ -15,7 +15,7 @@ import { badgeClass } from "@/shared/ui/badge-class";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
-import { Button, EmptyState, RowButton, buttonVariants } from "@/shared/ui";
+import { Button, EmptyState, GetAppLink, RowButton, buttonVariants } from "@/shared/ui";
 
 import { useLibraryRounds } from "../lib/rounds/library-rounds-context";
 import { capitalize } from "../lib/rounds/round-presentation";
@@ -187,13 +187,7 @@ export function LibraryRounds() {
               icon={<Clock3 />}
               tone="solid"
               action={
-                <Link
-                  href="/download/"
-                  data-testid="library-rounds-get-app"
-                  className={cn(controlClass({ shape: "link", size: "lg", tone: "accent" }), "atlas-touch-floor atlas-touch-floor-wide self-start")}
-                >
-                  {t("getApp")}
-                </Link>
+                <GetAppLink data-testid="library-rounds-get-app">{t("getApp")}</GetAppLink>
               }
             />
           </div>

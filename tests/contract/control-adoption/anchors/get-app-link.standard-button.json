@@ -1,0 +1,7 @@
+{
+  "file": "src/shared/ui/controls/get-app-link.tsx",
+  "count": 1,
+  "claim": "standard-button",
+  "proof": "buttonVariants",
+  "why": "The one \"Get the app\" door every browser-only screen wears is the primary sm standard button. It navigates to `/download/`, so it is a `<Link>` through `buttonVariants`; `control-class.ts` does not replace standard buttons."
+}

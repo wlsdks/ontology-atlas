@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, Download, RefreshCw, Settings2 } from 'lucide-react';
+import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
 import { useLocalVault, useVaultSessionIdentityScope } from '@/entities/vault-session';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';
@@ -15,7 +15,7 @@ import { Input } from '@/shared/ui/fields/input';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { badgeClass } from '@/shared/ui/badge-class';
-import { PAGE_TITLE, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
 import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, type BriefingPeriod } from '../model/briefing-model';
 import { useBriefing } from '../model/use-briefing';
 import { BriefingPatch } from './BriefingPatch';
@@ -37,7 +37,6 @@ export function ChangeBriefingPage() {
   const t = useTranslations('changeBriefing');
   const git = useTranslations('gitBriefing');
   const review = useTranslations('prBriefing');
-  const nav = useTranslations('navRail');
   const locale = useLocale();
   const vault = useLocalVault();
   const identity = useVaultSessionIdentityScope();
@@ -286,7 +285,7 @@ export function ChangeBriefingPage() {
     requestAnimationFrame(() => container?.querySelectorAll<HTMLElement>('[data-control="row"]')[before]?.focus({ preventScroll: true }));
   }
   const validData = data && (data.status === 'measured' || data.status === 'partial');
-  const status = !native ? 'webTitle' : !root ? null : !range ? 'invalidRange' : error ? 'readError' : loading ? 'loading' : data?.status === 'stale' ? 'stale' : data?.status === 'no-history' ? 'noHistory' : !validData ? 'sourceUnavailable' : !data.commits.length && data.status !== 'partial' ? 'empty' : null;
+  const status = !root ? null : !range ? 'invalidRange' : error ? 'readError' : loading ? 'loading' : data?.status === 'stale' ? 'stale' : data?.status === 'no-history' ? 'noHistory' : !validData ? 'sourceUnavailable' : !data.commits.length && data.status !== 'partial' ? 'empty' : null;
   async function chooseRepository() {
     const path = await pickTauriSourceDirectory(git('chooseRepository'));
     if (!path) {
@@ -299,7 +298,11 @@ export function ChangeBriefingPage() {
     setMode('summary');
     refresh();
   }
-  if (native && !root) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+  if (!native) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    <PageHeaderBar frame="page" title={git('title')} />
+    <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage /></div>
+  </main>;
+  if (!root) return <main ref={mainRef} id="main" data-briefing-surface className="flex min-h-full flex-col bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
     <PageHeaderBar frame="page" title={git('title')} actions={<IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={() => setSettingsOpen(true)}><Settings2 size={16} aria-hidden /></IconButton>} />
     <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage onChoose={() => void chooseRepository()} /></div>
     <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
@@ -309,13 +312,12 @@ export function ChangeBriefingPage() {
       <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-          <h1 tabIndex={-1} className={native ? "text-title font-[var(--font-weight-strong)]" : PAGE_TITLE}>{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span>
-          {native && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant={root ? 'ghost' : 'primary'} size="sm" aria-label={git(root ? 'changeRepository' : 'chooseRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>}
+          <h1 tabIndex={-1} className="text-title font-[var(--font-weight-strong)]">{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span>
+          <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-label={git('changeRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>
         </div>
-        {native && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>}
+        <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>
         </div>
-        {!root && <p className="max-w-prose text-body text-[color:var(--color-text-secondary)]">{git('sourcePrompt')}</p>}
-      {native && root && <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
+      <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
         <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
         <div className="flex min-h-8 min-w-0 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] px-1">
           {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('previous')} onClick={() => setAnchor(movePeriod(period, anchor, -1))}><ChevronLeft size={16} /></IconButton>}
@@ -325,7 +327,7 @@ export function ChangeBriefingPage() {
         </div>
         {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('today')} onClick={() => setAnchor(localDate(new Date()))}><CalendarCheck size={16} /></IconButton>}
         <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={refresh}><RefreshCw size={16} /></IconButton>
-      </section>}
+      </section>
       </header>
       <Dialog open={datesOpen} onClose={() => setDatesOpen(false)} aria-label={t('chooseDates')} size="sm" testId="briefing-dates-dialog">
         <div className="space-y-5">
@@ -340,7 +342,7 @@ export function ChangeBriefingPage() {
           </div>
         </div>
       </Dialog>
-      {native && root && <div ref={modesRef} className="flex flex-wrap items-center justify-between gap-3">
+      <div ref={modesRef} className="flex flex-wrap items-center justify-between gap-3">
         {section !== 'mixed' ? <SegmentedControl<Exclude<BriefingSection, 'mixed'>> className="max-[769px]:[&_[role=radio]]:min-h-11 max-[769px]:[&_[role=radio]]:min-w-11" ariaLabel={git('readingModes')} value={section} onChange={changeSection} options={[
           { value: 'prs', label: review('prTab'), testId: 'briefing-prs' },
           { value: 'commits', label: review('commitsTab'), testId: 'briefing-commits' },
@@ -348,16 +350,15 @@ export function ChangeBriefingPage() {
         ]} /> : <Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={() => { changeSection('prs'); requestAnimationFrame(() => mixedEntryRef.current?.focus({ preventScroll: true })); }}>{review('backToPrs')}</Button>}
         {validData && data.commits.length > 0 && section !== 'mixed' && <Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" data-testid="briefing-mixed" ref={mixedEntryRef} onClick={() => { setMixedStarted(true); changeSection('mixed'); requestAnimationFrame(() => mixedHeadingRef.current?.focus({ preventScroll: true })); }}>{review('previousCombined')}</Button>}
         <div hidden={!(section === 'mixed' || (section === 'commits' && commitExplain))} ref={setCoverageSeat} />
-      </div>}
+      </div>
       {publicRead && section !== 'prs' && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('prLoading')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" onClick={() => publicRead.abort()}>{git('stop')}</Button></div>}
       {commitActivity && (section !== 'commits' || !commitExplain) && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('commitRunning')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" disabled={commitActivity.busy === 'cancelling'} onClick={commitActivity.stop}>{git('stop')}</Button></div>}
       {mixedActivity && section !== 'mixed' && <div role="status" className="flex flex-wrap items-center gap-3"><p>{review('combinedRunning')}</p><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="outline" size="sm" disabled={mixedActivity.busy === 'cancelling'} onClick={mixedActivity.stop}>{git('stop')}</Button></div>}
       {status && !(status === 'empty' && (section === 'prs' || activeFileOrigin)) && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
         <h2 className="text-title font-[var(--font-weight-strong)]">{t(status)}</h2>
-        {!native && <><p className="text-[color:var(--color-text-secondary)]">{git('webBody')}</p><div className="flex flex-wrap gap-3"><Link href="/download/" className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })}><Download size={16} aria-hidden /><span>{nav('getApp')}</span></Link></div></>}
         {status === 'empty' && <p>{t('emptyHint')}</p>}
-        {native && status === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => { void pickTauriSourceDirectory(t('repository')).then(path => { if (path) { setSourceChoice(path); refresh(); } }); }}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
-        {native && (status === 'readError' || status === 'stale' || status === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={refresh}>{t('retry')}</Button>}
+        {status === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => { void pickTauriSourceDirectory(t('repository')).then(path => { if (path) { setSourceChoice(path); refresh(); } }); }}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
+        {(status === 'readError' || status === 'stale' || status === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={refresh}>{t('retry')}</Button>}
       </section>}
       {validData && <>
         {data.status === 'partial' && section !== 'prs' && <div role="status" className="space-y-1 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)] text-[color:var(--color-status-warning)]"><p>{t('partial')}</p><p className="text-body">{t('limit', { limit: data.limit })}</p></div>}
@@ -374,7 +375,7 @@ export function ChangeBriefingPage() {
           </div>}
         </>}
       </>}
-      {native && <div className="space-y-4 [&>.ai-row-disclosure]:overflow-clip">
+      <div className="space-y-4 [&>.ai-row-disclosure]:overflow-clip">
         {validData && activeFileOrigin && section === 'files' && root && <BriefingOriginFiles key={`${scopeKey}:${activeFileOrigin.kind}`} data={data} root={root} project={project} kind={activeFileOrigin.kind} paths={activeFileOrigin.paths} onBack={returnToOriginal} onRefresh={refreshCode} />}
         {validData && <section hidden={section !== 'files' || Boolean(activeFileOrigin)} className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -428,8 +429,8 @@ export function ChangeBriefingPage() {
         </section>}
           </>}
           </section>}
-        </div>}
-      {native && <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />}
+        </div>
+      <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
     </div>
   </main>;
 }
