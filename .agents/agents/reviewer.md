@@ -110,7 +110,6 @@ Source lenses for hygiene, refactor, and structural slices:
 - `algorithm` — for layout, search and matching, diffing, parsing, and graph
   traversal, name the complexity and data structure, then check that tests
   cover empty, single, duplicate, cyclic, Hangul, and largest-measured inputs.
-  This lens is never waived because the implementer ran at low effort.
 
 Security lens, for a diff on a path `pnpm checks:changed` calls a security
 surface, or one that adds a `security-raw-sinks` raise record; comment-only
