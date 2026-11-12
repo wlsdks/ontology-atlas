@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { readAcpTrouble, useAcpSession, type ChatSuggestion } from '@/features/acp-session';
 import { MOTION } from '@/shared/motion';
+import { KeptPanelSeat } from './KeptPanelSeat';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { RowButton, Surface } from '@/shared/ui';
@@ -41,7 +42,7 @@ import { useTurnClock, useTurnSilence } from './chat-panel/use-turn-timing';
 export type { AcpMapIntent } from '@/features/acp-session';
 export type { AcpOntologyRelationPreview } from './chat-panel/types';
 
-export function AcpChatPanel({
+export function AcpChatPanelBody({
   runtimeId,
   runtimeLabel,
   vaultRoot,
@@ -84,6 +85,7 @@ export function AcpChatPanel({
   onTurnStarted,
   captureTaskBaseline,
   meaningTransitionContext,
+  onBusyChange,
 }: AcpChatPanelProps) {
   const t = useTranslations('acpChat');
   const tGray = useTranslations('grayArea');
@@ -142,6 +144,11 @@ export function AcpChatPanel({
     autoDecide,
     systemPromptAppendix,
   });
+
+  const turnHeld = status === 'thinking' || pending !== null;
+  useEffect(() => {
+    onBusyChange?.(turnHeld);
+  }, [turnHeld, onBusyChange]);
 
   const [connectStopped, setConnectStopped] = useState(false);
   // Mirrored so the start effects see it without re-running, which would race New chat's own start.
@@ -268,7 +275,7 @@ export function AcpChatPanel({
     void start();
   }, [sessionEnabled, start]);
 
-  useHistoryEscape(historyOpen, setHistoryOpen);
+  useHistoryEscape(historyOpen && !putAway, setHistoryOpen);
 
   const { follow: followTranscript, restore: restoreTranscript } = transcriptFollow;
   const { lastUserEventIndex, hasCompletedAgentAnswer, showPostTurnSuggestions, postTurnSuggestionsHeld } =
@@ -669,4 +676,8 @@ export function AcpChatPanel({
       />
     </section>
   );
+}
+
+export function AcpChatPanel({ keepKey, ...props }: AcpChatPanelProps & { keepKey?: string }) {
+  return keepKey ? <KeptPanelSeat keepKey={keepKey} props={props} /> : <AcpChatPanelBody {...props} />;
 }

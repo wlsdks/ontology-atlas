@@ -120,10 +120,10 @@ export function useTurnReports({
   );
   const emittedMapIntentRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!mapIntent || !onMapIntent) return;
+    if (!mapIntent) return;
     const key = `${mapIntent.kind}:${mapIntent.toolCallId}`;
     if (emittedMapIntentRef.current === key) return;
     emittedMapIntentRef.current = key;
-    onMapIntent(mapIntent);
+    onMapIntent?.(mapIntent);
   }, [mapIntent, onMapIntent]);
 }

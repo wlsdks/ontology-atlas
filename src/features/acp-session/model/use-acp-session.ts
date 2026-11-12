@@ -51,7 +51,7 @@ import { unavailableTaskBaseline, type TaskBaselineCaptureResult } from './task-
  *
  * **Permission waits until the screen answers.** A request outside the vault raises a card and
  * defers the response until the user chooses; meanwhile the agent is stopped — that is what the
- * permission gate means. If the screen closes or the session ends, it **answers with a rejection**:
+ * permission gate means. If the panel or the session ends, it **answers with a rejection**:
  * counting an unasked question as allowed is the same as having no gate.
  */
 
