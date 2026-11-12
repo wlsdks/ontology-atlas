@@ -161,6 +161,7 @@ export function InsightsAgentDock({
             sessionEnabled={
               open && enabledRequestNonce === (prefillRequest?.nonce ?? null)
             }
+            resumeLatest
             putAway={!open}
             prefillRequest={prefillRequest}
             openingRequest={openingRequest}

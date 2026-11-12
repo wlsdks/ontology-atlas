@@ -311,6 +311,7 @@ export function TopologyAgentDock({
                   vaultRoot={gitVaultPath}
                   mcpServers={acpMcpServers}
                   sessionEnabled={acpChatOpen}
+                  resumeLatest
                   // Seated in the composer, not sent.
                   prefillRequest={vaultAgentPrefill ?? askPrefill}
                   openingRequest={agentOpeningRequest}
