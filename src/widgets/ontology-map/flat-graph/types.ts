@@ -73,6 +73,19 @@ export interface FlatGraphPaintTokens {
   nameHaloPx: number;
   domainNameHaloPx: number;
   namePadPx: number;
+  /** Share of a mark's hue at rest; the lit set paints at full hue. */
+  restHue: number;
+  selectedDiscPx: number;
+  selectedRingGapPx: number;
+  selectedRingPx: number;
+  selectedNamePx: number;
+  lineBow: number;
+  lineAlpha: number;
+  lineTaperPx: number;
+  lineHairPx: number;
+  lineDotPx: number;
+  lineDotGapPx: number;
+  lineDoubleGapPx: number;
 }
 
 export interface FlatGraphInks {
@@ -80,6 +93,8 @@ export interface FlatGraphInks {
   project: string;
   discFill: string;
   arc: string;
+  /** The lines from the concepts that need the selection. */
+  reach: string;
   nameStrong: string;
   name: string;
   halo: string;

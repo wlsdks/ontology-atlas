@@ -1,6 +1,6 @@
 {
-  "keyCapability": "○ 역량",
-  "keyDependency": "→ 필요한 대상",
+  "keyCapability": "역량",
+  "keyDependency": "필요한 대상",
   "keyStale": "! 노란색 · 근거 재확인 필요",
   "keySelection": "밝은 항목 · 선택과 직접 연결",
   "units": "역량 {capabilities, number} · 요소 {elements, number}",
@@ -19,5 +19,12 @@
   "legendStale": "낡음",
   "moreMembers": "역량 {count, number}개 더 보기",
   "lessMembers": "펼친 역량 {count, number}개 접기",
-  "connectionCount": "연결 {count, number}개"
+  "connectionCount": "연결 {count, number}개",
+  "keyNeeds": "이 역량이 필요로 하는 역량",
+  "keyNeededBy": "이 역량을 필요로 하는 역량",
+  "keyRelates": "관련",
+  "keyBroader": "상위 개념",
+  "noDomain": "도메인 없음 {count, number}",
+  "reachNeeds": "{count, number}곳에 기댐",
+  "reachNeededBy": "{count, number}곳이 기댐"
 }

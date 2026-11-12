@@ -2,17 +2,37 @@ import { easeOutCubic } from "../model/camera/camera-easing";
 import { MOTION } from "@/shared/motion/tokens";
 import type { DialModel } from "../dial/types";
 
+/** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */
+export type GraphLineKind = "needs" | "neededBy" | "relates" | "broader";
+
+/** Bits of the frame summary's `lineKinds`: the line kinds the map draws now, resting arcs included. */
+export const FLAT_LINE_BITS: Readonly<Record<GraphLineKind | "rest", number>> = { needs: 1, neededBy: 2, relates: 4, broader: 8, rest: 16 };
+
+/** One relation drawn for the focus; a taper is wide at `from` and points at `to`. */
+export interface GraphLine {
+  from: string;
+  to: string;
+  kind: GraphLineKind;
+  /** `kind:from>to`, built once so a frame can report the line without allocating. */
+  key: string;
+}
+
 export interface GraphAttention {
   key: string;
   focusId: string | null;
   selected: boolean;
   /** Concepts drawn at full ink; null means the rest picture, where everything is. */
   lit: ReadonlySet<string> | null;
-  /** Capability dependencies the focus draws, as `[from, to]`. */
-  links: readonly (readonly [string, string])[];
+  /** The relations the focus draws, one per far capability. */
+  lines: readonly GraphLine[];
+  /** Distinct capabilities a focused capability needs and is needed by; null for other kinds. */
+  reach: { needs: number; neededBy: number } | null;
+  /** Concepts a lit picture must name: the focus and every line's far end. */
+  named: ReadonlySet<string>;
 }
 
-const REST: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, links: [] };
+const NONE: ReadonlySet<string> = new Set();
+const REST: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: NONE };
 
 function domainMembers(model: DialModel, domainId: string, into: Set<string>): void {
   const d = model.domainById.get(domainId);
@@ -25,49 +45,95 @@ function domainMembers(model: DialModel, domainId: string, into: Set<string>): v
   for (const el of d.directElementIds) into.add(el);
 }
 
-function capabilityReach(model: DialModel, capabilityId: string, into: Set<string>, links: [string, string][]): void {
+/**
+ * One capability's own relations as lines, the connections its detail panel lists
+ * (`groupConnectionsByRole`): one line per far concept per side, outgoing and incoming apart. A
+ * dependency outranks `is_a` toward the same concept, and either outranks a symmetric relation.
+ * O(capability relations).
+ */
+export function capabilityLines(model: DialModel, capabilityId: string): GraphLine[] {
+  const lines: GraphLine[] = [];
+  const seen = new Set<string>();
+  const relations = model.capabilityRelations ?? [];
+  const add = (from: string, to: string, kind: GraphLineKind) => {
+    const outgoing = from === capabilityId;
+    const far = outgoing ? to : from;
+    const side = kind === "relates" ? "" : outgoing ? ">" : "<";
+    if (seen.has(`${side}${far}`) || (kind === "relates" && (seen.has(`>${far}`) || seen.has(`<${far}`)))) return;
+    seen.add(`${side}${far}`);
+    lines.push({ from, to, kind, key: `${kind}:${from}>${to}` });
+  };
+  for (const r of relations) {
+    if (r.kind !== "depends") continue;
+    if (r.from === capabilityId) add(r.from, r.to, "needs");
+    else if (r.to === capabilityId) add(r.from, r.to, "neededBy");
+  }
+  for (const r of relations) {
+    if (r.kind === "broader" && (r.from === capabilityId || r.to === capabilityId)) add(r.from, r.to, "broader");
+  }
+  for (const r of relations) {
+    if (r.kind !== "relates") continue;
+    if (r.from === capabilityId) add(r.from, r.to, "relates");
+    else if (r.to === capabilityId) add(r.to, r.from, "relates");
+  }
+  return lines;
+}
+
+/** The panel's two directed totals: distinct concepts the focus points at, and that point at it. */
+export function reachCounts(lines: readonly GraphLine[], capabilityId: string): { needs: number; neededBy: number } {
+  let needs = 0;
+  let neededBy = 0;
+  for (const line of lines) {
+    if (line.kind === "relates") continue;
+    if (line.from === capabilityId) needs += 1;
+    else neededBy += 1;
+  }
+  return { needs, neededBy };
+}
+
+function capabilityReach(model: DialModel, capabilityId: string, into: Set<string>, named: Set<string>): GraphLine[] {
   const cap = model.capabilityById.get(capabilityId);
-  if (!cap) return;
+  if (!cap) return [];
   into.add(capabilityId);
   into.add(cap.domainId);
   for (const el of cap.elementIds) into.add(el);
-  for (const dep of model.capabilityDependencies) {
-    if (dep.from === capabilityId) {
-      into.add(dep.to);
-      links.push([dep.from, dep.to]);
-    } else if (dep.to === capabilityId) {
-      into.add(dep.from);
-      links.push([dep.from, dep.to]);
-    }
+  const lines = capabilityLines(model, capabilityId);
+  for (const line of lines) {
+    const far = line.from === capabilityId ? line.to : line.from;
+    into.add(far);
+    named.add(far);
   }
-  for (const r of model.capabilityRelates) {
-    if (r.a === capabilityId) into.add(r.b);
-    else if (r.b === capabilityId) into.add(r.a);
-  }
+  return lines;
 }
 
 /**
  * The lit set: a domain lights itself and its members, a capability its domain, elements and every
- * capability it depends on or is used by, an element its capability's set. The project stays lit.
- * O(dependencies) per call; the frame caches by key.
+ * capability it needs, is needed by, relates to or sits under, an element its capability's set.
+ * The project sinks with the rest; pointing at the project lights nothing and brings back its spokes.
+ * O(relations) per call; the frame caches by key.
  */
 export function resolveGraphAttention(model: DialModel, focusId: string | null, selected: boolean): GraphAttention {
-  if (focusId === null || focusId === model.projectId) return selected && focusId !== null ? { ...REST, key: `project|1`, focusId, selected } : REST;
+  if (focusId === null) return REST;
+  const key = `${focusId}|${selected ? 1 : 0}`;
+  if (focusId === model.projectId) return { ...REST, key, focusId, selected };
   const lit = new Set<string>();
-  const links: [string, string][] = [];
-  if (model.projectId !== null) lit.add(model.projectId);
+  const named = new Set<string>([focusId]);
+  let lines: GraphLine[] = [];
   if (model.domainById.has(focusId)) domainMembers(model, focusId, lit);
-  else if (model.capabilityById.has(focusId)) capabilityReach(model, focusId, lit, links);
+  else if (model.capabilityById.has(focusId)) lines = capabilityReach(model, focusId, lit, named);
   else {
     const owner = model.capabilityOf.get(focusId);
-    if (owner) capabilityReach(model, owner, lit, links);
-    else {
+    if (owner) {
+      lines = capabilityReach(model, owner, lit, named);
+      named.add(owner);
+    } else {
       const domain = model.domainOf.get(focusId);
       if (domain) lit.add(domain);
     }
     lit.add(focusId);
   }
-  return { key: `${focusId}|${selected ? 1 : 0}`, focusId, selected, lit, links };
+  const reach = model.capabilityById.has(focusId) ? reachCounts(lines, focusId) : null;
+  return { key, focusId, selected, lit, lines, reach, named };
 }
 
 const attentionCache = new WeakMap<DialModel, Map<string, GraphAttention>>();
@@ -89,9 +155,9 @@ export function cachedGraphAttention(model: DialModel, focusId: string | null, s
   return hit;
 }
 
-/** Ink of one concept under an attention: full when lit or at rest, the sink token otherwise. */
-export function inkUnder(attention: GraphAttention, id: string, sink: number): number {
-  return attention.lit === null || attention.lit.has(id) ? 1 : sink;
+/** Ink of one concept under an attention: `rest` with nothing lit, full when lit, `sink` otherwise. */
+export function inkUnder(attention: GraphAttention, id: string, sink: number, rest = 1): number {
+  return attention.lit === null ? rest : attention.lit.has(id) ? 1 : sink;
 }
 
 const FOCUS_MS = MOTION.fast.duration * 1000;
@@ -127,10 +193,10 @@ export function graphInkMix(worldKey: object, attention: GraphAttention, now: nu
 }
 
 /** `transitionShare` of `inkUnder` without a closure, for the per-concept paths of a frame. */
-export function transitionInk(t: GraphTransition, id: string, sink: number): number {
-  const previous = inkUnder(t.previous, id, sink);
-  const from = t.carried >= 1 || t.older === t.previous ? previous : inkUnder(t.older, id, sink) + (previous - inkUnder(t.older, id, sink)) * t.carried;
-  const current = inkUnder(t.current, id, sink);
+export function transitionInk(t: GraphTransition, id: string, sink: number, rest = 1): number {
+  const previous = inkUnder(t.previous, id, sink, rest);
+  const from = t.carried >= 1 || t.older === t.previous ? previous : inkUnder(t.older, id, sink, rest) + (previous - inkUnder(t.older, id, sink, rest)) * t.carried;
+  const current = inkUnder(t.current, id, sink, rest);
   return t.mix >= 1 ? current : from + (current - from) * t.mix;
 }
 

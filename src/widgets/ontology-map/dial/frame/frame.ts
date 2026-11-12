@@ -1,5 +1,6 @@
 import { branchMembersAnimating } from "../branches/member-disclosure";
 import { MOTION } from "@/shared/motion/tokens";
+import { FLAT_LINE_BITS } from "../../flat-graph/attention";
 import { easeOutCubic } from "../../model/camera/camera-easing";
 import { dialConceptTotal, dialEvidenceView, resolveDialAttention } from "../dial-model";
 import { resolveDialDisclosure, smoothstep } from "./disclosure";
@@ -98,6 +99,7 @@ interface LastFrame {
     };
   concepts: number;
   domains: number;
+  lineKinds: number;
 }
 
 let last: LastFrame | null = null;
@@ -193,13 +195,14 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     disclosure: { capAlpha: disclosure.capAlpha, elementsAlpha: disclosure.elementsAlpha, entered: disclosure.entered, resolved: disclosure.resolved },
     zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
     rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
-    concepts: dialConceptTotal(model), domains: model.domains.length,
+    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds: FLAT_LINE_BITS.rest,
   };
   return result;
 }
 
 /** Lets another Flat scene painter keep `lastDialFrame()` and the probes truthful. */
-export function recordDialFrame(input: DialFrameInput, result: DialFrameResult, flows: DialMarksResult["flows"]): void {
+/** `lineKinds` is a bit set of the line kinds the frame draws, for the legend beneath the map. */
+export function recordDialFrame(input: DialFrameInput, result: DialFrameResult, flows: DialMarksResult["flows"], lineKinds = 0): void {
   const { model, scene } = input.dial;
   const placement = dialPlacementOf(input.dial);
   last = {
@@ -207,7 +210,7 @@ export function recordDialFrame(input: DialFrameInput, result: DialFrameResult, 
     disclosure: { capAlpha: 1, elementsAlpha: result.tier === "element" ? 1 : 0, entered: null, resolved: true },
     zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
     rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
-    concepts: dialConceptTotal(model), domains: model.domains.length,
+    concepts: dialConceptTotal(model), domains: model.domains.length, lineKinds,
   };
 }
 
@@ -266,13 +269,14 @@ export interface DialFrameSummary {
   tier: "spine" | "circuit" | "element";
   linksShown: number;
   linksTotal: number;
+  lineKinds: number;
 }
 
 export function dialFrameSummary(): DialFrameSummary | null {
   if (!last) return null;
   const { disclosure, flows } = last;
   const tier = disclosure.entered !== null && disclosure.elementsAlpha > 0.5 ? "element" : disclosure.capAlpha > 0.5 ? "circuit" : "spine";
-  return { concepts: last.concepts, domains: last.domains, tier, linksShown: flows.budget.shown, linksTotal: flows.budget.total };
+  return { concepts: last.concepts, domains: last.domains, tier, linksShown: flows.budget.shown, linksTotal: flows.budget.total, lineKinds: last.lineKinds };
 }
 
 export function clearDialFrame(): void {

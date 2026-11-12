@@ -1,4 +1,4 @@
-import type { ContainmentTree, DirectedDomainFlow, DomainDependency } from "../model/containment-tree";
+import type { CapabilityRelation, ContainmentTree, DirectedDomainFlow, DomainDependency } from "../model/containment-tree";
 import type {
   DialAttention,
   DialCapability,
@@ -15,9 +15,10 @@ export interface DialModelInput {
   flows: readonly DirectedDomainFlow[];
   elementIds?: readonly string[];
   relates?: readonly { a: string; b: string }[];
+  direct?: readonly CapabilityRelation[];
 }
 
-export function buildDialModel({ tree, dependencies, flows, elementIds = [], relates = [] }: DialModelInput): DialModel {
+export function buildDialModel({ tree, dependencies, flows, elementIds = [], relates = [], direct = [] }: DialModelInput): DialModel {
   const domains: DialDomain[] = [];
   const domainById = new Map<string, DialDomain>();
   for (const d of tree.domains) {
@@ -106,6 +107,7 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [], rel
     flowByKey: new Map(flowList.map((f) => [f.key, f] as const)),
     capabilityDependencies,
     capabilityRelates: relates.filter((r) => r.a !== r.b && capabilityById.has(r.a) && capabilityById.has(r.b)).map((r) => ({ a: r.a, b: r.b })),
+    capabilityRelations: direct.filter((r) => capabilityById.has(r.from) || capabilityById.has(r.to)),
     orphanIds: orphanIds.sort(),
     dependents: new Map([...sources].map(([id, set]) => [id, set.size] as const)),
   };

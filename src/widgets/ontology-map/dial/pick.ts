@@ -2,6 +2,10 @@ import type { DialPick, DialRowPick, DialRowAction } from "./types";
 
 export function pickDial(picks: readonly DialPick[], rows: readonly DialRowPick[], x: number, y: number, slackPx: number): string | null {
   if (pickDialAction(rows, x, y)) return null;
+  for (let i = picks.length - 1; i >= 0; i--) {
+    const pick = picks[i]!;
+    if (pick.solid && Math.hypot(x - pick.x, y - pick.y) <= pick.r) return pick.id;
+  }
   for (let i = rows.length - 1; i >= 0; i--) {
     const { id, box } = rows[i]!;
     if (x >= box.minX && x <= box.maxX && y >= box.minY && y <= box.maxY) return id;

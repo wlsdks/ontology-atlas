@@ -1,6 +1,6 @@
 {
-  "keyCapability": "○ 能力",
-  "keyDependency": "→ 依赖对象",
+  "keyCapability": "能力",
+  "keyDependency": "依赖对象",
   "keyStale": "! 黄色 · 需要重新核查依据",
   "keySelection": "明亮项 · 选中及直接关联",
   "units": "{capabilities, plural, other {# 项能力}} · {elements, plural, other {# 个元素}}",
@@ -19,5 +19,12 @@
   "legendStale": "过时",
   "moreMembers": "查看另外 {count, number} 项",
   "lessMembers": "收起已展开的 {count, number} 项能力",
-  "connectionCount": "{count, number} 个连接"
+  "connectionCount": "{count, number} 个连接",
+  "keyNeeds": "它依赖的",
+  "keyNeededBy": "依赖它的",
+  "keyRelates": "相关",
+  "keyBroader": "上位概念",
+  "noDomain": "无领域 {count, number}",
+  "reachNeeds": "依赖 {count, number} 处",
+  "reachNeededBy": "被 {count, number} 处依赖"
 }
