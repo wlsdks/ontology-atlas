@@ -46,43 +46,47 @@ function domainMembers(model: DialModel, domainId: string, into: Set<string>): v
 }
 
 /**
- * One capability's relations as lines. Rolled-up element relations repeat a pair, so each far
- * capability draws each direction once; a pair that also relates or sits under draws only its
- * dependency, which says more. Dependencies are read first. O(dependencies + relates + broader).
+ * One capability's own relations as lines, the connections its detail panel lists
+ * (`groupConnectionsByRole`): one line per far concept per side, outgoing and incoming apart. A
+ * dependency outranks `is_a` toward the same concept, and either outranks a symmetric relation.
+ * O(capability relations).
  */
 export function capabilityLines(model: DialModel, capabilityId: string): GraphLine[] {
   const lines: GraphLine[] = [];
   const seen = new Set<string>();
+  const relations = model.capabilityRelations ?? [];
   const add = (from: string, to: string, kind: GraphLineKind) => {
-    const far = from === capabilityId ? to : from;
-    if (far === capabilityId) return;
-    const directed = kind === "needs" || kind === "neededBy";
-    if (seen.has(`${far}|${kind}`) || (!directed && seen.has(far))) return;
-    seen.add(`${far}|${kind}`);
-    seen.add(far);
+    const outgoing = from === capabilityId;
+    const far = outgoing ? to : from;
+    const side = kind === "relates" ? "" : outgoing ? ">" : "<";
+    if (seen.has(`${side}${far}`) || (kind === "relates" && (seen.has(`>${far}`) || seen.has(`<${far}`)))) return;
+    seen.add(`${side}${far}`);
     lines.push({ from, to, kind, key: `${kind}:${from}>${to}` });
   };
-  for (const dep of model.capabilityDependencies) {
-    if (dep.from === capabilityId) add(dep.from, dep.to, "needs");
-    else if (dep.to === capabilityId) add(dep.from, dep.to, "neededBy");
+  for (const r of relations) {
+    if (r.kind !== "depends") continue;
+    if (r.from === capabilityId) add(r.from, r.to, "needs");
+    else if (r.to === capabilityId) add(r.from, r.to, "neededBy");
   }
-  for (const r of model.capabilityRelates) {
-    if (r.a === capabilityId) add(r.a, r.b, "relates");
-    else if (r.b === capabilityId) add(r.b, r.a, "relates");
+  for (const r of relations) {
+    if (r.kind === "broader" && (r.from === capabilityId || r.to === capabilityId)) add(r.from, r.to, "broader");
   }
-  for (const b of model.capabilityBroader ?? []) {
-    if (b.from === capabilityId || b.to === capabilityId) add(b.from, b.to, "broader");
+  for (const r of relations) {
+    if (r.kind !== "relates") continue;
+    if (r.from === capabilityId) add(r.from, r.to, "relates");
+    else if (r.to === capabilityId) add(r.to, r.from, "relates");
   }
   return lines;
 }
 
-/** Distinct capabilities on each side of the lines; a pair that runs both ways counts on each. */
-export function reachCounts(lines: readonly GraphLine[]): { needs: number; neededBy: number } {
+/** The panel's two directed totals: distinct concepts the focus points at, and that point at it. */
+export function reachCounts(lines: readonly GraphLine[], capabilityId: string): { needs: number; neededBy: number } {
   let needs = 0;
   let neededBy = 0;
   for (const line of lines) {
-    if (line.kind === "needs") needs += 1;
-    else if (line.kind === "neededBy") neededBy += 1;
+    if (line.kind === "relates") continue;
+    if (line.from === capabilityId) needs += 1;
+    else neededBy += 1;
   }
   return { needs, neededBy };
 }
@@ -128,7 +132,7 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
     }
     lit.add(focusId);
   }
-  const reach = model.capabilityById.has(focusId) ? reachCounts(lines) : null;
+  const reach = model.capabilityById.has(focusId) ? reachCounts(lines, focusId) : null;
   return { key, focusId, selected, lit, lines, reach, named };
 }
 

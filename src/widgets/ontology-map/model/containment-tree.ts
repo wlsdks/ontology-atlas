@@ -1,4 +1,13 @@
+import { isDirectionalRelation } from "@/entities/knowledge-graph";
+
 type TreeKind = "project" | "domain" | "capability" | "element";
+
+/** One relation a capability itself states; `broader` is `is_a`, `from` sitting under `to`. */
+export interface CapabilityRelation {
+  from: string;
+  to: string;
+  kind: "depends" | "broader" | "relates";
+}
 
 export interface TreeInputNode {
   id: string;
@@ -213,18 +222,24 @@ export function rollRelatesDomainPairs(tree: ContainmentTree, edges: readonly Tr
   return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
 }
 
-/** `is_a` edges between two capabilities, narrower first, as their element ends resolve. O(E log E). */
-export function rollBroaderCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { from: string; to: string }[] {
-  const { capabilityOf } = domainResolver(tree);
-  const pairs = new Map<string, { from: string; to: string }>();
+/**
+ * A capability's own non-containment edges, unrolled, so the map reads the same connections the
+ * detail panel lists (`buildConnections`): `relates` either way, `is_a` toward the broader end,
+ * every other type directed. One entry per (from, to, kind). O(E).
+ */
+export function directCapabilityRelations(tree: ContainmentTree, edges: readonly TreeInputEdge[]): CapabilityRelation[] {
+  const out: CapabilityRelation[] = [];
+  const seen = new Set<string>();
   for (const e of edges) {
-    if (e.kind === "contains" || e.relationType !== "is_a") continue;
-    const from = capabilityOf(e.source);
-    const to = capabilityOf(e.target);
-    if (!from || !to || from === to) continue;
-    pairs.set(`${from}>${to}`, { from, to });
+    if (e.kind === "contains" || e.source === e.target) continue;
+    if (!tree.capabilityDomain.has(e.source) && !tree.capabilityDomain.has(e.target)) continue;
+    const kind = !isDirectionalRelation(e.relationType) ? "relates" : e.relationType === "is_a" ? "broader" : "depends";
+    const key = `${e.source}\0${e.target}\0${kind}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ from: e.source, to: e.target, kind });
   }
-  return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
+  return out;
 }
 
 export function rollRelatesCapabilityPairs(tree: ContainmentTree, edges: readonly TreeInputEdge[]): { a: string; b: string }[] {

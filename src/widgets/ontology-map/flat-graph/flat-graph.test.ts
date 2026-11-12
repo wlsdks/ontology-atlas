@@ -7,11 +7,11 @@ import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
 import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
 import type { VaultManifest } from "@/entities/docs-vault";
 import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
-import { isContainmentRelation } from "@/entities/knowledge-graph";
+import { buildConnections, groupConnectionsByRole, isContainmentRelation } from "@/entities/knowledge-graph";
 
 import {
   readContainmentTree,
-  rollBroaderCapabilityPairs,
+  directCapabilityRelations,
   rollDirectedDomainFlows,
   rollDomainDependencies,
   rollRelatesCapabilityPairs,
@@ -51,7 +51,7 @@ function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
   return buildDialModel({
-    tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), broader: rollBroaderCapabilityPairs(tree, treeEdges),
+    tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directCapabilityRelations(tree, treeEdges),
   });
 }
 
@@ -388,15 +388,39 @@ describe("selection reach", () => {
 
   it("draws each relation of the focus as its kind, once per far capability and direction", () => {
     const lines = resolveGraphAttention(model, "a", true).lines.map((l) => `${l.kind}:${l.from}>${l.to}`).sort();
-    expect(lines).toEqual(["broader:a>f", "neededBy:b>a", "neededBy:c>a", "neededBy:e>a", "needs:a>e", "relates:a>g"]);
+    expect(lines).toEqual(["broader:a>f", "neededBy:b>a", "neededBy:c>a", "neededBy:e>a", "neededBy:y>a", "needs:a>e", "relates:a>g"]);
   });
 
-  it("counts distinct capabilities on each side of the reach, and an element focus reaches through its capability", () => {
-    expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 1, neededBy: 3 });
+  it("counts and reaches exactly the directed connections the detail panel lists, not its elements' relations", () => {
+    const panelOf = (id: string, ns: readonly Node[], es: readonly Edge[]) => {
+      const groups = groupConnectionsByRole(buildConnections(id, ns.map((n) => ({ ...n, title: n.title ?? n.id })), es));
+      return { needs: groups.dependsOn.length, neededBy: groups.usedBy.length, ids: new Set([...groups.dependsOn, ...groups.usedBy, ...groups.related].map((c) => c.id)) };
+    };
+    const reachOf = (m: DialModel, id: string) => {
+      const att = resolveGraphAttention(m, id, true);
+      return { needs: att.reach!.needs, neededBy: att.reach!.neededBy, ids: new Set(att.lines.map((l) => (l.from === id ? l.to : l.from))) };
+    };
+    const panel = panelOf("a", nodes, edges);
+    expect({ needs: panel.needs, neededBy: panel.neededBy }).toEqual({ needs: 2, neededBy: 4 });
+    expect(reachOf(model, "a")).toEqual({ needs: 2, neededBy: 4, ids: new Set(["b", "c", "e", "f", "g", "y"]) });
+    for (const manifest of [dogfoodManifest, storefrontManifest]) {
+      const d = deriveOntologyFromVault(manifest as unknown as VaultManifest);
+      const vault = modelOf(d.nodes as Node[], d.edges as Edge[]);
+      for (const id of vault.capabilityById.keys()) {
+        const shown = panelOf(id, d.nodes as Node[], d.edges as Edge[]);
+        const drawn = reachOf(vault, id);
+        expect({ needs: drawn.needs, neededBy: drawn.neededBy }, id).toEqual({ needs: shown.needs, neededBy: shown.neededBy });
+        for (const far of drawn.ids) expect(shown.ids.has(far), `${id} draws ${far}`).toBe(true);
+      }
+    }
+  });
+
+  it("counts distinct concepts on each side of the reach, and an element focus reaches through its capability", () => {
+    expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 2, neededBy: 4 });
     expect(resolveGraphAttention(model, "c", true).reach).toEqual({ needs: 1, neededBy: 0 });
     const element = resolveGraphAttention(model, "x", true);
     expect(element.reach).toBeNull();
-    expect(element.lines.length).toBe(6);
+    expect(element.lines.length).toBe(7);
     expect(resolveGraphAttention(model, "d1", false).lines).toEqual([]);
   });
 

@@ -1,4 +1,4 @@
-import type { DirectedDomainFlow } from "../model/containment-tree";
+import type { CapabilityRelation, DirectedDomainFlow } from "../model/containment-tree";
 
 export type DialKind = "project" | "domain" | "capability" | "element";
 export type DialEvidence = "current" | "stale" | "unknown";
@@ -98,8 +98,8 @@ export interface DialModel {
   flows: DirectedDomainFlow[]; flowByKey: ReadonlyMap<string, DirectedDomainFlow>;
   capabilityDependencies: DialCapabilityDependency[]; capabilityRelates: { a: string; b: string;
     }[]; orphanIds: string[];
-  /** `is_a` between capabilities: `from` sits under the broader `to`. */
-  capabilityBroader?: { from: string; to: string }[];
+  /** Edges a capability states itself, unrolled: the detail panel's connections. */
+  capabilityRelations?: CapabilityRelation[];
   dependents: ReadonlyMap<string, number>;
 }
 export interface DialEvidenceView { measured: boolean; stateOf(id: string): DialEvidence; staleByDomain: ReadonlyMap<string, number>;

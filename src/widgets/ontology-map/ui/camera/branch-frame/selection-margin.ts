@@ -21,7 +21,7 @@ function graphSelectionMargin(world: TopologyWorld, dial: DialWorld, id: string)
   const node = world.nodeById.get(id);
   if (!node || id === model.projectId || model.domainById.has(id)) return SELECTION_NUDGE_MARGIN_PX;
   const paint = readFlatGraphTokens().paint;
-  const reach = model.capabilityById.has(id) ? reachCounts(capabilityLines(model, id)) : null;
+  const reach = model.capabilityById.has(id) ? reachCounts(capabilityLines(model, id), id) : null;
   const disc = selectedDiscRadius(0, paint, paint.growthMax);
   const side = selectedBlockReachPx({ tokens: paint, labels: dial.labels ?? null, measureText: createMeasureText(), fontFamily: labelFontFamily() }, node.label, reach, disc);
   const margin = Math.max(SELECTION_NUDGE_MARGIN_PX, side + GRAPH_SELECTION_AIR_PX);

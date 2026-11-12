@@ -11,7 +11,7 @@ import type { ExpandStructure } from "@/shared/lib/preferences/appearance-prefer
 import { computeDensityGate, type DensityGateParentGeometry } from "../../model/layout/density-gate";
 import {
   readContainmentTree,
-  rollBroaderCapabilityPairs,
+  directCapabilityRelations,
   rollDirectedDomainFlows,
   rollDomainDependencies,
   rollRelatesCapabilityPairs,
@@ -755,7 +755,7 @@ function buildDialWorld(
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
-  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), broader: rollBroaderCapabilityPairs(tree, treeEdges) });
+  const built = buildDialModel({ tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directCapabilityRelations(tree, treeEdges) });
   const model = placeDial ? placeDial(built) : built;
   const { order } = circularDomainOrder(model, input.memory?.order ?? rememberedDialOrder());
   if (input.rememberOrder && model.domains.length > 0) rememberDialOrder(order);

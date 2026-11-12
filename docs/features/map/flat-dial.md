@@ -81,27 +81,29 @@ sinks with the rest unless it is the focus. Resting arcs give way while a set is
 `--motion-fast` and jump at once with reduced motion. Names keep their places;
 lit capability names join the admitted set.
 
-Only the hovered or selected capability draws its own lines, one per far
-capability and kind:
+Only the hovered or selected capability draws its own lines: the relations it
+states itself, the same connections its detail panel lists, one per far concept
+and direction. Its elements' relations are not rolled up into it.
 
-- **Needs** (`depends_on` from it): a filled taper, wide at the capability and
-  pointed at what it needs, in `--map-graph-arc`.
-- **Needed by** (`depends_on` into it): the same taper, wide at the concept
-  that needs it, in the warm `--map-graph-reach`.
+- **Needs** (a directed relation from it): a filled taper, wide at the
+  capability and pointed at what it needs, in `--map-graph-arc`.
+- **Needed by** (a directed relation into it): the same taper, wide at the
+  concept that needs it, in the warm `--map-graph-reach`.
 - **Relates**: a dotted hairline. A pair that also depends draws only the
   dependency.
-- **Broader** (`is_a`): a double hairline toward the broader capability.
+- **Broader** (`is_a`): a double hairline toward the broader concept.
 
 Direction is the taper and kind the stroke pattern, so no reading rests on hue
-alone. Element relations roll up to their capabilities. A recorded reason
+alone. A recorded reason
 (`relation_notes`) does not reach the map's edges yet, so lines carry no mark
 for it.
 
 A selected capability, element or orphan grows to `--map-graph-selected-disc-px`
 with one ring, and its name takes `--map-graph-selected-name-px` beside, below
 or above it, clear of every domain title. A capability's reach line sits
-beneath in the secondary ink with figures aligned as table columns: how many
-capabilities it needs and how many need it, a zero side left out. While a
+beneath in the secondary ink with figures aligned as table columns: the
+detail panel's two directed totals, what it depends on and what depends on it
+(`is_a` included), a zero side left out. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click opens the detail panel over the selection, the camera slides sideways at
 the same scale until that name block clears the panel.
