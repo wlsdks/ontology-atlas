@@ -122,6 +122,14 @@ export function isNodeHittable(
   return focusedNodeId !== null && (node.id === focusedNodeId || (neighborsOfFocused?.has(node.id) ?? false));
 }
 
+/** Beyond this many changed concepts, revealing each one covers the map in overlapping labels. */
+export const RECENT_SPOTLIGHT_REVEAL_MAX = 24;
+
+/** A recent-changes lens this large lights what the zoom already shows and reveals nothing more. */
+export function spotlightRevealsHidden(lensKind: string, litCount: number): boolean {
+  return lensKind !== "recent" || litCount <= RECENT_SPOTLIGHT_REVEAL_MAX;
+}
+
 /**
  * Pan and flick clamps must use the spine bounds here: the full layout spans far more than
  * the drawn spine, so a flick could strand the camera in a legal but empty region.
