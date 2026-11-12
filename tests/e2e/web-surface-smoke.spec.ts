@@ -263,6 +263,20 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destination: "atlas-git-web-get-app",
   },
   {
+    name: "planning: folder reads are proven only in the macOS app",
+    url: "/ko/planning/",
+    card: "planning-stage",
+    reason: /macOS 앱에서 지원하며/,
+    destination: "planning-get-app",
+  },
+  {
+    name: "briefing: the browser cannot read a local Git history",
+    url: "/ko/changes/",
+    card: "briefing-stage",
+    reason: /설치한 앱에서 저장소 폴더를 골라 로컬 Git 이력을/,
+    destination: "briefing-get-app",
+  },
+  {
     // Registering it on the web would promise nothing could keep: it keeps a clock and opens a headless
     // agent session while the person is away, which a browser tab cannot do.
     name: "rounds: the browser cannot keep a clock or launch an agent while you are away",

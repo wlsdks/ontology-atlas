@@ -6,11 +6,12 @@ import { useTranslations } from 'next-intl';
 import { FileCode2, FolderGit2, GitCommitHorizontal, GitPullRequest } from 'lucide-react';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
-import { Button } from '@/shared/ui';
+import { Button, GetAppLink } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-export function BriefingRepositoryStage({ onChoose }: { onChoose: () => void }) {
+export function BriefingRepositoryStage({ onChoose }: { onChoose?: () => void }) {
   const t = useTranslations('gitBriefing');
+  const nav = useTranslations('navRail');
   const review = useTranslations('prBriefing');
   const reduced = usePrefersReducedMotion();
   const [hovered, setHovered] = useState(false);
@@ -21,18 +22,21 @@ export function BriefingRepositoryStage({ onChoose }: { onChoose: () => void }) 
     { icon: GitCommitHorizontal, label: review('commitsTab') },
     { icon: FileCode2, label: review('filesTab') },
   ];
-  return <motion.section data-briefing-state="no-repository"
+  return <motion.section data-testid="briefing-stage" data-briefing-state={onChoose ? 'no-repository' : 'app-required'}
     initial={reduced ? false : OVERLAY_RISE} animate={OVERLAY_SETTLED}
     transition={reduced ? MOTION.fast : MOTION.expressive}
     className="my-auto grid w-full items-center gap-8 py-6 md:grid-cols-[minmax(0,1fr)_20rem] md:gap-10">
     <div className="min-w-0">
-      <h2 className="max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{t('startTitle')}</h2>
-      <p className="mt-4 max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{t('startBody')}</p>
-      <Button size="lg" className="mt-7" data-briefing-choose onClick={onChoose}
+      <h2 className={onChoose ? 'max-w-sm text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]' : 'max-w-sm text-title font-[var(--font-weight-signature)]'}>{t('startTitle')}</h2>
+      <p className={`${onChoose ? 'mt-4' : 'mt-2'} max-w-sm text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]`}>{t(onChoose ? 'startBody' : 'webBody')}</p>
+      <div className={`${onChoose ? 'mt-7' : 'mt-5'} flex`}
         onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-      ><FolderGit2 size={ICON_SIZE.lg} aria-hidden />{t('chooseRepository')}</Button>
-      <p className="mt-3 max-w-sm text-body text-[color:var(--color-text-secondary)]">{t('startHint')}</p>
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}>
+        {onChoose
+          ? <Button size="lg" data-briefing-choose onClick={onChoose}><FolderGit2 size={ICON_SIZE.lg} aria-hidden />{t('chooseRepository')}</Button>
+          : <GetAppLink data-testid="briefing-get-app">{nav('getApp')}</GetAppLink>}
+      </div>
+      {onChoose && <p className="mt-3 max-w-sm text-body text-[color:var(--color-text-secondary)]">{t('startHint')}</p>}
     </div>
     <div className="order-first mx-auto w-full max-w-xs md:order-last" aria-hidden>
       <div className="relative aspect-square">

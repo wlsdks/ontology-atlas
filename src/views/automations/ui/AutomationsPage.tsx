@@ -18,7 +18,7 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { MOTION } from "@/shared/motion";
 import { framerSpring, SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -138,7 +138,7 @@ export function AutomationsPage({
   const canHoldSchedules = state === "ready";
   const introCopy = state === "app-required"
     ? { title: t("appRequiredTitle"), description: t("appRequiredDescription"),
-      action: <Link href="/download/" className={cn(buttonVariants({ variant: "primary", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide")}>{t("getApp")}</Link> }
+      action: <GetAppLink>{t("getApp")}</GetAppLink> }
     : state === "no-vault"
       ? { title: t("openFolderTitle"), description: t("openFolderDescription"),
         action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }

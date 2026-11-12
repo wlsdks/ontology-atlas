@@ -163,7 +163,8 @@ test('narrows unmapped evidence by literal source area and expands every counted
 
 test('offers an honest browser limit without fabricated source history', async ({ page }) => {
   await page.goto('/en/changes/?guides=off');
-  await expect(page.getByTestId('briefing-status')).toContainText('installed app');
+  await expect(page.getByTestId('briefing-stage')).toContainText('installed app');
+  await expect(page.getByTestId('briefing-get-app')).toHaveAttribute('href', /\/download\//);
   await expect(page.getByTestId('briefing-ready')).toHaveCount(0);
   await capture(page, 'web-limit');
 });
