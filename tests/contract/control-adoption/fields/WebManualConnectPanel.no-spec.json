@@ -1,8 +1,0 @@
-{
-  "file": "src/features/docs-vault-local/ui/WebManualConnectPanel.tsx",
-  "count": 2,
-  "claim": "no-spec",
-  "proof": "size-4",
-  "why": "The manual-connect confirmation checkbox and its row. The checkbox contract fixes their size and target.",
-  "conditional": "When the checkbox contract is removed, move this row to the debt list."
-}

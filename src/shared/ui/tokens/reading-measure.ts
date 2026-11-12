@@ -2,7 +2,7 @@
  * The reading measure as a number for three consumers that cannot read the CSS token: the popout
  * window (an inlined stylesheet outside the app's cascade), the image `sizes=` hint (parsed at
  * build time) and the outline-rail fit (arithmetic). Each follows text zoom; the `_PX` values
- * are the default-root numbers, held to the token by tests/e2e/typography/prose-measure-calibration.spec.ts.
+ * are the default-root numbers.
  */
 
 /** Mirrors `--measure-prose-steps`; change both together. */
@@ -42,7 +42,5 @@ function proseMeasurePxAtRoot(rootFontPx: number): number {
 export function docColumnPxAtRoot(rootFontPx: number): number {
   return proseMeasurePxAtRoot(rootFontPx) + 2 * DOC_COLUMN_GUTTER_PX;
 }
-
-export const PROSE_MEASURE_PX = proseMeasurePxAtRoot(DOC_BODY_FONT_PX);
 
 export const DOC_COLUMN_PX = docColumnPxAtRoot(DOC_BODY_FONT_PX);

@@ -622,7 +622,7 @@ export function OntologyHexBoardMap({
       textBoxesRef.current = textBoxes;
       canvas.dataset.frame = JSON.stringify({ ...stats, namesFrom, staleOnly });
       // Every drawn route in canvas px, once the frame is still, so a check can hold each one
-      // to the free map (`map-hex-routes-free-area.spec.ts`).
+      // to the free map.
       if (!again) {
         const c = Math.cos(pose.pitch);
         const pv = pivotRef.current;

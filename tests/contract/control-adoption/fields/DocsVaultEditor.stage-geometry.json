@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/docs-vault/ui/DocsVaultEditor.tsx",
-  "count": 1,
-  "claim": "stage-geometry",
-  "proof": "absolute inset-0 resize-none",
-  "why": "The document editor's full-bleed writing surface fills the panel with `absolute inset-0`, so it cannot own box dimensions (height, inset, radius). `fieldClass` produces a part that owns its own box.",
-  "conditional": "When the editor sits inside a sized box instead of filling the panel, move this row to the debt list."
-}

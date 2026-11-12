@@ -1,7 +1,0 @@
-{
-  "file": "src/views/automations/ui/AutomationsPage.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "\"Open Library check history\" (ghost sm) navigates and sits beside `<Button>` controls, so it must press alike. It is a `<Link>` through `buttonVariants`; `control-class.ts` does not replace standard buttons."
-}

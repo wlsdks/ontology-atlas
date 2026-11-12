@@ -43,7 +43,7 @@
   /*
    * The plate sits only inside the 32px executor tiles: vendor marks are mostly drawn for light
    * backgrounds and vanish on dark. Monochrome, so no new hue; brand colour comes from `brandInk` in
-   * `src-tauri/src/acp-registry.json`. Gate: `tests/contract/brand/vendor-mark-plate.contract.test.ts`.
+   * `src-tauri/src/acp-registry.json`.
    */
   --color-vendor-plate: #f2f3f5;
   --color-vendor-plate-edge: rgba(0, 0, 0, 0.12);
@@ -60,8 +60,8 @@
    *   40 floating chrome/select · 50 modal back layer
    *
    * Reason not promoted to tokens here: those five are used in 68 places as Tailwind
-   * regular steps `z-10`~`z-50`, and moving them requires judging «is this z-40 chrome or select?» at each site. Just raising the name without consumption sites is blocked first by `unused-token-ratchet` — as that gate says,
-   * **tokens with definition but no consumption are misinformation, not specification.** Left for the next round.
+   * regular steps `z-10`~`z-50`, and moving them requires judging «is this z-40 chrome or select?» at each site.
+   * **Tokens with definition but no consumption are misinformation, not specification.** Left for the next round.
    */
   --z-map-scrim: 25;           /* Backdrop behind map (surface that closes on click) */
   --z-dialog: 60;              /* Dialog over scrim */
@@ -85,7 +85,7 @@
   /*
    * Filled accent buttons darken on hover: white ink loses contrast as the surface brightens (4.70
    * down to 3.17 at worst), and base #5e6ad2 leaves only 5.7% room to brighten while keeping AA. Tint
-   * and transparent controls still brighten. Gate: `tests/e2e/design-audits/hover-contrast.spec.ts`.
+   * and transparent controls still brighten.
    */
   --color-indigo-brand-hover: #5661c4;
 
@@ -310,8 +310,7 @@
   --gateway-gutter: 200;
   /*
    * Gateway body column cap. Origin is `max(gutter, (vw - this) / 2)`; keep it at least `--page-max`
-   * (1600) so 1440 to 1920 renders do not move. Gates:
-   * `tests/contract/layout/gateway-column-width.contract.test.ts`, `tests/e2e/gateway/download-gateway-grid.spec.ts`.
+   * (1600) so 1440 to 1920 renders do not move.
    */
   --gateway-page-max: 1920px;
   /*
@@ -321,8 +320,7 @@
   --gateway-section-gap: 80px;
   /*
    * Proportional stage width: floor 48rem (equals 40vw at 1920, so nothing moves below it), slope
-   * 40vw, cap 80rem (the demo clip is 1512px wide). Gates:
-   * `tests/contract/layout/gateway-stage-width.contract.test.ts`, `tests/e2e/gateway/download-gateway-grid.spec.ts`.
+   * 40vw, cap 80rem (the demo clip is 1512px wide).
    */
   --gateway-stage-max: clamp(48rem, 40vw, 80rem);
 
@@ -356,7 +354,7 @@
    */
   /*
    * Origin and column (`PAGE_COLUMN`) must read the same cap; changing one alone makes left and right
-   * asymmetric. `gateway-column-width.contract.test.ts` enforces the pair.
+   * asymmetric.
    */
   --gateway-origin: max(
     calc(var(--gateway-gutter) * 1px),
@@ -387,10 +385,6 @@
    * on `/en/docs/`: 651.9px on the viewer article and the frontmatter block, 473.2px on
    * the meta bar). Converting the measure once, at the size the body is actually set in,
    * is what makes the column one width.
-   *
-   * Gate: `tests/e2e/typography/prose-measure-calibration.spec.ts` renders the glyphs and fails if
-   * this ratio stops describing the shipped font, or if the derivation below stops
-   * matching the measure resolved at `--text-reading`.
    */
   --measure-zero-advance: 0.5957;
   /* The side inset every document column has always paired with — `px-6 md:px-10`
@@ -400,14 +394,13 @@
   --measure-doc-gutter: 40px;
   /*
    * `ch` is the advance of `0` (0.596em in Pretendard Variable), about 0.76 of an average Latin
-   * character, so 66ch fits 86 Latin or 46 Hangul characters. Gate:
-   * `tests/e2e/typography/prose-measure-calibration.spec.ts` fails outside 80-92 characters per measure.
+   * character, so 66ch fits 86 Latin or 46 Hangul characters.
    */
   --measure-prose: calc(var(--measure-prose-steps) * 1ch);
   /*
    * Prose measure at the body size plus a gutter each side (66 x 0.5957 x 16px + 2 x 40px = 709.1px);
    * a box cannot use `ch`, since consumers differ in font size. JS consumers read `DOC_COLUMN_PX` in
-   * `src/shared/ui/tokens/reading-measure.ts`, gated in `tests/e2e/typography/prose-measure-calibration.spec.ts`.
+   * `src/shared/ui/tokens/reading-measure.ts`.
    */
   --measure-doc-column: calc(
     var(--measure-prose-steps) * var(--measure-zero-advance) * var(--text-reading) +
@@ -616,8 +609,8 @@
      Apple optical principle: small steps use positive tracking to secure reading lines, large steps use negative tracking for cohesion. */
   /*
    * The ramp is in `rem` so browser text-only zoom reaches it; each step equals its old px value over
-   * the 16px root. Chrome geometry, `--text-monument` and `DOC_COLUMN_PX` stay in px. Gates:
-   * `tests/e2e/settings/text-zoom-ramp.spec.ts`, `tests/contract/typography/type-ramp-root-relative.contract.test.ts`.
+   * the 16px root. Chrome geometry, `--text-monument` and `DOC_COLUMN_PX` stay in px. Gate:
+   * `tests/contract/typography/type-ramp-root-relative.contract.test.ts`.
    */
   --text-caption: 0.59375rem; /* micro labels/legends/timestamps (pair: tracking-caption) */
   --text-label: 0.6875rem; /* chips/badges/auxiliary labels (pair: tracking-label) */
@@ -670,7 +663,7 @@
   /*
    * Caps tracking is a Latin device: wide tracking spreads Hangul syllable blocks as far apart as
    * words. `:root:lang(ko)` overrides these tokens; lang is set after hydration, so first frames use
-   * Latin. Gate: `tests/e2e/typography/hangul-tracking.spec.ts`.
+   * Latin.
    */
 
   /* Line-height ramp — 7 px values + 2 free, 1:1 pair with type steps. Tailwind v4

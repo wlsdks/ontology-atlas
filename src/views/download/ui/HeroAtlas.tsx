@@ -93,7 +93,7 @@ export function HeroAtlas({ graph, typed, total }: { graph: StageGraph; typed: n
             .map((e) => ({ a: e.source, b: e.target, y: e.kind as 'contains' | 'depends' })),
         },
         // Wide stands beside the decision block; narrow is ground under it, seen from above so the
-        // type stays clear (`download-gateway-grid.spec.ts`); the near rim clears the caption's line.
+        // type stays clear; the near rim clears the caption's line.
         {
           canvasClassName: 'block h-full w-full touch-pan-y',
           onHover: setHover,

@@ -1,7 +1,0 @@
-{
-  "file": "src/views/ontology-insights/ui/tabs/LibraryTab.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The Wiki preview footer's \"Start from the Library\" is the primary sm standard button, the same as the Guidance footer beside it. It navigates, so it is a `<Link>` styled through `buttonVariants`; `control-class.ts` does not replace standard buttons."
-}

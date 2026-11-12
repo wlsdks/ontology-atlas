@@ -1,7 +1,0 @@
-{
-  "file": "src/views/library/ui/LibraryRounds.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "\"Schedule in Automations\" is the empty check-history tab's one next step. It navigates, so it is a `<Link>` through `cn(buttonVariants(), …)`, matching the primary `<Button>` in the Work scope empty state; `controlClass` cannot make a standard button."
-}

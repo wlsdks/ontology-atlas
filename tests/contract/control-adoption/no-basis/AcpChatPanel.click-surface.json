@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx",
-  "count": 1,
-  "family": "button",
-  "claim": "click-surface",
-  "proof": "data-testid=\"acp-chat-history-scrim\"",
-  "why": "The backdrop behind the in-app chat's past-conversations list, which floats absolutely over the chat. It is the click surface that closes the list: `absolute inset-0` plus one background layer. None of the value layer's shapes would change what is visible."
-}

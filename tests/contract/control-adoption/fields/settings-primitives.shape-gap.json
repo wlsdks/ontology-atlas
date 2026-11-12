@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/app-settings-menu/ui/settings-primitives.tsx",
-  "count": 2,
-  "claim": "shape-gap",
-  "proof": "[&>svg]:h-3.5",
-  "why": "The slider (`type=\"range\"`) and its row. It is the app's only one, and its track and thumb each have dimensions, unlike the single-line and multi-line grammar of `fieldClass`. A value with one consumer gets no name.",
-  "conditional": "When a second slider exists, name the shape in the value layer and delete this row."
-}

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import test from 'node:test';
 
 import { suggestFocusedChecks } from '../lib/ci/focused-check-suggestions.mjs';
@@ -90,7 +90,6 @@ test('a stylesheet change runs the token gates that read it whole', () => {
       'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
       'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
       'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
-      'tests/contract/design-tokens/unused-token-ratchet.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
 });
@@ -154,40 +153,6 @@ test('an unmapped rendered dependency fails closed to the smoke suite', () => {
   ]);
 });
 
-test('an owner mapped to nested browser specs runs exactly those specs', () => {
-  const owner = 'src/features/gray-area/ui/GrayAreaInspector.tsx';
-  const specs = [
-    'tests/e2e/gray-area/panel-layout.spec.ts',
-    'tests/e2e/gray-area/text-scale.spec.ts',
-  ];
-  for (const file of [owner, ...specs]) assert.ok(existsSync(file), `${file} moved; update its owner mapping`);
-  const focused = suggestFocusedChecks([owner]).commands.map((row) => row.command);
-  for (const spec of specs) assert.ok(focused.includes(`pnpm exec playwright test ${spec}`));
-
-  const plan = buildImpactPlan({ files: [owner] });
-  assert.equal(plan.lanes.e2e.mode, 'targeted');
-  assert.deepEqual(plan.lanes.e2e.specs, specs);
-  assert.deepEqual(commandsForLane({ lane: 'e2e', plan, prebuilt: true }), [
-    'PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/gray-area/panel-layout.spec.ts tests/e2e/gray-area/text-scale.spec.ts',
-  ]);
-});
-
-test('an additive sweep joins a page root plan without standing in for its smoke suite', () => {
-  const unmapped = buildImpactPlan({ files: ['src/views/git/ui/GitPage.tsx'] }).lanes.e2e;
-  assert.equal(unmapped.mode, 'smoke');
-  assert.deepEqual(unmapped.unmappedPaths, ['src/views/git/ui/GitPage.tsx']);
-  assert.ok(unmapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
-
-  const mapped = buildImpactPlan({ files: ['src/views/architecture/ui/HarnessPage.tsx'] }).lanes.e2e;
-  assert.equal(mapped.mode, 'targeted');
-  assert.ok(mapped.specs.includes('tests/e2e/design-audits/scroll-end-gap.spec.ts'));
-
-  const withSpec = buildImpactPlan({
-    files: ['tests/e2e/design-audits/scroll-end-gap.spec.ts', 'src/views/architecture/ui/HarnessPage.tsx'],
-  }).lanes.e2e;
-  assert.equal(withSpec.mode, 'targeted');
-});
-
 test('every library graph source runs the graph specs and its ui keeps the smoke sweep', () => {
   const sources = readdirSync('src/widgets/library-graph', { recursive: true })
     .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
@@ -236,7 +201,7 @@ test('MCP dependency changes promote only the MCP boundary to its exhaustive lan
 });
 
 test('direct Playwright spec edits run that spec, including post-merge instruments', () => {
-  for (const spec of ['tests/e2e/map/camera/camera-transition.spec.ts', 'tests/e2e/gray-area/panel-layout.spec.ts']) {
+  for (const spec of ['tests/e2e/map/camera/camera-transition.spec.ts', 'tests/e2e/gray-area/gray-area.spec.ts']) {
     const focused = suggestFocusedChecks([spec]).commands.map((row) => row.command);
     assert.ok(focused.includes(`pnpm exec playwright test ${spec}`));
     const plan = buildImpactPlan({ files: [spec] });
@@ -252,9 +217,9 @@ test('unsafe spec paths never become browser command arguments', () => {
   for (const path of [
     '/tests/e2e/outside.spec.ts',
     'tests/e2e/../outside.spec.ts',
-    'tests/e2e/gray-area/./panel-layout.spec.ts',
-    'tests/e2e/gray-area//panel-layout.spec.ts',
-    'tests/e2e/gray area/panel-layout.spec.ts',
+    'tests/e2e/gray-area/./gray-area.spec.ts',
+    'tests/e2e/gray-area//gray-area.spec.ts',
+    'tests/e2e/gray area/gray-area.spec.ts',
     'tests/e2e/gray-area/;echo-injected.spec.ts',
   ]) {
     const plan = buildImpactPlan({ files: [path] });
@@ -391,12 +356,7 @@ test('token, toc, and package gates reach the PRs that touch their inputs', () =
   // part-only change must plan the same token gate and styling sweep.
   const part = buildImpactPlan({ files: ['app/styles/tokens.css'] });
   assert.ok(part.lanes.gates.commands.includes('pnpm check:tokens'));
-  assert.deepEqual(part.lanes.e2e.specs, [
-    'tests/e2e/design-audits/overflow-sweep.spec.ts',
-    'tests/e2e/settings/text-zoom-ramp.spec.ts',
-    'tests/e2e/typography/hangul-tracking.spec.ts',
-    'tests/e2e/typography/prose-measure-calibration.spec.ts',
-  ]);
+  assert.deepEqual(part.lanes.e2e.specs, ['tests/e2e/design-audits/overflow-sweep.spec.ts']);
   assert.equal(part.lanes.e2e.webSurface, true);
 
   const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });

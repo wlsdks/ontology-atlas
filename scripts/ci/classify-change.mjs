@@ -164,6 +164,7 @@ const BROWSER_INPUTS = [
    * affected Vitest.
    */
   /^src\/.*\/ui\/.*\.ts$/,
+  /^src\/(?:widgets\/ontology-map|shared\/motion)\/.*(?<!\.test)\.ts$/,
   /^messages\//,
   /^public\//,
   /^assets\//,

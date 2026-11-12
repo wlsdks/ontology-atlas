@@ -4,7 +4,7 @@ import { useDogfoodSample } from "../sample-source";
 
 /**
  * Smoke for live routes: `/download/`, `/projects/` and the `/ontology/` redirect to topology.
- * First-paint and scroll checks live in web-surface-smoke, scroll-end-gap and overflow-sweep
+ * First-paint and scroll checks live in web-surface-smoke and overflow-sweep
  * specs.
  */
 test.describe("ontology view UI", () => {

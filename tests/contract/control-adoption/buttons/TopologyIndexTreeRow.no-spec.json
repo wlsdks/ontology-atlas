@@ -1,8 +1,0 @@
-{
-  "file": "src/widgets/topology-index-panel/ui/TopologyIndexTreeRow.tsx",
-  "count": 1,
-  "claim": "no-spec",
-  "proof": "aria-hidden=\"true\"",
-  "why": "The tree row's expand chevron is `aria-hidden` with `tabIndex={-1}`, so it is outside the accessibility tree and the focus order. The enclosing `role=\"treeitem\"` row handles interaction, so the chevron is a mouse affordance with no control spec.",
-  "conditional": "When the chevron is exposed in the accessibility tree again and becomes a real control, move it to the debt list."
-}

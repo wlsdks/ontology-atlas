@@ -1,7 +1,0 @@
-{
-  "file": "src/widgets/app-settings-menu/ui/ModelConnectionsPanel.tsx",
-  "count": 1,
-  "claim": "standard-button",
-  "proof": "buttonVariants",
-  "why": "The Models tab's web-only \"Get the app\" door is the primary sm standard button, like the Agents tab door. It navigates, so it is a `<Link>` styled through `buttonVariants`; `control-class.ts` does not replace standard buttons."
-}

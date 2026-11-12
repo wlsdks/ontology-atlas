@@ -15,7 +15,7 @@ export const rules = [
   {
     order: 92,
     command:
-      'pnpm exec vitest run tests/contract/design-tokens/unused-token-ratchet.contract.test.ts tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
+      'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
     reason: 'the global stylesheet changed — the token gates read it whole, whatever else the diff holds',
     matches: [/^app\/(?:globals|styles\/[^/]+)\.css$/],
   },

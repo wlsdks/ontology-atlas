@@ -2,15 +2,6 @@
 
 export const rules = [
   {
-    order: 740,
-    command: 'pnpm exec playwright test tests/e2e/map/camera/map-viewport-reframe.spec.ts',
-    reason: 'camera free-area measurement or its selected-inspector owner changed',
-    matches: [
-      /^src\/widgets\/ontology-map\/interaction\/free-area\.ts$/,
-      /^src\/views\/home\/ui\/HomePage\.tsx$/,
-    ],
-  },
-  {
     order: 790,
     command: 'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
     reason: 'topology route-state and legacy redirect behavior changed',

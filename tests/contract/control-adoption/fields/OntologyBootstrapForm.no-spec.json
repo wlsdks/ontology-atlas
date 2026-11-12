@@ -1,8 +1,0 @@
-{
-  "file": "src/views/home/ui/OntologyBootstrapForm.tsx",
-  "count": 2,
-  "claim": "no-spec",
-  "proof": "accent-[color:var(--color-indigo-brand)]",
-  "why": "A checkbox and its label. The checkbox contract fixes their size and target.",
-  "conditional": "When the checkbox contract is removed, move this row to the debt list."
-}

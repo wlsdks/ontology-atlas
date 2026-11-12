@@ -111,8 +111,7 @@ describe("motion token mirror: CSS ramp and JS copy", () => {
   });
 
   /**
-   * JS side of the directional rule. `framer-exit-asymmetry` already forces every framer
-   * `exit` onto `EXIT_TRANSITION`, so the only way an *entry* could take the exit curve is
+   * JS side of the directional rule. The only way an *entry* could take the exit curve is
    * to import `MOTION_EASE_EXIT` directly and hand it to `transition=`. Closing the import
    * closes that door without a second AST selector.
    */

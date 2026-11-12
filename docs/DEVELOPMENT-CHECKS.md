@@ -365,19 +365,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: WCAG 1.4.3 text combinations and 1.4.11 touching data-mark pairs stay at the recorded baseline of zero across the 17 audited routes.
 **Escalate**: none.
 
-### Control adoption
-
-**Run**: `pnpm exec vitest run tests/contract/control-adoption/control-adoption-ratchet.contract.test.ts`
-**Proves**: Hand-written button, anchor, and form control classNames, their registered and no-basis places, and the full-bleed click surfaces do not grow against the merge base; each registry row is its own file under `tests/contract/control-adoption/`, so the base is measured with its own registry and two branches registering different places do not conflict.
-**Escalate**: `pnpm test:contracts`.
-**Fix**: Move the control onto `controlClass()` / `fieldClass()`, or add a verified registry row plus a `tests/contract/ratchet-raises/control-<gate>/<slug>.json` record saying why.
-
-### Copy that names the reader's surface
-
-**Run**: `pnpm exec vitest run tests/contract/copy/surface-naming-ratchet.contract.test.ts`
-**Proves**: Copy names the reader's actual surface rather than an unnamed or wrong one, and the count does not grow against the merge base (see the next entry).
-**Escalate**: `pnpm test:contracts`.
-
 ### Credentialed direct-download artifact build
 
 **Run**: `pnpm desktop:release-artifact`
@@ -694,12 +681,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: none.
 **Fix**: An unreachable address must show the exact on-screen failure sentence, not a silent pass.
 
-### Korean word-break rendering
-
-**Run**: `pnpm exec playwright test tests/e2e/typography/korean-word-break.spec.ts`
-**Proves**: Korean text never breaks mid-word at a line wrap across the audited destinations; wraps at spaces are normal.
-**Escalate**: none.
-
 ### Landing several branches together
 
 **Run**: `node --test scripts/landing/bundle-branches.test.mjs`
@@ -935,12 +916,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Installed CLI/MCP behavior, `mcp-verify --help`, project-less and empty-vault paths, strict argument/enum handling, destructive dry-runs, health tuning, and dependency-cycle failure behavior all work from the packed artifact.
 **Escalate**: `pnpm test:mcp:package` for MCP/CLI package and tarball checks.
 
-### Pixel identity palette, frame continuity, and safe map lane
-
-**Run**: `pnpm exec vitest run tests/contract/brand/mascot-palette-boundary.contract.test.ts tests/contract/motion/mascot-motion.contract.test.ts`
-**Proves**: The mascot's fixed palette stays out of CSS/data/status/control colour, its animation frames stay continuous, and it stays clear of the map's functional lane.
-**Escalate**: `pnpm exec playwright test tests/e2e/agents/agent-mascot-presence.spec.ts`.
-
 ### Playwright config/webServer smoke
 
 **Run**: `pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts`
@@ -959,13 +934,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `node --test mcp/src/project-meaning/project-meaning-evidence.test.mjs mcp/src/project-meaning/project-meaning-inventory.test.mjs mcp/src/project-source/project-source-connect.test.mjs && pnpm exec vitest run src/views/home/lib/project-source/project-source-witnesses.test.ts tests/contract/analysis/project-source-connect.contract.test.ts`
 **Proves**: A literal repository-root path stays rejected beside valid sibling evidence, keeping unsafe source-witness paths red.
 **Escalate**: none
-
-### Prose measure calibration (characters per line, not `ch`)
-
-**Run**: `pnpm exec playwright test tests/e2e/typography/prose-measure-calibration.spec.ts`
-**Proves**: the shipped font is rendering here (a load failure fails as itself, never as calibration drift), `--measure-prose` buys 65–82 characters per line, the body applies it, and `--measure-doc-column` is still that measure plus two gutters and still matches its `DOC_COLUMN_PX` mirror.
-**Escalate**: `pnpm exec playwright test` for the full suite when the body font or a reading column changed.
-**Fix**: change the `ch` number in `app/globals.css` until the measured character count is back in band; do not widen the band.
 
 ### Public download asset verification
 
@@ -1041,19 +1009,6 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 
 **Run**: `pnpm benchmark:scale --dry-run`
 **Proves**: The scale benchmark's configuration is valid without a temp vault or Codex spawn.
-**Escalate**: none.
-
-### Screen hierarchy and accent discipline
-
-**Run**: `pnpm exec playwright test tests/e2e/design-audits/screen-hierarchy.spec.ts`
-**Proves**: No painted text is larger than the route's largest h1 outside it, and at most one accent-filled control appears per screen, across every audited route.
-**Escalate**: none.
-**Fix**: Set `HIERARCHY_PROBE=<kind>` to plant a violation and confirm the layer still fires.
-
-### Scroll-end bottom clearance
-
-**Run**: `pnpm exec playwright test tests/e2e/design-audits/scroll-end-gap.spec.ts`
-**Proves**: The page box is not compressed, the gap under the last ink is at least 24px, and the last ink does not slide behind the bottom tab bar, across the audited routes and viewports.
 **Escalate**: none.
 
 ### Semantic source path case

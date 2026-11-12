@@ -157,8 +157,7 @@ describe("shell column owns the viewport", () => {
   });
 
   it("keeps the body slot from shrinking its children so the scroll-end gap survives", () => {
-    // jsdom does no layout, so this pins the prescription; `tests/e2e/design-audits/scroll-end-gap.spec.ts`
-    // measures the real gap.
+    // jsdom does no layout, so this pins the prescription.
     const { container } = render(
       <AppShell>
         <div>page</div>
