@@ -41,9 +41,9 @@ export function dialOwnsFlatPaint(input: DialOwnershipInput): boolean {
     && !input.spotlightActive
     && !input.pathLensActive
     && !input.impactLensActive
-    && !input.focusedIsElement
+    && (input.graphScene === true || !input.focusedIsElement)
     && !input.focusedRelationsCaptioned
-    && !input.brushedIsElement;
+    && (input.graphScene === true || !input.brushedIsElement);
 }
 
 interface FocusClock { key: string; changedAt: number; current: DialAttention; previous: DialAttention | null;
@@ -196,6 +196,19 @@ export function paintDialFrame(input: DialFrameInput): DialFrameResult {
     concepts: dialConceptTotal(model), domains: model.domains.length,
   };
   return result;
+}
+
+/** Lets another Flat scene painter keep `lastDialFrame()` and the probes truthful. */
+export function recordDialFrame(input: DialFrameInput, result: DialFrameResult, flows: DialMarksResult["flows"]): void {
+  const { model, scene } = input.dial;
+  const placement = dialPlacementOf(input.dial);
+  last = {
+    result, flows, ledger: null, elementSquares: 0,
+    disclosure: { capAlpha: 1, elementsAlpha: result.tier === "element" ? 1 : 0, entered: null, resolved: true },
+    zoomRatio: input.zoomRatio, domainAppear: input.domainAppear, freeRect: { ...input.freeRect }, origin: input.toScreen(0, 0), scale: input.scale,
+    rings: scene.rings, clusters: clusterProbesOf(scene), placement: { state: placement.state, held: placement.held },
+    concepts: dialConceptTotal(model), domains: model.domains.length,
+  };
 }
 
 type NumeralMark = DialFrameMarks["numerals"][number];
