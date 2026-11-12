@@ -7,7 +7,7 @@ import type { Box, DialFrameInput, DialFrameResult, DialPick, DialRowPick, Point
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/visibility/tier-visibility";
 import { labelFontFamily } from "../render/labels";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
-import { cachedGraphAttention, graphInkMix, inkUnder, type GraphAttention } from "./attention";
+import { cachedGraphAttention, graphInkMix, inkUnder, transitionShare, type GraphAttention, type GraphTransition } from "./attention";
 import {
   arcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
@@ -36,7 +36,6 @@ const UNKNOWN_DASH = [2, 2];
 const ELEMENT_PICK_PX = 4;
 
 const measureText = createMeasureText();
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number }
@@ -146,7 +145,8 @@ function onScreen(p: Point, w: number, h: number, pad: number): boolean {
   return p.x > -pad && p.y > -pad && p.x < w + pad && p.y < h + pad;
 }
 
-function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, attention: GraphAttention, previous: GraphAttention, mix: number) {
+function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, transition: GraphTransition) {
+  const { current: attention, previous, mix } = transition;
   const { model, scene } = input.dial;
   const layout = scene.graph!;
   const P = tokens.paint;
@@ -157,15 +157,15 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, attention: Gr
   const growth = zoomGrowth(input.zoomRatio, P);
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
-  const focusness = lerp(previous.lit ? 1 : 0, attention.lit ? 1 : 0, mix);
+  const focusness = transitionShare(transition, (a) => (a.lit ? 1 : 0));
   const evidence = input.evidence ? dialEvidenceView(model, input.evidence) : null;
   const measured = evidence?.measured === true;
   const elementSpacingPx = scene.medianElementPitch * input.scale;
   const dotAlpha = smoothstep(P.dotSpacingFromPx, P.dotSpacingFullPx, elementSpacingPx);
 
-  const settled = mix >= 1 || previous === attention;
+  const settled = mix >= 1 || (previous === attention && transition.older === attention);
   const inkOf = (id: string): number => {
-    const focus = settled ? inkUnder(attention, id, P.sinkInk) : lerp(inkUnder(previous, id, P.sinkInk), inkUnder(attention, id, P.sinkInk), mix);
+    const focus = settled ? inkUnder(attention, id, P.sinkInk) : transitionShare(transition, (a) => inkUnder(a, id, P.sinkInk));
     const brightened = attention.selected && id === input.hoveredNodeId ? 1 : focus;
     const lens = contextMode ? input.contextInkAlphas?.get(id) ?? 1 : 1;
     return brightened * lens * input.appearOf(id);
@@ -344,7 +344,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, attention: Gr
   });
   const nameInk = (n: PlacedName): number => {
     if (n.role === "project" || n.role === "domain" || n.role === "units") return inkOf(n.id);
-    const focus = lerp(nameInkUnder(previous, n.id), nameInkUnder(attention, n.id), mix);
+    const focus = transitionShare(transition, (a) => nameInkUnder(a, n.id));
     const brightened = attention.selected && n.id === input.hoveredNodeId ? 1 : focus;
     const lens = contextMode ? input.contextInkAlphas?.get(n.id) ?? 1 : 1;
     const elementShare = n.role === "element" && attention.lit?.has(n.id) !== true ? dotAlpha : 1;
@@ -628,8 +628,9 @@ export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphToke
   const contextMode = input.contextAlphas !== undefined;
   const focusId = contextMode ? null : input.focusedNodeId ?? input.hoveredNodeId;
   const attention = cachedGraphAttention(model, focusId, !contextMode && input.focusedNodeId !== null);
-  const { mix, previous } = graphInkMix(input.worldKey, attention, input.now, input.reducedMotion);
-  const built = buildPlan(input, tokens, attention, previous, mix);
+  const transition = graphInkMix(input.worldKey, attention, input.now, input.reducedMotion);
+  const mix = transition.mix;
+  const built = buildPlan(input, tokens, transition);
   const ground = input.mapTokens.canvasBgNear;
   const warning = tokens.inks.warning;
   if (input.deferPaint) deferred = { plan: built.plan, tokens, ground, warning };

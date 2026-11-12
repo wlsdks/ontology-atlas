@@ -33,7 +33,7 @@ import type { FlatRingMemoryStore } from "../loop/topology-loop-contract";
 import { createMeasureText } from "../../dial/fit";
 import { readDialTokens } from "../../dial/tokens";
 import { claimDialOrderFolder } from "../../dial/order";
-import { claimFlatGraphFolder } from "../../flat-graph/scene";
+import { claimFlatGraphFolder, settleFlatGraph } from "../../flat-graph/scene";
 import { readFlatGraphTokens } from "../../flat-graph/tokens";
 import { createDialPlacement, dialPlacementOf, setDialPlacement, type DialPlacementState } from "../../dial/placement";
 import type { DialLabels, DialMemory, DialWorldInput } from "../../dial/types";
@@ -283,6 +283,7 @@ export function useTopologyWorldLifecycle({
     if (world.dial) {
       setDialPlacement(world.dial, { ...placed, progress: loadProgress });
       if (placed.state === "settled") ringMemory?.write(world.dial.scene.memory);
+      if (world.dial.scene.graph) settleFlatGraph(world.dial.model, world.dial.scene.graph, placed.state);
       provisionalMemoryRef.current = placed.state === "provisional" ? world.dial.scene.memory : null;
     }
     const previousWorld = worldRef.current;

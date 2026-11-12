@@ -20,11 +20,12 @@ import {
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
-import { cachedGraphAttention, inkUnder } from "./attention";
+import { cachedGraphAttention, graphInkMix, inkUnder, transitionShare, type GraphTransition } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { graphDiscRadiusPx } from "./marks";
 import { admittedNames, type PlacedName } from "./names";
+import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphLayout } from "./types";
 
@@ -245,5 +246,64 @@ describe("attention and discs", () => {
     expect(r(4)).toBeGreaterThan(r(1));
     expect(r(4) - r(0)).toBeCloseTo(2 * (r(1) - r(0)));
     expect(r(10_000)).toBe(TOKENS.paint.capDiscMaxPx);
+  });
+});
+
+describe("session memory", () => {
+  const derived = deriveOntologyFromVault(storefrontManifest as unknown as VaultManifest);
+  const nodes = derived.nodes as Node[];
+  const edges = derived.edges as Edge[];
+  const partOf = (every: number) => {
+    const kept = new Set(nodes.filter((n, i) => (n.kind !== "capability" && n.kind !== "element") || i % every === 0).map((n) => n.id));
+    return modelOf(nodes.filter((n) => kept.has(n.id)), edges.filter((e) => kept.has(e.from) && kept.has(e.to)));
+  };
+  const build = (model: DialModel) => buildFlatGraphScene(model, circularDomainOrder(model, null).order, TOKENS.layout, flatGraphPins(model)).graph!;
+
+  it("lands a streamed read on the same positions and hues as a one-shot open", () => {
+    const full = modelOf(nodes, edges);
+    claimFlatGraphFolder("one-shot");
+    const oneShot = build(full);
+    settleFlatGraph(full, oneShot, "settled");
+    claimFlatGraphFolder("streamed");
+    for (const every of [4, 2]) {
+      const model = partOf(every);
+      settleFlatGraph(model, build(model), "provisional");
+    }
+    const streamed = build(full);
+    settleFlatGraph(full, streamed, "settled");
+    expect([...streamed.positions]).toEqual([...oneShot.positions]);
+    expect([...streamed.hueByDomain]).toEqual([...oneShot.hueByDomain]);
+  });
+
+  it("keeps every domain's hue when a changed folder pins no position", () => {
+    claimFlatGraphFolder("hues");
+    const before = partOf(2);
+    const first = build(before);
+    settleFlatGraph(before, first, "settled");
+    const after = build(modelOf(nodes, edges));
+    for (const [domainId, hue] of first.hueByDomain) expect(after.hueByDomain.get(domainId), domainId).toBe(hue);
+  });
+});
+
+describe("attention crossfade", () => {
+  const model = VAULTS[1][1];
+  const [a, b] = model.domains.map((d) => d.id);
+  const foreign = model.domains.find((d) => d.id !== a && d.id !== b)!.id;
+  const shareOf = (t: GraphTransition) => transitionShare(t, (att) => inkUnder(att, foreign, TOKENS.paint.sinkInk));
+
+  it("continues from the picture showing when a fast pointer retargets mid-fade", () => {
+    const key = {};
+    graphInkMix(key, cachedGraphAttention(model, null, false), 0, false);
+    graphInkMix(key, cachedGraphAttention(model, a!, false), 1_000, false);
+    const before = shareOf(graphInkMix(key, cachedGraphAttention(model, a!, false), 1_030, false));
+    const after = shareOf(graphInkMix(key, cachedGraphAttention(model, b!, false), 1_030, false));
+    expect(before).toBeGreaterThan(TOKENS.paint.sinkInk + 0.1);
+    expect(after).toBeCloseTo(before, 6);
+  });
+
+  it("lands at once under reduced motion", () => {
+    const key = {};
+    graphInkMix(key, cachedGraphAttention(model, null, false), 0, true);
+    expect(shareOf(graphInkMix(key, cachedGraphAttention(model, a!, false), 10, true))).toBe(TOKENS.paint.sinkInk);
   });
 });

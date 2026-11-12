@@ -1,3 +1,4 @@
+import type { DialPlacementState } from "../dial/placement";
 import type { DialCluster, DialItem, DialModel, DialScene, Point } from "../dial/types";
 import { directItemId, layoutFlatGraph } from "./layout";
 import { byId } from "./seed";
@@ -43,11 +44,18 @@ export function flatGraphPins(model: DialModel): FlatGraphPins | null {
     const direct = memory.positions.get(directItemId(d.id));
     if (direct) positions.set(directItemId(d.id), direct);
   }
-  if (positions.size === 0) return null;
   return { positions, seeds, hueByDomain: memory.hueByDomain };
 }
 
-export function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout): void {
+/**
+ * Remembers a graph only once its folder has settled: a provisional build mid-read never pins the
+ * next one, so a streamed read and a one-shot open of the same folder land on the same picture.
+ */
+export function settleFlatGraph(model: DialModel, layout: FlatGraphLayout, state: DialPlacementState): void {
+  if (state === "settled") rememberFlatGraph(model, layout);
+}
+
+function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout): void {
   const positions = new Map([...layout.positions, ...layout.itemAt]);
   remembered = {
     positions,
