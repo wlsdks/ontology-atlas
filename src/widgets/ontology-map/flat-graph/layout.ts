@@ -41,6 +41,7 @@ export function directItemId(domainId: string): string {
 
 /** Synchronous ForceAtlas2 over sorted bodies and springs: identical input gives identical output. */
 function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], iterations: number): Map<string, Point> {
+  if (bodies.every((b) => b.fixed)) return new Map(bodies.map((b) => [b.id, { x: b.x, y: b.y }]));
   const graph = new Graph({ type: "undirected", multi: false, allowSelfLoops: false });
   for (const b of [...bodies].sort((p, q) => byId(p.id, q.id))) graph.addNode(b.id, { x: b.x, y: b.y, size: b.r, fixed: b.fixed });
   const merged = new Map<string, Spring>();
