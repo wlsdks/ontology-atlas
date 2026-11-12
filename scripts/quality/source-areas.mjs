@@ -44,23 +44,7 @@ export function changedPaths(base, cwd = process.cwd()) {
   return [...paths].filter((path) => sourceArea(path) !== null).sort();
 }
 
-export function directFilesInWorktree(dir, cwd = process.cwd()) {
-  const prefix = dir === '' ? '' : `${dir}/`;
-  const listed = lines(git(['ls-files', '--cached', '--others', '--exclude-standard', '--', prefix || '.'], cwd));
-  const direct = new Set(listed.filter((p) => p.startsWith(prefix) && !p.slice(prefix.length).includes('/')));
-  return [...direct].filter((p) => existsSync(join(cwd, p))).length;
-}
-
-export function directFilesAtCommit(dir, sha, cwd = process.cwd()) {
-  try {
-    const rows = lines(git(['ls-tree', sha, '--', dir === '' ? '.' : `${dir}/`], cwd));
-    return rows.filter((row) => row.split(/\s+/)[1] === 'blob').length;
-  } catch {
-    return 0;
-  }
-}
-
-const AREA_GATE_PREFIXES = ['test-title-hangul', 'comment-bytes', 'oversize-files', 'wide-folders'];
+const AREA_GATE_PREFIXES = ['test-title-hangul'];
 
 const FIXED_AREAS = new Set(['src', 'app', 'tests', 'mcp', 'cli', 'scripts', 'src-tauri', 'harness', 'root']);
 

@@ -4,12 +4,11 @@ import test from 'node:test';
 import { areaGate, isAreaGate, sourceArea } from './source-areas.mjs';
 
 test('accepts area gates for known prefixes and existing areas only', () => {
-  assert.equal(isAreaGate('comment-bytes.src-shared'), true);
-  assert.equal(isAreaGate('wide-folders.src-tauri'), true);
-  assert.equal(isAreaGate('oversize-files.tests-contract'), true);
-  assert.equal(isAreaGate('comment-bytes.no-such-area'), false);
-  assert.equal(isAreaGate('comment-bytes.src-no-such-layer'), false);
-  assert.equal(isAreaGate('unknown-prefix.src-shared'), false);
+  assert.equal(isAreaGate('test-title-hangul.src-shared'), true);
+  assert.equal(isAreaGate('test-title-hangul.tests-contract'), true);
+  assert.equal(isAreaGate('test-title-hangul.no-such-area'), false);
+  assert.equal(isAreaGate('test-title-hangul.src-no-such-layer'), false);
+  assert.equal(isAreaGate('comment-bytes.src-shared'), false);
   assert.throws(() => areaGate('unknown-prefix', 'mcp'));
 });
 
@@ -45,6 +44,6 @@ test('excludes docs, public assets, samples and generated vault data', () => {
 });
 
 test('names gates without a path separator so raise records can be files', () => {
-  assert.equal(areaGate('comment-bytes', 'src/widgets'), 'comment-bytes.src-widgets');
-  assert.equal(areaGate('comment-bytes', 'mcp'), 'comment-bytes.mcp');
+  assert.equal(areaGate('test-title-hangul', 'src/widgets'), 'test-title-hangul.src-widgets');
+  assert.equal(areaGate('test-title-hangul', 'mcp'), 'test-title-hangul.mcp');
 });

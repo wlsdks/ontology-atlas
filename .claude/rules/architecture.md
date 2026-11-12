@@ -69,13 +69,9 @@ current need requires, so the source alone carries the meaning.
 - Algorithmic code (layout, search and matching, diffing, parsing, graph
   traversal) states its complexity in a name, type or one line, chooses its
   data structure on purpose, and lands only after an independent `reviewer`.
-- A file stays under 800 lines and a folder under 30 direct files. Split by
-  responsibility into a cohesive subfolder within its layer; add an `index`
-  only where the layer's public API already has one. A split adds no lines
-  beyond the imports, module declarations and test wrappers its new files need.
-- Per area, comment bytes, files over 800 lines and folders over 30 files only
-  fall against the merge base (`source-comment-bytes`, `source-shape`
-  contracts); a deliberate raise is a `tests/contract/ratchet-raises/` record.
+- Split a file when it stops being one job, by responsibility into a cohesive
+  subfolder within its layer; add an `index` only where the layer's public API
+  already has one. `pnpm review:facts` marks a changed file over 800 lines.
 - Dependencies, adapted code and borrowed assets follow
   `docs/engineering/third-party-code.md`; its `// Adapted from` license marker
   is a required comment, never cleanup.

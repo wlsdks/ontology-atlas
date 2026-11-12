@@ -20,7 +20,6 @@ import {
 const SOURCE_LANGUAGE_COMMAND = 'pnpm source:language';
 const DEAD_CODE_COMMAND = 'pnpm knip';
 const COMMENT_REFS_COMMAND = 'pnpm docs:comment-refs';
-const COMMENT_BYTES_COMMAND = 'pnpm exec vitest run tests/contract/ci-gates/source-comment-bytes.contract.test.ts';
 
 function commandNames(result) {
   return result.commands.map((row) => row.command);
@@ -34,8 +33,7 @@ function commandNames(result) {
 const isScriptLint = (command) => command.startsWith('pnpm exec eslint --max-warnings 0 --no-warn-ignored ');
 
 const SECURITY_COMMAND = SECURITY_RULES[0].command;
-const TEST_HYGIENE_COMMAND =
-  'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts tests/contract/ci-gates/source-comment-bytes.contract.test.ts';
+const TEST_HYGIENE_COMMAND = 'pnpm exec vitest run tests/contract/ci-gates/test-title-language.contract.test.ts';
 const IME_ENTER_GUARD_COMMAND = 'pnpm exec vitest run tests/contract/controls/ime-enter-guard.contract.test.ts';
 const TOKEN_GATES_COMMAND =
   'pnpm exec vitest run tests/contract/design-tokens/undeclared-token-ref.contract.test.ts tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts';
@@ -50,7 +48,6 @@ function domainCommands(result) {
     (command) =>
       command !== SOURCE_LANGUAGE_COMMAND &&
       command !== COMMENT_REFS_COMMAND &&
-      command !== COMMENT_BYTES_COMMAND &&
       command !== DEAD_CODE_COMMAND &&
       command !== SECURITY_COMMAND &&
       command !== TEST_HYGIENE_COMMAND &&
@@ -200,7 +197,7 @@ describe('focused check suggestions', () => {
       'scripts/quality/source-language/source-paths.mjs',
       'scripts/quality/source-language/inventory.test.mjs',
     ]);
-    assert.deepEqual(ruleCommands(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== COMMENT_BYTES_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
+    assert.deepEqual(ruleCommands(gate).filter((command) => command !== DEAD_CODE_COMMAND && command !== COMMENT_REFS_COMMAND && command !== TEST_HYGIENE_COMMAND && !isScriptLint(command)), [
       'pnpm exec node --test scripts/quality/source-language/inventory.test.mjs',
       SOURCE_LANGUAGE_COMMAND,
       'pnpm test:source:language',
@@ -209,17 +206,6 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.ok(!commandNames(suggestFocusedChecks(['messages/ko.json'])).includes(SOURCE_LANGUAGE_COMMAND));
-  });
-
-  it('ratchets comment bytes for every changed source, through the test hygiene pair for tests', () => {
-    const CASES = [
-      [['.github/workflows/checks.yml'], COMMENT_BYTES_COMMAND],
-      [['src/views/architecture/model/harness-anatomy.ts'], COMMENT_BYTES_COMMAND],
-      [['src/shared/lib/cn.test.ts'], TEST_HYGIENE_COMMAND],
-    ];
-    for (const [paths, expected] of CASES) {
-      assert.ok(commandNames(suggestFocusedChecks(paths)).includes(expected), paths.join(', '));
-    }
   });
 
   it('checks comment citations when source or Markdown changes, once', () => {
@@ -2050,7 +2036,7 @@ describe('files changed only in comments', () => {
     const tests = (commands) => commands.filter((command) => /playwright test|vitest related|node --test/.test(command));
     assert.ok(tests(all).length >= 3);
     assert.deepEqual(tests(skipped), []);
-    assert.ok(skipped.some((command) => command.includes('source-comment-bytes')), 'comment ratchets still run');
+    assert.ok(skipped.includes(TEST_HYGIENE_COMMAND), 'the test-title ratchet still runs');
     const config = suggestFocusedChecks(['eslint.config.mjs'], { commentOnlyPaths: ['eslint.config.mjs'] }).commands.map((item) => item.command);
     assert.ok(!config.includes('pnpm lint'), 'a comment in the lint config does not rerun the whole lint');
     assert.ok(skipped.includes(SOURCE_LANGUAGE_COMMAND));

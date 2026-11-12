@@ -76,7 +76,6 @@ test('app tests run affected Vitest and the test-source ratchets without waking 
   assert.equal(plan.lanes.unit.affected, true);
   assert.equal(plan.lanes.unit.contract, 'focused');
   assert.deepEqual(plan.lanes.unit.contractFiles, [
-    'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
     'tests/contract/ci-gates/test-title-language.contract.test.ts',
   ]);
   assert.equal(plan.lanes.e2e.mode, 'skip');
@@ -88,7 +87,6 @@ test('a stylesheet change runs the token gates that read it whole', () => {
     assert.equal(contract, 'focused', file);
     for (const gate of [
       'tests/contract/design-tokens/design-doc-token-integrity.contract.test.ts',
-      'tests/contract/ci-gates/source-comment-bytes.contract.test.ts',
       'tests/contract/design-tokens/undeclared-token-ref.contract.test.ts',
     ]) assert.ok(contractFiles.includes(gate), `${file} -> ${gate}`);
   }
