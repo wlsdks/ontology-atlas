@@ -39,7 +39,13 @@ read. ForceAtlas2 places domains around the hub, each
 sized by the footprint its capabilities and elements need. A second pass places
 each domain's capabilities with partner domains as weak far anchors, so a
 capability leans toward the domains it depends on yet stays nearer its own
-domain than any other. The clusters then spread to the overview's aspect, so
+domain than any other. A domain title is a
+fixed size on screen, so on a crowded overview the circle it reserves outgrows
+the member star. The star then spreads into that circle as a fan that leaves
+the title's wedge open, each member keeping its order around the domain, when
+the fan still ends inside the circle; a star too large for it stays gathered
+on its domain rather than crowding its neighbours. The hub reserves the circle
+its name and caption lines take, in screen pixels too. The clusters then spread to the overview's aspect, so
 the first fit fills the free map. Concepts outside every domain sit in an
 empty corner. Every domain and capability keeps a disc and a pick target,
 whether or not its name has room, and a pointer inside a disc picks that disc

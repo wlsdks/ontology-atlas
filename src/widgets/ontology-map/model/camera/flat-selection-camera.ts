@@ -93,6 +93,24 @@ const SAME_SCALE = 1e-6;
 
 /** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
+/** Two scales closer than this share of one another are one sample. */
+const SAME_SAMPLE = 1e-9;
+
+/**
+ * The scales above `from` up to `cap` on one grid of ZOOM_SAMPLES_PER_OCTAVE per octave, then `cap`.
+ * The grid does not depend on `from`, so a frame of its own landing probes no scale the first frame
+ * did not. O(samples).
+ */
+function scalesAbove(from: number, cap: number): number[] {
+  const out: number[] = [];
+  for (let k = Math.floor(Math.log2(from) * ZOOM_SAMPLES_PER_OCTAVE) + 1; ; k += 1) {
+    const s = 2 ** (k / ZOOM_SAMPLES_PER_OCTAVE);
+    if (s >= cap) break;
+    if (s > from * (1 + SAME_SAMPLE)) out.push(s);
+  }
+  if (cap > from) out.push(cap);
+  return out;
+}
 const ZOOM_REFINE_STEPS = 4;
 const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);
 
@@ -156,8 +174,7 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn, holds: (sca
   let bestAt = from;
   let below = from;
   let previous = from;
-  for (let k = 1; previous < cap; k += 1) {
-    const s = Math.min(cap, from * 2 ** (k / ZOOM_SAMPLES_PER_OCTAVE));
+  for (const s of scalesAbove(from, cap)) {
     const score = zoom.scoreAt(s);
     if (compareScores(score, best) > 0 && holds(s)) {
       best = score;
@@ -210,7 +227,7 @@ function shownAt(camera: CameraTarget, end: { x: number; y: number }, viewport: 
  * marks still fit and every one of `farEnds` the panned view shows stays on the free map. With
  * `zoom.maxScale` fixed, a frame applied to its own landing is null. Null when the view already
  * frames it.
- * O(marks + farEnds) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes and
+ * O(marks + farEnds) per scale tried; the zoom-in adds one fit probe per sample up to the cap, ZOOM_FIT_STEPS more, and
  * one per score sample that improves.
  */
 export function selectionFrameTarget(
@@ -263,9 +280,11 @@ export function selectionFrameTarget(
   const holds = (s: number) => fitsThere(s) && (held.length === 0 || fitsAt([...settledAt(s), ...held], s, width, height));
   if (zoom && scale < zoom.maxScale && holds(scale)) {
     let cap = zoom.maxScale;
-    if (!holds(cap)) {
-      let fits = scale;
-      let fails = cap;
+    // `holds` can fail and hold again as names change sides, so the cap is the first sample that fails, not any that does.
+    const firstFailing = scalesAbove(scale, cap).find((s) => !holds(s));
+    if (firstFailing !== undefined) {
+      let fits = scalesAbove(scale, firstFailing).at(-2) ?? scale;
+      let fails = firstFailing;
       for (let i = 0; i < ZOOM_FIT_STEPS; i += 1) {
         const mid = (fits + fails) / 2;
         if (holds(mid)) fits = mid;
