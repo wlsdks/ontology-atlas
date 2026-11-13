@@ -14,6 +14,7 @@ const originalAnimate = Object.getOwnPropertyDescriptor(HTMLElement.prototype, '
 const originalDecode = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'decode');
 beforeEach(() => {
   hidden = reduced = false;
+  vi.spyOn(Math, 'random').mockReturnValue(0);
   animations.length = 0;
   listeners.clear();
   vi.spyOn(document, 'hidden', 'get').mockImplementation(() => hidden);

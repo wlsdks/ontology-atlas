@@ -1,4 +1,31 @@
 import { expect, test } from '@playwright/test';
+import { createRequire } from 'node:module';
+import { stubDirectoryPicker } from './vault-picker-stub';
+import { FIXTURE_VAULT } from './fixture-vault';
+import { seedFirstRunSeen } from './first-run-seed';
+
+test('paints the still companion at a deep-linked welcome before any interaction', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await stubDirectoryPicker(page, FIXTURE_VAULT);
+  await seedFirstRunSeen(page);
+  await page.goto('/en/topology/?guides=off', { waitUntil: 'networkidle' });
+  await page.getByTestId('first-run-starter-open').click();
+  await page.getByTestId('vault-guide-pick-existing').click();
+  await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
+  await page.goto('/en/download/?guides=off#gateway-closing-title', { waitUntil: 'networkidle' });
+  const stage = page.locator('[data-moru-playground]');
+  await stage.locator('img').first().evaluate(image => (image as HTMLImageElement).decode());
+  const clip = await stage.boundingBox();
+  expect(clip).not.toBeNull();
+  const require = createRequire(`${process.cwd()}/package.json`);
+  const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+  const pixels: Buffer = await sharp(await page.screenshot({ clip: clip! })).removeAlpha().raw().toBuffer();
+  let bodyPixels = 0;
+  for (let i = 0; i < pixels.length; i += 3) {
+    if (pixels[i] > 150 && pixels[i + 1] > 140 && pixels[i + 2] < pixels[i + 1] + 10) bodyPixels++;
+  }
+  expect(bodyPixels, 'the loaded still character must paint real gray/ivory pixels').toBeGreaterThan(1000);
+});
 
 test('hover lets an airborne hop land before holding the character', async ({ page }) => {
   await page.goto('/en/download/?guides=off');
@@ -69,11 +96,16 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).every(a => a.playState === 'running'))).toBe(true);
   // Every new expression must finish and hand back to the same companion,
   // without adding a control or leaving the reaction strip visible forever.
-  for (const gesture of ['clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish', 'shy']) {
+  const seen = new Set(['shy']);
+  for (let i = 0; i < 11; i++) {
     await pet.click();
-    await expect(pet).toHaveAttribute('data-moru-reaction', gesture);
+    await expect(pet).toHaveAttribute('data-moru-reaction');
+    const gesture = (await pet.getAttribute('data-moru-reaction'))!;
+    expect(seen.has(gesture), `repeated ${gesture} before completing the repertoire`).toBe(false);
+    seen.add(gesture);
     await expect(pet).not.toHaveAttribute('data-moru-reaction');
   }
+  expect([...seen].sort()).toEqual(['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish'].sort());
   await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
 });
 
@@ -93,7 +125,8 @@ test('keyboard petting and its context menu preserve focus and an explicit pause
   await page.getByRole('menuitem', { name: 'Pause Moru animation' }).click();
   await pet.click();
   await expect(pet).toHaveAttribute('data-moru-paused', 'true');
-  await expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
+  await expect(pet).toHaveAttribute('data-moru-reaction');
+  await expect(pet).not.toHaveAttribute('data-moru-reaction', 'shy');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).every(a => a.playState === 'paused'))).toBe(true);
 });
 

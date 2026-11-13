@@ -24,6 +24,7 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   const actor = useRef<HTMLButtonElement>(null);
   const facing = useRef<HTMLSpanElement>(null);
   const emote = useRef<HTMLSpanElement>(null);
+  const variation = useRef<number | null>(null);
   const menuItem = useRef<HTMLButtonElement>(null);
   const { open: menuOpen, setOpen: setMenuOpen, ref: menuRef } = useDismissibleMenu();
   const bindMenuItem = useCallback((node: HTMLButtonElement | null) => {
@@ -54,11 +55,12 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
     const image = ref.current, reactionImage = reactionRef.current;
     const bounds = stage.current, body = actor.current, face = facing.current, bubble = emote.current;
     if (!image || !reactionImage || !bounds || !body || !face || !bubble) return;
-    const motion = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell), context);
+    variation.current ??= Math.floor(Math.random() * 3);
+    const motion = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell), context, variation.current);
     const options = { duration: motion.duration, iterations: Infinity };
     const animations = reducedMotion || typeof image.animate !== 'function' || typeof IntersectionObserver === 'undefined' ? []
       : [image.animate(motion.sprite, options), body.animate(motion.movement, options), face.animate(motion.facing, options), bubble.animate(motion.emote, options)];
-    const player = companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, reducedMotion, intent: () => intent.current });
+    const player = companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, variation: variation.current, reducedMotion, intent: () => intent.current });
     playback.current = player;
     return () => {
       playback.current = null;

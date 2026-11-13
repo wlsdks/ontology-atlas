@@ -48,8 +48,8 @@ Eight further gestures add a soft bow, hat greeting, fish trick, blanket peekabo
 rosy temper, flipper five, folder peek and bubble chase. The bow, flipper five and
 hat greeting join petting; the fish trick is reserved for the download welcome.
 Peekaboo, rosy temper and bubble chase remain catalogue scenes. A small pixel
-speech bubble responds with a heart, note or sparkle. One note accompanies the
-return hop per ambient itinerary; waiting has no bubble. These original SVG
+speech bubble responds with a heart, note or sparkle. One note accompanies a
+return hop in each longer three-phrase sequence; waiting has no bubble. These original SVG
 ornaments stay within the actor bounds, ignore pointer input and share its pause,
 visibility and reduced-motion behavior. A still response uses a still bubble.
 
@@ -62,6 +62,15 @@ refresh, connection, reply arrival, empty search and returning from rest.
 Silent singing, a fish friend, dancing and a miniature Moru chorus are optional
 expressive artwork. The chorus keeps its own smaller scene framing. Catalogue
 availability does not create an app state.
+
+The refined nod preserves the rounded body through the whole gesture. Nod, hop,
+folder peek and shy reaction use separate anticipation, movement, expression and
+settle timing. Ambient play joins three different phrases with quiet holds of
+different lengths. The starting phrase is chosen once per mounted companion;
+resize and visibility changes preserve it. Petting starts gently, then draws a
+full context-allowed repertoire in varied order, excluding the two most recent
+responses across refills (waiting alternates its two gentle choices). Randomness
+is local, has no persistent state and never supplies work or emotional status.
 
 ## Raster grids and palette
 
