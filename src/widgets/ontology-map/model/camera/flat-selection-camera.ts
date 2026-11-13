@@ -87,7 +87,20 @@ const SAME_SCALE = 1e-6;
 /** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
 const ZOOM_REFINE_STEPS = 4;
-const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
+const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);
+
+/**
+ * Whether a zoom from `from` to `to` is worth taking: a sample step or more, or any zoom that
+ * improves a judgment ahead of the last score entry (a count, which grid rounding can nudge, so a
+ * later frame would step again for it).
+ */
+function zoomEarns(zoom: SelectionZoomIn, from: number, to: number): boolean {
+  if (to <= from) return false;
+  if (to >= from * MIN_ZOOM_IN || zoom.readsAt(to)) return true;
+  return compareScores(zoom.scoreAt(to).slice(0, -1), zoom.scoreAt(from).slice(0, -1)) > 0;
+}
+
+/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
 const ZOOM_FIT_STEPS = 8;
 
 /**
@@ -218,8 +231,7 @@ export function selectionFrameTarget(
       cap = fits;
     }
     const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
-    // Short of reading clear, a zoom under one sample step is the search's own rounding: taken, the next frame would step again.
-    if (best > scale && (zoom.readsAt(best) || best >= scale * MIN_ZOOM_IN)) {
+    if (zoomEarns(zoom, scale, best)) {
       // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
       const settled = usable.find((set) => fitsAt(set, best, width, height)) ?? zoom.marksAt(best);
       target = framedAt(target, settled, best, viewport, free, margin, taken(best));

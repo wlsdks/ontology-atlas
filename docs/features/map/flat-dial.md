@@ -195,8 +195,9 @@ at the current zoom, and, when every partner domain's disc and name fit in the f
 the current zoom, pans them all in; otherwise it pans in the partners nearest
 to it, in order of distance, up to the first one that no longer fits with them,
 so a farther partner may still land in view while a nearer one stays out. A zoom
-that reads no better than the view the click left is never taken, and short of
-reading clear (the first two judgments) neither is one under a sample step, so a click stays a small move,
+that reads no better than the view the click left is never taken, and one under a
+sample step is taken only when it reads clear or betters one of the first two
+judgments, so a click stays a small move,
 the rest of the map stays in view, and framing the landed view again moves
 nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
