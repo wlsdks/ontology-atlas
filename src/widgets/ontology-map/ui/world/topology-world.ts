@@ -24,7 +24,7 @@ import { dialOverviewPad } from "../../dial/fit";
 import { layoutDial } from "../../dial/layout";
 import { circularDomainOrder, rememberDialOrder, rememberedDialOrder } from "../../dial/order";
 import type { DialModel, DialTokens, DialWorld, DialWorldInput } from "../../dial/types";
-import { domainTitleBlocks } from "../../flat-graph/names";
+import { domainTitleBlocks, hubBlockReachPx } from "../../flat-graph/names";
 import { buildFlatGraphScene, flatGraphPins } from "../../flat-graph/scene";
 import { computeConcentricLayout, type LayoutGraphNode, type LayoutRings } from "../../model/layout/layout";
 import { computeBowControlPoint, computeDependsBowControlPoint } from "../../render/traces";
@@ -199,7 +199,7 @@ export interface TopologyWorld {
 type DialBearing = { dial?: DialWorld | null;
 };
 
-const DIAL_OVERVIEW_SCALE_FLOOR = 0.02;
+const DIAL_OVERVIEW_SCALE_FLOOR = 0.01;
 
 export function dialOverviewFit(world: DialBearing): { padPx: DialWorld["overviewPadPx"]; scaleFloor: number; labelBottomAllowance?: number;
 } | undefined {
@@ -762,7 +762,7 @@ function buildDialWorld(
     const paint = input.graph.paint;
     const face = labelFontFamily();
     const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face });
-    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx });
+    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
     if (remember) rememberDialOrder(scene.order);
     const pad = paint.domainNamePx;
     return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad }, labels: input.labels };

@@ -553,7 +553,7 @@ describe("buildTopologyWorld with the Flat dial", () => {
         expect(computeRevealedBounds(world, fullTokens, crowded, null)).toEqual(extent);
         recomputeWorldGeometry(world, fullTokens);
         expect(world.spineBounds).toEqual(extent);
-        expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.02, labelBottomAllowance: 0 });
+        expect(dialOverviewFit(world)).toEqual({ padPx: dial.overviewPadPx, scaleFloor: 0.01, labelBottomAllowance: 0 });
     });
     it("frames hidden contained, direct and unassigned elements by their actual scene position", () => {
         const world = buildTopologyWorld([...nodes, mapNode("direct", "element"), mapNode("free", "element")], [...edges, edge("d0", "direct", "contains")], fullTokens, "disc", input(null));

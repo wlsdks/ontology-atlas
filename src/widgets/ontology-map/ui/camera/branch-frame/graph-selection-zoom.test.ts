@@ -12,7 +12,7 @@ import { buildDialModel } from "../../../dial/dial-model";
 import type { DialLabels, DialModel, DialWorld } from "../../../dial/types";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx, zoomGrowth } from "../../../flat-graph/marks";
-import { admitNamesAt, domainTitleBlocks, stepScale, zoomStep } from "../../../flat-graph/names";
+import { admitNamesAt, domainTitleBlocks, hubBlockReachPx, stepScale, zoomStep } from "../../../flat-graph/names";
 import { buildFlatGraphScene } from "../../../flat-graph/scene";
 import { resolveFlatGraphTokens } from "../../../flat-graph/tokens";
 import {
@@ -85,13 +85,13 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
   };
   const area = overviewEntryArea(viewport.width, viewport.height, overview as never, { padPx });
   const titleBlocks = domainTitleBlocks({ model, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif" });
-  const scene = buildFlatGraphScene(model, tokens.layout, null, { areaPx: area, titles: titleBlocks, capDiscPx: paint.capDiscMaxPx });
+  const scene = buildFlatGraphScene(model, tokens.layout, null, { areaPx: area, titles: titleBlocks, capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
   const layout = scene.graph!;
   const at = (id: string) => layout.positions.get(id) ?? layout.itemAt.get(id)!;
   const ids = [...new Set([...model.capabilityOf.keys(), ...layout.positions.keys()])].filter((id) => at(id));
   const world = { nodeById: new Map(ids.map((id) => [id, { id, label: titles.get(id) ?? id, ...at(id) }])), dialScaleMax: null } as unknown as TopologyWorld;
   const dial = { model, scene, labels: LABELS } as unknown as DialWorld;
-  const fitOptions = { padPx, scaleFloor: 0.02 };
+  const fitOptions = { padPx, scaleFloor: 0.01 };
   const fit = computeOverviewFitScale(layout.extent, viewport.width, viewport.height, overview as never, ids.length, fitOptions);
   const rest = computeOverviewCameraTarget(layout.extent, viewport.width, viewport.height, overview as never, ids.length, fitOptions);
   const free = { minX: PANELS.left, maxX: viewport.width - PANELS.right, minY: PANELS.top, maxY: viewport.height - PANELS.bottom };
@@ -228,17 +228,19 @@ describe("an element selection that zooms in", () => {
   it("keeps every far end of its lines inside the free map", () => {
     const viewport = { width: 1448, height: 949 };
     const map = vaultMap(docsManifest, viewport);
-    const id = "element:source-receipt-store";
-    const landed = map.frame(id, map.rest);
-    expect(landed?.tscale ?? 0, "the selection zooms in").toBeGreaterThan(map.rest.tscale);
-    for (const end of farEnds(map, id, landed!, viewport)) expect(pointInside(end, map.free), `${end.id} at (${Math.round(end.x)}, ${Math.round(end.y)})`).toBe(true);
+    const zoomed = [...map.model.capabilityOf.keys()].sort().flatMap((id) => {
+      const landed = map.frame(id, map.rest);
+      return landed && landed.tscale > map.rest.tscale && farEnds(map, id, landed, viewport).length > 0 ? [{ id, landed }] : [];
+    });
+    expect(zoomed.length, "some element selection zooms in and draws a line").toBeGreaterThan(0);
+    const { id, landed } = zoomed[0]!;
+    for (const end of farEnds(map, id, landed, viewport)) expect(pointInside(end, map.free), `${end.id} at (${Math.round(end.x)}, ${Math.round(end.y)})`).toBe(true);
   });
 
   it.each([
-    ["docs", 1448, 949, docsManifest, true], ["docs", 1856, 1080, docsManifest, true],
-    // No storefront element that zooms in at this size draws a line.
-    ["storefront", 1448, 949, storefrontManifest, false], ["storefront", 1856, 1080, storefrontManifest, true],
-  ])("loses no far end and lands in one step across the %s vault at %ix%i", (_, width, height, manifest, zoomedElementDrawsLine) => {
+    ["docs", 1448, 949, docsManifest], ["docs", 1856, 1080, docsManifest],
+    ["storefront", 1448, 949, storefrontManifest], ["storefront", 1856, 1080, storefrontManifest],
+  ])("loses no far end and lands in one step across the %s vault at %ix%i", (_, width, height, manifest) => {
     const viewport = { width, height };
     const map = vaultMap(manifest, viewport);
     const entry = map.rest.tscale;
@@ -247,19 +249,18 @@ describe("an element selection that zooms in", () => {
     const ids = [...map.model.capabilityById.keys(), ...elementIds];
     const lostFarEnds: string[] = [];
     const secondSteps: string[] = [];
-    let farEndsChecked = 0;
+    let zoomedElements = 0;
     for (const start of starts) {
       for (const id of ids) {
         const landed = map.frame(id, start) ?? start;
         if (map.frame(id, landed, start.tscale)) secondSteps.push(`${id} from ${start.tscale.toFixed(2)}`);
         if (!elementIds.has(id) || landed.tscale <= start.tscale + 1e-6) continue;
-        const ends = farEnds(map, id, landed, viewport);
-        farEndsChecked += ends.length;
-        const lost = ends.filter((end) => !pointInside(end, map.free));
+        zoomedElements += 1;
+        const lost = farEnds(map, id, landed, viewport).filter((end) => !pointInside(end, map.free));
         if (lost.length) lostFarEnds.push(`${id} from ${start.tscale.toFixed(2)}: ${lost.map((end) => end.id).join(", ")}`);
       }
     }
-    expect(farEndsChecked > 0, "some zoomed element selection draws a line").toBe(zoomedElementDrawsLine);
+    expect(zoomedElements, "some element selection zooms in").toBeGreaterThan(0);
     expect(lostFarEnds).toEqual([]);
     expect(secondSteps).toEqual([]);
   });

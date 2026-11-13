@@ -332,6 +332,19 @@ export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" 
   return blocks;
 }
 
+/**
+ * How far the project's name above the hub and its two caption lines below reach from the hub's
+ * centre at the overview. The layout keeps every cluster outside that circle; the lines' ends reach
+ * past it sideways, where a cluster's own title already holds its members off. O(1).
+ */
+export function hubBlockReachPx(input: Pick<NameInput, "model" | "tokens">): number {
+  const { model, tokens: t } = input;
+  if (model.projectId === null) return 0;
+  const nameTop = t.projectDiscPx + t.nameGapPx + t.projectNamePx + t.namePadPx;
+  const captionBottom = t.projectDiscPx + t.nameGapPx + 2 * t.captionPx + t.captionGapPx + t.namePadPx;
+  return Math.max(nameTop, captionBottom);
+}
+
 function projectName(input: NameInput): PlacedName | null {
   const { model, tokens: t, measureText, fontFamily } = input;
   if (model.projectId === null || !model.projectLabel) return null;
