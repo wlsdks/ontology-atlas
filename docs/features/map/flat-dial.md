@@ -211,13 +211,14 @@ up to the first one that no longer fits with them. Member names are not held in
 the frame; they are admitted again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
-judgments, so a click stays a small move,
+judgments, so a click on a concept stays a small move,
 the rest of the map stays in view, and framing the landed view again moves
 nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
-move is the least pan that frames, with any zoom, as one slide on the canvas
-spring: a second selection mid-slide retargets it from where the camera is,
+move is the least pan that frames, with any zoom — a domain's reach takes the
+middle of the free map instead, so a domain click may travel — as one slide on
+the canvas spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
 zoomed since; a selection a deep link arrived on returns to the overview. An

@@ -72,7 +72,7 @@ function vaultModel(manifest: unknown): { model: DialModel; titles: Map<string, 
 const LABELS = { units: (c: number, e: number) => `${c} capabilities · ${e} elements`, stale: (n: number) => `${n} stale`, orphans: (n: number) => `${n} unplaced` } as unknown as DialLabels;
 /** Both side panels open: the explorer's edge and the detail panel's width as the map measures them. */
 const PANELS = { left: 376, right: 384, top: 148, bottom: 96 };
-const INSETS = { safeInsetLeft: PANELS.left, safeInsetRight: PANELS.right, safeInsetTop: PANELS.top, safeInsetBottom: PANELS.bottom, overviewEntryRatio: 0.95, cameraMaxZoomRatio: 3.2, cameraScaleMax: 2.6 };
+const INSETS = { safeInsetLeft: PANELS.left, safeInsetRight: PANELS.right, safeInsetTop: PANELS.top, safeInsetBottom: PANELS.bottom, overviewEntryRatio: 0.95, cameraMaxZoomRatio: 3.2, cameraScaleMax: 2.6, cameraMinZoomRatio: 0.5, cameraScaleMin: 0.24 };
 
 /** A vault laid out as the map lays it out for a canvas, at rest on its overview. */
 function vaultMap(manifest: unknown, viewport: { width: number; height: number }) {
@@ -153,7 +153,7 @@ describe("a selection framed between both panels", () => {
     for (const box of names) expect(inside(box, free), `${box.text} [${Math.round(box.minX)}, ${Math.round(box.maxX)}] inside [${free.minX}, ${free.maxX}]`).toBe(true);
   });
 
-  it("zooms a domain out from a zoomed-in view until its own star and names fit, and never in", () => {
+  it("zooms a domain out from a zoomed-in view until its reach fits, and never in", () => {
     const { model, at, rest, free, frame, ownNames } = vaultMap(docsManifest, { width: 1448, height: 949 });
     const zoomed = rest.tscale * 4;
     let zoomedOut = 0;
@@ -188,6 +188,19 @@ describe("a selection framed between both panels", () => {
       }
     }
     expect(reaching, "some domain reaches another").toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["docs", 1100, 720, docsManifest], ["docs", 1512, 340, docsManifest], ["docs", 860, 900, docsManifest],
+    ["storefront", 1100, 720, storefrontManifest], ["storefront", 1366, 768, storefrontManifest], ["storefront", 860, 900, storefrontManifest],
+  ])("never zooms a domain below the camera's own minimum in the %s vault at %ix%i", (_, width, height, manifest) => {
+    const { model, rest, frame, fit } = vaultMap(manifest, { width, height });
+    const minScale = fit * INSETS.overviewEntryRatio * INSETS.cameraMinZoomRatio;
+    for (const domain of model.domains) {
+      const landed = frame(domain.id, rest) ?? rest;
+      expect(Number.isFinite(landed.tscale) && Number.isFinite(landed.tx) && Number.isFinite(landed.ty), domain.id).toBe(true);
+      expect(landed.tscale, `${domain.id} landed at ${landed.tscale}`).toBeGreaterThanOrEqual(minScale - 1e-9);
+    }
   });
 
   it("is a fixed point: framing the view it landed on moves nothing", () => {

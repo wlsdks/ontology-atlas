@@ -243,13 +243,13 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 94
 }
 
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
-  test(`at ${viewport.width} wide a domain the detail panel would cover pans its member star clear without zooming, its nearest partner in view and its names off its lines`, async ({ page }) => {
+  test(`at ${viewport.width} wide a domain the detail panel would cover frames its member star clear, its nearest partner in view and its names off its lines`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
     await openVault(page);
     const { id, star, before } = await domainNearPanel(page);
     const { dial, clickedZoom } = await selectOnMap(page, id);
-    expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
+    expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-6);
     await expectDomainFramed(page, id, star, before, dial);
     const r = dial.freeRect;
 
