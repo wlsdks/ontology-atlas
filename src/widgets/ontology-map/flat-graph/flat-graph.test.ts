@@ -27,7 +27,7 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockEnd, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -727,5 +727,15 @@ describe("names under the map's chrome", () => {
     const x = 12 - name.box.minX;
     expect(x).toBeLessThan(324);
     expect(nameBlockClear(names, from, nameBlockEnd(names, from), x, at.y, explorer)).toBe(false);
+  });
+
+  it("draws the selection's own name under a panel however it was selected, and still hides the other names there", () => {
+    const from = names.findIndex((n) => n.role === "capability");
+    const to = nameBlockEnd(names, from);
+    const id = names[from]!.id;
+    const panel = [{ minX: 0, maxX: 2000, minY: 0, maxY: 2000 }];
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, id), "the selection").toBe(true);
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, "capability:another"), "another concept selected").toBe(false);
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, null), "nothing selected").toBe(false);
   });
 });

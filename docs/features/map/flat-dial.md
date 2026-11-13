@@ -47,8 +47,10 @@ once it is drawn, ahead of a name but only outside every disc. A concept outside
 A name, with its caption or count line, is not drawn where any of its lines
 would reach under the chrome over the map: a side panel (out to the canvas
 edge, so the gap beside the rail counts), the key's row, or a control in the
-tool row. Admission runs per zoom step in world space, so this is judged as the
-frame draws, against boxes measured whenever the camera measures the panels.
+tool row. The selection's own name and count line always draw, however it was
+selected: the camera framed them, and they are what the reader chose. Admission
+runs per zoom step in world space, so this is judged as the frame draws, against
+boxes measured whenever the camera measures the panels.
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once

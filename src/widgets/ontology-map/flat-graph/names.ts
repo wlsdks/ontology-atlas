@@ -91,6 +91,11 @@ export function nameBlockClear(names: readonly PlacedName[], from: number, to: n
   return true;
 }
 
+/** Whether a block draws: the selection's own name always does, since the camera framed it and it is what the reader chose. */
+export function nameBlockDraws(names: readonly PlacedName[], from: number, to: number, x: number, y: number, obstacles: readonly Box[], selectedId: string | null): boolean {
+  return names[from]!.id === selectedId || nameBlockClear(names, from, to, x, y, obstacles);
+}
+
 export function zoomStep(scale: number, stepsPerOctave: number): number {
   return Math.round(Math.log2(Math.max(1e-6, scale)) * stepsPerOctave);
 }

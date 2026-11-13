@@ -14,7 +14,7 @@ import {
   arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
-import { admittedNames, boxUnderAny, nameBlockClear, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, boxUnderAny, nameBlockDraws, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
@@ -485,10 +485,10 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   L.names.add(mark);
 }
 
-/** Whether a concept's block of names may draw: its concept is not placed this frame, or every line clears the chrome. */
-function blockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[]): boolean {
+/** Whether a concept's block of names may draw: its concept is not placed this frame, it is the selection, or every line clears the chrome. */
+function blockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[], selectedId: string | null): boolean {
   const at = screenAt(list[from]!.id);
-  return !at || nameBlockClear(list, from, to, at.x, at.y, chrome);
+  return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
 }
 
 /** A glow under one disc of the hovered or selected set; the rest picture draws none. */
@@ -822,7 +822,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const chrome = input.nameObstacles ?? NO_BOXES;
   for (let nIndex = 0; nIndex < admission.names.length;) {
     const end = nameBlockEnd(admission.names, nIndex);
-    if (blockShows(admission.names, nIndex, end, chrome)) {
+    if (blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId)) {
       for (let i = nIndex; i < end; i += 1) planName(admission.names[i]!, alphas, admission.names[i]!.id === leaving ? mix : 1, false);
     }
     nIndex = end;
@@ -832,7 +832,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const before = admitUnder(motion.previous);
     for (let nIndex = 0; nIndex < before.names.length;) {
       const end = nameBlockEnd(before.names, nIndex);
-      if (before.names[nIndex]!.id === leaving && blockShows(before.names, nIndex, end, chrome)) {
+      if (before.names[nIndex]!.id === leaving && blockShows(before.names, nIndex, end, chrome, null)) {
         for (let i = nIndex; i < end; i += 1) planName(before.names[i]!, alphas, 1 - mix, true);
       }
       nIndex = end;
