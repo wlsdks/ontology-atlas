@@ -12,6 +12,13 @@ function positionAt(frames: Keyframe[], offset: number) {
 }
 
 describe('Moru ground contact', () => {
+  it('keeps pending work at rest and reserves the folder prop for selection', () => {
+    const waiting = companionMotion(640, 'waiting');
+    expect(waiting.movement.every(frame => x(frame) === 0)).toBe(true);
+    const folderStart = source.clips['folder-open'].firstFrame * source.cell;
+    expect(companionMotion(640, 'welcome').sprite.every(frame => -x(frame) < folderStart)).toBe(true);
+    expect(companionMotion(640, 'folder').sprite.some(frame => -x(frame) >= folderStart)).toBe(true);
+  });
   it('keeps planted poses still and moves only while the authored feet are clear of the floor', async () => {
     const require = createRequire(import.meta.url);
     const sharp = createRequire(require.resolve('next/package.json'))('sharp');

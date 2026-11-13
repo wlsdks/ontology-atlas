@@ -473,7 +473,7 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <div className="mb-3 w-full max-w-lg"><BrandCompanion labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still') }} /></div>
+        <div className="mb-3 w-full max-w-lg"><BrandCompanion context="welcome" labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still'), interact: moru('interact') }} /></div>
         <h2
           id="gateway-closing-title"
           className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"

@@ -83,7 +83,7 @@ retaining evidence-bound motion and raster tier constraints (`docs/DECISIONS.md:
 2. When the person reads any README or visits the existing gateway/download,
    Atlas presents compass identity and Moru without changing the promise or CTA facts.
 3. When the person enters folder selection, Atlas uses the existing welcome slot:
-   continuous bounded decorative play, with pointer/keyboard pause and reduced-motion stillness; re-renders do not restart it.
+   bounded decorative play with finite pet reactions, a separate pause button and reduced-motion stillness; re-renders do not restart it.
 4. When the person starts a real pending operation, Moru accompanies the existing
    status/cancel controls without progress percentages, read claims, or predictions.
 5. When the person's feed verifies a read, Atlas keeps the finite entrance/read
@@ -131,8 +131,7 @@ The owner also requested silent singing/notes, fish play, dancing and a miniatur
 Moru chorus (2026-11-13). These four catalogue clips are expressive art, not new
 service states.
 
-None added or changed — decorative images reuse existing strings and controls.
-English and Korean catalogues remain untouched; approved identity labels are
+The four localized `moru` catalogues name petting, pause, resume and reduced motion. Other service status strings remain unchanged; approved identity labels are
 “Ontology Atlas” and “Moru”. README prose changes are localized together.
 
 | Key | Where it appears | English |
@@ -222,5 +221,12 @@ None — character, name, compass family, and surfaces are authorized; compass r
 
 The 2026-11-13 owner correction replaces the finite entry greeting and static
 download portrait with native 128px decorative play. Copy keys `moru.pause`,
-`moru.resume` and `moru.still` name the character toggle in all four locales.
+`moru.resume` and `moru.still` name the separate playback control in all four locales; `moru.interact` names the transparent character target (English: “Pet Moru”).
 The stage owns travel bounds; work-state authority and navigation stay unchanged.
+
+The later owner correction makes character presses produce one finite `shy`, `clap`
+or `dance` response instead of a rectangular pressed surface or a pause toggle.
+Airborne hops land before reacting; repeated clicks do not queue. A busy chooser
+uses quiet `blink`/`tilt` waiting; folder opening can replace it with the existing
+waiting view. Download uses a welcome without the folder prop.
+Explicit pause and reduced motion permit a still expression without resumed motion.

@@ -8,10 +8,10 @@ import { moruBodyAnchor, moruColor } from './build-moru-sprites.mjs';
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 
-test('the shipped companion retains native facial pixels and a matching cache identity', async () => {
+for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${name} retains native facial pixels and a matching cache identity`, async () => {
   const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
-  const playback = JSON.parse(await readFile('src/shared/ui/marks/moru-companion.json', 'utf8'));
-  const file = await readFile('public/brand/moru-companion.png');
+  const playback = JSON.parse(await readFile(`src/shared/ui/marks/${name}.json`, 'utf8'));
+  const file = await readFile(`public/brand/${name}.png`);
   const meta = await sharp(file).metadata();
   assert.equal(meta.height, source.nativeCell);
   assert.equal(meta.width, playback.frames * source.nativeCell);
@@ -20,6 +20,13 @@ test('the shipped companion retains native facial pixels and a matching cache id
     const original = await sharp(`assets/brand/moru/${source.clips[id].sprite}`).raw().toBuffer();
     const shipped = await sharp(file).extract({ left: clip.firstFrame * source.nativeCell, top: 0, width: source.clips[id].frames * source.nativeCell, height: source.nativeCell }).raw().toBuffer();
     assert.deepEqual(shipped, original, `${id} lost native face detail during runtime export`);
+  }
+});
+
+test('large pending marks retain the native scene rather than enlarged low-resolution pixels', async () => {
+  const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) {
+    assert.deepEqual(await readFile(`public/brand/mascot-${state}-row-128.png`), await readFile(`assets/brand/moru/${source.clips[id].sprite}`));
   }
 });
 
