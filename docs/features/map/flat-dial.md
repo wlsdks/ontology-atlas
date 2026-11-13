@@ -60,8 +60,8 @@ the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a
 lit picture sits on another name only when it is a capability no free side
 holds; a lit element name also keeps the selected title gap
-from every domain title, and one with no free side is left out rather than
-overprinted. Under a lit picture a lit name tries its
+from every domain title, keeps off every disc and the selection's ring, and one
+with no such side is left out rather than overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a
@@ -181,7 +181,8 @@ framed view does not read clear, it zooms in about the selection, at most
 `--map-graph-select-zoom-max-ratio` times the zoom of the click (for selections
 made one after another with no pan or zoom between, the zoom of the first), never past the
 zoom band's top, and only as far as the domain's lit set, its names on the
-sides they take there, still fits. Within that range it takes the smallest zoom
+sides they take there, still fits and every far end the panned view showed in
+the free map stays there. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in

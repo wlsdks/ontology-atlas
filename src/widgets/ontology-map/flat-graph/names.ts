@@ -548,7 +548,14 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     for (const it of c.items) if (!it.direct) discs.push([it.id, input.discRadius(it.id)]);
   }
   for (const id of layout.orphanIds) discs.push([id, input.discRadius(id)]);
-  for (const [id, r] of discs) grid.add(worldBox(layout.positions.get(id)!, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
+  const selectedId = input.selected ? input.focusId : null;
+  const ringedDiscs = new Occupancy(CELL_PX / scale);
+  for (const [id, r] of discs) {
+    const at = layout.positions.get(id)!;
+    grid.add(worldBox(at, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
+    const ringed = id === selectedId ? r + tokens.selectedRingGapPx + tokens.selectedRingPx : r;
+    ringedDiscs.add(worldBox(at, { minX: -ringed, maxX: ringed, minY: -ringed, maxY: ringed }, scale));
+  }
   const place = (n: PlacedName) => {
     const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
     grid.add(box);
@@ -598,21 +605,22 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   });
   const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
-  const selectedId = input.selected ? input.focusId : null;
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
     !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
-  // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other
-  // than the focus may sit on a disc but not on a name, and a forced element with no such side drops.
+  // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
+  // the focus may sit on a disc but not on a name; an element other than the focus sits on neither,
+  // nor on the selection's ring, and a forced one drops when no side is left.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
     const lit = polylines.length > 0 && input.lit!.has(cand.id);
+    const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
     const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group));
+    const offDiscs = (group: readonly PlacedName[]) => !(yields && cand.element) || !hits(ringedDiscs, at, group);
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group)) && offDiscs(group);
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
-      const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || offTitles(at, group))) : [];
+      const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || (offTitles(at, group) && offDiscs(group)))) : [];
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const pool = apart.length > 0 ? apart : yields && cand.element ? [] : clear.length > 0 ? clear : tries;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
