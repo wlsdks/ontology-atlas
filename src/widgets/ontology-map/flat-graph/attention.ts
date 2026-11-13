@@ -17,7 +17,7 @@ export interface GraphLine {
   kind: GraphLineKind;
   /** `kind:from>to`, built once so a frame can report the line without allocating. */
   key: string;
-  /** The relations the line stands for: 1 for a capability's own, the pair's count between domains. */
+  /** The relations the line stands for: 1 for a concept's own, the pair's count between domains. */
   weight: number;
 }
 
@@ -114,7 +114,7 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
 }
 
 /** An element, or a concept outside every domain, lights its own lines and the capability and domain it sits in. */
-function elementReach(model: DialModel, elementId: string, into: Set<string>, named: Set<string>): GraphLine[] {
+function ownReach(model: DialModel, elementId: string, into: Set<string>, named: Set<string>): GraphLine[] {
   into.add(elementId);
   const owner = model.capabilityOf.get(elementId);
   if (owner) {
@@ -164,7 +164,7 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
     ? domainReach(model, focusId, lit, named)
     : model.capabilityById.has(focusId)
       ? capabilityReach(model, focusId, lit, named)
-      : elementReach(model, focusId, lit, named);
+      : ownReach(model, focusId, lit, named);
   const reach = model.domainOf.has(focusId) ? reachCounts(lines, focusId) : null;
   return { key, focusId, selected, lit, lines, reach, named };
 }

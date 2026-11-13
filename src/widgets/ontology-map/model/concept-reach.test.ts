@@ -131,12 +131,15 @@ describe("a selected element on the map and in its panel", () => {
     const { graphNodes, graphEdges, model } = vaultGraph(manifest);
     const elements = graphNodes.filter((n) => n.kind === "element");
     expect(elements.length).toBeGreaterThan(50);
+    let elementsWithRows = 0;
     const differing = elements.flatMap(({ id }) => {
       const reach = readConceptReach(graphNodes, graphEdges, id)!;
       const rows = [...reach.needs, ...reach.neededBy, ...reach.other].map((r) => `${r.line} ${r.id}`).sort();
+      if (rows.length > 0) elementsWithRows += 1;
       const lines = resolveGraphAttention(model, id, true).lines.map((l) => `${l.kind} ${l.from === id ? l.to : l.from}`).sort();
       return JSON.stringify(rows) === JSON.stringify(lines) ? [] : [{ id, rows, lines }];
     });
+    expect(elementsWithRows, "some element has a relation").toBeGreaterThan(0);
     expect(differing).toEqual([]);
   });
 

@@ -77,7 +77,7 @@ function graphSelectionFrame(
     const partners = new Set(attention.lines.map((line) => (line.from === id ? line.to : line.from)));
     return selectionFrameTarget(camera, reachFrameSets(marks(near), marks(partners)), viewport, free, paint.frameMarginPx, band.entryScale);
   }
-  const element = !model.capabilityById.has(id) && model.capabilityOf.has(id);
+  const element = !model.capabilityById.has(id) && model.domainOf.has(id);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,

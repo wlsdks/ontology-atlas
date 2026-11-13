@@ -129,7 +129,7 @@ relations it states itself, the same rows its detail panel lists
 direction. A capability's elements' relations are not rolled up into it.
 
 - **Needs** (a directed relation from it): a filled taper, wide at the
-  capability and pointed at what it needs, in `--map-graph-arc`.
+  selection and pointed at what it needs, in `--map-graph-arc`.
 - **Needed by** (a directed relation into it): the same taper, wide at the
   concept that needs it, in the warm `--map-graph-reach`.
 - **Relates**: a dotted hairline. A pair that also depends draws only the
@@ -190,7 +190,7 @@ the free map stays there. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. An element's picture is its lines, so it zooms in only while
+the domain named. An element's picture is its lines, whether a capability or a domain holds it, so it zooms in only while
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
 it keeps that zoom. A domain selection never zooms in, because its picture is its
