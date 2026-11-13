@@ -25,7 +25,7 @@ import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
-import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
+import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
@@ -168,6 +168,38 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     }
   });
 
+  it("rests every caption but the focused domain's when the name rows alone show a larger picture, and keeps that choice through a pinned rebuild", () => {
+    const order = circularDomainOrder(model, null).order;
+    const input = { model, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" };
+    const frame = (area: { width: number; height: number }): FlatGraphFrame => ({
+      areaPx: area, titles: domainTitleBlocks(input), compactTitles: domainTitleBlocks(input, "name"), capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0,
+    });
+    const captions = (l: FlatGraphLayout, scale: number, focusId: string | null) => namesAt(model, l, scale, focusId).names.filter((n) => n.role === "units").map((n) => n.id);
+    const roomy = layoutFlatGraph(model, order, TOKENS.layout, null, frame({ width: 6000, height: 4000 }));
+    expect(roomy.compactTitles).toBe(false);
+    expect(captions(roomy, 1, null).length).toBe(model.domains.length);
+
+    const widthOf = (l: FlatGraphLayout) => l.extent.maxX - l.extent.minX;
+    const fits = [{ width: 1100, height: 650 }, { width: 900, height: 540 }, { width: 760, height: 460 }].map((area) => {
+      const tight = frame(area);
+      return { tight, compact: layoutFlatGraph(model, order, TOKENS.layout, null, tight), full: layoutFlatGraph(model, order, TOKENS.layout, null, { ...tight, compactTitles: undefined }) };
+    });
+    const won = fits.find((f) => f.compact.compactTitles && widthOf(f.compact) < widthOf(f.full));
+    expect(won, "some laptop-sized area rests the captions for a larger picture").toBeDefined();
+    const { tight, compact } = won!;
+    const scale = Math.min(1, tight.areaPx!.width / widthOf(compact), tight.areaPx!.height / (compact.extent.maxY - compact.extent.minY));
+    expect(captions(compact, scale, null)).toEqual([]);
+    const focus = model.domains[0]!.id;
+    expect(captions(compact, scale, focus)).toEqual([focus]);
+
+    claimFlatGraphFolder("captions-rest");
+    settleFlatGraph(model, compact, "settled", "sans-serif");
+    const rebuilt = layoutFlatGraph(model, order, TOKENS.layout, flatGraphPins(model, "sans-serif"), tight);
+    claimFlatGraphFolder("captions-rest-done");
+    expect(rebuilt.compactTitles, "a pinned rebuild keeps the captions resting").toBe(true);
+    expect(captions(rebuilt, scale, null)).toEqual([]);
+  });
+
   it("spreads each member star into the room a wide title reserves, and never past it", () => {
     const wide = { halfWidthPx: 420, topPx: 18, bottomPx: 300 };
     const roomPx = Math.hypot(wide.halfWidthPx, wide.bottomPx);
@@ -230,6 +262,7 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     const pinned = layoutFlatGraph(model, layout.clusters.map((c) => c.domainId), TOKENS.layout, {
       positions: new Map([[domain.domainId, pinnedAt], [cap.id, capAt]]),
       seeds: new Map(),
+      compactTitles: false,
     });
     expect(pinned.positions.get(domain.domainId)).toEqual(pinnedAt);
     expect(pinned.positions.get(cap.id)).toEqual(capAt);
@@ -281,6 +314,27 @@ describe("attention and discs", () => {
     const outside = model.domains.find((d) => !attention.lit?.has(d.id))!;
     expect(inkUnder(attention, outside.id, TOKENS.paint.sinkInk)).toBe(TOKENS.paint.sinkInk);
     expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
+  });
+
+  it.each(VAULTS)("shrinks the %s capability discs of a crowded domain until no two overlap, and leaves an open star at full size", (_name, model) => {
+    const layout = layoutOf(model);
+    const stars = layout.clusters.filter((c) => c.items.filter((it) => !it.direct).length >= 2);
+    expect(stars.length).toBeGreaterThan(0);
+    for (const c of stars) {
+      const caps = c.items.filter((it) => !it.direct);
+      expect(crowdShare(layout, c.domainId, TOKENS.paint, 100, 1), `${c.domainId} stands open when zoomed far in`).toBe(1);
+      const scale = 0.02;
+      const share = crowdShare(layout, c.domainId, TOKENS.paint, scale, 1);
+      expect(share, `${c.domainId} is crowded at the far overview`).toBeLessThan(1);
+      const radius = (elements: number) => graphDiscRadiusPx("capability", elements, TOKENS.paint, 1) * share;
+      for (let i = 0; i < caps.length; i += 1) {
+        for (let j = i + 1; j < caps.length; j += 1) {
+          const a = layout.positions.get(caps[i]!.id)!;
+          const b = layout.positions.get(caps[j]!.id)!;
+          expect(Math.hypot(a.x - b.x, a.y - b.y) * scale, `${caps[i]!.id} and ${caps[j]!.id} stand apart`).toBeGreaterThan(radius(caps[i]!.elementIds.length) + radius(caps[j]!.elementIds.length));
+        }
+      }
+    }
   });
 
   it("grows capability discs with the square root of their element count within the token range", () => {
@@ -514,7 +568,7 @@ describe("a lit element's name beside the selection", () => {
     ];
     const layout: FlatGraphLayout = {
       positions, itemAt: new Map(), clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])),
-      orphanIds: [], extent: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 },
+      orphanIds: [], extent: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 }, compactTitles: false,
     };
     return admittedNames({
       model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,

@@ -148,6 +148,8 @@ export interface FlatGraphLayout {
   clusterByDomain: ReadonlyMap<string, FlatGraphCluster>;
   orphanIds: readonly string[];
   extent: Box;
+  /** The captions rest: the full title blocks outgrew the area, or their name rows alone showed a clearly larger picture. */
+  compactTitles: boolean;
 }
 
 /** A domain's name and caption block under its disc, in screen px about the domain's centre. */
@@ -164,6 +166,8 @@ export interface FlatGraphTitle {
 export interface FlatGraphFrame {
   areaPx: { width: number; height: number } | null;
   titles: ReadonlyMap<string, FlatGraphTitle>;
+  /** Each domain's name row alone: what the layout keeps clear when the full blocks outgrow the area. */
+  compactTitles?: ReadonlyMap<string, FlatGraphTitle>;
   capDiscPx: number;
   /** The radius the project's name and caption lines take around the hub, which no cluster enters. */
   hubPx: number;
@@ -173,10 +177,13 @@ export interface FlatGraphMemory {
   /** The font family the titles were measured in; a layout fitted to one face never pins another. */
   face: string;
   positions: ReadonlyMap<string, Point>;
+  compactTitles: boolean;
   signatureByDomain: ReadonlyMap<string, string>;
 }
 
 export interface FlatGraphPins {
   positions: ReadonlyMap<string, Point>;
+  /** Whether the remembered picture rested its captions; a pinned rebuild keeps that choice. */
+  compactTitles: boolean;
   seeds: ReadonlyMap<string, Point>;
 }
