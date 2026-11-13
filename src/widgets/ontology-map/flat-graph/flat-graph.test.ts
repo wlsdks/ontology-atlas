@@ -296,6 +296,32 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     expect(unnamed).toEqual([]);
   });
 
+  it("keeps the names a zoom step admits apart at both ends of the step, and off the project's caption row", () => {
+    const perOctave = TOKENS.paint.zoomStepsPerOctave;
+    const caption = "Evidence not measured for this project yet";
+    for (let step = -10; step <= 4; step += 1) {
+      const scale = 2 ** (step / perOctave);
+      const attention = cachedGraphAttention(model, null, false);
+      const names = admittedNames({
+        model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: null, attentionKey: attention.key, agentFocusId: null,
+        selected: false, named: attention.named, reach: null, lines: attention.lines, discRadius: () => 4,
+        elementSpacingPx: 0, hubCaption: caption,
+      }).names.filter((n) => n.role !== "element");
+      for (const edge of [-0.45, 0.45]) expect(overlapping(names, layout, scale * 2 ** (edge / perOctave)).filter((pair) => pair.includes("capability:")), `step ${step} at ${edge}`).toEqual([]);
+      const hub = layout.positions.get(model.projectId!)!;
+      const half = measure(caption, `${TOKENS.paint.captionPx}px`) / 2;
+      const rowY = 4 + TOKENS.paint.nameGapPx + TOKENS.paint.captionPx / 2;
+      const onRow = names.filter((n) => n.role === "capability").filter((n) => {
+        const at = layout.positions.get(n.id)!;
+        const x = (at.x - hub.x) * scale;
+        const y = (at.y - hub.y) * scale;
+        return x + n.box.minX < half && x + n.box.maxX > -half && y + n.box.minY < rowY + TOKENS.paint.captionPx / 2 && y + n.box.maxY > rowY - TOKENS.paint.captionPx / 2;
+      });
+      expect(onRow.map((n) => n.text), `names on the caption row at ${scale}`).toEqual([]);
+    }
+  });
+
   it("only adds names as the zoom grows", () => {
     const steps = [0.5, 0.71, 1, 1.41, 2].map((s) => namesAt(model, layout, s, null).ids);
     for (let k = 1; k < steps.length; k += 1) for (const id of steps[k - 1]!) expect(steps[k]!.has(id), id).toBe(true);
@@ -314,6 +340,35 @@ describe("attention and discs", () => {
     const outside = model.domains.find((d) => !attention.lit?.has(d.id))!;
     expect(inkUnder(attention, outside.id, TOKENS.paint.sinkInk)).toBe(TOKENS.paint.sinkInk);
     expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
+  });
+
+  it("names at rest at most two capabilities of a star while its discs are folded, and more once they stand apart", () => {
+    const domains = ["north", "south", "east", "west", "inner", "outer"];
+    const capabilities = domains.flatMap((d) => Array.from({ length: 30 }, (_, c) => `${d}-${c}`));
+    const dense = modelOf(
+      [{ id: "p", kind: "project" }, ...domains.map((id) => ({ id, kind: "domain" })), ...capabilities.map((id) => ({ id, kind: "capability" }))],
+      [...domains.map((d) => ({ from: "p", to: d, type: "contains" })), ...capabilities.map((id) => ({ from: id.split("-")[0]!, to: id, type: "contains" }))],
+    );
+    const input = { model: dense, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" };
+    const layout = layoutFlatGraph(dense, circularDomainOrder(dense, null).order, TOKENS.layout, null, {
+      areaPx: { width: 1000, height: 640 }, titles: domainTitleBlocks(input), compactTitles: domainTitleBlocks(input, "name"), capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0,
+    });
+    const perOctave = TOKENS.paint.zoomStepsPerOctave;
+    const namedIn = (domainId: string, ids: ReadonlySet<string>) => capabilities.filter((id) => id.startsWith(`${domainId}-`) && ids.has(id)).length;
+    let foldedStars = 0;
+    let openNames = 0;
+    for (let step = -14; step <= 12; step += 1) {
+      const ids = namesAt(dense, layout, 2 ** (step / perOctave), null).ids;
+      for (const domainId of domains) {
+        if (crowdShare(layout, domainId, TOKENS.paint, 2 ** ((step - 0.5) / perOctave), 1) === 1) openNames = Math.max(openNames, namedIn(domainId, ids));
+        else {
+          foldedStars += 1;
+          expect(namedIn(domainId, ids), `${domainId} at step ${step}`).toBeLessThanOrEqual(2);
+        }
+      }
+    }
+    expect(foldedStars).toBeGreaterThan(0);
+    expect(openNames, "an open star names more than the folded budget").toBeGreaterThan(2);
   });
 
   it.each(VAULTS)("shrinks the %s capability discs of a crowded domain until no two overlap, and leaves an open star at full size", (_name, model) => {
