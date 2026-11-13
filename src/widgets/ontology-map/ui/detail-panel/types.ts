@@ -1,58 +1,17 @@
 import type { RefObject } from "react";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 import type { ConceptReach } from "../../model/concept-reach";
-import type { DomainUsage } from "../../model/domain-usage";
-import type { V2ConnectionGroupsView, V2EvidenceRow } from "./map-datasheet";
+import type { V2ConnectionGroupsView } from "./map-datasheet";
 
 export interface OntologyMapDetailPanelLabels {
   kindLabel: string;
-  /** The prefix of the owning-domain fact ("domain · <name>"). */
-  domainLabel: string;
-  poweredOn: string;
-  poweredOff: string;
-  metricContains: string;
-  /** Unfolds the path-prefix summary into the list. */
-  containsShowAll: string;
-  /** Folds the list back into the summary. */
-  containsShowSummary: string;
-  /** The summary's remainder bucket. */
-  containsOtherGroup: string;
-  /** Follows a group's "+N", so the number is not dead. */
-  groupShowMore: string;
-  /** The label that returns an expanded group to its capped state ("Collapse"). */
-  groupShowFewer: string;
-  metricUsedBy: string;
-  metricDependsOn: string;
-  /**
-   * "Belongs To" — what contains this node. It uses the same word as
-   * full detail (both come from the `edgeTypesPlain.belongs_to` family).
-   */
-  metricBelongsTo: string;
-  metricRelated: string;
-  metricEvidence: string;
-  /** One plain line per group label, carried by `title` only. */
-  metricContainsHelp?: string;
-  metricUsedByHelp?: string;
-  metricDependsOnHelp?: string;
-  metricBelongsToHelp?: string;
-  metricRelatedHelp?: string;
-  /** Replace the used-by and needs help while a domain's partners lead those groups. */
-  metricUsedByDomainsHelp?: string;
-  metricDependsOnDomainsHelp?: string;
-  metricEvidenceHelp?: string;
   noConnections: string;
-  /** Under a domain's partner rows, the links its own file writes in that direction. */
-  directLinks: (count: number) => string;
   /** A partner domain row's count, spoken. */
   domainLinks: (count: number) => string;
-  domainCount: (count: number) => string;
-  handoff: string;
   close: string;
-  /** "Full Detail" (full detail) — the opt-in link to the A1 full-detail datasheet
-   * (`full-detail-a1` widget), the design gate's details-on-demand step beyond
-   * this compact ego popover. */
+  /** Opens the A1 full-detail datasheet, the details-on-demand step beyond this compact panel. */
   openFullDetail: string;
-  /** Action row that groups the primary action with the edit/more menu. */
+  /** The footer's controls as one group. */
   actionsGroupLabel: string;
   actionDocument: string;
   actionEditRelations: string;
@@ -61,27 +20,11 @@ export interface OntologyMapDetailPanelLabels {
   /** Build on this concept **to create a new concept** — do not leave the map. */
   actionCreateLinked?: string;
   actionCopyHandoff: string;
-  /**
-   * Optional: without an agent panel (web build) neither label nor handler appears,
-   * and handoff copy becomes the primary action.
-   */
+  /** Absent without an agent panel (web build); the handoff copy stands in for it. */
   actionAskAgent?: string;
-  /** S4 "Area Expansion" secondary discovery path action label ("Area Expansion"). */
   actionRealm: string;
-  /**
-   * Result-description tooltip for the primary action. Since touch has no hover, the tooltip is auxiliary;
-   * the label and aria are the self-sufficient core.
-   */
+  /** What asking the agent does; touch has no hover, so the label stays self-sufficient. */
   actionAskAgentTip?: string;
-  /** "Code Location" — the real code-location group (`codeLocations` prop),
-   * distinct from the "Evidence" group above (source-doc reference). */
-  codeLocationsLabel: string;
-  codeLocationsCopyLabel: string;
-  codeLocationsCopiedLabel: string;
-  /** Reuses the `editProvenance` i18n namespace. */
-  editSubjectPrefix: string;
-  editSubjectAgent: string;
-  editSubjectHuman: string;
   editConflictMessage: string;
   /** Preformatted by the caller; undefined in the browser (no Git history), so the row never mounts. */
   summaryFreshnessPrefix?: string;
@@ -100,17 +43,20 @@ export interface OntologyMapDetailPanelLabels {
   sourceGap?: string;
   sourceGapLabel?: string;
   sourceAction?: string;
-  /**
-   * The one **why** sentence that sits right beside the diagnosis, written in
-   * plain words about what the next action makes possible ("Code Folder" — code
-   * folder — and "Code Location"; nothing like "source binding"). The caller picks it
-   * by `nextAction.id`, and all eight actions have a match.
-   */
+  /** The one plain-words sentence beside the diagnosis saying what the next action makes possible. */
   sourceWhy?: string;
-  sourceRelationsShow?: string;
-  sourceRelationsHide?: string;
-  sourceOntologyDocument?: string;
   sourceBusy?: string;
+}
+
+/** What a person's review mark on the concept's document says now. A concept with no mark has none of it. */
+export interface ConceptReview {
+  /** `review_state: human_decides`, with `review_note` as written. */
+  raised: { note: string | null } | null;
+  changedSinceReview: boolean;
+  /** Confirmed, but the file could not be read to tell whether it changed since. */
+  unverifiable: boolean;
+  /** `reviewed_at` as written, only while the confirmation still matches the file. */
+  reviewedOn: string | null;
 }
 
 export interface OntologyMapDetailPanelProps {
@@ -118,17 +64,13 @@ export interface OntologyMapDetailPanelProps {
   nodeId: string;
   slug: string;
   title: string;
-  /**
-   * Slice B (humanising element labels) — a mono subline that preserves the
-   * original when `title` has been transformed for display (an element node's raw
-   * code path turned into a human name like "Bar Baz"). The caller passes it only
-   * when display differs from the raw title; identical values are omitted (or
-   * null) so nothing renders twice.
-   */
-  sourceTitle?: string | null;
   kind: string;
-  /** Owning domain, or null for a domain or orphan. Clicking focuses it via `onSelectConnection`. */
-  domain: { id: string; title: string } | null;
+  /** A capability's domain or an element's capability, pressed to select it; null for other kinds. */
+  owner: { id: string; title: string } | null;
+  /** The definition sentence as written; null shows the quiet "no definition yet" sentence. */
+  definition: string | null;
+  /** Absent reads as no review mark: no judgment line and no review date. */
+  review?: ConceptReview;
   /**
    * Set when this node is a `domain` or `project` whose containment list changed after
    * its description was last written — the caller derives it from the summary clock scan
@@ -138,31 +80,14 @@ export interface OntologyMapDetailPanelProps {
    */
   summaryStaleness?: { behindByDays: number } | null;
   summaryHistoryUnavailable?: boolean;
-  /** "Power" (power) — powered (recently updated, fresh) versus unpowered (quiet). */
+  /** The document changed inside the recent window, so its changed label is the header's time fact. */
   powered: boolean;
   /** Single source of every relation count this panel draws, so counts and drawn rows cannot diverge. */
   groups: V2ConnectionGroupsView;
-  /** A domain's partner domains as the map's flows count them, for the handoff. */
-  domainUsage?: DomainUsage | null;
   /** What the concept needs and what needs it, counted as the map's count line counts them. */
   reach?: ConceptReach | null;
-  /** The 「Evidence」 (evidence) group — the node's own backing vault doc(s),
-   * promoted to its own group. Rows built by `buildV2EvidenceRows`; empty when
-   * the node has no `evidenceIds` (which hides the group entirely, the same
-   * convention as usedBy/dependsOn). */
-  evidence: { rows: readonly V2EvidenceRow[]; total: number };
-  /**
-   * "Code Location" — the node's REAL code evidence: raw file paths
-   * (`src/foo/bar.ts`), not the self-referential vault-doc slug in `evidence`
-   * above. Built by `deriveCodeLocations` from the node's own title (when it is a
-   * path-titled element) plus its direct `contains` children. Empty hides the
-   * section — never fabricated.
-   */
-  codeLocations: readonly string[];
   /** Preformatted "when did it change" label; null when the node has no backing doc date. */
   updatedAtLabel?: string | null;
-  /** Last-edit provenance from real data only (`resolveNodeLastEditSubject`); null hides the row. */
-  lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
   /**
    * rank7 — expected_mtime conflict badge. `true` only on a REAL mismatch
    * between the freshness this panel opened with and the freshness now
@@ -187,13 +112,7 @@ export interface OntologyMapDetailPanelProps {
    * slug and go through `onHoverEvidence`; do not merge the two namespaces into one callback.
    */
   onHoverConnection?: (id: string | null) => void;
-  /**
-   * Evidence document row hover — it passes a **vault slug**
-   * (`capabilities/mcp-server`). If that node is on the map it is pointed at; if
-   * not (a document need not be a node) the caller folds it to null. That
-   * decision belongs to the caller — this panel does not know which nodes the map
-   * carries.
-   */
+  /** Cleared with the map's emphasis when the panel unmounts. */
   onHoverEvidence?: (slug: string | null) => void;
   onCopyHandoff: (text: string) => void;
   /** With a contextual editor inside the map, open it in place instead of following the link. */
@@ -211,10 +130,13 @@ export interface OntologyMapDetailPanelProps {
    * becomes the primary action. Do not draw a door that won't open.
    */
   onAskAgent?: () => void;
-  /** Open the shared meaning context without sending a model request. */
+  /**
+   * Opens the shared meaning context without sending a model request: the first `⋯` item, and the
+   * judgment action when connections have no reason written.
+   */
   meaningReview?: { label: string; onOpen: () => void };
   discoveryAction?: { label: string; onOpen: () => void };
-  /** Hide this panel's filled action while another surface owns the primary next step. */
+  /** Quiet this panel's filled control while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;
   /** Stable keyboard destination when related-node navigation replaces this panel. */
@@ -241,16 +163,8 @@ export interface OntologyMapDetailPanelProps {
    */
   onExited?: () => void;
   className?: string;
-  /**
-   * Slice C (developer/non-developer mode toggle) — handoff copy action. Default `true`.
-   * In non-developer (plain) mode, HomePage passes `false` to hide the developer chrome.
-   */
+  /** The handoff copy action; `false` in plain mode, where it is developer chrome. Default `true`. */
   showHandoff?: boolean;
-  /**
-   * Slice C — the raw path subline (slice B, `sourceTitle`). Defaults to `true`;
-   * `false` in non-dev (plain) mode, because a code path is developer vocabulary.
-   */
-  showSourcePath?: boolean;
   /** Project-only 0/1 source binding receipt. Other kinds ignore it. */
   projectSource?: ProjectSourceView | null;
   /**

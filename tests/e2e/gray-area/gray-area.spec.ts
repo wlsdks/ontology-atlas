@@ -179,7 +179,7 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
 
 test('a new explicit investigation restores its topic after an ordinary draft was retired',async({page})=>{
   await page.setViewportSize({width:1512,height:949});await install(page);
-  await page.getByTestId('map-detail-panel').getByRole('button',{name:'Meaning review',exact:true}).click();
+  await page.getByTestId('map-detail-panel-more-menu-trigger').click();await page.getByTestId('map-detail-panel-action-meaning').click();
   await page.getByTestId('analysis-workbench').getByRole('tab',{name:'Conversation',exact:true}).click();
   const composer=page.getByRole('textbox',{name:'Write what you want done',exact:true});
   await expect(composer).toBeVisible();await composer.fill('An ordinary draft');await composer.fill('');

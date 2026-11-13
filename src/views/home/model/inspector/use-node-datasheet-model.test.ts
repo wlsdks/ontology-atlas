@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { AgentActivityStatus } from "@/entities/vault-session";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
@@ -9,7 +9,13 @@ import {
   rollRelatesDomainPairs,
 } from "@/widgets/ontology-map/model/containment-tree";
 import { buildOntologyMapGraph } from "../../lib/map-canvas/map-adapter";
-import { useNodeDatasheetModel } from "./use-node-datasheet-model";
+import { reviewDigest } from "@/entities/docs-vault";
+import {
+  NO_CONCEPT_REVIEW,
+  type ReadConceptBody,
+  useConceptReview,
+  useNodeDatasheetModel,
+} from "./use-node-datasheet-model";
 
 /** A concept without its own `.md` must not open another concept's document from its button. */
 
@@ -501,5 +507,70 @@ describe("useNodeDatasheetModel relations read as the map draws them", () => {
     expect(text).toContain("used_by_domains: domain:agent (2), domain:code (1)");
     expect(text).toContain("needs_domains: domain:code (1)");
     expect(renderModel(graphNodes[4]!, graphNodes, graphEdges).v2DatasheetModel?.handoffText).not.toContain("used_by_domains");
+  });
+});
+
+describe("useNodeDatasheetModel header facts", () => {
+  const owned = [
+    node("domain:orders", [], { kind: "domain" }),
+    node("capability:checkout", [], { kind: "capability", summary: "  Walks a shopper through checkout.  " }),
+    node("element:form", []),
+  ];
+  const contains = (from: string, to: string): KnowledgeGraphEdge => ({
+    id: `${from}>${to}`, from, to, type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: stamp, lastApprovedBy: "test",
+  });
+  const edges = [contains("domain:orders", "capability:checkout"), contains("capability:checkout", "element:form")];
+
+  it("names the direct owner: a capability's domain, an element's capability, nothing for a domain", () => {
+    expect(renderModel(owned[1]!, owned, edges).v2DatasheetModel?.owner?.id).toBe("domain:orders");
+    expect(renderModel(owned[2]!, owned, edges).v2DatasheetModel?.owner?.id).toBe("capability:checkout");
+    expect(renderModel(owned[0]!, owned, edges).v2DatasheetModel?.owner).toBeNull();
+  });
+
+  it("carries the definition sentence as written, and null without one", () => {
+    expect(renderModel(owned[1]!, owned, edges).v2DatasheetModel?.definition).toBe("Walks a shopper through checkout.");
+    expect(renderModel(owned[2]!, owned, edges).v2DatasheetModel?.definition).toBeNull();
+  });
+});
+
+describe("useConceptReview", () => {
+  const body = "Walks a shopper through checkout.";
+  const confirmedFor = async (text: string) => {
+    const base = { kind: "capability", title: "Checkout" };
+    return { ...base, review_state: "confirmed", reviewed_at: "2026-10-02", reviewed_digest: await reviewDigest(base, text) };
+  };
+  const review = (frontmatter: Record<string, unknown>, readBody: ReadConceptBody) => {
+    const target = { slug: "capabilities/checkout", frontmatter };
+    return renderHook(() => useConceptReview(target, readBody));
+  };
+
+  it("reads a question raised for a person at once, with its note word for word", () => {
+    const note = "The reserve ratio differs per contract. Finance decides.";
+    const { result } = review({ kind: "capability", review_state: "human_decides", review_note: note }, null);
+    expect(result.current).toEqual({ ...NO_CONCEPT_REVIEW, raised: { note } });
+  });
+
+  it("dates a confirmation that still matches the file, and only then", async () => {
+    const { result } = review(await confirmedFor(body), async () => body);
+    expect(result.current.reviewedOn).toBeNull();
+    await waitFor(() => expect(result.current.reviewedOn).toBe("2026-10-02"));
+    expect(result.current.changedSinceReview).toBe(false);
+  });
+
+  it("names a confirmation the file outgrew", async () => {
+    const { result } = review(await confirmedFor(body), async () => `${body} It also books a slot.`);
+    await waitFor(() => expect(result.current.changedSinceReview).toBe(true));
+    expect(result.current.reviewedOn).toBeNull();
+  });
+
+  it("says the file could not be read rather than calling it current", async () => {
+    const { result } = review(await confirmedFor(body), async () => null);
+    await waitFor(() => expect(result.current.unverifiable).toBe(true));
+    expect(result.current.reviewedOn).toBeNull();
+  });
+
+  it("claims nothing where no file can be read, or where the concept has no mark", async () => {
+    expect(review(await confirmedFor(body), null).result.current).toEqual(NO_CONCEPT_REVIEW);
+    expect(review({ kind: "capability" }, async () => body).result.current).toEqual(NO_CONCEPT_REVIEW);
   });
 });

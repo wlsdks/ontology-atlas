@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buildTopologyMeaningEditorNodeHref,
   buildTopologyReturnMarker,
@@ -10,7 +10,7 @@ import {
   type KnowledgeGraphNode,
   isWithinRecentWindow,
 } from "@/entities/knowledge-graph";
-import { buildDocsVaultHref } from "@/entities/docs-vault";
+import { buildDocsVaultHref, reviewCurrentness } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/entities/vault-session";
 import { computeEditAge } from "@/shared/lib/edit-provenance/edit-age";
 import type { LastEditSubjectKind } from "@/shared/lib/edit-provenance/last-edit-subject";
@@ -27,6 +27,7 @@ import {
   readConceptReach,
   readDomainUsage,
   type ConceptReach,
+  type ConceptReview,
   type DomainUsage,
 } from "@/widgets/ontology-map";
 import type { OntologyMapGraph } from "../../lib/map-canvas/map-adapter";
@@ -80,10 +81,11 @@ export interface NodeDatasheetDerivation {
     slug: string;
     nodeId: string;
     title: string;
-    /** Only when the displayed title differs (humanised label); shown as a mono subline. */
-    sourceTitle: string | null;
     kind: string;
-    domain: { id: string; title: string } | null;
+    /** The concept directly above it: a capability's domain, an element's capability; else null. */
+    owner: { id: string; title: string } | null;
+    /** The definition sentence as written; null when the concept has none. */
+    definition: string | null;
     powered: boolean;
     /** `""` while Git is still dating documents; null with no date. */
     updatedAtLabel: string | null;
@@ -117,7 +119,7 @@ export interface NodeDatasheetDerivation {
      */
     mentionDocumentHref: string | null;
     meaningEditHref: string;
-    /** Non-null only with real evidence. Human vs AI is carried by `kind`, never by hue. */
+    /** Full detail's last-edit fact; non-null only with real evidence. */
     lastEditSubject: { kind: LastEditSubjectKind; ageLabel: string } | null;
     mtimeConflict: boolean;
   } | null;
@@ -277,15 +279,9 @@ export function useNodeDatasheetModel({
       slug,
       nodeId: selectedOntologyNode.id,
       title: nodeFocus.displayTitle,
-      sourceTitle:
-        selectedOntologyNode.title !== nodeFocus.displayTitle ? selectedOntologyNode.title : null,
       kind: nodeFocus.kind,
-      domain: nodeFocusData?.significance.ownerDomainId
-        ? {
-            id: nodeFocusData.significance.ownerDomainId,
-            title: nodeFocusData.significance.ownerDomainTitle ?? "",
-          }
-        : null,
+      owner: readOwner(nodeFocus.kind, nodeFocusData?.significance ?? null, groups),
+      definition: selectedOntologyNode.summary?.trim() || null,
       powered: freshnessIso ? isWithinRecentWindow(freshnessIso, updatedAgoNowMs) : false,
       updatedAtLabel: ago ? formatUpdatedLabel(ago.key, ago.count) : docDatesReading ? "" : null,
       metric,
@@ -337,4 +333,101 @@ export function useNodeDatasheetModel({
   ]);
 
   return { nodeFocus, significance: nodeFocusData?.significance ?? null, v2DatasheetModel };
+}
+
+function readOwner(
+  kind: string,
+  significance: NodeSignificanceModel | null,
+  groups: ReturnType<typeof buildV2ConnectionGroups>,
+): { id: string; title: string } | null {
+  if (kind === "capability") {
+    return significance?.ownerDomainId
+      ? { id: significance.ownerDomainId, title: significance.ownerDomainTitle ?? "" }
+      : null;
+  }
+  if (kind !== "element") return null;
+  const capability = (groups.belongsTo.allRows ?? groups.belongsTo.rows).find((row) => row.kind === "capability");
+  return capability ? { id: capability.id, title: capability.title } : null;
+}
+
+export const NO_CONCEPT_REVIEW: ConceptReview = {
+  raised: null,
+  changedSinceReview: false,
+  unverifiable: false,
+  reviewedOn: null,
+};
+
+export interface ConceptReviewTarget {
+  slug: string;
+  frontmatter: Record<string, unknown>;
+  mtime?: number | string;
+}
+
+/** Null when nothing can read the file (the bundled sample), which is not an unreadable file. */
+export type ReadConceptBody = ((slug: string) => Promise<string | null>) | null;
+
+type ConfirmedCheck = "current" | "changed-since-review" | "unreadable" | "unknown";
+
+function readRaised(frontmatter: Record<string, unknown>): ConceptReview["raised"] {
+  if (frontmatter.review_state !== "human_decides") return null;
+  const note = frontmatter.review_note;
+  return { note: typeof note === "string" && note.trim() ? note : null };
+}
+
+function readReviewedOn(frontmatter: Record<string, unknown>): string | null {
+  const value = frontmatter.reviewed_at;
+  const raw = value instanceof Date ? value.toISOString() : typeof value === "string" ? value : "";
+  return /^\d{4}-\d{2}-\d{2}/.test(raw) ? raw.slice(0, 10) : null;
+}
+
+export async function checkConfirmedReview(
+  frontmatter: Record<string, unknown>,
+  body: string | null,
+): Promise<ConfirmedCheck> {
+  // An empty body still tells a malformed binding apart, which is neither current nor changed.
+  if (body === null) return (await reviewCurrentness(frontmatter, "")) === "unknown" ? "unknown" : "unreadable";
+  const currentness = await reviewCurrentness(frontmatter, body);
+  return currentness === "not-confirmed" ? "unknown" : currentness;
+}
+
+export function composeConceptReview(
+  frontmatter: Record<string, unknown> | null,
+  check: ConfirmedCheck | null,
+): ConceptReview {
+  if (!frontmatter) return NO_CONCEPT_REVIEW;
+  const raised = readRaised(frontmatter);
+  if (raised) return { ...NO_CONCEPT_REVIEW, raised };
+  return {
+    raised: null,
+    changedSinceReview: check === "changed-since-review",
+    unverifiable: check === "unreadable",
+    reviewedOn: check === "current" ? readReviewedOn(frontmatter) : null,
+  };
+}
+
+/**
+ * The selected concept's review mark. A raised question is read at once from frontmatter; a
+ * confirmation needs the file's body hashed, so whether it still holds arrives after one read.
+ */
+export function useConceptReview(target: ConceptReviewTarget | null, readBody: ReadConceptBody): ConceptReview {
+  const confirmed = target?.frontmatter.review_state === "confirmed" && readBody !== null;
+  const key = target && confirmed
+    ? [target.slug, target.mtime ?? "", String(target.frontmatter.reviewed_digest ?? "")].join("\u0000")
+    : null;
+  const [checked, setChecked] = useState<{ key: string; check: ConfirmedCheck } | null>(null);
+  useEffect(() => {
+    if (key === null || !target || !readBody) return;
+    let cancelled = false;
+    void readBody(target.slug)
+      .catch(() => null)
+      .then((body) => checkConfirmedReview(target.frontmatter, body))
+      .then((check) => {
+        if (!cancelled) setChecked({ key, check });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, target, readBody]);
+  const check = checked && checked.key === key ? checked.check : null;
+  return useMemo(() => composeConceptReview(target?.frontmatter ?? null, check), [target, check]);
 }

@@ -138,16 +138,11 @@
                               const ontologyMapProjectSourceGap = document.querySelector(
                                 '[data-testid="map-project-source-gap"]'
                               );
-                              const ontologyMapDetailPanelActions = document.querySelector(
-                                '[data-testid="map-detail-panel-actions"]'
-                              );
                               const ontologyMapDetailPanelFooter = document.querySelector(
                                 '[data-testid="map-detail-panel-footer"]'
                               );
                               const ontologyMapProjectSourceReceiptRect =
                                 ontologyMapProjectSourceReceipt?.getBoundingClientRect();
-                              const ontologyMapDetailPanelActionsRect =
-                                ontologyMapDetailPanelActions?.getBoundingClientRect();
                               const ontologyMapDetailPanelFooterRect =
                                 ontologyMapDetailPanelFooter?.getBoundingClientRect();
                               const ontologyMapRectOverlapArea = (a, b) => {
@@ -156,11 +151,6 @@
                                 const height = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
                                 return width > 0.5 && height > 0.5 ? width * height : 0;
                               };
-                              const ontologyMapInlineActionWidths = ontologyMapDetailPanelActions
-                                ? Array.from(ontologyMapDetailPanelActions.children)
-                                  .filter(aiSettingsVisible)
-                                  .map((action) => action.getBoundingClientRect().width)
-                                : [];
                               const ontologyMapEdgePanel = document.querySelector(
                                 '[data-testid="map-edge-panel"]'
                               );
@@ -595,25 +585,9 @@
                                     aiSettingsVisible(ontologyMapProjectSourceGap),
                                   ontologyMapProjectSourceAction:
                                     ontologyMapProjectSourceReceipt?.getAttribute("data-source-action") || "",
-                                  ontologyMapProjectSourceRenderedActionCount:
-                                    ontologyMapInlineActionWidths.length,
-                                  ontologyMapProjectSourceInlineActionMinWidth:
-                                    ontologyMapInlineActionWidths.length > 0
-                                      ? Math.min(...ontologyMapInlineActionWidths)
-                                      : 0,
-                                  ontologyMapProjectSourceReceiptActionOverlap:
-                                    ontologyMapRectOverlapArea(
-                                      ontologyMapProjectSourceReceiptRect,
-                                      ontologyMapDetailPanelActionsRect
-                                    ),
                                   ontologyMapProjectSourceReceiptFooterOverlap:
                                     ontologyMapRectOverlapArea(
                                       ontologyMapProjectSourceReceiptRect,
-                                      ontologyMapDetailPanelFooterRect
-                                    ),
-                                  ontologyMapProjectSourceActionFooterOverlap:
-                                    ontologyMapRectOverlapArea(
-                                      ontologyMapDetailPanelActionsRect,
                                       ontologyMapDetailPanelFooterRect
                                     ),
                                   ontologyMapEdgePanelVisible,

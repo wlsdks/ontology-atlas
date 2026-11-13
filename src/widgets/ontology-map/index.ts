@@ -15,6 +15,7 @@ export type { FlatDialState, FlatRingMemoryStore } from './ui/loop/topology-loop
 export { FLAT_LINE_BITS } from './flat-graph/attention';
 export type { OntologyMapNode, OntologyMapEdge, } from './ui/OntologyMap';
 export { OntologyMapDetailPanel } from './ui/OntologyMapDetailPanel';
+export type { ConceptReview } from './ui/detail-panel/types';
 export { OntologyMapEdgeHoverCard } from './ui/OntologyMapEdgeHoverCard';
 export type { HoverAvoidRect } from './ui/input/topology-pointer-types';
 export { OntologyMapClusterHoverCard } from './ui/OntologyMapClusterHoverCard';
