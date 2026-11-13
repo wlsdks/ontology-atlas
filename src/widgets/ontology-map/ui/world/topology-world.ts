@@ -761,8 +761,8 @@ function buildDialWorld(
   if (input.graph) {
     const paint = input.graph.paint;
     const face = labelFontFamily();
-    const titles = domainTitleBlocks({ model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face });
-    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles, capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
+    const title = { model, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: face };
+    const scene = buildFlatGraphScene(model, input.graph.layout, flatGraphPins(model, face), { areaPx: input.graphAreaPx ?? null, titles: domainTitleBlocks(title), compactTitles: domainTitleBlocks(title, "name"), capDiscPx: paint.capDiscMaxPx, hubPx: hubBlockReachPx({ model, tokens: paint }) });
     if (remember) rememberDialOrder(scene.order);
     const pad = paint.domainNamePx;
     return { model, scene, overviewPadPx: { left: pad, right: pad, top: pad, bottom: pad }, labels: input.labels };

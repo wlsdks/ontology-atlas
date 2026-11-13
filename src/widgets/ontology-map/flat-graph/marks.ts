@@ -18,6 +18,67 @@ export function graphDiscRadiusPx(kind: GraphKind, elementCount: number, tokens:
   return Math.min(tokens.capDiscMaxPx, tokens.capDiscMinPx + tokens.capDiscGainPx * Math.sqrt(elementCount)) * growth;
 }
 
+/** The share of the gap between two touching discs that crowded discs give up to stay apart. */
+const CROWD_FILL = 0.8;
+
+/** The radius under which a crowded capability stops shrinking: a dot the eye still counts. */
+export const CROWD_DOT_MIN_PX = 0.9;
+
+/** The key under which the concepts with no domain share one room. */
+export const ORPHAN_ROOM = "";
+
+const discRoomCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
+
+/** World distance from each point to its nearest other per px of their summed radii, at the least. O(n²). */
+function tightestRoom(points: readonly Point[], radiiPx: readonly number[]): number {
+  let room = Infinity;
+  for (let i = 0; i < points.length; i += 1) {
+    for (let j = i + 1; j < points.length; j += 1) {
+      const pair = Math.hypot(points[i]!.x - points[j]!.x, points[i]!.y - points[j]!.y) / (radiiPx[i]! + radiiPx[j]!);
+      if (pair < room) room = pair;
+    }
+  }
+  return room;
+}
+
+/**
+ * Per domain, the world distance its tightest pair of capability discs has per px of their summed
+ * radii: under that scale the pair would overlap. O(members²) per cluster, once per layout.
+ */
+function capabilityDiscRoom(layout: FlatGraphLayout, tokens: FlatGraphPaintTokens): ReadonlyMap<string, number> {
+  let byDomain = discRoomCache.get(layout);
+  if (!byDomain) {
+    byDomain = new Map();
+    const roomOf = (key: string, ids: readonly string[], counts: readonly number[]) => {
+      const points: Point[] = [];
+      const radii: number[] = [];
+      ids.forEach((id, i) => {
+        const at = layout.positions.get(id);
+        if (!at) return;
+        points.push(at);
+        radii.push(graphDiscRadiusPx("capability", counts[i]!, tokens, 1));
+      });
+      byDomain!.set(key, tightestRoom(points, radii));
+    };
+    for (const c of layout.clusters) {
+      const items = c.items.filter((it) => !it.direct);
+      roomOf(c.domainId, items.map((it) => it.id), items.map((it) => it.elementIds.length));
+    }
+    roomOf(ORPHAN_ROOM, layout.orphanIds, layout.orphanIds.map(() => 0));
+    discRoomCache.set(layout, byDomain);
+  }
+  return byDomain;
+}
+
+/**
+ * The share of its full radius a capability disc keeps at this zoom: 1 while its domain's discs
+ * stand apart, less once the tightest pair would touch, so a crowded star reads as separate dots.
+ */
+export function crowdShare(layout: FlatGraphLayout, roomKey: string, tokens: FlatGraphPaintTokens, scale: number, growth: number): number {
+  const room = capabilityDiscRoom(layout, tokens).get(roomKey) ?? Infinity;
+  return Math.min(1, (room * scale * CROWD_FILL) / growth);
+}
+
 export function smoothstep(from: number, to: number, value: number): number {
   const t = Math.min(1, Math.max(0, (value - from) / (to - from || 1)));
   return t * t * (3 - 2 * t);

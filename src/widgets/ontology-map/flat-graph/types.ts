@@ -148,6 +148,8 @@ export interface FlatGraphLayout {
   clusterByDomain: ReadonlyMap<string, FlatGraphCluster>;
   orphanIds: readonly string[];
   extent: Box;
+  /** The area was too small for every title block, so the layout kept only the name rows clear and the captions rest. */
+  compactTitles: boolean;
 }
 
 /** A domain's name and caption block under its disc, in screen px about the domain's centre. */
@@ -164,6 +166,8 @@ export interface FlatGraphTitle {
 export interface FlatGraphFrame {
   areaPx: { width: number; height: number } | null;
   titles: ReadonlyMap<string, FlatGraphTitle>;
+  /** Each domain's name row alone: what the layout keeps clear when the full blocks outgrow the area. */
+  compactTitles?: ReadonlyMap<string, FlatGraphTitle>;
   capDiscPx: number;
   /** The radius the project's name and caption lines take around the hub, which no cluster enters. */
   hubPx: number;

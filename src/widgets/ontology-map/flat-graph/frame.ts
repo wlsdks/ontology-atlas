@@ -11,7 +11,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, CROWD_DOT_MIN_PX, crowdShare, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -206,7 +206,7 @@ const ORIGIN: Point = { x: 0, y: 0 };
 const screenCache = new WeakMap<FlatGraphLayout, Map<string, StampedPoint>>();
 const alphaCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
 const orphanCache = new WeakMap<FlatGraphLayout, ReadonlySet<string>>();
-const radiusCaches = new WeakMap<FlatGraphLayout, { growth: number; radii: Map<string, number> }>();
+const radiusCaches = new WeakMap<FlatGraphLayout, { growth: number; scale: number; radii: Map<string, number> }>();
 const flowKeyCache = new WeakMap<DialModel, Map<string, Map<string, string>>>();
 const linkProbeCache = new WeakMap<DialModel, DialMarksResult["flows"]["links"]>();
 const framePicks = new FrameList<DialPick>();
@@ -220,12 +220,12 @@ const NO_IDS: ReadonlySet<string> = new Set();
 const NO_LINES: GraphAttention["lines"] = [];
 const NO_BOXES: readonly Box[] = [];
 
-/** Disc radii at one growth, kept until the zoom changes it. */
-function radiusCacheFor(layout: FlatGraphLayout, growth: number): Map<string, number> {
+/** Disc radii at one growth and scale, kept until the zoom changes either. */
+function radiusCacheFor(layout: FlatGraphLayout, growth: number, scale: number): Map<string, number> {
   const hit = radiusCaches.get(layout);
-  if (hit && hit.growth === growth) return hit.radii;
+  if (hit && hit.growth === growth && hit.scale === scale) return hit.radii;
   const radii = new Map<string, number>();
-  radiusCaches.set(layout, { growth, radii });
+  radiusCaches.set(layout, { growth, scale, radii });
   return radii;
 }
 
@@ -430,7 +430,11 @@ function radiusOf(id: string, g: number): number {
   const { model, P } = F;
   if (id === model.projectId) return graphDiscRadiusPx("project", 0, P, g);
   if (model.domainById.has(id)) return graphDiscRadiusPx("domain", 0, P, g);
-  if (model.capabilityById.has(id) || F.orphans.has(id)) return graphDiscRadiusPx("capability", model.capabilityById.get(id)?.elementIds.length ?? 0, P, g);
+  if (model.capabilityById.has(id) || F.orphans.has(id)) {
+    const full = graphDiscRadiusPx("capability", model.capabilityById.get(id)?.elementIds.length ?? 0, P, g);
+    const roomKey = F.orphans.has(id) ? ORPHAN_ROOM : model.domainOf.get(id) ?? ORPHAN_ROOM;
+    return Math.max(Math.min(full, CROWD_DOT_MIN_PX), full * crowdShare(F.layout, roomKey, P, F.scale, g));
+  }
   return graphDiscRadiusPx("element", 0, P, g);
 }
 
@@ -498,14 +502,14 @@ function blockShows(list: readonly PlacedName[], from: number, to: number, chrom
   return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
 }
 
-/** A glow under one disc of the hovered or selected set; the rest picture draws none. */
+/** A glow under one disc of the hovered or selected set, no wider for a crowd-shrunk disc than its size carries; the rest picture draws none. */
 function addGlow(d: Disc, isProject: boolean): void {
   const { P, growth } = F;
   if (isProject) scratch[0] = F.projectShare;
   else loadGlowShare(d.id);
   const share = scratch[0]!;
   if (share <= DRAWN_INK) return;
-  const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth;
+  const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + Math.min(P.capGlowPx * growth, d.r * (P.capGlowPx / P.capDiscMinPx));
   const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
   const alpha = Math.min(1, P.glowAlpha * focusGain) * d.ink * d.ink * share;
   const g = glows.take();
@@ -669,7 +673,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   F.motion = motion; F.attention = attention;
   F.contextMode = contextMode; F.scale = input.scale; F.originX = origin.x; F.originY = origin.y;
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
-  F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth); F.orphans = orphansOf(layout);
+  F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth, input.scale); F.orphans = orphansOf(layout);
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
   stepGrowthNow[0] = stepGrowth;
@@ -1188,13 +1192,16 @@ const dotBuckets = buckets<Dot>();
 function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], tokens: FlatGraphTokens, ground: string, warning: string, kind: "domain" | "capability" | "project", growth: number): void {
   const P = tokens.paint;
   const rimPx = kind === "capability" ? P.capRimPx : P.domainRimPx;
+  const ringMinPx = kind === "capability" ? P.capRimPx + P.capCoreMinPx : 0;
   const discLists = group(discBuckets, marks, discKey);
   for (let listIndex = 0; listIndex < discLists.size; listIndex += 1) {
     const list = discLists.items[listIndex]!;
     const first = list.items[0]!;
+    if (ringMinPx > 0 && paintPlainDots(ctx, list, ringMinPx, sunk(first.hue, ground, first.ink)) === list.size) continue;
     ctx.beginPath();
     for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
       const d = list.items[dIndex]!;
+      if (d.r < ringMinPx) continue;
       ctx.moveTo(d.x + d.r, d.y);
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     }
@@ -1211,6 +1218,7 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.beginPath();
     for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
       const d = list.items[dIndex]!;
+      if (d.r < ringMinPx) continue;
       const core = kind === "project" ? P.projectCorePx * growth : kind === "domain" ? P.domainCorePx * growth : Math.max(P.capCoreMinPx, d.r - P.capCoreInsetPx);
       ctx.moveTo(d.x + core, d.y);
       ctx.arc(d.x, d.y, core, 0, Math.PI * 2);
@@ -1226,6 +1234,24 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.fillStyle = sunk(warning, ground, d.ink);
     ctx.fill();
   }
+}
+
+/** Paints the discs of one paint key too small to hold a rim around a core as plain dots, and counts them. */
+function paintPlainDots(ctx: CanvasRenderingContext2D, list: FrameList<Disc>, ringMinPx: number, ink: string): number {
+  let plain = 0;
+  for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
+    const d = list.items[dIndex]!;
+    if (d.r >= ringMinPx) continue;
+    if (plain === 0) ctx.beginPath();
+    plain += 1;
+    ctx.moveTo(d.x + d.r, d.y);
+    ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+  }
+  if (plain > 0) {
+    ctx.fillStyle = ink;
+    ctx.fill();
+  }
+  return plain;
 }
 
 /** One stroke per paint key; kept out of `paintPlan` so the optimiser passes the coordinates unboxed. */

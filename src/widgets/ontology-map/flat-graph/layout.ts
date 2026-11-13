@@ -501,10 +501,19 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * domain's capabilities through a local ForceAtlas2 with partner domains as weak far anchors, and
  * elements on a closed-form golden-angle fan. A pinned id keeps its position and enters every pass
  * fixed. With a frame, the clusters spread to its aspect and every domain's title block is kept
- * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles.
+ * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles;
+ * titles that outgrow the area are fitted once more as their name rows alone, and the larger picture wins.
  * Cost: O(P·(I·D² + I·n²)) for P passes, D domains and n items per domain; elements are O(E).
  */
 export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  const full = fitGraph(model, order, tokens, pins, frame);
+  if (full.titlesHold || !frame?.compactTitles) return full.layout;
+  const compact = fitGraph(model, order, tokens, pins, { ...frame, titles: frame.compactTitles });
+  return { ...(compact.shown <= full.shown ? compact : full).layout, compactTitles: true };
+}
+
+/** One fit of the graph to the frame's titles: whether the fitted scale keeps every title block clear, and the world units it shows per px. */
+function fitGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): { layout: FlatGraphLayout; titlesHold: boolean; shown: number } {
   const area = frame?.areaPx ?? null;
   const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
   const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
@@ -522,12 +531,13 @@ export function layoutFlatGraph(model: DialModel, order: readonly string[], toke
     layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, worldPerPx);
     shown = shownOf(layout);
   }
+  const titlesHold = shown <= worldPerPx;
   for (let pass = 0, memberScale = worldPerPx; pass < MEMBER_PASSES && shown > memberScale; pass += 1) {
     memberScale = shown * TITLE_PASS_MARGIN;
     layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, memberScale);
     shown = shownOf(layout);
   }
-  return layout;
+  return { layout, titlesHold, shown };
 }
 
 function placeGraph(
@@ -611,5 +621,5 @@ function placeGraph(
     grow(extent, centre, radius + pitch);
   }
 
-  return { positions, itemAt, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])), orphanIds, extent };
+  return { positions, itemAt, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])), orphanIds, extent, compactTitles: false };
 }

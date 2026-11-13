@@ -44,7 +44,14 @@ fixed size on screen, so on a crowded overview the circle it reserves outgrows
 the member star. The star then spreads into that circle as a fan that leaves
 the title's wedge open, each member keeping its order around the domain, when
 the fan still ends inside the circle; a star too large for it stays gathered
-on its domain rather than crowding its neighbours. The hub reserves the circle
+on its domain rather than crowding its neighbours. Where the zoom leaves a
+domain's capability discs less room than their size, the whole star's discs
+shrink together until the tightest pair stands apart, down to plain dots, so a
+crowded domain reads as separate marks and never as one smear; they grow back
+as the zoom opens. Concepts outside every domain shrink the same way. When the
+free map is too small for every title block, the layout is fitted to the name
+rows alone and the captions rest, so the picture draws larger; a pointed-at or
+selected domain still shows its caption. The hub reserves the circle
 its name and caption lines take, in screen pixels too. The clusters then spread to the overview's aspect, so
 the first fit fills the free map. Concepts outside every domain sit in an
 empty corner. Every domain and capability keeps a disc and a pick target,
