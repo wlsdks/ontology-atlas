@@ -61,6 +61,36 @@ export interface NameInput {
   elementSpacingPx: number;
 }
 
+/** Whether a screen box overlaps any of `obstacles`. O(obstacles). */
+export function boxUnderAny(obstacles: readonly Box[], minX: number, maxX: number, minY: number, maxY: number): boolean {
+  for (let i = 0; i < obstacles.length; i += 1) {
+    const o = obstacles[i]!;
+    if (minX < o.maxX && maxX > o.minX && minY < o.maxY && maxY > o.minY) return true;
+  }
+  return false;
+}
+
+/** The end of the run of names from `from` that one concept placed together: a name with its caption or reach line. */
+export function nameBlockEnd(names: readonly PlacedName[], from: number): number {
+  let end = from + 1;
+  while (end < names.length && names[end]!.id === names[from]!.id) end += 1;
+  return end;
+}
+
+/**
+ * Whether the block `names[from, to)`, drawn about its concept's screen point (x, y), stays clear
+ * of every chrome box; one line under chrome hides the block, since a caption alone names nothing.
+ * Admission runs per zoom step in world space, so the chrome, which moves with the screen, is
+ * judged at draw time. O(block × obstacles).
+ */
+export function nameBlockClear(names: readonly PlacedName[], from: number, to: number, x: number, y: number, obstacles: readonly Box[]): boolean {
+  for (let i = from; i < to; i += 1) {
+    const b = names[i]!.box;
+    if (boxUnderAny(obstacles, x + b.minX, x + b.maxX, y + b.minY, y + b.maxY)) return false;
+  }
+  return true;
+}
+
 export function zoomStep(scale: number, stepsPerOctave: number): number {
   return Math.round(Math.log2(Math.max(1e-6, scale)) * stepsPerOctave);
 }

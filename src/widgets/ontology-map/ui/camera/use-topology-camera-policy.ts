@@ -9,7 +9,9 @@ import {
   measureBottomFitObstacle,
   measureCanvasInsets,
   measureEdgeFitObstacle,
-  type EdgeFitObstacle
+  measureNameObstacles,
+  type EdgeFitObstacle,
+  type PanelInsets
 } from "../../interaction/free-area";
 import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
 import {
@@ -23,7 +25,7 @@ import { computeDomeFitCameraTarget } from "./topology-camera-math";
 
 interface Dependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  panelInsetsRef: RefObject<{ left: number; right: number; } | null>;
+  panelInsetsRef: RefObject<PanelInsets | null>;
   domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   reducedMotionRef: RefObject<boolean>;
   cameraTweenRef: RefObject<CameraTween | null>;
@@ -63,7 +65,7 @@ export function useTopologyCameraPolicy({
      * that move the camera are the moments a panel opens or closes: a selection
      * reframes, and so does a resize.
      */
-    panelInsetsRef.current = { left: measured.left, right: measured.right };
+    panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: measureNameObstacles(canvasEl, { left: true, right: true }) };
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),

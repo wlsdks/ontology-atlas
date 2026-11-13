@@ -4,6 +4,8 @@
  * `centerForInsets`. Shape decides the side: a tall panel is a side panel, a wide one a top bar.
  */
 
+import type { Box } from "../dial/types";
+
 export interface Rect {
   readonly x: number;
   readonly y: number;
@@ -177,21 +179,23 @@ export interface CanvasInsets {
   right: number;
 }
 
+/** The canvas side a covering box stands on as a side panel, or null for a bar, a sheet or an island. */
+function sidePanelSide(panel: Rect, canvasRect: Rect): "left" | "right" | null {
+  const explicitSidePanel = panel.cameraObstacle === "side-panel";
+  const tall =
+    explicitSidePanel || panel.height >= canvasRect.height * SIDE_PANEL_HEIGHT_RATIO;
+  const wide = panel.width >= canvasRect.width * TOP_BAR_WIDTH_RATIO;
+  if (!tall || wide) return null;
+  return panel.x + panel.width / 2 >= canvasRect.x + canvasRect.width / 2 ? "right" : "left";
+}
+
 export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasInsets {
   let left = 0;
   let right = 0;
   for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
-    const explicitSidePanel = panel.cameraObstacle === "side-panel";
-    const tall =
-      explicitSidePanel || panel.height >= canvasRect.height * SIDE_PANEL_HEIGHT_RATIO;
-    const wide = panel.width >= canvasRect.width * TOP_BAR_WIDTH_RATIO;
-    if (!tall || wide) continue;
-    const panelCenter = panel.x + panel.width / 2;
-    if (panelCenter >= canvasRect.x + canvasRect.width / 2) {
-      right = Math.max(right, canvasRect.x + canvasRect.width - panel.x);
-    } else {
-      left = Math.max(left, panel.x + panel.width - canvasRect.x);
-    }
+    const side = sidePanelSide(panel, canvasRect);
+    if (side === "right") right = Math.max(right, canvasRect.x + canvasRect.width - panel.x);
+    else if (side === "left") left = Math.max(left, panel.x + panel.width - canvasRect.x);
   }
   return { left: Math.round(left), right: Math.round(right) };
 }
@@ -236,6 +240,54 @@ export function measureEdgeFitObstacle(canvas: Element, side: "left" | "right"):
   return found === null
     ? null
     : { reach: Math.round(found.reach), top: Math.round(found.top), bottom: Math.round(found.bottom) };
+}
+
+/** The side panels' widths the camera reads, and the chrome no canvas name may be drawn under. */
+export interface PanelInsets extends CanvasInsets {
+  nameObstacles?: readonly Box[];
+}
+
+/** The pointer-taking islands of a pass-through lane: what of a wide tool row the reader can see. */
+function laneControls(lane: Element): Element[] {
+  const out: Element[] = [];
+  for (const el of lane.querySelectorAll("*")) {
+    const parent = el.parentElement;
+    if (parent && getComputedStyle(el).pointerEvents !== "none" && getComputedStyle(parent).pointerEvents === "none") out.push(el);
+  }
+  return out;
+}
+
+/**
+ * Canvas boxes a name must stay out of: each side panel on a `sides` side, widened to its canvas
+ * edge so the gap beside the rail counts too; the edge columns; and the chrome declared
+ * `data-map-name-obstacle`: the element itself (the key), or with `controls` each island of a
+ * pass-through lane (the tool row). O(elements over the canvas).
+ */
+export function measureNameObstacles(canvas: Element, sides: { left: boolean; right: boolean }): Box[] {
+  const c = canvas.getBoundingClientRect();
+  if (c.width <= 0 || c.height <= 0) return [];
+  const canvasRect: Rect = { x: c.left, y: c.top, width: c.width, height: c.height };
+  const out: Box[] = [];
+  for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
+    const side = sidePanelSide(panel, canvasRect);
+    if (side === null || !sides[side]) continue;
+    const minY = panel.y - c.top;
+    const maxY = panel.y + panel.height - c.top;
+    out.push(side === "left" ? { minX: 0, maxX: panel.x + panel.width - c.left, minY, maxY } : { minX: panel.x - c.left, maxX: c.width, minY, maxY });
+  }
+  for (const side of ["left", "right"] as const) {
+    const edge = measureEdgeFitObstacle(canvas, side);
+    if (edge) out.push(side === "left" ? { minX: 0, maxX: edge.reach, minY: edge.top, maxY: edge.bottom } : { minX: c.width - edge.reach, maxX: c.width, minY: edge.top, maxY: edge.bottom });
+  }
+  for (const declared of canvas.ownerDocument.querySelectorAll("[data-map-name-obstacle]")) {
+    const parts = declared.getAttribute("data-map-name-obstacle") === "controls" ? laneControls(declared) : [declared];
+    for (const el of parts) {
+      const box = el.getBoundingClientRect();
+      if (!isShownObstacle(el, box) || box.right <= c.left || box.left >= c.right || box.bottom <= c.top || box.top >= c.bottom) continue;
+      out.push({ minX: box.left - c.left, maxX: box.right - c.left, minY: box.top - c.top, maxY: box.bottom - c.top });
+    }
+  }
+  return out;
 }
 
 /** Air the fit keeps between the drawing and a bottom strip. */

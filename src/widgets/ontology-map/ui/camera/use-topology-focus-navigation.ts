@@ -1,6 +1,6 @@
 "use client";
 
-import { measureEdgeFitObstacle } from "../../interaction/free-area";
+import { measureEdgeFitObstacle, measureNameObstacles, type PanelInsets } from "../../interaction/free-area";
 import {
   useCallback,
   useEffect,
@@ -44,7 +44,7 @@ export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialF
 }
 
 interface Dependencies {
-  panelInsetsRef?: RefObject<{ left: number; right: number } | null>;
+  panelInsetsRef?: RefObject<PanelInsets | null>;
   lastFocusedSlugRef: RefObject<string | null>;
   focusedSlug: string | null;
   egoRevealBatchesRef: RefObject<number>;
@@ -203,8 +203,11 @@ export function useTopologyFocusNavigation({
       if (phase === "exiting" || (phase === "entering" && focusedSlug === null)) return;
       const measured = cameraTokens(tokens);
       if (focusedSlug === null && panelInsetsRef?.current) {
-        const right = Math.max(tokens.safeInsetRight, canvasRef.current ? measureEdgeFitObstacle(canvasRef.current, "right")?.reach ?? 0 : 0);
-        panelInsetsRef.current = { left: measured.safeInsetLeft, right };
+        const canvas = canvasRef.current;
+        const right = Math.max(tokens.safeInsetRight, canvas ? measureEdgeFitObstacle(canvas, "right")?.reach ?? 0 : 0);
+        // The detail panel is still on screen while it folds, so names stop yielding to it now.
+        const nameObstacles = canvas ? measureNameObstacles(canvas, { left: true, right: false }) : [];
+        panelInsetsRef.current = { left: measured.safeInsetLeft, right, nameObstacles };
       }
       const memory = selectionCameraRef.current;
       const gesture = cameraGestureRevisionRef.current;

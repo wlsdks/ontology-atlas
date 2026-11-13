@@ -44,6 +44,12 @@ whether or not its name has room, and a pointer inside a disc picks that disc
 even where an element dot is drawn over it. An element dot answers the pointer
 once it is drawn, ahead of a name but only outside every disc. A concept outside an open lens draws nothing and answers nothing.
 
+A name, with its caption or count line, is not drawn where any of its lines
+would reach under the chrome over the map: a side panel (out to the canvas
+edge, so the gap beside the rail counts), the key's row, or a control in the
+tool row. Admission runs per zoom step in world space, so this is judged as the
+frame draws, against boxes measured whenever the camera measures the panels.
+
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
 elements are far enough apart. Zooming in only adds names. A selected concept,
