@@ -177,3 +177,52 @@ describe("a selection framed between both panels", () => {
     expect(again, `landed at ${JSON.stringify(landed)} from ${rest.tscale.toFixed(3)}, then ${JSON.stringify(again)}`).toBeNull();
   });
 });
+
+/** The far ends of a selection's lines, in canvas pixels at `camera`. */
+function farEnds(map: ReturnType<typeof vaultMap>, id: string, camera: CameraTarget, viewport: { width: number; height: number }) {
+  return cachedGraphAttention(map.model, id, true).lines.flatMap((line) => [line.from, line.to]).map((end) => {
+    const p = map.at(end);
+    return { id: end, x: (p.x - camera.tx) * camera.tscale + viewport.width / 2, y: (p.y - camera.ty) * camera.tscale + viewport.height / 2 };
+  });
+}
+
+const pointInside = (p: { x: number; y: number }, free: { minX: number; maxX: number; minY: number; maxY: number }) =>
+  p.x >= free.minX - 0.5 && p.x <= free.maxX + 0.5 && p.y >= free.minY - 0.5 && p.y <= free.maxY + 0.5;
+
+describe("an element selection that zooms in", () => {
+  it("keeps every far end of its lines inside the free map", () => {
+    const viewport = { width: 1448, height: 949 };
+    const map = vaultMap(storefrontManifest, viewport);
+    const id = "element:stock-ledger";
+    const landed = map.frame(id, map.rest);
+    expect(landed?.tscale ?? 0, "the selection zooms in").toBeGreaterThan(map.rest.tscale);
+    for (const end of farEnds(map, id, landed!, viewport)) expect(pointInside(end, map.free), `${end.id} at (${Math.round(end.x)}, ${Math.round(end.y)})`).toBe(true);
+  });
+
+  it.each([
+    ["docs", 1448, 949, docsManifest], ["docs", 1856, 1080, docsManifest],
+    ["storefront", 1448, 949, storefrontManifest], ["storefront", 1856, 1080, storefrontManifest],
+  ])("loses no far end and lands in one step across the %s vault at %ix%i", (_, width, height, manifest) => {
+    const viewport = { width, height };
+    const map = vaultMap(manifest, viewport);
+    const entry = map.rest.tscale;
+    const starts = [map.rest, { ...map.rest, tscale: entry * 1.6 }, { tx: map.rest.tx + 300 / entry, ty: map.rest.ty, tscale: entry * 2.4 }];
+    const ids = [...map.model.capabilityById.keys(), ...map.model.capabilityOf.keys()];
+    const lostFarEnds: string[] = [];
+    const secondSteps: string[] = [];
+    let zoomedElements = 0;
+    for (const start of starts) {
+      for (const id of ids) {
+        const landed = map.frame(id, start) ?? start;
+        if (map.frame(id, landed, start.tscale)) secondSteps.push(`${id} from ${start.tscale.toFixed(2)}`);
+        if (!map.model.capabilityOf.has(id) || landed.tscale <= start.tscale + 1e-6) continue;
+        zoomedElements += 1;
+        const lost = farEnds(map, id, landed, viewport).filter((end) => !pointInside(end, map.free));
+        if (lost.length) lostFarEnds.push(`${id} from ${start.tscale.toFixed(2)}: ${lost.map((end) => end.id).join(", ")}`);
+      }
+    }
+    expect(zoomedElements, "some element selection zooms in").toBeGreaterThan(0);
+    expect(lostFarEnds).toEqual([]);
+    expect(secondSteps).toEqual([]);
+  });
+});

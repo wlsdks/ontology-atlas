@@ -73,12 +73,17 @@ function fitsAt(marks: readonly FramedMark[], scale: number, width: number, heig
   return x.hi - x.lo <= width && y.hi - y.lo <= height;
 }
 
-/** The shift along one axis that brings `span` inside `[lo, hi]` and moves least; when it cannot fit, `anchor` is kept inside and the span centred around it as far as that allows. */
-function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, lo: number, hi: number): number {
+/**
+ * The shift along one axis that brings `span` inside `[lo, hi]` and moves least; when it cannot fit,
+ * `anchor` is kept inside and the span centred around it as far as that allows; when the anchor cannot
+ * fit either, it is centred with its own `centre` (the selection's disc) still inside.
+ */
+function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, centre: number, lo: number, hi: number): number {
   const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
   if (lo - span.lo <= hi - span.hi) return clamp(0, lo - span.lo, hi - span.hi);
   const centred = (lo + hi) / 2 - (span.lo + span.hi) / 2;
-  return lo - anchor.lo <= hi - anchor.hi ? clamp(centred, lo - anchor.lo, hi - anchor.hi) : (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2;
+  if (lo - anchor.lo <= hi - anchor.hi) return clamp(centred, lo - anchor.lo, hi - anchor.hi);
+  return clamp((lo + hi) / 2 - (anchor.lo + anchor.hi) / 2, lo - centre, hi - centre);
 }
 
 /** Relative scale difference below which two frames are at the same zoom. */
@@ -134,8 +139,8 @@ function framedAt(
   const toScreenX = viewport.width / 2 - tx0 * scale;
   const toScreenY = viewport.height / 2 - ty0 * scale;
   const shifted = (span: { lo: number; hi: number }, by: number) => ({ lo: span.lo + by, hi: span.hi + by });
-  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), free.minX + margin, free.maxX - margin);
-  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), free.minY + margin, free.maxY - margin);
+  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), anchor.x * scale + toScreenX, free.minX + margin, free.maxX - margin);
+  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), anchor.y * scale + toScreenY, free.minY + margin, free.maxY - margin);
   return { tx: tx0 - dx / scale, ty: ty0 - dy / scale, tscale: scale };
 }
 
@@ -200,7 +205,9 @@ export function selectionFrameTarget(
   // The least wanted set, or the zoom's marks with names on the sides they take: what one scale frames.
   const lastAt = (s: number) => (fitsAt(last, s, width, height) || !zoom || !fitsThere(s) ? last : zoom.marksAt(s));
   const fitsLast = (s: number) => fitsAt(lastAt(s), s, width, height);
-  let marks = usable.find((set) => fitsAt(set, now, width, height)) ?? (fitsLast(now) ? lastAt(now) : undefined);
+  // The zoom's marks rank right after the most wanted set: what the zoom keeps framed is never traded for less.
+  const framesAt = (s: number) => (zoom ? [usable[0]!, zoom.marksAt(s), ...usable.slice(1)] : usable).find((set) => fitsAt(set, s, width, height));
+  let marks = framesAt(now) ?? (fitsLast(now) ? lastAt(now) : undefined);
   let scale = now;
   if (!marks) {
     const floor = Math.min(now, floorScale);
@@ -233,7 +240,7 @@ export function selectionFrameTarget(
     const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
     if (zoomEarns(zoom, scale, best)) {
       // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
-      const settled = usable.find((set) => fitsAt(set, best, width, height)) ?? zoom.marksAt(best);
+      const settled = framesAt(best) ?? zoom.marksAt(best);
       target = framedAt(target, settled, best, viewport, free, margin, taken(best));
     }
   }

@@ -91,6 +91,14 @@ describe("flat selection framing", () => {
     expect(selectionFrameTarget(view, [[...near, distant], near], viewport, free, margin, 0.5)).toBeNull();
   });
 
+  it("keeps the selected disc inside when even its own name cannot fit", () => {
+    const named: FramedMark = { x: 1_500, y: 0, box: { minX: -10, maxX: 1_400, minY: -20, maxY: 20 } };
+    const target = selectionFrameTarget(view, [[named]], viewport, free, margin, view.tscale)!;
+    const discX = (named.x - target.tx) * target.tscale + viewport.width / 2;
+    expect(discX).toBeGreaterThanOrEqual(free.minX + margin - 1e-6);
+    expect(discX).toBeLessThanOrEqual(free.maxX - margin + 1e-6);
+  });
+
   it("frames a domain's reach at the current zoom, keeping the nearest partners when not all fit by panning", () => {
     const near = [mark(0, 0), mark(80, 40)];
     const partners = [mark(-2_400, 0), mark(500, 0), mark(-300, 200)];
