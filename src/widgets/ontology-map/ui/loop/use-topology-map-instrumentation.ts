@@ -286,6 +286,8 @@ export function useTopologyMapInstrumentation({
                 const e = handlersRef.current?.probeEdgeAt(x, y, thresholdPx);
                 return e ? { sourceId: e.sourceId, targetId: e.targetId, kind: e.kind } : null;
             },
+            /** The node a press at `(x, y)` would grab, from the press's own hit test. */
+            nodeAt: (x: number, y: number) => handlersRef.current?.probeNodeAt(x, y) ?? null,
             /** What is being dragged, since a node and the background look identical on screen. */
             interaction: () => {
                 const drag = nodeDragRef.current;

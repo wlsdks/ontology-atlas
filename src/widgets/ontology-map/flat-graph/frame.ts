@@ -14,7 +14,7 @@ import {
   arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
-import { admittedNames, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, boxUnderAny, nameBlockDraws, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
@@ -217,6 +217,7 @@ const shownElements = new FrameList<string>();
 const expandedItems = new Set<string>();
 const NO_IDS: ReadonlySet<string> = new Set();
 const NO_LINES: GraphAttention["lines"] = [];
+const NO_BOXES: readonly Box[] = [];
 
 /** Disc radii at one growth, kept until the zoom changes it. */
 function radiusCacheFor(layout: FlatGraphLayout, growth: number): Map<string, number> {
@@ -482,6 +483,12 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
   L.names.add(mark);
+}
+
+/** Whether a concept's block of names may draw: its concept is not placed this frame, it is the selection, or every line clears the chrome. */
+function blockShows(list: readonly PlacedName[], from: number, to: number, chrome: readonly Box[], selectedId: string | null): boolean {
+  const at = screenAt(list[from]!.id);
+  return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
 }
 
 /** A glow under one disc of the hovered or selected set; the rest picture draws none. */
@@ -812,16 +819,23 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   });
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
-  for (let nIndex = 0; nIndex < admission.names.length; nIndex += 1) {
-    const n = admission.names[nIndex]!;
-    planName(n, alphas, n.id === leaving ? mix : 1, false);
+  const chrome = input.nameObstacles ?? NO_BOXES;
+  for (let nIndex = 0; nIndex < admission.names.length;) {
+    const end = nameBlockEnd(admission.names, nIndex);
+    if (blockShows(admission.names, nIndex, end, chrome, contextMode ? null : selectedId)) {
+      for (let i = nIndex; i < end; i += 1) planName(admission.names[i]!, alphas, admission.names[i]!.id === leaving ? mix : 1, false);
+    }
+    nIndex = end;
   }
   // A deselected name keeps its selected size and fades on the exit mix while its rest name fades in.
   if (leaving !== null) {
     const before = admitUnder(motion.previous);
-    for (let nIndex = 0; nIndex < before.names.length; nIndex += 1) {
-      const n = before.names[nIndex]!;
-      if (n.id === leaving) planName(n, alphas, 1 - mix, true);
+    for (let nIndex = 0; nIndex < before.names.length;) {
+      const end = nameBlockEnd(before.names, nIndex);
+      if (before.names[nIndex]!.id === leaving && blockShows(before.names, nIndex, end, chrome, null)) {
+        for (let i = nIndex; i < end; i += 1) planName(before.names[i]!, alphas, 1 - mix, true);
+      }
+      nIndex = end;
     }
   }
   const hub = plan.project[0];
@@ -838,6 +852,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       name.id = hub.id; name.text = text; name.font = font;
       if (name.dy !== dy) name.dy = dy;
       setBox(name.box, -w / 2 - P.namePadPx, w / 2 + P.namePadPx, dy - P.captionPx / 2 - P.namePadPx, dy + P.captionPx / 2 + P.namePadPx);
+      if (boxUnderAny(chrome, hub.x + name.box.minX, hub.x + name.box.maxX, hub.y + name.box.minY, hub.y + name.box.maxY)) return;
       L.names.add(nameMark(name, hub.x, hub.y + dy, inkOf(hub.id), inks.name, P.nameHaloPx));
     };
     hubLine(dialPlacementLine(placement.state, placement.progress, input.labels));

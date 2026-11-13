@@ -273,6 +273,8 @@ export function TopologyCommandChrome({
             )}
             ref={setToolbarElement}
             data-testid="topology-top-toolbar"
+            // Map names yield to each control this lane shows, not to its empty width.
+            data-map-name-obstacle="controls"
             // Lane popovers clamp to this box, which already reserves INDEX, the inspector and the
             // dock seam.
             data-popover-boundary="free-map"

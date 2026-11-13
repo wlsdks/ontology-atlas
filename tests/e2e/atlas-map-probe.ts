@@ -43,6 +43,8 @@ export interface AtlasMapProbe {
   /** The ego bounds the last focus dive framed, canvas CSS px, and where it aimed their centre before the leash clamp. */
   focusFrame?: () => { left: number; right: number; top: number; bottom: number; aimX: number; aimY: number } | null;
   interaction?: () => { kind: "node" | "pan" | "idle"; nodeId: string | null };
+  /** The node a press at `(x, y)` in canvas CSS px would grab, from the press's own hit test. */
+  nodeAt?: (x: number, y: number) => string | null;
   /** Live DOM-derived horizontal obstruction, before static camera safety tokens. */
   obstacleInsets: () => { left: number; right: number } | null;
   /** The drawn edges: endpoints and the quadratic control point, in canvas CSS px. */
