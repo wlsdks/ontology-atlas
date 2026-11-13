@@ -89,6 +89,7 @@
     --map-graph-backing-pad-y-px: 0;
     --map-graph-backing-alpha: 0.86;
     --map-graph-backing-feather-px: 7;
+    --map-graph-name-leader-alpha: 0.5;
     --map-graph-line-bow: 0.16;
     --map-graph-line-alpha: 0.9;
     --map-graph-line-taper-px: 3.4;

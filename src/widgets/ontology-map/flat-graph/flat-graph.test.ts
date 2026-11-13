@@ -431,15 +431,25 @@ describe("selection reach", () => {
     const layout = layoutOf(vault);
     const overprinted: string[] = [];
     let leftOut = 0;
+    let leaders = 0;
+    const strayLeaders: string[] = [];
     for (const at of [0.37, 0.75]) {
       const scale = stepScale(zoomStep(at, TOKENS.paint.zoomStepsPerOctave), TOKENS.paint.zoomStepsPerOctave);
       for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
         const admitted = namesAt(vault, layout, scale, id);
         const concepts = admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project");
         for (const pair of overlapping(concepts, layout, scale)) overprinted.push(`${id} at ${at}: ${pair}`);
-        for (const end of cachedGraphAttention(vault, id, true).named) if (vault.capabilityById.has(end) && !admitted.ids.has(end)) leftOut += 1;
+        const mustName = cachedGraphAttention(vault, id, true).named;
+        for (const end of mustName) if (vault.capabilityById.has(end) && !admitted.ids.has(end)) leftOut += 1;
+        for (const n of concepts) {
+          if (!n.leader) continue;
+          leaders += 1;
+          if (!mustName.has(n.id) || n.id === id) strayLeaders.push(`${id} at ${at}: ${n.id}`);
+        }
       }
     }
+    expect(leaders, "some name with no side on its row is set a row off, with a leader").toBeGreaterThan(0);
+    expect(strayLeaders, "only a far end's name leaves its row").toEqual([]);
     expect(leftOut, "some selection has a capability name with no legible side").toBeGreaterThan(0);
     expect(overprinted).toEqual([]);
   });

@@ -1329,6 +1329,17 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
+    if (n.name.leader) {
+      const reach = Math.hypot(n.name.dx, n.name.dy);
+      const from = (Math.abs(n.name.dx) - P.nameGapPx) / reach;
+      ctx.globalAlpha = n.ink * P.nameLeaderAlpha;
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = n.color;
+      ctx.beginPath();
+      ctx.moveTo(n.x - n.name.dx * (1 - from), n.y - n.name.dy * (1 - from));
+      ctx.lineTo(n.x - Math.sign(n.name.dx) * P.namePadPx, n.y);
+      ctx.stroke();
+    }
     ctx.font = n.name.font;
     ctx.textAlign = n.name.align;
     ctx.globalAlpha = n.ink;

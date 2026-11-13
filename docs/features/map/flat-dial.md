@@ -66,7 +66,11 @@ from every domain title, prefers a side clear of every disc, never sits on the
 selection's ring, and one with no side clear of names and the ring is left out
 rather than overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
-lit line crosses and no other name or disc occupies. Where every free side is
+lit line crosses and no other name or disc occupies. A selection's far end has
+four more sides after those, one row above or below its mark to the right or
+left; a name set there draws a hairline back to its mark
+(`--map-graph-name-leader-alpha` of the name's ink), so a tight member star
+names more of its ends without a name leaving its mark unexplained. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a
 rounded veil of the canvas ground just around its glyphs, translucent enough
 that the domain light beneath dims rather than being cut out, and opaque

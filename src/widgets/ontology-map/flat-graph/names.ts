@@ -26,6 +26,8 @@ export interface PlacedName {
   pieces?: readonly NamePiece[];
   /** A lit name a lit line crosses on every side it may take: it draws on the canvas ground. */
   backed?: boolean;
+  /** A name set a row above or below its concept: it draws a hairline back to the mark. */
+  leader?: boolean;
 }
 
 export interface NameAdmission {
@@ -355,7 +357,13 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
   if (!input.named.has(id)) return sides;
   const below = x + px / 2;
   const centred = (dy: number): PlacedName[] => [{ id, role, text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }];
-  return [...sides, centred(below), centred(-below)];
+  const rise = px + t.namePadPx * 2;
+  const diagonal = (side: 1 | -1, dy: number): PlacedName[] => [{
+    id, role, text, font: f, dx: side * x, dy, align: side === 1 ? "left" : "right",
+    box: { minX: side === 1 ? x - t.namePadPx : -x - w - t.namePadPx, maxX: side === 1 ? x + w + t.namePadPx : -x + t.namePadPx, minY: dy - half, maxY: dy + half },
+    leader: true,
+  }];
+  return [...sides, centred(below), centred(-below), diagonal(1, -rise), diagonal(-1, -rise), diagonal(1, rise), diagonal(-1, rise)];
 }
 
 /** Text runs with each digit centred in a cell as wide as the widest digit, so figures align as `tnum` would. */
