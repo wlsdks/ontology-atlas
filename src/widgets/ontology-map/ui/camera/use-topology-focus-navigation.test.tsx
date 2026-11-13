@@ -403,6 +403,13 @@ describe("useTopologyFocusNavigation", () => {
     moved.select(null);
     expect(moved.deps.beginCameraTween, "a view the reader panned").not.toHaveBeenCalled();
     expect(moved.deps.cameraTargetRef.current).toEqual(panned);
+
+    const arrival = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), lastFocusedSlugRef: ref("f"), cameraTargetRef: ref({ ...before }), overviewFitRef: ref("full") }, "f");
+    frames.shift()?.(performance.now());
+    const landed = { ...arrival.deps.cameraTargetRef.current };
+    arrival.select(null);
+    expect(arrival.deps.cameraTargetRef.current, "a deep link's arrival has no earlier view and goes to the overview").not.toEqual(landed);
+    expect(arrival.deps.cameraTargetRef.current).not.toEqual(before);
   });
 
   it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {

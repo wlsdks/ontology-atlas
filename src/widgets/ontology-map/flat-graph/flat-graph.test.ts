@@ -512,9 +512,12 @@ describe("a lit element's name beside the selection", () => {
     }).names.filter((n) => n.id === "y");
   }
 
-  it("drops a named element whose every side lies on a disc or on the selection's ring", () => {
+  it("names an element with no clear side on another concept's disc, never on the selection's ring or disc", () => {
     expect(attention.named.has("y")).toBe(true);
-    expect(admitWith({ x: 0, y: -(half + capPx + 1) }).map((n) => n.box)).toEqual([]);
+    const placed = admitWith({ x: 0, y: -(half + capPx + 1) });
+    expect(placed).toHaveLength(1);
+    const { box } = placed[0]!;
+    expect(box.maxX <= 0 || box.maxY <= -near, "left of or above the element, away from the selection").toBe(true);
   });
 
   it("names it on the one side clear of every disc and the ring", () => {

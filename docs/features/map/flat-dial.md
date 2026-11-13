@@ -60,8 +60,9 @@ the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a
 lit picture sits on another name only when it is a capability no free side
 holds; a lit element name also keeps the selected title gap
-from every domain title, keeps off every disc and the selection's ring, and one
-with no such side is left out rather than overprinted. Under a lit picture a lit name tries its
+from every domain title, prefers a side clear of every disc, never sits on the
+selection's ring, and one with no side clear of names and the ring is left out
+rather than overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a
@@ -207,7 +208,9 @@ move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
-zoomed since; a selection a deep link arrived on returns to the overview.
+zoomed since; a selection a deep link arrived on returns to the overview. An
+arrow-key walk recentres as it goes, which is the reader travelling: letting go
+after it stays where the walk arrived.
 
 ## Zoom
 

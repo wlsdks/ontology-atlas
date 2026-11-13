@@ -29,7 +29,7 @@ export interface CameraTween {
 
 export type CameraTweenAltitude = "follows-camera" | "held-at-target";
 
-/** `"spring"` is a pan at one scale on `SPRING.canvas`: the selection nudge and its undo. */
+/** `"spring"` rides `SPRING.canvas`: the selection frame and its undo. */
 export type CameraTweenEase = "out" | "spring";
 
 export function easeOutCubic(t: number): number {
