@@ -27,7 +27,7 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -433,6 +433,8 @@ describe("selection reach", () => {
     let leftOut = 0;
     let leaders = 0;
     const strayLeaders: string[] = [];
+    const struckNames: string[] = [];
+    const hoverLeaders: string[] = [];
     for (const at of [0.37, 0.75]) {
       const scale = stepScale(zoomStep(at, TOKENS.paint.zoomStepsPerOctave), TOKENS.paint.zoomStepsPerOctave);
       for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
@@ -445,13 +447,41 @@ describe("selection reach", () => {
           if (!n.leader) continue;
           leaders += 1;
           if (!mustName.has(n.id) || n.id === id) strayLeaders.push(`${id} at ${at}: ${n.id}`);
+          const mark = layout.positions.get(n.id)!;
+          const s = leaderSegment(n, Math.abs(n.dx) - TOKENS.paint.nameGapPx, TOKENS.paint.namePadPx);
+          for (const other of admitted.names) {
+            if (other === n) continue;
+            const p = layout.positions.get(other.id) ?? { x: 0, y: 0 };
+            const pad = TOKENS.paint.namePadPx;
+            const glyphs = { minX: p.x * scale + other.box.minX + pad, maxX: p.x * scale + other.box.maxX - pad, minY: p.y * scale + other.box.minY + pad, maxY: p.y * scale + other.box.maxY - pad };
+            if (segmentCrossesBox(mark.x * scale + s.x0, mark.y * scale + s.y0, mark.x * scale + s.x1, mark.y * scale + s.y1, glyphs)) struckNames.push(`${id} at ${at}: ${n.id} over ${other.id}`);
+          }
         }
+        const pointedAt = cachedGraphAttention(vault, id, false);
+        const hovered = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+          elementLabel: (of) => of, staleByDomain: null, lit: pointedAt.lit, focusId: id, attentionKey: pointedAt.key, agentFocusId: null,
+          selected: false, named: pointedAt.named, reach: pointedAt.reach, lines: pointedAt.lines, discRadius: () => 4, elementSpacingPx: TOKENS.paint.elementNameSpacingPx * 2,
+        });
+        for (const n of hovered.names) if (n.leader) hoverLeaders.push(`${id} at ${at}: ${n.id}`);
       }
     }
     expect(leaders, "some name with no side on its row is set a row off, with a leader").toBeGreaterThan(0);
     expect(strayLeaders, "only a far end's name leaves its row").toEqual([]);
+    expect(struckNames, "no leader runs through a name").toEqual([]);
+    expect(hoverLeaders, "pointing moves no name off its row").toEqual([]);
     expect(leftOut, "some selection has a capability name with no legible side").toBeGreaterThan(0);
     expect(overprinted).toEqual([]);
+  });
+
+  it("draws a leader from its mark's rim to one pad short of the text", () => {
+    const name: PlacedName = { id: "x", role: "capability", text: "x", font: "", dx: 12, dy: -16, align: "left", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 }, leader: true };
+    const s = leaderSegment(name, 5, 3);
+    expect(Math.hypot(s.x0, s.y0)).toBeCloseTo(5);
+    expect(s.x0 / s.y0).toBeCloseTo(12 / -16);
+    expect([s.x1, s.y1]).toEqual([9, -16]);
+    const left = leaderSegment({ ...name, dx: -12, align: "right" }, 5, 3);
+    expect([left.x1, left.y1]).toEqual([-9, -16]);
   });
 
   it("names every lit endpoint and the selection even at a crowded zoom, and keeps the selection off every domain name", () => {
