@@ -33,10 +33,12 @@ export interface GraphAttention {
   reach: { needs: number; neededBy: number } | null;
   /** Concepts a lit picture names first: the focus and every line's far end. */
   named: ReadonlySet<string>;
+  /** Concepts painted in the project's ink: the domain the focus sits in and its members. */
+  tinted: ReadonlySet<string>;
 }
 
 const NONE: ReadonlySet<string> = new Set();
-const REST: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: NONE };
+const REST: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: NONE, tinted: NONE };
 
 function domainMembers(model: DialModel, domainId: string, into: Set<string>): void {
   const d = model.domainById.get(domainId);
@@ -166,7 +168,10 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
       ? capabilityReach(model, focusId, lit, named)
       : ownReach(model, focusId, lit, named);
   const reach = model.domainOf.has(focusId) ? reachCounts(lines, focusId) : null;
-  return { key, focusId, selected, lit, lines, reach, named };
+  const tinted = new Set<string>();
+  const home = model.domainOf.get(focusId);
+  if (home !== undefined && home !== null) domainMembers(model, home, tinted);
+  return { key, focusId, selected, lit, lines, reach, named, tinted };
 }
 
 const attentionCache = new WeakMap<DialModel, Map<string, GraphAttention>>();

@@ -50,14 +50,15 @@ force; the recovery asks for review and explicit finalization without accepting
 incomplete answers. MCP bundles also retain nested modules declared as package
 directories.
 
-The full Flat map is a force graph lit by domain: each domain is a soft pool
-of its own hue around a lit disc with a large horizontal name and a count
+The full Flat map is a force graph lit by attention: each domain is a soft pool
+of light around a disc with a large horizontal name and a count
 caption, its capabilities are smaller discs sized by their element count, and
 elements are dots beside their capability. Resting arcs between domains are
 thin and faint; pointing at a concept lights its reach and sinks the rest.
 Names are admitted per zoom step without overlap and stay inside the free map;
 a selected concept and the concept an agent is working on are always named.
-Within a session an unchanged domain keeps its place and hue. Stale evidence
+The map rests on one neutral ink, and the domain a pointer or selection sits in
+takes the project's. Within a session an unchanged domain keeps its place. Stale evidence
 carries an amber pip, unknown evidence a dashed hollow disc. Focused areas
 keep the domain branch grammar, omit a forced-open root collapse control, and
 offer a labelled Full map return that restores the selected root. Concepts
