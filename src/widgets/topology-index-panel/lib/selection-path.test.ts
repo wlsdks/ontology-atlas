@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { treeAncestorIds } from "./reveal-row";
+import { closedAncestorHolding, treeAncestorIds } from "./selection-path";
 
 const node = (id: string, kind: string): KnowledgeGraphNode => ({
   id,
@@ -59,5 +59,25 @@ describe("treeAncestorIds", () => {
     expect(treeAncestorIds(tree(), "project:atlas")).toEqual([]);
     expect(treeAncestorIds(tree(), "element:not-in-the-tree")).toBeNull();
     expect(treeAncestorIds([], "project:atlas")).toBeNull();
+  });
+});
+
+describe("closedAncestorHolding", () => {
+  const openSet = (...ids: string[]) => (id: string) => ids.includes(id);
+
+  it("names the first closed row on the way down, which is the nearest visible one", () => {
+    expect(closedAncestorHolding(tree(), "element:change-headline", openSet("project:atlas"))).toBe("domain:workbench");
+  });
+
+  it("moves down as the person opens the rows above", () => {
+    const opened = openSet("project:atlas", "domain:workbench");
+    expect(closedAncestorHolding(tree(), "element:change-headline", opened)).toBe("capability:git-history");
+  });
+
+  it("names nothing when the row itself is visible or not in the tree", () => {
+    const allOpen = openSet("project:atlas", "domain:workbench", "capability:git-history");
+    expect(closedAncestorHolding(tree(), "element:change-headline", allOpen)).toBeNull();
+    expect(closedAncestorHolding(tree(), "project:atlas", openSet())).toBeNull();
+    expect(closedAncestorHolding(tree(), "element:not-in-the-tree", openSet())).toBeNull();
   });
 });

@@ -78,8 +78,8 @@ const labels = {
   searchPlaceholder: "Search concepts",
   searchMatches: "Matching concepts",
   censusConcepts: "concepts",
-  sourceDocuments: "documents",
-  sourceDocumentsPartialTitle: "partially read",
+  sourceDocumentsReading: "reading 3 of 9",
+  holdsSelection: "The selected concept is inside",
   censusRelations: "relations",
   censusDomains: "domains",
   capabilitiesShort: "caps",
@@ -96,10 +96,8 @@ const labels = {
   uncatalogedDocsAction: "Promote",
   brokenDocsLabel: "2 docs the checks caught",
   brokenDocsAction: "Open the library",
-  sourceUnboundLabel: "1 project with no code folder",
   openedInsideLabel: 'opened-inside',
   openedInsideDismiss: 'opened-inside-dismiss',
-  sourceUnboundAction: "Connect",
   tidyHeading: "To tidy",
 };
 
@@ -190,8 +188,8 @@ describe("TopologyIndexPanel", () => {
     expect(tree.tagName).toBe("DIV");
   });
 
-  /* After opening a folder the panel must name the folder that was read. */
-  describe("naming the folder the rows came from", () => {
+  /* The rail names the open folder; the panel names it only while files are still arriving. */
+  describe("the folder line while files are read", () => {
     const base = {
       treeResult: buildFixtureTree(),
       totalConcepts: 4,
@@ -204,43 +202,21 @@ describe("TopologyIndexPanel", () => {
       labels,
     };
 
-    it("says the folder basename and how many documents came out of it", () => {
-      render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceDocumentCount={99} />);
+    it("names the folder and the reading count while files are still arriving", () => {
+      render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceLoadProgress={{ read: 3, total: 9 }} />);
 
       const line = screen.getByTestId("topology-index-source");
       expect(line).toHaveTextContent("my-vault");
-      expect(line).toHaveTextContent("99 documents");
+      expect(line).toHaveTextContent("reading 3 of 9");
+      expect(line.querySelector("[data-vault-load-progress]")).toHaveAttribute("data-vault-load-progress", "3/9");
     });
 
-    /*
-     * `entities/docs-vault/model/types.ts`: a screen saying "N documents" must say in the same
-     * place whether N is all of them.
-     */
-    it("marks a count the walk did not finish rather than presenting it as the whole folder", () => {
-      render(
-        <TopologyIndexPanel
-          {...base}
-          sourceName="huge-repo"
-          sourceDocumentCount={500}
-          sourceDocumentCountPartial
-        />,
-      );
-
-      expect(screen.getByTestId("topology-index-source")).toHaveTextContent("500+ documents");
-    });
-
-    it("stays silent with no folder open — the sample keeps its own badge", () => {
-      render(<TopologyIndexPanel {...base} />);
-
+    it("leaves once the read ends, and stays away with no folder open", () => {
+      const { rerender } = render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceLoadProgress={null} />);
       expect(screen.queryByTestId("topology-index-source")).not.toBeInTheDocument();
-    });
 
-    it("names the folder even before the document count is known", () => {
-      render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceDocumentCount={null} />);
-
-      const line = screen.getByTestId("topology-index-source");
-      expect(line).toHaveTextContent("my-vault");
-      expect(line, 'an unknown count must not be invented as 0').not.toHaveTextContent("documents");
+      rerender(<TopologyIndexPanel {...base} />);
+      expect(screen.queryByTestId("topology-index-source")).not.toBeInTheDocument();
     });
   });
 
@@ -1065,11 +1041,7 @@ describe("TopologyIndexPanel", () => {
       expect(screen.queryByTestId("topology-index-broken-docs")).not.toBeInTheDocument();
     });
 
-    it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {
-      /*
-       * Surfaces an unbound project on the first screen instead of only after clicking that node.
-       */
-      const onSelect = vi.fn();
+    it("leaves a project without a code folder to that project's own panel", () => {
       render(
         <TopologyIndexPanel
           treeResult={buildFixtureTree()}
@@ -1078,18 +1050,15 @@ describe("TopologyIndexPanel", () => {
           domainCount={1}
           changedSlugs={new Set()}
           selectedId={null}
-          onSelect={onSelect}
+          onSelect={() => {}}
           onCollapse={() => {}}
           labels={labels}
           unboundProjectNodeId="project:root"
           vaultLoaded
         />,
       );
-      const row = screen.getByTestId("topology-index-source-unbound");
-      expect(row).toHaveTextContent("1 project with no code folder");
-      // This row does not open the folder picker — the prescription lives in exactly one place, the project panel.
-      fireEvent.click(row);
-      expect(onSelect).toHaveBeenCalledWith("project:root");
+      expect(screen.queryByTestId("topology-index-source-unbound")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("topology-index-tidy")).not.toBeInTheDocument();
     });
 
     /* Opening a folder other than the one chosen must be stated on screen. */
@@ -1169,8 +1138,6 @@ describe("TopologyIndexPanel", () => {
         (firstRunStarterProps.current as { mapUnbuilt?: boolean } | null)?.mapUnbuilt,
         'suggesting map creation on an existing map reads as starting over',
       ).toBe(false);
-      // The right action for a built map missing its evidence link is still offered.
-      expect(screen.getByTestId("topology-index-source-unbound")).toBeInTheDocument();
     });
 
     it("lets the notice be closed once it has been read", () => {
@@ -1211,25 +1178,6 @@ describe("TopologyIndexPanel", () => {
         />,
       );
       expect(screen.queryByTestId("topology-index-opened-inside")).not.toBeInTheDocument();
-    });
-
-    it("hides the unbound row when every project already has a code folder", () => {
-      render(
-        <TopologyIndexPanel
-          treeResult={buildFixtureTree()}
-          totalConcepts={4}
-          totalRelations={3}
-          domainCount={1}
-          changedSlugs={new Set()}
-          selectedId={null}
-          onSelect={() => {}}
-          onCollapse={() => {}}
-          labels={labels}
-          unboundProjectNodeId={null}
-          vaultLoaded
-        />,
-      );
-      expect(screen.queryByTestId("topology-index-source-unbound")).not.toBeInTheDocument();
     });
 
     it("does not advertise the retired freshness catalog without a vault gate", () => {
@@ -1328,11 +1276,15 @@ describe('TopologyIndexPanel selection and disclosure', () => {
 });
 
 /*
- * The tree follows the selection: rows above a selected node open even when it was selected
- * elsewhere.
+ * Only the person opens rows. A selection made elsewhere marks the nearest visible row above it,
+ * so the panel never grows or scrolls when something is selected on the map.
  */
-describe("TopologyIndexPanel follows the selection", () => {
+describe("TopologyIndexPanel marks a hidden selection instead of opening the tree", () => {
   const rowOf = (id: string) => document.querySelector(`[data-index-row="${id}"]`);
+  const markedRows = () =>
+    [...document.querySelectorAll<HTMLElement>("[data-holds-selection]")].map((row) => row.dataset.indexRow);
+  const openRows = () =>
+    [...document.querySelectorAll<HTMLElement>('[role="treeitem"][aria-expanded="true"]')].map((row) => row.dataset.indexRow);
 
   /** The panel as the page drives it: a pick selects, and the selection comes back down. */
   function Selecting({ initial = null, tree = buildFixtureTree() }: { initial?: string | null; tree?: ReturnType<typeof buildFixtureTree> }) {
@@ -1340,7 +1292,6 @@ describe("TopologyIndexPanel follows the selection", () => {
     return (
       <>
         <button type="button" data-testid="select-elsewhere" onClick={() => setSelectedId("capability:cli-entry")} />
-        <button type="button" data-testid="select-agent-brief" onClick={() => setSelectedId("element:agent-brief")} />
         <TopologyIndexPanel
           treeResult={tree}
           totalConcepts={4}
@@ -1356,44 +1307,60 @@ describe("TopologyIndexPanel follows the selection", () => {
     );
   }
 
-  it("opens the rows above a node selected from outside the tree", () => {
+  it("keeps the rows closed and marks the nearest visible row above the selection", () => {
     render(<Selecting initial="element:agent-brief" />);
 
-    const row = rowOf("element:agent-brief");
-    expect(row, "the selected row is folded away under a closed domain").not.toBeNull();
-    expect(row).toHaveAttribute("aria-selected", "true");
-    expect(rowOf("domain:onboarding")).toHaveAttribute("aria-expanded", "true");
-    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "true");
+    expect(rowOf("element:agent-brief"), "a selection opened its branch").toBeNull();
+    expect(rowOf("domain:onboarding")).toHaveAttribute("aria-expanded", "false");
+    expect(markedRows()).toEqual(["domain:onboarding"]);
+    const marked = rowOf("domain:onboarding")!;
+    expect(marked).toHaveTextContent(labels.holdsSelection);
+    expect(marked.querySelector('[data-testid="topology-index-holds-selection-dot"]')).not.toBeNull();
   });
 
-  it("keeps a row picked from the search in the tree after the search is cleared", () => {
-    render(<Selecting />);
-    const search = screen.getByTestId("topology-index-search");
+  it("moves the mark down as the person opens the marked row, and styles the row once visible", () => {
+    render(<Selecting initial="element:agent-brief" />);
 
-    fireEvent.change(search, { target: { value: "Agent Brief" } });
-    fireEvent.click(rowOf("element:agent-brief")!);
-    fireEvent.change(search, { target: { value: "" } });
+    fireEvent.click(rowOf("domain:onboarding")!.querySelector("button")!);
+    expect(markedRows()).toEqual(["capability:mcp-server"]);
 
-    // A folding branch keeps its rows for the exit transition, so the branch state is asserted.
-    expect(rowOf("domain:onboarding"), "the pick's domain folded when the search ended").toHaveAttribute("aria-expanded", "true");
-    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(rowOf("capability:mcp-server")!.querySelector("button")!);
+    expect(markedRows()).toEqual([]);
     expect(rowOf("element:agent-brief")).toHaveAttribute("aria-selected", "true");
   });
 
-  it("reveals once per selection: a branch folded again stays folded until the next selection", async () => {
+  it("makes the marked row the tree's tab stop, so the keyboard starts where the selection is", () => {
     render(<Selecting initial="element:agent-brief" />);
-    const capability = rowOf("capability:mcp-server")!;
 
-    fireEvent.click(capability.querySelector("button")!);
-    await waitForElementToBeRemoved(() => rowOf("element:agent-brief"));
-    expect(rowOf("capability:mcp-server")).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(screen.getByTestId("select-elsewhere"));
-    fireEvent.click(screen.getByTestId("select-agent-brief"));
-    expect(rowOf("element:agent-brief"), "a new selection did not open its branch again").not.toBeNull();
+    expect(rowOf("domain:onboarding")).toHaveAttribute("tabindex", "0");
   });
 
-  it("reveals a selection that arrived before its tree", () => {
+  it("marks nothing while the selected row is in view", () => {
+    render(<Selecting initial="domain:onboarding" />);
+
+    expect(markedRows()).toEqual([]);
+    expect(rowOf("domain:onboarding")).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByTestId("select-elsewhere"));
+    expect(openRows()).toEqual(["project:root"]);
+    expect(markedRows()).toEqual(["domain:onboarding"]);
+  });
+
+  it("returns the rows open before typing once a search is cleared, a pick from it included", () => {
+    render(<Selecting />);
+    const search = screen.getByTestId("topology-index-search");
+    const before = openRows();
+    expect(before, "at rest the project is open and its domains closed").toEqual(["project:root"]);
+
+    fireEvent.change(search, { target: { value: "Agent Brief" } });
+    fireEvent.click(rowOf("domain:onboarding")!.querySelector("button")!);
+    fireEvent.click(rowOf("element:agent-brief")!);
+    fireEvent.change(search, { target: { value: "" } });
+
+    expect(openRows()).toEqual(before);
+    expect(markedRows()).toEqual(["domain:onboarding"]);
+  });
+
+  it("marks a selection that arrived before its tree", () => {
     const empty = { roots: [], orphans: [], warnings: [] };
     const { rerender } = render(
       <TopologyIndexPanel
@@ -1422,6 +1389,43 @@ describe("TopologyIndexPanel follows the selection", () => {
       />,
     );
 
-    expect(rowOf("element:agent-brief")).not.toBeNull();
+    expect(rowOf("element:agent-brief")).toBeNull();
+    expect(markedRows()).toEqual(["domain:onboarding"]);
+  });
+});
+
+/* At rest the panel is five blocks: header, search, tabs, tree and the footer. */
+describe("TopologyIndexPanel at rest", () => {
+  it("holds five blocks and only the project's own rows, with no folder line after the read", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+        recentChanges={{ ids: new Set(), agentAttributedNodeId: null }}
+        sourceName="my-vault"
+        sourceLoadProgress={null}
+        uncatalogedDocCount={3}
+        onPromoteUncatalogedDocs={() => {}}
+        brokenDocCount={2}
+        unboundProjectNodeId="project:root"
+        vaultLoaded
+      />,
+    );
+    const panel = screen.getByTestId("topology-index-panel");
+    const blocks = [...panel.children].filter((child) => !child.classList.contains("sr-only"));
+    expect(blocks).toHaveLength(5);
+    expect(screen.queryByTestId("topology-index-source")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("treeitem").map((row) => row.dataset.indexRow)).toEqual([
+      "project:root",
+      "domain:onboarding",
+    ]);
+    expect(screen.getByTestId("topology-index-tidy").querySelectorAll("li")).toHaveLength(2);
   });
 });

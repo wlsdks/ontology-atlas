@@ -3,10 +3,10 @@ import { installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 import { waitForMapStill } from "../settle";
 
 /**
- * Re-reading an already open folder must not drop the session to `loading`: the INDEX must
- * keep the folder name and document count while the watch re-reads.
+ * Re-reading an already open folder must not drop the session to `loading`: the rail keeps the
+ * folder name, and the INDEX does not bring its reading line back while the watch re-reads.
  */
-test("the open folder keeps its name and its count while the watch re-reads", async ({ page }) => {
+test("the open folder keeps its name and the INDEX stays settled while the watch re-reads", async ({ page }) => {
   test.setTimeout(180_000);
   await page.setViewportSize({ width: 1512, height: 982 });
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -18,21 +18,21 @@ test("the open folder keeps its name and its count while the watch re-reads", as
   const read = () =>
     page.evaluate(() => {
       const panel = document.querySelector('[data-testid="topology-index-panel"]');
-      const text = panel?.textContent ?? "";
+      const rail = document.querySelector('[data-testid="vault-switch-rail-tile"]');
       return {
-        named: text.includes("atlas-vault"),
-        docs: /(\d+)\s*문서/.exec(text)?.[1] ?? null,
+        named: (rail?.getAttribute("aria-label") ?? "").includes("atlas-vault"),
+        settled: panel !== null && panel.querySelector('[data-testid="topology-index-source"]') === null,
         recent: (document.querySelector('[data-testid="topology-index-segment-recent"]')?.textContent ?? "").trim(),
       };
     });
 
   const first = await read();
-  expect(first.named, "폴더 이름이 처음부터 없다").toBe(true);
-  expect(first.docs, "문서 수가 처음부터 없다").not.toBeNull();
+  expect(first.named, "the rail does not name the open folder").toBe(true);
+  expect(first.settled, "the INDEX still shows its reading line after the first read").toBe(true);
 
   // Long enough to contain more than one watch cycle: the blink was ~3.5s out of ~8.6s,
   // so a 20-second window could not miss it.
-  const samples: Array<{ at: number; named: boolean; docs: string | null; recent: string }> = [];
+  const samples: Array<{ at: number; named: boolean; settled: boolean; recent: string }> = [];
   const started = Date.now();
   while (Date.now() - started < 20_000) {
     samples.push({ at: Date.now() - started, ...(await read()) });
@@ -40,15 +40,15 @@ test("the open folder keeps its name and its count while the watch re-reads", as
     await page.waitForTimeout(500);
   }
 
-  const blank = samples.filter((s) => !s.named || s.docs === null);
+  const blank = samples.filter((s) => !s.named || !s.settled);
   expect(
     blank.map((s) => `${Math.round(s.at / 100) / 10}s`),
-    `다시 읽는 동안 열린 폴더 이름/문서 수가 사라졌다 (${blank.length}/${samples.length} 표본)`,
+    `the folder name left the rail or the INDEX went back to reading during a re-read (${blank.length}/${samples.length} samples)`,
   ).toEqual([]);
 
   const drifted = samples.filter((s) => s.recent !== first.recent);
   expect(
     drifted.map((s) => `${Math.round(s.at / 100) / 10}s ${s.recent}`),
-    `아무것도 안 건드렸는데 최근 변경 수가 달라졌다 (기준 "${first.recent}")`,
+    `the recent-change count drifted with nothing touched (first "${first.recent}")`,
   ).toEqual([]);
 });

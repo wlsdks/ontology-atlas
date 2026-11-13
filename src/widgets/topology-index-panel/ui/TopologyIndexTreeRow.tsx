@@ -31,6 +31,8 @@ interface TopologyIndexTreeRowLabels {
   subtotalTitle?: string;
   /** The "an agent just now" attribution badge. */
   agentBadge?: string;
+  /** Hidden text on the closed row that holds the selection. */
+  holdsSelection?: string;
 }
 
 export interface TopologyIndexTreeRowProps {
@@ -46,6 +48,8 @@ export interface TopologyIndexTreeRowProps {
   onToggleOpen: (nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   selectedId: string | null;
+  /** The closed row the selection sits inside; the tree never opens itself to show it. */
+  selectionHolderId?: string | null;
   /** The roving tabindex entry point; only this row is tabIndex=0. */
   activeRowId: string | null;
   changedSlugs: ReadonlySet<string>;
@@ -77,6 +81,7 @@ export function TopologyIndexTreeRow({
   onToggleOpen,
   onSelect,
   selectedId,
+  selectionHolderId = null,
   activeRowId,
   changedSlugs,
   agentAttributedNodeId = null,
@@ -90,6 +95,7 @@ export function TopologyIndexTreeRow({
   const hasChildren = children.length > 0;
   const open = isOpen(node.id);
   const selected = selectedId === node.id;
+  const holdsSelection = selectionHolderId === node.id;
   const fresh = changedSlugs.has(node.id);
   const agentAttributed = agentAttributedNodeId !== null && agentAttributedNodeId === node.id;
   const eyebrow = useLatinEyebrow("tracking-[var(--tracking-caps-08)]");
@@ -145,6 +151,7 @@ export function TopologyIndexTreeRow({
         // handler.
         tabIndex={node.id === activeRowId ? 0 : -1}
         data-index-row={node.id}
+        data-holds-selection={holdsSelection || undefined}
         data-testid="topology-index-row"
         // Selection preserves the tree; the caret and arrow keys control disclosure.
         onClick={() => onSelect(node.id)}
@@ -154,7 +161,9 @@ export function TopologyIndexTreeRow({
         className={`atlas-touch-floor grid min-h-9 grid-cols-[24px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--map-panel-metric-surface)] text-[color:var(--map-panel-text-primary)]"
-            : "border-transparent text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-action-border)] hover:text-[color:var(--map-panel-text-primary)]"
+            : `border-transparent hover:border-[color:var(--map-panel-action-border)] hover:text-[color:var(--map-panel-text-primary)] ${
+                holdsSelection ? "text-[color:var(--map-panel-text-primary)]" : "text-[color:var(--map-panel-text-secondary)]"
+              }`
         }`}
       >
         <button
@@ -188,6 +197,9 @@ export function TopologyIndexTreeRow({
               >
                 {labels.agentBadge}
               </span>
+            ) : null}
+            {holdsSelection && labels.holdsSelection ? (
+              <span className="sr-only">{labels.holdsSelection}</span>
             ) : null}
             {fresh ? (
               <span
@@ -229,8 +241,17 @@ export function TopologyIndexTreeRow({
                   ? `${labels.subtotalTitle} ${count}`
                   : undefined
             }
-            className="justify-self-end text-label tabular-nums text-[color:var(--map-panel-text-tertiary)]"
+            className={`inline-flex items-center gap-1.5 justify-self-end text-label tabular-nums ${
+              holdsSelection ? "text-[color:var(--map-panel-text-primary)]" : "text-[color:var(--map-panel-text-tertiary)]"
+            }`}
           >
+            {holdsSelection ? (
+              <span
+                aria-hidden="true"
+                data-testid="topology-index-holds-selection-dot"
+                className="size-1.5 shrink-0 rounded-full bg-[color:var(--color-indigo-accent)]"
+              />
+            ) : null}
             {count}
           </span>
         ) : null}
@@ -261,6 +282,7 @@ export function TopologyIndexTreeRow({
               onToggleOpen={onToggleOpen}
               onSelect={onSelect}
               selectedId={selectedId}
+              selectionHolderId={selectionHolderId}
               activeRowId={activeRowId}
               changedSlugs={changedSlugs}
               agentAttributedNodeId={agentAttributedNodeId}
