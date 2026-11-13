@@ -16,7 +16,7 @@ import { admitNamesAt, domainTitleBlocks, stepScale, zoomStep } from "../../../f
 import { buildFlatGraphScene } from "../../../flat-graph/scene";
 import { resolveFlatGraphTokens } from "../../../flat-graph/tokens";
 import {
-  directCapabilityRelations, readContainmentTree, rollDirectedDomainFlows, rollDomainDependencies, rollRelatesCapabilityPairs,
+  directRelations, readContainmentTree, rollDirectedDomainFlows, rollDomainDependencies, rollRelatesCapabilityPairs,
   rollRelatesDomainPairs, type TreeInputEdge, type TreeInputNode,
 } from "../../../model/containment-tree";
 import type { TopologyWorld } from "../../world/topology-world";
@@ -64,7 +64,7 @@ function vaultModel(manifest: unknown): { model: DialModel; titles: Map<string, 
   const model = buildDialModel({
     tree, dependencies, flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges)),
     elementIds: treeNodes.filter((n) => n.kind === "element").map((n) => n.id),
-    relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directCapabilityRelations(tree, treeEdges),
+    relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directRelations(treeEdges),
   });
   return { model, titles };
 }
@@ -127,7 +127,7 @@ const inside = (box: { minX: number; maxX: number; minY: number; maxY: number },
 describe("an element selection's zoom", () => {
   it("keeps the scale it was made at when the far ends of its lines cannot all fit there", () => {
     const viewport = { width: 1512, height: 949 };
-    const { model, at, free, frame } = vaultMap(storefrontManifest, viewport);
+    const { model, at, free, frame } = vaultMap(docsManifest, viewport);
     const element = [...model.capabilityOf.keys()]
       .map((id) => {
         const ends = cachedGraphAttention(model, id, true).lines.flatMap((line) => [at(line.from), at(line.to)]);
@@ -192,8 +192,8 @@ const pointInside = (p: { x: number; y: number }, free: { minX: number; maxX: nu
 describe("an element selection that zooms in", () => {
   it("keeps every far end of its lines inside the free map", () => {
     const viewport = { width: 1448, height: 949 };
-    const map = vaultMap(storefrontManifest, viewport);
-    const id = "element:stock-ledger";
+    const map = vaultMap(docsManifest, viewport);
+    const id = "element:source-receipt-store";
     const landed = map.frame(id, map.rest);
     expect(landed?.tscale ?? 0, "the selection zooms in").toBeGreaterThan(map.rest.tscale);
     for (const end of farEnds(map, id, landed!, viewport)) expect(pointInside(end, map.free), `${end.id} at (${Math.round(end.x)}, ${Math.round(end.y)})`).toBe(true);
