@@ -1,6 +1,7 @@
 import type { MeasureText } from "../dial/label-marks";
 import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import { domainPartners } from "../model/containment-tree";
 import type { GraphLine } from "./attention";
 import { arcPathInto, emptyArcPath, litLineTrimsInto } from "./marks";
 import { byId } from "./seed";
@@ -268,12 +269,17 @@ function domainReachLine(input: Pick<NameInput, "selected" | "focusId" | "labels
   return input.selected && input.focusId === domainId ? reachText(input.labels, input.reach) : null;
 }
 
-/** Each domain's name and caption block at the overview, which the layout keeps clear of members. O(D). */
+/**
+ * Each domain's name and caption block at the overview, which the layout keeps clear of members,
+ * wide enough for the reach line that takes the caption's row when the domain is selected. O(flows × D).
+ */
 export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" | "discRadius">): Map<string, FlatGraphTitle> {
   const blocks = new Map<string, FlatGraphTitle>();
   const block: DomainBlockInput = { ...input, staleByDomain: null, discRadius: () => input.tokens.domainDiscPx };
   for (const d of input.model.domains) {
-    const boxes = domainBlock(block, d.id).map((n) => n.box);
+    const { needs, usedBy } = domainPartners(input.model.flows, d.id);
+    const reachLine = reachText(input.labels, { needs: needs.length, neededBy: usedBy.length });
+    const boxes = [...domainBlock(block, d.id), ...(reachLine ? domainBlock(block, d.id, reachLine) : [])].map((n) => n.box);
     blocks.set(d.id, {
       halfWidthPx: Math.max(...boxes.map((b) => Math.max(-b.minX, b.maxX))),
       topPx: Math.min(...boxes.map((b) => b.minY)),

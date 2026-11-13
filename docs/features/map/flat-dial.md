@@ -152,7 +152,8 @@ detail panel's two directed totals, what it depends on and what depends on it
 its caption's row under its name, in the same words, counting partner domains
 joined by `depends_on` alone (`is_a` and `related_to` leave a domain's reach),
 and equals the two domain counts its detail panel shows; the panel still lists
-the membership the caption counted. A partner domain's title that a lit
+the membership the caption counted. The layout keeps members clear of the wider
+of the caption and that reach line, so the row never lands on a member. A partner domain's title that a lit
 domain line would run through takes the side above its disc when no lit line
 crosses that side and no disc sits under it, so the line meets the disc;
 otherwise it stays below on a backing. While a

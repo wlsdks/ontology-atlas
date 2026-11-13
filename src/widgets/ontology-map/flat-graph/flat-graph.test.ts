@@ -27,7 +27,7 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, linePolylines, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -529,6 +529,25 @@ describe("domain reach", () => {
     expect(selected.map((n) => [n.role, n.text])).toEqual([["reach", "needs 1 · needed by 2"]]);
     expect(reachLines(false).map((n) => n.role)).toEqual(["units"]);
     expect(selected[0]!.box, "the reach line takes the caption's row").toEqual(expect.objectContaining({ minY: reachLines(false)[0]!.box.minY }));
+  });
+
+  it("reserves each domain's title block wide enough for the reach line its selection writes, on every bundled vault", () => {
+    const labels = { ...LABELS, units: (c: number, e: number) => `역량 ${c} · 요소 ${e}`, reachNeeds: (n: number) => `${n}곳에 기댐`, reachNeededBy: (n: number) => `${n}곳이 기댐` };
+    const wider: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const blocks = domainTitleBlocks({ model: vault, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif" });
+      for (const id of vault.domainById.keys()) {
+        const att = resolveGraphAttention(vault, id, true);
+        const row = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+          elementLabel: (of) => of, staleByDomain: null, lit: att.lit, focusId: id, attentionKey: att.key, agentFocusId: null,
+          selected: true, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => TOKENS.paint.domainDiscPx, elementSpacingPx: 0,
+        }).names.find((n) => n.id === id && n.role === "reach");
+        if (row && Math.max(-row.box.minX, row.box.maxX) > blocks.get(id)!.halfWidthPx + 1e-6) wider.push(`${name} ${id}: ${row.text}`);
+      }
+    }
+    expect(wider).toEqual([]);
   });
 
   it("raises a partner domain's title only where it clears every disc, on every bundled vault", () => {
