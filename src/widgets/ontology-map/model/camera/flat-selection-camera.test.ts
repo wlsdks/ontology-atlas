@@ -129,11 +129,22 @@ describe("flat selection framing", () => {
     expect(zoomed.tscale).toBeLessThan(1.5 * 2 ** (1 / 8));
     expect(inside(zoomed, near)).toBe(true);
     const ever = (s: number) => [s];
-    const never = () => false;
-    const capped = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(4, ever, never))!;
+    const above = (s: number) => s > 1;
+    const capped = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(4, ever, above))!;
     expect(inside(capped, near)).toBe(true);
     expect(inside({ ...capped, tscale: capped.tscale * 1.02 }, near)).toBe(false);
-    expect(selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(1.2, ever, never))!.tscale).toBeCloseTo(1.2, 9);
+    expect(selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(1.2, ever, above))!.tscale).toBeCloseTo(1.2, 9);
+    const neverClear = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(4, ever, () => false));
+    expect(neverClear?.tscale ?? view.tscale, "a zoom that never reads clear is not taken").toBe(view.tscale);
+  });
+
+  it("is a fixed point: a frame applied to its own landing moves nothing", () => {
+    const near = [mark(500, 0), mark(560, 30), mark(620, -40)];
+    const clearFrom = (from: number) => ({ maxScale: 0, readsAt: (s: number) => s >= from, scoreAt: (s: number) => [s >= from ? 1 : 0], marksAt: () => near });
+    for (const zoom of [{ ...clearFrom(1.5), maxScale: 4 }, { ...clearFrom(9), maxScale: 4 }]) {
+      const landed = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoom) ?? view;
+      expect(selectionFrameTarget(landed, [near], viewport, free, margin, 0.5, { ...zoom, maxScale: landed.tscale * 4 })).toBeNull();
+    }
   });
 
   it("takes the smallest zoom that reads best and spends no zoom that reads no better", () => {
@@ -144,7 +155,7 @@ describe("flat selection framing", () => {
     expect(twelveOfThirteen.tscale).toBeLessThan(1.3 * 2 ** (1 / 8));
     const readsAlready = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => [1, 1, s >= 1.3 ? 12 : 11]));
     expect(readsAlready?.tscale ?? view.tscale, "a view that reads clear takes no zoom for more names").toBe(view.tscale);
-    const apartFirst = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => (s >= 1.6 ? [1, 0, 3] : [0, 1, 13])))!;
+    const apartFirst = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => (s >= 1.6 ? [1, 1, 3] : [0, 1, 13])))!;
     expect(apartFirst.tscale).toBeGreaterThanOrEqual(1.6);
     expect(apartFirst.tscale).toBeLessThan(1.6 * 2 ** (1 / 8));
     const flat = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(() => [0, 0, 12]));

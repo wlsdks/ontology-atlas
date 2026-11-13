@@ -86,9 +86,7 @@ const SAME_SCALE = 1e-6;
 
 /** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
-const ZOOM_REFINE_STEPS = 4;
-const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);
-/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
+const ZOOM_REFINE_STEPS = 4;/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
 const ZOOM_FIT_STEPS = 8;
 
 /**
@@ -164,7 +162,8 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
  * selection keeps its screen point through any zoom, and the pan is the least that frames. When
  * the panned view does not read clear, it then zooms in about the selection, in the same move, to
  * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale` and as far as its
- * marks still fit. Null when the view already frames it, so a frame applied to its own landing is null.
+ * marks still fit, when that scale reads clear. Null when the view already frames it, so a frame
+ * applied to its own landing is null.
  * O(marks) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes.
  */
 export function selectionFrameTarget(
@@ -218,8 +217,8 @@ export function selectionFrameTarget(
       cap = fits;
     }
     const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
-    // A zoom under one sample step is the search's own rounding, and taking it would step again from the landing.
-    if (best >= scale * MIN_ZOOM_IN) {
+    // Only a zoom that reads clear is taken: one that does not would leave the next frame room to step again.
+    if (best > scale && zoom.readsAt(best)) {
       // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
       const settled = usable.find((set) => fitsAt(set, best, width, height)) ?? zoom.marksAt(best);
       target = framedAt(target, settled, best, viewport, free, margin, taken(best));
