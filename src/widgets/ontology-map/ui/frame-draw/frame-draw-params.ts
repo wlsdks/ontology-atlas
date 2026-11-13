@@ -1,4 +1,5 @@
 import type { DialWorld } from '../../dial/types';
+import type { PanelInsets } from "../../interaction/free-area";
 import type { CameraAxes } from "../../engine/camera";
 import type { EdgePairFocus } from "../../model/visibility/focus-state";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
@@ -27,10 +28,7 @@ export interface FrameDrawParams {
   now: number;
   viewportWidth: number;
   viewportHeight: number;
-  panelInsets?: {
-    left: number;
-    right: number;
-  } | null;
+  panelInsets?: PanelInsets | null;
   devicePixelRatio?: number;
   gridPattern: CanvasPattern | null;
   dustPoints: readonly DustPoint[];

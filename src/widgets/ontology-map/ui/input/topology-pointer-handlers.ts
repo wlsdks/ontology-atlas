@@ -1,3 +1,4 @@
+import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { hitTestEdges } from "./topology-edge-hit";
 import { createPointerContext } from "./topology-pointer-context";
 import { createPointerHitTests } from "./topology-pointer-hit-tests";
@@ -15,12 +16,17 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
   const { handlePointerDown, handleContextMenu } = createPointerPressHandlers(ctx, hits, handlePointerCancel);
   const handlePointerMove = createPointerMoveHandler(ctx, hits, handlePointerUp);
   const { handleWheel, handleGesturePinch } = createPointerZoomHandlers(ctx);
-  const { buildEdgeCandidates } = hits;
+  const { buildEdgeCandidates, hitVisibleNode } = hits;
 
   /**
    * Exposes the app's own edge decision (`buildEdgeCandidates` plus `hitTestEdges`) so external
    * instruments use the same formula as the app.
    */
   const probeEdgeAt = (screenX: number, screenY: number, thresholdPx = 7) => hitTestEdges(buildEdgeCandidates(), screenX, screenY, thresholdPx);
-  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt };
+  /** The node a press at `(screenX, screenY)` would grab: the press's own hit test. */
+  const probeNodeAt = (screenX: number, screenY: number) => {
+    const world = ctx.worldRef.current;
+    return world ? hitVisibleNode(world, ctx.cameraRef.current, readOntologyMapTokensOrNull(), screenX, screenY) : null;
+  };
+  return { handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleWheel, handleGesturePinch, handleContextMenu, probeEdgeAt, probeNodeAt };
 }

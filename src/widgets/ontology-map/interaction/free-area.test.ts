@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   measureCanvasInsets,
+  measureNameObstacles,
   collectCanvasObstacles,
   computeFreeArea,
   SIDE_PANEL_HEIGHT_RATIO,
@@ -256,5 +257,38 @@ describe("measureCanvasInsets", () => {
   it("top and bottom bars do not leak into the left and right insets", () => {
     const canvas = fakeCanvas([{ x: 64, y: 0, width: 1448, height: 96 }]);
     expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 0 });
+  });
+});
+
+describe("measureNameObstacles", () => {
+  const placed = (tag: string, r: { x: number; y: number; width: number; height: number }) => {
+    const el = document.createElement(tag);
+    el.getBoundingClientRect = (() => ({
+      x: r.x, y: r.y, width: r.width, height: r.height, left: r.x, top: r.y, right: r.x + r.width, bottom: r.y + r.height, toJSON: () => ({}),
+    })) as typeof el.getBoundingClientRect;
+    return el;
+  };
+
+  it("covers each side panel out to its canvas edge, the key, and only the tool row's controls, in canvas pixels", () => {
+    document.body.innerHTML = "";
+    const canvas = placed("canvas", { x: 64, y: 0, width: 1448, height: 949 });
+    const explorer = placed("aside", { x: 88, y: 24, width: 300, height: 691 });
+    const detail = placed("aside", { x: 1128, y: 32, width: 352, height: 599 });
+    detail.dataset.topologyCameraObstacle = "side-panel";
+    const key = placed("div", { x: 456, y: 885, width: 648, height: 16 });
+    key.dataset.mapNameObstacle = "";
+    const lane = placed("div", { x: 412, y: 24, width: 692, height: 88 });
+    lane.dataset.mapNameObstacle = "controls";
+    lane.setAttribute("style", "pointer-events: none");
+    const tiles = placed("div", { x: 412, y: 24, width: 168, height: 36 });
+    tiles.setAttribute("style", "pointer-events: auto");
+    tiles.append(placed("button", { x: 412, y: 24, width: 36, height: 36 }));
+    lane.append(tiles);
+    document.body.append(canvas, explorer, detail, key, lane);
+
+    const explorerBox = { minX: 0, maxX: 324, minY: 24, maxY: 715 };
+    const chrome = [{ minX: 392, maxX: 1040, minY: 885, maxY: 901 }, { minX: 348, maxX: 516, minY: 24, maxY: 60 }];
+    expect(measureNameObstacles(canvas, { left: true, right: true })).toEqual([explorerBox, { minX: 1064, maxX: 1448, minY: 32, maxY: 631 }, ...chrome]);
+    expect(measureNameObstacles(canvas, { left: true, right: false }), "a folding detail panel no longer holds names off").toEqual([explorerBox, ...chrome]);
   });
 });

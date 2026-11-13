@@ -181,13 +181,42 @@ test("selecting a capability lights and names what it needs and what needs it, a
   expect(selectedNeeds.every(([from]) => from === id) && selectedNeededBy.every(([, to]) => to === id), "every lit line runs to or from the selection").toBe(true);
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
-  for (const end of [...needs, ...neededBy]) {
-    if (!ink.has(end)) continue;
-    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
-    expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
-  }
-
   const free = selected.freeRect;
+  // A far end keeps its light anywhere; its name draws only where no panel covers it.
+  const inFree = (d: { x: number; y: number }) => d.x > free.minX && d.x < free.maxX && d.y > free.minY && d.y < free.maxY;
+  // Each side panel in canvas pixels, out to its canvas edge.
+  const panels = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    return [["topology-index-panel", "left"], ["map-detail-panel", "right"]].flatMap(([testId, side]) => {
+      const b = document.querySelector(`[data-testid="${testId}"]`)?.getBoundingClientRect();
+      if (!b || b.width === 0) return [];
+      return [{ minX: side === "left" ? 0 : b.left - canvas.left, maxX: side === "left" ? b.right - canvas.left : canvas.width, minY: b.top - canvas.top, maxY: b.bottom - canvas.top }];
+    });
+  });
+  expect(panels.length, "the detail panel is open").toBeGreaterThan(0);
+  // How far an unnamed far end's name would reach, from the names this frame drew: the widest
+  // pixels per character (CI's Linux fonts run wider), and the tallest line.
+  const drawnNames = selected.texts.filter((t) => t.role !== "domain" && t.text.length > 0);
+  const pxPerChar = Math.max(...drawnNames.map((t) => (t.box.maxX - t.box.minX) / t.text.length));
+  const lineHeight = Math.max(...drawnNames.map((t) => t.box.maxY - t.box.minY));
+  const labels = new Map((await page.evaluate(() => window.__atlasMap!.nodes().map((n) => [n.id, n.label] as const))));
+  const nameWouldReachChrome = (end: string, d: { x: number; y: number; r: number }) => {
+    const reachX = d.r + (labels.get(end)?.length ?? 0) * pxPerChar * 1.1 + lineHeight;
+    const reachY = d.r + lineHeight * 3;
+    return Math.min(d.x - free.minX, free.maxX - d.x) < reachX || Math.min(d.y - free.minY, free.maxY - d.y) < reachY;
+  };
+  let named = 0;
+  for (const end of [...needs, ...neededBy]) {
+    const disc = selected.discs.find((d) => d.id === end);
+    if (!disc) continue;
+    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
+    const names = selected.texts.filter((t) => t.id === end && t.role !== "domain");
+    for (const t of names) expect(panels.some((p) => overlap(t.box, p)), `${end}'s name ${t.text} is drawn under a panel`).toBe(false);
+    if (names.length > 0) named += 1;
+    else expect(!inFree(disc) || nameWouldReachChrome(end, disc), `${end} at (${Math.round(disc.x)}, ${Math.round(disc.y)}) in ${JSON.stringify(free)} is unnamed only where its name would reach a panel`).toBe(true);
+  }
+  expect(named, "the selection names at least one far end").toBeGreaterThan(0);
+
   const own = selected.texts.filter((t) => t.id === id && t.role !== "domain");
   expect(own.length, "the selection is named").toBeGreaterThan(0);
   const domainNames = selected.texts.filter((t) => t.role === "domain");
