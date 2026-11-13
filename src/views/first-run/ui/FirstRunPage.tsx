@@ -167,11 +167,11 @@ export function FirstRunPage() {
         <header
           className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
         >
-          <div className={`${styles.identity} grid w-full gap-1`}>
+          <div className={`${styles.identity} grid w-full gap-1 ${choosingFolderHome ? '' : 'justify-items-center'}`}>
             <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               Ontology Atlas
             </span>
-            <BrandPortrait expression="welcome" labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still') }} />
+            <BrandPortrait expression="welcome" busy={busy} labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still'), interact: moru('interact') }} />
           </div>
           <div className="grid gap-1.5">
             {!choosingFolderHome ? <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">

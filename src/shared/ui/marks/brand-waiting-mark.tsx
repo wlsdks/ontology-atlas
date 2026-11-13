@@ -64,7 +64,7 @@ function ActiveWaitingMark({ initialVisibility, scale, motion }: { initialVisibi
       data-waiting-motion={reducedMotion ? 'still' : initialVisibility === 'visible' ? 'running' : 'paused'}
       data-moru-motion={motion}
       className={`${motion === 'greeting' ? 'atlas-moru-greeting atlas-mascot-sprite' : 'atlas-waiting-mark'} pointer-events-none inline-block size-16 shrink-0`}
-      style={{ backgroundImage: `url(${withBasePath(`/brand/mascot-${motion}-row.png`)})` }}
+      style={{ backgroundImage: `url(${withBasePath(`/brand/mascot-${motion}-row${scale === 2 ? '-128' : ''}.png`)})` }}
     />
   );
   return scale === 2 ? <span className="atlas-waiting-mark-2x inline-block shrink-0">{mark}</span> : mark;
