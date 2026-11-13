@@ -31,8 +31,9 @@ test("just start writes the chosen starter into the new folder and says where", 
     ]),
   );
 
-  // The screen agrees with the disk, and the door says where the folder is.
-  const documents = files.filter((file) => file.endsWith(".md") && !file.startsWith(".")).length;
-  await expect(page.getByTestId("topology-index-panel")).toContainText(`${documents} documents`);
+  // The screen lists what the disk holds, and the door says where the folder is.
+  const index = page.getByTestId("topology-index-panel");
+  await expect(index).toContainText("My project");
+  await expect(index).toContainText("Example domain");
   await expect(page.locator("[data-sonner-toast]").first()).toContainText("~/Ontology Atlas/my-ontology");
 });
