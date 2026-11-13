@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 /** `[[target|label]]` reads as its label and `[[target]]` as the target's last segment. */
@@ -17,7 +17,7 @@ const DEFINITION_TEXT =
  */
 export function MeaningZone({ definition }: { definition: string | null }) {
   const t = useTranslations("docsVault.frontmatterBlock.validatorIssues");
-  const textRef = useRef<HTMLParagraphElement | null>(null);
+  const textRef = useRef<HTMLSpanElement | null>(null);
   const [open, setOpen] = useState(false);
   const [cut, setCut] = useState(false);
 
@@ -44,30 +44,30 @@ export function MeaningZone({ definition }: { definition: string | null }) {
   }
 
   const pressable = open || cut;
-  const toggle = () => setOpen((value) => !value);
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    toggle();
-  };
+  const text = (
+    <span ref={textRef} className={`block ${DEFINITION_TEXT} ${open ? "" : "line-clamp-3"}`}>
+      {readableDefinition(definition)}
+    </span>
+  );
+  const state = open ? "open" : cut ? "cut" : "whole";
   return (
     <div className="px-[var(--map-panel-pad)] pb-3">
-      <div
-        data-testid="map-detail-panel-definition"
-        data-definition={open ? "open" : cut ? "cut" : "whole"}
-        role={pressable ? "button" : undefined}
-        tabIndex={pressable ? 0 : undefined}
-        aria-expanded={pressable ? open : undefined}
-        onClick={pressable ? toggle : undefined}
-        onKeyDown={pressable ? onKeyDown : undefined}
-        className={pressable
-          ? "-mx-1.5 rounded-chip px-1.5 py-0.5 hover:bg-[color:var(--map-panel-row-hover)] focus-visible:bg-[color:var(--map-panel-row-hover)]"
-          : "py-0.5"}
-      >
-        <p ref={textRef} className={`${DEFINITION_TEXT} ${open ? "" : "line-clamp-3"}`}>
-          {readableDefinition(definition)}
-        </p>
-      </div>
+      {pressable ? (
+        <button
+          type="button"
+          data-testid="map-detail-panel-definition"
+          data-definition={state}
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+          className="-mx-1.5 block w-[calc(100%+0.75rem)] rounded-chip px-1.5 py-0.5 text-left hover:bg-[color:var(--map-panel-row-hover)] focus-visible:bg-[color:var(--map-panel-row-hover)]"
+        >
+          {text}
+        </button>
+      ) : (
+        <div data-testid="map-detail-panel-definition" data-definition={state} className="py-0.5">
+          {text}
+        </div>
+      )}
     </div>
   );
 }
