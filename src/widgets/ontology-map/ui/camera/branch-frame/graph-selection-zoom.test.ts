@@ -226,3 +226,31 @@ describe("an element selection that zooms in", () => {
     expect(secondSteps).toEqual([]);
   });
 });
+
+describe("a capability selection that zooms in", () => {
+  it.each([
+    ["docs", 1448, 949, docsManifest], ["docs", 1856, 1080, docsManifest],
+    ["storefront", 1448, 949, storefrontManifest], ["storefront", 1856, 1080, storefrontManifest],
+  ])("keeps every far end the panned view shows inside the free map across the %s vault at %ix%i", (_, width, height, manifest) => {
+    const viewport = { width, height };
+    const map = vaultMap(manifest, viewport);
+    const entry = map.rest.tscale;
+    const starts = [map.rest, { ...map.rest, tscale: entry * 1.6 }, { tx: map.rest.tx + 300 / entry, ty: map.rest.ty, tscale: entry * 2.4 }];
+    const lost: string[] = [];
+    let zoomed = 0;
+    for (const start of starts) {
+      for (const id of map.model.capabilityById.keys()) {
+        const landed = map.frame(id, start) ?? start;
+        if (landed.tscale <= start.tscale + 1e-6) continue;
+        zoomed += 1;
+        // A zoom base of zero leaves no zoom-in: the frame only pans.
+        const panned = map.frame(id, start, 0) ?? start;
+        const shown = new Set(farEnds(map, id, panned, viewport).filter((end) => pointInside(end, map.free)).map((end) => end.id));
+        const gone = farEnds(map, id, landed, viewport).filter((end) => shown.has(end.id) && !pointInside(end, map.free));
+        if (gone.length) lost.push(`${id} from ${start.tscale.toFixed(2)}: ${gone.map((end) => end.id).join(", ")}`);
+      }
+    }
+    expect(zoomed, "some capability selection zooms in").toBeGreaterThan(0);
+    expect(lost).toEqual([]);
+  });
+});

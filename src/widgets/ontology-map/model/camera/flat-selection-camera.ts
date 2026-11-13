@@ -145,11 +145,11 @@ function framedAt(
 }
 
 /**
- * The smallest scale in `[from, cap]` with the best score `zoom` gives there; `from` when no zoom
- * scores better, so no zoom is spent for nothing. Bounded: 1 + ZOOM_SAMPLES_PER_OCTAVE × octaves
- * to the cap + ZOOM_REFINE_STEPS calls of `scoreAt`.
+ * The smallest scale in `[from, cap]` where `holds` with the best score `zoom` gives there; `from`
+ * when no zoom scores better, so no zoom is spent for nothing. Bounded: 1 + ZOOM_SAMPLES_PER_OCTAVE
+ * × octaves to the cap + ZOOM_REFINE_STEPS calls of `scoreAt`, and of `holds` at most as many.
  */
-function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
+function bestScale(from: number, cap: number, zoom: SelectionZoomIn, holds: (scale: number) => boolean): number {
   let best = zoom.scoreAt(from);
   let bestAt = from;
   let below = from;
@@ -157,7 +157,7 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
   for (let k = 1; previous < cap; k += 1) {
     const s = Math.min(cap, from * 2 ** (k / ZOOM_SAMPLES_PER_OCTAVE));
     const score = zoom.scoreAt(s);
-    if (compareScores(score, best) > 0) {
+    if (compareScores(score, best) > 0 && holds(s)) {
       best = score;
       bestAt = s;
       below = previous;
@@ -167,10 +167,24 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
   if (bestAt === from) return from;
   for (let i = 0; i < ZOOM_REFINE_STEPS; i += 1) {
     const mid = (below + bestAt) / 2;
-    if (compareScores(zoom.scoreAt(mid), best) >= 0) bestAt = mid;
+    if (compareScores(zoom.scoreAt(mid), best) >= 0 && holds(mid)) bestAt = mid;
     else below = mid;
   }
   return bestAt;
+}
+
+/** A far end of the selection's lines as a mark the frame keeps on the free map itself, not `margin` inside it. */
+function heldEnd(end: { x: number; y: number }, margin: number): FramedMark {
+  return { x: end.x, y: end.y, box: { minX: margin, maxX: -margin, minY: margin, maxY: -margin } };
+}
+
+/** How far past the free map's edge a far end still counts as shown, px: a landing clamps held ends onto the edge. */
+const SHOWN_SLACK_PX = 0.5;
+
+function shownAt(camera: CameraTarget, end: { x: number; y: number }, viewport: { width: number; height: number }, free: FreeMapRect): boolean {
+  const x = (end.x - camera.tx) * camera.tscale + viewport.width / 2;
+  const y = (end.y - camera.ty) * camera.tscale + viewport.height / 2;
+  return x >= free.minX - SHOWN_SLACK_PX && x <= free.maxX + SHOWN_SLACK_PX && y >= free.minY - SHOWN_SLACK_PX && y <= free.maxY + SHOWN_SLACK_PX;
 }
 
 /**
@@ -180,10 +194,12 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
  * those are; otherwise the last zooms out as little as it needs, never below `floorScale`. The
  * selection keeps its screen point through any zoom, and the pan is the least that frames. When
  * the panned view does not read clear, it then zooms in about the selection, in the same move, to
- * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale` and as far as its
- * marks still fit. With `zoom.maxScale` fixed, a frame applied to its own landing is null. Null
- * when the view already frames it.
- * O(marks) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes.
+ * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale`, as far as its
+ * marks still fit and every one of `farEnds` the panned view shows stays on the free map. With
+ * `zoom.maxScale` fixed, a frame applied to its own landing is null. Null when the view already
+ * frames it.
+ * O(marks + farEnds) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes and
+ * one per score sample that improves.
  */
 export function selectionFrameTarget(
   camera: CameraTarget,
@@ -193,6 +209,7 @@ export function selectionFrameTarget(
   margin: number,
   floorScale: number,
   zoom: SelectionZoomIn | null = null,
+  farEnds: readonly { x: number; y: number }[] = [],
 ): CameraTarget | null {
   const usable = sets.filter((set) => set.length > 0);
   const last = usable.at(-1);
@@ -225,24 +242,27 @@ export function selectionFrameTarget(
     marks = lastAt(scale);
   }
   let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale));
-  if (zoom && scale < zoom.maxScale && fitsThere(scale)) {
+  const panned = target;
+  const held = farEnds.filter((end) => shownAt(panned, end, viewport, free)).map((end) => heldEnd(end, margin));
+  // Settled as a frame made at `s` settles it, so framing the landing again moves nothing.
+  const settledAt = (s: number) => framesAt(s) ?? zoom!.marksAt(s);
+  // Spans alone, so no pan changes it; the landing shows every end in `held`, so a frame of the
+  // landing holds at least these and finds `holds` true where it stands, never zooming out.
+  const holds = (s: number) => fitsThere(s) && (held.length === 0 || fitsAt([...settledAt(s), ...held], s, width, height));
+  if (zoom && scale < zoom.maxScale && holds(scale)) {
     let cap = zoom.maxScale;
-    if (!fitsThere(cap)) {
+    if (!holds(cap)) {
       let fits = scale;
       let fails = cap;
       for (let i = 0; i < ZOOM_FIT_STEPS; i += 1) {
         const mid = (fits + fails) / 2;
-        if (fitsThere(mid)) fits = mid;
+        if (holds(mid)) fits = mid;
         else fails = mid;
       }
       cap = fits;
     }
-    const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
-    if (zoomEarns(zoom, scale, best)) {
-      // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
-      const settled = framesAt(best) ?? zoom.marksAt(best);
-      target = framedAt(target, settled, best, viewport, free, margin, taken(best));
-    }
+    const best = cap > scale ? bestScale(scale, cap, zoom, holds) : scale;
+    if (zoomEarns(zoom, scale, best)) target = framedAt(target, [...settledAt(best), ...held], best, viewport, free, margin, taken(best));
   }
   const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
   return Math.abs(target.tscale - now) <= now * SAME_SCALE && !moved ? null : target;
