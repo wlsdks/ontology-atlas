@@ -182,15 +182,25 @@ test("selecting a capability lights and names what it needs and what needs it, a
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
   const free = selected.freeRect;
-  // A far end keeps its light anywhere; its name draws only where no panel covers it, and a drawn one sits between the panels.
+  // A far end keeps its light anywhere; its name draws only where no panel covers it.
   const inFree = (d: { x: number; y: number }) => d.x > free.minX && d.x < free.maxX && d.y > free.minY && d.y < free.maxY;
+  // Each side panel in canvas pixels, out to its canvas edge.
+  const panels = await page.evaluate(() => {
+    const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+    return [["topology-index-panel", "left"], ["map-detail-panel", "right"]].flatMap(([testId, side]) => {
+      const b = document.querySelector(`[data-testid="${testId}"]`)?.getBoundingClientRect();
+      if (!b || b.width === 0) return [];
+      return [{ minX: side === "left" ? 0 : b.left - canvas.left, maxX: side === "left" ? b.right - canvas.left : canvas.width, minY: b.top - canvas.top, maxY: b.bottom - canvas.top }];
+    });
+  });
+  expect(panels.length, "the detail panel is open").toBeGreaterThan(0);
   let named = 0;
   for (const end of [...needs, ...neededBy]) {
     const disc = selected.discs.find((d) => d.id === end);
     if (!disc) continue;
     expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
     const names = selected.texts.filter((t) => t.id === end && t.role !== "domain");
-    for (const t of names) expect(t.box.minX >= free.minX - 0.5 && t.box.maxX <= free.maxX + 0.5, `${end}'s name ${t.text} sits between the panels`).toBe(true);
+    for (const t of names) expect(panels.some((p) => overlap(t.box, p)), `${end}'s name ${t.text} is drawn under a panel`).toBe(false);
     if (names.length > 0) named += 1;
     else expect(inFree(disc), `${end} is unnamed only where its name would reach a panel`).toBe(false);
   }
