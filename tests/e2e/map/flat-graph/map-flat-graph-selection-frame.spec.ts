@@ -309,13 +309,15 @@ test("no map name is drawn under the key, the explorer, the detail panel, the ga
       .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))[0]!;
     const disc = (probe: DialProbe) => probe.discs.find((d) => d.id === name.t.id)!;
     const offset = { x: name.t.box.minX - disc(rest).x, y: name.t.box.minY - disc(rest).y };
-    // A press on empty map: no disc within reach and no name under it.
-    const empty = (x: number, y: number) => rest.discs.every((d) => Math.hypot(d.x - x, d.y - y) > d.r + 24) && rest.texts.every((t) => !(x >= t.box.minX && x <= t.box.maxX && y >= t.box.minY && y <= t.box.maxY));
     const centred = { x: box.width / 2 - name.dx / 2, y: box.height / 2 - name.dy / 2 };
-    const start = [0, 40, 80, 120, 160].flatMap((ring) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].map(([i, j]) => ({ x: centred.x + i! * ring, y: centred.y + j! * ring })))
-      .find((p) => empty(p.x, p.y))!;
+    const candidates = [0, 40, 80, 120, 160].flatMap((ring) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].map(([i, j]) => ({ x: centred.x + i! * ring, y: centred.y + j! * ring })));
+    // A press on empty map, as the press itself judges it: no concept to grab and the canvas on top.
+    const start = await page.evaluate(({ points, origin }) => {
+      const canvas = document.querySelector('[data-testid="ontology-map-canvas"]');
+      return points.find((p) => window.__atlasMap!.nodeAt!(p.x, p.y) === null && document.elementFromPoint(origin.x + p.x, origin.y + p.y) === canvas);
+    }, { points: candidates, origin: { x: box.x, y: box.y } });
     expect(start, "an empty point to press").toBeDefined();
-    const from = { x: box.x + start.x, y: box.y + start.y };
+    const from = { x: box.x + start!.x, y: box.y + start!.y };
     await page.mouse.move(from.x, from.y);
     await page.mouse.down();
     await page.mouse.move(from.x + name.dx, from.y + name.dy, { steps: 20 });

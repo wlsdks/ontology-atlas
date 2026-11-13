@@ -198,8 +198,8 @@ export function useTopologyCameraNavigation({
         height,
         { ...cameraTokens(tokens), overviewEntryRatio: 1 })
       // Fit beside the panels, not on the raw viewport, which would leave expand-all off the free
-      // centre.
-      : computeLensFitTarget(focusBounds, width, height, cameraTokens(tokens));
+      // centre; never closer than the overview, which on a large Flat graph sits below the token floor.
+      : computeLensFitTarget(focusBounds, width, height, { ...cameraTokens(tokens), cameraScaleMin: Math.min(tokens.cameraScaleMin, overviewScaleRef.current) });
     if (constellationFocusId !== null && constellationCameraRef.current === null) {
       constellationCameraRef.current = {
         returnTarget: { ...cameraTargetRef.current },

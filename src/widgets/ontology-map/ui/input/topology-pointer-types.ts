@@ -297,4 +297,6 @@ export interface TopologyPointerHandlers {
    * null on no hit. `__atlasMap.edgeAt()` exports this directly.
    */
   probeEdgeAt: (screenX: number, screenY: number, thresholdPx?: number) => WorldEdge | null;
+  /** For instrumentation: the node a press would grab at `(screenX, screenY)`; `__atlasMap.nodeAt()`. */
+  probeNodeAt: (screenX: number, screenY: number) => string | null;
 }
