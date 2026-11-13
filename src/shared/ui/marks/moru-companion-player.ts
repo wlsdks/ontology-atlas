@@ -32,7 +32,10 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
   const showEmotion = (id: typeof gestures[number], animated: boolean, duration = 0) => {
     if (context === 'waiting') return;
     // The still fish is already an expression; keep its prop space clear.
-    if (id === 'magic-fish' && !animated) return;
+    if (id === 'magic-fish' && !animated) {
+      delete bubble.dataset.emotion; bubble.style.opacity = '0';
+      return;
+    }
     bubble.dataset.emotion = ['dance', 'flipper-groove'].includes(id) ? 'note' : ['clap', 'hat-tip', 'magic-fish'].includes(id) ? 'spark' : 'heart';
     // A still response overrides the paused ambient keyframe without creating
     // an animation under reduced motion or resuming an explicit pause.
@@ -76,8 +79,12 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
     if (still && !paused) showAmbient();
     if (reaction) {
       pauseAmbient();
-      if (onScreen && !paused) { reaction.play(); emotion?.play(); }
-      else { reaction.pause(); emotion?.pause(); }
+      if (onScreen && !paused) reaction.play(); else reaction.pause();
+      // A finished short bubble must not restart when the longer fish gesture
+      // regains visibility or pointer attention changes.
+      if (emotion && emotion.playState !== 'finished') {
+        if (onScreen && !paused) emotion.play(); else emotion.pause();
+      }
     } else if (requested && reactionReady && onScreen && !paused) {
       const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
       if (rest.delay > 0) {
