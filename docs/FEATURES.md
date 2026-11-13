@@ -29,7 +29,10 @@ Initial repository analysis distinguishes authored Markdown from literal example
 Document excerpts report omitted prose with an exact, hash-bound source read;
 truncated evidence requires review and does not authorize meaning writes.
 
-The folder entry plays one finite Moru greeting, then rests. The missing-page
+Folder entry and the download invitation use a native-resolution Moru playground.
+Moru wanders, hops, blinks and dances inside its own measured bounds. Pressing the
+character pauses/resumes play; pointer/keyboard interaction, hidden/offscreen state
+and reduced motion suspend movement. The missing-page
 screen uses a static curious portrait in its existing icon slot. These expressions
 leave labels and actions authoritative. Connection, Compile and verified-read
 artwork follows the corresponding existing state, with visibility and reduced-motion guards.

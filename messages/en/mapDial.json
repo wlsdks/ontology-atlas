@@ -22,6 +22,8 @@
   "connectionCount": "{count, plural, one {# connection} other {# connections}}",
   "keyNeeds": "What it needs",
   "keyNeededBy": "What needs it",
+  "keyDomainNeeds": "Domains it needs",
+  "keyDomainNeededBy": "Domains that need it",
   "keyRelates": "Related",
   "keyBroader": "Broader concept",
   "noDomain": "No domain · {count, number}",

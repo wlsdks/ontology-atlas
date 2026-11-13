@@ -1,7 +1,8 @@
 import { mixOver } from "../dial/ink";
 import type { DialModel, Point } from "../dial/types";
 import { byId } from "./seed";
-import type { FlatGraphPaintTokens } from "./types";
+import type { GraphLine } from "./attention";
+import type { FlatGraphLayout, FlatGraphPaintTokens } from "./types";
 
 export type GraphKind = "project" | "domain" | "capability" | "element";
 
@@ -45,6 +46,66 @@ export function restArcs(model: DialModel, budget: number): readonly RestArc[] {
     byBudget.set(budget, hit);
   }
   return hit;
+}
+
+const starReachCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
+
+/**
+ * World distance from a domain's disc to its farthest member mark: where the domain's own lines
+ * leave its lit star, so they never run under its members. O(members) once per layout.
+ */
+function domainStarReach(layout: FlatGraphLayout, domainId: string): number {
+  let byDomain = starReachCache.get(layout);
+  if (!byDomain) {
+    byDomain = new Map();
+    for (const c of layout.clusters) {
+      const home = layout.positions.get(c.domainId) ?? c.centre;
+      let reach = 0;
+      const reachTo = (id: string) => {
+        const at = layout.itemAt.get(id) ?? layout.positions.get(id);
+        if (at) reach = Math.max(reach, Math.hypot(at.x - home.x, at.y - home.y));
+      };
+      for (const it of c.items) {
+        reachTo(it.id);
+        for (const el of it.elementIds) reachTo(el);
+      }
+      byDomain.set(c.domainId, reach);
+    }
+    starReachCache.set(layout, byDomain);
+  }
+  return byDomain.get(domainId) ?? 0;
+}
+
+/** The least share of a domain line its end trims leave drawn. */
+const DOMAIN_LINE_KEPT = 0.3;
+
+/** A domain line's trimmed end keeps short of its bow's control point by this share, so the curve never doubles back. */
+const DOMAIN_LINE_CONTROL_KEPT = 0.8;
+
+/**
+ * Writes into `out` the trims, in screen px, at which a lit line leaves `from` and reaches `to`
+ * (`length` px apart): each disc, a taper's point short of the disc it reaches, and a domain line's
+ * own end outside its member star. The frame draws and the names avoid the curve these trims cut.
+ */
+export function litLineTrimsInto(
+  out: Float64Array, layout: FlatGraphLayout, line: Pick<GraphLine, "from" | "to" | "kind">, length: number, scale: number, growth: number,
+  discFrom: number, discTo: number, P: Pick<FlatGraphPaintTokens, "arcTrimPx" | "capDiscMaxPx" | "lineBow">,
+): void {
+  let trimStart = discFrom;
+  let trimEnd = discTo + (line.kind === "needs" || line.kind === "neededBy" ? P.arcTrimPx / 2 : 0);
+  if (layout.clusterByDomain.has(line.from) && layout.clusterByDomain.has(line.to)) {
+    const own = line.kind === "needs" ? line.from : line.to;
+    const star = domainStarReach(layout, own) * scale + P.capDiscMaxPx * growth;
+    if (own === line.from) trimStart = Math.max(trimStart, star);
+    else trimEnd = Math.max(trimEnd, star + P.arcTrimPx / 2);
+    const trims = trimStart + trimEnd;
+    const fit = Math.min(1, ((1 - DOMAIN_LINE_KEPT) * length) / trims);
+    const toControl = DOMAIN_LINE_CONTROL_KEPT * length * Math.hypot(0.5, P.lineBow);
+    trimStart = Math.min(trimStart * fit, toControl);
+    trimEnd = Math.min(trimEnd * fit, toControl);
+  }
+  out[0] = trimStart;
+  out[1] = trimEnd;
 }
 
 export interface ArcPath { a: Point; c: Point; b: Point; tip: Point; angle: number }

@@ -46,9 +46,14 @@ once it is drawn, ahead of a name but only outside every disc. A concept outside
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
-elements are far enough apart. Zooming in only adds names. A selected concept
-and every far end of its lines are always named; a forced name keeps off every
-domain title when any placement can. Under a lit picture a lit name tries its
+elements are far enough apart. Zooming in only adds names. A selected concept,
+with its count line, is placed before every other name and always named, then
+the far ends of its lines and the lit capabilities, then lit element names. A
+forced name keeps off every domain title when any placement can, and under a
+lit picture sits on another name only when it is a capability no free side
+holds; a lit element name also keeps the selected title gap
+from every domain title, and one with no free side is left out rather than
+overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a
@@ -88,7 +93,8 @@ They read as texture under the clusters. The hidden ones still count in
 ## Focus
 
 Hovering or selecting lights a set and sinks everything else toward the
-canvas. A domain lights itself and its members. A capability lights its
+canvas. A domain lights itself, its members and every domain it needs or is
+needed by; those domains light their own disc and name, not their members. A capability lights its
 domain, its elements and every capability it needs, is needed by, relates to
 or sits under (`broader`). An element lights its capability's set. The project
 sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. Names keep their places;
@@ -106,7 +112,7 @@ lines have drawn, one small light runs once along each, from what is needed
 toward what needs it, then the map rests and draws no frame. With reduced
 motion every state lands at once and no light travels.
 
-Only the hovered or selected capability draws its own lines: the relations it
+A hovered or selected capability draws only its own lines: the relations it
 states itself, the same connections its detail panel lists, one per far concept
 and direction. Its elements' relations are not rolled up into it.
 
@@ -123,13 +129,36 @@ alone. A recorded reason
 (`relation_notes`) does not reach the map's edges yet, so lines carry no mark
 for it.
 
+A hovered or selected domain draws its reach at domain level: the partner
+domains its detail panel lists, one taper per partner and direction in the same
+two inks, so a pair that depends both ways draws two tapers bowed apart. A
+domain taper stands for every `depends_on` relation between the two domains in
+that direction and widens with their count, from `--map-graph-line-taper-px` by
+`--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`,
+the same screen width at every zoom. It leaves or lands just outside the
+domain's own member star (a trim capped at 0.8 of the distance to the curve's
+control point, so a large star beside a near partner can still hold the start),
+fading in
+from transparent over `--map-graph-line-fade-px` behind a round cap so it
+emerges from the cluster's light, and reaches the partner's disc. A partner the camera cannot pan into view keeps its taper,
+which runs off the edge toward it. The key names the two kinds as domains it
+needs and domains that need it.
+
 A selected capability, element or orphan grows to `--map-graph-selected-disc-px`
 with one ring, and its name takes `--map-graph-selected-name-px` beside, below
 or above it, at least `--map-graph-selected-title-gap-px` from every domain
 title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
-(`is_a` included), a zero side left out. While a
+(`is_a` included), a zero side left out. A selected domain's reach line takes
+its caption's row under its name, in the same words, counting partner domains
+joined by `depends_on` alone (`is_a` and `related_to` leave a domain's reach),
+and equals the two domain counts its detail panel shows; the panel still lists
+the membership the caption counted. The layout keeps members clear of the wider
+of the caption and that reach line, so the row never lands on a member. A partner domain's title that a lit
+domain line would run through takes the side above its disc when no lit line
+crosses that side and no disc sits under it, so the line meets the disc;
+otherwise it stays below on a backing. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the
@@ -145,8 +174,12 @@ sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. A domain selection is judged the same way for its members,
-and a member that cannot be named at any of those zooms stays unnamed. A zoom
+the domain named. A domain selection never zooms, because its picture is its
+reach: it pans its disc and member star clear of the detail panel by the frame
+margin and, when every partner domain's disc and name fit in the free map at
+the current zoom, pans them all in; otherwise it pans in the partners nearest
+to it, in order of distance, up to the first one that no longer fits with them,
+so a farther partner may still land in view while a nearer one stays out. A zoom
 that reads no better than the view the click left is never taken, so a click
 stays a small move and the rest of the map stays in view. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four

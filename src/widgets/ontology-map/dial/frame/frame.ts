@@ -471,7 +471,7 @@ export function describeLastDialFrame(viewportWidth: number, viewportHeight: num
         blocks: (marks.blocks ?? []).map(({ id, box, alpha }) => ({ id, box: { ...box }, alpha })),
         discs: marks.discs.map((d) => ({ id: d.id, x: d.x, y: d.y, r: d.r, ink: marks.inks[d.rim] ?? "", dashed: d.dashed })),
         squares: last.elementSquares,
-        strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "", ax: s.ax, ay: s.ay, cx: s.cx, cy: s.cy, bx: s.bx, by: s.by })),
+        strips: marks.strips.map((s) => ({ flowKey: s.flowKey, role: s.role, ink: marks.inks[s.ink] ?? "", ax: s.ax, ay: s.ay, cx: s.cx, cy: s.cy, bx: s.bx, by: s.by, widthPx: s.w0 })),
         ledger,
         crossings: countCrossings(lines, viewportWidth, viewportHeight),
         namesCrossed: namesCrossed(lines, allTexts).count,

@@ -1,10 +1,14 @@
 import type { DialModel } from "../dial/types";
+import { domainPartners } from "../model/containment-tree";
 
 /** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */
 export type GraphLineKind = "needs" | "neededBy" | "relates" | "broader";
 
-/** Bits of the frame summary's `lineKinds`: the line kinds the map draws now, resting arcs included. */
-export const FLAT_LINE_BITS: Readonly<Record<GraphLineKind | "rest", number>> = { needs: 1, neededBy: 2, relates: 4, broader: 8, rest: 16 };
+/**
+ * Bits of the frame summary's `lineKinds`: the line kinds the map draws now, resting arcs included;
+ * `domains` marks lit lines that join domains rather than concepts.
+ */
+export const FLAT_LINE_BITS: Readonly<Record<GraphLineKind | "rest" | "domains", number>> = { needs: 1, neededBy: 2, relates: 4, broader: 8, rest: 16, domains: 32 };
 
 /** One relation drawn for the focus; a taper is wide at `from` and points at `to`. */
 export interface GraphLine {
@@ -13,6 +17,8 @@ export interface GraphLine {
   kind: GraphLineKind;
   /** `kind:from>to`, built once so a frame can report the line without allocating. */
   key: string;
+  /** The relations the line stands for: 1 for a capability's own, the pair's count between domains. */
+  weight: number;
 }
 
 export interface GraphAttention {
@@ -23,7 +29,7 @@ export interface GraphAttention {
   lit: ReadonlySet<string> | null;
   /** The relations the focus draws, one per far capability. */
   lines: readonly GraphLine[];
-  /** Distinct capabilities a focused capability needs and is needed by; null for other kinds. */
+  /** Distinct concepts a focused capability, or domains a focused domain, needs and is needed by; null for other kinds. */
   reach: { needs: number; neededBy: number } | null;
   /** Concepts a lit picture must name: the focus and every line's far end. */
   named: ReadonlySet<string>;
@@ -59,7 +65,7 @@ export function capabilityLines(model: DialModel, capabilityId: string): GraphLi
     const side = kind === "relates" ? "" : outgoing ? ">" : "<";
     if (seen.has(`${side}${far}`) || (kind === "relates" && (seen.has(`>${far}`) || seen.has(`<${far}`)))) return;
     seen.add(`${side}${far}`);
-    lines.push({ from, to, kind, key: `${kind}:${from}>${to}` });
+    lines.push({ from, to, kind, key: `${kind}:${from}>${to}`, weight: 1 });
   };
   for (const r of relations) {
     if (r.kind !== "depends") continue;
@@ -105,7 +111,31 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
 }
 
 /**
- * The lit set: a domain lights itself and its members, a capability its domain, elements and every
+ * A domain's reach at domain level, the partners its detail panel lists (`domainPartners`): one
+ * line per partner domain and direction, weighted by the relations between them. O(flows).
+ */
+function domainLines(model: DialModel, domainId: string): GraphLine[] {
+  const { needs, usedBy } = domainPartners(model.flows, domainId);
+  const lines: GraphLine[] = [];
+  for (const p of needs) lines.push({ from: domainId, to: p.domainId, kind: "needs", key: `needs:${domainId}>${p.domainId}`, weight: p.links });
+  for (const p of usedBy) lines.push({ from: p.domainId, to: domainId, kind: "neededBy", key: `neededBy:${p.domainId}>${domainId}`, weight: p.links });
+  return lines;
+}
+
+function domainReach(model: DialModel, domainId: string, into: Set<string>, named: Set<string>): GraphLine[] {
+  domainMembers(model, domainId, into);
+  const lines = domainLines(model, domainId);
+  for (const line of lines) {
+    const far = line.from === domainId ? line.to : line.from;
+    into.add(far);
+    named.add(far);
+  }
+  return lines;
+}
+
+/**
+ * The lit set: a domain lights itself, its members and every domain it needs or is needed by, a
+ * capability its domain, elements and every
  * capability it needs, is needed by, relates to or sits under, an element its capability's set.
  * The project sinks with the rest; pointing at the project lights nothing and brings back its spokes.
  * O(relations) per call; the frame caches by key.
@@ -117,7 +147,7 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
   const lit = new Set<string>();
   const named = new Set<string>([focusId]);
   let lines: GraphLine[] = [];
-  if (model.domainById.has(focusId)) domainMembers(model, focusId, lit);
+  if (model.domainById.has(focusId)) lines = domainReach(model, focusId, lit, named);
   else if (model.capabilityById.has(focusId)) lines = capabilityReach(model, focusId, lit, named);
   else {
     const owner = model.capabilityOf.get(focusId);
@@ -130,7 +160,7 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
     }
     lit.add(focusId);
   }
-  const reach = model.capabilityById.has(focusId) ? reachCounts(lines, focusId) : null;
+  const reach = model.capabilityById.has(focusId) || model.domainById.has(focusId) ? reachCounts(lines, focusId) : null;
   return { key, focusId, selected, lit, lines, reach, named };
 }
 
