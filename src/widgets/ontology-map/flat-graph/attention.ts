@@ -31,7 +31,7 @@ export interface GraphAttention {
   lines: readonly GraphLine[];
   /** Distinct concepts the focus needs and is needed by, domains for a domain; null for the project and the rest picture. */
   reach: { needs: number; neededBy: number } | null;
-  /** Concepts a lit picture must name: the focus and every line's far end. */
+  /** Concepts a lit picture names first: the focus and every line's far end. */
   named: ReadonlySet<string>;
 }
 
