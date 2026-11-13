@@ -1,0 +1,10 @@
+{
+  "needs": "依赖",
+  "neededBy": "被依赖",
+  "otherLinks": "其他关联 {count, number}",
+  "elements": "实现要素 {count, number}",
+  "domains": "领域 {count, number}",
+  "describes": "描述的概念",
+  "showMore": "再显示 {count, number} 项",
+  "showFewer": "收起"
+}

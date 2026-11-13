@@ -10,7 +10,8 @@ export interface OntologyMapEdgeHoverCardProps {
   sentence: string;
   typeLabel: string;
   why: string | null;
-  clickHint: string;
+  /** What pressing does; absent where the card explains a row that says so itself. */
+  clickHint?: string;
   x: number;
   y: number;
   /**
@@ -124,7 +125,7 @@ export function OntologyMapEdgeHoverCard({ sentence, typeLabel, why, clickHint, 
           {sentence}
         </p>
       )}
-      <p className="text-label text-[color:var(--map-panel-text-quaternary)]">{clickHint}</p>
+      {clickHint ? <p className="text-label text-[color:var(--map-panel-text-quaternary)]">{clickHint}</p> : null}
     </div>
   );
 }

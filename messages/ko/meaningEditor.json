@@ -8,7 +8,7 @@
   "targetHelp": "이 폴더에 이미 있는 문서만 고를 수 있어 줄이 항상 이어져요. 영향 조회는 ‘{relations}’ 줄만 따라가며 이 개념의 변경이 어디까지 닿는지 답해요.",
   "why": "이 관계의 이유",
   "whyHint": "알고 있다면 적어 두세요. 다음 사람이 선을 해석하지 않아도 돼요.",
-  "whyRequiredHint": "의존 관계는 왜 기대는지 적어야 해요.",
+  "whyRequiredHint": "의존 관계는 왜 필요한지 적어야 해요.",
   "relationName": {
     "isA": "상위 개념",
     "dependsOn": "의존함",

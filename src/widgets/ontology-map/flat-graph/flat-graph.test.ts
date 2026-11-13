@@ -390,15 +390,16 @@ describe("selection reach", () => {
   it("counts and reaches exactly the directed connections the detail panel lists, not its elements' relations", () => {
     const panelOf = (id: string, ns: readonly Node[], es: readonly Edge[]) => {
       const groups = groupConnectionsByRole(buildConnections(id, ns.map((n) => ({ ...n, title: n.title ?? n.id })), es));
-      return { needs: groups.dependsOn.length, neededBy: groups.usedBy.length, ids: new Set([...groups.dependsOn, ...groups.usedBy, ...groups.related].map((c) => c.id)) };
+      const directed = (rows: typeof groups.dependsOn) => rows.filter((c) => !(c.relationTypes ?? [c.relationType]).every((t) => t === "is_a"));
+      return { needs: directed(groups.dependsOn).length, neededBy: directed(groups.usedBy).length, ids: new Set([...groups.dependsOn, ...groups.usedBy, ...groups.related].map((c) => c.id)) };
     };
     const reachOf = (m: DialModel, id: string) => {
       const att = resolveGraphAttention(m, id, true);
       return { needs: att.reach!.needs, neededBy: att.reach!.neededBy, ids: new Set(att.lines.map((l) => (l.from === id ? l.to : l.from))) };
     };
     const panel = panelOf("a", nodes, edges);
-    expect({ needs: panel.needs, neededBy: panel.neededBy }).toEqual({ needs: 2, neededBy: 4 });
-    expect(reachOf(model, "a")).toEqual({ needs: 2, neededBy: 4, ids: new Set(["b", "c", "e", "f", "g", "y"]) });
+    expect({ needs: panel.needs, neededBy: panel.neededBy }).toEqual({ needs: 1, neededBy: 4 });
+    expect(reachOf(model, "a"), "a broader concept is drawn but counted by neither side").toEqual({ needs: 1, neededBy: 4, ids: new Set(["b", "c", "e", "f", "g", "y"]) });
     for (const manifest of [dogfoodManifest, storefrontManifest]) {
       const d = deriveOntologyFromVault(manifest as unknown as VaultManifest);
       const vault = modelOf(d.nodes as Node[], d.edges as Edge[]);
@@ -412,7 +413,7 @@ describe("selection reach", () => {
   });
 
   it("counts distinct concepts on each side of the reach, and an element focus reaches through its capability", () => {
-    expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 2, neededBy: 4 });
+    expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 1, neededBy: 4 });
     expect(resolveGraphAttention(model, "c", true).reach).toEqual({ needs: 1, neededBy: 0 });
     const element = resolveGraphAttention(model, "x", true);
     expect(element.reach).toBeNull();
@@ -532,7 +533,7 @@ describe("domain reach", () => {
   });
 
   it("reserves each domain's title block wide enough for the reach line its selection writes, on every bundled vault", () => {
-    const labels = { ...LABELS, units: (c: number, e: number) => `역량 ${c} · 요소 ${e}`, reachNeeds: (n: number) => `${n}곳에 기댐`, reachNeededBy: (n: number) => `${n}곳이 기댐` };
+    const labels = { ...LABELS, units: (c: number, e: number) => `역량 ${c} · 요소 ${e}`, reachNeeds: (n: number) => `${n}곳이 필요`, reachNeededBy: (n: number) => `${n}곳에서 필요` };
     const wider: string[] = [];
     for (const [name, vault] of VAULTS) {
       const layout = layoutOf(vault);

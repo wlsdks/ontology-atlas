@@ -426,7 +426,7 @@
       "close": "카드 닫기",
       "conceptSentence": "지도의 개념이에요.",
       "fileFacts": "{format} · {size} · {state}",
-      "sourcesLabel": "기대고 있는 원문",
+      "sourcesLabel": "근거로 삼은 원문",
       "pagesLabel": "이 파일로 쓴 문서",
       "rowMissing": "이 폴더에 없음",
       "open": "열기",

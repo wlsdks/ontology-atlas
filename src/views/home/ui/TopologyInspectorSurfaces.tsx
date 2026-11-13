@@ -248,6 +248,7 @@ export function TopologyInspectorSurfaces({
               summaryHistoryUnavailable={summaryHistoryUnavailable.has(panelDatasheetModel.slug)}
               groups={panelDatasheetModel.groups}
               domainUsage={panelDatasheetModel.domainUsage}
+              reach={panelDatasheetModel.reach}
               evidence={panelDatasheetModel.evidence}
               codeLocations={panelDatasheetModel.codeLocations}
               updatedAtLabel={panelDatasheetModel.updatedAtLabel}

@@ -1,0 +1,10 @@
+{
+  "needs": "필요로 하는 곳",
+  "neededBy": "이 개념을 필요로 하는 곳",
+  "otherLinks": "그 밖의 연결 {count, number}",
+  "elements": "구현 요소 {count, number}",
+  "domains": "도메인 {count, number}",
+  "describes": "설명하는 개념",
+  "showMore": "{count, number}개 더 보기",
+  "showFewer": "접기"
+}

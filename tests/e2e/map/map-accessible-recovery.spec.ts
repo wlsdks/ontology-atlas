@@ -59,6 +59,15 @@ test('keyboard focus stays visible across the canvas and related concept replace
   const targetId = (await relation.getAttribute('data-datasheet-connection'))!;
   for (let i = 0; i < 50 && (await page.evaluate(() => document.activeElement?.getAttribute('data-datasheet-connection'))) !== targetId; i += 1) await page.keyboard.press('Tab');
   await expect(relation).toBeFocused();
+  // Focus shows the row's recorded reason outside the list, the sentence its description carries;
+  // a row with none says so in its own line and opens no card.
+  const reasonId = await relation.getAttribute('aria-describedby');
+  if (reasonId) {
+    await expect(page.getByTestId('map-edge-hover-why')).toHaveText((await page.locator(`[id="${reasonId}"]`).textContent())!);
+  } else if ((await relation.getAttribute('data-datasheet-domain-row')) === null) {
+    await expect(relation).toContainText('이유 없음');
+    await expect(page.getByTestId('map-edge-hover-card')).toHaveCount(0);
+  }
   await page.keyboard.press('Enter');
   await expect(panel).toHaveAttribute('data-selected-node-id', targetId);
   await expect(page.getByTestId('map-detail-panel-close')).toBeFocused();

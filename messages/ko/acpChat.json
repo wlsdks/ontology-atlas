@@ -346,7 +346,7 @@
     },
     "explainSubject": {
       "label": "「{subject}」의 역할을 기록과 관계로 설명해 줘",
-      "prompt": "get_concept와 find_neighbors로 「{subject}」({slug})를 읽고, 무슨 일을 하는지, 어디에 속하는지, 무엇에 기대는지 설명해 줘. 폴더에 적힌 것만 쓰고, 기록이 없는 자리는 추측하지 말고 없다고 말해 줘."
+      "prompt": "get_concept와 find_neighbors로 「{subject}」({slug})를 읽고, 무슨 일을 하는지, 어디에 속하는지, 무엇을 필요로 하는지 설명해 줘. 폴더에 적힌 것만 쓰고, 기록이 없는 자리는 추측하지 말고 없다고 말해 줘."
     },
     "subjectImpact": {
       "label": "「{subject}」에 변경이 생기면 영향받는 곳을 찾아 줘",
