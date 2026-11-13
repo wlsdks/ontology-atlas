@@ -36,7 +36,9 @@ The download invitation has its own welcome. Short hops move only while airborne
 Petting Moru plays one shy, clap, dance, thinking, pondering, hearts, laughter, flipper-groove, bow, flipper-five or hat-greeting response after an airborne hop lands;
 the download welcome also offers a fish trick. A wordless pixel bubble shows a
 heart, note or sparkle on touch and a note on occasional return hops. Waiting
-uses gentle reactions without bubbles; repeated presses do not queue more reactions. Pause/resume lives in Moru’s context menu (right-click or Shift+F10), with no persistent playback button beside the character.
+uses gentle reactions without bubbles; repeated presses do not queue more reactions. Ambient play combines three
+phrases with varied quiet rests; petting avoids the two most recent gestures
+while visiting every context-allowed response before refilling its choices. Pause/resume lives in Moru’s context menu (right-click or Shift+F10), with no persistent playback button beside the character.
 Pointer/keyboard interaction and hidden/offscreen state suspend ambient motion;
 reduced motion answers a pet with a still expression. Large pending fallbacks use
 native 128px art. Work and completion poses still require their existing evidence.

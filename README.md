@@ -203,6 +203,8 @@ At folder entry, Moru greets, offers a small folder and waits. Play gives way to
 
 New 32-pose gestures add a bow, flipper five and hat greeting to petting; the download welcome also offers a fish trick. A small wordless bubble answers touch with a heart, note or sparkle and occasionally accompanies a return hop. Waiting stays quiet. Peekaboo, rosy temper and bubble play are available in the catalogue.
 
+Moru now keeps its rounded shape during the small nod. Play combines three phrases with different quiet rests; petting varies the order while avoiding the two most recent gestures. Waiting remains gentle and stationary.
+
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
 <details>

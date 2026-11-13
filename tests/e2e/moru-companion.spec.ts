@@ -69,11 +69,16 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).every(a => a.playState === 'running'))).toBe(true);
   // Every new expression must finish and hand back to the same companion,
   // without adding a control or leaving the reaction strip visible forever.
-  for (const gesture of ['clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish', 'shy']) {
+  const seen = new Set(['shy']);
+  for (let i = 0; i < 11; i++) {
     await pet.click();
-    await expect(pet).toHaveAttribute('data-moru-reaction', gesture);
+    await expect(pet).toHaveAttribute('data-moru-reaction');
+    const gesture = (await pet.getAttribute('data-moru-reaction'))!;
+    expect(seen.has(gesture), `repeated ${gesture} before completing the repertoire`).toBe(false);
+    seen.add(gesture);
     await expect(pet).not.toHaveAttribute('data-moru-reaction');
   }
+  expect([...seen].sort()).toEqual(['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish'].sort());
   await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
 });
 
@@ -93,7 +98,8 @@ test('keyboard petting and its context menu preserve focus and an explicit pause
   await page.getByRole('menuitem', { name: 'Pause Moru animation' }).click();
   await pet.click();
   await expect(pet).toHaveAttribute('data-moru-paused', 'true');
-  await expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
+  await expect(pet).toHaveAttribute('data-moru-reaction');
+  await expect(pet).not.toHaveAttribute('data-moru-reaction', 'shy');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).every(a => a.playState === 'paused'))).toBe(true);
 });
 

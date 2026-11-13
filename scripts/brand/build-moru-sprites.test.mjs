@@ -111,6 +111,21 @@ test('complete floating ontology models retain connected opaque pixel links', as
   }
 });
 
+test('the soft nod keeps its rounded body instead of flattening during the greeting', async () => {
+  const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  const clip = clips['soft-bow'];
+  for (const [file, size] of [[clip.sprite64, 64], [clip.sprite, 128]]) {
+    const strip = sharp(`assets/brand/moru/${file}`);
+    const areas = [];
+    for (let frame = 0; frame < clip.frames; frame++) {
+      const data = await strip.clone().extract({ left: frame * size, top: 0, width: size, height: size }).ensureAlpha().raw().toBuffer();
+      areas.push(moruBodyAnchor(data, size).area);
+    }
+    assert.ok(Math.min(...areas) >= areas[0] * 0.9, `${size}px nod lost more than a tenth of its body volume`);
+    assert.ok(Math.max(...areas) <= areas[0] * 1.1, `${size}px nod inflated its body`);
+  }
+});
+
 test('every catalogue export has complete frames, clear margins and a shared neutral loop seam', async () => {
   const root = 'assets/brand/moru';
   const manifest = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));

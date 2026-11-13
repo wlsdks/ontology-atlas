@@ -16,6 +16,19 @@ function positionAt(frames: Keyframe[], offset: number) {
 }
 
 describe('Moru ground contact', () => {
+  it('varies the long play phrases while keeping waiting and resize continuity stable', () => {
+    for (const context of ['folder', 'welcome'] as const) {
+      const variants = [0, 1, 2].map(variant => companionMotion(32, context, variant));
+      expect(new Set(variants.map(motion => JSON.stringify(motion.sprite))).size).toBe(3);
+      for (const [variant, motion] of variants.entries()) {
+        expect(companionMotion(320, context, variant).sprite).toEqual(motion.sprite);
+        const shownNotes = motion.emote.filter(frame => Number(frame.opacity) > 0);
+        const returnTrips = motion.movement.filter((frame, i, all) => i > 0 && x(frame) < x(all[i - 1]));
+        expect(returnTrips.length).toBeGreaterThan(shownNotes.length / 2);
+      }
+    }
+    expect(JSON.stringify(companionMotion(32, 'waiting', 2))).toBe(JSON.stringify(companionMotion(32, 'waiting', 0)));
+  });
   it('keeps pending work at rest and reserves the folder prop for selection', () => {
     const waiting = companionMotion(640, 'waiting');
     expect(waiting.movement.every(frame => x(frame) === 0)).toBe(true);

@@ -2,36 +2,47 @@ import source from './moru-companion.json';
 import { moruFrame } from './moru-frame';
 
 /** Invite a folder choice, then wait nearby. Only hops change floor position. */
-const folderItinerary = [
-  ['wave', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['folder-peek', 1, 1],
-  ['blink', 1, 1], ['hop', 0, -1], ['folder-open', 0, 1], ['soft-bow', 0, 1], ['blink', 0, 1],
+const folderPhrases = [
+  [['wave', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['folder-peek', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['soft-bow', 0, 1], ['blink', 0, 1]],
+  [['blink', 0, 1], ['folder-peek', 0, 1], ['tilt', 0, 1], ['hop', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['wave', 0, 1], ['blink', 0, 1]],
+  [['soft-bow', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['folder-open', 1, 1], ['tilt', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['blink', 0, 1]],
 ] as const;
-const welcomeItinerary = [
-  ['soft-bow', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['blink', 1, 1],
-  ['hop', 0, -1], ['wave', 0, 1], ['blink', 0, 1],
+const welcomePhrases = [
+  [['soft-bow', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['wave', 0, 1], ['blink', 0, 1]],
+  [['blink', 0, 1], ['tilt', 0, 1], ['wave', 0, 1], ['hop', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['blink', 0, 1]],
+  [['wave', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['soft-bow', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['tilt', 0, 1], ['blink', 0, 1]],
 ] as const;
 const waitingItinerary = [['blink', 0, 1], ['tilt', 0, 1], ['blink', 0, 1]] as const;
 export type CompanionContext = 'folder' | 'welcome' | 'waiting';
 
-function poseDurations(id: keyof typeof source.clips) {
+function poseDurations(id: keyof typeof source.clips, rest = 0) {
   return source.clips[id].durationsMs.map((ms, frame, poses) => {
-    if (id !== 'hop') return ms;
+    if (id !== 'hop') return ms + (frame === poses.length - 1 ? rest : 0);
     // Retain the authored crouch/flight/landing poses; shorten only neutral dwell.
-    return frame === 0 ? 180 : frame === poses.length - 1 ? 320 : ms;
+    return frame === 0 ? 180 : frame === poses.length - 1 ? 420 : ms;
   });
 }
 
-export function companionMotion(travel: number, context: CompanionContext = 'folder') {
-  const itinerary = context === 'folder' ? folderItinerary : context === 'waiting' ? waitingItinerary : welcomeItinerary;
+export function companionMotion(travel: number, context: CompanionContext = 'folder', variation = 0) {
+  const phrases = context === 'folder' ? folderPhrases : welcomePhrases;
+  // A stable, longer sequence breathes differently across visits and resizes.
+  // Only one return hop in the three phrases carries a note.
+  const itinerary = context === 'waiting'
+    ? waitingItinerary.map(([id, destination, direction]) => ({ id, destination, direction, rest: 0, note: false }))
+    : [0, 1, 2].flatMap(index => {
+      const phrase = (index + variation) % phrases.length;
+      return phrases[phrase].map(([id, destination, direction]) => ({ id, destination, direction,
+        rest: id === 'blink' ? [420, 1100, 1800][phrase] : 0, note: index === 0 }));
+    });
   // A wide chooser must not turn a little hop into a room-wide glide.
   const reach = Math.min(Math.max(0, travel), source.cell / 4);
-  const duration = itinerary.reduce((sum, [id]) => sum + poseDurations(id).reduce((a, b) => a + b, 0), 0);
+  const duration = itinerary.reduce((sum, { id, rest }) => sum + poseDurations(id, rest).reduce((a, b) => a + b, 0), 0);
   const sprite: Keyframe[] = [], movement: Keyframe[] = [], facing: Keyframe[] = [];
   const emote: Keyframe[] = [{ offset: 0, opacity: 0, transform: 'translateY(0px)' }];
   const phases: Array<{ start: number; end: number; firstHold: number; rest: number; liftOff: number | null }> = [];
   let elapsed = 0, position = 0;
-  for (const [id, destination, direction] of itinerary) {
-    const clip = source.clips[id], durations = poseDurations(id), offset = elapsed / duration;
+  for (const { id, destination, direction, rest, note } of itinerary) {
+    const clip = source.clips[id], durations = poseDurations(id, rest), offset = elapsed / duration;
     const end = elapsed + durations.reduce((a, b) => a + b, 0);
     phases.push({ start: elapsed, end, firstHold: durations[0], rest: end - durations[durations.length - 1],
       liftOff: id === 'hop' ? elapsed + durations.slice(0, 6).reduce((a, b) => a + b, 0) : null });
@@ -46,8 +57,8 @@ export function companionMotion(travel: number, context: CompanionContext = 'fol
         { offset: (elapsed + liftOff) / duration, transform: `translateX(${position * reach}px)` },
         { offset: (elapsed + landing) / duration, transform: `translateX(${destination * reach}px)` },
       );
-      // One small note on the return hop per itinerary, away from folder props.
-      if (direction === -1) {
+      // An occasional note on a return hop, away from folder props.
+      if (direction === -1 && note) {
         const start = elapsed + liftOff, finish = Math.min(end - durations[durations.length - 1], start + 1600);
         emote.push(
           { offset: start / duration, opacity: 0, transform: 'translateY(0px)' },

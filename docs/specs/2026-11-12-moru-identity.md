@@ -249,3 +249,10 @@ celebration. Rosy temper stays a catalogue expression, never an error response.
 Wordless pixel bubbles show a heart, note or sparkle on touch and occasionally a
 note during a return hop. They stay within the companion, add no control or live
 announcement, and follow visibility, pause and reduced-motion guards.
+
+The subsequent polish pass keeps the catalogue at 70 clips. It preserves the
+rounded body during the small nod, retimes anticipation and settling in the core
+gestures, and uses three quiet ambient phrases with a stable starting variation.
+Click responses draw the whole contextual repertoire without recently repeated
+gestures; the first response remains gentle. Visibility, resize, explicit pause
+and reduced motion preserve their existing guards.

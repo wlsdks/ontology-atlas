@@ -1,17 +1,17 @@
 import reactions from './moru-reactions.json';
 import { companionMotion, type CompanionContext } from './moru-companion-motion';
 import { moruFrame } from './moru-frame';
-
-const gestures = ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish'] as const;
+import { companionChoices, type CompanionGesture } from './moru-companion-choices';
 
 /** A local, finite response to touch; it never projects agent or folder status. */
-export function companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, reducedMotion, intent }: {
+export function companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, variation, reducedMotion, intent }: {
   image: HTMLImageElement; reactionImage: HTMLImageElement; body: HTMLButtonElement; bounds: HTMLElement;
-  bubble: HTMLSpanElement; animations: Animation[]; context: CompanionContext; reducedMotion: boolean;
+  bubble: HTMLSpanElement; animations: Animation[]; context: CompanionContext; variation: number; reducedMotion: boolean;
   intent: () => { paused: boolean; held: boolean };
 }) {
-  let motion = companionMotion(Math.max(0, bounds.clientWidth - reactions.cell), context);
-  let visible = false, disposed = false, nextGesture = 0, requested: typeof gestures[number] | null = null;
+  let motion = companionMotion(Math.max(0, bounds.clientWidth - reactions.cell), context, variation);
+  const nextGesture = companionChoices(context);
+  let visible = false, disposed = false, requested: CompanionGesture | null = null;
   let reaction: Animation | null = null, timer: ReturnType<typeof setTimeout> | null = null, still = false;
   let emotion: Animation | null = null;
   let reactionReady = typeof reactionImage.decode !== 'function', decodeFailed = false;
@@ -29,7 +29,7 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
   };
   const pauseAmbient = () => { for (const animation of animations) animation.pause(); };
   const playAmbient = () => { for (const animation of animations) animation.play(); };
-  const showEmotion = (id: typeof gestures[number], animated: boolean, duration = 0) => {
+  const showEmotion = (id: CompanionGesture, animated: boolean, duration = 0) => {
     if (context === 'waiting') return;
     // The still fish is already an expression; keep its prop space clear.
     if (id === 'magic-fish' && !animated) {
@@ -50,7 +50,7 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
       { opacity: 0, transform: 'translateY(-2px)', offset: 1 },
     ], { duration: emotionDuration, fill: 'both' });
   };
-  const begin = (id: typeof gestures[number], at: number) => {
+  const begin = (id: CompanionGesture, at: number) => {
     requested = null;
     pauseAmbient();
     for (const animation of animations) animation.currentTime = at;
@@ -107,7 +107,7 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
       } else pauseAmbient();
     } else if (onScreen && !paused) playAmbient(); else pauseAmbient();
   };
-  const respond = (id: typeof gestures[number]) => {
+  const respond = (id: CompanionGesture) => {
     if (reducedMotion || intent().paused || animations.length === 0) {
       // Explicit pause/reduced motion permits a changed expression, never motion.
       pauseAmbient(); still = true;
@@ -139,7 +139,7 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
   });
   observer?.observe(bounds);
   const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
-    motion = companionMotion(Math.max(0, bounds.clientWidth - reactions.cell), context);
+    motion = companionMotion(Math.max(0, bounds.clientWidth - reactions.cell), context, variation);
     (animations[1]?.effect as KeyframeEffect | null)?.setKeyframes(motion.movement);
   });
   resize?.observe(bounds);
@@ -150,8 +150,7 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
     update,
     react() {
       if (disposed || decodeFailed || reaction || requested) return;
-      const available = context === 'waiting' ? ['soft-bow', 'thinking'] as const : context === 'folder' ? gestures.slice(0, -1) : gestures;
-      const id = available[nextGesture++ % available.length];
+      const id = nextGesture();
       if (!reactionReady) { requested = id; return; }
       respond(id);
     },
