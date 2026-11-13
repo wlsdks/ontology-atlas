@@ -60,8 +60,9 @@ the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a
 lit picture sits on another name only when it is a capability no free side
 holds; a lit element name also keeps the selected title gap
-from every domain title, and one with no free side is left out rather than
-overprinted. Under a lit picture a lit name tries its
+from every domain title, prefers a side clear of every disc, never sits on the
+selection's ring, and one with no side clear of names and the ring is left out
+rather than overprinted. Under a lit picture a lit name tries its
 sides in a fixed order (right, left, below, above) and takes the first that no
 lit line crosses and no other name or disc occupies. Where every free side is
 crossed, the name keeps the first free side and draws on a backing: a
@@ -181,7 +182,8 @@ framed view does not read clear, it zooms in about the selection, at most
 `--map-graph-select-zoom-max-ratio` times the zoom of the click (for selections
 made one after another with no pan or zoom between, the zoom of the first), never past the
 zoom band's top, and only as far as the domain's lit set, its names on the
-sides they take there, still fits. Within that range it takes the smallest zoom
+sides they take there, still fits and every far end the panned view showed in
+the free map stays there. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
@@ -204,9 +206,11 @@ eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
-and a press or drag stops it at once. Deselecting any selection, a deep link's
-arrival included, leaves the camera where it is; the fit control returns to the
-overview.
+and a press or drag stops it at once. Deselecting returns the camera to where it
+was before the first selection of the chain, unless the reader has panned or
+zoomed since; a selection a deep link arrived on returns to the overview. An
+arrow-key walk recentres as it goes, which is the reader travelling: letting go
+after it stays where the walk arrived.
 
 ## Zoom
 

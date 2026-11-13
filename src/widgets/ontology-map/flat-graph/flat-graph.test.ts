@@ -463,6 +463,69 @@ describe("selection reach", () => {
   });
 });
 
+describe("a lit element's name beside the selection", () => {
+  const contains = (from: string, to: string): Edge => ({ from, to, type: "contains" });
+  const label = "implementation role y";
+  // `y`, an element of `c`, needs the selected `a`: the selection names it.
+  const model = modelOf(
+    [
+      { id: "p", kind: "project" }, { id: "d1", kind: "domain" }, { id: "d2", kind: "domain" },
+      ...["a", "c", "k1", "k2"].map((id) => ({ id, kind: "capability" })), { id: "y", kind: "element", title: label },
+    ],
+    [
+      contains("p", "d1"), contains("p", "d2"), contains("d1", "a"), contains("d1", "c"), contains("d2", "k1"), contains("d2", "k2"),
+      contains("c", "y"), { from: "y", to: "a", type: "depends_on" },
+    ],
+  );
+  const attention = resolveGraphAttention(model, "a", true);
+  const t = TOKENS.paint;
+  const capPx = 6;
+  // At scale 1 and growth 1 a world unit is a pixel; `y` sits at the origin.
+  const nameW = measure(label, `400 ${t.elementNamePx}px sans-serif`);
+  const near = t.elementDotPx + t.nameGapPx - t.namePadPx;
+  const half = t.elementNamePx / 2 + t.namePadPx;
+  const selectedPx = Math.max(capPx, t.selectedDiscPx);
+  const ringedPx = selectedPx + t.selectedRingGapPx + t.selectedRingPx;
+
+  function admitWith(k2: { x: number; y: number }) {
+    const positions = new Map([
+      ["p", { x: 0, y: -600 }], ["d1", { x: 400, y: 400 }], ["d2", { x: -400, y: 400 }], ["c", { x: 500, y: 500 }], ["y", { x: 0, y: 0 }],
+      // Right of `y` only the selection's ring reaches; below, its disc.
+      ["a", { x: near + nameW / 2, y: half + (selectedPx + ringedPx) / 2 }],
+      ["k1", { x: -(near + nameW), y: 0 }],
+      ["k2", k2],
+    ]);
+    const item = (id: string, domainId: string, elementIds: string[] = []) => ({ id, domainId, direct: false, elementIds });
+    const clusters = [
+      { domainId: "d1", centre: positions.get("d1")!, footprint: 100, hue: 0, items: [item("a", "d1"), item("c", "d1", ["y"])] },
+      { domainId: "d2", centre: positions.get("d2")!, footprint: 100, hue: 1, items: [item("k1", "d2"), item("k2", "d2")] },
+    ];
+    const layout: FlatGraphLayout = {
+      positions, itemAt: new Map(), clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])),
+      hueByDomain: new Map([["d1", 0], ["d2", 1]]), orphanIds: [], extent: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 },
+    };
+    return admittedNames({
+      model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+      elementLabel: (id) => (id === "y" ? label : id), staleByDomain: null, lit: attention.lit, focusId: "a", attentionKey: attention.key,
+      agentFocusId: null, selected: true, named: attention.named, reach: attention.reach, lines: attention.lines,
+      discRadius: (id) => (model.domainById.has(id) ? t.domainDiscPx : capPx), elementSpacingPx: t.elementNameSpacingPx,
+    }).names.filter((n) => n.id === "y");
+  }
+
+  it("names an element with no clear side on another concept's disc, never on the selection's ring or disc", () => {
+    expect(attention.named.has("y")).toBe(true);
+    const placed = admitWith({ x: 0, y: -(half + capPx + 1) });
+    expect(placed).toHaveLength(1);
+    const { box } = placed[0]!;
+    expect(box.maxX <= 0 || box.maxY <= -near, "left of or above the element, away from the selection").toBe(true);
+  });
+
+  it("names it on the one side clear of every disc and the ring", () => {
+    const placed = admitWith({ x: -900, y: -900 });
+    expect(placed.map((n) => ({ align: n.align, above: n.box.maxY <= -near }))).toEqual([{ align: "center", above: true }]);
+  });
+});
+
 describe("domain reach", () => {
   const nodes: Node[] = [
     { id: "p", kind: "project" }, ...["d1", "d2", "d3", "d4"].map((id) => ({ id, kind: "domain" })),

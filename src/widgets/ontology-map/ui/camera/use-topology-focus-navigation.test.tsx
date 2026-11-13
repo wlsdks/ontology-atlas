@@ -376,7 +376,7 @@ describe("useTopologyFocusNavigation", () => {
     expect(deps.beginCameraTween).toHaveBeenLastCalledWith(framed, undefined, "spring");
   });
 
-  it("on the Flat graph a deselect leaves the camera where the selection put it, whatever made the selection", () => {
+  it("on the Flat graph a deselect returns a view the reader has not moved, whatever made the selection", () => {
     const framed = { tx: 610, ty: 12, tscale: 0.5 };
     vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
     vi.spyOn(branchFrame, "branchFocusTarget").mockReturnValue({ tx: 700, ty: 30, tscale: 1.4 });
@@ -390,20 +390,26 @@ describe("useTopologyFocusNavigation", () => {
     for (const [name, choose] of sources) {
       const s = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), cameraTargetRef: ref({ ...before }) });
       choose(s);
-      const landed = { ...s.deps.cameraTargetRef.current };
-      expect(landed, `${name} moves the camera`).not.toEqual(before);
-      vi.mocked(s.deps.beginCameraTween).mockClear();
+      expect(s.deps.cameraTargetRef.current, `${name} moves the camera`).not.toEqual(before);
       s.select(null);
-      expect(s.deps.beginCameraTween, name).not.toHaveBeenCalled();
-      expect(s.deps.cameraTargetRef.current, name).toEqual(landed);
+      expect(s.deps.cameraTargetRef.current, name).toEqual(before);
     }
+    const moved = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), cameraTargetRef: ref({ ...before }) });
+    moved.select("f", { click: true });
+    const panned = { ...moved.deps.cameraTargetRef.current, tx: moved.deps.cameraTargetRef.current.tx + 200 };
+    moved.deps.cameraTargetRef.current = panned;
+    moved.deps.cameraGestureRevisionRef.current += 1;
+    vi.mocked(moved.deps.beginCameraTween).mockClear();
+    moved.select(null);
+    expect(moved.deps.beginCameraTween, "a view the reader panned").not.toHaveBeenCalled();
+    expect(moved.deps.cameraTargetRef.current).toEqual(panned);
+
     const arrival = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), lastFocusedSlugRef: ref("f"), cameraTargetRef: ref({ ...before }), overviewFitRef: ref("full") }, "f");
     frames.shift()?.(performance.now());
     const landed = { ...arrival.deps.cameraTargetRef.current };
-    vi.mocked(arrival.deps.beginCameraTween).mockClear();
     arrival.select(null);
-    expect(arrival.deps.beginCameraTween, "a deep link's arrival frame").not.toHaveBeenCalled();
-    expect(arrival.deps.cameraTargetRef.current).toEqual(landed);
+    expect(arrival.deps.cameraTargetRef.current, "a deep link's arrival has no earlier view and goes to the overview").not.toEqual(landed);
+    expect(arrival.deps.cameraTargetRef.current).not.toEqual(before);
   });
 
   it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {
