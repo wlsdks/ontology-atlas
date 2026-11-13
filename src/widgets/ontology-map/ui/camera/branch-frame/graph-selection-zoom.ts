@@ -138,12 +138,14 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
 /**
  * How well a zoom reads a capability's selection, in order: no two names in `near` overlap or sit
  * on one of its discs; the selection's ring keeps `selectedDiscGapPx` from its domain disc; how
- * many of `near` are named. And what `framed` covers there, each name on the side it takes.
+ * many of `near` are named. It reads clear once the first two hold. And what `framed` covers
+ * there, each name on the side it takes.
  */
 export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoomIn {
   const reading = zoomReading(input);
   const scoreAt = (scale: number) => [reading.namesApart(scale, null) ? 1 : 0, reading.ringClear(scale) ? 1 : 0, reading.namedCount(scale)];
-  return { maxScale: input.maxScale, scoreAt, marksAt: reading.marksAt };
+  const readsAt = (scale: number) => reading.namesApart(scale, null) && reading.ringClear(scale);
+  return { maxScale: input.maxScale, readsAt, scoreAt, marksAt: reading.marksAt };
 }
 
 /**
@@ -154,6 +156,7 @@ export function graphSelectionZoom(input: GraphSelectionZoomInput): SelectionZoo
 export function elementSelectionZoom(input: GraphSelectionZoomInput): SelectionZoomIn {
   const reading = zoomReading(input);
   const focus = input.attention.focusId!;
-  const scoreAt = (scale: number) => [reading.namesApart(scale, focus) ? 1 : 0];
-  return { maxScale: input.maxScale, scoreAt, marksAt: reading.marksAt };
+  const readsAt = (scale: number) => reading.namesApart(scale, focus);
+  const scoreAt = (scale: number) => [readsAt(scale) ? 1 : 0];
+  return { maxScale: input.maxScale, readsAt, scoreAt, marksAt: reading.marksAt };
 }

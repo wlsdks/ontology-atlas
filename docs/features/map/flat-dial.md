@@ -170,14 +170,15 @@ otherwise it stays below on a backing. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, or a selection arrives from outside the canvas (the explorer,
 search or a link), the camera frames the selection, its domain disc and every lit
-concept inside that domain, with every side their names may take, inside the
+concept inside that domain, with every side their names may take (the selection's own on the side it
+takes when every side cannot fit), inside the
 free map (clear of the explorer, the detail panel, the tool row and the key)
 and `--map-graph-frame-margin-px` from each of those edges. When the whole lit
 reach fits at the current zoom it frames the whole reach; far ends in other
 domains otherwise may stay off screen. When the domain's lit set does not fit
 it zooms out only as far as it needs and never below the opening fit. When the
 framed view does not read clear, it zooms in about the selection, at most
-`--map-graph-select-zoom-max-ratio` times the zoom of the click, never past the
+`--map-graph-select-zoom-max-ratio` times the zoom the map opens at, never past the
 zoom band's top, and only as far as the domain's lit set, its names on the
 sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
@@ -192,15 +193,18 @@ and the detail panel by the frame margin, zooming out only when they cannot fit
 at the current zoom, and, when every partner domain's disc and name fit in the free map at
 the current zoom, pans them all in; otherwise it pans in the partners nearest
 to it, in order of distance, up to the first one that no longer fits with them,
-so a farther partner may still land in view while a nearer one stays out. A zoom
-that reads no better than the view the click left is never taken, so a click
-stays a small move and the rest of the map stays in view. The fit bisects
+so a farther partner may still land in view while a nearer one stays out. A view
+that already reads clear takes no zoom, and a zoom that reads no better than
+the view the click left, or one under a sample step, is never taken, so a click
+stays a small move, the rest of the map stays in view, and framing the landed
+view again moves nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
-and a press or drag stops it at once. Deselecting a click selection leaves the
-camera where it is.
+and a press or drag stops it at once. Deselecting any selection, a deep link's
+arrival included, leaves the camera where it is; the fit control returns to the
+overview.
 
 ## Zoom
 

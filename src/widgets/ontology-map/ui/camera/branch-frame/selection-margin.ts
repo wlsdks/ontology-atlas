@@ -81,7 +81,7 @@ function graphSelectionFrame(
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,
-    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, camera.tscale * paint.selectZoomMaxRatio),
+    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.entryScale * paint.selectZoomMaxRatio),
   });
   return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
 }
