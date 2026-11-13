@@ -22,6 +22,8 @@
   "connectionCount": "연결 {count, number}개",
   "keyNeeds": "이 역량이 필요로 하는 역량",
   "keyNeededBy": "이 역량을 필요로 하는 역량",
+  "keyDomainNeeds": "이 도메인이 필요로 하는 도메인",
+  "keyDomainNeededBy": "이 도메인을 필요로 하는 도메인",
   "keyRelates": "관련",
   "keyBroader": "상위 개념",
   "noDomain": "도메인 없음 {count, number}",

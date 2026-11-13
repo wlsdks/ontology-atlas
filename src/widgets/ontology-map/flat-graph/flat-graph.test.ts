@@ -19,14 +19,15 @@ import {
   type TreeInputEdge,
   type TreeInputNode,
 } from "../model/containment-tree";
+import { readDomainUsage } from "../model/domain-usage";
 import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
-import { graphDiscRadiusPx } from "./marks";
-import { admittedNames, chooseSide, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -35,7 +36,7 @@ const KINDS = new Set(["project", "domain", "capability", "element"]);
 type Node = { id: string; kind: string; title?: string };
 type Edge = { from: string; to: string; type: string };
 
-function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+function treeInputOf(nodes: readonly Node[], edges: readonly Edge[]): { treeNodes: TreeInputNode[]; treeEdges: TreeInputEdge[] } {
   const treeNodes: TreeInputNode[] = nodes
     .filter((n) => KINDS.has(n.kind))
     .map((n) => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as TreeInputNode["kind"] }));
@@ -45,6 +46,11 @@ function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
     kind: isContainmentRelation(e.type) ? "contains" : "depends",
     relationType: e.type,
   }));
+  return { treeNodes, treeEdges };
+}
+
+function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
+  const { treeNodes, treeEdges } = treeInputOf(nodes, edges);
   const tree = readContainmentTree(treeNodes, treeEdges);
   const dependencies = rollDomainDependencies(tree, treeEdges);
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
@@ -257,6 +263,19 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     expect(namesAt(model, layout, 0.5, null, null, 0).ids.has(element)).toBe(false);
   });
 
+  it("names the agent's element while a domain is pointed at", () => {
+    const elements = layout.clusters.flatMap((c) => c.items.flatMap((it) => it.elementIds));
+    const unnamed = [...model.domainById.keys()].flatMap((domain) => {
+      const attention = cachedGraphAttention(model, domain, false);
+      return elements.filter((element) => !admittedNames({
+        model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 0.5, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: domain, attentionKey: attention.key, agentFocusId: element,
+        selected: false, named: attention.named, reach: attention.reach, lines: attention.lines, discRadius: () => 4, elementSpacingPx: 0,
+      }).ids.has(element)).map((element) => `${element} under ${domain}`);
+    });
+    expect(unnamed).toEqual([]);
+  });
+
   it("only adds names as the zoom grows", () => {
     const steps = [0.5, 0.71, 1, 1.41, 2].map((s) => namesAt(model, layout, s, null).ids);
     for (let k = 1; k < steps.length; k += 1) for (const id of steps[k - 1]!) expect(steps[k]!.has(id), id).toBe(true);
@@ -398,7 +417,6 @@ describe("selection reach", () => {
     const element = resolveGraphAttention(model, "x", true);
     expect(element.reach).toBeNull();
     expect(element.lines.length).toBe(7);
-    expect(resolveGraphAttention(model, "d1", false).lines).toEqual([]);
   });
 
   it("writes the reach line without a zero side", () => {
@@ -419,6 +437,205 @@ describe("selection reach", () => {
       const titles = admitted.names.filter((n) => n.role === "domain").map(boxAt);
       for (const s of admitted.names.filter((n) => n.id === "a").map(boxAt)) {
         for (const t of titles) expect(s.minX < t.maxX && t.minX < s.maxX && s.minY < t.maxY && t.minY < s.maxY, `selection on a title at ${scale}`).toBe(false);
+      }
+    }
+  });
+
+  it("drops a lit element name with no free side rather than overprint, after the selection and capabilities", () => {
+    const elementIds = Array.from({ length: 8 }, (_, k) => `x${k}`);
+    const crowded = modelOf(
+      [...nodes, ...elementIds.map((id) => ({ id, kind: "element", title: `implementation role ${id}` }))],
+      [...edges, ...elementIds.flatMap((id) => [contains("b", id), { from: id, to: "a", type: "depends_on" }])],
+    );
+    const layout = layoutOf(crowded);
+    const scales = [0.25, 0.5, 1, 2];
+    const admissions = scales.map((scale) => namesAt(crowded, layout, scale, "a"));
+    admissions.forEach((admitted, k) => {
+      const scale = scales[k]!;
+      expect(admitted.ids.has("a"), `selection at ${scale}`).toBe(true);
+      for (const id of ["b", "c", "e", "f", "g"]) expect(admitted.ids.has(id), `capability ${id} at ${scale}`).toBe(true);
+      expect(overlapping(admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project"), layout, scale), `at ${scale}`).toEqual([]);
+    });
+    const namedElements = admissions.map((admitted) => elementIds.filter((id) => admitted.ids.has(id)).length);
+    expect(namedElements[0], "a crowded zoom drops element names").toBeLessThan(elementIds.length);
+    expect(namedElements.at(-1), "a closer zoom names more of them").toBeGreaterThan(namedElements[0]!);
+  });
+});
+
+describe("domain reach", () => {
+  const nodes: Node[] = [
+    { id: "p", kind: "project" }, ...["d1", "d2", "d3", "d4"].map((id) => ({ id, kind: "domain" })),
+    ...["a", "b", "e", "f", "g", "h"].map((id) => ({ id, kind: "capability" })), { id: "z", kind: "element" },
+  ];
+  const contains = (from: string, to: string): Edge => ({ from, to, type: "contains" });
+  const edges: Edge[] = [
+    contains("p", "d1"), contains("p", "d2"), contains("p", "d3"), contains("p", "d4"),
+    contains("d1", "a"), contains("d1", "b"), contains("d2", "e"), contains("d2", "f"), contains("d3", "g"), contains("d4", "h"), contains("g", "z"),
+    { from: "a", to: "e", type: "depends_on" },
+    { from: "b", to: "e", type: "depends_on" },
+    { from: "e", to: "a", type: "depends_on" },
+    { from: "z", to: "a", type: "depends_on" },
+    { from: "a", to: "h", type: "related_to" },
+  ];
+  const model = modelOf(nodes, edges);
+  const drawn = (id: string, selected: boolean) =>
+    resolveGraphAttention(model, id, selected).lines.map((l) => `${l.kind}:${l.from}>${l.to}x${l.weight}`).sort();
+
+  it("draws one line per partner domain and direction, weighted by the relations between them, and both ways for a two-way pair", () => {
+    expect(drawn("d1", true)).toEqual(["neededBy:d2>d1x1", "neededBy:d3>d1x1", "needs:d1>d2x2"]);
+    expect(drawn("d1", false)).toEqual(drawn("d1", true));
+    expect(drawn("d4", true), "a relates-only pair draws no line").toEqual([]);
+  });
+
+  it("lights the partner domains but not their members, and counts domains on each side", () => {
+    const att = resolveGraphAttention(model, "d1", true);
+    expect(att.reach).toEqual({ needs: 1, neededBy: 2 });
+    for (const id of ["d1", "a", "b", "d2", "d3"]) expect(att.lit!.has(id), id).toBe(true);
+    for (const id of ["e", "f", "g", "z", "d4", "h"]) expect(att.lit!.has(id), id).toBe(false);
+    expect([...att.named].sort()).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("counts exactly the partner domains the detail panel lists, on every bundled vault", () => {
+    for (const manifest of [dogfoodManifest, storefrontManifest]) {
+      const d = deriveOntologyFromVault(manifest as unknown as VaultManifest);
+      const { treeNodes, treeEdges } = treeInputOf(d.nodes as Node[], d.edges as Edge[]);
+      const vault = modelOf(d.nodes as Node[], d.edges as Edge[]);
+      let partnered = 0;
+      for (const id of vault.domainById.keys()) {
+        const panel = readDomainUsage(treeNodes, treeEdges, id)!;
+        const att = resolveGraphAttention(vault, id, true);
+        expect(att.reach, id).toEqual({ needs: panel.needs.length, neededBy: panel.usedBy.length });
+        const weights = (kind: "needs" | "neededBy") => att.lines.filter((l) => l.kind === kind).map((l) => `${l.from === id ? l.to : l.from}x${l.weight}`).sort();
+        expect(weights("needs"), id).toEqual(panel.needs.map((r) => `${r.domainId}x${r.links}`).sort());
+        expect(weights("neededBy"), id).toEqual(panel.usedBy.map((r) => `${r.domainId}x${r.links}`).sort());
+        if (att.lines.length > 0) partnered += 1;
+      }
+      expect(partnered, "the vault has domains with partners").toBeGreaterThan(0);
+    }
+  });
+
+  it("writes the reach line in the selected domain's caption row only", () => {
+    const layout = layoutOf(model);
+    const labels = { ...LABELS, reachNeeds: (n: number) => `needs ${n}`, reachNeededBy: (n: number) => `needed by ${n}` };
+    const reachLines = (selected: boolean) => {
+      const att = resolveGraphAttention(model, "d1", selected);
+      return admittedNames({
+        model, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: att.focusId, attentionKey: att.key, agentFocusId: null,
+        selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => 4, elementSpacingPx: 0,
+      }).names.filter((n) => n.id === "d1" && n.role !== "domain");
+    };
+    const selected = reachLines(true);
+    expect(selected.map((n) => [n.role, n.text])).toEqual([["reach", "needs 1 · needed by 2"]]);
+    expect(reachLines(false).map((n) => n.role)).toEqual(["units"]);
+    expect(selected[0]!.box, "the reach line takes the caption's row").toEqual(expect.objectContaining({ minY: reachLines(false)[0]!.box.minY }));
+  });
+
+  it("reserves each domain's title block wide enough for the reach line its selection writes, on every bundled vault", () => {
+    const labels = { ...LABELS, units: (c: number, e: number) => `역량 ${c} · 요소 ${e}`, reachNeeds: (n: number) => `${n}곳에 기댐`, reachNeededBy: (n: number) => `${n}곳이 기댐` };
+    const wider: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const blocks = domainTitleBlocks({ model: vault, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif" });
+      for (const id of vault.domainById.keys()) {
+        const att = resolveGraphAttention(vault, id, true);
+        const row = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+          elementLabel: (of) => of, staleByDomain: null, lit: att.lit, focusId: id, attentionKey: att.key, agentFocusId: null,
+          selected: true, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => TOKENS.paint.domainDiscPx, elementSpacingPx: 0,
+        }).names.find((n) => n.id === id && n.role === "reach");
+        if (row && Math.max(-row.box.minX, row.box.maxX) > blocks.get(id)!.halfWidthPx + 1e-6) wider.push(`${name} ${id}: ${row.text}`);
+      }
+    }
+    expect(wider).toEqual([]);
+  });
+
+  it("raises a partner domain's title only where it clears every disc, on every bundled vault", () => {
+    let raised = 0;
+    const onDiscs: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const radius = (id: string) => (vault.domainById.has(id) ? graphDiscRadiusPx("domain", 0, TOKENS.paint, 1)
+        : graphDiscRadiusPx("capability", vault.capabilityById.get(id)?.elementIds.length ?? 0, TOKENS.paint, 1));
+      const discs = layout.clusters.flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]);
+      for (const focus of vault.domainById.keys()) for (const selected of [true, false]) for (const scale of [0.5, 1, 2]) {
+        const att = resolveGraphAttention(vault, focus, selected);
+        const admitted = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+          elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: focus, attentionKey: att.key, agentFocusId: null,
+          selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: radius, elementSpacingPx: 0,
+        });
+        for (const n of admitted.names.filter((n) => n.id !== focus && vault.domainById.has(n.id) && n.dy < 0)) {
+          raised += 1;
+          const at = layout.positions.get(n.id)!;
+          const box = { minX: at.x * scale + n.box.minX, maxX: at.x * scale + n.box.maxX, minY: at.y * scale + n.box.minY, maxY: at.y * scale + n.box.maxY };
+          for (const id of discs) {
+            const p = layout.positions.get(id)!;
+            const r = radius(id);
+            if (box.minX < p.x * scale + r && p.x * scale - r < box.maxX && box.minY < p.y * scale + r && p.y * scale - r < box.maxY) onDiscs.push(`${name} ${focus} ${scale}: ${n.role} of ${n.id} on ${id}`);
+          }
+        }
+      }
+    }
+    expect(raised, "some partner title rises").toBeGreaterThan(0);
+    expect(onDiscs).toEqual([]);
+  });
+});
+
+describe("domain line curve", () => {
+  /** One large domain beside small ones: its member star reaches far enough that a trim scaled only by length passes the bow's control. */
+  const SIZES = [40, 1, 1, 6, 6];
+  const ELEMENTS_PER_CAPABILITY = 5;
+  const DEPENDS: [number, number][] = [[0, 1], [0, 2], [3, 0], [4, 0]];
+  const nodes: Node[] = [{ id: "p", kind: "project" }];
+  const edges: Edge[] = [];
+  SIZES.forEach((size, d) => {
+    nodes.push({ id: `d${d}`, kind: "domain" });
+    edges.push({ from: "p", to: `d${d}`, type: "contains" });
+    for (let c = 0; c < size; c += 1) {
+      nodes.push({ id: `c${d}-${c}`, kind: "capability" });
+      edges.push({ from: `d${d}`, to: `c${d}-${c}`, type: "contains" });
+      for (let e = 0; e < ELEMENTS_PER_CAPABILITY; e += 1) {
+        nodes.push({ id: `e${d}-${c}-${e}`, kind: "element" });
+        edges.push({ from: `c${d}-${c}`, to: `e${d}-${c}-${e}`, type: "contains" });
+      }
+    }
+  });
+  for (const [a, b] of DEPENDS) edges.push({ from: `c${a}-0`, to: `c${b}-0`, type: "depends_on" });
+  const model = modelOf(nodes, edges);
+  const layout = layoutOf(model);
+  const P = TOKENS.paint;
+  const fit = Math.min(1100 / (layout.extent.maxX - layout.extent.minX), 880 / (layout.extent.maxY - layout.extent.minY));
+  const views = [fit, fit * 3].flatMap((scale) => [1, P.growthMax].map((growth) => ({ scale, growth })));
+  const lines = resolveGraphAttention(model, "d0", true).lines;
+
+  it("trims each end of a large star's lines short of the bow's control point, so no curve doubles back", () => {
+    expect(lines.length).toBe(DEPENDS.length);
+    const trims = new Float64Array(2);
+    const path = emptyArcPath();
+    for (const { scale, growth } of views) {
+      const disc = graphDiscRadiusPx("domain", 0, P, growth);
+      for (const line of lines) {
+        const from = { x: layout.positions.get(line.from)!.x * scale, y: layout.positions.get(line.from)!.y * scale };
+        const to = { x: layout.positions.get(line.to)!.x * scale, y: layout.positions.get(line.to)!.y * scale };
+        litLineTrimsInto(trims, layout, line, Math.hypot(to.x - from.x, to.y - from.y), scale, growth, disc, disc, P);
+        if (!arcPathInto(path, from, to, P.lineBow, trims[0]!, trims[1]!)) continue;
+        const { a, c, b } = path;
+        const at = `${line.key} at ${(scale / fit).toFixed(0)}x, growth ${growth}`;
+        expect(Math.hypot(a.x - from.x, a.y - from.y), `start before the control: ${at}`).toBeLessThan(Math.hypot(c.x - from.x, c.y - from.y));
+        expect(Math.hypot(b.x - to.x, b.y - to.y), `end before the control: ${at}`).toBeLessThan(Math.hypot(c.x - to.x, c.y - to.y));
+      }
+    }
+  });
+
+  it("gives names each line as one forward run from its trimmed start to its trimmed end", () => {
+    for (const { scale, growth } of views) {
+      const disc = () => graphDiscRadiusPx("domain", 0, P, growth);
+      for (const pts of linePolylines(lines, layout, P, scale, growth, disc)) {
+        const chord = { x: pts[pts.length - 2]! - pts[0]!, y: pts[pts.length - 1]! - pts[1]! };
+        for (let k = 0; k + 3 < pts.length; k += 2) {
+          expect((pts[k + 2]! - pts[k]!) * chord.x + (pts[k + 3]! - pts[k + 1]!) * chord.y, `segment ${k / 2} at ${(scale / fit).toFixed(0)}x`).toBeGreaterThan(0);
+        }
       }
     }
   });
