@@ -175,7 +175,10 @@ sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. A domain selection never zooms in, because its picture is its
+the domain named. An element's picture is its lines, so it zooms in only while
+every far end, named, still fits, and only until its own name stands clear of
+the names and discs beside it; when the far ends do not fit at the current zoom
+it keeps that zoom. A domain selection never zooms in, because its picture is its
 reach: it pans its disc, member star, name and reach line clear of the explorer
 and the detail panel by the frame margin, zooming out only when they cannot fit
 at the current zoom, and, when every partner domain's disc and name fit in the free map at

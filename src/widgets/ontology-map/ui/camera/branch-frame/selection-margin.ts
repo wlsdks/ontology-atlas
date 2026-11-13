@@ -15,7 +15,7 @@ import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
 import { computeEffectiveCameraScaleMax } from "../topology-camera-math";
-import { graphSelectionZoom } from "./graph-selection-zoom";
+import { elementSelectionZoom, graphSelectionZoom } from "./graph-selection-zoom";
 
 const staleBounds = new WeakMap<DialModel, ReadonlyMap<string, number>>();
 
@@ -77,9 +77,10 @@ function graphSelectionFrame(
     const partners = new Set(attention.lines.map((line) => (line.from === id ? line.to : line.from)));
     return selectionFrameTarget(camera, reachFrameSets(marks(near), marks(partners)), viewport, free, paint.frameMarginPx, band.entryScale);
   }
-  const zoom = graphSelectionZoom({
+  const element = !model.capabilityById.has(id) && model.capabilityOf.has(id);
+  const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
-    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, domainId,
+    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,
     entryScale: band.entryScale, maxScale: Math.min(band.maxScale, camera.tscale * paint.selectZoomMaxRatio),
   });
   return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
