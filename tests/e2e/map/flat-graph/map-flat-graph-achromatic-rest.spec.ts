@@ -42,35 +42,35 @@ async function openVault(page: Page): Promise<void> {
 }
 
 /**
- * How coloured a square of the canvas is: how many pixels it drew, and the share of those whose
- * chroma passes `COLOURED`, counted in the page so no pixel array crosses the bridge. A neutral ink
- * leaves grey pixels, however bright, and only an ink with a hue of its own raises the share.
+ * How coloured a square of the canvas is: how many pixels it drew, and the chroma of their mean
+ * colour, summed in the page so no pixel array crosses the bridge. The mean is judged, not each
+ * pixel, because subpixel text antialiasing fringes single pixels red and blue where the ink is
+ * grey; the fringes cancel in the mean, and an ink with a hue of its own does not.
  */
-const colouredShare = (page: Page, at: { x: number; y: number }, halfPx: number) =>
-  page.evaluate(({ x, y, halfPx: half, drawn, coloured }) => {
+const meanChroma = (page: Page, at: { x: number; y: number }, halfPx: number) =>
+  page.evaluate(({ x, y, halfPx: half, drawn }) => {
     const element = document.querySelector<HTMLCanvasElement>('[data-testid="ontology-map-canvas"]')!;
-    const dpr = element.width / element.getBoundingClientRect().width;
     const box = element.getBoundingClientRect();
+    const dpr = element.width / box.width;
     const side = Math.round(half * 2 * dpr);
     const { data } = element.getContext("2d")!.getImageData(Math.round((x - box.x - half) * dpr), Math.round((y - box.y - half) * dpr), side, side);
+    const sum = [0, 0, 0];
     let lit = 0;
-    let hued = 0;
     for (let i = 0; i < data.length; i += 4) {
-      const r = data[i]!;
-      const g = data[i + 1]!;
-      const b = data[i + 2]!;
-      const high = Math.max(r, g, b);
-      if (high < drawn) continue;
+      if (Math.max(data[i]!, data[i + 1]!, data[i + 2]!) < drawn) continue;
       lit += 1;
-      if ((high - Math.min(r, g, b)) / high >= coloured) hued += 1;
+      for (let c = 0; c < 3; c += 1) sum[c]! += data[i + c]!;
     }
-    return { drawn: lit, share: lit === 0 ? 0 : hued / lit };
-  }, { x: at.x, y: at.y, halfPx, drawn: DRAWN_PIXEL, coloured: COLOURED });
+    const high = Math.max(...sum);
+    return { drawn: lit, chroma: high === 0 ? 0 : (high - Math.min(...sum)) / high };
+  }, { x: at.x, y: at.y, halfPx, drawn: DRAWN_PIXEL });
 
 /** A pixel the map drew rather than left to the ground. */
 const DRAWN_PIXEL = 56;
-/** Chroma over the brightest channel at which an ink reads as a colour rather than a grey. */
-const COLOURED = 0.2;
+/** Mean chroma under which a square reads grey; the neutral ink's own cool cast measures 0.06. */
+const GREY = 0.1;
+/** Mean chroma over which a square reads as the project's ink; a pointed domain measures 0.30. */
+const TINTED = 0.2;
 
 const domainNode = (page: Page, name: string) =>
   page.evaluate((title) => window.__atlasMap!.nodes().find((n) => n.kind === "domain" && /[^/:]+$/.exec(n.id)?.[0] === title)!, name);
@@ -88,17 +88,19 @@ test("the map rests achromatic and gives the project's ink to the domain the poi
   const partner = await at("returns");
 
   for (const [name, where] of [["orders", pointed], ["returns", partner]] as const) {
-    const rest = await colouredShare(page, where, 48);
+    const rest = await meanChroma(page, where, 48);
     expect(rest.drawn, `${name} draws marks to judge`).toBeGreaterThan(200);
-    expect(rest.share, `${name} rests with no hue of its own`).toBeLessThan(0.05);
+    console.log(`[achromatic-rest] ${name} at rest ${rest.chroma.toFixed(3)}`);
+    expect(rest.chroma, `${name} rests with no hue of its own`).toBeLessThan(GREY);
   }
 
   await page.mouse.move(pointed.x, pointed.y);
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.hover())).not.toBeNull();
   await waitForMapStill(page);
-  const focused = await colouredShare(page, pointed, 48);
-  expect(focused.share, "the pointed domain takes the project's ink").toBeGreaterThan(0.4);
-  const lit = await colouredShare(page, partner, 48);
+  const focused = await meanChroma(page, pointed, 48);
+  expect(focused.chroma, "the pointed domain takes the project's ink").toBeGreaterThan(TINTED);
+  const lit = await meanChroma(page, partner, 48);
   expect(lit.drawn, "the domain it reaches is lit, not sunk out of the measurement").toBeGreaterThan(200);
-  expect(lit.share, "a lit domain outside the focus's own keeps the neutral ink").toBeLessThan(0.05);
+  expect(lit.chroma, "a lit domain outside the focus's own keeps the neutral ink").toBeLessThan(GREY);
+  console.log(`[achromatic-rest] pointed ${focused.chroma.toFixed(3)}, lit partner ${lit.chroma.toFixed(3)}`);
 });
