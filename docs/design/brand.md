@@ -116,8 +116,10 @@ Horizontal travel is capped at 32px and occurs only in airborne hop poses.
 The borderless character target uses the existing transparent link control treatment;
 its keyboard focus indication remains, while pressing it adds no rectangular fill.
 Petting gives a finite shy, clap, dance, thinking, pondering, hearts, laughter or flipper-groove response. A pet during flight waits for the
-neutral landing pose, then returns to the grounded ambient timeline. Repeated presses
-during a response are ignored rather than queued. Right-clicking the character or pressing Shift+F10 opens its pause/resume menu.
+neutral landing pose, then returns to the grounded ambient timeline. The ambient
+character stays visible until the reaction image finishes decoding; a failed
+decode keeps that fallback. Repeated presses during decoding or a response are
+ignored rather than queued. Right-clicking the character or pressing Shift+F10 opens its pause/resume menu.
 The resting surface shows only Moru, with no adjacent playback button. Escape
 closes the menu and restores character focus; outside presses dismiss it. Pointer hover and keyboard focus hold ambient movement after an airborne hop finishes landing; ordinary
 pointer focus does not leave it frozen after the pointer moves away.

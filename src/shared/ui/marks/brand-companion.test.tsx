@@ -11,6 +11,7 @@ type FakeAnimation = { play: ReturnType<typeof vi.fn>; pause: ReturnType<typeof 
   currentTime: number; onfinish: (() => void) | null; frames: Keyframe[]; options: KeyframeAnimationOptions };
 const animations: FakeAnimation[] = [];
 const originalAnimate = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'animate');
+const originalDecode = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'decode');
 beforeEach(() => {
   hidden = reduced = false;
   animations.length = 0;
@@ -35,6 +36,8 @@ afterEach(() => {
   vi.restoreAllMocks(); vi.unstubAllGlobals();
   if (originalAnimate) Object.defineProperty(HTMLElement.prototype, 'animate', originalAnimate);
   else Reflect.deleteProperty(HTMLElement.prototype, 'animate');
+  if (originalDecode) Object.defineProperty(HTMLImageElement.prototype, 'decode', originalDecode);
+  else Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
 });
 
 it('pauses all movement while hidden and preserves an explicit pause when visibility returns', () => {
@@ -96,6 +99,49 @@ it('shows only the character and responds without adding playback buttons', () =
   expect(screen.getAllByRole('button')).toHaveLength(1);
   expect(screen.queryByRole('menu')).toBeNull();
   expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-reaction', 'shy');
+});
+
+it('keeps the ambient character visible until the first reaction image is decoded', async () => {
+  let decoded!: () => void;
+  Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true,
+    value: () => new Promise<void>(resolve => { decoded = resolve; }) });
+  const { container } = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  const [ambient, response] = container.querySelectorAll('img');
+  fireEvent.click(pet); fireEvent.click(pet);
+  expect(ambient.hidden).toBe(false);
+  expect(response.hidden).toBe(true);
+  expect(pet).not.toHaveAttribute('data-moru-reaction');
+  await act(async () => decoded());
+  expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  expect(ambient.hidden).toBe(true);
+  expect(response.hidden).toBe(false);
+});
+
+it('keeps the ambient character when reaction decoding fails and ignores a late decode after unmount', async () => {
+  let reject!: (reason: Error) => void;
+  Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true,
+    value: () => new Promise<void>((_, fail) => { reject = fail; }) });
+  const failed = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  await act(async () => reject(new Error('Image unavailable')));
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  expect(failed.container.querySelector('img')!.hidden).toBe(false);
+  expect(screen.getByRole('button', { name: 'pet' })).not.toHaveAttribute('data-moru-reaction');
+  failed.unmount();
+  let resolve!: () => void;
+  Object.defineProperty(HTMLImageElement.prototype, 'decode', { configurable: true,
+    value: () => new Promise<void>(ready => { resolve = ready; }) });
+  const late = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  late.unmount();
+  const count = animations.length;
+  await act(async () => resolve());
+  expect(animations).toHaveLength(count);
+  for (const animation of animations) expect(animation.cancel).toHaveBeenCalledOnce();
 });
 
 it('finishes one reaction before accepting another and does not lose an explicit pause', () => {
