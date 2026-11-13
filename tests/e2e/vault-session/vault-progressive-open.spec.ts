@@ -134,7 +134,7 @@ test("a 2,000-document vault draws its overview while it is still being read, an
   });
   await page.waitForFunction((total) => (window as unknown as ArrivalWindow).__arrival.nodes === total, DOCUMENTS, { timeout: 60_000 });
   await expect(page.locator("[data-vault-load-progress]")).toHaveCount(0);
-  await expect(page.getByTestId("topology-index-source")).toContainText(String(DOCUMENTS));
+  await expect(page.getByTestId("topology-index-source"), "the folder line outlived the read").toHaveCount(0);
   await waitForMapStill(page);
 
   const arrival = await page.evaluate(() => {

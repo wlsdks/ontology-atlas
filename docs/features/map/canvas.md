@@ -124,10 +124,15 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   announced the project and its nine domains as ten peers, and an expanded
   domain's capabilities joined that same flat list.
 
-- **The INDEX tree follows the selection** (2026-09-25) → a node selected anywhere
-  but on its own rows — a `?p=` link, the canvas, the palette, or a pick from the
-  INDEX search that was then cleared — opens the rows above it once and scrolls its
-  row into view; a branch folded again stays folded until the next selection.
+- **The INDEX tree opens only when the person opens it** (2026-11-13) → a caret,
+  an arrow key or a typed search opens rows; a selection never opens or scrolls the
+  tree, so the panel keeps its height. The nearest visible row above a hidden
+  selection carries a dot before its count, strong ink and the hidden text "the
+  selected concept is inside"; opening that row moves the mark down. Clearing a
+  search returns the rows that were open before typing. At rest the project is
+  open and its domains closed; the folder line shows only while files are read.
+  The footer keeps two rows, documents not on the map and documents the checks
+  caught; a project without a code folder is repaired from its own panel.
 
 - **"Recent" is dated by Git in the app** (2026-09-25) → the INDEX recent-changes
   window, the `?recent=` spotlight and a node's "changed … ago" read each concept

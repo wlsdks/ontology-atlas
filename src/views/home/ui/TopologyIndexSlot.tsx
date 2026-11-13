@@ -13,6 +13,7 @@ import type { useTopologySourceReadiness } from "../model/project-source/use-top
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { filterTreeExcludeKind } from "@/entities/knowledge-graph";
 import { useVaultLoadProgress } from "@/entities/vault-session";
 import { useMapReadingContext } from "@/shared/lib/navigation/map-reading-context";
@@ -81,6 +82,7 @@ export function TopologyIndexSlot({
   const { acpRuntimes } = acpRuntimeController;
   const { handleIndexTabExpandFromAgent } = topologyAgentOrchestration;
   const loadProgress = useVaultLoadProgress();
+  const tConceptIndex = useTranslations("conceptIndex");
   const { query, search, select } = useMapReadingContext(vault.handle);
   useEffect(() => { select(canvasSelectedSlug); }, [canvasSelectedSlug, select]);
 
@@ -207,21 +209,10 @@ export function TopologyIndexSlot({
                   // The row hides at 0.
                   brokenDocCount={brokenDocCount}
                   unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
-                  // Opens the project with the caret on its connect action.
-                  onOpenUnboundSource={(id) => {
-                    const leaving = document.activeElement;
-                    handleSelect(id, { keepIndexOpen: true });
-                    focusWhenReady(["map-project-source-action"], { leaving });
-                  }}
                   noProjectsYet={projectSourceReadiness.state === "no-projects"}
-                  // Names the folder the rows came from by `handle.name`; the browser has no
-                  // absolute path, so neither claims one.
-                  sourceName={
-                    vault.status === "loaded" || vault.partialTotal > 0 ? (vault.handle?.name ?? null) : null
-                  }
+                  // `handle.name`: the browser has no absolute path, so neither surface claims one.
+                  sourceName={vault.handle?.name ?? null}
                   sourceLoadProgress={vault.partialTotal > 0 ? loadProgress : null}
-                  sourceDocumentCount={vault.manifest?.docs.length ?? null}
-                  sourceDocumentCountPartial={vault.manifest?.walkTruncated ?? false}
                   // Without an agent the door would create a folder and then do nothing.
                   agentAvailable={acpRuntimes.length > 0}
                   openedInsidePickedFolder={vault.openedInsidePickedFolder ?? null}
@@ -238,8 +229,6 @@ export function TopologyIndexSlot({
                     searchPlaceholder: t("index.searchPlaceholder"),
                     searchMatches: t("index.searchMatches"),
                     censusConcepts: t("index.censusConcepts"),
-                    sourceDocuments: t("index.sourceDocuments"),
-                    sourceDocumentsPartialTitle: t("index.sourceDocumentsPartialTitle"),
                     sourceDocumentsReading: loadProgress
                       ? t("index.sourceDocumentsReading", { read: loadProgress.read, total: loadProgress.total })
                       : undefined,
@@ -277,10 +266,7 @@ export function TopologyIndexSlot({
                     uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                     brokenDocsLabel: t("index.brokenDocsLabel", { count: brokenDocCount }),
                     brokenDocsAction: t("index.brokenDocsAction"),
-                    sourceUnboundLabel: t("index.sourceUnboundLabel", {
-                      count: unboundProjectSource?.count ?? 0,
-                    }),
-                    sourceUnboundAction: t("index.sourceUnboundAction"),
+                    holdsSelection: tConceptIndex("holdsSelection"),
                     tidyHeading: t("index.tidyHeading"),
                     openedInsideLabel: t("index.openedInsideLabel"),
                     openedInsideDismiss: t("index.openedInsideDismiss"),

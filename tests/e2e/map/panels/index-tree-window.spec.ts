@@ -75,5 +75,12 @@ test("the INDEX renders the rows in view and still reaches every row", async ({ 
     (id) => (window as unknown as { next: { router: { push: (url: string) => void } } }).next.router.push(`/en/topology/?e2e=1&guides=off&p=${encodeURIComponent(id)}`),
     last.id!,
   );
-  await expect(page.locator(`${TREE} [data-index-row="${last.id}"]`)).toBeInViewport();
+  await expect(page.getByTestId("map-detail-panel")).toHaveAttribute("data-selected-node-id", last.id!);
+  expect(await page.locator(TREE).evaluate((tree) => tree.scrollTop), "a selection scrolled the tree").toBe(0);
+
+  // The keyboard still reaches the selected row in the window's far end.
+  await page.locator(`${TREE} [role="treeitem"]`).first().focus();
+  await page.keyboard.press("End");
+  await expect(page.locator(`${TREE} [data-index-row="${last.id}"]`)).toBeFocused();
+  await expect(page.locator(`${TREE} [data-index-row="${last.id}"]`)).toHaveAttribute("aria-selected", "true");
 });
