@@ -189,10 +189,10 @@ function sidePanelSide(panel: Rect, canvasRect: Rect): "left" | "right" | null {
   return panel.x + panel.width / 2 >= canvasRect.x + canvasRect.width / 2 ? "right" : "left";
 }
 
-export function measureCanvasInsets(canvas: Element, canvasRect: Rect): CanvasInsets {
+export function measureCanvasInsets(canvas: Element, canvasRect: Rect, panels: readonly Rect[] = collectCanvasObstacles(canvas, canvasRect)): CanvasInsets {
   let left = 0;
   let right = 0;
-  for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
+  for (const panel of panels) {
     const side = sidePanelSide(panel, canvasRect);
     if (side === "right") right = Math.max(right, canvasRect.x + canvasRect.width - panel.x);
     else if (side === "left") left = Math.max(left, panel.x + panel.width - canvasRect.x);
@@ -261,14 +261,15 @@ function laneControls(lane: Element): Element[] {
  * Canvas boxes a name must stay out of: each side panel on a `sides` side, widened to its canvas
  * edge so the gap beside the rail counts too; the edge columns; and the chrome declared
  * `data-map-name-obstacle`: the element itself (the key), or with `controls` each island of a
- * pass-through lane (the tool row). O(elements over the canvas).
+ * pass-through lane (the tool row). `panels` passes a `collectCanvasObstacles` walk already made
+ * for this canvas. O(elements over the canvas).
  */
-export function measureNameObstacles(canvas: Element, sides: { left: boolean; right: boolean }): Box[] {
+export function measureNameObstacles(canvas: Element, sides: { left: boolean; right: boolean }, panels?: readonly Rect[]): Box[] {
   const c = canvas.getBoundingClientRect();
   if (c.width <= 0 || c.height <= 0) return [];
   const canvasRect: Rect = { x: c.left, y: c.top, width: c.width, height: c.height };
   const out: Box[] = [];
-  for (const panel of collectCanvasObstacles(canvas, canvasRect)) {
+  for (const panel of panels ?? collectCanvasObstacles(canvas, canvasRect)) {
     const side = sidePanelSide(panel, canvasRect);
     if (side === null || !sides[side]) continue;
     const minY = panel.y - c.top;
