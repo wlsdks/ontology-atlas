@@ -46,6 +46,7 @@ vi.mock("../../render/edge-fireflies", async () => {
 import { stepTopologyPhysics } from "../frame-loop/topology-physics-step";
 import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
 import * as branchFrame from "./branch-frame/target";
+import * as selectionMargin from "./branch-frame/selection-margin";
 
 type Kind = "project" | "domain" | "capability";
 
@@ -362,6 +363,47 @@ describe("useTopologyFocusNavigation", () => {
     expect(Math.abs(back.tx - before.tx)).toBeLessThan(1);
     expect(Math.abs(back.ty - before.ty)).toBeLessThan(1);
     expect(back.tscale).toBeCloseTo(before.tscale, 6);
+  });
+
+  it("on the Flat graph a selection from outside the canvas takes the selection frame a click takes, not the focus zoom", () => {
+    const framed = { tx: 610, ty: 12, tscale: 1 };
+    const slide = vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
+    const graphWorld = { ...world(), dial: { scene: { graph: {} }, model: { projectId: "p" } } } as unknown as TopologyWorld;
+    const { deps, select } = setup({ worldRef: ref<TopologyWorld | null>(graphWorld) });
+    select("f");
+    expect(slide).toHaveBeenCalledTimes(1);
+    expect(deps.cameraTargetRef.current).toEqual(framed);
+    expect(deps.beginCameraTween).toHaveBeenLastCalledWith(framed, undefined, "spring");
+  });
+
+  it("on the Flat graph a deselect leaves the camera where the selection put it, whatever made the selection", () => {
+    const framed = { tx: 610, ty: 12, tscale: 0.5 };
+    vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
+    vi.spyOn(branchFrame, "branchFocusTarget").mockReturnValue({ tx: 700, ty: 30, tscale: 1.4 });
+    const graphWorld = () => ({ ...world(), dial: { scene: { graph: {} }, model: { projectId: "p" } } }) as unknown as TopologyWorld;
+    const before = { tx: 123, ty: -47, tscale: 0.8 };
+    const sources: [string, (s: ReturnType<typeof setup>) => void][] = [
+      ["a canvas click", ({ select }) => select("f", { click: true })],
+      ["the explorer, search or a panel link", ({ select }) => select("f")],
+      ["a double-click or Enter", ({ hook, select }) => { hook.result.current.flyToNode("f"); select("f"); }],
+    ];
+    for (const [name, choose] of sources) {
+      const s = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), cameraTargetRef: ref({ ...before }) });
+      choose(s);
+      const landed = { ...s.deps.cameraTargetRef.current };
+      expect(landed, `${name} moves the camera`).not.toEqual(before);
+      vi.mocked(s.deps.beginCameraTween).mockClear();
+      s.select(null);
+      expect(s.deps.beginCameraTween, name).not.toHaveBeenCalled();
+      expect(s.deps.cameraTargetRef.current, name).toEqual(landed);
+    }
+    const arrival = setup({ worldRef: ref<TopologyWorld | null>(graphWorld()), lastFocusedSlugRef: ref("f"), cameraTargetRef: ref({ ...before }), overviewFitRef: ref("full") }, "f");
+    frames.shift()?.(performance.now());
+    const landed = { ...arrival.deps.cameraTargetRef.current };
+    vi.mocked(arrival.deps.beginCameraTween).mockClear();
+    arrival.select(null);
+    expect(arrival.deps.beginCameraTween, "a deep link's arrival frame").not.toHaveBeenCalled();
+    expect(arrival.deps.cameraTargetRef.current).toEqual(landed);
   });
 
   it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {

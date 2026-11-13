@@ -193,29 +193,65 @@ test("a capability clicked on the map while another is selected frames and names
   await expectFramed(page, hub!, dial, clickedZoom);
 });
 
+/** The domain drawn furthest right in the free map, its member star, and the probe before it is selected. */
+async function domainNearPanel(page: Page): Promise<{ id: string; star: Set<string>; before: DialProbe }> {
+  const before = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+  const domainIds = new Set(before.clusters.map((c) => c.domainId));
+  const id = before.discs
+    .filter((d) => domainIds.has(d.id) && d.x > before.freeRect.minX && d.x < before.freeRect.maxX && d.y > before.freeRect.minY && d.y < before.freeRect.maxY)
+    .sort((a, b) => b.x - a.x)[0]!.id;
+  return { id, before, star: new Set([id, ...before.clusters.find((c) => c.domainId === id)!.capabilityIds]) };
+}
+
+/** The selected domain's disc, its member star and every name they carry, its name and reach line included, inside the free map by the margin. */
+async function expectDomainFramed(page: Page, id: string, star: ReadonlySet<string>, before: DialProbe, dial: DialProbe): Promise<number> {
+  const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
+  const r = dial.freeRect;
+  expect(before.discs.some((d) => star.has(d.id) && d.x + d.r > r.maxX - margin), "unmoved, the detail panel would cover the member star").toBe(true);
+  const own = dial.texts.filter((t) => t.id === id).map((t) => t.role);
+  expect(own, "the selected domain is named with its reach line beneath").toEqual(expect.arrayContaining(["domain", "status"]));
+  const outOfFrame = [
+    ...dial.discs.filter((d) => star.has(d.id)).map((d) => ({ what: `disc ${d.id}`, box: { minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r } })),
+    ...dial.texts.filter((t) => t.id !== null && star.has(t.id)).map((t) => ({ what: `${t.role} ${t.id}`, box: t.box })),
+  ].filter(({ box }) => box.minX < r.minX + margin - EDGE_PX || box.maxX > r.maxX - margin + EDGE_PX || box.minY < r.minY + margin - EDGE_PX || box.maxY > r.maxY - margin + EDGE_PX)
+    .map(({ what }) => `${what} ${Math.round(r.minX)}..${Math.round(r.maxX)}`);
+  expect(outOfFrame, "the domain, its members and their names inside the free map by the margin").toEqual([]);
+  return margin;
+}
+
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 949 }]) {
+  test(`at ${viewport.width} wide a domain chosen in the explorer frames its star, name and reach line between the explorer and the detail panel without zooming in`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize(viewport);
+    await openVault(page);
+    const { id, star, before } = await domainNearPanel(page);
+    const row = page.locator(`[data-testid="topology-index-panel"] [data-index-row="${id}"]`);
+    await expect(row, "the explorer lists the domain at rest").toBeVisible();
+    const clickedZoom = before.zoomRatio;
+    await row.click();
+    await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().nodeId)).toBe(id);
+    await waitForMapStill(page, { what: "camera" });
+    await expect.poll(() => page.evaluate(() => window.__atlasMap!.dialMotionSettled?.() === true)).toBe(true);
+    const dial = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+    const panels = await page.evaluate(() => window.__atlasMap!.obstacleInsets());
+    expect(panels?.left ?? 0, "the explorer is open on the left").toBeGreaterThan(0);
+    expect(panels?.right ?? 0, "the detail panel is open on the right").toBeGreaterThan(0);
+    expect(dial.freeRect.minX, "the free map starts past the explorer").toBeGreaterThanOrEqual(panels!.left);
+    expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-6);
+    await expectDomainFramed(page, id, star, before, dial);
+  });
+}
+
 for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
   test(`at ${viewport.width} wide a domain the detail panel would cover pans its member star clear without zooming, its nearest partner in view and its names off its lines`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize(viewport);
     await openVault(page);
-    const before = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
-    const domainIds = new Set(before.clusters.map((c) => c.domainId));
-    const id = before.discs
-      .filter((d) => domainIds.has(d.id) && d.x > before.freeRect.minX && d.x < before.freeRect.maxX && d.y > before.freeRect.minY && d.y < before.freeRect.maxY)
-      .sort((a, b) => b.x - a.x)[0]!.id;
-    const star = new Set([id, ...before.clusters.find((c) => c.domainId === id)!.capabilityIds]);
+    const { id, star, before } = await domainNearPanel(page);
     const { dial, clickedZoom } = await selectOnMap(page, id);
-    const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
-    const r = dial.freeRect;
-    expect(before.discs.some((d) => star.has(d.id) && d.x + d.r > r.maxX - margin), "unmoved, the detail panel would cover the member star").toBe(true);
-
     expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
-    const outOfFrame = [
-      ...dial.discs.filter((d) => star.has(d.id)).map((d) => ({ what: `disc ${d.id}`, box: { minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r } })),
-      ...dial.texts.filter((t) => t.id !== null && star.has(t.id)).map((t) => ({ what: `${t.role} ${t.id}`, box: t.box })),
-    ].filter(({ box }) => box.minX < r.minX + margin - EDGE_PX || box.maxX > r.maxX - margin + EDGE_PX || box.minY < r.minY + margin - EDGE_PX || box.maxY > r.maxY - margin + EDGE_PX)
-      .map(({ what }) => what);
-    expect(outOfFrame, "the domain, its members and their names inside the free map by the margin").toEqual([]);
+    await expectDomainFramed(page, id, star, before, dial);
+    const r = dial.freeRect;
 
     const lines = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey));
     const partners = [...new Set(lines.flatMap((s) => s.flowKey.slice(s.flowKey.indexOf(":") + 1).split(">")))].filter((end) => end !== id);
@@ -231,3 +267,74 @@ for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 98
     expect(crossed, "unbacked lit names a domain line runs through").toEqual([]);
   });
 }
+
+/** Canvas boxes of what covers the map: each side panel out to its canvas edge, the key's words and the tool row's controls. */
+const chromeBoxes = (page: Page) => page.evaluate(() => {
+  const canvas = document.querySelector('[data-testid="ontology-map-canvas"]')!.getBoundingClientRect();
+  const local = (el: Element | null) => {
+    const b = el?.getBoundingClientRect();
+    return b && b.width > 0 ? { minX: b.left - canvas.left, maxX: b.right - canvas.left, minY: b.top - canvas.top, maxY: b.bottom - canvas.top } : null;
+  };
+  const explorer = local(document.querySelector('[data-testid="topology-index-panel"]'));
+  const detail = local(document.querySelector('[data-testid="map-detail-panel"]'));
+  return {
+    explorer: explorer && { ...explorer, minX: 0 },
+    detail: detail && { ...detail, maxX: canvas.width },
+    key: local(document.querySelector('[data-testid="topology-flat-key"] > div')),
+    tools: local(document.querySelector('[data-testid="topology-tool-tile-group"]')),
+  };
+});
+
+async function drawnUnderChrome(page: Page): Promise<string[]> {
+  const chrome = await chromeBoxes(page);
+  const dial = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+  return dial.texts.flatMap((t) => Object.entries(chrome).filter(([, b]) => b !== null && overlaps(t.box, b)).map(([what]) => `${t.role} "${t.text}" under ${what}`));
+}
+
+test("no map name is drawn under the key, the explorer, the detail panel, the gap beside the rail or the tool row", async ({ page }) => {
+  test.setTimeout(180_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1512, height: 949 });
+  await openVault(page);
+  const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  const { key, explorer, tools } = await chromeBoxes(page);
+  expect(key, "the key shows below the map").not.toBeNull();
+  expect(explorer, "the explorer is open").not.toBeNull();
+  expect(tools, "the tool row shows").not.toBeNull();
+  const centre = (b: Box) => ({ x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 });
+  // Pans the domain name nearest `at` onto it by the shortest move, and checks it landed there.
+  const panNameOnto = async (at: { x: number; y: number }, what: string, cover: Box) => {
+    const rest = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+    const name = rest.texts.filter((t) => t.role === "domain").map((t) => ({ t, dx: at.x - centre(t.box).x, dy: at.y - centre(t.box).y }))
+      .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))[0]!;
+    const disc = (probe: DialProbe) => probe.discs.find((d) => d.id === name.t.id)!;
+    const offset = { x: name.t.box.minX - disc(rest).x, y: name.t.box.minY - disc(rest).y };
+    const centred = { x: box.width / 2 - name.dx / 2, y: box.height / 2 - name.dy / 2 };
+    const candidates = [0, 40, 80, 120, 160].flatMap((ring) => [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].map(([i, j]) => ({ x: centred.x + i! * ring, y: centred.y + j! * ring })));
+    // A press on empty map, as the press itself judges it: no concept to grab and the canvas on top.
+    const start = await page.evaluate(({ points, origin }) => {
+      const canvas = document.querySelector('[data-testid="ontology-map-canvas"]');
+      return points.find((p) => window.__atlasMap!.nodeAt!(p.x, p.y) === null && document.elementFromPoint(origin.x + p.x, origin.y + p.y) === canvas);
+    }, { points: candidates, origin: { x: box.x, y: box.y } });
+    expect(start, "an empty point to press").toBeDefined();
+    const from = { x: box.x + start!.x, y: box.y + start!.y };
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + name.dx, from.y + name.dy, { steps: 20 });
+    expect(await page.evaluate(() => window.__atlasMap!.interaction?.().kind), "the press pans the map").toBe("pan");
+    await page.mouse.up();
+    await waitForMapStill(page);
+    const panned = disc(await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe));
+    const width = name.t.box.maxX - name.t.box.minX;
+    const height = name.t.box.maxY - name.t.box.minY;
+    const lands = { minX: panned.x + offset.x, maxX: panned.x + offset.x + width, minY: panned.y + offset.y, maxY: panned.y + offset.y + height };
+    expect(overlaps(lands, cover), `${name.t.text}'s name lands on ${what}`).toBe(true);
+    expect(await drawnUnderChrome(page), `names drawn under the chrome with a name on ${what}`).toEqual([]);
+  };
+  await panNameOnto(centre(key!), "the key's words", key!);
+  await panNameOnto({ x: explorer!.maxX, y: box.height / 2 }, "the explorer's edge", explorer!);
+  await panNameOnto(centre(tools!), "the tool row", tools!);
+
+  await selectOnMap(page, await hubNearPanel(page));
+  expect(await drawnUnderChrome(page), "names drawn under the chrome with a selection").toEqual([]);
+});

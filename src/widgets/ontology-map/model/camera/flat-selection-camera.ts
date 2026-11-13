@@ -1,6 +1,6 @@
 import type { CameraTarget } from "../../engine/camera";
 
-/** A selection made on the canvas. Only a click selects in place; the rest, and any selection from outside the canvas, frame the node. */
+/** A selection made on the canvas: a click, a double-click or an arrow key. A selection from outside the canvas has no source. */
 export type SelectionSource = "canvas-click" | "canvas-dblclick" | "arrow";
 
 /**
@@ -73,27 +73,49 @@ function fitsAt(marks: readonly FramedMark[], scale: number, width: number, heig
   return x.hi - x.lo <= width && y.hi - y.lo <= height;
 }
 
-/** The shift along one axis that brings `span` inside `[lo, hi]` and moves least; when it cannot fit, `anchor` is kept inside and the span centred around it as far as that allows. */
-function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, lo: number, hi: number): number {
+/**
+ * The shift along one axis that brings `span` inside `[lo, hi]` and moves least; when it cannot fit,
+ * `anchor` is kept inside and the span centred around it as far as that allows; when the anchor cannot
+ * fit either, it is centred with its own `centre` (the selection's disc) still inside.
+ */
+function leastShift(span: { lo: number; hi: number }, anchor: { lo: number; hi: number }, centre: number, lo: number, hi: number): number {
   const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
   if (lo - span.lo <= hi - span.hi) return clamp(0, lo - span.lo, hi - span.hi);
   const centred = (lo + hi) / 2 - (span.lo + span.hi) / 2;
-  return lo - anchor.lo <= hi - anchor.hi ? clamp(centred, lo - anchor.lo, hi - anchor.hi) : (lo + hi) / 2 - (anchor.lo + anchor.hi) / 2;
+  if (lo - anchor.lo <= hi - anchor.hi) return clamp(centred, lo - anchor.lo, hi - anchor.hi);
+  return clamp((lo + hi) / 2 - (anchor.lo + anchor.hi) / 2, lo - centre, hi - centre);
 }
+
+/** Relative scale difference below which two frames are at the same zoom. */
+const SAME_SCALE = 1e-6;
 
 /** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
 const ZOOM_REFINE_STEPS = 4;
+const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);
+
+/**
+ * Whether a zoom from `from` to `to` is worth taking: a sample step or more, or any zoom that
+ * improves a judgment ahead of the last score entry (a count, which grid rounding can nudge, so a
+ * later frame would step again for it).
+ */
+function zoomEarns(zoom: SelectionZoomIn, from: number, to: number): boolean {
+  if (to <= from) return false;
+  if (to >= from * MIN_ZOOM_IN || zoom.readsAt(to)) return true;
+  return compareScores(zoom.scoreAt(to).slice(0, -1), zoom.scoreAt(from).slice(0, -1)) > 0;
+}
+
 /** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
 const ZOOM_FIT_STEPS = 8;
 
 /**
- * What a selection's zoom-in may do: how far it may reach, how well a zoom reads (scores compared
- * entry by entry, higher better), and the marks that must stay framed there, with names on the
- * sides they would take at that zoom.
+ * What a selection's zoom-in may do: whether a zoom reads clear (short of that, a zoom under a
+ * sample step is not taken), how far it may reach, how well a zoom reads (scores compared entry by entry, higher better), and
+ * the marks that must stay framed there, the selection first, names on the sides they take there.
  */
 export interface SelectionZoomIn {
   maxScale: number;
+  readsAt(scale: number): boolean;
   scoreAt(scale: number): readonly number[];
   marksAt(scale: number): readonly FramedMark[];
 }
@@ -103,16 +125,22 @@ function compareScores(a: readonly number[], b: readonly number[]): number {
   return 0;
 }
 
-/** The camera at `scale` that keeps the selection's screen point from `camera` and then pans `marks` in by the least move. */
-function framedAt(camera: CameraTarget, marks: readonly FramedMark[], scale: number, viewport: { width: number; height: number }, free: FreeMapRect, margin: number): CameraTarget {
-  const anchor = marks[0]!;
+/**
+ * The camera at `scale` that keeps the selection's screen point from `camera` and then pans `marks`
+ * in by the least move. `anchor` is the selection with its name on the side it takes, when known:
+ * a span too wide to fit then keeps that side inside, not every side the name might take.
+ */
+function framedAt(
+  camera: CameraTarget, marks: readonly FramedMark[], scale: number, viewport: { width: number; height: number }, free: FreeMapRect, margin: number,
+  anchor: FramedMark = marks[0]!,
+): CameraTarget {
   const tx0 = anchor.x - ((anchor.x - camera.tx) * camera.tscale) / scale;
   const ty0 = anchor.y - ((anchor.y - camera.ty) * camera.tscale) / scale;
   const toScreenX = viewport.width / 2 - tx0 * scale;
   const toScreenY = viewport.height / 2 - ty0 * scale;
   const shifted = (span: { lo: number; hi: number }, by: number) => ({ lo: span.lo + by, hi: span.hi + by });
-  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), free.minX + margin, free.maxX - margin);
-  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), free.minY + margin, free.maxY - margin);
+  const dx = leastShift(shifted(spanAt(marks, scale, "x"), toScreenX), shifted(spanAt([anchor], scale, "x"), toScreenX), anchor.x * scale + toScreenX, free.minX + margin, free.maxX - margin);
+  const dy = leastShift(shifted(spanAt(marks, scale, "y"), toScreenY), shifted(spanAt([anchor], scale, "y"), toScreenY), anchor.y * scale + toScreenY, free.minY + margin, free.maxY - margin);
   return { tx: tx0 - dx / scale, ty: ty0 - dy / scale, tscale: scale };
 }
 
@@ -148,11 +176,13 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
 /**
  * The camera that frames a selection inside the free map, `margin` clear of every edge. `sets` go
  * from most to least wanted, each starting with the selection: the first that fits at the current
- * scale is panned in; when none fits, the last zooms out as little as it needs, never below
- * `floorScale`. The selection keeps its screen point through any zoom, and the pan is the least
- * that frames. When the panned view does not read clear, it then zooms in about the selection, in
- * the same move, to the smallest scale with the best score `zoom` gives, at most `zoom.maxScale`
- * and as far as its marks still fit with their names where they would land. Null when the view already frames it.
+ * scale is panned in; when none fits but `zoom`'s marks do, with names on the sides they take,
+ * those are; otherwise the last zooms out as little as it needs, never below `floorScale`. The
+ * selection keeps its screen point through any zoom, and the pan is the least that frames. When
+ * the panned view does not read clear, it then zooms in about the selection, in the same move, to
+ * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale` and as far as its
+ * marks still fit. With `zoom.maxScale` fixed, a frame applied to its own landing is null. Null
+ * when the view already frames it.
  * O(marks) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes.
  */
 export function selectionFrameTarget(
@@ -170,25 +200,31 @@ export function selectionFrameTarget(
   const width = free.maxX - free.minX - margin * 2;
   const height = free.maxY - free.minY - margin * 2;
   const now = camera.tscale;
-  let marks = usable.find((set) => fitsAt(set, now, width, height));
+  const fitsThere = (s: number) => fitsAt(zoom!.marksAt(s), s, width, height);
+  const taken = (s: number) => zoom?.marksAt(s)[0];
+  // The least wanted set, or the zoom's marks with names on the sides they take: what one scale frames.
+  const lastAt = (s: number) => (fitsAt(last, s, width, height) || !zoom || !fitsThere(s) ? last : zoom.marksAt(s));
+  const fitsLast = (s: number) => fitsAt(lastAt(s), s, width, height);
+  // The zoom's marks rank right after the most wanted set: what the zoom keeps framed is never traded for less.
+  const framesAt = (s: number) => (zoom ? [usable[0]!, zoom.marksAt(s), ...usable.slice(1)] : usable).find((set) => fitsAt(set, s, width, height));
+  let marks = framesAt(now) ?? (fitsLast(now) ? lastAt(now) : undefined);
   let scale = now;
   if (!marks) {
-    marks = last;
     const floor = Math.min(now, floorScale);
-    if (!fitsAt(marks, floor, width, height)) scale = floor;
+    if (!fitsLast(floor)) scale = floor;
     else {
       let fits = floor;
       let fails = now;
       for (let i = 0; i < FIT_STEPS; i += 1) {
         const mid = (fits + fails) / 2;
-        if (fitsAt(marks, mid, width, height)) fits = mid;
+        if (fitsLast(mid)) fits = mid;
         else fails = mid;
       }
       scale = fits;
     }
+    marks = lastAt(scale);
   }
-  let target = framedAt(camera, marks, scale, viewport, free, margin);
-  const fitsThere = (s: number) => fitsAt(zoom!.marksAt(s), s, width, height);
+  let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale));
   if (zoom && scale < zoom.maxScale && fitsThere(scale)) {
     let cap = zoom.maxScale;
     if (!fitsThere(cap)) {
@@ -202,10 +238,14 @@ export function selectionFrameTarget(
       cap = fits;
     }
     const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
-    if (best > scale) target = framedAt(target, zoom.marksAt(best), best, viewport, free, margin);
+    if (zoomEarns(zoom, scale, best)) {
+      // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
+      const settled = framesAt(best) ?? zoom.marksAt(best);
+      target = framedAt(target, settled, best, viewport, free, margin, taken(best));
+    }
   }
   const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
-  return target.tscale === now && !moved ? null : target;
+  return Math.abs(target.tscale - now) <= now * SAME_SCALE && !moved ? null : target;
 }
 
 /**
@@ -220,6 +260,14 @@ export function reachFrameSets(near: readonly FramedMark[], partners: readonly F
   const sets: FramedMark[][] = [];
   for (let kept = nearestFirst.length; kept >= 0; kept -= 1) sets.push([...near, ...nearestFirst.slice(0, kept)]);
   return sets;
+}
+
+/**
+ * The zoom a selection was made at: the reader's own view, shared by selections that follow one
+ * another without a reader move, so reframing a landing never raises the selection's zoom cap.
+ */
+export function selectionZoomBase(memory: SelectionCamera | null, current: CameraTarget, gesture: number): number {
+  return memory !== null && untouched(memory, current, gesture) ? memory.restore.tscale : current.tscale;
 }
 
 /** Selections that follow one another without a reader move share the view the first one left. */

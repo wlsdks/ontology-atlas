@@ -61,6 +61,41 @@ export interface NameInput {
   elementSpacingPx: number;
 }
 
+/** Whether a screen box overlaps any of `obstacles`. O(obstacles). */
+export function boxUnderAny(obstacles: readonly Box[], minX: number, maxX: number, minY: number, maxY: number): boolean {
+  for (let i = 0; i < obstacles.length; i += 1) {
+    const o = obstacles[i]!;
+    if (minX < o.maxX && maxX > o.minX && minY < o.maxY && maxY > o.minY) return true;
+  }
+  return false;
+}
+
+/** The end of the run of names from `from` that one concept placed together: a name with its caption or reach line. */
+export function nameBlockEnd(names: readonly PlacedName[], from: number): number {
+  let end = from + 1;
+  while (end < names.length && names[end]!.id === names[from]!.id) end += 1;
+  return end;
+}
+
+/**
+ * Whether the block `names[from, to)`, drawn about its concept's screen point (x, y), stays clear
+ * of every chrome box; one line under chrome hides the block, since a caption alone names nothing.
+ * Admission runs per zoom step in world space, so the chrome, which moves with the screen, is
+ * judged at draw time. O(block × obstacles).
+ */
+export function nameBlockClear(names: readonly PlacedName[], from: number, to: number, x: number, y: number, obstacles: readonly Box[]): boolean {
+  for (let i = from; i < to; i += 1) {
+    const b = names[i]!.box;
+    if (boxUnderAny(obstacles, x + b.minX, x + b.maxX, y + b.minY, y + b.maxY)) return false;
+  }
+  return true;
+}
+
+/** Whether a block draws: the selection's own name always does, since the camera framed it and it is what the reader chose. */
+export function nameBlockDraws(names: readonly PlacedName[], from: number, to: number, x: number, y: number, obstacles: readonly Box[], selectedId: string | null): boolean {
+  return names[from]!.id === selectedId || nameBlockClear(names, from, to, x, y, obstacles);
+}
+
 export function zoomStep(scale: number, stepsPerOctave: number): number {
   return Math.round(Math.log2(Math.max(1e-6, scale)) * stepsPerOctave);
 }
@@ -523,6 +558,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   };
   const project = projectName(input);
   if (project) place(project);
+  const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
   // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
   const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
@@ -537,7 +573,10 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       if (crossed(at, block) && !crossed(at, above) && !onDisc) block = above;
     }
     for (const n of block) {
-      titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+      const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
+      // The census row is the one line of a title block that may go: it gives way to the project's name.
+      if (n.role === "units" && projectBox !== null && box.minX < projectBox.maxX && projectBox.minX < box.maxX && box.minY < projectBox.maxY && projectBox.minY < box.maxY) continue;
+      titles.add(box);
       place(n);
     }
   }

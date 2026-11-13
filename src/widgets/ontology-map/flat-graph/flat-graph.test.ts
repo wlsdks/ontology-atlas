@@ -27,7 +27,7 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -699,5 +699,43 @@ describe("name sides under lit lines", () => {
         expect(apart, `selected name to domain name at ${scale}`).toBeGreaterThanOrEqual(gap - 1e-6);
       }
     }
+  });
+});
+
+describe("names under the map's chrome", () => {
+  const model = VAULTS[1][1];
+  const names = namesAt(model, layoutOf(model), 1, null).names;
+  const at = { x: 400, y: 300 };
+
+  it("hides a domain's name and caption together when either line reaches under a panel's column", () => {
+    const from = names.findIndex((n, i) => n.role === "domain" && names[i + 1]?.id === n.id && names[i + 1]!.box.minX !== n.box.minX);
+    expect(from, "a domain whose caption and name differ in width").toBeGreaterThanOrEqual(0);
+    const to = nameBlockEnd(names, from);
+    expect(to - from, "the name and its caption are one block").toBe(2);
+    const edge = at.x + (names[from]!.box.minX + names[from + 1]!.box.minX) / 2;
+    const column = [{ minX: 0, maxX: edge, minY: 0, maxY: 949 }];
+    expect(nameBlockClear(names, from, to, at.x, at.y, column), "one line under the column hides both").toBe(false);
+    expect(nameBlockClear(names, from, to, at.x + 200, at.y, column), "clear of it, both draw").toBe(true);
+  });
+
+  it("hides a name whose concept sits under the explorer even where its tail reaches the gap before the rail", () => {
+    const from = names.findIndex((n) => n.role === "capability" && n.align === "right");
+    expect(from).toBeGreaterThanOrEqual(0);
+    const name = names[from]!;
+    const explorer = [{ minX: 0, maxX: 324, minY: 0, maxY: 949 }];
+    // The disc under the explorer's edge, the name's start in the 24 px before the rail.
+    const x = 12 - name.box.minX;
+    expect(x).toBeLessThan(324);
+    expect(nameBlockClear(names, from, nameBlockEnd(names, from), x, at.y, explorer)).toBe(false);
+  });
+
+  it("draws the selection's own name under a panel however it was selected, and still hides the other names there", () => {
+    const from = names.findIndex((n) => n.role === "capability");
+    const to = nameBlockEnd(names, from);
+    const id = names[from]!.id;
+    const panel = [{ minX: 0, maxX: 2000, minY: 0, maxY: 2000 }];
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, id), "the selection").toBe(true);
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, "capability:another"), "another concept selected").toBe(false);
+    expect(nameBlockDraws(names, from, to, at.x, at.y, panel, null), "nothing selected").toBe(false);
   });
 });
