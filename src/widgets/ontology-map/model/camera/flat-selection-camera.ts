@@ -91,8 +91,8 @@ const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);/** Bisection steps for t
 const ZOOM_FIT_STEPS = 8;
 
 /**
- * What a selection's zoom-in may do: whether a zoom already reads clear (none is taken from there),
- * how far it may reach, how well a zoom reads (scores compared entry by entry, higher better), and
+ * What a selection's zoom-in may do: whether a zoom reads clear (short of that, a zoom under a
+ * sample step is not taken), how far it may reach, how well a zoom reads (scores compared entry by entry, higher better), and
  * the marks that must stay framed there, the selection first, names on the sides they take there.
  */
 export interface SelectionZoomIn {
@@ -205,7 +205,7 @@ export function selectionFrameTarget(
     marks = lastAt(scale);
   }
   let target = framedAt(camera, marks, scale, viewport, free, margin, taken(scale));
-  if (zoom && !zoom.readsAt(scale) && scale < zoom.maxScale && fitsThere(scale)) {
+  if (zoom && scale < zoom.maxScale && fitsThere(scale)) {
     let cap = zoom.maxScale;
     if (!fitsThere(cap)) {
       let fits = scale;

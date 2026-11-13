@@ -153,8 +153,6 @@ describe("flat selection framing", () => {
     const twelveOfThirteen = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => [s >= 1.1 ? 1 : 0, 1, s >= 1.3 ? 12 : 11]))!;
     expect(twelveOfThirteen.tscale).toBeGreaterThanOrEqual(1.3);
     expect(twelveOfThirteen.tscale).toBeLessThan(1.3 * 2 ** (1 / 8));
-    const readsAlready = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => [1, 1, s >= 1.3 ? 12 : 11]));
-    expect(readsAlready?.tscale ?? view.tscale, "a view that reads clear takes no zoom for more names").toBe(view.tscale);
     const apartFirst = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn((s) => (s >= 1.6 ? [1, 1, 3] : [0, 1, 13])))!;
     expect(apartFirst.tscale).toBeGreaterThanOrEqual(1.6);
     expect(apartFirst.tscale).toBeLessThan(1.6 * 2 ** (1 / 8));
