@@ -12,24 +12,26 @@ routes: [/topology]
 
 The full Flat map is a force graph lit by domain. Flat answers "if I touch
 this, what moves?": at rest it shows territory, and pointing lights the reach.
-Each domain is a pool of soft, edgeless light in its own hue
-(`--color-domain-1-rgb` to `-8-rgb`), with a crisp disc and a lit core at its
-centre. Its capabilities sit around it as smaller discs in the same hue, sized
-by the square root of their element count. Their elements surround them as
-dots. At rest marks paint at `--map-graph-rest-hue` of their hue and no disc
-glows; glow and full hue belong to the hovered or selected set. The project
-sits at the hub as a disc no larger than a domain's; its spokes to the domains
-draw only while the project itself is pointed at or selected, because place and
-hue already say what it contains. Domain names are large, bold and horizontal,
+Each domain is a pool of soft, edgeless light, with a crisp disc and a lit core
+at its centre. Its capabilities sit around it as smaller discs, sized by the
+square root of their element count. Their elements surround them as dots. The
+map rests achromatic: every mark takes the neutral ink `--map-graph-name` at
+`--map-graph-rest-hue` of it, and no disc glows. Colour belongs to attention —
+the domain the pointer or the selection sits in takes the project's ink
+`--map-graph-project`, its lit set paints at full strength and glows, and the
+lit lines carry their two directional inks. So the only colours on this canvas
+name whose domain a mark is in and which way a relation runs. The tint rides
+the same clock as the light: it waits out the hover intent, so a sweep tints
+nothing, and fades back as the picture leaves. The project sits
+at the hub as a disc no larger than a domain's, in its own ink, the one mark
+with a colour at rest; its spokes to the domains draw only while the project
+itself is pointed at or selected, because place and name already say what it
+contains. Domain names are large, bold and horizontal,
 with a quieter caption counting the domain's complete capability and element
 membership. Capability names are one weight lighter, in the secondary ink.
 Concepts outside every domain sit together under one caption with their count.
 
-Hues follow the circular domain order. Past eight domains a hue repeats, but
-never on two neighbouring clusters while a free hue exists. A domain keeps its
-hue for the session.
-
-The layout is deterministic: the domain order, positions and hues come from
+The layout is deterministic: the domain order and positions come from
 the folder's content and the free map's size alone, so a folder draws the same
 picture however fast or in whatever batches its files were read, whichever map
 showed before it, and whether the product font arrived before or after the
@@ -242,8 +244,8 @@ the selected root.
 ## Memory and first read
 
 Within a session, an unchanged domain keeps its position and its capabilities'
-positions across rebuilds; a changed domain only seeds the new layout. Hues
-are kept the same way. Opening another folder clears this memory.
+positions across rebuilds; a changed domain only seeds the new layout. Opening
+another folder clears this memory.
 
 The map waits for the name font before its first frame, at most one second,
 because names size the layout: a map drawn in the fallback face would be laid

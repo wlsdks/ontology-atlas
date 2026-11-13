@@ -687,7 +687,6 @@ describe("buildTopologyWorld with the Flat graph", () => {
         for (const [how, scene] of Object.entries({ afterSample, streamed, reopened })) {
             const drift = Math.max(...[...oneShot.positions].map(([id, at]) => Math.hypot(scene.positions.get(id)!.x - at.x, scene.positions.get(id)!.y - at.y)));
             expect.soft(drift, `${how}: farthest drift from the one-shot open`).toBeLessThan(1e-6);
-            expect.soft(new Map(scene.graph!.hueByDomain), `${how}: hue per domain`).toEqual(new Map(oneShot.graph!.hueByDomain));
         }
     });
 });

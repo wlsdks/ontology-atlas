@@ -110,7 +110,6 @@ export interface FlatGraphPaintTokens {
 }
 
 export interface FlatGraphInks {
-  hues: readonly string[];
   project: string;
   discFill: string;
   arc: string;
@@ -139,7 +138,6 @@ export interface FlatGraphCluster {
   domainId: string;
   centre: Point;
   footprint: number;
-  hue: number;
   items: readonly FlatGraphItem[];
 }
 
@@ -148,7 +146,6 @@ export interface FlatGraphLayout {
   itemAt: ReadonlyMap<string, Point>;
   clusters: readonly FlatGraphCluster[];
   clusterByDomain: ReadonlyMap<string, FlatGraphCluster>;
-  hueByDomain: ReadonlyMap<string, number>;
   orphanIds: readonly string[];
   extent: Box;
 }
@@ -175,11 +172,9 @@ export interface FlatGraphMemory {
   face: string;
   positions: ReadonlyMap<string, Point>;
   signatureByDomain: ReadonlyMap<string, string>;
-  hueByDomain: ReadonlyMap<string, number>;
 }
 
 export interface FlatGraphPins {
   positions: ReadonlyMap<string, Point>;
   seeds: ReadonlyMap<string, Point>;
-  hueByDomain: ReadonlyMap<string, number>;
 }

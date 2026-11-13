@@ -87,18 +87,17 @@ test("pointing at a domain draws one line per partner domain and direction, and 
   const dial = await readDial(page);
   expect(await domainLines(page, dial)).toEqual(ORDERS_LINES);
 
-  const hues = await page.evaluate(() => {
+  const litInks = await page.evaluate(() => {
     const style = getComputedStyle(document.documentElement);
-    return Array.from({ length: 8 }, (_, k) => {
-      const [r, g, b] = style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number);
-      return `#${[r, g, b].map((n) => n!.toString(16).padStart(2, "0")).join("")}`;
-    });
+    return ["--map-graph-project", "--map-graph-name"].map((name) => style.getPropertyValue(name).trim());
   });
   const ink = new Map(dial.discs.map((d) => [d.id, d.ink]));
-  for (const name of ["orders", "catalog", "payments", "inventory", "shipping"]) {
-    expect(hues, `${name} is lit at its full hue`).toContain(ink.get((await domainNode(page, name)).id));
+  const pointedInk = ink.get((await domainNode(page, "orders")).id);
+  expect(litInks[0], "the domain the pointer is in takes the project's ink").toBe(pointedInk);
+  for (const name of ["catalog", "payments", "inventory", "shipping"]) {
+    expect(ink.get((await domainNode(page, name)).id), `${name} is lit in the neutral ink, not the project's`).toBe(litInks[1]);
   }
-  expect(hues, "an unconnected domain sinks").not.toContain(ink.get((await domainNode(page, "returns")).id));
+  expect(litInks, "an unconnected domain sinks").not.toContain(ink.get((await domainNode(page, "returns")).id));
   await expect(page.getByTestId("topology-flat-key").locator("[data-key-shape]")).toHaveCount(2);
 
   const widths = (d: DialProbe) => Object.fromEntries(d.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).map((s) => [s.flowKey, s.widthPx]));

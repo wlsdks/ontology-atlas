@@ -113,6 +113,7 @@ export class GraphMotion {
   private readonly index = new Map<string, number>();
   private fromLit = new Float64Array(256);
   private fromSink = new Float64Array(256);
+  private fromTint = new Float64Array(256);
   /** Per concept, the longest drawn line leaving it this frame: its source stays at least this lit. */
   private hold = new Float64Array(256);
   private readonly anchored: number[] = [];
@@ -150,6 +151,7 @@ export class GraphMotion {
     const i = this.slotOf(id);
     this.fromLit[i] = 0;
     this.fromSink[i] = 0;
+    this.fromTint[i] = 0;
   }
 
   /** A concept's ink now: `rest` at rest, 1 when lit, `sink` when sunk. */
@@ -161,6 +163,18 @@ export class GraphMotion {
   /** How lit a concept is now, 0 to 1. */
   litShare(id: string): number {
     return this.weights(id)[0]!;
+  }
+
+  /**
+   * How far a concept has moved toward the project's ink, 0 to 1. The tint rides the base clock, so
+   * it waits out `hoverIntentMs` with the rest of the picture and fades back on a leave.
+   */
+  tintShare(id: string): number {
+    const target = this.current.tinted.has(id) ? 1 : 0;
+    if (this.settled) return target;
+    const i = this.index.get(id);
+    const from = i === undefined ? (this.previous.tinted.has(id) ? 1 : 0) : this.fromTint[i]!;
+    return from + (target - from) * this.baseMix;
   }
 
   /** A whole-picture scalar moving from what it showed at the change to `target` on the base clock. */
@@ -263,12 +277,15 @@ export class GraphMotion {
       const lit = new Float64Array(this.fromLit.length * 2);
       const sink = new Float64Array(this.fromSink.length * 2);
       const hold = new Float64Array(this.hold.length * 2);
+      const tint = new Float64Array(this.fromTint.length * 2);
       lit.set(this.fromLit);
       sink.set(this.fromSink);
       hold.set(this.hold);
+      tint.set(this.fromTint);
       this.fromLit = lit;
       this.fromSink = sink;
       this.hold = hold;
+      this.fromTint = tint;
     }
     return i;
   }
@@ -278,9 +295,11 @@ export class GraphMotion {
     const seen = this.current.lit;
     if (seen !== null) for (const id of seen) this.slotOf(id);
     for (const [id, i] of this.index) {
+      const tint = this.tintShare(id);
       const w = this.weights(id);
       this.fromLit[i] = w[0]!;
       this.fromSink[i] = w[1]!;
+      this.fromTint[i] = tint;
     }
     this.fromShares.set(this.lastShares);
     this.planLines();
