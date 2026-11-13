@@ -19,8 +19,8 @@
     "legendPips": "점 = 요소 · 금색 = 낡은 요소",
     "legendStale": "낡음",
     "legendUnknown": "모름",
-    "legendCanals": "판 사이 기댐 · 굵을수록 관계가 많음",
-    "legendNotches": "홈 = 기대는 판 쪽",
+    "legendCanals": "판 사이 필요 관계 · 굵을수록 관계가 많음",
+    "legendNotches": "홈 = 필요로 하는 판 쪽",
     "legendNeeds": "필요한 곳",
     "legendUsers": "사용하는 곳",
     "legendKeys": "이웃 칸",
@@ -370,7 +370,7 @@
   },
   "edgeSentence": {
     "contains": "{from}{fromJosa} {to}{toJosa} 담고 있어요.",
-    "depends": "{from}{fromJosa} {to}에 기대요.",
+    "depends": "{from}{fromJosa} {to}{toJosa} 필요로 해요.",
     "describes": "{from}{fromJosa} {to}의 근거예요.",
     "belongsTo": "{from}{fromJosa} {to}에 속해요.",
     "related": "{from}{fromJosa} {to}{toJosa} 서로 관련돼 있어요."

@@ -24,7 +24,9 @@ import {
   buildV2Connections,
   buildV2EvidenceRows,
   formatV2HandoffText,
+  readConceptReach,
   readDomainUsage,
+  type ConceptReach,
   type DomainUsage,
 } from "@/widgets/ontology-map";
 import type { OntologyMapGraph } from "../../lib/map-canvas/map-adapter";
@@ -95,6 +97,8 @@ export interface NodeDatasheetDerivation {
     };
     groups: ReturnType<typeof buildV2ConnectionGroups>;
     domainUsage: DomainUsage | null;
+    /** The reach the map's count line counts, read from the map's own graph. */
+    reach: ConceptReach | null;
     evidence: { rows: ReturnType<typeof buildV2EvidenceRows>; total: number };
     /**
      * Real code paths from frontmatter `elements:`, kept apart from `evidence` (the source-doc
@@ -196,6 +200,11 @@ export function useNodeDatasheetModel({
     [mapGraph, selectedOntologyNode],
   );
 
+  const reach = useMemo(
+    () => (selectedOntologyNode ? readConceptReach(mapGraph.nodes, mapGraph.edges, selectedOntologyNode.id) : null),
+    [mapGraph, selectedOntologyNode],
+  );
+
   const v2DatasheetModel = useMemo(() => {
     if (!nodeFocus || !selectedOntologyNode || !insight) return null;
     // A vault-root slug for a document node; the written reference for a derived node without one.
@@ -282,6 +291,7 @@ export function useNodeDatasheetModel({
       metric,
       groups,
       domainUsage,
+      reach,
       evidence: { rows: evidenceRows, total: evidenceRows.length },
       codeLocations,
       handoffText,
@@ -311,6 +321,7 @@ export function useNodeDatasheetModel({
     selectedOntologyNode,
     insight,
     domainUsage,
+    reach,
     handoffSource,
     nodeFocusData,
     docFreshnessIndex,

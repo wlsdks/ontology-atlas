@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
+import type { ConceptReach } from "../../model/concept-reach";
 import type { DomainUsage } from "../../model/domain-usage";
 import type { V2ConnectionGroupsView, V2EvidenceRow } from "./map-datasheet";
 
@@ -141,8 +142,10 @@ export interface OntologyMapDetailPanelProps {
   powered: boolean;
   /** Single source of every relation count this panel draws, so counts and drawn rows cannot diverge. */
   groups: V2ConnectionGroupsView;
-  /** A domain's partner domains as the map's flows count them; their rows lead used-by and needs. */
+  /** A domain's partner domains as the map's flows count them, for the handoff. */
   domainUsage?: DomainUsage | null;
+  /** What the concept needs and what needs it, counted as the map's count line counts them. */
+  reach?: ConceptReach | null;
   /** The 「Evidence」 (evidence) group — the node's own backing vault doc(s),
    * promoted to its own group. Rows built by `buildV2EvidenceRows`; empty when
    * the node has no `evidenceIds` (which hides the group entirely, the same

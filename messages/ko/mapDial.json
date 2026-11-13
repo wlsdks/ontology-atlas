@@ -27,6 +27,6 @@
   "keyRelates": "관련",
   "keyBroader": "상위 개념",
   "noDomain": "도메인 없음 {count, number}",
-  "reachNeeds": "{count, number}곳에 기댐",
-  "reachNeededBy": "{count, number}곳이 기댐"
+  "reachNeeds": "{count, number}곳이 필요",
+  "reachNeededBy": "{count, number}곳에서 필요"
 }

@@ -27,7 +27,7 @@ describe("edgeSentenceValues — Korean particles follow the final consonant", (
   });
 
   it("depends and describes: only the subject particle varies", () => {
-    expect(edgeSentenceValues("depends", "주문", "결제")).toMatchObject({ fromJosa: "이", toJosa: "" });
+    expect(edgeSentenceValues("depends", "주문", "결제")).toMatchObject({ fromJosa: "이", toJosa: "를" });
     expect(edgeSentenceValues("describes", "근거", "배송")).toMatchObject({ fromJosa: "가", toJosa: "" });
   });
 

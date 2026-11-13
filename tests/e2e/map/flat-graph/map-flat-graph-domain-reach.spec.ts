@@ -147,7 +147,7 @@ test("selecting a domain counts its partner domains under its name as the panel 
   const reach = dial.texts.filter((t) => t.id === orders.id && t.role === "status");
   expect(reach.length, "one count line under the selected domain").toBe(1);
   const panelCount = async (group: string) => figures((await page.locator(`[data-datasheet-group-total="${group}"]`).first().textContent()) ?? "")[0];
-  const panel = [await panelCount("dependsOn"), await panelCount("usedBy")];
+  const panel = [await panelCount("needs"), await panelCount("neededBy")];
   expect(panel).toEqual([3, 2]);
   expect(figures(reach[0]!.text), "the map's counts are the panel's").toEqual(panel);
 

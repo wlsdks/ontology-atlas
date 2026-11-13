@@ -6,7 +6,7 @@ describe("OntologyMapEdgeHoverCard (P3c)", () => {
   it("renders the plain sentence, type, evidence and click hint as a non-interactive card", () => {
     render(
       <OntologyMapEdgeHoverCard
-        sentence="A 가 B 에 기대요"
+        sentence="A 가 B 를 필요로 해요"
         typeLabel="의존"
         why="쓰기 경로가 B 를 지난다"
         clickHint="클릭하면 상세 · 출처 문서"
@@ -15,7 +15,7 @@ describe("OntologyMapEdgeHoverCard (P3c)", () => {
       />,
     );
     const card = screen.getByTestId("map-edge-hover-card");
-    expect(card).toHaveTextContent("A 가 B 에 기대요");
+    expect(card).toHaveTextContent("A 가 B 를 필요로 해요");
     expect(card).toHaveTextContent("의존");
     expect(card).toHaveTextContent("쓰기 경로가 B 를 지난다");
     expect(card).toHaveTextContent("클릭하면 상세");

@@ -1,7 +1,8 @@
 /**
  * Pure view-model helpers for the component datasheet panel (`docs/design/ontology-map.md` section
- * 5): no React, i18n or DOM. Groups use the same connection set as the metric line, so counts
- * agree. Base derivation lives in `entities/knowledge-graph`, re-exported here under `V2` names.
+ * 5): no React, i18n or DOM. Role groups feed the handoff and the rows' reasons; the reach lists
+ * count as the map does (`model/concept-reach.ts`). Base derivation lives in
+ * `entities/knowledge-graph`, re-exported here under `V2` names.
  */
 export {
   buildConnections as buildV2Connections,
@@ -10,119 +11,6 @@ export {
 import { groupConnectionsByRole } from "@/entities/knowledge-graph";
 import type { DatasheetConnection as V2DatasheetConnection } from "@/entities/knowledge-graph";
 import type { DomainUsage } from "../../model/domain-usage";
-
-/**
- * S2 part 3 — when the "Contains" (what this contains) list is long (>15), show an
- * aggregate summary by kind and path prefix instead of individual rows (e.g.
- * "cli/src/commands 48 · .claude/skills 6 · Other 12"). Pure and deterministic:
- * count per prefix → descending count, ties by key alphabetically → only the top
- * `maxGroups` are named, and the rest plus prefix-less rows become `otherCount`
- * ("Other", other).
- */
-export interface V2ContainsGroupSummary {
-  groups: { key: string; count: number }[];
-  otherCount: number;
-  total: number;
-  /**
-   * B4 (the H1 non-developer language layer) — does the summary actually carry
-   * information? `false` means it collapsed into a single "Other" lump and
-   * carries nothing, so the panel renders the individual list instead. `true` as
-   * soon as one named group exists.
-   */
-  usable: boolean;
-}
-
-/** The threshold that turns the "Contains" group summary on — a total **above** this shows the summary. */
-export const V2_CONTAINS_SUMMARY_THRESHOLD = 15;
-
-/** Take only the slug part of a node id (`kind:slug`), dropping the `kind:` prefix. */
-function idToSlug(id: string): string {
-  const colon = id.indexOf(":");
-  return colon === -1 ? id : id.slice(colon + 1);
-}
-
-/** The directory prefix up to the last slash — null with no slash (folds into "Other").
- * e.g. `cli/src/commands/add` → `cli/src/commands`. */
-function deepPrefixKey(id: string): string | null {
-  const slug = idToSlug(id);
-  const slash = slug.lastIndexOf("/");
-  if (slash === -1) return null;
-  return slug.slice(0, slash);
-}
-
-/**
- * The first path segment (one level), or null with no slash. Re-splits more coarsely when deep
- * prefixes all scatter to count 1 and collapse into "Other".
- */
-function coarsePrefixKey(id: string): string | null {
-  const slug = idToSlug(id);
-  const slash = slug.indexOf("/");
-  if (slash === -1) return null;
-  return slug.slice(0, slash);
-}
-
-/** Build prefix buckets from one key function (pure). Descending count, ties by key
- * alphabetically. Only the top `cap` are named; the rest plus prefix-less rows become `otherCount`. */
-function bucketByKey(
-  rows: readonly V2DatasheetConnection[],
-  keyOf: (id: string) => string | null,
-  cap: number,
-): { groups: { key: string; count: number }[]; otherCount: number } {
-  const counts = new Map<string, number>();
-  let noPrefix = 0;
-  for (const row of rows) {
-    const key = keyOf(row.id);
-    if (key === null) {
-      noPrefix += 1;
-      continue;
-    }
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-  const sorted = [...counts.entries()].sort(
-    (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
-  );
-  const named = sorted.slice(0, cap);
-  let otherCount = noPrefix;
-  for (const [, c] of sorted.slice(cap)) otherCount += c;
-  return { groups: named.map(([key, count]) => ({ key, count })), otherCount };
-}
-
-/**
- * Aggregate "Contains" rows by path prefix. Deterministic: descending count, ties by
- * key alphabetically. Only the top `maxGroups` are named; the remaining prefixes plus
- * prefix-less rows fold into `otherCount`.
- *
- * B4 (H1) — when the deep prefixes all scatter and "Other" takes the majority (zero
- * information), re-split more coarsely on the first path segment and take whichever
- * actually divides. If still no group is named (no row has a slash), mark
- * `usable: false` so the panel renders the individual list instead.
- */
-export function summarizeContainsByPathPrefix(
-  rows: readonly V2DatasheetConnection[],
-  maxGroups: number = 4,
-): V2ContainsGroupSummary {
-  const total = rows.length;
-  const cap = Math.max(0, maxGroups);
-  const deep = bucketByKey(rows, deepPrefixKey, cap);
-
-  // If "Other" takes the majority or no group is named, retry with the coarser one-level prefix.
-  let chosen = deep;
-  if (deep.groups.length === 0 || deep.otherCount * 2 > total) {
-    const coarse = bucketByKey(rows, coarsePrefixKey, cap);
-    // Take whichever has the larger named coverage (= total - otherCount), keeping the
-    // more specific deep split on a tie.
-    const deepCovered = total - deep.otherCount;
-    const coarseCovered = total - coarse.otherCount;
-    if (coarseCovered > deepCovered) chosen = coarse;
-  }
-
-  return {
-    groups: chosen.groups,
-    otherCount: chosen.otherCount,
-    total,
-    usable: chosen.groups.length > 0,
-  };
-}
 
 /** One relation-role group as the panel renders it: a capped preview of rows +
  * the group's TRUE total (so the header can say "Uses 23" while showing 6). */
@@ -134,12 +22,6 @@ export interface V2ConnectionGroupView {
    * It references the pre-cap array directly, so the extra cost is one reference.
    */
   allRows?: V2DatasheetConnection[];
-  /**
-   * S2 part 3 — the path-prefix aggregate, filled only for the "Contains" group (shown
-   * instead of the individual list once the total exceeds the threshold). Computed
-   * over all rows, before the cap.
-   */
-  summary?: V2ContainsGroupSummary;
 }
 export interface V2ConnectionGroupsView {
   /** Outgoing containment — plain "Contains" (what this node contains). */
@@ -174,8 +56,7 @@ export function buildV2ConnectionGroups(
     allRows: rows.slice(),
   });
   return {
-    // Past the threshold the panel draws this summary instead of the rows.
-    contains: { ...toView(grouped.contains), summary: summarizeContainsByPathPrefix(grouped.contains) },
+    contains: toView(grouped.contains),
     usedBy: toView(grouped.usedBy),
     dependsOn: toView(grouped.dependsOn),
     belongsTo: toView(grouped.belongsTo),
@@ -183,73 +64,27 @@ export function buildV2ConnectionGroups(
   };
 }
 
-export interface V2MetricValues {
-  /** Outgoing containment — plain "Contains" (what this node contains). Only
-   *  rendered when > 0 (leaf nodes contain nothing, so the segment is hidden
-   *  for them rather than showing a noisy "Contains 0"). */
-  contains: number;
-  /** Direct incoming non-containment — plain "Uses" (places that use this). */
-  usedBy: number;
-  /** Direct outgoing non-containment — plain "Is Used By" (places this leans on). */
-  dependsOn: number;
-  /**
-   * Direct incoming containment — plain "Belongs To" (the parent(s) this node sits
-   * inside). Most nodes have nothing but a parent, so leaving this out zeroes the
-   * total (see the `V2ConnectionGroupsView.belongsTo` comment).
-   */
-  belongsTo: number;
-  /** Node-level evidence references — plain "Evidence". */
-  evidence: number;
-}
+/** The most rows a reach list shows before it folds; past it, five rows and a "show more" row. */
+export const REACH_ROW_LIMIT = 6;
 
-export interface V2MetricLabels {
-  contains: string;
-  usedBy: string;
-  dependsOn: string;
-  belongsTo: string;
-  evidence: string;
-}
-
-/** One typed segment of the engraved metric line — `key` matches the
- * connection-group id below it (`data-datasheet-group`), so the strip and the
- * groups stay reconciled by construction. */
-export interface V2MetricSegment {
-  key: "contains" | "usedBy" | "dependsOn" | "belongsTo" | "evidence";
-  label: string;
-  value: number;
+/** How many of `total` rows a list shows: all of six or fewer, else one fewer so the "show more" row fits. */
+export function shownReachRows(total: number, open: boolean): number {
+  return open || total <= REACH_ROW_LIMIT ? total : REACH_ROW_LIMIT - 1;
 }
 
 /**
- * The engraved metric line's segments, e.g. "Contains 18, Uses 4, Is Used By 2, Evidence 1".
- * The "Contains" segment appears only for container nodes (`contains > 0`). Segments are
- * structured so the panel can set label ink apart from value ink.
+ * The recorded reason of each direct relation, looked up by direction and far concept: `out:` for
+ * what the concept points at, `in:` for what points at it. The first written reason wins. O(rows).
  */
-export function buildV2MetricSegments(
-  values: V2MetricValues,
-  labels: V2MetricLabels,
-): V2MetricSegment[] {
-  const segments: V2MetricSegment[] = [];
-  if (values.contains > 0)
-    segments.push({ key: "contains", label: labels.contains, value: values.contains });
-  segments.push({ key: "usedBy", label: labels.usedBy, value: values.usedBy });
-  segments.push({ key: "dependsOn", label: labels.dependsOn, value: values.dependsOn });
-  // "Belongs To" follows the same rule as "Contains" — hidden only at 0, so a root or
-  // orphan node never carries "Belongs To 0". Hiding it when it exists is the defect above.
-  if (values.belongsTo > 0)
-    segments.push({ key: "belongsTo", label: labels.belongsTo, value: values.belongsTo });
-  segments.push({ key: "evidence", label: labels.evidence, value: values.evidence });
-  return segments;
-}
-
-/** Joined-string form of `buildV2MetricSegments` — kept for handoff/plain
- * text consumers and as the single source of the "label value · …" grammar. */
-export function formatV2MetricLine(
-  values: V2MetricValues,
-  labels: V2MetricLabels,
-): string {
-  return buildV2MetricSegments(values, labels)
-    .map((s) => `${s.label} ${s.value}`)
-    .join(" · ");
+export function reasonsByRelation(groups: V2ConnectionGroupsView): ReadonlyMap<string, string> {
+  const reasons = new Map<string, string>();
+  for (const view of [groups.dependsOn, groups.usedBy, groups.related]) {
+    for (const row of view.allRows ?? view.rows) {
+      const key = `${row.direction === "outgoing" ? "out" : "in"}:${row.id}`;
+      if (row.reason && !reasons.has(key)) reasons.set(key, row.reason);
+    }
+  }
+  return reasons;
 }
 
 /**
