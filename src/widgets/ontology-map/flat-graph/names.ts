@@ -1,7 +1,9 @@
 import type { MeasureText } from "../dial/label-marks";
 import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
+import { domainPartners } from "../model/containment-tree";
 import type { GraphLine } from "./attention";
+import { arcPathInto, emptyArcPath, litLineTrimsInto } from "./marks";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
@@ -124,24 +126,27 @@ function grown(b: Box, px: number): Box {
 /** Segments per lit line: the frame's bow strays under a pixel from a twelve-chord polyline at any lit length on screen. */
 const LINE_SAMPLES = 12;
 
-/**
- * The focus's lines as world polylines bowed as the frame draws them. Disc trims are left out: a
- * name box starts outside its disc, so the trimmed ends never reach one.
- */
-function linePolylines(lines: readonly GraphLine[], layout: FlatGraphLayout, bow: number): Float64Array[] {
+const linePath = emptyArcPath();
+const lineTrims = new Float64Array(2);
+
+/** The focus's lines as world polylines of the curves the frame draws at `scale`, trimmed alike. */
+export function linePolylines(
+  lines: readonly GraphLine[], layout: FlatGraphLayout, tokens: FlatGraphPaintTokens, scale: number, growth: number, discRadius: (id: string) => number,
+): Float64Array[] {
   const out: Float64Array[] = [];
   for (const line of lines) {
-    const a = layout.positions.get(line.from) ?? layout.itemAt.get(line.from);
-    const b = layout.positions.get(line.to) ?? layout.itemAt.get(line.to);
-    if (!a || !b) continue;
-    const cx = (a.x + b.x) / 2 - (b.y - a.y) * bow;
-    const cy = (a.y + b.y) / 2 + (b.x - a.x) * bow;
+    const from = layout.positions.get(line.from) ?? layout.itemAt.get(line.from);
+    const to = layout.positions.get(line.to) ?? layout.itemAt.get(line.to);
+    if (!from || !to) continue;
+    litLineTrimsInto(lineTrims, layout, line, Math.hypot(to.x - from.x, to.y - from.y) * scale, scale, growth, discRadius(line.from), discRadius(line.to), tokens);
+    if (!arcPathInto(linePath, from, to, tokens.lineBow, lineTrims[0]! / scale, lineTrims[1]! / scale)) continue;
+    const { a, c, b } = linePath;
     const pts = new Float64Array((LINE_SAMPLES + 1) * 2);
     for (let k = 0; k <= LINE_SAMPLES; k += 1) {
       const t = k / LINE_SAMPLES;
       const u = 1 - t;
-      pts[k * 2] = u * u * a.x + 2 * u * t * cx + t * t * b.x;
-      pts[k * 2 + 1] = u * u * a.y + 2 * u * t * cy + t * t * b.y;
+      pts[k * 2] = u * u * a.x + 2 * u * t * c.x + t * t * b.x;
+      pts[k * 2 + 1] = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
     }
     out.push(pts);
   }
@@ -198,7 +203,11 @@ function font(weight: number, px: number, family: string): string {
 
 type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measureText" | "fontFamily" | "staleByDomain" | "discRadius">;
 
-function domainBlock(input: DomainBlockInput, domainId: string): PlacedName[] {
+/**
+ * A domain's name and caption. A selected domain's reach line takes the caption's row: the layout
+ * keeps members off a two-row title, and the detail panel shows the membership the caption counts.
+ */
+function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
   const r = input.discRadius(domainId);
@@ -214,22 +223,63 @@ function domainBlock(input: DomainBlockInput, domainId: string): PlacedName[] {
     const units = labels.units(d.capabilityIds.length, d.elementCount);
     const text = stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
     const captionFont = font(400, t.captionPx, fontFamily);
-    const w = measureText(text, captionFont);
     const y = nameY + t.domainNamePx / 2 + t.captionGapPx + t.captionPx / 2;
-    out.push({
-      id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
-      box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
-    });
+    if (reachLine) {
+      const figures = tabularPieces(reachLine, captionFont, measureText);
+      const min = -figures.width / 2;
+      out.push({
+        id: domainId, role: "reach", text: reachLine, font: captionFont, dx: 0, dy: y, align: "center",
+        box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
+        pieces: figures.pieces.map((p) => ({ text: p.text, dx: min + p.dx })),
+      });
+    } else {
+      const w = measureText(text, captionFont);
+      out.push({
+        id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
+        box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
+      });
+    }
   }
   return out;
 }
 
-/** Each domain's name and caption block at the overview, which the layout keeps clear of members. O(D). */
+/**
+ * A domain block moved above its disc, its lines in the same order: where a partner domain's title
+ * goes when a lit domain line would run through it below, so the line meets the disc.
+ */
+function blockAbove(block: readonly PlacedName[]): PlacedName[] {
+  let top = Infinity;
+  let bottom = -Infinity;
+  for (const n of block) {
+    top = Math.min(top, n.box.minY);
+    bottom = Math.max(bottom, n.box.maxY);
+  }
+  const shift = -(top + bottom);
+  return block.map((n) => ({ ...n, dy: n.dy + shift, box: { ...n.box, minY: n.box.minY + shift, maxY: n.box.maxY + shift } }));
+}
+
+/** Whether a domain's title may take the side above its disc: a far end of a focused domain's lines. */
+function titleMayRise(input: Pick<NameInput, "model" | "focusId" | "named">, domainId: string): boolean {
+  const focus = input.focusId;
+  return focus !== null && focus !== domainId && input.model.domainById.has(focus) && input.named.has(domainId);
+}
+
+/** The selected domain's reach line, null for any other domain or picture. */
+function domainReachLine(input: Pick<NameInput, "selected" | "focusId" | "labels" | "reach">, domainId: string): string | null {
+  return input.selected && input.focusId === domainId ? reachText(input.labels, input.reach) : null;
+}
+
+/**
+ * Each domain's name and caption block at the overview, which the layout keeps clear of members,
+ * wide enough for the reach line that takes the caption's row when the domain is selected. O(flows × D).
+ */
 export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" | "discRadius">): Map<string, FlatGraphTitle> {
   const blocks = new Map<string, FlatGraphTitle>();
   const block: DomainBlockInput = { ...input, staleByDomain: null, discRadius: () => input.tokens.domainDiscPx };
   for (const d of input.model.domains) {
-    const boxes = domainBlock(block, d.id).map((n) => n.box);
+    const { needs, usedBy } = domainPartners(input.model.flows, d.id);
+    const reachLine = reachText(input.labels, { needs: needs.length, neededBy: usedBy.length });
+    const boxes = [...domainBlock(block, d.id), ...(reachLine ? domainBlock(block, d.id, reachLine) : [])].map((n) => n.box);
     blocks.set(d.id, {
       halfWidthPx: Math.max(...boxes.map((b) => Math.max(-b.minX, b.maxX))),
       topPx: Math.min(...boxes.map((b) => b.minY)),
@@ -371,7 +421,11 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   const r = input.discRadius(id);
   const ring = input.selected && id === input.focusId ? r + t.selectedRingGapPx + t.selectedRingPx : r;
   const boxes: Box[] = [{ minX: -ring, maxX: ring, minY: -ring, maxY: ring }];
-  if (model.domainById.has(id)) boxes.push(...domainBlock(input, id).map((n) => n.box));
+  if (model.domainById.has(id)) {
+    const block = domainBlock(input, id, domainReachLine(input, id));
+    boxes.push(...block.map((n) => n.box));
+    if (titleMayRise(input, id)) boxes.push(...blockAbove(block).map((n) => n.box));
+  }
   else {
     const cap = model.capabilityById.get(id);
     const label = cap?.label ?? input.elementLabel(id);
@@ -381,24 +435,24 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   return union(boxes);
 }
 
-interface Candidate { id: string; tries: () => PlacedName[][] }
+interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 
 function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Candidate[] {
   const { model, layout } = input;
   const lit = input.lit;
   const caps = [...model.capabilityById.values()].filter((c) => layout.positions.has(c.id));
   const rank = (a: { id: string }, b: { id: string }) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
-  const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, tries: () => sideNames(input, c.id, "capability", c.label) });
+  const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, element: false, tries: () => sideNames(input, c.id, "capability", c.label) });
   const showElements = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   const elementIds = showElements ? [...model.capabilityOf.keys(), ...model.domains.flatMap((d) => d.directElementIds)].filter((id) => layout.positions.has(id)).sort(byId) : [];
-  const elementCandidate = (id: string): Candidate => ({ id, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "element", label) : []; } });
+  const elementCandidate = (id: string): Candidate => ({ id, element: true, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "element", label) : []; } });
   const focusFirst = (a: { id: string }, b: { id: string }) => (a.id === input.focusId ? -1 : b.id === input.focusId ? 1 : rank(a, b));
   const litCaps = lit ? caps.filter((c) => lit.has(c.id)).sort(focusFirst) : [];
   const namesElements = lit !== null && input.focusId !== null && !model.domainById.has(input.focusId);
   const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id)).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
   const rest = caps.filter((c) => !lit?.has(c.id)).sort(rank);
   const orphans = layout.orphanIds.filter((id) => !lit || lit.has(id)).map((id): Candidate => ({
-    id, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
+    id, element: false, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
   }));
   const agent = input.agentFocusId;
   const agentCandidate: Candidate[] = agent === null || !layout.positions.has(agent) || model.domainById.has(agent) || agent === model.projectId ? []
@@ -449,6 +503,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const scale = stepScale(step, tokens.zoomStepsPerOctave);
   const grid = new Occupancy(CELL_PX / scale);
   const titles = new Occupancy(CELL_PX / scale);
+  const words = new Occupancy(CELL_PX / scale);
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const discs: [string, number][] = [];
@@ -460,27 +515,42 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   for (const id of layout.orphanIds) discs.push([id, input.discRadius(id)]);
   for (const [id, r] of discs) grid.add(worldBox(layout.positions.get(id)!, { minX: -r, maxX: r, minY: -r, maxY: r }, scale));
   const place = (n: PlacedName) => {
-    grid.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+    const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
+    grid.add(box);
+    words.add(box);
     names.push(n);
     ids.add(n.id);
   };
   const project = projectName(input);
   if (project) place(project);
+  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
+  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
+  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
+  const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
+  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   for (const c of layout.clusters) {
-    for (const n of domainBlock(input, c.domainId)) {
+    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId));
+    if (titleMayRise(input, c.domainId) && polylines.length > 0) {
+      const at = layout.positions.get(c.domainId)!;
+      const above = blockAbove(block);
+      const onDisc = above.some((n) => grid.hits(worldBox(at, n.box, scale)));
+      if (crossed(at, block) && !crossed(at, above) && !onDisc) block = above;
+    }
+    for (const n of block) {
       titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
       place(n);
     }
   }
   const caption = orphanCaption(input, scale);
   if (caption) {
-    grid.add(worldBox(layout.positions.get(caption.id)!, caption.box, scale));
+    const box = worldBox(layout.positions.get(caption.id)!, caption.box, scale);
+    grid.add(box);
+    words.add(box);
     names.push(caption);
   }
   const pending = candidates(input, degreeOf(model));
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
-  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const reach = tokens.domainNamePx / lowest;
   const inside = (at: Point, group: readonly PlacedName[]) => group.every((n) => {
     const b = worldBox(at, n.box, lowest);
@@ -489,30 +559,33 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   });
   const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
-  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
-  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
-  const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens.lineBow) : [];
-  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   const selectedId = input.selected ? input.focusId : null;
-  const offTitles = (id: string, at: Point, group: readonly PlacedName[]) => {
-    const gap = id === selectedId ? tokens.selectedTitleGapPx : 0;
-    return !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
-  };
-  // A lit name takes the first side no lit line crosses; a forced name then keeps off every domain
-  // title when any try can and takes the least crowded try.
+  const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
+    !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
+  // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other
+  // than the focus may sit on a disc but not on a name, and a forced element with no such side drops.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
     const lit = polylines.length > 0 && input.lit!.has(cand.id);
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (cand.id !== selectedId || offTitles(cand.id, at, group));
+    const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group));
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const clear = tries.filter((group) => offTitles(cand.id, at, group));
-      fit = (clear.length > 0 ? clear : tries).reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best));
+      const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
+      const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || offTitles(at, group))) : [];
+      const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
+      const pool = apart.length > 0 ? apart : yields && cand.element ? [] : clear.length > 0 ? clear : tries;
+      fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
     if (fit) for (const n of fit) place(n);
   };
+  // The focus wins over every name, then capabilities over elements.
+  const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
   if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
+  for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
+  for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
+  if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id)) tryPlace(cand, false);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id)) tryPlace(cand, true);
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;

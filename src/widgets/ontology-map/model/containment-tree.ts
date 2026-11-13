@@ -256,6 +256,33 @@ export function rollRelatesCapabilityPairs(tree: ContainmentTree, edges: readonl
   return [...pairs.entries()].sort(([p], [q]) => byString(p, q)).map(([, pair]) => pair);
 }
 
+export interface DomainPartner {
+  domainId: string;
+  /** The `depends_on` relations between the two domains in this direction. */
+  links: number;
+}
+
+/**
+ * One domain's partner domains from the directed flows, in flow order: the domains it needs and
+ * the domains that need it, each with its relation count. A relates-only pair is neither. O(flows).
+ */
+export function domainPartners(
+  flows: readonly DirectedDomainFlow[],
+  domainId: string,
+): { needs: DomainPartner[]; usedBy: DomainPartner[] } {
+  const needs: DomainPartner[] = [];
+  const usedBy: DomainPartner[] = [];
+  for (const flow of flows) {
+    if (flow.a !== domainId && flow.b !== domainId) continue;
+    const partner = flow.a === domainId ? flow.b : flow.a;
+    const outgoing = flow.a === domainId ? flow.ab : flow.ba;
+    const incoming = flow.a === domainId ? flow.ba : flow.ab;
+    if (outgoing > 0) needs.push({ domainId: partner, links: outgoing });
+    if (incoming > 0) usedBy.push({ domainId: partner, links: incoming });
+  }
+  return { needs, usedBy };
+}
+
 export function rollDirectedDomainFlows(
   deps: readonly DomainDependency[],
   relates: readonly { a: string; b: string }[],

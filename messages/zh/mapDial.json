@@ -22,6 +22,8 @@
   "connectionCount": "{count, number} 个连接",
   "keyNeeds": "它依赖的",
   "keyNeededBy": "依赖它的",
+  "keyDomainNeeds": "它依赖的领域",
+  "keyDomainNeededBy": "依赖它的领域",
   "keyRelates": "相关",
   "keyBroader": "上位概念",
   "noDomain": "无领域 {count, number}",

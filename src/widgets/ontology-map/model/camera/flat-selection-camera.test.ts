@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   SELECTION_NUDGE_MARGIN_PX,
   deselectCamera,
+  reachFrameSets,
   recordSelectionCamera,
   selectionFrameTarget,
   selectionNudgeTarget,
@@ -88,6 +89,19 @@ describe("flat selection framing", () => {
     expect(inside(whole, [...near, far])).toBe(true);
     const distant = mark(-2_000, 0);
     expect(selectionFrameTarget(view, [[...near, distant], near], viewport, free, margin, 0.5)).toBeNull();
+  });
+
+  it("frames a domain's reach at the current zoom, keeping the nearest partners when not all fit by panning", () => {
+    const near = [mark(0, 0), mark(80, 40)];
+    const partners = [mark(-2_400, 0), mark(500, 0), mark(-300, 200)];
+    const target = selectionFrameTarget(view, reachFrameSets(near, partners), viewport, free, margin, view.tscale)!;
+    expect(target.tscale).toBe(view.tscale);
+    expect(inside(target, [...near, partners[1]!, partners[2]!])).toBe(true);
+    expect(inside(target, [partners[0]!])).toBe(false);
+    const all = selectionFrameTarget(view, reachFrameSets(near, partners.slice(1)), viewport, free, margin, view.tscale);
+    expect(inside(all ?? view, [...near, ...partners.slice(1)])).toBe(true);
+    const wide = [mark(0, 0), mark(3_000, 0)];
+    expect(selectionFrameTarget(view, reachFrameSets(wide, []), viewport, free, margin, view.tscale)?.tscale ?? view.tscale, "never zooms out").toBe(view.tscale);
   });
 
   it("zooms out only as far as the near set needs, never below the floor and never in", () => {

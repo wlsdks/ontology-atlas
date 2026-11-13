@@ -11,7 +11,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -41,7 +41,8 @@ interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: 
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
 interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
-interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string; reach: number }
+/** `fadeStart` and `fadeEnd` are the shares of the curve that fade in from transparent at each end. */
+interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string; reach: number; fadeStart: number; fadeEnd: number }
 const LINE_KINDS: readonly GraphLineKind[] = ["needs", "neededBy", "relates", "broader"];
 const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
@@ -95,7 +96,7 @@ const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0,
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
-const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1 }));
+const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
 const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -183,6 +184,8 @@ function arcMark(from: Point, to: Point, bow: number, trimStart: number, trimEnd
   if (arc.kind !== kind) arc.kind = kind;
   arc.key = "";
   if (arc.reach !== 1) arc.reach = 1;
+  if (arc.fadeStart !== 0) arc.fadeStart = 0;
+  if (arc.fadeEnd !== 0) arc.fadeEnd = 0;
   return arc;
 }
 
@@ -900,6 +903,7 @@ function hubCaptionFont(px: number, family: string): string {
  * closure kept across frames would hold the frame that made it, and through it an unmounted canvas.
  */
 const stepGrowthNow = new Float64Array(1);
+const LINE_TRIMS = new Float64Array(2);
 function stepRadius(id: string): number {
   return radiusAt(id, stepGrowthNow[0]!);
 }
@@ -922,16 +926,23 @@ function focusLinks(motion: GraphMotion): void {
     if (!a || !b) continue;
     const kind = LINE_KINDS.indexOf(line.kind) + 1;
     const tapered = line.kind === "needs" || line.kind === "neededBy";
-    const trimEnd = discRadius(line.to) + (tapered ? P.arcTrimPx / 2 : 0);
-    const width = tapered ? P.lineTaperPx : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
-    const mark = arcMark(a, b, P.lineBow, discRadius(line.from), trimEnd, width, P.lineAlpha, false, 0, kind);
+    const betweenDomains = F.model.domainById.has(line.from) && F.model.domainById.has(line.to);
+    litLineTrimsInto(LINE_TRIMS, F.layout, line, Math.hypot(b.x - a.x, b.y - a.y), F.scale, F.growth, discRadius(line.from), discRadius(line.to), P);
+    const width = tapered ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    const mark = arcMark(a, b, P.lineBow, LINE_TRIMS[0]!, LINE_TRIMS[1]!, width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
     const { a: start, b: end } = mark.path;
     if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
     mark.key = line.key;
     if (mark.reach !== reach) mark.reach = reach;
+    if (betweenDomains) {
+      // The end outside the member star fades in, so the line emerges from the cluster's light.
+      const fade = Math.min(0.5, P.lineFadePx / (Math.hypot(end.x - start.x, end.y - start.y) || 1));
+      if (line.kind === "needs") mark.fadeStart = fade;
+      else mark.fadeEnd = fade;
+    }
     L.focusArcs.add(mark);
-    if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind];
+    if (current) F.lineKinds |= FLAT_LINE_BITS[line.kind] | (betweenDomains ? FLAT_LINE_BITS.domains : 0);
     if (chorded && current) frameChords.add(chordOf(mark, line.kind === "relates"));
   }
 }
@@ -987,12 +998,12 @@ function strokeArcs(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], ink: st
  * Fills a quadratic as a taper: `width` across at its start, a point at its end, so direction
  * reads without an arrowhead or a second hue.
  */
-function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number, reach: number): void {
+function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number, t0: number, t1: number, roundStart: boolean): void {
   const { a, c, b } = path;
   ctx.beginPath();
   for (let side = 1; side >= -1; side -= 2) {
     for (let k = 0; k <= TAPER_STEPS; k += 1) {
-      const t = (side === 1 ? k / TAPER_STEPS : 1 - k / TAPER_STEPS) * reach;
+      const t = t0 + (side === 1 ? k / TAPER_STEPS : 1 - k / TAPER_STEPS) * (t1 - t0);
       const u = 1 - t;
       const x = u * u * a.x + 2 * u * t * c.x + t * t * b.x;
       const y = u * u * a.y + 2 * u * t * c.y + t * t * b.y;
@@ -1002,10 +1013,39 @@ function fillTaper(ctx: CanvasRenderingContext2D, path: ArcPath, width: number, 
       const half = side * ((width / 2) * u + TAPER_TIP_PX * t);
       if (side === 1 && k === 0) ctx.moveTo(x - (ty / len) * half, y + (tx / len) * half);
       else ctx.lineTo(x - (ty / len) * half, y + (tx / len) * half);
+      if (roundStart && side === -1 && k === TAPER_STEPS) {
+        // Back round the start: from the far side's edge, behind the start point, to the near side's.
+        const heading = Math.atan2(ty, tx);
+        ctx.arc(x, y, Math.abs(half), heading - Math.PI / 2, heading + Math.PI / 2, true);
+      }
     }
   }
   ctx.closePath();
   ctx.fill();
+}
+
+/** Steps a faded end takes from transparent to the line's ink: no gradient object, so no allocation. */
+const FADE_STEPS = 8;
+
+/** A taper drawn to `reach`, its faded ends stepping up from transparent; a faded start is rounded. */
+function fillFadedTaper(ctx: CanvasRenderingContext2D, arc: Arc): void {
+  const { path, width, reach, fadeStart, fadeEnd, alpha } = arc;
+  const bodyFrom = Math.min(reach, fadeStart);
+  const bodyTo = Math.min(reach, 1 - fadeEnd);
+  for (let k = 0; k < FADE_STEPS && fadeStart > 0; k += 1) {
+    const from = (fadeStart * k) / FADE_STEPS;
+    if (from >= reach) break;
+    ctx.globalAlpha = (alpha * (k + 0.5)) / FADE_STEPS;
+    fillTaper(ctx, path, width, from, Math.min(reach, (fadeStart * (k + 1)) / FADE_STEPS), k === 0);
+  }
+  ctx.globalAlpha = alpha;
+  if (bodyTo > bodyFrom) fillTaper(ctx, path, width, bodyFrom, bodyTo, false);
+  for (let k = 0; k < FADE_STEPS && fadeEnd > 0; k += 1) {
+    const from = 1 - fadeEnd + (fadeEnd * k) / FADE_STEPS;
+    if (from >= reach) break;
+    ctx.globalAlpha = (alpha * (FADE_STEPS - k - 0.5)) / FADE_STEPS;
+    fillTaper(ctx, path, width, from, Math.min(reach, 1 - fadeEnd + (fadeEnd * (k + 1)) / FADE_STEPS), false);
+  }
 }
 
 /** Strokes the first `reach` of a quadratic: its own sub-curve, so a drawing line keeps its final bow. */
@@ -1038,7 +1078,8 @@ function paintLines(ctx: CanvasRenderingContext2D, arcs: readonly Arc[], tokens:
     ctx.globalAlpha = arc.alpha;
     if (kind === "needs" || kind === "neededBy") {
       ctx.fillStyle = kind === "needs" ? tokens.inks.arc : tokens.inks.reach;
-      fillTaper(ctx, arc.path, arc.width, arc.reach);
+      if (arc.fadeStart > 0 || arc.fadeEnd > 0) fillFadedTaper(ctx, arc);
+      else fillTaper(ctx, arc.path, arc.width, 0, arc.reach, false);
       continue;
     }
     ctx.strokeStyle = tokens.inks.arc;

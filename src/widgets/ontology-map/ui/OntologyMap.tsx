@@ -361,6 +361,8 @@ export interface OntologyMapProps {
    * shown only while 3D is on. The widget places it; it owns no copy.
    */
   domeLightLegend?: ReactNode;
+  /** The flat map's key, placed inside the map so it reads the panels' live insets. */
+  flatKey?: ReactNode;
   /**
    * Whether the node detail panel covers the screen. To the dome camera its opening or closing is a
    * resize, so each flip reframes the selected node. Ignored in 2D.
@@ -644,6 +646,7 @@ export function OntologyMap(props: OntologyMapProps) {
             </span>) : null}
         </button>) : null}
       {view3d && props.domeLightLegend ? props.domeLightLegend : null}
+      {!view3d && props.flatKey ? props.flatKey : null}
       {/* The inspector docks against the same right edge the names favour, and the
                   reader is looking at one concept, so the names step aside while it is open. */}
       {tierNamesActive && !detailPanelVisible ? (<OntologyMapTierLegend names={tierNames ?? []} labels={domeTierLabels!} onRaise={raiseDomeTier} onWidths={setDomeTierNameWidths}/>) : null}
