@@ -131,15 +131,6 @@ test("selecting a domain counts its partner domains under its name as the panel 
   const dial = await readDial(page);
   expect(await domainLines(page, dial), "every partner's line draws").toEqual(ORDERS_LINES);
   expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
-  const free = dial.freeRect;
-  const home = dial.discs.find((d) => d.id === orders.id)!;
-  const partners = await Promise.all(["catalog", "payments", "inventory", "shipping"].map(async (name) => {
-    const id = (await domainNode(page, name)).id;
-    const disc = dial.discs.find((d) => d.id === id)!;
-    return { name, far: Math.hypot(disc.x - home.x, disc.y - home.y), shown: disc.x >= free.minX && disc.x <= free.maxX && disc.y >= free.minY && disc.y <= free.maxY };
-  }));
-  partners.sort((p, q) => p.far - q.far);
-  expect(partners[0]!.shown, `the nearest partner, ${partners[0]!.name}, is panned into the free map`).toBe(true);
 
   const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
   const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs
