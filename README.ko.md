@@ -135,6 +135,8 @@ pnpm checks:changed -- --run
 
 모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 50개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
 
+시작 화면과 다운로드 페이지에서 모루가 좌우로 움직이고 뛰며 춤춥니다. 모루를 누르면 일시정지·재생할 수 있고, 동작 줄이기를 켜면 정지합니다.
+
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
 <details>

@@ -155,7 +155,10 @@ function trackedFiles(pattern: RegExp): string[] {
 
 const SOURCE_LOOP = /\brepeat\s*:\s*Infinity\b|\biterations\s*:\s*Infinity\b|animate-\[[^\]]*infinite/;
 
-const SCRIPTED_LOOPS: Record<string, string> = {};
+const SCRIPTED_LOOPS: Record<string, string> = {
+  "src/shared/ui/marks/brand-companion.tsx":
+    "Owner-requested decorative play in bounded entry/download space. All three WAAPI tracks animate transform only; IntersectionObserver, document visibility, reduced motion, pointer/focus hold and the explicit pause toggle control playback. brand-companion.test.tsx verifies the guards; the 2026-11-13 native recording verifies the rendered cycle.",
+};
 
 function scriptedLoops(files: readonly string[], read: (file: string) => string): string[] {
   return files.filter((file) => SOURCE_LOOP.test(read(file)) && !(file in SCRIPTED_LOOPS));
@@ -178,6 +181,7 @@ describe("infinite motion: loops are compositor-only, defined, and paused or tie
     const names = new Set(loops.map((loop) => loop.name));
     expect(Object.keys(RUNS_ONLY_DURING_WORK).filter((key) => !subjects.has(key))).toEqual([]);
     expect(Object.keys(PAINT_LICENSED).filter((key) => !names.has(key))).toEqual([]);
+    expect(Object.keys(SCRIPTED_LOOPS).filter((file) => !SOURCE_LOOP.test(readFileSync(path.join(REPO, file), "utf8")))).toEqual([]);
   });
 
   it("a layout keyframe that runs at rest is refused twice", () => {

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildMoruCompanion } from './build-moru-companion.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
@@ -188,6 +189,7 @@ export async function buildMoru() {
   const manifest = { name: 'Moru', version: spec.version, nativeCell: 128, palette: COLORS.map(x => `#${x}`), clips, poses, compass: 'icons/atlas-compass-1024.png', runtime: { greeting: 'wave', waiting: 'blink', connect: 'connect', compile: 'source-read', walk: 'wave', read: 'source-read', success: 'dance' }, scope: 'Local design catalogue. Only explicitly mapped and observed runtime states play in the app; no animation grants approval or accepts meaning.' };
   await put(join(ROOT, 'moru.json'), JSON.stringify(manifest, null, 2) + '\n');
   await put(join(ROOT, 'preview-data.js'), `globalThis.moruManifest = ${JSON.stringify(manifest)};\n`);
+  await buildMoruCompanion();
   console.log(`[moru] ${spec.authored.length} authored clips + ${spec.compositions.length} compositions; ${Object.keys(poses).length} poses; compass 16–1024px`);
 }
 
