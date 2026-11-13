@@ -106,5 +106,5 @@ export type {
   ReferrerListMove,
 } from './lib/authoring/rename-ref-rewrites';
 export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/bundled-vault/server-doc-content';
-export { buildReviewQueue, reviewDigest } from './lib/review';
+export { buildReviewQueue, reviewCurrentness, reviewDigest } from './lib/review';
 export type { ReviewQueueRow } from './lib/review';
