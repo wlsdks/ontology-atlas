@@ -137,7 +137,7 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
 
   it.each([[1700, 900], [1100, 860], [760, 820]])("keeps every capability disc off every domain title in a %ix%i fit", (width, height) => {
     const titles = new Map(model.domains.map((d) => [d.id, { halfWidthPx: 70 + (d.label.length % 5) * 12, topPx: 18, bottomPx: 64 }]));
-    const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, { areaPx: { width, height }, titles, capDiscPx: TOKENS.paint.capDiscMaxPx });
+    const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, { areaPx: { width, height }, titles, capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0 });
     const e = fitted.extent;
     const scale = Math.min(1, width / (e.maxX - e.minX), height / (e.maxY - e.minY));
     const discPx = TOKENS.paint.capDiscMaxPx / scale;
@@ -152,6 +152,37 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
       }
     }
     expect(hits).toEqual([]);
+  });
+
+  it("leaves no member in the strip between a domain and its title, where the domain's own mark would cover it", () => {
+    const title = { halfWidthPx: 90, topPx: 18, bottomPx: 64 };
+    const area = { width: 820, height: 560 };
+    const titles = new Map(model.domains.map((d) => [d.id, title]));
+    const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, { areaPx: area, titles, capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0 });
+    const scale = Math.min(1, area.width / (fitted.extent.maxX - fitted.extent.minX), area.height / (fitted.extent.maxY - fitted.extent.minY));
+    for (const c of fitted.clusters) {
+      for (const item of c.items) {
+        const at = fitted.itemAt.get(item.id)!;
+        expect(Math.hypot(at.x - c.centre.x, at.y - c.centre.y) * scale, `${item.id} stands clear of ${c.domainId}`).toBeGreaterThan(title.topPx);
+      }
+    }
+  });
+
+  it("spreads each member star into the room a wide title reserves, and never past it", () => {
+    const wide = { halfWidthPx: 420, topPx: 18, bottomPx: 300 };
+    const roomPx = Math.hypot(wide.halfWidthPx, wide.bottomPx);
+    const titles = new Map(model.domains.map((d) => [d.id, wide]));
+    const area = { width: 4000, height: 2400 };
+    const fitted = layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null, { areaPx: area, titles, capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0 });
+    const e = fitted.extent;
+    const scale = Math.min(1, area.width / (e.maxX - e.minX), area.height / (e.maxY - e.minY));
+    const stars = fitted.clusters.filter((c) => c.items.length >= 4);
+    expect(stars.length).toBeGreaterThan(0);
+    for (const c of stars) {
+      const reachPx = Math.max(...c.items.map((it) => Math.hypot(fitted.itemAt.get(it.id)!.x - c.centre.x, fitted.itemAt.get(it.id)!.y - c.centre.y))) * scale;
+      expect(reachPx / roomPx, `${c.domainId} reaches into its room`).toBeGreaterThan(0.5);
+      expect(c.footprint * scale, `${c.domainId} stays inside its room`).toBeLessThanOrEqual(roomPx * 1.1);
+    }
   });
 
   it("is deterministic", () => {
@@ -272,6 +303,7 @@ describe("session memory", () => {
       areaPx: { width: 1600, height: 900 },
       titles: new Map(full.domains.map((d) => [d.id, { halfWidthPx: d.label.length * charPx, topPx: 18, bottomPx: 64 }])),
       capDiscPx: TOKENS.paint.capDiscMaxPx,
+      hubPx: 0,
     });
     claimFlatGraphFolder("face-fresh");
     const fresh = buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "product"), frameAt(7)).graph!;
