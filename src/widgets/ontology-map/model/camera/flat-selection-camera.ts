@@ -175,6 +175,16 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn, holds: (sca
   return bestAt;
 }
 
+/** The camera at `scale` that puts the centre of `marks` on the centre of the free map. */
+function centredAt(marks: readonly FramedMark[], scale: number, viewport: { width: number; height: number }, free: FreeMapRect): CameraTarget {
+  const mid = (span: { lo: number; hi: number }, lo: number, hi: number, half: number) => ((span.lo + span.hi) / 2 + half - (lo + hi) / 2) / scale;
+  return {
+    tx: mid(spanAt(marks, scale, "x"), free.minX, free.maxX, viewport.width / 2),
+    ty: mid(spanAt(marks, scale, "y"), free.minY, free.maxY, viewport.height / 2),
+    tscale: scale,
+  };
+}
+
 /** A far end of the selection's lines as a mark the frame keeps on the free map itself, not `margin` inside it. */
 function heldEnd(end: { x: number; y: number }, margin: number): FramedMark {
   return { x: end.x, y: end.y, box: { minX: margin, maxX: -margin, minY: margin, maxY: -margin } };
@@ -273,7 +283,7 @@ export function selectionFrameTarget(
 /**
  * A domain selection's framing sets, most wanted first: its near set with every partner, then with
  * one fewer each time, the partner farthest from the selection dropped first, down to the near set
- * alone. Framed at the current zoom, it keeps as many partners in view as panning allows. O(partners²).
+ * alone. O(partners²).
  */
 export function reachFrameSets(near: readonly FramedMark[], partners: readonly FramedMark[]): FramedMark[][] {
   const at = near[0];
@@ -282,6 +292,53 @@ export function reachFrameSets(near: readonly FramedMark[], partners: readonly F
   const sets: FramedMark[][] = [];
   for (let kept = nearestFirst.length; kept >= 0; kept -= 1) sets.push([...near, ...nearestFirst.slice(0, kept)]);
   return sets;
+}
+
+/**
+ * A domain's frame: the most wanted of `sets` it can hold, centred on the free map and `margin`
+ * clear of every edge of it. It keeps the current zoom when that already holds the most wanted
+ * set, zooms out as little as it needs toward `floorScale` while a wider set comes with it, and never zooms in.
+ * Below `floorScale` nothing is gained that the overview does not already show, so the frame stops
+ * there and pans the rest in. Null when the view already frames it.
+ * O(sets × marks + marks × FIT_STEPS).
+ */
+export function reachFrameTarget(
+  camera: CameraTarget,
+  sets: readonly (readonly FramedMark[])[],
+  viewport: { width: number; height: number },
+  free: FreeMapRect,
+  margin: number,
+  floorScale: number,
+): CameraTarget | null {
+  const usable = sets.filter((set) => set.length > 0);
+  const last = usable.at(-1);
+  if (!last) return null;
+  const width = free.maxX - free.minX - margin * 2;
+  const height = free.maxY - free.minY - margin * 2;
+  const now = camera.tscale;
+  const floor = Math.min(now, floorScale);
+  // A set that fits at one scale fits at every smaller one: spans grow with the scale, names do not.
+  const wantedAt = (s: number) => usable.findIndex((set) => fitsAt(set, s, width, height));
+  const reachable = wantedAt(floor);
+  let wanted = wantedAt(now);
+  let scale = now;
+  if (reachable >= 0 && (wanted < 0 || reachable < wanted)) {
+    let fits = floor;
+    let fails = now;
+    for (let i = 0; i < FIT_STEPS; i += 1) {
+      const mid = (fits + fails) / 2;
+      if (fitsAt(usable[reachable]!, mid, width, height)) fits = mid;
+      else fails = mid;
+    }
+    scale = fits;
+    wanted = reachable;
+  } else if (wanted < 0) scale = floor;
+  const held = usable[wanted] ?? last;
+  // The reach is the whole picture, so it takes the middle of the free map rather than the least
+  // move; one that outgrows the map keeps the selection inside instead.
+  const target = wanted < 0 ? framedAt(camera, held, scale, viewport, free, margin) : centredAt(held, scale, viewport, free);
+  const moved = Math.abs((target.tx - camera.tx) * target.tscale) > 0.5 || Math.abs((target.ty - camera.ty) * target.tscale) > 0.5;
+  return Math.abs(target.tscale - now) <= now * SAME_SCALE && !moved ? null : target;
 }
 
 /**

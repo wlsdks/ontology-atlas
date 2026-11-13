@@ -5,12 +5,12 @@ import { branchNameLines, branchTextStyle } from "../../../dial/branches/text";
 import { readDialTokens } from "../../../dial/tokens";
 import type { DialModel, DialWorld } from "../../../dial/types";
 import {
-  SELECTION_NUDGE_MARGIN_PX, reachFrameSets, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
+  SELECTION_NUDGE_MARGIN_PX, reachFrameSets, reachFrameTarget, selectionFrameTarget, selectionNudgeTarget, type FramedMark, type FreeMapRect,
 } from "../../../model/camera/flat-selection-camera";
 import type { TopologyWorld } from "../../world/topology-world";
 import { cachedGraphAttention } from "../../../flat-graph/attention";
 import { graphDiscRadiusPx } from "../../../flat-graph/marks";
-import { nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
+import { domainTitleBlocks, nameReachBox, selectedDiscRadius, type NameReachInput } from "../../../flat-graph/names";
 import { readFlatGraphTokens } from "../../../flat-graph/tokens";
 import { labelFontFamily } from "../../../render/labels";
 import type { OntologyMapTokens } from "../../../tokens/read-map-tokens";
@@ -30,6 +30,8 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  * On the Flat graph a click frames the selection, its domain and the lit concepts inside that
  * domain with every side their names may take, preferring the whole lit reach when it already
  * fits. Radii are taken at the largest growth, so the frame holds at any zoom it lands on.
+ * A domain is its reach to other domains instead: it never zooms in, and zooms out as far as the
+ * map's own fit to bring every partner between the panels.
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
@@ -71,11 +73,30 @@ function graphSelectionFrame(
     const node = world.nodeById.get(of);
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
-  // A domain's picture is its reach to other domains: it never zooms in, zooms out only when its own
-  // star and names cannot fit, and pans in what partners it can.
   if (model.domainById.has(id)) {
     const partners = new Set(attention.lines.map((line) => (line.from === id ? line.to : line.from)));
-    return selectionFrameTarget(camera, reachFrameSets(marks(near), marks(partners)), viewport, free, paint.frameMarginPx, band.entryScale);
+    const titles = domainTitleBlocks({ model, tokens: paint, labels: dial.labels ?? null, measureText, fontFamily });
+    /** A mark as the frame holds it: the drawn disc, and a domain's name block under it when `withName`. */
+    const blocks = (ids: Iterable<string>, withName: boolean) => [...ids].flatMap((of): FramedMark[] => {
+      const node = world.nodeById.get(of);
+      if (!node) return [];
+      const r = radius(of);
+      const title = withName ? titles.get(of) : undefined;
+      const half = Math.max(r, title?.halfWidthPx ?? 0);
+      return [{ x: node.x, y: node.y, box: { minX: -half, maxX: half, minY: Math.min(-r, title?.topPx ?? 0), maxY: Math.max(r, title?.bottomPx ?? 0) } }];
+    });
+    // Members come along as discs: their names are re-admitted at whatever zoom the frame lands on,
+    // so holding every side one might take would cost the reach the picture is about.
+    const own = [...blocks([id], true), ...blocks([...near].filter((of) => of !== id), false)];
+    // Every partner's disc, and their names with them when that asks no more zoom-out than the map's own fit.
+    const sets = [[...own, ...blocks(partners, true)], ...reachFrameSets(own, blocks(partners, false))];
+    const extent = dial.scene.graph!.extent;
+    const domainDisc = graphDiscRadiusPx("domain", 0, paint, growth);
+    const mapFit = (span: number, extentSpan: number) => (span - paint.frameMarginPx * 2 - domainDisc * 2) / Math.max(extentSpan, 1e-6);
+    // No partner asks a smaller scale than the one holding every domain of the map, disc and all;
+    // below it the frame would only show what the overview already does.
+    const floor = Math.min(mapFit(free.maxX - free.minX, extent.maxX - extent.minX), mapFit(free.maxY - free.minY, extent.maxY - extent.minY));
+    return reachFrameTarget(camera, sets, viewport, free, paint.frameMarginPx, floor);
   }
   const element = !model.capabilityById.has(id) && model.domainOf.has(id);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({

@@ -168,6 +168,28 @@ describe("a selection framed between both panels", () => {
     expect(zoomedOut, "some domain's star outgrows the free map at this zoom").toBeGreaterThan(0);
   });
 
+  it.each([
+    ["docs", 1448, 949, docsManifest], ["docs", 1512, 949, docsManifest], ["docs", 1920, 1080, docsManifest],
+    ["storefront", 1512, 949, storefrontManifest], ["storefront", 1920, 1080, storefrontManifest],
+  ])("leaves no domain a domain reaches under a panel in the %s vault at %ix%i", (_, width, height, manifest) => {
+    const { model, at, rest, free, frame } = vaultMap(manifest, { width, height });
+    let reaching = 0;
+    for (const domain of model.domains) {
+      const partners = new Set(cachedGraphAttention(model, domain.id, true).lines.map((line) => (line.from === domain.id ? line.to : line.from)));
+      if (partners.size === 0) continue;
+      reaching += 1;
+      const landed = frame(domain.id, rest) ?? rest;
+      const disc = graphDiscRadiusPx("domain", 0, paint, zoomGrowth(landed.tscale / (rest.tscale / INSETS.overviewEntryRatio), paint));
+      for (const partner of partners) {
+        const p = at(partner);
+        const centre = { x: (p.x - landed.tx) * landed.tscale + width / 2, y: (p.y - landed.ty) * landed.tscale + height / 2 };
+        const box = { minX: centre.x - disc, maxX: centre.x + disc, minY: centre.y - disc, maxY: centre.y + disc };
+        expect(inside(box, free), `${domain.id} reaches ${partner}, whose disc lands at [${Math.round(box.minX)}, ${Math.round(box.maxX)}] x [${Math.round(box.minY)}, ${Math.round(box.maxY)}]`).toBe(true);
+      }
+    }
+    expect(reaching, "some domain reaches another").toBeGreaterThan(0);
+  });
+
   it("is a fixed point: framing the view it landed on moves nothing", () => {
     const { rest, frame } = vaultMap(docsManifest, { width: 1448, height: 949 });
     const id = "capability:repo-structure-analysis";
