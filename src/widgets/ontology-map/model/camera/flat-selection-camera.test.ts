@@ -3,6 +3,7 @@ import {
   SELECTION_NUDGE_MARGIN_PX,
   deselectCamera,
   reachFrameSets,
+  reachFrameTarget,
   recordSelectionCamera,
   selectionFrameTarget,
   selectionNudgeTarget,
@@ -99,17 +100,35 @@ describe("flat selection framing", () => {
     expect(discX).toBeLessThanOrEqual(free.maxX - margin + 1e-6);
   });
 
-  it("frames a domain's reach at the current zoom, keeping the nearest partners when not all fit by panning", () => {
+  it("frames a domain's reach at the current zoom, centred, when every partner already fits", () => {
     const near = [mark(0, 0), mark(80, 40)];
-    const partners = [mark(-2_400, 0), mark(500, 0), mark(-300, 200)];
-    const target = selectionFrameTarget(view, reachFrameSets(near, partners), viewport, free, margin, view.tscale)!;
+    const partners = [mark(500, 0), mark(-300, 200)];
+    const target = reachFrameTarget(view, reachFrameSets(near, partners), viewport, free, margin, 0.1)!;
     expect(target.tscale).toBe(view.tscale);
-    expect(inside(target, [...near, partners[1]!, partners[2]!])).toBe(true);
-    expect(inside(target, [partners[0]!])).toBe(false);
-    const all = selectionFrameTarget(view, reachFrameSets(near, partners.slice(1)), viewport, free, margin, view.tscale);
-    expect(inside(all ?? view, [...near, ...partners.slice(1)])).toBe(true);
-    const wide = [mark(0, 0), mark(3_000, 0)];
-    expect(selectionFrameTarget(view, reachFrameSets(wide, []), viewport, free, margin, view.tscale)?.tscale ?? view.tscale, "never zooms out").toBe(view.tscale);
+    expect(inside(target, [...near, ...partners])).toBe(true);
+    const mid = (m: FramedMark[]) => (Math.min(...m.map((o) => screen(target, o).minX)) + Math.max(...m.map((o) => screen(target, o).maxX))) / 2;
+    expect(mid([...near, ...partners])).toBeCloseTo((free.minX + free.maxX) / 2, 6);
+  });
+
+  it("zooms out for a far partner only as far as the floor, and keeps the nearest partners below it", () => {
+    const near = [mark(0, 0), mark(80, 40)];
+    const partners = [mark(2_400, 0), mark(500, 0)];
+    const reached = reachFrameTarget(view, reachFrameSets(near, partners), viewport, free, margin, 0.3)!;
+    expect(reached.tscale).toBeLessThan(view.tscale);
+    expect(reached.tscale).toBeGreaterThanOrEqual(0.3);
+    expect(inside(reached, [...near, ...partners])).toBe(true);
+    const floored = reachFrameTarget(view, reachFrameSets(near, partners), viewport, free, margin, 0.8)!;
+    expect(floored.tscale).toBe(view.tscale);
+    expect(inside(floored, [...near, partners[1]!])).toBe(true);
+    expect(inside(floored, [partners[0]!])).toBe(false);
+  });
+
+  it("holds the floor and the selection when even its own set cannot fit there", () => {
+    const wide = [mark(0, 0, 60), mark(8_000, 0, 60)];
+    const target = reachFrameTarget(view, [wide], viewport, free, margin, 0.2)!;
+    expect(target.tscale).toBe(0.2);
+    expect(screen(target, wide[0]!).minX).toBeGreaterThanOrEqual(free.minX + margin - 1e-6);
+    expect(reachFrameTarget(target, [wide], viewport, free, margin, 0.2), "framing its own landing moves nothing").toBeNull();
   });
 
   it("zooms out only as far as the near set needs, never below the floor and never in", () => {
