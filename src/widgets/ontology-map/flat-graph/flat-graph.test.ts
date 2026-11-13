@@ -27,7 +27,7 @@ import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attenti
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -427,6 +427,23 @@ describe("selection reach", () => {
     expect(reachText(labels, { needs: 0, neededBy: 0 })).toBeNull();
   });
 
+  it.each(VAULTS)("prints no concept name over another for any selection in the %s vault, leaving out the name that would", (_name, vault) => {
+    const layout = layoutOf(vault);
+    const overprinted: string[] = [];
+    let leftOut = 0;
+    for (const at of [0.37, 0.75]) {
+      const scale = stepScale(zoomStep(at, TOKENS.paint.zoomStepsPerOctave), TOKENS.paint.zoomStepsPerOctave);
+      for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
+        const admitted = namesAt(vault, layout, scale, id);
+        const concepts = admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project");
+        for (const pair of overlapping(concepts, layout, scale)) overprinted.push(`${id} at ${at}: ${pair}`);
+        for (const end of cachedGraphAttention(vault, id, true).named) if (vault.capabilityById.has(end) && !admitted.ids.has(end)) leftOut += 1;
+      }
+    }
+    expect(leftOut, "some selection has a capability name with no legible side").toBeGreaterThan(0);
+    expect(overprinted).toEqual([]);
+  });
+
   it("names every lit endpoint and the selection even at a crowded zoom, and keeps the selection off every domain name", () => {
     const layout = layoutOf(model);
     for (const scale of [0.25, 0.5, 1]) {
@@ -558,22 +575,6 @@ describe("domain reach", () => {
     for (const id of ["d1", "a", "b", "d2", "d3"]) expect(att.lit!.has(id), id).toBe(true);
     for (const id of ["e", "f", "g", "z", "d4", "h"]) expect(att.lit!.has(id), id).toBe(false);
     expect([...att.named].sort()).toEqual(["d1", "d2", "d3"]);
-  });
-
-  it.each(VAULTS)("prints no concept name over another for any selection in the %s vault", (_name, vault) => {
-    const layout = layoutOf(vault);
-    const overprinted: string[] = [];
-    let named = 0;
-    for (const scale of [0.37, 0.75]) {
-      for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
-        const admitted = namesAt(vault, layout, scale, id);
-        const concepts = admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project");
-        named += concepts.length;
-        for (const pair of overlapping(concepts, layout, scale)) overprinted.push(`${id} at ${scale}: ${pair}`);
-      }
-    }
-    expect(named, "selections name concepts").toBeGreaterThan(0);
-    expect(overprinted).toEqual([]);
   });
 
   it("counts exactly the partner domains the detail panel lists, on every bundled vault", () => {

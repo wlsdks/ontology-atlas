@@ -49,7 +49,7 @@ export interface NameInput {
   focusId: string | null;
   /** Whether the focus is selected: a selected capability is named large, with its reach beneath. */
   selected: boolean;
-  /** Concepts a lit picture names even where their name must overlap another. */
+  /** Concepts a lit picture names ahead of the rest; one drops only where its name would print over another concept's. */
   named: ReadonlySet<string>;
   reach: { needs: number; neededBy: number } | null;
   /** The focus's lines; lit names take a side none of them crosses. */
@@ -616,9 +616,11 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
     !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
+  // Both boxes carry the name pad; the test box gives up one, so two names keep one pad of air between their glyphs.
+  const overprints = (at: Point, group: readonly PlacedName[]) => group.some((n) => conceptNames.hits(worldBox(at, grown(n.box, -tokens.namePadPx), scale)));
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
-  // the focus may sit on a disc or a title block but never on a concept's name, and drops when no
-  // side is left; an element prefers a side clear of discs and never sits on the selection's ring.
+  // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
+  // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
@@ -632,7 +634,8 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
       const offMarks = cand.element ? apart.filter((group) => !hits(marks, at, group)) : apart;
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
-      const legible = yields ? (clear.length > 0 ? clear : tries).filter((group) => !hits(conceptNames, at, group)) : clear.length > 0 ? clear : tries;
+      const offTitle = clear.length > 0 ? clear : tries;
+      const legible = yields ? offTitle.filter((group) => !overprints(at, group)) : offTitle;
       const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : legible;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }

@@ -58,8 +58,9 @@ elements are far enough apart. Zooming in only adds names. A selected concept,
 with its count line, is placed before every other name and always named, then
 the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a
-lit picture never sits on another concept's name: a capability whose only sides
-would overprint one is left out, and the detail panel still lists it; a lit
+lit picture, unless it is the selection or the agent's focus, keeps to the sides
+clear of title blocks when any is and is left out when each of those would
+print within one name pad of another concept's name; the detail panel still lists it. A lit
 element name also keeps the selected title gap
 from every domain title, prefers a side clear of every disc, never sits on the
 selection's ring, and one with no side clear of names and the ring is left out
