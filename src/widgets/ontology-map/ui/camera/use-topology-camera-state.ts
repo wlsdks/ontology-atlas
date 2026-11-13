@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
 import type { SelectionCamera } from "../../model/camera/flat-selection-camera";
+import type { PanelInsets } from "../../interaction/free-area";
 import {
   type ViewportReframeMotion
 } from "./use-topology-viewport-lifecycle";
@@ -109,7 +110,7 @@ export function useTopologyCameraState({
   const initialRelayoutTokenRef = useRef(relayoutToken);
 
   /** What a panel covers on each side, refreshed wherever the camera measures it. */
-  const panelInsetsRef = useRef<{ left: number; right: number; } | null>(null);
+  const panelInsetsRef = useRef<PanelInsets | null>(null);
 
   /**
    * Which bbox the overview fit uses. The workbench (`"spine"`, default) draws only the spine tier on

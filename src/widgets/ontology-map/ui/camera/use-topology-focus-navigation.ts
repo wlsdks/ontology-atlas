@@ -1,6 +1,6 @@
 "use client";
 
-import { measureEdgeFitObstacle } from "../../interaction/free-area";
+import { measureEdgeFitObstacle, measureNameObstacles, type PanelInsets } from "../../interaction/free-area";
 import {
   useCallback,
   useEffect,
@@ -12,6 +12,7 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
+  selectionZoomBase,
   type SelectionCamera,
   type SelectionSource
 } from "../../model/camera/flat-selection-camera";
@@ -44,7 +45,7 @@ export function liveDialFocusFrame(world: TopologyWorld, focusId: string): DialF
 }
 
 interface Dependencies {
-  panelInsetsRef?: RefObject<{ left: number; right: number } | null>;
+  panelInsetsRef?: RefObject<PanelInsets | null>;
   lastFocusedSlugRef: RefObject<string | null>;
   focusedSlug: string | null;
   egoRevealBatchesRef: RefObject<number>;
@@ -203,8 +204,11 @@ export function useTopologyFocusNavigation({
       if (phase === "exiting" || (phase === "entering" && focusedSlug === null)) return;
       const measured = cameraTokens(tokens);
       if (focusedSlug === null && panelInsetsRef?.current) {
-        const right = Math.max(tokens.safeInsetRight, canvasRef.current ? measureEdgeFitObstacle(canvasRef.current, "right")?.reach ?? 0 : 0);
-        panelInsetsRef.current = { left: measured.safeInsetLeft, right };
+        const canvas = canvasRef.current;
+        const right = Math.max(tokens.safeInsetRight, canvas ? measureEdgeFitObstacle(canvas, "right")?.reach ?? 0 : 0);
+        // The detail panel is still on screen while it folds, so names stop yielding to it now.
+        const nameObstacles = canvas ? measureNameObstacles(canvas, { left: true, right: false }) : [];
+        panelInsetsRef.current = { left: measured.safeInsetLeft, right, nameObstacles };
       }
       const memory = selectionCameraRef.current;
       const gesture = cameraGestureRevisionRef.current;
@@ -213,9 +217,8 @@ export function useTopologyFocusNavigation({
       if (!realmActive && focusedSlug === null) {
         selectionCameraRef.current = null;
         focusLeashPxRef.current = null;
-        // A Flat graph click selection framed the lit set where the reader reads on; letting go keeps that view.
-        const framedByClick = Boolean(world.dial?.scene.graph) && memory !== null && !memory.framed;
-        const back = framedByClick ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
+        // On the Flat graph letting go of a selection, however it was made, leaves the view where the reader reads on.
+        const back = world.dial?.scene.graph ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
         if (back.kind === "return") moveCamera(back.target, tokens, memory?.framed ? undefined : "spring");
         // The released leash must not carry on a pan it was holding short, nor pull back its stretch.
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);
@@ -236,11 +239,13 @@ export function useTopologyFocusNavigation({
         return;
       }
 
-      if ((!realmActive || realmData?.flat) && source === "canvas-click" && !pathPick && focusedSlug !== null) {
+      // On the Flat graph a selection from outside the canvas (explorer, search, link) frames its lit set as a click does.
+      const framesLikeClick = source === "canvas-click" || (source === null && !realmActive && Boolean(world.dial?.scene.graph));
+      if ((!realmActive || realmData?.flat) && framesLikeClick && !pathPick && focusedSlug !== null) {
         const node = world.nodeById.get(focusedSlug);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;
-        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current);
+        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current, selectionZoomBase(memory, current, gesture));
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
         const leash = leashFor(width, height, measured);

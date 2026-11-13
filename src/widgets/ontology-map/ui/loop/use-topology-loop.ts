@@ -194,6 +194,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     reducedMotionRef,
     cameraTweenRef,
     cameraRef,
+    view3dRef,
+    lastActiveMsRef,
   });
   useTopologyObserverBindings({
         onGrowthReplayingChangeRef,

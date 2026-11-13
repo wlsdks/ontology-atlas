@@ -182,6 +182,8 @@ export interface DialFrameInput {
   ctx: CanvasRenderingContext2D; dial: DialWorld; worldKey: object;
   nodeScreen(id: string): Point | null; nodeAt?(id: string): Point | undefined; toScreen(x: number, y: number): Point; scale: number; zoomRatio: number;
   viewportWidth: number; viewportHeight: number; freeRect: Box;
+  /** Canvas boxes of the chrome over the map (panels, key, tool row) that no name is drawn under. */
+  nameObstacles?: readonly Box[];
   mapTokens: import("../tokens/read-map-tokens").OntologyMapTokens; dialTokens: DialTokens; labels: DialLabels | null; evidence: ReadonlyMap<string, DialEvidence> | null;
   hoveredNodeId: string | null; focusedNodeId: string | null; agentFocusNodeId: string | null;
   selectionPulse: { nodeId: string; scaleFactor: number; alpha: number;

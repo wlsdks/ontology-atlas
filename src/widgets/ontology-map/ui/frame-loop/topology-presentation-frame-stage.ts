@@ -1,4 +1,5 @@
 import type { DialWorld } from '../../dial/types';
+import type { PanelInsets } from "../../interaction/free-area";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
@@ -75,7 +76,7 @@ interface Dependencies {
   ambientSleepDelayRef: RefObject<number | undefined>;
   bgPointerRef: RefObject<{ x: number; y: number; } | null>;
   ctx: CanvasRenderingContext2D;
-  panelInsetsRef: RefObject<{ left: number; right: number; } | null>;
+  panelInsetsRef: RefObject<PanelInsets | null>;
   gridPatternRef: RefObject<CanvasPattern | null>;
   dustPointsRef: RefObject<DustPoint[]>;
   hoverStartRef: RefObject<{ id: string | null; at: number; }>;

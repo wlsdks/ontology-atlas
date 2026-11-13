@@ -2,14 +2,19 @@
 
 import {
   useCallback,
+  useEffect,
+  useRef,
   type RefObject
 } from "react";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import {
+  collectCanvasObstacles,
   measureBottomFitObstacle,
   measureCanvasInsets,
   measureEdgeFitObstacle,
-  type EdgeFitObstacle
+  measureNameObstacles,
+  type EdgeFitObstacle,
+  type PanelInsets
 } from "../../interaction/free-area";
 import { CANVAS_SPRING_PAN_MS, cameraTransitionDurationMs, type CameraKeyframe, type CameraTween, type CameraTweenAltitude, type CameraTweenEase } from "../../model/camera/camera-easing";
 import {
@@ -23,11 +28,23 @@ import { computeDomeFitCameraTarget } from "./topology-camera-math";
 
 interface Dependencies {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  panelInsetsRef: RefObject<{ left: number; right: number; } | null>;
+  panelInsetsRef: RefObject<PanelInsets | null>;
   domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   reducedMotionRef: RefObject<boolean>;
   cameraTweenRef: RefObject<CameraTween | null>;
   cameraRef: RefObject<CameraAxes>;
+  view3dRef: RefObject<boolean>;
+  /** Writing it asks the map for a frame. */
+  lastActiveMsRef: RefObject<number>;
+}
+
+/** The chrome whose size decides where map names may draw. */
+const NAME_CHROME_SELECTOR = "[data-topology-camera-obstacle], [data-map-name-obstacle], [data-map-fit-obstacle]";
+
+interface ChromeWatch {
+  observer: ResizeObserver;
+  watched: Set<Element>;
+  frame: number;
 }
 
 /** Camera inset, dome fitting, and tween policy shared by frame and navigation owners. */
@@ -38,7 +55,45 @@ export function useTopologyCameraPolicy({
   reducedMotionRef,
   cameraTweenRef,
   cameraRef,
+  view3dRef,
+  lastActiveMsRef,
 }: Dependencies) {
+  const chromeWatchRef = useRef<ChromeWatch | null>(null);
+
+  /*
+   * The chrome can change size between camera moments: the detail panel grows when its content
+   * arrives, the key wraps, INDEX folds while the agent dock is open. A size change re-measures
+   * the name boxes once, in the next frame, and asks for that frame; at rest nothing runs.
+   */
+  const watchChrome = useCallback((canvasEl: HTMLCanvasElement) => {
+    if (typeof ResizeObserver === "undefined") return;
+    let watch = chromeWatchRef.current;
+    if (!watch) {
+      const fresh: ChromeWatch = { observer: new ResizeObserver(() => {
+        if (fresh.frame !== 0) return;
+        fresh.frame = requestAnimationFrame(() => {
+          fresh.frame = 0;
+          const canvas = canvasRef.current;
+          const insets = panelInsetsRef.current;
+          if (!canvas || !insets || view3dRef.current) return;
+          panelInsetsRef.current = { ...insets, nameObstacles: measureNameObstacles(canvas, { left: true, right: true }) };
+          lastActiveMsRef.current = performance.now();
+        });
+      }), watched: new Set(), frame: 0 };
+      watch = chromeWatchRef.current = fresh;
+    }
+    const present = new Set(canvasEl.ownerDocument.querySelectorAll(NAME_CHROME_SELECTOR));
+    for (const el of watch.watched) if (!present.has(el)) watch.observer.unobserve(el);
+    for (const el of present) if (!watch.watched.has(el)) watch.observer.observe(el);
+    watch.watched = present;
+  }, [canvasRef, lastActiveMsRef, panelInsetsRef, view3dRef]);
+
+  useEffect(() => () => {
+    const watch = chromeWatchRef.current;
+    if (!watch) return;
+    watch.observer.disconnect();
+    cancelAnimationFrame(watch.frame);
+  }, []);
 
   /**
    * Tokens for a camera target with only the left and right safe insets replaced by measured values:
@@ -50,20 +105,19 @@ export function useTopologyCameraPolicy({
     if (!canvasEl) return tokens;
     const box = canvasEl.getBoundingClientRect();
     if (box.width <= 0 || box.height <= 0) return tokens;
-    const measured = measureCanvasInsets(canvasEl, {
-      x: box.x,
-      y: box.y,
-      width: box.width,
-      height: box.height,
-    });
+    const canvasRect = { x: box.x, y: box.y, width: box.width, height: box.height };
+    const panels = collectCanvasObstacles(canvasEl, canvasRect);
+    const measured = measureCanvasInsets(canvasEl, canvasRect, panels);
     /*
      * The same measurement the names need. The frame reads its tokens every
-     * frame, and `measureCanvasInsets` walks elements, so the draw cannot take
+     * frame, and the panels come from an element walk, so the draw cannot take
      * it per frame — it reads this ref instead. Written here because the moments
      * that move the camera are the moments a panel opens or closes: a selection
-     * reframes, and so does a resize.
+     * reframes, and so does a resize. In 3D no name reads the chrome boxes.
      */
-    panelInsetsRef.current = { left: measured.left, right: measured.right };
+    const flat = !view3dRef.current;
+    panelInsetsRef.current = { left: measured.left, right: measured.right, nameObstacles: flat ? measureNameObstacles(canvasEl, { left: true, right: true }, panels) : [] };
+    if (flat) watchChrome(canvasEl);
     return {
       ...tokens,
       safeInsetLeft: Math.max(tokens.safeInsetLeft, measured.left),
@@ -74,7 +128,7 @@ export function useTopologyCameraPolicy({
       obstacleInsetLeft: Math.max(measured.left, measureEdgeFitObstacle(canvasEl, "left")?.reach ?? 0),
       obstacleInsetRight: Math.max(measured.right, measureEdgeFitObstacle(canvasEl, "right")?.reach ?? 0),
     };
-  }, [canvasRef, panelInsetsRef]);
+  }, [canvasRef, panelInsetsRef, view3dRef, watchChrome]);
 
   /**
    * The camera target that puts the cone on the canvas: one function for entry, fit and deselect.
