@@ -1,0 +1,10 @@
+{
+  "needs": "依存先",
+  "neededBy": "依存元",
+  "otherLinks": "その他のつながり {count, number}",
+  "elements": "実装要素 {count, number}",
+  "domains": "ドメイン {count, number}",
+  "describes": "説明している概念",
+  "showMore": "あと{count, number}件を表示",
+  "showFewer": "折りたたむ"
+}
