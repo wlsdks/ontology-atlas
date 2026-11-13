@@ -851,6 +851,11 @@ describe("OntologyMapDetailPanel: definition", () => {
     expect(definition).not.toHaveAttribute("role");
   });
 
+  it("reads a wikilink in the definition as its words, not its markup", () => {
+    renderPanel(undefined, { definition: "This document explains [[capabilities/checkout|Checkout]], [[elements/idempotency-guard]]." });
+    expect(screen.getByTestId("map-detail-panel-definition")).toHaveTextContent(/^This document explains Checkout, idempotency-guard\.$/);
+  });
+
   it("says quietly that a definition is missing, without a judgment block", () => {
     renderPanel(undefined, { definition: null });
     expect(screen.getByTestId("map-detail-panel-definition")).toHaveTextContent(

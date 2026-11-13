@@ -1,6 +1,13 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
+/** `[[target|label]]` reads as its label and `[[target]]` as the target's last segment. */
+const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+
+function readableDefinition(definition: string): string {
+  return definition.replace(WIKILINK, (_, target: string, label?: string) => (label ?? target.split("/").pop() ?? target).trim());
+}
+
 const DEFINITION_TEXT =
   "text-body leading-body break-words [overflow-wrap:anywhere] text-[color:var(--map-panel-text-secondary)]";
 
@@ -58,7 +65,7 @@ export function MeaningZone({ definition }: { definition: string | null }) {
           : "py-0.5"}
       >
         <p ref={textRef} className={`${DEFINITION_TEXT} ${open ? "" : "line-clamp-3"}`}>
-          {definition}
+          {readableDefinition(definition)}
         </p>
       </div>
     </div>
