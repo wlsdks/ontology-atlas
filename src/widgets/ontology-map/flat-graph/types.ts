@@ -93,6 +93,8 @@ export interface FlatGraphPaintTokens {
   backingPadYPx: number;
   backingAlpha: number;
   backingFeatherPx: number;
+  /** A leader's share of its name's ink: the hairline tying a name set off its row back to its mark. */
+  nameLeaderAlpha: number;
   lineBow: number;
   lineAlpha: number;
   lineTaperPx: number;

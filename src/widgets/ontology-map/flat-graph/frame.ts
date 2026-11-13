@@ -14,7 +14,7 @@ import {
   arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
-import { admittedNames, boxUnderAny, nameBlockDraws, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
@@ -47,7 +47,8 @@ const LINE_KINDS: readonly GraphLineKind[] = ["needs", "neededBy", "relates", "b
 const REST_ARC = 0;
 interface Glow { x: number; y: number; r: number; ink: string; alpha: number }
 interface Light { x: number; y: number; r: number; ink: string; alpha: number }
-interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number }
+/** `markR` is the drawn radius of the name's mark, read only by a leader. */
+interface Name { name: PlacedName; x: number; y: number; ink: number; color: string; halo: number; markR: number }
 interface Ring { x: number; y: number; r: number; alpha: number; ink: string }
 type LabelBox = DialFrameResult["labelBoxes"][number];
 
@@ -98,7 +99,7 @@ const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const lights = markPool<Light>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
 const arcMarks = markPool<Arc>(() => ({ path: emptyArcPath(), width: 0, alpha: 0, head: false, glow: 0, kind: REST_ARC, key: "", reach: 1, fadeStart: 0, fadeEnd: 0 }));
 const chordPool = markPool<DialChordLight>(() => ({ key: "", sourceDomain: "", targetDomain: "", a: { x: 0, y: 0 }, c: { x: 0, y: 0 }, b: { x: 0, y: 0 }, widthPx: 0, chipRadiusPx: 0, arrivalBloom: false }));
-const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0 }));
+const names = markPool<Name>(() => ({ name: null as unknown as PlacedName, x: 0, y: 0, ink: 0, color: "", halo: 0, markR: 0 }));
 const hubNames = markPool<PlacedName>(() => ({ id: "", role: "units", text: "", font: "", dx: 0, dy: 0, align: "center", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const dotRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
 const nameRows = markPool<DialRowPick>(() => ({ id: "", box: { minX: 0, maxX: 0, minY: 0, maxY: 0 } }));
@@ -482,6 +483,8 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   if (mark.ink !== ink) mark.ink = ink;
   mark.color = color;
   if (mark.halo !== halo) mark.halo = halo;
+  const markR = n.leader ? (n.role === "element" ? radiusNow(n.id) * LIT_DOT_SHARE : discRadius(n.id)) : 0;
+  if (mark.markR !== markR) mark.markR = markR;
   L.names.add(mark);
 }
 
@@ -1329,6 +1332,18 @@ function paintPlan(ctx: CanvasRenderingContext2D, plan: FramePlan, tokens: FlatG
   ctx.lineJoin = "round";
   for (let nIndex = 0; nIndex < plan.names.length; nIndex += 1) {
     const n = plan.names[nIndex]!;
+    if (n.name.leader) {
+      const s = leaderSegment(n.name, n.markR, P.namePadPx);
+      const cx = n.x - n.name.dx;
+      const cy = n.y - n.name.dy;
+      ctx.globalAlpha = n.ink * P.nameLeaderAlpha;
+      ctx.lineWidth = P.lineHairPx;
+      ctx.strokeStyle = n.color;
+      ctx.beginPath();
+      ctx.moveTo(cx + s.x0, cy + s.y0);
+      ctx.lineTo(cx + s.x1, cy + s.y1);
+      ctx.stroke();
+    }
     ctx.font = n.name.font;
     ctx.textAlign = n.name.align;
     ctx.globalAlpha = n.ink;
