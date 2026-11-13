@@ -144,6 +144,8 @@ test("at 2,000 concepts no name is drawn over another, the project's caption inc
     }
   }
   expect(texts.filter((t) => t.role === "capability").length, "the overview names capabilities to judge").toBeGreaterThan(8);
+  const projectId = texts.find((t) => t.role === "project")!.id;
+  expect(texts.filter((t) => t.role === "units" && t.id === projectId).length, "the project draws its caption").toBe(1);
   expect(drawnOver).toEqual([]);
 });
 

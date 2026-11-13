@@ -64,7 +64,7 @@ export interface NameInput {
   discRadius(id: string): number;
   elementSpacingPx: number;
   /** The line the project carries under its disc while it has one; names keep off its row. */
-  hubCaption?: string | null;
+  hubCaption: string | null;
 }
 
 /** Whether a screen box overlaps any of `obstacles`. O(obstacles). */
@@ -146,6 +146,30 @@ class Occupancy {
       if (list) list.push(b);
       else this.cells.set(key, [b]);
     }
+  }
+}
+
+/**
+ * Screen boxes held at the low end, the centre and the high end of a zoom step. The gap between two
+ * boxes on an axis is linear in the zoom, so two that overlap nowhere at those three overlap inside
+ * the step only where their anchors cross. Insert and query cost three grid lookups.
+ */
+class StepOccupancy {
+  private readonly grids: readonly Occupancy[];
+  constructor(private readonly scales: readonly [number, number, number]) {
+    this.grids = scales.map((scale) => new Occupancy(CELL_PX / scale));
+  }
+
+  add(at: Point, rel: Box): void {
+    this.grids.forEach((grid, i) => grid.add(worldBox(at, rel, this.scales[i]!)));
+  }
+
+  hits(at: Point, rel: Box): boolean {
+    return this.grids.some((grid, i) => grid.hits(worldBox(at, rel, this.scales[i]!)));
+  }
+
+  hitsAtCentre(at: Point, rel: Box): boolean {
+    return this.grids[1]!.hits(worldBox(at, rel, this.scales[1]!));
   }
 }
 
@@ -511,13 +535,14 @@ interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] 
 
 function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale: number): Candidate[] {
   const { model, layout, tokens } = input;
-  // A lit element is named once its dot stands a name gap clear of its owner's disc and ring: a name beside a dot the disc hides points at nothing.
+  // The focused capability's element is named once its dot stands a name gap clear of the disc and ring: beside a dot they hide, a name points at nothing.
   const standsClear = (id: string) => {
     const ownerId = model.capabilityOf.get(id) ?? model.domainOf.get(id);
     const at = layout.positions.get(id);
     const owner = ownerId === undefined || ownerId === null ? undefined : layout.positions.get(ownerId);
     if (!at || !owner) return true;
-    const ring = input.selected && ownerId === input.focusId ? tokens.selectedRingGapPx + tokens.selectedRingPx : 0;
+    if (ownerId !== input.focusId) return true;
+    const ring = input.selected ? tokens.selectedRingGapPx + tokens.selectedRingPx : 0;
     return Math.hypot(at.x - owner.x, at.y - owner.y) * scale >= input.discRadius(ownerId!) + ring + input.discRadius(id) + tokens.nameGapPx;
   };
   const lit = input.lit;
@@ -594,14 +619,15 @@ function orphanCaption(input: NameInput, scale: number): PlacedName | null {
 function admit(input: NameInput, step: number, seed: NameAdmission | null, ceiling: ReadonlySet<string> | null): NameAdmission {
   const { model, layout, tokens } = input;
   const scale = stepScale(step, tokens.zoomStepsPerOctave);
-  // Every collision box covers the whole step, so names a step admits apart stay apart at any zoom inside it.
+  // Names are held apart at both ends of the step and its centre, so two a step admits apart stay apart inside it.
   const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
   const span = (at: Point, rel: Box) => sweptBox(at, rel, lowest, highest);
   const grid = new Occupancy(CELL_PX / scale);
-  const titles = new Occupancy(CELL_PX / scale);
-  const words = new Occupancy(CELL_PX / scale);
-  const conceptNames = new Occupancy(CELL_PX / scale);
+  const stepScales = [lowest, scale, highest] as const;
+  const titles = new StepOccupancy(stepScales);
+  const words = new StepOccupancy(stepScales);
+  const conceptNames = new StepOccupancy(stepScales);
   const glyphs: Box[] = [];
   const names: PlacedName[] = [];
   const ids = new Set<string>();
@@ -631,9 +657,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     return dx * dx + dy * dy < ringRadius * ringRadius;
   });
   const place = (n: PlacedName) => {
-    const box = span(layout.positions.get(n.id)!, n.box);
-    grid.add(box);
-    words.add(box);
+    grid.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+    words.add(layout.positions.get(n.id)!, n.box);
     glyphs.push(worldBox(layout.positions.get(n.id)!, grown(n.box, -tokens.namePadPx), scale));
     names.push(n);
     ids.add(n.id);
@@ -643,10 +668,10 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
   const hubRow = hubCaptionBox(input);
   if (hubRow) {
-    const box = span(layout.positions.get(model.projectId!)!, hubRow);
-    grid.add(box);
-    words.add(box);
-    titles.add(box);
+    const hubAt = layout.positions.get(model.projectId!)!;
+    grid.add(worldBox(hubAt, hubRow, scale));
+    words.add(hubAt, hubRow);
+    titles.add(hubAt, hubRow);
   }
   const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
   const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, span(at, n.box)));
@@ -655,22 +680,21 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
       const at = layout.positions.get(c.domainId)!;
       const above = blockAbove(block);
-      const onDisc = above.some((n) => grid.hits(span(at, n.box)));
+      const onDisc = above.some((n) => grid.hits(worldBox(at, n.box, scale)));
       if (crossed(at, block) && !crossed(at, above) && !onDisc) block = above;
     }
     for (const n of block) {
-      const box = span(layout.positions.get(n.id)!, n.box);
+      const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
       // The census row is the one line of a title block that may go: it gives way to the project's name.
       if (n.role === "units" && projectBox !== null && box.minX < projectBox.maxX && projectBox.minX < box.maxX && box.minY < projectBox.maxY && projectBox.minY < box.maxY) continue;
-      titles.add(box);
+      titles.add(layout.positions.get(n.id)!, n.box);
       place(n);
     }
   }
   const caption = orphanCaption(input, scale);
   if (caption) {
-    const box = span(layout.positions.get(caption.id)!, caption.box);
-    grid.add(box);
-    words.add(box);
+    grid.add(worldBox(layout.positions.get(caption.id)!, caption.box, scale));
+    words.add(layout.positions.get(caption.id)!, caption.box);
     names.push(caption);
   }
   const pending = candidates(input, degreeOf(model), scale);
@@ -682,12 +706,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     const e = layout.extent;
     return b.minX >= e.minX - reach && b.maxX <= e.maxX + reach && b.minY >= e.minY - reach && b.maxY <= e.maxY + reach;
   });
-  const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(span(at, n.box)));
-  const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(span(at, n.box)), 0);
+  const hits = (on: StepOccupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(at, n.box));
+  const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
-    !group.some((n) => titles.hits(span(at, grown(n.box, gap))));
+    !group.some((n) => titles.hits(at, grown(n.box, gap)));
   // Both boxes carry the name pad; the test box gives up one, so two names keep one pad of air between their glyphs.
-  const overprints = (at: Point, group: readonly PlacedName[]) => group.some((n) => conceptNames.hits(span(at, grown(n.box, -tokens.namePadPx))));
+  const overprints = (at: Point, group: readonly PlacedName[]) => group.some((n) => conceptNames.hits(at, grown(n.box, -tokens.namePadPx)));
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
   // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
   // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
@@ -707,18 +731,20 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
       return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
     });
-    // Names are tested against names across the whole step; a disc is tested at the step's own scale.
+    // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
     const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => marks.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!fit && force) {
       const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
-        && (!keepsOffTitles || !group.some((n) => titles.hits(worldBox(at, grown(n.box, tokens.selectedTitleGapPx), scale)))) && offRing(group) && leaderClear(group);
+        && (!keepsOffTitles || !group.some((n) => titles.hitsAtCentre(at, grown(n.box, tokens.selectedTitleGapPx)))) && offRing(group) && leaderClear(group);
       fit = chooseSide(tries, clearNow, (group) => lit && crossed(at, group))?.side;
     }
+    // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
+    if (!fit && force && !mayOverprint) fit = chooseSide(tries, (group) => inside(at, group) && !hits(words, at, group) && leaderClear(group), () => false)?.side;
     if (!fit && mayOverprint && tries.length > 0) {
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
-      const offMarks = cand.element ? apart.filter((group) => !hits(marks, at, group)) : apart;
+      const offMarks = cand.element ? apart.filter((group) => !group.some((n) => marks.hits(worldBox(at, n.box, scale)))) : apart;
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
       const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
@@ -728,12 +754,12 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     if (fit) sides.set(cand.id, all.indexOf(fit));
     if (fit) for (const n of fit) {
       place(n);
-      conceptNames.add(span(at, n.box));
+      conceptNames.add(at, n.box);
     }
   };
   // The focus wins over every name, then capabilities over elements.
   const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
-  // A name the step below showed stays where a side is clear; it never prints over another to stay.
+  // A name the step below showed stays wherever a side is clear of names; with none it goes, and still counts against its star.
   if (seed) for (const cand of pending) if (seed.ids.has(cand.id)) tryPlace(cand, true, false);
   for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
@@ -748,6 +774,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     if (domainId !== null) restNames.set(domainId, (restNames.get(domainId) ?? 0) + 1);
   };
   for (const id of ids) countName(id);
+  if (seed) for (const id of seed.ids) if (!ids.has(id)) countName(id);
   const orphanIds = new Set(layout.orphanIds);
   const overBudget = (cand: Candidate) => {
     if (cand.element || input.lit?.has(cand.id)) return false;
@@ -824,14 +851,15 @@ export function admitNamesAt(input: NameInput): NameAdmission {
 /**
  * Names admitted at the camera's quantised zoom step, cached per step so pan and drag never
  * re-run admission. Without attention, a step's names include every name of the nearest admitted
- * step below and only names the nearest admitted step above also holds, so zooming in only adds.
+ * step below that still has a side clear of other names, and only names the nearest admitted step
+ * above also holds, so zooming in adds names and drops one only where another name takes its place.
  */
 export function admittedNames(input: NameInput): NameAdmission {
   const step = zoomStep(input.scale, input.tokens.zoomStepsPerOctave);
   const elementNames = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   let cache = caches.get(input.layout);
-  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain || cache.hubCaption !== (input.hubCaption ?? null)) {
-    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption ?? null, rest: new Map(), focus: new Map() };
+  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain || cache.hubCaption !== input.hubCaption) {
+    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption, rest: new Map(), focus: new Map() };
     caches.set(input.layout, cache);
   }
   if (input.lit !== null || input.agentFocusId !== null) {

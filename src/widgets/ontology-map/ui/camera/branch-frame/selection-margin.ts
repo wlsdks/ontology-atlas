@@ -106,7 +106,7 @@ function graphSelectionFrame(
   const element = !model.capabilityById.has(id) && model.domainOf.has(id);
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
-    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,
+    staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, hubCaption: dial.labels?.evidenceUnmeasured?.() ?? null, near, framed: element ? whole : near, domainId,
     entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
   });
   const farEnds = [...whole].filter((of) => !near.has(of)).flatMap((of) => world.nodeById.get(of) ?? []);
