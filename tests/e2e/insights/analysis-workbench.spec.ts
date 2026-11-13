@@ -29,6 +29,7 @@ test.beforeEach(async ({ page }) => {
 test('a selected concept opens meaning and draws bounded directional relation captions', async ({ page }) => {
   await page.setViewportSize({ width: 1512, height: 945 });
   await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
+  await page.getByTestId('map-detail-panel-more-menu-trigger').click();
   await page.getByTestId('map-detail-panel-action-meaning').click();
   const workbench = page.getByTestId('analysis-workbench');
   await expect(workbench).toBeVisible();
@@ -150,6 +151,7 @@ for (const width of [1040, 1512]) {
   test(`showing a relationship reveals its hidden endpoint at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/en/topology/?e2e=1&guides=off&p=capability%3Acart&open=domain%3Aorder%2Cproject%3Astorefront');
+    await page.getByTestId('map-detail-panel-more-menu-trigger').click();
     await page.getByTestId('map-detail-panel-action-meaning').click();
     const relation = page.getByTestId('analysis-workbench').getByTestId('meaning-relation').filter({ hasText: 'Product Detail Page' });
     await relation.getByRole('button', { name: en.analysisWorkbench.showConnection }).click();

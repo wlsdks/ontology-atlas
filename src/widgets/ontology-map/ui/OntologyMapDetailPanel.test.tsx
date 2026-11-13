@@ -4,10 +4,10 @@ import type React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSourceView } from "@/shared/lib/project-source/project-source-receipt";
 import { OntologyMapDetailPanel } from "./OntologyMapDetailPanel";
-import type { OntologyMapDetailPanelProps } from "./detail-panel/types";
+import type { ConceptReview, OntologyMapDetailPanelProps } from "./detail-panel/types";
 import enMessages from "../../../../messages/en.json";
 
-/** The relation groups read their own message namespace. */
+/** The zones read their own message namespaces. */
 function render(ui: React.ReactElement) {
   return renderUi(ui, {
     wrapper: ({ children }) => (
@@ -45,41 +45,19 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
+const review = enMessages.vaultWidgets.parts.sidebar.review;
+
 const labels = {
   kindLabel: "Domain",
-  domainLabel: "domain",
-  poweredOn: "fresh",
-  poweredOff: "idle",
-  metricContains: "contains",
-  containsShowAll: "view all",
-  containsShowSummary: "summary",
-  containsOtherGroup: "other",
-  groupShowMore: "more",
-  groupShowFewer: "fewer",
-  metricUsedBy: "used by",
-  metricDependsOn: "leans on",
-  metricBelongsTo: "belongs to",
-  metricRelated: "related",
-  metricEvidence: "evidence",
-  codeLocationsLabel: "code location",
-  codeLocationsCopyLabel: "copy",
-  codeLocationsCopiedLabel: "copied",
-  editSubjectPrefix: "Last edited",
-  editSubjectAgent: "AI agent",
-  editSubjectHuman: "me",
   editConflictMessage: "This document changed elsewhere — check before you overwrite",
   summaryFreshnessPrefix: "Description lags membership",
   summaryFreshnessLag: "1d",
   summaryFreshnessAction: "Review description",
   summaryHistoryUnavailable: "History could not be compared",
   noConnections: "no relations recorded yet · relations are declared in frontmatter",
-  directLinks: (count: number) => `Direct links ${count}`,
   domainLinks: (count: number) => `${count} links with this domain`,
-  domainCount: (count: number) => `${count} domains`,
-  metricUsedByDomainsHelp: "Other domains that use this one",
-  handoff: "Copy next action",
   close: "Close",
-  openFullDetail: "Full detail →",
+  openFullDetail: "Full detail",
   actionsGroupLabel: "Node actions",
   actionDocument: "Document",
   actionEditRelations: "Edit relations",
@@ -88,7 +66,6 @@ const labels = {
   actionAskAgent: "Ask agent",
   actionEditMenu: "Edit",
   actionMore: "More actions",
-  actionPath: "Path",
   actionRealm: "Expand realm",
   sourceHeading: "Code evidence",
   sourcePending: "Reading the analysis receipt",
@@ -100,35 +77,33 @@ const labels = {
   sourceGapLabel: "Next check",
   sourceAction: "Use current evidence",
   sourceWhy: "Connecting a code folder shows where each concept lives.",
-  sourceRelationsShow: "Show project relations",
-  sourceRelationsHide: "Hide project relations",
-  sourceOntologyDocument: "Concept document",
   sourceBusy: "Measuring code evidence",
 };
 
+const FILLED = "--map-panel-primary-surface";
+const filledControls = () =>
+  [...screen.getByTestId("map-detail-panel").querySelectorAll("a, button")].filter((el) => el.className.includes(FILLED));
+const noReview: ConceptReview = { raised: null, changedSinceReview: false, unverifiable: false, reviewedOn: null };
+
 function renderPanel(
   onOpenFullDetail?: () => void,
-  evidence: { rows: { id: string; title: string; path: string | null }[]; total: number } = {
-    rows: [],
-    total: 0,
-  },
   overrides: {
     documentHref?: string | null;
     onCopyHandoff?: () => void;
-    domain?: { id: string; title: string } | null;
+    owner?: { id: string; title: string } | null;
+    definition?: string | null;
+    review?: ConceptReview;
+    powered?: boolean;
     onSelectConnection?: (id: string) => void;
     onHoverConnection?: (id: string | null) => void;
     onHoverEvidence?: (slug: string | null) => void;
-    sourceTitle?: string | null;
     showHandoff?: boolean;
-    showSourcePath?: boolean;
-    codeLocations?: readonly string[];
-    lastEditSubject?: { kind: "agent" | "human"; ageLabel: string } | null;
     mtimeConflict?: boolean;
     kind?: string;
     projectSource?: ProjectSourceView | null;
     onProjectSourceAction?: () => void | Promise<void>;
     onAskAgent?: () => void;
+    meaningReview?: { label: string; onOpen: () => void };
     suppressPrimaryAction?: boolean;
     onEditRelations?: () => void;
     onCreateLinked?: () => void;
@@ -140,23 +115,18 @@ function renderPanel(
     onProjectSourceConfirmProposal?: () => void | Promise<void>;
     updatedAtLabel?: string | null;
     groups?: OntologyMapDetailPanelProps["groups"];
-    domainUsage?: OntologyMapDetailPanelProps["domainUsage"];
     reach?: OntologyMapDetailPanelProps["reach"];
     projectSourceLoading?: boolean;
     summaryHistoryUnavailable?: boolean;
     summaryStaleness?: { behindByDays: number } | null;
   } = {},
 ) {
-  return render(panelElement(onOpenFullDetail, evidence, overrides));
+  return render(panelElement(onOpenFullDetail, overrides));
 }
 
 function panelElement(
   onOpenFullDetail: (() => void) | undefined,
-  evidence: { rows: { id: string; title: string; path: string | null }[]; total: number } = {
-    rows: [],
-    total: 0,
-  },
-  overrides: Parameters<typeof renderPanel>[2] = {},
+  overrides: Parameters<typeof renderPanel>[1] = {},
 ) {
   return (
     <OntologyMapDetailPanel
@@ -164,10 +134,11 @@ function panelElement(
       nodeId="domain:views"
       slug="domains/views"
       title="Views"
-      sourceTitle={overrides.sourceTitle ?? null}
       kind={overrides.kind ?? "domain"}
-      domain={overrides.domain !== undefined ? overrides.domain : null}
-      powered={false}
+      owner={overrides.owner !== undefined ? overrides.owner : null}
+      definition={overrides.definition !== undefined ? overrides.definition : "Views draw what the vault holds."}
+      review={overrides.review}
+      powered={overrides.powered ?? false}
       groups={overrides.groups ?? {
         contains: { rows: [], total: 0 },
         usedBy: { rows: [], total: 1 },
@@ -175,10 +146,7 @@ function panelElement(
         belongsTo: { rows: [], total: 0 },
         related: { rows: [], total: 0 },
       }}
-      domainUsage={overrides.domainUsage}
       reach={overrides.reach}
-      evidence={evidence}
-      codeLocations={overrides.codeLocations ?? []}
       updatedAtLabel={overrides.updatedAtLabel}
       handoffText="node: domains/views"
       documentHref={
@@ -188,7 +156,6 @@ function panelElement(
       }
       meaningEditHref="/ontology/studio/?node=domains%2Fviews"
       labels={labels}
-      lastEditSubject={overrides.lastEditSubject ?? null}
       mtimeConflict={overrides.mtimeConflict ?? false}
       summaryHistoryUnavailable={overrides.summaryHistoryUnavailable}
       summaryStaleness={overrides.summaryStaleness}
@@ -197,6 +164,7 @@ function panelElement(
       onHoverEvidence={overrides.onHoverEvidence}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onAskAgent={overrides.onAskAgent}
+      meaningReview={overrides.meaningReview}
       suppressPrimaryAction={overrides.suppressPrimaryAction}
       onEditRelations={overrides.onEditRelations}
       onCreateLinked={overrides.onCreateLinked}
@@ -212,7 +180,6 @@ function panelElement(
       projectSourceProposal={overrides.projectSourceProposal}
       onProjectSourceConfirmProposal={overrides.onProjectSourceConfirmProposal}
       showHandoff={overrides.showHandoff}
-      showSourcePath={overrides.showSourcePath}
     />
   );
 }
@@ -220,12 +187,13 @@ function panelElement(
 describe("OntologyMapDetailPanel history availability", () => {
   it("shows incomplete history without a stale verdict and clears it after a completed comparison", () => {
     const props = { summaryHistoryUnavailable: true, summaryStaleness: { behindByDays: 1 } };
-    const { rerender } = renderPanel(undefined, { rows: [], total: 0 }, props);
+    const { rerender } = renderPanel(undefined, props);
     expect(screen.getByTestId("summary-history-unavailable")).toHaveTextContent(labels.summaryHistoryUnavailable);
     expect(screen.queryByTestId("summary-freshness-row")).not.toBeInTheDocument();
-    rerender(panelElement(undefined, { rows: [], total: 0 }, { ...props, summaryHistoryUnavailable: false }));
+    rerender(panelElement(undefined, { ...props, summaryHistoryUnavailable: false }));
     expect(screen.queryByTestId("summary-history-unavailable")).not.toBeInTheDocument();
     expect(screen.getByTestId("summary-freshness-row")).toHaveTextContent(labels.summaryFreshnessLag);
+    expect(screen.getByTestId("map-detail-panel-judgment")).toContainElement(screen.getByTestId("summary-freshness-row"));
   });
 });
 
@@ -243,7 +211,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, { kind: "project", projectSource });
+    renderPanel(vi.fn(), { kind: "project", projectSource });
 
     const rail = screen.getByTestId("map-project-source-receipt");
     expect(rail).toHaveAttribute("data-source-status", "verified_current");
@@ -283,7 +251,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(undefined, undefined, {
+    renderPanel(undefined, {
       kind: "project",
       projectSource,
       projectSourceError: null,
@@ -296,7 +264,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     );
   });
 
-  it("keeps one primary action plus Edit and More for a current project", () => {
+  it("a current project holds no filled control and keeps its source action quiet beside the status", () => {
     const projectSource: ProjectSourceView = {
       contractVersion: 1,
       projectSlug: "views",
@@ -309,7 +277,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
@@ -317,13 +285,12 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       onEnterRealm: vi.fn(),
     });
 
-    const actions = screen.getByTestId("map-detail-panel-actions");
-    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(1);
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "none");
+    expect(filledControls()).toHaveLength(0);
     expect(screen.getByTestId("map-detail-panel-edit-menu-trigger")).toBeInTheDocument();
     expect(screen.getByTestId("map-detail-panel-more-menu-trigger")).toBeInTheDocument();
-    expect(screen.queryByTestId("map-detail-panel-action-handoff")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("map-detail-panel-action-path")).not.toBeInTheDocument();
-    expect(screen.getByTestId("map-project-source-action")).toBeInTheDocument();
+    expect(screen.getByTestId("map-project-source-receipt")).toContainElement(screen.getByTestId("map-project-source-action"));
+    expect(screen.getByTestId("map-detail-panel-footer")).not.toContainElement(screen.getByTestId("map-project-source-action"));
   });
 
   it("puts the next action inside the remedy block next to the gap, not in the footer", () => {
@@ -340,7 +307,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction,
@@ -360,9 +327,8 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
     // The same control is never drawn in two places.
     expect(screen.getAllByTestId("map-project-source-action")).toHaveLength(1);
 
-    const fullDetail = screen.getByTestId("map-detail-panel-open-full-detail");
-    expect(fullDetail.className).not.toContain("--map-panel-primary-surface");
-    expect(fullDetail.className).toContain("--map-panel-text-tertiary");
+    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).not.toContain(FILLED);
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "project-source");
   });
 
   it("explains why the action matters right where the gap is stated", () => {
@@ -378,7 +344,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
@@ -411,7 +377,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction,
@@ -470,7 +436,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
@@ -505,7 +471,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       projectSourceDegraded: {
@@ -544,14 +510,14 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
     });
 
     expect(screen.queryByTestId("map-project-source-remedy")).not.toBeInTheDocument();
-    // The action does not disappear — only its position stays in the footer.
+    // The action does not disappear; it stays quiet beside the status line.
     expect(screen.getAllByTestId("map-project-source-action")).toHaveLength(1);
   });
 
@@ -568,13 +534,10 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(vi.fn(), undefined, { kind: "domain", projectSource });
+    renderPanel(vi.fn(), { kind: "domain", projectSource });
 
     expect(screen.queryByTestId("map-project-source-receipt")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("map-detail-panel-stats")).not.toBeInTheDocument();
-    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).toContain(
-      "--map-panel-primary-surface",
-    );
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "none");
   });
 
   it("keeps a next action readable but non-interactive when no callback is available", () => {
@@ -590,7 +553,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(undefined, undefined, { kind: "project", projectSource });
+    renderPanel(undefined, { kind: "project", projectSource });
 
     expect(screen.queryByTestId("map-project-source-action")).not.toBeInTheDocument();
     expect(screen.getByText("Use current evidence")).toBeInTheDocument();
@@ -609,15 +572,15 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(undefined, undefined, {
+    renderPanel(undefined, {
       kind: "project",
       projectSource,
+      powered: true,
       updatedAtLabel: "changed 3d ago",
     });
 
-    expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent(
-      "Concept document · changed 3d ago",
-    );
+    expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent("changed 3d ago");
+    expect(screen.getByTestId("map-datasheet-updated-at")).not.toHaveTextContent("Measured today");
     fireEvent.click(screen.getByTestId("map-project-source-record"));
     expect(screen.getByTestId("map-project-source-receipt")).toHaveTextContent(
       "Measured today",
@@ -637,7 +600,7 @@ describe("OntologyMapDetailPanel — project source receipt", () => {
       receipt: null,
     };
 
-    renderPanel(undefined, undefined, {
+    renderPanel(undefined, {
       kind: "project",
       projectSource,
       onProjectSourceAction: vi.fn(),
@@ -673,10 +636,11 @@ describe("OntologyMapDetailPanel — project receipt still being read", () => {
   };
 
   it("draws the project's layout from the first frame and holds the receipt's place", () => {
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource: null,
       projectSourceLoading: true,
+      powered: true,
       updatedAtLabel: "changed today",
     });
 
@@ -687,18 +651,12 @@ describe("OntologyMapDetailPanel — project receipt still being read", () => {
     expect(screen.getByTestId("map-project-source-heading")).toHaveTextContent("Code evidence");
     expect(screen.queryByTestId("map-project-source-receipt")).not.toBeInTheDocument();
     // Everything else is already the project's.
-    expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent(
-      "Concept document · changed today",
-    );
-    expect(screen.queryByTestId("map-detail-panel-slug")).not.toBeInTheDocument();
-    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).not.toContain(
-      "--map-panel-primary-surface",
-    );
-    expect(screen.getByTestId("map-detail-panel-actions").className).toContain("border-t");
+    expect(screen.getByTestId("map-datasheet-updated-at")).toHaveTextContent("changed today");
+    expect(filledControls()).toHaveLength(0);
   });
 
   it("says it is reading only once the read outlives a frame's worth of waiting", async () => {
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource: null,
       projectSourceLoading: true,
@@ -713,14 +671,14 @@ describe("OntologyMapDetailPanel — project receipt still being read", () => {
   });
 
   it("turns the same live region into the receipt, and the gap arrives inside a disclosure", () => {
-    const { rerender } = renderPanel(vi.fn(), undefined, {
+    const { rerender } = renderPanel(vi.fn(), {
       kind: "project",
       projectSource: null,
       projectSourceLoading: true,
     });
     const slot = screen.getByTestId("map-project-source-pending");
 
-    rerender(panelElement(vi.fn(), undefined, {
+    rerender(panelElement(vi.fn(), {
       kind: "project",
       projectSource: gapView,
       projectSourceLoading: false,
@@ -741,7 +699,7 @@ describe("OntologyMapDetailPanel — project receipt still being read", () => {
   });
 
   it("keeps the plain layout where no receipt can exist (nothing is being read)", () => {
-    renderPanel(vi.fn(), undefined, {
+    renderPanel(vi.fn(), {
       kind: "project",
       projectSource: null,
       projectSourceLoading: false,
@@ -750,13 +708,11 @@ describe("OntologyMapDetailPanel — project receipt still being read", () => {
     expect(screen.queryByTestId("map-project-source-pending")).not.toBeInTheDocument();
     expect(screen.queryByTestId("map-project-source-receipt")).not.toBeInTheDocument();
     expect(screen.getByTestId("map-detail-panel-slug")).toBeInTheDocument();
-    expect(screen.getByTestId("map-detail-panel-open-full-detail").className).toContain(
-      "--map-panel-primary-surface",
-    );
+    expect(filledControls()).toHaveLength(0);
   });
 
   it("never holds a receipt's place for a kind that has none", () => {
-    renderPanel(vi.fn(), undefined, { kind: "domain", projectSourceLoading: true });
+    renderPanel(vi.fn(), { kind: "domain", projectSourceLoading: true });
 
     expect(screen.queryByTestId("map-project-source-pending")).not.toBeInTheDocument();
     expect(screen.getByTestId("map-detail-panel-slug")).toBeInTheDocument();
@@ -776,23 +732,23 @@ describe("OntologyMapDetailPanel — installed-app evidence identity", () => {
   });
 });
 
-describe("OntologyMapDetailPanel — full-detail A1 opt-in link", () => {
-  it("renders the '전체 상세 →' link when onOpenFullDetail is provided", () => {
+describe("OntologyMapDetailPanel — full detail", () => {
+  it("opens full detail from a quiet footer control", () => {
     const onOpenFullDetail = vi.fn();
     renderPanel(onOpenFullDetail);
-    fireEvent.click(screen.getByTestId("map-detail-panel-open-full-detail"));
+    const control = screen.getByTestId("map-detail-panel-open-full-detail");
+    expect(control.className).not.toContain(FILLED);
+    fireEvent.click(control);
     expect(onOpenFullDetail).toHaveBeenCalledTimes(1);
   });
 
-  it("hides the link when onOpenFullDetail is omitted", () => {
+  it("hides the control when onOpenFullDetail is omitted", () => {
     renderPanel(undefined);
-    expect(
-      screen.queryByTestId("map-detail-panel-open-full-detail"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("map-detail-panel-open-full-detail")).not.toBeInTheDocument();
   });
 });
 
-describe("OntologyMapDetailPanel: sticky footer slug in plain language", () => {
+describe("OntologyMapDetailPanel: footer slug", () => {
   it("shows only the slug's last segment in visible text, with the full slug as a hover title", () => {
     render(
       <OntologyMapDetailPanel
@@ -801,7 +757,8 @@ describe("OntologyMapDetailPanel: sticky footer slug in plain language", () => {
         slug="ontology/capabilities/mcp-server"
         title="MCP Server"
         kind="capability"
-        domain={null}
+        owner={null}
+        definition={null}
         powered={false}
         groups={{
           contains: { rows: [], total: 0 },
@@ -810,8 +767,6 @@ describe("OntologyMapDetailPanel: sticky footer slug in plain language", () => {
           belongsTo: { rows: [], total: 0 },
           related: { rows: [], total: 0 },
         }}
-        evidence={{ rows: [], total: 0 }}
-        codeLocations={[]}
         handoffText="node: ontology/capabilities/mcp-server"
         documentHref={null}
         meaningEditHref="/ontology/studio/?node=ontology%2Fcapabilities%2Fmcp-server"
@@ -827,123 +782,250 @@ describe("OntologyMapDetailPanel: sticky footer slug in plain language", () => {
     expect(slugEl).toHaveAttribute("title", "ontology/capabilities/mcp-server");
   });
 
-  it("shows the slug as-is when it has no path segment to fold", () => {
-    renderPanel();
-    // fixture slug is "domains/views" — but a slug with no "/" should render
-    // unchanged (nothing to fold).
-    const slugEl = screen.getByTestId("map-detail-panel-slug");
-    expect(slugEl).toHaveTextContent("views");
+  it("keeps the slug for a project, the handle an agent takes", () => {
+    renderPanel(undefined, { kind: "project", projectSourceLoading: true });
+    expect(screen.getByTestId("map-detail-panel-slug")).toHaveTextContent("views");
   });
 });
 
-// Slice B (humanising element labels) — when a title humanised for display is
-// rendered, the original code path is preserved as a mono subline. The caller's
-// contract is to pass sourceTitle only when display differs from the original, so
-// the panel itself decides whether to render purely from sourceTitle's presence
-// and whether it equals the title.
-describe("OntologyMapDetailPanel: source path subline", () => {
-  it("renders the original in a mono subline when sourceTitle differs from title", () => {
-    renderPanel(undefined, undefined, { sourceTitle: "src/foo/bar-baz.ts" });
-    const subline = screen.getByTestId("map-detail-panel-source-path");
-    expect(subline).toHaveTextContent("src/foo/bar-baz.ts");
-  });
-
-  it("does not render the subline when sourceTitle is missing (null/undefined)", () => {
-    renderPanel(undefined, undefined, {});
-    expect(
-      screen.queryByTestId("map-detail-panel-source-path"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("does not render the subline when sourceTitle equals title (duplicate)", () => {
-    renderPanel(undefined, undefined, { sourceTitle: "Views" });
-    expect(
-      screen.queryByTestId("map-detail-panel-source-path"),
-    ).not.toBeInTheDocument();
-  });
-});
-
-// Slice C (the dev/non-dev mode toggle) — non-dev (plain) mode treats the
-// handoff-copy action and the raw path subline as developer chrome and hides them.
-// The default (omitted) is true for both, keeping the existing render (zero regression).
-describe("OntologyMapDetailPanel: showHandoff and showSourcePath", () => {
-  it("renders the copy-handoff tile by default when showHandoff is omitted", () => {
-    renderPanel();
-    expect(screen.getByTestId("map-detail-panel-action-handoff")).toBeInTheDocument();
-  });
-
-  it("does not render the copy-handoff tile when showHandoff=false", () => {
-    renderPanel(undefined, undefined, { showHandoff: false });
-    expect(
-      screen.queryByTestId("map-detail-panel-action-handoff"),
-    ).not.toBeInTheDocument();
-  });
-
-  it("renders the source path subline by default when showSourcePath is omitted (and sourceTitle exists)", () => {
-    renderPanel(undefined, undefined, { sourceTitle: "src/foo/bar-baz.ts" });
-    expect(screen.getByTestId("map-detail-panel-source-path")).toBeInTheDocument();
-  });
-
-  it("does not render the source path subline when showSourcePath=false even if sourceTitle exists", () => {
-    renderPanel(undefined, undefined, {
-      sourceTitle: "src/foo/bar-baz.ts",
-      showSourcePath: false,
+describe("OntologyMapDetailPanel: header", () => {
+  it("reads kind, direct owner and one time fact on one meta line above the name", () => {
+    renderPanel(undefined, {
+      kind: "capability",
+      owner: { id: "domain:orders", title: "Orders" },
+      powered: true,
+      updatedAtLabel: "changed today",
     });
-    expect(
-      screen.queryByTestId("map-detail-panel-source-path"),
-    ).not.toBeInTheDocument();
+    const meta = screen.getByTestId("map-detail-panel-meta");
+    expect(meta).toHaveTextContent(/^Domain·Orders·changed today$/);
+    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Views");
   });
-});
 
-describe("OntologyMapDetailPanel: the owning domain as a first-class fact", () => {
-  it("renders a domain fact with the name in the header when the node has an owning domain", () => {
-    renderPanel(undefined, undefined, {
-      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
+  it("leaves a change outside the recent window off the header", () => {
+    renderPanel(undefined, { powered: false, updatedAtLabel: "changed 3mo ago" });
+    expect(screen.queryByTestId("map-datasheet-updated-at")).not.toBeInTheDocument();
+  });
+
+  it("prefers a confirmation that still holds over the change label", () => {
+    renderPanel(undefined, {
+      powered: true,
+      updatedAtLabel: "changed today",
+      review: { ...noReview, reviewedOn: "2026-10-02" },
     });
-    const fact = screen.getByTestId("map-detail-panel-domain");
-    expect(fact).toHaveTextContent("domain");
-    expect(fact).toHaveTextContent("AI Agent Partner");
+    expect(screen.getByTestId("map-detail-panel-reviewed-on")).toHaveTextContent(
+      review.reviewedOn.replace("{date}", "2026-10-02"),
+    );
+    expect(screen.queryByTestId("map-datasheet-updated-at")).not.toBeInTheDocument();
   });
 
-  it("hides the domain fact when the node has no owning domain", () => {
-    renderPanel(undefined, undefined, { domain: null });
-    expect(screen.queryByTestId("map-detail-panel-domain")).not.toBeInTheDocument();
-  });
-
-  it("focuses the domain via onSelectConnection when the domain fact is clicked", () => {
+  it("selects the owner when it is pressed and points the map at it while hovered", () => {
     const onSelectConnection = vi.fn();
-    renderPanel(undefined, undefined, {
-      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
+    const onHoverConnection = vi.fn();
+    renderPanel(undefined, {
+      kind: "element",
+      owner: { id: "capability:checkout", title: "Checkout" },
       onSelectConnection,
+      onHoverConnection,
     });
-    fireEvent.click(screen.getByTestId("map-detail-panel-domain"));
-    expect(onSelectConnection).toHaveBeenCalledWith("domains/ai-agent-partner");
+    const owner = screen.getByTestId("map-detail-panel-owner");
+    fireEvent.pointerEnter(owner);
+    expect(onHoverConnection).toHaveBeenCalledWith("capability:checkout");
+    fireEvent.pointerLeave(owner);
+    expect(onHoverConnection).toHaveBeenLastCalledWith(null);
+    fireEvent.click(owner);
+    expect(onSelectConnection).toHaveBeenCalledWith("capability:checkout");
+  });
+
+  it("draws no owner for a domain", () => {
+    renderPanel();
+    expect(screen.queryByTestId("map-detail-panel-owner")).not.toBeInTheDocument();
   });
 });
 
-describe("OntologyMapDetailPanel — W2-A action row", () => {
-  it("keeps one primary agent action and moves the rest behind Edit and More menus", () => {
-    const onAskAgent = vi.fn();
-    renderPanel(undefined, undefined, {
-      onAskAgent,
-      onEditRelations: vi.fn(),
-      onCreateLinked: vi.fn(),
-      onEnterRealm: vi.fn(),
-    });
+describe("OntologyMapDetailPanel: definition", () => {
+  it("shows the definition as written, with no label", () => {
+    renderPanel(undefined, { definition: "Walks a shopper through checkout." });
+    const definition = screen.getByTestId("map-detail-panel-definition");
+    expect(definition).toHaveTextContent(/^Walks a shopper through checkout\.$/);
+    expect(definition).toHaveAttribute("data-definition", "whole");
+    expect(definition).not.toHaveAttribute("role");
+  });
 
-    const actions = screen.getByTestId("map-detail-panel-actions");
-    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(1);
-    expect(screen.queryByTestId("map-detail-panel-action-path")).not.toBeInTheDocument();
-    expect(screen.getByTestId("map-detail-panel-edit-menu-trigger")).toBeInTheDocument();
-    expect(screen.getByTestId("map-detail-panel-more-menu-trigger")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("map-detail-panel-action-ask-agent"));
-    expect(onAskAgent).toHaveBeenCalledTimes(1);
+  it("reads a wikilink in the definition as its words, not its markup", () => {
+    renderPanel(undefined, { definition: "This document explains [[capabilities/checkout|Checkout]], [[elements/idempotency-guard]]." });
+    expect(screen.getByTestId("map-detail-panel-definition")).toHaveTextContent(/^This document explains Checkout, idempotency-guard\.$/);
+  });
+
+  it("says quietly that a definition is missing, without a judgment block", () => {
+    renderPanel(undefined, { definition: null });
+    expect(screen.getByTestId("map-detail-panel-definition")).toHaveTextContent(
+      enMessages.docsVault.frontmatterBlock.validatorIssues.definitionMissing,
+    );
+    expect(screen.queryByTestId("map-detail-panel-judgment")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "none");
+  });
+});
+
+describe("OntologyMapDetailPanel: judgment and the one emphasised thing", () => {
+  const reasonedGroups = (reasons: (string | undefined)[]): OntologyMapDetailPanelProps["groups"] => {
+    const rows = reasons.map((reason, i) => ({
+      id: `capability:need-${i}`,
+      title: `need-${i}`,
+      kind: "capability",
+      relationType: "depends_on",
+      direction: "outgoing" as const,
+      ...(reason ? { reason } : {}),
+    }));
+    return {
+      contains: { rows: [], total: 0 },
+      usedBy: { rows: [], total: 0 },
+      dependsOn: { rows, total: rows.length, allRows: rows },
+      belongsTo: { rows: [], total: 0 },
+      related: { rows: [], total: 0 },
+    };
+  };
+  const reachOf = (count: number): OntologyMapDetailPanelProps["reach"] => ({
+    needs: Array.from({ length: count }, (_, i) => ({
+      id: `capability:need-${i}`,
+      label: `need-${i}`,
+      kind: "capability",
+      line: "needs" as const,
+      links: null,
+      neededBy: 0,
+    })),
+    neededBy: [],
+    other: [],
+  });
+  const meaningReview = { label: "Meaning review", onOpen: vi.fn() };
+
+  it("a calm concept holds no filled control and no judgment block", () => {
+    renderPanel(vi.fn(), {
+      kind: "capability",
+      review: noReview,
+      meaningReview,
+      onAskAgent: vi.fn(),
+      groups: reasonedGroups(["checkout needs it"]),
+      reach: reachOf(1),
+    });
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "none");
+    expect(filledControls()).toHaveLength(0);
+    expect(screen.queryByTestId("map-detail-panel-judgment")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel").textContent).not.toMatch(/review|checked/i);
+  });
+
+  it("a question raised for a person shows its note word for word and opens the document", () => {
+    const note = "The reserve ratio differs per contract, so code alone cannot settle it. Finance decides.";
+    renderPanel(undefined, { kind: "capability", review: { ...noReview, raised: { note } }, documentHref: "/docs/payouts" });
+    const block = screen.getByTestId("map-detail-panel-judgment");
+    expect(block).toHaveAttribute("data-judgment-first", "raised");
+    expect(block).toHaveTextContent(review.docChipRaised);
+    expect(screen.getByTestId("map-detail-panel-judgment-note").textContent).toBe(note);
+    const action = screen.getByTestId("map-detail-panel-judgment-action");
+    expect(action).toHaveAttribute("href", "/docs/payouts");
+    expect(action).toHaveTextContent(labels.actionDocument);
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "open-document");
+    expect(filledControls()).toEqual([action]);
+  });
+
+  it("a confirmation the file outgrew opens the document", () => {
+    renderPanel(undefined, { kind: "capability", review: { ...noReview, changedSinceReview: true } });
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent(review.changedPlain);
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "open-document");
+    expect(filledControls()).toHaveLength(1);
+  });
+
+  it("an unreadable file is a warning with no action", () => {
+    renderPanel(undefined, { kind: "capability", review: { ...noReview, unverifiable: true } });
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent(review.unverifiablePlain);
+    expect(screen.queryByTestId("map-detail-panel-judgment-action")).not.toBeInTheDocument();
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "judgment");
+    expect(filledControls()).toHaveLength(0);
+  });
+
+  it("connections without a reason make meaning review the filled action", () => {
+    const onOpen = vi.fn();
+    renderPanel(undefined, {
+      kind: "capability",
+      meaningReview: { label: "Meaning review", onOpen },
+      groups: reasonedGroups(["first is explained", undefined, undefined]),
+      reach: reachOf(3),
+    });
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent("2 connections have no reason written");
+    const action = screen.getByTestId("map-detail-panel-judgment-action");
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "meaning-review");
+    expect(filledControls()).toEqual([action]);
+    fireEvent.click(action);
+    expect(onOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("folds every later fact under one line, and only the first carries the filled action", () => {
+    renderPanel(undefined, {
+      kind: "capability",
+      review: { ...noReview, raised: { note: "Decide the ratio." } },
+      mtimeConflict: true,
+    });
+    const block = screen.getByTestId("map-detail-panel-judgment");
+    expect(block).toHaveAttribute("data-judgment-count", "2");
+    expect(block).not.toHaveTextContent(labels.editConflictMessage);
+    fireEvent.click(screen.getByTestId("map-detail-panel-judgment-more"));
+    expect(block.querySelector('[data-judgment-item="edit-conflict"]')).toHaveTextContent(labels.editConflictMessage);
+    expect(filledControls()).toHaveLength(1);
+  });
+
+  it("an edit conflict alone is a warning line in the judgment block", () => {
+    renderPanel(undefined, { mtimeConflict: true });
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveAttribute("data-judgment-first", "edit-conflict");
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "judgment");
+  });
+
+  it("a document's one filled control is opening it, and it has no edit menu or full-detail step", () => {
+    renderPanel(vi.fn(), { kind: "document", documentHref: "/docs/adr-002" });
+    const open = screen.getByTestId("map-detail-panel-open-document");
+    expect(open).toHaveAttribute("href", "/docs/adr-002");
+    expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "open-document");
+    expect(filledControls()).toEqual([open]);
+    expect(screen.queryByTestId("map-detail-panel-edit-menu-trigger")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("map-detail-panel-open-full-detail")).not.toBeInTheDocument();
+  });
+
+  it("a document with a raised question gives the filled control to the judgment, not the footer", () => {
+    renderPanel(undefined, { kind: "document", documentHref: "/docs/adr-002", review: { ...noReview, raised: { note: null } } });
+    expect(screen.getByTestId("map-detail-panel-open-document").className).not.toContain(FILLED);
+    expect(filledControls()).toEqual([screen.getByTestId("map-detail-panel-judgment-action")]);
+  });
+
+  it("quiets the filled action while a guided presentation owns the next step", () => {
+    renderPanel(undefined, {
+      kind: "capability",
+      review: { ...noReview, raised: { note: null } },
+      suppressPrimaryAction: true,
+    });
+    const panel = screen.getByTestId("map-detail-panel");
+    expect(panel).toHaveAttribute("data-primary-action-suppressed", "true");
+    expect(panel).toHaveAttribute("data-panel-emphasis", "judgment");
+    expect(filledControls()).toHaveLength(0);
+  });
+});
+
+describe("OntologyMapDetailPanel — footer menus", () => {
+  it("puts meaning review first in the more menu, then the agent handoff", () => {
+    const onOpen = vi.fn();
+    renderPanel(undefined, { meaningReview: { label: "Meaning review", onOpen }, onAskAgent: vi.fn() });
+    fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
+    const items = [...screen.getByTestId("map-detail-panel-more-menu").querySelectorAll('[role="menuitem"]')].map((item) => item.getAttribute("data-testid"));
+    expect(items.slice(0, 3)).toEqual([
+      "map-detail-panel-action-meaning",
+      "map-detail-panel-action-ask-agent",
+      "map-detail-panel-action-handoff",
+    ]);
+    fireEvent.click(screen.getByTestId("map-detail-panel-action-meaning"));
+    expect(onOpen).toHaveBeenCalledTimes(1);
   });
 
   it("reveals edit actions in one anchored menu", () => {
     const onEditRelations = vi.fn();
     const onCreateLinked = vi.fn();
-    renderPanel(undefined, undefined, { onEditRelations, onCreateLinked });
+    renderPanel(undefined, { onEditRelations, onCreateLinked });
 
     fireEvent.click(screen.getByTestId("map-detail-panel-edit-menu-trigger"));
     const menu = screen.getByTestId("map-detail-panel-edit-menu");
@@ -952,55 +1034,29 @@ describe("OntologyMapDetailPanel — W2-A action row", () => {
     expect(onCreateLinked).toHaveBeenCalledTimes(1);
   });
 
-  it("uses handoff copy as the primary action when the in-app agent is unavailable", () => {
-    const onCopyHandoff = vi.fn();
-    renderPanel(undefined, undefined, { onCopyHandoff });
-    const handoff = screen.getByTestId("map-detail-panel-action-handoff");
-    expect(handoff).toHaveAttribute("data-action-role", "primary");
-    fireEvent.click(handoff);
-    expect(onCopyHandoff).toHaveBeenCalledWith("node: domains/views");
-  });
-
-  it("suppresses the competing filled action while a guided presentation owns the next step", () => {
-    renderPanel(undefined, undefined, {
-      onAskAgent: vi.fn(),
-      onEditRelations: vi.fn(),
-      suppressPrimaryAction: true,
-    });
-
-    const actions = screen.getByTestId("map-detail-panel-actions");
-    expect(actions).toHaveAttribute("data-primary-action-suppressed", "true");
-    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(0);
-    expect(screen.queryByTestId("map-detail-panel-action-ask-agent")).toBeNull();
-    expect(screen.queryByTestId("map-detail-panel-action-handoff")).toBeNull();
-    expect(screen.getByTestId("map-detail-panel-edit-menu-trigger")).toBeInTheDocument();
-  });
-
   it("links the document menu item to the document href when the node has a backing doc", () => {
-    renderPanel(undefined, undefined, { documentHref: "/docs/domains/views" });
+    renderPanel(undefined, { documentHref: "/docs/domains/views" });
     fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
     const link = screen.getByTestId("map-detail-panel-action-document");
     expect(link.tagName).toBe("A");
     expect(link).toHaveAttribute("href", expect.stringContaining("/docs/domains/views"));
   });
 
-  it("hides the document tile when the node has no sourceSlug or document href (no dead affordance)", () => {
-    renderPanel(undefined, undefined, { documentHref: null });
-    expect(
-      screen.queryByTestId("map-detail-panel-action-document"),
-    ).not.toBeInTheDocument();
+  it("hides the document item when the node has no document href (no dead affordance)", () => {
+    renderPanel(undefined, { documentHref: null });
+    fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
+    expect(screen.queryByTestId("map-detail-panel-action-document")).not.toBeInTheDocument();
   });
 
   it("links the edit-relations menu item to the studio deep link", () => {
     renderPanel();
     fireEvent.click(screen.getByTestId("map-detail-panel-edit-menu-trigger"));
-    const link = screen.getByTestId("map-detail-panel-action-edit");
-    expect(link).toHaveAttribute("href", expect.stringContaining("/ontology/studio/"));
+    expect(screen.getByTestId("map-detail-panel-action-edit")).toHaveAttribute("href", expect.stringContaining("/ontology/studio/"));
   });
 
   it("keeps edit-relations in place when a contextual editor callback is available", () => {
     const onEditRelations = vi.fn();
-    renderPanel(undefined, undefined, { onEditRelations });
+    renderPanel(undefined, { onEditRelations });
     fireEvent.click(screen.getByTestId("map-detail-panel-edit-menu-trigger"));
     const action = screen.getByTestId("map-detail-panel-action-edit");
     expect(action.tagName).toBe("BUTTON");
@@ -1008,94 +1064,20 @@ describe("OntologyMapDetailPanel — W2-A action row", () => {
     expect(onEditRelations).toHaveBeenCalledTimes(1);
   });
 
-  it("copies the handoff text when the copy-handoff tile is clicked", () => {
+  it("copies the handoff text from the more menu, and plain mode leaves it out", () => {
     const onCopyHandoff = vi.fn();
-    renderPanel(undefined, undefined, { onCopyHandoff });
+    const { unmount } = renderPanel(undefined, { onCopyHandoff });
+    fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
     fireEvent.click(screen.getByTestId("map-detail-panel-action-handoff"));
     expect(onCopyHandoff).toHaveBeenCalledWith("node: domains/views");
-  });
-
-  it("no longer renders a duplicate handoff button in the footer", () => {
-    renderPanel();
-    expect(
-      screen.queryByTestId("map-detail-panel-handoff"),
-    ).not.toBeInTheDocument();
-  });
-
-  // S2 part 3 — a long 「container」 defaults to the path-prefix summary, with 「View All」 for the list.
-
-  // B4 (H1) — when the summary collapses into one 「Other」 lump (usable=false), the
-  // summary and toggle are hidden even past the threshold and the individual list
-  // renders instead (avoiding zero information).
-});
-
-describe("OntologyMapDetailPanel — last-edit provenance", () => {
-  it("renders no subject row when lastEditSubject is null (no fabrication)", () => {
-    renderPanel();
-    expect(screen.queryByTestId("last-edit-subject-row")).not.toBeInTheDocument();
-  });
-
-  it("renders the AI agent subject row from a real, caller-resolved fact", () => {
-    renderPanel(undefined, undefined, {
-      lastEditSubject: { kind: "agent", ageLabel: "3m ago" },
-    });
-    const row = screen.getByTestId("last-edit-subject-row");
-    expect(row).toHaveAttribute("data-edit-subject-kind", "agent");
-    expect(row).toHaveTextContent("AI agent");
-    expect(row).toHaveTextContent("3m ago");
-  });
-
-  it("renders the human subject row from a real, caller-resolved fact", () => {
-    renderPanel(undefined, undefined, {
-      lastEditSubject: { kind: "human", ageLabel: "yesterday" },
-    });
-    const row = screen.getByTestId("last-edit-subject-row");
-    expect(row).toHaveAttribute("data-edit-subject-kind", "human");
-    expect(row).toHaveTextContent("me");
-  });
-
-  it("renders no conflict badge when mtimeConflict is false (default)", () => {
-    renderPanel();
-    expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
-  });
-
-  it("renders the conflict badge only when the caller resolved a real mtime mismatch", () => {
-    renderPanel(undefined, undefined, { mtimeConflict: true });
-    expect(screen.getByTestId("mtime-conflict-badge")).toBeInTheDocument();
+    unmount();
+    renderPanel(undefined, { showHandoff: false });
+    fireEvent.click(screen.getByTestId("map-detail-panel-more-menu-trigger"));
+    expect(screen.queryByTestId("map-detail-panel-action-handoff")).not.toBeInTheDocument();
   });
 });
 
-describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
-  it("keeps the concept name and localized kind in the header", () => {
-    renderPanel();
-    expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("Views");
-    expect(screen.getByTestId("map-detail-panel-kind")).toHaveTextContent(labels.kindLabel);
-  });
-
-  it("no longer renders the floating power-state dot", () => {
-    renderPanel();
-    expect(
-      screen.getByTestId("map-detail-panel").querySelector("[data-power-state]"),
-    ).toBeNull();
-  });
-
-  it("renders the footer '전체 상세' as the single indigo-filled primary", () => {
-    renderPanel(vi.fn());
-    const primary = screen.getByTestId("map-detail-panel-open-full-detail");
-    expect(primary.className).toContain("--map-panel-primary-surface");
-    expect(primary.className).toContain("--map-panel-primary-text");
-  });
-
-  it("renders the domain chip as an indigo-tinted navigable chip with no trailing arrow", () => {
-    renderPanel(undefined, undefined, {
-      domain: { id: "domains/ai-agent-partner", title: "AI Agent Partner" },
-    });
-    const chip = screen.getByTestId("map-detail-panel-domain");
-    expect(chip.className).toContain("--map-panel-domain-surface");
-    expect(chip).toHaveAttribute("aria-label", expect.stringContaining("AI Agent Partner"));
-    expect(chip.querySelector("svg")).toBeNull();
-  });
-
+describe("OntologyMapDetailPanel: exit", () => {
   it("closing does not vanish in one frame, and the exit is reported once when it finishes", async () => {
     const onExited = vi.fn();
     const panel = (open: boolean) => (
@@ -1106,7 +1088,8 @@ describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
         slug="domains/views"
         title="Views"
         kind="domain"
-        domain={null}
+        owner={null}
+        definition={null}
         powered={false}
         groups={{
           contains: { rows: [], total: 0 },
@@ -1115,8 +1098,6 @@ describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
           belongsTo: { rows: [], total: 0 },
           related: { rows: [], total: 0 },
         }}
-        evidence={{ rows: [], total: 0 }}
-        codeLocations={[]}
         handoffText="node: domains/views"
         documentHref={null}
         meaningEditHref="/ontology/studio/?node=domains%2Fviews"
@@ -1141,24 +1122,10 @@ describe("OntologyMapDetailPanel: redesigned structure from the mockup", () => {
 });
 
 describe("OntologyMapDetailPanel: the channel from row hover out to the map", () => {
-  it("the domain chip uses the same channel, since the same affordance cannot be the only one that does not react", () => {
-    const onHoverConnection = vi.fn();
-    renderPanel(undefined, undefined, {
-      onHoverConnection,
-      domain: { id: "domain:order", title: "주문" },
-    });
-
-    const chip = screen.getByTestId("map-detail-panel-domain");
-    fireEvent.pointerEnter(chip);
-    expect(onHoverConnection).toHaveBeenCalledWith("domain:order");
-    fireEvent.pointerLeave(chip);
-    expect(onHoverConnection).toHaveBeenLastCalledWith(null);
-  });
-
   it("the highlight clears when the panel disappears, because pressing a row never delivers pointerleave", () => {
     const onHoverConnection = vi.fn();
     const onHoverEvidence = vi.fn();
-    const { unmount } = renderPanel(undefined, undefined, {
+    const { unmount } = renderPanel(undefined, {
       onHoverConnection,
       onHoverEvidence,
       reach: {
