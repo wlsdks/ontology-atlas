@@ -1,7 +1,7 @@
 import reactions from './moru-reactions.json';
 import { companionMotion, type CompanionContext } from './moru-companion-motion';
 
-const gestures = ['shy', 'clap', 'dance'] as const;
+const gestures = ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove'] as const;
 
 /** A local, finite response to touch; it never projects agent or folder status. */
 export function companionPlayer({ image, reactionImage, body, bounds, animations, context, reducedMotion, intent }: {
@@ -12,6 +12,7 @@ export function companionPlayer({ image, reactionImage, body, bounds, animations
   let motion = companionMotion(Math.max(0, bounds.clientWidth - reactions.cell), context);
   let visible = false, disposed = false, nextGesture = 0, requested: typeof gestures[number] | null = null;
   let reaction: Animation | null = null, timer: ReturnType<typeof setTimeout> | null = null, still = false;
+  let reactionReady = typeof reactionImage.decode !== 'function', decodeFailed = false;
   const clearTimer = () => { if (timer !== null) clearTimeout(timer); timer = null; };
   const showAmbient = () => {
     image.hidden = false; reactionImage.hidden = true; still = false;
@@ -53,15 +54,53 @@ export function companionPlayer({ image, reactionImage, body, bounds, animations
     if (reaction) {
       pauseAmbient();
       if (onScreen && !paused) reaction.play(); else reaction.pause();
-    } else if (requested && onScreen && !paused) {
+    } else if (requested && reactionReady && onScreen && !paused) {
       const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
       if (rest.delay > 0) {
         // Finish the airborne hop even when the pointer now holds the actor.
         playAmbient();
-        timer = setTimeout(() => { if (!disposed && requested) begin(requested, rest.at); }, rest.delay);
+        timer = setTimeout(() => { timer = null; if (!disposed && requested) begin(requested, rest.at); }, rest.delay);
       } else begin(requested, rest.at);
-    } else if (onScreen && !paused && !held) playAmbient(); else pauseAmbient();
+    } else if (onScreen && !paused && held) {
+      const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
+      if (rest.delay > 0) {
+        // Attention is a grounded rest, not a freeze in the air. Explicit pause
+        // and hidden-document handling still stop immediately via the branches below.
+        playAmbient();
+        timer = setTimeout(() => {
+          timer = null;
+          if (disposed) return;
+          for (const animation of animations) animation.currentTime = rest.at;
+          pauseAmbient();
+        }, rest.delay);
+      } else pauseAmbient();
+    } else if (onScreen && !paused) playAmbient(); else pauseAmbient();
   };
+  const respond = (id: typeof gestures[number]) => {
+    if (reducedMotion || intent().paused || animations.length === 0) {
+      // Explicit pause/reduced motion permits a changed expression, never motion.
+      pauseAmbient(); still = true;
+      if (animations.length) {
+        const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
+        // A paused airborne pose stays paused; do not teleport it to the floor.
+        if (rest.delay > 0) return;
+        for (const animation of animations) animation.currentTime = rest.at;
+      }
+      image.hidden = true; reactionImage.hidden = false;
+      reactionImage.style.transform = `translateX(${-(reactions.clips[id].firstFrame + 12) * reactions.cell}px)`;
+      body.dataset.moruReaction = id;
+    } else { requested = id; update(); }
+  };
+  // WebKit can postpone decoding a hidden strip until its first use. Keep the
+  // ambient image visible until the replacement is ready, including still feedback.
+  if (!reactionReady) void reactionImage.decode().then(() => {
+    if (disposed) return;
+    reactionReady = true;
+    if (requested) { const id = requested; requested = null; respond(id); }
+  }, () => {
+    if (disposed) return;
+    decodeFailed = true; requested = null; update();
+  });
   const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => {
     visible = entry?.isIntersecting === true; update();
   });
@@ -77,21 +116,10 @@ export function companionPlayer({ image, reactionImage, body, bounds, animations
   return {
     update,
     react() {
-      if (disposed || reaction || requested) return;
+      if (disposed || decodeFailed || reaction || requested) return;
       const id = gestures[nextGesture++ % gestures.length];
-      if (reducedMotion || intent().paused || animations.length === 0) {
-        // Explicit pause/reduced motion permits a changed expression, never motion.
-        pauseAmbient(); still = true;
-        if (animations.length) {
-          const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
-          // A paused airborne pose stays paused; do not teleport it to the floor.
-          if (rest.delay > 0) return;
-          for (const animation of animations) animation.currentTime = rest.at;
-        }
-        image.hidden = true; reactionImage.hidden = false;
-        reactionImage.style.transform = `translateX(${-(reactions.clips[id].firstFrame + 12) * reactions.cell}px)`;
-        body.dataset.moruReaction = id;
-      } else { requested = id; update(); }
+      if (!reactionReady) { requested = id; return; }
+      respond(id);
     },
     destroy() {
       disposed = true; cancelReaction();

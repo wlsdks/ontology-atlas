@@ -70,6 +70,32 @@ test('the chorus retains complete opaque musical notes above the seals', async (
   assert.ok(opaque >= 200 && ivory >= 70, `chorus notes were reduced to fragments: ${opaque} opaque, ${ivory} ivory pixels`);
 });
 
+test('complete floating ontology models retain connected opaque pixel links', async () => {
+  for (const [id, frames] of [['ontology-dance', Array.from({ length: 24 }, (_, i) => i)], ['ontology-orbit', [9, 10, 11, 12, 13, 14, 15]]]) {
+    for (const size of [64, 128]) for (const frame of frames) {
+      // The model occupies the headroom above the seal. Eight-neighbour
+      // connectivity permits deliberate diagonal pixel stairs, not missing links.
+      const { data, info } = await sharp(`assets/brand/moru/sprites/${size}/authored/moru-${id}.png`)
+        .extract({ left: frame * size, top: 0, width: size, height: Math.round(size * 60 / 128) }).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      const ink = i => data[i * 4 + 3] === 255 && (data[i * 4] >= 64 && data[i * 4 + 2] > data[i * 4] + 20 || data[i * 4] > 235);
+      const seen = new Set(), groups = [];
+      for (let start = 0; start < info.width * info.height; start++) {
+        if (seen.has(start) || !ink(start)) continue;
+        const queue = [start]; seen.add(start);
+        for (let j = 0; j < queue.length; j++) {
+          const p = queue[j], x = p % info.width, y = Math.floor(p / info.width);
+          for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
+            const xx = x + dx, yy = y + dy, n = yy * info.width + xx;
+            if (xx >= 0 && xx < info.width && yy >= 0 && yy < info.height && !seen.has(n) && ink(n)) { seen.add(n); queue.push(n); }
+          }
+        }
+        if (queue.length > 2) groups.push(queue.length);
+      }
+      assert.equal(groups.length, 1, `${id} frame ${frame + 1} at ${size}px has disconnected model fragments: ${groups}`);
+    }
+  }
+});
+
 test('every catalogue export has complete frames, clear margins and a shared neutral loop seam', async () => {
   const root = 'assets/brand/moru';
   const manifest = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));

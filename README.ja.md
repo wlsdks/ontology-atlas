@@ -122,9 +122,9 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[50のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[62のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
 
-フォルダー選択画面では、モルが挨拶して小さなフォルダーを見せ、開いている間は遊ぶ動きを止め、既存の待機画面に切り替わります。ダウンロードページでは別のお迎え動作をします。移動するのはジャンプで足が地面を離れている間だけです。モルを押すと照れたり、拍手やダンスで短く反応し、右クリックまたは Shift+F10 のメニューで一時停止できます。キャラクターの隣に再生ボタンは表示しません。動きを減らす設定では静止した表情で反応します。
+フォルダー選択画面では、モルが挨拶して小さなフォルダーを見せ、開いている間は遊ぶ動きを止め、既存の待機画面に切り替わります。ダウンロードページでは別のお迎え動作をします。移動するのはジャンプで足が地面を離れている間だけです。カーソルを重ねると、着地を終えてから待ちます。モルを押すと照れたり、拍手、ダンス、考え込むしぐさ、ハート、笑顔やひれのダンスで短く反応し、右クリックまたは Shift+F10 のメニューで一時停止できます。キャラクターの隣に再生ボタンは表示しません。動きを減らす設定では静止した表情で反応します。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -145,6 +145,18 @@ MoruはAtlasのピクセルアザラシのキャラクターで、コンパス�
 <img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨の日に傘を差すモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="雪を見上げるモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="そよ風を楽しむモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="宙返りするMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="釣り糸のおもちゃで遊ぶMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="ノートパソコンでコードを書くMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="考えるMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="思案するMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="小さなハートを送るMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="くすくす笑うMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="眉をひそめるMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="ちょっぴり怒るMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="ひれで踊るMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="浮かぶオントロジー模型を見るMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="オントロジー模型と踊るMoru" />
 
 
 </details>

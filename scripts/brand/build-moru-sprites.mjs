@@ -50,7 +50,7 @@ function translate(data, size, dx, dy) {
   return out;
 }
 
-async function cell(source, columns, rows, index, size) {
+async function cell(source, columns, rows, index, size, alphaCutoff = 240) {
   const file = join(ROOT, source), meta = await sharp(file).metadata();
   const left = Math.round(index % columns * meta.width / columns);
   const top = Math.round(Math.floor(index / columns) * meta.height / rows);
@@ -58,7 +58,7 @@ async function cell(source, columns, rows, index, size) {
   const bottom = Math.round((Math.floor(index / columns) + 1) * meta.height / rows);
   const data = await sharp(file).extract({ left, top, width: right - left, height: bottom - top }).resize(size, size, { kernel: 'nearest' }).ensureAlpha().raw().toBuffer();
   for (let i = 0; i < data.length; i += 4) {
-    if (data[i + 3] < 240) { data.fill(0, i, i + 4); continue; }
+    if (data[i + 3] < alphaCutoff) { data.fill(0, i, i + 4); continue; }
     const color = moruColor(data[i], data[i + 1], data[i + 2]);
     data[i] = color[0]; data[i + 1] = color[1]; data[i + 2] = color[2]; data[i + 3] = 255;
   }
@@ -113,7 +113,7 @@ export async function buildMoru() {
     for (const clip of spec.authored) {
       const count = clip.frames;
       if (count !== 24 || clip.durationsMs.length !== count) throw new Error(`${clip.id} must declare twenty-four timed source poses`);
-      let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size)));
+      let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff)));
       const anchor = Math.round(size * 0.78);
       if (!neutral) {
         const fit = size * 7 / 8, inset = (size - fit) / 2;

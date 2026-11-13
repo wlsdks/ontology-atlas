@@ -59,9 +59,9 @@ full character's face. Owner selection does not prove unfamiliar users recognize
 | Moru as every app/OS/browser mark | One character everywhere; small face carries both identity and expression | Existing pipeline is close, local assets; loses the selected independent compass role |
 | Compass identity plus Moru companion | Stable app identification and expressive company in existing slots | Moderate fan-out, entirely local; chosen |
 
-The first slice covers all requested surfaces and **50 distinct named animation clips
-and 16 static expressions/poses**. The owner's later request sets a 30–50 range;
-34 clips are authored motions and 16 are explicitly labelled compositions.
+The first slice covers all requested surfaces and **62 distinct named animation clips
+and 16 static expressions/poses**. The owner subsequently requested twelve more gestures beyond the initial 30–50 range;
+46 clips are authored motions and 16 are explicitly labelled compositions.
 Sizes/formats do not count
 as new clips or poses. Each clip records its authored source or constituent poses
 and timing; compositions are labelled. Keep references, prompts, masters, exports,
@@ -176,7 +176,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    no unintended indigo eye edge, clipping, jitter, or ground-contact drift.
    Check preview captures and `brand-asset-parity.contract.test.ts`; preserve eye evidence.
 2. **Given** the catalogue, **when** manifest and preview are inspected, **then**
-   50 distinct clips and 16 static poses resolve to project sources and
+   62 distinct clips and 16 static poses resolve to project sources and
    exports, with compositions/timing identified. Open every clip in `assets/brand/moru/preview.html` at 64px and 128px.
 3. **Given** current consumers, **when** pipeline/parity checks run, **then**
    compass symbols and Moru slots consistently replace traveler art; compass at
@@ -224,8 +224,10 @@ download portrait with native 128px decorative play. Copy keys `moru.pause`,
 `moru.resume` and `moru.still` name the character context-menu playback action in all four locales; `moru.interact` names the transparent character target (English: “Pet Moru”).
 The stage owns travel bounds; work-state authority and navigation stay unchanged.
 
-The later owner correction makes character presses produce one finite `shy`, `clap`
-or `dance` response instead of a rectangular pressed surface or a pause toggle.
+The later owner correction makes character presses produce one finite `shy`, `clap`,
+`dance`, `thinking`, `pondering`, `hearts`, `laugh` or `flipper-groove` response instead of a rectangular pressed surface
+or a pause toggle. Somersault, toy-fishing, laptop-code, frown, temper and floating-ontology scenes are available in
+the catalogue and README; they do not stand in for observed application activity.
 Airborne hops land before reacting; repeated clicks do not queue. A busy chooser
 uses quiet `blink`/`tilt` waiting; folder opening can replace it with the existing
 waiting view. Download uses a welcome without the folder prop.
@@ -234,3 +236,7 @@ Explicit pause and reduced motion permit a still expression without resumed moti
 The owner rejected an always-visible playback icon beside Moru. Only the character
 is visible at rest; secondary-click or Shift+F10 opens the existing pause/resume
 action in a dismissible context menu. Primary click still gives the finite response.
+
+Pointer and keyboard attention holds finish an airborne hop before resting.
+Explicit pause, reduced motion and hidden/offscreen guards still stop immediately.
+Leaving the character cancels a pending attention hold.

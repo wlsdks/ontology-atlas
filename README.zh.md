@@ -122,9 +122,9 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[50个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[62个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
-在文件夹选择画面，Moru 会打招呼并展示小文件夹；打开文件夹时停止玩耍，切换到现有的等待画面。下载页面使用独立的欢迎动作。只有双脚离地的短跳跃期间才会移动。点击 Moru 会短暂地害羞、鼓掌或跳舞，右键点击或按 Shift+F10 可打开暂停菜单。角色旁不显示播放按钮。启用减少动态效果时，仅改变静态表情。
+在文件夹选择画面，Moru 会打招呼并展示小文件夹；打开文件夹时停止玩耍，切换到现有的等待画面。下载页面使用独立的欢迎动作。只有双脚离地的短跳跃期间才会移动。悬停时会先完成落地，再停下来等待。点击 Moru 会短暂地害羞、鼓掌、跳舞、思考、冒出爱心、欢笑或挥动鳍跳舞，右键点击或按 Shift+F10 可打开暂停菜单。角色旁不显示播放按钮。启用减少动态效果时，仅改变静态表情。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -145,6 +145,18 @@ Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[5
 <img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨天撑伞的 Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="看雪花的 Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="感受微风的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="翻跟头的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="玩钓鱼玩具的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="用笔记本电脑编程的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="思考的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="琢磨问题的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="送出小爱心的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="咯咯笑的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="皱眉的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="有点生气的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="挥动鳍跳舞的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="看着漂浮本体模型的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="和本体模型一起跳舞的Moru" />
 
 
 </details>

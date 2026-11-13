@@ -1,5 +1,30 @@
 import { expect, test } from '@playwright/test';
 
+test('hover lets an airborne hop land before holding the character', async ({ page }) => {
+  await page.goto('/en/download/?guides=off');
+  const pet = page.getByRole('button', { name: 'Pet Moru' });
+  await pet.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  // Seek to the middle of a real horizontal flight segment, independently of
+  // the sprite's frame numbers. Ground-contact tests verify that those segments
+  // coincide with feet clear of the floor in the shipped pixels.
+  const initialX = await pet.evaluate(element => {
+    const animations = element.closest('[data-moru-playground]')!.getAnimations({ subtree: true });
+    const travel = animations.find(a => (a.effect as KeyframeEffect).target === element)!;
+    const keys = (travel.effect as KeyframeEffect).getKeyframes();
+    const end = keys.findIndex((key, i) => i > 0 && key.transform !== keys[i - 1].transform);
+    const time = (Number(keys[end - 1].offset) + Number(keys[end].offset)) / 2 * Number(travel.effect!.getTiming().duration);
+    for (const animation of animations) { animation.pause(); animation.currentTime = time; }
+    return element.getBoundingClientRect().x;
+  });
+  await pet.hover();
+  await expect.poll(() => pet.evaluate(element => element.getBoundingClientRect().x)).not.toBe(initialX);
+  await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).every(a => a.playState === 'paused'))).toBe(true);
+  await expect(pet).not.toHaveAttribute('data-moru-reaction');
+  await page.mouse.move(0, 0);
+  await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).every(a => a.playState === 'running'))).toBe(true);
+});
+
 test('a pending folder choice replaces play with the existing waiting state', async ({ page }) => {
   await page.addInitScript(() => {
     Object.assign(window, { isTauri: true, __TAURI_INTERNALS__: {
@@ -39,6 +64,14 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
   await page.mouse.move(0, 0);
   await expect(pet).not.toHaveAttribute('data-moru-reaction');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).every(a => a.playState === 'running'))).toBe(true);
+  // Every new expression must finish and hand back to the same companion,
+  // without adding a control or leaving the reaction strip visible forever.
+  for (const gesture of ['clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'shy']) {
+    await pet.click();
+    await expect(pet).toHaveAttribute('data-moru-reaction', gesture);
+    await expect(pet).not.toHaveAttribute('data-moru-reaction');
+  }
+  await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
 });
 
 test('keyboard petting and its context menu preserve focus and an explicit pause', async ({ page }) => {

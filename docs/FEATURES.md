@@ -32,8 +32,8 @@ truncated evidence requires review and does not authorize meaning writes.
 Folder entry and the download invitation use native-resolution Moru in a bounded space.
 Folder selection offers a small folder; opening yields to the existing waiting view.
 A busy chooser that stays mounted uses quiet stationary poses.
-The download invitation has its own welcome. Short hops move only while airborne.
-Petting Moru plays one shy, clap or dance response after an airborne hop lands;
+The download invitation has its own welcome. Short hops move only while airborne and finish landing before a pointer/keyboard hold.
+Petting Moru plays one shy, clap, dance, thinking, pondering, hearts, laughter or flipper-groove response after an airborne hop lands;
 repeated presses do not queue more reactions. Pause/resume lives in Moru’s context menu (right-click or Shift+F10), with no persistent playback button beside the character.
 Pointer/keyboard interaction and hidden/offscreen state suspend ambient motion;
 reduced motion answers a pet with a still expression. Large pending fallbacks use
