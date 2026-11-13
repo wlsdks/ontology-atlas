@@ -13,13 +13,17 @@ for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${nam
   const playback = JSON.parse(await readFile(`src/shared/ui/marks/${name}.json`, 'utf8'));
   const file = await readFile(`public/brand/${name}.png`);
   const meta = await sharp(file).metadata();
-  assert.equal(meta.height, source.nativeCell);
-  assert.equal(meta.width, playback.frames * source.nativeCell);
+  assert.ok(meta.width <= 4096 && meta.height <= 4096, 'runtime sprite pages must fit a compact texture');
+  assert.equal(meta.width, playback.columns * source.nativeCell);
+  assert.equal(meta.height, playback.rows * source.nativeCell);
   assert.equal(playback.digest, createHash('sha256').update(file).digest('hex').slice(0, 12));
   for (const [id, clip] of Object.entries(playback.clips)) {
-    const original = await sharp(`assets/brand/moru/${source.clips[id].sprite}`).raw().toBuffer();
-    const shipped = await sharp(file).extract({ left: clip.firstFrame * source.nativeCell, top: 0, width: source.clips[id].frames * source.nativeCell, height: source.nativeCell }).raw().toBuffer();
-    assert.deepEqual(shipped, original, `${id} lost native face detail during runtime export`);
+    for (let frame = 0; frame < source.clips[id].frames; frame++) {
+      const cell = source.nativeCell, index = clip.firstFrame + frame;
+      const original = await sharp(`assets/brand/moru/${source.clips[id].sprite}`).extract({ left: frame * cell, top: 0, width: cell, height: cell }).raw().toBuffer();
+      const shipped = await sharp(file).extract({ left: index % playback.columns * cell, top: Math.floor(index / playback.columns) * cell, width: cell, height: cell }).raw().toBuffer();
+      assert.deepEqual(shipped, original, `${id} frame ${frame} lost native face detail during runtime export`);
+    }
   }
 });
 
@@ -41,6 +45,17 @@ test('near-neutral warm ivory stays ivory instead of becoming gray belly speckle
   for (const rgb of [[244, 232, 219]]) {
     const actual = moruColor(...rgb);
     assert.ok(actual[0] - actual[2] > 30, `warm belly became gray: ${actual}`);
+  }
+});
+
+test('an opted-in blush stays coral without recoloring the ordinary gray and ivory inks', () => {
+  const coral = [[217, 108, 117], [238, 154, 147]];
+  for (const color of coral) {
+    assert.deepEqual(moruColor(...color, coral), color, 'the expressive face lost its requested blush');
+    assert.notDeepEqual(moruColor(...color), color, 'an ordinary clip acquired a blush accent');
+  }
+  for (const color of [[214, 211, 201], [244, 232, 219], [109, 115, 210]]) {
+    assert.deepEqual(moruColor(...color, coral), moruColor(...color), 'accent opt-in changed an ordinary ink');
   }
 });
 

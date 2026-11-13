@@ -213,6 +213,73 @@ it('answers a pet with a still expression under reduced motion', () => {
   const pet = screen.getByRole('button', { name: 'pet' });
   fireEvent.click(pet);
   expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  expect(pet.querySelector('[data-moru-emote]')).toHaveAttribute('data-emotion', 'heart');
+  expect(animations).toHaveLength(0);
+});
+
+it('shows a finite wordless emotion on touch and clears it with the response', () => {
+  render(<BrandCompanion labels={labels} context="welcome" />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  const bubble = pet.querySelector('[data-moru-emote]');
+  expect(bubble).toHaveAttribute('aria-hidden', 'true');
+  for (const emotion of ['heart', 'spark', 'note']) {
+    fireEvent.click(pet);
+    expect(bubble).toHaveAttribute('data-emotion', emotion);
+    act(() => animations.at(-1)?.onfinish?.());
+    expect(bubble).not.toHaveAttribute('data-emotion');
+  }
+});
+
+it('keeps petting gentle while a chooser is waiting', () => {
+  render(<BrandCompanion labels={labels} context="waiting" />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  for (const id of ['soft-bow', 'thinking', 'soft-bow']) {
+    fireEvent.click(pet);
+    expect(pet).toHaveAttribute('data-moru-reaction', id);
+    expect(pet.querySelector('[data-moru-emote]')).not.toHaveAttribute('data-emotion');
+    act(() => animations.at(-1)?.onfinish?.());
+  }
+});
+
+it.each(['folder', 'welcome'] as const)('reserves the fish trick for the welcome while petting in %s', context => {
+  render(<BrandCompanion labels={labels} context={context} />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  const seen = new Set<string>();
+  for (let i = 0; i < 12; i++) {
+    fireEvent.click(pet);
+    seen.add(pet.dataset.moruReaction!);
+    act(() => animations.at(-1)?.onfinish?.());
+  }
+  expect(seen.has('magic-fish')).toBe(context === 'welcome');
+  expect(seen.has('hat-tip')).toBe(true);
+});
+
+it('keeps a finished magic bubble hidden when visibility returns', () => {
+  render(<BrandCompanion labels={labels} context="welcome" />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  for (let i = 0; i < 11; i++) { fireEvent.click(pet); act(() => animations.at(-1)?.onfinish?.()); }
+  fireEvent.click(pet);
+  expect(pet).toHaveAttribute('data-moru-reaction', 'magic-fish');
+  const bubble = animations.at(-2)!;
+  Object.assign(bubble, { playState: 'finished' });
+  bubble.play.mockClear(); bubble.pause.mockClear();
+  hidden = true; fireEvent(document, new Event('visibilitychange'));
+  hidden = false; fireEvent(document, new Event('visibilitychange'));
+  expect(bubble.play).not.toHaveBeenCalled();
+  expect(bubble.pause).not.toHaveBeenCalled();
+});
+
+it('clears the previous still bubble when the fish prop supplies the expression', () => {
+  reduced = true;
+  render(<BrandCompanion labels={labels} context="welcome" />);
+  const pet = screen.getByRole('button', { name: 'pet' });
+  for (let i = 0; i < 12; i++) fireEvent.click(pet);
+  expect(pet).toHaveAttribute('data-moru-reaction', 'magic-fish');
+  expect(pet.querySelector('[data-moru-emote]')).not.toHaveAttribute('data-emotion');
   expect(animations).toHaveLength(0);
 });
 

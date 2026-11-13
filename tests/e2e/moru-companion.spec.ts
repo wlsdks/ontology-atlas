@@ -45,8 +45,9 @@ test('a pending folder choice replaces play with the existing waiting state', as
 });
 
 test('petting has no pressed backdrop and returns to ambient play after a finite response', async ({ page }) => {
-  await page.goto('/en/?shell=desktop&guides=off');
+  await page.goto('/en/download/?guides=off');
   const pet = page.locator('[data-moru-companion]');
+  await expect(page.locator('[data-moru-playground]')).toHaveAttribute('data-moru-context', 'welcome');
   await pet.hover();
   await page.mouse.down();
   try {
@@ -61,12 +62,14 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
   } finally { await page.mouse.up(); }
   await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  await expect(pet.locator('[data-moru-emote]')).toHaveAttribute('data-emotion', 'heart');
+  await expect.poll(() => pet.locator('[data-moru-emote]').evaluate(element => Number(getComputedStyle(element).opacity))).toBe(1);
   await page.mouse.move(0, 0);
   await expect(pet).not.toHaveAttribute('data-moru-reaction');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).every(a => a.playState === 'running'))).toBe(true);
   // Every new expression must finish and hand back to the same companion,
   // without adding a control or leaving the reaction strip visible forever.
-  for (const gesture of ['clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'shy']) {
+  for (const gesture of ['clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish', 'shy']) {
     await pet.click();
     await expect(pet).toHaveAttribute('data-moru-reaction', gesture);
     await expect(pet).not.toHaveAttribute('data-moru-reaction');
@@ -100,6 +103,7 @@ test('reduced motion offers still feedback without starting any animation', asyn
   const pet = page.getByRole('button', { name: 'Pet Moru' });
   await pet.click();
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  await expect(pet.locator('[data-moru-emote]')).toHaveCSS('opacity', '1');
   await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
   await pet.click({ button: 'right' });
   await expect(page.getByRole('menuitem', { name: 'Moru · reduced motion' })).toBeDisabled();

@@ -12,6 +12,7 @@ import timeline from './moru-companion.json';
 import reactions from './moru-reactions.json';
 import { companionMotion, type CompanionContext } from './moru-companion-motion';
 import { companionPlayer } from './moru-companion-player';
+import styles from './moru-emote.module.css';
 
 /** Decorative company on entry/download screens, never evidence of work or progress. */
 export type CompanionLabels = { pause: string; resume: string; still: string; interact: string };
@@ -22,6 +23,7 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   const stage = useRef<HTMLDivElement>(null);
   const actor = useRef<HTMLButtonElement>(null);
   const facing = useRef<HTMLSpanElement>(null);
+  const emote = useRef<HTMLSpanElement>(null);
   const menuItem = useRef<HTMLButtonElement>(null);
   const { open: menuOpen, setOpen: setMenuOpen, ref: menuRef } = useDismissibleMenu();
   const bindMenuItem = useCallback((node: HTMLButtonElement | null) => {
@@ -50,13 +52,13 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
 
   useEffect(() => {
     const image = ref.current, reactionImage = reactionRef.current;
-    const bounds = stage.current, body = actor.current, face = facing.current;
-    if (!image || !reactionImage || !bounds || !body || !face) return;
+    const bounds = stage.current, body = actor.current, face = facing.current, bubble = emote.current;
+    if (!image || !reactionImage || !bounds || !body || !face || !bubble) return;
     const motion = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell), context);
     const options = { duration: motion.duration, iterations: Infinity };
     const animations = reducedMotion || typeof image.animate !== 'function' || typeof IntersectionObserver === 'undefined' ? []
-      : [image.animate(motion.sprite, options), body.animate(motion.movement, options), face.animate(motion.facing, options)];
-    const player = companionPlayer({ image, reactionImage, body, bounds, animations, context, reducedMotion, intent: () => intent.current });
+      : [image.animate(motion.sprite, options), body.animate(motion.movement, options), face.animate(motion.facing, options), bubble.animate(motion.emote, options)];
+    const player = companionPlayer({ image, reactionImage, body, bubble, bounds, animations, context, reducedMotion, intent: () => intent.current });
     playback.current = player;
     return () => {
       playback.current = null;
@@ -90,14 +92,21 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
           the lossy 64px runtime export. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={ref} src={withBasePath(`/brand/moru-companion.png?v=${timeline.digest}`)} alt="" aria-hidden="true" draggable={false}
-        width={timeline.cell * timeline.frames} height={timeline.cell}
+        width={timeline.cell * timeline.columns} height={timeline.cell * timeline.rows}
         className="pointer-events-none absolute top-0 left-0 max-w-none"
-        style={{ width: timeline.cell * timeline.frames, height: timeline.cell, imageRendering: 'pixelated' }} />
+        style={{ width: timeline.cell * timeline.columns, height: timeline.cell * timeline.rows, imageRendering: 'pixelated' }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={reactionRef} src={withBasePath(`/brand/moru-reactions.png?v=${reactions.digest}`)} alt="" aria-hidden="true" draggable={false} hidden
-        width={reactions.cell * reactions.frames} height={reactions.cell}
+        width={reactions.cell * reactions.columns} height={reactions.cell * reactions.rows}
         className="pointer-events-none absolute top-0 left-0 max-w-none"
-        style={{ width: reactions.cell * reactions.frames, height: reactions.cell, imageRendering: 'pixelated' }} />
+        style={{ width: reactions.cell * reactions.columns, height: reactions.cell * reactions.rows, imageRendering: 'pixelated' }} />
+      </span>
+      <span ref={emote} className={styles.bubble} data-moru-emote="" aria-hidden="true">
+        {(['heart', 'note', 'spark'] as const).map(glyph => (
+          // These wordless pixel drawings are decoration, never controls or status.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={glyph} data-glyph={glyph} src={withBasePath(`/brand/moru-emote-${glyph}.svg`)} width={24} height={24} alt="" draggable={false} />
+        ))}
       </span>
     </button>
     </div>

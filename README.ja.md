@@ -122,9 +122,11 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[62のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[70のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
 
 フォルダー選択画面では、モルが挨拶して小さなフォルダーを見せ、開いている間は遊ぶ動きを止め、既存の待機画面に切り替わります。ダウンロードページでは別のお迎え動作をします。移動するのはジャンプで足が地面を離れている間だけです。カーソルを重ねると、着地を終えてから待ちます。モルを押すと照れたり、拍手、ダンス、考え込むしぐさ、ハート、笑顔やひれのダンスで短く反応し、右クリックまたは Shift+F10 のメニューで一時停止できます。キャラクターの隣に再生ボタンは表示しません。動きを減らす設定では静止した表情で反応します。
+
+新しい32ポーズの動作には、お辞儀、ハイタッチ、帽子の挨拶が加わり、ダウンロード画面では魚の手品も楽しめます。クリックすると小さな吹き出しにハート、音符、きらめきが出て、戻るジャンプにも時々音符が現れます。処理待ちでは静かに待ちます。いないいないばあ、赤くなる顔、泡遊びはスタジオで確認できます。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -157,6 +159,14 @@ MoruはAtlasのピクセルアザラシのキャラクターで、コンパス�
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="ひれで踊るMoru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="浮かぶオントロジー模型を見るMoru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="オントロジー模型と踊るMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="お辞儀するモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="小さな帽子で挨拶するモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="魚の手品をするモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="いないいないばあをするモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="顔を赤くして落ち着くモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="ハイタッチするモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="フォルダーをのぞくモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="泡を追うモル" />
 
 
 </details>
