@@ -29,6 +29,7 @@ import styles from './first-run-chooser.module.css';
  */
 export function FirstRunPage() {
   const [chooserHelpOpen, setChooserHelpOpen] = useState(false);
+  const moru = useTranslations('moru');
   const t = useTranslations("firstRun");
   const tBriefing = useTranslations("gitBriefing");
   // Shared with the `/docs` chooser.
@@ -166,11 +167,11 @@ export function FirstRunPage() {
         <header
           className={`grid shrink-0 gap-3 ${choosingFolderHome ? "justify-items-start text-left" : "justify-items-center text-center"}`}
         >
-          <div className={`${styles.identity} inline-flex items-center gap-3`}>
-            <BrandPortrait expression="welcome" />
+          <div className={`${styles.identity} grid w-full gap-1`}>
             <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
               Ontology Atlas
             </span>
+            <BrandPortrait expression="welcome" labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still') }} />
           </div>
           <div className="grid gap-1.5">
             {!choosingFolderHome ? <p className="font-mono text-label uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">

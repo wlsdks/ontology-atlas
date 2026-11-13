@@ -75,7 +75,7 @@ Raw source files remain unchanged.
 
 | Existing moment | Source gesture | Playback and still endpoint |
 |---|---|---|
-| First folder-entry welcome | `wave` / greeting row | One finite cycle in the existing identity slot, then neutral |
+| Folder entry / download invitation | Native 128px `wave`, `tail`, `hop`, `blink`, `dance` | Bounded decorative play with pause/resume; not a work state |
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
@@ -93,7 +93,7 @@ accept meaning.
 Runtime rows contain twenty-four 64px cells. Their first/last pixels share a neutral
 pose, including WALK→READ and READ→SUCCESS boundaries. The verified sequence
 uses twenty-three steps over sixteen fast beats (1920ms), with a 2520ms
-completion hold. The welcome takes 3600ms; pending loops take 4320ms with
+completion hold. Pending loops take 4320ms with
 a quiet neutral hold. Catalogue timing is independent; compositions use 47
 poses with a shared neutral handoff between gestures.
 
@@ -101,7 +101,7 @@ poses with a shared neutral handoff between gestures.
 owns progress, cancellation or completion. First answer, Stop, permission, error
 and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
-The finite greeting never restarts on a re-render or after its completion.
+The decorative companion continuously traverses a measured playground in the entry and download invitation. It uses native 128px cells, preserves jump headroom and keeps its timing on re-render and resize. Pointer/focus interaction holds the moving button still; pressing it toggles pause. Offscreen/hidden state pauses all three compositor animations (pose strip, travel and facing); reduced motion cancels them to the neutral frame. It never overlays map ink, navigation or documents.
 No mark roams over graph ink; no idle state pretends work is occurring.
 
 ## Fan-out
@@ -109,9 +109,9 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Surface | Asset |
 |---|---|
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
-| Download closing invitation | Static full Moru, outside graph illustrations |
+| Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
-| First run / missing page | Finite welcome / static curious `BrandPortrait` |
+| First run / missing page | Playful companion / static curious `BrandPortrait` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og-image.png`, 1200×630 |
@@ -166,7 +166,7 @@ The repository [license](../../LICENSE) remains unchanged.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
   a nonempty 50-clip inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
-  cover evidence, Stop, visibility, reduced motion and finite greeting behavior.
+  cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through
   [the motion procedure](../engineering/motion-recording.md); still captures alone
   do not prove temporal quality.
