@@ -558,6 +558,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   };
   const project = projectName(input);
   if (project) place(project);
+  const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
   // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
   const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
   const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
@@ -572,7 +573,10 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       if (crossed(at, block) && !crossed(at, above) && !onDisc) block = above;
     }
     for (const n of block) {
-      titles.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+      const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
+      // The census row is the one line of a title block that may go: it gives way to the project's name.
+      if (n.role === "units" && projectBox !== null && box.minX < projectBox.maxX && projectBox.minX < box.maxX && box.minY < projectBox.maxY && projectBox.minY < box.maxY) continue;
+      titles.add(box);
       place(n);
     }
   }
