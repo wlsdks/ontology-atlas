@@ -54,7 +54,7 @@ function ActionControl({ action, filled, testId }: { action: JudgmentAction; fil
 
 /**
  * What a person must settle first, above the definition and only when a fact holds. The first item
- * shows its note and carries the one action; the rest fold under "그 밖에 N". Nothing here says the
+ * shows its note and carries the one action; the rest fold under one "+N more" line. Nothing here says the
  * concept is wrong; the lists below stay.
  */
 export function JudgmentZone({ items, actionFilled }: { items: readonly JudgmentItem[]; actionFilled: boolean }) {
