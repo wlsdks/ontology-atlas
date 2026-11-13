@@ -26,6 +26,8 @@ export interface PlacedName {
   pieces?: readonly NamePiece[];
   /** A lit name a lit line crosses on every side it may take: it draws on the canvas ground. */
   backed?: boolean;
+  /** A name set a row above or below its concept: it draws a hairline back to the mark. */
+  leader?: boolean;
 }
 
 export interface NameAdmission {
@@ -189,6 +191,12 @@ export function linePolylines(
 }
 
 /** Liang–Barsky: whether the segment from (x0, y0) to (x1, y1) enters `b`. */
+/** A leader's hairline in screen pixels about its mark's centre: from the mark's rim to one pad short of the text. */
+export function leaderSegment(n: PlacedName, markRadius: number, padPx: number): { x0: number; y0: number; x1: number; y1: number } {
+  const reach = Math.hypot(n.dx, n.dy);
+  return { x0: (n.dx / reach) * markRadius, y0: (n.dy / reach) * markRadius, x1: n.dx - Math.sign(n.dx) * padPx, y1: n.dy };
+}
+
 export function segmentCrossesBox(x0: number, y0: number, x1: number, y1: number, b: Box): boolean {
   let enter = 0;
   let leave = 1;
@@ -355,7 +363,16 @@ function sideNames(input: NameShape, id: string, role: "capability" | "element",
   if (!input.named.has(id)) return sides;
   const below = x + px / 2;
   const centred = (dy: number): PlacedName[] => [{ id, role, text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }];
-  return [...sides, centred(below), centred(-below)];
+  const rise = px + t.namePadPx * 2;
+  const diagonal = (side: 1 | -1, dy: number): PlacedName[] => [{
+    id, role, text, font: f, dx: side * x, dy, align: side === 1 ? "left" : "right",
+    box: { minX: side === 1 ? x - t.namePadPx : -x - w - t.namePadPx, maxX: side === 1 ? x + w + t.namePadPx : -x + t.namePadPx, minY: dy - half, maxY: dy + half },
+    leader: true,
+  }];
+  const onRow = [...sides, centred(below), centred(-below)];
+  // Only a selection's far end leaves its row: a pointed-at name must stay under the pointer.
+  if (!input.selected || id === input.focusId) return onRow;
+  return [...onRow, diagonal(1, -rise), diagonal(-1, -rise), diagonal(1, rise), diagonal(-1, rise)];
 }
 
 /** Text runs with each digit centred in a cell as wide as the widest digit, so figures align as `tnum` would. */
@@ -540,6 +557,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const titles = new Occupancy(CELL_PX / scale);
   const words = new Occupancy(CELL_PX / scale);
   const conceptNames = new Occupancy(CELL_PX / scale);
+  const glyphs: Box[] = [];
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const discs: [string, number][] = [];
@@ -569,6 +587,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
     grid.add(box);
     words.add(box);
+    glyphs.push(worldBox(layout.positions.get(n.id)!, grown(n.box, -tokens.namePadPx), scale));
     names.push(n);
     ids.add(n.id);
   };
@@ -628,14 +647,20 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
     const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
     const offRing = (group: readonly PlacedName[]) => !(yields && cand.element) || !onRing(at, group);
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group);
+    // A leader may not run through a name already set down. O(names) per off-row try.
+    const leaderClear = (group: readonly PlacedName[]) => !group.some((n) => {
+      if (!n.leader) return false;
+      const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
+      return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
+    });
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     if (!fit && force && tries.length > 0) {
-      const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
+      const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
       const offMarks = cand.element ? apart.filter((group) => !hits(marks, at, group)) : apart;
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
-      const legible = yields ? offTitle.filter((group) => !overprints(at, group)) : offTitle;
+      const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
       const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : legible;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
