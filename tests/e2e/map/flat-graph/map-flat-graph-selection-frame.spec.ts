@@ -297,28 +297,35 @@ test("no map name is drawn under the key, the explorer, the detail panel, the ga
   await page.setViewportSize({ width: 1512, height: 949 });
   await openVault(page);
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
-  const { key } = await chromeBoxes(page);
+  const { key, explorer, tools } = await chromeBoxes(page);
   expect(key, "the key shows below the map").not.toBeNull();
-  const rest = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+  expect(explorer, "the explorer is open").not.toBeNull();
+  expect(tools, "the tool row shows").not.toBeNull();
   const centre = (b: Box) => ({ x: (b.minX + b.maxX) / 2, y: (b.minY + b.maxY) / 2 });
-  // The domain name a pan brings onto the key's words by the shortest move.
-  const name = rest.texts.filter((t) => t.role === "domain").map((t) => ({ t, dx: centre(key!).x - centre(t.box).x, dy: centre(key!).y - centre(t.box).y }))
-    .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))[0]!;
-  const disc = (probe: DialProbe) => probe.discs.find((d) => d.id === name.t.id)!;
-  const offset = { x: name.t.box.minX - disc(rest).x, y: name.t.box.minY - disc(rest).y };
-  const from = { x: box.x + box.width / 2 - name.dx / 2, y: box.y + box.height / 2 - name.dy / 2 };
-  await page.mouse.move(from.x, from.y);
-  await page.mouse.down();
-  await page.mouse.move(from.x + name.dx, from.y + name.dy, { steps: 20 });
-  expect(await page.evaluate(() => window.__atlasMap!.interaction?.().kind), "the press pans the map").toBe("pan");
-  await page.mouse.up();
-  await waitForMapStill(page);
-  const panned = disc(await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe));
-  const width = name.t.box.maxX - name.t.box.minX;
-  const height = name.t.box.maxY - name.t.box.minY;
-  const lands = { minX: panned.x + offset.x, maxX: panned.x + offset.x + width, minY: panned.y + offset.y, maxY: panned.y + offset.y + height };
-  expect(overlaps(lands, key!), `${name.t.text}'s name lands on the key's words`).toBe(true);
-  expect(await drawnUnderChrome(page), "names drawn under the chrome at rest").toEqual([]);
+  // Pans the domain name nearest `at` onto it by the shortest move, and checks it landed there.
+  const panNameOnto = async (at: { x: number; y: number }, what: string, cover: Box) => {
+    const rest = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+    const name = rest.texts.filter((t) => t.role === "domain").map((t) => ({ t, dx: at.x - centre(t.box).x, dy: at.y - centre(t.box).y }))
+      .sort((a, b) => Math.hypot(a.dx, a.dy) - Math.hypot(b.dx, b.dy))[0]!;
+    const disc = (probe: DialProbe) => probe.discs.find((d) => d.id === name.t.id)!;
+    const offset = { x: name.t.box.minX - disc(rest).x, y: name.t.box.minY - disc(rest).y };
+    const from = { x: box.x + box.width / 2 - name.dx / 2, y: box.y + box.height / 2 - name.dy / 2 };
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(from.x + name.dx, from.y + name.dy, { steps: 20 });
+    expect(await page.evaluate(() => window.__atlasMap!.interaction?.().kind), "the press pans the map").toBe("pan");
+    await page.mouse.up();
+    await waitForMapStill(page);
+    const panned = disc(await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe));
+    const width = name.t.box.maxX - name.t.box.minX;
+    const height = name.t.box.maxY - name.t.box.minY;
+    const lands = { minX: panned.x + offset.x, maxX: panned.x + offset.x + width, minY: panned.y + offset.y, maxY: panned.y + offset.y + height };
+    expect(overlaps(lands, cover), `${name.t.text}'s name lands on ${what}`).toBe(true);
+    expect(await drawnUnderChrome(page), `names drawn under the chrome with a name on ${what}`).toEqual([]);
+  };
+  await panNameOnto(centre(key!), "the key's words", key!);
+  await panNameOnto({ x: explorer!.maxX, y: box.height / 2 }, "the explorer's edge", explorer!);
+  await panNameOnto(centre(tools!), "the tool row", tools!);
 
   await selectOnMap(page, await hubNearPanel(page));
   expect(await drawnUnderChrome(page), "names drawn under the chrome with a selection").toEqual([]);

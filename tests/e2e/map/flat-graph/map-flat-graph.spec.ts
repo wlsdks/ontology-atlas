@@ -182,14 +182,19 @@ test("selecting a capability lights and names what it needs and what needs it, a
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
   const free = selected.freeRect;
-  // A far end whose disc lies under a panel or the key keeps its light, but its name yields to that chrome.
+  // A far end keeps its light anywhere; its name draws only where no panel covers it, and a drawn one sits between the panels.
   const inFree = (d: { x: number; y: number }) => d.x > free.minX && d.x < free.maxX && d.y > free.minY && d.y < free.maxY;
+  let named = 0;
   for (const end of [...needs, ...neededBy]) {
     const disc = selected.discs.find((d) => d.id === end);
     if (!disc) continue;
     expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
-    if (inFree(disc)) expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
+    const names = selected.texts.filter((t) => t.id === end && t.role !== "domain");
+    for (const t of names) expect(t.box.minX >= free.minX - 0.5 && t.box.maxX <= free.maxX + 0.5, `${end}'s name ${t.text} sits between the panels`).toBe(true);
+    if (names.length > 0) named += 1;
+    else expect(inFree(disc), `${end} is unnamed only where its name would reach a panel`).toBe(false);
   }
+  expect(named, "the selection names at least one far end").toBeGreaterThan(0);
 
   const own = selected.texts.filter((t) => t.id === id && t.role !== "domain");
   expect(own.length, "the selection is named").toBeGreaterThan(0);
