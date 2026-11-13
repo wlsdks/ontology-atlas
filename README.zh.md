@@ -124,7 +124,7 @@ pnpm checks:changed -- --run
 
 Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[50个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
-在开始画面和下载页面，Moru 会左右移动、跳跃和跳舞。点击 Moru 可暂停或播放；启用减少动态效果后会保持静止。
+在开始画面和下载页面，Moru 会打招呼、环顾四周并展示小文件夹，等待你选择。只有双脚离地的短跳跃期间才会移动。点击 Moru 可暂停或播放；启用减少动态效果后会保持静止。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 

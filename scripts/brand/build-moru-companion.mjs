@@ -9,7 +9,7 @@ const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 export async function buildMoruCompanion() {
   const root = 'assets/brand/moru';
   const catalogue = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
-  const sequence = ['wave', 'blink', 'tail', 'hop', 'dance'];
+  const sequence = ['wave', 'blink', 'tilt', 'hop', 'folder-open'];
   const cell = catalogue.nativeCell;
   let frame = 0;
   const layers = [], clips = {};

@@ -30,7 +30,7 @@ Document excerpts report omitted prose with an exact, hash-bound source read;
 truncated evidence requires review and does not authorize meaning writes.
 
 Folder entry and the download invitation use a native-resolution Moru playground.
-Moru wanders, hops, blinks and dances inside its own measured bounds. Pressing the
+Moru greets, looks around, presents a small folder and waits for a choice. Its short hops move only during the airborne poses; planted feet stay in place. Pressing the
 character pauses/resumes play; pointer/keyboard interaction, hidden/offscreen state
 and reduced motion suspend movement. The missing-page
 screen uses a static curious portrait in its existing icon slot. These expressions

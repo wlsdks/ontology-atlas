@@ -31,8 +31,7 @@ export function BrandCompanion({ labels }: { labels: CompanionLabels }) {
     const image = ref.current;
     const bounds = stage.current, body = actor.current, face = facing.current;
     if (!image || !bounds || !body || !face || reducedMotion || typeof image.animate !== 'function' || typeof IntersectionObserver === 'undefined') return;
-    const easing = getComputedStyle(bounds).getPropertyValue('--motion-ease').trim();
-    const motion = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell), easing);
+    const motion = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell));
     const options = { duration: motion.duration, iterations: Infinity };
     const animations = [image.animate(motion.sprite, options), body.animate(motion.movement, options), face.animate(motion.facing, options)];
     let visible = false;
@@ -50,7 +49,7 @@ export function BrandCompanion({ labels }: { labels: CompanionLabels }) {
     });
     observer.observe(bounds);
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
-      const next = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell), easing);
+      const next = companionMotion(Math.max(0, bounds.clientWidth - timeline.cell));
       (animations[1].effect as KeyframeEffect).setKeyframes(next.movement);
     });
     resize?.observe(bounds);

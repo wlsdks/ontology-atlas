@@ -75,7 +75,7 @@ Raw source files remain unchanged.
 
 | Existing moment | Source gesture | Playback and still endpoint |
 |---|---|---|
-| Folder entry / download invitation | Native 128px `wave`, `tail`, `hop`, `blink`, `dance` | Bounded decorative play with pause/resume; not a work state |
+| Folder entry / download invitation | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` | Bounded decorative play with pause/resume; not a work state |
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
@@ -101,7 +101,7 @@ poses with a shared neutral handoff between gestures.
 owns progress, cancellation or completion. First answer, Stop, permission, error
 and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
-The decorative companion continuously traverses a measured playground in the entry and download invitation. It uses native 128px cells, preserves jump headroom and keeps its timing on re-render and resize. Pointer/focus interaction holds the moving button still; pressing it toggles pause. Offscreen/hidden state pauses all three compositor animations (pose strip, travel and facing); reduced motion cancels them to the neutral frame. It never overlays map ink, navigation or documents.
+The decorative companion greets, looks around, presents a small folder and waits in the entry and download invitation. This is an invitation to choose a folder, not evidence that a folder was opened or read. Horizontal travel is capped at one quarter of its native cell (32px), happens only while the hop art is airborne, and holds through anticipation and landing. The hop neutral dwell is shortened for a small preparatory bounce; the authored body poses are preserved. It uses native 128px cells, preserves jump headroom and keeps its timing on re-render and resize. Pointer/focus interaction holds the moving button still; pressing it toggles pause. Offscreen/hidden state pauses all three compositor animations (pose strip, travel and facing); reduced motion cancels them to the neutral frame. It never overlays map ink, navigation or documents.
 No mark roams over graph ink; no idle state pretends work is occurring.
 
 ## Fan-out
