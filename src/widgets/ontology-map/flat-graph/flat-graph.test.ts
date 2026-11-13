@@ -560,6 +560,22 @@ describe("domain reach", () => {
     expect([...att.named].sort()).toEqual(["d1", "d2", "d3"]);
   });
 
+  it.each(VAULTS)("prints no concept name over another for any selection in the %s vault", (_name, vault) => {
+    const layout = layoutOf(vault);
+    const overprinted: string[] = [];
+    let named = 0;
+    for (const scale of [0.37, 0.75]) {
+      for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
+        const admitted = namesAt(vault, layout, scale, id);
+        const concepts = admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project");
+        named += concepts.length;
+        for (const pair of overlapping(concepts, layout, scale)) overprinted.push(`${id} at ${scale}: ${pair}`);
+      }
+    }
+    expect(named, "selections name concepts").toBeGreaterThan(0);
+    expect(overprinted).toEqual([]);
+  });
+
   it("counts exactly the partner domains the detail panel lists, on every bundled vault", () => {
     for (const manifest of [dogfoodManifest, storefrontManifest]) {
       const d = deriveOntologyFromVault(manifest as unknown as VaultManifest);

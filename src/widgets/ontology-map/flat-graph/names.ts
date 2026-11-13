@@ -539,6 +539,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const grid = new Occupancy(CELL_PX / scale);
   const titles = new Occupancy(CELL_PX / scale);
   const words = new Occupancy(CELL_PX / scale);
+  const conceptNames = new Occupancy(CELL_PX / scale);
   const names: PlacedName[] = [];
   const ids = new Set<string>();
   const discs: [string, number][] = [];
@@ -616,8 +617,8 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
     !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
-  // the focus may sit on a disc but not on a name; an element prefers a side clear of discs, never
-  // sits on the selection's ring, and drops when no side is left.
+  // the focus may sit on a disc or a title block but never on a concept's name, and drops when no
+  // side is left; an element prefers a side clear of discs and never sits on the selection's ring.
   const tryPlace = (cand: Candidate, force: boolean) => {
     const at = layout.positions.get(cand.id)!;
     const tries = cand.tries();
@@ -631,10 +632,14 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
       const offMarks = cand.element ? apart.filter((group) => !hits(marks, at, group)) : apart;
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
-      const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : clear.length > 0 ? clear : tries;
+      const legible = yields ? (clear.length > 0 ? clear : tries).filter((group) => !hits(conceptNames, at, group)) : clear.length > 0 ? clear : tries;
+      const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : legible;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
-    if (fit) for (const n of fit) place(n);
+    if (fit) for (const n of fit) {
+      place(n);
+      conceptNames.add(worldBox(at, n.box, scale));
+    }
   };
   // The focus wins over every name, then capabilities over elements.
   const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
