@@ -23,12 +23,7 @@ const PAINT_KEYS: readonly (keyof FlatGraphPaintTokens)[] = [
 export const FLAT_GRAPH_LAYOUT_VARS = LAYOUT_KEYS.map((key) => ({ key, cssVar: `--map-graph-${kebab(key)}` }));
 export const FLAT_GRAPH_PAINT_VARS = PAINT_KEYS.map((key) => ({ key, cssVar: `--map-graph-${kebab(key)}` }));
 /** Spelled out: Tailwind emits an `@theme` variable only when a scanned source names it. */
-export const DOMAIN_HUE_VARS = [
-  "--color-domain-1-rgb", "--color-domain-2-rgb", "--color-domain-3-rgb", "--color-domain-4-rgb",
-  "--color-domain-5-rgb", "--color-domain-6-rgb", "--color-domain-7-rgb", "--color-domain-8-rgb",
-] as const;
-
-const INK_VARS: readonly { key: Exclude<keyof FlatGraphInks, "hues">; cssVar: string }[] = [
+const INK_VARS: readonly { key: keyof FlatGraphInks; cssVar: string }[] = [
   { key: "project", cssVar: "--map-graph-project" },
   { key: "discFill", cssVar: "--map-graph-disc-fill" },
   { key: "arc", cssVar: "--map-graph-arc" },
@@ -39,12 +34,6 @@ const INK_VARS: readonly { key: Exclude<keyof FlatGraphInks, "hues">; cssVar: st
   { key: "warning", cssVar: "--color-status-warning" },
 ];
 
-function rgbTriple(raw: string): string | null {
-  const parts = raw.trim().split(/\s+/).map(Number);
-  if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
-  const hex = (n: number) => Math.round(Math.min(255, Math.max(0, n))).toString(16).padStart(2, "0");
-  return `#${hex(parts[0]!)}${hex(parts[1]!)}${hex(parts[2]!)}`;
-}
 
 export function resolveFlatGraphTokens(get: (cssVar: string) => string): FlatGraphTokens {
   const missing: string[] = [];
@@ -60,12 +49,7 @@ export function resolveFlatGraphTokens(get: (cssVar: string) => string): FlatGra
   };
   const layout = numbers(FLAT_GRAPH_LAYOUT_VARS) as FlatGraphLayoutTokens;
   const paint = numbers(FLAT_GRAPH_PAINT_VARS) as FlatGraphPaintTokens;
-  const hues = DOMAIN_HUE_VARS.map((cssVar) => {
-    const hex = rgbTriple(get(cssVar));
-    if (hex === null) missing.push(cssVar);
-    return hex ?? "";
-  });
-  const inks = { hues } as unknown as FlatGraphInks;
+  const inks = {} as FlatGraphInks;
   for (const { key, cssVar } of INK_VARS) {
     const ink = get(cssVar).trim();
     if (!ink) missing.push(cssVar);

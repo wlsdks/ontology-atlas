@@ -24,12 +24,11 @@ import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
-import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
-import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
+import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
 
 const KINDS = new Set(["project", "domain", "capability", "element"]);
@@ -126,43 +125,10 @@ function overlapping(names: readonly PlacedName[], layout: FlatGraphLayout, scal
 }
 
 describe("flat graph tokens", () => {
-  it("resolves every token from the stylesheets and names one hue per index", () => {
-    expect(TOKENS.inks.hues).toHaveLength(DOMAIN_HUE_COUNT);
-    expect(DOMAIN_HUE_VARS).toHaveLength(DOMAIN_HUE_COUNT);
-    expect(new Set(TOKENS.inks.hues).size).toBe(DOMAIN_HUE_COUNT);
-  });
-
   it("refuses a missing token by name", () => {
     const values = cssValues();
     values.delete("--map-graph-cap-spacing");
     expect(() => resolveFlatGraphTokens((v) => values.get(v) ?? "")).toThrow(/--map-graph-cap-spacing/);
-  });
-});
-
-describe("domain hues", () => {
-  const ring = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
-  const neighbours = (a: string, b: string) => {
-    const d = Math.abs(ring.indexOf(a) - ring.indexOf(b));
-    return d === 1 || d === ring.length - 1;
-  };
-
-  it("gives adjacent domains different hues past eight domains", () => {
-    const hues = assignDomainHues(ring, neighbours, null);
-    for (const id of ring) expect(hues.get(id)).toBeLessThan(DOMAIN_HUE_COUNT);
-    ring.forEach((id, k) => expect(hues.get(id)).not.toBe(hues.get(ring[(k + 1) % ring.length]!)));
-  });
-
-  it("gives eight or fewer domains eight distinct hues while memory holds other domains", () => {
-    const eight = ring.slice(0, DOMAIN_HUE_COUNT);
-    const hues = assignDomainHues(eight, () => false, new Map([["x", 0], ["y", 3]]));
-    expect(new Set(eight.map((id) => hues.get(id))).size).toBe(eight.length);
-  });
-
-  it("keeps a remembered hue and gives a new domain the least-used index its neighbours leave free", () => {
-    const hues = assignDomainHues(["a", "b", "c"], () => true, new Map([["a", 5], ["c", 0]]));
-    expect(hues.get("a")).toBe(5);
-    expect(hues.get("c")).toBe(0);
-    expect(hues.get("b")).toBe(1);
   });
 });
 
@@ -191,7 +157,6 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
   it("is deterministic", () => {
     const again = layoutOf(model);
     expect([...again.positions]).toEqual([...layout.positions]);
-    expect([...again.hueByDomain]).toEqual([...layout.hueByDomain]);
   });
 
   it("places every concept and keeps it inside the extent", () => {
@@ -226,13 +191,6 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     }
   });
 
-  it("gives neighbouring clusters different hues", () => {
-    const ids = layout.clusters.map((c) => c.domainId);
-    for (let k = 0; k + 1 < ids.length && ids.length <= DOMAIN_HUE_COUNT; k += 1) {
-      expect(layout.hueByDomain.get(ids[k]!)).not.toBe(layout.hueByDomain.get(ids[k + 1]!));
-    }
-  });
-
   it("holds a pinned domain and its capabilities in place", () => {
     const domain = layout.clusters[0]!;
     const cap = domain.items.find((it) => !it.direct)!;
@@ -241,11 +199,9 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     const pinned = layoutFlatGraph(model, layout.clusters.map((c) => c.domainId), TOKENS.layout, {
       positions: new Map([[domain.domainId, pinnedAt], [cap.id, capAt]]),
       seeds: new Map(),
-      hueByDomain: new Map([[domain.domainId, 6]]),
     });
     expect(pinned.positions.get(domain.domainId)).toEqual(pinnedAt);
     expect(pinned.positions.get(cap.id)).toEqual(capAt);
-    expect(pinned.hueByDomain.get(domain.domainId)).toBe(6);
   });
 
   it("admits names without overlap at rest and under a focus", () => {
@@ -309,12 +265,6 @@ describe("session memory", () => {
   const derived = deriveOntologyFromVault(storefrontManifest as unknown as VaultManifest);
   const nodes = derived.nodes as Node[];
   const edges = derived.edges as Edge[];
-  const partOf = (every: number) => {
-    const kept = new Set(nodes.filter((n, i) => (n.kind !== "capability" && n.kind !== "element") || i % every === 0).map((n) => n.id));
-    return modelOf(nodes.filter((n) => kept.has(n.id)), edges.filter((e) => kept.has(e.from) && kept.has(e.to)));
-  };
-  const FACE = "sans-serif";
-  const build = (model: DialModel) => buildFlatGraphScene(model, TOKENS.layout, flatGraphPins(model, FACE)).graph!;
 
   it("pins nothing measured in another face, so names settling in the product font land on a fresh open's picture", () => {
     const full = modelOf(nodes, edges);
@@ -329,37 +279,9 @@ describe("session memory", () => {
     settleFlatGraph(full, buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "fallback"), frameAt(5)).graph!, "settled", "fallback");
     const late = buildFlatGraphScene(full, TOKENS.layout, flatGraphPins(full, "product"), frameAt(7)).graph!;
     expect([...late.positions]).toEqual([...fresh.positions]);
-    expect([...late.hueByDomain]).toEqual([...fresh.hueByDomain]);
   });
 
-  it("gives every domain its own hue on a one-shot open, a streamed read, and after another folder's memory", () => {
-    const bundled = deriveOntologyFromVault(dogfoodManifest as unknown as VaultManifest);
-    const own = bundled.nodes as Node[];
-    const ownEdges = bundled.edges as Edge[];
-    const full = modelOf(own, ownEdges);
-    const caps = own.filter((n) => n.kind === "capability");
-    const half = new Set(own.filter((n) => n.kind !== "capability" || caps.indexOf(n) % 2 === 0).map((n) => n.id));
-    const partial = modelOf(own.filter((n) => half.has(n.id)), ownEdges.filter((e) => half.has(e.from) && half.has(e.to)));
-    const distinct = (layout: FlatGraphLayout) => new Set(layout.hueByDomain.values()).size;
-    claimFlatGraphFolder("distinct-one-shot");
-    expect(distinct(build(full))).toBe(full.domains.length);
-    claimFlatGraphFolder("distinct-streamed");
-    settleFlatGraph(partial, build(partial), "provisional", FACE);
-    expect(distinct(build(full))).toBe(full.domains.length);
-    claimFlatGraphFolder("distinct-replaced");
-    const other = modelOf(nodes, edges);
-    settleFlatGraph(other, build(other), "settled", FACE);
-    expect(distinct(build(full))).toBe(full.domains.length);
-  });
 
-  it("keeps every domain's hue when a changed folder pins no position", () => {
-    claimFlatGraphFolder("hues");
-    const before = partOf(2);
-    const first = build(before);
-    settleFlatGraph(before, first, "settled", FACE);
-    const after = build(modelOf(nodes, edges));
-    for (const [domainId, hue] of first.hueByDomain) expect(after.hueByDomain.get(domainId), domainId).toBe(hue);
-  });
 });
 
 describe("selection reach", () => {
@@ -555,12 +477,12 @@ describe("a lit element's name beside the selection", () => {
     ]);
     const item = (id: string, domainId: string, elementIds: string[] = []) => ({ id, domainId, direct: false, elementIds });
     const clusters = [
-      { domainId: "d1", centre: positions.get("d1")!, footprint: 100, hue: 0, items: [item("a", "d1"), item("c", "d1", ["y"])] },
-      { domainId: "d2", centre: positions.get("d2")!, footprint: 100, hue: 1, items: [item("k1", "d2"), item("k2", "d2")] },
+      { domainId: "d1", centre: positions.get("d1")!, footprint: 100, items: [item("a", "d1"), item("c", "d1", ["y"])] },
+      { domainId: "d2", centre: positions.get("d2")!, footprint: 100, items: [item("k1", "d2"), item("k2", "d2")] },
     ];
     const layout: FlatGraphLayout = {
       positions, itemAt: new Map(), clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])),
-      hueByDomain: new Map([["d1", 0], ["d2", 1]]), orphanIds: [], extent: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 },
+      orphanIds: [], extent: { minX: -1000, maxX: 1000, minY: -1000, maxY: 1000 },
     };
     return admittedNames({
       model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,

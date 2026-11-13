@@ -48,7 +48,7 @@ async function streamReads(page: Page): Promise<void> {
 
 interface Picture {
   at: Map<string, { x: number; y: number }>;
-  hue: Map<string, string>;
+  rim: Map<string, string>;
 }
 
 const MARKS = DOMAINS.length * (1 + CAPABILITIES_PER_DOMAIN);
@@ -66,12 +66,12 @@ async function settledPicture(page: Page): Promise<Picture> {
   });
   await waitForMapStill(page);
   const rims = () => page.evaluate(() => (window.__atlasMap!.dial!() as DialProbe).discs.map((d) => [d.id, d.ink] as [string, string]));
-  let hue = await rims();
+  let rim = await rims();
   await expect.poll(async () => {
-    const before = hue;
+    const before = rim;
     await waitForMapStill(page);
-    hue = await rims();
-    return JSON.stringify(hue) === JSON.stringify(before);
+    rim = await rims();
+    return JSON.stringify(rim) === JSON.stringify(before);
   }, "rim inks stop changing").toBe(true);
   const at = await page.evaluate(() => {
     const nodes = window.__atlasMap!.nodes();
@@ -79,7 +79,7 @@ async function settledPicture(page: Page): Promise<Picture> {
     return nodes.filter((n) => n.kind === "domain" || n.kind === "capability").map((n) => [n.id, { x: n.x - project.x, y: n.y - project.y }] as const);
   });
   const domains = new Set(at.map(([id]) => id));
-  return { at: new Map(at), hue: new Map(hue.filter(([id]) => domains.has(id))) };
+  return { at: new Map(at), rim: new Map(rim.filter(([id]) => domains.has(id))) };
 }
 
 async function pickFolder(page: Page): Promise<void> {
@@ -126,9 +126,10 @@ test("one folder draws one Flat picture whichever sample showed first, however i
   await session.close();
 
   const [reference, ...others] = [...pictures];
-  expect(new Set(reference![1].hue.values()).size, "eight domains, eight hues").toBe(DOMAINS.length);
+  expect(reference![1].rim.size, "every drawn mark has a rim to compare").toBe(MARKS);
+  expect(new Set(reference![1].rim.values()).size, "the resting map gives every mark the same ink").toBe(1);
   for (const [how, picture] of others) {
     expect.soft(shapeDrift(reference![1], picture), `${how}: positions against ${reference![0]}`).toBeLessThan(SHAPE_EPSILON);
-    expect.soft(picture.hue, `${how}: hue per domain`).toEqual(reference![1].hue);
+    expect.soft(picture.rim, `${how}: rim ink per domain`).toEqual(reference![1].rim);
   }
 });

@@ -187,11 +187,6 @@ describe("topology ink contrast contract", () => {
 });
 
 describe("Flat graph inks", () => {
-  const rgbHex = (name: string): string => {
-    const parts = readRaw(name).split(/\s+/).map(Number);
-    expect(parts, `--${name} is an "r g b" triple`).toHaveLength(3);
-    return `#${parts.map((n) => n.toString(16).padStart(2, "0")).join("")}`;
-  };
   const hueOf = (hex: string): number => {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
     const max = Math.max(r, g, b);
@@ -201,14 +196,15 @@ describe("Flat graph inks", () => {
     return (h * 60 + 360) % 360;
   };
   const hueGap = (a: number, b: number) => Math.min(Math.abs(a - b), 360 - Math.abs(a - b));
-  /** A domain hue may not read as a status: it keeps this many degrees from amber and red. */
+  /** A graph ink may not read as a status: it keeps this many degrees from amber and red. */
   const STATUS_HUE_GAP = 15;
-  const DOMAIN_HUES = Array.from({ length: 8 }, (_, i) => `color-domain-${i + 1}-rgb`);
+  /** The map rests achromatic, so these are every ink on it that carries a hue of its own. */
+  const GRAPH_HUES = ["map-graph-project", "map-graph-arc", "map-graph-reach"];
 
-  it("each domain hue clears the non-text floor and stays apart from the status hues", () => {
+  it("each coloured graph ink clears the non-text floor and stays apart from the status hues", () => {
     const statuses = [readToken("color-status-warning"), readToken("color-status-danger")].map(hueOf);
-    for (const token of DOMAIN_HUES) {
-      const hex = rgbHex(token);
+    for (const token of GRAPH_HUES) {
+      const hex = readToken(token);
       expect(contrast(hex, CANVAS), token).toBeGreaterThanOrEqual(MIN_CONTRAST);
       for (const status of statuses) expect(hueGap(hueOf(hex), status), `${token} vs status hue`).toBeGreaterThanOrEqual(STATUS_HUE_GAP);
     }
@@ -218,5 +214,15 @@ describe("Flat graph inks", () => {
     for (const token of ["map-graph-name-strong", "map-graph-name"]) {
       expect(contrast(readToken(token), CANVAS), token).toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
     }
+  });
+
+  it("a count caption clears the text floor at the share the map rests on", () => {
+    const share = Number(readRaw("map-graph-rest-hue"));
+    expect(share, "--map-graph-rest-hue is a number").toBeGreaterThan(0);
+    const over = (hex: string): string => {
+      const mix = [1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * share + parseInt(CANVAS.slice(i, i + 2), 16) * (1 - share)));
+      return `#${mix.map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+    };
+    expect(contrast(over(readToken("map-graph-name")), CANVAS), "map-graph-name at the rest share").toBeGreaterThanOrEqual(MIN_TEXT_CONTRAST);
   });
 });
