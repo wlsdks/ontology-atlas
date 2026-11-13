@@ -11,7 +11,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, domainLineTrimScale, domainStarReach, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, emptyArcPath, glowSprite, graphDiscRadiusPx, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -903,6 +903,7 @@ function hubCaptionFont(px: number, family: string): string {
  * closure kept across frames would hold the frame that made it, and through it an unmounted canvas.
  */
 const stepGrowthNow = new Float64Array(1);
+const LINE_TRIMS = new Float64Array(2);
 function stepRadius(id: string): number {
   return radiusAt(id, stepGrowthNow[0]!);
 }
@@ -925,21 +926,10 @@ function focusLinks(motion: GraphMotion): void {
     if (!a || !b) continue;
     const kind = LINE_KINDS.indexOf(line.kind) + 1;
     const tapered = line.kind === "needs" || line.kind === "neededBy";
-    let trimStart = discRadius(line.from);
-    let trimEnd = discRadius(line.to) + (tapered ? P.arcTrimPx / 2 : 0);
     const betweenDomains = F.model.domainById.has(line.from) && F.model.domainById.has(line.to);
-    if (betweenDomains) {
-      // A domain's own end leaves from outside its lit member star; the partner's end reaches its disc.
-      const own = line.kind === "needs" ? line.from : line.to;
-      const star = domainStarReach(F.layout, own) * F.scale + P.capDiscMaxPx * F.growth;
-      if (own === line.from) trimStart = Math.max(trimStart, star);
-      else trimEnd = Math.max(trimEnd, star + P.arcTrimPx / 2);
-      const fit = domainLineTrimScale(Math.hypot(b.x - a.x, b.y - a.y), trimStart, trimEnd);
-      trimStart *= fit;
-      trimEnd *= fit;
-    }
+    litLineTrimsInto(LINE_TRIMS, F.layout, line, Math.hypot(b.x - a.x, b.y - a.y), F.scale, F.growth, discRadius(line.from), discRadius(line.to), P);
     const width = tapered ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
-    const mark = arcMark(a, b, P.lineBow, trimStart, trimEnd, width, P.lineAlpha, false, 0, kind);
+    const mark = arcMark(a, b, P.lineBow, LINE_TRIMS[0]!, LINE_TRIMS[1]!, width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
     const { a: start, b: end } = mark.path;
     if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;

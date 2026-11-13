@@ -26,8 +26,8 @@ import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { assignDomainHues, DOMAIN_HUE_COUNT } from "./hue";
 import { layoutFlatGraph } from "./layout";
-import { graphDiscRadiusPx } from "./marks";
-import { admittedNames, chooseSide, reachText, segmentCrossesBox, type PlacedName } from "./names";
+import { arcPathInto, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
+import { admittedNames, chooseSide, domainTitleBlocks, linePolylines, reachText, segmentCrossesBox, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { DOMAIN_HUE_VARS, resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -261,6 +261,19 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     const admitted = namesAt(model, layout, 0.5, null, element, 0);
     expect(admitted.ids.has(element)).toBe(true);
     expect(namesAt(model, layout, 0.5, null, null, 0).ids.has(element)).toBe(false);
+  });
+
+  it("names the agent's element while a domain is pointed at", () => {
+    const elements = layout.clusters.flatMap((c) => c.items.flatMap((it) => it.elementIds));
+    const unnamed = [...model.domainById.keys()].flatMap((domain) => {
+      const attention = cachedGraphAttention(model, domain, false);
+      return elements.filter((element) => !admittedNames({
+        model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 0.5, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: domain, attentionKey: attention.key, agentFocusId: element,
+        selected: false, named: attention.named, reach: attention.reach, lines: attention.lines, discRadius: () => 4, elementSpacingPx: 0,
+      }).ids.has(element)).map((element) => `${element} under ${domain}`);
+    });
+    expect(unnamed).toEqual([]);
   });
 
   it("only adds names as the zoom grows", () => {
@@ -516,6 +529,115 @@ describe("domain reach", () => {
     expect(selected.map((n) => [n.role, n.text])).toEqual([["reach", "needs 1 · needed by 2"]]);
     expect(reachLines(false).map((n) => n.role)).toEqual(["units"]);
     expect(selected[0]!.box, "the reach line takes the caption's row").toEqual(expect.objectContaining({ minY: reachLines(false)[0]!.box.minY }));
+  });
+
+  it("reserves each domain's title block wide enough for the reach line its selection writes, on every bundled vault", () => {
+    const labels = { ...LABELS, units: (c: number, e: number) => `역량 ${c} · 요소 ${e}`, reachNeeds: (n: number) => `${n}곳에 기댐`, reachNeededBy: (n: number) => `${n}곳이 기댐` };
+    const wider: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const blocks = domainTitleBlocks({ model: vault, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif" });
+      for (const id of vault.domainById.keys()) {
+        const att = resolveGraphAttention(vault, id, true);
+        const row = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
+          elementLabel: (of) => of, staleByDomain: null, lit: att.lit, focusId: id, attentionKey: att.key, agentFocusId: null,
+          selected: true, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => TOKENS.paint.domainDiscPx, elementSpacingPx: 0,
+        }).names.find((n) => n.id === id && n.role === "reach");
+        if (row && Math.max(-row.box.minX, row.box.maxX) > blocks.get(id)!.halfWidthPx + 1e-6) wider.push(`${name} ${id}: ${row.text}`);
+      }
+    }
+    expect(wider).toEqual([]);
+  });
+
+  it("raises a partner domain's title only where it clears every disc, on every bundled vault", () => {
+    let raised = 0;
+    const onDiscs: string[] = [];
+    for (const [name, vault] of VAULTS) {
+      const layout = layoutOf(vault);
+      const radius = (id: string) => (vault.domainById.has(id) ? graphDiscRadiusPx("domain", 0, TOKENS.paint, 1)
+        : graphDiscRadiusPx("capability", vault.capabilityById.get(id)?.elementIds.length ?? 0, TOKENS.paint, 1));
+      const discs = layout.clusters.flatMap((c) => [c.domainId, ...c.items.filter((it) => !it.direct).map((it) => it.id)]);
+      for (const focus of vault.domainById.keys()) for (const selected of [true, false]) for (const scale of [0.5, 1, 2]) {
+        const att = resolveGraphAttention(vault, focus, selected);
+        const admitted = admittedNames({
+          model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+          elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: focus, attentionKey: att.key, agentFocusId: null,
+          selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: radius, elementSpacingPx: 0,
+        });
+        for (const n of admitted.names.filter((n) => n.id !== focus && vault.domainById.has(n.id) && n.dy < 0)) {
+          raised += 1;
+          const at = layout.positions.get(n.id)!;
+          const box = { minX: at.x * scale + n.box.minX, maxX: at.x * scale + n.box.maxX, minY: at.y * scale + n.box.minY, maxY: at.y * scale + n.box.maxY };
+          for (const id of discs) {
+            const p = layout.positions.get(id)!;
+            const r = radius(id);
+            if (box.minX < p.x * scale + r && p.x * scale - r < box.maxX && box.minY < p.y * scale + r && p.y * scale - r < box.maxY) onDiscs.push(`${name} ${focus} ${scale}: ${n.role} of ${n.id} on ${id}`);
+          }
+        }
+      }
+    }
+    expect(raised, "some partner title rises").toBeGreaterThan(0);
+    expect(onDiscs).toEqual([]);
+  });
+});
+
+describe("domain line curve", () => {
+  /** One large domain beside small ones: its member star reaches far enough that a trim scaled only by length passes the bow's control. */
+  const SIZES = [40, 1, 1, 6, 6];
+  const ELEMENTS_PER_CAPABILITY = 5;
+  const DEPENDS: [number, number][] = [[0, 1], [0, 2], [3, 0], [4, 0]];
+  const nodes: Node[] = [{ id: "p", kind: "project" }];
+  const edges: Edge[] = [];
+  SIZES.forEach((size, d) => {
+    nodes.push({ id: `d${d}`, kind: "domain" });
+    edges.push({ from: "p", to: `d${d}`, type: "contains" });
+    for (let c = 0; c < size; c += 1) {
+      nodes.push({ id: `c${d}-${c}`, kind: "capability" });
+      edges.push({ from: `d${d}`, to: `c${d}-${c}`, type: "contains" });
+      for (let e = 0; e < ELEMENTS_PER_CAPABILITY; e += 1) {
+        nodes.push({ id: `e${d}-${c}-${e}`, kind: "element" });
+        edges.push({ from: `c${d}-${c}`, to: `e${d}-${c}-${e}`, type: "contains" });
+      }
+    }
+  });
+  for (const [a, b] of DEPENDS) edges.push({ from: `c${a}-0`, to: `c${b}-0`, type: "depends_on" });
+  const model = modelOf(nodes, edges);
+  const layout = layoutOf(model);
+  const P = TOKENS.paint;
+  const fit = Math.min(1100 / (layout.extent.maxX - layout.extent.minX), 880 / (layout.extent.maxY - layout.extent.minY));
+  const views = [fit, fit * 3].flatMap((scale) => [1, P.growthMax].map((growth) => ({ scale, growth })));
+  const lines = resolveGraphAttention(model, "d0", true).lines;
+
+  it("trims each end of a large star's lines short of the bow's control point, so no curve doubles back", () => {
+    expect(lines.length).toBe(DEPENDS.length);
+    const trims = new Float64Array(2);
+    const path = emptyArcPath();
+    for (const { scale, growth } of views) {
+      const disc = graphDiscRadiusPx("domain", 0, P, growth);
+      for (const line of lines) {
+        const from = { x: layout.positions.get(line.from)!.x * scale, y: layout.positions.get(line.from)!.y * scale };
+        const to = { x: layout.positions.get(line.to)!.x * scale, y: layout.positions.get(line.to)!.y * scale };
+        litLineTrimsInto(trims, layout, line, Math.hypot(to.x - from.x, to.y - from.y), scale, growth, disc, disc, P);
+        if (!arcPathInto(path, from, to, P.lineBow, trims[0]!, trims[1]!)) continue;
+        const { a, c, b } = path;
+        const at = `${line.key} at ${(scale / fit).toFixed(0)}x, growth ${growth}`;
+        expect(Math.hypot(a.x - from.x, a.y - from.y), `start before the control: ${at}`).toBeLessThan(Math.hypot(c.x - from.x, c.y - from.y));
+        expect(Math.hypot(b.x - to.x, b.y - to.y), `end before the control: ${at}`).toBeLessThan(Math.hypot(c.x - to.x, c.y - to.y));
+      }
+    }
+  });
+
+  it("gives names each line as one forward run from its trimmed start to its trimmed end", () => {
+    for (const { scale, growth } of views) {
+      const disc = () => graphDiscRadiusPx("domain", 0, P, growth);
+      for (const pts of linePolylines(lines, layout, P, scale, growth, disc)) {
+        const chord = { x: pts[pts.length - 2]! - pts[0]!, y: pts[pts.length - 1]! - pts[1]! };
+        for (let k = 0; k + 3 < pts.length; k += 2) {
+          expect((pts[k + 2]! - pts[k]!) * chord.x + (pts[k + 3]! - pts[k + 1]!) * chord.y, `segment ${k / 2} at ${(scale / fit).toFixed(0)}x`).toBeGreaterThan(0);
+        }
+      }
+    }
   });
 });
 

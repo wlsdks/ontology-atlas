@@ -2,10 +2,26 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { createHash } from 'node:crypto';
 import { moruBodyAnchor, moruColor } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+
+test('the shipped companion retains native facial pixels and a matching cache identity', async () => {
+  const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  const playback = JSON.parse(await readFile('src/shared/ui/marks/moru-companion.json', 'utf8'));
+  const file = await readFile('public/brand/moru-companion.png');
+  const meta = await sharp(file).metadata();
+  assert.equal(meta.height, source.nativeCell);
+  assert.equal(meta.width, playback.frames * source.nativeCell);
+  assert.equal(playback.digest, createHash('sha256').update(file).digest('hex').slice(0, 12));
+  for (const [id, clip] of Object.entries(playback.clips)) {
+    const original = await sharp(`assets/brand/moru/${source.clips[id].sprite}`).raw().toBuffer();
+    const shipped = await sharp(file).extract({ left: clip.firstFrame * source.nativeCell, top: 0, width: source.clips[id].frames * source.nativeCell, height: source.nativeCell }).raw().toBuffer();
+    assert.deepEqual(shipped, original, `${id} lost native face detail during runtime export`);
+  }
+});
 
 test('the observed gray right-eye edge stays achromatic instead of turning indigo', () => {
   for (const rgb of [[120, 117, 117], [109, 107, 104], [113, 111, 113]]) {

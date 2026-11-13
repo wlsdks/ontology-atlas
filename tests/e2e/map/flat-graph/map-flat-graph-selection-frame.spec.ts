@@ -192,3 +192,42 @@ test("a capability clicked on the map while another is selected frames and names
   expect(dial.texts.some((t) => t.role === "element"), "the hub's lit picture names elements").toBe(true);
   await expectFramed(page, hub!, dial, clickedZoom);
 });
+
+for (const viewport of [{ width: 1920, height: 1080 }, { width: 1512, height: 982 }]) {
+  test(`at ${viewport.width} wide a domain the detail panel would cover pans its member star clear without zooming, its nearest partner in view and its names off its lines`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize(viewport);
+    await openVault(page);
+    const before = await page.evaluate(() => window.__atlasMap!.dial!() as DialProbe);
+    const domainIds = new Set(before.clusters.map((c) => c.domainId));
+    const id = before.discs
+      .filter((d) => domainIds.has(d.id) && d.x > before.freeRect.minX && d.x < before.freeRect.maxX && d.y > before.freeRect.minY && d.y < before.freeRect.maxY)
+      .sort((a, b) => b.x - a.x)[0]!.id;
+    const star = new Set([id, ...before.clusters.find((c) => c.domainId === id)!.capabilityIds]);
+    const { dial, clickedZoom } = await selectOnMap(page, id);
+    const margin = await page.evaluate(() => Number(getComputedStyle(document.documentElement).getPropertyValue("--map-graph-frame-margin-px")));
+    const r = dial.freeRect;
+    expect(before.discs.some((d) => star.has(d.id) && d.x + d.r > r.maxX - margin), "unmoved, the detail panel would cover the member star").toBe(true);
+
+    expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
+    const outOfFrame = [
+      ...dial.discs.filter((d) => star.has(d.id)).map((d) => ({ what: `disc ${d.id}`, box: { minX: d.x - d.r, maxX: d.x + d.r, minY: d.y - d.r, maxY: d.y + d.r } })),
+      ...dial.texts.filter((t) => t.id !== null && star.has(t.id)).map((t) => ({ what: `${t.role} ${t.id}`, box: t.box })),
+    ].filter(({ box }) => box.minX < r.minX + margin - EDGE_PX || box.maxX > r.maxX - margin + EDGE_PX || box.minY < r.minY + margin - EDGE_PX || box.maxY > r.maxY - margin + EDGE_PX)
+      .map(({ what }) => what);
+    expect(outOfFrame, "the domain, its members and their names inside the free map by the margin").toEqual([]);
+
+    const lines = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey));
+    const partners = [...new Set(lines.flatMap((s) => s.flowKey.slice(s.flowKey.indexOf(":") + 1).split(">")))].filter((end) => end !== id);
+    expect(partners.length, "the domain has partner domains").toBeGreaterThan(0);
+    const home = dial.discs.find((d) => d.id === id)!;
+    const nearest = partners.map((p) => dial.discs.find((d) => d.id === p)!).sort((a, b) => Math.hypot(a.x - home.x, a.y - home.y) - Math.hypot(b.x - home.x, b.y - home.y))[0]!;
+    expect(nearest.x > r.minX && nearest.x < r.maxX && nearest.y > r.minY && nearest.y < r.maxY, `the nearest partner, ${nearest.id}, is in the free map`).toBe(true);
+
+    const lit = new Set([...star, ...partners]);
+    const crossed = dial.texts
+      .filter((t) => t.id !== null && lit.has(t.id) && !t.backed)
+      .flatMap((t) => lines.filter((s) => crossesBox(s, t.box)).map((s) => `${t.role}:${t.id} x ${s.flowKey}`));
+    expect(crossed, "unbacked lit names a domain line runs through").toEqual([]);
+  });
+}

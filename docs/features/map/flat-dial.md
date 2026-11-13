@@ -136,7 +136,9 @@ domain taper stands for every `depends_on` relation between the two domains in
 that direction and widens with their count, from `--map-graph-line-taper-px` by
 `--map-graph-line-taper-gain-px` per relation to `--map-graph-line-taper-max-px`,
 the same screen width at every zoom. It leaves or lands just outside the
-domain's own member star, so it never runs under its lit members, fading in
+domain's own member star (a trim capped at 0.8 of the distance to the curve's
+control point, so a large star beside a near partner can still hold the start),
+fading in
 from transparent over `--map-graph-line-fade-px` behind a round cap so it
 emerges from the cluster's light, and reaches the partner's disc. A partner the camera cannot pan into view keeps its taper,
 which runs off the edge toward it. The key names the two kinds as domains it
@@ -149,11 +151,14 @@ title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it depends on and what depends on it
 (`is_a` included), a zero side left out. A selected domain's reach line takes
-its caption's row under its name, in the same words, counting partner domains,
+its caption's row under its name, in the same words, counting partner domains
+joined by `depends_on` alone (`is_a` and `related_to` leave a domain's reach),
 and equals the two domain counts its detail panel shows; the panel still lists
-the membership the caption counted. A partner domain's title that a lit
-domain line would run through takes the side above its disc when that side is
-clear, so the line meets the disc. While a
+the membership the caption counted. The layout keeps members clear of the wider
+of the caption and that reach line, so the row never lands on a member. A partner domain's title that a lit
+domain line would run through takes the side above its disc when no lit line
+crosses that side and no disc sits under it, so the line meets the disc;
+otherwise it stays below on a backing. While a
 member is selected its domain's name steps down to the secondary ink. When a
 click selects, the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the
@@ -172,8 +177,9 @@ none sits on a lit disc; the selection's ring keeps
 the domain named. A domain selection never zooms, because its picture is its
 reach: it pans its disc and member star clear of the detail panel by the frame
 margin and, when every partner domain's disc and name fit in the free map at
-the current zoom, pans them all in; otherwise it keeps as many partners in view
-as panning allows, nearest first. A zoom
+the current zoom, pans them all in; otherwise it pans in the partners nearest
+to it, in order of distance, up to the first one that no longer fits with them,
+so a farther partner may still land in view while a nearer one stays out. A zoom
 that reads no better than the view the click left is never taken, so a click
 stays a small move and the rest of the map stays in view. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four

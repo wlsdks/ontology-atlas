@@ -510,7 +510,9 @@ describe('DownloadPage', () => {
         'src',
         '/brand/atlas-symbol.png',
       );
-      expect(screen.getByTestId('gateway-closing-moru')).toHaveAttribute('src', '/brand/mascot-full.png');
+      const companion = within(screen.getByTestId('gateway-closing')).getByRole('button', { name: 'Pause Moru animation' });
+      fireEvent.click(companion);
+      expect(companion).toHaveAccessibleName('Resume Moru animation');
       // Moru belongs to the closing invitation, clear of the graph's data marks.
       expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });

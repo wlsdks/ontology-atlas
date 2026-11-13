@@ -114,7 +114,7 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
  * A domain's reach at domain level, the partners its detail panel lists (`domainPartners`): one
  * line per partner domain and direction, weighted by the relations between them. O(flows).
  */
-export function domainLines(model: DialModel, domainId: string): GraphLine[] {
+function domainLines(model: DialModel, domainId: string): GraphLine[] {
   const { needs, usedBy } = domainPartners(model.flows, domainId);
   const lines: GraphLine[] = [];
   for (const p of needs) lines.push({ from: domainId, to: p.domainId, kind: "needs", key: `needs:${domainId}>${p.domainId}`, weight: p.links });
