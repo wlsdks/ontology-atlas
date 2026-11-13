@@ -200,21 +200,25 @@ the domain named. An element's picture is its lines, whether a capability or a d
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
 it keeps that zoom. A domain selection never zooms in, because its picture is its
-reach: it pans its disc, member star, name and reach line clear of the explorer
-and the detail panel by the frame margin, zooming out only when they cannot fit
-at the current zoom, and, when every partner domain's disc and name fit in the free map at
-the current zoom, pans them all in; otherwise it pans in the partners nearest
-to it, in order of distance, up to the first one that no longer fits with them,
-so a farther partner may still land in view while a nearer one stays out. A zoom
+reach: it holds its own disc and name, its member star as discs, and every
+partner domain's disc, and centres that set on the free map, clear of the
+explorer and the detail panel by the frame margin. The partners come named with
+their discs when that asks no more zoom-out than the map's own fit — the scale
+at which every domain of the map, disc and all, stands between the panels. It
+zooms out toward that fit only as far as it needs, and when even that cannot
+hold every partner it keeps the partners nearest to it, in order of distance,
+up to the first one that no longer fits with them. Member names are not held in
+the frame; they are admitted again at whatever zoom it lands on. A zoom
 that reads no better than the view the click left is never taken, and one under a
 sample step is taken only when it reads clear or betters one of the first two
-judgments, so a click stays a small move,
+judgments, so a click on a concept stays a small move,
 the rest of the map stays in view, and framing the landed view again moves
 nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
-move is the least pan that frames, with any zoom, as one slide on the canvas
-spring: a second selection mid-slide retargets it from where the camera is,
+move is the least pan that frames, with any zoom — a domain's reach takes the
+middle of the free map instead, so a domain click may travel — as one slide on
+the canvas spring: a second selection mid-slide retargets it from where the camera is,
 and a press or drag stops it at once. Deselecting returns the camera to where it
 was before the first selection of the chain, unless the reader has panned or
 zoomed since; a selection a deep link arrived on returns to the overview. An

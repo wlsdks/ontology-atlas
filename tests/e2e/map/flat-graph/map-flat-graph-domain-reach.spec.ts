@@ -130,7 +130,8 @@ test("selecting a domain counts its partner domains under its name as the panel 
 
   const dial = await readDial(page);
   expect(await domainLines(page, dial), "every partner's line draws").toEqual(ORDERS_LINES);
-  expect(dial.zoomRatio, "a domain selection never zooms").toBeCloseTo(clickedZoom, 6);
+  // A domain is framed as its reach, so it may zoom out to bring a partner between the panels.
+  expect(dial.zoomRatio, "a domain selection never zooms in").toBeLessThanOrEqual(clickedZoom + 1e-9);
 
   const members = new Set(dial.clusters.find((c) => c.domainId === orders.id)!.capabilityIds);
   const under = dial.strips.filter((s) => /^(needs|neededBy):/.test(s.flowKey)).flatMap((s) => dial.discs
