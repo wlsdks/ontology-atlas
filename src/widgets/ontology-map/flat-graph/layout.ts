@@ -2,7 +2,6 @@ import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
 
 import type { Box, DialModel, Point } from "../dial/types";
-import { assignDomainHues } from "./hue";
 import { GOLDEN_ANGLE, byId, seedAngle, seedUnit } from "./seed";
 import type { FlatGraphCluster, FlatGraphFrame, FlatGraphItem, FlatGraphLayout, FlatGraphLayoutTokens, FlatGraphPins, FlatGraphTitle } from "./types";
 
@@ -12,7 +11,6 @@ const TITLE_RIGHT = "\u0000title-right";
 const ANCHOR_PREFIX = "\u0000anchor:";
 const PACKING = 0.62;
 const SEED_JITTER = 0.25;
-const ADJACENT_REACH = 1.6;
 const PUSH_ROUNDS = 80;
 const CLUSTER_SPREAD = 0.8;
 const COMPACT_ROUNDS = 40;
@@ -496,7 +494,7 @@ function placeGraph(
     const title = titleOf(id);
     grow(extent, { x: centre.x + title.minX, y: centre.y + title.minY }, 0);
     grow(extent, { x: centre.x + title.maxX, y: centre.y + title.maxY }, 0);
-    clusters.push({ domainId: id, centre, footprint: local.footprint, hue: 0, items: local.items });
+    clusters.push({ domainId: id, centre, footprint: local.footprint, items: local.items });
   }
 
   const orphanIds = model.orphanIds.filter((id) => !positions.has(id) && id !== model.projectId).sort(byId);
@@ -511,17 +509,5 @@ function placeGraph(
     grow(extent, centre, radius + pitch);
   }
 
-  const adjacent = (a: string, b: string): boolean => {
-    const ia = domainIds.indexOf(a);
-    const ib = domainIds.indexOf(b);
-    const n = domainIds.length;
-    if (n > 2 && (Math.abs(ia - ib) === 1 || Math.abs(ia - ib) === n - 1)) return true;
-    const p = centres.get(a)!;
-    const q = centres.get(b)!;
-    const reach = (locals.get(a)!.footprint + locals.get(b)!.footprint + tokens.clusterGap) * ADJACENT_REACH;
-    return Math.hypot(p.x - q.x, p.y - q.y) < reach;
-  };
-  const hueByDomain = assignDomainHues(domainIds, adjacent, pins?.hueByDomain ?? null);
-  const hued = clusters.map((c) => ({ ...c, hue: hueByDomain.get(c.domainId) ?? 0 }));
-  return { positions, itemAt, clusters: hued, clusterByDomain: new Map(hued.map((c) => [c.domainId, c])), hueByDomain, orphanIds, extent };
+  return { positions, itemAt, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])), orphanIds, extent };
 }

@@ -7,10 +7,10 @@ const SINK = 0.14;
 const REST = 0.66;
 
 const line = (from: string, to: string): GraphLine => ({ from, to, kind: "needs", key: `needs:${from}>${to}`, weight: 1 });
-const rest: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: new Set() };
+const rest: GraphAttention = { key: "rest", focusId: null, selected: false, lit: null, lines: [], reach: null, named: new Set(), tinted: new Set() };
 
-function attention(focusId: string, lit: string[], lines: GraphLine[], selected = false): GraphAttention {
-  return { key: `${focusId}|${selected ? 1 : 0}`, focusId, selected, lit: new Set(lit), lines, reach: null, named: new Set([focusId]) };
+function attention(focusId: string, lit: string[], lines: GraphLine[], selected = false, tinted: string[] = [focusId]): GraphAttention {
+  return { key: `${focusId}|${selected ? 1 : 0}`, focusId, selected, lit: new Set(lit), lines, reach: null, named: new Set([focusId]), tinted: new Set(tinted) };
 }
 
 const POSITIONS: Record<string, { x: number; y: number }> = { a: { x: 0, y: 0 }, near: { x: 10, y: 0 }, far: { x: 100, y: 0 }, b: { x: 200, y: 0 }, other: { x: 300, y: 0 } };
@@ -68,6 +68,24 @@ describe("Flat attention motion", () => {
     run(motion, rest, 1_000 + FLAT_MOTION.hoverIntentMs, 2_000, () => inks.push(motion.ink("a", SINK, REST), motion.ink("other", SINK, REST)));
     expect(inks.every((ink) => ink === REST)).toBe(true);
     expect(motion.drawnCount).toBe(0);
+  });
+
+  it("holds the project's tint until the hover intent passes and fades it back on a leave", () => {
+    const motion = motionAtRest();
+    const early: number[] = [];
+    run(motion, hoverA, 1_000, 1_000 + FLAT_MOTION.hoverIntentMs - 8, () => early.push(motion.tintShare("a")));
+    expect(early.every((tint) => tint === 0), "a sweep shorter than the intent window tints nothing").toBe(true);
+    run(motion, rest, 1_000 + FLAT_MOTION.hoverIntentMs, 2_000, () => early.push(motion.tintShare("a")));
+    expect(Math.max(...early), "and leaving it does not flash").toBe(0);
+
+    run(motion, hoverA, 2_000, 3_000);
+    expect(motion.tintShare("a"), "a held hover tints the focus's domain").toBe(1);
+    expect(motion.tintShare("other"), "and nothing outside it").toBe(0);
+    const leaving: number[] = [];
+    run(motion, rest, 3_000, 3_000 + FLAT_MOTION.exitMs, () => leaving.push(motion.tintShare("a")));
+    expect(Math.max(...leaving), "the tint never rises on the way out").toBeLessThanOrEqual(1);
+    expect(leaving.every((tint, i) => i === 0 || tint <= leaving[i - 1]!), "it falls every frame").toBe(true);
+    expect(leaving.at(-1)).toBe(0);
   });
 
   it("retargets from one selection to another without passing through the rest picture", () => {

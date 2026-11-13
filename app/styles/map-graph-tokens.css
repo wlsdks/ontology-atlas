@@ -1,7 +1,8 @@
 /*
- * Flat map as a hue-lit force graph (src/widgets/ontology-map/flat-graph). Layout values are world
+ * Flat map as an attention-lit force graph (src/widgets/ontology-map/flat-graph). Layout values are world
  * units, which equal screen pixels at the overview of a mid-sized folder; `-px` values are screen
- * pixels at the overview and grow with zoom up to `growth-max`. Domain hues: `--color-domain-*-rgb`.
+ * pixels at the overview and grow with zoom up to `growth-max`. The map rests on the neutral
+ * name ink; `--map-graph-project`, `--map-graph-arc` and `--map-graph-reach` are the hues it mints.
  */
 @layer base {
   :root {
