@@ -16,6 +16,8 @@ const DEPENDS: readonly [string, string][] = [
   ["payments-0", "catalog-0"], ["payments-1", "catalog-0"], ["catalog-3", "catalog-0"], ["shipping-3", "payments-0"],
 ];
 const RELATES: readonly [string, string][] = [["orders-0", "shipping-3"], ["payments-3", "catalog-3"]];
+/** An `is_a` link is drawn in its own style and counted by neither side. */
+const BROADER: readonly [string, string][] = [["orders-3", "orders-0"]];
 
 /** Four domains of four capabilities, plus a legacy domain of one. */
 const MARKS = DOMAINS.length * (1 + CAPABILITIES_PER_DOMAIN) + 2;
@@ -32,6 +34,7 @@ function generatedVault(): Record<string, string> {
       const slug = `${name}-${c}`;
       const needs = DEPENDS.filter(([from]) => from === slug).map(([, to]) => `capabilities/${to}`);
       const relates = RELATES.filter(([from]) => from === slug).map(([, to]) => `capabilities/${to}`);
+      const broader = BROADER.filter(([from]) => from === slug).map(([, to]) => `capabilities/${to}`);
       files[`capabilities/${slug}.md`] = [
         "---",
         "kind: capability",
@@ -39,6 +42,7 @@ function generatedVault(): Record<string, string> {
         `domain: domains/${name}`,
         ...(needs.length ? [`depends_on: ${list(needs)}`, `relation_notes: { ${needs[0]}: "${slug} cannot finish without it." }`] : []),
         ...(relates.length ? [`relates: ${list(relates)}`] : []),
+        ...(broader.length ? [`broader: ${list(broader)}`] : []),
         "---",
       ].join("\n") + body(`${name} step ${c}`);
     }
@@ -107,7 +111,7 @@ test("each capability's and domain's reach groups hold what the map's count line
     expect(needs.rows.length, `${id}: every needs row opens`).toBe(needs.total);
     expect(neededBy.rows.length, `${id}: every needed-by row opens`).toBe(neededBy.total);
     expect([...needs.kinds, ...neededBy.kinds], `${id}: no document is reach`).not.toContain("document");
-    const expected = [needs.total > 0 ? `needs ${needs.total}` : null, neededBy.total > 0 ? `needed by ${neededBy.total}` : null]
+    const expected = [needs.total > 0 ? `Needs ${needs.total}` : null, neededBy.total > 0 ? `Needed by ${neededBy.total}` : null]
       .filter(Boolean)
       .join(" · ");
     expect(await countLine(page, id), `${id}: the map's count line is the panel's`).toBe(expected);

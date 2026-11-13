@@ -149,8 +149,8 @@ with one ring, and its name takes `--map-graph-selected-name-px` beside, below
 or above it, at least `--map-graph-selected-title-gap-px` from every domain
 title. A capability's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
-detail panel's two directed totals, what it depends on and what depends on it
-(`is_a` included), a zero side left out. A selected domain's reach line takes
+detail panel's two directed totals, what it needs and what needs it (an `is_a`
+line is drawn in its own style and counted by neither), a zero side left out. A selected domain's reach line takes
 its caption's row under its name, in the same words, counting partner domains
 joined by `depends_on` alone (`is_a` and `related_to` leave a domain's reach),
 and equals the two domain counts its detail panel shows; the panel still lists
