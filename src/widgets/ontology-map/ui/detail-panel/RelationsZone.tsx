@@ -40,7 +40,7 @@ interface PointedRow {
 }
 
 /** The concept kinds whose lines the map draws in the selection's own ink. */
-const DRAWN_REACH_KINDS = new Set(["capability", "domain"]);
+const DRAWN_REACH_KINDS = new Set(["capability", "domain", "element"]);
 const CONTAINED_KINDS: Readonly<Record<string, ReadonlySet<string>>> = {
   capability: new Set(["element"]),
   domain: new Set(["capability", "element"]),

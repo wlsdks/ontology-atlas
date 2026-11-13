@@ -11,7 +11,7 @@ import { buildConnections, groupConnectionsByRole, isContainmentRelation } from 
 
 import {
   readContainmentTree,
-  directCapabilityRelations,
+  directRelations,
   rollDirectedDomainFlows,
   rollDomainDependencies,
   rollRelatesCapabilityPairs,
@@ -56,7 +56,7 @@ function modelOf(nodes: readonly Node[], edges: readonly Edge[]): DialModel {
   const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, treeEdges));
   const elementIds = treeNodes.filter((n) => n.kind === "element").map((n) => n.id);
   return buildDialModel({
-    tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directCapabilityRelations(tree, treeEdges),
+    tree, dependencies, flows, elementIds, relates: rollRelatesCapabilityPairs(tree, treeEdges), direct: directRelations(treeEdges),
   });
 }
 
@@ -412,12 +412,13 @@ describe("selection reach", () => {
     }
   });
 
-  it("counts distinct concepts on each side of the reach, and an element focus reaches through its capability", () => {
+  it("counts distinct concepts on each side of the reach, and an element focus only its own relations", () => {
     expect(resolveGraphAttention(model, "a", true).reach).toEqual({ needs: 1, neededBy: 4 });
     expect(resolveGraphAttention(model, "c", true).reach).toEqual({ needs: 1, neededBy: 0 });
-    const element = resolveGraphAttention(model, "x", true);
-    expect(element.reach).toBeNull();
-    expect(element.lines.length).toBe(7);
+    const lone = resolveGraphAttention(model, "x", true);
+    expect([lone.reach, lone.lines.length, [...lone.lit!].sort()]).toEqual([{ needs: 0, neededBy: 0 }, 0, ["a", "d1", "x"]]);
+    const element = resolveGraphAttention(model, "y", true);
+    expect([element.reach, element.lines.map((l) => l.key)]).toEqual([{ needs: 1, neededBy: 0 }, ["needs:y>a"]]);
   });
 
   it("writes the reach line without a zero side", () => {

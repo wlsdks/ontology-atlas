@@ -1,8 +1,6 @@
-import { isDirectionalRelation } from "@/entities/knowledge-graph";
-import type { DialModel } from "../dial/types";
-import { capabilityLines, type GraphLineKind } from "../flat-graph/attention";
+import { conceptLines, type GraphLineKind } from "../flat-graph/attention";
 import {
-  directCapabilityRelations,
+  directRelations,
   domainPartners,
   readContainmentTree,
   rollDirectedDomainFlows,
@@ -36,40 +34,23 @@ const byLabel = (a: ReachRow, b: ReachRow) => a.label.localeCompare(b.label);
 const byNeededBy = (a: ReachRow, b: ReachRow) => b.neededBy - a.neededBy || byLabel(a, b);
 const byLinks = (a: ReachRow, b: ReachRow) => (b.links ?? 0) - (a.links ?? 0) || byLabel(a, b);
 
-function relationKind(relationType: string): CapabilityRelation["kind"] {
-  if (!isDirectionalRelation(relationType)) return "relates";
-  return relationType === "is_a" ? "broader" : "depends";
-}
-
-/** One concept's own non-containment edges, in the shape `directCapabilityRelations` gives a capability. O(E). */
-function ownRelations(edges: readonly TreeInputEdge[], conceptId: string): CapabilityRelation[] {
-  const out: CapabilityRelation[] = [];
-  for (const e of edges) {
-    if (e.kind === "contains" || e.source === e.target) continue;
-    if (e.source !== conceptId && e.target !== conceptId) continue;
-    out.push({ from: e.source, to: e.target, kind: relationKind(e.relationType) });
-  }
-  return out;
-}
-
-/** Distinct concepts that need each concept, over every dependency edge. O(E). */
-function neededByCounts(edges: readonly TreeInputEdge[]): Map<string, number> {
+/** Distinct concepts that need each concept, over every dependency. O(E). */
+function neededByCounts(relations: readonly CapabilityRelation[]): Map<string, number> {
   const sources = new Map<string, Set<string>>();
-  for (const e of edges) {
-    if (e.kind === "contains" || e.source === e.target) continue;
-    if (relationKind(e.relationType) !== "depends") continue;
-    let set = sources.get(e.target);
-    if (!set) sources.set(e.target, (set = new Set()));
-    set.add(e.source);
+  for (const r of relations) {
+    if (r.kind !== "depends") continue;
+    let set = sources.get(r.to);
+    if (!set) sources.set(r.to, (set = new Set()));
+    set.add(r.from);
   }
   return new Map([...sources].map(([id, set]) => [id, set.size]));
 }
 
 /**
  * The reach the detail panel lists, read with the map's own counting: `domainPartners` for a
- * domain and `capabilityLines` over `directCapabilityRelations` for a capability, so every number
- * equals the map's count line. An element reads its own relations by the same line rules. Null for
- * a project or a concept the map does not draw. O(N + E).
+ * domain and `conceptLines` over `directRelations` for a capability or element, so every row and
+ * number equals the map's lines and count line. Null for a project or a concept the map does not
+ * draw. O(N + E).
  */
 export function readConceptReach(
   nodes: readonly TreeInputNode[],
@@ -79,18 +60,18 @@ export function readConceptReach(
   const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
   const concept = nodeById.get(conceptId);
   if (!concept || concept.kind === "project") return null;
-  const tree = readContainmentTree(nodes, edges);
-  const counts = neededByCounts(edges);
+  const relations = directRelations(edges);
+  const counts = neededByCounts(relations);
   const row = (id: string, line: GraphLineKind, links: number | null = null): ReachRow => {
     const node = nodeById.get(id);
     return { id, label: node?.label ?? id, kind: node?.kind ?? "concept", line, links, neededBy: counts.get(id) ?? 0 };
   };
-  const relations = concept.kind === "capability" ? directCapabilityRelations(tree, edges) : ownRelations(edges, conceptId);
-  const lines = capabilityLines({ capabilityRelations: relations } as Pick<DialModel, "capabilityRelations"> as DialModel, conceptId);
+  const lines = conceptLines(relations, conceptId);
   const other = lines
     .filter((l) => l.kind === "relates" || l.kind === "broader")
     .map((l) => row(l.from === conceptId ? l.to : l.from, l.kind));
   if (concept.kind === "domain") {
+    const tree = readContainmentTree(nodes, edges);
     const flows = rollDirectedDomainFlows(rollDomainDependencies(tree, edges), rollRelatesDomainPairs(tree, edges));
     const partners = domainPartners(flows, conceptId);
     return {

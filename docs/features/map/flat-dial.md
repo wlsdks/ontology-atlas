@@ -105,7 +105,9 @@ Hovering or selecting lights a set and sinks everything else toward the
 canvas. A domain lights itself, its members and every domain it needs or is
 needed by; those domains light their own disc and name, not their members. A capability lights its
 domain, its elements and every capability it needs, is needed by, relates to
-or sits under (`broader`). An element lights its capability's set. The project
+or sits under (`broader`). An element lights itself, its capability and that
+capability's domain, so it shows where it lives, and the far end of each of its
+own lines; it does not light its capability's other lines. The project
 sinks with the rest unless it is the focus. Resting arcs give way while a set is lit. Names keep their places;
 lit capability names join the admitted set.
 
@@ -121,12 +123,13 @@ lines have drawn, one small light runs once along each, from what is needed
 toward what needs it, then the map rests and draws no frame. With reduced
 motion every state lands at once and no light travels.
 
-A hovered or selected capability draws only its own lines: the relations it
-states itself, the same connections its detail panel lists, one per far concept
-and direction. Its elements' relations are not rolled up into it.
+A hovered or selected capability or element draws only its own lines: the
+relations it states itself, the same rows its detail panel lists
+(`readConceptReach` and the map share `conceptLines`), one per far concept and
+direction. A capability's elements' relations are not rolled up into it.
 
 - **Needs** (a directed relation from it): a filled taper, wide at the
-  capability and pointed at what it needs, in `--map-graph-arc`.
+  selection and pointed at what it needs, in `--map-graph-arc`.
 - **Needed by** (a directed relation into it): the same taper, wide at the
   concept that needs it, in the warm `--map-graph-reach`.
 - **Relates**: a dotted hairline. A pair that also depends draws only the
@@ -156,7 +159,7 @@ needs and domains that need it.
 A selected capability, element or orphan grows to `--map-graph-selected-disc-px`
 with one ring, and its name takes `--map-graph-selected-name-px` beside, below
 or above it, at least `--map-graph-selected-title-gap-px` from every domain
-title. A capability's reach line sits
+title. A capability's or element's reach line sits
 beneath in the secondary ink with figures aligned as table columns: the
 detail panel's two directed totals, what it needs and what needs it (an `is_a`
 line is drawn in its own style and counted by neither), a zero side left out. A selected domain's reach line takes
@@ -187,7 +190,7 @@ the free map stays there. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. An element's picture is its lines, so it zooms in only while
+the domain named. An element's picture is its lines, whether a capability or a domain holds it, so it zooms in only while
 every far end, named, still fits, and only until its own name stands clear of
 the names and discs beside it; when the far ends do not fit at the current zoom
 it keeps that zoom. A domain selection never zooms in, because its picture is its
