@@ -18,45 +18,47 @@ import {
   Plus,
   ScanSearch,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
-import { Button, Disclosure, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { Disclosure, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
-import { PanelFooter } from "./detail-panel/PanelFooter";
+import {
+  countReasonsMissing,
+  type JudgmentAction,
+  type JudgmentItem,
+  JudgmentZone,
+  type PanelEmphasis,
+} from "./detail-panel/JudgmentZone";
+import { MeaningZone } from "./detail-panel/MeaningZone";
+import { PanelFooter, panelActionClass } from "./detail-panel/PanelFooter";
 import { ProjectSourceRemedy } from "./detail-panel/ProjectSourceRemedy";
 import { ProjectSourcePendingRows, ProjectSourceStatusIcon } from "./detail-panel/ProjectSourceRows";
 import { RelationsZone } from "./detail-panel/RelationsZone";
 import type { OntologyMapDetailPanelProps } from "./detail-panel/types";
 
 /**
- * Component datasheet node panel (`docs/design/ontology-map.md` section 5). It owns its prop
- * shape; the view maps `TopologyNodeFocusModel` into it. Connection groups are role-based, the
- * buckets full detail draws.
+ * The compact concept panel (`docs/features/map/node-detail-actions.md`). Its first screen answers
+ * what this is, what moves if it changes, and whether a person must settle something first; it
+ * holds at most one emphasised thing, named on its root as `data-panel-emphasis`.
  */
-
-/**
- * The action row's primary uses the map panel's chip radius (`--map-panel-row-radius`) like
- * the menu triggers.
- */
-const PRIMARY_ACTION_CLASS = "atlas-touch-floor min-w-0 flex-1 rounded-chip";
-
 export function OntologyMapDetailPanel({
   nodeId,
   slug,
   title,
-  sourceTitle = null,
   kind,
-  domain,
+  owner,
+  definition,
+  review,
   summaryStaleness = null,
   summaryHistoryUnavailable = false,
   powered,
   groups,
   reach = null,
   updatedAtLabel = null,
-  lastEditSubject = null,
   mtimeConflict = false,
   handoffText,
   documentHref,
@@ -80,7 +82,6 @@ export function OntologyMapDetailPanel({
   onExited,
   className,
   showHandoff = true,
-  showSourcePath = true,
   projectSource = null,
   projectSourceLoading = false,
   onProjectSourceAction,
@@ -90,7 +91,10 @@ export function OntologyMapDetailPanel({
   projectSourceProposal = null,
   onProjectSourceConfirmProposal,
 }: OntologyMapDetailPanelProps) {
+  const tPanel = useTranslations("conceptPanel");
+  const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const isProject = kind === "project";
+  const isDocument = kind === "document";
   const showProjectSource = isProject && projectSource !== null;
   /**
    * The layout is decided by the kind, not by when `projectSource` arrives, so the panel does not
@@ -99,26 +103,16 @@ export function OntologyMapDetailPanel({
    */
   const projectSourcePending = isProject && projectSource === null && projectSourceLoading;
   const projectLayout = showProjectSource || projectSourcePending;
-  /**
-   * The remedy block stands beside the diagnosis and appears only when there is a gap. The no-gap
-   * state's action stays in the footer, so the same control is never drawn in two places.
-   */
+  /** The remedy block stands beside the diagnosis and appears only when there is a gap. */
   const showSourceRemedy = Boolean(
     showProjectSource
     && projectSource.topGap
     && labels.sourceAction
     && (onProjectSourceAction || projectSourceDegraded),
   );
-  /**
-   * **The remedy box pushes its way in — so the pushing has to be visible.**
-   *
-   * The moment this box appears differs from the moment the panel opens: the vault
-   * root has to be measured before it is settled whether this is a folder picker
-   * or "Is this the correct folder?". With conditional rendering alone, the content below jolts
-   * aside at that moment, and when it disappears after confirmation there is no way
-   * out at all. So it uses the shared in-flow disclosure grammar that pushes its
-   * siblings — and the values (curve, duration) come from the single place,
-   * `.ai-row-disclosure`.
+  /*
+   * The remedy arrives after the panel opens (the vault root is measured first), so it pushes its
+   * siblings with the shared in-flow disclosure (`.ai-row-disclosure`) instead of jolting them.
    */
   const {
     mounted: remedyMounted,
@@ -126,12 +120,8 @@ export function OntologyMapDetailPanel({
     contentRef: remedyContentRef,
   } = useRowDisclosure(showSourceRemedy);
   /*
-   * The diagnosis above the remedy arrives with it, so it arrives the same way. Once the
-   * pending line holds the receipt's place, this sentence is the one part of the arrival
-   * that still pushes the actions down; drawn outright it would move them by its one or
-   * two lines in a single frame while the remedy under it eased in. The text is held
-   * through the exit, so a gap that closes (a measurement that settled it) leaves as
-   * itself, not as "no follow-up needed".
+   * The diagnosis above the remedy arrives the same way, and its text is held through the exit so
+   * a gap that closes leaves as itself, not as "no follow-up needed".
    */
   const showSourceGap = Boolean(showProjectSource && projectSource.topGap && labels.sourceGap);
   const heldSourceGap = useHeldValue(showSourceGap ? labels.sourceGap : null);
@@ -144,7 +134,51 @@ export function OntologyMapDetailPanel({
     showProjectSource && projectSource.nextAction.id === "use_current_evidence"
   );
   const [actionMenu, setActionMenu] = useState<"edit" | "more" | null>(null);
-  const canAskAgent = Boolean(onAskAgent && labels.actionAskAgent);
+
+  const openDocument: JudgmentAction | undefined = documentHref
+    ? { label: labels.actionDocument, emphasis: "open-document", href: documentHref }
+    : undefined;
+  const reasonsMissing = countReasonsMissing(kind, reach, groups);
+  const summaryLine = summaryHistoryUnavailable && labels.summaryHistoryUnavailable ? (
+    <span role="status" data-testid="summary-history-unavailable" className="text-[color:var(--map-panel-text-tertiary)]">
+      {labels.summaryHistoryUnavailable}
+    </span>
+  ) : summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (
+    <SummaryFreshnessRow
+      prefixLabel={labels.summaryFreshnessPrefix}
+      lagLabel={labels.summaryFreshnessLag}
+      actionLabel={labels.summaryFreshnessAction}
+    />
+  ) : null;
+  const judgmentItems: JudgmentItem[] = [
+    ...(review?.raised
+      ? [{ id: "raised" as const, line: tReview("docChipRaised"), note: review.raised.note, action: openDocument }]
+      : []),
+    ...(review?.changedSinceReview
+      ? [{ id: "changed-since-review" as const, line: tReview("changedPlain"), action: openDocument }]
+      : []),
+    ...(review?.unverifiable ? [{ id: "unverifiable" as const, line: tReview("unverifiablePlain") }] : []),
+    ...(reasonsMissing > 0
+      ? [{
+          id: "reasons-missing" as const,
+          line: tPanel("reasonsMissing", { count: reasonsMissing }),
+          action: meaningReview
+            ? { label: meaningReview.label, emphasis: "meaning-review" as const, onSelect: meaningReview.onOpen }
+            : undefined,
+        }]
+      : []),
+    ...(mtimeConflict ? [{ id: "edit-conflict" as const, line: <span role="status">{labels.editConflictMessage}</span> }] : []),
+    ...(summaryLine ? [{ id: "summary" as const, line: summaryLine }] : []),
+  ];
+  const lead = judgmentItems[0];
+  const emphasis: PanelEmphasis = showSourceRemedy
+    ? "project-source"
+    : lead
+      ? lead.action && !suppressPrimaryAction ? lead.action.emphasis : "judgment"
+      : isDocument && documentHref && !suppressPrimaryAction
+        ? "open-document"
+        : "none";
+
   const editActions: DetailActionItem[] = [
     onEditRelations
       ? {
@@ -171,47 +205,28 @@ export function OntologyMapDetailPanel({
       : []),
   ];
   const moreActions: DetailActionItem[] = [
-    ...(discoveryAction ? [{ label:discoveryAction.label, icon:<CircleHelp size={ICON_SIZE.sm} aria-hidden/>, testId:"map-detail-panel-action-gray-area", onSelect:discoveryAction.onOpen }] : []),
-    ...(documentHref
-      ? [
-          {
-            label: labels.actionDocument,
-            icon: <FileText size={ICON_SIZE.sm} aria-hidden />,
-            testId: "map-detail-panel-action-document",
-            href: documentHref,
-          },
-        ]
+    ...(meaningReview
+      ? [{ label: meaningReview.label, icon: <ScanSearch size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-meaning", onSelect: meaningReview.onOpen }]
       : []),
-    ...(canAskAgent && showInlineHandoff
-      ? [
-          {
-            label: labels.actionCopyHandoff,
-            icon: <Copy size={ICON_SIZE.sm} aria-hidden />,
-            testId: "map-detail-panel-action-handoff",
-            onSelect: () => onCopyHandoff(handoffText),
-          },
-        ]
+    ...(onAskAgent && labels.actionAskAgent
+      ? [{ label: labels.actionAskAgent, icon: <MessageCircle size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-ask-agent", onSelect: onAskAgent }]
+      : []),
+    ...(showInlineHandoff
+      ? [{ label: labels.actionCopyHandoff, icon: <Copy size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-handoff", onSelect: () => onCopyHandoff(handoffText) }]
+      : []),
+    ...(discoveryAction
+      ? [{ label: discoveryAction.label, icon: <CircleHelp size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-gray-area", onSelect: discoveryAction.onOpen }]
+      : []),
+    ...(documentHref && !isDocument
+      ? [{ label: labels.actionDocument, icon: <FileText size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-document", href: documentHref }]
       : []),
     ...(onEnterRealm
-      ? [
-          {
-            label: labels.actionRealm,
-            icon: <Orbit size={ICON_SIZE.sm} aria-hidden />,
-            testId: "map-detail-panel-action-realm",
-            onSelect: onEnterRealm,
-          },
-        ]
+      ? [{ label: labels.actionRealm, icon: <Orbit size={ICON_SIZE.sm} aria-hidden />, testId: "map-detail-panel-action-realm", onSelect: onEnterRealm }]
       : []),
   ];
   /*
-   * When the panel disappears, the map's emphasis goes with it.
-   *
-   * **Pressing** a row while the cursor rests on it changes the node, and the call
-   * site swaps the `key` to rebuild the panel entirely — that row leaves the DOM,
-   * so `pointerleave` never arrives. The map is then left with an emphasis nobody
-   * is pointing at. The latest callback is held in a ref and cleared once on
-   * unmount (so it is not turned off and on again every time the callback's
-   * identity changes).
+   * Pressing a row swaps the panel's `key`, so the row leaves without `pointerleave`; the map's
+   * emphasis is cleared once on unmount through the latest callbacks.
    */
   const clearHoverRef = useRef<() => void>(() => {});
   useEffect(() => {
@@ -235,8 +250,7 @@ export function OntologyMapDetailPanel({
   return (
     /*
      * `Surface` carries the exit window. The outer box carries width only; the inner box is the
-     * scroll container and the sticky footer anchors to its scrollport. Small menus inside keep
-     * chrome motion.
+     * one scroll body, and the footer stays outside its clipping boundary.
      */
     <Surface
       open={open}
@@ -263,14 +277,12 @@ export function OntologyMapDetailPanel({
         data-surface-role="active-node-inspector"
         data-attention-role="supporting-detail"
         data-datasheet-density="instrument"
+        data-panel-emphasis={emphasis}
+        data-primary-action-suppressed={suppressPrimaryAction ? "true" : undefined}
         onKeyDown={handleKeyDown}
         // The viewport cap keeps the footer in reach. `--map-inspector-max-height` is this surface's alias:
         // below `lg` it is a bottom sheet the meaning editor sharing this anchor must not inherit.
-        // The reading body scrolls; the footer stays outside its clipping boundary.
         className={[
-          // Width is decided by the outer `Surface` (including the consumer
-          // className's responsive width override) — here it only fills that width
-          // and carries the remaining material.
           "flex w-full flex-col",
           "max-h-[var(--map-inspector-max-height)] overflow-hidden",
           "rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)]",
@@ -278,256 +290,189 @@ export function OntologyMapDetailPanel({
           "shadow-[var(--map-panel-shadow)]",
         ].join(" ")}
       >
-        <div data-testid="map-detail-panel-body" className="min-h-0 overflow-y-auto pb-3">
-        {/* Identity precedes source state and actions. */}
-        <IdentityZone
-          nodeId={nodeId}
-          title={title}
-          sourceTitle={sourceTitle}
-          kind={kind}
-          domain={domain}
-          powered={powered}
-          updatedAtLabel={updatedAtLabel}
-          labels={labels}
-          onSelectConnection={onSelectConnection}
-          onHoverConnection={onHoverConnection}
-          onClose={onClose}
-          closeButtonRef={closeButtonRef}
-          showSourcePath={showSourcePath}
-          projectLayout={projectLayout}
-        />
+        <div data-testid="map-detail-panel-body" className="min-h-0 overflow-y-auto">
+          <IdentityZone
+            nodeId={nodeId}
+            title={title}
+            kind={kind}
+            owner={owner}
+            review={review}
+            powered={powered}
+            updatedAtLabel={updatedAtLabel}
+            labels={labels}
+            onSelectConnection={onSelectConnection}
+            onHoverConnection={onHoverConnection}
+            onClose={onClose}
+            closeButtonRef={closeButtonRef}
+          />
 
-        <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
+          <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 
-        {/* ZONE 2 · OPS — the last-edit/conflict row (only with real data) plus the
-            plain stats plus the quiet action strip. */}
-        <div className="flex flex-col gap-3 px-[var(--map-panel-pad)] pt-3 pb-2.5">
-          {lastEditSubject ? (
-            <LastEditSubjectRow
-              kind={lastEditSubject.kind}
-              prefixLabel={labels.editSubjectPrefix}
-              subjectLabel={lastEditSubject.kind === "agent" ? labels.editSubjectAgent : labels.editSubjectHuman}
-              ageLabel={lastEditSubject.ageLabel}
-            />
-          ) : null}
-          {mtimeConflict ? <MtimeConflictBadge message={labels.editConflictMessage} /> : null}
-          {summaryHistoryUnavailable && labels.summaryHistoryUnavailable ? (
-            <p role="status" data-testid="summary-history-unavailable" className="text-balance text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {labels.summaryHistoryUnavailable}
-            </p>
-          ) : summaryStaleness && labels.summaryFreshnessPrefix && labels.summaryFreshnessLag && labels.summaryFreshnessAction ? (
-            <SummaryFreshnessRow
-              prefixLabel={labels.summaryFreshnessPrefix}
-              lagLabel={labels.summaryFreshnessLag}
-              actionLabel={labels.summaryFreshnessAction}
-            />
-          ) : null}
-
-          {/* A project replaces the same position with the receipt rail. Everything
-              else keeps the existing plain stats (one aggregate line). While the receipt is
-              read the same element holds its place — heading, a pending status line and the
-              measured line's height — so the rows arrive where they will stay, and the live
-              region announcing them is the one that was already there. */}
-          {projectLayout ? (
-            <div
-              data-testid={showProjectSource ? "map-project-source-receipt" : "map-project-source-pending"}
-              data-source-status={showProjectSource ? projectSource.status : undefined}
-              data-source-version={showProjectSource ? projectSource.contractVersion : undefined}
-              data-source-measured-at={showProjectSource ? projectSource.measuredAt ?? "unmeasured" : undefined}
-              data-source-top-gap={showProjectSource ? projectSource.topGap?.id ?? "none" : undefined}
-              data-source-action={showProjectSource ? projectSource.nextAction.id : undefined}
-              data-source-currentness={showProjectSource ? projectSource.currentness : undefined}
-              data-source-cardinality={showProjectSource ? projectSource.bindingCardinality : undefined}
-              data-source-layout="status-action-separated"
-              data-source-gap-visible={showProjectSource ? projectSource.topGap !== null : undefined}
-              aria-live="polite"
-              aria-busy={showProjectSource ? undefined : true}
-              className="flex flex-col gap-2 text-body text-[color:var(--map-panel-text-tertiary)]"
-            >
-              {labels.sourceHeading ? (
-                <span
-                  data-testid="map-project-source-heading"
-                  className="sr-only"
-                >
-                  {labels.sourceHeading}
-                </span>
-              ) : null}
-              {showProjectSource ? (
-                /* Keyed apart from the pending rows, so these mount fresh and `ai-row-swap`
-                   crossfades them in: the line that said "reading" becomes the answer in place. */
-                <Fragment key="read">
-                  <div className="ai-row-swap flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-secondary)]">
-                    <ProjectSourceStatusIcon status={projectSource.status} />
-                    <span className="truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
-
-                  </div>
-
-                </Fragment>
-              ) : (
-                <ProjectSourcePendingRows key="pending" label={labels.sourcePending} />
-              )}
-              {/* One flex item for the diagnosis and its remedy: the column's 8px gap is paid
-                  once, by this item, whether or not either has arrived. The gap line's own
-                  spacing rides inside its disclosure (`pb-2`), so it opens from zero instead of
-                  a new flex item adding 8px in one frame before any easing starts. */}
-              <div>
-                {gapMounted ? (
-                  <div
-                    ref={gapBoxRef}
-                    className="ai-row-disclosure"
-                    data-state={showSourceGap ? "open" : "closed"}
-                  >
-                    <div ref={gapContentRef} className="ai-row-disclosure-body pb-2">
-                      <p
-                        data-testid="map-project-source-gap"
-                        className="text-[color:var(--map-panel-text-secondary)]"
-                      >
-                        {labels.sourceGapLabel ? (
-                          <span className="sr-only">{labels.sourceGapLabel}: </span>
-                        ) : null}
-                        {heldSourceGap}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
+          <div className="pt-3">
+            {/* The project's source receipt sits in the judgment slot. While it is read the same
+                element holds its place, so the rows arrive where they will stay and the live region
+                announcing them is the one that was already there. */}
+            {projectLayout ? (
+              <div className="px-[var(--map-panel-pad)] pb-3">
                 <div
-                  ref={remedyBoxRef}
-                  className="ai-row-disclosure"
-                  data-state={showSourceRemedy ? "open" : "closed"}
-                  // It stays in the DOM while collapsing, so it is disabled immediately
-                  // to keep an invisible button out of tab order and the screen reader.
-                  inert={!showSourceRemedy}
+                  data-testid={showProjectSource ? "map-project-source-receipt" : "map-project-source-pending"}
+                  data-source-status={showProjectSource ? projectSource.status : undefined}
+                  data-source-version={showProjectSource ? projectSource.contractVersion : undefined}
+                  data-source-measured-at={showProjectSource ? projectSource.measuredAt ?? "unmeasured" : undefined}
+                  data-source-top-gap={showProjectSource ? projectSource.topGap?.id ?? "none" : undefined}
+                  data-source-action={showProjectSource ? projectSource.nextAction.id : undefined}
+                  data-source-currentness={showProjectSource ? projectSource.currentness : undefined}
+                  data-source-cardinality={showProjectSource ? projectSource.bindingCardinality : undefined}
+                  data-source-layout="status-action-separated"
+                  data-source-gap-visible={showProjectSource ? projectSource.topGap !== null : undefined}
+                  aria-live="polite"
+                  aria-busy={showProjectSource ? undefined : true}
+                  className="flex flex-col gap-2 text-body text-[color:var(--map-panel-text-tertiary)]"
                 >
-                  {remedyMounted ? (
-                    /*
-                     * The card's 2px lead-in is padding on the measured body, not a margin: a child's top margin
-                     * collapses through the body, so the disclosure would size 2px short and `overflow: hidden`
-                     * cut the card's border.
-                     */
-                    <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
-                      <ProjectSourceRemedy
-                        why={projectSource?.nextAction.id === "remeasure_source" ? undefined : labels.sourceWhy}
-                        actionLabel={labels.sourceAction}
-                        busyLabel={labels.sourceBusy}
-                        busy={projectSourceBusy}
-                        onAction={onProjectSourceAction}
-                        degraded={projectSourceDegraded}
-                        proposal={projectSourceProposal}
-                        onConfirmProposal={onProjectSourceConfirmProposal}
-                      />
+                  {labels.sourceHeading ? (
+                    <span data-testid="map-project-source-heading" className="sr-only">
+                      {labels.sourceHeading}
+                    </span>
+                  ) : null}
+                  {showProjectSource ? (
+                    /* Keyed apart from the pending rows, so these mount fresh and `ai-row-swap`
+                       crossfades them in: the line that said "reading" becomes the answer in place. */
+                    <Fragment key="read">
+                      <div className="ai-row-swap flex min-w-0 items-center gap-1.5 text-[color:var(--map-panel-text-secondary)]">
+                        <ProjectSourceStatusIcon status={projectSource.status} />
+                        <span className="min-w-0 flex-1 truncate font-[var(--font-weight-signature)]">{labels.sourceStatus}</span>
+                        {/* With no gap the next action stays quiet beside the status: nothing needs a person. */}
+                        {labels.sourceAction && !showSourceRemedy ? (
+                          onProjectSourceAction ? (
+                            <button
+                              type="button"
+                              onClick={() => { void onProjectSourceAction(); }}
+                              disabled={projectSourceBusy}
+                              aria-busy={projectSourceBusy}
+                              data-testid="map-project-source-action"
+                              className={`${panelActionClass(false)} disabled:cursor-wait`}
+                            >
+                              {projectSourceBusy ? labels.sourceBusy ?? labels.sourceAction : labels.sourceAction}
+                            </button>
+                          ) : (
+                            <span className="shrink-0">{labels.sourceAction}</span>
+                          )
+                        ) : null}
+                      </div>
+                    </Fragment>
+                  ) : (
+                    <ProjectSourcePendingRows key="pending" label={labels.sourcePending} />
+                  )}
+                  {/* One flex item for the diagnosis and its remedy: the column's gap is paid once,
+                      and the gap line's own spacing rides inside its disclosure so it opens from zero. */}
+                  <div>
+                    {gapMounted ? (
+                      <div
+                        ref={gapBoxRef}
+                        className="ai-row-disclosure"
+                        data-state={showSourceGap ? "open" : "closed"}
+                      >
+                        <div ref={gapContentRef} className="ai-row-disclosure-body pb-2">
+                          <p data-testid="map-project-source-gap" className="text-[color:var(--map-panel-text-secondary)]">
+                            {labels.sourceGapLabel ? (
+                              <span className="sr-only">{labels.sourceGapLabel}: </span>
+                            ) : null}
+                            {heldSourceGap}
+                          </p>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div
+                      ref={remedyBoxRef}
+                      className="ai-row-disclosure"
+                      data-state={showSourceRemedy ? "open" : "closed"}
+                      // It stays in the DOM while collapsing, so it is disabled immediately
+                      // to keep an invisible button out of tab order and the screen reader.
+                      inert={!showSourceRemedy}
+                    >
+                      {remedyMounted ? (
+                        /* The card's 2px lead-in is padding on the measured body, not a margin, which
+                           would collapse through it and let `overflow: hidden` cut the card's border. */
+                        <div ref={remedyContentRef} className="ai-row-disclosure-body pt-0.5">
+                          <ProjectSourceRemedy
+                            why={projectSource?.nextAction.id === "remeasure_source" ? undefined : labels.sourceWhy}
+                            actionLabel={labels.sourceAction}
+                            busyLabel={labels.sourceBusy}
+                            busy={projectSourceBusy}
+                            onAction={onProjectSourceAction}
+                            degraded={projectSourceDegraded}
+                            proposal={projectSourceProposal}
+                            onConfirmProposal={onProjectSourceConfirmProposal}
+                          />
+                        </div>
+                      ) : null}
                     </div>
+                  </div>
+                  {/* The failure stands under the pressed button: above the remedy it would push the
+                      button from under the pointer and drop keyboard focus to `<body>`. */}
+                  {projectSourceError ? (
+                    <span
+                      role="status"
+                      data-testid="map-project-source-error"
+                      className="text-[color:var(--color-status-danger)]"
+                    >
+                      {projectSourceError}
+                    </span>
+                  ) : null}
+                  {showProjectSource ? (
+                    <Disclosure summary={labels.sourceRecord ?? labels.sourceHeading} summaryTestId="map-project-source-record">
+                      <div className="flex flex-col gap-1 pb-2 text-label text-[color:var(--map-panel-text-tertiary)]">
+                        <span>{labels.sourceMeasuredAt}</span>
+                        <span>{labels.sourceKind} · {labels.sourceCurrentness}</span>
+                      </div>
+                    </Disclosure>
                   ) : null}
                 </div>
               </div>
-              {/* The failure stands under the pressed button: above the remedy it would push the button from
-                 under the pointer and drop keyboard focus to `<body>`. */}
-              {projectSourceError ? (
-                <span
-                  role="status"
-                  data-testid="map-project-source-error"
-                  className="text-[color:var(--color-status-danger)]"
-                >
-                  {projectSourceError}
-                </span>
-              ) : null}
-              {showProjectSource ? (
-                <Disclosure summary={labels.sourceRecord ?? labels.sourceHeading} summaryTestId="map-project-source-record">
-                  <div className="flex flex-col gap-1 pb-2 text-label text-[color:var(--map-panel-text-tertiary)]">
-                    <span>{labels.sourceMeasuredAt}</span>
-                    <span>{labels.sourceKind} · {labels.sourceCurrentness}</span>
-                  </div>
-                </Disclosure>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* Only one line outside. Fold the rest into meaning-based menus to limit choices at the moment of reading a node to three. Navigate via the map + ACP global navigation. */}
-          <div
-            role="group"
-            aria-label={labels.actionsGroupLabel}
-            data-testid="map-detail-panel-actions"
-            data-primary-action-suppressed={suppressPrimaryAction ? "true" : undefined}
-            className={projectLayout
-              ? "flex items-center gap-1.5 border-t border-[color:var(--map-panel-zone-divider)] pt-3"
-              : "flex items-center gap-1.5"}
-          >
-            {!suppressPrimaryAction && meaningReview ? (
-              <Button variant={projectLayout && showSourceRemedy ? "ghost" : "primary"} size="sm" onClick={meaningReview.onOpen} data-testid="map-detail-panel-action-meaning" data-action-role={projectLayout && showSourceRemedy ? "secondary" : "primary"} className={PRIMARY_ACTION_CLASS}>
-                <ScanSearch size={ICON_SIZE.sm} aria-hidden />
-                <span className="truncate">{meaningReview.label}</span>
-              </Button>
-            ) : !suppressPrimaryAction && canAskAgent ? (
-              <Button
-                size="sm"
-                onClick={onAskAgent}
-                aria-label={labels.actionAskAgent}
-                title={labels.actionAskAgentTip}
-                data-testid="map-detail-panel-action-ask-agent"
-                data-action-role="primary"
-                className={PRIMARY_ACTION_CLASS}
-              >
-                <MessageCircle size={ICON_SIZE.sm} aria-hidden />
-                <span className="truncate">{labels.actionAskAgent}</span>
-              </Button>
-            ) : !suppressPrimaryAction && showInlineHandoff ? (
-              <Button
-                size="sm"
-                onClick={() => onCopyHandoff(handoffText)}
-                aria-label={labels.handoff}
-                data-testid="map-detail-panel-action-handoff"
-                data-action-role="primary"
-                className={PRIMARY_ACTION_CLASS}
-              >
-                <Copy size={ICON_SIZE.sm} aria-hidden />
-                <span className="truncate">{labels.actionCopyHandoff}</span>
-              </Button>
             ) : null}
-            <DetailActionMenu
-              label={labels.actionEditMenu}
-              triggerTestId="map-detail-panel-edit-menu-trigger"
-              menuTestId="map-detail-panel-edit-menu"
-              open={actionMenu === "edit"}
-              onOpenChange={(next) => setActionMenu(next ? "edit" : null)}
-              items={editActions}
-            />
-            <DetailActionMenu
-              label={labels.actionMore}
-              triggerTestId="map-detail-panel-more-menu-trigger"
-              menuTestId="map-detail-panel-more-menu"
-              iconOnly
-              open={actionMenu === "more"}
-              onOpenChange={(next) => setActionMenu(next ? "more" : null)}
-              items={moreActions}
-            />
+            <JudgmentZone items={judgmentItems} actionFilled={lead?.action !== undefined && emphasis === lead.action.emphasis} />
+            <MeaningZone definition={definition} />
           </div>
-        </div>
 
-        <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
+          <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 
-        <RelationsZone
-          kind={kind}
-          reach={reach}
-          groups={groups}
-          labels={labels}
-          onSelectConnection={onSelectConnection}
-          onHoverConnection={onHoverConnection}
-        />
-
-        {/* Footer (sticky) — the slug (left, last segment only; the full value on
-            `title=` hover) plus the indigo-filled primary 「All Details」 (the one and
-            only emphasis). The root is an unpadded scroll container, so it anchors
-            with `sticky bottom-0` and no negative margins — it stays inside the
-            viewport even when the content overflows (P3-③). */}
+          <RelationsZone
+            kind={kind}
+            reach={reach}
+            groups={groups}
+            labels={labels}
+            onSelectConnection={onSelectConnection}
+            onHoverConnection={onHoverConnection}
+          />
         </div>
         <PanelFooter
           slug={slug}
           labels={labels}
+          documentAction={isDocument && documentHref ? { href: documentHref, filled: !lead && emphasis === "open-document" } : null}
           onOpenFullDetail={onOpenFullDetail}
-          onProjectSourceAction={onProjectSourceAction}
-          projectSourceBusy={projectSourceBusy}
-          showProjectSource={showProjectSource}
-          projectLayout={projectLayout}
-          showSourceRemedy={showSourceRemedy}
+          menus={
+            <>
+              {isDocument ? null : (
+                <DetailActionMenu
+                  label={labels.actionEditMenu}
+                  triggerTestId="map-detail-panel-edit-menu-trigger"
+                  menuTestId="map-detail-panel-edit-menu"
+                  open={actionMenu === "edit"}
+                  onOpenChange={(next) => setActionMenu(next ? "edit" : null)}
+                  items={editActions}
+                />
+              )}
+              <DetailActionMenu
+                label={labels.actionMore}
+                triggerTestId="map-detail-panel-more-menu-trigger"
+                menuTestId="map-detail-panel-more-menu"
+                iconOnly
+                open={actionMenu === "more"}
+                onOpenChange={(next) => setActionMenu(next ? "more" : null)}
+                items={moreActions}
+              />
+            </>
+          }
         />
       </div>
     </Surface>

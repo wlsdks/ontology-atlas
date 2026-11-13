@@ -484,25 +484,8 @@ export function validateWebviewVerifyPayload(payload, {
         ) {
           return "WebView project source receipt rendered a healthy no-gap row";
         }
-        const renderedActionCount = Number(
-          payload.markers.ontologyMapProjectSourceRenderedActionCount || 0,
-        );
-        if (
-          payload.markers.ontologyMapProjectSourceAction === "use_current_evidence" &&
-          renderedActionCount !== 4
-        ) {
-          return `WebView current project source receipt rendered ${renderedActionCount} inline actions, expected 4`;
-        }
-        if (
-          renderedActionCount > 0 &&
-          Number(payload.markers.ontologyMapProjectSourceInlineActionMinWidth || 0) < 56
-        ) {
-          return `WebView project source inline action minimum width was ${payload.markers.ontologyMapProjectSourceInlineActionMinWidth || "missing"}px`;
-        }
         for (const [label, value] of [
-          ["receipt/actions", payload.markers.ontologyMapProjectSourceReceiptActionOverlap],
           ["receipt/footer", payload.markers.ontologyMapProjectSourceReceiptFooterOverlap],
-          ["actions/footer", payload.markers.ontologyMapProjectSourceActionFooterOverlap],
         ]) {
           if (Number(value || 0) > 0.5) {
             return `WebView project source ${label} overlap was ${value}px²`;

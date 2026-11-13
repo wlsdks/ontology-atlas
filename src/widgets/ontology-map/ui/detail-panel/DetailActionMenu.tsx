@@ -89,13 +89,14 @@ export function DetailActionMenu({
           />
         ) : null}
       </button>
+      {/* The menus live in the panel's footer, so they open upward into the panel. */}
       <Surface
         open={open}
-        origin="top right"
+        origin="bottom right"
         role="menu"
         data-testid={menuTestId}
         {...transientSurface("menu")}
-        className="absolute right-0 top-full z-30 mt-1 flex min-w-44 flex-col gap-0.5 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-1 shadow-[var(--map-panel-shadow)]"
+        className="absolute bottom-full right-0 z-30 mb-1 flex min-w-44 flex-col gap-0.5 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-1 shadow-[var(--map-panel-shadow)]"
       >
         {items.map((item) =>
           item.href ? (
