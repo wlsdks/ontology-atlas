@@ -217,8 +217,9 @@ export function useTopologyFocusNavigation({
       if (!realmActive && focusedSlug === null) {
         selectionCameraRef.current = null;
         focusLeashPxRef.current = null;
-        // On the Flat graph letting go of a selection, however it was made, leaves the view where the reader reads on.
-        const back = world.dial?.scene.graph ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
+        // A view the reader moved since the selection framed it is theirs and stays; an untouched one goes back.
+        // On the Flat graph a selection no memory describes has no view to go back to and stays.
+        const back = memory === null && world.dial?.scene.graph ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
         if (back.kind === "return") moveCamera(back.target, tokens, memory?.framed ? undefined : "spring");
         // The released leash must not carry on a pan it was holding short, nor pull back its stretch.
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);
@@ -247,7 +248,7 @@ export function useTopologyFocusNavigation({
         const activeDial = realmData?.dial ?? world.dial;
         const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current, selectionZoomBase(memory, current, gesture));
         const landed = nudge ?? current;
-        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
+        selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture, arrived: preselectedOnArrival });
         const leash = leashFor(width, height, measured);
         focusLeashPxRef.current = node
           ? { x: Math.max(leash.x, Math.abs(node.x - landed.tx) * landed.tscale + 1), y: Math.max(leash.y, Math.abs(node.y - landed.ty) * landed.tscale + 1) }

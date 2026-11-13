@@ -83,7 +83,8 @@ function graphSelectionFrame(
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,
     entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
   });
-  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
+  const farEnds = [...whole].filter((of) => !near.has(of)).flatMap((of) => world.nodeById.get(of) ?? []);
+  return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom, farEnds);
 }
 
 /**
