@@ -1,4 +1,31 @@
 import { expect, test } from '@playwright/test';
+import { createRequire } from 'node:module';
+import { stubDirectoryPicker } from './vault-picker-stub';
+import { FIXTURE_VAULT } from './fixture-vault';
+import { seedFirstRunSeen } from './first-run-seed';
+
+test('paints the still companion at a deep-linked welcome before any interaction', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await stubDirectoryPicker(page, FIXTURE_VAULT);
+  await seedFirstRunSeen(page);
+  await page.goto('/en/topology/?guides=off', { waitUntil: 'networkidle' });
+  await page.getByTestId('first-run-starter-open').click();
+  await page.getByTestId('vault-guide-pick-existing').click();
+  await expect(page.getByTestId('first-run-starter')).toHaveCount(0);
+  await page.goto('/en/download/?guides=off#gateway-closing-title', { waitUntil: 'networkidle' });
+  const stage = page.locator('[data-moru-playground]');
+  await stage.locator('img').first().evaluate(image => (image as HTMLImageElement).decode());
+  const clip = await stage.boundingBox();
+  expect(clip).not.toBeNull();
+  const require = createRequire(`${process.cwd()}/package.json`);
+  const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+  const pixels: Buffer = await sharp(await page.screenshot({ clip: clip! })).removeAlpha().raw().toBuffer();
+  let bodyPixels = 0;
+  for (let i = 0; i < pixels.length; i += 3) {
+    if (pixels[i] > 150 && pixels[i + 1] > 140 && pixels[i + 2] < pixels[i + 1] + 10) bodyPixels++;
+  }
+  expect(bodyPixels, 'the loaded still character must paint real gray/ivory pixels').toBeGreaterThan(1000);
+});
 
 test('hover lets an airborne hop land before holding the character', async ({ page }) => {
   await page.goto('/en/download/?guides=off');
