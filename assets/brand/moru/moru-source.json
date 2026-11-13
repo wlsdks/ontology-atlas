@@ -1653,7 +1653,7 @@
       "id": "ontology-orbit",
       "label": "Floating ontology",
       "context": "Expressive catalogue scene. The floating model is illustrative and does not represent vault data, progress or accepted meaning.",
-      "source": "source/motion-v6/ontology-orbit.png",
+      "source": "source/motion-v6/ontology-orbit-corrected.png",
       "columns": 4,
       "rows": 6,
       "offset": 0,
@@ -1691,7 +1691,7 @@
       "id": "ontology-dance",
       "label": "Ontology rhythm",
       "context": "Expressive catalogue scene. The floating model is illustrative and does not represent vault data, progress or accepted meaning.",
-      "source": "source/motion-v6/ontology-dance.png",
+      "source": "source/motion-v6/ontology-dance-corrected.png",
       "columns": 4,
       "rows": 6,
       "offset": 0,
@@ -1723,7 +1723,8 @@
         1000
       ],
       "scene": true,
-      "airborne": false
+      "airborne": false,
+      "alphaCutoff": 232
     }
   ],
   "compositions": [
