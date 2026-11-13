@@ -34,7 +34,7 @@ Folder selection offers a small folder; opening yields to the existing waiting v
 A busy chooser that stays mounted uses quiet stationary poses.
 The download invitation has its own welcome. Short hops move only while airborne.
 Petting Moru plays one shy, clap or dance response after an airborne hop lands;
-repeated presses do not queue more reactions. A separate button pauses/resumes play.
+repeated presses do not queue more reactions. Pause/resume lives in Moru’s context menu (right-click or Shift+F10), with no persistent playback button beside the character.
 Pointer/keyboard interaction and hidden/offscreen state suspend ambient motion;
 reduced motion answers a pet with a still expression. Large pending fallbacks use
 native 128px art. Work and completion poses still require their existing evidence.

@@ -83,7 +83,7 @@ retaining evidence-bound motion and raster tier constraints (`docs/DECISIONS.md:
 2. When the person reads any README or visits the existing gateway/download,
    Atlas presents compass identity and Moru without changing the promise or CTA facts.
 3. When the person enters folder selection, Atlas uses the existing welcome slot:
-   bounded decorative play with finite pet reactions, a separate pause button and reduced-motion stillness; re-renders do not restart it.
+   bounded decorative play with finite pet reactions, a character context menu for pause/resume and reduced-motion stillness; re-renders do not restart it.
 4. When the person starts a real pending operation, Moru accompanies the existing
    status/cancel controls without progress percentages, read claims, or predictions.
 5. When the person's feed verifies a read, Atlas keeps the finite entrance/read
@@ -115,7 +115,7 @@ Runtime art mapping (other catalogue clips have service contexts, not new app st
 
 | Context | Named source and playback | Still / transition |
 |---|---|---|
-| First-run / download welcome | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` in a bounded playground | Continuous play; explicit pause, visibility and reduced-motion guards |
+| First-run / download welcome | Contextual native 128px selection/welcome gestures | Bounded play; context-menu pause, visibility and reduced-motion guards |
 | Actual pending | `blink`; `connect` for tool preparation, `source-read` for Compile; existing guarded cadence | Neutral; active=false removes the mark |
 | Verified entrance (`walk`) | `wave`, finite 1920ms entrance | Neutral shared endpoint before read |
 | Verified read (`read`) | `source-read`, one twenty-four-frame finite cycle (1920ms) | Neutral; text retains read state after motion ends |
@@ -221,7 +221,7 @@ None — character, name, compass family, and surfaces are authorized; compass r
 
 The 2026-11-13 owner correction replaces the finite entry greeting and static
 download portrait with native 128px decorative play. Copy keys `moru.pause`,
-`moru.resume` and `moru.still` name the separate playback control in all four locales; `moru.interact` names the transparent character target (English: “Pet Moru”).
+`moru.resume` and `moru.still` name the character context-menu playback action in all four locales; `moru.interact` names the transparent character target (English: “Pet Moru”).
 The stage owns travel bounds; work-state authority and navigation stay unchanged.
 
 The later owner correction makes character presses produce one finite `shy`, `clap`
@@ -230,3 +230,7 @@ Airborne hops land before reacting; repeated clicks do not queue. A busy chooser
 uses quiet `blink`/`tilt` waiting; folder opening can replace it with the existing
 waiting view. Download uses a welcome without the folder prop.
 Explicit pause and reduced motion permit a still expression without resumed motion.
+
+The owner rejected an always-visible playback icon beside Moru. Only the character
+is visible at rest; secondary-click or Shift+F10 opens the existing pause/resume
+action in a dismissible context menu. Primary click still gives the finite response.

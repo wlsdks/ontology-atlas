@@ -510,9 +510,11 @@ describe('DownloadPage', () => {
         'src',
         '/brand/atlas-symbol.png',
       );
-      const companion = within(screen.getByTestId('gateway-closing')).getByRole('button', { name: 'Pause Moru animation' });
-      fireEvent.click(companion);
-      expect(companion).toHaveAccessibleName('Resume Moru animation');
+      const companion = within(screen.getByTestId('gateway-closing')).getByRole('button', { name: 'Pet Moru' });
+      expect(within(screen.getByTestId('gateway-closing')).getAllByRole('button')).toHaveLength(1);
+      fireEvent.contextMenu(companion);
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Pause Moru animation' }));
+      expect(companion).toHaveAttribute('data-moru-paused', 'true');
       // Moru belongs to the closing invitation, clear of the graph's data marks.
       expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });

@@ -34,14 +34,14 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
     });
     expect(background).toBe('rgba(0, 0, 0, 0)');
   } finally { await page.mouse.up(); }
-  await expect(page.getByRole('button', { name: 'Pause Moru animation' })).toBeVisible();
+  await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
   await page.mouse.move(0, 0);
   await expect(pet).not.toHaveAttribute('data-moru-reaction');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).every(a => a.playState === 'running'))).toBe(true);
 });
 
-test('keyboard petting retains focus and the separate pause survives another expression', async ({ page }) => {
+test('keyboard petting and its context menu preserve focus and an explicit pause', async ({ page }) => {
   await page.goto('/en/?shell=desktop&guides=off');
   const pet = page.getByRole('button', { name: 'Pet Moru' });
   await pet.focus();
@@ -49,9 +49,14 @@ test('keyboard petting retains focus and the separate pause survives another exp
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
   await expect(pet).toBeFocused();
   await expect(pet).not.toHaveAttribute('data-moru-reaction');
-  await page.getByRole('button', { name: 'Pause Moru animation' }).click();
+  await page.keyboard.press('Shift+F10');
+  await expect(page.getByRole('menuitem', { name: 'Pause Moru animation' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(pet).toBeFocused();
+  await pet.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Pause Moru animation' }).click();
   await pet.click();
-  await expect(page.getByRole('button', { name: 'Resume Moru animation' })).toBeVisible();
+  await expect(pet).toHaveAttribute('data-moru-paused', 'true');
   await expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
   await expect.poll(() => pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).every(a => a.playState === 'paused'))).toBe(true);
 });
@@ -62,6 +67,8 @@ test('reduced motion offers still feedback without starting any animation', asyn
   const pet = page.getByRole('button', { name: 'Pet Moru' });
   await pet.click();
   await expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
-  await expect(page.getByRole('button', { name: 'Moru · reduced motion' })).toBeDisabled();
+  await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
+  await pet.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Moru · reduced motion' })).toBeDisabled();
   expect(await pet.evaluate(element => element.closest('[data-moru-playground]')!.getAnimations({ subtree: true }).filter(a => !(a instanceof CSSTransition)).length)).toBe(0);
 });

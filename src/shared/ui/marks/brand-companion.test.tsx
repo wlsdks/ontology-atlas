@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { BrandCompanion } from './brand-companion';
 import { companionMotion } from './moru-companion-motion';
@@ -41,7 +41,8 @@ it('pauses all movement while hidden and preserves an explicit pause when visibi
   render(<BrandCompanion labels={labels} />);
   act(() => reveal(true));
   for (const animation of animations) expect(animation.play).toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'pause' }));
+  fireEvent.contextMenu(screen.getByRole('button', { name: 'pet' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'pause' }));
   for (const animation of animations) { expect(animation.pause).toHaveBeenCalled(); animation.play.mockClear(); }
   hidden = true;
   fireEvent(document, new Event('visibilitychange'));
@@ -49,7 +50,12 @@ it('pauses all movement while hidden and preserves an explicit pause when visibi
   fireEvent(document, new Event('visibilitychange'));
   act(() => { reveal(false); reveal(true); });
   for (const animation of animations) expect(animation.play).not.toHaveBeenCalled();
-  fireEvent.click(screen.getByRole('button', { name: 'resume' }));
+  fireEvent.contextMenu(screen.getByRole('button', { name: 'pet' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'resume' }));
+  expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-paused', 'false');
+  // Menu dismissal restores keyboard focus; leave that intentional hold before
+  // checking that the explicit pause has been lifted.
+  fireEvent.blur(screen.getByRole('button', { name: 'pet' }));
   for (const animation of animations) expect(animation.play).toHaveBeenCalled();
 });
 
@@ -76,17 +82,19 @@ it('cancels decorative movement when reduced motion is requested and on unmount'
   act(() => reveal(true));
   act(() => { reduced = true; for (const listener of listeners) listener(); });
   for (const animation of animations) expect(animation.cancel).toHaveBeenCalledOnce();
-  expect(screen.getByRole('button', { name: 'still' })).toBeDisabled();
+  fireEvent.contextMenu(screen.getByRole('button', { name: 'pet' }));
+  expect(screen.getByRole('menuitem', { name: 'still' })).toBeDisabled();
   expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-paused', 'true');
   unmount();
   expect(listeners.size).toBe(0);
 });
 
-it('responds to a pet without toggling the separate pause control', () => {
+it('shows only the character and responds without adding playback buttons', () => {
   render(<BrandCompanion labels={labels} />);
   act(() => reveal(true));
   fireEvent.click(screen.getByRole('button', { name: 'pet' }));
-  expect(screen.getByRole('button', { name: 'pause' })).toBeInTheDocument();
+  expect(screen.getAllByRole('button')).toHaveLength(1);
+  expect(screen.queryByRole('menu')).toBeNull();
   expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-reaction', 'shy');
 });
 
@@ -99,14 +107,15 @@ it('finishes one reaction before accepting another and does not lose an explicit
   expect(first.options.iterations ?? 1).toBe(1);
   fireEvent.click(pet); fireEvent.click(pet);
   expect(animations.at(-1)).toBe(first);
-  fireEvent.click(screen.getByRole('button', { name: 'pause' }));
+  fireEvent.contextMenu(screen.getByRole('button', { name: 'pet' }));
+  fireEvent.click(screen.getByRole('menuitem', { name: 'pause' }));
   expect(first.pause).toHaveBeenCalled();
   act(() => first.onfinish?.());
   for (const animation of animations.slice(0, 3)) animation.play.mockClear();
   fireEvent.click(pet);
   expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
   for (const animation of animations.slice(0, 3)) expect(animation.play).not.toHaveBeenCalled();
-  expect(screen.getByRole('button', { name: 'resume' })).toBeInTheDocument();
+  expect(pet).toHaveAttribute('data-moru-paused', 'true');
 });
 
 it('suspends a pet reaction offscreen and cancels it when the view leaves', () => {
@@ -159,4 +168,16 @@ it('answers a pet with a still expression under reduced motion', () => {
   fireEvent.click(pet);
   expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
   expect(animations).toHaveLength(0);
+});
+
+it('opens playback only on a context-menu request and restores focus on Escape', async () => {
+  render(<BrandCompanion labels={labels} />);
+  const pet = screen.getByRole('button', { name: 'pet' });
+  expect(screen.queryByRole('menu')).toBeNull();
+  fireEvent.keyDown(pet, { key: 'F10', shiftKey: true });
+  const item = screen.getByRole('menuitem', { name: 'pause' });
+  await waitFor(() => expect(item).toHaveFocus());
+  fireEvent.keyDown(item, { key: 'Escape' });
+  expect(pet).toHaveFocus();
+  expect(pet).toHaveAttribute('aria-expanded', 'false');
 });

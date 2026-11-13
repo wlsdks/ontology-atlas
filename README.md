@@ -199,7 +199,7 @@ Use `--scope=<selector>` to audit one visible modal or region. The selector must
 
 Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [50 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
 
-At folder entry, Moru greets, offers a small folder and waits. Play gives way to the existing waiting view when a folder opens. The download invitation uses a separate welcome. Hops travel only while airborne. Pet Moru for a brief shy, clap or dance response; a separate button pauses play. Reduced motion keeps a still expression.
+At folder entry, Moru greets, offers a small folder and waits. Play gives way to the existing waiting view when a folder opens. The download invitation uses a separate welcome. Hops travel only while airborne. Pet Moru for a brief shy, clap or dance response; right-click Moru or press Shift+F10 for pause/resume. No playback button sits beside the character. Reduced motion keeps a still expression.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
