@@ -29,13 +29,15 @@ Initial repository analysis distinguishes authored Markdown from literal example
 Document excerpts report omitted prose with an exact, hash-bound source read;
 truncated evidence requires review and does not authorize meaning writes.
 
-Folder entry and the download invitation use a native-resolution Moru playground.
-Moru greets, looks around, presents a small folder and waits for a choice. Its short hops move only during the airborne poses; planted feet stay in place. Pressing the
-character pauses/resumes play; pointer/keyboard interaction, hidden/offscreen state
-and reduced motion suspend movement. The missing-page
-screen uses a static curious portrait in its existing icon slot. These expressions
-leave labels and actions authoritative. Connection, Compile and verified-read
-artwork follows the corresponding existing state, with visibility and reduced-motion guards.
+Folder entry and the download invitation use native-resolution Moru in a bounded space.
+Folder selection offers a small folder; opening yields to the existing waiting view.
+A busy chooser that stays mounted uses quiet stationary poses.
+The download invitation has its own welcome. Short hops move only while airborne.
+Petting Moru plays one shy, clap or dance response after an airborne hop lands;
+repeated presses do not queue more reactions. A separate button pauses/resumes play.
+Pointer/keyboard interaction and hidden/offscreen state suspend ambient motion;
+reduced motion answers a pet with a still expression. Large pending fallbacks use
+native 128px art. Work and completion poses still require their existing evidence.
 
 Agent setup names the connected vault in its post-change sync guidance, including
 when the vault and codebase are separate folders.

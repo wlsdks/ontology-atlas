@@ -9,7 +9,15 @@ const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 export async function buildMoruCompanion() {
   const root = 'assets/brand/moru';
   const catalogue = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
-  const sequence = ['wave', 'blink', 'tilt', 'hop', 'folder-open'];
+  await exportStrip('moru-companion', ['wave', 'blink', 'tilt', 'hop', 'folder-open'], catalogue, root);
+  await exportStrip('moru-reactions', ['shy', 'clap', 'dance'], catalogue, root);
+  // Large pending fallbacks need native 128px source pixels, not an enlarged 64px export.
+  for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) {
+    await writeFile(`public/brand/mascot-${state}-row-128.png`, await readFile(`${root}/${catalogue.clips[id].sprite}`));
+  }
+}
+
+async function exportStrip(name, sequence, catalogue, root) {
   const cell = catalogue.nativeCell;
   let frame = 0;
   const layers = [], clips = {};
@@ -20,7 +28,7 @@ export async function buildMoruCompanion() {
     frame += clip.frames;
   }
   const sprite = await sharp({ create: { width: frame * cell, height: cell, channels: 4, background: '#00000000' } }).composite(layers).png().toBuffer();
-  await writeFile('public/brand/moru-companion.png', sprite);
+  await writeFile(`public/brand/${name}.png`, sprite);
   const digest = createHash('sha256').update(sprite).digest('hex').slice(0, 12);
-  await writeFile('src/shared/ui/marks/moru-companion.json', JSON.stringify({ cell, frames: frame, digest, clips }, null, 2) + '\n');
+  await writeFile(`src/shared/ui/marks/${name}.json`, JSON.stringify({ cell, frames: frame, digest, clips }, null, 2) + '\n');
 }

@@ -1,12 +1,15 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { BrandCompanion } from './brand-companion';
+import { companionMotion } from './moru-companion-motion';
 
-const labels = { pause: 'pause', resume: 'resume', still: 'still' };
+const labels = { pause: 'pause', resume: 'resume', still: 'still', interact: 'pet' };
 let hidden = false, reduced = false;
 let reveal: (visible: boolean) => void;
 const listeners = new Set<() => void>();
-const animations: Array<{ play: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; cancel: ReturnType<typeof vi.fn> }> = [];
+type FakeAnimation = { play: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn>; cancel: ReturnType<typeof vi.fn>;
+  currentTime: number; onfinish: (() => void) | null; frames: Keyframe[]; options: KeyframeAnimationOptions };
+const animations: FakeAnimation[] = [];
 const originalAnimate = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'animate');
 beforeEach(() => {
   hidden = reduced = false;
@@ -21,13 +24,14 @@ beforeEach(() => {
   vi.stubGlobal('ResizeObserver', undefined);
   vi.stubGlobal('getComputedStyle', () => ({ getPropertyValue: () => 'linear' }));
   vi.stubGlobal('Animation', class {});
-  Object.defineProperty(HTMLElement.prototype, 'animate', { configurable: true, value: () => {
-    const animation = { play: vi.fn(), pause: vi.fn(), cancel: vi.fn() };
+  Object.defineProperty(HTMLElement.prototype, 'animate', { configurable: true, value: (frames: Keyframe[], options: KeyframeAnimationOptions) => {
+    const animation = { play: vi.fn(), pause: vi.fn(), cancel: vi.fn(), currentTime: 0, onfinish: null, frames, options };
     animations.push(animation);
     return animation as unknown as Animation;
   } });
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks(); vi.unstubAllGlobals();
   if (originalAnimate) Object.defineProperty(HTMLElement.prototype, 'animate', originalAnimate);
   else Reflect.deleteProperty(HTMLElement.prototype, 'animate');
@@ -52,12 +56,13 @@ it('pauses all movement while hidden and preserves an explicit pause when visibi
 it('holds a moving control still for pointer and keyboard interaction', () => {
   render(<BrandCompanion labels={labels} />);
   act(() => reveal(true));
-  const button = screen.getByRole('button');
+  const button = screen.getByRole('button', { name: 'pet' });
   for (const animation of animations) animation.pause.mockClear();
   fireEvent.pointerEnter(button);
   for (const animation of animations) expect(animation.pause).toHaveBeenCalledOnce();
   fireEvent.pointerLeave(button);
   for (const animation of animations) animation.pause.mockClear();
+  vi.spyOn(button, 'matches').mockReturnValue(true);
   fireEvent.focus(button);
   for (const animation of animations) expect(animation.pause).toHaveBeenCalledOnce();
   fireEvent.pointerEnter(button);
@@ -71,7 +76,87 @@ it('cancels decorative movement when reduced motion is requested and on unmount'
   act(() => reveal(true));
   act(() => { reduced = true; for (const listener of listeners) listener(); });
   for (const animation of animations) expect(animation.cancel).toHaveBeenCalledOnce();
-  expect(screen.getByRole('button', { name: 'still' })).toHaveAttribute('data-moru-paused', 'true');
+  expect(screen.getByRole('button', { name: 'still' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-paused', 'true');
   unmount();
   expect(listeners.size).toBe(0);
+});
+
+it('responds to a pet without toggling the separate pause control', () => {
+  render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  expect(screen.getByRole('button', { name: 'pause' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'pet' })).toHaveAttribute('data-moru-reaction', 'shy');
+});
+
+it('finishes one reaction before accepting another and does not lose an explicit pause', () => {
+  render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  const pet = screen.getByRole('button', { name: 'pet' });
+  fireEvent.click(pet);
+  const first = animations.at(-1)!;
+  expect(first.options.iterations ?? 1).toBe(1);
+  fireEvent.click(pet); fireEvent.click(pet);
+  expect(animations.at(-1)).toBe(first);
+  fireEvent.click(screen.getByRole('button', { name: 'pause' }));
+  expect(first.pause).toHaveBeenCalled();
+  act(() => first.onfinish?.());
+  for (const animation of animations.slice(0, 3)) animation.play.mockClear();
+  fireEvent.click(pet);
+  expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
+  for (const animation of animations.slice(0, 3)) expect(animation.play).not.toHaveBeenCalled();
+  expect(screen.getByRole('button', { name: 'resume' })).toBeInTheDocument();
+});
+
+it('suspends a pet reaction offscreen and cancels it when the view leaves', () => {
+  const { unmount } = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  fireEvent.click(screen.getByRole('button', { name: 'pet' }));
+  const reaction = animations.at(-1)!;
+  hidden = true;
+  fireEvent(document, new Event('visibilitychange'));
+  expect(reaction.pause).toHaveBeenCalled();
+  hidden = false;
+  act(() => reveal(false));
+  reaction.play.mockClear();
+  fireEvent(document, new Event('visibilitychange'));
+  expect(reaction.play).not.toHaveBeenCalled();
+  act(() => reveal(true));
+  expect(reaction.play).toHaveBeenCalled();
+  unmount();
+  expect(reaction.cancel).toHaveBeenCalled();
+  expect(reaction.onfinish).toBeNull();
+});
+
+it('lands an airborne hop before responding and cancels the handoff when unmounted', () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  const motion = companionMotion(32);
+  const airborne = motion.sprite.find(frame => motion.restAt(Number(frame.offset) * motion.duration).delay > 0)!;
+  const time = Number(airborne.offset) * motion.duration;
+  for (const animation of animations) animation.currentTime = time;
+  const pet = screen.getByRole('button', { name: 'pet' });
+  fireEvent.pointerEnter(pet);
+  fireEvent.click(pet);
+  expect(pet).not.toHaveAttribute('data-moru-reaction');
+  const landing = motion.restAt(time);
+  act(() => vi.advanceTimersByTime(landing.delay));
+  expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  for (const animation of animations.slice(0, 3)) expect(animation.currentTime).toBe(landing.at);
+  act(() => animations.at(-1)?.onfinish?.());
+  for (const animation of animations.slice(0, 3)) animation.currentTime = time;
+  fireEvent.click(pet);
+  unmount();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it('answers a pet with a still expression under reduced motion', () => {
+  reduced = true;
+  render(<BrandCompanion labels={labels} />);
+  const pet = screen.getByRole('button', { name: 'pet' });
+  fireEvent.click(pet);
+  expect(pet).toHaveAttribute('data-moru-reaction', 'shy');
+  expect(animations).toHaveLength(0);
 });
