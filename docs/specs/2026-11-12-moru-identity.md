@@ -115,7 +115,7 @@ Runtime art mapping (other catalogue clips have service contexts, not new app st
 
 | Context | Named source and playback | Still / transition |
 |---|---|---|
-| First-run / download welcome | Native 128px `wave`, `tail`, `hop`, `blink`, `dance` in a bounded playground | Continuous play; explicit pause, visibility and reduced-motion guards |
+| First-run / download welcome | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` in a bounded playground | Continuous play; explicit pause, visibility and reduced-motion guards |
 | Actual pending | `blink`; `connect` for tool preparation, `source-read` for Compile; existing guarded cadence | Neutral; active=false removes the mark |
 | Verified entrance (`walk`) | `wave`, finite 1920ms entrance | Neutral shared endpoint before read |
 | Verified read (`read`) | `source-read`, one twenty-four-frame finite cycle (1920ms) | Neutral; text retains read state after motion ends |
