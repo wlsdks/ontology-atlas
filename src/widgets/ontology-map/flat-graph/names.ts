@@ -3,7 +3,7 @@ import type { Box, DialLabels, DialModel, Point } from "../dial/types";
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { domainPartners } from "../model/containment-tree";
 import type { GraphLine } from "./attention";
-import { arcPathInto, emptyArcPath, litLineTrimsInto } from "./marks";
+import { arcPathInto, crowdShare, emptyArcPath, litLineTrimsInto, ORPHAN_ROOM } from "./marks";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
@@ -34,6 +34,8 @@ export interface NameAdmission {
   step: number;
   names: readonly PlacedName[];
   ids: ReadonlySet<string>;
+  /** Which of its candidate sides each capability or element name took, so the step above keeps it there. */
+  sides: ReadonlyMap<string, number>;
 }
 
 export interface NameInput {
@@ -61,6 +63,8 @@ export interface NameInput {
   attentionKey: string;
   discRadius(id: string): number;
   elementSpacingPx: number;
+  /** The line the project carries under its disc while it has one; names keep off its row. */
+  hubCaption: string | null;
 }
 
 /** Whether a screen box overlaps any of `obstacles`. O(obstacles). */
@@ -142,6 +146,30 @@ class Occupancy {
       if (list) list.push(b);
       else this.cells.set(key, [b]);
     }
+  }
+}
+
+/**
+ * Screen boxes held at the low end, the centre and the high end of a zoom step. The gap between two
+ * boxes on an axis is linear in the zoom, so two that overlap nowhere at those three overlap inside
+ * the step only where their anchors cross. Insert and query cost three grid lookups.
+ */
+class StepOccupancy {
+  private readonly grids: readonly Occupancy[];
+  constructor(private readonly scales: readonly [number, number, number]) {
+    this.grids = scales.map((scale) => new Occupancy(CELL_PX / scale));
+  }
+
+  add(at: Point, rel: Box): void {
+    this.grids.forEach((grid, i) => grid.add(worldBox(at, rel, this.scales[i]!)));
+  }
+
+  hits(at: Point, rel: Box): boolean {
+    return this.grids.some((grid, i) => grid.hits(worldBox(at, rel, this.scales[i]!)));
+  }
+
+  hitsAtCentre(at: Point, rel: Box): boolean {
+    return this.grids[1]!.hits(worldBox(at, rel, this.scales[1]!));
   }
 }
 
@@ -505,8 +533,18 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
 
 interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 
-function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Candidate[] {
-  const { model, layout } = input;
+function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale: number): Candidate[] {
+  const { model, layout, tokens } = input;
+  // The focused capability's element is named once its dot stands a name gap clear of the disc and ring: beside a dot they hide, a name points at nothing.
+  const standsClear = (id: string) => {
+    const ownerId = model.capabilityOf.get(id) ?? model.domainOf.get(id);
+    const at = layout.positions.get(id);
+    const owner = ownerId === undefined || ownerId === null ? undefined : layout.positions.get(ownerId);
+    if (!at || !owner) return true;
+    if (ownerId !== input.focusId) return true;
+    const ring = input.selected ? tokens.selectedRingGapPx + tokens.selectedRingPx : 0;
+    return Math.hypot(at.x - owner.x, at.y - owner.y) * scale >= input.discRadius(ownerId!) + ring + input.discRadius(id) + tokens.nameGapPx;
+  };
   const lit = input.lit;
   const caps = [...model.capabilityById.values()].filter((c) => layout.positions.has(c.id));
   const rank = (a: { id: string }, b: { id: string }) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
@@ -517,7 +555,7 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Cand
   const focusFirst = (a: { id: string }, b: { id: string }) => (a.id === input.focusId ? -1 : b.id === input.focusId ? 1 : rank(a, b));
   const litCaps = lit ? caps.filter((c) => lit.has(c.id)).sort(focusFirst) : [];
   const namesElements = lit !== null && input.focusId !== null && !model.domainById.has(input.focusId);
-  const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id)).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
+  const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id) && (id === input.focusId || standsClear(id))).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
   const rest = caps.filter((c) => !lit?.has(c.id)).sort(rank);
   const orphans = layout.orphanIds.filter((id) => !lit || lit.has(id)).map((id): Candidate => ({
     id, element: false, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
@@ -537,6 +575,18 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Cand
     ...elementIds.filter((id) => !lit?.has(id)).map(elementCandidate),
   ];
 }
+
+/** The row the project's caption draws on under its disc, padded like a name. O(1). */
+function hubCaptionBox(input: NameInput): Box | null {
+  const { model, tokens: t } = input;
+  if (!input.hubCaption || model.projectId === null || !input.layout.positions.has(model.projectId)) return null;
+  const w = input.measureText(input.hubCaption, font(FONT_WEIGHT.signature, t.captionPx, input.fontFamily));
+  const y = input.discRadius(model.projectId) + t.nameGapPx + t.captionPx / 2;
+  return { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx };
+}
+
+/** How many capabilities a folded star names at rest: its most connected ones stand for the mass. */
+const FOLDED_STAR_NAMES = 2;
 
 /** The concepts outside every domain, captioned once under their group with the count. */
 function orphanCaption(input: NameInput, scale: number): PlacedName | null {
@@ -566,16 +616,22 @@ function orphanCaption(input: NameInput, scale: number): PlacedName | null {
   };
 }
 
-function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null, ceiling: ReadonlySet<string> | null): NameAdmission {
+function admit(input: NameInput, step: number, seed: NameAdmission | null, ceiling: ReadonlySet<string> | null): NameAdmission {
   const { model, layout, tokens } = input;
   const scale = stepScale(step, tokens.zoomStepsPerOctave);
+  // Names are held apart at both ends of the step and its centre, so two a step admits apart stay apart inside it.
+  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
+  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
+  const span = (at: Point, rel: Box) => sweptBox(at, rel, lowest, highest);
   const grid = new Occupancy(CELL_PX / scale);
-  const titles = new Occupancy(CELL_PX / scale);
-  const words = new Occupancy(CELL_PX / scale);
-  const conceptNames = new Occupancy(CELL_PX / scale);
+  const stepScales = [lowest, scale, highest] as const;
+  const titles = new StepOccupancy(stepScales);
+  const words = new StepOccupancy(stepScales);
+  const conceptNames = new StepOccupancy(stepScales);
   const glyphs: Box[] = [];
   const names: PlacedName[] = [];
   const ids = new Set<string>();
+  const sides = new Map<string, number>();
   const discs: [string, number][] = [];
   if (model.projectId !== null && layout.positions.has(model.projectId)) discs.push([model.projectId, input.discRadius(model.projectId)]);
   for (const c of layout.clusters) {
@@ -586,6 +642,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const selectedId = input.selected ? input.focusId : null;
   const marks = new Occupancy(CELL_PX / scale);
   for (const [id, r] of discs) {
+    // A disc and the name beside it share an anchor and scale together, so discs keep their box at the step's own scale.
     const box = worldBox(layout.positions.get(id)!, { minX: -r, maxX: r, minY: -r, maxY: r }, scale);
     grid.add(box);
     marks.add(box);
@@ -600,9 +657,8 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     return dx * dx + dy * dy < ringRadius * ringRadius;
   });
   const place = (n: PlacedName) => {
-    const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
-    grid.add(box);
-    words.add(box);
+    grid.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
+    words.add(layout.positions.get(n.id)!, n.box);
     glyphs.push(worldBox(layout.positions.get(n.id)!, grown(n.box, -tokens.namePadPx), scale));
     names.push(n);
     ids.add(n.id);
@@ -610,11 +666,15 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const project = projectName(input);
   if (project) place(project);
   const projectBox = project ? worldBox(layout.positions.get(project.id)!, project.box, scale) : null;
-  // Line tests sweep the whole step, so a name the step admits clear of a line stays clear at any zoom inside it.
-  const lowest = stepScale(step - 0.5, tokens.zoomStepsPerOctave);
-  const highest = stepScale(step + 0.5, tokens.zoomStepsPerOctave);
+  const hubRow = hubCaptionBox(input);
+  if (hubRow) {
+    const hubAt = layout.positions.get(model.projectId!)!;
+    grid.add(worldBox(hubAt, hubRow, scale));
+    words.add(hubAt, hubRow);
+    titles.add(hubAt, hubRow);
+  }
   const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
-  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
+  const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, span(at, n.box)));
   for (const c of layout.clusters) {
     let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId), layout.compactTitles && input.focusId !== c.domainId);
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
@@ -627,18 +687,17 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       const box = worldBox(layout.positions.get(n.id)!, n.box, scale);
       // The census row is the one line of a title block that may go: it gives way to the project's name.
       if (n.role === "units" && projectBox !== null && box.minX < projectBox.maxX && projectBox.minX < box.maxX && box.minY < projectBox.maxY && projectBox.minY < box.maxY) continue;
-      titles.add(box);
+      titles.add(layout.positions.get(n.id)!, n.box);
       place(n);
     }
   }
   const caption = orphanCaption(input, scale);
   if (caption) {
-    const box = worldBox(layout.positions.get(caption.id)!, caption.box, scale);
-    grid.add(box);
-    words.add(box);
+    grid.add(worldBox(layout.positions.get(caption.id)!, caption.box, scale));
+    words.add(layout.positions.get(caption.id)!, caption.box);
     names.push(caption);
   }
-  const pending = candidates(input, degreeOf(model));
+  const pending = candidates(input, degreeOf(model), scale);
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
   const reach = tokens.domainNamePx / lowest;
@@ -647,18 +706,21 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
     const e = layout.extent;
     return b.minX >= e.minX - reach && b.maxX <= e.maxX + reach && b.minY >= e.minY - reach && b.maxY <= e.maxY + reach;
   });
-  const hits = (on: Occupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(worldBox(at, n.box, scale)));
+  const hits = (on: StepOccupancy, at: Point, group: readonly PlacedName[]) => group.some((n) => on.hits(at, n.box));
   const crowding = (at: Point, group: readonly PlacedName[]) => group.reduce((sum, n) => sum + grid.count(worldBox(at, n.box, scale)), 0);
   const offTitles = (at: Point, group: readonly PlacedName[], gap = tokens.selectedTitleGapPx) =>
-    !group.some((n) => titles.hits(worldBox(at, grown(n.box, gap), scale)));
+    !group.some((n) => titles.hits(at, grown(n.box, gap)));
   // Both boxes carry the name pad; the test box gives up one, so two names keep one pad of air between their glyphs.
-  const overprints = (at: Point, group: readonly PlacedName[]) => group.some((n) => conceptNames.hits(worldBox(at, grown(n.box, -tokens.namePadPx), scale)));
+  const overprints = (at: Point, group: readonly PlacedName[]) => group.some((n) => conceptNames.hits(at, grown(n.box, -tokens.namePadPx)));
   // A lit name takes the first side no lit line crosses. Under a lit picture a forced name other than
   // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
   // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
-  const tryPlace = (cand: Candidate, force: boolean) => {
+  const tryPlace = (cand: Candidate, force: boolean, mayOverprint = force) => {
     const at = layout.positions.get(cand.id)!;
-    const tries = cand.tries();
+    const all = cand.tries();
+    const kept = seed?.sides.get(cand.id);
+    // A name the step below placed tries that side first, so names do not trade sides and crowd one another out.
+    const tries = kept !== undefined && kept > 0 && kept < all.length ? [all[kept]!, ...all.slice(0, kept), ...all.slice(kept + 1)] : all;
     const lit = polylines.length > 0 && input.lit!.has(cand.id);
     const yields = input.lit !== null && cand.id !== input.focusId && cand.id !== input.agentFocusId;
     const keepsOffTitles = cand.id === selectedId || (cand.element && input.lit !== null);
@@ -669,37 +731,68 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
       const s = leaderSegment(n, Math.abs(n.dx) - tokens.nameGapPx, tokens.namePadPx);
       return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
     });
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !hits(grid, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
+    // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => marks.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
-    if (!fit && force && tries.length > 0) {
+    // A forced name with no side clear across the whole step takes one clear at the step's own scale.
+    if (!fit && force) {
+      const clearNow = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => grid.hits(worldBox(at, n.box, scale)))
+        && (!keepsOffTitles || !group.some((n) => titles.hitsAtCentre(at, grown(n.box, tokens.selectedTitleGapPx)))) && offRing(group) && leaderClear(group);
+      fit = chooseSide(tries, clearNow, (group) => lit && crossed(at, group))?.side;
+    }
+    // A name carried up from the step below may stand beside a disc that drifted onto its side, never on another name.
+    if (!fit && force && !mayOverprint) fit = chooseSide(tries, (group) => inside(at, group) && !hits(words, at, group) && leaderClear(group), () => false)?.side;
+    if (!fit && mayOverprint && tries.length > 0) {
       const apart = yields ? tries.filter((group) => !hits(words, at, group) && leaderClear(group) && (!cand.element || (offTitles(at, group) && offRing(group)))) : [];
-      const offMarks = cand.element ? apart.filter((group) => !hits(marks, at, group)) : apart;
+      const offMarks = cand.element ? apart.filter((group) => !group.some((n) => marks.hits(worldBox(at, n.box, scale)))) : apart;
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
       const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
-      const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : legible;
+      const pool = offMarks.length > 0 ? offMarks : cand.element && yields ? [] : apart.length > 0 ? apart : legible;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
+    if (fit) sides.set(cand.id, all.indexOf(fit));
     if (fit) for (const n of fit) {
       place(n);
-      conceptNames.add(worldBox(at, n.box, scale));
+      conceptNames.add(at, n.box);
     }
   };
   // The focus wins over every name, then capabilities over elements.
   const ahead = (cand: Candidate) => cand.id === input.focusId || !cand.element;
-  if (seed) for (const cand of pending) if (seed.has(cand.id)) tryPlace(cand, true);
+  // A name the step below showed stays wherever a side is clear of names; with none it goes, and still counts against its star.
+  if (seed) for (const cand of pending) if (seed.ids.has(cand.id)) tryPlace(cand, true, false);
   for (const cand of pending) if (!ids.has(cand.id) && cand.id === input.focusId) tryPlace(cand, true);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id) && ahead(cand)) tryPlace(cand, true);
   if (input.lit !== null) for (const cand of pending) if (!ids.has(cand.id) && !cand.element && input.lit.has(cand.id)) tryPlace(cand, false);
   for (const cand of pending) if (!ids.has(cand.id) && input.named.has(cand.id)) tryPlace(cand, true);
+  // A folded star is a mass: at rest it names only its most connected few, and a folded orphan group none.
+  const folded = (roomKey: string) => crowdShare(layout, roomKey, tokens, lowest, input.growth) < 1;
+  const restNames = new Map<string, number>();
+  const starOf = (id: string) => (model.capabilityById.has(id) ? model.domainOf.get(id) ?? null : null);
+  const countName = (id: string) => {
+    const domainId = starOf(id);
+    if (domainId !== null) restNames.set(domainId, (restNames.get(domainId) ?? 0) + 1);
+  };
+  for (const id of ids) countName(id);
+  if (seed) for (const id of seed.ids) if (!ids.has(id)) countName(id);
+  const orphanIds = new Set(layout.orphanIds);
+  const overBudget = (cand: Candidate) => {
+    if (cand.element || input.lit?.has(cand.id)) return false;
+    if (orphanIds.has(cand.id)) return folded(ORPHAN_ROOM);
+    const domainId = starOf(cand.id);
+    return domainId !== null && (restNames.get(domainId) ?? 0) >= FOLDED_STAR_NAMES && folded(domainId);
+  };
   for (const cand of pending) {
     if (ids.has(cand.id) || (ceiling && !ceiling.has(cand.id))) continue;
-    tryPlace(cand, cand.id === input.focusId || cand.id === input.agentFocusId);
+    const forced = cand.id === input.focusId || cand.id === input.agentFocusId;
+    if (!forced && overBudget(cand)) continue;
+    tryPlace(cand, forced);
+    if (ids.has(cand.id)) countName(cand.id);
   }
   if (polylines.length > 0) {
     for (const n of names) if (input.lit!.has(n.id) && crossed(layout.positions.get(n.id)!, [n])) n.backed = true;
   }
-  return { step, names, ids };
+  return { step, names, ids, sides };
 }
 
 const degreeCache = new WeakMap<DialModel, Map<string, number>>();
@@ -721,6 +814,7 @@ interface NameCache {
   font: string;
   elementNames: boolean;
   stale: ReadonlyMap<string, number> | null;
+  hubCaption: string | null;
   rest: Map<number, NameAdmission>;
   focus: Map<string, NameAdmission>;
 }
@@ -757,14 +851,15 @@ export function admitNamesAt(input: NameInput): NameAdmission {
 /**
  * Names admitted at the camera's quantised zoom step, cached per step so pan and drag never
  * re-run admission. Without attention, a step's names include every name of the nearest admitted
- * step below and only names the nearest admitted step above also holds, so zooming in only adds.
+ * step below that still has a side clear of other names, and only names the nearest admitted step
+ * above also holds, so zooming in adds names and drops one only where another name takes its place.
  */
 export function admittedNames(input: NameInput): NameAdmission {
   const step = zoomStep(input.scale, input.tokens.zoomStepsPerOctave);
   const elementNames = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   let cache = caches.get(input.layout);
-  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain) {
-    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, rest: new Map(), focus: new Map() };
+  if (!cache || cache.font !== input.fontFamily || cache.elementNames !== elementNames || cache.stale !== input.staleByDomain || cache.hubCaption !== input.hubCaption) {
+    cache = { font: input.fontFamily, elementNames, stale: input.staleByDomain, hubCaption: input.hubCaption, rest: new Map(), focus: new Map() };
     caches.set(input.layout, cache);
   }
   if (input.lit !== null || input.agentFocusId !== null) {
@@ -779,7 +874,7 @@ export function admittedNames(input: NameInput): NameAdmission {
   const hit = cache.rest.get(step);
   if (hit) return hit;
   const restInput = { ...input, lit: null, focusId: null, agentFocusId: null, selected: false, named: NO_NAMES, reach: null, lines: [] };
-  const made = admit(restInput, step, nearest(cache.rest, step, true)?.ids ?? null, nearest(cache.rest, step, false)?.ids ?? null);
+  const made = admit(restInput, step, nearest(cache.rest, step, true), nearest(cache.rest, step, false)?.ids ?? null);
   cache.rest.set(step, made);
   return made;
 }

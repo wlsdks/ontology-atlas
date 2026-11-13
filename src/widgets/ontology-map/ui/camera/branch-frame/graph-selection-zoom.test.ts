@@ -111,7 +111,7 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
       model, layout, tokens: paint, labels: LABELS, measureText, fontFamily: "sans-serif", scale: camera.tscale, growth,
       elementLabel: (of) => titles.get(of) ?? null, staleByDomain: null, lit: attention.lit, focusId: id, selected: true,
       named: attention.named, reach: attention.reach, lines: attention.lines, agentFocusId: null, attentionKey: attention.key,
-      discRadius: radius, elementSpacingPx: scene.medianElementPitch * camera.tscale,
+      discRadius: radius, elementSpacingPx: scene.medianElementPitch * camera.tscale, hubCaption: null,
     });
     const p = at(id);
     const sx = (p.x - camera.tx) * camera.tscale + viewport.width / 2;

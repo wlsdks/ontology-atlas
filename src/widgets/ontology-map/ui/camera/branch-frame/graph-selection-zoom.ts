@@ -19,6 +19,8 @@ export interface GraphSelectionZoomInput {
   elementLabel(id: string): string | null;
   staleByDomain: ReadonlyMap<string, number> | null;
   medianElementPitch: number;
+  /** The line under the project's disc that names must keep off, as the frame admits them. */
+  hubCaption: string | null;
   /** The selection, its domain and the lit concepts inside it: what must read clear. */
   near: ReadonlySet<string>;
   /** What must stay framed, names included, at any zoom taken: `near` itself or a wider lit set. */
@@ -77,7 +79,7 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
       model, layout, tokens: paint, labels: input.labels, measureText: input.measureText, fontFamily: input.fontFamily, scale, growth: stepGrowth,
       elementLabel: input.elementLabel, staleByDomain: input.staleByDomain, lit: attention.lit, focusId: focus, selected: true,
       named: attention.named, reach: attention.reach, lines: attention.lines, agentFocusId: null, attentionKey: attention.key,
-      discRadius: (id) => radiusOf(model, paint, id, stepGrowth), elementSpacingPx: input.medianElementPitch * scale,
+      discRadius: (id) => radiusOf(model, paint, id, stepGrowth), elementSpacingPx: input.medianElementPitch * scale, hubCaption: input.hubCaption,
     });
     admissions.set(step, admission);
     return admission;

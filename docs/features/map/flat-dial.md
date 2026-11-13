@@ -72,7 +72,17 @@ boxes measured whenever the camera measures the panels.
 
 Names are admitted per zoom step without collision: the project, every domain
 block, then capabilities by dependency degree, then element names once
-elements are far enough apart. Zooming in only adds names. A selected concept,
+elements are far enough apart. Zooming in keeps a resting name on the side the
+step below gave it, and drops it only where no side is clear of another name,
+as when its dot passes under a domain title; it never overprints to stay.
+Names are held apart from one another at both ends of the zoom step and its
+centre, and off the row the project's caption takes. A star whose discs have shrunk for crowding names at rest only its two
+most connected capabilities, and a crowded group outside every domain names
+none; pointing at the domain or zooming until its discs stand apart names the
+rest. An element of the pointed or selected capability is named only once its
+dot stands a name gap clear of that capability's disc and selection ring:
+beside a dot the disc hides, a name points at nothing. No lit element name
+that yields falls back to a side over a disc. A selected concept,
 with its count line, is placed before every other name and always named, then
 the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a

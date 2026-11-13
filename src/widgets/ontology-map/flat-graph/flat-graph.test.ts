@@ -26,7 +26,7 @@ import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -101,7 +101,7 @@ function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focus
     model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
     elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: attention.focusId, attentionKey: attention.key, agentFocusId,
     selected: attention.selected, named: attention.named, reach: attention.reach, lines: attention.lines,
-    discRadius: () => 4, elementSpacingPx,
+    discRadius: () => 4, elementSpacingPx, hubCaption: null,
   });
 }
 
@@ -290,15 +290,42 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
       return elements.filter((element) => !admittedNames({
         model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 0.5, growth: 1,
         elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: domain, attentionKey: attention.key, agentFocusId: element,
-        selected: false, named: attention.named, reach: attention.reach, lines: attention.lines, discRadius: () => 4, elementSpacingPx: 0,
+        selected: false, named: attention.named, reach: attention.reach, lines: attention.lines, discRadius: () => 4, elementSpacingPx: 0, hubCaption: null,
       }).ids.has(element)).map((element) => `${element} under ${domain}`);
     });
     expect(unnamed).toEqual([]);
   });
 
-  it("only adds names as the zoom grows", () => {
-    const steps = [0.5, 0.71, 1, 1.41, 2].map((s) => namesAt(model, layout, s, null).ids);
-    for (let k = 1; k < steps.length; k += 1) for (const id of steps[k - 1]!) expect(steps[k]!.has(id), id).toBe(true);
+  it("keeps every capability name off the project's caption row", () => {
+    const perOctave = TOKENS.paint.zoomStepsPerOctave;
+    const caption = "Evidence not measured for this project yet";
+    for (let step = -10; step <= 4; step += 1) {
+      const scale = 2 ** (step / perOctave);
+      const attention = cachedGraphAttention(model, null, false);
+      const names = admittedNames({
+        model, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+        elementLabel: (id) => id, staleByDomain: null, lit: attention.lit, focusId: null, attentionKey: attention.key, agentFocusId: null,
+        selected: false, named: attention.named, reach: null, lines: attention.lines, discRadius: () => 4,
+        elementSpacingPx: 0, hubCaption: caption,
+      }).names.filter((n) => n.role !== "element");
+      const hub = layout.positions.get(model.projectId!)!;
+      const half = measure(caption, `${TOKENS.paint.captionPx}px`) / 2;
+      const rowY = 4 + TOKENS.paint.nameGapPx + TOKENS.paint.captionPx / 2;
+      const onRow = names.filter((n) => n.role === "capability").filter((n) => {
+        const at = layout.positions.get(n.id)!;
+        const x = (at.x - hub.x) * scale;
+        const y = (at.y - hub.y) * scale;
+        return x + n.box.minX < half && x + n.box.maxX > -half && y + n.box.minY < rowY + TOKENS.paint.captionPx / 2 && y + n.box.maxY > rowY - TOKENS.paint.captionPx / 2;
+      });
+      expect(onRow.map((n) => n.text), `names on the caption row at ${scale}`).toEqual([]);
+    }
+  });
+
+  it("keeps a resting name through every zoom step in, but for one a domain title passes over", () => {
+    const steps = Array.from({ length: 13 }, (_, k) => 2 ** ((k - 8) / TOKENS.paint.zoomStepsPerOctave)).map((s) => namesAt(model, layout, s, null).ids);
+    const lost = steps.flatMap((ids, k) => (k === 0 ? [] : [...steps[k - 1]!].filter((id) => !ids.has(id)).map((id) => `${id} at step ${k - 8}`)));
+    // Measured: storefront loses checkout at step -4, where its dot passes under its domain's title; dogfood loses none.
+    expect(lost.length, lost.join(", ")).toBeLessThanOrEqual(1);
   });
 });
 
@@ -314,6 +341,87 @@ describe("attention and discs", () => {
     const outside = model.domains.find((d) => !attention.lit?.has(d.id))!;
     expect(inkUnder(attention, outside.id, TOKENS.paint.sinkInk)).toBe(TOKENS.paint.sinkInk);
     expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
+  });
+
+  it.each(VAULTS)("names a %s capability's lit element only once its dot stands clear of the capability's disc and ring", (_name, model) => {
+    const layout = layoutOf(model);
+    const t = TOKENS.paint;
+    let hidden = 0;
+    let named = 0;
+    for (const cap of model.capabilityById.values()) {
+      if (!layout.positions.has(cap.id)) continue;
+      for (const scale of [0.35, 0.7, 1.4, 2.8]) {
+        const ids = namesAt(model, layout, scale, cap.id).ids;
+        const owner = layout.positions.get(cap.id)!;
+        for (const id of cap.elementIds) {
+          const at = layout.positions.get(id);
+          if (!at) continue;
+          const clearPx = Math.hypot(at.x - owner.x, at.y - owner.y) * stepScale(zoomStep(scale, t.zoomStepsPerOctave), t.zoomStepsPerOctave)
+            - (selectedDiscRadius(4, t, 1) + t.selectedRingGapPx + t.selectedRingPx + 4 + t.nameGapPx);
+          if (clearPx < 0) hidden += 1;
+          if (ids.has(id)) named += 1;
+          if (ids.has(id)) expect(clearPx, `${id} under ${cap.id} at ${scale}`).toBeGreaterThanOrEqual(0);
+        }
+      }
+    }
+    expect(hidden, "some element dot sits under its selected capability at the overview").toBeGreaterThan(0);
+    expect(named, "elements are named once they stand clear").toBeGreaterThan(0);
+  });
+
+  it("keeps the name of a selection's far-end element that sits beside another capability's disc", () => {
+    const model = VAULTS[0][1];
+    const layout = layoutOf(model);
+    const t = TOKENS.paint;
+    const scale = stepScale(zoomStep(0.35, t.zoomStepsPerOctave), t.zoomStepsPerOctave);
+    let farEndsBesideTheirDisc = 0;
+    for (const cap of model.capabilityById.values()) {
+      if (!layout.positions.has(cap.id)) continue;
+      const lit = cachedGraphAttention(model, cap.id, true).lit!;
+      for (const id of namesAt(model, layout, scale, cap.id).ids) {
+        const ownerId = model.capabilityOf.get(id);
+        const at = layout.positions.get(id);
+        const far = ownerId === undefined || ownerId === cap.id ? undefined : layout.positions.get(ownerId);
+        if (lit.has(id) && at && far && Math.hypot(at.x - far.x, at.y - far.y) * scale < 4 + 4 + t.nameGapPx) farEndsBesideTheirDisc += 1;
+      }
+    }
+    expect(farEndsBesideTheirDisc).toBeGreaterThan(0);
+  });
+
+  it("names at rest at most two capabilities of a star while its discs are folded, and more once they stand apart", () => {
+    const domains = ["north", "south", "east", "west", "inner", "outer"];
+    const capabilities = domains.flatMap((d) => Array.from({ length: 30 }, (_, c) => `${d}-${c}`));
+    const dense = modelOf(
+      [{ id: "p", kind: "project" }, ...domains.map((id) => ({ id, kind: "domain" })), ...capabilities.map((id) => ({ id, kind: "capability" }))],
+      [...domains.map((d) => ({ from: "p", to: d, type: "contains" })), ...capabilities.map((id) => ({ from: id.split("-")[0]!, to: id, type: "contains" }))],
+    );
+    const input = { model: dense, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" };
+    const layout = layoutFlatGraph(dense, circularDomainOrder(dense, null).order, TOKENS.layout, null, {
+      areaPx: { width: 1000, height: 640 }, titles: domainTitleBlocks(input), compactTitles: domainTitleBlocks(input, "name"), capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0,
+    });
+    const perOctave = TOKENS.paint.zoomStepsPerOctave;
+    const namedIn = (domainId: string, ids: ReadonlySet<string>) => capabilities.filter((id) => id.startsWith(`${domainId}-`) && ids.has(id)).length;
+    let foldedStars = 0;
+    let openNames = 0;
+    let before: ReadonlySet<string> = new Set();
+    const lost: string[] = [];
+    for (let step = -14; step <= 12; step += 1) {
+      const admission = namesAt(dense, layout, 2 ** (step / perOctave), null);
+      const ids = admission.ids;
+      for (const edge of [-0.45, 0.45]) expect(overlapping(admission.names, layout, 2 ** ((step + edge) / perOctave)).filter((pair) => pair.includes("capability:")), `step ${step} at ${edge}`).toEqual([]);
+      lost.push(...[...before].filter((id) => !ids.has(id)).map((id) => `${id} at ${step}`));
+      before = ids;
+      for (const domainId of domains) {
+        if (crowdShare(layout, domainId, TOKENS.paint, 2 ** ((step - 0.5) / perOctave), 1) === 1) openNames = Math.max(openNames, namedIn(domainId, ids));
+        else {
+          foldedStars += 1;
+          expect(namedIn(domainId, ids), `${domainId} at step ${step}`).toBeLessThanOrEqual(2);
+        }
+      }
+    }
+    expect(foldedStars).toBeGreaterThan(0);
+    expect(openNames, "an open star names more than the folded budget").toBeGreaterThan(2);
+    // Measured: of 180 names one, west-5, loses both sides to a title that crosses its anchor at step -11.
+    expect(lost.length, `names lost on zooming in: ${lost.join(", ")}`).toBeLessThanOrEqual(1);
   });
 
   it.each(VAULTS)("shrinks the %s capability discs of a crowded domain until no two overlap, and leaves an open star at full size", (_name, model) => {
@@ -469,7 +577,7 @@ describe("selection reach", () => {
         const hovered = admittedNames({
           model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
           elementLabel: (of) => of, staleByDomain: null, lit: pointedAt.lit, focusId: id, attentionKey: pointedAt.key, agentFocusId: null,
-          selected: false, named: pointedAt.named, reach: pointedAt.reach, lines: pointedAt.lines, discRadius: () => 4, elementSpacingPx: TOKENS.paint.elementNameSpacingPx * 2,
+          selected: false, named: pointedAt.named, reach: pointedAt.reach, lines: pointedAt.lines, discRadius: () => 4, elementSpacingPx: TOKENS.paint.elementNameSpacingPx * 2, hubCaption: null,
         });
         for (const n of hovered.names) if (n.leader) hoverLeaders.push(`${id} at ${at}: ${n.id}`);
       }
@@ -574,7 +682,7 @@ describe("a lit element's name beside the selection", () => {
       model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
       elementLabel: (id) => (id === "y" ? label : id), staleByDomain: null, lit: attention.lit, focusId: "a", attentionKey: attention.key,
       agentFocusId: null, selected: true, named: attention.named, reach: attention.reach, lines: attention.lines,
-      discRadius: (id) => (model.domainById.has(id) ? t.domainDiscPx : capPx), elementSpacingPx: t.elementNameSpacingPx,
+      discRadius: (id) => (model.domainById.has(id) ? t.domainDiscPx : capPx), elementSpacingPx: t.elementNameSpacingPx, hubCaption: null,
     }).names.filter((n) => n.id === "y");
   }
 
@@ -652,7 +760,7 @@ describe("domain reach", () => {
       return admittedNames({
         model, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
         elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: att.focusId, attentionKey: att.key, agentFocusId: null,
-        selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => 4, elementSpacingPx: 0,
+        selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => 4, elementSpacingPx: 0, hubCaption: null,
       }).names.filter((n) => n.id === "d1" && n.role !== "domain");
     };
     const selected = reachLines(true);
@@ -672,7 +780,7 @@ describe("domain reach", () => {
         const row = admittedNames({
           model: vault, layout, tokens: TOKENS.paint, labels, measureText: measure, fontFamily: "sans-serif", scale: 1, growth: 1,
           elementLabel: (of) => of, staleByDomain: null, lit: att.lit, focusId: id, attentionKey: att.key, agentFocusId: null,
-          selected: true, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => TOKENS.paint.domainDiscPx, elementSpacingPx: 0,
+          selected: true, named: att.named, reach: att.reach, lines: att.lines, discRadius: () => TOKENS.paint.domainDiscPx, elementSpacingPx: 0, hubCaption: null,
         }).names.find((n) => n.id === id && n.role === "reach");
         if (row && Math.max(-row.box.minX, row.box.maxX) > blocks.get(id)!.halfWidthPx + 1e-6) wider.push(`${name} ${id}: ${row.text}`);
       }
@@ -693,7 +801,7 @@ describe("domain reach", () => {
         const admitted = admittedNames({
           model: vault, layout, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
           elementLabel: (id) => id, staleByDomain: null, lit: att.lit, focusId: focus, attentionKey: att.key, agentFocusId: null,
-          selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: radius, elementSpacingPx: 0,
+          selected, named: att.named, reach: att.reach, lines: att.lines, discRadius: radius, elementSpacingPx: 0, hubCaption: null,
         });
         for (const n of admitted.names.filter((n) => n.id !== focus && vault.domainById.has(n.id) && n.dy < 0)) {
           raised += 1;

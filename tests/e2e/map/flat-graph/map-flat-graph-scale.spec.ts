@@ -129,6 +129,26 @@ test("at 5,000 concepts on a laptop a crowded domain's capability discs shrink u
   expect(overlappingCapabilityDiscs(dial, capabilityIds)).toEqual([]);
 });
 
+test("at 2,000 concepts no name is drawn over another, the project's caption included", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1512, height: 949 });
+  const dial = await open(page, "synth=2000&synthDeps=1&");
+  const texts = dial.texts;
+  const drawnOver: string[] = [];
+  for (let i = 0; i < texts.length; i += 1) {
+    for (let j = i + 1; j < texts.length; j += 1) {
+      const a = texts[i]!;
+      const b = texts[j]!;
+      if (a.id === b.id) continue;
+      if (a.box.minX < b.box.maxX && b.box.minX < a.box.maxX && a.box.minY < b.box.maxY && b.box.minY < a.box.maxY) drawnOver.push(`${a.text} × ${b.text}`);
+    }
+  }
+  expect(texts.filter((t) => t.role === "capability").length, "the overview names capabilities to judge").toBeGreaterThan(8);
+  const projectId = texts.find((t) => t.role === "project")!.id;
+  expect(texts.filter((t) => t.role === "units" && t.id === projectId).length, "the project draws its caption").toBe(1);
+  expect(drawnOver).toEqual([]);
+});
+
 for (const source of ["dogfood", "storefront", "synth"] as const) {
   test(`at a laptop width every ${source} name stays inside the free map and no disc sits on a domain title`, async ({ page }) => {
     test.setTimeout(180_000);
