@@ -26,7 +26,7 @@ import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
-import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, stepScale, zoomStep, type PlacedName } from "./names";
+import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
 import type { FlatGraphFrame, FlatGraphLayout } from "./types";
@@ -340,6 +340,31 @@ describe("attention and discs", () => {
     const outside = model.domains.find((d) => !attention.lit?.has(d.id))!;
     expect(inkUnder(attention, outside.id, TOKENS.paint.sinkInk)).toBe(TOKENS.paint.sinkInk);
     expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
+  });
+
+  it.each(VAULTS)("names a %s capability's lit element only once its dot stands clear of the capability's disc and ring", (_name, model) => {
+    const layout = layoutOf(model);
+    const t = TOKENS.paint;
+    let hidden = 0;
+    let named = 0;
+    for (const cap of model.capabilityById.values()) {
+      if (!layout.positions.has(cap.id)) continue;
+      for (const scale of [0.35, 0.7, 1.4, 2.8]) {
+        const ids = namesAt(model, layout, scale, cap.id).ids;
+        const owner = layout.positions.get(cap.id)!;
+        for (const id of cap.elementIds) {
+          const at = layout.positions.get(id);
+          if (!at) continue;
+          const clearPx = Math.hypot(at.x - owner.x, at.y - owner.y) * stepScale(zoomStep(scale, t.zoomStepsPerOctave), t.zoomStepsPerOctave)
+            - (selectedDiscRadius(4, t, 1) + t.selectedRingGapPx + t.selectedRingPx + 4 + t.nameGapPx);
+          if (clearPx < 0) hidden += 1;
+          if (ids.has(id)) named += 1;
+          if (ids.has(id)) expect(clearPx, `${id} under ${cap.id} at ${scale}`).toBeGreaterThanOrEqual(0);
+        }
+      }
+    }
+    expect(hidden, "some element dot sits under its selected capability at the overview").toBeGreaterThan(0);
+    expect(named, "elements are named once they stand clear").toBeGreaterThan(0);
   });
 
   it("names at rest at most two capabilities of a star while its discs are folded, and more once they stand apart", () => {

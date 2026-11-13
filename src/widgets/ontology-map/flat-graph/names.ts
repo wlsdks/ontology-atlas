@@ -509,8 +509,17 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
 
 interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 
-function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Candidate[] {
-  const { model, layout } = input;
+function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale: number): Candidate[] {
+  const { model, layout, tokens } = input;
+  // A lit element is named once its dot stands a name gap clear of its owner's disc and ring: a name beside a dot the disc hides points at nothing.
+  const standsClear = (id: string) => {
+    const ownerId = model.capabilityOf.get(id) ?? model.domainOf.get(id);
+    const at = layout.positions.get(id);
+    const owner = ownerId === undefined || ownerId === null ? undefined : layout.positions.get(ownerId);
+    if (!at || !owner) return true;
+    const ring = input.selected && ownerId === input.focusId ? tokens.selectedRingGapPx + tokens.selectedRingPx : 0;
+    return Math.hypot(at.x - owner.x, at.y - owner.y) * scale >= input.discRadius(ownerId!) + ring + input.discRadius(id) + tokens.nameGapPx;
+  };
   const lit = input.lit;
   const caps = [...model.capabilityById.values()].filter((c) => layout.positions.has(c.id));
   const rank = (a: { id: string }, b: { id: string }) => (degree.get(b.id) ?? 0) - (degree.get(a.id) ?? 0) || byId(a.id, b.id);
@@ -521,7 +530,7 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>): Cand
   const focusFirst = (a: { id: string }, b: { id: string }) => (a.id === input.focusId ? -1 : b.id === input.focusId ? 1 : rank(a, b));
   const litCaps = lit ? caps.filter((c) => lit.has(c.id)).sort(focusFirst) : [];
   const namesElements = lit !== null && input.focusId !== null && !model.domainById.has(input.focusId);
-  const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id)).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
+  const litElements = namesElements ? [...lit!].filter((id) => model.capabilityOf.has(id) || (model.domainOf.has(id) && !model.domainById.has(id) && !model.capabilityById.has(id))).filter((id) => layout.positions.has(id) && (id === input.focusId || standsClear(id))).sort((a, b) => (a === input.focusId ? -1 : b === input.focusId ? 1 : byId(a, b))) : [];
   const rest = caps.filter((c) => !lit?.has(c.id)).sort(rank);
   const orphans = layout.orphanIds.filter((id) => !lit || lit.has(id)).map((id): Candidate => ({
     id, element: false, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "capability", label) : []; },
@@ -664,7 +673,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     words.add(box);
     names.push(caption);
   }
-  const pending = candidates(input, degreeOf(model));
+  const pending = candidates(input, degreeOf(model), scale);
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
   const reach = tokens.domainNamePx / lowest;
@@ -713,7 +722,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       const clear = tries.filter((group) => offTitles(at, group, cand.id === selectedId ? tokens.selectedTitleGapPx : 0));
       const offTitle = clear.length > 0 ? clear : tries;
       const legible = yields ? offTitle.filter((group) => !overprints(at, group) && leaderClear(group)) : offTitle;
-      const pool = offMarks.length > 0 ? offMarks : apart.length > 0 ? apart : yields && cand.element ? [] : legible;
+      const pool = offMarks.length > 0 ? offMarks : cand.element && yields ? [] : apart.length > 0 ? apart : legible;
       fit = pool.length > 0 ? pool.reduce((best, group) => (crowding(at, group) < crowding(at, best) ? group : best)) : undefined;
     }
     if (fit) sides.set(cand.id, all.indexOf(fit));

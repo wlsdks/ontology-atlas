@@ -78,7 +78,9 @@ whole zoom step, not only at its centre, and off the row the project's caption
 takes. A star whose discs have shrunk for crowding names at rest only its two
 most connected capabilities, and a crowded group outside every domain names
 none; pointing at the domain or zooming until its discs stand apart names the
-rest. A selected concept,
+rest. A lit element is named only once its dot stands a name gap clear of
+its capability's disc and selection ring, and never over a disc: beside a dot
+the disc hides, a name points at nothing. A selected concept,
 with its count line, is placed before every other name and always named, then
 the far ends of its lines and the lit capabilities, then lit element names. A
 forced name keeps off every domain title when any placement can, and under a
