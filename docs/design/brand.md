@@ -75,7 +75,7 @@ Raw source files remain unchanged.
 
 | Existing moment | Source gesture | Playback and still endpoint |
 |---|---|---|
-| Folder selection | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` | Offers a folder; bounded play with a separate pause button |
+| Folder selection | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` | Offers a folder; bounded play with playback in the character context menu |
 | Busy chooser | `blink`, `tilt` | Quiet stationary waiting while the busy chooser stays mounted; folder opening can replace it with the existing waiting view |
 | Download invitation | `wave`, `tilt`, `blink`, `hop` | Welcome without the folder-selection prop |
 | Petting the decorative companion | `shy`, `clap`, `dance` | One finite reaction per press; no queued repeats or work claim |
@@ -110,8 +110,9 @@ The borderless character target uses the existing transparent link control treat
 its keyboard focus indication remains, while pressing it adds no rectangular fill.
 Petting gives a finite shy, clap or dance response. A pet during flight waits for the
 neutral landing pose, then returns to the grounded ambient timeline. Repeated presses
-during a response are ignored rather than queued. The adjacent pause button owns
-pause/resume. Pointer hover and keyboard focus hold ambient movement; ordinary
+during a response are ignored rather than queued. Right-clicking the character or pressing Shift+F10 opens its pause/resume menu.
+The resting surface shows only Moru, with no adjacent playback button. Escape
+closes the menu and restores character focus; outside presses dismiss it. Pointer hover and keyboard focus hold ambient movement; ordinary
 pointer focus does not leave it frozen after the pointer moves away.
 Hidden/offscreen state suspends ambient and reaction animations, cleanup cancels a
 pending handoff, and reduced motion uses a still expression. An explicit pause is

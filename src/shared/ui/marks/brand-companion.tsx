@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
-import { IconButton } from '../controls/controls';
+import { useDismissibleMenu } from '@/shared/lib/overlays/use-dismissible-menu';
+import { RowButton } from '../controls/controls';
+import { Surface } from '../surfaces/surface';
+import { transientSurface } from '../surfaces/transient-surface';
 import { controlClass } from '../control-class';
-import { ICON_SIZE } from '../tokens/icon-size';
 import timeline from './moru-companion.json';
 import reactions from './moru-reactions.json';
 import { companionMotion, type CompanionContext } from './moru-companion-motion';
@@ -21,6 +22,14 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   const stage = useRef<HTMLDivElement>(null);
   const actor = useRef<HTMLButtonElement>(null);
   const facing = useRef<HTMLSpanElement>(null);
+  const menuItem = useRef<HTMLButtonElement>(null);
+  const { open: menuOpen, setOpen: setMenuOpen, ref: menuRef } = useDismissibleMenu();
+  const bindMenuItem = useCallback((node: HTMLButtonElement | null) => {
+    menuItem.current = node;
+    // Surface may mount after the open effect's first frame. Focus the actual
+    // mounted item too, so keyboard context menus do not leave focus behind.
+    if (node && menuOpen) node.focus({ preventScroll: true });
+  }, [menuOpen]);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -29,9 +38,15 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   const playback = useRef<ReturnType<typeof companionPlayer> | null>(null);
 
   useEffect(() => {
-    intent.current = { paused, held: hovered || focused };
+    intent.current = { paused, held: hovered || focused || menuOpen };
     playback.current?.update();
-  }, [paused, hovered, focused]);
+  }, [paused, hovered, focused, menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const frame = requestAnimationFrame(() => menuItem.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [menuOpen]);
 
   useEffect(() => {
     const image = ref.current, reactionImage = reactionRef.current;
@@ -50,16 +65,23 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
   }, [reducedMotion, context]);
 
   return (
-    <div className="flex w-full max-w-48 items-end gap-2">
-    <div ref={stage} className="relative h-32 min-w-32 flex-1 overflow-hidden" data-moru-playground="" data-moru-context={context}>
+    <div ref={menuRef} className="relative w-40 max-w-full" data-moru-companion-region="">
+    <div ref={stage} className="relative h-32 w-full min-w-32 overflow-hidden" data-moru-playground="" data-moru-context={context}>
     <button ref={actor}
       type="button" aria-label={labels.interact} title={labels.interact}
+      aria-haspopup="menu" aria-expanded={menuOpen} aria-keyshortcuts="Shift+F10"
       className={controlClass({ shape: 'link', size: 'sm', tone: 'secondary', className: 'absolute top-0 left-0 w-32 shrink-0 overflow-hidden' })}
       style={{ height: timeline.cell }}
       onClick={() => playback.current?.react()}
+      onContextMenu={event => { event.preventDefault(); setMenuOpen(true); }}
       onPointerEnter={() => setHovered(true)} onPointerLeave={() => setHovered(false)}
       onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))} onBlur={() => setFocused(false)}
-      onKeyDown={() => setFocused(true)}
+      onKeyDown={event => {
+        setFocused(true);
+        if (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey)) {
+          event.preventDefault(); setMenuOpen(true);
+        }
+      }}
       data-moru-companion=""
       data-moru-paused={reducedMotion || paused}
     >
@@ -79,11 +101,21 @@ export function BrandCompanion({ labels, context = 'folder' }: { labels: Compani
       </span>
     </button>
     </div>
-    <IconButton label={labels[reducedMotion ? 'still' : paused ? 'resume' : 'pause']} size="sm" tone="secondary"
-      disabled={reducedMotion} className="atlas-touch-floor atlas-touch-floor-wide mb-4 shrink-0" aria-pressed={paused}
-      onClick={() => setPaused(value => !value)}>
-      {paused || reducedMotion ? <Play size={ICON_SIZE.sm} aria-hidden /> : <Pause size={ICON_SIZE.sm} aria-hidden />}
-    </IconButton>
+    <Surface open={menuOpen} origin="top left" role="menu" aria-label={labels.interact}
+      {...transientSurface('menu')}
+      className="absolute left-0 top-full z-[var(--z-dialog)] mt-1 w-max max-w-[calc(100vw-3rem)] rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-2)]">
+      <RowButton ref={bindMenuItem} role="menuitem" tone="secondary" hoverInk="strong" hoverSurface="lift"
+        disabled={reducedMotion}
+        onClick={() => { setPaused(value => !value); setMenuOpen(false); actor.current?.focus({ preventScroll: true }); }}
+        onKeyDown={event => {
+          if (event.key === 'Escape') {
+            event.preventDefault(); event.stopPropagation(); setMenuOpen(false); actor.current?.focus({ preventScroll: true });
+          } else if (event.key === 'Tab') setMenuOpen(false);
+          else if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) event.preventDefault();
+        }}>
+        {labels[reducedMotion ? 'still' : paused ? 'resume' : 'pause']}
+      </RowButton>
+    </Surface>
     </div>
   );
 }
