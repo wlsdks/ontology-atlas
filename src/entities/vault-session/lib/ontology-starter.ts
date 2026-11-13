@@ -558,7 +558,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   로 잡힙니다.
 - frontmatter 키:
   - \`capabilities: [...]\` — 이 도메인이 가진 역량의 slug
-  - \`depends_on: [...]\` — 이 도메인이 기대는 다른 도메인이나 외부 시스템
+  - \`depends_on: [...]\` — 이 도메인이 필요로 하는 다른 도메인이나 외부 시스템
   - \`relates: [...]\` — 느슨한 연관 참조(선택)
 
 ## 남길까, 지울까?
@@ -606,7 +606,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 - frontmatter 키:
   - \`domain: <slug>\` — 상위 도메인 하나
   - \`elements: [...]\` — 이 역량이 쓰는 요소의 slug
-  - \`depends_on: [...]\` — 이 역량이 기대는 다른 역량
+  - \`depends_on: [...]\` — 이 역량이 필요로 하는 다른 역량
   - \`relates: [...]\` — 느슨한 연관 참조(선택)
 `;
 
@@ -639,7 +639,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 - frontmatter 키:
   - \`domain: <slug>\` — 상위 도메인 하나
   - \`path: <src/...>\` — 이 요소가 대응하는 코드 경로(선택)
-  - \`depends_on: [...]\` — 이 요소가 기대는 다른 요소/역량
+  - \`depends_on: [...]\` — 이 요소가 필요로 하는 다른 요소/역량
   - \`relates: [...]\` — 느슨한 연관 참조(선택)
 `;
 

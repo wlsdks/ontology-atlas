@@ -83,12 +83,12 @@ export function capabilityLines(model: DialModel, capabilityId: string): GraphLi
   return lines;
 }
 
-/** The panel's two directed totals: distinct concepts the focus points at, and that point at it. */
+/** The panel's two directed totals: distinct concepts the focus needs and that need it; relates and broader lines are drawn, never counted. */
 export function reachCounts(lines: readonly GraphLine[], capabilityId: string): { needs: number; neededBy: number } {
   let needs = 0;
   let neededBy = 0;
   for (const line of lines) {
-    if (line.kind === "relates") continue;
+    if (line.kind === "relates" || line.kind === "broader") continue;
     if (line.from === capabilityId) needs += 1;
     else neededBy += 1;
   }

@@ -27,6 +27,6 @@
   "keyRelates": "Related",
   "keyBroader": "Broader concept",
   "noDomain": "No domain · {count, number}",
-  "reachNeeds": "needs {count, number}",
-  "reachNeededBy": "needed by {count, number}"
+  "reachNeeds": "Needs {count, number}",
+  "reachNeededBy": "Needed by {count, number}"
 }

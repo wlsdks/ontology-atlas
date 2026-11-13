@@ -9,6 +9,8 @@ export interface DatasheetConnection {
   relationType: string;
   relationTypes?: readonly string[];
   direction: "incoming" | "outgoing";
+  /** The relation's recorded reason (`relation_notes`); null or absent when none was written. */
+  reason?: string | null;
 }
 
 /** Connections by role, with containment split out, so popover and full detail count alike. */
@@ -32,7 +34,7 @@ function containmentNodeIsParent(connection: DatasheetConnection): boolean {
     : connection.direction === "outgoing";
 }
 
-/** O(n+t) role groups, deduped by neighbor in input order. */
+/** O(n+t) role groups, deduped by neighbor in input order; a later copy lends its reason to a row without one. */
 export function groupConnectionsByRole(
   connections: readonly DatasheetConnection[],
 ): RoleGroupedConnections {
@@ -41,45 +43,48 @@ export function groupConnectionsByRole(
   const dependsOn: DatasheetConnection[] = [];
   const belongsTo: DatasheetConnection[] = [];
   const related: DatasheetConnection[] = [];
+  type Kept = { row: DatasheetConnection; types: Set<string> };
   const seen = {
-    contains: new Map<string, Set<string>>(),
-    usedBy: new Map<string, Set<string>>(),
-    dependsOn: new Map<string, Set<string>>(),
-    belongsTo: new Map<string, Set<string>>(),
-    related: new Map<string, Set<string>>(),
+    contains: new Map<string, Kept>(),
+    usedBy: new Map<string, Kept>(),
+    dependsOn: new Map<string, Kept>(),
+    belongsTo: new Map<string, Kept>(),
+    related: new Map<string, Kept>(),
   };
   for (const connection of connections) {
     let bucket: DatasheetConnection[];
-    let seenTypes: Map<string, Set<string>>;
+    let kept: Map<string, Kept>;
     if (isContainmentRelation(connection.relationType)) {
       if (containmentNodeIsParent(connection)) {
         bucket = contains;
-        seenTypes = seen.contains;
+        kept = seen.contains;
       } else {
         bucket = belongsTo;
-        seenTypes = seen.belongsTo;
+        kept = seen.belongsTo;
       }
     } else if (!isDirectionalRelation(connection.relationType)) {
       bucket = related;
-      seenTypes = seen.related;
+      kept = seen.related;
     } else if (connection.direction === "incoming") {
       bucket = usedBy;
-      seenTypes = seen.usedBy;
+      kept = seen.usedBy;
     } else {
       bucket = dependsOn;
-      seenTypes = seen.dependsOn;
+      kept = seen.dependsOn;
     }
-    const types = seenTypes.get(connection.id);
-    if (types) {
-      for (const type of connection.relationTypes ?? [connection.relationType]) types.add(type);
+    const earlier = kept.get(connection.id);
+    if (earlier) {
+      for (const type of connection.relationTypes ?? [connection.relationType]) earlier.types.add(type);
+      earlier.row.reason ||= connection.reason ?? null;
       continue;
     }
-    seenTypes.set(connection.id, new Set(connection.relationTypes ?? [connection.relationType]));
-    bucket.push({ ...connection });
+    const row = { ...connection };
+    kept.set(connection.id, { row, types: new Set(connection.relationTypes ?? [connection.relationType]) });
+    bucket.push(row);
   }
   const groups = { contains, usedBy, dependsOn, belongsTo, related };
   for (const role of Object.keys(groups) as (keyof RoleGroupedConnections)[]) {
-    for (const row of groups[role]) row.relationTypes = [...seen[role].get(row.id)!];
+    for (const row of groups[role]) row.relationTypes = [...seen[role].get(row.id)!.types];
   }
   return groups;
 }
@@ -97,6 +102,8 @@ export interface ConnectionSourceEdge {
   from: string;
   to: string;
   type: string;
+  /** The recorded reason; blank reads as none. */
+  label?: string;
 }
 
 /**
@@ -125,6 +132,7 @@ export function buildConnections(
         kind: other.kind,
         relationType: edge.type,
         direction: "outgoing",
+        reason: edge.label?.trim() || null,
       });
     } else if (edge.to === nodeId) {
       const other = nodeById.get(edge.from);
@@ -138,6 +146,7 @@ export function buildConnections(
         kind: other.kind,
         relationType: edge.type,
         direction: "incoming",
+        reason: edge.label?.trim() || null,
       });
     }
   }

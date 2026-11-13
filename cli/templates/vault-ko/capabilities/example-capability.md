@@ -37,5 +37,5 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 - frontmatter 키:
   - `domain: <slug>` — 상위 도메인 하나
   - `elements: [...]` — 이 역량이 쓰는 요소의 slug
-  - `depends_on: [...]` — 이 역량이 기대는 다른 역량
+  - `depends_on: [...]` — 이 역량이 필요로 하는 다른 역량
   - `relates: [...]` — 느슨한 연관 참조(선택)

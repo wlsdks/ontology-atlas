@@ -5,10 +5,9 @@ import {
   buildV2ConnectionGroups,
   buildV2EvidenceRows,
   formatV2HandoffText,
-  buildV2MetricSegments,
-  formatV2MetricLine,
+  reasonsByRelation,
+  shownReachRows,
   slugDisplaySegment,
-  summarizeContainsByPathPrefix,
   type V2DatasheetConnection,
 } from "./map-datasheet";
 
@@ -136,7 +135,7 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
   it("handles an empty set with zero totals across every role group", () => {
     const groups = buildV2ConnectionGroups([]);
     expect(groups).toEqual({
-      contains: { rows: [], allRows: [], total: 0, summary: { groups: [], otherCount: 0, total: 0, usable: false } },
+      contains: { rows: [], allRows: [], total: 0 },
       usedBy: { rows: [], allRows: [], total: 0 },
       dependsOn: { rows: [], allRows: [], total: 0 },
       belongsTo: { rows: [], allRows: [], total: 0 },
@@ -182,53 +181,6 @@ describe("buildV2ConnectionGroups — M-2 ROLE axis, single source for metric + 
     expect(groups.usedBy.total).toBe(2);
     expect(groups.dependsOn.total).toBe(1);
     expect(groups.belongsTo.total).toBe(0);
-  });
-});
-
-describe("formatV2MetricLine — M-2 typed segments", () => {
-  const labels = {
-    contains: "담는 것",
-    usedBy: "쓰는 곳",
-    dependsOn: "기대는 곳",
-    belongsTo: "속한 곳",
-    evidence: "근거",
-  };
-
-  it("prepends the holds segment for a container node (contains > 0), the typed split", () => {
-    expect(
-      formatV2MetricLine({ contains: 18, usedBy: 4, dependsOn: 2, belongsTo: 0, evidence: 1 }, labels),
-    ).toBe("담는 것 18 · 쓰는 곳 4 · 기대는 곳 2 · 근거 1");
-  });
-
-  it("hides the holds segment for a leaf (contains === 0) so it is not a noisy zero", () => {
-    expect(
-      formatV2MetricLine({ contains: 0, usedBy: 3, dependsOn: 5, belongsTo: 0, evidence: 2 }, labels),
-    ).toBe("쓰는 곳 3 · 기대는 곳 5 · 근거 2");
-  });
-
-  it("keeps the remaining three facts' zeros explicit", () => {
-    expect(
-      formatV2MetricLine({ contains: 0, usedBy: 0, dependsOn: 0, belongsTo: 0, evidence: 0 }, labels),
-    ).toBe("쓰는 곳 0 · 기대는 곳 0 · 근거 0");
-  });
-
-  it("buildV2MetricSegments exposes the same segments structured, keyed by the group ids", () => {
-    expect(
-      buildV2MetricSegments({ contains: 18, usedBy: 4, dependsOn: 2, belongsTo: 0, evidence: 1 }, labels),
-    ).toEqual([
-      { key: "contains", label: "담는 것", value: 18 },
-      { key: "usedBy", label: "쓰는 곳", value: 4 },
-      { key: "dependsOn", label: "기대는 곳", value: 2 },
-      { key: "evidence", label: "근거", value: 1 },
-    ]);
-  });
-
-  it("buildV2MetricSegments omits the contains segment for a leaf, like the joined line", () => {
-    expect(
-      buildV2MetricSegments({ contains: 0, usedBy: 3, dependsOn: 5, belongsTo: 0, evidence: 2 }, labels).map(
-        (s) => s.key,
-      ),
-    ).toEqual(["usedBy", "dependsOn", "evidence"]);
   });
 });
 
@@ -378,66 +330,39 @@ describe("slugDisplaySegment: sticky footer slug in plain language", () => {
   });
 });
 
-describe("summarizeContainsByPathPrefix (part 3)", () => {
-  const el = (idPath: string): V2DatasheetConnection =>
-    conn({ id: `element:${idPath}`, relationType: "contains", direction: "outgoing" });
+describe("shownReachRows", () => {
+  it.each([
+    [0, 0],
+    [1, 1],
+    [6, 6],
+    [7, 5],
+    [40, 5],
+  ])("shows %i rows as %i while folded", (total, shown) => {
+    expect(shownReachRows(total, false)).toBe(shown);
+  });
 
-  it("aggregates by path prefix sorted by count descending, ties by key alphabetically, the rest as other", () => {
-    const rows: V2DatasheetConnection[] = [
-      ...Array.from({ length: 4 }, (_, i) => el(`cli/src/commands/c${i}`)),
-      ...Array.from({ length: 2 }, (_, i) => el(`.claude/skills/s${i}`)),
-      el("cli/src/lib/one"),
-      el("solo"), // No slash → Other (other)
-    ];
-    const summary = summarizeContainsByPathPrefix(rows, 2);
-    expect(summary.total).toBe(8);
-    // Top 2: cli/src/commands(4), .claude/skills(2)
-    expect(summary.groups).toEqual([
-      { key: "cli/src/commands", count: 4 },
-      { key: ".claude/skills", count: 2 },
+  it("shows every row once opened", () => {
+    expect(shownReachRows(40, true)).toBe(40);
+  });
+});
+
+describe("reasonsByRelation", () => {
+  it("finds a reason by direction and far concept, so the same neighbour can carry two", () => {
+    const groups = buildV2ConnectionGroups([
+      conn({ id: "pay", relationType: "depends_on", reason: "Charges the card." }),
+      conn({ id: "pay", relationType: "depends_on", direction: "incoming", reason: "Refunds return here." }),
+      conn({ id: "search", relationType: "related_to", reason: "Shares the index." }),
+      conn({ id: "cart", relationType: "depends_on", reason: null }),
     ]);
-    // The rest: cli/src/lib(1) + solo (no prefix, 1) = 2
-    expect(summary.otherCount).toBe(2);
+    const reasons = reasonsByRelation(groups);
+    expect(reasons.get("out:pay")).toBe("Charges the card.");
+    expect(reasons.get("in:pay")).toBe("Refunds return here.");
+    expect(reasons.get("out:search")).toBe("Shares the index.");
+    expect(reasons.has("out:cart")).toBe(false);
   });
 
-  it("deterministic: the same input twice gives the same result", () => {
-    const rows = [el("a/b/x"), el("a/b/y"), el("c/d/z")];
-    expect(summarizeContainsByPathPrefix(rows)).toEqual(summarizeContainsByPathPrefix(rows));
-  });
-
-  it("buildV2ConnectionGroups carries the summary on contains", () => {
-    const rows = Array.from({ length: 3 }, (_, i) => el(`p/q/e${i}`));
-    const groups = buildV2ConnectionGroups(rows);
-    expect(groups.contains.summary).toBeDefined();
-    expect(groups.contains.summary?.total).toBe(3);
-    expect(groups.contains.summary?.usable).toBe(true);
-    expect(groups.usedBy.summary).toBeUndefined();
-  });
-
-  // B4 (H1) — rescue a summary collapsing into one 「Other」 lump by re-splitting, then by falling back to the list.
-  it('when deep prefixes scatter and the other bucket exceeds half, it re-splits by first-level prefix', () => {
-    const rows: V2DatasheetConnection[] = [
-      ...["a", "b", "c", "d", "e", "f"].map((s) => el(`cli/${s}/x`)),
-      ...["g", "h", "i", "j"].map((s) => el(`src/${s}/y`)),
-    ];
-    // The deep prefixes (cli/a … src/j) are all count 1 → only the top 4 are named and
-    // the remaining 6 go to Other. Other (6) is the majority, so it re-splits on the
-    // one-level prefix (cli/src) and takes the side that actually divides.
-    const summary = summarizeContainsByPathPrefix(rows, 4);
-    expect(summary.usable).toBe(true);
-    expect(summary.groups).toEqual([
-      { key: "cli", count: 6 },
-      { key: "src", count: 4 },
-    ]);
-    expect(summary.otherCount).toBe(0);
-  });
-
-  it("usable=false when there are no slashes to split on (the panel falls back to the list)", () => {
-    const rows = [el("add"), el("list"), el("find")];
-    const summary = summarizeContainsByPathPrefix(rows, 4);
-    expect(summary.usable).toBe(false);
-    expect(summary.groups).toEqual([]);
-    expect(summary.otherCount).toBe(3);
-    expect(summary.total).toBe(3);
+  it("reads past the capped preview", () => {
+    const rows = Array.from({ length: 9 }, (_, i) => conn({ id: `c${i}`, relationType: "depends_on", reason: `Reason ${i}` }));
+    expect(reasonsByRelation(buildV2ConnectionGroups(rows)).get("out:c8")).toBe("Reason 8");
   });
 });

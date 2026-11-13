@@ -40,7 +40,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
   로 잡힙니다.
 - frontmatter 키:
   - `capabilities: [...]` — 이 도메인이 가진 역량의 slug
-  - `depends_on: [...]` — 이 도메인이 기대는 다른 도메인이나 외부 시스템
+  - `depends_on: [...]` — 이 도메인이 필요로 하는 다른 도메인이나 외부 시스템
   - `relates: [...]` — 느슨한 연관 참조(선택)
 
 ## 남길까, 지울까?

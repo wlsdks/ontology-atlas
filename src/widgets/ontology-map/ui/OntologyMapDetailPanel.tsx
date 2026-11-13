@@ -21,7 +21,6 @@ import {
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
-import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { Button, Disclosure, LastEditSubjectRow, MtimeConflictBadge, Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
@@ -55,9 +54,7 @@ export function OntologyMapDetailPanel({
   summaryHistoryUnavailable = false,
   powered,
   groups,
-  domainUsage = null,
-  evidence,
-  codeLocations,
+  reach = null,
   updatedAtLabel = null,
   lastEditSubject = null,
   mtimeConflict = false,
@@ -206,27 +203,6 @@ export function OntologyMapDetailPanel({
         ]
       : []),
   ];
-  const compactProjectRelations = useViewportBelow(1513);
-  const collapseProjectRelations = projectLayout && compactProjectRelations;
-  // The top count sums the totals of the groups drawn below, so it equals their aggregate by
-  // construction.
-  const connectedTotal =
-    groups.contains.total + groups.usedBy.total + groups.dependsOn.total + groups.belongsTo.total +
-    groups.related.total;
-  const hasConnections =
-    connectedTotal > 0 || evidence.total > 0 || codeLocations.length > 0;
-
-  // S2 part 3 — a long "contains" list folds into a path-prefix summary, and the
-  // "View all" toggle unfolds the existing list (session-only state). The slug is
-  // used as the key so a node change resets it to the default (summary) — the call
-  // site HomePage supplies the key, so it remounts.
-  const [showAllContains, setShowAllContains] = useState(false);
-  // "+N" expansion — independent per group (if expanding the children also
-  // lengthened leans on, the panel would grow everywhere at once). A node change
-  // makes the parent build the panel afresh, so this state lives only for that node.
-  const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set());
-  const [showProjectRelations, setShowProjectRelations] = useState(false);
-
   /*
    * When the panel disappears, the map's emphasis goes with it.
    *
@@ -528,28 +504,13 @@ export function OntologyMapDetailPanel({
 
         <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 
-        {/* ZONE 3 · RELATIONS — the rhythm between groups is
-            `--map-panel-zone-gap` (28px), far wider than the row spacing
-            inside a group, so each typed-fact block reads as its own section
-            ("space encodes grouping"). */}
         <RelationsZone
+          kind={kind}
+          reach={reach}
           groups={groups}
-          domainUsage={domainUsage}
-          evidence={evidence}
-          codeLocations={codeLocations}
           labels={labels}
           onSelectConnection={onSelectConnection}
           onHoverConnection={onHoverConnection}
-          onHoverEvidence={onHoverEvidence}
-          collapseProjectRelations={collapseProjectRelations}
-          connectedTotal={connectedTotal}
-          hasConnections={hasConnections}
-          showAllContains={showAllContains}
-          setShowAllContains={setShowAllContains}
-          expandedGroups={expandedGroups}
-          setExpandedGroups={setExpandedGroups}
-          showProjectRelations={showProjectRelations}
-          setShowProjectRelations={setShowProjectRelations}
         />
 
         {/* Footer (sticky) — the slug (left, last segment only; the full value on
