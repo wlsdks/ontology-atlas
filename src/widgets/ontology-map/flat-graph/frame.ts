@@ -11,7 +11,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { cachedGraphAttention, FLAT_LINE_BITS, inkUnder, type GraphAttention, type GraphLineKind } from "./attention";
 import { directItemId } from "./layout";
 import {
-  arcPathInto, CROWD_DOT_MIN_PX, crowdShare, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
+  arcPathInto, capabilityDiscRadiusPx, emptyArcPath, glowSprite, graphDiscRadiusPx, ORPHAN_ROOM, lightSprite, litLineTrimsInto, restArcs, smoothstep, sunk, zoomGrowth, type ArcPath,
 } from "./marks";
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -28,6 +28,8 @@ const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 const DOT_ALPHA = 0.7;
 const LIT_DOT_SHARE = 1.5;
+/** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
+const ELEMENT_PITCH_FILL = 0.33;
 const LIGHT_SINK_GAIN = 1.4;
 const AGENT_RING_WIDTH_PX = 1;
 const PIP_SHARE = 0.3;
@@ -318,6 +320,8 @@ interface FrameState {
   radii: Map<string, number>;
   orphans: ReadonlySet<string>;
   dotAlpha: number;
+  /** World distance between neighbouring elements of one fan. */
+  elementPitch: number;
   focusness: number;
   required: ReadonlySet<string>;
   evidence: DialEvidenceView | null;
@@ -426,23 +430,21 @@ function lensHidden(id: string): boolean {
   return F.contextMode && (F.input.contextAlphas!.get(id) ?? 0) < HITTABLE_MIN_TIER_ALPHA;
 }
 
-function radiusOf(id: string, g: number): number {
+function radiusOf(id: string, g: number, scale: number): number {
   const { model, P } = F;
   if (id === model.projectId) return graphDiscRadiusPx("project", 0, P, g);
   if (model.domainById.has(id)) return graphDiscRadiusPx("domain", 0, P, g);
-  if (model.capabilityById.has(id) || F.orphans.has(id)) {
-    const full = graphDiscRadiusPx("capability", model.capabilityById.get(id)?.elementIds.length ?? 0, P, g);
-    const roomKey = F.orphans.has(id) ? ORPHAN_ROOM : model.domainOf.get(id) ?? ORPHAN_ROOM;
-    return Math.max(Math.min(full, CROWD_DOT_MIN_PX), full * crowdShare(F.layout, roomKey, P, F.scale, g));
-  }
-  return graphDiscRadiusPx("element", 0, P, g);
+  const capability = model.capabilityById.get(id);
+  if (capability) return capabilityDiscRadiusPx(F.layout, model.domainOf.get(id)!, capability.elementIds.length, P, scale, g);
+  if (F.orphans.has(id)) return capabilityDiscRadiusPx(F.layout, ORPHAN_ROOM, 0, P, scale, g);
+  return Math.min(graphDiscRadiusPx("element", 0, P, g), F.elementPitch * scale * ELEMENT_PITCH_FILL);
 }
 
 function radiusAt(id: string, g: number): number {
-  if (g !== F.growth) return radiusOf(id, g);
+  if (g !== F.growth) return radiusOf(id, g, F.scale);
   const known = F.radii.get(id);
   if (known !== undefined) return known;
-  const r = radiusOf(id, g);
+  const r = radiusOf(id, g, F.scale);
   F.radii.set(id, r);
   return r;
 }
@@ -502,6 +504,12 @@ function blockShows(list: readonly PlacedName[], from: number, to: number, chrom
   return !at || nameBlockDraws(list, from, to, at.x, at.y, chrome, selectedId);
 }
 
+/** The share of its full radius a capability disc is drawn at, 1 for a disc no crowd shrank. */
+function crowdKept(d: Disc): number {
+  const full = graphDiscRadiusPx("capability", F.model.capabilityById.get(d.id)?.elementIds.length ?? 0, F.P, F.growth);
+  return Math.min(1, d.r / full);
+}
+
 /** A glow under one disc of the hovered or selected set, no wider for a crowd-shrunk disc than its size carries; the rest picture draws none. */
 function addGlow(d: Disc, isProject: boolean): void {
   const { P, growth } = F;
@@ -509,7 +517,7 @@ function addGlow(d: Disc, isProject: boolean): void {
   else loadGlowShare(d.id);
   const share = scratch[0]!;
   if (share <= DRAWN_INK) return;
-  const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + Math.min(P.capGlowPx * growth, d.r * (P.capGlowPx / P.capDiscMinPx));
+  const halo = isProject ? P.projectGlowPx * growth : F.model.domainById.has(d.id) ? P.domainGlowPx * growth : d.r + P.capGlowPx * growth * crowdKept(d);
   const focusGain = d.focus ? FOCUS_GLOW_ALPHA / P.glowAlpha : 1;
   const alpha = Math.min(1, P.glowAlpha * focusGain) * d.ink * d.ink * share;
   const g = glows.take();
@@ -677,9 +685,11 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const step = zoomStep(input.scale, P.zoomStepsPerOctave);
   const stepGrowth = zoomGrowth((input.zoomRatio * stepScale(step, P.zoomStepsPerOctave)) / input.scale, P);
   stepGrowthNow[0] = stepGrowth;
+  stepGrowthNow[1] = stepScale(step, P.zoomStepsPerOctave);
   const focusness = motion.share(MOTION_SHARE.focus, attention.lit ? 1 : 0);
   const evidence = input.evidence ? dialEvidenceView(model, input.evidence) : null;
   const measured = evidence?.measured === true;
+  F.elementPitch = scene.medianElementPitch;
   const elementSpacingPx = scene.medianElementPitch * input.scale;
   const dotAlpha = smoothstep(P.dotSpacingFromPx, P.dotSpacingFullPx, elementSpacingPx);
   F.dotAlpha = dotAlpha;
@@ -927,10 +937,10 @@ function hubCaptionFont(px: number, family: string): string {
  * The name admission's disc radius at this frame's zoom step. A module function, not a closure: a
  * closure kept across frames would hold the frame that made it, and through it an unmounted canvas.
  */
-const stepGrowthNow = new Float64Array(1);
+const stepGrowthNow = new Float64Array(2);
 const LINE_TRIMS = new Float64Array(2);
 function stepRadius(id: string): number {
-  return radiusAt(id, stepGrowthNow[0]!);
+  return radiusOf(id, stepGrowthNow[0]!, stepGrowthNow[1]!);
 }
 
 /**
@@ -1185,6 +1195,8 @@ function paintDots(ctx: CanvasRenderingContext2D, marks: readonly Dot[], ground:
 
 const dotKey = (d: Dot): number => ((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * GROUP_LEVELS + level(d.alpha)) | 0;
 const NO_DASH: number[] = [];
+/** Slack under the smallest full disc, so rounding never paints an uncrowded disc as a dot. */
+const RADIUS_EPSILON_PX = 1e-6;
 const discBuckets = buckets<Disc>();
 const segmentBuckets = buckets<Segment>();
 const dotBuckets = buckets<Dot>();
@@ -1192,16 +1204,18 @@ const dotBuckets = buckets<Dot>();
 function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], tokens: FlatGraphTokens, ground: string, warning: string, kind: "domain" | "capability" | "project", growth: number): void {
   const P = tokens.paint;
   const rimPx = kind === "capability" ? P.capRimPx : P.domainRimPx;
-  const ringMinPx = kind === "capability" ? P.capRimPx + P.capCoreMinPx : 0;
+  const ringMinPx = kind === "capability" ? P.capDiscMinPx * growth - RADIUS_EPSILON_PX : 0;
   const discLists = group(discBuckets, marks, discKey);
   for (let listIndex = 0; listIndex < discLists.size; listIndex += 1) {
     const list = discLists.items[listIndex]!;
     const first = list.items[0]!;
-    if (ringMinPx > 0 && paintPlainDots(ctx, list, ringMinPx, sunk(first.hue, ground, first.ink)) === list.size) continue;
+    const plain = ringMinPx > 0 && !first.focus && first.state !== "unknown";
+    if (plain && paintPlainDots(ctx, list, ringMinPx, sunk(first.hue, ground, first.ink)) === list.size) continue;
+    const ringFromPx = plain ? ringMinPx : 0;
     ctx.beginPath();
     for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
       const d = list.items[dIndex]!;
-      if (d.r < ringMinPx) continue;
+      if (d.r < ringFromPx) continue;
       ctx.moveTo(d.x + d.r, d.y);
       ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
     }
@@ -1218,7 +1232,7 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
     ctx.beginPath();
     for (let dIndex = 0; dIndex < list.size; dIndex += 1) {
       const d = list.items[dIndex]!;
-      if (d.r < ringMinPx) continue;
+      if (d.r < ringFromPx) continue;
       const core = kind === "project" ? P.projectCorePx * growth : kind === "domain" ? P.domainCorePx * growth : Math.max(P.capCoreMinPx, d.r - P.capCoreInsetPx);
       ctx.moveTo(d.x + core, d.y);
       ctx.arc(d.x, d.y, core, 0, Math.PI * 2);
@@ -1236,7 +1250,7 @@ function paintDiscs(ctx: CanvasRenderingContext2D, marks: readonly Disc[], token
   }
 }
 
-/** Paints the discs of one paint key too small to hold a rim around a core as plain dots, and counts them. */
+/** Paints the discs of one paint key that a crowd shrank under the smallest full disc as plain dots, and counts them. */
 function paintPlainDots(ctx: CanvasRenderingContext2D, list: FrameList<Disc>, ringMinPx: number, ink: string): number {
   let plain = 0;
   for (let dIndex = 0; dIndex < list.size; dIndex += 1) {

@@ -168,27 +168,36 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     }
   });
 
-  it("fits to the name rows alone when the full title blocks outgrow the area, and rests every caption but the focused domain's", () => {
+  it("rests every caption but the focused domain's when the name rows alone show a larger picture, and keeps that choice through a pinned rebuild", () => {
     const order = circularDomainOrder(model, null).order;
     const input = { model, tokens: TOKENS.paint, labels: LABELS, measureText: measure, fontFamily: "sans-serif" };
     const frame = (area: { width: number; height: number }): FlatGraphFrame => ({
       areaPx: area, titles: domainTitleBlocks(input), compactTitles: domainTitleBlocks(input, "name"), capDiscPx: TOKENS.paint.capDiscMaxPx, hubPx: 0,
     });
+    const captions = (l: FlatGraphLayout, scale: number, focusId: string | null) => namesAt(model, l, scale, focusId).names.filter((n) => n.role === "units").map((n) => n.id);
     const roomy = layoutFlatGraph(model, order, TOKENS.layout, null, frame({ width: 6000, height: 4000 }));
     expect(roomy.compactTitles).toBe(false);
-    const tight = { width: 640, height: 420 };
-    const compact = layoutFlatGraph(model, order, TOKENS.layout, null, frame(tight));
-    expect(compact.compactTitles).toBe(true);
-    const full = layoutFlatGraph(model, order, TOKENS.layout, null, { ...frame(tight), compactTitles: undefined });
-    const widthOf = (l: FlatGraphLayout) => l.extent.maxX - l.extent.minX;
-    expect(widthOf(compact), "resting the captions never shrinks the picture").toBeLessThanOrEqual(widthOf(full));
+    expect(captions(roomy, 1, null).length).toBe(model.domains.length);
 
-    const scale = Math.min(1, tight.width / widthOf(compact), tight.height / (compact.extent.maxY - compact.extent.minY));
-    const captionsAt = (focusId: string | null) => namesAt(model, compact, scale, focusId).names.filter((n) => n.role === "units").map((n) => n.id);
-    expect(captionsAt(null)).toEqual([]);
+    const widthOf = (l: FlatGraphLayout) => l.extent.maxX - l.extent.minX;
+    const fits = [{ width: 1100, height: 650 }, { width: 900, height: 540 }, { width: 760, height: 460 }].map((area) => {
+      const tight = frame(area);
+      return { tight, compact: layoutFlatGraph(model, order, TOKENS.layout, null, tight), full: layoutFlatGraph(model, order, TOKENS.layout, null, { ...tight, compactTitles: undefined }) };
+    });
+    const won = fits.find((f) => f.compact.compactTitles && widthOf(f.compact) < widthOf(f.full));
+    expect(won, "some laptop-sized area rests the captions for a larger picture").toBeDefined();
+    const { tight, compact } = won!;
+    const scale = Math.min(1, tight.areaPx!.width / widthOf(compact), tight.areaPx!.height / (compact.extent.maxY - compact.extent.minY));
+    expect(captions(compact, scale, null)).toEqual([]);
     const focus = model.domains[0]!.id;
-    expect(captionsAt(focus)).toEqual([focus]);
-    expect(namesAt(model, roomy, 1, null).names.filter((n) => n.role === "units").length).toBeGreaterThan(0);
+    expect(captions(compact, scale, focus)).toEqual([focus]);
+
+    claimFlatGraphFolder("captions-rest");
+    settleFlatGraph(model, compact, "settled", "sans-serif");
+    const rebuilt = layoutFlatGraph(model, order, TOKENS.layout, flatGraphPins(model, "sans-serif"), tight);
+    claimFlatGraphFolder("captions-rest-done");
+    expect(rebuilt.compactTitles, "a pinned rebuild keeps the captions resting").toBe(true);
+    expect(captions(rebuilt, scale, null)).toEqual([]);
   });
 
   it("spreads each member star into the room a wide title reserves, and never past it", () => {
@@ -253,6 +262,7 @@ describe.each(VAULTS)("flat graph layout: %s", (_, model) => {
     const pinned = layoutFlatGraph(model, layout.clusters.map((c) => c.domainId), TOKENS.layout, {
       positions: new Map([[domain.domainId, pinnedAt], [cap.id, capAt]]),
       seeds: new Map(),
+      compactTitles: false,
     });
     expect(pinned.positions.get(domain.domainId)).toEqual(pinnedAt);
     expect(pinned.positions.get(cap.id)).toEqual(capAt);

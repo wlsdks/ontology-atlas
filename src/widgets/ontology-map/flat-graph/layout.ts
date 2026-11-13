@@ -24,6 +24,8 @@ const TITLE_PASSES = 6;
 const TITLE_PASS_MARGIN = 1.04;
 /** A steeper secant means the titles alone outgrow the area: a larger reservation only shrinks the fit, so the passes stop. */
 const MAX_TITLE_SLOPE = 0.9;
+/** Captions that fit still rest when the name rows alone show the picture this many times larger. */
+const COMPACT_TITLE_GAIN = 1.25;
 /** The first secant starts from an unscaled guess, so the passes never stop on it. */
 const FIRST_SECANT_PASS = 2;
 /** Passes that keep members off the titles at the shown scale where the reservation could not reach it. */
@@ -502,13 +504,20 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * elements on a closed-form golden-angle fan. A pinned id keeps its position and enters every pass
  * fixed. With a frame, the clusters spread to its aspect and every domain's title block is kept
  * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles;
- * titles that outgrow the area are fitted once more as their name rows alone, and the larger picture wins.
+ * the graph is fitted once more to the name rows alone, and that picture wins when the full titles
+ * outgrow the area or it shows clearly larger.
  * Cost: O(P·(I·D² + I·n²)) for P passes, D domains and n items per domain; elements are O(E).
  */
 export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  const nameRows = frame?.compactTitles ? { ...frame, titles: frame.compactTitles } : null;
+  if (nameRows === null) return fitGraph(model, order, tokens, pins, frame).layout;
+  // Pinned positions cannot answer a title reservation, so a pinned rebuild keeps the remembered choice.
+  if (pins !== null && pins.positions.size > 0) {
+    return { ...fitGraph(model, order, tokens, pins, pins.compactTitles ? nameRows : frame).layout, compactTitles: pins.compactTitles };
+  }
   const full = fitGraph(model, order, tokens, pins, frame);
-  if (full.titlesHold || !frame?.compactTitles) return full.layout;
-  const compact = fitGraph(model, order, tokens, pins, { ...frame, titles: frame.compactTitles });
+  const compact = fitGraph(model, order, tokens, pins, nameRows);
+  if (full.titlesHold && full.shown <= compact.shown * COMPACT_TITLE_GAIN) return full.layout;
   return { ...(compact.shown <= full.shown ? compact : full).layout, compactTitles: true };
 }
 

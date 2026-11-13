@@ -18,21 +18,24 @@ export function graphDiscRadiusPx(kind: GraphKind, elementCount: number, tokens:
   return Math.min(tokens.capDiscMaxPx, tokens.capDiscMinPx + tokens.capDiscGainPx * Math.sqrt(elementCount)) * growth;
 }
 
-/** The share of the gap between two touching discs that crowded discs give up to stay apart. */
+/** The share of the distance between a crowded pair's centres that their two radii fill; the rest is the air between them. */
 const CROWD_FILL = 0.8;
 
 /** The radius under which a crowded capability stops shrinking: a dot the eye still counts. */
-export const CROWD_DOT_MIN_PX = 0.9;
+const CROWD_DOT_MIN_PX = 0.9;
 
 /** The key under which the concepts with no domain share one room. */
 export const ORPHAN_ROOM = "";
 
 const discRoomCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
 
-/** World distance from each point to its nearest other per px of their summed radii, at the least. O(n²). */
-function tightestRoom(points: readonly Point[], radiiPx: readonly number[]): number {
+/** The orphans whose nearest neighbour is measured: their golden-angle disc is evenly pitched, so a few stand for all. */
+const ORPHAN_PROBES = 48;
+
+/** World distance from each of the first `probes` points to its nearest other per px of their summed radii, at the least. O(probes × n). */
+function tightestRoom(points: readonly Point[], radiiPx: readonly number[], probes: number): number {
   let room = Infinity;
-  for (let i = 0; i < points.length; i += 1) {
+  for (let i = 0; i < Math.min(probes, points.length); i += 1) {
     for (let j = i + 1; j < points.length; j += 1) {
       const pair = Math.hypot(points[i]!.x - points[j]!.x, points[i]!.y - points[j]!.y) / (radiiPx[i]! + radiiPx[j]!);
       if (pair < room) room = pair;
@@ -43,13 +46,13 @@ function tightestRoom(points: readonly Point[], radiiPx: readonly number[]): num
 
 /**
  * Per domain, the world distance its tightest pair of capability discs has per px of their summed
- * radii: under that scale the pair would overlap. O(members²) per cluster, once per layout.
+ * radii: under that scale the pair would overlap. O(members²) per cluster and O(orphans), once per layout.
  */
 function capabilityDiscRoom(layout: FlatGraphLayout, tokens: FlatGraphPaintTokens): ReadonlyMap<string, number> {
   let byDomain = discRoomCache.get(layout);
   if (!byDomain) {
     byDomain = new Map();
-    const roomOf = (key: string, ids: readonly string[], counts: readonly number[]) => {
+    const roomOf = (key: string, ids: readonly string[], counts: readonly number[], probes: number) => {
       const points: Point[] = [];
       const radii: number[] = [];
       ids.forEach((id, i) => {
@@ -58,13 +61,13 @@ function capabilityDiscRoom(layout: FlatGraphLayout, tokens: FlatGraphPaintToken
         points.push(at);
         radii.push(graphDiscRadiusPx("capability", counts[i]!, tokens, 1));
       });
-      byDomain!.set(key, tightestRoom(points, radii));
+      byDomain!.set(key, tightestRoom(points, radii, probes));
     };
     for (const c of layout.clusters) {
       const items = c.items.filter((it) => !it.direct);
-      roomOf(c.domainId, items.map((it) => it.id), items.map((it) => it.elementIds.length));
+      roomOf(c.domainId, items.map((it) => it.id), items.map((it) => it.elementIds.length), items.length);
     }
-    roomOf(ORPHAN_ROOM, layout.orphanIds, layout.orphanIds.map(() => 0));
+    roomOf(ORPHAN_ROOM, layout.orphanIds, layout.orphanIds.map(() => 0), ORPHAN_PROBES);
     discRoomCache.set(layout, byDomain);
   }
   return byDomain;
@@ -77,6 +80,12 @@ function capabilityDiscRoom(layout: FlatGraphLayout, tokens: FlatGraphPaintToken
 export function crowdShare(layout: FlatGraphLayout, roomKey: string, tokens: FlatGraphPaintTokens, scale: number, growth: number): number {
   const room = capabilityDiscRoom(layout, tokens).get(roomKey) ?? Infinity;
   return Math.min(1, (room * scale * CROWD_FILL) / growth);
+}
+
+/** A capability disc's drawn radius: its full size, shrunk with its star when the zoom crowds it, never under a countable dot. */
+export function capabilityDiscRadiusPx(layout: FlatGraphLayout, roomKey: string, elementCount: number, tokens: FlatGraphPaintTokens, scale: number, growth: number): number {
+  const full = graphDiscRadiusPx("capability", elementCount, tokens, growth);
+  return Math.max(Math.min(full, CROWD_DOT_MIN_PX), full * crowdShare(layout, roomKey, tokens, scale, growth));
 }
 
 export function smoothstep(from: number, to: number, value: number): number {

@@ -148,7 +148,7 @@ export interface FlatGraphLayout {
   clusterByDomain: ReadonlyMap<string, FlatGraphCluster>;
   orphanIds: readonly string[];
   extent: Box;
-  /** The area was too small for every title block, so the layout kept only the name rows clear and the captions rest. */
+  /** The captions rest: the full title blocks outgrew the area, or their name rows alone showed a clearly larger picture. */
   compactTitles: boolean;
 }
 
@@ -177,10 +177,13 @@ export interface FlatGraphMemory {
   /** The font family the titles were measured in; a layout fitted to one face never pins another. */
   face: string;
   positions: ReadonlyMap<string, Point>;
+  compactTitles: boolean;
   signatureByDomain: ReadonlyMap<string, string>;
 }
 
 export interface FlatGraphPins {
   positions: ReadonlyMap<string, Point>;
+  /** Whether the remembered picture rested its captions; a pinned rebuild keeps that choice. */
+  compactTitles: boolean;
   seeds: ReadonlyMap<string, Point>;
 }

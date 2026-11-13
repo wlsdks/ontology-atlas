@@ -103,6 +103,32 @@ test("at 2,000 concepts a pan paints per drawn mark, never per concept, and a re
   await page.waitForFunction((quietMs) => performance.now() - (window as CallWindow).__calls!.lastAt > quietMs, IDLE_QUIET_MS, { polling: 250, timeout: 60_000 });
 });
 
+/** Pairs of capability discs drawn into each other, by more than antialiasing. O(n²) over the drawn discs. */
+function overlappingCapabilityDiscs(dial: DialProbe, capabilityIds: ReadonlySet<string>): string[] {
+  const discs = dial.discs.filter((d) => capabilityIds.has(d.id));
+  const hits: string[] = [];
+  for (let i = 0; i < discs.length; i += 1) {
+    for (let j = i + 1; j < discs.length; j += 1) {
+      const a = discs[i]!;
+      const b = discs[j]!;
+      if (Math.hypot(a.x - b.x, a.y - b.y) < a.r + b.r - 0.5) hits.push(`${a.id} × ${b.id}`);
+    }
+  }
+  return hits;
+}
+
+test("at 5,000 concepts on a laptop a crowded domain's capability discs shrink until none overlaps another", async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const dial = await open(page, "synth=5000&synthDeps=1&");
+  const capabilityIds = new Set(await page.evaluate(() => window.__atlasMap!.nodes().filter((n) => n.kind === "capability").map((n) => n.id)));
+  const drawn = dial.discs.filter((d) => capabilityIds.has(d.id));
+  const smallestFullPx = Number(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--map-graph-cap-disc-min-px")));
+  expect(drawn.length).toBeGreaterThan(100);
+  expect(drawn.filter((d) => d.r < smallestFullPx).length, "the overview is crowded enough to shrink discs").toBeGreaterThan(0);
+  expect(overlappingCapabilityDiscs(dial, capabilityIds)).toEqual([]);
+});
+
 for (const source of ["dogfood", "storefront", "synth"] as const) {
   test(`at a laptop width every ${source} name stays inside the free map and no disc sits on a domain title`, async ({ page }) => {
     test.setTimeout(180_000);

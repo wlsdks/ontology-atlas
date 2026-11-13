@@ -249,8 +249,9 @@ type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measure
 /**
  * A domain's name and caption. A selected domain's reach line takes the caption's row: the layout
  * keeps members off a two-row title, and the detail panel shows the membership the caption counts.
+ * A resting caption draws only a stale count, the one fact in it that asks for attention.
  */
-function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null): PlacedName[] {
+function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null, captionRests = false): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
   const r = input.discRadius(domainId);
@@ -264,7 +265,7 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
   if (labels) {
     const stale = input.staleByDomain?.get(domainId) ?? 0;
     const units = labels.units(d.capabilityIds.length, d.elementCount);
-    const text = stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
+    const text = captionRests ? labels.stale(stale) : stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
     const captionFont = font(400, t.captionPx, fontFamily);
     const y = nameY + t.domainNamePx / 2 + t.captionGapPx + t.captionPx / 2;
     if (reachLine) {
@@ -275,7 +276,7 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
         box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
         pieces: figures.pieces.map((p) => ({ text: p.text, dx: min + p.dx })),
       });
-    } else {
+    } else if (!captionRests || stale > 0) {
       const w = measureText(text, captionFont);
       out.push({
         id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
@@ -615,8 +616,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
   const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   for (const c of layout.clusters) {
-    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId));
-    if (layout.compactTitles && input.focusId !== c.domainId) block = block.filter((n) => n.role !== "units");
+    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId), layout.compactTitles && input.focusId !== c.domainId);
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
       const at = layout.positions.get(c.domainId)!;
       const above = blockAbove(block);
