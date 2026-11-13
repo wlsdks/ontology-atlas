@@ -31,7 +31,7 @@ a curled forked left tail with an ivory notch. Preserve the selected silhouette.
 Moru is a character, not an ontology kind, assistant persona or work detector.
 
 The complete project pack is [assets/brand/moru](../../assets/brand/moru/):
-46 authored twenty-four-frame motions, 16 explicitly labelled composed sequences and
+54 authored motions (46 with 24 poses and eight with 32), 16 explicitly labelled composed sequences and
 16 static poses. Sizes/formats never count as additional designs.
 Open [preview.html](../../assets/brand/moru/preview.html) locally to play, pause,
 scrub frames, inspect 64/128px exports, and download individual assets.
@@ -43,6 +43,15 @@ temper, a flipper groove and two floating-ontology scenes. Thoughtful expression
 hearts, laughter and the flipper groove join the finite petting
 reactions. The larger scenes (including the illustrative ontology), frown and temper stay in the catalogue and README
 samples; an application error does not make Moru angry at the person.
+
+Eight further gestures add a soft bow, hat greeting, fish trick, blanket peekaboo,
+rosy temper, flipper five, folder peek and bubble chase. The bow, flipper five and
+hat greeting join petting; the fish trick is reserved for the download welcome.
+Peekaboo, rosy temper and bubble chase remain catalogue scenes. A small pixel
+speech bubble responds with a heart, note or sparkle. One note accompanies the
+return hop per ambient itinerary; waiting has no bubble. These original SVG
+ornaments stay within the actor bounds, ignore pointer input and share its pause,
+visibility and reduced-motion behavior. A still response uses a still bubble.
 
 Source sheets, generation prompts and discarded explorations remain in that pack.
 `moru-source.json` records source cells and sequence constituents; `moru.json`
@@ -76,16 +85,18 @@ control fills or data colors. The exporter keeps dark achromatic eye shading
 neutral without turning bright warm ivory into gray speckles. It registers
 the largest connected skin region independently of tails, flippers and detached
 props, so a tail briefly separating cannot shift or resize the body.
-Raw source files remain unchanged.
+The rosy-temper clip alone opts into coral `#D96C75` and `#EE9A93`; these are
+character ink, never error or control colors. New clips preserve their initial
+body scale across the gesture. Raw source files remain unchanged.
 
 ## Contextual motion
 
 | Existing moment | Source gesture | Playback and still endpoint |
 |---|---|---|
-| Folder selection | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` | Offers a folder; bounded play with playback in the character context menu |
+| Folder selection | Native 128px `wave`, `tilt`, `folder-open`, `folder-peek`, `soft-bow`, `blink`, `hop` | Offers a folder; bounded play with playback in the character context menu |
 | Busy chooser | `blink`, `tilt` | Quiet stationary waiting while the busy chooser stays mounted; folder opening can replace it with the existing waiting view |
-| Download invitation | `wave`, `tilt`, `blink`, `hop` | Welcome without the folder-selection prop |
-| Petting the decorative companion | `shy`, `clap`, `dance`, `thinking`, `pondering`, `hearts`, `laugh`, `flipper-groove` | One finite reaction per press; no queued repeats or work claim |
+| Download invitation | `soft-bow`, `wave`, `tilt`, `blink`, `hop` | Welcome without the folder-selection prop |
+| Petting the decorative companion | `shy`, `clap`, `dance`, `thinking`, `pondering`, `hearts`, `laugh`, `flipper-groove`, `soft-bow`, `flipper-five`, `hat-tip`; welcome also `magic-fish` | One finite reaction per press; no queued repeats or work claim |
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
@@ -112,6 +123,8 @@ owns progress, cancellation or completion. First answer, Stop, permission, error
 and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
 The decorative companion keeps native 128px cells and authored jump headroom.
+Its ambient and reaction sheets use 32 columns with explicit row/column addressing
+(maximum width 4096px), so adding motions does not create oversized textures.
 Horizontal travel is capped at 32px and occurs only in airborne hop poses.
 The borderless character target uses the existing transparent link control treatment;
 its keyboard focus indication remains, while pressing it adds no rectangular fill.

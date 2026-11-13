@@ -14,13 +14,18 @@ const NEUTRALS = PALETTE.filter(p => Math.max(...p) - Math.min(...p) < 30);
 const [STONE, IVORY] = ['d6d3c9', 'fff1d7'].map(hex => PALETTE[COLORS.indexOf(hex)]);
 
 /** Dark achromatic shading must not become indigo; bright warm ivory remains ivory. */
-export function moruColor(r, g, b) {
+export function moruColor(r, g, b, accents = []) {
+  const distance = q => (r - q[0]) ** 2 + (g - q[1]) ** 2 + (b - q[2]) ** 2;
+  if (accents.length) {
+    const base = PALETTE.reduce((a, p) => distance(p) < distance(a) ? p : a);
+    const accent = accents.reduce((a, p) => distance(p) < distance(a) ? p : a);
+    if (distance(accent) < distance(base)) return accent;
+  }
   if (r >= 235 && r - g >= 5 && r - b >= 18) return IVORY;
   const achromatic = Math.max(r, g, b) - Math.min(r, g, b) < 35;
   if (achromatic && Math.min(r, g, b) >= 150) return STONE;
   const candidates = achromatic ? NEUTRALS : PALETTE;
   return candidates.reduce((best, p) => {
-    const distance = q => (r - q[0]) ** 2 + (g - q[1]) ** 2 + (b - q[2]) ** 2;
     return distance(p) < distance(best) ? p : best;
   });
 }
@@ -50,7 +55,7 @@ function translate(data, size, dx, dy) {
   return out;
 }
 
-async function cell(source, columns, rows, index, size, alphaCutoff = 240) {
+async function cell(source, columns, rows, index, size, alphaCutoff = 240, accents = []) {
   const file = join(ROOT, source), meta = await sharp(file).metadata();
   const left = Math.round(index % columns * meta.width / columns);
   const top = Math.round(Math.floor(index / columns) * meta.height / rows);
@@ -59,7 +64,7 @@ async function cell(source, columns, rows, index, size, alphaCutoff = 240) {
   const data = await sharp(file).extract({ left, top, width: right - left, height: bottom - top }).resize(size, size, { kernel: 'nearest' }).ensureAlpha().raw().toBuffer();
   for (let i = 0; i < data.length; i += 4) {
     if (data[i + 3] < alphaCutoff) { data.fill(0, i, i + 4); continue; }
-    const color = moruColor(data[i], data[i + 1], data[i + 2]);
+    const color = moruColor(data[i], data[i + 1], data[i + 2], accents);
     data[i] = color[0]; data[i + 1] = color[1]; data[i + 2] = color[2]; data[i + 3] = 255;
   }
   return data;
@@ -90,10 +95,10 @@ export function moruBodyAnchor(data, size) {
   return largest;
 }
 
-function registerBody(frame, reference, size, airborneOrigin) {
+function registerBody(frame, reference, size, airborneOrigin, scaleReference) {
   const from = moruBodyAnchor(frame, size), to = moruBodyAnchor(reference, size);
   const origin = airborneOrigin ? moruBodyAnchor(airborneOrigin, size) : from;
-  const scale = Math.sqrt(to.area / origin.area);
+  const scale = Math.sqrt(to.area / (scaleReference ? moruBodyAnchor(scaleReference, size).area : origin.area));
   const dy = airborneOrigin ? (from.bottom - origin.bottom) * scale : 0;
   const out = Buffer.alloc(frame.length);
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
@@ -112,8 +117,14 @@ export async function buildMoru() {
     let neutral;
     for (const clip of spec.authored) {
       const count = clip.frames;
-      if (count !== 24 || clip.durationsMs.length !== count) throw new Error(`${clip.id} must declare twenty-four timed source poses`);
-      let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff)));
+      if (!Number.isInteger(count) || count < 2 || clip.durationsMs.length !== count || clip.offset + count > clip.columns * clip.rows || clip.durationsMs.some(ms => !Number.isFinite(ms) || ms <= 0)) throw new Error(`${clip.id} must declare a valid grid of timed source poses`);
+      const accents = (clip.accents ?? []).map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
+      let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff, accents)));
+      // A scene keeps one fixed camera; reserve an equal transparent inset for its props.
+      if (clip.sceneInset) {
+        const inset = Math.round(size * clip.sceneInset);
+        frames = await Promise.all(frames.map(f => raw(f, size).resize(size - 2 * inset, size - 2 * inset, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: inset, bottom: inset, background: '#00000000' }).raw().toBuffer()));
+      }
       const anchor = Math.round(size * 0.78);
       if (!neutral) {
         const fit = size * 7 / 8, inset = (size - fit) / 2;
@@ -123,7 +134,7 @@ export async function buildMoru() {
       const reference = clip.scene ? frames[0] : neutral;
       frames = frames.map((f, i) => {
         if (i === 0 || i === count - 1) return Buffer.from(reference);
-        try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined); }
+        try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
         catch (error) { throw new Error(`${clip.id} frame ${i + 1} at ${size}px: ${error.message}`); }
       });
       framesBySize[size][clip.id] = frames;
@@ -186,7 +197,7 @@ export async function buildMoru() {
     for (let i = 0; i < data.length; i += 4) { const visible = data[i] > 100 && data[i + 3] > 200; data.fill(0, i, i + 3); data[i + 3] = visible ? 255 : 0; }
     await put(`${canonical}/mascot-tray-template-${size}.png`, await raw(data, 16).resize(size, size, { kernel: 'nearest' }).png().toBuffer());
   }
-  const manifest = { name: 'Moru', version: spec.version, nativeCell: 128, palette: COLORS.map(x => `#${x}`), clips, poses, compass: 'icons/atlas-compass-1024.png', runtime: { greeting: 'wave', waiting: 'blink', connect: 'connect', compile: 'source-read', walk: 'wave', read: 'source-read', success: 'dance' }, scope: 'Local design catalogue. Only explicitly mapped and observed runtime states play in the app; no animation grants approval or accepts meaning.' };
+  const manifest = { name: 'Moru', version: spec.version, nativeCell: 128, palette: [...new Set([...COLORS, ...spec.authored.flatMap(c => c.accents ?? [])])].map(x => `#${x}`), clips, poses, compass: 'icons/atlas-compass-1024.png', runtime: { greeting: 'wave', waiting: 'blink', connect: 'connect', compile: 'source-read', walk: 'wave', read: 'source-read', success: 'dance' }, scope: 'Local design catalogue. Only explicitly mapped and observed runtime states play in the app; no animation grants approval or accepts meaning.' };
   await put(join(ROOT, 'moru.json'), JSON.stringify(manifest, null, 2) + '\n');
   await put(join(ROOT, 'preview-data.js'), `globalThis.moruManifest = ${JSON.stringify(manifest)};\n`);
   await buildMoruCompanion();

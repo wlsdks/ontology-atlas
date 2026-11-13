@@ -122,9 +122,11 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[62个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[70个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
 在文件夹选择画面，Moru 会打招呼并展示小文件夹；打开文件夹时停止玩耍，切换到现有的等待画面。下载页面使用独立的欢迎动作。只有双脚离地的短跳跃期间才会移动。悬停时会先完成落地，再停下来等待。点击 Moru 会短暂地害羞、鼓掌、跳舞、思考、冒出爱心、欢笑或挥动鳍跳舞，右键点击或按 Shift+F10 可打开暂停菜单。角色旁不显示播放按钮。启用减少动态效果时，仅改变静态表情。
+
+新的32姿势动作增加了鞠躬、击掌和帽子问候，下载欢迎画面还会表演小鱼魔术。点击时，小气泡会显示爱心、音符或闪光，返回跳跃时也会偶尔出现音符。等待操作时保持安静。躲猫猫、脸红和泡泡游戏可在动作预览中查看。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -157,6 +159,14 @@ Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[6
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="挥动鳍跳舞的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="看着漂浮本体模型的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="和本体模型一起跳舞的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="轻轻鞠躬的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="摘小帽子问好的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="变出小鱼的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="玩躲猫猫的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="脸红后平静下来的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="击掌的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="查看文件夹的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="追泡泡的Moru" />
 
 
 </details>

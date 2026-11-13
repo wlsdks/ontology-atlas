@@ -1,0 +1,23 @@
+.bubble {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.bubble img {
+  position: absolute;
+  inset: 0;
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated;
+}
+
+.bubble img:not([data-glyph="note"]) { display: none; }
+.bubble[data-emotion] img { display: none; }
+.bubble[data-emotion="heart"] [data-glyph="heart"],
+.bubble[data-emotion="note"] [data-glyph="note"],
+.bubble[data-emotion="spark"] [data-glyph="spark"] { display: block; }

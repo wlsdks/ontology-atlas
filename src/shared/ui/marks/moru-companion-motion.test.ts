@@ -3,6 +3,10 @@ import source from './moru-companion.json';
 import { companionMotion } from './moru-companion-motion';
 
 const x = (frame: Keyframe) => Number(String(frame.transform).match(/translateX\((-?[\d.]+)px\)/)?.[1]);
+function cellAt(frame: Keyframe) {
+  const match = String(frame.transform).match(/translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)/)!;
+  return -Number(match[2]) / source.cell * source.columns - Number(match[1]) / source.cell;
+}
 function positionAt(frames: Keyframe[], offset: number) {
   const end = frames.findIndex(frame => Number(frame.offset) > offset);
   if (end < 0) return x(frames.at(-1)!);
@@ -15,9 +19,21 @@ describe('Moru ground contact', () => {
   it('keeps pending work at rest and reserves the folder prop for selection', () => {
     const waiting = companionMotion(640, 'waiting');
     expect(waiting.movement.every(frame => x(frame) === 0)).toBe(true);
-    const folderStart = source.clips['folder-open'].firstFrame * source.cell;
-    expect(companionMotion(640, 'welcome').sprite.every(frame => -x(frame) < folderStart)).toBe(true);
-    expect(companionMotion(640, 'folder').sprite.some(frame => -x(frame) >= folderStart)).toBe(true);
+    expect(waiting.emote.every(frame => Number(frame.opacity) === 0)).toBe(true);
+    for (const context of ['folder', 'welcome'] as const) {
+      const active = companionMotion(32, context);
+      const visible = active.emote.filter(frame => Number(frame.opacity) > 0);
+      expect(visible.length).toBeGreaterThan(0);
+      // The ornament accompanies travel, never the stationary folder invitation.
+      expect(visible.every(frame => active.restAt(Number(frame.offset) * active.duration).delay > 0)).toBe(true);
+      expect(active.emote.at(-1)?.opacity).toBe(0);
+    }
+    const isFolder = (frame: Keyframe) => ['folder-open', 'folder-peek'].some(id => {
+      const clip = source.clips[id as 'folder-open' | 'folder-peek'];
+      return cellAt(frame) >= clip.firstFrame && cellAt(frame) < clip.firstFrame + clip.durationsMs.length;
+    });
+    expect(companionMotion(640, 'welcome').sprite.some(isFolder)).toBe(false);
+    expect(companionMotion(640, 'folder').sprite.some(isFolder)).toBe(true);
   });
   it('keeps planted poses still and moves only while the authored feet are clear of the floor', async () => {
     const require = createRequire(import.meta.url);
@@ -25,14 +41,16 @@ describe('Moru ground contact', () => {
     const pixels: Buffer = await sharp('public/brand/moru-companion.png').ensureAlpha().raw().toBuffer();
     const bottomAt = (cell: number) => {
       for (let y = source.cell - 1; y >= 0; y--) for (let x = 0; x < source.cell; x++) {
-        if (pixels[(y * source.cell * source.frames + cell * source.cell + x) * 4 + 3]) return y + 1;
+        const sheetY = Math.floor(cell / source.columns) * source.cell + y;
+        const sheetX = cell % source.columns * source.cell + x;
+        if (pixels[(sheetY * source.cell * source.columns + sheetX) * 4 + 3]) return y + 1;
       }
       throw new Error(`Empty source cell ${cell}`);
     };
     const floor = bottomAt(source.clips.hop.firstFrame);
     const motion = companionMotion(640);
     for (let i = 0; i < motion.sprite.length - 1; i++) {
-      const pose = -x(motion.sprite[i]) / source.cell;
+      const pose = cellAt(motion.sprite[i]);
       const hopFrame = pose - source.clips.hop.firstFrame;
       // The authored feet vary by up to three native pixels while resting. Read the
       // artwork instead of copying the implementation's lift-off/landing indices.

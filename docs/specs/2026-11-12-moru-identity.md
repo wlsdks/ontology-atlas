@@ -59,9 +59,9 @@ full character's face. Owner selection does not prove unfamiliar users recognize
 | Moru as every app/OS/browser mark | One character everywhere; small face carries both identity and expression | Existing pipeline is close, local assets; loses the selected independent compass role |
 | Compass identity plus Moru companion | Stable app identification and expressive company in existing slots | Moderate fan-out, entirely local; chosen |
 
-The first slice covers all requested surfaces and **62 distinct named animation clips
-and 16 static expressions/poses**. The owner subsequently requested twelve more gestures beyond the initial 30–50 range;
-46 clips are authored motions and 16 are explicitly labelled compositions.
+The first slice covers all requested surfaces and **70 distinct named animation clips
+and 16 static expressions/poses**. The owner subsequently requested more expressive gestures beyond the initial 30–50 range;
+54 clips are authored motions and 16 are explicitly labelled compositions.
 Sizes/formats do not count
 as new clips or poses. Each clip records its authored source or constituent poses
 and timing; compositions are labelled. Keep references, prompts, masters, exports,
@@ -176,7 +176,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    no unintended indigo eye edge, clipping, jitter, or ground-contact drift.
    Check preview captures and `brand-asset-parity.contract.test.ts`; preserve eye evidence.
 2. **Given** the catalogue, **when** manifest and preview are inspected, **then**
-   62 distinct clips and 16 static poses resolve to project sources and
+   70 distinct clips and 16 static poses resolve to project sources and
    exports, with compositions/timing identified. Open every clip in `assets/brand/moru/preview.html` at 64px and 128px.
 3. **Given** current consumers, **when** pipeline/parity checks run, **then**
    compass symbols and Moru slots consistently replace traveler art; compass at
@@ -240,3 +240,12 @@ action in a dismissible context menu. Primary click still gives the finite respo
 Pointer and keyboard attention holds finish an airborne hop before resting.
 Explicit pause, reduced motion and hidden/offscreen guards still stop immediately.
 Leaving the character cancels a pending attention hold.
+
+The next owner request adds eight 32-pose gestures: soft bow, hat tip, fish trick,
+peekaboo, rosy temper, flipper five, folder peek and bubble chase. Folder entry
+uses folder peek and bow; touch adds bow, flipper five and hat tip. Only welcome
+touch includes the fish trick. A waiting chooser answers gently without props or
+celebration. Rosy temper stays a catalogue expression, never an error response.
+Wordless pixel bubbles show a heart, note or sparkle on touch and occasionally a
+note during a return hop. They stay within the companion, add no control or live
+announcement, and follow visibility, pause and reduced-motion guards.

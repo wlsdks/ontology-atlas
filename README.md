@@ -160,7 +160,7 @@ implementation still require exhaustive CI.
 |---|---|
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
-| `pnpm brand:sprites` | Rebuild Moru sprites, 62 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
+| `pnpm brand:sprites` | Rebuild Moru sprites, 70 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
@@ -197,9 +197,11 @@ Use `--scope=<selector>` to audit one visible modal or region. The selector must
 
 ## Moru
 
-Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [62 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
+Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [70 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
 
 At folder entry, Moru greets, offers a small folder and waits. Play gives way to the existing waiting view when a folder opens. The download invitation uses a separate welcome. Hops travel only while airborne; hovering lets a hop land before Moru waits. Pet Moru for a brief shy, clap, dance, thinking, pondering, hearts, laughter or flipper-groove response; right-click Moru or press Shift+F10 for pause/resume. No playback button sits beside the character. Reduced motion keeps a still expression.
+
+New 32-pose gestures add a bow, flipper five and hat greeting to petting; the download welcome also offers a fish trick. A small wordless bubble answers touch with a heart, note or sparkle and occasionally accompanies a return hop. Waiting stays quiet. Peekaboo, rosy temper and bubble play are available in the catalogue.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -232,6 +234,14 @@ At folder entry, Moru greets, offers a small folder and waits. Play gives way to
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="Moru dancing with its flippers" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="Moru watching a floating ontology model" />
 <img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="Moru dancing with a floating ontology" />
+<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="Moru bowing softly" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="Moru tipping a tiny hat" />
+<img src="assets/brand/moru/animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="Moru revealing a magic fish" />
+<img src="assets/brand/moru/animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="Moru playing peekaboo" />
+<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="Moru blushing with a tiny temper" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="Moru offering a flipper five" />
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="Moru peeking into a folder" />
+<img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="Moru chasing a bubble" />
 
 
 </details>
