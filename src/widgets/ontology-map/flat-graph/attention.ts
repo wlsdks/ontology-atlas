@@ -1,5 +1,5 @@
 import type { DialModel } from "../dial/types";
-import { domainPartners } from "../model/containment-tree";
+import { domainPartners, type CapabilityRelation } from "../model/containment-tree";
 
 /** How a lit line reads: what the focus needs, what needs it, a symmetric relation, a broader concept. */
 export type GraphLineKind = "needs" | "neededBy" | "relates" | "broader";
@@ -17,7 +17,7 @@ export interface GraphLine {
   kind: GraphLineKind;
   /** `kind:from>to`, built once so a frame can report the line without allocating. */
   key: string;
-  /** The relations the line stands for: 1 for a capability's own, the pair's count between domains. */
+  /** The relations the line stands for: 1 for a concept's own, the pair's count between domains. */
   weight: number;
 }
 
@@ -27,9 +27,9 @@ export interface GraphAttention {
   selected: boolean;
   /** Concepts drawn at full ink; null means the rest picture, where everything is. */
   lit: ReadonlySet<string> | null;
-  /** The relations the focus draws, one per far capability. */
+  /** The relations the focus draws, one per far concept and side. */
   lines: readonly GraphLine[];
-  /** Distinct concepts a focused capability, or domains a focused domain, needs and is needed by; null for other kinds. */
+  /** Distinct concepts the focus needs and is needed by, domains for a domain; null for the project and the rest picture. */
   reach: { needs: number; neededBy: number } | null;
   /** Concepts a lit picture must name: the focus and every line's far end. */
   named: ReadonlySet<string>;
@@ -50,17 +50,16 @@ function domainMembers(model: DialModel, domainId: string, into: Set<string>): v
 }
 
 /**
- * One capability's own relations as lines, the connections its detail panel lists
- * (`groupConnectionsByRole`): one line per far concept per side, outgoing and incoming apart. A
+ * One capability's or element's own relations as lines, the rows its detail panel lists
+ * (`readConceptReach`): one line per far concept per side, outgoing and incoming apart. A
  * dependency outranks `is_a` toward the same concept, and either outranks a symmetric relation.
- * O(capability relations).
+ * O(relations).
  */
-export function capabilityLines(model: DialModel, capabilityId: string): GraphLine[] {
+export function conceptLines(relations: readonly CapabilityRelation[], conceptId: string): GraphLine[] {
   const lines: GraphLine[] = [];
   const seen = new Set<string>();
-  const relations = model.capabilityRelations ?? [];
   const add = (from: string, to: string, kind: GraphLineKind) => {
-    const outgoing = from === capabilityId;
+    const outgoing = from === conceptId;
     const far = outgoing ? to : from;
     const side = kind === "relates" ? "" : outgoing ? ">" : "<";
     if (seen.has(`${side}${far}`) || (kind === "relates" && (seen.has(`>${far}`) || seen.has(`<${far}`)))) return;
@@ -69,30 +68,38 @@ export function capabilityLines(model: DialModel, capabilityId: string): GraphLi
   };
   for (const r of relations) {
     if (r.kind !== "depends") continue;
-    if (r.from === capabilityId) add(r.from, r.to, "needs");
-    else if (r.to === capabilityId) add(r.from, r.to, "neededBy");
+    if (r.from === conceptId) add(r.from, r.to, "needs");
+    else if (r.to === conceptId) add(r.from, r.to, "neededBy");
   }
   for (const r of relations) {
-    if (r.kind === "broader" && (r.from === capabilityId || r.to === capabilityId)) add(r.from, r.to, "broader");
+    if (r.kind === "broader" && (r.from === conceptId || r.to === conceptId)) add(r.from, r.to, "broader");
   }
   for (const r of relations) {
     if (r.kind !== "relates") continue;
-    if (r.from === capabilityId) add(r.from, r.to, "relates");
-    else if (r.to === capabilityId) add(r.to, r.from, "relates");
+    if (r.from === conceptId) add(r.from, r.to, "relates");
+    else if (r.to === conceptId) add(r.to, r.from, "relates");
   }
   return lines;
 }
 
 /** The panel's two directed totals: distinct concepts the focus needs and that need it; relates and broader lines are drawn, never counted. */
-export function reachCounts(lines: readonly GraphLine[], capabilityId: string): { needs: number; neededBy: number } {
+export function reachCounts(lines: readonly GraphLine[], focusId: string): { needs: number; neededBy: number } {
   let needs = 0;
   let neededBy = 0;
   for (const line of lines) {
     if (line.kind === "relates" || line.kind === "broader") continue;
-    if (line.from === capabilityId) needs += 1;
+    if (line.from === focusId) needs += 1;
     else neededBy += 1;
   }
   return { needs, neededBy };
+}
+
+function lightFarEnds(lines: readonly GraphLine[], focusId: string, into: Set<string>, named: Set<string>): void {
+  for (const line of lines) {
+    const far = line.from === focusId ? line.to : line.from;
+    into.add(far);
+    named.add(far);
+  }
 }
 
 function capabilityReach(model: DialModel, capabilityId: string, into: Set<string>, named: Set<string>): GraphLine[] {
@@ -101,12 +108,23 @@ function capabilityReach(model: DialModel, capabilityId: string, into: Set<strin
   into.add(capabilityId);
   into.add(cap.domainId);
   for (const el of cap.elementIds) into.add(el);
-  const lines = capabilityLines(model, capabilityId);
-  for (const line of lines) {
-    const far = line.from === capabilityId ? line.to : line.from;
-    into.add(far);
-    named.add(far);
+  const lines = conceptLines(model.conceptRelations ?? [], capabilityId);
+  lightFarEnds(lines, capabilityId, into, named);
+  return lines;
+}
+
+/** An element, or a concept outside every domain, lights its own lines and the capability and domain it sits in. */
+function ownReach(model: DialModel, elementId: string, into: Set<string>, named: Set<string>): GraphLine[] {
+  into.add(elementId);
+  const owner = model.capabilityOf.get(elementId);
+  if (owner) {
+    into.add(owner);
+    named.add(owner);
   }
+  const domain = model.domainOf.get(elementId);
+  if (domain) into.add(domain);
+  const lines = conceptLines(model.conceptRelations ?? [], elementId);
+  lightFarEnds(lines, elementId, into, named);
   return lines;
 }
 
@@ -125,18 +143,14 @@ function domainLines(model: DialModel, domainId: string): GraphLine[] {
 function domainReach(model: DialModel, domainId: string, into: Set<string>, named: Set<string>): GraphLine[] {
   domainMembers(model, domainId, into);
   const lines = domainLines(model, domainId);
-  for (const line of lines) {
-    const far = line.from === domainId ? line.to : line.from;
-    into.add(far);
-    named.add(far);
-  }
+  lightFarEnds(lines, domainId, into, named);
   return lines;
 }
 
 /**
  * The lit set: a domain lights itself, its members and every domain it needs or is needed by, a
- * capability its domain, elements and every
- * capability it needs, is needed by, relates to or sits under, an element its capability's set.
+ * capability its domain, elements and every concept it needs, is needed by, relates to or sits
+ * under, an element itself, its capability, its domain and the far end of each of its own lines.
  * The project sinks with the rest; pointing at the project lights nothing and brings back its spokes.
  * O(relations) per call; the frame caches by key.
  */
@@ -146,21 +160,12 @@ export function resolveGraphAttention(model: DialModel, focusId: string | null, 
   if (focusId === model.projectId) return { ...REST, key, focusId, selected };
   const lit = new Set<string>();
   const named = new Set<string>([focusId]);
-  let lines: GraphLine[] = [];
-  if (model.domainById.has(focusId)) lines = domainReach(model, focusId, lit, named);
-  else if (model.capabilityById.has(focusId)) lines = capabilityReach(model, focusId, lit, named);
-  else {
-    const owner = model.capabilityOf.get(focusId);
-    if (owner) {
-      lines = capabilityReach(model, owner, lit, named);
-      named.add(owner);
-    } else {
-      const domain = model.domainOf.get(focusId);
-      if (domain) lit.add(domain);
-    }
-    lit.add(focusId);
-  }
-  const reach = model.capabilityById.has(focusId) || model.domainById.has(focusId) ? reachCounts(lines, focusId) : null;
+  const lines = model.domainById.has(focusId)
+    ? domainReach(model, focusId, lit, named)
+    : model.capabilityById.has(focusId)
+      ? capabilityReach(model, focusId, lit, named)
+      : ownReach(model, focusId, lit, named);
+  const reach = model.domainOf.has(focusId) ? reachCounts(lines, focusId) : null;
   return { key, focusId, selected, lit, lines, reach, named };
 }
 

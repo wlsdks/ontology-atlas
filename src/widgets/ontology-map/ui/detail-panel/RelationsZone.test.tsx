@@ -116,9 +116,10 @@ describe("RelationsZone reach groups", () => {
     expect(onSelectConnection).toHaveBeenCalledWith("domain:billing");
   });
 
-  it("draws no line sample for an element, whose own lines the map does not draw", () => {
-    const { container } = renderZone({ kind: "element", reach: { needs: [reachRow("element:store", "needs")], neededBy: [], other: [] } });
-    expect(container.querySelector("[data-reach-sample]")).toBeNull();
+  it("draws an element's line sample as the map draws its lines, and none for a document, whose lines the map does not draw", () => {
+    const reach = { needs: [reachRow("element:store", "needs")], neededBy: [], other: [] };
+    expect(renderZone({ kind: "element", reach }).container.querySelector("[data-reach-sample]")).not.toBeNull();
+    expect(renderZone({ kind: "document", reach }).container.querySelector("[data-reach-sample]")).toBeNull();
   });
 });
 

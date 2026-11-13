@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
+import docsManifest from "@/entities/docs-vault/data/manifest.json";
+import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
+import type { VaultManifest } from "@/entities/docs-vault";
+import { deriveOntologyFromVault } from "@/entities/docs-vault/lib/derive-ontology-from-vault";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
 import { buildDialModel } from "../dial/dial-model";
-import { cachedGraphAttention } from "../flat-graph/attention";
+import { cachedGraphAttention, resolveGraphAttention } from "../flat-graph/attention";
 import { readConceptReach } from "./concept-reach";
 import {
-  directCapabilityRelations,
+  directRelations,
   readContainmentTree,
   rollDirectedDomainFlows,
   rollDomainDependencies,
@@ -42,18 +47,37 @@ const edges: TreeInputEdge[] = [
   rel("domain:legacy", "domain:catalog", "is_a"),
 ];
 
-function mapReach(focusId: string) {
-  const tree = readContainmentTree(nodes, edges);
-  const dependencies = rollDomainDependencies(tree, edges);
-  const flows = rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, edges));
-  const model = buildDialModel({
-    tree, dependencies, flows,
-    elementIds: nodes.filter((n) => n.kind === "element").map((n) => n.id),
-    relates: rollRelatesCapabilityPairs(tree, edges),
-    direct: directCapabilityRelations(tree, edges),
+function modelOf(graphNodes: readonly TreeInputNode[], graphEdges: readonly TreeInputEdge[]) {
+  const tree = readContainmentTree(graphNodes, graphEdges);
+  const dependencies = rollDomainDependencies(tree, graphEdges);
+  return buildDialModel({
+    tree, dependencies,
+    flows: rollDirectedDomainFlows(dependencies, rollRelatesDomainPairs(tree, graphEdges)),
+    elementIds: graphNodes.filter((n) => n.kind === "element").map((n) => n.id),
+    relates: rollRelatesCapabilityPairs(tree, graphEdges),
+    direct: directRelations(graphEdges),
   });
-  return cachedGraphAttention(model, focusId, true).reach;
 }
+
+function mapReach(focusId: string) {
+  return cachedGraphAttention(modelOf(nodes, edges), focusId, true).reach;
+}
+
+/** A sample vault as the map's graph holds it: map concepts only, and the relations between them. */
+function vaultGraph(manifest: unknown) {
+  const derived = deriveOntologyFromVault(manifest as VaultManifest);
+  const kinds = new Set(["project", "domain", "capability", "element"]);
+  const graphNodes: TreeInputNode[] = (derived.nodes as { id: string; kind: string; title?: string }[])
+    .filter((n) => kinds.has(n.kind))
+    .map((n) => ({ id: n.id, label: n.title ?? n.id, kind: n.kind as TreeInputNode["kind"] }));
+  const ids = new Set(graphNodes.map((n) => n.id));
+  const graphEdges: TreeInputEdge[] = (derived.edges as { from: string; to: string; type: string }[])
+    .filter((e) => ids.has(e.from) && ids.has(e.to) && e.from !== e.to)
+    .map((e) => ({ source: e.from, target: e.to, kind: isContainmentRelation(e.type) ? "contains" : "depends", relationType: e.type }));
+  return { graphNodes, graphEdges, model: modelOf(graphNodes, graphEdges) };
+}
+
+const VAULTS = [["docs", docsManifest], ["storefront", storefrontManifest]] as const;
 
 describe("readConceptReach", () => {
   it.each(["capability:checkout", "capability:charge", "capability:refund", "domain:orders", "domain:payments", "domain:catalog"])(
@@ -99,5 +123,42 @@ describe("readConceptReach", () => {
   it("has no reach for a project or a concept the map does not draw", () => {
     expect(readConceptReach(nodes, edges, "project:shop")).toBeNull();
     expect(readConceptReach(nodes, edges, "document:adr-1")).toBeNull();
+  });
+});
+
+describe("a selected element on the map and in its panel", () => {
+  it.each(VAULTS)("draws the %s vault's element lines exactly as the panel lists its rows", (_name, manifest) => {
+    const { graphNodes, graphEdges, model } = vaultGraph(manifest);
+    const elements = graphNodes.filter((n) => n.kind === "element");
+    expect(elements.length).toBeGreaterThan(50);
+    let elementsWithRows = 0;
+    const differing = elements.flatMap(({ id }) => {
+      const reach = readConceptReach(graphNodes, graphEdges, id)!;
+      const rows = [...reach.needs, ...reach.neededBy, ...reach.other].map((r) => `${r.line} ${r.id}`).sort();
+      if (rows.length > 0) elementsWithRows += 1;
+      const lines = resolveGraphAttention(model, id, true).lines.map((l) => `${l.kind} ${l.from === id ? l.to : l.from}`).sort();
+      return JSON.stringify(rows) === JSON.stringify(lines) ? [] : [{ id, rows, lines }];
+    });
+    expect(elementsWithRows, "some element has a relation").toBeGreaterThan(0);
+    expect(differing).toEqual([]);
+  });
+
+  it.each(VAULTS)("counts a selected %s element's reach as the panel's two totals", (_name, manifest) => {
+    const { graphNodes, graphEdges, model } = vaultGraph(manifest);
+    for (const { id } of graphNodes.filter((n) => n.kind === "element")) {
+      const reach = readConceptReach(graphNodes, graphEdges, id)!;
+      expect(resolveGraphAttention(model, id, true).reach, id).toEqual({ needs: reach.needs.length, neededBy: reach.neededBy.length });
+    }
+  });
+
+  it("lights an element with where it lives and its own far ends, never its capability's other lines", () => {
+    const { model } = vaultGraph(docsManifest);
+    for (const id of model.capabilityOf.keys()) {
+      const attention = resolveGraphAttention(model, id, true);
+      const owner = model.capabilityOf.get(id)!;
+      const far = attention.lines.map((l) => (l.from === id ? l.to : l.from));
+      expect(attention.lines.every((l) => l.from === id || l.to === id), id).toBe(true);
+      expect([...attention.lit!].sort(), id).toEqual([...new Set([id, owner, model.domainOf.get(id)!, ...far])].sort());
+    }
   });
 });

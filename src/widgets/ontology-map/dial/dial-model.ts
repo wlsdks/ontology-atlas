@@ -107,7 +107,7 @@ export function buildDialModel({ tree, dependencies, flows, elementIds = [], rel
     flowByKey: new Map(flowList.map((f) => [f.key, f] as const)),
     capabilityDependencies,
     capabilityRelates: relates.filter((r) => r.a !== r.b && capabilityById.has(r.a) && capabilityById.has(r.b)).map((r) => ({ a: r.a, b: r.b })),
-    capabilityRelations: direct.filter((r) => capabilityById.has(r.from) || capabilityById.has(r.to)),
+    conceptRelations: direct,
     orphanIds: orphanIds.sort(),
     dependents: new Map([...sources].map(([id, set]) => [id, set.size] as const)),
   };

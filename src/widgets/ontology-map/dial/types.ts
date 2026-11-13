@@ -98,8 +98,8 @@ export interface DialModel {
   flows: DirectedDomainFlow[]; flowByKey: ReadonlyMap<string, DirectedDomainFlow>;
   capabilityDependencies: DialCapabilityDependency[]; capabilityRelates: { a: string; b: string;
     }[]; orphanIds: string[];
-  /** Edges a capability states itself, unrolled: the detail panel's connections. */
-  capabilityRelations?: CapabilityRelation[];
+  /** Edges each concept states itself, unrolled (`directRelations`): the detail panel's connections. */
+  conceptRelations?: readonly CapabilityRelation[];
   dependents: ReadonlyMap<string, number>;
 }
 export interface DialEvidenceView { measured: boolean; stateOf(id: string): DialEvidence; staleByDomain: ReadonlyMap<string, number>;
