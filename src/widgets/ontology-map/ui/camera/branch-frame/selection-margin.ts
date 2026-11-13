@@ -71,10 +71,11 @@ function graphSelectionFrame(
     const node = world.nodeById.get(of);
     return node ? [{ x: node.x, y: node.y, box: nameReachBox(input, of) }] : [];
   });
-  // A domain's picture is its reach to other domains: it never zooms, and pans in what partners it can.
+  // A domain's picture is its reach to other domains: it never zooms in, zooms out only when its own
+  // star and names cannot fit, and pans in what partners it can.
   if (model.domainById.has(id)) {
     const partners = new Set(attention.lines.map((line) => (line.from === id ? line.to : line.from)));
-    return selectionFrameTarget(camera, reachFrameSets(marks(near), marks(partners)), viewport, free, paint.frameMarginPx, camera.tscale);
+    return selectionFrameTarget(camera, reachFrameSets(marks(near), marks(partners)), viewport, free, paint.frameMarginPx, band.entryScale);
   }
   const zoom = graphSelectionZoom({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,

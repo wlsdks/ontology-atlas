@@ -236,7 +236,9 @@ export function useTopologyFocusNavigation({
         return;
       }
 
-      if ((!realmActive || realmData?.flat) && source === "canvas-click" && !pathPick && focusedSlug !== null) {
+      // On the Flat graph a selection from outside the canvas (explorer, search, link) frames its lit set as a click does.
+      const framesLikeClick = source === "canvas-click" || (source === null && !realmActive && Boolean(world.dial?.scene.graph));
+      if ((!realmActive || realmData?.flat) && framesLikeClick && !pathPick && focusedSlug !== null) {
         const node = world.nodeById.get(focusedSlug);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;

@@ -46,6 +46,7 @@ vi.mock("../../render/edge-fireflies", async () => {
 import { stepTopologyPhysics } from "../frame-loop/topology-physics-step";
 import { useTopologyFocusNavigation } from "./use-topology-focus-navigation";
 import * as branchFrame from "./branch-frame/target";
+import * as selectionMargin from "./branch-frame/selection-margin";
 
 type Kind = "project" | "domain" | "capability";
 
@@ -362,6 +363,17 @@ describe("useTopologyFocusNavigation", () => {
     expect(Math.abs(back.tx - before.tx)).toBeLessThan(1);
     expect(Math.abs(back.ty - before.ty)).toBeLessThan(1);
     expect(back.tscale).toBeCloseTo(before.tscale, 6);
+  });
+
+  it("on the Flat graph a selection from outside the canvas takes the selection frame a click takes, not the focus zoom", () => {
+    const framed = { tx: 610, ty: 12, tscale: 1 };
+    const slide = vi.spyOn(selectionMargin, "selectionSlideTarget").mockReturnValue(framed);
+    const graphWorld = { ...world(), dial: { scene: { graph: {} }, model: { projectId: "p" } } } as unknown as TopologyWorld;
+    const { deps, select } = setup({ worldRef: ref<TopologyWorld | null>(graphWorld) });
+    select("f");
+    expect(slide).toHaveBeenCalledTimes(1);
+    expect(deps.cameraTargetRef.current).toEqual(framed);
+    expect(deps.beginCameraTween).toHaveBeenLastCalledWith(framed, undefined, "spring");
   });
 
   it("a pan after a framed selection is the reader's view, and the deselect leaves it", () => {

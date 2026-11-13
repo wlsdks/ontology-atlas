@@ -160,7 +160,8 @@ domain line would run through takes the side above its disc when no lit line
 crosses that side and no disc sits under it, so the line meets the disc;
 otherwise it stays below on a backing. While a
 member is selected its domain's name steps down to the secondary ink. When a
-click selects, the camera frames the selection, its domain disc and every lit
+click selects, or a selection arrives from outside the canvas (the explorer,
+search or a link), the camera frames the selection, its domain disc and every lit
 concept inside that domain, with every side their names may take, inside the
 free map (clear of the explorer, the detail panel, the tool row and the key)
 and `--map-graph-frame-margin-px` from each of those edges. When the whole lit
@@ -174,9 +175,10 @@ sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
 none sits on a lit disc; the selection's ring keeps
 `--map-graph-selected-disc-gap-px` from its domain disc; the most concepts in
-the domain named. A domain selection never zooms, because its picture is its
-reach: it pans its disc and member star clear of the detail panel by the frame
-margin and, when every partner domain's disc and name fit in the free map at
+the domain named. A domain selection never zooms in, because its picture is its
+reach: it pans its disc, member star, name and reach line clear of the explorer
+and the detail panel by the frame margin, zooming out only when they cannot fit
+at the current zoom, and, when every partner domain's disc and name fit in the free map at
 the current zoom, pans them all in; otherwise it pans in the partners nearest
 to it, in order of distance, up to the first one that no longer fits with them,
 so a farther partner may still land in view while a nearer one stays out. A zoom
