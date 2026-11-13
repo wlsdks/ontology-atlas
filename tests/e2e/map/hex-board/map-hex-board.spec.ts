@@ -57,8 +57,8 @@ async function readBoard(page: Page) {
   });
 }
 
-const LEGEND_CANALS = "판 사이 기댐";
-const LEGEND_NOTCHES = "기대는 판 쪽";
+const LEGEND_CANALS = "판 사이 필요 관계";
+const LEGEND_NOTCHES = "필요로 하는 판 쪽";
 
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 

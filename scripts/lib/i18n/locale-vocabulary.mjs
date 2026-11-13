@@ -64,7 +64,7 @@ export const VOCABULARY = {
         { term: '핸드오프', tolerated: [], inLabels: true },
         { term: '담는 것', tolerated: [], inLabels: true },
         { term: '속한 곳', tolerated: [], inLabels: true },
-        { term: '기대는 곳', tolerated: ['conceptReach.needs', 'conceptReach.neededBy'], inLabels: true },
+        { term: '기대는 곳', tolerated: [], inLabels: true },
         { term: '이것만 보기', tolerated: [], inLabels: true },
         { term: '전체 상세', tolerated: [], inLabels: true },
         { term: '수리 큐', tolerated: [] },
