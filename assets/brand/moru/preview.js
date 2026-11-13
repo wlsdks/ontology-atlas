@@ -3,7 +3,8 @@ const hero = document.querySelector('#hero'), holder = document.querySelector('#
 const images = {}, canvases = {}, buttons = {}, visible = new Set();
 const pref = matchMedia('(prefers-reduced-motion: reduce)');
 const elapsedByKey = Object.fromEntries(Object.keys(data.clips).map(key => [key, 0]));
-let selected = 'wave', wantsPlayback = true, playing = !pref.matches, size = 128, raf = 0, cycles = 0, lastTick = performance.now(), overview = false;
+const requestedClip = new URLSearchParams(location.search).get('clip');
+let selected = Object.hasOwn(data.clips, requestedClip) ? requestedClip : 'wave', wantsPlayback = true, playing = !pref.matches, size = 128, raf = 0, cycles = 0, lastTick = performance.now(), overview = false;
 const observer = new IntersectionObserver(entries => { for (const e of entries) { if (e.isIntersecting) visible.add(e.target); else visible.delete(e.target); } schedule(); });
 observer.observe(hero);
 for (const [key, clip] of Object.entries(data.clips)) {

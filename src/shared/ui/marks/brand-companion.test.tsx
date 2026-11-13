@@ -170,6 +170,36 @@ it('answers a pet with a still expression under reduced motion', () => {
   expect(animations).toHaveLength(0);
 });
 
+it('lands before holding for a pointer and cancels that handoff when the pointer leaves', () => {
+  vi.useFakeTimers();
+  const { unmount } = render(<BrandCompanion labels={labels} />);
+  act(() => reveal(true));
+  const motion = companionMotion(32);
+  const airborne = motion.sprite.find(frame => motion.restAt(Number(frame.offset) * motion.duration).delay > 0)!;
+  const time = Number(airborne.offset) * motion.duration;
+  for (const animation of animations) { animation.currentTime = time; animation.pause.mockClear(); animation.play.mockClear(); }
+  const pet = screen.getByRole('button', { name: 'pet' });
+  fireEvent.pointerEnter(pet);
+  for (const animation of animations) {
+    expect(animation.pause).not.toHaveBeenCalled();
+    expect(animation.play).toHaveBeenCalled();
+  }
+  const landing = motion.restAt(time);
+  act(() => vi.advanceTimersByTime(landing.delay));
+  for (const animation of animations) {
+    expect(animation.currentTime).toBe(landing.at);
+    expect(animation.pause).toHaveBeenCalled();
+  }
+  fireEvent.pointerLeave(pet);
+  for (const animation of animations) animation.currentTime = time;
+  fireEvent.pointerEnter(pet);
+  fireEvent.pointerLeave(pet);
+  act(() => vi.advanceTimersByTime(landing.delay));
+  for (const animation of animations) expect(animation.currentTime).toBe(time);
+  unmount();
+  expect(vi.getTimerCount()).toBe(0);
+});
+
 it('opens playback only on a context-menu request and restores focus on Escape', async () => {
   render(<BrandCompanion labels={labels} />);
   const pet = screen.getByRole('button', { name: 'pet' });

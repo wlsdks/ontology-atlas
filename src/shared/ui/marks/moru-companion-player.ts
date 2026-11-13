@@ -1,7 +1,7 @@
 import reactions from './moru-reactions.json';
 import { companionMotion, type CompanionContext } from './moru-companion-motion';
 
-const gestures = ['shy', 'clap', 'dance'] as const;
+const gestures = ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove'] as const;
 
 /** A local, finite response to touch; it never projects agent or folder status. */
 export function companionPlayer({ image, reactionImage, body, bounds, animations, context, reducedMotion, intent }: {
@@ -58,9 +58,22 @@ export function companionPlayer({ image, reactionImage, body, bounds, animations
       if (rest.delay > 0) {
         // Finish the airborne hop even when the pointer now holds the actor.
         playAmbient();
-        timer = setTimeout(() => { if (!disposed && requested) begin(requested, rest.at); }, rest.delay);
+        timer = setTimeout(() => { timer = null; if (!disposed && requested) begin(requested, rest.at); }, rest.delay);
       } else begin(requested, rest.at);
-    } else if (onScreen && !paused && !held) playAmbient(); else pauseAmbient();
+    } else if (onScreen && !paused && held) {
+      const rest = motion.restAt(Number(animations[0].currentTime ?? 0));
+      if (rest.delay > 0) {
+        // Attention is a grounded rest, not a freeze in the air. Explicit pause
+        // and hidden-document handling still stop immediately via the branches below.
+        playAmbient();
+        timer = setTimeout(() => {
+          timer = null;
+          if (disposed) return;
+          for (const animation of animations) animation.currentTime = rest.at;
+          pauseAmbient();
+        }, rest.delay);
+      } else pauseAmbient();
+    } else if (onScreen && !paused) playAmbient(); else pauseAmbient();
   };
   const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => {
     visible = entry?.isIntersecting === true; update();

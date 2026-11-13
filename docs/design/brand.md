@@ -31,11 +31,18 @@ a curled forked left tail with an ivory notch. Preserve the selected silhouette.
 Moru is a character, not an ontology kind, assistant persona or work detector.
 
 The complete project pack is [assets/brand/moru](../../assets/brand/moru/):
-34 authored twenty-four-frame motions, 16 explicitly labelled composed sequences and
+46 authored twenty-four-frame motions, 16 explicitly labelled composed sequences and
 16 static poses. Sizes/formats never count as additional designs.
 Open [preview.html](../../assets/brand/moru/preview.html) locally to play, pause,
 scrub frames, inspect 64/128px exports, and download individual assets.
 The preview works from a local file or a static server without external requests.
+
+The latest gestures add a somersault, toy-fishing, laptop coding, curious thinking
+and quiet pondering, followed by hearts, a giggle, a puzzled frown and a tiny
+temper, a flipper groove and two floating-ontology scenes. Thoughtful expressions,
+hearts, laughter and the flipper groove join the finite petting
+reactions. The larger scenes (including the illustrative ontology), frown and temper stay in the catalogue and README
+samples; an application error does not make Moru angry at the person.
 
 Source sheets, generation prompts and discarded explorations remain in that pack.
 `moru-source.json` records source cells and sequence constituents; `moru.json`
@@ -78,7 +85,7 @@ Raw source files remain unchanged.
 | Folder selection | Native 128px `wave`, `tilt`, `folder-open`, `blink`, `hop` | Offers a folder; bounded play with playback in the character context menu |
 | Busy chooser | `blink`, `tilt` | Quiet stationary waiting while the busy chooser stays mounted; folder opening can replace it with the existing waiting view |
 | Download invitation | `wave`, `tilt`, `blink`, `hop` | Welcome without the folder-selection prop |
-| Petting the decorative companion | `shy`, `clap`, `dance` | One finite reaction per press; no queued repeats or work claim |
+| Petting the decorative companion | `shy`, `clap`, `dance`, `thinking`, `pondering`, `hearts`, `laugh`, `flipper-groove` | One finite reaction per press; no queued repeats or work claim |
 | Real generic pending operation | `blink` / waiting row | Quiet loop while the operation is active and visible |
 | Tool preparation/connection | `connect` / connect row | Same pending guards; status and Stop remain authoritative |
 | Local Compile running | `source-read` / compile row | Same pending guards; no inferred completion |
@@ -108,11 +115,11 @@ The decorative companion keeps native 128px cells and authored jump headroom.
 Horizontal travel is capped at 32px and occurs only in airborne hop poses.
 The borderless character target uses the existing transparent link control treatment;
 its keyboard focus indication remains, while pressing it adds no rectangular fill.
-Petting gives a finite shy, clap or dance response. A pet during flight waits for the
+Petting gives a finite shy, clap, dance, thinking, pondering, hearts, laughter or flipper-groove response. A pet during flight waits for the
 neutral landing pose, then returns to the grounded ambient timeline. Repeated presses
 during a response are ignored rather than queued. Right-clicking the character or pressing Shift+F10 opens its pause/resume menu.
 The resting surface shows only Moru, with no adjacent playback button. Escape
-closes the menu and restores character focus; outside presses dismiss it. Pointer hover and keyboard focus hold ambient movement; ordinary
+closes the menu and restores character focus; outside presses dismiss it. Pointer hover and keyboard focus hold ambient movement after an airborne hop finishes landing; ordinary
 pointer focus does not leave it frozen after the pointer moves away.
 Hidden/offscreen state suspends ambient and reaction animations, cleanup cancels a
 pending handoff, and reduced motion uses a still expression. An explicit pause is
@@ -181,7 +188,7 @@ The repository [license](../../LICENSE) remains unchanged.
 - Brand parity/presence contracts cover the three character tiers, independent
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
-  a nonempty 50-clip inventory, frame count, hard alpha, margins and loop seams.
+  a nonempty 62-clip inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through

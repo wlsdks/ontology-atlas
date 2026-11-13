@@ -133,9 +133,9 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 50개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 62개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
 
-폴더 선택 화면에서는 모루가 인사하고 작은 폴더를 보여주며 기다리고, 폴더를 여는 동안에는 장난스러운 동작을 멈추고 기존 대기 화면으로 넘어갑니다. 다운로드 페이지에서는 별도의 환영 동작을 보여줍니다. 이동은 발이 공중에 뜬 짧은 점프 구간에만 일어납니다. 모루를 누르면 수줍어하기·박수·춤으로 짧게 반응하며, 우클릭 또는 Shift+F10 메뉴에서 일시정지할 수 있습니다. 캐릭터 옆에는 재생 버튼이 표시되지 않습니다. 동작 줄이기에서는 정지된 표정으로 반응합니다.
+폴더 선택 화면에서는 모루가 인사하고 작은 폴더를 보여주며 기다리고, 폴더를 여는 동안에는 장난스러운 동작을 멈추고 기존 대기 화면으로 넘어갑니다. 다운로드 페이지에서는 별도의 환영 동작을 보여줍니다. 이동은 발이 공중에 뜬 짧은 점프 구간에만 일어납니다. 커서를 올리면 뛰던 동작을 착지까지 마친 뒤 기다립니다. 모루를 누르면 수줍어하기·박수·춤·생각하기·고민하기·하트·웃음·지느러미 춤으로 짧게 반응하며, 우클릭 또는 Shift+F10 메뉴에서 일시정지할 수 있습니다. 캐릭터 옆에는 재생 버튼이 표시되지 않습니다. 동작 줄이기에서는 정지된 표정으로 반응합니다.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -156,6 +156,18 @@ pnpm checks:changed -- --run
 <img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="비 오는 날 우산 쓴 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="눈송이를 바라보는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="산들바람을 느끼는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="공중제비 도는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="낚싯줄 물고기 장난감을 갖고 노는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="노트북으로 코딩하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="생각하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="고민하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="작은 하트를 보내는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="깔깔 웃는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="살짝 찡그리는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="귀엽게 화내는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="지느러미로 춤추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="떠오르는 온톨로지 모형을 보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="온톨로지 모형과 함께 춤추는 모루" />
 
 
 </details>

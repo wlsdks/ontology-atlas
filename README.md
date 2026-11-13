@@ -160,7 +160,7 @@ implementation still require exhaustive CI.
 |---|---|
 | `node scripts/ci/run-playwright-ci.mjs --help` | Browser shard options, without discovering or running tests; unknown options fail before execution |
 | `pnpm agents:check` | Each harness's instruction files are valid; Codex and Claude files need not match |
-| `pnpm brand:sprites` | Rebuild Moru sprites, 50 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
+| `pnpm brand:sprites` | Rebuild Moru sprites, 62 animation exports, 16 poses and compass sizes from retained project sources; inspect `assets/brand/moru/preview.html` |
 | `pnpm brief:new -- --slug=<slug> --owns=<path,...>` | A delegation brief with the port, scratch, checks and merge lines filled in |
 | `pnpm build:static` | Reuse `out/` only for matching build inputs; fail without a reuse stamp if inputs change during the build |
 | `pnpm bundle:plan` · `pnpm bundle:prune` | Plan merging several branches as one, then prune the branches main contains (`/merge`) |
@@ -197,9 +197,9 @@ Use `--scope=<selector>` to audit one visible modal or region. The selector must
 
 ## Moru
 
-Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [50 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
+Moru is Atlas's pixel seal companion; the compass is the app identity. The project includes [62 motions, 16 poses and their sources](assets/brand/moru/README.md). Open the [local motion studio](assets/brand/moru/preview.html) to play, pause and inspect every frame.
 
-At folder entry, Moru greets, offers a small folder and waits. Play gives way to the existing waiting view when a folder opens. The download invitation uses a separate welcome. Hops travel only while airborne. Pet Moru for a brief shy, clap or dance response; right-click Moru or press Shift+F10 for pause/resume. No playback button sits beside the character. Reduced motion keeps a still expression.
+At folder entry, Moru greets, offers a small folder and waits. Play gives way to the existing waiting view when a folder opens. The download invitation uses a separate welcome. Hops travel only while airborne; hovering lets a hop land before Moru waits. Pet Moru for a brief shy, clap, dance, thinking, pondering, hearts, laughter or flipper-groove response; right-click Moru or press Shift+F10 for pause/resume. No playback button sits beside the character. Reduced motion keeps a still expression.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -220,6 +220,18 @@ At folder entry, Moru greets, offers a small folder and waits. Play gives way to
 <img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="Moru with an umbrella in the rain" />
 <img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="Moru watching snowflakes" />
 <img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="Moru in a little breeze" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="Moru doing a somersault" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="Moru playing with a fishing-line toy" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="Moru coding on a laptop" />
+<img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="Moru thinking" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="Moru pondering" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="Moru sending little hearts" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="Moru giggling" />
+<img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="Moru frowning thoughtfully" />
+<img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="Moru with a tiny temper" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="Moru dancing with its flippers" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="Moru watching a floating ontology model" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="Moru dancing with a floating ontology" />
 
 
 </details>

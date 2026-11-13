@@ -10,7 +10,7 @@ export async function buildMoruCompanion() {
   const root = 'assets/brand/moru';
   const catalogue = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
   await exportStrip('moru-companion', ['wave', 'blink', 'tilt', 'hop', 'folder-open'], catalogue, root);
-  await exportStrip('moru-reactions', ['shy', 'clap', 'dance'], catalogue, root);
+  await exportStrip('moru-reactions', ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove'], catalogue, root);
   // Large pending fallbacks need native 128px source pixels, not an enlarged 64px export.
   for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) {
     await writeFile(`public/brand/mascot-${state}-row-128.png`, await readFile(`${root}/${catalogue.clips[id].sprite}`));
