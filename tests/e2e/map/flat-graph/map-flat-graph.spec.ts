@@ -181,13 +181,16 @@ test("selecting a capability lights and names what it needs and what needs it, a
   expect(selectedNeeds.every(([from]) => from === id) && selectedNeededBy.every(([, to]) => to === id), "every lit line runs to or from the selection").toBe(true);
 
   const ink = new Map(selected.discs.map((d) => [d.id, d.ink]));
+  const free = selected.freeRect;
+  // A far end whose disc lies under a panel or the key keeps its light, but its name yields to that chrome.
+  const inFree = (d: { x: number; y: number }) => d.x > free.minX && d.x < free.maxX && d.y > free.minY && d.y < free.maxY;
   for (const end of [...needs, ...neededBy]) {
-    if (!ink.has(end)) continue;
+    const disc = selected.discs.find((d) => d.id === end);
+    if (!disc) continue;
     expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
-    expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
+    if (inFree(disc)) expect(selected.texts.some((t) => t.id === end && t.role !== "domain"), `${end} is named`).toBe(true);
   }
 
-  const free = selected.freeRect;
   const own = selected.texts.filter((t) => t.id === id && t.role !== "domain");
   expect(own.length, "the selection is named").toBeGreaterThan(0);
   const domainNames = selected.texts.filter((t) => t.role === "domain");
