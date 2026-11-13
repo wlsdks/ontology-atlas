@@ -217,8 +217,8 @@ export function useTopologyFocusNavigation({
       if (!realmActive && focusedSlug === null) {
         selectionCameraRef.current = null;
         focusLeashPxRef.current = null;
-        // On the Flat graph letting go of a selection, however it was made, leaves the view where the reader reads on.
-        const back = world.dial?.scene.graph ? { kind: "stay" as const } : deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
+        // A view the reader moved since the selection framed it is theirs and stays; an untouched one goes back.
+        const back = deselectCamera(memory, cameraTargetRef.current, gesture, userDrivenCameraRef.current);
         if (back.kind === "return") moveCamera(back.target, tokens, memory?.framed ? undefined : "spring");
         // The released leash must not carry on a pan it was holding short, nor pull back its stretch.
         const anchor = releasedSlug === null ? undefined : world.nodeById.get(releasedSlug);

@@ -204,9 +204,9 @@ eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas
 spring: a second selection mid-slide retargets it from where the camera is,
-and a press or drag stops it at once. Deselecting any selection, a deep link's
-arrival included, leaves the camera where it is; the fit control returns to the
-overview.
+and a press or drag stops it at once. Deselecting returns the camera to where it
+was before the first selection of the chain, unless the reader has panned or
+zoomed since; a selection a deep link arrived on returns to the overview.
 
 ## Zoom
 
