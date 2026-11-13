@@ -86,7 +86,8 @@ const SAME_SCALE = 1e-6;
 
 /** Zoom samples per octave in the zoom-in search, then bisection steps toward the first best sample. */
 const ZOOM_SAMPLES_PER_OCTAVE = 8;
-const ZOOM_REFINE_STEPS = 4;/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
+const ZOOM_REFINE_STEPS = 4;
+const MIN_ZOOM_IN = 2 ** (1 / ZOOM_SAMPLES_PER_OCTAVE);/** Bisection steps for the zoom-in's fit cap: 2^-8 of the band is under a pixel at map sizes. */
 const ZOOM_FIT_STEPS = 8;
 
 /**
@@ -162,8 +163,8 @@ function bestScale(from: number, cap: number, zoom: SelectionZoomIn): number {
  * selection keeps its screen point through any zoom, and the pan is the least that frames. When
  * the panned view does not read clear, it then zooms in about the selection, in the same move, to
  * the smallest scale with the best score `zoom` gives, at most `zoom.maxScale` and as far as its
- * marks still fit, when that scale reads clear. Null when the view already frames it, so a frame
- * applied to its own landing is null.
+ * marks still fit. With `zoom.maxScale` fixed, a frame applied to its own landing is null. Null
+ * when the view already frames it.
  * O(marks) per scale tried; the zoom-in adds at most ZOOM_FIT_STEPS + 1 fit probes.
  */
 export function selectionFrameTarget(
@@ -217,8 +218,8 @@ export function selectionFrameTarget(
       cap = fits;
     }
     const best = cap > scale ? bestScale(scale, cap, zoom) : scale;
-    // Only a zoom that reads clear is taken: one that does not would leave the next frame room to step again.
-    if (best > scale && zoom.readsAt(best)) {
+    // Short of reading clear, a zoom under one sample step is the search's own rounding: taken, the next frame would step again.
+    if (best > scale && (zoom.readsAt(best) || best >= scale * MIN_ZOOM_IN)) {
       // Settled as a frame made at `best` settles it, so framing the landing again moves nothing.
       const settled = usable.find((set) => fitsAt(set, best, width, height)) ?? zoom.marksAt(best);
       target = framedAt(target, settled, best, viewport, free, margin, taken(best));
@@ -240,6 +241,14 @@ export function reachFrameSets(near: readonly FramedMark[], partners: readonly F
   const sets: FramedMark[][] = [];
   for (let kept = nearestFirst.length; kept >= 0; kept -= 1) sets.push([...near, ...nearestFirst.slice(0, kept)]);
   return sets;
+}
+
+/**
+ * The zoom a selection was made at: the reader's own view, shared by selections that follow one
+ * another without a reader move, so reframing a landing never raises the selection's zoom cap.
+ */
+export function selectionZoomBase(memory: SelectionCamera | null, current: CameraTarget, gesture: number): number {
+  return memory !== null && untouched(memory, current, gesture) ? memory.restore.tscale : current.tscale;
 }
 
 /** Selections that follow one another without a reader move share the view the first one left. */

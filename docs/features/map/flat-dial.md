@@ -178,7 +178,8 @@ reach fits at the current zoom it frames the whole reach; far ends in other
 domains otherwise may stay off screen. When the domain's lit set does not fit
 it zooms out only as far as it needs and never below the opening fit. When the
 framed view does not read clear, it zooms in about the selection, at most
-`--map-graph-select-zoom-max-ratio` times the zoom of the click, never past the
+`--map-graph-select-zoom-max-ratio` times the zoom of the click (for selections
+made one after another with no pan or zoom between, the zoom of the first), never past the
 zoom band's top, and only as far as the domain's lit set, its names on the
 sides they take there, still fits. Within that range it takes the smallest zoom
 that reads best, judged in order: no two lit names in the domain overlap and
@@ -194,9 +195,11 @@ at the current zoom, and, when every partner domain's disc and name fit in the f
 the current zoom, pans them all in; otherwise it pans in the partners nearest
 to it, in order of distance, up to the first one that no longer fits with them,
 so a farther partner may still land in view while a nearer one stays out. A view
-that already reads clear takes no zoom, and a zoom is taken only when it reads
-clear (the first two judgments hold), so a click stays a small move, the rest
-of the map stays in view, and framing the landed view again moves nothing. The fit bisects
+that already reads clear (the first two judgments hold) takes no zoom, a zoom
+that reads no better than the view the click left is never taken, and short of
+reading clear neither is one under a sample step, so a click stays a small move,
+the rest of the map stays in view, and framing the landed view again moves
+nothing. The fit bisects
 eight times and the search samples eight zooms per octave, then bisects four
 times: at most one name admission per zoom step. The
 move is the least pan that frames, with any zoom, as one slide on the canvas

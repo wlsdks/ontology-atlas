@@ -134,8 +134,8 @@ describe("flat selection framing", () => {
     expect(inside(capped, near)).toBe(true);
     expect(inside({ ...capped, tscale: capped.tscale * 1.02 }, near)).toBe(false);
     expect(selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(1.2, ever, above))!.tscale).toBeCloseTo(1.2, 9);
-    const neverClear = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(4, ever, () => false));
-    expect(neverClear?.tscale ?? view.tscale, "a zoom that never reads clear is not taken").toBe(view.tscale);
+    const rounding = selectionFrameTarget(view, [near], viewport, free, margin, 0.5, zoomIn(4, (s) => [s >= 1.04 ? 1 : 0], () => false));
+    expect(rounding?.tscale ?? view.tscale, "a zoom under a sample step that still does not read clear is not taken").toBe(view.tscale);
   });
 
   it("is a fixed point: a frame applied to its own landing moves nothing", () => {

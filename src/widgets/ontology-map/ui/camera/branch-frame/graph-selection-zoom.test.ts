@@ -95,7 +95,8 @@ function vaultMap(manifest: unknown, viewport: { width: number; height: number }
   const fit = computeOverviewFitScale(layout.extent, viewport.width, viewport.height, overview as never, ids.length, fitOptions);
   const rest = computeOverviewCameraTarget(layout.extent, viewport.width, viewport.height, overview as never, ids.length, fitOptions);
   const free = { minX: PANELS.left, maxX: viewport.width - PANELS.right, minY: PANELS.top, maxY: viewport.height - PANELS.bottom };
-  const frame = (id: string, camera: CameraTarget) => selectionSlideTarget(world, dial, id, camera, viewport, INSETS, fit);
+  /** The frame a selection made at `zoomBase` (the reader's view, by default the camera) takes from `camera`. */
+  const frame = (id: string, camera: CameraTarget, zoomBase = camera.tscale) => selectionSlideTarget(world, dial, id, camera, viewport, INSETS, fit, zoomBase);
   /** The selection's own name and reach line as the frame admits them at `camera`, in canvas pixels. */
   const ownNames = (id: string, camera: CameraTarget) => {
     const attention = cachedGraphAttention(model, id, true);
@@ -172,7 +173,7 @@ describe("a selection framed between both panels", () => {
     const id = "capability:repo-structure-analysis";
     const landed = frame(id, rest);
     expect(landed, "the first selection frames").not.toBeNull();
-    const again = frame(id, landed!);
+    const again = frame(id, landed!, rest.tscale);
     expect(again, `landed at ${JSON.stringify(landed)} from ${rest.tscale.toFixed(3)}, then ${JSON.stringify(again)}`).toBeNull();
   });
 });

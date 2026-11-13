@@ -12,6 +12,7 @@ import type { CameraTweenEase } from "../../model/camera/camera-easing";
 import {
   deselectCamera,
   recordSelectionCamera,
+  selectionZoomBase,
   type SelectionCamera,
   type SelectionSource
 } from "../../model/camera/flat-selection-camera";
@@ -244,7 +245,7 @@ export function useTopologyFocusNavigation({
         const node = world.nodeById.get(focusedSlug);
         const current = cameraTargetRef.current;
         const activeDial = realmData?.dial ?? world.dial;
-        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current);
+        const nudge = selectionSlideTarget(world, activeDial, focusedSlug, current, { width, height }, measured, overviewScaleRef.current, selectionZoomBase(memory, current, gesture));
         const landed = nudge ?? current;
         selectionCameraRef.current = recordSelectionCamera(memory, { slug: focusedSlug, framed: false, current, landed, gesture });
         const leash = leashFor(width, height, measured);

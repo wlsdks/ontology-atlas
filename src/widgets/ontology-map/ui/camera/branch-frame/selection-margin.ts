@@ -33,7 +33,7 @@ function staleBound(model: DialModel): ReadonlyMap<string, number> {
  */
 function graphSelectionFrame(
   world: TopologyWorld, dial: DialWorld, id: string, camera: CameraTarget, viewport: { width: number; height: number }, free: FreeMapRect,
-  band: { entryScale: number; maxScale: number },
+  band: { entryScale: number; maxScale: number; zoomBase: number },
 ): CameraTarget | null {
   const { model } = dial;
   const paint = readFlatGraphTokens().paint;
@@ -81,19 +81,21 @@ function graphSelectionFrame(
   const zoom = (element ? elementSelectionZoom : graphSelectionZoom)({
     model, layout: dial.scene.graph!, paint, attention, labels: dial.labels ?? null, measureText, fontFamily, elementLabel,
     staleByDomain: staleBound(model), medianElementPitch: dial.scene.medianElementPitch, near, framed: element ? whole : near, domainId,
-    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, camera.tscale * paint.selectZoomMaxRatio),
+    entryScale: band.entryScale, maxScale: Math.min(band.maxScale, band.zoomBase * paint.selectZoomMaxRatio),
   });
   return selectionFrameTarget(camera, [marks(whole), marks(near)], viewport, free, paint.frameMarginPx, band.entryScale, zoom);
 }
 
 /**
  * Where a click selection slides the camera so the detail panel leaves it readable: on the Flat
- * graph the framing above, elsewhere a sideways nudge until its name clears the panel.
+ * graph the framing above, its zoom-in capped from `zoomBase` (`selectionZoomBase`), elsewhere a
+ * sideways nudge until its name clears the panel.
  */
 export function selectionSlideTarget(
   world: TopologyWorld, dial: DialWorld | null | undefined, id: string, camera: CameraTarget, viewport: { width: number; height: number },
   insets: Pick<OntologyMapTokens, "safeInsetLeft" | "safeInsetRight" | "safeInsetTop" | "safeInsetBottom" | "overviewEntryRatio" | "cameraMaxZoomRatio" | "cameraScaleMax">,
   overviewScale: number,
+  zoomBase: number,
 ): CameraTarget | null {
   const node = world.nodeById.get(id);
   if (!node) return null;
@@ -101,7 +103,7 @@ export function selectionSlideTarget(
     const free = { minX: insets.safeInsetLeft, maxX: viewport.width - insets.safeInsetRight, minY: insets.safeInsetTop, maxY: viewport.height - insets.safeInsetBottom };
     const entryScale = overviewScale * insets.overviewEntryRatio;
     const maxScale = computeEffectiveCameraScaleMax(entryScale, insets.cameraMaxZoomRatio, insets.cameraScaleMax, world.dialScaleMax ?? undefined);
-    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale });
+    return graphSelectionFrame(world, dial, id, camera, viewport, free, { entryScale, maxScale, zoomBase });
   }
   const span = viewport.width - insets.safeInsetLeft - insets.safeInsetRight;
   return selectionNudgeTarget(camera, node, viewport.width, { left: insets.safeInsetLeft, right: insets.safeInsetRight }, branchSelectionMargin(world, dial, id, camera.tscale, span));
