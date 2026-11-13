@@ -25,9 +25,11 @@ import { OntologyMapClusterHoverCard, OntologyMapContextMenu, OntologyMapDetailP
 import { ProjectDrawer } from "@/widgets/project-drawer";
 import { useTranslations } from "next-intl";
 import { normalizeKindLabelKey } from "../lib/inspector/topology-node-significance";
-import { relationHeadingKeys } from "../lib/inspector/relation-heading/relation-heading";
 import { returnFocusIfDropped } from "../lib/keyboard/topology-focus-return";
 import { resolveNodeVaultRef } from "../lib/authoring/topology-node-edit";
+import { type ConceptReviewTarget, type ReadConceptBody, useConceptReview } from "../model/inspector/use-node-datasheet-model";
+import { parseFrontmatter } from "@/shared/lib/vault-document/parse-frontmatter";
+import { useMemo } from "react";
 
 
 interface TopologyInspectorSurfacesProps {
@@ -63,6 +65,7 @@ interface TopologyInspectorSurfacesProps {
     | "llmBridgeAvailable"
     | "setNeedsVaultReason"
     | "selectedOntologyNode"
+    | "vault"
   >;
   topologyCanvasFocus: Pick<
     ReturnType<typeof useTopologyCanvasFocus>,
@@ -95,6 +98,7 @@ interface TopologyInspectorSurfacesProps {
   topologyAuthoring: Pick<
     ReturnType<typeof useTopologyAuthoring>,
     | "createNodeOpen"
+    | "nodeEditTarget"
     | "setMeaningEditorState"
     | "meaningEditorSource"
     | "openMeaningEditor"
@@ -111,7 +115,7 @@ interface TopologyInspectorSurfacesProps {
     | "edgePanelOpen"
     | "setSelectedEdge"
   >;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "relationVocabulary" | "tWorkbench" | "audiencePlain">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "t" | "tKinds" | "tWorkbench" | "audiencePlain">;
   topologyCreateIntent: Pick<ReturnType<typeof useTopologyCreateIntent>, "setCreateNodeSeedDomain" | "setCreateNodeDefaultKind" | "openCreateNode">;
   topologyExplorationLenses: Pick<ReturnType<typeof useTopologyExplorationLenses>, "drawerProject">;
 }
@@ -127,9 +131,9 @@ export function TopologyInspectorSurfaces({
   const { drawerProject } = topologyExplorationLenses;
   const { setCreateNodeSeedDomain, setCreateNodeDefaultKind, openCreateNode } = topologyCreateIntent;
 
-  const { t, tKinds, relationVocabulary, tWorkbench, audiencePlain } = topologyPreferences;
+  const { t, tKinds, tWorkbench, audiencePlain } = topologyPreferences;
   const {
-    createNodeOpen, setMeaningEditorState, meaningEditorSource, openMeaningEditor, canCreateNode,
+    createNodeOpen, nodeEditTarget, setMeaningEditorState, meaningEditorSource, openMeaningEditor, canCreateNode,
     heldMeaningEditorState, meaningEditorCandidates, setMeaningPreview, applyMeaningEditor,
     closeMeaningEditor, hoverEdgeCardModel, selectedEdge, clusterHoverCardModel, heldEdgePanelModel,
     edgePanelOpen, setSelectedEdge
@@ -145,7 +149,7 @@ export function TopologyInspectorSurfaces({
     handleDatasheetHoverEvidence, setFullDetailSlug, contextMenuNode, closeContextMenu, FullDetailCard,
     fullDetailOpen
   } = topologyCanvasFocus;
-  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode } = topologyVaultReadModel;
+  const { summaryFreshness, summaryHistoryUnavailable, llmBridgeAvailable, setNeedsVaultReason, selectedOntologyNode, vault } = topologyVaultReadModel;
   const { projectSource } = topologySourceReadiness;
   const {
     projectSourceLabels, copyV2NodeHandoff, projectSourceErrorLabel, projectSourceDegraded,
@@ -157,9 +161,24 @@ export function TopologyInspectorSurfaces({
   const { openMeaningWorkbench, meaningWorkbenchOpen } = homeWorkbenchController;
   const { acpPresentationVisible } = acpRuntimeController;
   const { handleEnterRealm } = topologyRouteControls;
-  const relationHeadings = !grayAreaOpen && nodePanelMounted && panelDatasheetModel
-    ? relationHeadingKeys(panelDatasheetModel.kind, panelDatasheetModel.groups)
-    : null;
+  const panelShown = Boolean(!grayAreaOpen && nodePanelMounted && panelDatasheetModel);
+  const vaultFiles = vault.status === "loaded" ? vault.fileHandles : null;
+  const readConceptBody = useMemo<ReadConceptBody>(
+    () => vaultFiles
+      ? async (slug) => {
+        const handle = vaultFiles.get(slug);
+        return handle ? parseFrontmatter(await (await handle.getFile()).text()).body : null;
+      }
+      : null,
+    [vaultFiles],
+  );
+  const reviewTarget = useMemo<ConceptReviewTarget | null>(
+    () => panelShown && nodeEditTarget
+      ? { slug: nodeEditTarget.vaultSlug, frontmatter: nodeEditTarget.frontmatter, mtime: nodeEditTarget.mtime }
+      : null,
+    [panelShown, nodeEditTarget],
+  );
+  const conceptReview = useConceptReview(reviewTarget, readConceptBody);
 
   return (<>
     <Surface
@@ -203,7 +222,7 @@ export function TopologyInspectorSurfaces({
     ) : null}
     {/* Stays mounted until the panel's `<Surface>` reports `onExited`, drawing the retained model
        as it folds. */}
-    {!grayAreaOpen && nodePanelMounted && panelDatasheetModel && relationHeadings ? (
+    {panelShown && panelDatasheetModel ? (
       <div
         ref={nodePopoverPositionerRef}
         data-testid="topology-node-popover-positioner"
@@ -236,9 +255,10 @@ export function TopologyInspectorSurfaces({
               nodeId={panelDatasheetModel.nodeId}
               slug={panelDatasheetModel.slug}
               title={panelDatasheetModel.title}
-              sourceTitle={panelDatasheetModel.sourceTitle}
               kind={panelDatasheetModel.kind}
-              domain={panelDatasheetModel.domain}
+              owner={panelDatasheetModel.owner}
+              definition={panelDatasheetModel.definition}
+              review={conceptReview}
               powered={panelDatasheetModel.powered}
               summaryStaleness={
                 summaryFreshness.has(panelDatasheetModel.slug)
@@ -247,12 +267,8 @@ export function TopologyInspectorSurfaces({
               }
               summaryHistoryUnavailable={summaryHistoryUnavailable.has(panelDatasheetModel.slug)}
               groups={panelDatasheetModel.groups}
-              domainUsage={panelDatasheetModel.domainUsage}
               reach={panelDatasheetModel.reach}
-              evidence={panelDatasheetModel.evidence}
-              codeLocations={panelDatasheetModel.codeLocations}
               updatedAtLabel={panelDatasheetModel.updatedAtLabel}
-              lastEditSubject={panelDatasheetModel.lastEditSubject}
               mtimeConflict={panelDatasheetModel.mtimeConflict}
               handoffText={projectSource.view
                 ? `${panelDatasheetModel.handoffText}\n\n${formatProjectSourceHandoff(projectSource.view)}`
@@ -261,38 +277,8 @@ export function TopologyInspectorSurfaces({
               meaningEditHref={panelDatasheetModel.meaningEditHref}
               labels={{
                 kindLabel: tKinds(normalizeKindLabelKey(panelDatasheetModel.kind)),
-                domainLabel: t("nodeDatasheet.domainLabel"),
-                poweredOn: t("nodeDatasheet.poweredOn"),
-                poweredOff: t("nodeDatasheet.poweredOff"),
-                metricContains: t(relationHeadings.contains),
-                containsShowAll: t("nodeDatasheet.containsShowAll"),
-                groupShowMore: t("nodeDatasheet.groupShowMore"),
-                groupShowFewer: t("nodeDatasheet.groupShowFewer"),
-                containsShowSummary: t("nodeDatasheet.containsShowSummary"),
-                containsOtherGroup: t("nodeDatasheet.containsOtherGroup"),
-                metricUsedBy: t(relationHeadings.usedBy),
-                metricDependsOn: t(relationHeadings.dependsOn),
-                metricBelongsTo: t(relationHeadings.belongsTo),
-                metricRelated: relationVocabulary("related_to", "plain"),
-                metricEvidence: relationVocabulary("describes", "plain"),
-                metricContainsHelp: t("nodeDatasheet.metricContainsHelp"),
-                metricUsedByHelp: t(relationHeadings.usedByHelp),
-                metricDependsOnHelp: t(relationHeadings.dependsOnHelp),
-                metricBelongsToHelp: t("nodeDatasheet.metricBelongsToHelp"),
-                metricRelatedHelp: t("nodeDatasheet.metricRelatedHelp"),
-                metricUsedByDomainsHelp: t(relationHeadings.usedByDomainsHelp),
-                metricDependsOnDomainsHelp: t(relationHeadings.dependsOnDomainsHelp),
-                metricEvidenceHelp: t("nodeDatasheet.metricEvidenceHelp"),
                 noConnections: t("nodeDatasheet.noConnections"),
-                directLinks: (count) => t("nodeDatasheet.directLinks", { count }),
                 domainLinks: (count) => t("nodeDatasheet.domainLinks", { count }),
-                domainCount: (count) => t("nodeDatasheet.domainCount", { count }),
-                // Actual code evidence: source file paths.
-                codeLocationsLabel: t("nodeDatasheet.codeLocationsLabel"),
-                codeLocationsCopyLabel: t("nodeDatasheet.codeLocationsCopyLabel"),
-                codeLocationsCopiedLabel: t("nodeDatasheet.codeLocationsCopiedLabel"),
-                // Same `editProvenance` namespace as `DocFrontmatterBlock`.
-                editSubjectPrefix: tEditProvenance("prefix"),
                 summaryFreshnessPrefix: tSummaryFreshness("prefix"),
                 summaryFreshnessLag: summaryFreshness.has(panelDatasheetModel.slug)
                   ? tSummaryFreshness("lag", {
@@ -301,10 +287,7 @@ export function TopologyInspectorSurfaces({
                   : undefined,
                 summaryFreshnessAction: tSummaryFreshness("action"),
                 summaryHistoryUnavailable: tSummaryFreshness("unavailable"),
-                editSubjectAgent: tEditProvenance("subjectAgent"),
-                editSubjectHuman: tEditProvenance("subjectHuman"),
                 editConflictMessage: tEditProvenance("conflictMessage"),
-                handoff: t("nodeDatasheet.handoff"),
                 close: t("controls.close"),
                 openFullDetail: t("nodeDatasheet.openFullDetail"),
                 actionsGroupLabel: t("nodeDatasheet.actionsGroupLabel"),
@@ -332,9 +315,6 @@ export function TopologyInspectorSurfaces({
                 sourceWhy: projectSourceLabels?.why,
                 sourceGapLabel: t("nodeDatasheet.sourceGapLabel"),
                 sourceAction: projectSourceLabels?.action,
-                sourceRelationsShow: t("nodeDatasheet.sourceRelationsShow"),
-                sourceRelationsHide: t("nodeDatasheet.sourceRelationsHide"),
-                sourceOntologyDocument: t("nodeDatasheet.sourceOntologyDocument"),
                 sourceBusy: projectSourceLabels?.busy,
               }}
               onSelectConnection={(id) => {
@@ -375,8 +355,8 @@ export function TopologyInspectorSurfaces({
                     }
                     : undefined
               }
-              // Without an agent surface (web) handoff copy is the primary action; no door that
-              // will not open.
+              // Without an agent surface (web) only the handoff copy is offered; no door that will
+              // not open.
               onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
               meaningReview={{ label: tWorkbench('meaningTitle'), onOpen: openMeaningWorkbench }}
               suppressPrimaryAction={acpPresentationVisible}
@@ -408,9 +388,8 @@ export function TopologyInspectorSurfaces({
                   }
                   : undefined
               }
-              // Plain mode hides handoff copy and the path subline as developer chrome.
+              // Plain mode hides handoff copy as developer chrome.
               showHandoff={!audiencePlain}
-              showSourcePath={!audiencePlain}
               className="col-start-1 row-start-1 max-lg:w-[min(520px,calc(100vw-1.5rem))]"
             />
           ) : null}
