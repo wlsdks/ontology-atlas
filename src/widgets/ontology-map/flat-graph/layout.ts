@@ -24,6 +24,8 @@ const TITLE_PASSES = 6;
 const TITLE_PASS_MARGIN = 1.04;
 /** A steeper secant means the titles alone outgrow the area: a larger reservation only shrinks the fit, so the passes stop. */
 const MAX_TITLE_SLOPE = 0.9;
+/** Captions that fit still rest when the name rows alone show the picture this many times larger. */
+const COMPACT_TITLE_GAIN = 1.25;
 /** The first secant starts from an unscaled guess, so the passes never stop on it. */
 const FIRST_SECANT_PASS = 2;
 /** Passes that keep members off the titles at the shown scale where the reservation could not reach it. */
@@ -501,10 +503,26 @@ function fallbackTitle(tokens: FlatGraphLayoutTokens): FlatGraphTitle {
  * domain's capabilities through a local ForceAtlas2 with partner domains as weak far anchors, and
  * elements on a closed-form golden-angle fan. A pinned id keeps its position and enters every pass
  * fixed. With a frame, the clusters spread to its aspect and every domain's title block is kept
- * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles.
+ * clear at the scale the fit will show, re-run at most `TITLE_PASSES` + `MEMBER_PASSES` times as it settles;
+ * the graph is fitted once more to the name rows alone, and that picture wins when the full titles
+ * outgrow the area or it shows clearly larger.
  * Cost: O(P·(I·D² + I·n²)) for P passes, D domains and n items per domain; elements are O(E).
  */
 export function layoutFlatGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): FlatGraphLayout {
+  const nameRows = frame?.compactTitles ? { ...frame, titles: frame.compactTitles } : null;
+  if (nameRows === null) return fitGraph(model, order, tokens, pins, frame).layout;
+  // Pinned positions cannot answer a title reservation, so a pinned rebuild keeps the remembered choice.
+  if (pins !== null && pins.positions.size > 0) {
+    return { ...fitGraph(model, order, tokens, pins, pins.compactTitles ? nameRows : frame).layout, compactTitles: pins.compactTitles };
+  }
+  const full = fitGraph(model, order, tokens, pins, frame);
+  const compact = fitGraph(model, order, tokens, pins, nameRows);
+  if (full.titlesHold && full.shown <= compact.shown * COMPACT_TITLE_GAIN) return full.layout;
+  return { ...(compact.shown <= full.shown ? compact : full).layout, compactTitles: true };
+}
+
+/** One fit of the graph to the frame's titles: whether the fitted scale keeps every title block clear, and the world units it shows per px. */
+function fitGraph(model: DialModel, order: readonly string[], tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null): { layout: FlatGraphLayout; titlesHold: boolean; shown: number } {
   const area = frame?.areaPx ?? null;
   const aspect = area ? Math.min(MAX_ASPECT, Math.max(MIN_ASPECT, area.width / area.height)) : tokens.aspect;
   const shownOf = (l: FlatGraphLayout) => area === null ? 1 : Math.max(1, (l.extent.maxX - l.extent.minX) / area.width, (l.extent.maxY - l.extent.minY) / area.height);
@@ -522,12 +540,13 @@ export function layoutFlatGraph(model: DialModel, order: readonly string[], toke
     layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, worldPerPx);
     shown = shownOf(layout);
   }
+  const titlesHold = shown <= worldPerPx;
   for (let pass = 0, memberScale = worldPerPx; pass < MEMBER_PASSES && shown > memberScale; pass += 1) {
     memberScale = shown * TITLE_PASS_MARGIN;
     layout = placeGraph(model, order, tokens, pins, frame, aspect, worldPerPx, memberScale);
     shown = shownOf(layout);
   }
-  return layout;
+  return { layout, titlesHold, shown };
 }
 
 function placeGraph(
@@ -611,5 +630,5 @@ function placeGraph(
     grow(extent, centre, radius + pitch);
   }
 
-  return { positions, itemAt, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])), orphanIds, extent };
+  return { positions, itemAt, clusters, clusterByDomain: new Map(clusters.map((c) => [c.domainId, c])), orphanIds, extent, compactTitles: false };
 }

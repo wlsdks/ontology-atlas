@@ -249,8 +249,9 @@ type DomainBlockInput = Pick<NameInput, "model" | "tokens" | "labels" | "measure
 /**
  * A domain's name and caption. A selected domain's reach line takes the caption's row: the layout
  * keeps members off a two-row title, and the detail panel shows the membership the caption counts.
+ * A resting caption draws only a stale count, the one fact in it that asks for attention.
  */
-function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null): PlacedName[] {
+function domainBlock(input: DomainBlockInput, domainId: string, reachLine: string | null = null, captionRests = false): PlacedName[] {
   const { model, tokens: t, labels, measureText, fontFamily } = input;
   const d = model.domainById.get(domainId)!;
   const r = input.discRadius(domainId);
@@ -264,7 +265,7 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
   if (labels) {
     const stale = input.staleByDomain?.get(domainId) ?? 0;
     const units = labels.units(d.capabilityIds.length, d.elementCount);
-    const text = stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
+    const text = captionRests ? labels.stale(stale) : stale > 0 ? `${units} · ${labels.stale(stale)}` : units;
     const captionFont = font(400, t.captionPx, fontFamily);
     const y = nameY + t.domainNamePx / 2 + t.captionGapPx + t.captionPx / 2;
     if (reachLine) {
@@ -275,7 +276,7 @@ function domainBlock(input: DomainBlockInput, domainId: string, reachLine: strin
         box: { minX: min - t.namePadPx, maxX: -min + t.namePadPx, minY: y - t.captionPx / 2 - t.namePadPx, maxY: y + t.captionPx / 2 + t.namePadPx },
         pieces: figures.pieces.map((p) => ({ text: p.text, dx: min + p.dx })),
       });
-    } else {
+    } else if (!captionRests || stale > 0) {
       const w = measureText(text, captionFont);
       out.push({
         id: domainId, role: "units", text, font: captionFont, dx: 0, dy: y, align: "center",
@@ -314,15 +315,17 @@ function domainReachLine(input: Pick<NameInput, "selected" | "focusId" | "labels
 
 /**
  * Each domain's name and caption block at the overview, which the layout keeps clear of members,
- * wide enough for the reach line that takes the caption's row when the domain is selected. O(flows × D).
+ * wide enough for the reach line that takes the caption's row when the domain is selected; `name`
+ * measures the name row alone. O(flows × D).
  */
-export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" | "discRadius">): Map<string, FlatGraphTitle> {
+export function domainTitleBlocks(input: Omit<DomainBlockInput, "staleByDomain" | "discRadius">, rows: "all" | "name" = "all"): Map<string, FlatGraphTitle> {
   const blocks = new Map<string, FlatGraphTitle>();
   const block: DomainBlockInput = { ...input, staleByDomain: null, discRadius: () => input.tokens.domainDiscPx };
   for (const d of input.model.domains) {
     const { needs, usedBy } = domainPartners(input.model.flows, d.id);
     const reachLine = reachText(input.labels, { needs: needs.length, neededBy: usedBy.length });
-    const boxes = [...domainBlock(block, d.id), ...(reachLine ? domainBlock(block, d.id, reachLine) : [])].map((n) => n.box);
+    const drawn = [...domainBlock(block, d.id), ...(reachLine ? domainBlock(block, d.id, reachLine) : [])];
+    const boxes = drawn.filter((n) => rows === "all" || n.role === "domain").map((n) => n.box);
     blocks.set(d.id, {
       halfWidthPx: Math.max(...boxes.map((b) => Math.max(-b.minX, b.maxX))),
       topPx: Math.min(...boxes.map((b) => b.minY)),
@@ -613,7 +616,7 @@ function admit(input: NameInput, step: number, seed: ReadonlySet<string> | null,
   const polylines = input.lit !== null && input.lines.length > 0 ? linePolylines(input.lines, layout, tokens, scale, input.growth, input.discRadius) : [];
   const crossed = (at: Point, group: readonly PlacedName[]) => group.some((n) => linesCross(polylines, sweptBox(at, n.box, lowest, highest)));
   for (const c of layout.clusters) {
-    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId));
+    let block = domainBlock(input, c.domainId, domainReachLine(input, c.domainId), layout.compactTitles && input.focusId !== c.domainId);
     if (titleMayRise(input, c.domainId) && polylines.length > 0) {
       const at = layout.positions.get(c.domainId)!;
       const above = blockAbove(block);

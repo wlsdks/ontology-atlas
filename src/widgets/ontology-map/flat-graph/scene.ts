@@ -49,7 +49,7 @@ export function flatGraphPins(model: DialModel, face: string): FlatGraphPins | n
     const direct = memory.positions.get(directItemId(d.id));
     if (direct) positions.set(directItemId(d.id), direct);
   }
-  return { positions, seeds };
+  return { positions, seeds, compactTitles: memory.compactTitles };
 }
 
 /**
@@ -65,6 +65,7 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
   remembered = {
     face,
     positions,
+    compactTitles: layout.compactTitles,
     signatureByDomain: new Map(model.domains.map((d) => [d.id, domainSignature(model, d.id)])),
   };
 }

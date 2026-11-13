@@ -7,7 +7,7 @@ import { dialChipRadiusPx, dialDiscRadiusPx } from "../dial/tokens";
 import { createMeasureText } from "../dial/fit";
 import { readDialTokens } from "../dial/tokens";
 import type { DialLabels, DialMemory, DialTokens, DialWorld } from "../dial/types";
-import { graphDiscRadiusPx } from "../flat-graph/marks";
+import { capabilityDiscRadiusPx, graphDiscRadiusPx } from "../flat-graph/marks";
 import { readFlatGraphTokens } from "../flat-graph/tokens";
 import type { FlatGraphTokens } from "../flat-graph/types";
 import type { CameraAxes } from "../engine/camera";
@@ -165,7 +165,7 @@ function dialMarks(world: TopologyWorld, dial: DialWorld, dialTokens: DialTokens
     if (model.projectId) push(model.projectId, scene.positions.get(model.projectId) ?? { x: 0, y: 0 }, graphDiscRadiusPx("project", 0, P, 1));
     for (const c of scene.clusters) {
       push(c.domainId, scene.positions.get(c.domainId) ?? c.chip, graphDiscRadiusPx("domain", 0, P, 1));
-      for (const it of c.items) if (model.capabilityById.has(it.id)) push(it.id, scene.positions.get(it.id) ?? it, graphDiscRadiusPx("capability", it.elementIds.length, P, 1));
+      for (const it of c.items) if (model.capabilityById.has(it.id)) push(it.id, scene.positions.get(it.id) ?? it, capabilityDiscRadiusPx(scene.graph, c.domainId, it.elementIds.length, P, s, 1));
     }
     return marks;
   }
