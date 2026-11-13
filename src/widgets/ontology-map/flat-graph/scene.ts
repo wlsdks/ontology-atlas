@@ -49,7 +49,7 @@ export function flatGraphPins(model: DialModel, face: string): FlatGraphPins | n
     const direct = memory.positions.get(directItemId(d.id));
     if (direct) positions.set(directItemId(d.id), direct);
   }
-  return { positions, seeds, hueByDomain: memory.hueByDomain };
+  return { positions, seeds };
 }
 
 /**
@@ -66,13 +66,12 @@ function rememberFlatGraph(model: DialModel, layout: FlatGraphLayout, face: stri
     face,
     positions,
     signatureByDomain: new Map(model.domains.map((d) => [d.id, domainSignature(model, d.id)])),
-    hueByDomain: layout.hueByDomain,
   };
 }
 
 /**
  * Domains go round in the content's own circular order, never a remembered one: an order kept from
- * a partial read, the bundled sample or an earlier session would seed the layout and the hues.
+ * a partial read, the bundled sample or an earlier session would seed the layout.
  */
 export function buildFlatGraphScene(model: DialModel, tokens: FlatGraphLayoutTokens, pins: FlatGraphPins | null, frame: FlatGraphFrame | null = null): DialScene {
   const { order } = circularDomainOrder(model, null);

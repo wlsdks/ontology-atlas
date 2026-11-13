@@ -42,13 +42,14 @@ async function canvasPoint(page: Page, at: { x: number; y: number }): Promise<{ 
   return { x: box.x + at.x, y: box.y + at.y };
 }
 
-/** The eight domain hues as the canvas writes them: a disc rim in one of these is lit at full hue. */
-const domainHues = (page: Page) => page.evaluate(() => {
+/** The project's ink, the one colour on this canvas: a mark drawn in it belongs to the lit domain. */
+const projectInk = (page: Page) =>
+  page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--map-graph-project").trim());
+
+/** What a lit mark paints: the project's ink inside the focus's own domain, the neutral name ink elsewhere. */
+const litInks = (page: Page) => page.evaluate(() => {
   const style = getComputedStyle(document.documentElement);
-  return Array.from({ length: 8 }, (_, k) => {
-    const [r, g, b] = style.getPropertyValue(`--color-domain-${k + 1}-rgb`).trim().split(/\s+/).map(Number);
-    return `#${[r, g, b].map((n) => n!.toString(16).padStart(2, "0")).join("")}`;
-  });
+  return ["--map-graph-project", "--map-graph-name"].map((name) => style.getPropertyValue(name).trim());
 });
 
 const hovered = (page: Page) =>
@@ -99,8 +100,8 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   await waitForMapStill(page);
   const lit = await readDial(page);
   const litInk = new Map(lit.discs.map((d) => [d.id, d.ink]));
-  const hues = await domainHues(page);
-  for (const id of own) if (restInk.has(id)) expect(hues, `${id} is lit at its full hue`).toContain(litInk.get(id));
+  const ink = await projectInk(page);
+  for (const id of own) if (restInk.has(id)) expect(litInk.get(id), `${id} is lit in the project's ink`).toBe(ink);
   const sunkCount = foreign.filter((id) => litInk.get(id) !== restInk.get(id)).length;
   expect(sunkCount, "every foreign capability sinks").toBe(foreign.length);
 
@@ -115,7 +116,7 @@ test("pointing at a domain sinks every other domain; selecting a capability name
   expect(selected.texts.some((t) => t.id === capability && t.role === "capability"), "the selected capability is named").toBe(true);
   expect(selected.textOverlaps, "no admitted name crosses another under a selection").toBe(0);
   const selectedInk = new Map(selected.discs.map((d) => [d.id, d.ink]));
-  expect(hues, "the selected capability's domain stays lit").toContain(selectedInk.get(target.domainId));
+  expect(selectedInk.get(target.domainId), "the selected capability's domain stays lit").toBe(ink);
 });
 
 test("under a path lens a concept outside the lens draws no disc and answers no pointer", async ({ page }) => {
@@ -145,7 +146,7 @@ test("selecting a capability lights and names what it needs and what needs it, a
   test.setTimeout(180_000);
   await useDogfoodSample(page);
   const rest = await openGraph(page);
-  const hues = await domainHues(page);
+  const litRims = await litInks(page);
   let chosen: { id: string; needs: string[]; neededBy: string[] } | null = null;
   for (const disc of rest.discs) {
     if (!rest.clusters.some((c) => c.capabilityIds.includes(disc.id))) continue;
@@ -209,7 +210,7 @@ test("selecting a capability lights and names what it needs and what needs it, a
   for (const end of [...needs, ...neededBy]) {
     const disc = selected.discs.find((d) => d.id === end);
     if (!disc) continue;
-    expect(hues, `${end} is lit at its full hue`).toContain(ink.get(end));
+    expect(litRims, `${end} is lit at full strength`).toContain(ink.get(end));
     const names = selected.texts.filter((t) => t.id === end && t.role !== "domain");
     for (const t of names) expect(panels.some((p) => overlap(t.box, p)), `${end}'s name ${t.text} is drawn under a panel`).toBe(false);
     if (names.length > 0) named += 1;

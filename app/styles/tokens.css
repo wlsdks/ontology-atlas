@@ -78,19 +78,6 @@
   --color-kind-capability-rgb: 211 159 73;
   --color-kind-element-rgb: 124 166 141;
 
-  /*
-   * Eight domain hues for the Flat map, equal OKLCH lightness 0.80 and chroma 0.105, ordered so
-   * neighbouring indices sit far apart. None sits near warning amber or error red, and indigo stays
-   * reserved for the project and selection. A name and its caption always travel with the hue.
-   */
-  --color-domain-1-rgb: 98 207 232;
-  --color-domain-2-rgb: 241 162 199;
-  --color-domain-3-rgb: 139 209 154;
-  --color-domain-4-rgb: 205 173 244;
-  --color-domain-5-rgb: 124 199 251;
-  --color-domain-6-rgb: 227 166 224;
-  --color-domain-7-rgb: 99 212 198;
-  --color-domain-8-rgb: 174 202 126;
 
   /* Indigo accent (system's only color) */
   --color-indigo-brand: #5e6ad2;

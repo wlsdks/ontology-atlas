@@ -333,9 +333,14 @@ interface FrameState {
 }
 const F = { stamp: 0 } as FrameState;
 
-function hueOf(domainId: string | null | undefined): string {
-  const index = domainId ? F.layout.hueByDomain.get(domainId) : undefined;
-  return index === undefined ? F.tokens.inks.name : F.tokens.inks.hues[index] ?? F.tokens.inks.name;
+/**
+ * A domain's hue. The map rests achromatic, so every mark takes the neutral ink until attention
+ * reaches the domain it sits in, which takes the project's ink over the same clock as the light.
+ * Colour on this canvas says whose domain a mark is in and which way a relation runs.
+ */
+function hueOf(domainId: string): string {
+  const tint = F.motion.tintShare(domainId);
+  return tint <= 0 ? F.tokens.inks.name : sunk(F.tokens.inks.project, F.tokens.inks.name, tint);
 }
 
 /**
@@ -469,10 +474,9 @@ function planName(n: PlacedName, alphas: ReadonlyMap<string, number>, share: num
   if (ink <= DRAWN_INK) return;
   const { P, attention } = F;
   const inks = F.tokens.inks;
-  const domainId = n.role === "domain" || n.role === "units" ? n.id : F.model.domainOf.get(n.id) ?? null;
   const childSelected = n.role === "domain" && attention.selected && attention.focusId !== n.id && F.model.domainOf.get(attention.focusId ?? "") === n.id;
   const strong = (n.role === "domain" && !childSelected) || n.role === "project" || ((n.role === "capability" || n.role === "element") && (wasFocus || n.id === attention.focusId));
-  const color = n.role === "units" ? hueOf(domainId) : strong ? inks.nameStrong : inks.name;
+  const color = strong ? inks.nameStrong : inks.name;
   const mark = names.take();
   mark.name = n;
   const x = at.x + n.dx;
@@ -663,7 +667,6 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const origin = input.toScreen(0, 0);
   F.input = input; F.model = model; F.layout = layout; F.tokens = tokens; F.P = P;
   F.motion = motion; F.attention = attention;
-  F.settled = motion.settled;
   F.contextMode = contextMode; F.scale = input.scale; F.originX = origin.x; F.originY = origin.y;
   F.W = input.viewportWidth; F.H = input.viewportHeight; F.growth = growth; F.stamp += 1;
   F.screen = cacheFor(screenCache, layout); F.radii = radiusCacheFor(layout, growth); F.orphans = orphansOf(layout);
@@ -1486,7 +1489,7 @@ export function paintDeferredFlatGraph(ctx: CanvasRenderingContext2D, zoomRatio:
   deferred = null;
 }
 
-/** Flat as a hue-lit graph: same input and result contract as the dial frame it replaces. */
+/** Flat as an attention-lit graph: same input and result contract as the dial frame it replaces. */
 export function paintFlatGraphFrame(input: DialFrameInput, tokens: FlatGraphTokens): DialFrameResult {
   const { model } = input.dial;
   const contextMode = input.contextAlphas !== undefined;

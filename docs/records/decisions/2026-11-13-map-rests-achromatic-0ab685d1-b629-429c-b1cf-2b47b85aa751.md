@@ -1,0 +1,12 @@
+---
+id: 0ab685d1-b629-429c-b1cf-2b47b85aa751
+date: 2026-11-13
+---
+## 2026-11-13 — The map rests achromatic and colour belongs to attention
+
+**Why**: the owner read the eight-hue map as "too rainbow, like AI design". Eight hues over 250 degrees at near-equal lightness put ten hues on one screen, where hue carried only identity the name and position already carried, while the two inks that do carry meaning, a relation's direction, competed with them. It also matches where interface and chart practice has gone: a grey base, colour spent on what is being asked about.
+**Prior**: overturns one clause of flat-is-a-hue-lit-graph 38e33f2e-dd02-4874-bd5f-2b1b5891072e, "eight domain hues in circular order with neighbours apart", and with it `--color-domain-{1..8}-rgb` and the hue memory across rebuilds; keeps the rest of it (deterministic ForceAtlas2 layout, footprint sizing, sqrt radius, collision-free names per zoom step, hover and selection lighting the reach).
+**Decision**: full Flat mints no hue. Every mark rests on `--map-graph-name` at `--map-graph-rest-hue`, and the project hub is the only coloured mark at rest. On hover or selection the domain the focus sits in, with its members, takes `--map-graph-project`; lit marks elsewhere paint the neutral ink at full strength; lit lines keep `--map-graph-arc` and `--map-graph-reach`. Beside the signal tones the map already carries (the stale pip and the agent ring in amber), that leaves three hues, each naming one fact: whose domain the focus is in, and which way a relation runs. `map-flat-graph-achromatic-rest.spec.ts` measures real canvas pixels and holds the rest state under 5 per cent coloured.
+**Dissent**: a reader can no longer separate two domains by hue across the resting map and must point at one or read its name; that is the cost of the complaint, and the reason the pointed domain is given the project's ink rather than nothing. The project's ink now says three things on one screen (the hub, a selection ring, the focus's domain), and the new signal is only 1.47:1 against a lit neutral mark, so it is weak for a hue-blind reader. The tint rides the attention clock, which is one more thing the motion must get right. A folder never pointed at reads as one grey field.
+**Falsifier**: a person pointing at a capability still cannot tell which domain it is in; or the resting map reads so undifferentiated that one cannot see where a domain ends; or the project's ink on a lit domain is mistaken for a status.
+**Owner**: Stark
