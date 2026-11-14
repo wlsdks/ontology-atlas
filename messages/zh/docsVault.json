@@ -6,8 +6,6 @@
   "header": {
     "openTreeAriaLabel": "打开文档列表",
     "openTreeTitle": "文档列表",
-    "backToReviewAriaLabel": "返回分析复核",
-    "reviewBack": "← 分析复核",
     "title": "本体",
     "docCount": "{count} 篇文档",
     "localBadge": "本地",
@@ -458,7 +456,7 @@
   },
   "linkCopied": "已复制文档链接",
   "linkCopyFailed": "无法复制文档链接",
-  "proofHealthOpenQueue": "在“接下来做”中打开",
+  "proofHealthOpenQueue": "打开本体文档",
   "review": {
     "writeFailed": "无法把你的复核保存到文件，没有任何改动。"
   }

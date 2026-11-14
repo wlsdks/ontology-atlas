@@ -29,6 +29,16 @@ export const rules = [
     ],
   },
   {
+    order: 760,
+    // A control present on one screen only is invisible to a gate that loads a bare route.
+    command: 'pnpm exec playwright test tests/e2e/gateway/touch-target-contract.spec.ts',
+    reason: 'a shared tab or segmented control primitive changed',
+    matches: [
+      /^src\/shared\/ui\/controls\/tab-bar\.tsx$/,
+      /^src\/shared\/ui\/fields\/segmented-control\.tsx$/,
+    ],
+  },
+  {
     order: 720,
     command: 'pnpm exec playwright test tests/e2e/vault-session/local-vault-picker.spec.ts',
     reason: 'Playwright config or webServer behavior changed',

@@ -78,11 +78,6 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   /INDEX|Concept map|개념|Workspace|작업공간|Relief/,
 ];
 
-const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
-  /Insights|Analysis|분석/i,
-  /Review summary|Wiki|검토 요약|위키/i,
-];
-
 const WEBVIEW_PLANNING_WORKBENCH_MARKERS = [
   /Planning documents|企画ドキュメント|기획 문서|规划文档/i,
   /Choose folder|フォルダを選択|폴더 선택|选择文件夹/i,
@@ -115,9 +110,6 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = nu
     }
     if (routeIs("topology")) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;
-    }
-    if (routeIs("ontology/insights")) {
-      return WEBVIEW_INSIGHTS_WORKBENCH_MARKERS;
     }
   }
   return WEBVIEW_WORKBENCH_MARKERS;

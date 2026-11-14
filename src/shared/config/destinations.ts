@@ -15,7 +15,6 @@ export const DESTINATION_IDS = [
   'planning',
   // Automation management owns schedules; execution context remains Map or Library.
   'automations',
-  'insights',
   'projects',
   // Agents: install and connect work with progress, kept out of the settings sheet.
   'agents',
@@ -29,7 +28,7 @@ export type DestinationId = (typeof DESTINATION_IDS)[number] | 'docs' | 'mcp';
 export const FOLDER_OPTIONAL_DESTINATIONS: ReadonlySet<DestinationId> = new Set(['library', 'planning', 'agents', 'changes']);
 
 /*
- * Persistent bottom tabs below `lg`; web may add Get App as a sixth. Architecture stays so a
+ * Persistent bottom tabs below `lg`; web may add Get App as a sixth tab. Architecture stays so a
  * selected route remains visible. MCP and Agents are absent on purpose: they are desk work,
  * reached below `lg` from their contextual entry points and typed addresses.
  */
@@ -38,7 +37,6 @@ export const MOBILE_DESTINATION_IDS = [
   'architecture',
   'library',
   'planning',
-  'insights',
   'projects',
 ] as const satisfies ReadonlyArray<DestinationId>;
 
@@ -53,7 +51,6 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   map: '/topology/',
   architecture: '/architecture/',
   docs: '/docs/',
-  insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
   mcp: '/agents/?tab=mcp',
@@ -87,7 +84,6 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   // `a` belongs to Agents; the second consonant keeps Architecture mnemonic.
   architecture: 'r',
   docs: 'd',
-  insights: 'i',
   projects: 'p',
   agents: 'a',
   // `m` belongs to Map; `c` for the connectors it holds.
@@ -114,7 +110,7 @@ export const DESTINATION_BY_KEY: Record<string, DestinationId> = {
 
 /**
  * The shape comes from the files (`describeVaultShape`), never a setting, so a teammate sees the
- * same rail. Without code, Map, Architecture, Docs, Insights and Projects would be empty doors. An
+ * same rail. Without code, Map, Architecture, Docs and Projects would be empty doors. An
  * empty folder earns all.
  */
 export function destinationsForVaultShape(

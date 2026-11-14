@@ -36,11 +36,14 @@
   "change": {
     "eyebrow": "After a commit",
     "title": "When your agent commits, you see <key>which meanings to recheck</key>",
-    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app's Insights lists that concept with the file and both dates. Reread it yourself or ask your agent to; its answer waits for you.",
+    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app marks that concept in amber on the map. Reread it yourself or ask your agent to; its answer waits for you.",
     "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
     "agentCommit": "Your agent's commit",
     "filesChanged": "{count, plural, one {# file changed} other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark Insights gives a meaning whose code moved, and each file's path moves into the Insights brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example."
+    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark the map gives a meaning whose code moved, and each file's path moves into a brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example.",
+    "briefMoved": "{count, plural, one {# concept whose} other {# concepts whose}} meaning stands while the code under it moved",
+    "briefDetail": "changed {moved} · document {doc}",
+    "askAgent": "Ask the agent"
   },
   "start": {
     "eyebrow": "After you install",
@@ -50,7 +53,8 @@
     "step1": "The first screen asks for a folder.",
     "step2": "In a code folder, the first card offers your agent's draft.",
     "step3": "The draft waits for your answer, then fills the map.",
-    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and Insights lists them as “{unreviewed}”."
+    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and a line reads “{unreviewed}”.",
+    "unreviewed": "{count, plural, one {# concept} other {# concepts}} an agent wrote that no person has looked at"
   },
   "screens": {
     "eyebrow": "Screens",
@@ -66,7 +70,6 @@
       "library": "A sample library of five sources and six pages beside this repository's ontology. The page whose source changed is marked before you open it. Captured from the app.",
       "planning": "The docs folder of this repository, read in place: a file list on the left, FEATURES.md open on the right. Nothing is copied or edited. Captured from the app.",
       "automations": "A weekday check of that sample library, and the run that found one page's source had changed. Captured from the app.",
-      "insights": "The Analysis screen on this repository's ontology: product links between responsibilities as a board, and the evidence for the selected link beside it. Captured from the app.",
       "projects": "Ontology Atlas on one page: its domains, concepts, library and harness together. Captured from the app.",
       "changes": "One week of this repository's history, listed as commits: what changed, in which files. Captured from the app.",
       "git": "The Git history of this repository's ontology folder, read as the concepts each step changed. Captured from the app."

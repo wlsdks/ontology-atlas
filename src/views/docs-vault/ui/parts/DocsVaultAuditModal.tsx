@@ -157,7 +157,7 @@ export function DocsVaultAuditModal({
       }),
       body: t("sourceContract.agentBody"),
       chip: t("sourceContract.agentChip"),
-      href: "/ontology/insights/",
+      href: "/topology/",
       cta: t("sourceContract.agentCta"),
       copyText: AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
       copyCta: t("sourceContract.agentCopyGate"),

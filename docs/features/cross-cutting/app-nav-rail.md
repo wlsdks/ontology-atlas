@@ -13,7 +13,7 @@ routes: []
   `src/widgets/app-nav-rail/ui/AppNavRail.tsx` and
   `src/shared/config/destinations.ts`: Map (`/`, `/topology`) · Harness
   (`/architecture`) · Library (`/library`) · Automations (`/automations`) ·
-  Insights (`/ontology/insights`) · Projects (`/projects` or `/project/*`) ·
+  Projects (`/projects` or `/project/*`) ·
   Agents (`/agents`) · Changes (`/changes`) · Git (`/git`). MCP is a tab of Agents; `/mcp` redirects
   there and has no tile.
   Library's tabs are the `LibraryTab` type in

@@ -9,5 +9,5 @@ routes: [/topology]
 # Map on mobile
 
 #### Mobile-only
-- `BottomTabBar` (4 tabs: Map / Docs / Insights / Projects) at safe-area bottom
+- `BottomTabBar` (5 tabs: Map / Architecture / Library / Planning / Projects) at safe-area bottom
 - `GestureHint` overlay (dismissible, not persisted)

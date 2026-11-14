@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../../model";
 import {
-  computeEdgeTypeDistribution,
   countCrossProjectEdges,
   isContainmentRelation,
 } from "./relations";
@@ -35,22 +34,6 @@ const edge = (
   evidenceIds,
   lastApprovedAt: APPROVED_AT,
   lastApprovedBy: "test",
-});
-
-describe("computeEdgeTypeDistribution", () => {
-  it("counts edges per relation type", () => {
-    const dist = computeEdgeTypeDistribution([
-      edge("e1", "a", "b", "contains"),
-      edge("e2", "b", "c", "contains"),
-      edge("e3", "a", "c", "depends_on"),
-    ]);
-    expect(dist.get("contains")).toBe(2);
-    expect(dist.get("depends_on")).toBe(1);
-  });
-
-  it("returns an empty Map for no edges", () => {
-    expect(computeEdgeTypeDistribution([]).size).toBe(0);
-  });
 });
 
 describe("countCrossProjectEdges", () => {

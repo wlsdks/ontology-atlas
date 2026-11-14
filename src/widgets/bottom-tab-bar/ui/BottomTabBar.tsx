@@ -3,7 +3,7 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { Blocks, Download, FolderKanban, Library, LineChart, Map as MapIcon, NotebookPen } from 'lucide-react';
+import { Blocks, Download, FolderKanban, Library, Map as MapIcon, NotebookPen } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { useLocalVault } from '@/entities/vault-session';
 import { useMapReadingContext } from '@/shared/lib/navigation/map-reading-context';
@@ -48,8 +48,6 @@ const TABS: ReadonlyArray<TabItem> = [
       architecture: Blocks,
       library: Library,
       planning: NotebookPen,
-      // `LineChart`, not `BarChart3` (see `AppNavRail.tsx`).
-      insights: LineChart,
       projects: FolderKanban,
     } satisfies Record<MobileDestinationId, typeof MapIcon>)[id],
   })),

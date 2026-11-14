@@ -5,38 +5,6 @@
                                 href: link.getAttribute("href") || "",
                                 text: link.textContent || "",
                               }));
-                              const insightsMaintenanceBoard = document.querySelector(
-                                '[data-insights-surface="relationship-analysis"]'
-                              );
-                              const insightsQuestionTabs = Array.from(
-                                insightsMaintenanceBoard?.querySelectorAll('[role="tab"]') || []
-                              );
-                              const insightsSelectedTabs = insightsQuestionTabs.filter(
-                                (tab) => tab.getAttribute("aria-selected") === "true"
-                              );
-                              // Keep historical marker names; only the section tabs count here.
-                              const insightsSubjectRadios = Array.from(
-                                insightsMaintenanceBoard?.querySelectorAll('[data-testid="insights-core-switch"] [role="tab"]') || []
-                              );
-                              const insightsSelectedSubject =
-                                insightsSubjectRadios
-                                  .find((radio) => radio.getAttribute("aria-selected") === "true")
-                                  ?.getAttribute("data-testid") || "";
-                              const insightsSelectedPanel =
-                                insightsMaintenanceBoard?.querySelector("[data-insights-panel]") || null;
-                              const insightsSelectedPanelRect =
-                                insightsSelectedPanel?.getBoundingClientRect();
-                              const insightsSelectedPanelStyle = insightsSelectedPanel
-                                ? getComputedStyle(insightsSelectedPanel)
-                                : null;
-                              const insightsSelectedPanelVisible = Boolean(
-                                insightsSelectedPanelRect &&
-                                insightsSelectedPanelRect.width > 1 &&
-                                insightsSelectedPanelRect.height > 1 &&
-                                insightsSelectedPanelStyle?.display !== "none" &&
-                                insightsSelectedPanelStyle?.visibility !== "hidden" &&
-                                Number(insightsSelectedPanelStyle?.opacity || "1") > 0.01
-                              );
                               const aiSettingsVerification = window.__ontologyAtlasAiSettingsVerify || null;
                               const appUpdateVerification = window.__ontologyAtlasAppUpdateVerify || null;
                               const acpInstallVerification = window.__ontologyAtlasAcpInstallVerify || null;
@@ -355,16 +323,6 @@
                                   libraryOntologyReaderVisible,
                                   libraryOntologyStarterVisible,
                                   libraryOntologyContentState,
-                                  insightsMaintenanceBoard: Boolean(insightsMaintenanceBoard),
-                                  insightsQuestionModel:
-                                    insightsMaintenanceBoard?.getAttribute("data-insights-question-model") || "",
-                                  insightsSubjectCount: insightsSubjectRadios.length,
-                                  insightsSelectedSubject,
-                                  insightsSelectedPanelKey:
-                                    insightsSelectedPanel?.getAttribute("data-insights-panel") || "",
-                                  insightsTabCount: insightsQuestionTabs.length,
-                                  insightsSelectedTabCount: insightsSelectedTabs.length,
-                                  insightsSelectedPanelVisible,
                                   topologyAttentionWinner,
                                   topologyMapViewportVisible: Boolean(
                                     mapViewportRect &&

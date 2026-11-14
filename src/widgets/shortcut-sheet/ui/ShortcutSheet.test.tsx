@@ -42,6 +42,11 @@ describe("ShortcutSheet — the rows every screen shows", () => {
     expect(screen.queryByText("Search concepts, docs, and projects together")).toBeNull();
   });
 
+  it("teaches no G I, since Analysis is no longer a destination", () => {
+    renderSheet();
+    expect(rowsOf(sections.navigation).some((row) => row.endsWith(": G I"))).toBe(false);
+  });
+
   it("lists ⌘ , for settings in Navigation", () => {
     renderSheet();
     expect(rowsOf(sections.navigation)).toContain(`${rows.openSettings}: ⌘ ,`);

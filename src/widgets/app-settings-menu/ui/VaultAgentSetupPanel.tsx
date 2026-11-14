@@ -41,6 +41,7 @@ import { useRowDisclosure } from '@/shared/lib/list-rows/use-row-disclosure';
 import { getTauriVaultRootPath } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import {
   ATLAS_CLI,
   shellQuoteForPacket,
@@ -608,10 +609,10 @@ export function VaultAgentSetupPanel({
           : validationState === 'error'
             ? 'blocked'
             : 'warning',
-      // The To-Do readiness meter counts the same check results, so a blocking count links there.
+      // The map INDEX's "docs the checks caught" row counts the same results and opens the same place.
       href:
         validationState === 'error' || validationState === 'warning'
-          ? '/ontology/insights/?tab=do-next'
+          ? DESTINATION_HREF.docs
           : null,
     },
     {
