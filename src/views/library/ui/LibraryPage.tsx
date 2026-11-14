@@ -283,7 +283,7 @@ export function LibraryPage({ segment, onSegmentChange, toolsHost = null }: {
   const templateProblems = useWikiTemplateProblems({
     t, locale, toast, nativeVaultRootPath, turnRunning, choose, busy, model, agent, reader, turns,
   });
-  if (!hasFolder) return <LibraryNoFolderStage t={t} locale={locale} />;
+  if (!hasFolder) return <LibraryNoFolderStage t={t} />;
 
   const importDialog = (
     <>

@@ -31,7 +31,7 @@ export function LibraryEmptyFolderStage({
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--color-canvas)_0%,var(--color-canvas-a70)_30%,transparent_56%,var(--color-canvas-a70)_88%,var(--color-canvas)_100%)]"
       />
       {/* mb-14: the workspace header's height. */}
-      <div className="relative mb-14">
+      <div className="relative mb-14 w-full">
       <LibraryStartStage
         vaultLabel={nativeVaultRootPath ?? handle.name}
         busy={busy}
