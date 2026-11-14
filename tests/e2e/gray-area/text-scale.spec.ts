@@ -12,7 +12,7 @@ for (const [width, height] of [[600, 900], [1040, 900], [1512, 900], [2560, 1440
     const panel = page.getByTestId('gray-area-inspector');
     await waitForAnimationsDone(panel);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe('32px');
-    await expect(panel.getByRole('group', { name: 'What needs a closer look' })).toBeFocused();
+    await expect(panel.getByRole('group', { name: 'Needs a closer look' })).toBeFocused();
     await expect.poll(() => page.getByTestId('gray-area-body').evaluate(el => el.scrollTop)).toBe(0);
     const arrangement = await panel.evaluate(el => {
       const r = el.getBoundingClientRect();
@@ -24,7 +24,7 @@ for (const [width, height] of [[600, 900], [1040, 900], [1512, 900], [2560, 1440
     expect(arrangement.bottom).toBeLessThanOrEqual(arrangement.navTop);
     const label = page.getByTestId('gray-area-missing-link').getByRole('button', { expanded: true }).first();
     expect(await label.evaluate(el => [...el.querySelectorAll('span')].every(span => span.scrollWidth <= span.clientWidth + 1))).toBe(true);
-    for (const name of ['Compare concepts on map', 'Fold for this inspection', 'Scope, limits and permissions']) {
+    for (const name of ['Show both concepts on map', 'Hide for now', 'Scope, limits and permissions']) {
       const control = panel.getByRole('button', { name, exact: true }).first();
       await control.scrollIntoViewIfNeeded();
       await expect.poll(() => control.evaluate(el => {

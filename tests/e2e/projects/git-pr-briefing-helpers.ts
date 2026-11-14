@@ -23,7 +23,7 @@ export async function calls(page: import('@playwright/test').Page, command: stri
 export async function reviewSummary(page: import('@playwright/test').Page) {
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: /^(Create summary|Rebuild summary)$/, exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Explain this period', exact: true })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Summarize this period', exact: true })).toBeVisible();
 }
 export async function openCoverage(page: import('@playwright/test').Page) {
   if (!await page.getByTestId('briefing-coverage-dialog').isVisible()) await page.getByTestId('briefing-coverage').click();
@@ -44,7 +44,7 @@ export async function readPrs(page: import('@playwright/test').Page) {
   const read = page.getByRole('button', { name: /^(Read GitHub PR descriptions|Read latest PR descriptions)$/ });
   if (!await read.isVisible()) {
     await page.getByTestId('briefing-originals').click();
-    const list = page.getByRole('button', { name: 'Source list', exact: true });
+    const list = page.getByRole('button', { name: 'Commit and PR list', exact: true });
     if (await list.isVisible()) await list.click();
   }
   await read.click();

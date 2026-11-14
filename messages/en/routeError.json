@@ -1,6 +1,6 @@
 {
   "label": "Unexpected error",
-  "title": "This screen stopped while rendering",
+  "title": "This screen could not be shown",
   "body": "It may be a passing problem. Try again or go home.",
   "bodyWithId": "It may be a passing problem. Try again or go home. If it keeps happening, report it with the error ID below.",
   "retry": "Try again",

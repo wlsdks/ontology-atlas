@@ -305,7 +305,7 @@ describe('i18n message catalog', () => {
       /문서 기록|기록 찾기/,
     );
     assert.equal(commands.sourceServer, '샘플 폴더 보기');
-    assert.equal(commands.sourceLocal, '내 PC 폴더 열기');
+    assert.equal(commands.sourceLocal, '내 폴더 열기');
     assert.equal(commands.viewFolderTopology, undefined);
     assert.equal(commands.scaffoldTopology, undefined);
     assert.doesNotMatch(commands.sourceServer, /소스|Source/);
@@ -341,11 +341,11 @@ describe('i18n message catalog', () => {
     assert.ok(ko.docsVault.desktopWelcome.contractAriaLabel.length > 0);
     assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '폴더 파일');
     assert.doesNotMatch(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성|프론트매터/);
-    assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
-    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '폴더 시작 액션');
+    assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, '쓰기 전 검사');
+    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '폴더 작업');
     assert.equal(ko.docsVault.sourceContract.filesLabel, '폴더 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
-    assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
+    assert.equal(ko.docsVault.sourceContract.agentLabel, '쓰기 전 검사');
     // The plain phrase replaced "Properties at the top of the document" / "Document Properties" — both screens now
     // say "File Top Info Bar", and the glossary gate keeps the old names out.
     assert.match(ko.docsVault.desktopWelcome.contractGraphValue, /정보칸/);
@@ -425,17 +425,17 @@ describe('i18n message catalog', () => {
       !en.settingsFolder.documentsTitle.includes(en.navRail.library),
       'the Ontology section card must not claim to open the whole Library destination',
     );
-    assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');
+    assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local folder');
     // Property, not wording — see the Korean half of this file for why.
     assert.doesNotMatch(en.docsVault.desktopWelcome.contractAriaLabel, /\bcontract\b/i);
     assert.ok(en.docsVault.desktopWelcome.contractAriaLabel.length > 0);
-    assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Workspace files');
+    assert.equal(en.docsVault.desktopWelcome.contractFilesLabel, 'Folder files');
     assert.doesNotMatch(en.docsVault.desktopWelcome.contractGraphValue, /frontmatter/i);
-    assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'AI check');
-    assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Workspace setup actions');
-    assert.equal(en.docsVault.sourceContract.filesLabel, 'Workspace files');
+    assert.equal(en.docsVault.desktopWelcome.contractAgentLabel, 'Agent check');
+    assert.equal(en.docsVault.desktopWelcome.actionsAriaLabel, 'Folder actions');
+    assert.equal(en.docsVault.sourceContract.filesLabel, 'Folder files');
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
-    assert.equal(en.docsVault.sourceContract.agentLabel, 'AI check');
+    assert.equal(en.docsVault.sourceContract.agentLabel, 'Agent check');
     assert.equal(en.docsVault.sourceContract.agentCopyGate, 'Copy graph check');
     assert.doesNotMatch(
       welcomeCopy,

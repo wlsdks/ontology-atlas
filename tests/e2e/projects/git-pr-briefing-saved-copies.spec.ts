@@ -6,10 +6,10 @@ import { calls, enter, expectCoverage, prepare, readPrs } from './git-pr-briefin
 test('keeps saved-copy management available in an empty period without a remote read', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'empty');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(page.getByTestId('briefing-status')).toBeVisible();
   await page.getByTestId('briefing-settings').click();
-  await expect(page.getByRole('button', { name: 'Clear all saved PR copies', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete all saved PR descriptions', exact: true })).toBeVisible();
   expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
 });
@@ -20,22 +20,22 @@ test('reopens saved originals after reload without network and keeps versions af
   await page.reload();
   await openOriginals(page);
   await page.getByTestId('briefing-mixed').click();
-  await expectCoverage(page, 'Opened 1 saved PR descriptions. GitHub has not been checked.');
+  await expectCoverage(page, 'Opened 1 saved PR descriptions. GitHub has not been checked for newer versions.');
   expect(await calls(page, 'git_briefing_pull_descriptions')).toHaveLength(0);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
   await page.getByTestId('briefing-originals').click();
   const row=page.getByRole('button', { name: /Keep map navigation readable PR #2925/ });
-  await expect(row).toContainText('Saved PR copy');
+  await expect(row).toContainText('Saved PR description');
   await row.click();
   await expect(page.getByTestId('briefing-original')).toContainText('53 ms and 57 ms');
   await expect(page.getByTestId('briefing-original')).not.toContainText('2026-10-25T01:00:00Z');
   await expect(page.getByTestId('briefing-original')).toContainText('2026');
-  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to source list', exact: true }).first().click();
+  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to commits and PRs', exact: true }).first().click();
   await expect(row).toBeFocused();
   await setBriefingMode(page,'pr-rate-limited');
   await readPrs(page);
   await expectCoverage(page, '1 PR descriptions read');
-  await expect(row).toContainText('Saved PR copy');
+  await expect(row).toContainText('Saved PR description');
   await page.reload();
   await openOriginals(page);
   await page.getByTestId('briefing-mixed').click();
@@ -47,16 +47,16 @@ test('clears copies without a usable source and keeps open originals session-onl
   await enter(page); await prepare(page);
   await page.getByRole('dialog').getByRole('button',{name:'Cancel',exact:true}).click();
   await page.getByTestId('briefing-settings').click();
-  await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
+  await page.getByRole('button',{name:'Delete all saved PR descriptions',exact:true}).click();
   await expectCoverage(page, '1 PR descriptions read');
   await page.getByTestId('briefing-originals').click();
-  await expect(page.getByRole('button',{name:/Keep map navigation readable PR #2925/})).toContainText('App-session copy');
+  await expect(page.getByRole('button',{name:/Keep map navigation readable PR #2925/})).toContainText('Kept until you close the app');
   await setBriefingMode(page,'ungranted');
-  await page.getByRole('button',{name:'Read again',exact:true}).click();
+  await page.getByRole('button',{name:'Refresh',exact:true}).click();
   await expect(page.getByTestId('briefing-status')).toBeVisible();
   await page.getByTestId('briefing-settings').click();
-  await expect(page.getByRole('button',{name:'Clear all saved PR copies',exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Delete all saved PR descriptions',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Delete all saved PR descriptions',exact:true}).click();
   expect(await calls(page,'git_briefing_clear_saved_pulls')).toHaveLength(2);
   expect(await calls(page,'source_briefing_chat')).toHaveLength(0);
   await page.reload();
@@ -71,14 +71,14 @@ for (const mode of ['cache-unavailable', 'cache-unsupported', 'cache-save-failed
   test(`keeps fresh original reading available when local copies fail: ${mode}`, async ({ page }) => {
     await enter(page);
     await setBriefingMode(page, mode);
-    await page.getByRole('button', { name: 'Read again', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await expect(page.getByTestId('briefing-narrative')).toBeVisible();
     await readPrs(page);
     await expectCoverage(page, '1 PR descriptions read');
     if (mode === 'cache-save-failed') {
       for (const view of ['briefing-summary-mode', 'briefing-originals']) {
         await page.getByTestId(view).click();
-        await expect(page.getByRole('status').filter({ hasText: 'Could not update saved PR copies' })).toBeVisible();
+        await expect(page.getByRole('status').filter({ hasText: 'Could not update saved PR descriptions' })).toBeVisible();
       }
     }
     await page.getByTestId('briefing-originals').click();
@@ -93,8 +93,8 @@ test('keeps measured empty results empty after restart and reports failed cleari
   await page.getByRole('dialog').getByRole('button', { name: 'Cancel', exact: true }).click();
   await setBriefingMode(page,'cache-clear-failed');
   await page.getByTestId('briefing-settings').click();
-  await page.getByRole('button',{name:'Clear all saved PR copies',exact:true}).click();
-  await expect(page.getByTestId('briefing-saved-panel')).toContainText('Could not clear all saved PR copies');
+  await page.getByRole('button',{name:'Delete all saved PR descriptions',exact:true}).click();
+  await expect(page.getByTestId('briefing-saved-panel')).toContainText('Could not delete all saved PR descriptions');
   await page.reload();
   await openOriginals(page);
   await page.getByTestId('briefing-mixed').click();
@@ -141,8 +141,8 @@ for (const action of ['manual-read', 'clear'] as const) {
       await expectCoverage(page, '1 PR descriptions read');
     } else {
       await page.getByTestId('briefing-settings').click();
-      await page.getByRole('button', { name: 'Clear all saved PR copies', exact: true }).click();
-      await expect(page.getByTestId('briefing-saved-panel')).toContainText('Saved PR copies cleared.');
+      await page.getByRole('button', { name: 'Delete all saved PR descriptions', exact: true }).click();
+      await expect(page.getByTestId('briefing-saved-panel')).toContainText('Saved PR descriptions deleted.');
     }
     await page.evaluate(() => (window as unknown as { __releaseSaved: () => void }).__releaseSaved());
     await expect.poll(() => page.evaluate(() => (window as unknown as { __savedReturned: boolean }).__savedReturned)).toBe(true);

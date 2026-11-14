@@ -11,7 +11,7 @@ test("the home CTA on the 404 page navigates home without preserving history", a
   await page.goto("/en/");
   await page.goto("/en/this-route-really-does-not-exist/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "Looks like you're lost.",
+    "Page not found",
   );
 
   // Clicking the "home" link (a Link component → push). Going back afterwards must
