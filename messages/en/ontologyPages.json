@@ -230,38 +230,6 @@
         "emptyDescription": "Add sources in the Library to see their wiki pages and check results here."
       }
     },
-    "harnessTab": {
-      "preview": {
-        "title": "Guidance and checks by code area",
-        "body": "See which areas have instructions, rules that block changes, and automated checks.",
-        "exampleLabel": "Example · not data from your folder",
-        "pauseAnimation": "Pause example animation",
-        "resumeAnimation": "Resume example animation",
-        "instruction": "Select a role to see how to connect it.",
-        "area": {
-          "title": "Payments"
-        },
-        "roles": {
-          "instructions": {
-            "title": "Instructions",
-            "buttonLabel": "How to add instructions",
-            "setup": "Add working guidance to AGENTS.md or rule documents in the code repository. Review their scope to see which code areas they reach."
-          },
-          "gates": {
-            "title": "Gates",
-            "example": "Example: no connected rule",
-            "buttonLabel": "How to connect gates",
-            "setup": "Connect hooks or checks that actually block changes, then review their scope. A request written in guidance alone does not count as a gate."
-          },
-          "checks": {
-            "title": "Checks",
-            "example": "Tests · lint",
-            "buttonLabel": "How to connect checks",
-            "setup": "Review the target paths of automated checks such as tests and lint. A check file does not prove that the check ran or passed."
-          }
-        }
-      }
-    },
     "analysis": {
       "title": "Analysis",
       "subtitle": "Read the connections. Inspect the claim.",
