@@ -32,11 +32,14 @@ const REPO: Record<string, string> = {
   'src/AGENTS.md': '# src\n',
   '.claude/rules/always.md': '# Always\n',
   '.claude/rules/scoped.md': ['---', 'paths:', '  - "src/**"', '---', '# Scoped', ''].join('\n'),
+  '.claude/rules/inline.md': ['---', 'paths: src/**', '---', '# Inline', ''].join('\n'),
   '.claude/skills/review/SKILL.md': '# review\n',
+  '.claude/skills/review/workflow.md': '# steps\n',
   '.agents/skills/review/SKILL.md': '# review\n\nCodex copy.\n',
   '.claude/agents/scout.md': '# scout\n',
   '.mcp.json': '{"mcpServers":{}}',
   '.cursorignore': 'secrets/**\n',
+  '.aiexclude': 'secrets/**\n',
   '.claude/hooks/guard.sh': '#!/bin/sh\n',
   '.claude/hooks/format.sh': '#!/bin/sh\n',
   '.claude/hooks/census.sh': '#!/bin/sh\n',
@@ -72,12 +75,12 @@ function labelsIn(section: SetupSectionId, group: SetupGroupId, filter: Paramete
 describe('buildHarnessSetup', () => {
   it.each<[SetupSectionId, SetupGroupId, string[]]>([
     ['context', 'instructions', ['AGENTS.md', 'CLAUDE.md', 'src/AGENTS.md']],
-    ['context', 'rules', ['.claude/rules/always.md', '.claude/rules/scoped.md']],
-    ['context', 'skills', ['.agents/skills/review/SKILL.md', '.claude/skills/review/SKILL.md']],
+    ['context', 'rules', ['.claude/rules/always.md', '.claude/rules/inline.md', '.claude/rules/scoped.md']],
+    ['context', 'skills', ['.agents/skills/review', '.claude/skills/review']],
     ['context', 'subagents', ['.claude/agents/scout.md']],
     ['context', 'mcp', ['.mcp.json']],
     ['context', 'configs', ['.codex/config.toml', '.codex/hooks.json']],
-    ['context', 'ignore', ['.cursorignore']],
+    ['context', 'ignore', ['.aiexclude', '.cursorignore']],
     ['context', 'contextHooks', ['.claude/hooks/census.sh']],
     ['guardrails', 'permissions', ['.claude/settings.json']],
     ['guardrails', 'blockingHooks', ['.claude/hooks/gone.sh', '.claude/hooks/guard.sh', '.claude/hooks/guard.sh']],
@@ -94,6 +97,7 @@ describe('buildHarnessSetup', () => {
     const setup = buildHarnessSetup(report);
     expect(setup.items.get('file:.claude/rules/always.md')?.loading).toBe('always');
     expect(setup.items.get('file:.claude/rules/scoped.md')?.loading).toBe('path');
+    expect(setup.items.get('file:.claude/rules/inline.md')?.loading).toBe('path');
     expect(setup.items.get('permissions:.claude/settings.json')?.permissionCounts).toEqual({ allow: 0, ask: 1, deny: 1 });
   });
 
@@ -122,9 +126,24 @@ describe('buildHarnessSetup', () => {
 
   it('names the twin a differing copy differs from, and gives a copy with no twin no such fact', () => {
     const setup = buildHarnessSetup(report);
-    expect(setup.items.get('file:.claude/skills/review/SKILL.md')?.differsFrom).toBe('codex');
-    expect(setup.items.get('file:.agents/skills/review/SKILL.md')?.differsFrom).toBe('claude-code');
+    expect(setup.items.get('skill:.claude/skills/review')?.differsFrom).toBe('codex');
+    expect(setup.items.get('skill:.agents/skills/review')?.differsFrom).toBe('claude-code');
     expect(setup.items.get('file:.claude/agents/scout.md')?.differsFrom).toBeUndefined();
+  });
+
+  it('counts a skill once per directory and keeps each of its files selectable', () => {
+    const skill = buildHarnessSetup(report).items.get('skill:.claude/skills/review');
+    expect(skill?.bytes).toBe(REPO['.claude/skills/review/SKILL.md']!.length + REPO['.claude/skills/review/workflow.md']!.length);
+    expect(skill?.files?.map((file) => file.key)).toEqual([
+      'file:.claude/skills/review/SKILL.md',
+      'file:.claude/skills/review/workflow.md',
+    ]);
+    expect(buildHarnessSetup(report).items.has('file:.claude/skills/review/workflow.md')).toBe(true);
+  });
+
+  it('holds only what the filter shows, so a hidden selection has nothing to open', () => {
+    expect(buildHarnessSetup(report).items.has('file:CLAUDE.md')).toBe(true);
+    expect(buildHarnessSetup(report, 'codex').items.has('file:CLAUDE.md')).toBe(false);
   });
 
   it('narrows every list to one tool while keeping checks no tool claims', () => {
@@ -134,6 +153,7 @@ describe('buildHarnessSetup', () => {
     expect(labelsIn('context', 'rules', 'codex')).toEqual([]);
     expect(labelsIn('guardrails', 'blockingHooks', 'codex')).toEqual(['.claude/hooks/guard.sh']);
     expect(labelsIn('verification', 'scripts', 'codex').sort()).toEqual(['lint', 'test:cart']);
+    expect(labelsIn('context', 'ignore', 'codex')).toEqual([]);
     expect(setup.problems.map((problem) => problem.kind)).toEqual(['codex-cap']);
     expect(setup.claudeSessionBytes).toBeNull();
   });

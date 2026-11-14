@@ -12,6 +12,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 import {
   buildHarnessSetup,
+  itemHolds,
   type SetupGroup,
   type SetupProblem,
   type SetupSectionId,
@@ -72,14 +73,14 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
   const [toggled, setToggled] = useState<ReadonlyMap<string, boolean>>(() => new Map());
   const isOpen = useCallback(
     (section: SetupSectionId) => (group: SetupGroup) =>
-      toggled.get(groupKey(section, group)) ?? group.items.some((item) => item.key === selectedKey),
+      toggled.get(groupKey(section, group)) ?? group.items.some((item) => itemHolds(item, selectedKey)),
     [toggled, selectedKey],
   );
   const toggle = useCallback(
     (section: SetupSectionId) => (group: SetupGroup) => {
       const key = groupKey(section, group);
       setToggled((current) => {
-        const open = current.get(key) ?? group.items.some((item) => item.key === selectedKey);
+        const open = current.get(key) ?? group.items.some((item) => itemHolds(item, selectedKey));
         return new Map(current).set(key, !open);
       });
     },

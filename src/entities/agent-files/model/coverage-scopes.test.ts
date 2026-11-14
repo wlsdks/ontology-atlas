@@ -62,6 +62,15 @@ describe('ruleGlobs — the paths a .claude rule declares', () => {
     expect(ruleGlobs(rule)).toEqual(['src/**', 'app/**', 'next.config.ts']);
   });
 
+  it.each([
+    ['paths: src/**', ['src/**']],
+    ['paths: "src/**"', ['src/**']],
+    ['paths: [src/**, "app/**"]', ['src/**', 'app/**']],
+    ['paths: "src/**, app/**"', ['src/**', 'app/**']],
+  ])('reads the inline form %s', (line, globs) => {
+    expect(ruleGlobs(`---\n${line}\n---\n\n# Scoped\n`)).toEqual(globs);
+  });
+
   it('returns nothing for an always-loaded rule', () => {
     /* "Declares no path" means every area, never none. */
     expect(ruleGlobs('# Forbidden patterns\n\nNo frontmatter at all.\n')).toEqual([]);

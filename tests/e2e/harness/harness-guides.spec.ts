@@ -53,7 +53,7 @@ test.describe("harness Setup files and statuses", () => {
     await expect(problem(page, "hook-missing")).toHaveCount(1);
     const context = page.locator('[data-harness-section="context"]');
     await context.locator('[data-harness-group="skills"] button[aria-expanded]').click();
-    await context.locator('[data-harness-item="file:.claude/skills/po-pass/SKILL.md"]').click();
+    await context.locator('[data-harness-item="skill:.claude/skills/po-pass"]').click();
     const detail = page.getByTestId("harness-item-detail");
     await expect(detail.locator('[data-harness-status="copy"]')).toHaveText("Differs from Codex copy");
     const diff = page.getByTestId("harness-drift-diff");

@@ -45,8 +45,10 @@ export interface SetupItem {
   path: string;
   /** Whether the scan holds this file's text, so the detail can show it. */
   hasContent: boolean;
-  /** Empty for repository-wide checks every agent meets (scripts, Git hooks, CI). */
+  /** The agents that read it; empty when none of the listed agents does. */
   tools: readonly AgentTool[];
+  /** A check every agent meets whichever one works (a script, a Git hook, CI): no filter hides it. */
+  repositoryWide?: boolean;
   bytes: number | null;
   /** The classifier rule, for the detail's cited "what reads it". */
   ruleId: string | null;
@@ -74,6 +76,8 @@ export interface SetupItem {
   differsFrom?: 'claude-code' | 'codex';
   /** Claude's copy, then Codex's, when both exist and differ. */
   pairPaths?: readonly [string, string];
+  /** A skill directory's files, when it has more than one; each is selectable on its own. */
+  files?: readonly SetupItem[];
 }
 
 export interface PermissionCounts {
@@ -147,6 +151,9 @@ const RECORD_GROUP: Readonly<Record<string, SetupGroupId>> = Object.freeze({
 const VERIFICATION_ASIDE: readonly SetupGroupId[] = ['otherHooks', 'unwiredHooks'];
 
 const HOOK_SCRIPT_DIR = /^\.(?:claude|codex)\/hooks\//;
+
+/** A skill is its directory: `SKILL.md` plus whatever it loads beside it. */
+const SKILL_DIRECTORY = /^(?:\.claude|\.agents)\/skills\/[^/]+(?=\/)/;
 
 /** Git runs only files with these names; anything else in `.githooks/` is a helper they call. */
 const GIT_HOOK_NAMES: ReadonlySet<string> = new Set([
@@ -320,6 +327,7 @@ function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' 
     path,
     hasContent: report.contents.has(path),
     tools: [],
+    repositoryWide: true,
     bytes: null,
     ruleId: null,
     declaration: declaration || undefined,
@@ -384,13 +392,44 @@ function claudeSessionBytes(report: HarnessReport, rules: ReadonlyMap<string, Sc
   return read.reduce((sum, record) => sum + record.bytes, claudeMd.bytes);
 }
 
-function visibleTo(tools: readonly AgentTool[], filter: ToolFilter): boolean {
-  return filter === null || tools.length === 0 || tools.includes(filter);
+/** Whether `key` is this item or one of its files. */
+export function itemHolds(item: SetupItem, key: string | null): boolean {
+  return key !== null && (item.key === key || (item.files ?? []).some((file) => file.key === key));
+}
+
+function visibleTo(item: Pick<SetupItem, 'tools' | 'repositoryWide'>, filter: ToolFilter): boolean {
+  return filter === null || item.repositoryWide === true || item.tools.includes(filter);
+}
+
+/** One row per skill directory; its files stay reachable from the row. */
+function skillDirectories(files: readonly SetupItem[]): SetupItem[] {
+  const byDirectory = new Map<string, SetupItem[]>();
+  for (const file of files) {
+    const directory = SKILL_DIRECTORY.exec(file.path)?.[0] ?? file.path;
+    byDirectory.set(directory, [...(byDirectory.get(directory) ?? []), file]);
+  }
+  return [...byDirectory].map(([directory, inside]) => {
+    if (inside.length === 1 && inside[0]?.path === directory) return inside[0];
+    const entry = inside.find((file) => file.path.endsWith('/SKILL.md')) ?? inside[0]!;
+    const differing = entry.pairPaths ? entry : inside.find((file) => file.pairPaths);
+    return {
+      key: `skill:${directory}`,
+      label: directory,
+      path: entry.path,
+      hasContent: entry.hasContent,
+      tools: entry.tools,
+      bytes: inside.reduce((sum, file) => sum + (file.bytes ?? 0), 0),
+      ruleId: entry.ruleId,
+      differsFrom: differing?.differsFrom,
+      pairPaths: differing?.pairPaths,
+      files: inside.length > 1 ? inside : undefined,
+    };
+  });
 }
 
 /**
- * O(records + hooks + coverage). With a tool filter, an item another tool reads is left out; an
- * item no tool claims (a script, a Git hook, CI) stays, since it runs whichever agent works.
+ * O(records + hooks + coverage). With a tool filter, an item another tool reads is left out, and
+ * so is a file none of the listed agents reads; a repository-wide check stays.
  */
 export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = null): HarnessSetup {
   const rules = declarationsById(report.coverage, 'rule');
@@ -420,12 +459,14 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
   for (const item of checks.gitHooks) push('gitHooks', item);
   for (const item of checks.workflows) push('workflows', item);
 
-  const items = new Map<string, SetupItem>();
-  for (const list of byGroup.values()) for (const item of list) items.set(item.key, item);
+  byGroup.set('skills', skillDirectories(byGroup.get('skills') ?? []));
 
+  /* Only what the filter shows, so a selection it hides has nothing to open. */
+  const items = new Map<string, SetupItem>();
   const visibleGroup = (id: SetupGroupId): SetupGroup | null => {
-    const visible = (byGroup.get(id) ?? []).filter((item) => visibleTo(item.tools, filter));
+    const visible = (byGroup.get(id) ?? []).filter((item) => visibleTo(item, filter));
     if (visible.length === 0) return null;
+    for (const item of visible) for (const shown of [item, ...(item.files ?? [])]) items.set(shown.key, shown);
     return { id, items: visible, bytes: visible.reduce((sum, item) => sum + (item.bytes ?? 0), 0) };
   };
   const sections: SetupSection[] = (Object.keys(SECTION_GROUPS) as SetupSectionId[]).map((id) => {
@@ -444,9 +485,11 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
   return {
     tools,
     sections,
-    problems: problemsOf(report, items).filter((problem) => visibleTo(problem.tools, filter)),
-    claudeSessionBytes: visibleTo(['claude-code'], filter) ? claudeSessionBytes(report, rules) : null,
-    codexSession: visibleTo(['codex'], filter) ? codexSession(report) : null,
+    problems: problemsOf(report, items).filter(
+      (problem) => items.has(problem.itemKey) && visibleTo({ tools: problem.tools }, filter),
+    ),
+    claudeSessionBytes: visibleTo({ tools: ['claude-code'] }, filter) ? claudeSessionBytes(report, rules) : null,
+    codexSession: visibleTo({ tools: ['codex'] }, filter) ? codexSession(report) : null,
     items,
   };
 }

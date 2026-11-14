@@ -7,7 +7,7 @@ import { cn } from '@/shared/lib/cn';
 import { RowButton, RowDisclosure } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
-import type { CodexSessionSize, SetupGroup, SetupItem, SetupSection } from '../model/harness-setup';
+import { itemHolds, type CodexSessionSize, type SetupGroup, type SetupItem, type SetupSection } from '../model/harness-setup';
 import { ItemStatus, statusTags, type TranslateFn } from './HarnessGuideDetail';
 import { formatBytes, shortLabel } from './harness-setup-format';
 
@@ -70,19 +70,61 @@ function SessionSizes({
   );
 }
 
+function FileRows({
+  item,
+  selectedKey,
+  onSelect,
+}: {
+  item: SetupItem;
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}) {
+  return (
+    <ul data-harness-files={item.key} className="flex flex-col gap-0.5 pt-0.5">
+      {(item.files ?? []).map((file) => {
+        const selected = file.key === selectedKey;
+        return (
+          <li key={file.key}>
+            <RowButton
+              data-harness-item={file.key}
+              aria-pressed={selected}
+              active={selected}
+              hoverSurface="lift"
+              size="sm"
+              onClick={() => onSelect(file.key)}
+              className={cn('min-h-7 w-full gap-2 py-1 pl-11', selected ? 'bg-[color:var(--color-indigo-a16)]' : 'bg-transparent')}
+            >
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate font-mono text-label',
+                  selected ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-tertiary)]',
+                )}
+              >
+                {file.path.slice(item.label.length + 1)}
+              </span>
+              {file.bytes !== null ? <span className={COUNT}>{formatBytes(file.bytes)}</span> : null}
+            </RowButton>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function ItemRow({
   item,
-  selected,
+  selectedKey,
   showTools,
   onSelect,
   t,
 }: {
   item: SetupItem;
-  selected: boolean;
+  selectedKey: string | null;
   showTools: boolean;
   onSelect: (key: string) => void;
   t: TranslateFn;
 }) {
+  const selected = item.key === selectedKey;
   const hasMeta = Boolean(item.events) || (showTools && item.tools.length > 0) || statusTags(item).length > 0;
   return (
     <li>
@@ -118,6 +160,7 @@ function ItemRow({
           </span>
         ) : null}
       </RowButton>
+      {item.files && itemHolds(item, selectedKey) ? <FileRows item={item} selectedKey={selectedKey} onSelect={onSelect} /> : null}
     </li>
   );
 }
@@ -176,7 +219,7 @@ function GroupRow({
             <ItemRow
               key={item.key}
               item={item}
-              selected={item.key === selectedKey}
+              selectedKey={selectedKey}
               showTools={showTools}
               onSelect={onSelect}
               t={t}
