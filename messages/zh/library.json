@@ -137,6 +137,8 @@
   },
   "emptyTitle": "还没有来源和 Wiki 页面",
   "emptyBody": "把项目已有的文档带进来：规格说明、演示文稿、电子表格、导出的页面。Atlas 会原样复制到 sources/，在你提出之前绝不会打开它们。",
+  "stageTitle": "把已有的文档，变成注明出处的 Wiki",
+  "stageBody": "打开文件夹并添加文件。来源原样保留，每份来源对应一个 Wiki 页面，每条论断都引用其出处文件。",
   "sources": {
     "listAria": "此文件夹中的原始来源",
     "add": "添加文件",
@@ -519,11 +521,8 @@
       "paragraphs": "{count, number} 个段落"
     }
   },
-  "kindsAria": "此文件夹保存的内容",
   "kindSourcesTitle": "来源",
-  "kindSourcesBody": "文件按到达时的原样保存：任何格式，逐字节不变，从不解析。",
   "kindWikiTitle": "Wiki 页面",
-  "kindWikiBody": "每份来源对应一个页面，格式统一，每条论断都引用其出处文件。",
   "stage": {
     "title": "收集、整理、阅读",
     "state": {
