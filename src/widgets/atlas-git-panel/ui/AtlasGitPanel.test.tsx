@@ -832,7 +832,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   it("puts each divergence count on the button it justifies", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("푸시 2");
+    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("Push 2");
     expect(screen.getByRole("button", { name: "Pull · 전체 저장소 1" })).toBeEnabled();
     // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
