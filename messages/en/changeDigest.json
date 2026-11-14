@@ -15,5 +15,6 @@
   "backToSummary": "Back to summary",
   "empty": "Nothing was merged in this period.",
   "goLatest": "Go to the latest changes",
-  "partial": "Only the newest {count} changes of this period were read. Choose a shorter period to see the rest."
+  "partial": "Only the newest {count} changes of this period were read. Choose a shorter period to see the rest.",
+  "partialOther": "Part of this period could not be read, so these counts are incomplete. Choose a shorter period to read more."
 }

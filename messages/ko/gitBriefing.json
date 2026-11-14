@@ -203,7 +203,7 @@
   "savedPrStatus": "저장한 PR · GitHub 최신 내용 미확인",
   "sourceListTitle": "커밋·PR 원문",
   "sourceList": "원문 목록",
-  "backSummary": "요약으로 돌아가기",
+  "backSummary": "한눈에 보기로 돌아가기",
   "commitIdentity": "커밋 {hash}",
   "originalsDisclaimer": "작성자 기록 · 동작 미검증",
   "sourceInventoryUnchecked": "커밋 {commits}개 · PR 설명 미조회",

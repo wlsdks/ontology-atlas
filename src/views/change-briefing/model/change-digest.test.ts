@@ -28,6 +28,22 @@ describe('title parsing', () => {
     expect(changeTitle('Merge #1: ')).toBe('Merge #1: ');
   });
 
+  it('reads a merge of several pull requests by its first title and number', () => {
+    const subject = 'Merge #2981 #2984: fix(editor): confirm discarding and 1 more';
+    expect(pullRequestNumber(subject)).toBe(2981);
+    expect(titleLabel(subject)).toBe('editor');
+    expect(changeTitle(subject)).toBe('fix(editor): confirm discarding and 1 more');
+  });
+
+  it('reads a hosted merge by the first line of its body', () => {
+    const subject = 'Merge pull request #12 from someone/branch';
+    const message = `${subject}\n\nfix(map): keep the camera\n`;
+    expect(pullRequestNumber(subject)).toBe(12);
+    expect(titleLabel(subject, message)).toBe('map');
+    expect(changeTitle(subject, message)).toBe('fix(map): keep the camera');
+    expect(changeTitle(subject)).toBe(subject);
+  });
+
   it.each([
     ['fix(map): keep the camera', 'map'],
     ['Merge #3: feat(Brand)!: adopt motions', 'brand'],
@@ -113,7 +129,7 @@ describe('groups', () => {
     expect(digest.groups[0].concepts).toEqual(['camera', 'search']);
   });
 
-  it('groups by the top-level directory holding most files when fewer than two labels exist', () => {
+  it('groups by the top-level directory holding most files when under half the titles carry a label', () => {
     const commits = [
       change('fix(map): only label', { paths: ['src/a.ts', 'src/b.ts', 'docs/c.md'] }),
       change('docs: words', { paths: ['docs/a.md'] }),
@@ -126,6 +142,12 @@ describe('groups', () => {
       ['directory', '.', 1], ['directory', 'docs', 1], ['directory', 'src', 1], ['other', '', 1],
     ]);
     expect(mainDirectory(['b/x', 'a/y'])).toBe('a');
+  });
+
+  it('keeps label groups when most titles carry the same single label', () => {
+    const digest = buildChangeDigest([...ordinary(6, 'changes'), change('docs: words', { paths: ['docs/a.md'] })], noConcepts);
+    expect(digest.grouping).toBe('label');
+    expect(digest.groups.map(group => [group.name, group.changes.length])).toEqual([['changes', 6], ['', 1]]);
   });
 
   it('counts distinct files across the period', () => {

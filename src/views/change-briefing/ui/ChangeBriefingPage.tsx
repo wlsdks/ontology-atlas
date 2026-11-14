@@ -53,9 +53,9 @@ export function ChangeBriefingPage() {
   const native = useSyncExternalStore(subscribe, isGitBridgeAvailable, webSnapshot);
   const today = localDate(new Date());
   const [period, setPeriod] = useArrivalMemory<BriefingPeriod>(memory && `${memory}:period`, 'day');
-  const [chosenAnchor, setAnchor] = useArrivalMemory<string | null>(memory && `${memory}:anchor`, null);
+  const [chosenAnchor, setAnchor] = useArrivalMemory<string | null>(memory && `${memory}:anchor:${today}`, null);
   const [latest, setLatest] = useState<{ key: string; day: string | null } | null>(null);
-  const [view, setView] = useArrivalMemory<'digest' | 'originals'>(`${memory}:view`, 'digest');
+  const [view, setView] = useArrivalMemory<'digest' | 'originals'>(`${memory}:view:${today}`, 'digest');
   const [originalsStarted, setOriginalsStarted] = useArrivalMemory(`${memory}:originals-started`, false);
   const [digestOrigin, setDigestOrigin] = useState<{ scope: string; hash: string; list: string | null } | null>(null);
   const originalsButtonRef = useRef<HTMLButtonElement>(null);
@@ -422,7 +422,7 @@ export function ChangeBriefingPage() {
         </div>
         {latestDay !== null && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>}
       </section>}
-      {!digestStatus && digest && <ChangeDigest digest={digest} shown={digestShown} onShown={setDigestShown} partialCount={data?.status === 'partial' ? data.commits.length : null}
+      {!digestStatus && digest && <ChangeDigest digest={digest} shown={digestShown} onShown={setDigestShown} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
         conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
         pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} />}
       {view === 'digest' && !digestStatus && !digest && data?.status === 'partial' && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('partial')}</p>}

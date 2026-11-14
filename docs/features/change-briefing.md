@@ -34,8 +34,9 @@ is built only from local history; it makes no agent, model or network request.
   With none qualifying the strip is not drawn. Size is a file count, never an
   importance claim.
 - **Groups.** A change belongs to the label in brackets in its title
-  (`fix(map): …` is `map`), read after any `Merge #N:` prefix and lower-cased.
-  When fewer than two labels exist in the period, changes group by the top-level
+  (`fix(map): …` is `map`), read after any `Merge #N:` or `Merge #A #B:` prefix (a hosted
+  `Merge pull request #N from …` takes its first body line) and lower-cased.
+  When under half the titles in the period carry a label, changes group by the top-level
   directory holding most of their files instead. The seven largest groups are
   named, ordered by count then name; every other change joins "Other changes",
   always last, so the group counts add up to the headline. The largest named
@@ -47,7 +48,8 @@ is built only from local history; it makes no agent, model or network request.
 - Pressing a change opens its original in Originals; going back returns focus
   to that row with the group still expanded.
 
-A partial read says how many of the newest changes were counted. An empty
+A read cut short by the change or size limit says how many of the newest
+changes were counted; any other limited read says only that it is limited. An empty
 period shows zero and, when history holds a newer change, offers the latest
 changes.
 

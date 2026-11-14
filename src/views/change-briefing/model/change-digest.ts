@@ -1,7 +1,8 @@
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { localDate } from './briefing-model';
 
-const MERGE_PREFIX = /^Merge #(\d+):\s*/i;
+const MERGE_PREFIX = /^Merge #(\d+)(?: #\d+)*:\s*/i;
+const HOSTED_MERGE = /^Merge pull request #(\d+) from \S+/i;
 const TRAILING_PR = /\(#(\d+)\)\s*$/;
 const CONVENTIONAL_HEAD = /^[\p{L}\p{N}_-]+(?:\(([^()]*)\))?(!)?:/u;
 const NAMED_GROUP_LIMIT = 7;
@@ -38,32 +39,39 @@ export interface ChangeDigest {
   notable: NotableChange[];
 }
 
-/** The title without a `Merge #N:` prefix; that prefix only records how the change arrived. */
-function ownTitle(subject: string) {
+/**
+ * The title without its merge wrapper, which only records how the change arrived. A hosted merge
+ * titles itself with the branch, so its own title is the first body line.
+ */
+function ownTitle(subject: string, message?: string) {
+  if (HOSTED_MERGE.test(subject)) {
+    const body = message?.split('\n').map(line => line.trim()).find(line => line && line !== subject);
+    return body ?? subject;
+  }
   return subject.replace(MERGE_PREFIX, '');
 }
 
 /** The title as its author wrote it, with the pull request number shown beside it instead. */
-export function changeTitle(subject: string) {
-  return ownTitle(subject).replace(TRAILING_PR, '').trim() || subject;
+export function changeTitle(subject: string, message?: string) {
+  return ownTitle(subject, message).replace(TRAILING_PR, '').trim() || subject;
 }
 
 export function pullRequestNumber(subject: string): number | null {
-  const found = MERGE_PREFIX.exec(subject) ?? TRAILING_PR.exec(subject);
+  const found = MERGE_PREFIX.exec(subject) ?? HOSTED_MERGE.exec(subject) ?? TRAILING_PR.exec(subject);
   return found ? Number(found[1]) : null;
 }
 
-export function titleLabel(subject: string): string | null {
-  const label = CONVENTIONAL_HEAD.exec(ownTitle(subject))?.[1]?.trim().toLowerCase();
+export function titleLabel(subject: string, message?: string): string | null {
+  const label = CONVENTIONAL_HEAD.exec(ownTitle(subject, message))?.[1]?.trim().toLowerCase();
   return label || null;
 }
 
 export function isRevert(commit: BriefingCommit) {
-  return /^revert\b/i.test(ownTitle(commit.subject)) || Boolean(commit.message?.includes('This reverts commit'));
+  return /^revert\b/i.test(ownTitle(commit.subject, commit.message)) || Boolean(commit.message?.includes('This reverts commit'));
 }
 
 export function isMarkedBreaking(commit: BriefingCommit) {
-  return CONVENTIONAL_HEAD.exec(ownTitle(commit.subject))?.[2] === '!' || Boolean(commit.message?.includes('BREAKING CHANGE'));
+  return CONVENTIONAL_HEAD.exec(ownTitle(commit.subject, commit.message))?.[2] === '!' || Boolean(commit.message?.includes('BREAKING CHANGE'));
 }
 
 /** The top-level directory holding most of a change's files; ties go to the name that sorts first. */
@@ -119,7 +127,7 @@ function pickNotable(changes: readonly DigestChange[]): NotableChange[] {
 }
 
 /**
- * Groups by the label in each title, or by top-level directory when fewer than two labels exist;
+ * Groups by the label in each title, or by top-level directory when under half the titles carry one;
  * the seven largest are named and the rest join one last group. O(changes × paths + groups log groups).
  */
 export function buildChangeDigest(commits: readonly BriefingCommit[], conceptsByPath: ReadonlyMap<string, readonly string[]>): ChangeDigest {
@@ -129,8 +137,9 @@ export function buildChangeDigest(commits: readonly BriefingCommit[], conceptsBy
     files: new Set(commit.paths).size,
     concepts: [...new Set(commit.paths.flatMap(path => conceptsByPath.get(path) ?? []))],
   }));
-  const labels = changes.map(change => titleLabel(change.commit.subject));
-  const grouping = new Set(labels.filter(Boolean)).size >= 2 ? 'label' : 'directory';
+  const labels = changes.map(change => titleLabel(change.commit.subject, change.commit.message));
+  const labelled = labels.filter(Boolean).length;
+  const grouping = labelled > 0 && labelled * 2 >= changes.length ? 'label' : 'directory';
   const names = grouping === 'label' ? labels : changes.map(change => mainDirectory(change.commit.paths));
   const buckets = new Map<string, DigestChange[]>();
   const unnamed: DigestChange[] = [];

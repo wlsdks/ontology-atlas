@@ -22,7 +22,8 @@ interface ChangeDigestProps {
   shown: Record<string, number>;
   onShown: (next: Record<string, number>) => void;
   /** Newest changes read when the period was cut short; null for a complete read. */
-  partialCount: number | null;
+  /** How many changes a cut-short read holds, 'limited' when the read is partial for another reason. */
+  partialCount: number | 'limited' | null;
   conceptTitle: (id: string) => string;
   formatTime: (committedAt: string) => string;
   pullUrl: (number: number) => string | null;
@@ -41,7 +42,7 @@ export function ChangeDigest({ digest, shown, onShown, partialCount, conceptTitl
     onShown(next);
   };
   return <div data-testid="change-digest" className="space-y-10">
-    {partialCount !== null && <p role="status" data-testid="change-digest-partial" className="text-body text-[color:var(--color-status-warning)]">{t('partial', { count: partialCount })}</p>}
+    {partialCount !== null && <p role="status" data-testid="change-digest-partial" className="text-body text-[color:var(--color-status-warning)]">{partialCount === 'limited' ? t('partialOther') : t('partial', { count: partialCount })}</p>}
     <div className="space-y-1">
       <h2 id={headlineId} className="font-mono text-hero font-[var(--font-weight-strong)] tabular-nums">{digest.changes.toLocaleString()}</h2>
       <p className="text-body-lg text-[color:var(--color-text-secondary)]">{t('headline', { count: digest.changes, files: digest.files })}</p>
@@ -105,7 +106,7 @@ function ChangeRow({ change, lead, leadClassName, pullUrl, onOpen, emphasis = fa
   change: DigestChange; lead: ReactNode; leadClassName: string; emphasis?: boolean;
 } & Pick<ChangeDigestProps, 'pullUrl' | 'onOpen'>) {
   const t = useTranslations('changeDigest');
-  const title = changeTitle(change.commit.subject);
+  const title = changeTitle(change.commit.subject, change.commit.message);
   const url = change.number === null ? null : pullUrl(change.number);
   return <div className="group/change flex items-center gap-2">
     <RowButton hoverSurface="lift" hoverInk="strong" aria-label={t('readOriginal', { title })} title={title} data-change-hash={change.commit.hash} onClick={() => onOpen(change.commit)}
