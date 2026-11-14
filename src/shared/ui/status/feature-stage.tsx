@@ -23,6 +23,7 @@ export interface FeatureStageMotion {
 export function FeatureStage({
   art,
   title,
+  titleAs: Title = 'h2',
   body,
   alert,
   action,
@@ -32,6 +33,8 @@ export function FeatureStage({
 }: {
   art: (state: FeatureStageMotion) => ReactNode;
   title: ReactNode;
+  /** `h1` where the page has no header bar naming it. */
+  titleAs?: 'h1' | 'h2';
   body: ReactNode;
   alert?: ReactNode;
   action?: ReactNode;
@@ -61,7 +64,7 @@ export function FeatureStage({
       <div data-feature-stage-art aria-hidden className="w-full max-w-72">
         {art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}
       </div>
-      <h2 className="mt-8 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</h2>
+      <Title className="mt-8 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</Title>
       <p className="mt-4 max-w-md text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
       {alert}
       {action ? (

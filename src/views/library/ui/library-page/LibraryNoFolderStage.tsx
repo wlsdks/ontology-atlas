@@ -1,75 +1,47 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import { PAGE_COLUMN_STAGE, PAGE_LEDE, PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
-import { libraryEyebrowClass } from "../../lib/page-eyebrow";
+import { FeatureStage } from "@/shared/ui";
 import { LibraryConstellation } from "../parts/first-run/LibraryConstellation";
 
-export function LibraryNoFolderStage({
-  t, locale,
-}: {
-  t: ReturnType<typeof useTranslations<"library">>;
-  locale: string;
-}) {
+export function LibraryNoFolderStage({ t }: { t: ReturnType<typeof useTranslations<"library">> }) {
   return (
     <main
       id="main"
       tabIndex={-1}
       data-testid="library-page"
       data-library-state="no-folder"
-      className="relative flex min-h-0 flex-1 items-center justify-center overflow-y-auto px-5 py-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
+      className="relative flex min-h-0 flex-1 overflow-y-auto px-5 py-10 max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]"
     >
-      <div className="flex w-full max-w-[var(--library-empty-max)] flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-12">
-      <div className={`${PAGE_COLUMN_STAGE} relative shrink-0`}>
-        <p className={libraryEyebrowClass(locale)}>
-          {t("title")}
-        </p>
-        <h1 className={`mt-1 break-keep ${PAGE_TITLE}`}>
-          {t("emptyTitle")}
-        </h1>
-        <p className={`mt-2 ${PAGE_LEDE}`}>
-          {t("emptyBody")}
-        </p>
-        <dl
-          aria-label={t("kindsAria")}
-          data-testid="library-kinds"
-          className="mt-5 flex flex-col gap-3 border-t border-[color:var(--color-border-soft)] pt-4"
-        >
-          <div>
-            <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t("kindSourcesTitle")}
-            </dt>
-            <dd className="mt-0.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-              {t("kindSourcesBody")}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t("kindWikiTitle")}
-            </dt>
-            <dd className="mt-0.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-              {t("kindWikiBody")}
-            </dd>
-          </div>
-        </dl>
-        <div className="mt-5">
+      <FeatureStage
+        titleAs="h1"
+        art={() => (
+          <>
+            <div data-testid="library-empty-object" className="relative aspect-square w-full">
+              <LibraryConstellation />
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,var(--color-canvas-a70)_82%,var(--color-canvas)_100%)]"
+              />
+            </div>
+            {/* The object's two marks, named: a cube is a source, a sphere the wiki page that cites it. */}
+            <div className="mt-2 flex items-center justify-center gap-5 text-label text-[color:var(--color-text-tertiary)]">
+              <span className="flex items-center gap-2"><span className="size-2 rotate-12 bg-[color:var(--color-text-secondary)]" />{t("kindSourcesTitle")}</span>
+              <span className="flex items-center gap-2"><span className="size-2 rounded-full bg-[color:var(--color-indigo-accent)]" />{t("kindWikiTitle")}</span>
+            </div>
+          </>
+        )}
+        title={t("stageTitle")}
+        body={t("stageBody")}
+        action={
           <OpenVaultCta
             testId="library-open-vault"
             tone="accentOnTint"
             className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
           />
-        </div>
-      </div>
-      <div
-        data-testid="library-empty-object"
-        className="relative aspect-square w-full max-w-[var(--library-empty-object-max)] shrink-0"
-      >
-        <LibraryConstellation />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,var(--color-canvas-a70)_82%,var(--color-canvas)_100%)]"
-        />
-      </div>
-      </div>
+        }
+      />
     </main>
   );
 }

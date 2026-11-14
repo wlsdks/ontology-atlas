@@ -613,13 +613,6 @@
     /* Document list aside expanded width — retract existing hardcoded w-[280px]. */
     --docs-list-width: 280px;
 
-    /* The Library's empty state is a reading column beside its object. The row's cap keeps
-       the two from drifting apart on a wide monitor; the object's cap keeps it from
-       out-weighing the ask. The object's box is square at every width, because its vignette
-       is an ellipse fitted to the box: at 2.6:1 the clear middle measured 59px tall and
-       swallowed the object whole (2026-09-09, 768×1024). */
-    --library-empty-max: 1120px;
-    --library-empty-object-max: 440px;
     /* **The pane height below which the Library's spine folds its finished steps.**
        The landing stacks three step cards over the saved questions, and below `lg` the
        reader is half of one column: measured 2026-09-11 on the seeded folder, the first

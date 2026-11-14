@@ -21,7 +21,7 @@ nobody can lift out is an effect nobody can remove.
 
 | Screen | Piece | Why |
 |---|---|---|
-| Library, no folder open | the constellation | It is the screen's **subject**: the shape of the thing a person is about to make, drawn whole beside the ask. The folder is anonymous and deterministic — never a claim about files they have. |
+| Library, no folder open | the constellation | It is the screen's **subject**: the shape of the thing a person is about to make, drawn whole above the ask, with its two marks named beneath it. The folder is anonymous and deterministic — never a claim about files they have. |
 | Library, folder open, nothing selected | the synapse field | The stepper is the subject here and the field is **texture**. It draws no count and no link that exists, so there is nothing on it to mistake for a fact about the folder. |
 | Library, folder open, nothing selected | **not** the constellation | Tried three ways and cut. A working folder's object is small — the frame that settled it had six documents and four write-ups — and ten marks across half a pane read as debris drifting into the cards, not as a ground. |
 
@@ -37,8 +37,6 @@ All in `app/globals.css`.
 | Token | Piece | Meaning |
 |---|---|---|
 | `--color-canvas-a70` | both | the vignette step that fades a field into the canvas at a pane's rim |
-| `--library-empty-max` | empty state | the cap on the copy-plus-object row, so the two do not drift apart on a wide monitor |
-| `--library-empty-object-max` | empty state | the object's own box, square at every width and capped so it never out-weighs the ask |
 
 A glass panel over the object was built and cut in the same session — the copy stands
 beside the object now, not on it — and its three tokens (`--color-panel-a80`,

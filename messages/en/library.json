@@ -137,6 +137,8 @@
   },
   "emptyTitle": "No sources or wiki pages yet",
   "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
+  "stageTitle": "The documents you have, as a wiki that cites them",
+  "stageBody": "Open a folder and add files. Each stays untouched, and gets one wiki page whose every claim cites it.",
   "sources": {
     "listAria": "Raw sources in this folder",
     "add": "Add files",
@@ -519,11 +521,8 @@
       "paragraphs": "{count, number} paragraphs"
     }
   },
-  "kindsAria": "What this folder keeps",
   "kindSourcesTitle": "Sources",
-  "kindSourcesBody": "The files as they arrived: any format, byte for byte, never parsed.",
   "kindWikiTitle": "Wiki",
-  "kindWikiBody": "One page per source, in one shape, with every claim citing the file it came from.",
   "stage": {
     "title": "Gather, compile, read",
     "state": {
