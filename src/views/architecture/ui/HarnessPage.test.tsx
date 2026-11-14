@@ -102,20 +102,12 @@ function fakeReport(overrides: Partial<HarnessReport> = {}): HarnessReport {
       summary: { files: 0, byTool: {}, byKind: {}, driftCount: 0, checkStatuses: {} },
     } as unknown as HarnessReport['analysis'],
     hookGroups: [],
-    coverage: [],
-    documentReach: {
-      total: 0, guides: 0, named: 0, namedDirect: 0, unnamed: 0,
-      unnamedByFolder: [], excluded: [], truncated: false,
-    },
-    testFiles: [],
+    declarations: [],
     gitHookFiles: [],
     workflowFiles: [],
-    times: [],
     contents: new Map(),
-    checks: { wiredHooks: 20, gitHooks: 3, scripts: new Array(57).fill('x'), total: 80 },
-    guideDocumentCount: 93,
+    checkScripts: new Array(57).fill('x'),
     topLevelFolders: [],
-    timesAreFileMtime: true,
     ...overrides,
   };
 }
@@ -276,19 +268,19 @@ describe('the segmented control', () => {
   });
 
   it('shows the passes it is actually running rather than a word on a black screen', () => {
-    /* The wait names each pass and fills a bar only with a known denominator; the checkout walk sweeps. */
+    /* The wait names each pass and fills a bar only with a known denominator. */
     window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
-      progress: { stage: 'citation-hops', done: 3, total: null },
+      progress: { stage: 'hooks', done: 1, total: 2 },
     };
     vi.useFakeTimers();
     mount();
     waitPastProgressThreshold();
     const panel = screen.getByTestId('harness-scan-progress');
-    expect(panel).toHaveTextContent('인용을 따라가는 중');
-    expect(panel.querySelector('[data-harness-stage="citation-hops"]')).toHaveAttribute(
+    expect(panel).toHaveTextContent('훅 설정');
+    expect(panel.querySelector('[data-harness-stage="hooks"]')).toHaveAttribute(
       'data-harness-stage-state',
       'running',
     );
@@ -325,7 +317,7 @@ describe('the segmented control', () => {
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
-      progress: { stage: 'documents', done: 0, total: null },
+      progress: { stage: 'nested', done: 0, total: null },
     };
     const view = mount();
     waitPastProgressThreshold();
@@ -348,7 +340,7 @@ describe('the segmented control', () => {
     state.report = {
       status: 'loading',
       sourceRoot: '/repo',
-      progress: { stage: 'documents', done: 0, total: null },
+      progress: { stage: 'nested', done: 0, total: null },
     };
     vi.useFakeTimers();
     mount();

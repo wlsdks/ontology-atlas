@@ -196,9 +196,9 @@ function hookItemKey(group: HookConfigFacts, ref: string, step: HookEventStep): 
   return `hook:${step}:${group.configPath}:${ref}`;
 }
 
-function declarationsById(coverage: readonly ScopeDeclaration[], origin: ScopeDeclaration['origin']) {
+function declarationsById(declarations: readonly ScopeDeclaration[], origin: ScopeDeclaration['origin']) {
   const out = new Map<string, ScopeDeclaration>();
-  for (const entry of coverage) if (entry.origin === origin) out.set(entry.id, entry);
+  for (const entry of declarations) if (entry.origin === origin) out.set(entry.id, entry);
   return out;
 }
 
@@ -318,9 +318,9 @@ function permissionItems(report: HarnessReport): SetupItem[] {
 }
 
 function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' | 'workflows', SetupItem[]> {
-  const scripts = declarationsById(report.coverage, 'script');
-  const gitHooks = declarationsById(report.coverage, 'git-hook');
-  const workflows = declarationsById(report.coverage, 'workflow');
+  const scripts = declarationsById(report.declarations, 'script');
+  const gitHooks = declarationsById(report.declarations, 'git-hook');
+  const workflows = declarationsById(report.declarations, 'workflow');
   const plain = (key: string, label: string, path: string, declaration: string | undefined): SetupItem => ({
     key,
     label,
@@ -333,7 +333,7 @@ function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' 
     declaration: declaration || undefined,
   });
   return {
-    scripts: report.checks.scripts.map((name) =>
+    scripts: report.checkScripts.map((name) =>
       plain(`script:${name}`, name, `package.json#${name}`, scripts.get(`package.json#${name}`)?.declaration),
     ),
     gitHooks: report.gitHookFiles.filter((name) => GIT_HOOK_NAMES.has(name)).map((name) =>
@@ -428,11 +428,11 @@ function skillDirectories(files: readonly SetupItem[]): SetupItem[] {
 }
 
 /**
- * O(records + hooks + coverage). With a tool filter, an item another tool reads is left out, and
+ * O(records + hooks + declarations). With a tool filter, an item another tool reads is left out, and
  * so is a file none of the listed agents reads; a repository-wide check stays.
  */
 export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = null): HarnessSetup {
-  const rules = declarationsById(report.coverage, 'rule');
+  const rules = declarationsById(report.declarations, 'rule');
   const pairs = differingPairs(report);
   const byGroup = new Map<SetupGroupId, SetupItem[]>();
   const push = (group: SetupGroupId, item: SetupItem) => {

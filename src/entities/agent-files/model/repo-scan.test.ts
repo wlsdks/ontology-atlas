@@ -165,19 +165,10 @@ describe('scanHarness — hooks', () => {
   });
 });
 
-describe('scanHarness — the two numbers in the sentence', () => {
-  it('counts guide documents and leaves out the wiring layer', async () => {
+describe('scanHarness — check scripts and top-level folders', () => {
+  it('lists only the package scripts that lint, type-check or test', async () => {
     const report = await scanHarness(fixturePort(REPO));
-    // AGENTS.md, CLAUDE.md, src/AGENTS.md, 2 rules, 2 skill copies, 2 agent copies = 9; config is not prose.
-    expect(report.guideDocumentCount).toBe(9);
-  });
-
-  it('publishes the check number as three auditable parts, never as a bare total', async () => {
-    const report = await scanHarness(fixturePort(REPO));
-    expect(report.checks.wiredHooks).toBe(2);
-    expect(report.checks.gitHooks).toBe(2);
-    expect(report.checks.scripts).toEqual(['lint', 'test:contracts', 'test:run', 'typecheck']);
-    expect(report.checks.total).toBe(8);
+    expect(report.checkScripts).toEqual(['lint', 'test:contracts', 'test:run', 'typecheck']);
   });
 
   it('names the top-level folders, leaving out dot, build, ignored and excluded folders', async () => {
@@ -212,12 +203,6 @@ describe('scanHarness — the two numbers in the sentence', () => {
     );
     expect(report.topLevelFolders).toEqual(['keep', 'nested', 'src']);
   });
-
-  it('states that its change times are file modification times, not commit dates', async () => {
-    const report = await scanHarness(fixturePort(REPO));
-    expect(report.timesAreFileMtime).toBe(true);
-    expect(report.times.find((time) => time.path === 'AGENTS.md')?.lastModified).toBe(1_757_000_000_000);
-  });
 });
 
 describe('guide citations', () => {
@@ -250,11 +235,25 @@ describe('scanHarness — what it may read', () => {
       reads.push(path);
       return read(path);
     };
-    const report = await scanHarness(port);
+    await scanHarness(port);
     expect(reads.filter((path) => !isReadableHarnessPath(path))).toEqual([]);
     expect(reads).not.toContain('docs/a.md');
-    expect(report.documentReach.namedDirect).toBe(1);
-    expect(report.documentReach.unnamed).toBe(1);
+  });
+
+  it('lists only the root and the harness directories, never an authored folder', async () => {
+    const port = fixturePort({
+      ...REPO,
+      'docs/guide/a.md': 'A document.\n',
+      'src/features/x/index.ts': '',
+    });
+    const list = port.listDir.bind(port);
+    const listed: string[] = [];
+    port.listDir = async (path) => {
+      listed.push(path);
+      return list(path);
+    };
+    await scanHarness(port);
+    expect(listed.filter((path) => /^(docs|src)(\/|$)/.test(path))).toEqual([]);
   });
 
   it('probes a hook script by existence, never by reading it', async () => {
@@ -306,39 +305,7 @@ describe('scanHarness — what it may read', () => {
     },
   );
 
-  it('answers false for a scope path outside the repository without asking the app', async () => {
-    const port = fixturePort(REPO);
-    const probes: string[] = [];
-    port.pathExists = async (path) => {
-      probes.push(path);
-      return true;
-    };
-    const report = await scanHarness(port, { capabilityPaths: ['../elsewhere', 'src'] });
-    expect(probes).not.toContain('../elsewhere');
-    expect(report.coverage).toBeDefined();
-  });
-
-  it.each(['/usr/local/bin/x.sh', '~/hooks/x.sh', '../shared/hooks/x.sh'])(
-    'reads a hook script outside the repository (%s) as unresolved, never as a failed reading',
-    async (script) => {
-      const files = {
-        ...REPO,
-        '.claude/settings.json': JSON.stringify({
-          hooks: { Stop: [{ hooks: [{ type: 'command', command: `bash ${script}` }] }] },
-        }),
-      };
-      const port = fixturePort(files);
-      port.pathExists = async (path) => {
-        if (harnessReadClass(path) === 'invalid') throw codedFailure('harness-path-invalid', path);
-        return path in files;
-      };
-      const report = await scanHarness(port);
-      const claude = report.hookGroups.find((group) => group.configPath === '.claude/settings.json');
-      expect(claude?.hooks.map((hook) => hook.status)).toEqual(['unresolved']);
-    },
-  );
-
-  it('never asks the app whether a scope path outside the repository exists', async () => {
+  it('never asks the app whether a path a rule declares outside the repository exists', async () => {
     const files = {
       ...REPO,
       '.claude/rules/outside.md': ['---', 'paths:', '  - "../elsewhere/**"', '---', '', '# Outside', ''].join('\n'),
@@ -350,7 +317,7 @@ describe('scanHarness — what it may read', () => {
       if (harnessReadClass(path) === 'invalid') throw codedFailure('harness-path-invalid', path);
       return path in files;
     };
-    await scanHarness(port, { capabilityPaths: ['../elsewhere/api', 'src/features'] });
+    await scanHarness(port);
     expect(probes.filter((path) => harnessReadClass(path) === 'invalid')).toEqual([]);
   });
 
@@ -363,51 +330,5 @@ describe('scanHarness — what it may read', () => {
     };
     const report = await scanHarness(port);
     expect(report.analysis.checks.codexSizeCap.agentsMdBytes).toBe(40_000);
-  });
-});
-
-describe('scanHarness — the document census', () => {
-  it('counts every document by name without reading it', async () => {
-    const documents = Object.fromEntries(
-      Array.from({ length: 900 }, (_, index) => [
-        `docs/record-${String(index).padStart(4, '0')}.md`,
-        'A saved development observation.',
-      ]),
-    );
-    const port = fixturePort({ 'AGENTS.md': '# Guide\nSee docs/record-0000.md.\n', ...documents });
-    const read = port.readText.bind(port);
-    let documentReads = 0;
-    port.readText = async (path) => {
-      if (path.startsWith('docs/record-')) documentReads += 1;
-      return read(path);
-    };
-    const report = await scanHarness(port);
-    expect(report.documentReach.total).toBe(901);
-    expect(report.documentReach.truncated).toBe(false);
-    expect(documentReads).toBe(0);
-  });
-});
-
-describe('scanHarness — a census cut short', () => {
-  it.each([
-    {
-      name: 'more folders than the directory budget',
-      files: Object.fromEntries(Array.from({ length: 3001 }, (_, index) => [`area-${index}/note.md`, 'A note.'])),
-    },
-    {
-      name: 'folders nested deeper than the depth bound',
-      files: { 'a/b/c/d/e/f/g/h/i/deep.md': 'A note.' },
-    },
-  ])('reports $name as truncated without reading a document', async ({ files }) => {
-    const port = fixturePort({ 'AGENTS.md': '# Guide\n', ...files });
-    const read = port.readText.bind(port);
-    let documentReads = 0;
-    port.readText = async (path) => {
-      if (path.endsWith('note.md') || path.endsWith('deep.md')) documentReads += 1;
-      return read(path);
-    };
-    const report = await scanHarness(port);
-    expect(report.documentReach.truncated).toBe(true);
-    expect(documentReads).toBe(0);
   });
 });
