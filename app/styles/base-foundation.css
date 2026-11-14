@@ -192,12 +192,28 @@
     transform: none;
   }
 
+  /* A dead end is not pending work: the tilt is slower than the waiting blink, and it begins
+     late in its neutral hold so the first tilt follows the screen's entrance. */
+  .atlas-waiting-mark[data-moru-motion='curious'] {
+    animation-duration: calc(var(--motion-base) * 40);
+    animation-delay: calc(var(--motion-base) * -15);
+  }
+
+  /* Its still pose is the held tilt, the cell the gesture rests on at its peak. */
+  .atlas-waiting-mark[data-moru-motion='curious'][data-waiting-motion='still'] {
+    background-position: -704px 0;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .atlas-waiting-mark,
     .atlas-moru-greeting {
       animation: none !important;
       background-position: 0 0 !important;
       transform: none !important;
+    }
+
+    .atlas-waiting-mark[data-moru-motion='curious'] {
+      background-position: -704px 0 !important;
     }
   }
 
