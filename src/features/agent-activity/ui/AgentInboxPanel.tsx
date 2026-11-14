@@ -32,6 +32,8 @@ import type { AgentActivityFeed } from '../model/use-agent-activity-feed';
  */
 const TAB_STORAGE_KEY = 'atlas.agentActivity.tab';
 const TAB_ID_PREFIX = 'agent-inbox';
+/** The map INDEX's "To tidy" rows are where the folder's fix counts can be read. */
+const MAP_TIDY_LIST_HREF = `${DESTINATION_HREF.map}?index=expanded`;
 
 function readStoredTab(): BellTab | null {
   if (typeof window === 'undefined') return null;
@@ -373,7 +375,7 @@ export function AgentInboxPanel({
             <InboxEmpty testId="agent-inbox-todo-empty">
               {t('todoEmpty')}
               <Link
-                href={DESTINATION_HREF.docs}
+                href={MAP_TIDY_LIST_HREF}
                 data-testid="agent-inbox-todo-empty-repair"
                 onClick={() => onClose?.()}
                 className={controlClass({
@@ -649,7 +651,7 @@ function TodoRow({
         </span>
       </span>
       <Link
-        href={DESTINATION_HREF.docs}
+        href={MAP_TIDY_LIST_HREF}
         aria-label={t('problemDoorAria')}
         data-testid="agent-inbox-problem-door"
         onClick={() => onClose?.()}

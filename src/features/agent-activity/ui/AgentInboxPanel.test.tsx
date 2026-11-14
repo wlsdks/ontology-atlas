@@ -92,15 +92,15 @@ describe('empty tab', () => {
   });
 });
 
-/** Both "things to fix" doors open the place the map INDEX's "docs the checks caught" row opens. */
+/** Both "things to fix" doors open the map INDEX, whose "To tidy" rows carry the counts. */
 describe('things-to-fix doors', () => {
-  it('opens the ontology documents from the empty To do tab', () => {
+  it('opens the map list from the empty To do tab', () => {
     window.localStorage.clear();
     renderPanel(undefined, { todos: [], results: [], history: [], unreadResults: 0 });
-    expect(screen.getByTestId('agent-inbox-todo-empty-repair').getAttribute('href')).toMatch(/^\/ko\/docs\/?$/);
+    expect(screen.getByTestId('agent-inbox-todo-empty-repair').getAttribute('href')).toMatch(/^\/ko\/topology\/?\?index=expanded$/);
   });
 
-  it('opens the ontology documents from a folder-problem row', () => {
+  it('opens the map list from a folder-problem row', () => {
     window.localStorage.clear();
     renderPanel(undefined, {
       todos: [{ kind: 'folder-problem', id: 'problem:1', at: NOW - MINUTE, problems: { unresolvedEdges: 2, dependencyCycles: 0 } }],
@@ -108,7 +108,7 @@ describe('things-to-fix doors', () => {
       history: [],
       unreadResults: 0,
     });
-    expect(screen.getByTestId('agent-inbox-problem-door').getAttribute('href')).toMatch(/^\/ko\/docs\/?$/);
+    expect(screen.getByTestId('agent-inbox-problem-door').getAttribute('href')).toMatch(/^\/ko\/topology\/?\?index=expanded$/);
   });
 });
 

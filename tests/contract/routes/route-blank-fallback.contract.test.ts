@@ -17,7 +17,6 @@ const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
  */
 const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
-  "InsightsLoadingView",
   "MapEntryFallback",
   "GatewayEntryFallback",
 ] as const;

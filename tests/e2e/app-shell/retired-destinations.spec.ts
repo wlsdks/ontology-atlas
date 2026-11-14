@@ -34,23 +34,24 @@ const ANALYSIS_ROWS = [
   },
 ] as const;
 
+/* A pushed redirect would leave Back on the retired address, which forwards again to the target. */
+const START = { url: "/ko/automations/?guides=off", at: /\/ko\/automations\/\?guides=off$/ };
+
 test.describe("retired Analysis addresses", () => {
   for (const row of ANALYSIS_ROWS) {
     test(`${row.from} lands on its target without a history entry`, async ({ page }) => {
       await seedFirstRunSeen(page);
-      await page.addInitScript(() => {
-        (window as unknown as { __arrivalHistoryLength: number }).__arrivalHistoryLength = history.length;
-      });
+      await page.goto(START.url, { waitUntil: "domcontentloaded" });
+      await expect(page).toHaveURL(START.at);
 
       await page.goto(row.from, { waitUntil: "domcontentloaded" });
       await expect(page).toHaveURL(row.to, { timeout: 30_000 });
       await expect(page.locator(row.ready).first()).toBeVisible({ timeout: 30_000 });
 
-      const lengths = await page.evaluate(() => ({
-        arrival: (window as unknown as { __arrivalHistoryLength: number }).__arrivalHistoryLength,
-        now: history.length,
-      }));
-      expect(lengths.now, "the redirect pushed a history entry").toBe(lengths.arrival);
+      await page.goBack({ waitUntil: "domcontentloaded" });
+      await expect(page, "Back returned to the retired address, so the redirect pushed an entry").toHaveURL(START.at, {
+        timeout: 30_000,
+      });
     });
   }
 

@@ -75,7 +75,7 @@ describe('chat panel width: the user drags it, the map is protected', () => {
  *
  * The regression that separated them: raising the default to 520 left the app's own 1040px
  * minimum window a 480px map, and at 480 a relation caption on the map stopped fitting
- * (`tests/e2e/insights/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden endpoint
+ * (`tests/e2e/map/analysis-workbench.spec.ts`, "showing a relationship reveals its hidden endpoint
  * at 1040px"). Nothing about that change went near the map.
  */
 describe('chat panel width: a width nobody chose yields more room to the map', () => {

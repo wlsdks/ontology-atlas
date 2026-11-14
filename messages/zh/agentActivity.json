@@ -79,7 +79,7 @@
   "askDoorAria": "打开对话以审阅等待中的请求",
   "problemSentence": "文件夹里有需要修复的地方",
   "problemDoor": "查看",
-  "problemDoorAria": "打开待修复的列表",
+  "problemDoorAria": "打开地图上的待修复列表",
   "resultAdded": "新写入 {count} 个概念",
   "resultEdited": "修订了 {count} 个概念",
   "resultRemoved": "删除了 {count} 个概念",
