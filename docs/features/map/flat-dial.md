@@ -79,9 +79,22 @@ Names are held apart from one another at both ends of the zoom step and its
 centre, and off the row the project's caption takes. A star whose discs have shrunk for crowding names at rest only its two
 most connected capabilities, and a crowded group outside every domain names
 none; pointing at the domain or zooming until its discs stand apart names the
-rest. An element of the pointed or selected capability is named only once its
-dot stands a name gap clear of that capability's disc and selection ring:
-beside a dot the disc hides, a name points at nothing. No lit element name
+rest. Selecting a capability opens its elements: where the zoom shows them
+closer than `--map-graph-element-name-spacing-px` or under the selection ring,
+they fan round the disc at that spacing, below the wedge its name and reach
+line take, and close smoothly back to their own places as the zoom nears
+showing them apart. Each fanned element hangs on one straight spoke in the
+capability's hue at `--map-graph-fan-spoke-alpha`; the spoke gains weight with
+the zoom up to `--map-graph-fan-spoke-max-px`, and a relation between the
+capability and its own fanned element runs straight along that spoke as a
+hair, so an element the capability also depends on reads brighter than one it
+only contains. The fan slides
+along its arc to the nearest place where no dot stands on a line leaving the
+capability. A fanned name sits on the side away from the capability, on its
+row or one row off with a leader, keeps off every fanned dot, and may cross a
+disc the selection has sunk but none still lit. An element of a pointed capability is named only once its
+dot stands a name gap clear of that capability's disc: beside a dot the disc
+hides, a name points at nothing. No lit element name
 that yields falls back to a side over a disc. A selected concept,
 with its count line, is placed before every other name and always named, then
 the far ends of its lines and the lit capabilities, then lit element names. A
