@@ -45,7 +45,7 @@ const INK_LEDGER: ReadonlyArray<readonly [token: string, ratio: number]> = [
   ['--map-panel-metric-text', 8.88],
   ['--map-panel-text-secondary', 7.14],
   ['--map-panel-text-tertiary', 4.96],
-  ['--map-panel-text-quaternary', 4.69],
+  ['--map-panel-text-quaternary', 4.78],
 ];
 
 /** The WCAG 1.4.3 body-text floor. Every ink in this panel is used at body size. */

@@ -49,7 +49,7 @@ export default async function ProjectOgImage({
           justifyContent: 'space-between',
           padding: '72px',
           background:
-            `radial-gradient(circle at 22% 28%, ${accent}26 0%, transparent 48%), linear-gradient(180deg, #08090a 0%, #0b0c0e 100%)`,
+            `radial-gradient(circle at 22% 28%, ${accent}26 0%, transparent 48%), linear-gradient(180deg, #0b0b0a 0%, #0b0c0e 100%)`,
           color: '#f0f1f3',
           fontFamily:
             'Inter, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif',
@@ -66,7 +66,7 @@ export default async function ProjectOgImage({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#08090a',
+              color: '#0b0b0a',
               fontSize: 22,
               fontWeight: 700,
               letterSpacing: '0.04em',

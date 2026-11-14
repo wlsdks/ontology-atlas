@@ -238,7 +238,7 @@ export function AgentProposalCard({
               className={controlClass({
                 tone: 'onAccent',
                 className:
-                  'tracking-label focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)]',
+                  'tracking-label',
               })}
             >
               {proposal.status === 'applying' ? labels.applying : labels.apply(selected.length)}

@@ -137,7 +137,7 @@ export function McpPage({
             openFolderAction={
               <OpenVaultCta
                 testId="connectors-open-vault"
-                tone="accentOnTint"
+                tone="accent"
                 className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
               />
             }

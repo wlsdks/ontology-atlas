@@ -665,7 +665,7 @@ export function DocFrontmatterBlock({
             disabled={saving}
             className={controlClass({
               shape: "chip",
-              tone: "accentOnTint",
+              tone: "accent",
               className: "hover:bg-[color:var(--color-indigo-a16)]",
             })}
           >

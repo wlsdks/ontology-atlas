@@ -15,15 +15,14 @@ import { escapeHtml } from "../persistence";
  * they are not the app's ramp.
  */
 const POPOUT_TOKENS = {
-  canvas: "#08090a",
-  panel: "#0f1011",
-  textPrimary: "#f7f8f8",
-  textSecondary: "#d0d6e0",
-  textTertiary: "#9a9fa8",
+  canvas: "#0b0b0a",
+  panel: "#121211",
+  textPrimary: "#f3f2ee",
+  textSecondary: "#d2d0c9",
+  textTertiary: "#a4a29b",
   borderSoft: "rgba(255,255,255,0.08)",
-  // One hue: indigo alpha only.
-  indigoAlphaStrong: "rgba(139,151,255,0.9)",
-  indigoAlphaBorder: "rgba(139,151,255,0.35)",
+  indigoAlphaStrong: "rgba(160,188,236,0.95)",
+  indigoAlphaBorder: "rgba(233,231,224,0.21)",
   indigoAlphaSurface: "rgba(139,151,255,0.08)",
 } as const;
 

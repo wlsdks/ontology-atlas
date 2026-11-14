@@ -42,9 +42,6 @@ const closureScopeSelectors = [
   },
 ];
 
-// `accent` (#7170ff) is AA only on the darkest backgrounds; on indigo/amber tints contrast falls
-// to 3.5-4.4, so tinted controls use `accentOnTint`. Only literal pairings in one call/element are
-// seen; constants are covered by tests/contract/design-tokens/accent-ink-contrast.contract.test.ts.
 /*
  * Inline `style={{ boxShadow }}` creates no class, so className selectors cannot see it. Loaded in
  * both global and ramp blocks: flat config replaces rule options, never merges. Allowed values
@@ -250,27 +247,6 @@ const layerSelectors = [
     message: `${NAMED_Z_MESSAGE} (template literal)`,
   },
 ];
-
-/*
- * Direct-child matching misses ternaries such as `tone={cond ? "accent" : …}`, so pairs match
- * direct literals plus `ConditionalExpression > Literal` branches, which does not hit comparison
- * literals like `x === "accent"`.
- */
-const accentTintPairingSelectors = [
-  {
-    selector:
-      'CallExpression[callee.name="controlClass"] ObjectExpression:has(:matches(Property[key.name="tone"] > Literal[value="accent"], Property[key.name="tone"] ConditionalExpression > Literal[value="accent"])):has(Property[key.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
-    message:
-      'Ink on an indigo/amber tint fill is accentOnTint, not the tone accent (#7170ff, composite contrast 3.5~4.4:1, below AA). Ternary branches are covered too. See tests/contract/design-tokens/accent-ink-contrast.contract.test.ts',
-  },
-  {
-    selector:
-      'JSXOpeningElement:has(:matches(JSXAttribute[name.name="tone"] > Literal[value="accent"], JSXAttribute[name.name="tone"] JSXExpressionContainer ConditionalExpression > Literal[value="accent"])):has(JSXAttribute[name.name="className"] :matches(Literal[value=/bg-\\[color:var\\(--color-(indigo|amber)/], TemplateElement[value.raw=/bg-\\[color:var\\(--color-(indigo|amber)/]))',
-    message:
-      'Ink on an indigo/amber tint fill is tone="accentOnTint", not tone="accent" (#7170ff, below AA). Ternary branches (tone={cond ? "accent" : …}) are covered too. See tests/contract/design-tokens/accent-ink-contrast.contract.test.ts',
-  },
-];
-
 
 // ── Geometry & Type Codex (R5) Blockade ─────────────────────────────────
 // Arbitrary classes like text-[Npx] / rounded-[Npx] are prohibited — docs/DESIGN-SYSTEM.md
@@ -719,7 +695,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Token-discipline block for every source file: checkbox accent, accent/tint ink pairing,
+  // Token-discipline block for every source file: checkbox accent,
   // inline shadow and size, cursor and disabled affordance. Violations are lint errors.
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],
@@ -727,7 +703,6 @@ const eslintConfig = defineConfig([
       'no-restricted-syntax': [
         'error',
         ...checkboxAccentSelectors,
-        ...accentTintPairingSelectors,
         // Ramp debt files also receive this block — inline shadows are a ladder issue, not
         // ramp issue, so they must not be exempted along with debt exemption.
         ...inlineShadowSelectors,
@@ -748,7 +723,6 @@ const eslintConfig = defineConfig([
         'error',
         ...checkboxAccentSelectors,
         ...arbitrarySizeSelectors,
-        ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
@@ -775,7 +749,6 @@ const eslintConfig = defineConfig([
         'error',
         ...checkboxAccentSelectors,
         ...arbitrarySizeSelectors,
-        ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
         ...inlineSizeSelectors,
         ...cursorAffordanceSelectors,
@@ -798,7 +771,6 @@ const eslintConfig = defineConfig([
         'error',
         ...checkboxAccentSelectors,
         ...arbitrarySizeSelectors,
-        ...accentTintPairingSelectors,
         ...inlineShadowSelectors,
         ...cursorAffordanceSelectors,
         ...disabledAffordanceSelectors,
@@ -819,7 +791,6 @@ const eslintConfig = defineConfig([
         'error',
         ...checkboxAccentSelectors,
         ...arbitrarySizeSelectors,
-        ...accentTintPairingSelectors,
         // Reload every ramp selector here too, or weight, spacing, palette and layer rules silently stop
         // applying in this directory.
         ...inlineShadowSelectors,

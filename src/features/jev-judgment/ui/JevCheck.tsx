@@ -120,7 +120,7 @@ export function JevCheck({
         {/* Commit tone, not filled: an experimental check must not be the strongest control. */}
         <Chip
           size="lg"
-          tone="accentOnTint"
+          tone="accent"
           hoverSurface="lift"
           ref={sendRef}
           data-testid="jev-send"

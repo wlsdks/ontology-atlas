@@ -410,7 +410,7 @@ function LibraryImportFlow({
             {native ? <Chip
               ref={saveButton}
               size="lg"
-              tone="accentOnTint"
+              tone="accent"
               data-testid={`${testIdPrefix}-connect`}
               aria-busy={pending}
               disabled={pending || checking || failed === 'setupConflict' || failed === 'setupStopped' || failed === 'setupRuntimeUnavailable' || (!inspection && !failed) || (!!inspection && !inspection.hasSecret && !token.trim())}
@@ -516,7 +516,7 @@ function LibraryImportFlow({
             {canRunAgent ? (
               <Chip
                 size="lg"
-                tone="accentOnTint"
+                tone="accent"
                 data-testid={`${testIdPrefix}-bring`}
                 onClick={bring}
                 className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"

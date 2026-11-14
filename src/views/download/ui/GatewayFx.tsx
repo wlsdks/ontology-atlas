@@ -32,7 +32,7 @@ export function GatewayFx() {
     };
     const blobAlphaCeiling = readAlpha('--gateway-fx-blob-alpha', 0.14);
     const dustAlphaCeiling = readAlpha('--gateway-fx-dust-alpha', 0.28);
-    const accentRaw = styles.getPropertyValue('--color-indigo-brand').trim() || '#5e6ad2';
+    const accentRaw = styles.getPropertyValue('--color-indigo-brand').trim() || '#e9e7e0';
     const hexRgb = (hex: string): [number, number, number] => {
       const m = hex.replace('#', '');
       const n = m.length === 3 ? m.split('').map((c) => c + c).join('') : m;

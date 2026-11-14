@@ -186,8 +186,7 @@ export function DocsVaultDocumentPane({
                 shape: 'segment',
                 size: 'lg',
                 active: editing === mode,
-                hoverInk: 'strong',
-                hoverSurface: 'lift',
+                hoverInk: 'secondary',
               })}
             >
               {mode ? t('editorHeader.editTab') : t('editorHeader.previewTab')}

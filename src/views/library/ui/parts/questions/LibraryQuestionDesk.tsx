@@ -161,7 +161,7 @@ function SafeReportMarkdown({ text, sources, onOpenSource, answer = false }: {
           const address = `${citation.path}#${citation.anchor}`;
           return <button type="button" data-source-path={citation.path} data-source-anchor={citation.anchor}
             aria-label={address} onClick={() => onOpenSource(citation.path!, citation.anchor!)}
-            className={controlClass({ shape: 'link', size: 'lg', tone: 'accentOnTint', hoverInk: 'strong', className: answer ? 'inline break-all underline text-body-lg leading-body' : 'inline break-all underline' })}>
+            className={controlClass({ shape: 'link', size: 'lg', tone: 'accent', hoverInk: 'strong', className: answer ? 'inline break-all underline text-body-lg leading-body' : 'inline break-all underline' })}>
             {wikilink?.labelled ? <>{children} · {address}</> : address}
           </button>;
         }
@@ -534,7 +534,7 @@ export function LibraryQuestionDesk({
         onClick={() => setEditingQuestion(true)} data-testid="question-desk-edit-question">{t('editQuestion')}</Chip>
       <Chip tone="muted" onClick={downloadReport} data-testid="question-desk-download-markdown">{t('report.downloadMarkdown')}</Chip>
       <Chip tone="muted" onClick={() => void printReport()} data-testid="question-desk-print-pdf">{t('report.printPdf')}</Chip>
-      <Chip tone="accentOnTint" disabled={!onFileReport || filingReport} onClick={onFileReport ?? undefined} data-testid="question-desk-file-report">
+      <Chip tone="accent" disabled={!onFileReport || filingReport} onClick={onFileReport ?? undefined} data-testid="question-desk-file-report">
         {filingReport ? t('report.filing') : t('report.file')}
       </Chip>
       {navigationActions}
@@ -565,7 +565,7 @@ export function LibraryQuestionDesk({
           onFocusCapture={() => setQuestionFormFocused(true)}
           onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setQuestionFormFocused(false); }}
           className="mb-5 max-w-[var(--measure-doc-column)]">
-          <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-line-a54)]">
+          <div className="flex flex-wrap items-center gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]">
           <Search size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-text-tertiary)]" aria-hidden="true" />
           <Input ref={questionInputRef} frame="bare" size="lg" aria-label={t('questionLabel')} placeholder={t('questionPlaceholder')} value={question} readOnly={jevSending} onChange={(event) => {
             onInvalidateReport();
@@ -678,7 +678,7 @@ export function LibraryQuestionDesk({
               {displayResult.claims.length ? <ul className="mt-3 space-y-2">{displayResult.claims.map((claim, index) => (
                 <li key={`${claim.pageSlug}-${index}`} className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accentOnTint', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenWiki(claim.pageSlug)}>{claim.pageTitle}</button>
+                    <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accent', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenWiki(claim.pageSlug)}>{claim.pageTitle}</button>
                     {claim.citations.length === 0 || claim.citations.some((citation) => ['stale', 'missing'].includes(citationState(claim, citation)))
                       ? <StateBadge tone="warning">{t('reviewBadge')}</StateBadge>
                       : claim.citations.some((citation) => citationState(claim, citation) === 'unmeasured')
@@ -688,7 +688,7 @@ export function LibraryQuestionDesk({
                   <p className="mt-2 text-body leading-body text-[color:var(--color-text-primary)]">{claim.text.replace(INLINE_CITATION, '').trim()}</p>
                   {claim.citations.length ? <div className="mt-2 flex flex-wrap gap-2">{claim.citations.map((citation) => (
                     <div key={`${citation.path}#${citation.anchor}`} className="flex flex-wrap items-center gap-2">
-                      <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accentOnTint', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(citation.path, citation.anchor)}>{citation.path}#{citation.anchor}</button>
+                      <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accent', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(citation.path, citation.anchor)}>{citation.path}#{citation.anchor}</button>
                       <span className="text-caption leading-caption text-[color:var(--color-text-tertiary)]">{t(`sourceState.${citationState(claim, citation)}`)}</span>
                       {vaultRoot ? <Chip aria-disabled={jevPreparing || jevSending} onClick={() => void prepareJev(claim, citation)}>{jevPreparing ? t('jev.checking') : t('jev.check')}</Chip> : null}
                       {jevFinding?.pageSlug === claim.pageSlug && jevFinding.claimText === claim.text && jevFinding.citation.path === citation.path && jevFinding.citation.anchor === citation.anchor
@@ -711,7 +711,7 @@ export function LibraryQuestionDesk({
               <h3 id="desk-source-title" className="text-body font-[var(--font-weight-strong)] leading-body">{t('sourceTitle')}</h3>
               {displayResult.sourceHits.length ? <ul className="mt-3 space-y-2">{displayResult.sourceHits.map((hit) => (
                 <li key={`${hit.path}#${hit.anchor}`} className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
-                  <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accentOnTint', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(hit.path, hit.anchor)}>{hit.path}#{hit.anchor}</button>
+                  <button type="button" className={controlClass({ shape: 'link', size: 'md', tone: 'accent', hoverInk: 'strong', className: 'underline' })} onClick={() => onOpenSource(hit.path, hit.anchor)}>{hit.path}#{hit.anchor}</button>
                   <p className="mt-2 text-body leading-body text-[color:var(--color-text-secondary)]">{hit.text}</p>
                 </li>
               ))}</ul> : <p className="mt-3 text-label leading-label text-[color:var(--color-text-tertiary)]">{t('noSourceHits')}</p>}
