@@ -73,17 +73,6 @@ const HOOK_CONFIGS: ReadonlyArray<{ path: string; approvalGate: boolean }> = Obj
   { path: '.codex/hooks.json', approvalGate: true },
 ]);
 
-/**
- * Rule ids the repository's parity check compares byte for byte. Hook scripts are left out:
- * Codex hooks are adapted from Claude's, so they differ by design.
- */
-const DECLARED_PAIR_RULES: Readonly<Record<string, string>> = Object.freeze({
-  'claude-skills': '.agents/skills',
-  'agents-skills': '.claude/skills',
-  'claude-agents': '.agents/agents',
-  'agents-agents': '.claude/agents',
-});
-
 const PAIR_DRIFT_CODES = new Set([
   'skill-copy-diverged',
   'skill-copy-file-missing',
@@ -91,16 +80,12 @@ const PAIR_DRIFT_CODES = new Set([
   'agent-copy-file-missing',
 ]);
 
-export function declaredPairFor(ruleId: string): string | null {
-  return DECLARED_PAIR_RULES[ruleId] ?? null;
-}
-
 export function isPairDrift(code: string): boolean {
   return PAIR_DRIFT_CODES.has(code);
 }
 
-/** One definition of a guide for both the sentence's count and the guides table. */
-export function isGuideRecord(record: { kind: string }): boolean {
+/** What counts as a guide document in `guideDocumentCount`. */
+function isGuideRecord(record: { kind: string }): boolean {
   /* An exclusion says what an agent may not see, so it is not something the repository tells agents. */
   return record.kind !== 'config' && record.kind !== 'exclusion';
 }
