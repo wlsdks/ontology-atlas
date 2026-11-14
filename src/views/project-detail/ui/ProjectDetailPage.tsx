@@ -5,9 +5,10 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, FileText, FolderSearch, Layers, Waypoints } from "lucide-react";
+import { ArrowLeft, BookOpen, FileText, Layers, Waypoints } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
+import { PAGE_STAGE_FILL, PAGE_TITLE, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
+import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
 import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
@@ -18,12 +19,16 @@ import { MOTION } from "@/shared/motion";
 import {
   Button,
   EmptyState,
+  FeatureStage,
   InlineEditable,
   OntologyMapKindGlyph,
   Tooltip,
+  WaitStage,
+  buttonVariants,
   controlClass,
   useToast,
 } from "@/shared/ui";
+import { cn } from "@/shared/lib/cn";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
@@ -82,10 +87,13 @@ function ProjectDetailShell({
   children,
   dock = null,
   dockOpen = false,
+  fillsHeight = false,
 }: {
   children: ReactNode;
   dock?: ReactNode;
   dockOpen?: boolean;
+  /** A page that is one centred stage stretches its column to the window's height. */
+  fillsHeight?: boolean;
 }) {
   // Below `xl` the open dock covers the page, so the page leaves the Tab order too.
   const dockCoversPage = useViewportBelow(1280) && dockOpen;
@@ -93,13 +101,13 @@ function ProjectDetailShell({
     // The dock is a sticky sibling of `main`: a column from `xl`, an overlay below it.
     <div className="relative flex min-h-full w-full">
       {/* Below `lg` the main reserves the tab bar; from `lg` the frame carries the breath, as `PAGE_FRAME` does. */}
-      <main id="main" tabIndex={-1} inert={dockCoversPage} className="topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-0">
+      <main id="main" tabIndex={-1} inert={dockCoversPage} className={cn("topology-ui-scale min-w-0 flex-1 bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] pt-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] md:px-0 md:pt-12 lg:pb-0", fillsHeight && "flex flex-col")}>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={MOTION.base}
           // A named container: with the dock open the column is narrower than the viewport.
-          className="@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))] lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]"
+          className={cn("@container/project-page mx-auto w-full max-w-[var(--page-max)] md:pr-[max(2.5rem,env(safe-area-inset-right))] md:pl-[max(2.5rem,env(safe-area-inset-left))] lg:pb-[max(3.5rem,env(safe-area-inset-bottom))]", fillsHeight && "flex flex-1 flex-col")}
         >
           {children}
         </motion.div>
@@ -185,39 +193,42 @@ function ProjectDetailState({
 }) {
   const t = useTranslations("projectPages.detail");
   return (
-    <ProjectDetailShell>
+    <ProjectDetailShell fillsHeight>
       <ProjectDetailTopBar slug={slug} />
-      <div className="mx-auto mt-16 w-full max-w-lg">
-        <EmptyState
+      <div className={PAGE_STAGE_FILL}>
+        <FeatureStage
+          data-testid={testId}
           titleAs="h1"
-          tone="solid"
-          align="center"
-          icon={<FolderSearch size={ICON_SIZE.lg} aria-hidden />}
-          /* A heading step, since a sentence stands under it. */
-          title={
-            <span
-              data-testid={testId}
-              className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
-            >
-              {title}
-            </span>
-          }
-          description={description}
+          art={() => (
+            <div className="flex justify-center">
+              <BrandPortrait expression="curious" />
+            </div>
+          )}
+          title={<span className="block text-balance">{title}</span>}
+          body={description}
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Link href={'/projects/'}>
-                <Button type="button" variant="primary" size="sm">
-                  {t("stateBackToWorkspace")}
-                </Button>
+              <Link href={'/projects/'} className={cn(buttonVariants({ variant: "primary", size: "lg" }), "atlas-touch-floor atlas-touch-floor-wide")}>
+                {t("stateBackToWorkspace")}
               </Link>
-              <Link href={'/topology/'}>
-                <Button type="button" variant="outline" size="sm">
-                  {t("stateBackToMap")}
-                </Button>
+              <Link href={'/topology/'} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "atlas-touch-floor atlas-touch-floor-wide")}>
+                {t("stateBackToMap")}
               </Link>
             </div>
           }
         />
+      </div>
+    </ProjectDetailShell>
+  );
+}
+
+function ProjectDetailLoading({ slug }: { slug: string }) {
+  const t = useTranslations("projectPages.detail");
+  return (
+    <ProjectDetailShell fillsHeight>
+      <ProjectDetailTopBar slug={slug} />
+      <div className={cn(PAGE_STAGE_FILL, "relative")}>
+        <WaitStage mark="mascot" delayed data-testid="project-detail-loading" className={PAGE_WAIT_LIFT} title={t("stateLoadingTitle")} />
       </div>
     </ProjectDetailShell>
   );
@@ -355,14 +366,7 @@ export function ProjectDetailPage({
 
   if (!project) {
     if (!resolved) {
-      return (
-        <ProjectDetailState
-          testId="project-detail-loading"
-          title={t("stateLoadingTitle")}
-          description={t("stateLoadingDesc")}
-          slug={slug}
-        />
-      );
+      return <ProjectDetailLoading slug={slug} />;
     }
 
     return (
