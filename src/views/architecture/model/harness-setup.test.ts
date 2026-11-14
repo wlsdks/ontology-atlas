@@ -51,7 +51,10 @@ const REPO: Record<string, string> = {
     },
   }),
   '.codex/hooks.json': JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ command: 'bash .claude/hooks/guard.sh' }] }] } }),
+  '.claude/hooks/helper.sh': '#!/bin/sh\n',
+  '.codex/config.toml': 'model = "o4"\n',
   '.githooks/pre-commit': '#!/bin/sh\npnpm lint\n',
+  '.githooks/lane.mjs': 'export const lane = 1;\n',
   '.github/workflows/ci.yml': 'on: push\njobs:\n  test: {}\n',
 };
 
@@ -61,9 +64,8 @@ beforeAll(async () => {
 });
 
 function labelsIn(section: SetupSectionId, group: SetupGroupId, filter: Parameters<typeof buildHarnessSetup>[1] = null) {
-  const found = buildHarnessSetup(report, filter)
-    .sections.find((entry) => entry.id === section)
-    ?.groups.find((entry) => entry.id === group);
+  const shown = buildHarnessSetup(report, filter).sections.find((entry) => entry.id === section);
+  const found = [...(shown?.groups ?? []), ...(shown?.aside ?? [])].find((entry) => entry.id === group);
   return found?.items.map((item) => item.label) ?? [];
 }
 
@@ -74,6 +76,7 @@ describe('buildHarnessSetup', () => {
     ['context', 'skills', ['.agents/skills/review/SKILL.md', '.claude/skills/review/SKILL.md']],
     ['context', 'subagents', ['.claude/agents/scout.md']],
     ['context', 'mcp', ['.mcp.json']],
+    ['context', 'configs', ['.codex/config.toml', '.codex/hooks.json']],
     ['context', 'ignore', ['.cursorignore']],
     ['context', 'contextHooks', ['.claude/hooks/census.sh']],
     ['guardrails', 'permissions', ['.claude/settings.json']],
@@ -81,6 +84,7 @@ describe('buildHarnessSetup', () => {
     ['verification', 'hooks', ['.claude/hooks/format.sh', '.claude/hooks/gone.sh', 'npx prettier --write .']],
     ['verification', 'scripts', ['lint', 'test:cart']],
     ['verification', 'gitHooks', ['pre-commit']],
+    ['verification', 'unwiredHooks', ['.claude/hooks/helper.sh']],
     ['verification', 'workflows', ['ci.yml']],
   ])('files %s / %s from the scan', (section, group, labels) => {
     expect(labelsIn(section, group).sort()).toEqual(labels);
@@ -143,7 +147,7 @@ describe('buildHarnessSetup — hooks are sorted by the step their event runs in
 
   function groupsOf(setup: ReturnType<typeof buildHarnessSetup>) {
     return setup.sections.flatMap((section) =>
-      [...section.groups, ...(section.other ? [section.other] : [])].map((group) => ({ section: section.id, group })),
+      [...section.groups, ...section.aside].map((group) => ({ section: section.id, group })),
     );
   }
 
@@ -171,7 +175,7 @@ describe('buildHarnessSetup — hooks are sorted by the step their event runs in
   it('keeps an unknown event out of what Verification counts as checks', async () => {
     const setup = await setupOf({ hooks: { Notification: [{ hooks: [{ command: '.claude/hooks/h.sh' }] }] } });
     const verification = setup.sections.find((section) => section.id === 'verification');
-    expect(verification?.other?.items).toHaveLength(1);
+    expect(verification?.aside.map((group) => group.items.length)).toEqual([1]);
     expect(verification?.total).toBe(0);
   });
 
@@ -193,10 +197,11 @@ describe('buildHarnessSetup — hooks are sorted by the step their event runs in
     expect(setup.problems.map((problem) => problem.kind)).toEqual(['hook-missing']);
   });
 
-  it('draws no hook group for a config that names no hooks', async () => {
+  it('draws no event group for a config that names no hooks, and lists its script as unwired', async () => {
     const setup = await setupOf({ hooks: {} });
     const hookGroups = groupsOf(setup).filter(({ group }) => /hooks$/i.test(group.id) && group.id !== 'gitHooks');
-    expect(hookGroups).toEqual([]);
+    expect(hookGroups.map(({ group }) => group.id)).toEqual(['unwiredHooks']);
+    expect(setup.items.get('file:.claude/hooks/h.sh')?.unwired).toBe(true);
   });
 
   it('counts a settings file with only allow rules as allow rules, with no deny or ask', async () => {

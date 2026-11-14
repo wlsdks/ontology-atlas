@@ -34,7 +34,7 @@ test.describe("harness tab", () => {
     await expect(page.locator("#harness-tab-overview")).toHaveAttribute("aria-selected", "true");
 
     await test.step("the three sections name their totals", async () => {
-      await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("13");
+      await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("15");
       await expect(section(page, "guardrails").locator("[data-harness-section-total]")).toContainText("4");
       await expect(section(page, "verification").locator("[data-harness-section-total]")).toContainText("5");
     });
@@ -89,7 +89,7 @@ test.describe("harness tab", () => {
 
     await test.step("the tool filter narrows every list", async () => {
       await page.getByTestId("harness-tool-filter").getByRole("radio", { name: "Codex" }).click();
-      await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("5");
+      await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("7");
       await expect(group(page, "context", "rules")).toHaveCount(0);
       await expect(page.getByTestId("harness-problems").locator('[data-harness-problem="hook-missing"]')).toHaveCount(0);
       await expect(section(page, "verification").locator("[data-harness-section-total]")).toContainText("5");

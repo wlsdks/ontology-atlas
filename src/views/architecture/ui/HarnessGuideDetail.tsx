@@ -82,7 +82,7 @@ function CodexShare({ report, t }: { report: HarnessReport; t: TranslateFn }) {
 }
 
 interface StatusTag {
-  key: 'missing' | 'wired' | 'approval' | 'always' | 'path' | 'allow' | 'ask' | 'deny' | 'copy' | 'imported';
+  key: 'missing' | 'wired' | 'approval' | 'always' | 'path' | 'allow' | 'ask' | 'deny' | 'copy' | 'imported' | 'unwired';
   warning: boolean;
 }
 
@@ -110,6 +110,7 @@ export function statusTags(item: SetupItem): StatusTag[] {
   }
   if (item.differsFrom) tags.push({ key: 'copy', warning: false });
   if (item.importedByClaudeMd) tags.push({ key: 'imported', warning: false });
+  if (item.unwired) tags.push({ key: 'unwired', warning: false });
   return tags;
 }
 
@@ -133,6 +134,8 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
       return { text: t(item.differsFrom === 'codex' ? 'differsFromCodex' : 'differsFromClaude') };
     case 'imported':
       return { text: t('importedByClaudeMd') };
+    case 'unwired':
+      return { text: t('hookUnwired') };
   }
 }
 

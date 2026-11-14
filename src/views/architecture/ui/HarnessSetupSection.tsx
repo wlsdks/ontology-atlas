@@ -210,7 +210,6 @@ export function HarnessSetupSection({
   t: TranslateFn;
 }) {
   const headingId = `harness-section-${section.id}`;
-  const other = section.other;
   return (
     <section
       aria-labelledby={headingId}
@@ -250,18 +249,21 @@ export function HarnessSetupSection({
       ) : (
         <p className="px-2.5 pb-1.5 text-label text-[color:var(--color-text-quaternary)]">{t('sectionNone')}</p>
       )}
-      {other ? (
-        <ul data-harness-other className="mt-1 flex flex-col gap-0.5 border-t border-[color:var(--color-overlay-1)] pt-1">
-          <GroupRow
-            section={section.id}
-            group={other}
-            open={isOpen(other)}
-            selectedKey={selectedKey}
-            showTools={showTools}
-            onToggle={() => onToggle(other)}
-            onSelect={onSelect}
-            t={t}
-          />
+      {section.aside.length > 0 ? (
+        <ul data-harness-aside className="mt-1 flex flex-col gap-0.5 border-t border-[color:var(--color-overlay-1)] pt-1">
+          {section.aside.map((group) => (
+            <GroupRow
+              key={group.id}
+              section={section.id}
+              group={group}
+              open={isOpen(group)}
+              selectedKey={selectedKey}
+              showTools={showTools}
+              onToggle={() => onToggle(group)}
+              onSelect={onSelect}
+              t={t}
+            />
+          ))}
         </ul>
       ) : null}
     </section>

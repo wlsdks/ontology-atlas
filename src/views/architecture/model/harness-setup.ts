@@ -23,12 +23,14 @@ export type SetupGroupId =
   | 'skills'
   | 'subagents'
   | 'mcp'
+  | 'configs'
   | 'ignore'
   | 'contextHooks'
   | 'permissions'
   | 'blockingHooks'
   | 'hooks'
   | 'otherHooks'
+  | 'unwiredHooks'
   | 'scripts'
   | 'gitHooks'
   | 'workflows';
@@ -61,6 +63,8 @@ export interface SetupItem {
   permissionCounts?: PermissionCounts;
   /** The text that put the item here, quoted from its file. */
   declaration?: string;
+  /** A hook script on disk that no hook config names. */
+  unwired?: boolean;
   /** Root AGENTS.md when CLAUDE.md imports it: Claude Code reads it through that import. */
   importedByClaudeMd?: boolean;
   /**
@@ -87,8 +91,11 @@ export interface SetupGroup {
 export interface SetupSection {
   id: SetupSectionId;
   groups: SetupGroup[];
-  /** Hooks on an event no step names; shown beside Verification, never counted as its checks. */
-  other: SetupGroup | null;
+  /**
+   * Hooks on an event no step names, and hook scripts no config names: shown under Verification,
+   * never counted as its checks.
+   */
+  aside: SetupGroup[];
   total: number;
 }
 
@@ -122,7 +129,7 @@ export interface HarnessSetup {
 export type ToolFilter = AgentTool | null;
 
 const SECTION_GROUPS: Readonly<Record<SetupSectionId, readonly SetupGroupId[]>> = Object.freeze({
-  context: ['instructions', 'rules', 'skills', 'subagents', 'mcp', 'ignore', 'contextHooks'],
+  context: ['instructions', 'rules', 'skills', 'subagents', 'mcp', 'configs', 'ignore', 'contextHooks'],
   guardrails: ['permissions', 'blockingHooks'],
   verification: ['hooks', 'scripts', 'gitHooks', 'workflows'],
 });
@@ -133,8 +140,36 @@ const RECORD_GROUP: Readonly<Record<string, SetupGroupId>> = Object.freeze({
   skill: 'skills',
   agent: 'subagents',
   'mcp-config': 'mcp',
+  config: 'configs',
   exclusion: 'ignore',
 });
+
+const VERIFICATION_ASIDE: readonly SetupGroupId[] = ['otherHooks', 'unwiredHooks'];
+
+const HOOK_SCRIPT_DIR = /^\.(?:claude|codex)\/hooks\//;
+
+/** Git runs only files with these names; anything else in `.githooks/` is a helper they call. */
+const GIT_HOOK_NAMES: ReadonlySet<string> = new Set([
+  'applypatch-msg',
+  'pre-applypatch',
+  'post-applypatch',
+  'pre-commit',
+  'pre-merge-commit',
+  'prepare-commit-msg',
+  'commit-msg',
+  'post-commit',
+  'pre-rebase',
+  'post-checkout',
+  'post-merge',
+  'pre-push',
+  'pre-auto-gc',
+  'post-rewrite',
+  'reference-transaction',
+  'push-to-checkout',
+  'sendemail-validate',
+  'fsmonitor-watchman',
+  'post-index-change',
+]);
 
 const HOOK_GROUP: Readonly<Record<HookEventStep, SetupGroupId>> = Object.freeze({
   context: 'contextHooks',
@@ -293,7 +328,7 @@ function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' 
     scripts: report.checks.scripts.map((name) =>
       plain(`script:${name}`, name, `package.json#${name}`, scripts.get(`package.json#${name}`)?.declaration),
     ),
-    gitHooks: report.gitHookFiles.map((name) =>
+    gitHooks: report.gitHookFiles.filter((name) => GIT_HOOK_NAMES.has(name)).map((name) =>
       plain(`githook:${name}`, name, `.githooks/${name}`, gitHooks.get(`.githooks/${name}`)?.declaration),
     ),
     workflows: report.workflowFiles.map((path) =>
@@ -365,11 +400,20 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
     byGroup.set(group, [...(byGroup.get(group) ?? []), item]);
   };
 
+  const permissions = permissionItems(report);
+  const shownAsPermissions = new Set(permissions.map((item) => item.path));
+  const namedScripts = new Set(report.hookGroups.flatMap((group) => group.hooks.map((hook) => hook.ref.path)));
   for (const record of report.analysis.records) {
+    if (HOOK_SCRIPT_DIR.test(record.path)) {
+      /* A named script is listed under its event; one no config names is listed once, as such. */
+      if (!namedScripts.has(record.path)) push('unwiredHooks', { ...fileItem(record, report, rules, pairs), unwired: true });
+      continue;
+    }
+    if (shownAsPermissions.has(record.path)) continue;
     const group = RECORD_GROUP[record.kind];
     if (group) push(group, fileItem(record, report, rules, pairs));
   }
-  for (const item of permissionItems(report)) push('permissions', item);
+  for (const item of permissions) push('permissions', item);
   for (const { step, item } of hookItems(report)) push(HOOK_GROUP[step], item);
   const checks = repositoryChecks(report);
   for (const item of checks.scripts) push('scripts', item);
@@ -389,7 +433,7 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
     return {
       id,
       groups,
-      other: id === 'verification' ? visibleGroup('otherHooks') : null,
+      aside: id === 'verification' ? VERIFICATION_ASIDE.map(visibleGroup).filter((group) => group !== null) : [],
       total: groups.reduce((sum, group) => sum + group.items.length, 0),
     };
   });
