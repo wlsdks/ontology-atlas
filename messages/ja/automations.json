@@ -8,7 +8,6 @@
   "changeFailed": "変更を保存できませんでした。もう一度お試しください。",
   "checked": "{count}件の文書を確認しました。",
   "earlierRuns": "過去の実行・{count}",
-  "openFolderTitle": "フォルダを開くとレビューを予約できます",
   "openFolderDescription": "スケジュールと実行履歴は、開いたフォルダの中に保存されます。",
   "staleLabel": "要レビュー",
   "writtenLabel": "更新したファイル",
@@ -30,13 +29,13 @@
   },
   "title": "自動化",
   "lede": "定期的なレビューを予約し、各回の結果を確認できます。Atlasを開いている間、このコンピュータで実行されます。",
+  "stageTitle": "決めた間隔で実行されるレビュー",
   "tabsAria": "自動化の種類",
   "tabs": {
     "ontology": "オントロジー",
     "documents": "文書"
   },
   "indexAria": "このフォルダのスケジュール",
-  "appRequiredTitle": "自動化はデスクトップアプリで実行されます",
   "appRequiredDescription": "アプリでフォルダを開くと、この画面でそのままスケジュールを作れます。",
   "getApp": "アプリを入手",
   "loadingTitle": "自動点検を読み込み中",
@@ -127,8 +126,6 @@
         "body": "何も変更しません。各提案を確認し、マップ上でご自身で適用します。"
       }
     },
-    "emptyTitle": "オントロジーレビューはまだ予約されていません",
-    "emptyDescription": "必要なのは名前と頻度だけです。重点エリアは任意です。",
     "preview": {
       "title": "スケジュール",
       "name": "名前",
@@ -165,8 +162,6 @@
         "body": "承認済みの資料室の範囲内にあるソースとWikiの下書きだけです。オントロジーは変更しません。"
       }
     },
-    "emptyTitle": "文書の実行はまだ予約されていません",
-    "emptyDescription": "ページごとのレビューと実行履歴の全体は、資料室で確認できます。",
     "preview": {
       "title": "スケジュール",
       "name": "名前",
