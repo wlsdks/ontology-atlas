@@ -35,7 +35,6 @@
     "stateInvalidTitle": "We don't know which project this is",
     "stateInvalidDesc": "The address is missing a project name. Pick one from the list.",
     "stateLoadingTitle": "Loading project",
-    "stateLoadingDesc": "One moment.",
     "stateNotFoundTitle": "This project isn't in the current folder",
     "stateNotFoundDesc": "We couldn't find the project this address points to in the folder you have open. It may be a link from another folder, or the document may have moved.",
     "stateBackToWorkspace": "Project list",

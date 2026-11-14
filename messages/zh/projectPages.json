@@ -35,7 +35,6 @@
     "stateInvalidTitle": "无法确定是哪个项目",
     "stateInvalidDesc": "地址中缺少项目名称。请从列表中选择一个。",
     "stateLoadingTitle": "正在载入项目",
-    "stateLoadingDesc": "请稍候。",
     "stateNotFoundTitle": "当前文件夹中没有这个项目",
     "stateNotFoundDesc": "在你打开的文件夹中找不到此地址指向的项目。可能是来自其他文件夹的链接，也可能是文档已被移动。",
     "stateBackToWorkspace": "项目列表",
