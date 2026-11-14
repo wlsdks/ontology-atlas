@@ -91,18 +91,14 @@ export function TopologyHexBoardSurface({
     "no-paths": t("evidenceNoPaths"),
   };
 
-  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ staleOnly, focused, band, relief: tilted, dependentsMax }) => (
+  const legend: ComponentProps<typeof OntologyHexBoardMap>["legend"] = ({ focused, canals, relief: tilted, dependentsMax }) => (
     <div
       data-testid="hex-board-legend"
       data-evidence-availability={evidence.availability}
       className="pointer-events-none flex max-w-full flex-col items-center gap-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
     >
-      {tilted ? (
-        <span data-testid="hex-board-relief-legend" className="text-center">
-          {dependentsMax > 0 ? tr("legend") : tr("legendNone")}
-        </span>
-      ) : null}
       <div data-testid="hex-board-legend-marks" className="flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        {tilted ? <span data-testid="hex-board-relief-legend">{dependentsMax > 0 ? tr("legend") : tr("legendNone")}</span> : null}
         <span className="flex items-center gap-1.5">
           <svg aria-hidden width="46" height="14" viewBox="0 0 46 14">
             {[0, 1, 2, 3, 4].map((i) => (
@@ -152,14 +148,7 @@ export function TopologyHexBoardSurface({
               {t("legendUsers")}
             </span>
           </>
-        ) : band !== "regions" ? (
-          <span className="flex items-center gap-1.5">
-            <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
-              <line x1="7" y1="7" x2="17" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-indigo-bright)" }} />
-            </svg>
-            {t("legendNotches")}
-          </span>
-        ) : !staleOnly ? (
+        ) : canals ? (
           <span className="flex items-center gap-1.5">
             <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
               <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-hex-canal)" }} />

@@ -93,8 +93,6 @@ export interface HexDrawState {
   /** Region nameplate words for the far band: name plus "caps · ◐ stale". */
   plateSub: ReadonlyMap<string, string>;
   routes: readonly HexDrawRoute[];
-  /** Edge ticks at rest: capability → sides (0–5) facing regions it relies on. */
-  ports: ReadonlyMap<string, readonly number[]>;
   /** Arrival: ms since the board first drew, or null when it has fully arrived. */
   arrivalMs: number | null;
   reducedMotion: boolean;

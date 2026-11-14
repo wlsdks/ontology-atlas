@@ -136,7 +136,6 @@ describe("hex board stale-only paint", () => {
         projectMeta: "91 문서",
         plateSub: new Map(),
         routes: [],
-        ports: new Map(),
         arrivalMs: null,
         reducedMotion: false,
         sweep: 0.4,

@@ -20,7 +20,6 @@
     "legendStale": "古い",
     "legendUnknown": "不明",
     "legendCanals": "ドメイン間の依存 · 太いほど関係が多い",
-    "legendNotches": "切れ込み＝依存先のドメインに面した辺",
     "legendNeeds": "依存先",
     "legendUsers": "依存元",
     "evidenceMeasured": "Gitの履歴から根拠を読み取りました：ケイパビリティ{total}件中{stale}件が古い",

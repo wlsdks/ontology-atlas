@@ -33,7 +33,7 @@ import {
   hexGutter,
 } from "../model/board/hex-board";
 import { SQRT3 } from "../model/board/hex-grid";
-import { buildHexLattice, closedNodes, HexFocusRoutes, layCanals, type HexRouteJob } from "../model/board/hex-router";
+import { buildHexLattice, closedNodes, HexFocusRoutes, type HexRoute, type HexRouteJob } from "../model/board/hex-router";
 import { buildBoardScene, isSlabBand, reliefLiftPx } from "../board/board-scene";
 import { drawBoard } from "../board/board-paint";
 import type { PaintedFace } from "../board/board-geometry";
@@ -85,7 +85,7 @@ export interface OntologyHexBoardMapProps {
   onDrawnCountChange?: (drawn: number) => void;
   canvasLabel?: string;
   listLabel?: string;
-  legend?: (state: { staleOnly: boolean; focused: boolean; band: HexBand; relief: boolean; dependentsMax: number }) => ReactNode;
+  legend?: (state: { focused: boolean; canals: boolean; relief: boolean; dependentsMax: number }) => ReactNode;
   reducedMotion?: boolean;
   arrivedByMorph?: boolean;
   navigationSpeed?: MapNavigationSpeed;
@@ -98,11 +98,19 @@ const PAN_KEEP = 160;
 /** Chrome that moves with a selection (INDEX folding or opening, the inspector) has settled by then. */
 const CHROME_SETTLE_MS = 450;
 const MIRROR_REST_MS = 120;
-/** Canals shown in the far band (spec §7). */
-const FAR_CANALS = 14;
+/** Domain-to-domain canals drawn at rest, at every band (spec §7). */
+const REST_CANALS = 14;
 const ROUTE_BUDGET_MS = 4;
+/** Canals avoid each other's lanes harder than focus routes do, as `layCanals` lays them. */
+const CANAL_OTHER_PENALTY = 1.8;
 
 type FocusJob = HexRouteJob<"need" | "use" | "need-inside">;
+type CanalJob = HexRouteJob<"canal">;
+interface CanalPlan {
+  jobs: CanalJob[];
+  /** `from>to` domain ids → the flow a laid route draws. */
+  flows: Map<string, { count: number; twoWay: boolean }>;
+}
 interface FocusPlan {
   lit: Set<string> | null;
   jobs: FocusJob[];
@@ -150,14 +158,17 @@ const ROUTE_CLEAR = 10;
 const FOOTER_CLEAR = 8;
 
 /**
- * The room ends above the footer's real top: the reserve `readHexRoom` predicts for a glide
- * holds a one-line legend, and a legend that wraps would otherwise sit over the lowest tiles.
+ * The board rests in the room the glide predicted (`readHexRoom`). Only when its lowest tiles, at
+ * the resting pitch, would reach a footer that wrapped past that reserve, and a shorter room lifts
+ * them clear, does it rest in that shorter room; a board too large for either stays as predicted.
  */
-function roomAboveFooter(room: Rect, footerTop: number | null): Rect {
-  if (footerTop == null) return room;
-  const bottom = footerTop - FOOTER_CLEAR;
-  if (room.y + room.height <= bottom) return room;
-  return { ...room, height: Math.max(80, Math.round(bottom - room.y)) };
+function restCameraAboveFooter(layout: HexBoardLayout, room: Rect, footerTop: number | null, pitch: number): Camera {
+  const pivot = room.y + room.height / 2;
+  const lowest = (c: Camera) => pivot + (c.oy + layout.bounds.maxY * c.R - pivot) * Math.cos(pitch);
+  const rest = hexRestCamera(layout, room);
+  if (footerTop == null || lowest(rest) <= footerTop - FOOTER_CLEAR) return rest;
+  const lifted = hexRestCamera(layout, { ...room, height: Math.max(80, Math.round(footerTop - FOOTER_CLEAR - room.y)) });
+  return lowest(lifted) <= footerTop - FOOTER_CLEAR ? lifted : rest;
 }
 
 /** Where routes may run, in the board's unit space, for one camera. */
@@ -219,6 +230,7 @@ export function OntologyHexBoardMap({
   const footerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [room, setRoom] = useState<Rect | null>(null);
+  const [footerTop, setFooterTop] = useState<number | null>(null);
   const [staleOnlyPressed, setStaleOnly] = useState(false);
   const staleOnly = evidenceMeasured && staleOnlyPressed;
   const [regionsOnly, setRegionsOnly] = useState(false);
@@ -365,31 +377,30 @@ export function OntologyHexBoardMap({
     );
   }, [lattice, routeFrame]);
 
-  const canalRoutes = useMemo(() => {
-    if (!layout || !lattice || band !== "regions") return [];
-    return layCanals(layout, lattice, blocked, FAR_CANALS).map(
-      (route): HexDrawRoute => ({ points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: route.count, twoWay: route.twoWay, stub: route.stub }),
-    );
-  }, [layout, lattice, blocked, band]);
-
-  /** Edge ticks: a capability's notch toward each region it relies on. */
-  const ports = useMemo(() => {
-    const m = new Map<string, number[]>();
-    if (!layout) return m;
-    for (const dep of layout.dependencies) {
-      const from = layout.byId.get(dep.from);
-      const to = layout.byId.get(dep.to);
-      if (!from || !to || from.kind !== "capability" || !to.domainId || to.domainId === from.domainId) continue;
-      const seed = layout.byId.get(to.domainId);
-      if (!seed) continue;
-      const a = Math.atan2(seed.y - from.y, seed.x - from.x);
-      const side = (((Math.round((a - Math.PI / 6) / (Math.PI / 3)) % 6) + 6) % 6);
-      const list = m.get(from.id) ?? [];
-      if (!list.includes(side)) list.push(side);
-      m.set(from.id, list);
+  /** The resting canals as routing jobs, laid a few per frame inside the routing budget. */
+  const canalPlan = useMemo((): CanalPlan => {
+    const plan: CanalPlan = { jobs: [], flows: new Map() };
+    if (!layout) return plan;
+    const regionById = new Map(layout.regions.map((r) => [r.domainId, r] as const));
+    for (const flow of layout.canals.slice(0, REST_CANALS)) {
+      const a = regionById.get(flow.fromDomain);
+      const b = regionById.get(flow.toDomain);
+      if (!a || !b) continue;
+      const bundle = `${a.domainId}>${b.domainId}`;
+      plan.jobs.push({ from: [a.domainId, ...a.capabilityIds], to: [b.domainId, ...b.capabilityIds], bundle, role: "canal" });
+      plan.flows.set(bundle, { count: flow.count, twoWay: flow.twoWay });
     }
-    return m as ReadonlyMap<string, readonly number[]>;
+    return plan;
   }, [layout]);
+  const canalsRef = useRef(new HexFocusRoutes<"canal">());
+  const canalOf = useCallback(
+    (route: HexRoute): HexDrawRoute => {
+      const domainOf = (id: string) => layout?.byId.get(id)?.domainId ?? id;
+      const flow = canalPlan.flows.get(`${domainOf(route.sourceId)}>${domainOf(route.targetId)}`);
+      return { points: route.points, nodes: route.nodes, sourceId: route.sourceId, targetId: route.targetId, role: "canal", count: flow?.count ?? 1, twoWay: flow?.twoWay ?? false, stub: route.stub };
+    },
+    [layout, canalPlan],
+  );
 
   /** Who stays lit, and the focus routes, for the selection (or the hover when nothing is selected). */
   const focus = useMemo((): FocusPlan => {
@@ -449,7 +460,10 @@ export function OntologyHexBoardMap({
   }, [room, size]);
 
   /* ── camera ─────────────────────────────────────────────────────────── */
-  const restCamera = useCallback((): Camera | null => (layout && room ? hexRestCamera(layout, room) : null), [layout, room]);
+  const restCamera = useCallback(
+    (): Camera | null => (layout && room ? restCameraAboveFooter(layout, room, footerTop, relief ? RELIEF_PITCH_REST : 0) : null),
+    [layout, room, footerTop, relief],
+  );
 
   const clampCamera = useCallback(
     (c: Camera): Camera => {
@@ -586,14 +600,19 @@ export function OntologyHexBoardMap({
       if (!ctx) return false;
       const dpr = window.devicePixelRatio || 1;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const hovering = !selectedId && !!hoverId && !staleOnly;
       let routes: HexDrawRoute[] = [];
+      const routeDeadline = performance.now() + ROUTE_BUDGET_MS;
       if (lattice && focus.jobs.length > 0) {
-        const laid = focusRoutesRef.current.lay(lattice, focus, focus.jobs, blocked, 1.15, performance.now() + ROUTE_BUDGET_MS);
+        const laid = focusRoutesRef.current.lay(lattice, focus, focus.jobs, blocked, 1.15, routeDeadline);
         routes = [...laid.routes];
         if (laid.pending) again = true;
       } else focusRoutesRef.current.clear();
-      if (!focus.lit && !hovering && currentBand === "regions") routes = canalRoutes.slice(0, FAR_CANALS);
+      // The resting canals fade with the dim, so a selection or stale-only lets them step back.
+      if (lattice && dim.t < 1) {
+        const laid = canalsRef.current.lay(lattice, canalPlan, canalPlan.jobs, blocked, CANAL_OTHER_PENALTY, routeDeadline);
+        routes = [...routes, ...laid.routes.map(canalOf)];
+        if (laid.pending) again = true;
+      }
       const { stats, textBoxes, plateBoxes } = drawBoard(
         ctx,
         layout,
@@ -619,7 +638,6 @@ export function OntologyHexBoardMap({
           projectMeta: labels.projectMeta,
           plateSub,
           routes,
-          ports,
           arrivalMs,
           reducedMotion,
           sweep,
@@ -652,7 +670,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, evidenceMeasured, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera, pose],
+    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, evidenceMeasured, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalPlan, canalOf, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera, pose],
   );
 
   const paintRef = useRef(paint);
@@ -698,25 +716,28 @@ export function OntologyHexBoardMap({
   useLayoutEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
+    // The legend resizing is not a new room: it only moves the footer's top.
+    const readFooter = () => {
+      const footer = footerRef.current?.getBoundingClientRect();
+      setFooterTop(footer ? Math.round(footer.top - wrap.getBoundingClientRect().top) : null);
+    };
     const read = () => {
       const chrome = mapChromeOf(canvasRef.current);
       chromeRef.current = chrome;
       const r = wrap.getBoundingClientRect();
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
+      readFooter();
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const footer = footerRef.current?.getBoundingClientRect();
-      const predicted = readHexRoom(canvasRef.current, r.width, r.height, wrap);
-      const next = roomAboveFooter(predicted, footer ? footer.top - r.top : null);
-      // A footer that grew always lifts the floor, however little: the slack is for the glide's prediction.
-      const lifted = (prev: Rect | null) => next !== predicted && prev != null && next.y + next.height < prev.y + prev.height;
-      setRoom((prev) => (roomMovesRest(prev, next) || lifted(prev) ? next : prev));
+      const next = readHexRoom(canvasRef.current, r.width, r.height, wrap);
+      setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
     read();
     const ro = new ResizeObserver(read);
     ro.observe(wrap);
-    if (footerRef.current) ro.observe(footerRef.current);
+    const footerObserver = new ResizeObserver(readFooter);
+    if (footerRef.current) footerObserver.observe(footerRef.current);
     /*
      * INDEX folding or opening changes the free map without resizing the board (it floats
      * over it). Once its transition is over, re-read the room and lay the routes again. A
@@ -737,6 +758,7 @@ export function OntologyHexBoardMap({
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-topology-index"] });
     return () => {
       ro.disconnect();
+      footerObserver.disconnect();
       mo.disconnect();
       if (settle != null) window.clearTimeout(settle);
     };
@@ -1323,7 +1345,7 @@ export function OntologyHexBoardMap({
             {labels.relief}
           </Chip>
         </div>
-        {legend?.({ staleOnly, focused: !!selectedId, band, relief, dependentsMax: metric.capabilityMax })}
+        {legend?.({ focused: !!selectedId, canals: canalPlan.jobs.length > 0 && !staleOnly, relief, dependentsMax: metric.capabilityMax })}
       </div>
       {tileList}
     </div>

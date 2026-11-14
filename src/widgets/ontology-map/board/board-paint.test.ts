@@ -144,7 +144,6 @@ function stateFor(over: Partial<HexDrawState> = {}): HexDrawState {
     projectMeta: null,
     plateSub: new Map(),
     routes: [],
-    ports: new Map(),
     arrivalMs: null,
     reducedMotion: false,
     sweep: null,

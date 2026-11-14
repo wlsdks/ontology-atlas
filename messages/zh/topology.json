@@ -20,7 +20,6 @@
     "legendStale": "过时",
     "legendUnknown": "未知",
     "legendCanals": "领域间依赖 · 越粗关系越多",
-    "legendNotches": "缺口 = 朝向所依赖的领域",
     "legendNeeds": "依赖",
     "legendUsers": "被依赖",
     "evidenceMeasured": "已从 Git 历史读取依据：{total} 个能力中 {stale} 个过时",
