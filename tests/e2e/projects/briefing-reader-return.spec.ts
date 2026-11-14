@@ -53,7 +53,7 @@ test('retains the expanded source list and original return row across routes', a
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByTestId('briefing-originals').click();
   const sources = page.getByTestId('briefing-sources');
-  await sources.getByRole('button', { name: /Read \d+ more sources/ }).click();
+  await sources.getByRole('button', { name: /^Show \d+ more$/ }).click();
   const row = sources.locator('[data-control="row"]').nth(44);
   const before = await row.evaluate(element => {
     const main = element.closest('main')!;

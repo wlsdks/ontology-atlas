@@ -61,7 +61,7 @@ test('keeps progress and Stop reachable while reading Code', async ({ page }) =>
   await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
   const stop = page.getByRole('button', { name: 'Stop', exact: true });
   await expect(stop).toBeVisible();
-  await expect(page.getByTestId('briefing-narrative')).not.toContainText('This period explanation is partial.');
+  await expect(page.getByTestId('briefing-narrative')).not.toContainText('This summary is partial');
   await stop.click();
   await expect.poll(() => calls(page, 'llm_chat_cancel').then(values => values.length)).toBe(1);
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { release: () => void } }).__briefingProbe.release(); });
@@ -101,7 +101,7 @@ test('can enrich a commit-only explanation with newly fetched PR descriptions', 
   await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect(page.getByTestId('briefing-theme')).toBeVisible();
   await readPrs(page);
-  await expectCoverage(page, 'Prepare a new plan before continuing.');
+  await expectCoverage(page, 'Prepare a new plan to continue.');
   await reviewSummary(page);
   await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect(page.getByTestId('briefing-theme')).toContainText('53 ms and 57 ms');
@@ -121,7 +121,7 @@ test('invalidates a local explanation when empty PR lookup coverage changes', as
   await expect(page.getByTestId('briefing-theme')).toBeVisible();
   await setBriefingMode(page, 'pr-empty');
   await readPrs(page);
-  await expectCoverage(page, 'Prepare a new plan before continuing.');
+  await expectCoverage(page, 'Prepare a new plan to continue.');
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
 });
 
@@ -208,10 +208,10 @@ for (const mode of ['model-post-audit', 'model-finalize-audit']) test(`does not 
   await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   const error = page.getByTestId('briefing-error');
   await expect(error).toHaveAttribute('data-briefing-error', 'auditFailed');
-  await expect(error).toContainText('This request may have been sent.');
+  await expect(error).toContainText('The request may already have been sent.');
   await expect(error).not.toContainText('No new analysis was sent');
   await expect(page.getByTestId('briefing-theme')).toHaveCount(0);
   await openCoverage(page);
-  await expectCoverage(page, '3 delivery unconfirmed');
+  await expectCoverage(page, '3 not confirmed as delivered');
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
 });

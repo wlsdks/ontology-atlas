@@ -46,11 +46,11 @@ test('a changed evidence version blocks source opening and copying; session fold
   await install(page);await inspect(page);
   await page.getByRole('button',{name:'Hide for now',exact:true}).first().click();
   await expect(page.getByTestId('gray-area-missing-link')).toHaveCount(0);
-  await page.getByRole('button',{name:/Restore 1 folded/}).click();
+  await page.getByRole('button',{name:/Show 1 hidden suggestion/}).click();
   await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await page.evaluate(()=>{(window as unknown as {__gray:{current:boolean}}).__gray.current=false;});
   await page.getByRole('button',{name:'Copy prompt',exact:true}).first().click();
-  await expect(page.getByTestId('gray-area-inspector')).toContainText('source, meaning or folder binding changed');
+  await expect(page.getByTestId('gray-area-inspector')).toContainText('the ontology or the folder connection changed');
   await expect(page.getByRole('button',{name:'Copy prompt',exact:true}).first()).toBeDisabled();
   await expect(page.getByTestId('gray-area-source-witness')).toHaveCount(0);
 });
@@ -86,7 +86,7 @@ test('source invalidation at a low action reveals focused recovery',async({page}
   await expect(page.getByTestId('gray-area-source-witness')).toBeVisible();
   await page.evaluate(()=>{(window as unknown as {__gray:{current:boolean}}).__gray.current=false;});
   await page.getByRole('button',{name:'Copy prompt',exact:true}).first().click();
-  const recovery=page.getByTestId('gray-area-inspector').getByRole('status').filter({hasText:'source, meaning or folder binding changed'});
+  const recovery=page.getByTestId('gray-area-inspector').getByRole('status').filter({hasText:'the ontology or the folder connection changed'});
   await expect(recovery).toBeFocused();
   await expect.poll(()=>recovery.evaluate(e=>{
     const r=e.getBoundingClientRect();const body=e.closest('[data-testid="gray-area-body"]')!.getBoundingClientRect();
@@ -120,7 +120,7 @@ test('the inspector, candidate detail, scope and source open with nonempty WCAG 
   await audit('scope disclosure');
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
   await expect(page.getByRole('region',{name:'Code excerpt',exact:true})).toBeFocused();
-  await audit('source excerpt');
+  await audit('code excerpt');
 });
 
 test('a comparison from the saved Hex view draws both elements on the flat recorded path',async({page})=>{

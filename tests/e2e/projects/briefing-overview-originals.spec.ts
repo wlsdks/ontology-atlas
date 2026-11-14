@@ -12,7 +12,7 @@ test('opens a recorded original without starting a model or PR request and retur
     await page.getByTestId('briefing-mixed').click();
   const recent = page.getByTestId('briefing-recent-originals');
   await expect(recent).toBeVisible();
-  await expect(page.getByText('PR descriptions not checked', { exact: false })).toBeVisible();
+  await expect(page.getByText('PR descriptions not read', { exact: false })).toBeVisible();
   const row = recent.getByRole('button', { name: /author claim: changed checkout/ });
   await expect(row).toBeVisible();
   await row.click();
@@ -62,7 +62,7 @@ test('returns to a visible original when saved PRs arrive and preserves both loo
   await expect(originalRow).toBeVisible();
   await expect(originalRow).toBeFocused();
   await expect(page.getByText('PR lookup did not finish', { exact: true })).toBeVisible();
-  await expect(page.getByText('This PR could not be tied to the selected history.', { exact: false })).toBeVisible();
+  await expect(page.getByText('This PR could not be matched to the selected commits.', { exact: false })).toBeVisible();
 });
 
 test('shows incomplete lookup and unlinked PR gaps together for a fresh lookup', async ({ page }) => {
@@ -79,7 +79,7 @@ test('shows incomplete lookup and unlinked PR gaps together for a fresh lookup',
     await page.getByTestId('briefing-mixed').click();
   await page.getByRole('button', { name: 'Read GitHub PR descriptions', exact: true }).click();
   await expect(page.getByText('PR lookup did not finish', { exact: true })).toBeVisible();
-  await expect(page.getByText('This PR could not be tied to the selected history.', { exact: false })).toBeVisible();
+  await expect(page.getByText('This PR could not be matched to the selected commits.', { exact: false })).toBeVisible();
 });
 
 test('keeps recorded originals reachable across the responsive overview', async ({ browser, baseURL }) => {

@@ -13,7 +13,7 @@ test('keeps reading modes exclusive and loads further originals into keyboard fo
   await expect(sources).toBeVisible();
   await expect(page.getByTestId('briefing-summary')).not.toBeVisible();
   await expect(page.getByTestId('briefing-ready')).not.toBeVisible();
-  await sources.getByRole('button', { name: /Read \d+ more sources/ }).click();
+  await sources.getByRole('button', { name: /^Show \d+ more$/ }).click();
   await expect(sources.locator('[data-control="row"]').nth(40)).toBeFocused();
   const next = sources.locator('[data-control="row"]').nth(44);
   const before = await next.evaluate(element => {

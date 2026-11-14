@@ -22,7 +22,7 @@ test('reads grouped source evidence and actual changed lines without leaving Atl
   await enter(page);
   const group = page.getByTestId('briefing-group-capabilities/checkout');
   await group.click();
-  await expect(page.getByRole('region', { name: 'Commits and PRs', exact: true })).toBeFocused();
+  await expect(page.getByRole('region', { name: 'Code changes', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('-limit = 10\n+limit = 20');
   await expect(page.getByTestId('briefing-group-unmapped')).toBeHidden();
@@ -81,10 +81,10 @@ for (const mode of ['binary', 'truncated', 'revert', 'patch-error'] as const) {
     await setBriefingMode(page, mode);
     await page.getByTestId('briefing-group-capabilities/checkout').click();
     await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
-    const evidence = page.getByRole('region', { name: 'Commits and PRs', exact: true });
+    const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
     if (mode === 'binary') await expect(evidence).toContainText('binary');
     if (mode === 'truncated') await expect(evidence).toContainText('32 KiB');
-    if (mode === 'revert') await expect(evidence).toContainText('no differences');
+    if (mode === 'revert') await expect(evidence).toContainText('same in both commits');
     if (mode === 'patch-error') await expect(page.getByRole('button', { name: 'Retry diff', exact: true })).toBeVisible();
     await page.getByRole('radio', { name: 'Commits', exact: true }).click();
     await expect(evidence).toBeHidden();
@@ -149,7 +149,7 @@ test('narrows unmapped evidence by literal source area and expands every counted
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByTestId('briefing-group-unmapped').click();
   await page.getByRole('button', { name: 'mcp · 61', exact: true }).click();
-  const evidence = page.getByRole('region', { name: 'Commits and PRs', exact: true });
+  const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
   await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(40);
   await evidence.getByRole('button', { name: 'Show 21 more files', exact: true }).click();
   await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(61);
@@ -196,7 +196,7 @@ test('opens a literal source area directly from the overview and returns focus t
   await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   const area = page.getByTestId('briefing-area-mcp');
   await area.click();
-  const evidence = page.getByRole('region', { name: 'Commits and PRs', exact: true });
+  const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
   await expect(evidence.getByRole('heading', { name: 'mcp', exact: true })).toBeVisible();
   await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(40);
   await expect(evidence.getByRole('button', { name: 'Show diff: 한글/unmapped.ts', exact: true })).toHaveCount(0);

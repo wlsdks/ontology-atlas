@@ -39,7 +39,7 @@ test('reads all fitting records once, then builds an overview from original pass
   await page.getByRole('button', { name: 'Request details', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('one at a time');
   await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
-  await expectCoverage(page, 'All planned parts are finished.');
+  await expectCoverage(page, 'All parts are done.');
   const requests = await calls(page, 'source_briefing_chat');
   const overview = JSON.parse(String(requests.at(-1)!.args.packet));
   expect(overview.scope).toBe('overview-from-selected-original-passages');
@@ -49,7 +49,7 @@ test('reads all fitting records once, then builds an overview from original pass
   expect(String(requests.at(-1)!.args.packet)).not.toContain('The author reports 131 passing tests.');
   expect(requests.every(request => (request.args.expectedCapacity as { inputByteLimit: number }).inputByteLimit === 1800)).toBe(true);
   expect(await page.evaluate(() => (window as unknown as { __briefingProbe: { peak: number } }).__briefingProbe.peak)).toBe(1);
-  await expectCoverage(page, '11 of 11 source records sent');
+  await expectCoverage(page, '11 of 11 commits and PRs sent');
   await openCoverage(page);
   const parts = page.getByRole('combobox', { name: 'Read part summaries', exact: true });
   await parts.click();
@@ -80,7 +80,7 @@ test('keeps completed parts after stop and resumes without resending them', asyn
   await expect(page.getByRole('button', { name: 'Continue with remaining parts', exact: true })).toBeVisible();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(2);
   await page.getByRole('button', { name: 'Continue with remaining parts', exact: true }).click();
-  await expectCoverage(page, 'All planned parts are finished.');
+  await expectCoverage(page, 'All parts are done.');
   expect((await calls(page, 'source_briefing_chat')).filter(request => String(request.args.packet) === first)).toHaveLength(1);
 });
 
@@ -92,7 +92,7 @@ test('retries only the overview after preserving every completed part', async ({
   await expect(page.getByRole('button', { name: 'Retry overall summary', exact: true })).toBeVisible();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(parts + 1);
   await page.getByRole('button', { name: 'Retry overall summary', exact: true }).click();
-  await expectCoverage(page, 'All planned parts are finished.');
+  await expectCoverage(page, 'All parts are done.');
   const requests = await calls(page, 'source_briefing_chat');
   expect(requests).toHaveLength(parts + 2);
   expect(JSON.parse(String(requests.at(-1)!.args.packet)).scope).toBe('overview-from-selected-original-passages');
@@ -111,7 +111,7 @@ test('retains attributed old parts but requires a new plan when native capacity 
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 2000; });
   await page.getByRole('button', { name: 'Prepare new plan', exact: true }).click();
   await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
-  await expectCoverage(page, 'All planned parts are finished.');
+  await expectCoverage(page, 'All parts are done.');
   expect(((await calls(page, 'source_briefing_chat'))[2].args.expectedCapacity as { inputByteLimit: number }).inputByteLimit).toBe(2000);
 });
 
@@ -128,7 +128,7 @@ test('waits for an interrupted request to settle across a Models round trip befo
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(2);
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { release: () => void } }).__briefingProbe.release(); });
   await page.getByRole('button', { name: 'Continue with remaining parts', exact: true }).click();
-  await expectCoverage(page, 'All planned parts are finished.');
+  await expectCoverage(page, 'All parts are done.');
   expect(await page.evaluate(() => (window as unknown as { __briefingProbe: { peak: number } }).__briefingProbe.peak)).toBe(1);
 });
 
@@ -147,7 +147,7 @@ for (const mode of ['pr-unavailable', 'pr-error', 'pr-rate-limited', 'pr-partial
     else await expect(retry).toBeEnabled();
     await page.getByTestId('briefing-summary-mode').click();
     await expectCoverage(page, '1 PR descriptions read');
-    await expectCoverage(page, 'Prepare a new plan before continuing.', true);
+    await expectCoverage(page, 'Prepare a new plan to continue.', true);
     const citation = theme.getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).first();
     await citation.click();
     await expect(page.getByTestId('briefing-original')).toContainText('Checks: 131 author-reported tests passed.');
@@ -158,7 +158,7 @@ for (const mode of ['pr-unavailable', 'pr-error', 'pr-rate-limited', 'pr-partial
     await setBriefingMode(page, 'pr-empty');
     await readPrs(page);
     await expectCoverage(page, '0 PR descriptions read');
-    await expectCoverage(page, 'Prepare a new plan before continuing.');
+    await expectCoverage(page, 'Prepare a new plan to continue.');
   });
 }
 

@@ -54,7 +54,7 @@ test('discloses the extra overview request and keeps oversized originals inspect
   await setBriefingMode(page, 'long-original');
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 1000; });
   await prepare(page);
-  const gap = dialog.getByRole('button', { name: /source records cannot be sent/ });
+  const gap = dialog.getByRole('button', { name: /commits or PRs cannot be sent/ });
   await expect(gap).toBeVisible();
   await gap.click();
   await dialog.getByRole('button', { name: 'Keep map navigation readable', exact: true }).click();
@@ -70,7 +70,7 @@ test('wraps a long unbroken source title in the expanded request preview', async
   await page.setViewportSize({ width: 390, height: 900 });
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: /source records cannot be sent/ }).click();
+  await dialog.getByRole('button', { name: /commits or PRs cannot be sent/ }).click();
   const title = dialog.getByRole('button', { name: /LongUnbrokenPullRequestTitle/ });
   await expect(title).toBeVisible();
   const geometry = await title.evaluate(element => ({ width: element.getBoundingClientRect().width, scrollWidth: element.scrollWidth, parentWidth: element.parentElement!.getBoundingClientRect().width }));

@@ -54,7 +54,7 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
     await expect(list).toBeVisible();
     for (const end of [false, true]) {
       if (end) await list.evaluate(element => { element.scrollTop = element.scrollHeight; });
-      const audit = await auditPage(page, { width, rampNames: ramps, scope: '[aria-label="Commits and PRs"]' });
+      const audit = await auditPage(page, { width, rampNames: ramps, scope: '[aria-label="Code changes"]' });
       await testInfo.attach(`files-${width}-${end}`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
       expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
     }
@@ -71,7 +71,7 @@ for (const width of [390, 1512]) {
     await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await page.setViewportSize({ width, height: 900 });
     await page.getByTestId('briefing-area-mcp').click();
-    const heading = page.getByRole('region', { name: 'Commits and PRs', exact: true }).getByRole('heading', { name: 'mcp', exact: true });
+    const heading = page.getByRole('region', { name: 'Code changes', exact: true }).getByRole('heading', { name: 'mcp', exact: true });
     const before = await heading.evaluate(element => parseFloat(getComputedStyle(element).fontSize));
     await page.evaluate(() => { document.documentElement.style.fontSize = `${parseFloat(getComputedStyle(document.documentElement).fontSize) * 2}px`; });
     expect(await heading.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBe(before * 2);
@@ -83,7 +83,7 @@ for (const width of [390, 1512]) {
     await expect(file).toBeFocused();
     await expect(search).toHaveValue('tool-60');
     await expect(file).toHaveAttribute('aria-pressed', 'true');
-    const audit = await auditPage(page, { width, rampNames: ramps, scope: '[aria-label="Commits and PRs"]' });
+    const audit = await auditPage(page, { width, rampNames: ramps, scope: '[aria-label="Code changes"]' });
     await testInfo.attach(`files-${width}-text-zoom`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
     expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
   });
@@ -99,7 +99,7 @@ test('refreshes history instead of retrying an expired patch snapshot', async ({
   await setBriefingMode(page, 'stale');
   await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
   const patch = page.getByRole('region', { name: 'Diff: src/features/checkout/service.ts', exact: true });
-  await expect(patch).toContainText('changed while reading');
+  await expect(patch).toContainText('changed while it was being read');
   await setBriefingMode(page, 'changed-head');
   const reads = () => page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.filter(call => call.command === 'git_change_briefing').length);
   const before = await reads();
