@@ -114,7 +114,6 @@ export function DependencyPicker({
               className={controlClass({
                 shape: 'pill',
                 size: 'lg',
-                /* On the indigo tint accent ink falls below AA, so hubs use `accent`. */
                 tone: p.isHub ? 'accent' : 'strong',
                 className: cn(
                   'group gap-1.5 border-[color:var(--color-indigo-brand)]',

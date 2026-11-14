@@ -282,7 +282,7 @@ export function LibraryShelf({
         data-testid="library-shelf-board"
         className={cn(
           "mx-3 h-px transition-colors",
-          compiling ? "bg-[color:var(--color-indigo-a40)]" : "bg-[color:var(--color-border-strong)]",
+          compiling ? "bg-[color:var(--color-indigo-accent)]" : "bg-[color:var(--color-border-strong)]",
         )}
       />
       {compiling ? (

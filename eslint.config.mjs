@@ -695,7 +695,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Token-discipline block for every source file: checkbox accent, accent/tint ink pairing,
+  // Token-discipline block for every source file: checkbox accent,
   // inline shadow and size, cursor and disabled affordance. Violations are lint errors.
   {
     files: ['src/**/*.{ts,tsx,jsx,js}', 'app/**/*.{ts,tsx,jsx,js}'],

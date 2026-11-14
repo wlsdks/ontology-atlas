@@ -686,7 +686,7 @@ function RuntimeRow({
       data-testid={copy ? undefined : `app-settings-runtime-chat-${runtime.id}`}
       aria-label={t('openChat')}
       onClick={() => onOpenChat(runtime.id)}
-      className={cn('shrink-0', oneOfSeveralChats ? LEAD_CHIP : 'focus-visible:ring-[color:var(--color-text-primary)]')}
+      className={cn('shrink-0', oneOfSeveralChats && LEAD_CHIP)}
     >
       <MessageSquare size={ICON_SIZE.md} aria-hidden />
       {t('openChatShort')}

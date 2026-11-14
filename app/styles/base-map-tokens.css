@@ -65,7 +65,7 @@
     --map-node-fill-stale: #141418;
     --map-node-stroke-stale: #454549;
     --map-node-hole-fill: #0c0c10;
-    --map-indigo: var(--color-indigo-brand);
+    --map-indigo: #5e6ad2;
     --map-indigo-bright: #8890e0;
     --map-amber-hub: #d4b478;
     /*
@@ -136,11 +136,11 @@
     --map-hex-hatch: #2a2a33;
     --map-hex-bevel-light: rgba(255, 255, 255, 0.16);
     --map-hex-bevel-shade: rgba(0, 0, 0, 0.25);
-    --map-hex-plate: var(--color-indigo-a06);
-    --map-hex-plate-focus: var(--color-indigo-a12);
+    --map-hex-plate: rgba(94, 106, 210, 0.06);
+    --map-hex-plate-focus: rgba(94, 106, 210, 0.12);
     --map-hex-plate-stroke: rgba(136, 144, 224, 0.22);
     --map-hex-moat: rgba(255, 255, 255, 0.022);
-    --map-hex-glow: var(--color-indigo-a08);
+    --map-hex-glow: rgba(94, 106, 210, 0.08);
     --map-hex-accent: #9aa0f0;
     --map-hex-canal: #5c5f79;
     --map-hex-canal-head: #6d7090;
@@ -153,7 +153,7 @@
      * The pending-review ring must differ from `--color-danger` so human-written nodes do not read as
      * errors. It is a static dashed ring with no rotation, so it does not shake the map.
      */
-    --map-hover-ring: var(--color-indigo-a55);
+    --map-hover-ring: rgba(94, 106, 210, 0.55);
     /* Design Guardian approved prescription L — hover circuit-trace shimmer. Static hover
        ring (above) with one slowly circulating bright arc (glow 0 — reuse `strokeKindOutline`
        path + `setLineDash`/`lineDashOffset` time animation only). seg is
@@ -552,7 +552,7 @@ still recedes compared to primary. Guardian follow-up #2. */
     /* Connection group trace mini-line — same family as canvas edges (contains solid / depends dashed) */
     /* A1 full detail indigo border — tokenizing the two literal rgba(94,106,210,0.5)s
        (Guardian A1 follow-up P2). */
-    --map-indigo-border: var(--color-indigo-a50);
+    --map-indigo-border: rgba(94, 106, 210, 0.5);
 
     --map-edge-contains-mark: #4a4a54;
     --map-edge-depends-mark: #5c5c72;

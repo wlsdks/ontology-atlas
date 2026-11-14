@@ -324,7 +324,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
     // Pressed borderless inset — inside a box, "this one, now" is said with an
     // indigo tint alone. All 12 measured consumers used the `--color-indigo-a16`
     // or `a26` tint, and 0 used a border.
-    { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a16)] text-[color:var(--color-text-primary)]' },
+    { shape: 'segment', active: true, class: 'bg-[color:var(--color-indigo-a24)] text-[color:var(--color-text-primary)]' },
 
     /*
      * ── The second neutral ramp. Its values were nudged by measuring contrast
@@ -350,7 +350,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      * **after** the `border-[…divider]` compounds above, so it wins in
      * tailwind-merge.
      */
-    { tone: 'onAccent', class: 'border-transparent active:bg-[color:var(--color-indigo-brand)] active:text-[color:var(--color-text-on-accent)] active:shadow-[var(--shadow-control-press)]' },
+    { tone: 'onAccent', class: 'border-transparent focus-visible:ring-0 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-indigo-focus-ring)] active:bg-[color:var(--color-indigo-brand)] active:text-[color:var(--color-text-on-accent)] active:shadow-[var(--shadow-control-press)]' },
   ],
   defaultVariants: {
     shape: 'chip',
@@ -438,7 +438,7 @@ const field = cva(`${fieldBase} ${DISABLED}`, {
        * emits width makes the latter **not a 0px migration**.
        */
       boxed:
-        'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-a46)] focus-visible:outline-none',
+        'atlas-touch-floor border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] focus-visible:border-[color:var(--color-indigo-focus-ring)] focus-visible:outline-none',
       bare: 'bg-transparent text-body focus:outline-none',
     },
     /** Single line or growing. **Not a separate shape** — border, background, radius, focus and placeholder are identical; only the dimension grammar differs. */

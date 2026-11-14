@@ -135,8 +135,8 @@ rule and its lint enforcement in the same PR. In product code it blocks raw
 functions outside tokens; shadows not built from elevation, docking, press,
 surface or inset tokens; numeric `duration-*`; inline type, radius or shadow
 literals; weights other than 400/510/560/650; Tailwind palette classes; z-index
-20 and above without `--z-*`; repeated `cursor-pointer`; hand-built disabled
-states (`CONTROL_DISABLED_CLASS`); and unpaired accent/tint.
+20 and above without `--z-*`; repeated `cursor-pointer`; and hand-built disabled
+states (`CONTROL_DISABLED_CLASS`).
 
 Lint cannot see an unknown utility: `text-large` emits no CSS and silently
 renders 16px. Spacing is deliberately unenforced; do not add unused spacing
