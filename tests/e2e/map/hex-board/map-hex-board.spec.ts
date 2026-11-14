@@ -57,8 +57,8 @@ async function readBoard(page: Page) {
   });
 }
 
-const LEGEND_CANALS = "판 사이 필요 관계";
-const LEGEND_NOTCHES = "필요로 하는 판 쪽";
+const LEGEND_CANALS = "도메인 사이 의존";
+const LEGEND_NOTCHES = "의존하는 도메인 쪽";
 
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -221,7 +221,7 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     // The stale count shown is the count the rule gives, per tile and per domain title.
     expect(Number(board.stale)).toBe(vault.expectedStale);
     expect(caps.filter((c) => c.evidence === "stale")).toHaveLength(vault.expectedStale);
-    await expect(page.getByTestId("hex-board-evidence-note")).toContainText(`낡음 ${vault.expectedStale}`);
+    await expect(page.getByTestId("hex-board-evidence-note")).toContainText(`오래됨 ${vault.expectedStale}`);
     await expect(page.getByTestId("hex-board-stale-only")).toContainText(String(vault.expectedStale));
 
     if (CAPTURE_DIR) mkdirSync(CAPTURE_DIR, { recursive: true });
