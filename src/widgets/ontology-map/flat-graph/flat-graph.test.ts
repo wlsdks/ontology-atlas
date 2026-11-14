@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import forceAtlas2 from "graphology-layout-forceatlas2";
+import { describe, expect, it, vi } from "vitest";
 
 import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
 import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
@@ -1075,5 +1076,34 @@ describe("names under the map's chrome", () => {
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, id), "the selection").toBe(true);
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, "capability:another"), "another concept selected").toBe(false);
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, null), "nothing selected").toBe(false);
+  });
+});
+
+describe("cluster iteration budget", () => {
+  it("runs a small cluster at the full iterations and holds a crowded one to that pair work", () => {
+    const sizes = [40, 170, 500];
+    const nodes: Node[] = [{ id: "project:p", kind: "project" }];
+    const edges: Edge[] = [];
+    sizes.forEach((size, d) => {
+      nodes.push({ id: `domain:${d}`, kind: "domain" });
+      edges.push({ from: "project:p", to: `domain:${d}`, type: "contains" });
+      for (let c = 0; c < size; c += 1) {
+        nodes.push({ id: `capability:${d}-${c}`, kind: "capability" });
+        edges.push({ from: `domain:${d}`, to: `capability:${d}-${c}`, type: "contains" });
+      }
+    });
+    const model = modelOf(nodes, edges);
+    const assign = vi.spyOn(forceAtlas2, "assign");
+    layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null);
+    const runs = assign.mock.calls.map(([graph, options]) => ({ bodies: graph.order, iterations: (options as { iterations: number }).iterations }));
+    assign.mockRestore();
+    const full = TOKENS.layout.capabilityIterations;
+    const small = runs.find((run) => run.bodies >= 40 && run.bodies < 64);
+    expect(small?.iterations, "the 40-member cluster").toBe(full);
+    const crowded = runs.filter((run) => run.bodies >= 170);
+    expect(crowded.length).toBe(2);
+    const ceiling = full * 64 ** 2;
+    for (const run of crowded) expect(run.iterations * run.bodies ** 2, `${run.bodies} bodies`).toBeLessThanOrEqual(ceiling * 1.15);
+    for (const run of crowded) expect(run.iterations).toBeGreaterThan(0);
   });
 });
