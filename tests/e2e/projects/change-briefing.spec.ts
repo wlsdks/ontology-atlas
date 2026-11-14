@@ -169,6 +169,18 @@ test('offers an honest browser limit without fabricated source history', async (
   await capture(page, 'web-limit');
 });
 
+test('draws the prerendered stage settled as soon as reduced motion is known', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/en/changes/?guides=off');
+  const faintestMarkOpacity = await page.waitForFunction(() => {
+    const stage = document.querySelector('[data-testid="briefing-stage"][data-reduced-motion="true"]');
+    if (!stage) return null;
+    const marks = [stage, ...stage.querySelectorAll('[data-feature-stage-art] svg circle')];
+    return { value: Math.min(...marks.map(mark => Number(getComputedStyle(mark).opacity))) };
+  }, undefined, { polling: 'raf' });
+  expect((await faintestMarkOpacity.jsonValue())?.value).toBe(1);
+});
+
 test('never presents an empty partial read as proof that the period has no commits', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'partial-empty');

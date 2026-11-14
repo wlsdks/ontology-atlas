@@ -1,7 +1,9 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
+import { MOTION } from "@/shared/motion";
 import { FeatureStage } from "@/shared/ui";
 import { LibraryConstellation } from "../parts/first-run/LibraryConstellation";
 
@@ -16,11 +18,21 @@ export function LibraryNoFolderStage({ t }: { t: ReturnType<typeof useTranslatio
     >
       <FeatureStage
         titleAs="h1"
-        art={() => (
+        art={({ arriving, reduced }) => (
           <>
             {/* A mask, not a painted vignette: the stage's plate shows through the object's rim. */}
             <div data-testid="library-empty-object" className="relative aspect-square w-full [mask-image:radial-gradient(closest-side,black_62%,transparent)]">
-              <LibraryConstellation />
+              {/* Building the 3D object blocks the main thread once, so it waits for the stage to come to rest and then fades in. */}
+              {arriving ? null : (
+                <motion.div
+                  className="absolute inset-0"
+                  initial={reduced ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ ...MOTION.expressive, delay: MOTION.slow.duration }}
+                >
+                  <LibraryConstellation />
+                </motion.div>
+              )}
             </div>
             {/* The object's two marks, named: a cube is a source, a sphere the wiki page that cites it. */}
             <div className="mt-2 flex items-center justify-center gap-5 text-label text-[color:var(--color-text-tertiary)]">
