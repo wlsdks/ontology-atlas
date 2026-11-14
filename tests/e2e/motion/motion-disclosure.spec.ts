@@ -59,19 +59,19 @@ function firstStepShare(values: number[]): number {
   return firstChange < 0 ? 0 : Math.abs(values[firstChange]! - values[0]!) / total;
 }
 
-async function openProvenance(page: Page) {
+async function openSetupGroup(page: Page) {
   await installHarnessRuntime(page);
   await mountHarnessVault(page);
   await page.goto("/en/architecture/?view=overview");
-  await expect(page.getByTestId("harness-overview")).toBeVisible({ timeout: 30_000 });
-  const trigger = page.getByTestId("harness-overview-provenance");
+  await expect(page.getByTestId("harness-setup")).toBeVisible({ timeout: 30_000 });
+  const trigger = page.locator('[data-harness-group="scripts"] button[aria-expanded]');
   const box = page.locator(`#${(await trigger.getAttribute("aria-controls"))!.replace(/:/g, "\\:")}`);
   return { trigger, box };
 }
 
 test.describe("Disclosure motion", () => {
-  test("provenance opens and closes on the row curve with no height jump", async ({ page }) => {
-    const { trigger, box } = await openProvenance(page);
+  test("a Setup group opens and closes on the row curve with no height jump", async ({ page }) => {
+    const { trigger, box } = await openSetupGroup(page);
     await waitForAnimationsDone(page.locator("html"));
     await startSmoothness(page);
 
@@ -88,11 +88,11 @@ test.describe("Disclosure motion", () => {
     expect(closing.inertAtFirstFrame).toBe(true);
     expect(closing.height.at(-1)!).toBeLessThan(closing.height[0]!);
     expect(maxStepShare(closing.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
-    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-overview"]'), { reflow: ["height"] });
+    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-setup"]'), { reflow: ["height"] });
   });
 
   test("an immediate second key press reverses the disclosure", async ({ page }) => {
-    const { trigger } = await openProvenance(page);
+    const { trigger } = await openSetupGroup(page);
     await trigger.focus();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Enter");
@@ -103,7 +103,7 @@ test.describe("Disclosure motion", () => {
 
   test("reduced motion sets the height at once and keeps the content fade", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    const { trigger, box } = await openProvenance(page);
+    const { trigger, box } = await openSetupGroup(page);
     const opening = await sampleToggle(page, trigger, box);
     expect(maxStepShare(opening.height)).toBeGreaterThan(0.9);
     expect(opening.opacity.some((value) => value > 0 && value < 1)).toBe(true);

@@ -11,9 +11,8 @@ import {
 } from './harness-view-state';
 
 describe('parseHarnessView', () => {
-  it('reads the three views', () => {
+  it('reads the two views', () => {
     expect(parseHarnessView('overview')).toBe('overview');
-    expect(parseHarnessView('guides')).toBe('guides');
     expect(parseHarnessView('architecture')).toBe('architecture');
   });
 
@@ -29,11 +28,12 @@ describe('parseHarnessView', () => {
     expect(parseHarnessView('sensors')).toBe('overview');
     expect(parseHarnessView('structure')).toBe('overview');
     expect(parseHarnessView('coverage')).toBe('overview');
+    expect(parseHarnessView('guides')).toBe('overview');
   });
 
   it('puts the overview first, so the tab order is the reading order', () => {
     expect(HARNESS_VIEW_ORDER[0]).toBe('overview');
-    expect([...HARNESS_VIEW_ORDER]).toEqual(['overview', 'guides', 'architecture']);
+    expect([...HARNESS_VIEW_ORDER]).toEqual(['overview', 'architecture']);
   });
 });
 
@@ -42,10 +42,10 @@ describe('rewriteRetiredView', () => {
     expect(rewriteRetiredView('?view=coverage&guides=off')).toBe('?view=overview&guides=off');
     expect(rewriteRetiredView('?view=sensors')).toBe('?view=overview');
     expect(rewriteRetiredView('?role=views&view=structure')).toBe('?role=views&view=overview');
+    expect(rewriteRetiredView('?view=guides')).toBe('?view=overview');
   });
 
   it('leaves a current or absent view alone', () => {
-    expect(rewriteRetiredView('?view=guides')).toBeNull();
     expect(rewriteRetiredView('?view=overview')).toBeNull();
     expect(rewriteRetiredView('')).toBeNull();
     expect(rewriteRetiredView('?focus=main')).toBeNull();
@@ -60,7 +60,7 @@ describe('resolveAddressView', () => {
   });
 
   it('lets an explicit view win over that reading', () => {
-    expect(resolveAddressView(new URLSearchParams('view=guides&role=views'))).toBe('guides');
+    expect(resolveAddressView(new URLSearchParams('view=overview&role=views'))).toBe('overview');
   });
 
   it('opens the arrival view for a plain address or none at all', () => {
@@ -102,19 +102,18 @@ describe('buildHarnessViewHref', () => {
   });
 
   it('names the other views in the query', () => {
-    expect(buildHarnessViewHref('guides')).toBe('/architecture/?view=guides');
     expect(buildHarnessViewHref('architecture')).toBe('/architecture/?view=architecture');
   });
 
   it('keeps the locale-prefixed pathname it was given', () => {
-    expect(buildHarnessViewHref('guides', '/ko/architecture/')).toBe('/ko/architecture/?view=guides');
+    expect(buildHarnessViewHref('architecture', '/ko/architecture/')).toBe('/ko/architecture/?view=architecture');
   });
 
   it('keeps every other parameter, because the other writer of this URL does', () => {
-    expect(buildHarnessViewHref('guides', '/ko/architecture/', '?role=views&guides=off')).toBe(
-      '/ko/architecture/?role=views&guides=off&view=guides',
+    expect(buildHarnessViewHref('architecture', '/ko/architecture/', '?role=views&guides=off')).toBe(
+      '/ko/architecture/?role=views&guides=off&view=architecture',
     );
-    expect(buildHarnessViewHref('overview', '/ko/architecture/', '?view=guides&role=views')).toBe(
+    expect(buildHarnessViewHref('overview', '/ko/architecture/', '?view=architecture&role=views')).toBe(
       '/ko/architecture/?role=views',
     );
   });

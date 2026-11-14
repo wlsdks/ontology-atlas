@@ -9,7 +9,7 @@ import {
   type ScopeDeclaration,
 } from './coverage-scopes';
 import { AGENT_FILE_RULES, agentToolsForPath } from './agent-files';
-import type { HookConfigFacts } from './hook-wiring';
+import { hookEventStep, type HookConfigFacts, type HookEventStep } from './hook-wiring';
 
 /**
  * Keeps only candidate scopes that reach a recorded capability path and exist on disk, and
@@ -49,10 +49,15 @@ const ROOT_GUIDE_RULES = new Set([
   'copilot-instructions',
 ]);
 
+const STEP_COLUMN: Readonly<Record<HookEventStep, CoverageColumn>> = Object.freeze({
+  context: 'told',
+  guardrails: 'gated',
+  verification: 'watched',
+  other: 'watched',
+});
+
 function hookEventColumn(event: string): CoverageColumn {
-  if (/\bpre[-_]?tool|\bbefore[-_]?tool/i.test(event)) return 'gated';
-  if (/^(session[-_]?start|user[-_]?prompt[-_]?submit)$/i.test(event)) return 'told';
-  return 'watched';
+  return STEP_COLUMN[hookEventStep(event)];
 }
 
 function denyAndAskRuleCount(text: string | undefined): number {

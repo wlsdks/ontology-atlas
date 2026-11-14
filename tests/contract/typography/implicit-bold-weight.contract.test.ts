@@ -80,7 +80,7 @@ describe('<b>/<strong> state their weight', () => {
   const scan = scanRepo();
 
   it('the scan is not empty, since a gate over an empty set is no gate', () => {
-    expect(scan.total).toBe(9);
+    expect(scan.total).toBe(8);
   });
 
   it('<b>/<strong> without a weight declaration are 0, since the browser default 700 is outside the ramp', () => {
