@@ -65,9 +65,16 @@
 .claimLaneTitle { display: flex; align-items: center; gap: 0.5rem; min-width: 0; margin-bottom: 0.25rem; padding: 0 0.625rem 0.5rem; border-bottom: 1px solid var(--color-divider); color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
 .claimLaneCount { flex: none; margin-left: auto; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); font-weight: 400; font-variant-numeric: tabular-nums; }
 .claimLaneEmpty { padding: 0.5rem 0.625rem; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); }
-.claimRow { display: grid; grid-template-columns: minmax(8rem, 15rem) minmax(0, 1fr) auto; gap: 1rem; }
+.claimRow, .claimColumns { display: grid; grid-template-columns: minmax(8rem, 15rem) repeat(5, 4.5rem) minmax(0, 1fr) auto; column-gap: 0; align-items: center; }
+.claimColumns { padding: 0 0.625rem; color: var(--color-text-quaternary); font-size: var(--text-label); line-height: var(--leading-label); }
+.claimColumn { text-align: center; white-space: nowrap; }
+.claimCell { flex: none; justify-self: center; width: 0.3125rem; height: 0.3125rem; border-radius: 50%; background: var(--color-text-quaternary); }
+.claimLegend { display: flex; align-items: center; justify-content: flex-end; gap: 0.375rem; min-width: 0; white-space: nowrap; }
+.claimLegend > .claimCell:not(:first-child) { margin-left: 0.5rem; }
+.claimCell[data-missing] { width: 0.5rem; height: 0.5rem; border: 1.5px solid var(--color-status-warning); background: transparent; }
+.claimRecorded { min-width: 0; overflow: hidden; padding-left: 1rem; color: var(--color-text-quaternary); font-size: var(--text-label); line-height: var(--leading-label); text-overflow: ellipsis; white-space: nowrap; }
 .claimName { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.claimGaps { min-width: 0; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); text-overflow: ellipsis; white-space: nowrap; }
+.claimGaps { display: none; min-width: 0; overflow: hidden; color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); text-overflow: ellipsis; white-space: nowrap; }
 .claimGaps[data-clean] { color: var(--color-text-quaternary); }
 .claimSource { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--color-text-secondary); font-size: var(--text-label); line-height: var(--leading-label); white-space: nowrap; }
 .boardMarker { display: inline-block; flex: none; width: 0.4375rem; height: 0.4375rem; border-radius: 50%; }
@@ -114,7 +121,11 @@
  .boardToolbar { grid-template-columns: minmax(0, 1fr); }
  .boardToolbar > :last-child { grid-area: 3 / 1; margin-top: 0.75rem; }
 }
-@container (max-width: 34rem) {
+@container (max-width: 46rem) {
  .claimRow { grid-template-columns: minmax(0,1fr) auto; row-gap: 0.125rem; }
- .claimGaps { grid-row: 2; grid-column: 1 / -1; }
+ .claimGaps { display: block; grid-row: 2; grid-column: 1 / -1; }
+ .claimColumns, .claimCell, .claimRecorded { display: none; }
+}
+@container (max-width: 72rem) {
+ .claimRecorded, .claimLegend { visibility: hidden; }
 }
