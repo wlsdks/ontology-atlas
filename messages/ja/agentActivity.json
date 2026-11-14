@@ -79,7 +79,7 @@
   "askDoorAria": "会話を開いて、待機中の依頼を確認する",
   "problemSentence": "フォルダに直すべき点があります",
   "problemDoor": "表示",
-  "problemDoorAria": "直すべき点の一覧を開く",
+  "problemDoorAria": "マップの直すべき点の一覧を開く",
   "resultAdded": "新しい概念を{count}件書き込みました",
   "resultEdited": "概念を{count}件修正しました",
   "resultRemoved": "概念を{count}件削除しました",

@@ -49,11 +49,10 @@ reject each change as a Markdown diff.
 <td width="50%"><img src="public/gateway/changes.en.png" alt="Changes: one week of commits, each with its date" /><br /><b>Changes</b> — what was merged in a period, counted and grouped, with the pull requests, commits and files behind it.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/insights.en.png" alt="Analysis: relationships between responsibilities, with the evidence beside each claim" /><br /><b>Analysis</b> — which parts depend on which, with the evidence beside each claim.</td>
 <td width="50%"><img src="public/gateway/git.en.png" alt="Git: an unsaved concept change with its exact Markdown diff" /><br /><b>Git</b> — the exact Markdown diff before you save.</td>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness: what the repository tells, blocks and watches for its coding agents" /><br /><b>Harness</b> — what your repository tells, blocks and watches for agents.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness: what the repository tells, blocks and watches for its coding agents" /><br /><b>Harness</b> — what your repository tells, blocks and watches for agents.</td>
 <td width="50%"><img src="public/gateway/automations.en.png" alt="Automations: scheduled checks that keep the folder current" /><br /><b>Automations</b> — scheduled checks that keep the folder current.</td>
 </tr>
 </table>
@@ -91,7 +90,7 @@ your-repo/
 
 A Markdown file whose frontmatter has `kind:` is one concept. Its `uid` never
 changes, its `slug` is its current address, and its `path` names the code it
-describes. The map, documents, Library, Insights and Git screens all read these
+describes. The map, documents, Library and Git screens all read these
 files.
 
 Your agent reaches the folder two ways:
@@ -101,15 +100,11 @@ Your agent reaches the folder two ways:
 
 A project's source-path repair opens the affected concept and recorded relative path; stale or missing targets require remeasurement.
 
-Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning. Analysis filters capabilities by changed, missing or unchecked source evidence while keeping the selected claim open.
+Project checks distinguish a document changed since its last meaning review from malformed input. They ask for review and explicit re-finalization; supported code paths and saved changes do not accept the meaning.
 
 Codex's locally configured permission profiles are excluded from the in-app mode picker because their effective approval behavior is not disclosed. Read-only startup stays required; an unsolicited move into a profile is reported as unverified, without claiming the runtime was stopped.
 
 The full project editor confirms leaving unsaved changes inside the app, so Cancel and Back work in the macOS WebView as well as the browser.
-
-The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
-
-Analysis compares recorded dependencies between responsibilities, then opens the exact concepts and declaring document beside the selected claim. Implementation records, unchecked source and missing explanations stay distinct. In the macOS app, documents and cited files can be dated in their respective bound Git repositories; missing access or history stays unknown, and a folder chosen for reading must match the existing connection. [Analysis](docs/features/analysis.md)
 
 ## Local-first
 

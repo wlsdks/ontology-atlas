@@ -68,6 +68,13 @@ describe("useDestinationShortcuts", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  it("the leader then i does nothing, since Analysis is no longer a destination", () => {
+    renderHook(() => useDestinationShortcuts({ navigate }));
+    press("g");
+    press("i");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
   it("the leader then r goes to architecture", () => {
     renderHook(() => useDestinationShortcuts({ navigate }));
     press("g");

@@ -7,7 +7,6 @@ export type AppNavDestinationId =
   | "library"
   | "planning"
   | "automations"
-  | "insights"
   | "projects"
   | "agents"
   | "mcp"
@@ -20,9 +19,9 @@ export type AppNavDestinationId =
  * `BottomTabBar` (mobile, `<lg`) share this ladder and MUST agree on which one
  * is "active" for a given pathname, so it lives here once instead of being
  * duplicated per widget. Compatibility routes under `/ontology/edit` and
- * `/ontology/studio` fold into `map`, while `/ontology/insights` keeps its own
- * destination. The mobile `BottomTabBar` renders the five persistent reading
- * and planning destinations from `MOBILE_DESTINATION_IDS`.
+ * `/ontology/studio` fold into `map`; other redirects match nothing. The mobile
+ * `BottomTabBar` renders its persistent destinations from
+ * `MOBILE_DESTINATION_IDS`.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
   // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
@@ -32,7 +31,6 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   const path = stripLocalePrefix(pathname || "/");
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "map";
-  if (path.startsWith("/ontology/insights")) return "insights";
   if (path.startsWith("/architecture")) return "architecture";
   if (path.startsWith("/git")) return "git";
   if (path.startsWith("/changes")) return "changes";

@@ -41,7 +41,7 @@ describe("OntologyEditRedirectPage", () => {
     );
   });
 
-  it("translates create mode and preserves edge/review context", () => {
+  it("translates create mode, preserves the edge and drops the retired Analysis return marker", () => {
     mocks.replace.mockClear();
     mocks.searchParams = new URLSearchParams("mode=create");
     const { unmount } = render(<OntologyEditRedirectPage />);
@@ -54,7 +54,7 @@ describe("OntologyEditRedirectPage", () => {
     );
     render(<OntologyEditRedirectPage />);
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/topology/?p=capability%3Aa&workbench=edit&edit=dependsOn%3Acapability%3Ab&via=insights%3Ado-next&review=row-1",
+      "/topology/?p=capability%3Aa&workbench=edit&edit=dependsOn%3Acapability%3Ab",
     );
   });
 });

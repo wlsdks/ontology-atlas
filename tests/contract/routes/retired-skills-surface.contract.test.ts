@@ -20,7 +20,6 @@ describe("retired Skills product surface", () => {
       "planning",
       // Automations owns schedule management; Map and Library remain execution contexts.
       "automations",
-      "insights",
       "projects",
       "agents",
       // MCP reopened the seven-cap decision (91) but did not reinstate the retired surface, and the two

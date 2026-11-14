@@ -39,8 +39,6 @@ describe("parseHomeRouteState", () => {
       meaningEditorIntent: false,
       meaningEditParam: null,
       indexState: null,
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
       askIntent: null,
       askBusinessFlow: false,
       expandedParents: [],
@@ -273,8 +271,6 @@ describe("applyHomeRouteState", () => {
       meaningEditorIntent: false,
       meaningEditParam: null,
       indexState: null,
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
       askIntent: null,
       askBusinessFlow: false,
       expandedParents: [],
@@ -303,8 +299,6 @@ describe("applyHomeRouteState", () => {
       meaningEditorIntent: false,
       meaningEditParam: null,
       indexState: null,
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
       askIntent: null,
       askBusinessFlow: false,
       expandedParents: [],
@@ -331,8 +325,6 @@ describe("applyHomeRouteState", () => {
       meaningEditorIntent: false,
       meaningEditParam: null,
       indexState: null,
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
       askIntent: null,
       askBusinessFlow: false,
       expandedParents: [],
@@ -361,8 +353,6 @@ describe("applyHomeRouteState", () => {
         meaningEditorIntent: false,
         meaningEditParam: null,
         indexState: null,
-        insightsReturnTab: null,
-        insightsReturnReviewId: null,
         askIntent: null,
       askBusinessFlow: false,
         expandedParents: [],
@@ -581,67 +571,14 @@ describe("resolveTopologyNodeClickRouteState", () => {
   });
 });
 
-describe("insights return marker (?via=insights:<tab>)", () => {
-  it("parses a valid insights origin marker into the return tab", () => {
+describe("the retired Analysis return marker (?via=insights:<tab>)", () => {
+  it("selects the named concept and draws nothing for the marker", () => {
     const params = new URLSearchParams(
       "p=domain%3Aviews&via=insights%3Ado-next&review=neglected-hub%3Adomain%3Aviews",
     );
-
-    expect(parseHomeRouteState(params)).toMatchObject({
-      selectedSlug: "domain:views",
-      insightsReturnTab: "do-next",
-      insightsReturnReviewId: "neglected-hub:domain:views",
-    });
-  });
-
-  it("ignores via values that are not the insights marker grammar", () => {
-    expect(
-      parseHomeRouteState(new URLSearchParams("via=somewhere-else")),
-    ).toMatchObject({
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
-      askIntent: null,
-      askBusinessFlow: false,
-    });
-    // A prefix without a tab names no destination.
-    expect(
-      parseHomeRouteState(
-        new URLSearchParams("via=insights&review=promotion:element:x"),
-      ),
-    ).toMatchObject({
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
-      askIntent: null,
-      askBusinessFlow: false,
-    });
-  });
-
-  it("survives map interactions and is deleted only by explicit dismiss", () => {
-    const params = new URLSearchParams(
-      "via=insights:do-next&review=promotion:element:x",
-    );
     const state = parseHomeRouteState(params);
 
-    // The chip survives a node click.
-    const afterClick = resolveTopologyNodeClickRouteState(state, "domain:views");
-    expect(afterClick.insightsReturnTab).toBe("do-next");
-    expect(applyHomeRouteState(params, afterClick).get("via")).toBe(
-      "insights:do-next",
-    );
-    expect(applyHomeRouteState(params, afterClick).get("review")).toBe(
-      "promotion:element:x",
-    );
-
-    // Only the chip's dismiss clears the marker.
-    const dismissed = applyHomeRouteState(params, {
-      ...afterClick,
-      insightsReturnTab: null,
-      insightsReturnReviewId: null,
-      askIntent: null,
-      askBusinessFlow: false,
-    });
-    expect(dismissed.get("via")).toBeNull();
-    expect(dismissed.get("review")).toBeNull();
+    expect(state).toEqual({ ...DEFAULT_HOME_ROUTE_STATE, selectedSlug: "domain:views" });
   });
 });
 

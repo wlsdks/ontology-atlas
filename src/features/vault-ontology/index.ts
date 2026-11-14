@@ -1,6 +1,6 @@
 
 export { useArrivingOntologyInsight, useOntologyInsight, useDogfoodInsight } from './model/use-ontology-insight';
-export { useVaultHealth, useVaultHealthDocs, useVaultUnmatchedAsks } from './model/use-vault-health';
+export { useVaultHealth } from './model/use-vault-health';
 export { useVaultValidationSummary } from './model/use-vault-validation';
 export { useVaultDocDates, useVaultDocFileDates } from './model/use-vault-doc-freshness';
 export {

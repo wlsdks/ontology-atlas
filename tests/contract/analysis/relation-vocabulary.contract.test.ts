@@ -8,15 +8,11 @@ import { KNOWLEDGE_EDGE_TYPES } from '../../../src/entities/knowledge-graph/mode
 
 /**
  * relation-vocabulary contract (persona measurement N5: four separate relation
- * vocabularies, one per surface). Before `relation-vocabulary.ts`, the 4 surfaces that name a
- * `KnowledgeEdgeType` to a human each picked their own wording: the map
- * legend and `/ontology/insights` used formal Korean nouns, the node
- * datasheet used its own plain phrases, and the ERD builder rendered raw
- * untranslated English. Two guardrails:
+ * vocabularies, one per surface). Before `relation-vocabulary.ts`, each surface that names a
+ * `KnowledgeEdgeType` to a human picked its own wording. Two guardrails:
  *
- * 1. Source-grep — each of the 4 surface files imports the shared
- *    dictionary (`useRelationVocabulary` or its formal-only wrapper
- *    `useEdgeTypeLabel`, both from `@/entities/knowledge-graph`). A future
+ * 1. Source-grep — each surface file imports the shared dictionary
+ *    (`useRelationVocabulary` from `@/entities/knowledge-graph`). A future
  *    edit that reverts one surface to a hand-rolled label reads as a
  *    missing import here, not just a silent copy drift.
  * 2. Dictionary completeness — both i18n registers (`edgeTypes` formal /
@@ -29,14 +25,13 @@ const ROOT = process.cwd();
 
 const SURFACE_FILES: ReadonlyArray<{ label: string; file: string }> = [
   { label: 'map help relation guide (ShortcutSheet)', file: 'src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx' },
-  { label: 'Analysis relationship workspace', file: 'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx' },
   { label: 'data sheet (HomePage — nodeDatasheet labels)', file: 'src/views/home/model/use-topology-preferences.tsx' },
 ];
 
-const IMPORT_MARKERS = ['useRelationVocabulary', 'useEdgeTypeLabel'];
+const IMPORT_MARKERS = ['useRelationVocabulary'];
 
-describe('relation-vocabulary contract — a dictionary shared by 3 surfaces', () => {
-  it('the map legend, insights and data sheet all import the shared dictionary (useRelationVocabulary/useEdgeTypeLabel)', () => {
+describe('relation-vocabulary contract — a dictionary shared by 2 surfaces', () => {
+  it('the map legend and data sheet both import the shared dictionary (useRelationVocabulary)', () => {
     const missing: string[] = [];
     for (const surface of SURFACE_FILES) {
       const source = readFileSync(path.join(ROOT, surface.file), 'utf8');
