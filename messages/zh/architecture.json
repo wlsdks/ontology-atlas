@@ -58,7 +58,7 @@
   "copyHandoffError": "复制失败，请重试",
   "copiedShort": "已复制",
   "noProfiles": "尚未记录此代码库的结构",
-  "noProfilesBody": "已连接的智能体会读取文件夹和真实的导入，并提出架构规则配置草稿。无需手写任何内容：审阅草稿，接受后会在本体文件夹中保存一个文件。",
+  "noProfilesBody": "智能体会读取文件夹和真实的导入，并提出结构草稿。审阅并接受后，会保存为一个文件。",
   "roleLabels": {
     "routing": "路由",
     "app": "应用外壳",
@@ -131,7 +131,7 @@
   "checkingAgent": "正在查找受保护的智能体…",
   "inspectSourceAction": "检查源码",
   "planChangeAction": "规划改动",
-  "draftNoAgentBody": "没有已连接的智能体，所以无法在这里开始。复制下面的指令，粘贴到你使用的编码智能体中。",
+  "draftNoAgentBody": "没有已连接的智能体。复制指令，粘贴到你使用的编码智能体中。",
   "agentTaskMenu": "选择其他智能体任务",
   "recheckSourceAction": "重新检查源码",
   "findImprovementsAction": "查找改进点",

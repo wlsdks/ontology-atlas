@@ -58,7 +58,7 @@
   "copyHandoffError": "コピーできませんでした。もう一度お試しください",
   "copiedShort": "コピーしました",
   "noProfiles": "このコードベースの構造はまだ記録されていません",
-  "noProfilesBody": "接続したエージェントがフォルダと実際のimportを読み、アーキテクチャプロファイルの草案を提案します。手で書くものはありません。草案を確認して承認すると、オントロジーフォルダにファイルが1つ保存されます。",
+  "noProfilesBody": "エージェントがフォルダと実際のimportを読み、構造の草案を提案します。確認して承認すると、ファイル1つに保存されます。",
   "roleLabels": {
     "routing": "ルート",
     "app": "アプリシェル",
@@ -131,7 +131,7 @@
   "checkingAgent": "保護されたエージェントを確認中…",
   "inspectSourceAction": "ソースを検査",
   "planChangeAction": "変更を計画",
-  "draftNoAgentBody": "エージェントが接続されていないため、ここから開始できません。下の文をコピーして、お使いのコーディングエージェントに貼り付けてください。",
+  "draftNoAgentBody": "エージェントが接続されていません。文をコピーして、お使いのコーディングエージェントに貼り付けてください。",
   "agentTaskMenu": "別のエージェントタスクを選ぶ",
   "recheckSourceAction": "ソースを再検査",
   "findImprovementsAction": "改善点を探す",

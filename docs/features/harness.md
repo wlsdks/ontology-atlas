@@ -32,6 +32,10 @@ at all, so the installed app arrives on At a glance and a browser arrives on the
 from the bundled profile and answers there. Without a reading the tabs are At a glance and
 Architecture, and an address that names a view always wins; `?role=` or `?stage=` with no `?view=`
 opens the ladder, the only view with either.
+
+Without a reading, At a glance is one centred stage (`HarnessUnreadStage`): a code path forking to
+the three guards the matrix reads, the third drawn missing, then the reason in one sentence and the
+one way forward (get the app in a browser, connect a source folder in the app).
 The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
 link: keying the carve-out on it made one rail click open the ladder and left the default
 unreachable from the rail (measured in the installed app, 2026-09-13).

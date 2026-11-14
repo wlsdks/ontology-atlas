@@ -16,7 +16,6 @@ import { RefreshCw } from 'lucide-react';
 import { Button, buttonVariants, Chip, EmptyState, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
 import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { GuidanceRelationshipPreview } from '@/widgets/relationship-preview';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 
@@ -33,6 +32,7 @@ import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessGuidesView } from './HarnessGuidesView';
+import { HarnessUnreadStage } from './HarnessUnreadStage';
 import { HarnessOverviewView } from './HarnessOverviewView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
@@ -242,6 +242,7 @@ function HarnessPageInner() {
 
   const fillsPanel = view === 'guides' && reportState.status === 'ready';
   const overviewFills = view === 'overview' && reportState.status === 'ready';
+  const staged = harnessUnavailable && view !== 'architecture';
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
@@ -293,11 +294,11 @@ function HarnessPageInner() {
           className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
             HARNESS_GUTTER_X,
             overviewFills ? 'flex flex-col overflow-hidden pt-6' : 'overflow-y-auto pt-4',
-            fillsPanel && 'flex flex-col')}
+            (fillsPanel || staged) && 'flex flex-col')}
         >
-          <div className={cn('w-full', overviewFills && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
+          <div className={cn('w-full', overviewFills && 'flex min-h-0 flex-1 flex-col', staged && 'flex flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
             {/* One lead: the explainer and the census are a paragraph and its measurement, so they share a block. */}
-            {overviewFills ? null : (
+            {overviewFills || staged ? null : (
               <div className="mb-3 flex shrink-0 flex-col gap-1">
                 <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
                   {t('explainer')}
@@ -333,14 +334,13 @@ function HarnessPageInner() {
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>
             ) : reportState.status === 'no-source' ? (
-              <GuidanceRelationshipPreview footer={<>
-                <div className="min-w-0 max-w-prose">
-                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('noSource')}</p>
-                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('noSourceBody')}</p>
-                  {/* Under the sentence it answers, on its start line; the standard primary `Button`, since the pill is for a state or a count. */}
-                  <Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide mt-4')}>{t('connectSourceAction')}</Link>
-                </div>
-              </>} />
+              <HarnessUnreadStage
+                state="no-source"
+                title={t('noSource')}
+                body={t('noSourceBody')}
+                note={t('noSourceNote')}
+                action={<Link href="/projects/" className={cn(buttonVariants({ variant: 'primary', size: 'lg' }), 'atlas-touch-floor atlas-touch-floor-wide')}>{t('connectSourceAction')}</Link>}
+              />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
               <EmptyState
@@ -358,13 +358,12 @@ function HarnessPageInner() {
               />
             ) : (
               /* The browser sees no dot directory, so it does not draw a shorter list and call it the harness. */
-              <GuidanceRelationshipPreview footer={<>
-                <div className="min-w-0 max-w-prose">
-                  <p className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">{t('browserOnly')}</p>
-                  <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">{t('browserOnlyBody')}</p>
-                  <GetAppLink className="mt-4">{t('browserAction')}</GetAppLink>
-                </div>
-              </>} />
+              <HarnessUnreadStage
+                state="browser"
+                title={t('browserOnly')}
+                body={t('browserOnlyBody')}
+                action={<GetAppLink>{t('browserAction')}</GetAppLink>}
+              />
             )}
           </div>
         </div>
