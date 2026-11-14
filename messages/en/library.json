@@ -887,7 +887,7 @@
       "mayWritePages": "write pages under wiki/ that fit the template, as drafts",
       "mayNothingElse": "nothing else; anything else is blocked and listed in the run history",
       "costNone": "No agent run.",
-      "costPerPass": "The agent runs once each time · about {count, number} times a day at this cadence.",
+      "costPerPass": "One agent run each time · about {count, number} a day at this cadence.",
       "costOnStale": "The agent runs only when a run finds something stale.",
       "allowAndSave": "Allow and schedule",
       "cancel": "Cancel",
