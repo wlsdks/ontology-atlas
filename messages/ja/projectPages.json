@@ -35,7 +35,6 @@
     "stateInvalidTitle": "どのプロジェクトか分かりません",
     "stateInvalidDesc": "アドレスにプロジェクト名がありません。一覧から選んでください。",
     "stateLoadingTitle": "プロジェクトを読み込み中",
-    "stateLoadingDesc": "しばらくお待ちください。",
     "stateNotFoundTitle": "このプロジェクトは現在のフォルダにありません",
     "stateNotFoundDesc": "開いているフォルダに、このアドレスが指すプロジェクトが見つかりませんでした。別のフォルダのリンクか、文書が移動した可能性があります。",
     "stateBackToWorkspace": "プロジェクト一覧",
