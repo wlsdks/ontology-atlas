@@ -42,7 +42,7 @@
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/planning.en.png" alt="规划：左侧是项目文件夹中的 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 就地阅读项目文件夹里的 Markdown，不复制。</td>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="简报：一周内的提交及其日期" /><br /><b>简报</b> — 一段时间内改了什么，按拉取请求、提交和文件分开看。</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="变更：一周内的提交及其日期" /><br /><b>变更</b> — 一段时间内改了什么，按拉取请求、提交和文件分开看。</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/insights.en.png" alt="分析：职责之间的关系，以及每个主张旁边的依据" /><br /><b>分析</b> — 哪些部分依赖哪些部分，依据就在旁边。</td>
@@ -63,7 +63,7 @@
 - 资料库的设置和检查需要在应用中进行；浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
 - 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/FEATURES.md)
 - Git 的仅发送操作不会提交新的文件更改；文件夹或分支状态变化时，可以重新查看。拉取可能更改整个仓库中的文件。[Git](docs/features/git.md)
-- 连接文件夹之前，应用也会保持资料库、规划、智能体和简报可用。[功能清单](docs/FEATURES.md)
+- 连接文件夹之前，应用也会保持资料库、规划、智能体和变更可用。[功能清单](docs/FEATURES.md)
 
 ## 快速开始
 

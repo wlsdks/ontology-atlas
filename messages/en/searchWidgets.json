@@ -174,7 +174,7 @@
       "copyDocUrl": "Copy current document URL to clipboard",
       "tagFilter": "Click a tag chip to filter the tree",
       "modeToggle": "Mode toggle: show only that mode's docs",
-      "goTo_changes": "Go to change briefing",
+      "goTo_changes": "Go to Changes",
       "goTo_planning": "Go to planning"
     },
     "keys": {

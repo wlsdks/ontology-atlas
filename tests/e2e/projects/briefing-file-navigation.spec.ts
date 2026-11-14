@@ -3,16 +3,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { auditPage } from '../../../scripts/lib/design/ui-audit-probe.mjs';
 import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit-checks.mjs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
+import { installBriefingRuntime, openChangesFromRail, setBriefingMode } from './change-briefing-fixture';
 
 for (const width of [390, 1512]) {
   test(`finds a file beyond the first batch without scrolling the whole list at ${width}`, async ({ page }) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+    await openChangesFromRail(page);
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     await page.setViewportSize({ width, height: 900 });
     await page.getByTestId('briefing-area-mcp').click();
     const search = page.getByRole('searchbox', { name: 'Find a changed file', exact: true });
@@ -44,10 +44,10 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
   test(`keeps the changed-file collection bounded and reachable at ${width}`, async ({ page }, testInfo) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+    await openChangesFromRail(page);
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     await page.setViewportSize({ width, height });
     await page.getByTestId('briefing-area-mcp').click();
     const list = page.getByTestId('briefing-file-list');
@@ -65,10 +65,10 @@ for (const width of [390, 1512]) {
   test(`retains file search and selected-file recovery at doubled text size and ${width}`, async ({ page }, testInfo) => {
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+    await openChangesFromRail(page);
     await page.getByTestId('briefing-source-browser').click();
     await setBriefingMode(page, 'long');
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     await page.setViewportSize({ width, height: 900 });
     await page.getByTestId('briefing-area-mcp').click();
     const heading = page.getByRole('region', { name: 'Source evidence', exact: true }).getByRole('heading', { name: 'mcp', exact: true });
@@ -92,7 +92,7 @@ for (const width of [390, 1512]) {
 test('refreshes history instead of retrying an expired patch snapshot', async ({ page }) => {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await page.getByTestId('briefing-source-browser').click();
   const range = await page.getByTestId('briefing-range').innerText();
   await page.getByTestId('briefing-group-capabilities/checkout').click();
@@ -103,7 +103,7 @@ test('refreshes history instead of retrying an expired patch snapshot', async ({
   await setBriefingMode(page, 'changed-head');
   const reads = () => page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.filter(call => call.command === 'git_change_briefing').length);
   const before = await reads();
-  await patch.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await patch.getByRole('button', { name: 'Read again', exact: true }).click();
   await expect.poll(reads).toBe(before + 1);
   await expect(page.getByTestId('briefing-source-browser')).toBeFocused();
   await expect(page.getByTestId('briefing-overview')).toBeVisible();

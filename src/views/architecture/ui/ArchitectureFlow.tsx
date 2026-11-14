@@ -219,7 +219,7 @@ export function ArchitectureFlow({
           data-arc-count={drawsArcs ? arcs.length : 0}
           className="grid w-full"
           style={{
-            gridTemplateColumns: `fit-content(16rem) minmax(0, 1fr) ${arcColumnPx}px`,
+            gridTemplateColumns: `fit-content(24rem) minmax(0, 1fr) ${arcColumnPx}px`,
             gridTemplateRows: `repeat(${order.length}, ${rowPx}px)`,
             rowGap: gapPx,
           }}

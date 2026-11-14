@@ -1,12 +1,12 @@
 import { expect } from '@playwright/test';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime } from './change-briefing-fixture';
+import { gotoOriginals, installBriefingRuntime } from './change-briefing-fixture';
 
 export async function enter(page: import('@playwright/test').Page) {
   await installBriefingRuntime(page);
   await page.addInitScript(() => localStorage.setItem('ontology-atlas:local-endpoint', JSON.stringify({ baseUrl: 'http://localhost:11434', model: 'fixture-text-model' })));
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
   await page.getByTestId('briefing-mixed').click();
   await expect(page.getByTestId('briefing-narrative')).toBeVisible();
 }

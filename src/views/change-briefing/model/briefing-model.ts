@@ -33,6 +33,17 @@ export function movePeriod(period: BriefingPeriod, anchor: string, direction: nu
   return localDate(date);
 }
 
+/** The period as a person reads it ("Thursday, November 13"); the year appears only outside the current one. */
+export function periodLabel(period: BriefingPeriod, range: BriefingRange, locale: string, today: string): string {
+  const start = new Date(`${range.start}T00:00:00`);
+  const end = new Date(`${range.end}T00:00:00`);
+  const year = range.start.slice(0, 4) !== today.slice(0, 4) || range.end.slice(0, 4) !== today.slice(0, 4) ? 'numeric' : undefined;
+  if (period === 'day') return new Intl.DateTimeFormat(locale, { year, month: 'long', day: 'numeric', weekday: 'long' }).format(start);
+  if (period === 'month') return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }).format(start);
+  if (period === 'year') return new Intl.DateTimeFormat(locale, { year: 'numeric' }).format(start);
+  return new Intl.DateTimeFormat(locale, { year, month: 'short', day: 'numeric' }).formatRange(start, end);
+}
+
 export interface BriefingCommit { hash: string; subject: string; message?: string; messageComplete?: boolean; paths: string[] }
 export interface CapabilityGroup { id: string; title: string; paths: string[]; commits: BriefingCommit[] }
 

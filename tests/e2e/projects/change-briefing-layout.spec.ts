@@ -3,13 +3,13 @@ import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { auditPage, FREEZE_CSS } from '../../../scripts/lib/design/ui-audit-probe.mjs';
 import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit-checks.mjs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
+import { gotoOriginals, installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
 
 test('keeps coverage beside the combined briefing return and restores focus after inspection', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
   await page.getByTestId('briefing-mixed').click();
   const mode = await page.getByRole('button', { name: 'Back to pull requests' }).boundingBox();
   const coverage = await page.getByTestId('briefing-coverage').boundingBox();
@@ -32,12 +32,12 @@ test('keeps grouped evidence and file comparison reachable across responsive ban
     const page = await context.newPage();
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.goto('/en/changes/?guides=off');
+    await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-source-browser').click();
     await expect(page.getByTestId('briefing-ready')).toBeVisible();
     await page.setViewportSize({ width, height: 900 });
     await setBriefingMode(page, 'long');
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     await expect(page.getByTestId('briefing-area-mcp')).toBeVisible();
     await page.addStyleTag({ content: FREEZE_CSS });
     const overview = await auditPage(page, { width, rampNames, scope: 'main' });

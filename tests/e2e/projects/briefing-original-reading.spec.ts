@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { openChangesFromRail } from './change-briefing-fixture';
 import { calls, enter, readPrs } from './git-pr-briefing-helpers';
 import { readFileSync, readdirSync } from 'node:fs';
 import { auditPage } from '../../../scripts/lib/design/ui-audit-probe.mjs';
@@ -99,7 +100,7 @@ test('keeps a cited passage inside a multi-paragraph code fence attached to the 
   await original.getByRole('button', { name: 'View source text', exact: true }).click();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${text}`);
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await expect(original.getByTestId('briefing-source-text')).toBeVisible();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${text}`);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
@@ -139,7 +140,7 @@ test('keeps an explicit formatted citation view through route and period returns
   await expect.poll(() => original.evaluate(element => element.closest('main')!.scrollTop)).toBe(beforePeriodChange);
   const position = await original.evaluate(element => { const main = element.closest('main')!; main.scrollTop = 800; return main.scrollTop; });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await expect(original.getByTestId('briefing-source-reading')).toBeVisible();
   await expect.poll(() => original.evaluate(element => element.closest('main')!.scrollTop)).toBe(position);
   await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();

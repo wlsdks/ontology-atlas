@@ -202,7 +202,7 @@ The desktop rail's order and hrefs come from
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
-| Briefing: public PR updates, commits and files in separate views | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
+| Changes: a digest of merged work (count, worth a look, groups by title label); PRs, commits and files in Originals | `/changes` | [`change-briefing.md`](features/change-briefing.md) |
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
@@ -252,7 +252,7 @@ and managed-PC risk before the executable CTA. Chrome or Edge remains the
 install-free fallback when that warning or an organization policy is a blocker;
 the web still does not offer BYOK or MCP registration.
 
-Before a vault is connected, the installed app keeps Library, Planning, Agents and Briefing reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
+Before a vault is connected, the installed app keeps Library, Planning, Agents and Changes reachable and offers a folder chooser above the rail. A folder containing only wiki pages still opens in Library; its loaded-folder navigation remains based on its contents.
 
 Library service imports stage disabled metadata, confirm credential storage, then activate and allow the exact saved definition on this Mac. Pending saves cannot be submitted twice; failed saves can resume the same row. Changed settings and duplicate names require review. Browser users get Add files or the app, with no token field. Service access remains unverified.
 
