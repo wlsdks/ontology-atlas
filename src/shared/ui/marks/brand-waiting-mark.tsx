@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 
-/** Company for pending work or one finite welcome; parents own status and Stop. */
+/** Company for pending work, one finite welcome, or a curious look beside a dead end; parents own status and Stop. */
 export function BrandWaitingMark({
   active,
   initialVisibility = 'observed',
@@ -14,13 +14,17 @@ export function BrandWaitingMark({
   active: boolean;
   /** Only full-screen pending fallbacks can know they are visible before hydration. */
   initialVisibility?: 'observed' | 'visible';
-  scale?: 1 | 2;
-  motion?: 'waiting' | 'connect' | 'compile' | 'greeting';
-}) {
+} & (
+  | { scale?: 1 | 2; motion?: Exclude<WaitingMotion, 'curious'> }
+  /** The curious tilt exists only as native 128px cells. */
+  | { scale: 2; motion: 'curious' }
+)) {
   return active ? <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} motion={motion} /> : null;
 }
 
-function ActiveWaitingMark({ initialVisibility, scale, motion }: { initialVisibility: 'observed' | 'visible'; scale: 1 | 2; motion: 'waiting' | 'connect' | 'compile' | 'greeting' }) {
+type WaitingMotion = 'waiting' | 'connect' | 'compile' | 'greeting' | 'curious';
+
+function ActiveWaitingMark({ initialVisibility, scale, motion }: { initialVisibility: 'observed' | 'visible'; scale: 1 | 2; motion: WaitingMotion }) {
   const ref = useRef<HTMLSpanElement>(null);
   const greetingFinished = useRef(false);
   const reducedMotion = usePrefersReducedMotion();
