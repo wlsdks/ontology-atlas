@@ -40,7 +40,7 @@
     "git-remote": "Git 推送、拉取和获取",
     "coding-tools": "编码智能体",
     "website-files": "网站文件",
-    "git-pr-descriptions": "GitHub PR descriptions"
+    "git-pr-descriptions": "读取 GitHub PR 描述"
   },
   "updateOn": "自动检查已开",
   "updateOff": "自动检查已关",

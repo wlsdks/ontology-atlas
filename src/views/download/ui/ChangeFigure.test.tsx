@@ -150,7 +150,7 @@ describe('ChangeSection', () => {
     mount();
     expect(screen.getByRole('figure', { name: /illustration/i })).toHaveAccessibleDescription(/Library workspace/);
     const section = screen.getByTestId('download-change-section');
-    for (const text of ['which meanings to recheck', '3 concepts whose meaning stands while the code under it moved', 'Ask the agent']) {
+    for (const text of ['which meanings to recheck', '3 concepts whose code changed after the meaning was written', 'Ask the agent']) {
       expect(section.textContent).toContain(text);
     }
     for (const row of CHANGE_CAST) expect(section.textContent).toContain(row.file);

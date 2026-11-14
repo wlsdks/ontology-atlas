@@ -80,7 +80,7 @@ describe('empty tab', () => {
   it('has the three tabs say different sentences', () => {
     renderPanel(undefined, empty);
     expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent(
-      '여기 올라온 기다리는 일은 없어요.',
+      '기다리는 일이 없어요.',
     );
     expect(screen.getByTestId('agent-inbox-todo-empty-repair')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /결과/ }));
@@ -181,7 +181,7 @@ describe('ink and numbers of the panel: only what draws attention is indigo', ()
     // than replacing it through `aria-label`.
     const name = screen.getByRole('button', { name: /지도에서 주문 열기/ });
     expect(name).toBe(row);
-    expect(name).toHaveAccessibleName(/개념 1개를 고쳤어요/);
+    expect(name).toHaveAccessibleName(/개념 1개를 수정했어요/);
     // A word inside the row takes no underline — the row presses, not the word.
     expect(row.querySelector('.underline')).toBeNull();
   });

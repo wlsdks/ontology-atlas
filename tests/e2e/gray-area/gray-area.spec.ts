@@ -7,7 +7,7 @@ import { installGrayAreaHarness as install, openGrayAreaPreview as open, inspect
 test('reviews the exact folder before any scan and shows bounded actual source with preserved path focus',async({page})=>{
   await page.setViewportSize({width:1512,height:949});await install(page);await open(page);
   expect(await page.evaluate(()=> (window as unknown as {__gray:{calls:{command:string}[]}}).__gray.calls.filter(c=>c.command==='read_gray_area_evidence').length)).toBe(0);
-  await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
+  await page.getByRole('button',{name:'Check this folder',exact:true}).click();
   const panel=page.getByTestId('gray-area-inspector');await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await waitForGrayAreaTop(page);
   await page.setViewportSize({width:390,height:949});
@@ -16,11 +16,11 @@ test('reviews the exact folder before any scan and shows bounded actual source w
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
   await expect(page.getByTestId('gray-area-source-witness')).toContainText('canWrite(request)');
   await expect(page.getByTestId('gray-area-source-witness')).toContainText('SHA256');
-  await expect(page.getByRole('region',{name:'Captured source',exact:true})).toBeFocused();
-  await expect.poll(()=>page.getByRole('button',{name:'Close source excerpt'}).evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
-  await page.getByRole('button',{name:'Close source excerpt'}).click();
+  await expect(page.getByRole('region',{name:'Code excerpt',exact:true})).toBeFocused();
+  await expect.poll(()=>page.getByRole('button',{name:'Close code excerpt'}).evaluate(e=>{const r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})).toBe(true);
+  await page.getByRole('button',{name:'Close code excerpt'}).click();
   await expect(page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first()).toBeFocused();
-  await page.getByRole('button',{name:'Compare concepts on map'}).first().click();
+  await page.getByRole('button',{name:'Show both concepts on map'}).first().click();
   await expect(panel).toBeVisible();await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await waitForAnimationsDone(panel);
   for(const width of [390,768,1040]){
@@ -28,12 +28,12 @@ test('reviews the exact folder before any scan and shows bounded actual source w
     await expect.poll(()=>panel.evaluate(e=>{const r=e.getBoundingClientRect();return Math.max(-r.left,r.right-innerWidth,-r.top,r.bottom-innerHeight);})).toBeLessThanOrEqual(1);
   }
   await page.getByRole('button',{name:'Scope, limits and permissions',exact:true}).click();
-  await expect(page.getByRole('list',{name:'Implementation folders inspected'}).getByRole('listitem')).toHaveText(['src/research','src/retry']);
+  await expect(page.getByRole('list',{name:'Code folders checked'}).getByRole('listitem')).toHaveText(['src/research','src/retry']);
 });
 
 test('prepares an editable investigation without sending a provider turn or writing',async({page})=>{
   await install(page);await inspect(page);
-  await page.getByRole('button',{name:'Prepare editable draft',exact:true}).first().click();
+  await page.getByRole('button',{name:'Add draft to chat',exact:true}).first().click();
   const composer=page.getByRole('textbox',{name:'Message'});await expect(composer).toContainText('Retry dispatch');
   await page.getByTestId('acp-chat-seated-detail').click();
   const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');
@@ -44,14 +44,14 @@ test('prepares an editable investigation without sending a provider turn or writ
 
 test('a changed evidence version blocks source opening and copying; session folding is reversible',async({page})=>{
   await install(page);await inspect(page);
-  await page.getByRole('button',{name:'Fold for this inspection',exact:true}).first().click();
+  await page.getByRole('button',{name:'Hide for now',exact:true}).first().click();
   await expect(page.getByTestId('gray-area-missing-link')).toHaveCount(0);
-  await page.getByRole('button',{name:/Restore 1 folded/}).click();
+  await page.getByRole('button',{name:/Show 1 hidden suggestion/}).click();
   await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();
   await page.evaluate(()=>{(window as unknown as {__gray:{current:boolean}}).__gray.current=false;});
-  await page.getByRole('button',{name:'Copy investigation',exact:true}).first().click();
-  await expect(page.getByTestId('gray-area-inspector')).toContainText('source, meaning or folder binding changed');
-  await expect(page.getByRole('button',{name:'Copy investigation',exact:true}).first()).toBeDisabled();
+  await page.getByRole('button',{name:'Copy prompt',exact:true}).first().click();
+  await expect(page.getByTestId('gray-area-inspector')).toContainText('the ontology or the folder connection changed');
+  await expect(page.getByRole('button',{name:'Copy prompt',exact:true}).first()).toBeDisabled();
   await expect(page.getByTestId('gray-area-source-witness')).toHaveCount(0);
 });
 
@@ -68,7 +68,7 @@ test('distinct references from one concept control their own candidate details',
       return snapshot;
     };
   });
-  await open(page);await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
+  await open(page);await page.getByRole('button',{name:'Check this folder',exact:true}).click();
   const cards=page.getByTestId('gray-area-missing-link');await expect(cards).toHaveCount(2);
   const headers=cards.locator(':scope > button[aria-controls]');
   const ids=await headers.evaluateAll(items=>items.map(e=>e.getAttribute('aria-controls')));
@@ -85,8 +85,8 @@ test('source invalidation at a low action reveals focused recovery',async({page}
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
   await expect(page.getByTestId('gray-area-source-witness')).toBeVisible();
   await page.evaluate(()=>{(window as unknown as {__gray:{current:boolean}}).__gray.current=false;});
-  await page.getByRole('button',{name:'Copy investigation',exact:true}).first().click();
-  const recovery=page.getByTestId('gray-area-inspector').getByRole('status').filter({hasText:'source, meaning or folder binding changed'});
+  await page.getByRole('button',{name:'Copy prompt',exact:true}).first().click();
+  const recovery=page.getByTestId('gray-area-inspector').getByRole('status').filter({hasText:'the ontology or the folder connection changed'});
   await expect(recovery).toBeFocused();
   await expect.poll(()=>recovery.evaluate(e=>{
     const r=e.getBoundingClientRect();const body=e.closest('[data-testid="gray-area-body"]')!.getBoundingClientRect();
@@ -112,15 +112,15 @@ test('the inspector, candidate detail, scope and source open with nonempty WCAG 
     expect(result.violations,state).toEqual([]);
   };
   await audit('folder preview');
-  await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();
+  await page.getByRole('button',{name:'Check this folder',exact:true}).click();
   await expect(page.getByTestId('gray-area-missing-link').getByText('Observed',{exact:true})).toBeVisible();
   await audit('candidate detail');
   await page.getByRole('button',{name:'Scope, limits and permissions',exact:true}).click();
-  await expect(page.getByRole('list',{name:'Implementation folders inspected'})).toBeVisible();
+  await expect(page.getByRole('list',{name:'Code folders checked'})).toBeVisible();
   await audit('scope disclosure');
   await page.getByRole('button',{name:/src\/retry\/index.ts:1/}).first().click();
-  await expect(page.getByRole('region',{name:'Captured source',exact:true})).toBeFocused();
-  await audit('source excerpt');
+  await expect(page.getByRole('region',{name:'Code excerpt',exact:true})).toBeFocused();
+  await audit('code excerpt');
 });
 
 test('a comparison from the saved Hex view draws both elements on the flat recorded path',async({page})=>{
@@ -129,7 +129,7 @@ test('a comparison from the saved Hex view draws both elements on the flat recor
   await expect(page.getByTestId('hex-board-map')).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>localStorage.getItem('atlas.appearance.hex-board'))).toBe('on');
   await inspect(page);
-  await page.getByRole('button',{name:'Compare concepts on map',exact:true}).click();
+  await page.getByRole('button',{name:'Show both concepts on map',exact:true}).click();
   await expect(page.getByTestId('topology-view-3d')).toHaveAttribute('data-map-view','flat');
   await expect(page.getByTestId('hex-board-map')).toHaveCount(0);
   const map=page.getByTestId('ontology-map');
@@ -154,7 +154,7 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await page.getByTestId('map-detail-panel-more-menu-trigger').click();await page.getByTestId('map-detail-panel-action-gray-area').click();
   await page.getByRole('button',{name:'이 폴더에서 검사',exact:true}).click();
   await page.getByRole('button',{name:'지도에서 두 개념 보기',exact:true}).click();
-  await page.getByRole('button',{name:'수정 가능한 대화 초안',exact:true}).first().click();
+  await page.getByRole('button',{name:'대화에 초안 넣기',exact:true}).first().click();
   const dock=page.getByTestId('analysis-workbench');const heading=dock.getByRole('heading',{level:2});
   await expect(heading).toContainText('재시도 전달');await expect(heading).toContainText('쓰기 권한 규칙');
   const composer=page.getByRole('textbox',{name:'메시지',exact:true});
@@ -185,7 +185,7 @@ test('a new explicit investigation restores its topic after an ordinary draft wa
   await expect(composer).toBeVisible();await composer.fill('An ordinary draft');await composer.fill('');
   await page.getByTestId('analysis-workbench').getByRole('button',{name:/close/i}).click();
   await inspect(page);
-  await page.getByRole('button',{name:'Analyze next',exact:true}).click();
+  await page.getByRole('button',{name:'Run analysis',exact:true}).click();
   await expect(page.getByTestId('analysis-workbench').getByRole('heading',{level:2})).toContainText('Retry dispatch');
   await expect(page.getByTestId('analysis-workbench').getByRole('heading',{level:2})).toContainText('Write policy');
   await composer.fill('A new editable follow-up');await composer.fill('');

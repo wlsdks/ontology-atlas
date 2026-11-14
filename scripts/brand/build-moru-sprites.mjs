@@ -501,8 +501,6 @@ export async function buildMoru() {
   const canonical = 'assets/brand/mascot';
   for (const [name, source] of Object.entries({ 'full-64': 'moru-full-64.png', 'presentation-128': 'moru-full-128.png', 'compact-32': poses['compact-portrait'].path, 'micro-16': poses['micro-portrait'].path })) await put(`${canonical}/mascot-${name}.png`, await readFile(join(ROOT, source)));
   await put(`${canonical}/mascot-welcome-32.png`, await readFile(join(ROOT, poses['compact-portrait'].path)));
-  // A tilted full body has no readable face at 32px, so the missing page shows the native pose.
-  await put(`${canonical}/mascot-curious-128.png`, await readFile(join(ROOT, poses['tilt-right'].path)));
   for (const [state, id] of Object.entries({ walk: 'wave', read: 'source-read', success: 'dance', waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) await put(`${canonical}/mascot-${state}-row-64.png`, await strip(framesBySize[64][id], 64));
   for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) await put(join(ROOT, `icons/atlas-compass-${size}.png`), await sharp(join(ROOT, spec.compass)).resize(size, size).png().toBuffer());
   const proof = [];
