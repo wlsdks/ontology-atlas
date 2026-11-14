@@ -74,8 +74,6 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   edit: { scope: "vault-scoped", note: "relation type and target node slug" },
   index: { scope: "global", note: "expanded|collapsed" },
   recent: { scope: "global", note: "auto|1|7|30" },
-  via: { scope: "global", note: "insights return marker: a tab name (independent of the vault)" },
-  review: { scope: "global", note: "insights queue row id; the queue is derived each time, so it is not a vault name" },
   ask: { scope: "global", note: "enumeration of intent kinds" },
   view: { scope: "global", note: "map view enumeration: hex, structure, strata, coupling" },
 };
@@ -217,23 +215,6 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     file: "src/features/library/lib/sources/declined-candidates.ts",
     provenBy: "src/features/library/lib/sources/declined-candidates.test.ts",
     note: "candidate handed over from document search; a convenience that stays on this computer only",
-  },
-  {
-    // When this reader last looked at the brief. A reader fact, never the folder's, and per
-    // vault because each folder has its own brief.
-    key: "atlas.insights.briefSeenAt:",
-    kind: "storage",
-    scope: "vault-scoped",
-    scopedBy: "useVaultIdentityScope",
-    file: "src/views/ontology-insights/lib/brief/brief-anchor.ts",
-    provenBy: "src/views/ontology-insights/lib/brief/brief-anchor.test.ts",
-    note: "last time the briefing was seen; the baseline for measuring \"since then\", per folder",
-  },
-  {
-    key: "ontology-atlas:insights-brief-seen-change",
-    kind: "event",
-    scope: "global",
-    note: "event that announces a baseline time change within the same tab; not a storage key",
   },
   {
     key: "atlas.map.hex-board.v1:",

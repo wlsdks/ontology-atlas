@@ -32,8 +32,8 @@ export interface DomainCapacityBarProps {
 }
 
 /**
- * Capabilities against elements; the track always fills and only the boundary moves. Shared by
- * `/ontology/insights` and `/projects`. Indigo plus neutral with a 1px seam; no minimum width, which
+ * Capabilities against elements; the track always fills and only the boundary moves. Indigo plus
+ * neutral with a 1px seam; no minimum width, which
  * would inflate small values (`docs/DESIGN-SYSTEM.md`, "Three ambers, three rules").
  */
 export function DomainCapacityBar({

@@ -372,7 +372,7 @@ export async function waitForDomQuiet(
 export async function waitForPageSettled(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
   await page.waitForLoadState("load", { timeout });
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  // A loading view (a route's Suspense fallback, Insights still counting) says so with
+  // A loading view (a route's Suspense fallback) says so with
   // `aria-busy`, and it can hold still for longer than the quiet window while it reads.
   const notBusy = () =>
     page.waitForFunction(() => document.querySelector('[aria-busy="true"]') === null, undefined, {

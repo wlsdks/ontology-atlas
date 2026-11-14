@@ -17,7 +17,6 @@ const SCAN_DIRS = [join(process.cwd(), "app"), join(process.cwd(), "src")];
  */
 const APPROVED_FALLBACKS = [
   "RouteLoadingFallback",
-  "InsightsLoadingView",
   "MapEntryFallback",
   "GatewayEntryFallback",
 ] as const;
@@ -70,15 +69,6 @@ describe("blank-screen gate on route entry", () => {
       return !APPROVED_FALLBACKS.some((name) => source.includes(name));
     });
     expect(offenders.map(rel)).toEqual([]);
-  });
-
-  it("analysis has a named, busy destination while its implementation loads", () => {
-    const shell = readFileSync("src/views/ontology-insights/ui/InsightsLoadingView.tsx", "utf8");
-    expect(shell).toContain('<PageHeaderBar');
-    expect(shell, 'the loading view names the page, so its title is the h1').not.toContain('titleAs=');
-    expect(shell).toContain('aria-busy="true"');
-    expect(shell).toContain('<WaitStage');
-    expect(shell).toContain('data-route-loading="true"');
   });
 
   it("the placeholder wording exists in both ko and en", () => {

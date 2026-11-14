@@ -9,14 +9,14 @@ export interface HiddenCountLineProps {
    * with `total - shown`.
    */
   label: (hidden: number) => string;
-  /** Required: a remainder with nowhere to go is a dead number. */
-  route: ReactNode;
+  /** Where the withheld rows can be read; omitted when no screen lists them all. */
+  route?: ReactNode;
   className?: string;
   'data-testid'?: string;
 }
 
 /**
- * One quiet line saying what a truncated view leaves out and where to read it. Renders only
+ * One quiet line saying what a truncated view leaves out and, when one exists, where to read it. Renders only
  * when `total > shown` (`hidden-count-line.test.tsx`). No trailing arrow
  * (`tests/contract/copy/label-decoration.contract.test.ts`), and no colour or icon, because it
  * states a view boundary, not a vault problem.
@@ -41,8 +41,12 @@ export function HiddenCountLine({
       )}
     >
       <span className="min-w-0">{label(hidden)}</span>
-      <span aria-hidden>·</span>
-      {route}
+      {route ? (
+        <>
+          <span aria-hidden>·</span>
+          {route}
+        </>
+      ) : null}
     </p>
   );
 }

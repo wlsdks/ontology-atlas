@@ -9,7 +9,7 @@ routes: []
 # BottomTabBar
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- 5 persistent destinations: Map · Architecture · Docs · Insights · Projects.
+- 5 persistent destinations: Map · Architecture · Library · Planning · Projects.
   Contextual relation writing, Agents and MCP entry points, and Git keep their
   existing narrow-screen paths. Web adds Get App as a sixth utility, not a destination.
 - Min height 56 px (safe-area)

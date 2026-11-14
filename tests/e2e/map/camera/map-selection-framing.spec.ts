@@ -135,7 +135,7 @@ test("the Korean relation sentence joins its particles to the names", async ({ p
 
 test("an edit intent that arrives by URL on the sample says why it cannot edit and offers the folder", async ({ page }) => {
   await page.goto(
-    "/ko/topology/?e2e=1&guides=off&p=capability%3Aorder-placement&workbench=edit&via=insights%3Ado-next&review=promotion%3Acapability%3Aorder-placement",
+    "/ko/topology/?e2e=1&guides=off&p=capability%3Aorder-placement&workbench=edit",
     { waitUntil: "domcontentloaded" });
   const dialog = page.locator('[data-testid="recent-changes-needs-vault-dialog"]');
   await expect(dialog).toBeVisible({ timeout: 15000 });

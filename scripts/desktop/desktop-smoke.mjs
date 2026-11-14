@@ -36,7 +36,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLE_KEYS = {
   "/docs": "docs",
   "/ontology": "ontology",
   "/topology": "topology",
-  "/ontology/insights": "ontologyInsights",
+  // The retired Analysis address redirects and carries the same title as `/ontology`.
+  "/ontology/insights": "ontology",
 };
 
 // Download uses an absolute homeTitle; workbenches template pages with siteName. Follow route
@@ -144,11 +145,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/ontology": ["/topology/?", "index", "expanded"],
   "/topology": ["ontology-map-canvas", "topology-concept-search"],
   "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
-  "/ontology/insights": [
-    "relationship-analysis",
-    "claim-evidence",
-    "analysis-board",
-  ],
+  "/ontology/insights": ["/library/?tab=wiki", "/architecture/?"],
 };
 
 function routeIndexPath({ locale, route }) {

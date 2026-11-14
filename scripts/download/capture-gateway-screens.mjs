@@ -648,20 +648,6 @@ const SCREENS = [
     },
   },
   {
-    name: "insights",
-    route: "/ontology/insights/",
-    async prepare(page) {
-      await page.waitForFunction(
-        () =>
-          document.querySelectorAll('[data-testid="analysis-board"] [data-testid="analysis-claim"]').length > 0 &&
-          document.querySelectorAll('[data-testid="analysis-board"] [data-testid="analysis-witness"]').length > 0,
-        undefined,
-        { timeout: 180_000, polling: 250 },
-      );
-      await page.waitForTimeout(300);
-    },
-  },
-  {
     name: "projects",
     route: "/project/ontology-atlas/",
     async prepare(page) {

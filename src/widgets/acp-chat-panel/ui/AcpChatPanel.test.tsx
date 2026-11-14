@@ -3,7 +3,6 @@ import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { TURN_SILENCE_LIMIT_MS } from '@/features/acp-session/model/turn-liveness';
-import { READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
 import type { TaskBaselineCaptureResult } from '@/features/acp-session';
 
 /**
@@ -4022,9 +4021,9 @@ describe('reopening the panel — the folder\'s latest conversation, not a blank
 });
 
 describe('chat panel: a seated request stands as only a readable sentence, and the attached instruction follows unchanged', () => {
-  const LEAD = 'Explain this Analysis tab from the current ontology evidence only.';
+  const LEAD = 'Explain this map from the current ontology evidence only.';
   const DETAIL = [
-    READ_ONLY_TOOL_INSTRUCTION.en,
+    'Scope: the whole folder, read tools only.',
     '',
     'query_ontology({operation:"maintenance_plan"}) → explain the top three priorities',
     '',
