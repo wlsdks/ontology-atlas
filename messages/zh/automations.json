@@ -35,7 +35,6 @@
     "ontology": "本体",
     "documents": "文档"
   },
-  "indexAria": "此文件夹中的计划",
   "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
   "getApp": "获取应用",
   "loadingTitle": "正在加载自动检查",

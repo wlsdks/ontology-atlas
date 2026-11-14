@@ -172,7 +172,7 @@ test.describe('the Library spine at one saved answer', () => {
     const observation = popup.getByTestId('answer-observation').first();
     await expect(observation).toHaveAttribute('data-state', 'unchanged');
     expect(await observation.evaluate((el) => el.querySelector('svg') !== null)).toBe(true);
-    await expect(row).toHaveAccessibleDescription(/No change since source observation/);
+    await expect(row).toHaveAccessibleDescription(/No change since the last source check/);
 
     // The row is a door, and it opens the answer it names.
     await row.click();

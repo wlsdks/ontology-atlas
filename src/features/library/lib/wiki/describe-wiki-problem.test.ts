@@ -60,7 +60,7 @@ describe("describeWikiProblem — what, where, what to do", () => {
       section: "Facts",
       line: 31,
     });
-    expect(words.sentence).toBe("No original backs up what is written at line 31 under Facts.");
+    expect(words.sentence).toBe("No source backs up what is written at line 31 under Facts.");
   });
 
   /* The check report carries lines on its door, so the sentence omits them. */

@@ -223,7 +223,7 @@ test.describe("the Library destination", () => {
     await expect(planRow).toContainText("needs review");
 
     const budgetRow = page.getByTestId("library-source-sources/budget.xlsx");
-    await expect(budgetRow).toContainText("not compiled");
+    await expect(budgetRow).toContainText("no wiki page");
 
     /*
      * The count keeps two states apart: one source nobody wrote up and one whose page is behind its
@@ -412,7 +412,7 @@ test.describe("the Library destination", () => {
       page.getByTestId("library-source-sources/Requirements v3.pdf"),
     ).toBeVisible({ timeout: 25_000 });
     await expect(page.getByTestId('library-source-sources/Schedule.pdf')).toBeVisible();
-    await expect(page.getByTestId("library-source-list")).toContainText("not compiled");
+    await expect(page.getByTestId("library-source-list")).toContainText("no wiki page");
     await page.getByTestId('library-find-documents').click();
     await expect(dialog.getByRole('searchbox')).toHaveValue('');
     await expect(page.getByTestId('find-documents-candidate-other/Notes.pdf')).toBeVisible();
@@ -578,7 +578,7 @@ test.describe("the Library pane", () => {
 
     // One strip, and the step facts are on it — not in a second header row.
     const strip = page.getByTestId("library-home-strip");
-    await expect(strip).toContainText("Compile next");
+    await expect(strip).toContainText("Write wiki page:");
     await expect(page.getByTestId("library-status-strip")).toHaveCount(0);
     await expect(page.getByTestId("library-needs-compile")).toHaveCount(0);
 

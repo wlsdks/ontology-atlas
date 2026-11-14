@@ -106,7 +106,7 @@ describe("the passage a pressed citation shows", () => {
       enMessages.library.source.openedForCitation,
     );
     // And the hash row stops reading "not measured" once these bytes were hashed.
-    expect(screen.getByTestId("library-source-summary").textContent).toContain("measured just now");
+    expect(screen.getByTestId("library-source-summary").textContent).toContain("read just now");
   });
 
   it("names every unit of a heading section, because the anchor names the section", () => {

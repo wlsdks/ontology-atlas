@@ -45,7 +45,7 @@ test('schedule rows expose result evidence, collapse, and keep creation cancella
   await expect(report.locator('a[href*="slug=wiki%2Fonboarding"]')).toHaveCount(1);
   await expect(report).not.toContainText('wiki/onboarding.md');
   await report.getByRole('button', { name: 'Tool activity', exact: true }).press('Enter');
-  await expect(report.getByText(/Refused: mcp__confluence__create_page/)).toBeVisible();
+  await expect(report.getByText(/Blocked: mcp__confluence__create_page/)).toBeVisible();
   await page.getByTestId('automations-remove').click();
   await expect(page.getByTestId('automations-confirm-remove')).toBeVisible();
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
@@ -110,7 +110,7 @@ test('new schedules start fresh after cancellation and save, including rapid reo
   await page.getByTestId('ontology-automation-name').fill('Cancelled ontology draft');
   await page.keyboard.press('Escape');
   await page.keyboard.press('Enter');
-  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology check');
   await page.getByTestId('ontology-automation-name').fill('Saved ontology review');
   await page.getByTestId('ontology-automation-focus').fill('Evidence links');
   await page.getByTestId('ontology-automation-allow').click();
@@ -120,7 +120,7 @@ test('new schedules start fresh after cancellation and save, including rapid reo
     button.addEventListener('mousedown', (event) => event.preventDefault(), { once: true });
   });
   await page.getByTestId('automations-new').click();
-  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology refinement');
+  await expect(page.getByTestId('ontology-automation-name')).toHaveValue('Ontology check');
   await expect(page.getByTestId('ontology-automation-focus')).toHaveValue('');
   await page.keyboard.press('Escape');
 });
@@ -144,7 +144,7 @@ test('a pass that had no agent says why in its run history, on the history colum
   await expect(report).toContainText('Checked 4 documents');
   // The Library ledger's own sentence for the same stored fact.
   const note = report.locator('[data-run-note="no-agent"]');
-  await expect(note).toHaveText('No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the round again.');
+  await expect(note).toHaveText('No coding agent was ready on this Mac, so nothing was redrafted. Open Agents to sign in, then run the scheduled check again.');
 
   for (const width of [1280, 1040]) {
     await page.setViewportSize({ width, height: 800 });
@@ -227,14 +227,14 @@ test('a round and a connector a cloned folder switched on wait for this Mac, and
   await page.goto('/en/automations/?guides=off&kind=documents');
   const row = page.getByTestId('automation-r-confluence');
   const item = page.locator('li', { has: row });
-  await expect(row).toContainText('Not on this Mac');
+  await expect(row).toContainText('Off on this Mac');
   await expect(item.getByTestId('automation-allow-here')).toContainText('Switched on in this folder, not on this Mac');
-  await expect(item.getByTestId('automation-allow-here-line')).toContainText('confluence · looks for “pages changed in the last day” · at most 20 new documents a pass');
+  await expect(item.getByTestId('automation-allow-here-line')).toContainText('confluence · looks for “pages changed in the last day” · at most 20 new documents per run');
   const before = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
   await item.getByTestId('automation-allow-here-button').click();
   await expect(item.getByTestId('automation-allow-here')).toHaveCount(0);
   await expect(row).toContainText('Scheduled');
-  await expect(page.getByTestId('automation-r-consistency')).toContainText('Not on this Mac');
+  await expect(page.getByTestId('automation-r-consistency')).toContainText('Off on this Mac');
   const after = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
   expect(after).toBe(before);
 
@@ -259,7 +259,7 @@ test('a document round is edited in place: same id, its history kept, the new ca
   const item = page.locator('li', { has: row });
   await item.getByTestId('automations-edit').click();
   const sheet = page.getByTestId('library-rounds-sheet');
-  await expect(sheet).toContainText('Edit the document review');
+  await expect(sheet).toContainText('Edit document check');
   await expect(page.getByTestId('library-rounds-rename')).toContainText('Pages still match');
   await page.getByTestId('library-rounds-cadence-unit').getByRole('radio', { name: 'Day', exact: true }).click();
   await expect(page.getByTestId('library-rounds-allow')).toHaveText('Save changes');
@@ -289,9 +289,9 @@ test('the documents lane keeps its run history under the schedules: held lines, 
   const ledger = history.getByTestId('round-ledger');
   await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
   await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(0);
-  await expect(ledger.locator("[data-outcome='redrafted']")).toContainText('1 agent turn');
+  await expect(ledger.locator("[data-outcome='redrafted']")).toContainText('1 agent run');
   await expect(ledger.locator("[data-outcome='redrafted']")).toContainText('mcp__confluence__create_page');
-  await expect(ledger.locator("[data-outcome='stale']")).toContainText('no agent turn');
+  await expect(ledger.locator("[data-outcome='stale']")).toContainText('no agent run');
   const heldHeight = await ledger.locator("[data-outcome='held']").first().evaluate((el) => el.getBoundingClientRect().height);
   const cardHeight = await ledger.locator("[data-outcome='redrafted']").first().evaluate((el) => el.getBoundingClientRect().height);
   expect(cardHeight, 'a change is a card, a held pass a line').toBeGreaterThan(heldHeight * 2);
@@ -340,7 +340,7 @@ test('a local check saved from the documents lane runs once and lands in its run
 
   const ledger = page.getByTestId('automations-run-ledger').getByTestId('round-ledger');
   await expect(ledger.locator("[data-outcome='held']")).toHaveCount(1);
-  await expect(ledger).toContainText('run by hand');
+  await expect(ledger).toContainText('run manually');
   const stored = await page.evaluate(() => {
     const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
     return (files['.ontology-atlas/rounds-ledger.jsonl'] ?? '').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));

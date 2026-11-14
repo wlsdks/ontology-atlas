@@ -222,7 +222,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     expect(fold.getAttribute("aria-expanded")).toBe("false");
     // The count of what is inside, and the reason it is closed — on the control, not on a heading.
     expect(fold.textContent).toContain("6 advisory findings");
-    expect(fold.textContent).toContain("young wiki");
+    expect(fold.textContent).toContain("Info");
     // The rail still lists the advisory codes, so their anchor has to resolve while closed.
     expect(document.getElementById("report-code-orphan-page")).not.toBeNull();
     fireEvent.click(fold);
@@ -273,7 +273,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     );
     const sharedRows = [...shared.querySelectorAll('[data-testid="library-structural-finding"]')];
     expect(sharedRows).toHaveLength(4);
-    expect(sharedRows[0]!.textContent).toContain("is written from the same original");
+    expect(sharedRows[0]!.textContent).toContain("is written from the same source");
     for (const row of sharedRows) {
       expect(row.textContent).not.toContain("Link one of them to the other");
     }
@@ -283,7 +283,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     mount(<Harness structural={STRUCTURAL} />);
     const uncited = group("uncited-fact");
     // The heading a person reads is a sentence, not the validator's token.
-    expect(uncited.querySelector("h4")!.textContent).toContain("No original backs this up");
+    expect(uncited.querySelector("h4")!.textContent).toContain("No source backs this up");
     expect(uncited.querySelector("h4")!.textContent).not.toContain("uncited-fact");
     // Nothing is taken away: the code, its line anchor and the English message the CLI
     // prints are under the same disclosure the wiki page beside it uses.
@@ -370,7 +370,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
       />,
     );
     const notice = screen.getByTestId("library-check-report-agent-missing");
-    expect(notice).toHaveTextContent("check page format");
+    expect(notice).toHaveTextContent("check the wiki");
     expect(screen.getByTestId("library-check-report-agent-missing-door")).toHaveAttribute(
       "href",
       expect.stringContaining("agents"),
@@ -403,7 +403,7 @@ describe("the computed half is the app's own, and it is the half that leads", ()
     };
     mount(<TestOutline />);
     const parsed = JSON.parse(screen.getByTestId("outline").textContent!) as string[];
-    expect(parsed).toContain("A cited original is not here 1");
+    expect(parsed).toContain("A cited source is not here 1");
     expect(parsed).toContain("No other page points here 2");
     expect(parsed.some((text) => text.startsWith("orphan-page"))).toBe(false);
   });

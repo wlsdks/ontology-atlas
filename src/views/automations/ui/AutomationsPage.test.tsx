@@ -477,7 +477,7 @@ describe('Automations manager', () => {
     const line = screen.getByTestId('automation-allow-here-line');
     expect(line).toHaveTextContent('confluence · ENG');
     expect(line).toHaveTextContent('looks for “pages changed today”');
-    expect(line).toHaveTextContent('at most 20 new documents a pass');
+    expect(line).toHaveTextContent('at most 20 new documents per run');
     const runNow = screen.getByRole('button', { name: en.automations.runNow });
     expect(runNow).toBeDisabled();
     expect(runNow).toHaveAccessibleDescription(en.automations.allowHere.waiting);
