@@ -17,6 +17,7 @@ import type {
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git/git-install-guide";
 import { Button, controlClass } from "@/shared/ui";
+import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
 import type { ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { PendingDocumentPane, type ChangedDocument } from "./PendingDocumentPane";
@@ -260,8 +261,12 @@ export function DesktopBody({
         t={t}
         step={null}
         state="error"
+        figure={<BrandPortrait expression="curious" />}
         title={t("loadError")}
-        body={loadErrorText ?? undefined}
+        body={<>
+          {loadErrorText ? <span className="block break-words">{loadErrorText}</span> : null}
+          <span className="block">{t("loadErrorNext")}</span>
+        </>}
         note={t("scopeNotice")}
       >
         <div className="flex flex-col items-center gap-3" data-testid="atlas-git-load-error">
