@@ -67,7 +67,7 @@ const MARK_RASTER_PLAN = Object.freeze([
   ['mark-compact', 'compact', 64],
   ['mark-micro', 'micro', 16],
   ['mark-welcome', 'welcome', 32],
-  ['mark-curious', 'curious', 32],
+  ['mark-curious', 'curious', 128],
   ['foreground-108', 'full', 108],
   ['foreground-162', 'full', 162],
   ['foreground-216', 'full', 216],

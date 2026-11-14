@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState, type KeyboardEvent, type ReactN
 import { useTranslations } from 'next-intl';
 
 import { CITATIONS_REVIEWED, type HarnessReport, type HookConfigFacts } from '@/entities/agent-files';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, FileText, Folder } from 'lucide-react';
 
 import { EmptyState, RowDisclosure } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -13,7 +13,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { useSurfaceSwap, useSwapHeight } from '@/shared/lib/render-timing/use-presence';
 import { useSlidingIndicator } from '@/shared/motion/use-sliding-indicator';
 import { cn } from '@/shared/lib/cn';
-import { GuideSelectionDetail, PAIR_DRIFT_BADGE, WARNING_BADGE } from './HarnessGuideDetail';
+import { GuideSelectionDetail, PAIR_COUNT_TEXT, PAIR_DRIFT_BADGE, WARNING_BADGE } from './HarnessGuideDetail';
 import { buildRows, differingCount, formatBytes, mergedShare, type GuideRow, type Selection } from './harness-guide-rows';
 
 /**
@@ -31,6 +31,11 @@ function hookRowStatus(group: HookConfigFacts) {
   const unresolved = group.hooks.some((hook) => hook.status === 'unresolved');
   const wired = group.hooks.length > 0 && group.hooks.every((hook) => hook.status === 'wired');
   return { missing, unresolved, wired };
+}
+
+function RowKindIcon({ folder }: { folder: boolean }) {
+  const Icon = folder ? Folder : FileText;
+  return <Icon size={ICON_SIZE.sm} aria-hidden className="shrink-0 self-center text-[color:var(--color-text-tertiary)]" />;
 }
 
 export function HarnessGuidesView({
@@ -194,7 +199,7 @@ export function HarnessGuidesView({
               data-selection-indicator="surface-y"
               data-placed={placed ? 'true' : 'false'}
               data-animated={animated ? 'true' : 'false'}
-              className="motion-indicator z-0 rounded-chip bg-[color:var(--color-indigo-a14)]"
+              className="motion-indicator z-0 rounded-chip bg-[color:var(--color-indigo-a24)]"
               style={indicatorStyle ?? { opacity: 0 }}
             />
             <section aria-labelledby={guidesHeading}>
@@ -245,6 +250,7 @@ export function HarnessGuidesView({
                           row.key,
                           <>
                             <span className={ROW_NAME}>
+                              <RowKindIcon folder={row.label.endsWith('/') || row.fileCount > 1} />
                               <span
                                 className={cn(
                                   'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
@@ -266,12 +272,12 @@ export function HarnessGuidesView({
                                 </span>
                               ) : null}
                               {row.driftFiles.length > differing ? (
-                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                <span className={PAIR_COUNT_TEXT}>
                                   {t('pairFilesNoTwin', { count: row.driftFiles.length - differing })}
                                 </span>
                               ) : null}
                               {row.missingFiles.length > 0 ? (
-                                <span className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', PAIR_DRIFT_BADGE) })}>
+                                <span className={PAIR_COUNT_TEXT}>
                                   {t('pairFilesMissing', { count: row.missingFiles.length })}
                                 </span>
                               ) : null}
@@ -342,6 +348,7 @@ export function HarnessGuidesView({
                             key,
                             <>
                               <span className={ROW_NAME}>
+                                <RowKindIcon folder={false} />
                                 <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
                                   {group.configPath}
                                 </span>
