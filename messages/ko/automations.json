@@ -8,7 +8,6 @@
   "changeFailed": "변경 사항을 저장하지 못했어요. 다시 시도해 주세요.",
   "checked": "문서 {count}개를 점검했어요.",
   "earlierRuns": "이전 실행 · {count}건",
-  "openFolderTitle": "폴더를 열면 점검을 예약할 수 있어요",
   "openFolderDescription": "예약과 실행 기록은 연 폴더 안에 저장돼요.",
   "staleLabel": "검토가 필요한 문서",
   "writtenLabel": "수정한 파일",
@@ -30,13 +29,13 @@
   },
   "title": "자동화",
   "lede": "반복할 점검을 예약하고 결과를 확인해요. Atlas가 켜져 있는 동안 이 컴퓨터에서 실행돼요.",
+  "stageTitle": "정해 둔 주기로 도는 점검",
   "tabsAria": "자동화 갈래",
   "tabs": {
     "ontology": "온톨로지",
     "documents": "문서"
   },
   "indexAria": "이 폴더의 예약 목록",
-  "appRequiredTitle": "자동화는 데스크톱 앱에서만 실행돼요",
   "appRequiredDescription": "앱에서 폴더를 열면 이 화면에서 바로 예약을 만들 수 있어요.",
   "getApp": "앱 받기",
   "loadingTitle": "자동 점검을 불러오는 중",
@@ -127,8 +126,6 @@
         "body": "아무것도 바꾸지 않아요. 개선안은 지도에서 직접 검토하고 적용해요."
       }
     },
-    "emptyTitle": "아직 예약된 온톨로지 점검이 없어요",
-    "emptyDescription": "이름과 주기만 정하면 돼요. 살펴볼 범위는 비워 둬도 괜찮아요.",
     "preview": {
       "title": "예약 목록",
       "name": "이름",
@@ -165,8 +162,6 @@
         "body": "승인한 자료실 범위 안에서만 원문과 위키 초안을 고쳐요. 온톨로지는 건드리지 않아요."
       }
     },
-    "emptyTitle": "아직 예약된 문서 점검이 없어요",
-    "emptyDescription": "페이지별 검토와 전체 실행 기록은 자료실에서 이어서 봐요.",
     "preview": {
       "title": "예약 목록",
       "name": "이름",

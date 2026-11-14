@@ -62,7 +62,7 @@ export function FeatureStage({
         {art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}
       </div>
       <h2 className="mt-8 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</h2>
-      <p className="mt-4 max-w-md text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
+      <p className="mt-4 max-w-md text-balance text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
       {alert}
       {action ? (
         <div

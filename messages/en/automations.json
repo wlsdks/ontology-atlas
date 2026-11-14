@@ -8,7 +8,6 @@
   "changeFailed": "The change could not be saved. Try again.",
   "checked": "{count, plural, one {Checked # document.} other {Checked # documents.}}",
   "earlierRuns": "Earlier runs · {count}",
-  "openFolderTitle": "Open a folder to schedule reviews",
   "openFolderDescription": "Schedules and their run history are saved inside the folder you open.",
   "staleLabel": "Needs review",
   "writtenLabel": "Updated files",
@@ -30,13 +29,13 @@
   },
   "title": "Automations",
   "lede": "Schedule recurring reviews, then inspect what each run found. They run on this computer while Atlas is open.",
+  "stageTitle": "Reviews that run on a schedule",
   "tabsAria": "Automation lanes",
   "tabs": {
     "ontology": "Ontology",
     "documents": "Documents"
   },
   "indexAria": "Schedules in this folder",
-  "appRequiredTitle": "Automations run in the desktop app",
   "appRequiredDescription": "Open your folder in the app to create schedules right on this screen.",
   "getApp": "Get the app",
   "loadingTitle": "Loading automations",
@@ -127,8 +126,6 @@
         "body": "Nothing. You review each proposal and apply it on the map yourself."
       }
     },
-    "emptyTitle": "No ontology review is scheduled yet",
-    "emptyDescription": "All it needs is a name and a cadence. The focus area is optional.",
     "preview": {
       "title": "Schedules",
       "name": "Name",
@@ -165,8 +162,6 @@
         "body": "Only sources and wiki drafts inside the approved Library scope. Never the ontology."
       }
     },
-    "emptyTitle": "No document round is scheduled yet",
-    "emptyDescription": "Page-by-page review and the full run ledger continue in the Library.",
     "preview": {
       "title": "Schedules",
       "name": "Name",

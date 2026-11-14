@@ -16,9 +16,13 @@ its latest report and the Run now, Edit, Pause/Resume, and Remove actions (remov
 an inline confirmation);
 older runs expand on demand. Document results retain checked counts, stale pages,
 updated files, and tool receipts when recorded. An empty lane presents one first
-schedule action. Both states share one list panel, whose column header uses the row's own grid; an
-empty lane shows one dimmed ghost row, its name marked as an example ("e.g. …"), with the default cadence where the first schedule will appear,
-and saving it turns that row real in place while the lane glides from the window's centre to the top. While a lane has no schedule, or the screen cannot hold one yet, the lede, the list and the facts are one stage centred in the window. The new-schedule button keeps its place in the header bar, filled while the lane is empty. The header bar starts at the page gutter like every destination's; the body wears the 960px column centred at every width, as Agents does, and the three facts follow the list.
+schedule action. A lane with schedules is one list panel whose column header uses the row's own grid, with the
+three facts after it. While a lane has no schedule, or the screen cannot hold one yet, the page is
+one stage centred in the window: an artwork of an example schedule (its name marked "e.g. …", with
+the default cadence) over a time line whose runs each leave a result, a title, one sentence for the
+state and the one action. Saving the first schedule fades the stage into the list while the new row
+rises. The new-schedule button keeps its place in the header bar. The header bar starts at the page
+gutter like every destination's; the body wears the 960px column centred at every width, as Agents does.
 Without a folder, the installed app opens a folder in place.
 The browser explains the installed-app requirement. Cancelling a new schedule returns keyboard
 focus to the header action in both lanes, including after an unfocused native pointer click.
