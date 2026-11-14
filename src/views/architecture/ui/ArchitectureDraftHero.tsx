@@ -56,16 +56,19 @@ export function ArchitectureDraftHero({
       data-testid="architecture-draft-hero"
     >
       {notices}
-      <div className="@container/draft w-full">
-        <div className="grid w-full grid-cols-1 items-start gap-8 @min-[76rem]/draft:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,1fr)] @min-[76rem]/draft:gap-14">
-          <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
-            <div className="flex flex-col gap-2">
+      {/* One centred column, as every empty destination: the preview of what a draft becomes, then the ask. */}
+      <div className="@container/draft mx-auto my-auto flex w-full max-w-[var(--architecture-draft-stage-max)] flex-col items-center gap-8 py-6 text-center">
+          <div className="hidden w-full min-w-0 text-left @min-[36rem]/draft:block">
+            <ArchitectureDraftPreview source={draftSource} still={agentWorking} />
+          </div>
+          <div className="flex min-w-0 max-w-[var(--measure-stage-column)] flex-col items-center gap-5">
+            <div className="flex flex-col items-center gap-2">
               <Title className={cn(PAGE_TITLE, 'text-balance')}>{t('noProfiles')}</Title>
-              <p className={PAGE_LEDE}>
+              <p className={cn(PAGE_LEDE, 'text-balance')}>
                 {agentRoute === 'clipboard' ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}` : t('noProfilesBody')}
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {agentRoute === 'agent' ? (
                 <Button
                   variant="primary"
@@ -108,10 +111,6 @@ export function ArchitectureDraftHero({
               </span>
             </div>
           </div>
-          <div className="hidden min-w-0 @min-[36rem]/draft:block">
-            <ArchitectureDraftPreview source={draftSource} still={agentWorking} />
-          </div>
-        </div>
       </div>
     </main>
   );
