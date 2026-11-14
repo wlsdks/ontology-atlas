@@ -14,7 +14,6 @@ import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
 import { Button, buttonVariants, Chip, EmptyState, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
-import { PlacedInfoHint } from './PlacedInfoHint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -31,9 +30,8 @@ import {
 import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
-import { HarnessGuidesView } from './HarnessGuidesView';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
-import { HarnessOverviewView } from './HarnessOverviewView';
+import { HarnessSetupView } from './HarnessSetupView';
 import { HarnessScanProgressPanel } from './HarnessScanProgressPanel';
 import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 
@@ -45,9 +43,6 @@ import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
  * Mackinlay 1991). No minimum visible duration: holding the panel would delay the answer.
  */
 const PROGRESS_REVEAL_MS = 1000;
-
-/** The guides workbench owns the panel's height where its two panes sit side by side, and scrolls with the page below that. */
-const GUIDES_FILL = 'flex flex-1 flex-col @min-[48rem]/harness:min-h-0';
 
 /** The read never changes within a session, so nothing has to be watched. */
 const subscribeNever = () => () => {};
@@ -139,7 +134,6 @@ function HarnessPageInner() {
     coverage.capabilityPaths,
     reloadNonce,
   );
-  const report = reportState.status === 'ready' ? reportState.report : null;
   const draftSource = useMemo(() => {
     if (reportState.status !== 'ready' || reportState.report.topLevelFolders.length === 0) return null;
     const name = reportState.sourceRoot.split(/[\\/]+/).filter(Boolean).pop();
@@ -211,36 +205,6 @@ function HarnessPageInner() {
     />
   );
 
-  /* `relative z-10` on the wrapper keeps this block's hint panel above the later results block; the panel's own `z-30` only orders it among siblings. */
-  const sentence = report ? (
-    <div data-testid="harness-sentence" className="architecture-result-arrive relative z-10">
-      {/* The thesis takes the one step above body, at regular weight, still lighter than the cards' numerals. */}
-      <div className="max-w-prose text-pretty text-title text-[color:var(--color-text-primary)]">
-        <span className="tabular-nums">
-          {t('sentence', {
-            documents: report.guideDocumentCount,
-            checks: report.checks.total,
-          })}
-        </span>
-        {/* No-break space in a nowrap run: the hint never wraps away from the last word. */}
-        <span className="whitespace-nowrap">
-          {'\u00a0'}
-          <PlacedInfoHint preferred="left" className="align-middle" label={t('checksBreakdownLabel')}>
-            {t('checksHint')}
-          </PlacedInfoHint>
-        </span>
-      </div>
-      <p className="mt-1 text-label tabular-nums text-[color:var(--color-text-tertiary)]">
-        {t('checksBreakdown', {
-          hooks: report.checks.wiredHooks,
-          gitHooks: report.checks.gitHooks,
-          scripts: report.checks.scripts.length,
-        })}
-      </p>
-    </div>
-  ) : null;
-
-  const fillsPanel = view === 'guides' && reportState.status === 'ready';
   const overviewFills = view === 'overview' && reportState.status === 'ready';
   const staged = harnessUnavailable && view !== 'architecture';
 
@@ -261,7 +225,7 @@ function HarnessPageInner() {
               onClick={rereadHarness}
             >
               <RefreshCw size={ICON_SIZE.sm} aria-hidden />
-              <span className="max-sm:sr-only">{t('overviewReread')}</span>
+              <span className="max-sm:sr-only">{t('reread')}</span>
             </Button>
           ) : null
         }
@@ -294,32 +258,12 @@ function HarnessPageInner() {
           className={cn('min-h-0 flex-1 pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)] max-lg:scroll-pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
             HARNESS_GUTTER_X,
             overviewFills ? 'flex flex-col overflow-hidden pt-6' : 'overflow-y-auto pt-4',
-            (fillsPanel || staged) && 'flex flex-col')}
+            (staged || loading) && 'flex flex-col')}
         >
-          <div className={cn('w-full', overviewFills && 'flex min-h-0 flex-1 flex-col', staged && 'flex flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
-            {/* One lead: the explainer and the census are a paragraph and its measurement, so they share a block. */}
-            {overviewFills || staged ? null : (
-              <div className="mb-3 flex shrink-0 flex-col gap-1">
-                <p className="max-w-prose text-body text-[color:var(--color-text-tertiary)]">
-                  {t('explainer')}
-                </p>
-                {view === 'guides' ? sentence : null}
-              </div>
-            )}
+          <div className={cn('w-full', (overviewFills || staged || loading) && 'flex min-h-0 flex-1 flex-col')}>
             {reportState.status === 'ready' ? (
-              <div className={cn('architecture-result-arrive', view === 'overview' && 'flex min-h-0 flex-1 flex-col', fillsPanel && GUIDES_FILL)}>
-                {view === 'overview' ? (
-                  <HarnessOverviewView
-                    key={reloadNonce}
-                    report={reportState.report}
-                    areas={coverage.areas}
-                    pathlessCapabilities={coverage.pathlessCapabilities}
-                    sourceRoot={reportState.sourceRoot}
-                    onOpenGuides={() => setView('guides')}
-                  />
-                ) : (
-                  <HarnessGuidesView report={reportState.report} locale={locale} sourceRoot={reportState.sourceRoot} />
-                )}
+              <div className="architecture-result-arrive flex min-h-0 flex-1 flex-col">
+                <HarnessSetupView key={reloadNonce} report={reportState.report} sourceRoot={reportState.sourceRoot} />
               </div>
             ) : reportState.status === 'loading' ? (
               /*
@@ -330,6 +274,7 @@ function HarnessPageInner() {
               <Surface
                 open={waitedPastThreshold}
                 motion="overlay"
+                className="flex min-h-0 flex-1 flex-col justify-center"
               >
                 <HarnessScanProgressPanel progress={reportState.progress} />
               </Surface>

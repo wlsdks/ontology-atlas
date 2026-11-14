@@ -57,8 +57,10 @@ export interface SetupItem {
   denyAndAskRuleCount?: number;
   /** The text that put the item here, quoted from its file. */
   declaration?: string;
-  /** A Claude or Codex copy that differs from its declared twin. */
+  /** A Claude or Codex copy that differs from its declared twin, or has none. */
   copyDiffers?: boolean;
+  /** Claude's copy, then Codex's, when both exist and differ. */
+  pairPaths?: readonly [string, string];
 }
 
 export interface SetupGroup {
@@ -146,10 +148,23 @@ function declarationsById(coverage: readonly ScopeDeclaration[], origin: ScopeDe
   return out;
 }
 
+function differingPairs(report: HarnessReport): Map<string, readonly [string, string]> {
+  const out = new Map<string, readonly [string, string]>();
+  for (const finding of report.analysis.drift) {
+    const claudePath = finding.detail?.claudePath;
+    const agentsPath = finding.detail?.agentsPath;
+    if (!isPairDrift(finding.code) || typeof claudePath !== 'string' || typeof agentsPath !== 'string') continue;
+    out.set(claudePath, [claudePath, agentsPath]);
+    out.set(agentsPath, [claudePath, agentsPath]);
+  }
+  return out;
+}
+
 function fileItem(
   record: AgentFileRecord,
   report: HarnessReport,
   rules: ReadonlyMap<string, ScopeDeclaration>,
+  pairs: ReadonlyMap<string, readonly [string, string]>,
 ): SetupItem {
   const rule = rules.get(record.path);
   return {
@@ -163,6 +178,7 @@ function fileItem(
     loading: rule ? (rule.declaration ? 'path' : 'always') : undefined,
     declaration: rule?.declaration || undefined,
     copyDiffers: record.drift.some(isPairDrift) || undefined,
+    pairPaths: pairs.get(record.path),
   };
 }
 
@@ -311,6 +327,7 @@ function visibleTo(tools: readonly AgentTool[], filter: ToolFilter): boolean {
  */
 export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = null): HarnessSetup {
   const rules = declarationsById(report.coverage, 'rule');
+  const pairs = differingPairs(report);
   const byGroup = new Map<SetupGroupId, SetupItem[]>();
   const push = (group: SetupGroupId, item: SetupItem) => {
     byGroup.set(group, [...(byGroup.get(group) ?? []), item]);
@@ -318,7 +335,7 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
 
   for (const record of report.analysis.records) {
     const group = RECORD_GROUP[record.kind];
-    if (group) push(group, fileItem(record, report, rules));
+    if (group) push(group, fileItem(record, report, rules, pairs));
   }
   for (const item of permissionItems(report)) push('permissions', item);
   for (const { section, item } of hookItems(report)) push(HOOK_GROUP[section], item);
