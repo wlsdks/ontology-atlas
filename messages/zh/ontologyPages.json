@@ -230,38 +230,6 @@
         "emptyDescription": "在资料库中添加来源后，这里会显示其 Wiki 页面和检查结果。"
       }
     },
-    "harnessTab": {
-      "preview": {
-        "title": "按代码区域查看指引与检查",
-        "body": "查看哪些区域有指令、会拦截变更的规则和自动检查。",
-        "exampleLabel": "示例 · 并非你文件夹中的数据",
-        "pauseAnimation": "暂停示例动画",
-        "resumeAnimation": "继续示例动画",
-        "instruction": "选择一个角色，查看如何接入。",
-        "area": {
-          "title": "支付"
-        },
-        "roles": {
-          "instructions": {
-            "title": "指令",
-            "buttonLabel": "如何添加指令",
-            "setup": "在代码仓库的 AGENTS.md 或规则文档中添加工作指引。查看其范围，了解覆盖哪些代码区域。"
-          },
-          "gates": {
-            "title": "关卡",
-            "example": "示例：没有关联的规则",
-            "buttonLabel": "如何接入关卡",
-            "setup": "接入真正会拦截变更的钩子或检查，再查看其范围。仅写在指引里的要求不算关卡。"
-          },
-          "checks": {
-            "title": "检查",
-            "example": "测试 · lint",
-            "buttonLabel": "如何接入检查",
-            "setup": "查看测试、lint 等自动检查的目标路径。检查文件并不能证明检查运行过或已通过。"
-          }
-        }
-      }
-    },
     "analysis": {
       "title": "分析",
       "subtitle": "阅读关系，检查主张的依据。",

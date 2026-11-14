@@ -58,7 +58,7 @@
   "copyHandoffError": "Could not copy. Try again",
   "copiedShort": "Copied",
   "noProfiles": "This codebase's structure has not been recorded yet",
-  "noProfilesBody": "A connected agent reads the folders and the real imports and proposes a draft architecture profile. There is nothing to write by hand: review the draft, and accepting it saves one file in your ontology folder.",
+  "noProfilesBody": "A connected agent reads the folders and the real imports and proposes a draft. Review it, and accepting saves one file.",
   "roleLabels": {
     "routing": "Routes",
     "app": "Application shell",
@@ -131,7 +131,7 @@
   "checkingAgent": "Checking for a guarded agent…",
   "inspectSourceAction": "Inspect source",
   "planChangeAction": "Plan change",
-  "draftNoAgentBody": "No agent is connected, so this cannot start here. Copy the sentence below and paste it into the coding agent you use.",
+  "draftNoAgentBody": "No agent is connected. Copy the sentence and paste it into the coding agent you use.",
   "agentTaskMenu": "Choose another agent task",
   "recheckSourceAction": "Re-inspect source",
   "findImprovementsAction": "Find improvements",

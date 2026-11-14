@@ -137,6 +137,7 @@ describe('the destination identity', () => {
   });
 
   it('says in one line what it is about, except where the line below already does', () => {
+    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?view=guides');
     mount();
     expect(

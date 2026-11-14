@@ -58,7 +58,7 @@
   "copyHandoffError": "복사하지 못했어요. 다시 시도",
   "copiedShort": "복사했어요",
   "noProfiles": "이 코드베이스의 구조가 아직 기록되지 않았어요",
-  "noProfilesBody": "연결된 에이전트가 폴더와 실제 import를 읽어 아키텍처 프로필 초안을 제안해요. 손으로 적을 것은 없어요. 제안된 초안을 확인하고 승인하면 온톨로지 폴더에 파일 하나로 저장돼요.",
+  "noProfilesBody": "에이전트가 폴더와 실제 import를 읽고 구조 초안을 제안해요. 확인하고 승인하면 파일 하나로 저장돼요.",
   "roleLabels": {
     "routing": "라우트",
     "app": "앱 셸",
@@ -131,7 +131,7 @@
   "checkingAgent": "보호된 에이전트 확인 중…",
   "inspectSourceAction": "소스 검사",
   "planChangeAction": "변경 계획",
-  "draftNoAgentBody": "지금은 연결된 에이전트가 없어 이 화면에서 바로 시작할 수 없어요. 아래 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요.",
+  "draftNoAgentBody": "연결된 에이전트가 없어요. 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요.",
   "agentTaskMenu": "다른 에이전트 작업 고르기",
   "recheckSourceAction": "소스 다시 검사",
   "findImprovementsAction": "개선점 찾기",

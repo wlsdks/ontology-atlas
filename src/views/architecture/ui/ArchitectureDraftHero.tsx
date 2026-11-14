@@ -65,7 +65,7 @@ export function ArchitectureDraftHero({
             <div className="flex flex-col items-center gap-2">
               <Title className={cn(PAGE_TITLE, 'text-balance')}>{t('noProfiles')}</Title>
               <p className={cn(PAGE_LEDE, 'text-balance')}>
-                {agentRoute === 'clipboard' ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}` : t('noProfilesBody')}
+                {t('noProfilesBody')}
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -110,6 +110,9 @@ export function ArchitectureDraftHero({
                 {copyState === 'copied' ? t('copiedHandoff') : copyState === 'error' ? t('copyHandoffError') : ''}
               </span>
             </div>
+            {agentRoute === 'clipboard' ? (
+              <p className="text-body text-[color:var(--color-text-tertiary)]">{t('draftNoAgentBody')}</p>
+            ) : null}
           </div>
       </div>
     </main>
