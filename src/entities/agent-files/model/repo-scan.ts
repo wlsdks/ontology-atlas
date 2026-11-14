@@ -137,7 +137,7 @@ export interface HarnessReport {
   checks: HarnessCheckCensus;
   /** Guide documents found, excluding hook configs and scripts. */
   guideDocumentCount: number;
-  /** Scope declarations; empty when the caller passed no capability paths. */
+  /** Scope declarations; unprobed against the disk when the caller passed no capability paths. */
   coverage: readonly ScopeDeclaration[];
   /** Authored Markdown split by whether a guide sends an agent to it. */
   documentReach: DocumentReach;
@@ -384,24 +384,23 @@ export async function scanHarness(
   const capabilityPaths = options.capabilityPaths ?? [];
   /* No denominator: `resolveScopeDeclarations` reports nothing from inside its `Promise.all`. */
   report({ stage: 'coverage', done: 0, total: null });
-  const coverage = capabilityPaths.length
-    ? await resolveScopeDeclarations(
-        candidateScopeDeclarations({
-          contents: contentByPath,
-          hookGroups,
-          gitHooks,
-          checkScripts: scripts,
-          workflows,
-        }),
-        capabilityPaths,
-        async (relativePath) => {
-          if (harnessReadClass(relativePath) === 'invalid') return false;
-          if (port.pathExists) return port.pathExists(relativePath);
-          if ((await port.listDir(relativePath)) !== null) return true;
-          return (await port.readText(relativePath)) !== null;
-        },
-      )
-    : [];
+  /* With no capability paths nothing is probed and every declaration keeps its written scopes. */
+  const coverage = await resolveScopeDeclarations(
+    candidateScopeDeclarations({
+      contents: contentByPath,
+      hookGroups,
+      gitHooks,
+      checkScripts: scripts,
+      workflows,
+    }),
+    capabilityPaths,
+    async (relativePath) => {
+      if (harnessReadClass(relativePath) === 'invalid') return false;
+      if (port.pathExists) return port.pathExists(relativePath);
+      if ((await port.listDir(relativePath)) !== null) return true;
+      return (await port.readText(relativePath)) !== null;
+    },
+  );
 
   const gitignore = await port.readText('.gitignore');
   const excludedFolders = [
