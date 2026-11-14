@@ -278,16 +278,10 @@ export const UNRESOLVED_HOOK_SOURCE: Record<string, string> = {
   }),
 };
 
+/** Both configs name no hook, so nothing is missing and the scripts on disk are unwired. */
 export const HOOKLESS_SOURCE: Record<string, string> = {
   ".claude/settings.json": JSON.stringify({ permissions: { deny: ["Read(./.env*)"] } }),
-};
-
-export const ONE_SIDED_BRIEF_SOURCE: Record<string, string> = {
-  ".claude/agents/scout.md": "# scout\n",
-};
-
-export const CODEX_ONLY_BRIEF_SOURCE: Record<string, string> = {
-  ".agents/agents/lookout.md": "# lookout\n",
+  ".codex/hooks.json": JSON.stringify({ hooks: {} }),
 };
 
 export const MISSING_CODEX_HOOK_SOURCE: Record<string, string> = {

@@ -2,7 +2,7 @@
  * `/architecture` view state. `?view=` is the source of truth (refresh, shared link, agent handoff),
  * with the same grammar as `/mcp`'s `?tab=`. Retired names resolve to `overview`.
  */
-const HARNESS_VIEWS = ['overview', 'guides', 'architecture'] as const;
+const HARNESS_VIEWS = ['overview', 'architecture'] as const;
 
 export type HarnessView = (typeof HARNESS_VIEWS)[number];
 
@@ -12,6 +12,7 @@ const RETIRED_VIEWS: Readonly<Record<string, HarnessView>> = Object.freeze({
   sensors: 'overview',
   structure: 'overview',
   coverage: 'overview',
+  guides: 'overview',
 });
 
 function isHarnessView(value: string): value is HarnessView {

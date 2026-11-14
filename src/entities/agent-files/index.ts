@@ -9,7 +9,6 @@ export {
   selectAgentFileDocs,
   AGENT_TOOL_LABELS,
   WEB_SCAN_ANALYZE_OPTIONS,
-  type AgentDriftFinding,
   type AgentFileEntry,
   type AgentFilesAnalysis,
   type AgentFilesUiModel,
@@ -20,10 +19,8 @@ export {
   type CoverageAreaInput,
   type CoverageCapability,
 } from './model/coverage-matrix';
-export { type CoverageColumn, type ScopeDeclaration } from './model/coverage-scopes';
+export { type ScopeDeclaration } from './model/coverage-scopes';
 export {
-  declaredPairFor,
-  isGuideRecord,
   isPairDrift,
   scanHarness,
   type HarnessReport,
@@ -31,5 +28,5 @@ export {
   type HarnessScanProgress,
 } from './model/repo-scan';
 export { citesPath } from './model/document-reach';
-export { type HookConfigFacts } from './model/hook-wiring';
-export { guideCitation, CITATIONS_REVIEWED } from './model/guide-citations';
+export { hookEventStep, type HookConfigFacts, type HookEventStep } from './model/hook-wiring';
+export { guideCitation } from './model/guide-citations';
