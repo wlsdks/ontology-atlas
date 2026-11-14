@@ -27,7 +27,7 @@ const TooltipContent = forwardRef<
     collisionPadding={collisionPadding}
     className={cn(
       className ??
-        "atlas-tooltip data-[state=closed]:pointer-events-none z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]",
+        "atlas-tooltip z-[var(--z-tooltip)] rounded-chip border border-[color:var(--color-indigo-a32)] bg-[color:var(--color-panel)] px-2 py-1 text-label text-[color:var(--color-text-primary)] shadow-[var(--shadow-elevation-1)]",
       panelClassName,
     )}
     {...props}
@@ -52,8 +52,6 @@ export interface TooltipProps {
   delayMs?: number;
   /**
    * Appended to the panel's classes, unlike `className`, which replaces its appearance.
-   * For `pointer-events-none` on a panel over a control the hand reaches next: Radix keeps the
-   * content mounted through its exit, so it would still catch the pointer.
    */
   panelClassName?: string;
   toggleOnPress?: boolean;
@@ -89,16 +87,16 @@ export function Tooltip({
       >
         {children}
       </TooltipPrimitive.Trigger>
-      <TooltipPrimitive.Portal>
+      {/* Unmounted once closed: Radix keeps a closing panel as the top dismissable layer, where it takes the next Escape. */}
+      {open && <TooltipPrimitive.Portal>
         <TooltipContent side={side} align={align} panelClassName={panelClassName}
-          aria-hidden={open ? undefined : true}
           onPointerDownOutside={(event) => {
             if (toggleOnPress && triggerRef.current?.contains(event.target as Node)) event.preventDefault();
           }}
         >
           {content}
         </TooltipContent>
-      </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Portal>}
     </TooltipPrimitive.Root>
   );
   if (!withProvider) return inner;
