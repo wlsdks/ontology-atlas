@@ -34,11 +34,15 @@ async function folderOpen(page: Page, previous: string | null): Promise<string> 
   return (await tile.getAttribute("aria-label")) ?? "";
 }
 
+// A text-width memo (keys join font and text with NUL) passes LARGE only as names draw, and its model owns it.
+const LARGE_MAP = `item.size >= ${LARGE} && !String(item.keys().next().value).includes("\\u0000")`;
+const LARGE_ARRAY = `item.length >= ${LARGE}`;
+
 async function retained(cdp: CDPSession) {
   return {
     fileHandles: await liveInstances(cdp, "FileSystemFileHandle"),
-    largeArrays: await liveInstances(cdp, "Array", `item.length >= ${LARGE}`),
-    largeMaps: await liveInstances(cdp, "Map", `item.size >= ${LARGE}`),
+    largeArrays: await liveInstances(cdp, "Array", LARGE_ARRAY),
+    largeMaps: await liveInstances(cdp, "Map", LARGE_MAP),
   };
 }
 
@@ -76,17 +80,22 @@ test("two folder switches leave no earlier folder alive", async ({ page }) => {
   expect(oneFolder.largeArrays, "the open folder's graph is made of arrays this large").toBeGreaterThan(0);
   expect(oneFolder.largeMaps, "the open folder has indexed maps this large").toBeGreaterThan(0);
 
+  // The frame's reused mark lists reach their high-water length during a switch, so arrays are
+  // compared between the two switches; maps and handles are held to the first open.
+  let arraysAfterOneSwitch = oneFolder.largeArrays;
   for (let switchCount = 1; switchCount <= 2; switchCount += 1) {
     const beforeArrival = await partialArrivals();
     await page.getByTestId("vault-switch-rail-tile").click();
     await page.getByTestId("vault-switch-pick-other").click();
     label = await folderOpen(page, label);
     expect(await partialArrivals(), 'each switched folder must exercise partial arrival').toBeGreaterThan(beforeArrival);
+    if (switchCount === 1) arraysAfterOneSwitch = await liveInstances(cdp, "Array", LARGE_ARRAY);
   }
 
   const afterSwitches = await retained(cdp);
-  const summary = `one folder open: ${JSON.stringify(oneFolder)}; after two switches: ${JSON.stringify(afterSwitches)}`;
+  const summary = `one folder open: ${JSON.stringify(oneFolder)}; arrays after one switch: ${arraysAfterOneSwitch}; after two switches: ${JSON.stringify(afterSwitches)}`;
   expect(afterSwitches.fileHandles, summary).toBeLessThanOrEqual(oneFolder.fileHandles);
-  expect(afterSwitches.largeArrays, summary).toBeLessThanOrEqual(oneFolder.largeArrays);
-  expect(afterSwitches.largeMaps, summary).toBeLessThanOrEqual(oneFolder.largeMaps);
+  // Work still in flight when the map goes still can hold one more collection; a kept folder never lets go.
+  await expect.poll(() => liveInstances(cdp, "Array", LARGE_ARRAY), summary).toBeLessThanOrEqual(arraysAfterOneSwitch);
+  await expect.poll(() => liveInstances(cdp, "Map", LARGE_MAP), summary).toBeLessThanOrEqual(oneFolder.largeMaps);
 });
