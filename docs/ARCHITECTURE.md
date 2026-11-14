@@ -29,8 +29,8 @@ area: architecture
 │ │                          less web visitor, map for   │
 │ │                          the app and vault users     │
 │ ├─ /topology               map + contextual write     │
-│ ├─ /architecture           harness: at a glance ·     │
-│ │                          guides · architecture       │
+│ ├─ /architecture           harness: setup ·           │
+│ │                          architecture                │
 │ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
 │ │                          + collections               │
@@ -203,15 +203,16 @@ analysis remains in MCP/CLI rather than being duplicated into Markdown. It moved
 address on 2026-09-19: the layer ladder is the product's architecture, which a harness *regulates*
 (maintainability · architecture fitness · behaviour), and not a part of the harness itself.
 
-In the installed app the default `?view=overview` (At a glance, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`) crosses the ontology's own domains with
-the path scopes this repository's guides, gates and checks declare, by Told, Gated and Watched; a
-file that declares no path sits in one last row, a domain cell no file fills is a counted gap, and
-one action copies a request for the person's own coding agent. `buildHarnessOverview`
-(`src/views/architecture/model/harness-overview.ts`) is the only place gaps are counted;
-`HarnessOverviewView` and `HarnessOverviewPanel` render it. `?view=structure`, `?view=coverage` and
-`?view=sensors` are rewritten to it. Beside it `?view=guides` reads the same repository's guide
-files — which tool reads which, size against a documented cap, declared mirror-pair drift, and
-hook wiring — from files only, through the installed app's read-only harness commands
+In the installed app the default `?view=overview` (Setup, `docs/records/decisions/2026-11-15-harness-follows-the-agent-loop-c52ae218-e053-4eb6-8d45-84efad283ff1.md`) lists the connected
+repository's harness in the order of the agent's loop: Context (instruction files, rules, skills by
+directory, subagents, MCP and config files, ignore files, context hooks), Guardrails (permission
+rules, blocking hooks) and Verification (hooks after an action, check scripts, Git hooks, CI
+workflows). `buildHarnessSetup` (`src/views/architecture/model/harness-setup.ts`) regroups the
+scan and is the only place problems are decided: a missing hook script, or Codex's `AGENTS.md`
+over its default limit; `hookEventStep` in `entities/agent-files` is the one hook-event table.
+`HarnessSetupView` and `HarnessSetupSection` render it with a tool filter and a detail beside the
+lists. `?view=guides`, `?view=structure`, `?view=coverage` and `?view=sensors` are rewritten to it.
+It reads files only, through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
 files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.
 `/ontology/insights?tab=harness` replaces itself with `/architecture/?view=overview`, keeping the other
@@ -701,20 +702,18 @@ until a local manifest, or the first part of one, exists.
                            "map" or "edit relation" points here, not at / (gate:
                            tests/contract/routes/map-destination-route.contract.test.ts)
 /architecture              the Harness destination (relabelled from Architecture since
-                           2026-09-13; route unchanged). Three views on ?view=:
-                           overview (At a glance, the default) — the ontology's
-                           domains by Told, Gated and Watched, each cell the files
-                           whose declared path reaches the domain, one last row for
-                           files that declare no path, gaps counted and handed to
-                           the person's own agent as a copied request, and no score,
-                           grade or percentage; guides — the agent guide files this
-                           repository carries, which tool reads each, size against
-                           the Codex 32 KiB merged cap, mirror-pair status and hook
-                           wiring; architecture — reviewed architecture profiles,
-                           the stable role blueprint, and the typed MCP/CLI handoff,
-                           where every ?role= deep link still lands. ?view=structure,
-                           ?view=coverage and ?view=sensors rewrite to overview.
-                           Never an ontology map
+                           2026-09-13; route unchanged). Two views on ?view=:
+                           overview (Setup, the default) — the connected
+                           repository's context, guardrails and verification in
+                           the order of the agent's loop, each artefact by its real
+                           name with a filter per agent tool, problems only for a
+                           missing hook script or Codex's AGENTS.md over its
+                           default limit, and no score, grade or percentage;
+                           architecture — reviewed architecture profiles, the
+                           stable role blueprint, and the typed MCP/CLI handoff,
+                           where every ?role= deep link still lands. ?view=guides,
+                           ?view=structure, ?view=coverage and ?view=sensors
+                           rewrite to overview. Never an ontology map
 /planning                  session-only, read-only project-folder reader; native reads use a
                            Planning-specific root descriptor and never add source/vault grants.
                            The browser displays an unsupported state pending separate proof.

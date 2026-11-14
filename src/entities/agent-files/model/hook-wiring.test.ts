@@ -20,8 +20,22 @@ describe('hookScriptPath', () => {
     expect(hookScriptPath('bash $HOOKS_DIR/guard.sh')).toBeNull();
   });
 
-  it('returns null for a command that runs no script', () => {
-    expect(hookScriptPath('echo hello')).toBeNull();
+  it.each([
+    ['"$CLAUDE_PROJECT_DIR"/.claude/hooks/session-length.sh', '.claude/hooks/session-length.sh'],
+    ['${CLAUDE_PROJECT_DIR}/.claude/hooks/x.sh', '.claude/hooks/x.sh'],
+    ['node scripts/hooks/check.mjs --strict', 'scripts/hooks/check.mjs'],
+    ['./scripts/guard.sh', 'scripts/guard.sh'],
+  ])('resolves the script %s runs', (command, path) => {
+    expect(hookScriptPath(command)).toBe(path);
+  });
+
+  it.each([
+    'echo hello',
+    'pnpm lint:changed',
+    'npx prettier --write src/index.js',
+    "osascript -e 'display notification \"done\"'",
+  ])('returns null for %s, which runs no script of its own', (command) => {
+    expect(hookScriptPath(command)).toBeNull();
   });
 });
 

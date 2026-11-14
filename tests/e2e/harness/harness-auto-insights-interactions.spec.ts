@@ -1,44 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-import { box, hintPanel } from './harness-auto-insights-harness';
+import { box } from './harness-auto-insights-harness';
 import { installHarnessRuntime, mountHarnessVault } from '../harness-tab-fixture';
 import { installDesktopBridge } from '../rounds-desktop-bridge';
-
-test.describe('Harness hints', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-  });
-
-  test('a hint panel can be hovered into and Escape dismisses it', async ({ page }) => {
-    await page.goto('/ko/architecture/?view=overview&guides=off');
-    const button = page.getByRole('button', { name: '말해둔 것', exact: true });
-    await expect(button).toBeVisible({ timeout: 30_000 });
-    const panel = await hintPanel(page, button);
-    const trigger = await box(button);
-    const x = trigger.x + trigger.width / 2;
-    await page.mouse.move(x, trigger.y + trigger.height / 2);
-    await expect(panel).toHaveCSS('opacity', '1');
-    const rect = await box(panel);
-    /* Through the gap between button and panel, then into the panel itself. */
-    await page.mouse.move(x, (trigger.y + trigger.height + rect.y) / 2, { steps: 3 });
-    // measurement window: the claim is that the panel stays open for a stretch with the pointer in the gap.
-    await page.waitForTimeout(400);
-    await expect(panel, 'the panel vanished in the gap under its button').toHaveCSS('opacity', '1');
-    await page.mouse.move(x, rect.y + 10, { steps: 3 });
-    // measurement window: the claim is that the panel stays open for a stretch once the pointer is on it.
-    await page.waitForTimeout(400);
-    await expect(panel, 'the panel vanished before the pointer reached it').toHaveCSS('opacity', '1');
-
-    await page.mouse.move(2, 2);
-    await button.focus();
-    await expect(panel).toHaveCSS('opacity', '1');
-    await page.keyboard.press('Escape');
-    await expect(panel, 'Escape did not dismiss the hint').toHaveCSS('opacity', '0');
-    await expect(button).toBeFocused();
-  });
-});
 
 test.describe('Architecture toolbar', () => {
   test.beforeEach(async ({ page, context }) => {
@@ -89,51 +53,6 @@ test.describe('Automations remove confirm', () => {
     await page.keyboard.press('Escape');
     await expect(confirm).toHaveCount(0);
     await expect(page.getByTestId('automations-remove').filter({ visible: true }).first()).toBeFocused();
-  });
-});
-
-test.describe('Harness hints stay whole', () => {
-  test.beforeEach(async ({ page }) => {
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-  });
-
-  test('Escape closes the hint and leaves the cell panel under it open', async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await page.goto('/ko/architecture/?view=overview&guides=off');
-    const cell = page.locator('[data-harness-cell="told"]').first();
-    await expect(cell).toBeVisible({ timeout: 30_000 });
-    await cell.click();
-    const detail = page.getByTestId('harness-overview-panel');
-    await expect(detail).toBeVisible();
-    const button = page.getByRole('button', { name: '말해둔 것', exact: true });
-    await button.hover();
-    const panel = await hintPanel(page, button);
-    await expect(panel).toHaveCSS('opacity', '1');
-    await page.keyboard.press('Escape');
-    await expect(panel).toHaveCSS('opacity', '0');
-    /* Both closed on one press before. */
-    await expect(detail, 'one Escape closed the hint and the panel').not.toHaveAttribute('data-panel-cell', '');
-    await page.keyboard.press('Escape');
-    await expect(detail).toHaveAttribute('data-panel-cell', '');
-  });
-
-  test('a hint dismissed with Escape comes back when the pointer returns', async ({ page }) => {
-    await page.setViewportSize({ width: 1512, height: 949 });
-    await page.goto('/ko/architecture/?view=overview&guides=off');
-    const button = page.getByRole('button', { name: '말해둔 것', exact: true });
-    await expect(button).toBeVisible({ timeout: 30_000 });
-    const panel = await hintPanel(page, button);
-    await button.focus();
-    await button.hover();
-    await expect(panel).toHaveCSS('opacity', '1');
-    await page.keyboard.press('Escape');
-    await expect(panel).toHaveCSS('opacity', '0');
-    await page.mouse.move(2, 2);
-    await button.hover();
-    /* It stayed at 0 until the button blurred before. */
-    await expect(panel, 'hover no longer reopens a dismissed hint').toHaveCSS('opacity', '1');
-    await expect(button).toBeFocused();
   });
 });
 

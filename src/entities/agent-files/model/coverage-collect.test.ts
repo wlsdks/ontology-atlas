@@ -53,14 +53,26 @@ describe('candidateScopeDeclarations — hooks are filed by what their event doe
     ]);
   });
 
-  it('reads Codex beforeToolUse as gated', () => {
+  it('files PermissionRequest and PreCompact as gated, and an event no table names as watched', () => {
     const declarations = candidateScopeDeclarations(
       input({
-        contents: new Map([['.codex/hooks/g.sh', '']]),
-        hookGroups: [wired('.codex/hooks.json', 'beforeToolUse', '.codex/hooks/g.sh')],
+        contents: new Map([
+          ['.claude/hooks/p.sh', ''],
+          ['.claude/hooks/c.sh', ''],
+          ['.codex/hooks/g.sh', ''],
+        ]),
+        hookGroups: [
+          wired('.claude/settings.json', 'PermissionRequest', '.claude/hooks/p.sh'),
+          wired('.claude/settings.json', 'PreCompact', '.claude/hooks/c.sh'),
+          wired('.codex/hooks.json', 'beforeToolUse', '.codex/hooks/g.sh'),
+        ],
       }),
     );
-    expect(hookColumns(declarations)).toEqual(['.codex/hooks/g.sh:gated']);
+    expect(hookColumns(declarations)).toEqual([
+      '.claude/hooks/p.sh:gated',
+      '.claude/hooks/c.sh:gated',
+      '.codex/hooks/g.sh:watched',
+    ]);
   });
 
   it('lists a script wired for pre and post in both columns', () => {

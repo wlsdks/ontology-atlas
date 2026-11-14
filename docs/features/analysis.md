@@ -153,7 +153,7 @@ Three visible section tabs select System relationships, Review summary and Wiki.
 Each supporting section names the actual
 folder or bundled-example scope above its records. Review summary retains its visit anchor,
 evidence details and explicit agent request. Wiki uses its existing
-read model. Guidance moved to Harness At a glance and Written explanations is no
+read model. Guidance moved to Harness Setup and Written explanations is no
 longer a section; explanations saved earlier stay as files in
 `.ontology-atlas/analyses/`, which the agent panel's Findings & history, MCP
 `analysis_history` and `analysis_record`, and the CLI still read. One ACP conversation remains mounted across
