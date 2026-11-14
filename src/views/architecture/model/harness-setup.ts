@@ -57,6 +57,8 @@ export interface SetupItem {
   denyAndAskRuleCount?: number;
   /** The text that put the item here, quoted from its file. */
   declaration?: string;
+  /** Root AGENTS.md when CLAUDE.md imports it: Claude Code reads it through that import. */
+  importedByClaudeMd?: boolean;
   /**
    * The tool whose copy of this skill or subagent differs from this one. Information only: the
    * two trees are maintained independently (decision e47518a9), and a file with no twin has none.
@@ -95,7 +97,10 @@ export interface HarnessSetup {
   tools: AgentTool[];
   sections: SetupSection[];
   problems: SetupProblem[];
-  /** CLAUDE.md plus every rule with no `paths:`, or null when there is no CLAUDE.md. */
+  /**
+   * CLAUDE.md, every rule with no `paths:`, and root AGENTS.md when CLAUDE.md imports it; null
+   * when there is no CLAUDE.md.
+   */
   claudeSessionBytes: number | null;
   codexSession: CodexSessionSize | null;
   items: ReadonlyMap<string, SetupItem>;
@@ -149,6 +154,10 @@ function declarationsById(coverage: readonly ScopeDeclaration[], origin: ScopeDe
   return out;
 }
 
+function importsAgentsMd(report: HarnessReport): boolean {
+  return report.analysis.checks.claudeAgentsBridge.status === 'ok';
+}
+
 function differingPairs(report: HarnessReport): Map<string, readonly [string, string]> {
   const out = new Map<string, readonly [string, string]>();
   for (const finding of report.analysis.drift) {
@@ -169,12 +178,14 @@ function fileItem(
 ): SetupItem {
   const rule = rules.get(record.path);
   const pair = pairs.get(record.path);
+  const imported = record.ruleId === 'agents-md' && importsAgentsMd(report);
   return {
     key: fileItemKey(record.path),
     label: record.path,
     path: record.path,
     hasContent: report.contents.has(record.path),
-    tools: record.tools,
+    tools: imported && !record.tools.includes('claude-code') ? [...record.tools, 'claude-code'] : record.tools,
+    importedByClaudeMd: imported || undefined,
     bytes: record.bytes,
     ruleId: record.ruleId,
     loading: rule ? (rule.declaration ? 'path' : 'always') : undefined,
@@ -303,10 +314,12 @@ function claudeSessionBytes(report: HarnessReport, rules: ReadonlyMap<string, Sc
   const records = report.analysis.records;
   const claudeMd = records.find((record) => record.ruleId === 'claude-md');
   if (!claudeMd) return null;
-  const alwaysRules = records.filter(
-    (record) => record.ruleId === 'claude-rules' && !rules.get(record.path)?.declaration,
+  const read = records.filter(
+    (record) =>
+      (record.ruleId === 'claude-rules' && !rules.get(record.path)?.declaration) ||
+      (record.ruleId === 'agents-md' && importsAgentsMd(report)),
   );
-  return alwaysRules.reduce((sum, record) => sum + record.bytes, claudeMd.bytes);
+  return read.reduce((sum, record) => sum + record.bytes, claudeMd.bytes);
 }
 
 function visibleTo(tools: readonly AgentTool[], filter: ToolFilter): boolean {

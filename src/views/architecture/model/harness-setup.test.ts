@@ -91,9 +91,15 @@ describe('buildHarnessSetup', () => {
     expect(setup.items.get('file:.claude/rules/always.md')?.loading).toBe('always');
     expect(setup.items.get('file:.claude/rules/scoped.md')?.loading).toBe('path');
     expect(setup.items.get('permissions:.claude/settings.json')?.denyAndAskRuleCount).toBe(2);
-    expect(setup.claudeSessionBytes).toBe(
-      new TextEncoder().encode(REPO['CLAUDE.md']).length + new TextEncoder().encode(REPO['.claude/rules/always.md']).length,
-    );
+  });
+
+  it('counts the AGENTS.md that CLAUDE.md imports in what Claude Code reads at session start', () => {
+    const size = (path: string) => new TextEncoder().encode(REPO[path]).length;
+    const setup = buildHarnessSetup(report, 'claude-code');
+    expect(setup.claudeSessionBytes).toBe(size('CLAUDE.md') + size('.claude/rules/always.md') + size('AGENTS.md'));
+    expect(labelsIn('context', 'instructions', 'claude-code').sort()).toEqual(['AGENTS.md', 'CLAUDE.md']);
+    expect(setup.items.get('file:AGENTS.md')?.importedByClaudeMd).toBe(true);
+    expect(setup.items.get('file:src/AGENTS.md')?.importedByClaudeMd).toBeUndefined();
   });
 
   it('lists only what a person must fix, one row per missing script however many events name it', () => {

@@ -46,8 +46,11 @@ function SessionSizes({
       {codex !== null ? (
         <div className="flex flex-col gap-1">
           <p className="flex items-baseline justify-between gap-3 text-label">
-            <span className="text-[color:var(--color-text-secondary)]">{AGENT_TOOL_LABELS.codex}</span>
-            <span className={cn('tabular-nums', codex.over ? 'text-[color:var(--color-amber-source-a90)]' : 'text-[color:var(--color-text-secondary)]')}>
+            <span className="min-w-0 text-[color:var(--color-text-secondary)]">
+              {AGENT_TOOL_LABELS.codex}
+              <span className="text-[color:var(--color-text-tertiary)]"> · {t('codexSessionScope')}</span>
+            </span>
+            <span className={cn('shrink-0 tabular-nums', codex.over ? 'text-[color:var(--color-amber-source-a90)]' : 'text-[color:var(--color-text-secondary)]')}>
               {t('capMergedValue', { used: formatBytes(codex.used), cap: formatBytes(codex.cap) })}
             </span>
           </p>
