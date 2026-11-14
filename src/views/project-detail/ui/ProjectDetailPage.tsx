@@ -20,6 +20,7 @@ import {
   EmptyState,
   InlineEditable,
   OntologyMapKindGlyph,
+  Tooltip,
   controlClass,
   useToast,
 } from "@/shared/ui";
@@ -561,21 +562,24 @@ export function ProjectDetailPage({
                 aria-label={t("constructionReview.openResult")}
                 hidden
               />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={constructionReview.status === "reading"}
-                onClick={openReviewPicker}
-                data-testid="construction-review-open"
-                aria-describedby="construction-review-file-hint"
-                className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto"
-              >
-                <FileText size={ICON_SIZE.md} aria-hidden="true" />
-                {constructionReview.status === "reading"
-                  ? t("constructionReview.readingResult")
-                  : t("constructionReview.openResult")}
-              </Button>
+              {/* The hint concerns this one action, so it shows when the action is reached for. */}
+              <Tooltip content={t("constructionReview.fileHint")} side="bottom" panelClassName="max-w-xs text-pretty">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={constructionReview.status === "reading"}
+                  onClick={openReviewPicker}
+                  data-testid="construction-review-open"
+                  aria-describedby="construction-review-file-hint"
+                  className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto"
+                >
+                  <FileText size={ICON_SIZE.md} aria-hidden="true" />
+                  {constructionReview.status === "reading"
+                    ? t("constructionReview.readingResult")
+                    : t("constructionReview.openResult")}
+                </Button>
+              </Tooltip>
               {canManageProject ? (
                 <div className="col-span-2 flex [&>button]:w-full sm:[&>button]:w-auto">
                   <ProjectQuickEditPanel
@@ -590,7 +594,7 @@ export function ProjectDetailPage({
             </div>
           </div>
 
-          <p id="construction-review-file-hint" className="mt-4 max-w-prose text-label leading-prose text-[color:var(--color-text-tertiary)]">
+          <p id="construction-review-file-hint" className="sr-only">
             {t("constructionReview.fileHint")}
           </p>
 
