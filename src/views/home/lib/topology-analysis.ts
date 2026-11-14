@@ -56,9 +56,8 @@ export interface TopologyAnalysisSummary {
 }
 
 /**
- * Re-exported from `entities/knowledge-graph/lib/ontology-health-signals.ts`, shared
- * with `/ontology/insights`, so both "next repair target" choices call one function without a
- * cross-view import.
+ * Re-exported from `entities/knowledge-graph/lib/ontology-health-signals.ts`, so every "next
+ * repair target" choice calls one function without a cross-view import.
  */
 export type TopologyHealthActionTarget = OntologyHealthActionTarget;
 
@@ -114,7 +113,6 @@ export interface TopologyOverviewBriefLabels {
   promotion: string;
   url: string;
   healthUrl: string;
-  insightsUrl: string;
   agentCheck: string;
   mcpCheck: string;
   mcpQueryPlan: string;
@@ -253,7 +251,6 @@ export function formatTopologyOverviewBrief({
   labels,
   url,
   healthUrl,
-  insightsUrl,
 }: {
   summary: Pick<
     TopologyAnalysisSummary,
@@ -266,7 +263,6 @@ export function formatTopologyOverviewBrief({
   labels: TopologyOverviewBriefLabels;
   url?: string | null;
   healthUrl: string;
-  insightsUrl: string;
 }): string {
   const healthSignalCount =
     summary.healthBreakdown.stale +
@@ -305,7 +301,6 @@ export function formatTopologyOverviewBrief({
 
   lines.push(
     `- ${labels.healthUrl}: ${healthUrl}`,
-    `- ${labels.insightsUrl}: ${insightsUrl}`,
     `- ${labels.agentCheck}: ${ATLAS_CLI} overview [vault] --limit 5`,
     `- ${labels.mcpCheck}: ${formatTopologyOverviewMcpCheck()}`,
     `- ${labels.mcpQueryPlan}: ${formatTopologyOverviewMcpQueryPlan()}`,

@@ -27,7 +27,6 @@ const ROUTES = [
   "/ko/",
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/new/",
   "/ko/agents/",
@@ -247,7 +246,7 @@ test.describe("three contracts for transient surfaces", () => {
           /*
            * ⚠️ **Compare focus return by identity, never by a marker planted in the DOM.**
            * The first version looked up `[data-sweep-trigger]`, but on screens where closing
-           * the surface rerenders that region (`/docs`, `/ontology/insights`) the marker
+           * the surface rerenders that region (`/docs`) the marker
            * disappeared and it reported "does not return" **even though focus had returned
            * correctly**. Measured by hand, all three routes return focus to the trigger.
            */

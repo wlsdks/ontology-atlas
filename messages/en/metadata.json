@@ -7,7 +7,6 @@
     "docs": "Ontology · Library",
     "projects": "Projects",
     "ontology": "Ontology",
-    "ontologyInsights": "Analysis",
     "projectNew": "New project",
     "guide": "Guide",
     "changelog": "Changelog"
@@ -18,7 +17,6 @@
     "topology": "See your project's domains, capabilities, elements and their dependencies as one map. The info block at the top of each file is the map, and the files stay on your own disk.",
     "docs": "Read and edit the markdown folder directly. Change the info block at the top of a file and the map follows.",
     "projects": "Every project and hub on this map, with the domains and capabilities each one is made of.",
-    "ontologyInsights": "Inspect recorded dependencies between responsibilities, their exact declarations and implementation evidence. Unchecked source remains explicit.",
     "guide": "Start with a Markdown vault, connect your coding agent, and learn how to inspect recorded meaning, evidence, and unknowns in Ontology Atlas.",
     "changelog": "Ontology Atlas changelog: user-visible changes, newest first.",
     "library": "Gather sources, compile them into wiki pages, and ask questions that cite their passages, all inside your local Markdown folder.",
@@ -36,7 +34,6 @@
     "fromYourRepo": "Start an ontology from what you already have: your code, its folder structure, and CLAUDE.md or AGENTS.md, extracted with your coding agent.",
     "connectAgent": "Connect a coding agent to Ontology Atlas over MCP in one click: Atlas writes the tool's configuration with the real absolute path.",
     "growingVault": "Keep a growing folder healthy: find duplicates, see what a rename breaks, and know what to fix when people and agents add concepts every day.",
-    "insights": "The Insights screen answers what to fix next: concept counts by kind, the most-connected hubs, and concepts attached to nothing.",
     "cli": "The Ontology Atlas CLI is the daily entry point from a source checkout: check, snapshot and inspect a folder from the terminal.",
     "trust": "What Ontology Atlas does not do: no backend, account or telemetry, and your files stay on your disk."
   }

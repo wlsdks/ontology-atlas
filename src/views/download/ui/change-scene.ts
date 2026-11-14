@@ -32,7 +32,7 @@ export const CHANGE_CAST: readonly ChangeRow[] = [
     added: 9,
     removed: 2,
     concept: 'element:wiki-page-write-judge',
-    calm: ['capability:ontology-insights'],
+    calm: ['element:wiki-lint-brief'],
   },
   {
     file: 'src/features/saved-constellations/model/use-saved-constellations.ts',

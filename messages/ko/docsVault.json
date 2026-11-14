@@ -6,8 +6,6 @@
   "header": {
     "openTreeAriaLabel": "문서 목록 열기",
     "openTreeTitle": "문서 목록",
-    "backToReviewAriaLabel": "분석 검토로 돌아가기",
-    "reviewBack": "← 분석 검토",
     "title": "온톨로지",
     "docCount": "문서 {count}개",
     "localBadge": "로컬",
@@ -458,7 +456,7 @@
   },
   "linkCopied": "문서 링크를 복사했어요",
   "linkCopyFailed": "문서 링크 복사 실패",
-  "proofHealthOpenQueue": "할 일에서 보기",
+  "proofHealthOpenQueue": "온톨로지 문서 열기",
   "review": {
     "writeFailed": "검토 표시를 파일에 저장하지 못했어요. 바뀐 건 없어요."
   }

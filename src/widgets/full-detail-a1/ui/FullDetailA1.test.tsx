@@ -61,7 +61,6 @@ const messages = {
       emptyGroup: "{title} 없음",
     },
     reach: {
-      domainsHiddenRoute: koMessages.fullDetailA1.reach.domainsHiddenRoute,
       leadIn: "이 노드에서",
       stepUnit: "단계",
       afterSteps: "안에 닿는 개념",

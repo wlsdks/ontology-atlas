@@ -86,7 +86,7 @@ describe("agent activity status", () => {
           ontologySlug: null,
           files: [
             "src/features/agent-activity/ui/AgentActivityChip.tsx",
-            "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+            "src/views/library/ui/LibraryPage.tsx",
           ],
         },
         plan: [],
@@ -103,7 +103,7 @@ describe("agent activity status", () => {
       ontologySlug: null,
       files: [
         "src/features/agent-activity/ui/AgentActivityChip.tsx",
-        "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+        "src/views/library/ui/LibraryPage.tsx",
       ],
       label: "source · src/features/agent-activity/ui/AgentActivityChip.tsx +1",
     });

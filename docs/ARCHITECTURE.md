@@ -14,9 +14,8 @@ area: architecture
 > and AI coding agents read and write that same folder. Round 10 permanently
 > removed every login and cloud-data screen. In today's route model, reading and
 > contextual writing happen together on Topology, ACP writes pause in the same
-> conversation for human review, and Analysis uses a three-section relationship/evidence workspace:
-> relationships, review summary and Wiki. The old `/ontology/studio` and
-> `/ontology/edit` URLs only translate old links.
+> conversation for human review. The old `/ontology/studio`, `/ontology/edit`
+> and `/ontology/insights` URLs only translate old links.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
 ## High-level shape
@@ -39,7 +38,7 @@ area: architecture
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
-│ ├─ /ontology/insights      relationships + evidence        │
+│ ├─ /ontology/insights      compatibility → map         │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /changes                source change briefing      │
 │ ├─ /planning               selected project documents  │
@@ -139,8 +138,6 @@ The public entrypoints remain stable while internal modules own narrower work:
 | `mcp/src/ontology-engine.mjs` | Composes public query methods. `artifact-context.mjs` builds indexes; `context-operations.mjs` owns graph lookups; planner, traversal, selection, scope, maintenance, brief, and health modules own their query families. Dependencies between families are explicit named functions. Dispatch, vocabulary, validation, result shaping, and response formatting are separate owners. |
 | `mcp/src/vault/` | The vault's disk layer, one owner per reason: `slug-paths.mjs` confines every slug to the vault root, `documents.mjs` reads documents, `relation-refs.mjs` owns the edge keys, `graph-queries.mjs` answers reference queries, `eligibility-gate.mjs` holds the gate's session state, `atomic-writes.mjs` owns torn-write and conflict safety, `doc-writes.mjs` is the single document write point, and `backlink-rewrite.mjs` rewrites references after a rename, merge or reclassify. Importers name the owning file; there is no barrel. |
 | `mcp/scripts/verify.mjs` + `verify/` | The entry owns argument parsing at load, the parser smoke, the server session, the gates, the phase order and the summary. `verify/cli.mjs` parses flags and env; `requests/` owns which JSON-RPC requests are sent; `tools-list/` owns the tools/list inventory and schema contract, one file per tool family; `checks/` return a failure string and never log; `phases/` log and never parse JSON-RPC. |
-| `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
-| `src/views/ontology-insights/ui/analysis/` | Fixed DOM dependency comparison with SVG connectors, named declaration witnesses and adjacent evidence. `lib/analysis-model.ts` derives only recorded dependencies, unambiguous responsibility pairs, implementation anchors and document gaps. `AnalysisRecords` keeps supporting records and one persistent ACP conversation; no second census/maintenance board is mounted. The source-date hook refuses a separately bound code root. |
 | `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation; the Documents lane draws the `round-ledger` widget below the list once a document pass has run. Scheduling and execution authority remain in Library rounds. |
 
 These modules preserve the existing React lifecycle, frame order, query result
@@ -214,12 +211,9 @@ files — which tool reads which, size against a documented cap, declared mirror
 hook wiring — from files only, through the installed app's read-only harness commands
 (`src-tauri/src/harness_source/`), which serve only the connected repository's allowlisted harness
 files; the browser cannot see a dot directory at all and says so instead of drawing a shorter list.
-`/ontology/insights?tab=harness` replaces itself with `/architecture/?view=overview`, keeping the other
-flags and adding no history entry. The measured/null availability contract, scanner, join, and write
+The retired `/ontology/insights?tab=harness` address replaces itself with
+`/architecture/?view=overview`, keeping the other flags and adding no history entry. The measured/null availability contract, scanner, join, and write
 authority remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
-The `relationship-preview` widget supplies explicitly
-labelled Wiki/Guidance examples and their real next action, shared with unavailable Harness
-states. Its decorative motion pauses offscreen and under reduced motion; it never creates data.
 
 ## Surface contract — web and app
 
@@ -721,10 +715,11 @@ until a local manifest, or the first part of one, exists.
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
-/ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
-/ontology/insights         three-section relationship/evidence workspace; exact declarations,
-                           capability endpoints and supporting records; old tab URLs map
-                           to the corresponding relationship, evidence or record question
+/ontology/studio           compatibility redirect; translates node/mode/edit to /topology
+/ontology/insights         compatibility redirect (src/views/insights-redirect/): tab=harness →
+                           /architecture/?view=overview with other flags kept; tab=library →
+                           /library/?tab=wiki; review=analysis:<id> or node=<slug> →
+                           /topology/?p=<canonical id>; anything else → /topology/
 /git                       local vault git history / snapshot workbench; remains a
                            primary desktop-rail destination with contextual links too
 /agents                    coding agents this computer can run — the app launches them and
@@ -818,9 +813,9 @@ for observed read/completion events; it adds no polling or idle simulation.
 
 **One piece of code decides which nav item is active; each screen size shows a
 different list of buttons.** The desktop rail shows Map,
-Architecture, Library, Planning, Automations, Insights, Projects, Agents, Changes and Git. Agents carries
+Architecture, Library, Planning, Automations, Projects, Agents, Changes and Git. Agents carries
 three body tabs, `agents`, `models` and `mcp`, addressed by `?tab=`. The mobile bottom
-bar shows Map, Architecture, Library, Planning, Insights, and Projects;
+bar shows Map, Architecture, Library, Planning and Projects;
 web adds Get App as a separate utility. Library contains Sources, Wiki, Ontology, and Check history;
 Bookmarks live inside Ontology alongside Concept documents;
 `/docs` remains an exact-document compatibility address for non-ontology files and resolves
@@ -858,17 +853,16 @@ to an agent.
 | `hub` · `c` · `impact` · `pulse` · `index` · `create` | `/`, `/topology` | focused hub · category · impact mode · pulse window · INDEX panel state · legacy create-node intent | see `src/views/home/model/route-state/url-state.ts` |
 | `workbench` · `edit` | `/topology` | contextual writer state · optional relation/target | `edit` \| `create`; `edit=<relation>:<targetId>` |
 | `recent` · `ask` | `/`, `/topology` | recent-change lens · agent first-words intent | typed parsers in `src/views/home/model/route-state/url-state.ts` |
-| `via` | `/`, `/topology`, `/ontology` | origin marker for the return chip | `insights:<tab>` |
-| `review` | `/`, `/topology`, `/ontology/insights` | selected Analysis claim/declaration carried across a document or correction return | `analysis:<nodeId>` / `relation:<edgeId>`; legacy review ids remain compatible context |
+| `via` | `/docs` | the map node the document crumb returns to; a retired `insights:<tab>` marker is ignored everywhere | `topology:<nodeId>` |
 | `constellation` | `/topology` | saved Map task scope or creation intent | stable folder UUID \| `new` |
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
-| `tab` | `/ontology/insights` | section or compatible question intent | `connections` (default), `brief`, `library`; `do-next`/`unmatched` open evidence; `harness` replaces itself with `/architecture/?view=overview`; `flow` opens relationships with a retired-section notice; other legacy ontology names open relationships |
+| `tab` · `review` · `node` | `/ontology/insights` (redirect) | where a saved Analysis address lands | `tab=harness` → `/architecture/?view=overview`; `tab=library` → `/library/?tab=wiki`; `review=analysis:<nodeId>` or `node=<slug>` → `/topology/?p=<canonical id>`; anything else → `/topology/` |
 
 ### One place builds node ids, one place reads them
 
-- **Building a link** (map · Insights · popovers · datasheets, all staying in
+- **Building a link** (map · popovers · datasheets, all staying in
   the map workbench): `buildTopologyMeaningEditorNodeHref` and
   `buildTopologyMeaningEditorEdgeHref` in
   `src/entities/knowledge-graph/lib/ontology-node-href.ts`. It normalizes any
@@ -887,8 +881,8 @@ to an agent.
   addresses files, not nodes, so its `?slug=` deliberately stays a file path.
 - Both the building and the reading side are pinned by `ontology-node-href.test.ts`,
   `translate-ontology-deeplink.test.ts`, and
-  `url-state.test.ts`, and `OntologyEditRedirectPage.test.tsx`. Insights tab
-  serialization is separately pinned by `insights-tab-state.test.ts`.
+  `url-state.test.ts`, and `OntologyEditRedirectPage.test.tsx`. The retired
+  Analysis address is pinned by `InsightsRedirectPage.test.tsx`.
 
 ## Build pipeline
 

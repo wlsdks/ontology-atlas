@@ -3,26 +3,17 @@ export type {
   KnowledgeGraphEdge,
   KnowledgeProjectInsight,
 } from "./model";
+export { useRelationVocabulary } from "./model";
 export {
-  useEdgeTypeLabel,
-  useRelationVocabulary,
-  buildEdgeTypeRows,
-} from "./model";
-export {
-  buildInsightsReturnMarker,
   buildTopologyMeaningEditorNodeHref,
   buildTopologyMeaningEditorEdgeHref,
   buildTopologyMeaningCreateHref,
-  buildOntologyInsightsReturnHref,
   BUSINESS_FLOW_ASK_VALUE,
   buildOntologyNodeHref,
   edgeAuthoredByFromNode,
   meaningEditRelationForEdgeType,
   parseOntologyMeaningEditParam,
-  ONTOLOGY_DEEPLINK_VIA_KEY,
-  ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_ASK_KEY,
-  parseInsightsReturnMarker,
   buildTopologyReturnMarker,
   buildTopologyReturnHref,
   parseTopologyReturnMarker,
@@ -69,9 +60,8 @@ export {
 export {
   capabilitiesWithoutImplementationEvidence,
   computeVaultHealth,
-  unmatchedGraphAsks,
 } from "./lib/vault-health";
-export type { UnmatchedGraphAsk, VaultHealthResult } from "./lib/vault-health";
+export type { VaultHealthResult } from "./lib/vault-health";
 export {
   isContainmentRelation,
   computeAdaptiveRecentChanges,
@@ -97,7 +87,6 @@ export {
   computeOntologyChangeset,
   filterTreeExcludeKind,
   useChangeBaseline,
-  computeEdgeTypeDistribution,
   computeDegreeCentrality,
   formatAgentPostChangeSyncPacket,
   MEANINGFUL_ONTOLOGY_KINDS,

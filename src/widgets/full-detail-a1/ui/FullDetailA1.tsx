@@ -454,7 +454,6 @@ export function FullDetailA1({
           selfDomainLabel: t("reach.selfDomainLabel"),
           noDomainLabel: t("reach.noDomainLabel"),
           domainsHidden: (hidden) => t("reach.domainsHidden", { count: hidden }),
-          domainsHiddenRoute: t("reach.domainsHiddenRoute"),
         }}
       />
 

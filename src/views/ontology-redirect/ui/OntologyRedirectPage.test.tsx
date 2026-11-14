@@ -46,20 +46,9 @@ describe("OntologyRedirectPage", () => {
     );
   });
 
-  it("forwards a review id only with a valid insights return marker", () => {
+  it("drops the retired Analysis return marker and its review id", () => {
     mocks.searchParams = new URLSearchParams(
       "node=capability:mcp-server&via=insights:do-next&review=neglected-hub:capability:mcp-server",
-    );
-    render(<OntologyRedirectPage />);
-    expect(mocks.replace).toHaveBeenCalledWith(
-      "/topology/?index=expanded&p=capability%3Amcp-server" +
-        "&via=insights%3Ado-next" +
-        "&review=neglected-hub%3Acapability%3Amcp-server",
-    );
-
-    mocks.replace.mockClear();
-    mocks.searchParams = new URLSearchParams(
-      "node=capability:mcp-server&review=neglected-hub:capability:mcp-server",
     );
     render(<OntologyRedirectPage />);
     expect(mocks.replace).toHaveBeenCalledWith(
@@ -67,14 +56,14 @@ describe("OntologyRedirectPage", () => {
     );
   });
 
-  it("preserves the whole-graph business-flow request and its insights return marker", () => {
+  it("preserves the whole-graph business-flow request without the retired return marker", () => {
     mocks.searchParams = new URLSearchParams(
       "ask=business-flow&via=insights:flow",
     );
     render(<OntologyRedirectPage />);
 
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/topology/?index=expanded&via=insights%3Aflow&ask=business-flow",
+      "/topology/?index=expanded&ask=business-flow",
     );
   });
 

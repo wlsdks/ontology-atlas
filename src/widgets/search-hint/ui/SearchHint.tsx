@@ -33,8 +33,6 @@ interface Props {
   className?: string;
   /** Path mode status chip (`TopologyPathChip`), placed beside search by riding in this lane. */
   pathChip?: ReactNode;
-  /** The insights deeplink return chip (`TopologyInsightsReturnChip`). */
-  returnChip?: ReactNode;
   /** The realm status chip, present only while a realm is active. */
   realmChip?: ReactNode;
   /** The session trail chip (`TopologyTrailChip`). */
@@ -59,7 +57,6 @@ export function SearchHint({
   phoneSheetSuppressed = false,
   className,
   pathChip,
-  returnChip,
   realmChip,
   trailChip,
   constellationControl,
@@ -255,7 +252,7 @@ export function SearchHint({
           {t('searchLabel')}
         </ChromeChip>
         </div>
-        {returnChip || realmChip || pathChip || trailChip ? (
+        {realmChip || pathChip || trailChip ? (
           // The status chips are what yields. From `xl` the group takes its natural
           // width up to `max-w-md`, or the path chip shrinks to one letter; past that
           // each chip truncates its label (full text in hover and accessible name).
@@ -263,7 +260,6 @@ export function SearchHint({
             className="pointer-events-auto flex min-w-0 items-center gap-[var(--topology-chrome-gap)] xl:max-w-md"
             data-testid="topology-status-chip-group"
           >
-            {phoneFocusSuppressed && realmChip ? <div className="hidden xl:contents">{returnChip}</div> : returnChip}
             {realmChip}
             {phoneFocusSuppressed && realmChip ? <div className="hidden xl:contents">{pathChip}{trailChip}</div> : <>{pathChip}{trailChip}</>}
           </div>

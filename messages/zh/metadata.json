@@ -7,7 +7,6 @@
     "docs": "本体 · 资料库",
     "projects": "项目",
     "ontology": "本体",
-    "ontologyInsights": "分析",
     "projectNew": "新建项目",
     "guide": "指南",
     "changelog": "更新日志"
@@ -18,7 +17,6 @@
     "topology": "把项目的领域、能力、要素及其依赖画成一张地图。每个文件顶部的信息块就是地图，文件保留在你自己的磁盘上。",
     "docs": "直接阅读和编辑 Markdown 文件夹。改动文件顶部的信息块，地图随之更新。",
     "projects": "这张地图上的所有项目和枢纽，以及各自包含的领域和能力。",
-    "ontologyInsights": "查看职责之间记录的依赖关系、具体声明与实现依据，并明确标示尚未检查的源码状态。",
     "guide": "从 Markdown 文件夹开始，连接你的编码智能体，学习如何在 Ontology Atlas 中查看已记录的语义、依据和未知项。",
     "changelog": "Ontology Atlas 更新日志：用户可见的变更，最新的在前。",
     "library": "收集资料，整理成 Wiki 页面，并就内容提问，回答会标出引用的段落。全部在本地 Markdown 文件夹中完成。",
@@ -36,7 +34,6 @@
     "fromYourRepo": "从你已有的内容开始建立本体：代码、文件夹结构，以及 CLAUDE.md 或 AGENTS.md，由你的编码智能体帮你提取。",
     "connectAgent": "一键通过 MCP 把编码智能体连接到 Ontology Atlas：Atlas 会用真实的绝对路径写入该工具的配置。",
     "growingVault": "让不断变大的文件夹保持健康：找出重复项，查看改名会破坏什么，并知道在人和智能体每天新增概念时该修什么。",
-    "insights": "分析页面告诉你下一步该修什么：按类型统计的概念数量、连线最多的枢纽，以及未连到任何东西的概念。",
     "cli": "Ontology Atlas CLI 是从源码检出目录使用的日常入口：在终端里检查文件夹、生成快照并查看内容。",
     "trust": "Ontology Atlas 不做什么：没有后端、账号或遥测，你的文件始终留在自己的磁盘上。"
   }

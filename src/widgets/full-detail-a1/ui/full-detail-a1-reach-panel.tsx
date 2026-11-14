@@ -5,10 +5,8 @@ import type {
   FullDetailReachDomainRow,
   FullDetailReachModel,
 } from "../lib/full-detail-reach";
-import { controlClass } from "@/shared/ui/control-class";
 import { HiddenCountLine } from "@/shared/ui/status/hidden-count-line";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
-import { Link } from "@/i18n/navigation";
 
 /**
  * Outward reach sentence, a 1/2/3 step selector and a per-domain bar breakdown. Indigo is reserved
@@ -28,8 +26,6 @@ export interface FullDetailA1ReachLabels {
   noDomainLabel: string;
   /** The remainder sentence for domains past `DOMAIN_ROW_LIMIT`. */
   domainsHidden: (hidden: number) => string;
-  /** Where every domain-to-domain relation is drawn — the insights boundaries tab. */
-  domainsHiddenRoute: string;
 }
 
 const STEPS: readonly FullDetailReachDepth[] = [1, 2, 3];
@@ -124,15 +120,6 @@ export function FullDetailA1ReachPanel({
         total={atDepth.domainRows.length}
         shown={topRows.length}
         label={labels.domainsHidden}
-        route={
-          <Link
-            href="/ontology/insights/?tab=boundaries"
-            data-testid="fulldetail-reach-domains-hidden-route"
-            className={controlClass({ shape: "link", size: "sm", scope: "panel", hoverInk: "secondary" })}
-          >
-            {labels.domainsHiddenRoute}
-          </Link>
-        }
       />
     </section>
   );
