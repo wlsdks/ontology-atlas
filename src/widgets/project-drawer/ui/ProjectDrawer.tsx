@@ -580,7 +580,7 @@ export function ProjectDrawer({
                             ? t("openDocsVaultTitleWithDoc", { name: project.name })
                             : t("openDocsVaultTitleEmpty")
                         }
-                        className={controlClass({ shape: "chip", size: "lg", tone: "accentOnTint", className: "h-10 justify-center gap-1.5 text-body-lg border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)]" })}
+                        className={controlClass({ shape: "chip", size: "lg", tone: "accent", className: "h-10 justify-center gap-1.5 text-body-lg border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a06)] hover:border-[color:var(--color-indigo-a55)] hover:text-[color:var(--color-text-primary)]" })}
                       >
                         <BookOpen size={ICON_SIZE.sm} />
                         {t("openDocsVault")}

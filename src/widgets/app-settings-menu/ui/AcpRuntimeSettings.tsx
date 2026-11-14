@@ -205,7 +205,7 @@ export function AcpRuntimeSettings({
   const searchChip = (
     <Chip
       size="lg"
-      tone={listed.length === 0 ? 'accentOnTint' : 'secondary'}
+      tone={listed.length === 0 ? 'accent' : 'secondary'}
       data-testid="app-settings-runtimes-others-toggle"
       aria-haspopup="dialog"
       onClick={() => openOthers('')}
@@ -682,11 +682,11 @@ function RuntimeRow({
   const chat = (copy = false) => (
     <Chip
       size="lg"
-      tone={oneOfSeveralChats ? 'accentOnTint' : 'onAccent'}
+      tone={oneOfSeveralChats ? 'accent' : 'onAccent'}
       data-testid={copy ? undefined : `app-settings-runtime-chat-${runtime.id}`}
       aria-label={t('openChat')}
       onClick={() => onOpenChat(runtime.id)}
-      className={cn('shrink-0', oneOfSeveralChats ? LEAD_CHIP : 'focus-visible:ring-[color:var(--color-text-primary)]')}
+      className={cn('shrink-0', oneOfSeveralChats && LEAD_CHIP)}
     >
       <MessageSquare size={ICON_SIZE.md} aria-hidden />
       {t('openChatShort')}
@@ -710,7 +710,7 @@ function RuntimeRow({
       className={controlClass({
         shape: 'chip',
         size: 'lg',
-        tone: lead ? 'accentOnTint' : 'secondary',
+        tone: lead ? 'accent' : 'secondary',
         hoverInk: 'strong',
         className: cn('shrink-0', lead && LEAD_CHIP, exiting && 'motion-swap-out pointer-events-none'),
       })}

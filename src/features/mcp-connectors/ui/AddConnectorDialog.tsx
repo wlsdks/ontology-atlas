@@ -1320,7 +1320,7 @@ function CustomConnectorForm({
                         key={runtime.name}
                         data-testid={`${testIdPrefix}-custom-runtime-${runtime.name}`}
                         aria-pressed={command === runtime.path}
-                        tone={command === runtime.path ? 'accentOnTint' : 'secondary'}
+                        tone={command === runtime.path ? 'accent' : 'secondary'}
                         onClick={() => {
                           setCommand(runtime.path ?? '');
                           setTypedCommand(false);
@@ -1332,7 +1332,7 @@ function CustomConnectorForm({
                     <Chip
                       data-testid={`${testIdPrefix}-custom-runtime-other`}
                       aria-pressed={typedCommand}
-                      tone={typedCommand ? 'accentOnTint' : 'secondary'}
+                      tone={typedCommand ? 'accent' : 'secondary'}
                       onClick={() => setTypedCommand(true)}
                     >
                       {t('runtimeOther')}

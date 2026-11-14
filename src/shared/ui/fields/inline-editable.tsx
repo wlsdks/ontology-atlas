@@ -171,7 +171,7 @@ export function InlineEditable({
 }
 
 const EDITABLE_VIEW_CLASS =
-  "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a32)]";
+  "cursor-text rounded-chip transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]";
 
 const HEADING_TAGS = new Set<NonNullable<Props["as"]>>(["h1", "h2", "h3"]);
 

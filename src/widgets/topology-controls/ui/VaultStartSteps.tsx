@@ -363,7 +363,7 @@ export function VaultStartSteps({
              */}
             <Chip
               size="lg"
-              tone="accentOnTint"
+              tone="accent"
               data-testid={primary.testId}
               disabled={primary.disabled}
               onClick={primary.run}

@@ -1,7 +1,7 @@
 /*
  * ontology-atlas — Design Tokens
  *
- * Linear-based design system. Restrained black-and-white + single indigo accent.
+ * Warm graphite neutrals, a paper-white primary action, and one calm blue for links and focus.
  * Details: docs/DESIGN-SYSTEM.md
  *
  * Prohibited (to prevent AI clichés):
@@ -15,30 +15,30 @@
 
 @theme {
   /* Background surfaces */
-  --color-canvas: #08090a;
-  --color-panel: #0f1011;
-  --color-elevated: #191a1b;
+  --color-canvas: #0b0b0a;
+  --color-panel: #121211;
+  --color-elevated: #1b1b19;
 
   /* Text */
-  --color-text-primary: #f7f8f8;
-  --color-text-secondary: #d0d6e0;
+  --color-text-primary: #f3f2ee;
+  --color-text-secondary: #d2d0c9;
   /*
-   * Tertiary: 7:1 on canvas and panel only (6.56 elevated, 6.26 panel+overlay-2). Quaternary (4.57
+   * Tertiary: 7:1 on canvas and panel only (6.75 elevated, 6.37 panel+overlay-2). Quaternary (4.61
    * on elevated): 12.5 px and up, up to overlay-1. Gates: `quaternary-ink-surface.contract.test.ts`,
    * `a11y-open-surfaces.spec.ts`.
    */
-  --color-text-tertiary: #9a9fa8;
-  --color-text-quaternary: #82828a;
+  --color-text-tertiary: #a4a29b;
+  --color-text-quaternary: #86847e;
   /*
    * Foreground **above** filled indigo. All four lamp palettes are for dark backgrounds, so none can be used on filled controls — thus, all 9 filled indigo buttons in the repository were manually writing `text-white` literals, and this spot was missing from the eight `tone`s of `controlClass`, leaving two rounds (features 5 · widgets 6) entirely outside the value layer.
    * This is not a new hue (monochrome #fff). Contrast against `--color-indigo-brand`(#5e6ad2) is 4.71:1, passing WCAG AA(4.5:1) — it is an existing combination already on screen today.
    */
-  --color-text-on-accent: #ffffff;
+  --color-text-on-accent: #141413;
   /*
    * Only this `<kbd>` sits on indigo fill, where the white alpha ladder made for the dark canvas makes
    * the border disappear.
    */
-  --color-keycap-edge-on-accent: rgba(255, 255, 255, 0.35);
+  --color-keycap-edge-on-accent: rgba(0, 0, 0, 0.35);
 
   /*
    * The plate sits only inside the 32px executor tiles: vendor marks are mostly drawn for light
@@ -80,15 +80,15 @@
 
 
   /* Indigo accent (system's only color) */
-  --color-indigo-brand: #5e6ad2;
-  --color-indigo-accent: #7170ff;
-  --color-indigo-hover: #828fff;
+  --color-indigo-brand: #e9e7e0;
+  --color-indigo-accent: #8fb0ea;
+  --color-indigo-hover: #a9c4f2;
   /*
    * Filled accent buttons darken on hover: white ink loses contrast as the surface brightens (4.70
    * down to 3.17 at worst), and base #5e6ad2 leaves only 5.7% room to brighten while keeping AA. Tint
    * and transparent controls still brighten.
    */
-  --color-indigo-brand-hover: #5661c4;
+  --color-indigo-brand-hover: #d5d3cc;
 
   /*
    * Three signal tones, each with a solid dot plus surface/border/text alpha ladder. Success is only
@@ -104,40 +104,40 @@
    * scattered as inline hardcodes in `OntologyInspector.tsx` /
    * `OntologyKindPalette.tsx` — visual result unchanged, references only changed to CSS variables.
    */
-  --color-indigo-a06: rgba(94, 106, 210, 0.06);
-  --color-indigo-a08: rgba(94, 106, 210, 0.08);
-  --color-indigo-a10: rgba(94, 106, 210, 0.1);
-  --color-indigo-a12: rgba(94, 106, 210, 0.12);
-  --color-indigo-a14: rgba(94, 106, 210, 0.14);
-  --color-indigo-a16: rgba(94, 106, 210, 0.16);
-  --color-indigo-a18: rgba(94, 106, 210, 0.18);
-  --color-indigo-a22: rgba(94, 106, 210, 0.22);
-  --color-indigo-a26: rgba(94, 106, 210, 0.26);
-  --color-indigo-a28: rgba(94, 106, 210, 0.28);
-  --color-indigo-a32: rgba(94, 106, 210, 0.32);
-  --color-indigo-a38: rgba(94, 106, 210, 0.38);
-  --color-indigo-a40: rgba(94, 106, 210, 0.4);
-  --color-indigo-a46: rgba(94, 106, 210, 0.46);
+  --color-indigo-a06: rgba(233, 231, 224, 0.03);
+  --color-indigo-a08: rgba(233, 231, 224, 0.04);
+  --color-indigo-a10: rgba(233, 231, 224, 0.05);
+  --color-indigo-a12: rgba(233, 231, 224, 0.06);
+  --color-indigo-a14: rgba(233, 231, 224, 0.07);
+  --color-indigo-a16: rgba(233, 231, 224, 0.08);
+  --color-indigo-a18: rgba(233, 231, 224, 0.09);
+  --color-indigo-a22: rgba(233, 231, 224, 0.11);
+  --color-indigo-a26: rgba(233, 231, 224, 0.13);
+  --color-indigo-a28: rgba(233, 231, 224, 0.14);
+  --color-indigo-a32: rgba(233, 231, 224, 0.16);
+  --color-indigo-a38: rgba(233, 231, 224, 0.19);
+  --color-indigo-a40: rgba(233, 231, 224, 0.2);
+  --color-indigo-a46: rgba(233, 231, 224, 0.23);
   /* For border/hover:border only. */
   /*
    * Opaque: at alpha 0.46 the ring composited to 1.75:1, below the WCAG 1.4.11 non-text 3:1; opaque
    * gives 4.24 on canvas, 3.95 on panel, 3.66 on lighter surfaces.
    */
-  --color-indigo-focus-ring: rgb(94, 106, 210);
-  --color-indigo-a50: rgba(94, 106, 210, 0.5);
-  --color-indigo-a55: rgba(94, 106, 210, 0.55);
-  --color-indigo-a66: rgba(94, 106, 210, 0.66);
+  --color-indigo-focus-ring: rgb(127, 160, 224);
+  --color-indigo-a50: rgba(233, 231, 224, 0.25);
+  --color-indigo-a55: rgba(233, 231, 224, 0.275);
+  --color-indigo-a66: rgba(233, 231, 224, 0.33);
   /* pale indigo text. */
-  --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
+  --color-indigo-text-strong: rgba(160, 188, 236, 0.95);
   /* Pale indigo text — different tuple from the exact rgb three above. */
-  --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
+  --color-indigo-text-soft: rgba(196, 213, 244, 0.92);
 
   /*
    * Alpha steps of the accent #7170ff, not a new colour; the colour gate only contrasts registered
    * tuples, so literals must not be written inline.
    */
-  --color-indigo-accent-a32: rgba(113, 112, 255, 0.32);
-  --color-indigo-accent-a50: rgba(113, 112, 255, 0.5);
+  --color-indigo-accent-a32: rgba(143, 176, 234, 0.32);
+  --color-indigo-accent-a50: rgba(143, 176, 234, 0.5);
 
   /* Text color for search match `<mark>`. The only value readable on `--color-indigo-line-a22` surface, so named for purpose — 3 consumption sites were copying the same literal (highlighted-text · document palette · document viewer). */
   --color-search-mark-text: rgba(210, 218, 255, 0.98);
@@ -164,29 +164,29 @@
    * Adds only opacity/hue not in the above A2 scale — visual result unchanged, references only
    * replaced with CSS variables.
    */
-  --color-indigo-a20: rgba(94, 106, 210, 0.2);
-  --color-indigo-a24: rgba(94, 106, 210, 0.24);
-  --color-indigo-a30: rgba(94, 106, 210, 0.3);
-  --color-indigo-a34: rgba(94, 106, 210, 0.34);
-  --color-indigo-a60: rgba(94, 106, 210, 0.6);
+  --color-indigo-a20: rgba(233, 231, 224, 0.1);
+  --color-indigo-a24: rgba(233, 231, 224, 0.12);
+  --color-indigo-a30: rgba(233, 231, 224, 0.15);
+  --color-indigo-a34: rgba(233, 231, 224, 0.17);
+  --color-indigo-a60: rgba(233, 231, 224, 0.3);
   /* pale indigo text — sibling of text-strong(0.95), exclusive to layout view radio dot. */
 
   /*
    * Mockup `--indigo-line` series (139,151,255) — different hue from the A2 indigo scale
    * (94,106,210).
    */
-  --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
-  --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
-  --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
-  --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
-  --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
-  --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
-  --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
-  --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
-  --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
-  --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
-  --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
-  --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
+  --color-indigo-line-a06: rgba(233, 231, 224, 0.036);
+  --color-indigo-line-a13: rgba(233, 231, 224, 0.078);
+  --color-indigo-line-a15: rgba(233, 231, 224, 0.09);
+  --color-indigo-line-a20: rgba(233, 231, 224, 0.12);
+  --color-indigo-line-a22: rgba(233, 231, 224, 0.132);
+  --color-indigo-line-a32: rgba(233, 231, 224, 0.192);
+  --color-indigo-line-a35: rgba(233, 231, 224, 0.21);
+  --color-indigo-line-a40: rgba(233, 231, 224, 0.24);
+  --color-indigo-line-a42: rgba(233, 231, 224, 0.252);
+  --color-indigo-line-a45: rgba(233, 231, 224, 0.27);
+  --color-indigo-line-a54: rgba(233, 231, 224, 0.324);
+  --color-indigo-line-a90: rgba(233, 231, 224, 0.54);
 
   --color-danger-a12: rgba(229, 72, 77, 0.12);
   --color-danger-text-strong: rgba(236, 116, 116, 0.95);

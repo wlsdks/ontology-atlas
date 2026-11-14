@@ -260,13 +260,13 @@ test.describe("the index row's own state", () => {
     const currentHover = await read("current-hover");
     const otherHover = await read("other-hover");
 
-    // Selected is indigo and it stays indigo under the pointer.
-    expect(currentRest.background).toBe("rgba(94, 106, 210, 0.16)");
+    // The selected fill stays under the pointer.
+    expect(currentRest.background).toBe("rgba(233, 231, 224, 0.08)");
     expect(currentHover.background, "hover changed the current row's fill").toBe(currentRest.background);
     expect(currentHover.colour).toBe(currentRest.colour);
-    // The durable mark is the edge, not the tint: 2px of indigo ink, 5.18:1 on canvas.
+    // The durable mark is the edge, not the tint: 2px of accent ink.
     expect(currentRest.edgeWidth).toBe("2px");
-    expect(currentRest.edge).toBe("rgb(113, 112, 255)");
+    expect(currentRest.edge).toBe("rgb(143, 176, 234)");
     // An unselected row still answers the pointer — one step, from the axis.
     expect(otherHover.background).toBe("rgba(255, 255, 255, 0.02)");
     expect(otherHover.edge).toBeNull();

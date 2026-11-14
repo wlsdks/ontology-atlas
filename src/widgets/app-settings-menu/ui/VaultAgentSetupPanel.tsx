@@ -1044,7 +1044,7 @@ export function VaultAgentSetupPanel({
               onClick={() => void handleEnsureAgentConfigs().catch(() => undefined)}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
-              tone="accentOnTint"
+              tone="accent"
               className={`self-start ${ACCENT_ACTION_CHIP}`}
             >
               <Bot size={ICON_SIZE.sm} aria-hidden />
@@ -1235,7 +1235,7 @@ export function VaultAgentSetupPanel({
               size="md"
               onClick={onOpenWorkflowGuide}
               title={t('agentSetup.openWorkflowGuideTitle')}
-              tone="accentOnTint"
+              tone="accent"
               className={ACCENT_ACTION_CHIP}
             >
               <BookOpen size={ICON_SIZE.sm} aria-hidden />

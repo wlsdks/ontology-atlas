@@ -242,7 +242,7 @@ export function WorkspacePane({
                 ) : (
                   <Chip
                     size="lg"
-                    tone="accentOnTint"
+                    tone="accent"
                     hoverSurface="lift"
                     onClick={() => void localVault.open()}
                     disabled={vaultBusy}

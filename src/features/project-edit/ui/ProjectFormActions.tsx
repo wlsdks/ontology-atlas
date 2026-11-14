@@ -275,7 +275,7 @@ export function DangerRow({
         variant="outline"
         onClick={onDelete}
         disabled={deleting || submitting}
-        className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-status-danger)] hover:border-[color:var(--color-danger-a50)]"
+        className="ml-auto shrink-0 border-[color:var(--color-border-soft)] text-[color:var(--color-danger-text)] hover:border-[color:var(--color-danger-a50)]"
       >
         {deleting ? t("actions.deleting") : t("actions.delete")}
       </Button>

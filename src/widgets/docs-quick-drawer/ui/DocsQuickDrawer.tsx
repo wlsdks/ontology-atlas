@@ -582,7 +582,7 @@ export function DocsQuickDrawer({
                     flatTreeSlugs.length;
                   setFocusedSlug(flatTreeSlugs[nextIdx]);
                 }}
-                className="mt-3 flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 transition-[border-color,box-shadow] focus-within:border-[color:var(--color-indigo-a50)] focus-within:ring-2 focus-within:ring-[color:var(--color-indigo-a24)]"
+                className="mt-3 flex items-center gap-2 rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 transition-[border-color,box-shadow] focus-within:border-[color:var(--color-indigo-focus-ring)] focus-within:ring-2 focus-within:ring-[color:var(--color-indigo-focus-ring)]"
               >
                 <Search size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" />
                 <input

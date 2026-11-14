@@ -124,8 +124,8 @@ export function BottomTabBar() {
             data-active={active ? 'true' : 'false'}
             className={
               active
-                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-text-soft)] transition-colors active:bg-[color:var(--color-indigo-a08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
-                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset'
+                ? 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-indigo-text-soft)] transition-colors active:bg-[color:var(--color-indigo-a08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset'
+                : 'relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset'
             }
           >
             {active ? (
@@ -157,7 +157,7 @@ export function BottomTabBar() {
           href="/download/"
           title={tRail('getAppTitle')}
           data-testid="bottom-tab-get-app"
-          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-a50)] focus-visible:ring-inset"
+          className="relative flex min-h-[var(--topology-bottom-tab-min-height)] min-w-14 flex-1 flex-col items-center justify-center gap-0.5 text-[color:var(--color-text-quaternary)] transition-colors active:bg-[color:var(--color-overlay-1)] active:text-[color:var(--color-text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
         >
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-card border border-transparent transition-colors">
             <Download size={ICON_SIZE.lg} aria-hidden />

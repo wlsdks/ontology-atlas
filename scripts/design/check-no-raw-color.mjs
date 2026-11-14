@@ -13,11 +13,11 @@ export const SRC_DIR = join(ROOT, "src");
 // hue, the pre-convergence values are watched too, so a regression that reintroduces
 // any of them as a literal is caught.
 const HUE_FAMILIES = [
-  { name: "indigo", rgbs: [[94, 106, 210]] },
+  { name: "indigo", rgbs: [[233, 231, 224], [94, 106, 210]] },
   { name: "indigo-line", rgbs: [[139, 151, 255]] },
   // These hues are listed to name which token to use; pass/fail is decided by the achromatic rule below.
-  { name: "indigo-accent → var(--color-indigo-accent-a32/-a50)", rgbs: [[113, 112, 255]] },
-  { name: "indigo-text-strong → var(--color-indigo-text-strong)", rgbs: [[159, 170, 235]] },
+  { name: "indigo-accent → var(--color-indigo-accent-a32/-a50)", rgbs: [[143, 176, 234], [113, 112, 255]] },
+  { name: "indigo-text-strong → var(--color-indigo-text-strong)", rgbs: [[160, 188, 236], [159, 170, 235]] },
   { name: "search-mark → var(--color-search-mark-text)", rgbs: [[210, 218, 255]] },
   { name: "indigo-pale", rgbs: [[200, 210, 255], [205, 212, 255], [211, 215, 255]] },
   { name: "danger", rgbs: [[229, 72, 77], [236, 116, 116]] },

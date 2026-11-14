@@ -180,7 +180,7 @@ export function TopologyBlockingOverlays(props: TopologyBlockingOverlaysProps) {
               onClick={() => { props.closeCreateNode(); props.openDocsDrawer(); }}
               data-testid="topology-create-node-open-workspace"
               className={controlClass({
-                shape: "pill", size: "md", tone: "accentOnTint",
+                shape: "pill", size: "md", tone: "accent",
                 className: "mt-3 justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset"
               })}
             >{t("createNode.unavailableAction")}</button></section>

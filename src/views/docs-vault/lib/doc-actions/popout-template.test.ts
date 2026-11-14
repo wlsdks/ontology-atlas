@@ -22,14 +22,14 @@ describe("buildDocsVaultPopoutHtml", () => {
     expect(html).toContain("width=device-width,initial-scale=1");
   });
 
-  it("uses only neutral dark colors and indigo alpha in the body", () => {
+  it("uses only neutral dark colors and one link ink in the body", () => {
     const html = buildDocsVaultPopoutHtml("a", "<p>x</p>");
     // Neutral surface and text colours are the design tokens' literal values (identical to globals.css).
-    expect(html).toContain("background: #0f1011"); // panel
-    expect(html).toContain("color: #f7f8f8"); // text-primary (heading)
-    expect(html).toContain("color: #d0d6e0"); // text-secondary (body)
+    expect(html).toContain("background: #121211"); // panel
+    expect(html).toContain("color: #f3f2ee"); // text-primary (heading)
+    expect(html).toContain("color: #d2d0c9"); // text-secondary (body)
     // Indigo alpha (link, code background) — one colour only.
-    expect(html).toContain("rgba(139,151,255,0.9)");
+    expect(html).toContain("rgba(160,188,236,0.95)");
     expect(html).not.toMatch(/linear-gradient/);
     expect(html).not.toMatch(/box-shadow/);
   });

@@ -59,7 +59,7 @@ export function ErrorCard({
             className={controlClass({
               shape: 'chip',
               size: 'lg',
-              tone: 'accentOnTint',
+              tone: 'accent',
               hoverSurface: 'lift',
               className:
                 'shrink-0 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)]',
@@ -70,7 +70,7 @@ export function ErrorCard({
         ) : (
           <Chip
             size="lg"
-            tone="accentOnTint"
+            tone="accent"
             data-testid="acp-chat-error-retry"
             disabled={retryDisabled}
             onClick={onRetry}

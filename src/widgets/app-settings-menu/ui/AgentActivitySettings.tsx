@@ -81,7 +81,7 @@ export function AgentActivitySettings() {
                     className={controlClass({
                       shape: 'chip',
                       size: 'md',
-                      tone: on ? 'accentOnTint' : 'muted',
+                      tone: on ? 'accent' : 'muted',
                       hoverInk: on ? 'none' : 'secondary',
                       className: on
                         ? 'border-[color:var(--color-indigo-line-a45)] bg-[color:var(--color-indigo-a14)]'

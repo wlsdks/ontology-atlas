@@ -71,7 +71,7 @@ export function ConnectStoppedState({ t, onConnectAgain }: { t: ChatT; onConnect
       </p>
       <Chip
         size="lg"
-        tone="accentOnTint"
+        tone="accent"
         data-testid="acp-connect-again"
         onClick={onConnectAgain}
         className={cn(RETRY_CHIP_CLASS, 'mt-3')}

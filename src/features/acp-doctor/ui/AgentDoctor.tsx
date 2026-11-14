@@ -374,7 +374,7 @@ export function useAgentDoctor(
                 {check.state === 'problem' && check.fixable ? (
                   <Chip
                     size="sm"
-                    tone="accentOnTint"
+                    tone="accent"
                     data-testid={`agent-doctor-fix-${check.id}`}
                     disabled={busy !== null}
                     onClick={() => void fix(check.id)}
@@ -407,7 +407,7 @@ export function useAgentDoctor(
                     <span className="mt-2 block">
                       <Chip
                         size="sm"
-                        tone="accentOnTint"
+                        tone="accent"
                         data-testid="agent-doctor-install"
                         disabled={busy !== null}
                         onClick={() => void install()}
@@ -435,7 +435,7 @@ export function useAgentDoctor(
                     <span className="mt-2 block">
                       <Chip
                         size="sm"
-                        tone="accentOnTint"
+                        tone="accent"
                         data-testid="agent-doctor-install-node"
                         disabled={busy !== null}
                         onClick={() => void getNode()}
