@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import {
+  CROWDED_SOURCE,
+  HOOKLESS_SOURCE,
   MISSING_CODEX_HOOK_SOURCE,
   UNRESOLVED_HOOK_SOURCE,
   installHarnessRuntime,
@@ -45,6 +47,31 @@ test.describe("harness Setup files and statuses", () => {
       await expect(row.locator('[data-harness-status="approval"]')).toHaveText("Needs approval in Codex");
     }
     await expect(problem(page, "hook-missing").filter({ hasText: "block-npm-publish.sh" })).toHaveCount(2);
+  });
+
+  test("a repository with no hooks has no problems and lists its scripts on disk as not wired", async ({ page }) => {
+    await openSetup(page, { source: HOOKLESS_SOURCE, locale: "en" });
+    await expect(page.getByTestId("harness-problems")).toHaveCount(0);
+    for (const id of ["contextHooks", "blockingHooks", "hooks", "otherHooks"]) {
+      await expect(page.locator(`[data-harness-group="${id}"]`)).toHaveCount(0);
+    }
+    const unwired = page.locator('[data-harness-section="verification"] [data-harness-group="unwiredHooks"]');
+    await expect(unwired.locator("[data-harness-group-count]")).toHaveText("2");
+    await unwired.locator("button[aria-expanded]").click();
+    await expect(unwired.locator('[data-harness-status="unwired"]').first()).toHaveText("Not wired");
+  });
+
+  test("a crowded repository keeps the page inside the window and scrolls its lists", async ({ page }) => {
+    await openSetup(page, { source: CROWDED_SOURCE });
+    const blocking = page.locator('[data-harness-section="guardrails"] [data-harness-group="blockingHooks"]');
+    await expect(blocking.locator("[data-harness-group-count]")).toHaveText("21");
+    await blocking.locator("button[aria-expanded]").click();
+    await expect(blocking.locator("[data-harness-item]")).toHaveCount(21);
+    const scroll = page.getByTestId("harness-setup-scroll");
+    const overflow = await scroll.evaluate((node) => node.scrollHeight - node.clientHeight);
+    expect(overflow, "the expanded list should scroll inside its slot").toBeGreaterThan(0);
+    const box = (await page.getByTestId("harness-setup").boundingBox())!;
+    expect(box.y + box.height, "the Setup slot grew past the window").toBeLessThanOrEqual(900);
   });
 
   test("Claude and Codex copies that differ are a neutral fact that opens side by side", async ({ page }) => {

@@ -148,10 +148,7 @@ function HarnessPageInner() {
   const canReadHarness = surfaceHasBridge && !harnessUnavailable;
   const addressView = resolveAddressView(searchParams, canReadHarness);
   /* A press wins over the address until the next history move; see `setView`. */
-  const requestedView = viewOverride ?? addressView;
-  /* Before a reading exists the three harness views draw the same example, so they collapse into one tab until a reading arrives. */
-  const view: HarnessView =
-    harnessUnavailable && requestedView !== 'architecture' ? 'overview' : requestedView;
+  const view: HarnessView = viewOverride ?? addressView;
 
   const setView = useCallback(
     (next: HarnessView) => {
@@ -194,14 +191,7 @@ function HarnessPageInner() {
       idPrefix="harness"
       activeKey={view}
       onSelect={(key) => setView(parseHarnessView(key))}
-      items={
-        harnessUnavailable
-          ? [
-              { key: 'overview', label: t('views.overview') },
-              { key: 'architecture', label: t('views.architecture') },
-            ]
-          : HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))
-      }
+      items={HARNESS_VIEW_ORDER.map((id) => ({ key: id, label: t(`views.${id}`) }))}
     />
   );
 
