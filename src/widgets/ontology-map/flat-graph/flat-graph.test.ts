@@ -24,7 +24,7 @@ import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
-import { layoutFlatGraph } from "./layout";
+import { budgetedIterations, layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -1075,5 +1075,19 @@ describe("names under the map's chrome", () => {
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, id), "the selection").toBe(true);
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, "capability:another"), "another concept selected").toBe(false);
     expect(nameBlockDraws(names, from, to, at.x, at.y, panel, null), "nothing selected").toBe(false);
+  });
+});
+
+describe("cluster iteration budget", () => {
+  it("keeps a small cluster's iterations and never lets a crowded one do more pair work than the largest unbudgeted cluster", () => {
+    const iterations = TOKENS.layout.capabilityIterations;
+    let unbudgeted = 0;
+    for (let bodies = 1; bodies <= 2000; bodies += 1) {
+      const budgeted = budgetedIterations(iterations, bodies);
+      if (budgeted === iterations) unbudgeted = bodies;
+    }
+    expect(unbudgeted).toBeGreaterThan(Math.max(...VAULTS.flatMap(([, model]) => model.domains.map((d) => d.capabilityIds.length))));
+    const ceiling = iterations * unbudgeted ** 2;
+    for (const bodies of [unbudgeted + 1, 100, 170]) expect(budgetedIterations(iterations, bodies) * bodies ** 2, `${bodies} bodies`).toBeLessThanOrEqual(ceiling * 1.02);
   });
 });

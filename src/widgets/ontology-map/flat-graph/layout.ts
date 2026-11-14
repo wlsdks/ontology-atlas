@@ -16,6 +16,8 @@ const CLUSTER_SPREAD = 0.8;
 const COMPACT_ROUNDS = 40;
 const COMPACT_PULL = 0.04;
 const COMPACT_SEPARATIONS = 6;
+const FULL_ITERATION_BODIES = 64;
+const MIN_BUDGETED_ITERATIONS = 24;
 const MAX_STRETCH = 2;
 const MIN_ASPECT = 0.6;
 const MAX_ASPECT = 2.6;
@@ -84,20 +86,30 @@ function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], ite
   return out;
 }
 
+/**
+ * ForceAtlas2 costs O(iterations · n²), and a fit runs it once per pass. A cluster past
+ * `FULL_ITERATION_BODIES` keeps the pair work of one that size, so a crowded domain cannot stall the open.
+ */
+export function budgetedIterations(iterations: number, bodyCount: number): number {
+  if (bodyCount <= FULL_ITERATION_BODIES) return iterations;
+  return Math.max(MIN_BUDGETED_ITERATIONS, Math.round(iterations * (FULL_ITERATION_BODIES / bodyCount) ** 2));
+}
+
 /** Pairwise separation in sorted order; fixed bodies never move. O(rounds · n²). */
 function separate(bodies: Body[], gap: number, rounds: number): void {
   for (let round = 0; round < rounds; round += 1) {
     let moved = false;
     for (let i = 0; i < bodies.length; i += 1) {
+      const p = bodies[i]!;
       for (let j = i + 1; j < bodies.length; j += 1) {
-        const p = bodies[i]!;
         const q = bodies[j]!;
         if (p.fixed && q.fixed) continue;
         const need = p.r + q.r + gap;
         let dx = q.x - p.x;
         let dy = q.y - p.y;
-        let d = Math.hypot(dx, dy);
-        if (d >= need) continue;
+        const squared = dx * dx + dy * dy;
+        if (squared >= need * need) continue;
+        let d = Math.sqrt(squared);
         if (d < 1e-6) {
           const a = seedAngle(`${p.id}|${q.id}`);
           dx = Math.cos(a);
@@ -207,7 +219,7 @@ function layoutCluster(
     const anchor = anchorOf.get(otherDomain);
     if (anchor) springs.push({ a: inside, b: anchor, weight: tokens.anchorWeight });
   }
-  const placed = runForceAtlas2(bodies, springs, ranked.length > 0 ? tokens.capabilityIterations : 0);
+  const placed = runForceAtlas2(bodies, springs, ranked.length > 0 ? budgetedIterations(tokens.capabilityIterations, bodies.length) : 0);
   const movable = bodies.filter((b) => !b.fixed && members.has(b.id));
   for (const b of movable) {
     const at = placed.get(b.id)!;
