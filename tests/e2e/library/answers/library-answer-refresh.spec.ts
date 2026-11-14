@@ -72,7 +72,7 @@ async function openLibrary(page: Page, files = FILES, locale = 'en') {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, { files });
   await page.goto(`/${locale}/`);
-  await page.getByRole('button', { name: /Open a folder|내 폴더 열기/i }).click();
+  await page.getByRole('button', { name: /Open a folder|폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
   await page.waitForFunction(() => !Array.from(document.querySelectorAll('body *')).some((el) => el.children.length === 0 && /Loading the map|지도를 불러/.test(el.textContent ?? '') && el.getBoundingClientRect().width > 0));
