@@ -47,7 +47,7 @@ test("the trail accumulates, lists correctly, jumps back and clears", async ({ p
     .toBe("capability:checkout");
 
   // The chip counts three steps
-  const chip = page.getByText(/걸어온 길 · 3/);
+  const chip = page.getByText(/방문 기록 · 3/);
   await expect(chip, "the trail chip does not count steps").toBeVisible();
   await chip.click();
   // The rows below are `toBeVisible` assertions, which retry on their own — the
@@ -55,8 +55,8 @@ test("the trail accumulates, lists correctly, jumps back and clears", async ({ p
 
   // The list — here now, one step back, two steps back
   await expect(page.getByText("지금 여기")).toBeVisible();
-  await expect(page.getByText("1걸음 전")).toBeVisible();
-  await expect(page.getByText("2걸음 전")).toBeVisible();
+  await expect(page.getByText("1개 전")).toBeVisible();
+  await expect(page.getByText("2개 전")).toBeVisible();
 
   // Jump back — pressing the two-steps-back (orders) row returns the selection
   await page.getByText("주문", { exact: true }).last().click();
@@ -71,8 +71,8 @@ test("the trail accumulates, lists correctly, jumps back and clears", async ({ p
    * then waited fifteen seconds for a chip that was never going to leave, so the failure read as
    * "clear is broken" when the product had grown a confirmation the walk did not answer.
    */
-  await page.getByText(/걸어온 길 · \d/).click();
+  await page.getByText(/방문 기록 · \d/).click();
   await page.getByText("지우기", { exact: true }).click();
   await page.getByText("한 번 더 누르면 지워요", { exact: true }).click();
-  await expect(page.getByText(/걸어온 길 · \d/)).toHaveCount(0);
+  await expect(page.getByText(/방문 기록 · \d/)).toHaveCount(0);
 });

@@ -130,7 +130,7 @@ test("the Korean relation sentence joins its particles to the names", async ({ p
   await expect.poll(() => page.evaluate(() => window.__atlasMap!.selection().edge)).toMatchObject({ sourceId: "domain:fulfillment", targetId: "capability:carrier-integration" });
   const sentence = page.locator('[data-testid="map-edge-sentence"]');
   await expect(sentence).toBeVisible({ timeout: 5000 });
-  await expect(sentence).toHaveText("배송이 택배사 연동을 담고 있어요.");
+  await expect(sentence).toHaveText("배송이 택배사 연동을 포함해요.");
 });
 
 test("an edit intent that arrives by URL on the sample says why it cannot edit and offers the folder", async ({ page }) => {

@@ -8,7 +8,7 @@
     "expandAriaLabel": "Expand hub bar",
     "collapseTooltip": "Collapse hub bar",
     "collapseAriaLabel": "Collapse hub bar",
-    "itemTitle": "{name} · {degree} connections"
+    "itemTitle": "{name} · {degree} relations"
   },
   "keyboardWalk": {
     "deadEnd": "No connected concept this way"

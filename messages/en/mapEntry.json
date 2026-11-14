@@ -2,7 +2,7 @@
   "takingLonger": "This is taking longer than expected. Return to the previous screen to try again.",
   "returnToPrevious": "Return to previous screen",
   "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
-  "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
+  "lede": "Keep domains, capabilities, code evidence, dependencies and impact in Markdown beside the code, maintained by people and coding agents together.",
   "mapComing": "Loading the map…",
-  "loadingDetail": "Arranging concepts and relationships for the map."
+  "loadingDetail": "Arranging concepts and relations for the map."
 }

@@ -110,8 +110,8 @@ describe('ProjectDrawer impact mode help', () => {
     const upstream = screen.getByRole("radio", { name: /^의존 —/ });
     const downstream = screen.getByRole("radio", { name: /^영향 —/ });
 
-    expect(upstream.getAttribute("aria-label")).toContain("필요한 대상");
-    expect(downstream.getAttribute("aria-label")).toContain("필요로 하는 대상");
+    expect(upstream.getAttribute("aria-label")).toContain("이 개념이 의존");
+    expect(downstream.getAttribute("aria-label")).toContain("이 개념에 의존");
   });
 
   it('calls back on a mode pill click and shows each mode\'s own help', () => {
@@ -131,7 +131,7 @@ describe('ProjectDrawer impact mode help', () => {
     renderDrawer({ impactMode: "upstream", onChangeImpactMode });
     expect(
       within(screen.getByTestId("project-drawer-impact-help")).getByText(
-        "이 항목에 필요한 대상을 강조해요",
+        /이 개념이 의존하는 개념/,
       ),
     ).toBeInTheDocument();
   });
