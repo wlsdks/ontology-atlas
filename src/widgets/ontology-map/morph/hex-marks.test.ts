@@ -17,9 +17,9 @@ describe("roomMovesRest", () => {
   });
 });
 
-function placed<T extends HTMLElement>(el: T, x: number, y: number, width: number, height: number): T {
+function placed<T extends HTMLElement>(el: T, x: number, y: number, width: number, height: number, parent: HTMLElement = document.body): T {
   el.getBoundingClientRect = () => ({ x, y, left: x, top: y, right: x + width, bottom: y + height, width, height, toJSON: () => ({}) });
-  document.body.append(el);
+  parent.append(el);
   return el;
 }
 
@@ -37,11 +37,14 @@ describe("readHexRoom", () => {
     expect(readHexRoom(canvas, 976, 720).x).toBe(679);
   });
 
-  it("keeps the predicted room when the destination footer occupies its bottom reserve", () => {
-    const canvas = placed(document.createElement("canvas"), 64, 0, 1448, 982);
+  it("rests the board in the room its glide predicted when the board's own footer outgrows the bottom reserve", () => {
     placed(document.createElement("div"), 412, 24, 1076, 140);
-    const predicted = readHexRoom(canvas, 1448, 982);
-    placed(document.createElement("div"), 488, 868, 960, 98);
-    expect(readHexRoom(canvas, 1448, 982)).toEqual(predicted);
+    const glide = placed(document.createElement("canvas"), 64, 0, 1448, 982);
+    const predicted = readHexRoom(glide, 1448, 982);
+    glide.remove();
+    const board = placed(document.createElement("div"), 64, 0, 1448, 982);
+    const canvas = placed(document.createElement("canvas"), 64, 0, 1448, 982, board);
+    placed(document.createElement("div"), 504, 848, 960, 118, board);
+    expect(readHexRoom(canvas, 1448, 982, board)).toEqual(predicted);
   });
 });
