@@ -347,7 +347,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // ⚠️ The card **does not name the browser**:
     // this sentence is true wherever it renders, so it states the fact instead: a
     // program on this computer is what reads those files.
-    reason: /이 컴퓨터에서 도는 프로그램이 있어야 하고[\s\S]*토큰을 담아 둘 자리도 여기에는 없어요/,
+    reason: /config\.toml[\s\S]*토큰/,
     destination: "connectors-web-get-app",
   },
   {
