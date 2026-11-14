@@ -46,7 +46,7 @@ reject each change as a Markdown diff.
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/planning.en.png" alt="Planning: a project folder's Markdown files listed on the left, one document open on the right" /><br /><b>Planning</b> — read a project folder's Markdown in place, without copying it.</td>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="Briefing: one week of commits, each with its date" /><br /><b>Briefing</b> — what changed in a period, as pull requests, commits and files.</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="Changes: one week of commits, each with its date" /><br /><b>Changes</b> — what was merged in a period, counted and grouped, with the pull requests, commits and files behind it.</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/insights.en.png" alt="Analysis: relationships between responsibilities, with the evidence beside each claim" /><br /><b>Analysis</b> — which parts depend on which, with the evidence beside each claim.</td>
@@ -67,7 +67,7 @@ A few things worth knowing before you start:
 - Library setup and checks need the app; a browser offers the app or adding files. [Library](docs/features/library/workspace.md)
 - Planning is read-only and works in the macOS app on a folder you choose; it shows Markdown and PNG/JPEG images. [Planning](docs/FEATURES.md)
 - Git's send-only action does not commit new file changes; it asks you to review a stale folder or branch again. Pull can change files across the repository. [Git](docs/features/git.md)
-- Before a folder is connected, the app keeps Library, Planning, Agents and Briefing reachable. [Features](docs/FEATURES.md)
+- Before a folder is connected, the app keeps Library, Planning, Agents and Changes reachable. [Features](docs/FEATURES.md)
 
 ## Quick start
 
@@ -113,7 +113,7 @@ Analysis compares recorded dependencies between responsibilities, then opens the
 
 ## Local-first
 
-The installed app's **Briefing** prototype opens a chosen Git repository without requiring an ontology. Pull requests, commits and files have separate reading views. An explicit public GitHub read lists PRs updated in the selected local dates, including open and closed work; a moving, paginated list may be incomplete. Each PR original is attributed and remains inspectable. Commit-only summaries use a local model, while the separately labelled earlier combined briefing retains matched PR descriptions and earlier results. Private PR access and in-app ACP explanations are not yet available in the PR inventory. Failed reads retain the session's earlier results. Inspect individual commit messages and bounded, endpoint-based file comparisons inside Atlas. Author records and optional ontology grouping do not establish verified behavior changes. [Change briefing](docs/features/change-briefing.md)
+The installed app's **Changes** screen opens a chosen Git repository without requiring an ontology. Pull requests, commits and files have separate reading views. An explicit public GitHub read lists PRs updated in the selected local dates, including open and closed work; a moving, paginated list may be incomplete. Each PR original is attributed and remains inspectable. Commit-only summaries use a local model, while the separately labelled earlier combined briefing retains matched PR descriptions and earlier results. Private PR access and in-app ACP explanations are not yet available in the PR inventory. Failed reads retain the session's earlier results. Inspect individual commit messages and bounded, endpoint-based file comparisons inside Atlas. Author records and optional ontology grouping do not establish verified behavior changes. [Change briefing](docs/features/change-briefing.md)
 
 - No backend, account or telemetry. The folder stays plain Markdown on your disk.
 - Model calls with your API key or a local model are opt-in, and each records its destination in `.ontology-atlas/llm-audit.jsonl`.
