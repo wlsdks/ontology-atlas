@@ -83,10 +83,6 @@ describe("computeLabelAlpha", () => {
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "neighbor", revealAlpha: 0 })).toBe(0);
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "neighbor", revealAlpha: 1 })).toBe(1);
   });
-
-  it.todo(
-    "light-mode label color contrast (labelDomain/labelCapability/labelElement tokens) — design doc §2.2 explicitly defers exact light values to a P3 Design Guardian pass",
-  );
 });
 
 describe("computeLensLabelAlpha", () => {

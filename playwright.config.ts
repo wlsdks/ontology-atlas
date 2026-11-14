@@ -20,11 +20,18 @@ if (!process.env.CI && servesStaticExport && !existsSync('out/index.html')) {
   throw new Error('PLAYWRIGHT_STATIC=1 serves the static export in out/, which is missing: run `pnpm build` first.');
 }
 
+const CI_STATIC_WORKERS = 2;
+/** Measured on a 121-test sample: 1 worker 227 s, 2 119 s, 4 75 s; 6 was no faster and failed two. */
+const LOCAL_STATIC_WORKERS = 4;
+
 export function resolvePlaywrightWorkers(
   env: Record<string, string | undefined>,
 ): number {
   const isCI = env.CI === 'true' || env.CI === '1';
-  return isCI && env.PLAYWRIGHT_STATIC === '1' ? 2 : 1;
+  const requested = Number(env.PLAYWRIGHT_WORKERS);
+  if (Number.isInteger(requested) && requested > 0) return requested;
+  if (env.PLAYWRIGHT_STATIC !== '1') return 1;
+  return isCI ? CI_STATIC_WORKERS : LOCAL_STATIC_WORKERS;
 }
 
 export default defineConfig({
@@ -39,9 +46,9 @@ export default defineConfig({
   },
   fullyParallel: false,
   forbidOnly: isCI,
-  // Local/dev stays sequential because Turbopack compiles routes on demand; CI's read-only static
-  // export has no such race, so it runs two workers. Not four: the suite is CPU-bound, and four
-  // workers made each test about 44% slower for a 10% total gain. Add shards in e2e.yml instead.
+  // The dev server stays sequential because Turbopack compiles routes on demand. The read-only
+  // static export has no such race: the two-CPU CI runner takes two workers and adds shards in
+  // e2e.yml instead of more, and a local machine takes four.
   workers: resolvePlaywrightWorkers(process.env),
   // CI retries absorb runner variance but remain visible in the report; true regressions fail
   // after every attempt. Local runs keep retries at zero so flakiness is exposed directly.
@@ -61,7 +68,12 @@ export default defineConfig({
    */
   projects: [
     { name: 'smoke', testIgnore: POST_MERGE_SPECS.map((file) => `**/${file}`) },
-    { name: 'post-merge', testMatch: POST_MERGE_SPECS.map((file) => `**/${file}`) },
+    {
+      name: 'post-merge',
+      testMatch: POST_MERGE_SPECS.map((file) => `**/${file}`),
+      // These specs time frames, so outside CI they do not share the machine with other workers.
+      ...(isCI ? {} : { workers: 1 }),
+    },
   ],
   outputDir: 'output/playwright/test-results',
   use: {

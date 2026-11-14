@@ -46,7 +46,6 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const cancel = await box(page.getByTestId("atlas-git-discard-cancel"));
     expect([confirm.height, cancel.height, doorBox.height]).toEqual([32, 32, 32]);
     expect(new Set([confirm.fontSize, cancel.fontSize, doorBox.fontSize]).size, "the discard pair and its door use two type sizes").toBe(1);
-    await page.screenshot({ path: "output/ix/git-discard-1512.png" });
 
     await page.keyboard.press("Escape");
     await expect(step).toHaveCount(0);
@@ -171,7 +170,6 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const groups = await box(page.getByTestId("connectors-add-groups"));
     const noneBox = await box(none);
     expect(noneBox.y - groups.y, "the empty answer is not the first thing in the list").toBeLessThanOrEqual(1);
-    await page.screenshot({ path: "output/ix/connectors-none-1280.png" });
 
     // One door to the by-hand form: the card's, not the card's and the fold's.
     const noneCustom = page.getByTestId("connectors-add-none-custom");

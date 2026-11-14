@@ -1,4 +1,3 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { seedFirstRunSeen } from '../../first-run-seed';
 import { digest, wiki } from './library-question-desk-harness';
@@ -50,18 +49,14 @@ test('Jev preview keeps the exact claim and long original passage reachable befo
     claim: 'Refund approval queues a stock restoration job.',
     evidence: longPassage.trim(),
   });
-  mkdirSync('/tmp/atlas-question-desk-sol', { recursive: true });
   for (const [width, height] of [[1040, 720], [390, 844]] as const) {
     await page.setViewportSize({ width, height });
     await expect(panel).toBeVisible();
     await waitForAnimationsDone(panel);
     await panel.evaluate((element) => { element.scrollTop = 0; });
     await expect(page.getByTestId('question-desk-jev-payload')).toContainText(longPassage.slice(0, 60));
-    await page.screenshot({ path: `/tmp/atlas-question-desk-sol/jev-consent-${width}.png` });
-    writeFileSync(`/tmp/atlas-question-desk-sol/jev-consent-${width}.ax.txt`, await page.locator('body').ariaSnapshot());
     await panel.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect(page.getByTestId('question-desk-jev-send')).toBeInViewport();
-    await page.screenshot({ path: `/tmp/atlas-question-desk-sol/jev-consent-${width}-end.png` });
   }
   expect(await page.evaluate(() => (window as unknown as { __atlasJevRequests: string[] }).__atlasJevRequests)).toEqual([]);
   await page.getByRole('button', { name: 'Cancel' }).click();

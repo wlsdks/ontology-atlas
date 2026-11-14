@@ -1,4 +1,3 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { seedFirstRunSeen } from '../../first-run-seed';
 import { installLibraryWorkHarness } from '../../library-work-harness';
@@ -125,8 +124,6 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await page.getByRole('button', { name: /^Open my folder/ }).first().click();
   await page.getByTestId('library-workspace-wiki').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
-  mkdirSync('/tmp/atlas-question-desk-sol', { recursive: true });
-  await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-initial.png' });
   await page.getByTestId('question-desk-input').fill('Does refund approval immediately restore stock?');
   await page.getByTestId('question-desk-search').click();
   await expect(page.getByTestId('question-desk-results')).toBeVisible();
@@ -141,20 +138,15 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
   await expect(page.getByTestId('question-desk-results')).toContainText('Refund approval queues a stock restoration job.');
   await expect(page.getByTestId('question-desk-summarize')).toBeDisabled();
   await expect(page.getByText('Check claim with Jev')).toHaveCount(0);
-  await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-results.png', fullPage: true });
-  writeFileSync('/tmp/atlas-question-desk-sol/desk-results.ax.txt', await page.locator('body').ariaSnapshot());
   await page.setViewportSize({ width: 1040, height: 720 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-1040.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await expect(page.getByTestId('question-desk-input')).toBeVisible();
   await expect(page.getByTestId('library-index')).toBeHidden();
   await expect(page.getByText('Refund approval immediately restores stock.')).toBeVisible();
-  await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-mobile.png' });
   await page.getByTestId('question-desk-browse').click();
   await expect(page.getByTestId('library-index')).toBeVisible();
-  await page.screenshot({ path: '/tmp/atlas-question-desk-sol/desk-mobile-browse.png' });
   await page.getByTestId('question-desk-back').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await page.setViewportSize({ width: 1512, height: 901 });
