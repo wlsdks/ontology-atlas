@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
+import { ArrowLeft, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
+import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault, useVaultSessionIdentityScope } from '@/entities/vault-session';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
 import { Link } from '@/i18n/navigation';
@@ -14,10 +15,13 @@ import { Button, Dialog, Disclosure, IconButton, PageHeaderBar, RowButton, Selec
 import { Input } from '@/shared/ui/fields/input';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
-import { badgeClass } from '@/shared/ui/badge-class';
-import { PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
-import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, type BriefingPeriod } from '../model/briefing-model';
+import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { gitBriefingRepositories, gitChangeBriefing, gitSourceBriefing, type BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
+import { briefingRange, groupSourceAreas, localDate, movePeriod, periodLabel, type BriefingPeriod } from '../model/briefing-model';
+import { findLatestChangeDay } from '../model/latest-change-day';
 import { useBriefing } from '../model/use-briefing';
+import { useChangeDigest } from '../model/use-change-digest';
 import { BriefingPatch } from './BriefingPatch';
 import { BriefingFileList } from './BriefingFileList';
 import { BriefingOriginFiles } from './BriefingOriginFiles';
@@ -26,10 +30,12 @@ import { BriefingSettings } from './BriefingSettings';
 import { BriefingOverview } from './BriefingOverview';
 import { CommitInventory } from './CommitInventory';
 import { BriefingRepositoryStage } from './BriefingRepositoryStage';
+import { ChangeDigest } from './ChangeDigest';
 import { PublicPullInventory } from './PublicPullInventory';
 
 const subscribe = () => () => {};
 const webSnapshot = () => false;
+const NO_DOCS: VaultDoc[] = [];
 const PERIODS: BriefingPeriod[] = ['day', 'week', 'month', 'year', 'custom'];
 type BriefingSection = 'prs' | 'commits' | 'files' | 'mixed';
 
@@ -37,6 +43,7 @@ export function ChangeBriefingPage() {
   const t = useTranslations('changeBriefing');
   const git = useTranslations('gitBriefing');
   const review = useTranslations('prBriefing');
+  const digestCopy = useTranslations('changeDigest');
   const locale = useLocale();
   const vault = useLocalVault();
   const identity = useVaultSessionIdentityScope();
@@ -44,10 +51,17 @@ export function ChangeBriefingPage() {
   const [sourceChoice, setSourceChoice] = useArrivalMemory<string | null>("source-briefing:repository", null);
   const memory = sourceChoice ? `source-briefing:${sourceChoice}` : vault.handle ? `${identity}:change-briefing` : "source-briefing:unselected";
   const native = useSyncExternalStore(subscribe, isGitBridgeAvailable, webSnapshot);
-  const [period, setPeriod] = useArrivalMemory<BriefingPeriod>(memory && `${memory}:period`, 'week');
-  const [anchor, setAnchor] = useArrivalMemory(memory && `${memory}:anchor`, localDate(new Date()));
-  const [from, setFrom] = useArrivalMemory(memory && `${memory}:from`, anchor);
-  const [to, setTo] = useArrivalMemory(memory && `${memory}:to`, anchor);
+  const today = localDate(new Date());
+  const [period, setPeriod] = useArrivalMemory<BriefingPeriod>(memory && `${memory}:period`, 'day');
+  const [chosenAnchor, setAnchor] = useArrivalMemory<string | null>(memory && `${memory}:anchor`, null);
+  const [latest, setLatest] = useState<{ key: string; day: string | null } | null>(null);
+  const [view, setView] = useArrivalMemory<'digest' | 'originals'>(`${memory}:view`, 'digest');
+  const [originalsStarted, setOriginalsStarted] = useArrivalMemory(`${memory}:originals-started`, false);
+  const [digestOrigin, setDigestOrigin] = useState<{ scope: string; hash: string; list: string | null } | null>(null);
+  const originalsButtonRef = useRef<HTMLButtonElement>(null);
+  const digestRef = useRef<HTMLDivElement>(null);
+  const [from, setFrom] = useArrivalMemory(memory && `${memory}:from`, chosenAnchor ?? today);
+  const [to, setTo] = useArrivalMemory(memory && `${memory}:to`, chosenAnchor ?? today);
   const [custom, setCustom] = useArrivalMemory<{ from: string; to: string } | null>(memory && `${memory}:custom`, null);
   const [projectChoice, setProjectChoice] = useArrivalMemory(memory && `${memory}:project`, '');
   const [selection, setSelection] = useArrivalMemory<{ scope: string; group: string; area: string | null; path: string | null } | null>(memory && `${memory}:selection`, null);
@@ -78,11 +92,15 @@ export function ChangeBriefingPage() {
   const docs = useMemo(() => vault.manifest?.docs ?? [], [vault.manifest]);
   const projects = docs.filter(doc => doc.frontmatter.kind === 'project');
   const project = sourceChoice ? '' : projects.some(doc => doc.slug === projectChoice) ? projectChoice : projects[0]?.slug ?? '';
+  const root = native ? sourceChoice ?? (vault.handle && project ? getTauriVaultRootPath(vault.handle) ?? null : null) : null;
+  const latestKey = JSON.stringify([root, project, today]);
+  const latestDay = latest?.key === latestKey ? latest.day : undefined;
+  const anchor = chosenAnchor ?? latestDay ?? today;
   const range = briefingRange(period, anchor, custom?.from, custom?.to);
   const invalidDraft = period === 'custom' && !briefingRange('custom', anchor, from, to);
-  const root = native ? sourceChoice ?? (vault.handle && project ? getTauriVaultRootPath(vault.handle) ?? null : null) : null;
   const { data, loading, error, refresh } = useBriefing(root, project, range, vault.lastLoadedAt);
-  const grouped = data && section === 'files' ? groupBriefing(data.commits, sourceChoice ? [] : docs, locale, project) : null;
+  const { capabilityGroups, conceptTitles, digest } = useChangeDigest(data, sourceChoice ? NO_DOCS : docs, locale, project, { digest: view === 'digest', files: section === 'files' });
+  const grouped = section === 'files' ? capabilityGroups : null;
   const scopeKey = JSON.stringify([root, project, range?.startEpoch, range?.endEpoch, data?.snapshot, data?.head, data?.base, data?.tip]);
   const activeFileOrigin = fileOrigin?.scope === scopeKey ? fileOrigin : null;
   const [commitExplain, setCommitExplain] = useArrivalMemory(`${scopeKey}:commit-explain`, false);
@@ -286,6 +304,66 @@ export function ChangeBriefingPage() {
   }
   const validData = data && (data.status === 'measured' || data.status === 'partial');
   const status = !root ? null : !range ? 'invalidRange' : error ? 'readError' : loading ? 'loading' : data?.status === 'stale' ? 'stale' : data?.status === 'no-history' ? 'noHistory' : !validData ? 'sourceUnavailable' : !data.commits.length && data.status !== 'partial' ? 'empty' : null;
+  const readHistory = (start: number, end: number) => !root ? Promise.resolve(null) : project ? gitChangeBriefing(root, project, start, end) : gitSourceBriefing(root, start, end);
+  const seekingLatest = chosenAnchor === null && period === 'day' && latestDay === undefined && status === 'empty';
+  useEffect(() => {
+    if (!seekingLatest || !root) return;
+    let cancelled = false;
+    const read = (start: number, end: number) => project ? gitChangeBriefing(root, project, start, end) : gitSourceBriefing(root, start, end);
+    void findLatestChangeDay(read, today).then(day => { if (!cancelled) setLatest({ key: latestKey, day }); }, () => { if (!cancelled) setLatest({ key: latestKey, day: null }); });
+    return () => { cancelled = true; };
+  }, [seekingLatest, root, project, today, latestKey]);
+  const [pullRepository, setPullRepository] = useState<{ scope: string; repository: string | null } | null>(null);
+  const wantsPullLinks = Boolean(digest?.groups.some(group => group.changes.some(change => change.number !== null)));
+  useEffect(() => {
+    if (!wantsPullLinks || !data) return;
+    let cancelled = false;
+    void gitBriefingRepositories(data).then(list => { if (!cancelled) setPullRepository({ scope: scopeKey, repository: list.length === 1 ? list[0] : null }); }, () => { if (!cancelled) setPullRepository({ scope: scopeKey, repository: null }); });
+    return () => { cancelled = true; };
+  }, [wantsPullLinks, data, scopeKey]);
+  const githubRepository = pullRepository?.scope === scopeKey ? pullRepository.repository : null;
+  const clockFormat = new Intl.DateTimeFormat(locale, period === 'day' ? { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } : { month: 'short', day: 'numeric' });
+  const formatTime = (committedAt: string) => { const at = new Date(committedAt); return Number.isNaN(at.getTime()) ? '' : clockFormat.format(at); };
+  function readAgain() {
+    setLatest(null);
+    refresh();
+  }
+  async function goLatest() {
+    const day = latestDay !== undefined ? latestDay : await findLatestChangeDay(readHistory, today);
+    setLatest({ key: latestKey, day });
+    if (!day) return;
+    if (period === 'custom') setPeriod('day');
+    setAnchor(day);
+  }
+  function openOriginals() {
+    setOriginalsStarted(true);
+    setView('originals');
+  }
+  function backToSummary() {
+    if (activeDigestOrigin && section === 'commits') return returnToChange();
+    setDigestOrigin(null);
+    setView('digest');
+    requestAnimationFrame(() => originalsButtonRef.current?.focus({ preventScroll: true }));
+  }
+  function openChange(commit: BriefingCommit) {
+    setDigestOrigin({ scope: scopeKey, hash: commit.hash, list: document.activeElement?.closest('[data-digest-list]')?.getAttribute('data-digest-list') ?? null });
+    setSection('commits');
+    setCommitExplain(false);
+    openOriginals();
+    requestAnimationFrame(() => mainRef.current?.querySelector<HTMLElement>('[data-commit-reader]')?.focus({ preventScroll: true }));
+  }
+  function returnToChange() {
+    const origin = digestOrigin;
+    setDigestOrigin(null);
+    setView('digest');
+    requestAnimationFrame(() => {
+      const row = origin && digestRef.current?.querySelector<HTMLElement>(`${origin.list ? `[data-digest-list="${CSS.escape(origin.list)}"] ` : ''}[data-change-hash="${CSS.escape(origin.hash)}"]`);
+      (row ?? originalsButtonRef.current)?.focus({ preventScroll: true });
+      row?.scrollIntoView({ block: 'nearest' });
+    });
+  }
+  const activeDigestOrigin = digestOrigin?.scope === scopeKey ? digestOrigin : null;
+  const [digestShown, setDigestShown] = useArrivalMemory<Record<string, number>>(`${scopeKey}:digest-shown`, {});
   async function chooseRepository() {
     const path = await pickTauriSourceDirectory(git('chooseRepository'));
     if (!path) {
@@ -307,41 +385,53 @@ export function ChangeBriefingPage() {
     <div className={`${PAGE_FRAME_FORM} ${PAGE_STAGE_FILL}`}><BriefingRepositoryStage onChoose={() => void chooseRepository()} /></div>
     <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
   </main>;
+  const periodBar = <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
+    <div className="flex min-h-8 min-w-0 basis-full items-center gap-1 sm:basis-auto">
+      {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('previous')} onClick={() => setAnchor(movePeriod(period, anchor, -1))}><ChevronLeft size={16} /></IconButton>}
+      <p data-testid="briefing-range" className="min-w-0 break-words px-1 text-title font-[var(--font-weight-strong)]">{range ? periodLabel(period, range, locale, today) : t('invalidRange')}</p>
+      {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('next')} onClick={() => setAnchor(movePeriod(period, anchor, 1))}><ChevronRight size={16} /></IconButton>}
+    </div>
+    <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
+    <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('chooseDates')} aria-haspopup="dialog" aria-expanded={datesOpen} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDatesOpen(true); }}><CalendarDays size={16} /></IconButton>
+    {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('today')} onClick={() => setAnchor(today)}><CalendarCheck size={16} /></IconButton>}
+    <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={readAgain}><RefreshCw size={16} /></IconButton>
+  </section>;
+  const digestStatus = seekingLatest ? 'loading' : status === 'empty' ? null : status;
   return <main ref={mainRef} id="main" data-briefing-surface className="h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
     <PageHeaderBar
       frame="page"
       className="static z-auto"
       title={git('title')}
-      meta={<><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-label={git('changeRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button></>}
-      actions={<IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>}
+      meta={<Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-label={git('changeRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>}
+      actions={<>
+        <Button ref={originalsButtonRef} className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-pressed={view === 'originals'} data-testid="change-originals" onClick={view === 'originals' ? backToSummary : openOriginals}>{digestCopy('originals')}</Button>
+        <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>
+      </>}
     />
-    <div className="mx-auto max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
-      <header className="border-b border-[color:var(--color-border-soft)] pb-5">
-      <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
-        <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
-        <div className="flex min-h-8 min-w-0 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] px-1">
-          {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('previous')} onClick={() => setAnchor(movePeriod(period, anchor, -1))}><ChevronLeft size={16} /></IconButton>}
-          <h2 data-testid="briefing-range" className="min-w-0 break-words text-body font-[var(--font-weight-strong)]">{range ? period === 'day' ? range.start : t('range', { start: range.start, end: range.end }) : t('invalidRange')}</h2>
-          {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('next')} onClick={() => setAnchor(movePeriod(period, anchor, 1))}><ChevronRight size={16} /></IconButton>}
-          <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('chooseDates')} aria-haspopup="dialog" aria-expanded={datesOpen} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDatesOpen(true); }}><CalendarDays size={16} /></IconButton>
+    <div ref={digestRef} hidden={view !== 'digest'} className={`${PAGE_COLUMN_FORM} space-y-10 px-5 pt-8 md:px-10`}>
+      {view === 'digest' && periodBar}
+      {view === 'digest' && digestStatus && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
+        <h2 className="text-title font-[var(--font-weight-strong)]">{t(digestStatus)}</h2>
+        {digestStatus === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
+        {(digestStatus === 'readError' || digestStatus === 'stale' || digestStatus === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={readAgain}>{t('retry')}</Button>}
+      </section>}
+      {view === 'digest' && !digestStatus && status === 'empty' && <section data-testid="change-digest-empty" className="space-y-6">
+        <div className="space-y-1">
+          <h2 className="font-mono text-hero font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-tertiary)]">0</h2>
+          <p className="text-body-lg text-[color:var(--color-text-secondary)]">{digestCopy('empty')}</p>
         </div>
-        {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('today')} onClick={() => setAnchor(localDate(new Date()))}><CalendarCheck size={16} /></IconButton>}
-        <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={refresh}><RefreshCw size={16} /></IconButton>
-      </section>
+        {latestDay !== null && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>}
+      </section>}
+      {!digestStatus && digest && <ChangeDigest digest={digest} shown={digestShown} onShown={setDigestShown} partialCount={data?.status === 'partial' ? data.commits.length : null}
+        conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
+        pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} />}
+      {view === 'digest' && !digestStatus && !digest && data?.status === 'partial' && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('partial')}</p>}
+    </div>
+    {originalsStarted && <div hidden={view !== 'originals'} className="mx-auto max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
+      <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">
+      <button type="button" data-testid="change-back-to-summary" className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={backToSummary}><ArrowLeft size={ICON_SIZE.md} aria-hidden />{digestCopy('backToSummary')}</button>
+      {view === 'originals' && periodBar}
       </header>
-      <Dialog open={datesOpen} onClose={() => setDatesOpen(false)} aria-label={t('chooseDates')} size="sm" testId="briefing-dates-dialog">
-        <div className="space-y-5">
-          <h2 className="text-title font-[var(--font-weight-strong)]">{t('chooseDates')}</h2>
-          {period !== 'custom' ? <Input label={t('anchorDate')} type="date" value={anchor} onChange={event => setAnchor(event.target.value)} /> : <>
-            <Input label={t('startDate')} type="date" value={from} onChange={event => setFrom(event.target.value)} />
-            <Input label={t('endDate')} type="date" value={to} onChange={event => setTo(event.target.value)} error={invalidDraft ? t('invalidRange') : undefined} />
-          </>}
-          <div className="flex justify-end gap-2">
-            <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={() => setDatesOpen(false)}>{t('closeDates')}</Button>
-            {period === 'custom' && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" size="sm" onClick={() => { if (!invalidDraft) { setCustom({ from, to }); setDatesOpen(false); } }}>{t('apply')}</Button>}
-          </div>
-        </div>
-      </Dialog>
       <div ref={modesRef} className="flex flex-wrap items-center justify-between gap-3">
         {section !== 'mixed' ? <SegmentedControl<Exclude<BriefingSection, 'mixed'>> className="max-[769px]:[&_[role=radio]]:min-h-11 max-[769px]:[&_[role=radio]]:min-w-11" ariaLabel={git('readingModes')} value={section} onChange={changeSection} options={[
           { value: 'prs', label: review('prTab'), testId: 'briefing-prs' },
@@ -364,7 +454,7 @@ export function ChangeBriefingPage() {
         {data.status === 'partial' && section !== 'prs' && <div role="status" className="space-y-1 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)] text-[color:var(--color-status-warning)]"><p>{t('partial')}</p><p className="text-body">{t('limit', { limit: data.limit })}</p></div>}
         <div hidden={section !== 'prs'}><PublicPullInventory data={data} memory={scopeKey} onActivity={setPublicRead} onFiles={() => openOriginalFiles('prs', data.commits.flatMap(commit => commit.paths))} /></div>
         {data.commits.length > 0 && <>
-          <div hidden={section !== 'commits' || commitExplain}><CommitInventory data={data} onFiles={paths => openOriginalFiles('commits', paths)} onExplain={() => { setCommitExplainStarted(true); setCommitExplain(true); changeMode('summary'); }} /></div>
+          <div hidden={section !== 'commits' || commitExplain}><CommitInventory data={data} opened={activeDigestOrigin && { hash: activeDigestOrigin.hash, backLabel: digestCopy('backToSummary'), onBack: returnToChange }} onFiles={paths => openOriginalFiles('commits', paths)} onExplain={() => { setCommitExplainStarted(true); setCommitExplain(true); changeMode('summary'); }} /></div>
           {commitExplainStarted && <div hidden={section !== 'commits' || !commitExplain} className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide max-[769px]:min-h-11" variant="ghost" size="sm" onClick={() => setCommitExplain(false)}>{review('backToCommits')}</Button><SegmentedControl<'summary' | 'sources'> className="max-[769px]:[&_[role=radio]]:min-h-11 max-[769px]:[&_[role=radio]]:min-w-11" ariaLabel={git('readingModes')} value={explanationMode === 'sources' ? 'sources' : 'summary'} onChange={changeMode} options={[{ value: 'summary', label: git('summaryMode') }, { value: 'sources', label: git('sourcesMode') }]} /></div><BriefingNarrative key={scopeKey} data={data} clearedAt={clearedAt} period={range ? `${range.start} – ${range.end}` : ''} mode={explanationMode} onMode={changeMode} repository={repository} setRepository={setRepository} onReadCode={openCode} coverageSeat={section === 'commits' && commitExplain ? coverageSeat : null} commitOnly onActivity={setCommitActivity} /></div>}
           {(mixedStarted || section === 'mixed') && <div hidden={section !== 'mixed'} className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -430,7 +520,20 @@ export function ChangeBriefingPage() {
           </>}
           </section>}
         </div>
-      <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
-    </div>
+    </div>}
+    <Dialog open={datesOpen} onClose={() => setDatesOpen(false)} aria-label={t('chooseDates')} size="sm" testId="briefing-dates-dialog">
+      <div className="space-y-5">
+        <h2 className="text-title font-[var(--font-weight-strong)]">{t('chooseDates')}</h2>
+        {period !== 'custom' ? <Input label={t('anchorDate')} type="date" value={anchor} onChange={event => setAnchor(event.target.value)} /> : <>
+          <Input label={t('startDate')} type="date" value={from} onChange={event => setFrom(event.target.value)} />
+          <Input label={t('endDate')} type="date" value={to} onChange={event => setTo(event.target.value)} error={invalidDraft ? t('invalidRange') : undefined} />
+        </>}
+        <div className="flex justify-end gap-2">
+          <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={() => setDatesOpen(false)}>{t('closeDates')}</Button>
+          {period === 'custom' && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="primary" size="sm" onClick={() => { if (!invalidDraft) { setCustom({ from, to }); setDatesOpen(false); } }}>{t('apply')}</Button>}
+        </div>
+      </div>
+    </Dialog>
+    <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
   </main>;
 }

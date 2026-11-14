@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { auditPage } from '../../../scripts/lib/design/ui-audit-probe.mjs';
 import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit-checks.mjs';
-import { setBriefingMode } from './change-briefing-fixture';
+import { openChangesFromRail, setBriefingMode } from './change-briefing-fixture';
 import { calls, enter, prepare, readPrs } from './git-pr-briefing-helpers';
 
 test.use({ viewport: { width: 1920, height: 1080 } });
@@ -10,7 +10,7 @@ test.use({ viewport: { width: 1920, height: 1080 } });
 async function leaveAndReturn(page: import('@playwright/test').Page) {
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
   await expect(page).toHaveURL(/topology/);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await expect(page.getByTestId('briefing-narrative')).toBeVisible();
 }
 
@@ -50,7 +50,7 @@ test('returns to the same long original and reading position after leaving Chang
 test('retains the expanded source list and original return row across routes', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'source-pages');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-originals').click();
   const sources = page.getByTestId('briefing-sources');
   await sources.getByRole('button', { name: /Read \d+ more sources/ }).click();

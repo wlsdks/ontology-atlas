@@ -12,7 +12,7 @@
   "observationLimit": "Files may change before the next check.",
   "findFile": "Find a file name or path",
   "refresh": "Refresh folder",
-  "openHistory": "Open repository briefing",
+  "openHistory": "Open Changes",
   "historyLimit": "Commit history follows the current branch's first-parent commits. Uncommitted changes are not included.",
   "comparisonLimit": "Code comparisons use the period’s repository-wide endpoints, not an individual commit.",
   "openMap": "Open ontology map",

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
 
 export async function installBriefingRuntime(page: Page) {
@@ -10,7 +10,7 @@ export async function installBriefingRuntime(page: Page) {
       __briefingProbe: { mode: string; calls: Invocation[]; hold: boolean; holdCommand: string; holdAt: number; failAt: number; capacity: number; active: number; peak: number; release: () => void };
     };
     const nativeInvoke = target.__TAURI_INTERNALS__.invoke;
-    const probe = { mode: 'ready', calls: [] as Invocation[], hold: false, holdCommand: '', holdAt: 0, failAt: 0, capacity: 16000, active: 0, peak: 0, release: () => {} };
+    const probe = { mode: localStorage.getItem('atlas-fixture-briefing-mode') ?? 'ready', calls: [] as Invocation[], hold: false, holdCommand: '', holdAt: 0, failAt: 0, capacity: 16000, active: 0, peak: 0, release: () => {} };
     target.__briefingProbe = probe;
     target.__TAURI_INTERNALS__.invoke = async (command, args = {}) => {
       if (command === 'llm_chat_prepare') return 'fixture-source-request';
@@ -94,6 +94,32 @@ export async function installBriefingRuntime(page: Page) {
         if (mode === 'patch-error') throw new Error('fixture read failure');
         return { status: mode === 'binary' ? 'binary' : mode === 'stale' ? 'stale' : 'measured', patch: mode === 'revert' ? '' : mode === 'long' ? `diff --git a/${args.path} b/${args.path}\n${Array.from({ length: 260 }, (_, index) => `+const value${index} = ${index};`).join('\n')}\n` : `diff --git a/${args.path} b/${args.path}\n--- a/${args.path}\n+++ b/${args.path}\n@@ -1 +1 @@\n-limit = 10\n+limit = 20\n`, truncated: mode === 'truncated' };
       }
+      if (mode.startsWith('digest')) {
+        const start = Number(args.startEpoch);
+        const end = Number(args.endEpoch);
+        const latestDay = new Date(); latestDay.setHours(0, 0, 0, 0); latestDay.setDate(latestDay.getDate() - 2);
+        const day = mode === 'digest-latest' ? latestDay.getTime() / 1000 : start;
+        const covered = mode !== 'digest-empty' && day >= start && day < end;
+        const table: [string, number, string[]?][] = [
+          ['Merge #3063: feat(brand): adopt Moru motions across the download page', 482],
+          ['Merge #3047: docs: delete documents nobody reads', 229],
+          ...Array.from({ length: 17 }, (_, index): [string, number, string[]?] => [`Merge #${3100 + index}: fix(map): keep the camera steady on step ${index + 1}`, 6 + (index % 5), index < 4 ? ['src/features/checkout/service.ts'] : undefined]),
+          ['Merge #3120: feat(map): replace the dial with the flat graph', 14],
+          ...Array.from({ length: 5 }, (_, index): [string, number, string[]?] => [`Merge #${3130 + index}: fix(brand): sharpen the companion frame ${index + 1}`, 4]),
+          ...Array.from({ length: 3 }, (_, index): [string, number, string[]?] => [`Merge #${3140 + index}: design(harness): tell guidance lines apart ${index + 1}`, 9]),
+          ...Array.from({ length: 2 }, (_, index): [string, number, string[]?] => [`chore(deps): bump the bundler ${index + 1} (#${3150 + index})`, 2]),
+          ['Merge #3160: fix(cli): keep the init prompt short', 3],
+          ['Merge #3161: docs(records): record the change digest decision', 1],
+          ['Merge #3162: chore: tidy the release notes', 2],
+        ];
+        const count = mode === 'digest-partial' ? 20 : table.length;
+        const commits = covered ? table.slice(0, count).map(([subject, files, extra], index) => ({
+          hash: (0xd1000 + index).toString(16).padStart(40, '0'), subject, message: `${subject}\n\nDescribed by its author.`,
+          committedAt: new Date((day + 9 * 3600 + index * 900) * 1000).toISOString(),
+          paths: [...(extra ?? []), ...Array.from({ length: files - (extra?.length ?? 0) }, (_, file) => `src/area-${index}/file-${file}.ts`)],
+        })) : [];
+        return { status: mode === 'digest-partial' && covered ? 'partial' : 'measured', sourceRoot: '/source/storefront', snapshot: `digest-${start}`, head: 'a'.repeat(40), base: 'b'.repeat(40), tip: commits.length ? 'c'.repeat(40) : null, limit: 2000, partialReasons: mode === 'digest-partial' ? ['commit-limit'] : [], commits, netPaths: [] };
+      }
       const unavailable = ['stale', 'no-history', 'ungranted', 'no-source', 'unreadable'].includes(mode);
       return {
         status: unavailable ? mode : mode.startsWith('partial') ? 'partial' : 'measured', sourceRoot: '/source/storefront', snapshot: mode === 'fresh-period' ? 'fixture-new-period-snapshot' : mode.startsWith('batch') ? 'fixture-batch-snapshot' : 'fixture-snapshot', head: (mode === 'fresh-period' ? '9' : mode === 'changed-head' ? 'f' : 'a').repeat(40), base: mode === 'empty' ? null : 'b'.repeat(40), tip: mode === 'empty' ? null : 'c'.repeat(40), limit: 2000, partialReasons: mode.startsWith('partial') ? ['commit-limit'] : [],
@@ -106,4 +132,27 @@ export async function installBriefingRuntime(page: Page) {
 
 export async function setBriefingMode(page: Page, mode: string) {
   await page.evaluate(value => { (window as unknown as { __briefingProbe: { mode: string } }).__briefingProbe.mode = value; }, mode);
+}
+
+/** The PR, commit and file readers sit behind Originals; the digest is the first view, and a return visit restores the view left. */
+export async function openOriginals(page: Page) {
+  const originals = page.getByTestId('change-originals');
+  await expect(originals).toBeVisible();
+  if (await originals.getAttribute('aria-pressed') !== 'true') await originals.click();
+  await expect(page.getByTestId('change-back-to-summary')).toBeVisible();
+}
+
+export async function gotoOriginals(page: Page, url: string) {
+  await page.goto(url);
+  await openOriginals(page);
+}
+
+export async function openChangesFromRail(page: Page) {
+  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Changes', exact: true }).click();
+  await openOriginals(page);
+}
+
+/** Sets the bridge mode before the first read, which the digest makes on arrival. */
+export async function startInBriefingMode(page: Page, mode: string) {
+  await page.addInitScript(value => localStorage.setItem('atlas-fixture-briefing-mode', value), mode);
 }

@@ -1,0 +1,19 @@
+{
+  "headline": "合并了 {count} 项变更 · {files} 个文件",
+  "notable": "值得一看",
+  "reasonRevert": "撤销了先前的变更",
+  "reasonBreaking": "作者标记为不兼容变更",
+  "reasonReach": "涉及 {count} 个已记录的概念",
+  "reasonSize": "{count} 个文件",
+  "other": "其他变更",
+  "groupName": "{group}：{count} 项变更",
+  "concepts": "涉及概念",
+  "readOriginal": "阅读原文：{title}",
+  "onGitHub": "↗ GitHub",
+  "more": "再显示 {count} 项",
+  "originals": "原文",
+  "backToSummary": "返回摘要",
+  "empty": "这段时间没有合并任何变更。",
+  "goLatest": "查看最新变更",
+  "partial": "这段时间只读取了最新的 {count} 项变更。缩短时间范围即可查看其余部分。"
+}

@@ -3,12 +3,12 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { auditPage, FREEZE_CSS } from '../../../scripts/lib/design/ui-audit-probe.mjs';
 import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit-checks.mjs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime } from './change-briefing-fixture';
+import { gotoOriginals, installBriefingRuntime } from './change-briefing-fixture';
 
 test('opens a recorded original without starting a model or PR request and returns to its row', async ({ page }) => {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-mixed').click();
   const recent = page.getByTestId('briefing-recent-originals');
   await expect(recent).toBeVisible();
@@ -49,7 +49,7 @@ test('returns to a visible original when saved PRs arrive and preserves both loo
     };
   });
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-mixed').click();
   const recent = page.getByTestId('briefing-recent-originals');
   const originalRow = recent.getByRole('button', { name: /Extra recorded commit 3/ });
@@ -75,7 +75,7 @@ test('shows incomplete lookup and unlinked PR gaps together for a fresh lookup',
       : invoke(command, args);
   });
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-mixed').click();
   await page.getByRole('button', { name: 'Read GitHub PR descriptions', exact: true }).click();
   await expect(page.getByText('PR lookup incomplete', { exact: true })).toBeVisible();
@@ -91,7 +91,7 @@ test('keeps recorded originals reachable across the responsive overview', async 
     const page = await context.newPage();
     await installBriefingRuntime(page);
     await mountDesktopVault(page);
-    await page.goto('/en/changes/?guides=off');
+    await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-mixed').click();
     await expect(page.getByTestId('briefing-recent-originals')).toBeVisible();
     await page.setViewportSize({ width, height: 900 });

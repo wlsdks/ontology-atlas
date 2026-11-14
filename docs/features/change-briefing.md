@@ -1,22 +1,67 @@
 ---
-title: Change Briefing
+title: Changes
 doc_type: feature
 status: current
 area: git
 routes: [/changes]
 ---
 
-# Change Briefing
+# Changes
 
-The Briefing destination is a read-only prototype for catching up on a connected
-source repository without reading each commit in another Git application.
-The existing Git destination remains scoped to vault documents and checkpoints.
+Changes answers "what was merged, and which few changes deserve my own eyes?"
+for a connected source repository, without reading each commit in another Git
+application. The Git destination remains scoped to vault documents and checkpoints.
 
-Without a chosen repository, Briefing shows a dedicated entry with one Git folder action and a diagram of its PR, commit and file reading modes. The diagram contains no repository results. Cancelling the picker restores focus to the action. PR reading remains limited to public GitHub repositories.
+Without a chosen repository, Changes shows a dedicated entry with one Git folder
+action and a diagram of history drawn into measured groups. The diagram contains
+no repository results. Cancelling the picker restores focus to the action.
 
-Choose a project and a daily, weekly, monthly or yearly calendar period, move
-back or forward, or open the date control to choose an anchor or apply inclusive custom dates. The initial period is this
-week; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine
+## Digest
+
+Changes opens on a digest of the most recent day that has changes. When today
+has none, it reads widening windows back from today (7, 31 and 366 days, then
+the whole history) and opens the day of the newest change it finds. The digest
+is built only from local history; it makes no agent, model or network request.
+
+- **Headline.** One number: the changes merged in the period, with the count of
+  distinct files they touched.
+- **Worth a look.** At most three changes, each listed once, filled in this
+  order: reverts (title starting with "revert" after any `Merge #N:` prefix, or
+  "This reverts commit" in the message); changes marked breaking by their author
+  (`!` before the title's colon, or "BREAKING CHANGE" in the message); changes
+  touching two or more recorded concepts, most first; changes touching at least
+  30 files and three times the period's median, most first. Ties go to the newest.
+  With none qualifying the strip is not drawn. Size is a file count, never an
+  importance claim.
+- **Groups.** A change belongs to the label in brackets in its title
+  (`fix(map): …` is `map`), read after any `Merge #N:` prefix and lower-cased.
+  When fewer than two labels exist in the period, changes group by the top-level
+  directory holding most of their files instead. The seven largest groups are
+  named, ordered by count then name; every other change joins "Other changes",
+  always last, so the group counts add up to the headline. The largest named
+  group's bar carries the accent; the rest are neutral.
+- Pressing a group expands it in place to its changes (title, `#number`, time),
+  40 at a time, and names up to three recorded concepts whose implementation
+  paths the group's files touch, each linking to the map. A change's GitHub link
+  appears only when the repository has exactly one github.com remote.
+- Pressing a change opens its original in Originals; going back returns focus
+  to that row with the group still expanded.
+
+A partial read says how many of the newest changes were counted. An empty
+period shows zero and, when history holds a newer change, offers the latest
+changes.
+
+## Originals
+
+Originals, in the header, holds the pull request, commit and file readers for
+the same period, unchanged; "Back to summary" returns to the digest and to the
+Originals control. The period controls (Day, Week, Month, Year, Custom dates,
+previous and next, the date dialog, today and Read again) stay on both views.
+Leaving Changes and returning in the same app session restores the view left.
+
+Choose a project and a calendar period, move back or forward, or open the date
+control to choose an anchor or apply inclusive custom dates. The initial period
+is the latest day with changes; weeks start Monday. First entry to Custom dates copies the displayed range, including full week, month and year boundaries. Later visits preserve both the applied custom range and any unfinished date draft. The displayed local timezone and exact dates determine
 committer-time membership. Uncommitted work and separately counted commits
 inside merged branches are excluded: this is current-HEAD first-parent history,
 including merge integration differences.
@@ -72,18 +117,18 @@ Direct picker-granted source reading follows the separate standalone path below.
 Reads are bounded at 2,000 first-parent commits, 8 MiB history output and 20,000
 path records. Partial reads state that coverage is incomplete. File comparisons
 show at most 32 KiB; binary, unavailable, stale and truncated states remain
-explicit. An expired patch offers a briefing refresh that reads history again
+explicit. An expired patch offers Read again, which reads history again
 and returns focus to Code with the chosen period retained. It does not repeat
 the expired patch request. Calendar inputs and selection survive route changes within the same vault
 session, after the source revisions are re-read and match. Dates are retained after
 read errors; an obsolete response cannot replace a newer scope.
 
 The browser shows its local-Git capability limit and no fabricated history.
-There is no semantic approval, agent attribution, background collection or last-read checkpoint in this prototype.
+There is no semantic approval, agent attribution, background collection or last-read checkpoint.
 
 ## Public pull request inventory
 
-Pull requests are the first view; switching views or periods makes no GitHub or model request. A named public GitHub repository is read only after an explicit action. PRs are selected by their update time in the chosen local dates, across open and closed states; this is not a list of PRs merged in those dates. The moving GitHub list is not an atomic snapshot, so omissions remain possible. Each original shows its repository, version and fetch time; selected originals replace the list and preserve the return target. Long lists can be searched by title or number.
+Pull requests are the first reader in Originals; switching views or periods makes no GitHub or model request. A named public GitHub repository is read only after an explicit action. PRs are selected by their update time in the chosen local dates, across open and closed states; this is not a list of PRs merged in those dates. The moving GitHub list is not an atomic snapshot, so omissions remain possible. Each original shows its repository, version and fetch time; selected originals replace the list and preserve the return target. Long lists can be searched by title or number.
 
 An action reads no more than five pages, 2 MiB and 60 seconds. Pagination can continue explicitly when a safe cursor is available. Fetches are unauthenticated, use fixed GitHub HTTPS endpoints, and send no Git credentials or source code. Errors preserve earlier results and do not establish that a repository or PR is absent. Session memory retains at most 400 original versions and 16 MiB across up to 32 source scopes, and omits originals over 512 KiB. Changed versions and omissions remain visible. Clearing the session copies does not change GitHub. This direct inventory currently supports public github.com repositories only; private account access and ACP explanation are not yet available.
 
@@ -91,7 +136,7 @@ Identified omissions from either the native read or session storage limits remai
 
 ## Standalone source access
 
-The installed launch chooser also offers Git and PR briefing. Choose a Git repository directly in Briefing;
+The installed launch chooser also offers Changes. Choose a Git repository directly in Changes;
 this grants source reading only and does not create/open an ontology or grant vault writes. The chosen repository
 must itself be the Git worktree root; choosing a child does not authorize its parent repository.
 Models is reachable without a vault and returns to the same repository/calendar. Local connection checks without
@@ -110,7 +155,7 @@ Completed-part choices include their first supported theme title as well as ordi
 
 Period explanations partition all fitting collected complete records into disclosed sequential local requests. Validated parts stay readable in session memory after Stop or a failed request; explicit continuation retries the interrupted stage. A final compact overview uses selected exact original passages rather than generated summaries as evidence, with selected/omitted passage coverage and one part visible at a time. Confirmed responses, uncertain interrupted delivery, unattempted records and citations are separate; none establishes a complete semantic explanation. Source/model/capacity/language changes preserve attributed old results but require a new plan. Oversized or incomplete originals remain named gaps. Closing the app clears this progress.
 
-Briefing uses a compact repository/calendar toolbar and separate Pull requests, Commits and Files views. The earlier combined briefing remains an explicitly labelled separate view with its Overview and Sources modes. Before a summary exists, Overview shows up to five recorded author messages with their source identities and lets the reader open an original directly; it labels an unrequested PR lookup as unchecked. Overview presents one report column, with source counts, validity and unchecked-copy provenance kept visible. Coverage contains exact processing/omission accounting, completed-part selection and rejected-response inspection; Settings contains model configuration, public-PR transfer details and saved-copy management even without a usable source. Switching views sends no PR or model request and retains reading position. Exact citations open Sources and return to their claim; list originals return to their row. Leaving Briefing and returning in the same app session restores the open original, its reading position and its return target, scoped to the source snapshot and period; expanded source lists remain expanded. If the originating explanation has been replaced, returning focuses the current summary heading instead of an unrelated claim. Long author checks use exact-source entries instead of repeated full quote blocks, while recorded limits stay visible. Stop and recovery remain reachable while reading Files.
+Originals uses the repository/calendar toolbar and separate Pull requests, Commits and Files views. The earlier combined briefing remains an explicitly labelled separate view with its Overview and Sources modes. Before a summary exists, Overview shows up to five recorded author messages with their source identities and lets the reader open an original directly; it labels an unrequested PR lookup as unchecked. Overview presents one report column, with source counts, validity and unchecked-copy provenance kept visible. Coverage contains exact processing/omission accounting, completed-part selection and rejected-response inspection; Settings contains model configuration, public-PR transfer details and saved-copy management even without a usable source. Switching views sends no PR or model request and retains reading position. Exact citations open Sources and return to their claim; list originals return to their row. Leaving Changes and returning in the same app session restores the open original, its reading position and its return target, scoped to the source snapshot and period; expanded source lists remain expanded. If the originating explanation has been replaced, returning focuses the current summary heading instead of an unrelated claim. Long author checks use exact-source entries instead of repeated full quote blocks, while recorded limits stay visible. Stop and recovery remain reachable while reading Files.
 
 PR originals render as a single Markdown document for reading, with headings, lists, tables and intact code fences. Source text remains available verbatim, including Markdown syntax; commit messages stay plain text. Embedded images are links only and never load automatically, HTML is not executed, and only explicit HTTP(S) links navigate externally. Citations scroll to the matching rendered block; definition-only passages and citations into the middle of compound blocks fall back to exact text. The reader can still explicitly switch back to formatted reading; that choice and reading position survive route and period returns for the open original. A newly opened citation gets its own precise-text fallback. Source bytes, passage IDs and versions remain unchanged.
 

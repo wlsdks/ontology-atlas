@@ -1,7 +1,6 @@
 {
   "title": "ブリーフィング",
   "navLabel": "ブリーフィング",
-  "prototype": "Prototype",
   "intro": "Catch up on committed source changes, grouped by the capabilities recorded in this folder.",
   "project": "Project",
   "period": "Period",

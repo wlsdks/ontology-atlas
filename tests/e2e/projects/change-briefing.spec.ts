@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
+import { installBriefingRuntime, openChangesFromRail, openOriginals, setBriefingMode } from './change-briefing-fixture';
 
 async function capture(page: import('@playwright/test').Page, state: string) {
   const folder = process.env.ATLAS_BRIEFING_PROOF;
@@ -13,7 +13,7 @@ async function capture(page: import('@playwright/test').Page, state: string) {
 async function enter(page: import('@playwright/test').Page) {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await page.getByTestId('briefing-source-browser').click();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
 }
@@ -39,13 +39,13 @@ test('reads grouped source evidence and actual changed lines without leaving Atl
 test('navigates calendar periods and applies an inclusive custom interval', async ({ page }) => {
   await enter(page);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
-  await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('option', { name: 'Month', exact: true }).click();
   await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2024-02-20');
   await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-01 – 2024-02-29');
+  await expect(page.getByTestId('briefing-range')).toHaveText('February 2024');
   await page.getByRole('button', { name: 'Next period', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-03-01 – 2024-03-31');
+  await expect(page.getByTestId('briefing-range')).toHaveText('March 2024');
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
   await page.getByRole('option', { name: 'Custom dates', exact: true }).click();
   await page.getByLabel('Start date', { exact: true }).fill('2024-02-29');
@@ -54,7 +54,7 @@ test('navigates calendar periods and applies an inclusive custom interval', asyn
   await capture(page, 'invalid-dates');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-29');
   await page.getByRole('button', { name: 'Read this period', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-29 – 2024-02-29');
+  await expect(page.getByTestId('briefing-range')).toHaveText('Feb 29, 2024');
   await expect.poll(() => page.evaluate(() => {
     const calls = (window as unknown as { __briefingProbe: { calls: { args: Record<string, unknown> }[] } }).__briefingProbe.calls;
     const last = calls.filter(call => typeof call.args.startEpoch === 'number').at(-1)!.args;
@@ -66,7 +66,7 @@ for (const mode of ['partial', 'empty', 'stale', 'no-history', 'ungranted'] as c
   test(`preserves date recovery for ${mode} source evidence`, async ({ page }) => {
     await enter(page);
     await setBriefingMode(page, mode);
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     if (mode === 'partial') await expect(page.getByTestId('briefing-ready')).toBeVisible();
     else await expect(page.getByTestId('briefing-status')).toBeVisible();
     await expect(page.getByTestId('briefing-range')).toBeVisible();
@@ -122,7 +122,7 @@ test('does not insert an obsolete file comparison into a newly selected group', 
 test('returns from the map to the same calendar range and selected comparison', async ({ page }) => {
   await enter(page);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
-  await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('option', { name: 'Month', exact: true }).click();
   await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2024-02-20');
   await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
@@ -131,22 +131,22 @@ test('returns from the map to the same calendar range and selected comparison', 
   await expect(page.getByTestId('briefing-patch')).toBeVisible();
   await page.getByRole('link', { name: 'Open capability on map', exact: true }).click();
   await expect(page).toHaveURL(/\/topology\//);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Monthly');
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-01 – 2024-02-29');
+  await openChangesFromRail(page);
+  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Month');
+  await expect(page.getByTestId('briefing-range')).toHaveText('February 2024');
   await expect(page.getByTestId('briefing-group-capabilities/checkout')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('briefing-patch')).toContainText('+limit = 20');
   await setBriefingMode(page, 'changed-head');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await expect(page.getByTestId('briefing-group-capabilities/checkout')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('briefing-patch')).toHaveCount(0);
-  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Monthly');
+  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Month');
 });
 
 test('narrows unmapped evidence by literal source area and expands every counted file', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-group-unmapped').click();
   await page.getByRole('button', { name: 'mcp · 61', exact: true }).click();
   const evidence = page.getByRole('region', { name: 'Source evidence', exact: true });
@@ -184,7 +184,7 @@ test('draws the prerendered stage settled as soon as reduced motion is known', a
 test('never presents an empty partial read as proof that the period has no commits', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'partial-empty');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await expect(page.getByText('Showing a limited read of this period. Narrow the dates for a more complete briefing.', { exact: true })).toBeVisible();
   await expect(page.getByText('No commits found in this period.', { exact: true })).toHaveCount(0);
 });
@@ -193,7 +193,7 @@ test('never presents an empty partial read as proof that the period has no commi
 test('opens a literal source area directly from the overview and returns focus to its entry', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   const area = page.getByTestId('briefing-area-mcp');
   await area.click();
   const evidence = page.getByRole('region', { name: 'Source evidence', exact: true });
@@ -215,7 +215,7 @@ test('opens a literal source area directly from the overview and returns focus t
 test('keeps file switching reachable during a long diff and scopes navigation to its area', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'long');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-area-mcp').click();
   await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-0.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('value259');
@@ -256,15 +256,16 @@ test('starts from a cold native launch and reads source history without opening 
   await installBriefingRuntime(page);
   await page.setViewportSize({ width: 768, height: 1024 });
   await page.goto('/en/?shell=desktop');
-  await page.getByRole('link', { name: /Git and PR briefing/ }).click();
+  await page.getByRole('link', { name: /^Changes/ }).click();
   await expect(page.locator('[data-tabbar=primary]')).toHaveCount(0);
   await expect(page).toHaveURL(/\/changes/);
   await page.getByRole('button', { name: 'Choose Git repository', exact: true }).click();
+  await openOriginals(page);
   await page.getByTestId('briefing-source-browser').click();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Project', exact: true })).toHaveCount(0);
   await page.getByRole('combobox', { name: 'Period', exact: true }).click();
-  await page.getByRole('option', { name: 'Monthly', exact: true }).click();
+  await page.getByRole('option', { name: 'Month', exact: true }).click();
   await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('Date in this period', { exact: true }).fill('2026-10-25');
   await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
@@ -273,8 +274,8 @@ test('starts from a cold native launch and reads source history without opening 
   await expect(page).toHaveURL(/tab=models/);
   await expect(page.locator('[data-tabbar=primary]')).toHaveCount(0);
   await page.getByRole('link', { name: 'Back to explanation', exact: true }).click();
-  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toHaveText('Monthly');
-  await expect(page.getByTestId('briefing-range')).toHaveText('2026-10-01 – 2026-10-31');
+  await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toHaveText('Month');
+  await expect(page.getByTestId('briefing-range')).toHaveText('October 2026');
   await page.getByTestId('briefing-group-unmapped').click();
   await page.getByRole('radio', { name: 'Commits', exact: true }).click();
   await page.getByRole('button', { name: /author claim: changed checkout; not independently verified/ }).click();

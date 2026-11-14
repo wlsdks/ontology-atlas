@@ -45,22 +45,22 @@ test('returns focus after a pointer opens dates without focusing the button firs
   await expect(opener).toBeFocused();
 });
 
-for (const [period, start, end] of [
-  ['Daily', '2024-02-20', '2024-02-20'],
-  ['Weekly', '2024-02-19', '2024-02-25'],
-  ['Monthly', '2024-02-01', '2024-02-29'],
-  ['Yearly', '2024-01-01', '2024-12-31'],
+for (const [period, start, end, preset, custom] of [
+  ['Day', '2024-02-20', '2024-02-20', 'Tuesday, February 20, 2024', 'Feb 20, 2024'],
+  ['Week', '2024-02-19', '2024-02-25', 'Feb 19 – 25, 2024', 'Feb 19 – 25, 2024'],
+  ['Month', '2024-02-01', '2024-02-29', 'February 2024', 'Feb 1 – 29, 2024'],
+  ['Year', '2024-01-01', '2024-12-31', '2024', 'Jan 1 – Dec 31, 2024'],
 ]) {
   test(`starts the first custom interval from the displayed ${period.toLowerCase()} range`, async ({ page }, testInfo) => {
     await enter(page);
     await choosePeriod(page, period);
     await setAnchor(page, '2024-02-20');
-    await expect(page.getByTestId('briefing-range')).toHaveText(start === end ? start : `${start} – ${end}`);
+    await expect(page.getByTestId('briefing-range')).toHaveText(preset);
     await choosePeriod(page, 'Custom dates');
     await expect(page.getByLabel('Start date', { exact: true })).toHaveValue(start);
     await expect(page.getByLabel('End date', { exact: true })).toHaveValue(end);
-    await expect(page.getByTestId('briefing-range')).toHaveText(`${start} – ${end}`);
-    if (period === 'Daily') {
+    await expect(page.getByTestId('briefing-range')).toHaveText(custom);
+    if (period === 'Day') {
       await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
       const rampNames = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));
       const audit = await auditPage(page, { width: 1920, rampNames, scope: 'main' });
@@ -78,21 +78,21 @@ test('keeps an applied custom range and unfinished invalid draft when returning 
   await page.getByLabel('Start date', { exact: true }).fill('2024-02-10');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-12');
   await page.getByRole('button', { name: 'Read this period', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-10 – 2024-02-12');
+  await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 12, 2024');
   await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('End date', { exact: true }).fill('2024-02-09');
   await expect(page.getByTestId('briefing-dates-dialog').getByRole('alert')).toBeVisible();
-  await choosePeriod(page, 'Daily');
+  await choosePeriod(page, 'Day');
   await setAnchor(page, '2025-07-18');
   await choosePeriod(page, 'Custom dates');
   await expect(page.getByLabel('Start date', { exact: true })).toHaveValue('2024-02-10');
   await expect(page.getByLabel('End date', { exact: true })).toHaveValue('2024-02-09');
   await expect(page.getByTestId('briefing-dates-dialog').getByRole('alert')).toBeVisible();
   await page.getByRole('button', { name: 'Read this period', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-10 – 2024-02-12');
+  await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 12, 2024');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-13');
   await page.getByRole('button', { name: 'Read this period', exact: true }).click();
-  await expect(page.getByTestId('briefing-range')).toHaveText('2024-02-10 – 2024-02-13');
+  await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 13, 2024');
 });
 
 test('does not replace an empty preset date with the launch date on first custom entry', async ({ page }) => {
@@ -107,7 +107,7 @@ test('does not replace an empty preset date with the launch date on first custom
 
 test('keeps an open original when first custom entry describes the same period', async ({ page }) => {
   await enter(page);
-  await choosePeriod(page, 'Daily');
+  await choosePeriod(page, 'Day');
   await setAnchor(page, '2024-02-20');
   await page.getByTestId('briefing-originals').click();
   await page.getByTestId('briefing-sources').locator('[data-control="row"]').first().click();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { VaultDoc } from '@/entities/docs-vault';
-import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod } from './briefing-model';
+import { briefingRange, groupBriefing, groupSourceAreas, localDate, movePeriod, periodLabel } from './briefing-model';
 
 describe('calendar source briefing', () => {
   it('uses Monday weeks, leap months and year boundaries', () => {
@@ -37,6 +37,15 @@ describe('calendar source briefing', () => {
   });
   it.each([['2026-02-29', '2026-03-01'], ['2026-04-31', '2026-05-01'], ['', '2026-01-01'], ['2026-04-10', '2026-04-01']])('refuses invalid or reversed dates %s to %s', (from, to) => {
     expect(briefingRange('custom', from, from, to)).toBeNull();
+  });
+  it.each([
+    ['day', '2026-11-13', 'Friday, November 13'],
+    ['day', '2024-02-20', 'Tuesday, February 20, 2024'],
+    ['week', '2026-11-13', 'Nov 9 – 15'],
+    ['month', '2026-11-13', 'November 2026'],
+    ['year', '2026-11-13', '2026'],
+  ] as const)('reads a %s period around %s as a person says it', (period, anchor, label) => {
+    expect(periodLabel(period, briefingRange(period, anchor)!, 'en', '2026-11-14').replace(/\s+/g, ' ')).toBe(label);
   });
 });
 

@@ -221,6 +221,5 @@
   "previewDetails": "请求详情",
   "previewCancel": "取消",
   "startTitle": "一眼看清变化",
-  "startBody": "分别查看 PR、提交和变更文件。打开本地 Git 仓库即可开始。",
-  "startHint": "PR 阅读支持公开的 GitHub 仓库。"
+  "startBody": "分别查看 PR、提交和变更文件。打开本地 Git 仓库即可开始。"
 }
