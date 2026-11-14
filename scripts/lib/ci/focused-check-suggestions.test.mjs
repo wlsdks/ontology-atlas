@@ -854,6 +854,15 @@ describe('focused check suggestions', () => {
     );
   });
 
+  it('routes an installed-app DOM probe change to the suite that evaluates the probe', () => {
+    const result = suggestFocusedChecks(['src-tauri/src/webview_verify/dom_marker_probe.js']);
+
+    assert.ok(
+      result.commands.some((row) => row.command === 'pnpm test:desktop:check'),
+      'a DOM probe edit must run the payload contract that reads the probe',
+    );
+  });
+
   it('routes every ACP launch-boundary input to the registry compatibility gate', () => {
     const subjects = [
       'scripts/registry-snapshots/build-acp-registry.mjs',
@@ -1046,14 +1055,6 @@ describe('focused check suggestions', () => {
       'scripts/design/check-ontology-design-surface.mjs',
       'scripts/design/check-ontology-design-surface.test.mjs',
     ]);
-  });
-
-  it('automatically suggests the ontology design guard when Insights changes', () => {
-    const result = suggestFocusedChecks([
-      'src/views/ontology-insights/lib/insights-tab-state.ts',
-    ]);
-
-    assert.ok(domainCommands(result).includes('pnpm design:ontology'));
   });
 
   it('suggests static export gates when Next config changes', () => {
@@ -1262,22 +1263,6 @@ describe('focused check suggestions', () => {
     }
   });
 
-  it('suggests the insights count E2E for the analysis model, board model, page, workspace, and board', () => {
-    const paths = [
-      'src/views/ontology-insights/lib/analysis-model.ts',
-      'src/views/ontology-insights/lib/analysis-board.ts',
-      'src/views/ontology-insights/ui/OntologyInsightsPage.tsx',
-      'src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx',
-      'src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx',
-    ];
-    const command = 'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts';
-    const result = suggestFocusedChecks(paths);
-    const matches = result.commands.filter((row) => row.command === command);
-
-    assert.equal(matches.length, 1);
-    assert.deepEqual(matches[0].paths, paths);
-  });
-
   it('suggests the legacy-route E2E for its HomePage owner', () => {
     const result = suggestFocusedChecks(['src/views/home/ui/HomePage.tsx']);
 
@@ -1306,7 +1291,6 @@ describe('focused check suggestions', () => {
 
   it('does not broaden installed-audit E2E mappings to neighboring tests or helpers', () => {
     const protectedCommands = new Set([
-      'pnpm exec playwright test tests/e2e/insights/insights-badge-agreement.spec.ts',
       'pnpm exec playwright test tests/e2e/contextual-meaning-editor.spec.ts',
       'pnpm exec playwright test tests/e2e/gateway/ontology-ui.spec.ts',
       'pnpm exec playwright test tests/e2e/gateway/touch-target-contract.spec.ts',
@@ -1314,8 +1298,6 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'src/widgets/ontology-map/interaction/free-area.test.ts',
       'src/views/home/model/inspector/use-node-datasheet-model.ts',
-      'src/views/ontology-insights/lib/analysis-model.test.ts',
-      'src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx',
       'src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx',
       'src/widgets/ontology-map/ui/OntologyMapDetailPanel.test.tsx',
     ]);

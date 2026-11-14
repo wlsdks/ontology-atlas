@@ -296,7 +296,6 @@
    */
   @media (prefers-reduced-motion: reduce) {
     /* ① Already opacity-only — revert time only. */
-    .insights-disclosure-in,
     .gateway-screen-in,
     .gateway-screen-out,
     .ai-row-swap,

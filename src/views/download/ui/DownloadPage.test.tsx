@@ -422,7 +422,6 @@ describe('DownloadPage', () => {
       'Library',
       'Planning',
       'Automations',
-      'Insights',
       'Projects',
       'Changes',
       'Git',

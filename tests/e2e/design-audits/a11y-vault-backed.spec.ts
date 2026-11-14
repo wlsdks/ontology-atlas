@@ -148,49 +148,6 @@ const STATES: readonly VaultState[] = [
     evidence: '[data-testid="topology-concept-search"]',
   },
   {
-    name: "Insights: to do",
-    url: "/ko/ontology/insights/?tab=do-next",
-    evidence: '[id^="insights-tabpanel"]',
-  },
-  {
-    name: "Insights: composition",
-    url: "/ko/ontology/insights/?tab=composition",
-    evidence: '[id^="insights-tabpanel"]',
-  },
-  {
-    name: "Insights: connections",
-    url: "/ko/ontology/insights/?tab=connections",
-    evidence: '[id^="insights-tabpanel"]',
-  },
-  {
-    name: "Analysis declared responsibility pair",
-    url: "/ko/ontology/insights/?tab=connections",
-    evidence: '[data-testid="analysis-board"]',
-    async verify(page) {
-      expect(await page.getByTestId('analysis-witness').count()).toBeGreaterThan(0);
-      await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeVisible();
-    },
-  },
-  {
-    name: "Analysis selected implementation evidence",
-    url: "/ko/ontology/insights/?tab=do-next",
-    evidence: '[data-testid="analysis-claim"][aria-pressed="true"]',
-    async act(page) {
-      const claims = page.getByTestId('analysis-claim');
-      expect(await claims.count()).toBeGreaterThan(1);
-      await claims.nth(1).click();
-      await expect(claims.nth(1)).toHaveAttribute('aria-pressed', 'true');
-    },
-    async verify(page) {
-      await expect(page.getByTestId('analysis-evidence').getByRole('link').first()).toBeVisible();
-    },
-  },
-  {
-    name: "Insights: freshness",
-    url: "/ko/ontology/insights/?tab=freshness",
-    evidence: '[id^="insights-tabpanel"]',
-  },
-  {
     // Both states below are vault-backed: the composition board needs a project with an ontology and the
     // rows need domains, so the ratchet measures what only data can open.
     name: "Project detail: composition board",
@@ -275,7 +232,7 @@ test("vault-backed accessibility and contrast ratchet: measures states that exis
   //   times and every assertion green (an empty set satisfies every universal
   //   claim). Pinned as a literal: deriving it from the measurement would make
   //   "it never shrinks" impossible to fail in principle.
-  expect(STATES.length, "the measured states shrank; if one was removed, the diff must show why").toBeGreaterThanOrEqual(14);
+  expect(STATES.length, "the measured states shrank; if one was removed, the diff must show why").toBeGreaterThanOrEqual(8);
 
   const axeCounts = new Map<string, number>();
   const axeSamples = new Map<string, string>();

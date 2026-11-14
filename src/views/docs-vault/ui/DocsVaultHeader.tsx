@@ -1,6 +1,5 @@
 'use client';
 
-import type { useDocsVaultAddress } from '../model/use-docs-vault-url';
 import type { Dispatch, SetStateAction, ComponentProps } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
@@ -21,8 +20,6 @@ export function DocsVaultHeader({
   legacyDocumentMode,
   docListCollapsed,
   libraryOntologyHref,
-  insightsReturnTab,
-  workspaceHref,
   setSourceTreeOpen,
   toggleDocListCollapsed,
   vaultChipIdentity,
@@ -53,8 +50,6 @@ export function DocsVaultHeader({
   legacyDocumentMode: boolean;
   docListCollapsed: boolean;
   libraryOntologyHref: string;
-  insightsReturnTab: ReturnType<typeof useDocsVaultAddress>['insightsReturnTab'];
-  workspaceHref: string;
   setSourceTreeOpen: Dispatch<SetStateAction<boolean>>;
   toggleDocListCollapsed: () => void;
   vaultChipIdentity: ReturnType<typeof resolveVaultChipIdentity>;
@@ -138,22 +133,6 @@ export function DocsVaultHeader({
             {t('compatibility.title')}
           </span>
         </>
-      ) : null}
-      {/* Return to the insights review the user came from; the rail owns the way back to the map. */}
-      {insightsReturnTab ? (
-        <Link
-          href={workspaceHref}
-          aria-label={t('header.backToReviewAriaLabel')}
-          className={controlClass({
-            shape: 'chip',
-            size: 'lg',
-            className:
-              'min-h-[var(--chrome-tile-size)] flex-none justify-center hover:border-[color:var(--color-indigo-line-a35)] hover:text-[color:var(--color-text-primary)]',
-          })}
-        >
-          <ArrowLeft size={ICON_SIZE.md} aria-hidden />
-          <span className="hidden sm:inline">{t('header.reviewBack')}</span>
-        </Link>
       ) : null}
       <Chip
         size="lg"

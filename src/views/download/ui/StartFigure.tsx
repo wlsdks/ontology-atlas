@@ -53,7 +53,6 @@ export function StartSection() {
   const tAnalyze = useTranslations('topology.startSteps.analyze');
   const tPermission = useTranslations('acpChat.permission');
   const tHeadline = useTranslations('ontologyChangeReview.headline');
-  const tBrief = useTranslations('ontologyPages.insights.brief.line');
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [width, setWidth] = useState(0);
@@ -107,7 +106,7 @@ export function StartSection() {
     reject: tPermission('reject'),
     allowOnce: tPermission('allowOnce'),
     allowed: tPermission('answered.allow'),
-    unreviewed: tBrief('ontology-agent-unreviewed', { count: START_DRAFT_COUNT }),
+    unreviewed: t('unreviewed', { count: START_DRAFT_COUNT }),
   };
   const description = t('description', { ...words, count: START_DRAFT_COUNT });
 

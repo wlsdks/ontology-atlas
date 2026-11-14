@@ -38,10 +38,6 @@ export type AtlasToolMode = 'read' | 'write';
  * adding a read tool without updating the generated-surface contract must add
  * friction, never grant a new write path by accident.
  */
-export function atlasBareToolMode(toolName: string): AtlasToolMode {
-  return ATLAS_READ_TOOLS.has(toolName) ? 'read' : 'write';
-}
-
 export function atlasToolMode(
   permissionToolName: string | null,
   serverName: string,

@@ -9,7 +9,7 @@ import { waitForPageSettled } from "../settle";
 
 const DESTINATIONS = [
   { id: "library", url: /\/library\//, section: "ontology" },
-  { id: "insights", url: /\/ontology\/insights\// },
+  { id: "automations", url: /\/automations\// },
   { id: "projects", url: /\/project\/fallback\/\?slug=/ },
   { id: "map", url: /\/topology\// },
 ] as const;
@@ -18,7 +18,6 @@ const OFF_RAIL_SURFACES = ["/ko/projects/", "/ko/git/", "/ko/architecture/"];
 
 const TITLE_ROUTES = [
   "/ko/library/?tab=ontology",
-  "/ko/ontology/insights/",
   "/ko/architecture/",
   "/ko/projects/",
   "/ko/agents/",
@@ -119,7 +118,7 @@ test.describe("rail destinations", () => {
       ).toEqual([]);
       expect(chrome.h1FocusVisible, `${destination.id}: title shows a focus ring`).toBe(false);
       expect(chrome.outline, `${destination.id}: title keeps an outline`).toMatch(/none|0px/);
-      if (destination.id === "insights") {
+      if (destination.id === "automations") {
         expect(chrome.h1Focused, "route change did not move focus to the title").toBe(true);
       }
     }
@@ -133,7 +132,6 @@ test.describe("rail destinations", () => {
     const surfaces = [
       "/ko/topology/",
       "/ko/library/?tab=ontology",
-      "/ko/ontology/insights/",
       ...OFF_RAIL_SURFACES,
     ];
     const positions: number[] = [];

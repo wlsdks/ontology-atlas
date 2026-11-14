@@ -1,4 +1,4 @@
-import { ANALYSIS_FINDINGS_INSTRUCTION, READ_ONLY_TOOL_INSTRUCTION } from '@/features/acp-session';
+import { ANALYSIS_FINDINGS_INSTRUCTION } from '@/features/acp-session';
 
 /**
  * A turn the app composed opens on the readable sentence; the full text stays one disclosure away.
@@ -14,7 +14,7 @@ export interface RequestParts {
 /**
  * Where an app-composed block starts: the exact opening of text a caller appends after
  * the readable sentence. A brief whose first line is the anchor folds nothing: no readable half
- * stands before it. Both languages of `READ_ONLY_TOOL_INSTRUCTION` are listed.
+ * stands before it.
  */
 const APP_BLOCK_MARKERS = [
   'Scope:',
@@ -24,8 +24,6 @@ const APP_BLOCK_MARKERS = [
   'Folder: ',
   '폴더: ',
   ANALYSIS_FINDINGS_INSTRUCTION.split('\n')[0],
-  READ_ONLY_TOOL_INSTRUCTION.en,
-  READ_ONLY_TOOL_INSTRUCTION.ko,
 ] as const;
 
 export function splitAppRequest(text: string): RequestParts {

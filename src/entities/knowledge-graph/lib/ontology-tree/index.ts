@@ -14,10 +14,7 @@ export {
   filterTreeByNodeIds,
   filterTreeExcludeKind,
 } from "./filter-tree";
-export {
-  computeEdgeTypeDistribution,
-  isContainmentRelation,
-} from "./relations";
+export { isContainmentRelation } from "./relations";
 export {
   computeDegreeCentrality,
   buildContainmentParents,

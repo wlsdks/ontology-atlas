@@ -23,10 +23,6 @@ describe("resolveActiveNavRailItem", () => {
     expect(resolveActiveNavRailItem("/ontology/studio/")).toBe("map");
   });
 
-  it("matches /ontology/insights to insights", () => {
-    expect(resolveActiveNavRailItem("/ontology/insights/")).toBe("insights");
-  });
-
   it("matches both additive Architecture and preserved Git destinations", () => {
     expect(resolveActiveNavRailItem("/architecture/")).toBe("architecture");
     expect(resolveActiveNavRailItem("/git/")).toBe("git");

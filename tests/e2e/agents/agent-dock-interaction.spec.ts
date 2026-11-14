@@ -73,7 +73,7 @@ test('Escape in the map composer keeps the dock and the draft; an empty composer
 
 test('the Library dock follows the same Escape rule and returns focus to its door', async ({ page }) => {
   await openLibraryDock(page);
-  await expect.poll(() => focused(page), { message: 'opening left focus outside the composer' }).toBe('무엇을 시킬지 적어요');
+  await expect.poll(() => focused(page), { message: 'opening left focus outside the composer' }).toBe('메시지');
 
   await composer(page).fill('자료실 초안');
   await composer(page).press('Escape');
@@ -96,7 +96,7 @@ test('after Stop and after declining a write, focus is in the composer and the r
   await expect(page.locator('[data-acp-entry="tool"]').first()).not.toContainText('읽었어요');
 
   await page.getByTestId('acp-permission-reject').click();
-  await expect.poll(() => focused(page), { message: 'answering the card dropped focus' }).toBe('무엇을 시킬지 적어요');
+  await expect.poll(() => focused(page), { message: 'answering the card dropped focus' }).toBe('메시지');
   await expect(row.getByTestId('acp-chat-tool-outcome')).toHaveText('거절함');
   await harness.finish(page);
   await expect(page.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready');
@@ -106,7 +106,7 @@ test('after Stop and after declining a write, focus is in the composer and the r
   await page.getByTestId('acp-chat-send').click();
   await expect(page.getByTestId('acp-chat-stop')).toBeVisible();
   await page.getByTestId('acp-chat-stop').click();
-  await expect.poll(() => focused(page), { message: 'Stop dropped focus' }).toBe('무엇을 시킬지 적어요');
+  await expect.poll(() => focused(page), { message: 'Stop dropped focus' }).toBe('메시지');
 });
 
 test('the resize handle and its focus mark lie inside the dock it resizes', async ({ page }) => {

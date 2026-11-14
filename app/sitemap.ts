@@ -18,10 +18,9 @@ const STATIC_ROUTES = [
   'guide',
   'changelog',
   ...GUIDE_PAGES.slice(1).map(guideCanonicalPath),
-  // 'ontology' is excluded — it redirects to `/topology`, so it is not its own canonical
+  // Compatibility redirects such as 'ontology' are excluded — none is its own canonical
   // (`app/[locale]/ontology/page.tsx`). Putting an address whose canonical points elsewhere into
   // the sitemap makes two signals say different things.
-  'ontology/insights',
 ];
 
 const hreflangOf = (locale: string): string =>

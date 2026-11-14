@@ -43,7 +43,7 @@ export const WEBVIEW_WORKBENCH_MARKERS = [
 
 const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
   /에이전트|Agents/,
-  /이 컴퓨터의 도구|MCP 연결|Tools on this computer|MCP connection/,
+  /이 컴퓨터의 에이전트|MCP 연결|Agents on this computer|MCP connection/,
 ];
 
 /*
@@ -75,11 +75,6 @@ const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   // repeat the brand; require both the destination and its rendered map content.
   /Map|지도/,
   /INDEX|Concept map|개념|Workspace|작업공간|Relief/,
-];
-
-const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
-  /Insights|Analysis|분석/i,
-  /Review summary|Wiki|검토 요약|위키/i,
 ];
 
 const WEBVIEW_PLANNING_WORKBENCH_MARKERS = [
@@ -114,9 +109,6 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null, locales = nu
     }
     if (routeIs("topology")) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;
-    }
-    if (routeIs("ontology/insights")) {
-      return WEBVIEW_INSIGHTS_WORKBENCH_MARKERS;
     }
   }
   return WEBVIEW_WORKBENCH_MARKERS;

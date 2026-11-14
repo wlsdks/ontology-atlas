@@ -92,10 +92,6 @@ function writeCleanWorkbenchFixtures(root) {
     "src/features/acp-session/model/acp-client.ts",
     "const ontologyWrite = atlasMode === 'write';",
   );
-  writeFixture(root, "src/views/ontology-insights/ui/OntologyInsightsPage.tsx", '<main data-insights-surface="relationship-analysis" data-insights-question-model="claim-evidence" role="tabpanel"><TabBar /><AnalysisWorkspace /></main>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", '<aside data-testid="analysis-evidence">buildDocsVaultHref<button data-testid="analysis-inspect-selected" onClick={() => onInspect(inspection.text)} /><CopyControl testId="analysis-copy-selected" /></aside>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx", '<div data-testid="analysis-board"><path data-testid="analysis-witness" /></div>');
-  writeFixture(root, "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", '<InsightsAgentDock /> planInsightsAgentPrompt');
   writeFixture(
     root,
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
@@ -136,14 +132,13 @@ test("ontology design surface passes when visual and workbench contracts are pre
       "src/widgets/docs-vault",
       "src/views/ontology-view",
       "src/features/ontology-meaning-editor",
-      "src/views/ontology-insights",
     ],
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 3);
+  assert.equal(report.requiredSurfaceMarkerCount, 2);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 3 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /4 surfaces \+ 2 workbench structure contracts/);
 });
 
 test("ontology design surface fails closed when its scan matches zero files", () => {
@@ -182,7 +177,6 @@ test("ontology design surface ignores test fixtures when scanning forbidden visu
       "src/widgets/docs-vault",
       "src/views/ontology-view",
       "src/features/ontology-meaning-editor",
-      "src/views/ontology-insights",
     ],
   });
 
@@ -272,53 +266,6 @@ test("ontology design surface does not accept a workbench marker that survives o
   );
 });
 
-for (const [file, missing] of [
-  ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", /relationship-analysis/],
-  ["src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx", /analysis-evidence/],
-  ["src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx", /analysis-board|analysis-witness/],
-  ["src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx", /InsightsAgentDock/],
-]) {
-  test(`ontology design surface rejects missing relationship or authority subject: ${file}`, () => {
-    const root = makeFixture();
-    writeCleanWorkbenchFixtures(root);
-    writeFixture(root, file, "// the protected subject was removed");
-    const report = evaluateOntologyDesignSurface({ root, targetDirs: ["src/views/ontology-insights"] });
-    assert.equal(report.ok, false);
-    assert.ok(report.violations.length > 0);
-    assert.match(report.violations.map(violation => violation.source).join("\n"), missing);
-  });
-}
-
-test("ontology design surface rejects the retired three-tab insights dashboard", () => {
-  const root = makeFixture();
-  writeCleanWorkbenchFixtures(root);
-  writeFixture(
-    root,
-    "src/views/ontology-insights/lib/insights-tab-state.ts",
-    'export const INSIGHTS_TABS = ["overview", "relations", "freshness"] as const;',
-  );
-  writeFixture(
-    root,
-    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-    [
-      "<TabBar",
-      "<InsightsHeroCensus",
-      "<InsightsHandoffRow",
-    ].join("\n"),
-  );
-
-  const report = evaluateOntologyDesignSurface({
-    root,
-    targetDirs: ["src/views/ontology-insights"],
-  });
-
-  assert.equal(report.ok, false);
-  assert.deepEqual(
-    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
-    ["insights-relationship-analysis"],
-  );
-});
-
 test("ontology design surface reports missing workspace execution cells", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
@@ -334,7 +281,7 @@ test("ontology design surface reports missing workspace execution cells", () => 
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor", "src/views/ontology-insights"],
+    targetDirs: ["src/views/ontology-view", "src/features/ontology-meaning-editor"],
   });
 
   assert.equal(report.ok, false);

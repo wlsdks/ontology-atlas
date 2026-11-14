@@ -14,5 +14,5 @@ routes: []
   including duplicate-key order and existing encoding. Uses
   `router.replace(..., {scroll: false})`, so changing the language does not add
   browser history or reset URL-addressed task state such as the selected
-  Insights tab.
+  Library tab.
 - localStorage `ontology-atlas:locale`

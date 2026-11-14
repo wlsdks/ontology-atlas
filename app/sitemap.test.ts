@@ -45,7 +45,6 @@ const PUBLIC_STATIC_PATHS = [
   'download',
   'topology',
   'library',
-  'ontology/insights',
   'guide',
   'changelog',
   ...GUIDE_PAGES.filter((page) => page.segment !== GUIDE_ENTRY_PAGE.segment).map(

@@ -23,7 +23,7 @@ Knowing this before memorizing commands makes the rest easy.
 |---|---|
 | CLI | Humans: from the terminal |
 | MCP | AI agents: Claude Code · Codex · Cursor |
-| UI | Humans: [Studio](/guide/studio) · [Insights](/guide/insights) |
+| UI | Humans: [Studio](/guide/studio) |
 
 All three view the **same `.md` folder**. Commands that manipulate graphs are actually wrappers around the MCP server, so whether you call `blast-radius` from the terminal or an agent, you get the **same permissions and same answers**. That's why this chapter's table organizes by **"what to call in this situation"** rather than "what commands exist".
 
@@ -90,8 +90,6 @@ To commit the vault separately, use `snapshot` (check with `--dry-run` first).
 | Where can it grow more? | `growth` |
 | What's the center? | `hubs`: PageRank · bridges · authority · hub rankings |
 | Current situation + next action on one screen | `workspace-brief` |
-
-If you want to view the same queue in the UI, [Maintenance Board](/guide/insights) draws the same `maintenance_plan`.
 
 ### When you don't trust the vault
 

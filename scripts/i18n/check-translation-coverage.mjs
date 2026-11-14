@@ -79,6 +79,8 @@ export const ACCEPTED = {
       'architecture.patternLabels.feature-sliced-design': 'the name of a published architecture pattern',
       'architecture.patternLabels.mvp': 'an acronym used as the pattern name',
       'architecture.inspectorEscHint': 'the name of a keyboard key',
+      'atlasGit.remoteFetch': 'a Git command name, shown as developers type it',
+      'atlasGit.remotePush': 'a Git command name, shown as developers type it',
       'connectors.source.claude': 'a lowercase connector identifier shown as written',
       'connectors.source.codex': 'a lowercase connector identifier shown as written',
       'connectors.source.cursor': 'a lowercase connector identifier shown as written',
@@ -111,7 +113,7 @@ export const ACCEPTED = {
       'featuresMisc.starterCta.copyCliFailed': 'the Korean text says terminal where English says CLI',
       'gatewayNav.readFullSource': 'the Korean text says repository where English names GitHub',
       'metadata.descriptions.guide': 'the Korean text uses the short product name Atlas',
-      'ontologyPages.insights.flow.request': 'the Korean request says Atlas tools where English says MCP',
+      'topology.businessFlowRequest': 'the Korean request says Atlas tools where English says MCP',
     },
   },
   zh: {

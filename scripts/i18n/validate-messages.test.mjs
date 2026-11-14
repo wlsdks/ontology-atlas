@@ -131,7 +131,6 @@ describe('i18n message catalog', () => {
       ko.navRail.map,
       ko.navRail.architecture,
       ko.navRail.library,
-      ko.navRail.insights,
       ko.navRail.projects,
       ko.navRail.agents,
       ko.navRail.mcp,

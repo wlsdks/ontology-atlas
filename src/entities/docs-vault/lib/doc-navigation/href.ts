@@ -4,9 +4,8 @@ interface DocsVaultHrefInput {
   hash?: string | null;
   intent?: 'local' | null;
   dogfood?: boolean;
-  /** Insights return context; pass only a valid `via` marker and an exact row id. */
+  /** Return context; pass only a valid `via` marker. */
   via?: string | null;
-  reviewId?: string | null;
 }
 
 /** Document address with return context and fragment. */
@@ -17,7 +16,6 @@ export function buildDocsVaultHref({
   intent,
   dogfood,
   via,
-  reviewId,
 }: DocsVaultHrefInput = {}): string {
   const normalizedSlug = slug?.trim();
   const normalizedHash = hash?.trim().replace(/^#/, '');
@@ -28,7 +26,6 @@ export function buildDocsVaultHref({
   if (intent === 'local') queryParts.push('intent=local');
   if (dogfood) queryParts.push('dogfood=1');
   if (via) queryParts.push(`via=${encodeURIComponent(via)}`);
-  if (via && reviewId) queryParts.push(`review=${encodeURIComponent(reviewId)}`);
 
   const query = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
   const pathname = collection === 'ontology' ? '/library/' : '/docs/';

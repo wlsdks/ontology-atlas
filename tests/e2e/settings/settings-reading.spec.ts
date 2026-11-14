@@ -33,7 +33,7 @@ for (const [width, height] of [[1040, 720], [1440, 900]] as const) {
 
     test('expanded map controls fit the pane and remain reachable', async ({ page }) => {
       await page.emulateMedia({ reducedMotion: 'reduce' });
-      await page.goto('/ko/ontology/insights/?guides=off');
+      await page.goto('/ko/automations/?guides=off');
       await page.locator('[data-testid="app-settings-trigger"]:visible').click();
       for (const section of ['expand', 'footprint']) {
         await page.getByTestId(`app-settings-nav-${section}`).click();

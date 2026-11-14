@@ -33,14 +33,14 @@ describe("LocaleSwitch", () => {
   it("preserves raw query order, duplicate keys, encoded values, and the hash", () => {
     expect(
       buildLocaleTarget(
-        "/ko/ontology/insights/",
+        "/ko/architecture/",
         "ko",
         "en",
         "?tab=freshness&tag=a&tag=b&node=%ED%95%9C%EA%B8%80%2Ffact",
         "#recent",
       ),
     ).toBe(
-      "/en/ontology/insights/?tab=freshness&tag=a&tag=b&node=%ED%95%9C%EA%B8%80%2Ffact#recent",
+      "/en/architecture/?tab=freshness&tag=a&tag=b&node=%ED%95%9C%EA%B8%80%2Ffact#recent",
     );
   });
 
@@ -48,24 +48,24 @@ describe("LocaleSwitch", () => {
     ["/en", "/ko"],
     ["/en/", "/ko/"],
     ["/", "/ko/"],
-    ["/ontology/insights/", "/ko/ontology/insights/"],
+    ["/architecture/", "/ko/architecture/"],
   ])("keeps the trailing-slash contract for %s", (pathname, expected) => {
     expect(buildLocaleTarget(pathname, "en", "ko")).toBe(expected);
   });
 
   it("replaces only the locale while keeping the current review state", () => {
-    mocks.pathname = "/en/ontology/insights/";
+    mocks.pathname = "/en/architecture/";
     window.history.replaceState(
       {},
       "",
-      "/en/ontology/insights/?tab=freshness&tag=a&tag=b#recent",
+      "/en/architecture/?tab=freshness&tag=a&tag=b#recent",
     );
     renderSwitch();
 
     fireEvent.click(screen.getByRole("radio", { name: "KO 한국어" }));
 
     expect(mocks.replace).toHaveBeenCalledWith(
-      "/ko/ontology/insights/?tab=freshness&tag=a&tag=b#recent",
+      "/ko/architecture/?tab=freshness&tag=a&tag=b#recent",
       { scroll: false },
     );
     expect(window.localStorage.getItem("ontology-atlas:locale")).toBe("ko");

@@ -1,8 +1,9 @@
-import { Suspense } from "react";
-import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
-import { InsightsLoadingView, OntologyInsightsPage } from "@/views/ontology-insights";
-import { buildPageMetadata } from "@/shared/lib/public-pages/page-metadata";
+import { Suspense } from 'react';
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { InsightsRedirectPage } from '@/views/insights-redirect';
+import { RouteLoadingFallback } from '@/shared/ui';
+import { absoluteUrl } from '@/shared/config';
 
 export async function generateMetadata({
   params,
@@ -10,22 +11,23 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "metadata" });
-  return buildPageMetadata({
-    locale,
-    path: 'ontology/insights',
-    title: t("pages.ontologyInsights"),
-    description: t('descriptions.ontologyInsights'),
-  });
+  const t = await getTranslations({ locale, namespace: 'metadata' });
+  // Canonical is the map so search engines see one page.
+  return { title: t('pages.ontology'), alternates: { canonical: absoluteUrl(`/${locale}/topology/`) } };
 }
 
 /**
- * Relationship-first analysis with exact declaration evidence and supporting records.
+ * `/ontology/insights` — the retired Analysis address, kept so saved links and the installed
+ * app's remembered route still land: `tab=harness` on Harness, `tab=library` on the Wiki, a named
+ * concept selected on the map, anything else on the map.
+ *
+ * The `Suspense` boundary is required: the view reads the query through `useSearchParams`, and
+ * with `output: 'export'` a prerendered page without one fails the build.
  */
 export default function Page() {
   return (
-    <Suspense fallback={<InsightsLoadingView />}>
-      <OntologyInsightsPage />
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <InsightsRedirectPage />
     </Suspense>
   );
 }

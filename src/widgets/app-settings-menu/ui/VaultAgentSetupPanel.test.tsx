@@ -386,20 +386,16 @@ describe('VaultAgentSetupPanel', () => {
   });
 
   // Present with findings and absent when clean, since an always-present link carries no state.
-  it('links the validation row to the to-do queue when there are findings', () => {
+  it('links the validation row to the ontology documents when there are findings', () => {
     renderPanel(
       { agentConfigStatus: { mcpJson: true, codexConfig: true, mcpExample: true } },
       { validationSummary: { errorCount: 5, warningCount: 4 } },
     );
 
     const link = screen.getByTestId('agent-setup-proof-health-link');
-    // The trailing slash is added by the router config (`trailingSlash`), so it is
-    // absent from a jsdom render. What the gate has to measure is «destination and
-    // tab», not the slash.
-    const href = link.getAttribute('href') ?? '';
-    expect(href).toContain('/ontology/insights');
-    expect(href).toContain('tab=do-next');
-    expect(link).toHaveTextContent('할 일에서 보기');
+    // The same place the map INDEX's "docs the checks caught" row opens.
+    expect(link.getAttribute('href')).toMatch(/^\/ko\/docs\/?$/);
+    expect(link).toHaveTextContent('온톨로지 문서 열기');
   });
 
   it('omits the to-do link when validation is clean', () => {
