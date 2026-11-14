@@ -283,7 +283,7 @@ describe("the library graph section", () => {
 
     renderGraph({ wikiPages: [], docs: [], sources: [] });
     expect(screen.queryByTestId("library-graph-canvas")).toBeNull();
-    expect(screen.getByTestId("library-graph-empty").textContent).toContain("아직 그릴 것이 없어요");
+    expect(screen.getByTestId("library-graph-empty").textContent).toContain("아직 표시할 것이 없어요");
   });
 
   it("keeps the keyboard sentence out of the rendered line and inside the description", () => {

@@ -57,7 +57,7 @@
       "tagsPlaceholder": "AI, MCP, ポートフォリオ",
       "stackPlaceholder": "Next.js, Tauri",
       "dependenciesHint": "このプロジェクトがつながるハブや上流のプロジェクトを選びます。",
-      "ownerPlaceholder": "名前",
+      "ownerPlaceholder": "決済チーム",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
       "isHubLabel": "ハブにする",
@@ -91,7 +91,7 @@
         "protocol": "リンク{index}行目：URLはhttp:// またはhttps:// で始めてください。",
         "invalidUrl": "リンク{index}行目：正しいURLを入力してください。"
       },
-      "demoModeBanner": "保存するには、先にMarkdownフォルダを開く必要があります。",
+      "demoModeBanner": "保存するには、先にフォルダを開いてください。",
       "demoModeBannerHint": "マップ画面でフォルダを選ぶと保存できるようになります"
     },
     "actions": {
@@ -178,7 +178,7 @@
     "fieldDescriptionPlaceholder": "このプロジェクトを1行で説明してください…",
     "fieldOwner": "担当者",
     "optionalHint": "任意",
-    "fieldOwnerPlaceholder": "例：田中",
+    "fieldOwnerPlaceholder": "例：決済チーム",
     "fieldTags": "タグ",
     "fieldTagsPlaceholder": "例：auth, gateway",
     "labelName": "名前",
@@ -188,7 +188,7 @@
     "applying": "適用中…",
     "apply": "変更を適用",
     "reset": "入力をリセット",
-    "openDocument": "文書を登録",
+    "openDocument": "文書を追加",
     "openSettings": "すべて編集",
     "errorEmpty": "名前と1行の説明は空にできません。",
     "errorGeneric": "変更を適用できませんでした。",
@@ -199,13 +199,13 @@
   "workspaceShapeMap": "オントロジーマップ",
   "workspaceShapeWiki": "Wiki",
   "workspaceShapeCaption": "設定ではなく、ファイルから読み取っています。パーツを追加すると初期ファイルが書き込まれ、タブもそれに従います。",
-  "workspaceShapeStartMap": "マップを始める",
-  "workspaceShapeStartWiki": "Wikiを始める",
+  "workspaceShapeStartMap": "マップを追加",
+  "workspaceShapeStartWiki": "Wikiを追加",
   "workspaceShapeStarted": "このフォルダに追加しました。",
   "workspaceShapeFailed": "このフォルダに追加できませんでした。もう一度お試しください。",
   "wikiWriteModeLabel": "エージェントがWikiページを書くとき",
-  "wikiWriteModeAuto": "すぐに書く",
+  "wikiWriteModeAuto": "確認せずに書き込む",
   "wikiWriteModeAsk": "毎回確認",
-  "wikiWriteModeAutoCaption": "規約に合うソースのまとめは、すぐに書き込まれます。保持した回答は必ず別にレビューが必要です。形式の確認が必要なページは、許可カードで止まります。",
-  "wikiWriteModeAskCaption": "すべてのページが許可カードで止まります。"
+  "wikiWriteModeAutoCaption": "ページ形式に合うWikiページはすぐに保存されます。保存した回答は必ず別にレビューが必要です。形式の確認が必要なページは、保存の前に許可を求めます。",
+  "wikiWriteModeAskCaption": "ページを書き込むたびに許可を求めます。"
 }

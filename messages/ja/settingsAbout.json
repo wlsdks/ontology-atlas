@@ -2,7 +2,7 @@
   "groups": {
     "app": "このアプリ",
     "help": "ヘルプ",
-    "trouble": "問題が起きたとき"
+    "trouble": "トラブルシューティング"
   },
   "rows": {
     "version": "バージョン",

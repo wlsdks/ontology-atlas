@@ -87,7 +87,7 @@ test.describe("the structural check is the app's own", () => {
     /* Nothing here can start a turn: one notice says why and links to the agents page. */
     const notice = page.getByTestId("library-agent-missing");
     await expect(notice).toBeVisible({ timeout: 25_000 });
-    await expect(notice).toContainText("check page format");
+    await expect(notice).toContainText("check the wiki");
     await expect(notice.getByTestId("library-agent-missing-door")).toHaveAttribute("href", /\/agents/);
     await expect(page.getByTestId("library-lint")).toHaveCount(0);
 
@@ -162,7 +162,7 @@ test.describe("the structural check is the app's own", () => {
 
     const reportNotice = page.getByTestId("library-check-report-agent-missing");
     await expect(reportNotice).toBeVisible();
-    await expect(reportNotice).toContainText("check page format");
+    await expect(reportNotice).toContainText("check the wiki");
     await expect(reportNotice.getByTestId("library-check-report-agent-missing-door")).toHaveAttribute("href", /\/agents/);
     await expect(page.getByTestId("library-check-report-lint")).toHaveCount(0);
     const card = (testId: string) =>

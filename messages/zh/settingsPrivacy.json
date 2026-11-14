@@ -1,8 +1,8 @@
 {
-  "leadDesktop": "Atlas 的界面无法访问互联网，只有下面列表中的内容会离开。",
+  "leadDesktop": "Atlas 的界面不连接互联网，只有下面列表中的内容会外传。",
   "leadWeb": "此网站会读取这台电脑上的文件夹。你的文件夹绝不会被上传。",
   "outbound": {
-    "title": "哪些内容可能离开这台电脑",
+    "title": "外部传输",
     "keywords": "网络 联网 发送 上传 外发 审计 日志 更新 检查",
     "recorded": "已记录",
     "recordedIn": "记录在 {file}",
@@ -10,8 +10,8 @@
     "unseen": "Atlas 看不到",
     "recordedNote": "已记录：每次发送都会写入此文件夹中的 <file>{file}</file>。",
     "groups": {
-      "sends-content": "可能发送文件夹内容的",
-      "agent-sends": "由智能体直接发送的",
+      "sends-content": "传输文件夹内容",
+      "agent-sends": "智能体直接发送",
       "no-content": "不含文件夹内容的连接"
     }
   },
@@ -21,24 +21,24 @@
     "agent-use": "智能体使用时"
   },
   "destinations": {
-    "your-runner-address": "你填写的运行器地址",
+    "your-runner-address": "你填写的本地模型服务器地址",
     "npm-registry": "npm 软件包注册表",
     "python-package-index": "Python 包索引（PyPI）",
-    "your-connector-urls": "此文件夹中连接器的地址，或这台电脑上的程序",
+    "your-connector-urls": "此文件夹的 MCP 服务器（地址或这台电脑上的程序）",
     "your-git-remote": "你的 Git 远程仓库",
-    "your-coding-tool-provider": "你的编码工具自己的服务商"
+    "your-coding-tool-provider": "编码智能体自己的服务商"
   },
   "paths": {
     "update-check": "检查更新",
     "update-download": "下载更新",
     "model-providers": "模型服务商",
-    "local-runner": "本地运行器",
-    "jev": "外部检查",
-    "tool-downloads": "编码工具安装",
-    "adapter-packages": "对话适配器包",
-    "connectors": "MCP 连接",
+    "local-runner": "本地模型服务器",
+    "jev": "外部模型审阅",
+    "tool-downloads": "编码智能体安装",
+    "adapter-packages": "ACP 适配器包",
+    "connectors": "MCP 服务器",
     "git-remote": "Git 推送、拉取和获取",
-    "coding-tools": "编码工具",
+    "coding-tools": "编码智能体",
     "website-files": "网站文件",
     "git-pr-descriptions": "GitHub PR descriptions"
   },
@@ -47,26 +47,26 @@
   "updateChange": "更改",
   "updateChangeAria": "在“关于”中更改自动检查更新",
   "allowances": {
-    "title": "在这台电脑上已允许",
-    "keywords": "同意 批准 允许 撤销 忘记 连接器 计划",
-    "empty": "还没有允许任何内容。文件夹中的连接器和计划会等你允许后才生效。",
-    "counts": "{connectors, plural, =0 {} other {# 个连接器}}{both, select, yes { · } other { }}{rounds, plural, =0 {} other {# 个计划}}",
-    "forget": "忘记",
-    "forgetArmed": "再按一次以忘记",
-    "forgetAll": "全部忘记",
-    "forgetAllArmed": "再按一次以全部忘记",
-    "caption": "忘记后它们会停止，直到你再次允许；文件夹中的内容不会改变。",
-    "forgetAria": "忘记为 {name} 允许的内容"
+    "title": "允许列表",
+    "keywords": "同意 批准 允许 撤销 mcp 服务器 定时检查",
+    "empty": "还没有允许任何内容。文件夹中的 MCP 服务器和定时检查会等你允许后才运行。",
+    "counts": "{connectors, plural, =0 {} other {# 个 MCP 服务器}}{both, select, yes { · } other { }}{rounds, plural, =0 {} other {# 个定时检查}}",
+    "forget": "撤销",
+    "forgetArmed": "再按一次以撤销",
+    "forgetAll": "全部撤销",
+    "forgetAllArmed": "再按一次以全部撤销",
+    "caption": "撤销后，它们在你再次允许前不会运行；文件夹中的内容不会改变。",
+    "forgetAria": "撤销 {name} 的许可"
   },
   "recent": {
-    "title": "这台电脑上记住的内容",
-    "keywords": "最近 文件夹 历史 忘记",
+    "title": "已保存的设置",
+    "keywords": "最近 文件夹 历史 清除 列表",
     "label": "最近的文件夹",
-    "count": "{count, plural, =0 {没有记住的文件夹} other {已记住 # 个文件夹}}",
-    "captionWeb": "保存在这台电脑上。忘记不会影响文件夹本身。",
-    "captionDesktop": "保存在此应用中。忘记不会影响文件夹本身。",
-    "failed": "无法忘记该列表，请重试。",
-    "forgetAll": "全部忘记",
-    "forgetAllArmed": "再按一次以全部忘记"
+    "count": "{count, plural, =0 {没有已保存的文件夹} other {# 个文件夹}}",
+    "captionWeb": "保存在这台电脑上。清除列表不会影响文件夹本身。",
+    "captionDesktop": "保存在此应用中。清除列表不会影响文件夹本身。",
+    "failed": "无法清除该列表，请重试。",
+    "forgetAll": "全部清除",
+    "forgetAllArmed": "再按一次以全部清除"
   }
 }

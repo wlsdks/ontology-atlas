@@ -1,8 +1,8 @@
 {
-  "leadDesktop": "Atlas 화면은 인터넷에 닿지 않아요. 아래 목록에 있는 것만 밖으로 나가요.",
+  "leadDesktop": "Atlas 화면은 인터넷에 연결하지 않아요. 아래 목록에 있는 것만 밖으로 나가요.",
   "leadWeb": "이 웹사이트는 폴더를 이 컴퓨터 안에서 읽어요. 폴더는 업로드되지 않아요.",
   "outbound": {
-    "title": "이 컴퓨터 밖으로 나갈 수 있는 것",
+    "title": "외부 전송",
     "keywords": "네트워크 인터넷 전송 업로드 외부 기록 로그 업데이트 확인 제공자",
     "recorded": "기록함",
     "recordedIn": "{file}에 기록",
@@ -10,9 +10,9 @@
     "unseen": "Atlas는 볼 수 없음",
     "recordedNote": "기록함: 보낼 때마다 이 폴더의 <file>{file}</file>에 남아요.",
     "groups": {
-      "sends-content": "폴더 내용을 보낼 수 있는 것",
-      "agent-sends": "에이전트가 직접 보내는 것",
-      "no-content": "폴더 내용 없이 연결하는 것"
+      "sends-content": "폴더 내용 전송",
+      "agent-sends": "에이전트 직접 전송",
+      "no-content": "폴더 내용 없는 연결"
     }
   },
   "trigger": {
@@ -21,24 +21,24 @@
     "agent-use": "에이전트가 쓸 때"
   },
   "destinations": {
-    "your-runner-address": "입력한 러너 주소",
+    "your-runner-address": "입력한 로컬 모델 서버 주소",
     "npm-registry": "npm 패키지 저장소",
     "python-package-index": "파이썬 패키지 저장소(PyPI)",
-    "your-connector-urls": "이 폴더의 연결 도구(주소 또는 이 컴퓨터의 프로그램)",
+    "your-connector-urls": "이 폴더의 MCP 서버(주소 또는 이 컴퓨터의 프로그램)",
     "your-git-remote": "Git 원격 저장소",
-    "your-coding-tool-provider": "코딩 도구의 제공자"
+    "your-coding-tool-provider": "코딩 에이전트의 제공자"
   },
   "paths": {
     "update-check": "업데이트 확인",
     "update-download": "업데이트 받기",
     "model-providers": "모델 제공자",
-    "local-runner": "로컬 러너",
-    "jev": "외부 점검",
-    "tool-downloads": "코딩 도구 설치",
-    "adapter-packages": "대화 어댑터 패키지",
-    "connectors": "MCP 연결",
-    "git-remote": "Git 보내기·받기·가져오기",
-    "coding-tools": "코딩 도구",
+    "local-runner": "로컬 모델 서버",
+    "jev": "외부 모델 검토",
+    "tool-downloads": "코딩 에이전트 설치",
+    "adapter-packages": "ACP 어댑터 패키지",
+    "connectors": "MCP 서버",
+    "git-remote": "Git 푸시·풀·페치",
+    "coding-tools": "코딩 에이전트",
     "website-files": "웹사이트 파일",
     "git-pr-descriptions": "GitHub PR 설명 조회"
   },
@@ -47,26 +47,26 @@
   "updateChange": "바꾸기",
   "updateChangeAria": "정보에서 자동 업데이트 확인 바꾸기",
   "allowances": {
-    "title": "이 컴퓨터에서 허용한 것",
-    "keywords": "동의 승인 허용 취소 잊기 연결 도구 예약",
-    "empty": "아직 허용한 것이 없어요. 폴더의 연결 도구와 예약은 허용하기 전까지 기다려요.",
-    "counts": "{connectors, plural, =0 {} other {연결 도구 #개}}{both, select, yes { · } other {}}{rounds, plural, =0 {} other {예약 #개}}",
-    "forget": "잊기",
-    "forgetArmed": "한 번 더 누르면 잊기",
-    "forgetAll": "모두 잊기",
-    "forgetAllArmed": "한 번 더 누르면 모두 잊기",
-    "caption": "잊으면 다시 허용할 때까지 멈출 뿐, 폴더 안은 바뀌지 않아요.",
-    "forgetAria": "{name}에 허용한 것 잊기"
+    "title": "허용 목록",
+    "keywords": "동의 승인 허용 취소 mcp 서버 예약 점검",
+    "empty": "아직 허용한 항목이 없어요. 폴더의 MCP 서버와 예약 점검은 허용하기 전까지 대기해요.",
+    "counts": "{connectors, plural, =0 {} other {MCP 서버 #개}}{both, select, yes { · } other {}}{rounds, plural, =0 {} other {예약 점검 #개}}",
+    "forget": "허용 취소",
+    "forgetArmed": "한 번 더 누르면 허용 취소",
+    "forgetAll": "모두 허용 취소",
+    "forgetAllArmed": "한 번 더 누르면 모두 허용 취소",
+    "caption": "허용을 취소하면 다시 허용할 때까지 실행되지 않고, 폴더 안은 바뀌지 않아요.",
+    "forgetAria": "{name} 허용 취소"
   },
   "recent": {
-    "title": "이 컴퓨터가 기억하는 것",
-    "keywords": "최근 폴더 기록 잊기 목록",
+    "title": "저장된 설정",
+    "keywords": "최근 폴더 기록 지우기 목록",
     "label": "최근 폴더",
-    "count": "{count, plural, =0 {기억한 폴더 없음} other {폴더 #개 기억}}",
-    "captionWeb": "이 컴퓨터에 보관해요. 잊어도 폴더는 그대로예요.",
-    "captionDesktop": "이 앱에 보관해요. 잊어도 폴더는 그대로예요.",
-    "failed": "목록을 잊지 못했어요. 다시 시도해 주세요.",
-    "forgetAll": "모두 잊기",
-    "forgetAllArmed": "한 번 더 누르면 모두 잊기"
+    "count": "{count, plural, =0 {저장된 폴더 없음} other {폴더 #개}}",
+    "captionWeb": "이 컴퓨터에 저장해요. 목록을 지워도 폴더는 그대로예요.",
+    "captionDesktop": "이 앱에 저장해요. 목록을 지워도 폴더는 그대로예요.",
+    "failed": "목록을 지우지 못했어요. 다시 시도해 주세요.",
+    "forgetAll": "모두 지우기",
+    "forgetAllArmed": "한 번 더 누르면 모두 지우기"
   }
 }

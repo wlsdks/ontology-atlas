@@ -57,7 +57,7 @@
       "tagsPlaceholder": "AI, MCP, Portfolio",
       "stackPlaceholder": "Next.js, Tauri",
       "dependenciesHint": "Pick the hubs or upstream projects this one connects to.",
-      "ownerPlaceholder": "Name",
+      "ownerPlaceholder": "Payments team",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
       "isHubLabel": "Mark as a hub",
@@ -91,7 +91,7 @@
         "protocol": "Link line {index}: URL must start with http:// or https://.",
         "invalidUrl": "Link line {index}: enter a valid URL."
       },
-      "demoModeBanner": "You'll need to open a markdown folder before you can save.",
+      "demoModeBanner": "Open a folder before you can save.",
       "demoModeBannerHint": "Pick a folder on the map screen to enable saving"
     },
     "actions": {
@@ -178,7 +178,7 @@
     "fieldDescriptionPlaceholder": "Describe this project in one line…",
     "fieldOwner": "Owner",
     "optionalHint": "optional",
-    "fieldOwnerPlaceholder": "e.g. Min-hyuk",
+    "fieldOwnerPlaceholder": "e.g. Payments team",
     "fieldTags": "Tags",
     "fieldTagsPlaceholder": "e.g. auth, gateway",
     "labelName": "Name",
@@ -188,7 +188,7 @@
     "applying": "Applying…",
     "apply": "Apply changes",
     "reset": "Reset inputs",
-    "openDocument": "Register document",
+    "openDocument": "Add document",
     "openSettings": "Full edit",
     "errorEmpty": "Name and one-line description cannot be empty.",
     "errorGeneric": "Could not apply the changes.",
@@ -199,13 +199,13 @@
   "workspaceShapeMap": "Ontology map",
   "workspaceShapeWiki": "Wiki",
   "workspaceShapeCaption": "Read from the files, not a setting. Adding a part writes its starter files; the tabs follow.",
-  "workspaceShapeStartMap": "Start the map",
-  "workspaceShapeStartWiki": "Start a wiki",
+  "workspaceShapeStartMap": "Add map",
+  "workspaceShapeStartWiki": "Add wiki",
   "workspaceShapeStarted": "Added to this folder.",
   "workspaceShapeFailed": "Could not add to this folder. Try again.",
   "wikiWriteModeLabel": "When the agent writes a wiki page",
-  "wikiWriteModeAuto": "Write at once",
+  "wikiWriteModeAuto": "Write without asking",
   "wikiWriteModeAsk": "Ask each time",
-  "wikiWriteModeAutoCaption": "Source write-ups that fit the contract are written at once. Retained answers always require a separate review; other pages stop at the permission card when their format needs attention.",
-  "wikiWriteModeAskCaption": "Every page stops at the permission card."
+  "wikiWriteModeAutoCaption": "Wiki pages that match the page format are saved at once. Saved answers always need a separate review; other pages ask for permission when their format needs attention.",
+  "wikiWriteModeAskCaption": "Every page asks for permission before it is written."
 }

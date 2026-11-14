@@ -2,7 +2,7 @@
   "groups": {
     "app": "此应用",
     "help": "帮助",
-    "trouble": "出问题时"
+    "trouble": "故障排除"
   },
   "rows": {
     "version": "当前版本",
@@ -55,7 +55,7 @@
     "buildApp": "应用 {version}",
     "buildWeb": "网站 {version}",
     "buildUnknown": "未知",
-    "surface": "界面",
+    "surface": "运行环境",
     "surfaceDesktop": "桌面",
     "surfaceWeb": "网页",
     "userAgent": "用户代理",

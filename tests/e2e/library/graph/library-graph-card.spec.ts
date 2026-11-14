@@ -306,7 +306,7 @@ test.describe("a press on a mark opens a card beside it", () => {
     expect(flow.stale.length).toBeLessThanOrEqual(flow.edges.length);
 
     /* The card carries words for the drift, beside the lines. */
-    await expect(page.getByTestId("library-graph-card-flow")).toContainText("flow from each original");
+    await expect(page.getByTestId("library-graph-card-flow")).toContainText("flow from each source");
     /* With the pointer off the marks the slot below the canvas is the legend again. */
     const box = (await page.getByTestId("library-graph-canvas").boundingBox())!;
     await page.mouse.move(box.x + 3, box.y + 3);

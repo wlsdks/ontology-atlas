@@ -6,7 +6,7 @@ test('unproven browser access stays unavailable at narrow and desktop widths', a
   for (const width of [320, 768, 1440, 1920]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/ko/planning/');
-    await expect(page.getByRole('heading', { name: planning.title })).toBeVisible();
+    await expect(page.getByRole('heading', { name: planning.title, exact: true })).toBeVisible();
     await expect(page.getByText(planning.browserUnavailable)).toBeVisible();
     await expect(page.getByRole('button', { name: planning.chooseFolder })).toHaveCount(0);
     await expect(page.getByTestId('planning-get-app')).toHaveAttribute('href', /\/download\//);

@@ -130,10 +130,10 @@ describe("AgentClientButtons does not show a failed write as success", () => {
         "failed",
       ),
     );
-    expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent("안 됐어요");
+    expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent("실패");
     expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute(
       "aria-label",
-      "안 됐어요. 다시 눌러 주세요.",
+      "연결하지 못했어요. 다시 눌러 주세요.",
     );
   });
 
@@ -147,7 +147,7 @@ describe("AgentClientButtons does not show a failed write as success", () => {
       expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute("data-state", "ready"),
     );
     expect(screen.getByTestId("agent-client-claude-code")).not.toHaveTextContent(
-      "안 됐어요. 다시 눌러 주세요.",
+      "연결하지 못했어요. 다시 눌러 주세요.",
     );
   });
 });
