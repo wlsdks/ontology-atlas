@@ -20,7 +20,7 @@ is for, and a tab set picks one of three views on `?view=`.
 Structure inside a destination called Harness, and it is the product's **architecture** — which,
 in the vocabulary this tab borrows, is one of the three things a harness *regulates*
 (maintainability · architecture fitness · behaviour) rather than a part of the harness itself. So
-`?view=architecture` holds the ladder under its own name. **Structure and Coverage became one view on
+`?view=architecture` holds the architecture picture under its own name. **Structure and Coverage became one view on
 2026-10-20** (owner, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`): they asked the same three questions, one by harness part and one
 by domain, filed a hook in different columns and offered no next step. `?view=structure`,
 `?view=coverage` and `?view=sensors` are rewritten in place to `?view=overview`, so an old link and
@@ -31,13 +31,13 @@ the whole harness lives in dot directories and a browser's folder permission can
 at all, so the installed app arrives on At a glance and a browser arrives on the blueprint, which is built
 from the bundled profile and answers there. Without a reading the tabs are At a glance and
 Architecture, and an address that names a view always wins; `?role=` or `?stage=` with no `?view=`
-opens the ladder, the only view with either.
+opens Architecture, the only view with either.
 
 Without a reading, At a glance is one centred stage (`HarnessUnreadStage`): a code path forking to
 the three guards the matrix reads, the third drawn missing, then the reason in one sentence and the
 one way forward (get the app in a browser, connect a source folder in the app).
 The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
-link: keying the carve-out on it made one rail click open the ladder and left the default
+link: keying the carve-out on it made one rail click open Architecture and left the default
 unreachable from the rail (measured in the installed app, 2026-09-13).
 
 **On Guides, one sentence at the top, computed from files only**: how many guide documents this repository
@@ -172,82 +172,41 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   summaries; Atlas does not infer Clean, Hexagonal, MVP, or Feature-Sliced Design
   from folder names. The visible Understand → Plan → Verify stages were removed
   on 2026-09-03; the canvas compares reviewed intent with observation directly.
-- A role's modules are the connected repository's folder and file names under the role's
-  paths, listed through the read-only harness commands; no file is opened. When that
-  repository cannot be read, the role shows no count instead of zero.
-- Under the observation heading the ladder dates what it shows ("Recorded 2026-08-28"): the
-  import counts are the last record's, not a live reading, and this surface cannot re-check them.
-- **The ladder's contract face grows into the card's spare width, and the drawing is
-  centred** (2026-09-13, inspection 122 S8). The three faces used to hold 280/72/240 whatever
-  the card's width: measured at 1512×949 in the installed-app window the drawn band was **592px
-  inside a 1448px card (41 %), sitting 124px left of its centre, with all seven role sentences
-  ending in an ellipsis** while 856px of the card stood empty; the tight ladder buys its height
-  by dropping the sentence's second line, and one 280px line cannot hold a Korean sentence. The
-  contract face now takes the ground neither lane wants, up to 560px (derived: the longest
-  dogfood sentence estimates at 472px and `captionLineRoom` spends 24 on padding), and whatever
-  the lanes still do not need is split evenly. Re-measured at the same size: band **872px of
-  1448 (60 %)**, centred to the pixel, **0 of 7 sentences cut**, height unchanged. The
-  observation column also states "not inspected yet" once under its heading instead of once per
-  role, the way the across-axis lane headings already did.
-- **The comparison ladder is chosen by height** (2026-09-03). Whenever the seven
-  reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
-  chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
-  rule sentence sits beside the arrow it describes, in the 24px gap between the
-  two faces it joins. A canvas too short for the rows still draws the across
-  chain. The ladder needs only its faces plus 48px of
-  side lane each side, so a tablet canvas from 744px draws it too. A canvas too
-  short for those rows but tall enough for tighter ones draws the same comparison
-  on 58px faces with one summary line and a 22px gap, so a 1280×800 laptop shows
-  all seven roles instead of counting the seventh as hidden. Choosing a role
-  recedes the unrelated roles and strokes to 0.7, so every receded word stays at or
-  above 3:1. Every role is one rounded face (the stadium ends were retired on
-  2026-09-03), and captions wrap by the width their script needs, so a Korean
-  sentence stays inside its face. Both lanes seat an adjacent sentence beside its
-  own arrow; a skip arc leaves and arrives at the face's side with a side port,
-  so no arc crosses a row gap; the count sentence reads "{from} → {to} import
-  {n}"; and the side lanes go where the arcs are, a 48px contract lane unless the
-  profile declares a skip and up to 360px for the observation lane. The ladder sits
-  in the middle of the height it has, and the observation face is exactly its row,
-  so both lanes share one arrow length and one sentence baseline. Below the
-  paired width a phone draws the narrow ladder: one lane, the face as wide as the
-  canvas allows up to 280px, two caption lines, and each rule sentence beside its
-  arrow reading to the canvas edge. A short-canvas across chain grows its faces
-  with the canvas up to the roomy 220px, names each row once above its first face
-  instead of on every face, and gives its captions three lines.
-- **Every role has its own row, and a stroke is drawn the way it runs** (2026-11-12).
-  Roles the rules cannot order stand on consecutive rows and share one numeral
-  (`01, 02, 02, 02, 03`), so a fan is the same ladder as a chain, and the across chain
-  is left to a canvas too short for the rows. A stroke leaves the edge of its face that
-  looks at its target, so a crossing that climbs the chain starts at the face's top
-  instead of striking through the rows it passes. Two rules, or two imports, that oppose
-  each other between neighbours stand 6px either side of their line (3px on the narrow
-  ladder, where a rule and an import already share it). A skip leaves the face's side on
-  both ladders, rules on the left and imports on the right: an arc on the paired ladder,
-  a shallow bracket (16px, plus 10px per nested lane) inside the phone's edge air.
-  Opposed skips nest by lane. A rule between neighbouring ranks is always drawn, as a
-  side arc where it passes a sibling, so a fan shows every rule it declares. A
-  paired-ladder track with at most three skips past a rank draws those at rest too; rule
-  skips rest only on a canvas where that costs no sentence: both lanes read whole, the
-  row gaps span their sentences, and no role description is cut that the widest face
-  reads. That is judged with the dock closed and the skip lane a record would take, so
-  neither an opening dock nor a landing record withdraws them; of three rule skips about
-  one midpoint, one sentence still waits for its role.
-  Any other skip arrives when its role is chosen or it is violated. On the across chain
-  a skip turns inside the column gap and runs under its row of faces. Where the profile
-  declares a rule skip, the gap above the observation row opens to the run's depth plus
-  64px, so the run, its sentence and the two count lines over the observation faces each
-  have a line, and the joint on each pillar stays 24px above its observation face. The
-  across observation heading is measured with its date, so a count sentence reads a line
-  clear of it, and the sentence under an opposed pair of across skips reads clear of the
-  outer run. The sentences of the rule skips drawn at rest claim their ground from the
-  profile alone, never from a record or a selection: the contract lane for the rules, the
-  observation lane for the counts of their pairs (either direction, four digits, nested
-  as a pair), and the span between the two lanes' arrows where a rule shares a row gap
-  with the count of its pair, up to the 160px gutter cap. Both lanes claim before the
-  face grows. In a row gap a count reads from its own arrow as far across as a rule does.
-  The faces stand on the card's centre line unless a lane needs more than half the ground
-  beside them, the rule lane first, and neither lane takes the other's 48px floor. A
-  sentence longer than the ground it lands in is shortened.
+- **The picture is a cross-section of the code** (2026-11-14, owner). One row per role in
+  profile order: at the left the role's path pattern in mono and its name, then a rounded
+  band holding the role's real members as small mono chips on one line, closing with `+N`
+  for the members that do not fit, or the total when all of them do. Members are the
+  connected repository's folder and file names under the role's paths, listed through the
+  read-only harness commands with no file opened; without a listing they are the modules the
+  role's recorded concepts sit in, most recorded first; with neither the band is empty and
+  only the pattern names it. A band carries no description; the role's sentence, reach,
+  modules and concepts are in its detail panel.
+- **Observed imports are arcs beside the bands.** Each crossing between two roles in the
+  last record is one arc leaving the right edge of its source band and returning to its
+  target's, bulging further the more rows it spans, its stroke 1 to 6px wide by its share
+  of the busiest crossing, neutral at rest. Imports inside one role are not drawn, and an
+  allowed rule nobody has imported along is not drawn: the arcs are the code's, the rules
+  are in the rules panel. A violation takes the outer lane, dashed in the danger tone with
+  an arrowhead at its target and a short label `from → to N`. Choosing a band brightens its
+  arcs, dims the rest and puts each bright arc's count at its far point; hovering an arc
+  shows `from → to N`, and each arc's accessible name is its full sentence. One legend line
+  under the picture keys the marks. Before a record exists nothing is drawn beside the
+  bands: no arc, placeholder or legend.
+- **The header is one line.** The profile title, then the status: "Not scanned yet", "No
+  import against the rules · checked <date>", or a red dot and the count against the rules
+  with its date; a live agent turn names itself there instead. The status opens the
+  profile's issues and records. At the right sit the rules toggle and the agent action. The
+  last check's result, counts and dated stamp, or the command that would write one, are in
+  the rules panel under "Last check".
+- **At workbench width the screen does not scroll** (2026-08-30). The panel hugs its rows,
+  which shrink from 60 to 34px with a tighter gap before any role leaves view, so seven
+  roles stand whole at 1280×800 and 1512×945. The role's answer and the rules open in a
+  380px panel beside it — by choosing a band, by the "Roles and rules" button, or by a link
+  naming a role — and Escape closes it and returns focus. Below workbench width the panels
+  return to the document flow, the arc column narrows first, and below a 600px stage the
+  arcs are dropped and each band names its strongest outgoing crossing instead. Bands never
+  scroll sideways. The arcs draw in once over `--motion-settle`, selection crossfades, and
+  reduced motion shows the finished picture.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale
@@ -273,38 +232,13 @@ other file's name only (`.claude/rules/surfaces.md`). The binding they read is m
   receipts. Unsupported languages, unknown import usage, unmapped edges,
   unruled edges, and empty roles fail closed; absence of evidence is never a
   green result.
-- **At workbench width the screen is a canvas with docks, and it does not scroll**
-  (2026-08-30). The canvas holds the full height; the role's own answer, the rule
-  sentences, the mark legend, the applied scopes and the dependency-direction prose
-  open in a 380px panel beside it — by clicking a role, by the "Roles and rules"
-  button, or by a link naming a role — and Escape closes it. The continuous
-  contract/observation/delta ledger opens in its own 360px panel. Role, rules, and
-  evidence panels are mutually exclusive, because two at once leave a laptop canvas
-  too narrow for the drawing. The 44px evidence summary stays above the canvas at
-  every width. Below workbench width the panels return to the document flow.
-- **A violated crossing is drawn as one** (2026-08-30): always visible even when it
-  skips a role, in the same tone as the `Violated` pill, dashed so it reads without
-  colour, with its own legend row and the same mark on its sentence.
-- **Each role box carries its own ledger** when a persisted receipt exists
-  (2026-08-30). One line under a ruled separator states what that role's own
-  outgoing edges did and how many imports leave it — `✓ none recorded · 411
-  imports`, `⊘ 2/5 edges violated · 38 imports`, `at least N violated` when the
-  receipt's violation sample was truncated, `○ no source matched` for a role the
-  receipt lists as empty. It is never a per-role verdict: `conforms` /
-  `violated` / `unknown` stays profile-wide in the evidence summary, and no box ever
-  says "unmeasured", because unmapped and unruled edges carry no role. Without a
-  receipt there is no ledger at all rather than a row of zeros — in a browser,
-  which cannot read a source folder, that is the ordinary case. Status is a
-  glyph, never a colour.
 - The short agent action sends a state-bound inspection or change request. In the installed
   app, an exact CLI fallback is included only when the project source binding,
   vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
   packet says the fallback is unavailable instead of inventing a command.
-- At narrow widths the role model remains first in document order. Open evidence
-  and role panels scroll into view without covering the persistent bottom tabs,
-  whose reserve stays part of the workbench.
-
-**Import direction is drawn as depth** (2026-09-08). The reviewed ladder stands on stacked translucent planes, one per layer, stepping 14 px per rank so the stack shears along one line and reads as a solid: an allowed import runs down onto a lower plane in indigo, a violation is the stroke that climbs to a higher plane in the danger tone with a halo that rises when either end is selected. Plane fill is capped under a role's own face so depth never inverts; the lit top edge carries the reading. Measured at 1512 and 1280: overlap count 0, every label at or above 4.5:1 on its plane, height up 1.6 to 2.8 percent, width unchanged.
+- At narrow widths the role model remains first in document order. Open role and rules
+  panels scroll into view without covering the persistent bottom tabs, whose reserve stays
+  part of the workbench.
 
 **Before a profile exists, the tab shows what one gives** (2026-10-02, owner). The empty state is a
 hero on the Harness start line, top-aligned under the tabs: the sentence and its two actions, and
