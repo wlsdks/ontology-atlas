@@ -28,8 +28,8 @@ export async function generateMetadata({
  *
  * ⚠️ **The `Suspense` boundary is required, not decorative.** The view reads `?view=` through
  * `useSearchParams`, and with `output: 'export'` a prerendered page that calls it without a
- * boundary fails the build outright. `/mcp` and `/ontology/insights` carry the same wrapper for the
- * same reason; this file copies them rather than inventing a third answer.
+ * boundary fails the build outright. `/mcp` and the other compatibility redirects carry the same
+ * wrapper for the same reason; this file copies them rather than inventing another answer.
  */
 export default function Page() {
   return (

@@ -5,10 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { getTopologyProjectHref } from '@/entities/project';
 import {
-  buildOntologyInsightsReturnHref,
-  buildTopologyReturnHref,
   buildTopologyReturnMarker,
-  parseInsightsReturnMarker,
   parseTopologyReturnMarker,
 } from '@/entities/knowledge-graph';
 import { buildDocsVaultHref } from '@/entities/docs-vault';
@@ -40,36 +37,20 @@ export function useDocsVaultAddress() {
   // An unknown order value falls back to the default.
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
   const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
-  const insightsReturnTab = parseInsightsReturnMarker(
-    searchParams?.get('via'),
-  );
-  const insightsReviewId = insightsReturnTab
-    ? searchParams?.get('review') ?? null
-    : null;
   // `via=topology:<nodeId>` sends the crumb back to that node, selected.
   const topologyReturnNode = parseTopologyReturnMarker(searchParams?.get('via'));
   const projectsListHref = '/projects/';
-  // On a hard navigation `/` falls through to the gateway before the vault restores,
-  // so the crumb goes straight to the map.
-  const workspaceHref = insightsReturnTab
-    ? buildOntologyInsightsReturnHref(insightsReturnTab, insightsReviewId)
-    : topologyReturnNode
-      ? buildTopologyReturnHref(topologyReturnNode)
-      : '/topology';
   const getDocHref = useCallback(
     (slug: string, hash?: string) =>
       buildDocsVaultHref({
         slug,
         hash,
         // Keep the origin across in-vault hops so the crumb keeps its way back.
-        via: insightsReturnTab
-          ? `insights:${insightsReturnTab}`
-          : topologyReturnNode
-            ? buildTopologyReturnMarker(topologyReturnNode)
-            : null,
-        reviewId: insightsReviewId,
+        via: topologyReturnNode
+          ? buildTopologyReturnMarker(topologyReturnNode)
+          : null,
       }),
-    [insightsReturnTab, insightsReviewId, topologyReturnNode],
+    [topologyReturnNode],
   );
   // `/?p=` loses its query in the locale-less root redirect; link /topology directly.
   const getProjectHref = useCallback(
@@ -112,8 +93,6 @@ export function useDocsVaultAddress() {
     queryDogfood,
     queryTreeSort,
     queryTreeGroup,
-    insightsReturnTab,
-    workspaceHref,
     getDocHref,
     getProjectHref,
     projectsListHref,

@@ -79,7 +79,7 @@
   "askDoorAria": "대화를 열어 기다리는 요청을 확인하기",
   "problemSentence": "폴더에 고칠 곳이 생겼어요",
   "problemDoor": "보기",
-  "problemDoorAria": "고칠 곳 목록 열기",
+  "problemDoorAria": "지도의 고칠 곳 목록 열기",
   "resultAdded": "개념 {count}개를 새로 적었어요",
   "resultEdited": "개념 {count}개를 고쳤어요",
   "resultRemoved": "개념 {count}개를 지웠어요",

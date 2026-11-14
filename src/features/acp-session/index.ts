@@ -12,7 +12,7 @@ export type { AcpEvent, PendingPermission } from "./model/use-acp-session";
 export type { AcpTurnStart, AcpTurnCompletion } from './model/use-acp-session';
 export { captureTaskBaseline } from './model/task-baseline';
 export type { TaskBaselineCaptureRequest, TaskBaselineCaptureResult, TaskBaselineSourceInspection } from './model/task-baseline';
-export { ANALYSIS_FINDINGS_INSTRUCTION, READ_ONLY_TOOL_INSTRUCTION, analysisGraphFromInsight, currentAnalysisBasis } from './model/analysis-capture/analysis-capture';
+export { ANALYSIS_FINDINGS_INSTRUCTION, analysisGraphFromInsight, currentAnalysisBasis } from './model/analysis-capture/analysis-capture';
 export type { AnalysisCaptureContext, AnalysisSaveState } from './model/analysis-capture/analysis-capture';
 export { useAnalysisCapture } from './model/analysis-capture/use-analysis-capture';
 export { turnLiveness } from "./model/turn-liveness";
@@ -41,4 +41,4 @@ export type {
 export { permissionIntent } from "./model/permissions/permission-intent";
 export { permissionScope } from "./model/permissions/permission-scope";
 export { permissionLocality } from "./model/permissions/permission-locality";
-export { atlasBareToolMode, atlasToolMode } from "./model/permissions/atlas-tool-policy";
+export { atlasToolMode } from "./model/permissions/atlas-tool-policy";

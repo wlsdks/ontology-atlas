@@ -40,7 +40,7 @@ task, its implementation anchors, constraints, evidence, and unknowns. The
 person need not open Atlas for every task. A configured MCP connection is an
 interface, not a guarantee that every host calls it or respects its guidance.
 
-**The human workbench.** Map, Architecture, Library, Insights, and Git
+**The human workbench.** Map, Architecture, Library, and Git
 History help people inspect the meaning and evidence behind a question or
 change. Task-bound Meaning Diff is a development direction for comparing
 observed code changes, proposed meaning, and accepted meaning. Existing write
@@ -454,9 +454,9 @@ Current distribution contract:
 
 1. Next.js static export is the Tauri frontend payload.
 2. The installed app opens local vaults through the native bridge and verifies
-   current Docs, Topology (including contextual writing), Insights, Projects,
-   Agents, and Git routes.
-3. `/ontology`, `/ontology/edit`, and `/ontology/studio` remain compatibility
+   current Docs, Topology (including contextual writing), Projects, Agents,
+   and Git routes.
+3. `/ontology`, `/ontology/edit`, `/ontology/studio` and `/ontology/insights` remain compatibility
    redirects into the topology workbench; they are smoke inputs, not separate
    product surfaces.
 4. Signing, notarization, release slots, checksums, and installed-app proof
@@ -785,12 +785,12 @@ judgment, and reuse across real tasks need their own evidence under V1–V4.
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
 - Topology + INDEX is the read/inspect surface, contextual map writing is the
-  frontmatter relation-write surface, and Insights is the six-tab maintenance
-  board: five measured questions plus Flow.
+  frontmatter relation-write surface.
 - `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit` and
   `/ontology/studio` redirect into `/topology` and translate legacy edit query
-  strings. None of those redirects owns current chrome.
+  strings; `/ontology/insights` redirects to the map, the Library Wiki or
+  Harness At a glance. None of those redirects owns current chrome.
 - Agent/CLI graph DB packs still expose health, scans, paths, relation checks,
-  and explanation contracts without turning Insights into a query cockpit.
+  and explanation contracts without turning a screen into a query cockpit.
 - CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is
   treated as complete.

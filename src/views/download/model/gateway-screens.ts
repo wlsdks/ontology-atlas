@@ -11,7 +11,6 @@ export const GATEWAY_SCREEN_FILES = [
   'library',
   'planning',
   'automations',
-  'insights',
   'projects',
   'changes',
   'git',

@@ -178,7 +178,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   and empty cells between regions keep them apart. A tile's brightness and its row
   of dots count its elements (a gold dot is a stale element); a gold rim is stale
   and a dashed, hatched tile is unknown, by the same rule and Git walk as
-  the analysis brief; the web says every state is unknown rather than guess. Placement is append-only per folder: a new capability takes a free
+  the MCP server; the web says every state is unknown rather than guess. Placement is append-only per folder: a new capability takes a free
   cell of its region and a new domain the next free slot, so nothing already placed
   moves; only a region that outgrows its room re-seeds the board, and the board says
   so. In the far band, strokes between regions grow thicker with
@@ -253,7 +253,7 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   emit a halo in their kind colour, and **evidence is the light**: a current
   concept emits fully, a stale one keeps a dimmer core and wears a 1 px amber
   ring, and an unknown one emits nothing and wears a dashed ring. The states come
-  from the rule the analysis brief and the MCP server use (one Git walk in the
+  from the rule the MCP server uses (one Git walk in the
   app); the web has no Git walk, so everything there is unknown and the legend
   (bottom left: kinds and evidence counts) says so. Neural gathers its clusters
   around the domains. **A click only selects**; a double-click or Enter flies the

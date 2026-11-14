@@ -11,6 +11,7 @@ export const rules = [
       /^scripts\/desktop\/desktop-smoke\.(?:mjs|test\.mjs)$/,
       /^scripts\/verify-macos\/verify-macos-app-launch(?:\.[^/]+)?\.mjs$/,
       /^scripts\/lib\/verify-macos\/[^/]+\.mjs$/,
+      /^src-tauri\/src\/webview_verify\/[^/]+\.js$/,
       /^scripts\/verify-macos\/verify-macos-dmg\.mjs$/,
       /^scripts\/verify-macos\/verify-macos-install-smoke\.mjs$/,
       /^scripts\/lib\/macos-artifact\/macos-dmg-layout\.(?:mjs|test\.mjs)$/,

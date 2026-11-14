@@ -35,8 +35,7 @@
     "mostlyTwo": "Largest groups: {a} ({aCount}), {b} ({bCount}).",
     "selfDomainLabel": "this domain",
     "noDomainLabel": "no domain",
-    "domainsHidden": "{count} more domains are reached than these bars show",
-    "domainsHiddenRoute": "Domain boundaries"
+    "domainsHidden": "{count} more domains are reached than these bars show"
   },
   "handoff": {
     "label": "Agent handoff",
