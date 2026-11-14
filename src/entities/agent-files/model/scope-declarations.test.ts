@@ -1,49 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  commandPathScopes,
-  literalPrefix,
-  ruleGlobs,
-  scopeReaches,
-  scriptPathScopes,
-  workflowPathFilters,
-} from './coverage-scopes';
-
-describe('literalPrefix — a glob reduced to the folder it certainly touches', () => {
-  it('stops at the first wildcard segment', () => {
-    expect(literalPrefix('src/**')).toBe('src');
-    expect(literalPrefix('src/**/*.tsx')).toBe('src');
-    expect(literalPrefix('scripts/check-*.mjs')).toBe('scripts');
-    expect(literalPrefix('tests/contract/**')).toBe('tests/contract');
-  });
-
-  it('keeps a plain file path whole', () => {
-    expect(literalPrefix('next.config.ts')).toBe('next.config.ts');
-    expect(literalPrefix('.claude/rules/design.md')).toBe('.claude/rules/design.md');
-  });
-
-  it('returns nothing for a glob that starts with a wildcard', () => {
-    /* A leading `**` reaches every folder, so its prefix is empty, not a folder name. */
-    expect(literalPrefix('**/*.test.ts')).toBe('');
-    expect(literalPrefix('*.md')).toBe('');
-  });
-});
-
-describe('scopeReaches — containment runs both ways', () => {
-  it('reaches a path inside the scope', () => {
-    expect(scopeReaches('src', 'src/features/vault-agent')).toBe(true);
-  });
-
-  it('reaches a scope inside the path', () => {
-    /* A check naming one file inside `cli/src` is a check that names that capability. */
-    expect(scopeReaches('cli/src/lib/analysis-results/architecture-results.test.mjs', 'cli/src')).toBe(true);
-  });
-
-  it('does not treat a shared name prefix as containment', () => {
-    expect(scopeReaches('src', 'src-tauri/src/acp.rs')).toBe(false);
-    expect(scopeReaches('eslint', 'eslint.config.mjs')).toBe(false);
-  });
-});
+import { ruleGlobs, scriptPathScopes, workflowPathFilters } from './scope-declarations';
 
 describe('ruleGlobs — the paths a .claude rule declares', () => {
   const rule = [
@@ -72,7 +29,7 @@ describe('ruleGlobs — the paths a .claude rule declares', () => {
   });
 
   it('returns nothing for an always-loaded rule', () => {
-    /* "Declares no path" means every area, never none. */
+    /* No `paths:` means loaded every session. */
     expect(ruleGlobs('# Forbidden patterns\n\nNo frontmatter at all.\n')).toEqual([]);
     expect(ruleGlobs('---\ndescription: always\n---\n\n# Git\n')).toEqual([]);
   });
@@ -96,22 +53,9 @@ describe('scriptPathScopes — what a guard script says about itself', () => {
     ]);
   });
 
-  it('over-collects a regex that is not a path, which the disk probe then drops', () => {
-    /* `/^eslint/` is extracted too; callers keep only scopes that resolve, so this is asserted, not fixed. */
+  it('over-collects a regex that is not a path, quoting it rather than guessing', () => {
+    /* `/^eslint/` is extracted too; the screen shows the declaration for a reader to judge. */
     expect(scriptPathScopes('if (/^eslint/.test(finding)) return;')).toContain('eslint');
-  });
-});
-
-describe('commandPathScopes — the files a check command names', () => {
-  it('names the paths it runs over', () => {
-    expect(commandPathScopes('node --test cli/src/lib/*.test.mjs').sort()).toEqual(['cli/src/lib']);
-  });
-
-  it('names nothing for a repository-wide lane', () => {
-    /* A repository-wide `vitest` names no area, unlike a check written for one. */
-    expect(commandPathScopes('vitest run')).toEqual([]);
-    expect(commandPathScopes('eslint --max-warnings 0')).toEqual([]);
-    expect(commandPathScopes('tsc --noEmit')).toEqual([]);
   });
 });
 

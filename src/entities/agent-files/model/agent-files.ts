@@ -176,11 +176,6 @@ export interface AgentFilesAnalysis {
   };
 }
 
-/** Agent tools reading this path, so mirrored hook names in `.claude` and `.codex` are told apart. */
-export function agentToolsForPath(path: string): readonly AgentTool[] {
-  return classifyAgentFilePath(path)?.tools ?? [];
-}
-
 function classifyAgentFilePath(
   path: string,
 ): { ruleId: string; kind: AgentFileKind; tools: AgentTool[] } | null {

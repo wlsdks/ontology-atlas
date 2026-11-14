@@ -45,23 +45,24 @@ describe('useHarnessReport request identity', () => {
 
   it('renders reading immediately for a supported request while its source binding resolves', () => {
     mocks.list.mockReturnValue(new Promise(() => {}));
-    const { result } = renderHook(() => useHarnessReport(handle('/vault'), ['project'], true, []));
+    const { result } = renderHook(() => useHarnessReport(handle('/vault'), ['project'], true));
     expect(result.current).toEqual({ status: 'loading', sourceRoot: '', progress: null });
   });
 
-  it('hides a ready result immediately when scope or reload identity changes', async () => {
+  it('hides a ready result immediately when project or reload identity changes', async () => {
     mocks.list.mockResolvedValue(binding('/repo'));
     mocks.scan.mockResolvedValue({ files: [] });
     const source = handle('/vault');
     const { result, rerender } = renderHook(
-      ({ paths, reload }) => useHarnessReport(source, ['project'], true, paths, reload),
-      { initialProps: { paths: ['src/a'], reload: 0 } },
+      ({ projects, reload }) => useHarnessReport(source, projects, true, reload),
+      { initialProps: { projects: ['a'], reload: 0 } },
     );
     await waitFor(() => expect(result.current.status).toBe('ready'));
 
-    rerender({ paths: ['src/b'], reload: 0 });
+    rerender({ projects: ['b'], reload: 0 });
     expect(result.current.status).toBe('loading');
-    rerender({ paths: ['src/b'], reload: 1 });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    rerender({ projects: ['b'], reload: 1 });
     expect(result.current.status).toBe('loading');
   });
 
@@ -76,7 +77,7 @@ describe('useHarnessReport request identity', () => {
     const oldHandle = handle('/old');
     const newHandle = handle('/new');
     const { result, rerender } = renderHook(
-      ({ current }) => useHarnessReport(current, ['project'], true, []),
+      ({ current }) => useHarnessReport(current, ['project'], true),
       { initialProps: { current: oldHandle } },
     );
     rerender({ current: newHandle });
@@ -91,7 +92,7 @@ describe('useHarnessReport request identity', () => {
     mocks.list.mockResolvedValue(binding('/repo'));
     mocks.scan.mockRejectedValue(codedFailure('source-root-not-granted', '.: source-root-not-granted'));
     const vault = handle('/repo/docs');
-    const { result } = renderHook(() => useHarnessReport(vault, ['project'], true, []));
+    const { result } = renderHook(() => useHarnessReport(vault, ['project'], true));
     await waitFor(() => expect(result.current.status).toBe('failed'));
     expect(result.current).toMatchObject({ sourceRoot: '/repo', code: 'source-root-not-granted' });
   });
@@ -102,7 +103,7 @@ describe('useHarnessReport request identity', () => {
     );
     mocks.scan.mockResolvedValue({ files: [] });
     const vault = handle('/repo/docs');
-    const { result } = renderHook(() => useHarnessReport(vault, ['one', 'two'], true, []));
+    const { result } = renderHook(() => useHarnessReport(vault, ['one', 'two'], true));
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(mocks.port).toHaveBeenCalledWith({ vaultRoot: '/repo/docs', projectSlug: 'two' });
     expect(JSON.stringify(mocks.port.mock.calls)).not.toContain('"/repo"');
@@ -111,14 +112,14 @@ describe('useHarnessReport request identity', () => {
   it('resolves to no source when no project has exactly one binding on the root', async () => {
     mocks.list.mockResolvedValue({ status: 'ok', bindings: [{ rootPath: '/repo' }, { rootPath: '/repo' }] });
     const vault = handle('/repo/docs');
-    const { result } = renderHook(() => useHarnessReport(vault, ['one'], true, []));
+    const { result } = renderHook(() => useHarnessReport(vault, ['one'], true));
     await waitFor(() => expect(result.current.status).toBe('no-source'));
     expect(mocks.scan).not.toHaveBeenCalled();
   });
 
   it('keeps disabled and browser requests unsupported', () => {
     const native = handle('/vault');
-    expect(renderHook(() => useHarnessReport(native, [], false, [])).result.current.status).toBe('unsupported');
-    expect(renderHook(() => useHarnessReport(null, [], true, [])).result.current.status).toBe('unsupported');
+    expect(renderHook(() => useHarnessReport(native, [], false)).result.current.status).toBe('unsupported');
+    expect(renderHook(() => useHarnessReport(null, [], true)).result.current.status).toBe('unsupported');
   });
 });

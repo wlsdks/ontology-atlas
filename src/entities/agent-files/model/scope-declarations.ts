@@ -1,51 +1,32 @@
 /**
- * Path scopes harness files declare about themselves (nested `AGENTS.md`, rule `paths:`, hook
- * filters, check-script arguments); an agent file's location is never read as its scope.
+ * The text a rule, Git hook, check script or workflow writes about where it applies, quoted so a
+ * reader can judge it; an agent file's location is never read as its scope.
  */
 
-import type { AgentTool } from './agent-files';
-
-/** The three questions the matrix asks of every area. */
-export type CoverageColumn = 'told' | 'gated' | 'watched';
-
-/** The file kind making the claim; cell wording differs per origin. */
-type CoverageOrigin =
-  | 'nested-agents'
-  | 'rule'
-  | 'hook'
-  | 'git-hook'
-  | 'script'
-  | 'workflow'
-  | 'root'
-  | 'permissions'
-  | 'exclusion';
-
-/** One file, or one `package.json` script, and the path scope it declares. */
+/** One file, or one `package.json` script, and the text that declares where it applies. */
 export interface ScopeDeclaration {
-  column: CoverageColumn;
   /** Repo-relative path, or `package.json#<script>`. */
   id: string;
-  /** The cell text, as it appears on disk. */
-  label: string;
-  origin: CoverageOrigin;
-  /** The declaring text quoted from the file, so a reader can judge the attribution. */
+  origin: 'rule' | 'git-hook' | 'script' | 'workflow';
+  /** Quoted from the file; empty for a rule with no `paths:`, which loads every session. */
   declaration: string;
-  /** Whether any path scope is declared: no `paths:` means every file, unmatched paths mean none. */
-  declaresPath: boolean;
-  /** Declared prefixes that resolve on disk. */
-  scopes: readonly string[];
-  /** For a hook: the config file that names the script. */
-  namedBy?: string;
-  /** Agent tools reading this file, so mirrored `.claude` and `.codex` hooks are told apart. */
-  tools: readonly AgentTool[];
-  denyAndAskRuleCount?: number;
 }
 
-/**
- * The glob before its first wildcard segment (`src/**` → `src`). Prefix containment answers
- * whether an area is governed, which strict glob matching does not.
- */
-export function literalPrefix(glob: string): string {
+export interface ScopeDeclarationInput {
+  /** Every scanned file's text by repo-relative path. */
+  contents: ReadonlyMap<string, string>;
+  /** `.githooks/<name>` → file text. */
+  gitHooks: ReadonlyMap<string, string>;
+  /** `package.json` lint / typecheck / test scripts → their command. */
+  checkScripts: ReadonlyMap<string, string>;
+  /** `.github/workflows/<name>` → file text. */
+  workflows: ReadonlyMap<string, string>;
+}
+
+const RULE_PREFIX = '.claude/rules/';
+
+/** The glob before its first wildcard segment (`src/**` → `src`). */
+function literalPrefix(glob: string): string {
   const segments = String(glob).trim().replace(/^\.\//, '').split('/');
   const out: string[] = [];
   for (const segment of segments) {
@@ -54,13 +35,6 @@ export function literalPrefix(glob: string): string {
     out.push(segment);
   }
   return out.join('/');
-}
-
-/** Either path contains the other: `src` reaches `src/features/x` and a file reaches its folder. */
-export function scopeReaches(scope: string, capabilityPath: string): boolean {
-  if (!scope || !capabilityPath) return false;
-  if (scope === capabilityPath) return true;
-  return capabilityPath.startsWith(`${scope}/`) || scope.startsWith(`${capabilityPath}/`);
 }
 
 /** A rule's `paths:` globs in order; no list means always loaded. */
@@ -86,10 +60,7 @@ export function ruleGlobs(text: string): string[] {
     .filter((glob) => glob.length > 0);
 }
 
-/**
- * Anchored filters (`^src/`) and quoted prefixes a script writes; this over-collects, so callers
- * keep only scopes that resolve on disk and show the declaration.
- */
+/** Anchored filters (`^src/`) and quoted prefixes a script writes; this over-collects. */
 export function scriptPathScopes(text: string): string[] {
   const body = String(text ?? '');
   const out = new Set<string>();
@@ -109,18 +80,6 @@ export function scriptPathScopes(text: string): string[] {
   return [...out];
 }
 
-/** Paths a check command names; a repository-wide command names none. */
-export function commandPathScopes(command: string): string[] {
-  const out = new Set<string>();
-  const pathish = /(?:^|[\s'"=(])((?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.*{}-]*)/g;
-  let match: RegExpExecArray | null;
-  while ((match = pathish.exec(String(command ?? ''))) !== null) {
-    const scope = literalPrefix(match[1].replace(/\/$/, ''));
-    if (scope.includes('/')) out.add(scope);
-  }
-  return [...out];
-}
-
 /** Trigger `paths:` filters above `jobs:`; job commands are never read as filters. */
 export function workflowPathFilters(yaml: string): string[] {
   const head = String(yaml ?? '').split(/\njobs:/)[0];
@@ -133,6 +92,27 @@ export function workflowPathFilters(yaml: string): string[] {
       if (!item) continue;
       out.push(item[1].replace(/^["']|["']$/g, ''));
     }
+  }
+  return out;
+}
+
+/** Text only: nothing here touches the disk. */
+export function scopeDeclarations(input: ScopeDeclarationInput): ScopeDeclaration[] {
+  const out: ScopeDeclaration[] = [];
+  for (const [path, text] of input.contents) {
+    if (!path.startsWith(RULE_PREFIX) || !path.endsWith('.md')) continue;
+    const globs = ruleGlobs(text);
+    out.push({ id: path, origin: 'rule', declaration: globs.length > 0 ? `paths: ${globs.join(' · ')}` : '' });
+  }
+  for (const [name, body] of input.gitHooks) {
+    out.push({ id: `.githooks/${name}`, origin: 'git-hook', declaration: scriptPathScopes(body).join(' · ') });
+  }
+  for (const [name, command] of input.checkScripts) {
+    out.push({ id: `package.json#${name}`, origin: 'script', declaration: command });
+  }
+  for (const [path, text] of input.workflows) {
+    const filters = workflowPathFilters(text);
+    out.push({ id: path, origin: 'workflow', declaration: filters.length > 0 ? `paths: ${filters.join(' · ')}` : '' });
   }
   return out;
 }

@@ -25,7 +25,6 @@ export type HarnessReportState =
 interface HarnessReportSnapshot {
   handle: FileSystemDirectoryHandle;
   slugKey: string;
-  capabilityKey: string;
   reloadNonce: number;
   state: HarnessReportState;
 }
@@ -58,14 +57,11 @@ export function useHarnessReport(
   handle: FileSystemDirectoryHandle | null,
   projectSlugs: readonly string[],
   enabled: boolean,
-  /** Paths the ontology records; the scan probes a declared scope only when it reaches one. */
-  capabilityPaths: readonly string[],
   /** Bumped by the failed state's retry, so a transient bridge error is not a dead end. */
   reloadNonce = 0,
 ): HarnessReportState {
   const [snapshot, setSnapshot] = useState<HarnessReportSnapshot | null>(null);
   const slugKey = projectSlugs.join('\0');
-  const capabilityKey = capabilityPaths.join('\0');
   /* The gate is computed in render and demotes the return value, avoiding a setState cascade. */
   const supported = enabled && !!handle && !!getTauriVaultRootPath(handle);
 
@@ -73,7 +69,7 @@ export function useHarnessReport(
     if (!supported || !handle) return;
     let cancelled = false;
     const commit = (state: HarnessReportState) => {
-      if (!cancelled) setSnapshot({ handle, slugKey, capabilityKey, reloadNonce, state });
+      if (!cancelled) setSnapshot({ handle, slugKey, reloadNonce, state });
     };
     void (async () => {
       let sourceRoot = '';
@@ -86,14 +82,13 @@ export function useHarnessReport(
           return;
         }
         commit({ status: 'loading', sourceRoot, progress: null });
-        /* An in-checkout ontology folder is excluded from the document census. */
+        /* An in-checkout ontology folder is not one of the repository's own top-level folders. */
         const vaultRoot = getTauriVaultRootPath(handle) ?? '';
         const excludedFolders =
           vaultRoot.startsWith(`${sourceRoot}/`)
             ? [vaultRoot.slice(sourceRoot.length + 1)]
             : [];
         const report = await scanHarness(bridgePort({ vaultRoot, projectSlug: binding.projectSlug }), {
-          capabilityPaths: capabilityKey ? capabilityKey.split('\0') : [],
           excludedFolders,
           /* Straight through to state; each report already lands on its own task. */
           onProgress: (progress) => {
@@ -113,13 +108,12 @@ export function useHarnessReport(
     return () => {
       cancelled = true;
     };
-  }, [supported, handle, slugKey, capabilityKey, reloadNonce]);
+  }, [supported, handle, slugKey, reloadNonce]);
 
   if (!supported || !handle) return { status: 'unsupported' };
   const matchesCurrentRequest =
     snapshot?.handle === handle &&
     snapshot.slugKey === slugKey &&
-    snapshot.capabilityKey === capabilityKey &&
     snapshot.reloadNonce === reloadNonce;
   return matchesCurrentRequest
     ? snapshot.state

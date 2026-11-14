@@ -88,10 +88,12 @@ skill or subagent whose Claude and Codex copies differ shows both copies side by
 (`HarnessDriftDiff`); a hook whose script is missing shows the config that names it, where the line
 to fix is.
 
-**The wait screen is held back, never the read.** The scan reports each pass it runs and fills a
-bar only where the denominator was known before the pass started — but it appears only once a read
-has taken longer than a second, so a read that finishes in 0.6s shows no wait screen at all and one
-over five thousand documents still gets its stages. The read was never slowed to display it. What
+**The wait screen is held back, never the read.** The scan reports each of its four passes (root
+guides, nested `AGENTS.md`, agent directories, hook configs) and fills a bar only where the
+denominator was known before the pass started — but it appears only once a read has taken longer
+than the app's 400ms delay, so a fast read shows no wait screen at all and a slow bridge still gets
+its stages. The scan opens only harness files and lists only the repository root and the harness
+folders; it does not walk the repository's other Markdown. The read was never slowed to display it. What
 happens on every visit regardless of speed is the **arrival**: the result rises into place.
 
 The whole reading goes through the installed app's read-only harness commands
