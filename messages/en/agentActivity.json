@@ -79,7 +79,7 @@
   "askDoorAria": "Open the conversation to review the waiting request",
   "problemSentence": "The folder has something to fix",
   "problemDoor": "View",
-  "problemDoorAria": "Open the list of things to fix",
+  "problemDoorAria": "Open the map's list of things to fix",
   "resultAdded": "Wrote {count, plural, one {# new concept} other {# new concepts}}",
   "resultEdited": "Revised {count, plural, one {# concept} other {# concepts}}",
   "resultRemoved": "Deleted {count, plural, one {# concept} other {# concepts}}",

@@ -12,7 +12,7 @@ export function useTopologyPreferences() {
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
-  const businessFlowRequestText = useTranslations('ontologyPages.insights.flow')('request');
+  const businessFlowRequestText = useTranslations('topology')('businessFlowRequest');
   // For the create composer's per-locale name inputs.
   const activeLocale = useLocale();
   const tKinds = useTranslations('kinds');

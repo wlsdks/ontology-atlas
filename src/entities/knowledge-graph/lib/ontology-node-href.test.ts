@@ -1,17 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
-  buildInsightsReturnMarker,
   buildTopologyReturnHref,
   buildTopologyReturnMarker,
   parseTopologyReturnMarker,
   buildTopologyMeaningEditorNodeHref,
   buildTopologyMeaningEditorEdgeHref,
-  buildOntologyInsightsNodeHref,
-  buildOntologyInsightsReturnHref,
   buildOntologyNodeHref,
   edgeAuthoredByFromNode,
-  parseInsightsReturnMarker,
   parseOntologyMeaningEditParam,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
@@ -41,69 +37,11 @@ describe("buildOntologyNodeHref", () => {
     expect(buildOntologyNodeHref("")).toBe("/ontology/?node=");
   });
 
-  it("appends an encoded via marker", () => {
-    expect(
-      buildOntologyNodeHref("domain:views", { via: "insights:structure" }),
-    ).toBe(
-      `/ontology/?node=${encodeURIComponent("domain:views")}&via=${encodeURIComponent("insights:structure")}`,
-    );
-    // Without `via` the link is unchanged.
-    expect(buildOntologyNodeHref("domain:views")).toBe(
-      `/ontology/?node=${encodeURIComponent("domain:views")}`,
+  it("carries only the ask kind", () => {
+    expect(buildOntologyNodeHref("domain:views", { ask: "business-flow" })).toBe(
+      `/ontology/?node=${encodeURIComponent("domain:views")}&ask=business-flow`,
     );
   });
-
-  it("keeps the review row id in the return context", () => {
-    expect(
-      buildOntologyNodeHref("domain:views", {
-        via: "insights:do-next",
-        reviewId: "neglected-hub:domain:views",
-      }),
-    ).toBe(
-      `/ontology/?node=${encodeURIComponent("domain:views")}` +
-        `&via=${encodeURIComponent("insights:do-next")}` +
-        `&review=${encodeURIComponent("neglected-hub:domain:views")}`,
-    );
-    expect(
-      buildOntologyNodeHref("domain:views", {
-        reviewId: "orphan:domain:views",
-      }),
-    ).toBe(`/ontology/?node=${encodeURIComponent("domain:views")}`);
-  });
-});
-
-describe("insights return marker", () => {
-  it("round-trips build and parse", () => {
-    expect(parseInsightsReturnMarker(buildInsightsReturnMarker("do-next"))).toBe(
-      "do-next",
-    );
-    expect(
-      parseInsightsReturnMarker(buildInsightsReturnMarker("structure")),
-    ).toBe("structure");
-  });
-
-  it("returns null for a string outside the marker grammar", () => {
-    expect(parseInsightsReturnMarker(null)).toBeNull();
-    expect(parseInsightsReturnMarker("")).toBeNull();
-    expect(parseInsightsReturnMarker("insights")).toBeNull();
-    expect(parseInsightsReturnMarker("elsewhere:structure")).toBeNull();
-    expect(parseInsightsReturnMarker("insights:UPPER")).toBeNull();
-  });
-
-  it("points the return href at the original insights tab", () => {
-    expect(buildOntologyInsightsReturnHref("freshness")).toBe(
-      "/ontology/insights/?tab=freshness",
-    );
-    expect(
-      buildOntologyInsightsReturnHref(
-        "do-next",
-        "neglected-hub:capability:mcp-server",
-      ),
-    ).toBe(
-      "/ontology/insights/?tab=do-next&review=neglected-hub%3Acapability%3Amcp-server",
-    );
-  });
-
 });
 
 describe("resolveOntologyBuilderNodeSlug", () => {
@@ -171,17 +109,6 @@ describe("resolveOntologyBuilderNodeSlug", () => {
         }),
       ),
     ).toBe("ontology-atlas");
-    expect(
-      buildOntologyInsightsNodeHref(
-        node({
-          id: "project:ontology-atlas",
-          kind: "project",
-          evidenceIds: ["ontology/project"],
-        }),
-      ),
-    ).toBe(
-      `/ontology/insights/?node=${encodeURIComponent("ontology-atlas")}`,
-    );
   });
 });
 
@@ -197,20 +124,6 @@ describe("buildTopologyMeaningEditorNodeHref", () => {
       `/topology/?p=${encodeURIComponent(
         "capability:topology-analysis-modes",
       )}&workbench=edit`,
-    );
-    expect(
-      buildTopologyMeaningEditorNodeHref(
-        "capability:topology-analysis-modes",
-        {
-          via: "insights:do-next",
-          reviewId: "promotion:element:x",
-        },
-      ),
-    ).toBe(
-      `/topology/?p=${encodeURIComponent(
-        "capability:topology-analysis-modes",
-      )}&workbench=edit&via=${encodeURIComponent("insights:do-next")}` +
-        `&review=${encodeURIComponent("promotion:element:x")}`,
     );
   });
 
@@ -334,26 +247,6 @@ describe("parseOntologyMeaningEditParam", () => {
     expect(parseOntologyMeaningEditParam("relates:")).toBeNull();
     expect(parseOntologyMeaningEditParam("")).toBeNull();
     expect(parseOntologyMeaningEditParam(null)).toBeNull();
-  });
-});
-
-describe("buildOntologyInsightsNodeHref", () => {
-  it("uses the canonical vault slug for focused query proof", () => {
-    const selected: KnowledgeGraphNode = {
-      id: "capability:builder-vault-write",
-      title: "Builder Vault Write",
-      kind: "capability",
-      projectIds: [],
-      evidenceIds: ["ontology/capabilities/builder-vault-write"],
-      lastApprovedAt: new Date(0),
-      lastApprovedBy: "test",
-    };
-
-    expect(buildOntologyInsightsNodeHref(selected)).toBe(
-      `/ontology/insights/?node=${encodeURIComponent(
-        "capabilities/builder-vault-write",
-      )}`,
-    );
   });
 });
 

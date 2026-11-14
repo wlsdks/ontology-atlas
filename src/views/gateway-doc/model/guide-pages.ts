@@ -23,7 +23,6 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
   { slug: 'guide/from-your-repo', segment: 'from-your-repo', titleKey: 'fromYourRepo' },
   { slug: 'guide/connect-agent', segment: 'connect-agent', titleKey: 'connectAgent' },
   { slug: 'guide/growing-vault', segment: 'growing-vault', titleKey: 'growingVault' },
-  { slug: 'guide/insights', segment: 'insights', titleKey: 'insights' },
   { slug: 'guide/cli', segment: 'cli', titleKey: 'cli' },
   { slug: 'guide/trust', segment: 'trust', titleKey: 'trust' },
 ] as const;

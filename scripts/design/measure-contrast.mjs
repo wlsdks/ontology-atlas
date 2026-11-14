@@ -38,7 +38,6 @@ export const DEFAULT_ROUTES = [
   "/ko/architecture/",
   "/ko/docs/",
   "/ko/ontology/studio/",
-  "/ko/ontology/insights/",
   "/ko/projects/",
   "/ko/project/storefront/",
   "/ko/project/storefront/edit/",

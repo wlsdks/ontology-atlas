@@ -18,7 +18,6 @@ const WORKBENCH_ROUTES = [
   "/en/download/",
   "/en/guide/",
   "/en/project/ontology-atlas/",
-  "/en/ontology/insights/",
   "/en/project/new/",
 ] as const;
 
@@ -37,7 +36,6 @@ const STRUCTURE_ROUTES = new Set<string>([
   "/en/docs/",
   "/en/topology/",
   "/en/projects/",
-  "/en/ontology/insights/",
 ]);
 
 const VAULT_FREE_EN_ROUTES = new Set<string>(["/en/project/new/", "/en/download/"]);
@@ -233,6 +231,15 @@ test.describe("public screens at the workbench size", () => {
       }
     });
   }
+});
+
+test("the Korean download page shows no Analysis screen and its Change figure names no destination", async ({ page }) => {
+  await open(page, "/ko/download/");
+  const stage = page.getByTestId("gateway-screens-stage");
+  await expect(stage.getByRole("tab").first()).toBeVisible();
+  await expect(stage.getByRole("tab", { name: "분석", exact: true })).toHaveCount(0);
+  await expect(page.locator('img[src*="/gateway/insights."]')).toHaveCount(0);
+  await expect(page.getByText("분석 · 브리핑")).toHaveCount(0);
 });
 
 test.describe("public gateway at the phone width", () => {

@@ -31,9 +31,7 @@ function buildTopologyWorkbenchRedirect(searchParams: URLSearchParams): string {
 
   const base = buildTopologyMeaningEditorNodeHref(node);
   const query = new URLSearchParams(base.slice(base.indexOf("?") + 1));
-  for (const key of ["edit", "via", "review"] as const) {
-    const value = searchParams.get(key);
-    if (value) query.set(key, value);
-  }
+  const edit = searchParams.get("edit");
+  if (edit) query.set("edit", edit);
   return `/topology/?${query.toString()}`;
 }

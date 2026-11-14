@@ -105,7 +105,7 @@ in the repository or `~/scratch`; a probe worth keeping becomes a `pnpm` script.
 
 | Target | Accepted proof |
 |---|---|
-| Shared map, docs, insights and project screens | Browser proof covers the shared bundle; recheck the installed app only when font rendering, scrolling or window chrome changed |
+| Shared map, docs, library and project screens | Browser proof covers the shared bundle; recheck the installed app only when font rendering, scrolling or window chrome changed |
 | Desktop-only keychain, Git, updater and absolute-path abilities | Installed-app evidence only |
 | The web surface itself | `tests/e2e/web-surface-smoke.spec.ts` |
 

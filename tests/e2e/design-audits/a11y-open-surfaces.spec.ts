@@ -121,12 +121,6 @@ const OPENERS: readonly Opener[] = [
     surface: '[data-testid="docs-sidebar-order-menu"]',
   },
   {
-    name: "Analysis selected-fact request",
-    route: "/ko/ontology/insights/?tab=connections",
-    trigger: "analysis-selected-request-toggle",
-    surface: '[data-testid="analysis-selected-request"]',
-  },
-  {
     name: "Project review evidence",
     route: "/ko/project/storefront/",
     trigger: "construction-review-evidence-toggle",

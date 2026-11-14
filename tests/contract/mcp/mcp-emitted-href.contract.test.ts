@@ -24,8 +24,8 @@ const RETIRED_ADDRESS = new RegExp(
       String.raw`diagnostics\/`,
       String.raw`knowledge\/`,
       String.raw`skills\b`,
-      // The two legacy redirects. `/ontology/insights` is live and must never match.
-      String.raw`ontology\/(?:studio|edit)\b`,
+      // The legacy redirects, including the retired Analysis address.
+      String.raw`ontology\/(?:studio|edit|insights)\b`,
       String.raw`ontology\/?(?=["'\`?])`,
     ].join('|'),
     ')',
@@ -81,10 +81,10 @@ describe('addresses handed to agents point at live surfaces', () => {
     ).toEqual([]);
   });
 
-  it('does not mistake the live /ontology/insights route for a retired one', () => {
+  it('flags the retired Analysis address and leaves a live route alone', () => {
     // The bans are prefix-shaped, so this is the case that decides whether the pattern is
     // usable at all. A gate that fires on a live route gets deleted rather than obeyed.
-    expect(RETIRED_ADDRESS.test(`'/ontology/insights'`)).toBe(false);
+    expect(RETIRED_ADDRESS.test(`'/ontology/insights/?tab=brief'`)).toBe(true);
     expect(RETIRED_ADDRESS.test(`'/topology/?p=domain%3Aauth&workbench=edit'`)).toBe(false);
     expect(RETIRED_ADDRESS.test(`'/ontology/studio/?node=x'`)).toBe(true);
     expect(RETIRED_ADDRESS.test(`'/ontology/'`)).toBe(true);

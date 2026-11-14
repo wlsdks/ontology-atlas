@@ -3,45 +3,34 @@ uid: e09a683e-d8e1-4c86-bacf-1fdb86a121de
 slug: capabilities/ontology-insights
 kind: capability
 title: Ontology insights
-display_en: Analysis
-display_ko: 분석
+display_en: Retired Analysis address
+display_ko: 옛 분석 주소
 domain: domains/human-workbench
 elements: []
-path: src/views/ontology-insights/ui/OntologyInsightsPage.tsx
+path: src/views/insights-redirect/ui/InsightsRedirectPage.tsx
 created_by: "agent:claude-code"
 relation_notes: { capabilities/vault-graph-query: "Both read the typed Markdown graph. Analysis derives its comparison from the loaded graph in the renderer; it does not invoke the graph tool module. This relates entry marks the shared record contract, not a runtime import or health-parity verdict." }
 relates: [capabilities/vault-graph-query]
 ---
 
-A workbench where a person compares declared product relationships with their declaring documents, recorded implementation, and remaining evidence gaps.
+The retired Analysis destination: its address still answers and sends a person to the screen that now holds what they came for.
+
+The Analysis workbench was removed on 2026-11-15 (`docs/records/decisions/2026-11-15-retire-analysis-destination-c1e7648c-0227-4f33-b1d4-1f86240dd0f2.md`). This concept remains only for the address that outlives it.
 
 ## Includes
-- A connection explorer: a list of responsibility pairs with their declaration counts, grouped either by the responsibility that needs another or by the one that is needed. A selected pair draws its capabilities on two sides, and each arrow names one declared cross-responsibility dependency between real concepts. Selecting a declaration keeps its source document and recorded rationale under the drawing.
-- A list of capabilities under their responsibility that names each recorded gap in words and, in a local folder, a moved or missing source mark.
-- Inspection of a selected capability's recorded implementation roles or path, documentary findings, and source state. Missing evidence is not proof that implementation is absent.
-- Source-state scopes combine with name search and recorded gaps while keeping the selected claim open. Counts cover capabilities; unavailable or unmeasured evidence stays unchecked, and a source change does not accept or reject the recorded meaning.
-- Exact document and correction entries that return to the selected claim, with visible keyboard focus.
-- Three sections: product connections, the review summary, and Wiki evidence. Scope distinguishes the bundled example, a single project, and a folder containing multiple projects.
-- Addresses to retired sections: a Guidance address replaces itself with Harness At a glance, and a Written explanations address opens product connections with a notice that counts the folder's saved explanations and says where to read them.
-- Read-only requests tied to the visible record. Example facts can be copied without querying another vault; claim inspection requests check the exact vault root and recorded identities before reads and wait for explicit Send.
+- Replacing an old `/ontology/insights` address in place, in every locale, without adding a history entry: a Guidance address opens Harness, a Wiki address opens the Library wiki, an address naming one concept or one analysis review opens that concept on the Map, and any other address opens the Map.
+- Keeping the other flags of a Harness address.
 
 ## Excludes
-- Repeating the main Map's camera and topology exploration.
-- Agent guidance coverage by domain, which Harness At a glance owns.
-- Writing, moving, or deleting saved explanation runs under `.ontology-atlas/analyses/`.
-- The retired global repair catalog, duplicate ranking, dependency-cycle dashboard, unmatched-name board, and document freshness census.
-- Drawing every responsibility and every declaration at once; one pair is drawn at a time.
-- Inferring runtime impact, implementation correctness, or accepted meaning from a declared edge, path, date, or clean structure.
-- Sending an agent request, repairing a document, or accepting meaning without the person's explicit action.
+- The connection explorer that ranked responsibility pairs, the list of capabilities with a recorded gap, and the review summary. They no longer exist on any screen; the Map shows relationships and gaps one concept at a time.
+- Any analysis, reading or writing of the vault. The redirect only rewrites an address.
+- Navigation entries, shortcuts or tabs for Analysis.
 
 ## Evidence
-- `src/views/ontology-insights/ui/OntologyInsightsPage.tsx` owns the three sections and legacy URL entry, including the retired Guidance and Written explanations addresses.
-- `src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx`, `ConnectionExplorer.tsx`, `ClaimList.tsx`, `lib/analysis-board.ts`, and `lib/analysis-model.ts` build the pair groups, the drawing and the exact evidence continuation.
-- `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx` exposes stored canonical references and relationship notes in the declaring document.
-- `src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx` keeps explicit agent requests separate from the graph and shows the retired-section notice; `lib/count-saved-explanations.ts` counts saved runs without writing.
+- `src/views/insights-redirect/ui/InsightsRedirectPage.tsx` builds the target from the old address and replaces the location.
+- `tests/e2e/app-shell/retired-destinations.spec.ts` follows the old address from another screen and returns with Back.
 
 ## Uncertainty
-- Re-read against the 2026-11-12 connection-explorer change and inspected in a local build at 1512, 1040 and 390 pixels with the bundled example. The installed macOS app has not been walked for this change, and no vault larger than the example was drawn.
-- An actual external agent explanation run was not exercised. Native request behavior has fixture coverage.
-- On the web, saved explanations are no longer readable inside Atlas; only the app's agent panel and an agent over MCP read them.
-- Legacy repair helpers remain in the repository and their tests. The current page does not import them; removing the former containment and import-derived dependency claims does not delete or qualify those concepts.
+- Whether this concept should stay as a redirect or be deleted from the ontology is undecided; deletion needs the owner's explicit request. Its title and slug still say "insights".
+- The redirect was reviewed against hostile addresses in a copy of its builder and run in a static build; the installed macOS app has not followed an old address.
+- Saved explanation files under `.ontology-atlas/analyses/` are untouched and were not inspected.

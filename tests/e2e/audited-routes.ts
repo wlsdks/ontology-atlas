@@ -23,7 +23,6 @@ export const AUDITED_ROUTES = [
   "/ko/topology/",
   "/ko/architecture/",
   "/ko/docs/",
-  "/ko/ontology/insights/",
   "/ko/projects/",
   // The slug must exist in the running data source (`samples/storefront/`), not only the build output;
   // a missing project renders a degraded card or no `<main>`, which the ratchets would not measure.
@@ -67,4 +66,5 @@ export const EXCLUDED_ROUTES: Readonly<Record<string, string>> = {
   "/ontology/edit": "호환 리다이렉트 → /topology contextual workbench — 목적지와 편집 상태를 이미 잰다",
   "/ontology/studio": "호환 리다이렉트 → /topology contextual workbench — 자기 화면이 없다",
   "/mcp": "호환 리다이렉트 → /agents/?tab=mcp — 목적지를 이미 잰다",
+  "/ontology/insights": "Compatibility redirect to /topology, /library or /architecture; every target is already measured",
 };

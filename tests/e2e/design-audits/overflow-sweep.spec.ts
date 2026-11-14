@@ -31,13 +31,7 @@ const ROUTES = [
   // Only the user-facing surfaces still alive after R10 (auth and cloud surfaces permanently removed).
   "/en/topology/",
   "/en/ontology/",
-  // Every live Analysis section and its implementation question owns a different reading surface.
-  "/en/ontology/insights/?guides=off",
-  "/en/ontology/insights/?tab=do-next&guides=off",
-  "/en/ontology/insights/?tab=brief&guides=off",
-  "/en/ontology/insights/?tab=library&guides=off",
   "/en/architecture/?view=overview&guides=off",
-  "/en/ontology/insights/?tab=composition&guides=off",
   ONTOLOGY_LIBRARY_ROUTE,
   "/en/download/",
 ];

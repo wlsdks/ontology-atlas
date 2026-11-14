@@ -11,7 +11,6 @@ vi.mock("@/i18n/navigation", () => ({
 
 import { CHROME_STATUS_CHIP_CLASS } from "@/shared/ui/controls/chrome-chip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
-import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 
 /**
@@ -36,21 +35,6 @@ describe("top chrome status chip geometry", () => {
       <TopologyRealmChip title="AI Agent Partner" beforeLabel="" afterLabel="만 보는 중" clearAriaLabel="전체 지도" onClear={() => {}} />,
     );
     const chip = screen.getByTestId("topology-realm-chip");
-    expect(chip.className).toBe(CHROME_STATUS_CHIP_CLASS);
-    expect(chip.className).not.toContain("topology-ui-scale");
-  });
-
-  it("the return chip uses the geometry class unchanged", () => {
-    render(
-      <TopologyInsightsReturnChip
-        href="/ontology/insights/?tab=structure"
-        label="인사이트로 돌아가기"
-        ariaLabel="복귀"
-        dismissAriaLabel="닫기"
-        onDismiss={() => {}}
-      />,
-    );
-    const chip = screen.getByTestId("topology-insights-return-chip");
     expect(chip.className).toBe(CHROME_STATUS_CHIP_CLASS);
     expect(chip.className).not.toContain("topology-ui-scale");
   });

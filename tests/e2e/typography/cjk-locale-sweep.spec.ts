@@ -13,7 +13,7 @@ const VIEWPORTS = [
   { width: 1440, height: 900 },
 ] as const;
 
-const ROUTES = ['topology', 'library', 'docs', 'ontology/insights', 'architecture', 'agents', 'git', 'projects', 'download', 'no-such-page'] as const;
+const ROUTES = ['topology', 'library', 'docs', 'architecture', 'agents', 'git', 'projects', 'download', 'no-such-page'] as const;
 const SETTINGS_PANES = ['screen', 'map', 'expand', 'footprint', 'notify', 'agents', 'privacy', 'workspace', 'about'] as const;
 
 const SHOTS = process.env.E2E_SWEEP_SHOTS;

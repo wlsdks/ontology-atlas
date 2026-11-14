@@ -51,7 +51,6 @@ export const rules = [
     matches: [
       /^scripts\/design\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/,
       /^scripts\/quality\/source-language\/(?:inventory|source-paths)\.mjs$/,
-      /^src\/views\/ontology-insights\//,
     ],
   },
   {
