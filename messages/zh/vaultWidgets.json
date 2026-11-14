@@ -220,7 +220,6 @@
   "parts": {
     "meta": {
       "recordProofAria": "地图依据",
-      "recordProofLabel": "地图依据",
       "wordsUnit": "{count} 个词",
       "readingMinutes": "约 {minutes} 分钟读完",
       "topologyLinkLabel": "地图",

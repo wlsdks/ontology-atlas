@@ -220,7 +220,6 @@
   "parts": {
     "meta": {
       "recordProofAria": "マップの根拠",
-      "recordProofLabel": "マップの根拠",
       "wordsUnit": "{count}語",
       "readingMinutes": "約{minutes}分で読めます",
       "topologyLinkLabel": "マップ",

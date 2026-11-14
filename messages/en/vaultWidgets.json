@@ -220,7 +220,6 @@
   "parts": {
     "meta": {
       "recordProofAria": "Map evidence",
-      "recordProofLabel": "Map evidence",
       "wordsUnit": "{count} words",
       "readingMinutes": "≈ {minutes} min read",
       "topologyLinkLabel": "Map",
