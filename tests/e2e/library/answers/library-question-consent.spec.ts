@@ -31,7 +31,7 @@ test('Jev preview keeps the exact claim and long original passage reachable befo
     };
   });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await page.getByRole('button', { name: /^Open a folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map' })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('library-workspace-wiki').click();

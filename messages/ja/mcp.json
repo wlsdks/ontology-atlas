@@ -4,6 +4,5 @@
   "shareHeading": "このフォルダを共有",
   "connectorsHeading": "コネクタ",
   "connectorsHeadingCount": "コネクタ・{total}件中{on}件オン",
-  "connectorsNeedFolder": "コネクタはフォルダ内に書き込まれます。上でフォルダを開くと、ここに表示されます。",
-  "connectorsCountTitle": "オンのコネクタ"
+  "connectorsNeedFolder": "コネクタはフォルダ内に書き込まれます。上でフォルダを開くと、ここに表示されます。"
 }

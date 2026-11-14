@@ -1551,7 +1551,7 @@ describe('VaultAgentSetupPanel', () => {
 
     // A browser can connect; the one thing it cannot do is save the config automatically.
     const card = screen.getByTestId('agent-server-unavailable');
-    expect(card).toHaveTextContent('설정 파일을 대신 저장하지 못해요');
+    expect(card).toHaveTextContent('설정 파일을 저장하지 못해요');
     expect(card).not.toHaveTextContent('연결할 수 없어요');
     expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-step-2')).not.toBeInTheDocument();

@@ -30,7 +30,6 @@
   "sampleSourceDogfood": "本应用的代码",
   "sampleSourceStorefront": "网店",
   "readout": {
-    "conceptUnit": "个概念",
     "scopeFull": "完整地图 · {count, number} 个概念",
     "scopePartial": "当前范围 · {shown, number} / 共 {total, number} 个概念",
     "synthetic": "性能测试用合成数据 · {count, number} 个概念"

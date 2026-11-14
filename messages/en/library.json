@@ -448,7 +448,7 @@
     "compileNext": "Write wiki page: {source}",
     "staleClause": "{count, plural, one {# source changed} other {# sources changed}}",
     "compileTitle": "Write wiki page for {source}",
-    "staleLit": "{count, plural, one {# changed original is lit} other {# changed originals are lit}}, with the {pages, plural, one {# page} other {# pages}} citing them. Escape, or a press on the picture, clears it."
+    "staleLit": "{count, plural, one {# changed source is lit} other {# changed sources are lit}}, with the {pages, plural, one {# page} other {# pages}} citing them. Escape, or a press on the picture, clears it."
   },
   "find": {
     "searchLabel": "Find by file name or path",

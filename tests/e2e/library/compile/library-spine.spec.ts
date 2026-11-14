@@ -80,7 +80,7 @@ async function openLibraryHome(page: Page, files: Record<string, string> = FILES
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { files });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+  await page.getByRole('button', { name: /Open a folder|폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
 }
@@ -200,7 +200,7 @@ test.describe('the Library index with an empty wiki', () => {
       },
     });
     await page.goto('/en/');
-    await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+    await page.getByRole('button', { name: /Open a folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-workspace-wiki').click();
     await expect(page.getByTestId('library-wiki-empty')).toBeVisible();
@@ -217,7 +217,7 @@ test.describe('the Library spine names one lead step', () => {
     await seedFirstRunSeen(page);
     await installLibraryWorkHarness(page, { files: FILES_WITH_WAITING_SOURCE });
     await page.goto('/en/');
-    await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+    await page.getByRole('button', { name: /Open a folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-graph-canvas').waitFor();
     await page.getByTestId('library-guide-open').click();
@@ -310,7 +310,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
     });
   }
   await page.goto('/en/?guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open a folder/i }).click();
   await expect(page.getByRole('heading', { name: 'Map', level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library' }).click();
   await page.getByTestId('library-workspace-sources').click();

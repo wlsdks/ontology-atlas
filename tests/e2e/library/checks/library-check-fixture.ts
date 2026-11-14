@@ -194,7 +194,7 @@ export async function installLibraryCheckBridge(page: Page) {
 export async function openLibraryCheckFolder(page: Page) {
   await page.goto("/en/");
   await page.waitForLoadState("networkidle");
-  const door = page.getByRole("button", { name: /^Open my folder/ });
+  const door = page.getByRole("button", { name: /^Open a folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
   await page.getByRole("heading", { name: "Map", level: 1 }).waitFor({ timeout: 30_000 });

@@ -21,7 +21,7 @@ describe('how an agent\'s wiki page lands is a setting', () => {
     expect(screen.getByTestId('app-settings-wiki-write-mode-auto').getAttribute('aria-checked')).toBe('true');
     fireEvent.click(screen.getByTestId('app-settings-wiki-write-mode-ask'));
     expect(window.localStorage.getItem('library.wikiWriteMode')).toBe('ask');
-    expect(screen.getByTestId('app-settings-wiki-write-mode').textContent).toContain('Every page stops');
+    expect(screen.getByTestId('app-settings-wiki-write-mode').textContent).toContain('Every page asks for permission');
     expect(screen.getByTestId('app-settings-wiki-write-mode')).toHaveAttribute('data-setting-id', 'wiki-write-mode');
   });
 });

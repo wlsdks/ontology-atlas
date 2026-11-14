@@ -15,7 +15,7 @@ test('a long retained question stays inside the inquiry at 200 percent text on a
       .replace('status: draft', 'status: draft\nanswer_thread: wiki/answers/retained'),
   } });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await page.getByRole('button', { name: /^Open a folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
   const question = page.getByTestId('library-questions-open');
@@ -40,7 +40,7 @@ test('keeps a short positive inquiry centered and expanded evidence reachable', 
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
   } });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await page.getByRole('button', { name: /^Open a folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('question-desk-input').fill('refund');
@@ -77,7 +77,7 @@ test('keeps the report scroll viewport and focused citations above mobile naviga
     'wiki/refund-overview.md': wiki('Refund overview', 'sources/refund-handling.md', digest(refund), 'Refund approval queues a stock restoration job.'),
   } });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await page.getByRole('button', { name: /^Open a folder/ }).first().click();
   await expect(page.getByRole('heading', { name: 'Map', exact: true })).toBeVisible();
   await page.goto('/en/library/?tab=wiki&guides=off');
   await page.getByTestId('library-workspace-wiki').click();
@@ -121,7 +121,7 @@ test('Wiki question desk finds contradictory leads and keeps the no-key source p
     'wiki/inventory-state.md': wiki('Inventory state', 'sources/inventory-state.md', digest(inventory), 'Refund approval does not immediately restore inventory.'),
   });
   await page.goto('/en/library/?tab=wiki&guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: /^Open my folder/ }).first().click();
+  await page.getByRole('button', { name: /^Open a folder/ }).first().click();
   await page.getByTestId('library-workspace-wiki').click();
   await expect(page.getByTestId('library-question-desk')).toBeVisible();
   await page.getByTestId('question-desk-input').fill('Does refund approval immediately restore stock?');

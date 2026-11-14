@@ -57,7 +57,7 @@
       "tagsPlaceholder": "AI, MCP, Portfolio",
       "stackPlaceholder": "Next.js, Tauri",
       "dependenciesHint": "이 프로젝트가 연결될 허브·상위 프로젝트를 선택하세요.",
-      "ownerPlaceholder": "진안",
+      "ownerPlaceholder": "결제팀",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
       "isHubLabel": "허브로 표시",
@@ -115,7 +115,7 @@
       "createNoticeStay": "프로젝트를 만들고 이어서 편집할 수 있게 준비했어요.",
       "editNoticeStay": "변경 사항을 저장했어요. 오른쪽 미리보기와 상세 화면 링크에서 바로 확인할 수 있어요.",
       "deleteRowTitle": "프로젝트 삭제",
-      "deleteRowCaption": "문서 파일이 지워지고, 이 문서를 가리키던 다른 문서에는 「연결 끊김」 경고가 남아요. 지우기 전에 무엇이 사라지는지 먼저 보여드려요."
+      "deleteRowCaption": "문서 파일이 지워지고, 이 문서를 가리키던 다른 문서에는 「연결 끊김」 경고가 남아요. 지우기 전에 사라지는 내용을 먼저 보여 줘요."
     },
     "preview": {
       "summaryDirty": "완성도 {score}% · 바뀌는 내용 {count}건",
@@ -178,7 +178,7 @@
     "fieldDescriptionPlaceholder": "이 프로젝트를 한 줄로 설명…",
     "fieldOwner": "담당",
     "optionalHint": "선택",
-    "fieldOwnerPlaceholder": "예: 민혁",
+    "fieldOwnerPlaceholder": "예: 결제팀",
     "fieldTags": "태그",
     "fieldTagsPlaceholder": "예: auth, gateway",
     "labelName": "이름",
@@ -188,7 +188,7 @@
     "applying": "적용 중…",
     "apply": "변경 적용",
     "reset": "입력 되돌리기",
-    "openDocument": "문서 등록",
+    "openDocument": "문서 추가",
     "openSettings": "전체 편집",
     "errorEmpty": "이름과 한 줄 설명은 비워둘 수 없어요.",
     "errorGeneric": "변경 내용을 반영하지 못했어요.",
@@ -199,13 +199,13 @@
   "workspaceShapeMap": "온톨로지 지도",
   "workspaceShapeWiki": "위키",
   "workspaceShapeCaption": "설정이 아니라 파일에서 읽어요. 추가하면 시작 파일을 쓰고, 탭이 따라와요.",
-  "workspaceShapeStartMap": "지도 시작",
-  "workspaceShapeStartWiki": "위키 시작",
+  "workspaceShapeStartMap": "지도 추가",
+  "workspaceShapeStartWiki": "위키 추가",
   "workspaceShapeStarted": "이 폴더에 추가했어요.",
   "workspaceShapeFailed": "이 폴더에 추가하지 못했어요. 다시 시도해 주세요.",
   "wikiWriteModeLabel": "에이전트가 위키 문서를 쓸 때",
-  "wikiWriteModeAuto": "바로 쓰기",
+  "wikiWriteModeAuto": "자동 저장",
   "wikiWriteModeAsk": "매번 묻기",
-  "wikiWriteModeAutoCaption": "형식에 맞는 원문 정리 글은 바로 써요. 저장된 답은 항상 별도로 검토하며, 다른 글도 형식에 문제가 있으면 허락 카드에서 멈춰요.",
-  "wikiWriteModeAskCaption": "문서를 쓸 때마다 허락 카드에서 멈춰요."
+  "wikiWriteModeAutoCaption": "서식에 맞는 위키 문서는 바로 저장해요. 저장한 답은 항상 따로 검토하고, 서식에 문제가 있는 문서는 저장 전에 권한을 요청해요.",
+  "wikiWriteModeAskCaption": "문서를 쓸 때마다 권한을 요청해요."
 }

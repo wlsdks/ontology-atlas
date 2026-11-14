@@ -10,7 +10,6 @@
   "justStartToast": "已创建在 {path}，你的 AI 智能体也能看到这个文件夹。",
   "createTitle": "新建文件夹",
   "createBody": "选一个空文件夹，自动生成起步结构：5 个 Markdown 种子和智能体配置。",
-  "demoTitle": "先看示例",
   "busy": "正在打开文件夹…",
   "scaffolding": "正在写入起步结构…",
   "starterFailed": "文件夹已打开，但起步文件未能写入。可在设置 › 工作区中补上。",

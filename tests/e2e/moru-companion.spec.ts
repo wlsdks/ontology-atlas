@@ -64,7 +64,7 @@ test('a pending folder choice replaces play with the existing waiting state', as
   const stage = page.locator('[data-moru-playground]');
   await expect(stage).toHaveAttribute('data-moru-context', 'folder');
   const previousStage = await stage.elementHandle();
-  await page.getByRole('button', { name: /Open my folder/ }).click();
+  await page.getByRole('button', { name: /Open a folder/ }).click();
   await expect(stage).toHaveCount(0);
   await expect(page.getByRole('status')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Pet Moru' })).toHaveCount(0);

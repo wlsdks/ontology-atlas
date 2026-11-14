@@ -161,7 +161,7 @@ async function installDesktopBridge(page: Page) {
 async function openFolder(page: Page) {
   await page.goto("/en/");
   await page.waitForLoadState("networkidle");
-  const door = page.getByRole("button", { name: /^Open my folder/ });
+  const door = page.getByRole("button", { name: /^Open a folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
   // Opening a folder from the first-run card lands on the map, which is where a person

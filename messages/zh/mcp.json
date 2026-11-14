@@ -4,6 +4,5 @@
   "shareHeading": "共享此文件夹",
   "connectorsHeading": "连接器",
   "connectorsHeadingCount": "连接器 · 已开启 {on}/{total}",
-  "connectorsNeedFolder": "连接器写在文件夹里。先在上方打开一个文件夹，它们就会出现在这里。",
-  "connectorsCountTitle": "已开启的连接器"
+  "connectorsNeedFolder": "连接器写在文件夹里。先在上方打开一个文件夹，它们就会出现在这里。"
 }

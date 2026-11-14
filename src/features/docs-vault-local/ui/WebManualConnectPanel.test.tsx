@@ -158,7 +158,7 @@ describe('AgentClientButtons web fallback is not a dead end', () => {
     const card = screen.getByTestId('agent-server-unavailable');
     expect(card.textContent).not.toMatch(/연결할 수 없어요/);
     // It names exactly one thing as impossible: saving the file automatically.
-    expect(card.textContent).toMatch(/설정 파일을 대신 저장하지 못해요/);
+    expect(card.textContent).toMatch(/설정 파일을 저장하지 못해요/);
     // The app remains the easier path.
     expect(screen.getByTestId('agent-connect-web-get-app')).toBeInTheDocument();
     expect(screen.getByTestId('web-manual-connect')).toBeInTheDocument();

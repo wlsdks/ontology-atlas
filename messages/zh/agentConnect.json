@@ -9,7 +9,6 @@
   "previewLabel": "连接后，智能体会这样读取它",
   "copyHandoff": "复制交接文本",
   "handoffCopied": "已复制",
-  "step1Title": "点击连接按钮",
   "step2Title": "重启智能体",
   "step2Desc": "退出并重新打开刚连接的工具，其他工具保持原样即可。",
   "step3Title": "确认连接",

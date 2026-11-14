@@ -95,7 +95,7 @@ async function openLocalCompile(page: Page, selectPage = false, options: Paramet
   await seedFirstRunSeen(page);
   const harness = await installLocalCompileHarness(page, options);
   await page.goto("/en/?guides=off", { waitUntil: "domcontentloaded" });
-  await page.getByRole("button", { name: /Open my folder/i }).click();
+  await page.getByRole("button", { name: /Open a folder/i }).click();
   await expect(page.getByRole("heading", { name: "Map", level: 1 })).toBeVisible({
     timeout: 30_000,
   });

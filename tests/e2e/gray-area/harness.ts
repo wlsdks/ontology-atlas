@@ -31,7 +31,7 @@ export async function installGrayAreaHarness(page:Page,options:{runtimeIds?:read
     Object.defineProperty(w,'__TAURI_INTERNALS__',{configurable:true,get:()=>internals,set:value=>{internals=wrap(value);}});
   },{snapshot});
   await page.goto('/en/');
-  await page.getByRole('button',{name:/^Open my folder/}).first().click();
+  await page.getByRole('button',{name:/^Open a folder/}).first().click();
   await expect(page.getByRole('heading',{name:'Map',exact:true})).toBeVisible();
   await page.goto('/en/topology/?p=elements/retry-dispatch&guides=off');
   await expect(page.getByTestId('map-detail-panel')).toBeVisible();
