@@ -256,7 +256,7 @@ Before a vault is connected, the installed app keeps Library, Planning, Agents a
 
 Library service imports stage disabled metadata, confirm credential storage, then activate and allow the exact saved definition on this Mac. Pending saves cannot be submitted twice; failed saves can resume the same row. Changed settings and duplicate names require review. Browser users get Add files or the app, with no token field. Service access remains unverified.
 
-Library check history defaults to executed checks. A labelled control with a count includes recorded sleep gaps on demand without changing the ledger or schedule permissions.
+Automations' Documents lane shows the run history of document schedules below the list once a pass has run, executed checks by default. A labelled control with a count includes recorded sleep gaps on demand without changing the ledger or schedule permissions.
 
 ## Topic files
 

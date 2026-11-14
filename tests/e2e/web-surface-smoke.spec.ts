@@ -279,11 +279,12 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
   {
     // Registering it on the web would promise nothing could keep: it keeps a clock and opens a headless
     // agent session while the person is away, which a browser tab cannot do.
-    name: "rounds: the browser cannot keep a clock or launch an agent while you are away",
+    // The retired Library address lands here too, so the old link keeps its destination.
+    name: "automations: the browser cannot keep a clock or launch an agent while you are away",
     url: "/ko/library/?tab=rounds",
-    card: "library-rounds-app-required",
-    reason: /설치한 앱만 할 수 있어요/,
-    destination: "library-rounds-get-app",
+    card: "automations-empty-workbench",
+    reason: /앱에서 폴더를 열면 이 화면에서 바로 예약을 만들 수 있어요/,
+    destination: "automations-get-app",
   },
   {
     // Claims only that the browser cannot save the config automatically (it does not know the absolute

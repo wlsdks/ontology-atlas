@@ -746,8 +746,6 @@
     "wiki": "Wiki 页面",
     "wikiCount": "全部 Wiki 页面",
     "ontology": "本体",
-    "rounds": "检查记录",
-    "roundsCount": "已开启的巡检",
     "ontologyViews": "本体视图",
     "conceptDocuments": "概念文档",
     "conceptSets": "书签"
@@ -796,97 +794,31 @@
     }
   },
   "rounds": {
-    "eyebrow": "来自自动化",
-    "title": "检查记录",
-    "lede": "查看在“自动化”中安排的文档检查。计划和执行设置请在那里管理。",
-    "indexAria": "这台 Mac 为此文件夹保存的巡检",
-    "manageAutomations": "在自动化中管理",
-    "limit": "仅在这台 Mac 上的 Ontology Atlas 打开时运行。睡眠会暂停；下一轮会补跑一次。",
-    "appRequiredTitle": "巡检在桌面应用中运行",
-    "appRequiredDescription": "巡检需要计时，并在你离开时打开智能体，只有桌面应用才能做到。请在那里登记巡检。",
-    "getApp": "获取应用",
-    "loadingTitle": "正在读取此文件夹的巡检",
-    "malformedTitle": "巡检文件需要处理",
-    "malformedDescription": "Atlas 无法读取 .ontology-atlas/rounds.json，并保持其不变。请修复或删除它，然后重新读取。",
-    "unavailableTitle": "Atlas 无法读取此文件夹的巡检",
-    "unavailableDescription": "Atlas 无法读取此文件夹中的 .ontology-atlas/rounds.json，因此无法显示或运行其中的巡检。请确认文件夹仍在 Atlas 打开它的位置，然后重新读取。",
-    "retry": "重新读取",
-    "emptyTitle": "安排第一次文档检查",
-    "emptyDescription": "每次定时检查运行后，结果都会出现在这里，最新的在前。",
-    "emptyAction": "在自动化中安排",
-    "emptyKinds": "可以安排的检查",
-    "signal": {
-      "stale": "过时",
-      "redrafted": "已重写",
-      "refused": "已拒绝",
-      "held": "无变化"
-    },
     "kind": {
       "consistency": "页面仍与来源一致",
-      "consistencyBody": "在这台 Mac 上对每份引用的来源计算哈希，并运行页面检查。不启动智能体对话。",
-      "service": "来自服务的文档",
-      "serviceBody": "每轮一次智能体对话：重新读取服务发来的内容，导入新增内容，并重写有变化的页面。"
+      "service": "来自服务的文档"
     },
     "cadence": {
-      "hour": "每小时",
-      "6h": "每 6 小时",
-      "daily": "每天 {time}",
-      "weekdays": "工作日 {time}",
       "dailyChip": "每天",
       "weekdaysChip": "工作日",
       "everyMinutes": "每 {count} 分钟",
       "everyHours": "每 {count} 小时"
     },
-    "state": {
-      "on": "开启",
-      "paused": "已暂停",
-      "running": "运行中",
-      "notHere": "不在这台 Mac 上"
-    },
     "outcome": {
-      "held": "无变化",
       "reviewed": "已复核",
       "stale": "{count} 个过时",
       "redrafted": "{count} 个已重写",
       "refused": "已拒绝",
-      "failed": "未完成",
-      "asleep": "休眠",
-      "none": "尚无运行"
+      "failed": "未完成"
     },
-    "header": {
-      "rounds": "{count} 个巡检",
-      "next": "下次 {time} · {name}",
-      "running": "正在运行 · {name}",
-      "nothingYet": "尚无运行",
-      "paused": "全部暂停",
-      "waitingHere": "等待这台 Mac 在“自动化”中允许"
-    },
-    "runNow": "立即运行",
-    "pause": "暂停",
-    "resume": "继续",
-    "remove": "移除",
-    "removeNamed": "移除 {name}",
     "since": {
-      "title": "你离开之后",
-      "todayTitle": "今天",
       "span": "{from} → {to}",
-      "nothing": "没有变化。运行了 {count} 轮，每个页面仍与其来源一致。",
-      "noPasses": "这段时间没有运行。",
-      "stale": "{count} 个页面已过时",
-      "redrafted": "{count} 份重写稿等你处理",
-      "held": "{count} 轮无变化",
-      "refused": "{count} 个请求被拒绝",
-      "failed": "{count} 轮未完成",
-      "openPage": "在 Wiki 中打开 {page}",
-      "showRefused": "在清单中查看"
+      "openPage": "在 Wiki 中打开 {page}"
     },
     "ledger": {
-      "title": "清单",
       "aria": "各轮运行，最新的在前",
       "today": "今天",
       "yesterday": "昨天",
-      "empty": "尚无运行。第一轮将在 {time} 运行。",
-      "emptyPaused": "尚无运行，且所有巡检都已暂停。",
       "checked": "检查了 {count} 个页面",
       "agentTurn": "1 次智能体对话",
       "noAgentTurn": "无智能体对话",
@@ -924,10 +856,7 @@
       "columnTime": "时间",
       "columnRound": "巡检",
       "columnOutcome": "结果",
-      "ghostTime": "––:––",
-      "ghostAria": "第一次运行会出现在这里",
-      "includeSleep": "显示休眠时段（{count} 条）",
-      "noPasses": "尚未运行任何检查。"
+      "includeSleep": "显示休眠时段（{count} 条）"
     },
     "sheet": {
       "readbackHour": "每小时",
@@ -1009,10 +938,6 @@
       "dayAria": "哪几天",
       "valueMinutes": "每 {count} 分钟",
       "valueHours": "每 {count} 小时"
-    },
-    "index": {
-      "title": "定时检查",
-      "subtitle": "{cadence} · {places}"
     }
   }
 }

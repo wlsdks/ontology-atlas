@@ -33,9 +33,9 @@ area: architecture
 │ │                          guides · architecture       │
 │ ├─ /docs                   exact-document compatibility │
 │ ├─ /library                sources + wiki + ontology     │
-│ │                          + collections + rounds      │
+│ │                          + collections               │
 │ ├─ /automations            ontology reviews + document │
-│ │                          round scheduling            │
+│ │                          rounds + run history        │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
@@ -141,7 +141,7 @@ The public entrypoints remain stable while internal modules own narrower work:
 | `mcp/scripts/verify.mjs` + `verify/` | The entry owns argument parsing at load, the parser smoke, the server session, the gates, the phase order and the summary. `verify/cli.mjs` parses flags and env; `requests/` owns which JSON-RPC requests are sent; `tools-list/` owns the tools/list inventory and schema contract, one file per tool family; `checks/` return a failure string and never log; `phases/` log and never parse JSON-RPC. |
 | `src/views/ontology-insights/ui/InsightsPageEntry.tsx` | Commits the lightweight `InsightsLoadingView` before mounting the dynamically imported analysis workbench. Two animation frames cross a paint boundary; unmount cancels pending frames. Heavy derivation still runs on the main thread after that visible handoff. |
 | `src/views/ontology-insights/ui/analysis/` | Fixed DOM dependency comparison with SVG connectors, named declaration witnesses and adjacent evidence. `lib/analysis-model.ts` derives only recorded dependencies, unambiguous responsibility pairs, implementation anchors and document gaps. `AnalysisRecords` keeps supporting records and one persistent ACP conversation; no second census/maintenance board is mounted. The source-date hook refuses a separately bound code root. |
-| `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation. Scheduling and execution authority remain in Library rounds. |
+| `src/views/automations/ui/AutomationsPage.tsx` | Owns lane and selected-schedule navigation. `AutomationScheduleRow` displays timing/status and targets the runner's existing actions; `AutomationRunHistory` owns latest/older result presentation; the Documents lane draws the `round-ledger` widget below the list once a document pass has run. Scheduling and execution authority remain in Library rounds. |
 
 These modules preserve the existing React lifecycle, frame order, query result
 ordering, and error contracts. The MCP package's explicit file inventory includes
@@ -481,16 +481,16 @@ graph. The separation is a property of the **walk**, not a filter applied later.
   60-second tick, one pass at a time, local rounds first, a catch-up once after sleep,
   and a headless `useAcpSession` whose `autoDecide` answers every permission request
   from the scope and can now refuse (`{ reject }`). `LibraryRoundsProvider` mounts it
-  once in `AppShell`, above every route; `/library/?tab=rounds` only reads. No Rust
+  once in `AppShell`, above every route; Automations only reads the ledger. No Rust
   change: hashing, the watcher and the ACP commands already existed.
 - **Automations (2026-09-20).** `src/views/automations/` is the schedule manager and
   `src/app/automations-workspace/` composes it with the one `LibraryRoundsProvider` clock.
   Its Ontology lane registers `kind: "ontology"` read-only ACP review rounds: the runner may
   read `atlas-vault` and source evidence, records a bounded review summary, and refuses every
   ontology/file write and `finalize_project_meaning`. Its Documents lane opens the existing
-  Library round registration and ledger. The rail's Automations destination opens on the
-  Ontology lane (the map no longer repeats it as a toolbar chip, 2026-09-24); Library's round
-  header opens the Documents lane. No scheduler runs while the
+  Library round registration and draws the pass ledger (`src/widgets/round-ledger/`). The rail's Automations destination opens on the
+  Ontology lane (the map no longer repeats it as a toolbar chip, 2026-09-24); the retired
+  `/library/?tab=rounds` address replaces itself with the Documents lane. No scheduler runs while the
   web build lacks a native folder root.
 - `src/entities/library-collection/` owns the compatible `v1` saved-constellation
   schema and UID-based member resolution. The selected vault sidecar is shared by

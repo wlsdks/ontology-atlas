@@ -1,4 +1,4 @@
-export type LibraryTab = 'sources' | 'wiki' | 'ontology' | 'rounds';
+export type LibraryTab = 'sources' | 'wiki' | 'ontology';
 
 type FadeToken = '--motion-base' | '--motion-fast';
 

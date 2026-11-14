@@ -746,8 +746,6 @@
     "wiki": "Wiki",
     "wikiCount": "Wiki pages",
     "ontology": "Ontology",
-    "rounds": "Check history",
-    "roundsCount": "Rounds switched on",
     "ontologyViews": "Ontology view",
     "conceptDocuments": "Concept documents",
     "conceptSets": "Bookmarks"
@@ -796,97 +794,31 @@
     }
   },
   "rounds": {
-    "eyebrow": "LEFT BY AUTOMATIONS",
-    "title": "Check history",
-    "lede": "Review the document checks scheduled in Automations. Manage schedules and execution settings there.",
-    "indexAria": "Rounds this Mac keeps for this folder",
-    "manageAutomations": "Manage in Automations",
-    "limit": "Runs while Ontology Atlas is open on this Mac. Sleep pauses it; the next pass catches up once.",
-    "appRequiredTitle": "Rounds run in the desktop app",
-    "appRequiredDescription": "A round keeps a clock and opens an agent while you are away, which only the desktop app can do. Register a round there.",
-    "getApp": "Get the app",
-    "loadingTitle": "Reading this folder's rounds",
-    "malformedTitle": "The rounds file needs attention",
-    "malformedDescription": "Atlas could not read .ontology-atlas/rounds.json and left it unchanged. Fix or remove it, then read again.",
-    "unavailableTitle": "Atlas could not read this folder's rounds",
-    "unavailableDescription": "Atlas could not read .ontology-atlas/rounds.json in this folder, so its rounds cannot be shown or run. Check the folder is where Atlas opened it, then read again.",
-    "retry": "Read again",
-    "emptyTitle": "Schedule the first document check",
-    "emptyDescription": "Each time a scheduled check runs, its result lands here, newest first.",
-    "emptyAction": "Schedule in Automations",
-    "emptyKinds": "Checks you can schedule",
-    "signal": {
-      "stale": "Stale",
-      "redrafted": "Redrafted",
-      "refused": "Refused",
-      "held": "No change"
-    },
     "kind": {
       "consistency": "Pages still match their sources",
-      "consistencyBody": "Hashes every cited source on this Mac and runs the page check. No agent turn.",
-      "service": "Documents from a service",
-      "serviceBody": "One agent turn per pass: re-reads what the service sent, brings in what is new, and redrafts the pages that changed."
+      "service": "Documents from a service"
     },
     "cadence": {
-      "hour": "Every hour",
-      "6h": "Every 6 hours",
-      "daily": "Daily at {time}",
-      "weekdays": "Weekdays at {time}",
       "dailyChip": "Daily",
       "weekdaysChip": "Weekdays",
       "everyMinutes": "{count, plural, one {Every minute} other {Every # minutes}}",
       "everyHours": "{count, plural, one {Every hour} other {Every # hours}}"
     },
-    "state": {
-      "on": "On",
-      "paused": "Paused",
-      "running": "Running",
-      "notHere": "Not on this Mac"
-    },
     "outcome": {
-      "held": "no change",
       "reviewed": "reviewed",
       "stale": "{count, plural, one {# stale} other {# stale}}",
       "redrafted": "{count, plural, one {# redrafted} other {# redrafted}}",
       "refused": "refused",
-      "failed": "did not finish",
-      "asleep": "asleep",
-      "none": "no pass yet"
+      "failed": "did not finish"
     },
-    "header": {
-      "rounds": "{count, plural, one {# round} other {# rounds}}",
-      "next": "next {time} · {name}",
-      "running": "running now · {name}",
-      "nothingYet": "no pass yet",
-      "paused": "all paused",
-      "waitingHere": "waiting for this Mac to allow them, in Automations"
-    },
-    "runNow": "Run now",
-    "pause": "Pause",
-    "resume": "Resume",
-    "remove": "Remove",
-    "removeNamed": "Remove {name}",
     "since": {
-      "title": "Since you left",
-      "todayTitle": "Today",
       "span": "{from} → {to}",
-      "nothing": "Nothing changed. {count, plural, one {# pass ran and} other {# passes ran and}} every page still matches its sources.",
-      "noPasses": "No pass ran in this span.",
-      "stale": "{count, plural, one {# page} other {# pages}} went stale",
-      "redrafted": "{count, plural, one {# redraft waits} other {# redrafts wait}} for you",
-      "held": "{count, plural, one {# pass} other {# passes}} with no change",
-      "refused": "{count, plural, one {# request was} other {# requests were}} refused",
-      "failed": "{count, plural, one {# pass} other {# passes}} did not finish",
-      "openPage": "Open {page} in Wiki",
-      "showRefused": "See it in the ledger"
+      "openPage": "Open {page} in Wiki"
     },
     "ledger": {
-      "title": "Ledger",
       "aria": "Passes, newest first",
       "today": "Today",
       "yesterday": "Yesterday",
-      "empty": "No pass yet. The first one runs at {time}.",
-      "emptyPaused": "No pass yet, and every round is paused.",
       "checked": "{count, plural, one {# page checked} other {# pages checked}}",
       "agentTurn": "1 agent turn",
       "noAgentTurn": "no agent turn",
@@ -924,10 +856,7 @@
       "columnTime": "Time",
       "columnRound": "Round",
       "columnOutcome": "Outcome",
-      "ghostTime": "––:––",
-      "ghostAria": "Where the first pass will land",
-      "includeSleep": "Include sleep gaps ({count})",
-      "noPasses": "No checks have run yet."
+      "includeSleep": "Include sleep gaps ({count})"
     },
     "sheet": {
       "readbackHour": "Every hour",
@@ -1009,10 +938,6 @@
       "dayAria": "Which days",
       "valueMinutes": "{count, plural, one {every minute} other {every # minutes}}",
       "valueHours": "{count, plural, one {every hour} other {every # hours}}"
-    },
-    "index": {
-      "title": "Scheduled checks",
-      "subtitle": "{cadence} · {places}"
     }
   }
 }

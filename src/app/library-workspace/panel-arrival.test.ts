@@ -26,8 +26,8 @@ describe('tabSwitchFade', () => {
 
   it('plays every switch as an opacity fade on the short step under reduced motion', () => {
     expect(tabSwitchFade('wiki', 'ontology', true)).toBe('--motion-fast');
-    expect(tabSwitchFade('rounds', 'sources', true)).toBe('--motion-fast');
-    expect(tabSwitchFade('rounds', 'rounds', true)).toBeNull();
+    expect(tabSwitchFade('ontology', 'sources', true)).toBe('--motion-fast');
+    expect(tabSwitchFade('ontology', 'ontology', true)).toBeNull();
   });
 });
 

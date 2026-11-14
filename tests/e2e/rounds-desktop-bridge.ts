@@ -263,15 +263,14 @@ export async function installDesktopBridge(
   );
 }
 
-export async function openRounds(page: Page) {
+export async function openDocumentAutomations(page: Page) {
   await page.goto("/en/");
   await page.waitForLoadState("networkidle");
   const door = page.getByRole("button", { name: /^Open my folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
   await page.getByRole("heading", { name: "Map", level: 1 }).waitFor({ timeout: 30_000 });
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
-  await page.getByTestId("library-workspace-rounds").waitFor({ timeout: 30_000 });
-  await page.getByTestId("library-workspace-rounds").click();
-  await page.getByTestId("library-rounds").waitFor({ timeout: 30_000 });
+  await page.getByTestId("app-nav-rail-item-automations").click();
+  await page.getByTestId("automations-tab-documents").click();
+  await page.locator('[data-automations-lane="documents"][data-automations-state="ready"]').waitFor({ timeout: 30_000 });
 }

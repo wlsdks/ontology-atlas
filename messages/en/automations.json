@@ -167,7 +167,6 @@
       "name": "Name",
       "cadence": "Cadence",
       "last": "Last result"
-    },
-    "openRounds": "Open Library check history"
+    }
   }
 }

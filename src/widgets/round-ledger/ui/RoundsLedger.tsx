@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Moon, Play, type LucideIcon } from "lucide-react";
+import { FileText, Moon, Play } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
@@ -14,22 +14,13 @@ import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Checkbox, Chip } from "@/shared/ui";
 
-import { groupLedgerByDay, passDurationSeconds } from "../../../lib/rounds/round-presentation";
-import { landInk } from "./landing";
+import { groupLedgerByDay, passDurationSeconds } from "../model/ledger-days";
 import styles from "./rounds-ledger.module.css";
 
 /**
- * **The ledger** — passes on a time axis, newest first.
- *
- * What is drawn is what changed. A pass that held is one quiet line on the axis so the eye
- * skips it; a pass that found something stale, wrote, refused or failed is a card with the
- * pages named as presses; sleep gaps can be included as hatched bands with their spans. n8n's execution log says
- * "37 succeeded"; this axis says which page became untrue at which hour, which is the thing a
- * person came back to learn.
- *
- * Motion: an entry that arrives while the ledger is on screen enters with the status motion
- * (`atlasStatusIn`, the usability family); entries present at mount are still. Reduced motion
- * draws them still.
+ * Document passes on a time axis, newest first. A held pass is one quiet line; a pass that found,
+ * wrote, refused or failed is a card naming its pages; sleep gaps are hatched bands on request.
+ * Entries that arrive while the ledger is on screen enter with `atlasStatusIn`; those present at mount are still.
  */
 
 /**
@@ -63,12 +54,11 @@ const OUTCOME_BADGE: Record<Exclude<RoundPassOutcome, "asleep" | "held">, string
 const ENTER = "motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]";
 
 const LEDGER_ROW = "grid grid-cols-[3.5rem_1rem_minmax(0,1fr)] items-start gap-x-3";
-const OUTCOME_SIGNALS = ["stale", "redrafted", "refused", "held"] as const;
 
 function LedgerColumns() {
   const t = useTranslations("library.rounds");
   return (
-    <div data-testid="library-rounds-ledger-head" className={cn(LEDGER_ROW, styles.head)}>
+    <div data-testid="round-ledger-head" className={cn(LEDGER_ROW, styles.head)}>
       <span>{t("ledger.columnTime")}</span>
       <span />
       <span className="flex items-baseline justify-between gap-4"><span>{t("ledger.columnRound")}</span><span>{t("ledger.columnOutcome")}</span></span>
@@ -76,55 +66,14 @@ function LedgerColumns() {
   );
 }
 
-/** The row the first pass lands in: a ghost before any round exists, then the round's own words. */
-function LedgerWaitingRow({ ink, landed, children }: { ink: "ghost" | "live"; landed: boolean; children: ReactNode }) {
-  const t = useTranslations("library.rounds");
-  return (
-    <div ref={landed ? landInk : undefined} data-testid="library-rounds-waiting-row" data-outcome="waiting" data-ink={ink} className={cn(
-      LEDGER_ROW,
-      ink === "ghost" ? "text-[color:var(--color-text-quaternary)]" : "text-[color:var(--color-text-primary)]",
-    )}>
-      <span className="sr-only">{t("ledger.ghostAria")}</span>
-      <span aria-hidden data-ghost-text="" className="py-1.5 text-label leading-label tabular-nums">{t("ledger.ghostTime")}</span>
-      <span className="flex justify-center py-2.5">
-        <span aria-hidden className="h-1.5 w-1.5 rounded-full border border-current" />
-      </span>
-      <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 py-1.5">
-        {children}
-        <span className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-label leading-label text-[color:var(--color-text-tertiary)]">
-          {OUTCOME_SIGNALS.map((tone) => <span key={tone} data-signal={tone} className="inline-flex items-center gap-1.5">
-            <span aria-hidden className={styles.dot} data-tone={tone} />{t(`signal.${tone}`)}
-          </span>)}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /** `wiki/payments-api.md` → `payments-api`: the name a person knows the page by. */
-export function pageName(path: string): string {
+function pageName(path: string): string {
   return path.replace(/^wiki\//, "").replace(/\.md$/, "");
 }
-/**
- * One chip for every press a pass names, in the morning card and the ledger alike: same glyph, type
- * step and padding. A press that goes somewhere other than a page passes its own glyph.
- */
-export function RoundChip({
-  label,
-  ariaLabel,
-  onClick,
-  icon: Icon = FileText,
-  testId,
-}: {
-  label: string;
-  ariaLabel?: string;
-  onClick: () => void;
-  icon?: LucideIcon;
-  testId?: string;
-}) {
+function PageChip({ label, ariaLabel, onClick }: { label: string; ariaLabel: string; onClick: () => void }) {
   return (
-    <Chip size="sm" onClick={onClick} aria-label={ariaLabel} data-testid={testId} data-round-chip="">
-      <Icon size={ICON_SIZE.sm} aria-hidden />
+    <Chip size="sm" onClick={onClick} aria-label={ariaLabel} data-round-chip="">
+      <FileText size={ICON_SIZE.sm} aria-hidden />
       {label}
     </Chip>
   );
@@ -146,10 +95,7 @@ export interface RunningPass {
   phase: "checking" | "agent";
 }
 
-/**
- * The live row: a pass in flight is on the axis while it runs, and the empty sentence yields to this
- * row.
- */
+/** A pass in flight stands on the axis while it runs. */
 function LiveRow({ running, locale }: { running: RunningPass; locale: string }) {
   const t = useTranslations("library.rounds");
   // The caller keys this component on `startedAt`, so a new pass is a new mount and the
@@ -161,7 +107,7 @@ function LiveRow({ running, locale }: { running: RunningPass; locale: string }) 
   }, [running.startedAt]);
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" });
   return (
-    <ol className="relative" data-testid="library-rounds-ledger-live">
+    <ol className="relative" data-testid="round-ledger-live">
       <span aria-hidden className="absolute bottom-0 left-[calc(3.5rem+0.75rem+0.25rem-0.5px)] top-0 w-px bg-[color:var(--color-divider)]" />
       <li
         data-outcome="running"
@@ -197,10 +143,7 @@ export function RoundsLedger({
   onOpenPage,
   titleFor,
   running = null,
-  nextDueLabel,
-  allPaused,
-  beforeFirstRound = false,
-  landed = false,
+  heading,
 }: {
   entries: readonly RoundPassEntry[];
   locale: string;
@@ -213,11 +156,8 @@ export function RoundsLedger({
   titleFor?: (slug: string) => string;
   /** The pass in flight, drawn at the top of the axis while it runs. */
   running?: RunningPass | null;
-  /** The first due time, for the empty line. */
-  nextDueLabel: string | null;
-  allPaused: boolean;
-  beforeFirstRound?: boolean;
-  landed?: boolean;
+  /** The caller's title, on the row the sleep toggle shares. */
+  heading?: ReactNode;
 }) {
   const t = useTranslations("library.rounds");
   const durationWords = useDurationWords();
@@ -251,28 +191,22 @@ export function RoundsLedger({
     date.getTime() === today.getTime() ? t("ledger.today") : date.getTime() === yesterday.getTime() ? t("ledger.yesterday") : dayFormat.format(date);
 
   return (
-    <section aria-label={t("ledger.aria")} data-testid="library-rounds-ledger">
-      {sleepCount > 0 ? (
-        <div className="mb-3 flex flex-wrap justify-end">
+    <div role="group" aria-label={t("ledger.aria")} data-testid="round-ledger">
+      <div className="mb-3 flex min-h-6 flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        {heading}
+        {sleepCount > 0 ? (
           <Checkbox
             label={t("ledger.includeSleep", { count: sleepCount })}
             checked={showSleep}
             onChange={(event) => setShowSleep(event.target.checked)}
-            data-testid="library-rounds-show-sleep"
+            data-testid="round-ledger-show-sleep"
             className="atlas-touch-floor"
           />
-        </div>
-      ) : null}
+        ) : null}
+      </div>
       <LedgerColumns />
       <div className="mt-2 flex flex-col gap-6">
         {running ? <LiveRow key={running.startedAt} running={running} locale={locale} /> : null}
-        {visibleEntries.length === 0 && !running ? (
-          <LedgerWaitingRow ink={beforeFirstRound ? "ghost" : "live"} landed={landed}>
-            <p data-testid="library-rounds-ledger-empty" className="min-w-0 text-body leading-body">
-              {beforeFirstRound ? t("ledger.noPasses") : allPaused ? t("ledger.emptyPaused") : nextDueLabel ? t("ledger.empty", { time: nextDueLabel }) : t("ledger.emptyPaused")}
-            </p>
-          </LedgerWaitingRow>
-        ) : null}
         {days.map((day) => (
           <div key={day.key} data-ledger-day={day.key}>
             <h3 className="mb-2 text-caption leading-caption font-[var(--font-weight-strong)] uppercase tracking-[var(--tracking-caps-08)] text-[color:var(--color-text-quaternary)]">
@@ -284,10 +218,8 @@ export function RoundsLedger({
               {day.entries.map((entry) => (
                 <li
                   key={entry.id}
-                  id={`library-rounds-pass-${entry.id}`}
-                  data-testid={`library-rounds-pass-${entry.id}`}
+                  data-testid={`round-ledger-pass-${entry.id}`}
                   data-outcome={entry.outcome}
-                  tabIndex={-1}
                   className={cn(LEDGER_ROW, arrived.has(entry.id) && ENTER)}
                 >
                   {entry.outcome === "asleep" ? (
@@ -296,15 +228,7 @@ export function RoundsLedger({
                       <span className="flex justify-center pt-2">
                         <Moon size={ICON_SIZE.sm} className="text-[color:var(--color-text-quaternary)]" aria-hidden />
                       </span>
-                      {/*
-                        One inner edge and one type step down this column. Measured at 1512
-                        before this: the card's text began at 489, this band's at 484 and the
-                        held line's at 472 — three starts inside one column, and the band was
-                        11px where the held line beside it was 12.5 (`docs/DESIGN-SYSTEM.md`,
-                        "One text edge per column"). The band now wears the card's own
-                        `--card-pad` horizontally and the held line's step; quiet is carried
-                        by the quaternary ink, which is where quiet belongs.
-                      */}
+                      {/* The card's inner pad and the held line's type step keep one text edge per column. */}
                       <div className="my-1 border-y border-dashed border-[color:var(--color-divider)] bg-[repeating-linear-gradient(135deg,var(--color-overlay-1)_0_6px,transparent_6px_12px)] px-[var(--card-pad)] py-1.5 text-body leading-body text-[color:var(--color-text-quaternary)]">
                         {t("ledger.asleep")} · {t("since.span", { from: time.format(new Date(entry.startedAt)), to: time.format(new Date(entry.endedAt)) })}
                       </div>
@@ -338,8 +262,7 @@ export function RoundsLedger({
                                 ? t("outcome.redrafted", { count: pagesWritten(entry).length })
                                 : t(`outcome.${entry.outcome}`)}
                           </span>
-                          {/* A pass under a second says nothing about its length: "0 s" is not a
-                              duration a person can use, and it read as a defect beside a real one. */}
+                          {/* "0 s" is not a duration a person can use, so a pass under a second names none. */}
                           <span className="text-label leading-label tabular-nums text-[color:var(--color-text-quaternary)]">
                             {passDurationSeconds(entry) > 0 ? `${durationWords(passDurationSeconds(entry))} · ` : null}
                             {entry.agentTurns === 1 ? t("ledger.agentTurn") : t("ledger.noAgentTurn")}
@@ -352,23 +275,23 @@ export function RoundsLedger({
                             : <>{t("ledger.checked", { count: entry.checked })}{entry.summary ? ` · ${entry.summary}` : null}</>}
                         </p>
                         {entry.undone?.length ? (
-                          <p data-testid="library-rounds-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
+                          <p data-testid="round-ledger-undone" className="mt-2 text-body leading-body text-[color:var(--color-amber-source-a90)]">
                             {entry.undone.map((item) => `${item.action === "left" ? t("ledger.leftAsIs", { page: item.path }) : t(`ledger.undone.${item.action}`, { page: item.path })} ${t(`ledger.undoneReason.${undoneReasonKey(item.reason)}`, { key: item.key ?? "" })}${item.copy ? ` ${t("ledger.undoneCopy", { copy: item.copy })}` : ""}`).join(" ")}
                           </p>
                         ) : null}
                         {entry.leftAsIs?.length ? (
-                          <p data-testid="library-rounds-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
+                          <p data-testid="round-ledger-left-as-is" className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)]">
                             {entry.leftAsIs.map((page) => t("ledger.leftAsIs", { page })).join(" ")}
                           </p>
                         ) : null}
                         {entry.stale.length > 0 || pagesWritten(entry).length > 0 ? (
                           <div className="mt-2 flex flex-wrap gap-1.5">
                             {staleNotRedrafted(entry).map((slug) => (
-                              <RoundChip key={`stale-${slug}`} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
+                              <PageChip key={`stale-${slug}`} onClick={() => onOpenPage(slug)} label={pageTitle(slug)}
                                 ariaLabel={t("since.openPage", { page: pageTitle(slug) })} />
                             ))}
                             {pagesWritten(entry).map((path) => (
-                              <RoundChip key={`written-${path}`} onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
+                              <PageChip key={`written-${path}`} onClick={() => onOpenPage(path.replace(/\.md$/, ""))}
                                 label={pageTitle(path)} ariaLabel={t("since.openPage", { page: pageTitle(path) })} />
                             ))}
                           </div>
@@ -406,6 +329,6 @@ export function RoundsLedger({
           </div>
         ))}
       </div>
-    </section>
+    </div>
   );
 }
