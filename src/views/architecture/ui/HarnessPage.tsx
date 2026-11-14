@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 
 import {
@@ -27,7 +27,6 @@ import {
   rewriteRetiredView,
   type HarnessView,
 } from '../lib/harness-view-state';
-import { deriveCoverageAreas } from '@/features/harness-report';
 import { useHarnessReport } from '@/features/harness-report';
 import { ArchitecturePage } from './ArchitecturePage';
 import { HarnessUnreadStage } from './HarnessUnreadStage';
@@ -67,7 +66,6 @@ const EMPTY_DOCS: Array<{
 
 function HarnessPageInner() {
   const t = useTranslations('harness');
-  const locale = useLocale();
   const searchParams = useSearchParams();
   /*
    * The address is read on every render: `useSearchParams()` is empty during a static export's
@@ -98,8 +96,6 @@ function HarnessPageInner() {
     () => (mode === 'static' ? staticManifest.docs : (localVault.manifest?.docs ?? EMPTY_DOCS)),
     [localVault.manifest, mode, staticManifest.docs],
   );
-  /* Derived here so the scan knows which implementation paths exist before probing the disk per candidate. */
-  const coverage = useMemo(() => deriveCoverageAreas(docs, locale), [docs, locale]);
   const projectSlugs = useMemo(
     () =>
       docs
@@ -131,7 +127,6 @@ function HarnessPageInner() {
     mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
     projectSlugs,
     surfaceHasBridge,
-    coverage.capabilityPaths,
     reloadNonce,
   );
   const draftSource = useMemo(() => {

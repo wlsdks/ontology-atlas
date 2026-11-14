@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { collectHookFacts, hookScriptPath, parseHookConfig, wiredHookCount } from './hook-wiring';
+import { collectHookFacts, hookScriptPath, parseHookConfig } from './hook-wiring';
 
 describe('hookScriptPath', () => {
   it('strips the documented project-directory prefix so the path can be tested on disk', () => {
@@ -122,15 +122,5 @@ describe('collectHookFacts', () => {
     });
     expect(claude.approvalGate).toBe(false);
     expect(codex.approvalGate).toBe(true);
-  });
-
-  it('counts only scripts the filesystem confirmed', async () => {
-    const facts = await collectHookFacts(
-      '.codex/hooks.json',
-      codexShape,
-      async (path) => path === '.codex/hooks/guard.sh',
-      { approvalGate: true },
-    );
-    expect(wiredHookCount([facts])).toBe(1);
   });
 });

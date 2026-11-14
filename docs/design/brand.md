@@ -86,7 +86,7 @@ is local, has no persistent state and never supplies work or emotional status.
 | Compact | `mascot-compact-32.png` in that directory | Separately simplified 32px face |
 | Micro | `mascot-micro-16.png` | Independently simplified 16px face |
 | Presentation | `mascot-presentation-128.png` | Larger character compositions |
-| Curious portrait | `mascot-curious-128.png` | Native tilted pose on the missing page; a tilted body has no readable face at 32px |
+| Curious portrait | `mascot-curious-128.png` | Native tilted pose on the missing page, the route error and a project the open folder lacks; a tilted body has no readable face at 32px |
 | Compass | `assets/brand/moru/icons/atlas-compass-1024.png` | Smoothly resampled app identity, 16–1024px |
 | macOS template | `mascot-tray-template-{16,32}.png` | Black/clear compass mask; 2× is the same logical drawing |
 
@@ -201,7 +201,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
 | Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
-| First run / missing page and route error | Playful companion / static curious `BrandPortrait` |
+| First run / missing page, route error and missing project | Playful companion / static curious `BrandPortrait` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og-image.png`, 1200×630 |
