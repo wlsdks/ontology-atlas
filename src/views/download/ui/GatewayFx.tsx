@@ -211,8 +211,9 @@ export function GatewayFx() {
       let ty = innerHeight / 2;
       let cx = tx;
       let cy = ty;
+      // The companion is itself the picture: a filled ring over it would cover its face.
       const HOT =
-        'a,button,[role="button"],video,summary,input,select,textarea,label';
+        'a,button:not([data-moru-companion]),[role="button"],video,summary,input,select,textarea,label';
       const put = (): void => {
         ringHost.style.transform = `translate3d(${cx}px,${cy}px,0)`;
       };

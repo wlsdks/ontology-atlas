@@ -86,7 +86,7 @@ is local, has no persistent state and never supplies work or emotional status.
 | Compact | `mascot-compact-32.png` in that directory | Separately simplified 32px face |
 | Micro | `mascot-micro-16.png` | Independently simplified 16px face |
 | Presentation | `mascot-presentation-128.png` | Larger character compositions |
-| Curious portrait | `mascot-curious-32.png` | Existing missing-page icon slot |
+| Curious portrait | `mascot-curious-128.png` | Native tilted pose on the missing page; a tilted body has no readable face at 32px |
 | Compass | `assets/brand/moru/icons/atlas-compass-1024.png` | Smoothly resampled app identity, 16–1024px |
 | macOS template | `mascot-tray-template-{16,32}.png` | Black/clear compass mask; 2× is the same logical drawing |
 
@@ -103,6 +103,17 @@ props, so a tail briefly separating cannot shift or resize the body.
 The rosy-temper clip alone opts into coral `#D96C75` and `#EE9A93`; these are
 character ink, never error or control colors. New clips preserve their initial
 body scale across the gesture. Raw source files remain unchanged.
+
+Clips are cut, registered and cleaned on one 256px grid, then reduced once to
+128px and 64px. A reduced pixel takes the colour most of its source block agrees
+on; a stroke straddling two blocks lands in one of them, so an eye column or a
+whisker neither doubles nor disappears. Outline ink is 1.14:1 on the app canvas
+and reads only beside a fill, so ink drawn away from every fill (a note, a
+fishing line, an emphasis tick) is exported in indigo `#6D73D2`, and a detached
+piece smaller than four drawn pixels is treated as source noise. A plainly blue
+source pixel stays in the ink and indigo family instead of taking the nearer
+dark gray. Only skin anchors the body, which keeps a grounded clip on one floor
+line; a clip that leaves the ground declares `airborne`.
 
 ## Contextual motion
 
@@ -218,7 +229,9 @@ The repository [license](../../LICENSE) remains unchanged.
 - Brand parity/presence contracts cover the three character tiers, independent
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
-  a nonempty 62-clip inventory, frame count, hard alpha, margins and loop seams.
+  equal eye width at both sizes, the floor line of every grounded clip, the
+  reduction and free-ink rules, a nonempty clip inventory, frame count, hard
+  alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through

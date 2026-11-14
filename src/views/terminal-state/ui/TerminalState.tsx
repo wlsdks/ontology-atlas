@@ -11,7 +11,10 @@ import { PAGE_GUTTER } from '@/shared/lib/public-pages/gateway-frame';
 export interface TerminalStateProps {
   /** Colours the icon tile and its light. */
   tone: 'neutral' | 'warning';
-  icon: ReactNode;
+  /** Drawn inside the toned tile. */
+  icon?: ReactNode;
+  /** A character at its own size, in place of the tile. */
+  figure?: ReactNode;
   eyebrow: string;
   title: string;
   body: string;
@@ -52,6 +55,7 @@ export function TerminalStatePending({ testId }: { testId: string }) {
 export function TerminalState({
   tone,
   icon,
+  figure,
   eyebrow,
   title,
   body,
@@ -79,16 +83,18 @@ export function TerminalState({
           className={cn('pointer-events-none absolute inset-0 -z-10', GLOW_TONE[tone])}
         />
         <div className="flex w-full max-w-[var(--measure-note-column)] flex-col items-center text-center motion-safe:animate-[atlasStatusIn_var(--motion-settle)_var(--motion-ease)_both]">
-          <span
-            aria-hidden
-            className={cn(
-              'flex size-10 items-center justify-center rounded-panel border shadow-[var(--shadow-elevation-2)]',
-              TILE_TONE[tone],
-            )}
-          >
-            {icon}
-          </span>
-          <p className="mt-6 font-mono text-label leading-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]">
+          {figure ?? (
+            <span
+              aria-hidden
+              className={cn(
+                'flex size-10 items-center justify-center rounded-panel border shadow-[var(--shadow-elevation-2)]',
+                TILE_TONE[tone],
+              )}
+            >
+              {icon}
+            </span>
+          )}
+          <p className={cn(!figure && 'mt-6', 'font-mono text-label leading-label uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-tertiary)]')}>
             {eyebrow}
           </p>
           <h1 className="mt-2 text-balance text-hero-lg leading-hero-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">

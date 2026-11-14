@@ -3,10 +3,22 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { moruBodyAnchor, moruColor } from './build-moru-sprites.mjs';
+import { liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
+const INK = [23, 25, 35], SKIN = [214, 211, 201], FREE_INK = [109, 115, 210];
+
+function canvas(size) {
+  const data = Buffer.alloc(size * size * 4);
+  const paint = (x0, y0, x1, y1, color) => { for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) data.set([...color, 255], (y * size + x) * 4); };
+  const at = (buffer, x, y, width = size) => buffer[(y * width + x) * 4 + 3] ? [...buffer.subarray((y * width + x) * 4, (y * width + x) * 4 + 3)] : null;
+  return { data, paint, at };
+}
+
+async function frameOf(file, frame, size) {
+  return sharp(file).extract({ left: frame * size, top: 0, width: size, height: size }).ensureAlpha().raw().toBuffer();
+}
 
 for (const name of ['moru-companion', 'moru-reactions']) test(`the shipped ${name} retains native facial pixels and a matching cache identity`, async () => {
   const source = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
@@ -166,5 +178,91 @@ test('every catalogue export has complete frames, clear margins and a shared neu
       assert.equal(stats.channels.at(-1).min, 0, `${name}: source background is not fully transparent`);
     }
     else for (const id of clip.constituents) assert.ok(manifest.clips[id]?.source, `${name}: missing authored constituent`);
+  }
+});
+
+test('a drawn pixel that straddles two exported pixels lands in exactly one of them', () => {
+  const { data, paint, at } = canvas(16);
+  paint(6, 0, 10, 16, INK);
+  const reduced = reduceMoru(data, 16, 4);
+  for (let y = 0; y < 4; y++) assert.deepEqual([0, 1, 2, 3].map(x => at(reduced, x, y, 4) ? 1 : 0), [0, 1, 0, 0], 'a one-pixel stroke doubled or vanished');
+});
+
+test('a stroke on a fill that straddles two exported pixels stays one pixel wide', () => {
+  const { data, paint, at } = canvas(16);
+  paint(0, 0, 16, 16, SKIN);
+  paint(6, 0, 10, 16, INK);
+  const reduced = reduceMoru(data, 16, 4);
+  for (let y = 0; y < 4; y++) assert.deepEqual([0, 1, 2, 3].map(x => at(reduced, x, y, 4)), [SKIN, INK, SKIN, SKIN], 'a whisker doubled or vanished');
+});
+
+test('an outline that shares its block with a fill survives the reduction', () => {
+  const { data, paint, at } = canvas(8);
+  paint(0, 0, 8, 8, SKIN);
+  paint(4, 0, 6, 8, INK);
+  paint(0, 4, 1, 8, INK);
+  const reduced = reduceMoru(data, 8, 2);
+  assert.deepEqual(at(reduced, 1, 0, 2), INK, 'an outline covering half its block lost to the fill');
+  assert.deepEqual(at(reduced, 0, 1, 2), SKIN, 'a sliver of ink replaced the fill');
+});
+
+test('ink drawn away from every fill takes the indigo that reads on the dark canvas', () => {
+  const { data, paint, at } = canvas(64);
+  paint(8, 20, 28, 40, INK);
+  paint(10, 22, 26, 38, SKIN);
+  paint(44, 4, 52, 14, INK);
+  paint(60, 60, 62, 62, INK);
+  const lifted = liftFreeInk(data, 64);
+  assert.deepEqual(at(lifted, 48, 8), FREE_INK, 'a detached stroke kept the outline ink');
+  assert.deepEqual(at(lifted, 8, 20), INK, 'the outline of a fill changed colour');
+  assert.deepEqual(at(lifted, 16, 30), SKIN, 'a fill changed colour');
+  assert.equal(at(lifted, 60, 60), null, 'a detached crumb smaller than a drawn pixel survived');
+});
+
+test('a dim blue flipper stays in the indigo family instead of turning gray', () => {
+  for (const rgb of [[64, 64, 112], [70, 74, 118]]) {
+    const actual = moruColor(...rgb);
+    assert.ok(actual[2] - actual[0] >= 60, `dim flipper ${rgb} lost its colour: ${actual}`);
+  }
+});
+
+test('the resting face keeps both eyes at the same width at both exported sizes', async () => {
+  const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
+  for (const [file, size] of [[clips.blink.sprite64, 64], [clips.blink.sprite, 128]]) {
+    const data = await frameOf(`assets/brand/moru/${file}`, 0, size);
+    const ink = p => data[p * 4 + 3] === 255 && data[p * 4] < 32, seen = new Uint8Array(size * size), eyes = [];
+    for (let start = 0; start < size * size; start++) {
+      if (seen[start] || !ink(start)) continue;
+      const group = [start]; seen[start] = 1;
+      let enclosed = true, x0 = size, x1 = 0, y0 = size, y1 = 0;
+      for (let j = 0; j < group.length; j++) {
+        const p = group[j], x = p % size, y = (p - x) / size;
+        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
+          const xx = x + dx, yy = y + dy, n = yy * size + xx;
+          if (xx < 0 || yy < 0 || xx >= size || yy >= size || !data[n * 4 + 3]) enclosed = false;
+          else if (!seen[n] && ink(n)) { seen[n] = 1; group.push(n); }
+        }
+      }
+      if (enclosed) eyes.push({ width: x1 - x0 + 1, height: y1 - y0 + 1 });
+    }
+    // The eyes are the two tallest marks inside the face; whiskers and the nose are shorter.
+    eyes.sort((a, b) => b.height - a.height);
+    assert.ok(eyes.length >= 3 && eyes[1].height > eyes[2].height, `${size}px resting face does not show two eyes`);
+    assert.equal(eyes[0].width, eyes[1].width, `${size}px resting face has one eye narrower than the other`);
+  }
+});
+
+test('a clip that stays on the ground keeps the body on one floor line', async () => {
+  const root = 'assets/brand/moru';
+  const { clips } = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
+  const spec = JSON.parse(await readFile(`${root}/moru-source.json`, 'utf8'));
+  const grounded = spec.authored.filter(clip => !clip.scene && !clip.airborne);
+  assert.ok(grounded.length > 30, 'the grounded inventory is nearly empty');
+  for (const clip of grounded) {
+    const bottoms = [];
+    for (let frame = 0; frame < clip.frames; frame++) bottoms.push(moruBodyAnchor(await frameOf(`${root}/${clips[clip.id].sprite}`, frame, 128), 128).bottom);
+    // Two native pixels: a breath or a squash moves the belly edge that far.
+    assert.ok(Math.max(...bottoms) - Math.min(...bottoms) <= 2, `${clip.id} leaves the floor: body bottoms ${Math.min(...bottoms)}–${Math.max(...bottoms)}`);
   }
 });

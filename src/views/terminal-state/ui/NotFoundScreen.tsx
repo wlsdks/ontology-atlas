@@ -79,7 +79,7 @@ function NotFoundBody() {
     <TerminalState
       testId="not-found-stage"
       tone="neutral"
-      icon={<BrandPortrait expression="curious" />}
+      figure={<BrandPortrait expression="curious" />}
       eyebrow={t('label')}
       title={t('title')}
       body={t('body')}
