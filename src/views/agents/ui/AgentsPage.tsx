@@ -84,7 +84,6 @@ export function AgentsPage({
   };
 
   const staged = tab !== 'mcp' && !isAcpBridgeAvailable();
-  const webAgentsStage = staged && tab === 'agents';
 
   return (
     /*
@@ -141,8 +140,8 @@ export function AgentsPage({
         layoutDependency={staged}
         transition={framerSpring(SPRING.surface)}
       >
-      {/* On the web the agents tab is a stage that says this itself. */}
-      {webAgentsStage ? null : (
+      {/* On the web the agents and models tabs are stages that say this themselves. */}
+      {staged ? null : (
         <p data-testid="agents-lede" className={`max-w-2xl ${PAGE_LEDE}`}>
           {tab === 'mcp'
             ? <>{tMcp('lede')} <TermHint term="mcp" /></>
@@ -159,7 +158,7 @@ export function AgentsPage({
         id={`agents-tabpanel-${tab}`}
         aria-labelledby={`agents-tab-${tab}`}
         data-testid="agents-tabpanel"
-        className={cn('min-w-0', !webAgentsStage && 'mt-5')}
+        className={cn('min-w-0', !staged && 'mt-5')}
       >
         {tab === 'agents' ? (
           /* No sr-only heading: the tool group inside already shows this name visibly. */

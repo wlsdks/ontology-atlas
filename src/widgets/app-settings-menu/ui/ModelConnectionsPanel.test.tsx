@@ -137,7 +137,8 @@ describe('models tab on the web', () => {
     for (const id of ['ai-register-anthropic', 'ai-key-input-openai', 'ai-register-local-ollama', 'ai-local-url', 'ai-provider-jev', 'ai-audit-tail']) {
       expect(screen.queryByTestId(id)).toBeNull();
     }
-    // Why the key-less runners do not work here either is said in the same card.
+    // Why the key-less runners do not work here either is one press away, under the stage.
+    fireEvent.click(screen.getByTestId('ai-connection-web-why'));
     expect(screen.getByTestId('ai-connection-web-degraded-local')).toBeInTheDocument();
     expect(screen.getByTestId('ai-connection-download-link')).toHaveAttribute('href', '/download/');
   });

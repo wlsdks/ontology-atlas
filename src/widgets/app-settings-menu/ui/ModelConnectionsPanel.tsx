@@ -43,7 +43,9 @@ import { buildRouteFocusHref, rememberRouteFocusIntent } from '@/shared/ui/routi
 import { fieldClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls/controls';
 import { buttonVariants } from '@/shared/ui/controls/button';
-import { EmptyState } from '@/shared/ui/status/empty-state';
+import { Disclosure } from '@/shared/ui/controls/disclosure';
+import { FeatureStage } from '@/shared/ui/status/feature-stage';
+import { ModelKeyArtwork } from './ModelKeyArtwork';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Download } from 'lucide-react';
 import { Select } from '@/shared/ui/fields/select';
@@ -190,41 +192,43 @@ export function ModelConnectionsPanel({
 
   if (!bridgeAvailable) {
     /*
-     * The same empty-state shape the Agents tab wears on the web (title that says why, what still
-     * holds, and the app as the one filled press), so the two tabs read as one destination. No
+     * The same stage the Agents tab wears on the web, so the two tabs read as one destination. No
      * sample rows: a key or runner drawn here would be data this browser does not have.
      */
     return (
-      <div className="grid min-w-0 content-start gap-3" data-testid="ai-connection-view">
-        <div data-testid="ai-connection-web-degraded">
-          <EmptyState
-            tone="solid"
-            className="rounded-card border-[color:var(--color-border-soft)]"
-            title={t('webDegradedTitle')}
-            description={
-              <>
-                <span className="block max-w-2xl">{t('webDegradedBody')}</span>
-                {/* Why key-less runners do not work here either: without it the card reads as
-                    "if keys are the problem, then key-less Ollama must work". */}
-                <span className="mt-1.5 block max-w-2xl" data-testid="ai-connection-web-degraded-local">
-                  {t('webDegradedLocalBody')}
-                </span>
-              </>
-            }
-            action={
-              <Link
-                href={downloadHref}
-                onClick={onDownloadNavigate}
-                data-testid="ai-connection-download-link"
-                /* The standard primary button every web-only door wears; pills are for a state or a count. */
-                className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
-              >
-                <Download size={ICON_SIZE.md} aria-hidden />
-                {t('webDegradedCta')}
-              </Link>
-            }
-          />
-        </div>
+      <div className="my-auto flex min-w-0 flex-col items-center" data-testid="ai-connection-view">
+        <FeatureStage
+          data-testid="ai-connection-web-degraded"
+          className="my-0"
+          art={(motionState) => <ModelKeyArtwork {...motionState} />}
+          title={t('webStageTitle')}
+          body={t('webStageBody')}
+          action={
+            <Link
+              href={downloadHref}
+              onClick={onDownloadNavigate}
+              data-testid="ai-connection-download-link"
+              /* The standard primary button every web-only door wears; pills are for a state or a count. */
+              className={cn(buttonVariants({ variant: 'primary', size: 'sm' }), 'atlas-touch-floor atlas-touch-floor-wide')}
+            >
+              <Download size={ICON_SIZE.md} aria-hidden />
+              {t('webDegradedCta')}
+            </Link>
+          }
+        />
+        <Disclosure
+          className="w-full max-w-[var(--measure-stage-column)] text-center"
+          summaryClassName="atlas-touch-floor"
+          summaryTestId="ai-connection-web-why"
+          summary={t('webWhyToggle')}
+        >
+          <div className="mx-auto mt-3 grid max-w-prose gap-2 text-left text-body leading-body text-[color:var(--color-text-secondary)]">
+            <p>{t('webDegradedBody')}</p>
+            {/* Why key-less runners do not work here either: without it the answer reads as
+                "if keys are the problem, then key-less Ollama must work". */}
+            <p data-testid="ai-connection-web-degraded-local">{t('webDegradedLocalBody')}</p>
+          </div>
+        </Disclosure>
       </div>
     );
   }
