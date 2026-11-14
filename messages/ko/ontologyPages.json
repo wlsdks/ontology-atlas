@@ -399,6 +399,15 @@
         "boundary": "경계 누락",
         "uncertainty": "미확인 내용 누락"
       },
+      "gapLegendMissing": "빈틈",
+      "gapLegendRecorded": "기록됨",
+      "gapColumn": {
+        "document": "문서",
+        "anchor": "근거",
+        "definition": "정의",
+        "boundary": "경계",
+        "uncertainty": "미확인"
+      },
       "declaringDocument": "선언한 문서",
       "recordedRoles": "구현 요소 {count}개",
       "recordedPaths": "소스 경로 {count}개",

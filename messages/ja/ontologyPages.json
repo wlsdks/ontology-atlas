@@ -399,6 +399,15 @@
         "boundary": "境界の記載なし",
         "uncertainty": "未確認事項の記載なし"
       },
+      "gapLegendMissing": "不足",
+      "gapLegendRecorded": "記録あり",
+      "gapColumn": {
+        "document": "文書",
+        "anchor": "根拠",
+        "definition": "定義",
+        "boundary": "境界",
+        "uncertainty": "未確認"
+      },
       "declaringDocument": "宣言した文書",
       "recordedRoles": "実装要素{count}件",
       "recordedPaths": "ソースパス{count}件",

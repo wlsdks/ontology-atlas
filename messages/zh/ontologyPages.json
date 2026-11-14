@@ -399,6 +399,15 @@
         "boundary": "缺少边界",
         "uncertainty": "未记录未确认内容"
       },
+      "gapLegendMissing": "缺口",
+      "gapLegendRecorded": "已记录",
+      "gapColumn": {
+        "document": "文档",
+        "anchor": "依据",
+        "definition": "定义",
+        "boundary": "边界",
+        "uncertainty": "未确认"
+      },
       "declaringDocument": "声明所在文档",
       "recordedRoles": "{count} 个实现要素",
       "recordedPaths": "{count} 条源码路径",
