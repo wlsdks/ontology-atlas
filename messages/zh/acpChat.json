@@ -1,11 +1,11 @@
 {
   "ariaLabel": "与 {runtime} 的对话",
   "emptyHint": "智能体会读取此文件夹中的文件来回答。",
-  "emptySeatedHint": "此页面已为你写好一个问题。可在下方修改，也可直接发送。",
+  "emptySeatedHint": "推荐问题已放入输入框。可以修改，也可以直接发送。",
   "codeCopy": "复制",
   "codeCopied": "已复制",
   "jumpToLatest": "跳到最新",
-  "composerLabel": "写下你要做的事",
+  "composerLabel": "消息",
   "send": "发送",
   "stop": "停止",
   "stoppedBeforeAnswer": "智能体回答前已停止，未写入任何内容。",
@@ -16,31 +16,31 @@
     "starting": "连接中",
     "ready": "就绪",
     "thinking": "思考中",
-    "awaiting": "等你确认",
+    "awaiting": "等待批准",
     "error": "出错",
     "exited": "已结束",
     "stopped": "已停止"
   },
   "firstRun": {
-    "title": "正在准备此工具",
-    "body": "首次运行需要下载该工具（数百 MB），可能要几分钟。请保持应用打开。",
+    "title": "正在准备智能体",
+    "body": "首次运行需要下载该智能体（数百 MB），可能要几分钟。请保持应用打开。",
     "progress": "已下载 {mb} MB"
   },
   "starting": {
-    "title": "正在连接工具",
-    "body": "工具正在这台电脑上启动，就绪后即可提问。"
+    "title": "正在连接智能体",
+    "body": "智能体正在这台电脑上启动，就绪后即可提问。"
   },
   "connectStopped": {
     "title": "已停止连接",
-    "body": "工具未启动，也没有发送任何内容。",
+    "body": "智能体未启动，也没有发送任何内容。",
     "again": "重新连接"
   },
   "permission": {
-    "title": "它想操作此文件夹之外的内容",
-    "body": "在你允许之前不会有任何动作。请在下方确认它要写入的位置。",
+    "title": "它想访问此文件夹之外的内容",
+    "body": "在你允许之前不会有任何动作。请在下方确认它要访问的位置。",
     "ontologyWriteTitle": "审阅提议的更改",
     "ontologyWriteBody": "允许后会写入此文件夹中的 Markdown 文件，在此之前不会有任何更改。",
-    "consentTitle": "此文件夹中有一项更改待确认",
+    "consentTitle": "它想更改此文件夹中的文件",
     "consentBody": "在你允许之前不会有任何更改。它想改什么，下方用它自己的话写明。",
     "unknownTarget": "无法判断它想做什么",
     "reject": "拒绝",
@@ -165,7 +165,7 @@
     "insideFolderTitle": "它想修改此文件夹中的一个文件",
     "insideFolderBody": "路径见下方。在你允许之前不会有任何动作。",
     "insideProjectTitle": "它想查看你项目中的代码",
-    "insideProjectBody": "这些代码在地图文件夹之外，但在你选择的项目之内。在你允许之前不会有任何动作。",
+    "insideProjectBody": "这些代码在本体文件夹之外，但在你选择的项目之内。在你允许之前不会有任何动作。",
     "ontologyWriteUnverifiedBody": "只有点击“仅允许一次”后，此请求才会写入提议更改的本体文件。允许前请先核对目标。"
   },
   "close": "关闭对话",
@@ -175,14 +175,14 @@
   "composerHint": "Enter 发送 · ⇧Enter 换行",
   "history": "历史对话",
   "newChat": "新对话",
-  "newChatWhenReady": "工具连接后即可开始新对话",
-  "sendWhenReady": "工具连接后即可发送",
+  "newChatWhenReady": "智能体连接后即可开始新对话",
+  "sendWhenReady": "智能体连接后即可发送",
   "untitled": "未命名对话",
   "model": "模型",
   "mode": "模式",
   "modeUnverified": "{name} · 未检查",
-  "modeUnverifiedHint": "尚未测量。",
-  "runtimePicker": "选择对话的工具",
+  "modeUnverifiedHint": "尚未检查。",
+  "runtimePicker": "选择对话的智能体",
   "tool": {
     "connect": "连接文件夹",
     "read": "读取地图",
@@ -191,7 +191,7 @@
     "editNode": "编辑概念",
     "renameNode": "重命名概念",
     "mergeNodes": "合并两个概念",
-    "addRelation": "关联两个概念",
+    "addRelation": "添加关系",
     "findEvidence": "查找依据",
     "findOrphans": "查找未关联的概念",
     "readConstellation": "读取已保存的书签",
@@ -219,7 +219,7 @@
     "fetch": "获取"
   },
   "fullRequest": "完整请求",
-  "seatedDetail": "此页面附带了 {lines} 条指令",
+  "seatedDetail": "此页面添加了 {lines} 条指令",
   "toolRepeat": "重复了 {count} 次",
   "toolOutcome": {
     "foundUnit": " 个结果",
@@ -237,8 +237,8 @@
   "resizeHint": "拖动可调宽或调窄，也可使用方向键。",
   "closeHistory": "关闭历史对话列表",
   "presentation": {
-    "ariaLabel": "本体 DNA 演示",
-    "eyebrow": "本体 DNA",
+    "ariaLabel": "业务流程演示",
+    "eyebrow": "基于本体的回答",
     "title": "业务流程演示",
     "open": "演示此回答",
     "openHint": "通过 {count} 个场景，查看这条仅基于本体的回答。",
@@ -250,14 +250,14 @@
       "full_body_read_budget_exceeded": "读取的概念正文超过 12 篇。请收窄到一条有代表性的流程。",
       "scene_count_out_of_range": "回答中明确的场景不在三到七个之间。",
       "scene_uncited": "至少有一个场景没有依据 slug。",
-      "citation_not_read": "某个场景引用的概念，本轮并未完整读取其正文。",
+      "citation_not_read": "某个场景引用的概念，本次回答并未完整读取其正文。",
       "relation_not_in_graph": "讲解用到了当前本体中不存在的关联。"
     },
     "progress": "第 {current} 个场景，共 {total} 个",
     "progressAria": "演示进度",
     "sourceHidden": "仅本体 · {count} 篇完整正文",
     "qualification": {
-      "cited": "本轮已读取",
+      "cited": "本次回答已读取",
       "limited": "含有限制或未知项"
     },
     "sceneFallback": "场景 {current}",
@@ -272,29 +272,29 @@
   },
   "trouble": {
     "limit": {
-      "title": "此工具已达使用上限",
-      "hint": "问题不在应用：是该工具自己的套餐额度用完了。如果“详情”里写明了重置时间，到时点“再试一次”；在此之前，请在下方换一个工具继续。",
-      "hintOnlyTool": "问题不在应用：是该工具自己的套餐额度用完了，而这里只设置了这一个工具。如果“详情”里写明了重置时间，到时点“再试一次”。在“智能体”页面再连接第二个工具，就有地方继续了。"
+      "title": "此智能体已达使用上限",
+      "hint": "问题不在应用：是该智能体自己的套餐额度用完了。如果“详情”里写明了重置时间，到时点“再试一次”；在此之前，请在下方换一个智能体继续。",
+      "hintOnlyTool": "问题不在应用：是该智能体自己的套餐额度用完了，而这里只设置了这一个智能体。如果“详情”里写明了重置时间，到时点“再试一次”。在“智能体”页面再连接第二个智能体，就能继续了。"
     },
     "auth": {
-      "title": "旧的应用专用登录挡住了去路",
-      "hint": "你不需要单独登录。此应用使用的就是你在终端里用的那个登录。挡路的是之前应用专用登录留下的钥匙串条目：它盖住了共用的登录，而且已经过期。点击下方的“再试一次”，应用会清除该条目并改用你真正的登录。如果仍然失败，请把“详情”下的那行命令粘贴到终端中运行。"
+      "title": "保存的登录已过期",
+      "hint": "你不需要单独登录。此应用使用的就是你在终端里用的那个登录。问题在于之前应用专用登录留下的钥匙串条目：它盖住了共用的登录，而且已经过期。点击下方的“再试一次”，应用会清除该条目并改用你真正的登录。如果仍然失败，请把“详情”下的那行命令粘贴到终端中运行。"
     },
     "install": {
       "title": "中断的下载留下了损坏的文件",
       "hint": "首次运行的下载中途被打断，残留的文件让它每次都在同一处失败。点击下方的“再试一次”，应用会清除这些文件并从头重新下载。下载期间请检查网络连接并保持应用打开（数百 MB）。"
     },
     "timeout": {
-      "title": "工具没有响应",
-      "hint": "工具已 45 秒没有任何回应。正在进行的下载会延长等待，所以这更像是真的卡住了。请点击下方的“再试一次”。如果反复出现，请确认该工具能在终端中单独启动。"
+      "title": "智能体没有响应",
+      "hint": "智能体已 45 秒没有任何回应。正在进行的下载会延长等待，所以这更像是真的卡住了。请点击下方的“再试一次”。如果反复出现，请确认该智能体能在终端中单独启动。"
     },
     "launch": {
-      "title": "无法启动工具",
-      "hint": "“智能体”页面会显示此工具的状态，下方按钮可以打开它。",
+      "title": "无法启动智能体",
+      "hint": "“智能体”页面会显示此智能体的状态，下方按钮可以打开它。",
       "door": "打开智能体"
     },
     "network": {
-      "title": "无法连接外部网络",
+      "title": "无法连接网络",
       "hint": "请检查网络连接，然后点击下方的“再试一次”。读取和编辑地图在离线时也能进行。"
     },
     "unknown": {
@@ -303,16 +303,16 @@
     },
     "retry": "再试一次",
     "details": "详情",
-    "diagnosticsLabel": "工具的输出内容"
+    "diagnosticsLabel": "错误输出"
   },
   "notice": {
-    "gateOff": "在此对话中，Atlas 无法在触碰此文件夹之外的文件前征求你的同意。工具会直接按你给它的设置执行。",
+    "gateOff": "在此对话中，Atlas 无法在访问此文件夹之外的文件前征求你的同意。智能体会直接按你给它的设置执行。",
     "diedMidTurn": "智能体在回答中途停止了。你看到的就是已收到的全部内容。请在上方开始新对话并重新提问。",
-    "profileModeMoved": "工具把此对话切换到了本地配置的权限配置文件“{mode}”。Atlas 尚未确认它是否会在编辑文件前请求批准。",
-    "profileModeMovedServerGate": "工具把此对话切换到了本地配置的权限配置文件“{mode}”。Atlas 尚未确认它是否会在编辑文件前请求批准。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
-    "modeMoved": "工具把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。",
-    "modeMovedServerGate": "工具把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
-    "autoAllowed": "{detail} 已直接写入，未经询问：它符合 Wiki 页面约定。",
+    "profileModeMoved": "智能体把此对话切换到了本地配置的权限配置文件“{mode}”。Atlas 尚未确认它是否会在编辑文件前请求批准。",
+    "profileModeMovedServerGate": "智能体把此对话切换到了本地配置的权限配置文件“{mode}”。Atlas 尚未确认它是否会在编辑文件前请求批准。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
+    "modeMoved": "智能体把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。",
+    "modeMovedServerGate": "智能体把此对话切换到了“{mode}”，该模式会不经询问直接接受文件编辑。通过 Atlas 工具做出的更改，仍会在服务器端等待你的批准。",
+    "autoAllowed": "{detail} 已直接写入，未经询问：它符合 Wiki 页面格式。",
     "autoRefused": "已直接拒绝，未经询问 · {detail}。它超出了此对话可以做的范围。",
     "openPage": "打开",
     "askNext": "下次先询问"
@@ -356,14 +356,14 @@
   "modeName": {
     "default": "先询问",
     "plan": "仅规划",
-    "auto": "自动决定",
-    "dontask": "从不询问",
+    "auto": "自动",
+    "dontask": "不询问直接拒绝",
     "read-only": "只读"
   },
   "modeHint": {
     "default": "任何可能有风险的操作都会先问你。",
     "plan": "只规划要做的事，不会真正运行。",
-    "auto": "由工具自己决定是否询问。",
+    "auto": "由智能体决定是否询问。",
     "dontask": "从不询问。未事先批准的一律拒绝。",
     "read-only": "只读取。更改须通过 Atlas 工具进行。"
   },
@@ -385,42 +385,42 @@
     "failed": "检查未能完成，请稍后再试。",
     "allClear": "目前没有问题",
     "restFine": "其余都正常",
-    "whatWeChecked": "我们检查了什么",
+    "whatWeChecked": "检查项目",
     "state": {
       "ok": "正常",
-      "problem": "受阻",
-      "unknown": "无法判断"
+      "problem": "有问题",
+      "unknown": "无法检查"
     },
     "check": {
-      "cli": "这台电脑上有没有该工具",
+      "cli": "这台电脑上有没有该智能体",
       "launcher": "能否启动它",
-      "npx-cache": "下载的副本是否完好",
+      "npx-cache": "下载的文件是否完好",
       "config-dir": "应用自己的配置是否就绪",
       "credentials-link": "是否沿用终端里的登录",
-      "shadow-keychain": "有没有旧的登录记录挡路",
+      "shadow-keychain": "有没有旧的登录记录在阻挡",
       "login": "此文件夹是否已登录",
-      "gate": "触碰文件夹之外的内容前是否会先询问"
+      "gate": "访问文件夹之外的内容前是否会先询问"
     },
     "next": {
-      "cli": "从此列表打开该工具的安装指南，装好后点击上方的“检查连接”。",
-      "launcher": "启动该工具需要 Node。装好 Node 后，请点击“检查连接”。",
-      "login": "请先在终端里登录该工具一次，应用会沿用这个登录。",
-      "gate": "对这个工具，应用无法拦在你文件夹之外的操作前面。这需要我们来修复；在此之前，换一个工具更稳妥。"
+      "cli": "从此列表打开该智能体的安装指南，装好后点击上方的“重新检查”。",
+      "launcher": "启动该智能体需要 Node。装好 Node 后，请点击“重新检查”。",
+      "login": "请先在终端里登录该智能体一次，应用会沿用这个登录。",
+      "gate": "对这个智能体，应用无法拦截你文件夹之外的操作。这需要我们来修复；在此之前，换一个智能体更稳妥。"
     },
     "progress": {
       "node": {
         "downloading": "正在下载 Node",
         "verifying": "正在按哈希校验下载的文件",
         "extracting": "正在解压",
-        "verifying-install": "正在再次检测，确认已就位",
-        "done": "Node 已就位",
+        "verifying-install": "正在确认是否安装正确",
+        "done": "Node 已下载",
         "failed": "无法下载 Node"
       },
       "cli": {
         "installing": "安装中",
         "verifying": "检查中",
         "extracting": "正在解压",
-        "verifying-install": "正在再次检测，确认已就位",
+        "verifying-install": "正在确认是否安装正确",
         "done": "已安装",
         "failed": "无法安装"
       }
