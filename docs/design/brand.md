@@ -104,16 +104,41 @@ The rosy-temper clip alone opts into coral `#D96C75` and `#EE9A93`; these are
 character ink, never error or control colors. New clips preserve their initial
 body scale across the gesture. Raw source files remain unchanged.
 
-Clips are cut, registered and cleaned on one 256px grid, then reduced once to
-128px and 64px. A reduced pixel takes the colour most of its source block agrees
-on; a stroke straddling two blocks lands in one of them, so an eye column or a
-whisker neither doubles nor disappears. Outline ink is 1.14:1 on the app canvas
-and reads only beside a fill, so ink drawn away from every fill (a note, a
-fishing line, an emphasis tick) is exported in indigo `#6D73D2`, and a detached
-piece smaller than four drawn pixels is treated as source noise. A plainly blue
-source pixel stays in the ink and indigo family instead of taking the nearer
-dark gray. Only skin anchors the body, which keeps a grounded clip on one floor
-line; a clip that leaves the ground declares `airborne`.
+Clips are cut, registered and cleaned on one 256px grid, then halved to 128px
+and 64px. A source pixel at least half opaque is kept unless the clip declares
+its own cutoff, because a thin stroke's soft edge is about that opaque. Cleaning
+replaces a piece of one colour smaller than a quarter of a drawn pixel with the
+colour around it. The source's ink fades through dark gray, which showed as
+gray dashes around the silhouette on the dark canvas: within half a drawn pixel
+the soft edge of the outline joins the outline, and the soft edge of a facial
+mark dissolves into the fill around it. Gray farther in is a drawn surface and
+stays gray.
+
+Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
+halves in length and a filled square stays a filled rectangle within a pixel of
+its true size wherever it sits on the grid. An upright or level ink stroke, or
+piece of silhouette, half an exported pixel wide keeps one whole pixel; a
+diagonal that thin can be lost at some grid positions, and a coloured detail
+inside a fill is kept from one exported pixel. Facial marks (ink enclosed in a
+fill, such as an eye, the nose or a whisker) are lifted out first and drawn
+back at their own reduced size, centred where the body's sampling puts them, so
+a mark's size never depends on where the frame sits on the grid; a size exactly
+between two takes the smaller. Marks of one reduced size that share at least
+three quarters of their pixels are one drawing made twice and are exported
+identically. A mark takes the place within one pixel that covers and touches
+the least other ink; where the face is too crowded for a clear place, it may
+touch.
+
+Outline ink is 1.14:1 on the app canvas and reads only beside a fill, so ink
+drawn away from every fill (a note, a fishing line, an emphasis tick) is
+exported in indigo `#6D73D2`, and a detached piece smaller than four drawn
+pixels is treated as source noise. The far tip of a stroke that is attached to a
+fill stays outline ink when it is that small. A plainly blue source pixel stays
+in the ink and indigo family instead of taking the nearer dark gray. Only skin
+anchors the body, which keeps a grounded clip on one floor line; a clip that
+leaves the ground declares `airborne`. A prop tip may put at most two exported
+pixels on the cell edge, which are removed; more than that fails the export as
+a clipped frame.
 
 ## Contextual motion
 
@@ -229,9 +254,9 @@ The repository [license](../../LICENSE) remains unchanged.
 - Brand parity/presence contracts cover the three character tiers, independent
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
-  equal eye width at both sizes, the floor line of every grounded clip, the
-  reduction and free-ink rules, a nonempty clip inventory, frame count, hard
-  alpha, margins and loop seams.
+  identical level eyes at both sizes, the floor line of every grounded clip,
+  the cleaning, reduction, facial-mark and free-ink rules, a nonempty clip
+  inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through
