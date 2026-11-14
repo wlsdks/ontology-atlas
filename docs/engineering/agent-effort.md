@@ -10,15 +10,23 @@ area: harness
 Owner rule (2026-11-12): the harness runs on two models. Opus builds and
 debugs; Fable plans, specs, reviews and gives design verdicts.
 
+Effort follows Anthropic's Fable 5.2 prompting guide
+(<https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-2>):
+`high` is the level for hard coding, agentic work and long unattended runs,
+and most of the model's gain arrives there; `xhigh` costs far more tokens for
+a small gain and belongs where that gain was measured. The reviewer and the
+investigator keep `xhigh` because one missed defect or wrong root cause costs
+more than the run; no comparison has been made for either yet.
+
 | Task | Agent | Model · effort | Turn cap |
 |---|---|---|---|
-| decide, plan small changes, talk to the owner | lead session | the owner's choice · xhigh from `.claude/settings.json` | none |
+| decide, plan small changes, talk to the owner | lead session | the owner's choice · high from `.claude/settings.json` | none |
 | build one slice from `/delegate`, deciding inside its owned files | `implementer` | Opus · high | 150 |
 | root cause of a reproduced failure or flake, then the fix | `investigator` | Opus · xhigh | 250 |
-| slices for a change that crosses modules: file ownership, cross-slice decisions, order, acceptance | `planner` | Fable · xhigh | 200 |
-| the product spec of a one-way product change | `product-planner` | Fable · xhigh | 250 |
+| slices for a change that crosses modules: file ownership, cross-slice decisions, order, acceptance | `planner` | Fable · high | 200 |
+| the product spec of a one-way product change | `product-planner` | Fable · high | 250 |
 | independent review of a diff or a routed decision | `reviewer` | Fable · xhigh | 150 |
-| design verdict with edits, when the owner asks | `design-guardian` | Fable · xhigh | 300 |
+| design verdict with edits, when the owner asks | `design-guardian` | Fable · high | 300 |
 
 The Agent tool's `model` and `effort` arguments override an agent's own for
 one call, for example a simple review at `high`. Built-in agents (Explore,
@@ -51,8 +59,9 @@ feature and redesign missions, not failures. Those go to `planner`, then
 
 ## Steps
 
-1. The lead starts at `xhigh` from the project's `.claude/settings.json`
-   (`effortLevel`). Keep it there; a model cannot raise its own effort.
+1. The lead starts at `high` from the project's `.claude/settings.json`
+   (`effortLevel`). A model cannot raise its own effort; the owner raises one
+   session with `/effort` when a task warrants it.
 2. Do not export `CLAUDE_CODE_EFFORT_LEVEL`. It outranks every agent's
    `effort:` line, so implementers would run at max as well.
 3. Delegate by agent type. The Agent tool has no per-call effort, so the type
@@ -70,7 +79,8 @@ feature and redesign missions, not failures. Those go to `planner`, then
 
 - Implementer slices come back wrong: a decision that crosses slices was left
   open. Send that decision back to `planner`; do not narrow the builder's brief.
-- A plan or review misses something `max` would have caught: raise that one
-  agent to `max`, compare a few runs, and keep the level you measured better.
+- A plan, spec or verdict misses something a higher level would have caught:
+  raise that one agent a level, compare a few runs on the same input, and keep
+  the level you measured better.
 - Codex briefs in `.agents/agents/` inherit the caller's model and effort;
   choose the reasoning effort when you start the Codex session.
