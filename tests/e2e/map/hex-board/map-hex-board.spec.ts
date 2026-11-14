@@ -59,7 +59,6 @@ async function readBoard(page: Page) {
 }
 
 const LEGEND_CANALS = topology.hexBoard.legendCanals;
-const LEGEND_NOTCHES = topology.hexBoard.legendNotches;
 
 const overlap = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
@@ -198,10 +197,9 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     // The real vault opens with its names on.
     expect(board.band).toBe("names");
     expect(board.frame.spills).toBe(0);
-    expect(board.frame.canals).toBe(0);
+    expect(board.frame.canals).toBeGreaterThanOrEqual(1);
     expect(board.frame.pills).toBe(0);
-    await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
-    await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_NOTCHES);
+    await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_CANALS);
 
     // Every tile is named, on screen, inside its own face; no two names overlap.
     const W = viewport.width;
@@ -281,6 +279,8 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
     await settled(page);
     board = await readBoard(page);
     expect(board.frame.focus).toBe(clicked!.id);
+    // The resting canals step back behind the selection's routes.
+    expect(board.frame.canals).toBe(0);
     await shot("c-capability");
 
     // Arrow keys move the selection to the neighbouring tile.
@@ -335,7 +335,7 @@ for (const viewport of [{ width: 1512, height: 982 }]) {
   });
 }
 
-test("hex board on the dogfood vault at 1040 opens on pips with notches and no rest canals", async ({ page }) => {
+test("hex board on the dogfood vault at 1040 opens on pips with its domain canals at rest", async ({ page }) => {
   test.setTimeout(240_000);
   const vault = dogfoodEvidenceVault();
   await page.setViewportSize({ width: 1040, height: 760 });
@@ -344,10 +344,9 @@ test("hex board on the dogfood vault at 1040 opens on pips with notches and no r
   const board = await readBoard(page);
   console.log(`[hex 1040] R=${board.R} band=${board.band} frame=${JSON.stringify(board.frame)}`);
   expect(board.band).toBe("pips");
-  expect(board.frame.canals).toBe(0);
+  expect(board.frame.canals).toBeGreaterThanOrEqual(1);
   expect(board.frame.pills).toBe(0);
-  await expect(page.getByTestId("hex-board-legend")).not.toContainText(LEGEND_CANALS);
-  await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_NOTCHES);
+  await expect(page.getByTestId("hex-board-legend")).toContainText(LEGEND_CANALS);
 });
 
 type HexPaint = { t: number; arrived: boolean };

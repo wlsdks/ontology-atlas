@@ -120,26 +120,6 @@ export function startDot(ctx: CanvasRenderingContext2D, at: Point, r: number, co
   ctx.stroke();
 }
 
-export function ticks(ctx: CanvasRenderingContext2D, x: number, y: number, RI: number, c: number, sides: readonly number[], color: string) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2.4;
-  ctx.lineCap = "round";
-  ctx.beginPath();
-  const rr = RI - 1.6;
-  const half = Math.min(7, RI * 0.15);
-  for (const k of sides) {
-    const b = (k + 1) % 6;
-    const cx = x + rr * ((COS[k]! + COS[b]!) / 2);
-    const cy = y + rr * ((SIN[k]! + SIN[b]!) / 2) * c;
-    const dx = COS[b]! - COS[k]!;
-    const dy = (SIN[b]! - SIN[k]!) * c;
-    const L = Math.hypot(dx, dy) || 1;
-    ctx.moveTo(cx - (dx / L) * half, cy - (dy / L) * half);
-    ctx.lineTo(cx + (dx / L) * half, cy + (dy / L) * half);
-  }
-  ctx.stroke();
-}
-
 export function pips(
   ctx: CanvasRenderingContext2D,
   t: HexTile,

@@ -158,13 +158,14 @@ export function drawSlabs(
       const ev = t.kind === "capability" ? (state.evidence.get(t.id) ?? "unknown") : "current";
       const sel = t.id === state.selectedId;
       const m = tileMaterial(T, t.kind, t.bucket, ev, sel, false, light);
-      const unknown = t.kind === "capability" && ev === "unknown" && !sel;
+      const unknown = state.evidenceMeasured && t.kind === "capability" && ev === "unknown";
       const dim = state.lit != null && !state.lit.has(t.id);
       const alpha = dim ? 1 - state.dimT * (1 - (t.kind === "domain" ? 0.8 : restAlpha)) : 1;
-      const fillKey = `${dim ? 1 : 0}|${unknown ? "hatch|" : ""}${m.topCss}`;
+      const hatched = unknown && !sel;
+      const fillKey = `${dim ? 1 : 0}|${hatched ? "hatch|" : ""}${m.topCss}`;
       const fl = fills.get(fillKey);
       if (fl) fl.tiles.push(t);
-      else fills.set(fillKey, { fill: unknown ? hatch(ctx, m.topCss, T.hatch) : m.topCss, alpha, tiles: [t] });
+      else fills.set(fillKey, { fill: hatched ? hatch(ctx, m.topCss, T.hatch) : m.topCss, alpha, tiles: [t] });
       const rim =
         t.kind === "domain"
           ? { key: "domain", color: T.rimDomain, width: 1.5, dash: [] }
@@ -174,7 +175,7 @@ export function drawSlabs(
               ? { key: "hover", color: T.indigoBright, width: 2, dash: [] }
             : ev === "stale"
               ? { key: "stale", color: T.stale, width: 1.6, dash: [] }
-              : ev === "unknown"
+              : unknown
                 ? { key: "unknown", color: T.rimUnknown, width: 1, dash: [2, 2] }
                 : { key: "rim", color: T.rim, width: 1, dash: [] };
       const r = rims.get(`${dim ? 1 : 0}|${rim.key}`);
