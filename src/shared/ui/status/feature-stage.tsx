@@ -8,6 +8,8 @@ import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-
 import { MOTION, OVERLAY_RISE, OVERLAY_SETTLED } from '@/shared/motion';
 
 const ARRIVAL_MS = MOTION.choreography.duration * 1000;
+/** The pulse's length as a fraction of its line. */
+const PULSE_LENGTH = 0.16;
 
 /** What the stage tells its artwork: `arriving` for one choreography after mount, `engaged` while the action is hovered or focused. */
 export interface FeatureStageMotion {
@@ -61,11 +63,19 @@ export function FeatureStage({
       transition={reduced ? MOTION.fast : MOTION.expressive}
       className={cn('mx-auto my-auto flex w-full max-w-[var(--measure-stage-column)] flex-col items-center py-6 text-center', className)}
     >
-      <div data-feature-stage-art aria-hidden className="w-full max-w-72">
-        {art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}
+      <div data-feature-stage-art aria-hidden className="relative w-full max-w-72">
+        {/* The plate the artwork stands on: a dot grid and one indigo light, both fading out before the column's edge. */}
+        <div className="pointer-events-none absolute -inset-x-24 -inset-y-12 bg-[radial-gradient(var(--color-overlay-3)_1px,transparent_1px)] [background-size:16px_16px] [mask-image:radial-gradient(closest-side,black,transparent)]" />
+        <motion.div
+          className="pointer-events-none absolute -inset-x-16 -inset-y-8 bg-[radial-gradient(closest-side,var(--color-indigo-a24),transparent)]"
+          initial={reduced ? false : { opacity: 0 }}
+          animate={{ opacity: hovered || focused ? 1 : 0.6 }}
+          transition={reduced ? MOTION.fast : arriving ? MOTION.choreography : MOTION.slow}
+        />
+        <div className="relative">{art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}</div>
       </div>
-      <Title className="mt-8 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</Title>
-      <p className="mt-4 max-w-md text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
+      <Title className="mt-10 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</Title>
+      <p className="mt-4 max-w-md text-balance text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
       {alert}
       {action ? (
         <div
@@ -80,5 +90,28 @@ export function FeatureStage({
       ) : null}
       {note ? <div className="mt-3 flex max-w-md items-center justify-center gap-2 text-body text-[color:var(--color-text-secondary)]">{note}</div> : null}
     </motion.section>
+  );
+}
+
+/**
+ * One short light travelling a line of the artwork, drawn over that line. It runs once after `delay`
+ * and again each time `engaged` turns on; under reduced motion it draws nothing.
+ */
+export function FeatureStagePulse({ d, delay = 0, engaged, reduced }: { d: string; delay?: number; engaged: boolean; reduced: boolean }) {
+  if (reduced) return null;
+  return (
+    <motion.path
+      key={engaged ? 'engaged' : 'arrival'}
+      d={d}
+      pathLength={1}
+      fill="none"
+      stroke="var(--color-indigo-accent)"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeDasharray={`${PULSE_LENGTH} 1`}
+      initial={{ strokeDashoffset: PULSE_LENGTH, opacity: 1 }}
+      animate={{ strokeDashoffset: -1, opacity: [1, 1, 0] }}
+      transition={{ ...MOTION.choreography, delay: engaged ? 0 : delay }}
+    />
   );
 }
