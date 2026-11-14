@@ -1,0 +1,20 @@
+{
+  "headline": "변경 {count}건이 머지됐어요 · 파일 {files}개",
+  "notable": "살펴볼 변경",
+  "reasonRevert": "앞선 변경을 되돌려요",
+  "reasonBreaking": "작성자가 호환이 깨진다고 표시했어요",
+  "reasonReach": "기록된 개념 {count}개에 닿아요",
+  "reasonSize": "파일 {count}개",
+  "other": "그 밖의 변경",
+  "groupName": "{group}: 변경 {count}건",
+  "concepts": "닿은 개념",
+  "readOriginal": "원본 읽기: {title}",
+  "onGitHub": "↗ GitHub",
+  "more": "{count}건 더 보기",
+  "originals": "원본",
+  "backToSummary": "요약으로",
+  "empty": "이 기간에는 머지된 변경이 없어요.",
+  "goLatest": "가장 최근 변경 보기",
+  "partial": "이 기간은 최근 변경 {count}건까지만 읽었어요. 기간을 줄이면 나머지를 볼 수 있어요.",
+  "partialOther": "이 기간의 일부를 읽지 못해서 수치가 다 차지 않았어요. 기간을 줄이면 더 읽을 수 있어요."
+}

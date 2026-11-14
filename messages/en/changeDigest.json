@@ -1,0 +1,20 @@
+{
+  "headline": "{count, plural, one {# change merged} other {# changes merged}} · {files, plural, one {# file} other {# files}}",
+  "notable": "Worth a look",
+  "reasonRevert": "Reverts an earlier change",
+  "reasonBreaking": "Marked breaking by its author",
+  "reasonReach": "Touches {count} recorded concepts",
+  "reasonSize": "{count} files",
+  "other": "Other changes",
+  "groupName": "{group}: {count, plural, one {# change} other {# changes}}",
+  "concepts": "Touches",
+  "readOriginal": "Read the original: {title}",
+  "onGitHub": "↗ GitHub",
+  "more": "Show {count} more",
+  "originals": "Originals",
+  "backToSummary": "Back to summary",
+  "empty": "Nothing was merged in this period.",
+  "goLatest": "Go to the latest changes",
+  "partial": "Only the newest {count} changes of this period were read. Choose a shorter period to see the rest.",
+  "partialOther": "Part of this period could not be read, so these counts are incomplete. Choose a shorter period to read more."
+}

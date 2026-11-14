@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
+import { gotoOriginals, installBriefingRuntime, openChangesFromRail, setBriefingMode } from './change-briefing-fixture';
 
 async function capture(page: Page, name: string) {
   if (!process.env.ATLAS_FILES_WORKSPACE_PROOF) return;
@@ -12,7 +12,7 @@ async function capture(page: Page, name: string) {
 async function openFiles(page: Page, width: number) {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
   await page.setViewportSize({ width, height: 900 });
   await page.getByTestId('briefing-source-browser').click();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
@@ -43,7 +43,7 @@ test('keeps the file list beside one comparison and returns to groups on desktop
 test('restores an expanded file list and scroll position after leaving a group', async ({ page }) => {
   await openFiles(page, 1440);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   const group = page.getByTestId('briefing-area-mcp');
   await group.click();
   const list = page.getByTestId('briefing-file-list');
@@ -61,7 +61,7 @@ test('restores an expanded file list and scroll position after leaving a group',
 test('restores the file list after visiting the map and returning', async ({ page }) => {
   await openFiles(page, 1440);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-area-mcp').click();
   const list = page.getByTestId('briefing-file-list');
   await list.getByRole('button', { name: 'Show 21 more files', exact: true }).click();
@@ -70,7 +70,7 @@ test('restores the file list after visiting the map and returning', async ({ pag
   const before = await list.evaluate(element => element.scrollTop);
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
   await expect(page).toHaveURL(/topology/);
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await expect(list).toBeVisible();
   await expect.poll(() => list.evaluate(element => element.scrollTop)).toBe(before);
 });
@@ -78,7 +78,7 @@ test('restores the file list after visiting the map and returning', async ({ pag
 test('navigates filtered files and keeps the current comparison when it is filtered out', async ({ page }) => {
   await openFiles(page, 1440);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-area-mcp').click();
   const search = page.getByRole('searchbox', { name: 'Find a changed file', exact: true });
   await search.fill('tool-5');
@@ -141,7 +141,7 @@ test('returns focus to search when no filtered file row remains', async ({ page 
 test('moves focus out of the comparison when the file list becomes the only pane', async ({ page }) => {
   await openFiles(page, 800);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await page.getByTestId('briefing-area-mcp').click();
   const row = page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-1.ts', exact: true });
   await row.click();

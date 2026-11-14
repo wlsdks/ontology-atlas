@@ -273,7 +273,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     name: "briefing: the browser cannot read a local Git history",
     url: "/ko/changes/",
     card: "briefing-stage",
-    reason: /설치한 앱에서 저장소 폴더를 골라 로컬 Git 이력을/,
+    reason: /로컬 Git 저장소는 설치한 앱에서만 읽을 수 있어요/,
     destination: "briefing-get-app",
   },
   {

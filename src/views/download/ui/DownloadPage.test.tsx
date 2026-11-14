@@ -424,7 +424,7 @@ describe('DownloadPage', () => {
       'Automations',
       'Insights',
       'Projects',
-      'Briefing',
+      'Changes',
       'Git',
     ]);
 

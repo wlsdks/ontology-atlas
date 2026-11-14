@@ -3,12 +3,12 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { auditPage, FREEZE_CSS } from '../../../scripts/lib/design/ui-audit-probe.mjs';
 import { parseRampNames, shouldFail } from '../../../scripts/lib/design/ui-audit-checks.mjs';
 import { mountDesktopVault } from '../desktop-rail-arrival-harness';
-import { installBriefingRuntime, setBriefingMode } from './change-briefing-fixture';
+import { gotoOriginals, installBriefingRuntime, openChangesFromRail, openOriginals, setBriefingMode } from './change-briefing-fixture';
 
 async function openBriefing(page: Page) {
   await installBriefingRuntime(page);
   await mountDesktopVault(page);
-  await page.goto('/en/changes/?guides=off');
+  await gotoOriginals(page, '/en/changes/?guides=off');
   await expect(page.getByRole('button', { name: 'Read GitHub PRs' })).toBeVisible();
 }
 
@@ -88,7 +88,7 @@ test('keeps a selected file beyond the first page reachable on a narrow screen',
   await openBriefing(page);
   await page.setViewportSize({ width: 600, height: 900 });
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Refresh briefing' }).click();
+  await page.getByRole('button', { name: 'Read again' }).click();
   await page.getByRole('radio', { name: 'Commits', exact: true }).click();
   await page.getByRole('button', { name: /change tooling/ }).click();
   await page.getByRole('button', { name: 'View files touched by this commit' }).click();
@@ -165,7 +165,7 @@ test('keeps combined and commit explanations separate after running both and ret
   await page.getByTestId('briefing-mixed').click();
   await expect(page.getByText('Readable map navigation', { exact: true })).toBeVisible();
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
-  await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Briefing', exact: true }).click();
+  await openChangesFromRail(page);
   await expect(page.getByText('Readable map navigation', { exact: true })).toBeVisible();
 });
 
@@ -196,7 +196,7 @@ test('serializes mixed and commit requests and keeps Stop reachable after leavin
 test('reads public PRs even when the selected period has no commits', async ({ page }) => {
   await openBriefing(page);
   await setBriefingMode(page, 'empty');
-  await page.getByRole('button', { name: 'Refresh briefing' }).click();
+  await page.getByRole('button', { name: 'Read again' }).click();
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
   await expect(page.getByRole('button', { name: /Make checkout confirmation clear/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Keep the order timeline readable/ })).toBeVisible();
@@ -208,6 +208,7 @@ test('reads a public PR from a source-only entry without opening a vault', async
   await page.goto('/en/changes/?guides=off');
   await setBriefingMode(page, 'empty');
   await page.getByRole('button', { name: 'Choose Git repository' }).click();
+  await openOriginals(page);
   await page.getByRole('button', { name: 'Read GitHub PRs' }).click();
   await expect(page.getByRole('button', { name: /Make checkout confirmation clear/ })).toBeVisible();
   const calls = await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls.map(call => call.command));
@@ -289,7 +290,7 @@ test('shows failure without losing originals and offers a fixed GitHub recovery 
 test('retries local remote detection without an automatic GitHub read', async ({ page }) => {
   await openBriefing(page);
   await setBriefingMode(page, 'remote-error');
-  await page.getByRole('button', { name: 'Refresh briefing' }).click();
+  await page.getByRole('button', { name: 'Read again' }).click();
   await expect(page.getByText('Could not read the repository’s GitHub address.')).toBeVisible();
   await setBriefingMode(page, 'ready');
   await page.getByRole('button', { name: 'Check repository again' }).click();

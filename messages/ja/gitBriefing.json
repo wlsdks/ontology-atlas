@@ -1,8 +1,8 @@
 {
-  "title": "Git and PR briefing",
+  "title": "変更",
   "sourcePrompt": "Choose a Git repository to catch up on its commits and PR descriptions. An ontology is optional.",
   "chooseRepository": "Gitリポジトリを選ぶ",
-  "webBody": "インストールしたアプリでリポジトリのフォルダを選ぶと、ローカルのGit履歴を読み、接続したモデルで説明を作成できます。",
+  "webBody": "ローカルのGitリポジトリは、インストールしたアプリでのみ読めます。ブラウザでは履歴を表示しません。",
   "sourceUnavailable": "This repository is unavailable or its folder permission expired. Choose it again; your dates are kept.",
   "noHistory": "This folder has no readable Git history. Choose another repository or retry after its first commit.",
   "loading": "Reading the selected repository and period…",
@@ -185,7 +185,7 @@
   "summaryEmptyBody": "Read the originals, or create a summary.",
   "summaryModelMissing": "Choose a local model to create a summary. You can read the originals now.",
   "briefingSettings": "設定",
-  "settingsTitle": "Briefing settings",
+  "settingsTitle": "変更の設定",
   "closeSettings": "Close settings",
   "settingsModel": "Summary model",
   "settingsPrs": "GitHub PRs",
@@ -220,7 +220,6 @@
   "previewOverview": "原文を分割して読み、選んだ原文を最大{bytes}バイト再送して概要を作ります。",
   "previewDetails": "リクエストの詳細",
   "previewCancel": "キャンセル",
-  "startTitle": "何が変わったか、ひと目で",
-  "startBody": "PR、コミット、変更ファイルを分けて確認できます。ローカルのGitリポジトリを開いて始めましょう。",
-  "startHint": "PRの閲覧は公開GitHubリポジトリに対応しています。"
+  "startTitle": "何が変わったかを、ひと目で",
+  "startBody": "ローカルのGitリポジトリを開くと、マージされた変更をまとめて数えて表示します。"
 }

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { installBriefingRuntime } from './change-briefing-fixture';
+import { installBriefingRuntime, openOriginals } from './change-briefing-fixture';
 
 test('unconnected desktop keeps Library reachable and repository cancellation returns focus', async ({ page }) => {
   await installBriefingRuntime(page);
@@ -30,5 +30,7 @@ test('unconnected desktop keeps Library reachable and repository cancellation re
   await expect(stage).toBeVisible();
   await choose.click();
   await expect(stage).toHaveCount(0);
+  await expect(page.getByTestId('change-digest')).toBeVisible();
+  await openOriginals(page);
   await expect(page.getByTestId('briefing-prs')).toBeVisible();
 });

@@ -42,7 +42,7 @@
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/planning.en.png" alt="企画：左にプロジェクトフォルダの Markdown ファイル一覧、右に開いた文書" /><br /><b>企画</b> — プロジェクトフォルダの Markdown を、コピーせずその場で読みます。</td>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="ブリーフィング：1 週間分のコミットと、それぞれの日時" /><br /><b>ブリーフィング</b> — 期間中に何が変わったかを、プルリクエスト、コミット、ファイルに分けて見ます。</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="変更：1 週間分のコミットと、それぞれの日時" /><br /><b>変更</b> — 期間中に何が変わったかを、プルリクエスト、コミット、ファイルに分けて見ます。</td>
 </tr>
 <tr>
 <td width="50%"><img src="public/gateway/insights.en.png" alt="分析：責務どうしの関係と、各主張の横に並ぶ根拠" /><br /><b>分析</b> — 何が何に依存しているかを、根拠とともに見ます。</td>
@@ -63,7 +63,7 @@
 - 資料室の設定とチェックはアプリで行います。ブラウザでは、アプリの入手かファイルの追加ができます。[資料室](docs/features/library/workspace.md)
 - 企画は読み取り専用で、macOS アプリで選んだフォルダに対して動作します。Markdown と PNG/JPEG 画像を表示します。[企画](docs/FEATURES.md)
 - Git の送信専用操作は新しいファイルの変更をコミットしません。フォルダやブランチの状態が変わった場合は再確認できます。プルはリポジトリ全体のファイルを変更することがあります。[Git](docs/features/git.md)
-- フォルダを接続する前でも、アプリは資料室、企画、エージェント、ブリーフィングを開けるようにしています。[機能一覧](docs/FEATURES.md)
+- フォルダを接続する前でも、アプリは資料室、企画、エージェント、変更を開けるようにしています。[機能一覧](docs/FEATURES.md)
 
 ## クイックスタート
 

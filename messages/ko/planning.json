@@ -12,7 +12,7 @@
   "observationLimit": "다음 확인 전에 파일이 바뀔 수 있어요.",
   "findFile": "파일명 또는 경로 찾기",
   "refresh": "폴더 새로고침",
-  "openHistory": "저장소 브리핑 열기",
+  "openHistory": "변경 열기",
   "historyLimit": "커밋 이력은 현재 브랜치의 첫 번째 부모 커밋만 포함하며 미커밋 변경은 제외해요.",
   "comparisonLimit": "코드 비교는 선택한 기간의 저장소 전체 양 끝점을 비교하며, 개별 커밋 비교가 아니에요.",
   "openMap": "온톨로지 맵 열기",

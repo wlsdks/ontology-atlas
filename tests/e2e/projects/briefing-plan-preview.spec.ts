@@ -37,7 +37,7 @@ test('discloses the extra overview request and keeps oversized originals inspect
   await enter(page);
   await setBriefingMode(page, 'batch');
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 1800; });
-  await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+  await page.getByRole('button', { name: 'Read again', exact: true }).click();
   await prepare(page);
   const dialog = page.getByRole('dialog');
   const parts = Number(await page.getByTestId('briefing-plan-requests').getAttribute('data-reading-parts'));
@@ -103,7 +103,7 @@ for (const width of [390, 1512]) {
   test(`keeps original inspection and part selection bounded at ${width}`, async ({ page }, testInfo) => {
     await enter(page);
     await setBriefingMode(page, 'batch');
-    await page.getByRole('button', { name: 'Refresh briefing', exact: true }).click();
+    await page.getByRole('button', { name: 'Read again', exact: true }).click();
     await setBriefingMode(page, 'long-original');
     await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 20000; });
     await prepare(page);
