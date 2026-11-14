@@ -11,7 +11,7 @@ routes: [/library]
 ### `/library` — Library (2026-09-06, its own destination)
 
 A vault holds three kinds of file and **only one is the graph**. Library keeps their distinct
-meaning across Sources, Wiki, Ontology, and Check history. Ontology contains
+meaning across Sources, Wiki and Ontology. Ontology contains
 Concept documents (the explicitly typed graph nodes) and Bookmarks (saved map
 selections); their switch stands beside the tabs and takes a row of its own only when the
 tabs would no longer fit beside it. Sources and Wiki draw the other two file kinds.
@@ -107,16 +107,11 @@ legacy addresses and malformed quoted remainders. Original bytes and existing
 wiki citations are not rewritten, and a matching source hash does not prove that
 an old ambiguous citation identifies the intended passage.
 
-Check history shows executed checks first. Sleep gaps stay in the recorded ledger and
-can be included with the labelled checkbox and its gap count; they are excluded by
-default, including when the folder has no executed checks. A sleep-only ledger shows
-the no-checks-yet state rather than a long list under execution history. The control
-changes presentation only: it does not edit recorded gaps, schedules, outcomes or permissions.
-
-Library has four tabs — Sources, Wiki, Ontology and Check history
-(`LibraryTab` in `src/app/library-workspace/index.tsx`; labels in
+Library has three tabs — Sources, Wiki and Ontology
+(`LibraryTab` in `src/app/library-workspace/panel-arrival.ts`; labels in
 `messages/en/library.json` `workspace.*`) — and each tab keeps its own reader and
-file meaning. The mobile Library tab
+file meaning. The run history of document schedules lives in Automations' Documents lane
+([Automations](../automations.md)); the retired `?tab=rounds` address goes there. The mobile Library tab
 inherits the former Docs slot; `/docs/?slug=…` remains a compatible exact-file link, using the
 general Document reader only when the target is outside Ontology. The Ontology tree and all of
 its displayed and restored working sets show only the five explicit schema kinds, and its name-and-path filter

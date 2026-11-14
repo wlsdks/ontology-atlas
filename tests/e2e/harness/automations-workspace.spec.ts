@@ -273,14 +273,87 @@ test('a document round is edited in place: same id, its history kept, the new ca
   await expect(row).toContainText('Scheduled');
 });
 
-test('the door to Library check history opens with the schedule it came from selected', async ({ page }) => {
+test('the documents lane keeps its run history under the schedules: held lines, change cards, sleep on request', async ({ page }) => {
   await installDesktopBridge(page, { seedRounds: true });
   await page.goto('/en/');
   await page.getByRole('button', { name: /Open.*folder/i }).first().click();
   await expect(page.getByTestId('app-nav-rail')).toBeVisible();
-  await page.goto('/en/automations/?guides=off&kind=documents&round=r-confluence');
+  await page.goto('/en/automations/?guides=off&kind=documents');
+
+  const history = page.getByTestId('automations-run-ledger');
+  await expect(history.getByRole('heading', { level: 2 })).toHaveText('Run history');
+  const listBottom = await page.getByTestId('automations-list-panel').evaluate((panel) => panel.getBoundingClientRect().bottom);
+  const historyTop = await history.evaluate((section) => section.getBoundingClientRect().top);
+  expect(historyTop, 'the history stands below the schedule list').toBeGreaterThan(listBottom);
+
+  const ledger = history.getByTestId('round-ledger');
+  await expect(ledger.locator("[data-outcome='held']")).toHaveCount(3);
+  await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(0);
+  await expect(ledger.locator("[data-outcome='redrafted']")).toContainText('1 agent turn');
+  await expect(ledger.locator("[data-outcome='redrafted']")).toContainText('mcp__confluence__create_page');
+  await expect(ledger.locator("[data-outcome='stale']")).toContainText('no agent turn');
+  const heldHeight = await ledger.locator("[data-outcome='held']").first().evaluate((el) => el.getBoundingClientRect().height);
+  const cardHeight = await ledger.locator("[data-outcome='redrafted']").first().evaluate((el) => el.getBoundingClientRect().height);
+  expect(cardHeight, 'a change is a card, a held pass a line').toBeGreaterThan(heldHeight * 2);
+
+  const sleepToggle = ledger.getByTestId('round-ledger-show-sleep');
+  await sleepToggle.focus();
+  await page.keyboard.press('Space');
+  await expect(sleepToggle).toBeChecked();
+  await expect(sleepToggle).toBeFocused();
+  await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(1);
+  await page.keyboard.press('Space');
+  await expect(ledger.locator("[data-outcome='asleep']")).toHaveCount(0);
+});
+
+test('an old Library check-history link opens the documents lane on that schedule and its runs', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/library/?tab=rounds&round=r-confluence');
+
+  await expect(page).toHaveURL(/\/en\/automations\/\?kind=documents&round=r-confluence$/);
   await expect(page.getByTestId('automation-r-confluence')).toHaveAttribute('aria-expanded', 'true');
-  await page.getByTestId('automations-open-library-rounds').click();
-  await expect(page.getByTestId('library-round-r-confluence')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByTestId('library-round-r-consistency')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('automation-r-consistency')).toHaveAttribute('aria-expanded', 'false');
+  const history = page.getByTestId('automations-run-ledger');
+  await expect(history.getByRole('heading', { level: 2 })).toContainText('Confluence');
+  await expect(history.locator("[data-outcome='redrafted']")).toHaveCount(1);
+  await expect(history.locator("[data-outcome='held']")).toHaveCount(0);
+
+  // Picking a row is the person's own choice, so the link's narrowing gives way to every run.
+  await page.getByTestId('automation-r-consistency').click();
+  await expect(history.locator("[data-outcome='held']")).toHaveCount(3);
+});
+
+test('a local check saved from the documents lane runs once and lands in its run history', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: false });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/automations/?guides=off&kind=documents');
+  await expect(page.getByTestId('automations-run-ledger')).toHaveCount(0);
+
+  await page.getByTestId('automations-new').click();
+  await page.getByTestId('library-rounds-allow').click();
+  await expect(page.getByTestId('library-rounds-sheet')).toHaveCount(0);
+
+  const ledger = page.getByTestId('automations-run-ledger').getByTestId('round-ledger');
+  await expect(ledger.locator("[data-outcome='held']")).toHaveCount(1);
+  await expect(ledger).toContainText('run by hand');
+  const stored = await page.evaluate(() => {
+    const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+    return (files['.ontology-atlas/rounds-ledger.jsonl'] ?? '').trim().split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  });
+  expect(stored).toHaveLength(1);
+  expect(stored[0]).toMatchObject({ kind: 'consistency', outcome: 'held', trigger: 'manual', agentTurns: 0 });
+});
+
+test('Library offers sources, wiki and ontology, and no check history tab', async ({ page }) => {
+  await installDesktopBridge(page, { seedRounds: true });
+  await page.goto('/en/');
+  await page.getByRole('button', { name: /Open.*folder/i }).first().click();
+  await expect(page.getByTestId('app-nav-rail')).toBeVisible();
+  await page.goto('/en/library/');
+  await expect(page.getByTestId('library-workspace-tabs').getByRole('tab')).toHaveText([/^Sources/, /^Wiki/, /^Ontology/]);
 });

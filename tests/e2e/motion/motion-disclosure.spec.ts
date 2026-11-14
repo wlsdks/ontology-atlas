@@ -4,7 +4,7 @@ import { seedFirstRunSeen } from "../first-run-seed";
 import { installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { waitForAnimationsDone } from "../settle";
-import { installDesktopBridge, openRounds } from "../rounds-desktop-bridge";
+import { installDesktopBridge, openDocumentAutomations } from "../rounds-desktop-bridge";
 
 type Track = { height: number[]; opacity: number[]; inertAtFirstFrame: boolean };
 
@@ -112,8 +112,7 @@ test.describe("Disclosure motion", () => {
   test("a field error opens below the field without a jump and is an alert", async ({ page }) => {
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });
-    await openRounds(page);
-    await page.getByTestId("library-rounds-new").click();
+    await openDocumentAutomations(page);
     await page.getByTestId("automations-new").click();
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Day" }).click();
     const time = page.getByTestId("library-rounds-time");

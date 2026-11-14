@@ -1,7 +1,0 @@
-.kinds { margin: 0; padding: 0; list-style: none; }
-.kinds li { display: flex; align-items: flex-start; gap: .625rem; padding: .75rem 0; border-top: 1px solid var(--color-divider); }
-.mark { display: inline-grid; flex: none; place-items: center start; width: 1rem; height: var(--leading-body); color: var(--color-text-tertiary); }
-.copy { display: flex; min-width: 0; flex-direction: column; gap: .125rem; }
-.name { color: var(--color-text-primary); font-size: var(--text-body); line-height: var(--leading-body); font-weight: var(--font-weight-emphasis); }
-.body { max-width: var(--measure-prose); color: var(--color-text-tertiary); font-size: var(--text-label); line-height: var(--leading-label); word-break: keep-all; }
-
