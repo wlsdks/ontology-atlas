@@ -1,5 +1,6 @@
 import { dialEvidenceView } from "../dial/dial-model";
 import { createMeasureText } from "../dial/fit";
+import type { MeasureText } from "../dial/label-marks";
 import { emptyDialFrameMarks, type DialFrameMarks, type DialMarksResult } from "../dial/frame/marks";
 import { dialChordPresence, recordDialFrame } from "../dial/frame/frame";
 import { dialPlacementLine, dialPlacementOf } from "../dial/placement";
@@ -40,7 +41,13 @@ const PIP_MIN_PX = 2;
 const UNKNOWN_DASH = [2, 2];
 const ELEMENT_PICK_PX = 4;
 
-const measureText = createMeasureText();
+/** One width memo per model, so a closed folder's names leave with its model. */
+const measureByModel = new WeakMap<DialModel, MeasureText>();
+function measureTextOf(model: DialModel): MeasureText {
+  let measure = measureByModel.get(model);
+  if (!measure) measureByModel.set(model, (measure = createMeasureText()));
+  return measure;
+}
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
@@ -715,6 +722,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   const attention = motion.current;
   const mix = motion.baseMix;
   const { model, scene } = input.dial;
+  const measureText = measureTextOf(model);
   const layout = scene.graph!;
   const P = tokens.paint;
   const inks = tokens.inks;

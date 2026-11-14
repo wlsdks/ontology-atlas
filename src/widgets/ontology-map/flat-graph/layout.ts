@@ -17,7 +17,6 @@ const COMPACT_ROUNDS = 40;
 const COMPACT_PULL = 0.04;
 const COMPACT_SEPARATIONS = 6;
 const FULL_ITERATION_BODIES = 64;
-const MIN_BUDGETED_ITERATIONS = 24;
 const MAX_STRETCH = 2;
 const MIN_ASPECT = 0.6;
 const MAX_ASPECT = 2.6;
@@ -87,12 +86,12 @@ function runForceAtlas2(bodies: readonly Body[], springs: readonly Spring[], ite
 }
 
 /**
- * ForceAtlas2 costs O(iterations · n²), and a fit runs it once per pass. A cluster past
- * `FULL_ITERATION_BODIES` keeps the pair work of one that size, so a crowded domain cannot stall the open.
+ * ForceAtlas2 costs O(iterations · n²) and a fit runs it once per pass. A cluster past
+ * `FULL_ITERATION_BODIES` gets the iterations that keep that size's pair work, down to one pass.
  */
-export function budgetedIterations(iterations: number, bodyCount: number): number {
+function budgetedIterations(iterations: number, bodyCount: number): number {
   if (bodyCount <= FULL_ITERATION_BODIES) return iterations;
-  return Math.max(MIN_BUDGETED_ITERATIONS, Math.round(iterations * (FULL_ITERATION_BODIES / bodyCount) ** 2));
+  return Math.min(iterations, Math.max(1, Math.round(iterations * (FULL_ITERATION_BODIES / bodyCount) ** 2)));
 }
 
 /** Pairwise separation in sorted order; fixed bodies never move. O(rounds · n²). */

@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import forceAtlas2 from "graphology-layout-forceatlas2";
+import { describe, expect, it, vi } from "vitest";
 
 import dogfoodManifest from "@/entities/docs-vault/data/manifest.json";
 import storefrontManifest from "@/entities/docs-vault/data/sample-storefront.manifest.json";
@@ -24,7 +25,7 @@ import { buildDialModel } from "../dial/dial-model";
 import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
-import { budgetedIterations, layoutFlatGraph } from "./layout";
+import { layoutFlatGraph } from "./layout";
 import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
@@ -1079,15 +1080,30 @@ describe("names under the map's chrome", () => {
 });
 
 describe("cluster iteration budget", () => {
-  it("keeps a small cluster's iterations and never lets a crowded one do more pair work than the largest unbudgeted cluster", () => {
-    const iterations = TOKENS.layout.capabilityIterations;
-    let unbudgeted = 0;
-    for (let bodies = 1; bodies <= 2000; bodies += 1) {
-      const budgeted = budgetedIterations(iterations, bodies);
-      if (budgeted === iterations) unbudgeted = bodies;
-    }
-    expect(unbudgeted).toBeGreaterThan(Math.max(...VAULTS.flatMap(([, model]) => model.domains.map((d) => d.capabilityIds.length))));
-    const ceiling = iterations * unbudgeted ** 2;
-    for (const bodies of [unbudgeted + 1, 100, 170]) expect(budgetedIterations(iterations, bodies) * bodies ** 2, `${bodies} bodies`).toBeLessThanOrEqual(ceiling * 1.02);
+  it("runs a small cluster at the full iterations and holds a crowded one to that pair work", () => {
+    const sizes = [40, 170, 500];
+    const nodes: Node[] = [{ id: "project:p", kind: "project" }];
+    const edges: Edge[] = [];
+    sizes.forEach((size, d) => {
+      nodes.push({ id: `domain:${d}`, kind: "domain" });
+      edges.push({ from: "project:p", to: `domain:${d}`, type: "contains" });
+      for (let c = 0; c < size; c += 1) {
+        nodes.push({ id: `capability:${d}-${c}`, kind: "capability" });
+        edges.push({ from: `domain:${d}`, to: `capability:${d}-${c}`, type: "contains" });
+      }
+    });
+    const model = modelOf(nodes, edges);
+    const assign = vi.spyOn(forceAtlas2, "assign");
+    layoutFlatGraph(model, circularDomainOrder(model, null).order, TOKENS.layout, null);
+    const runs = assign.mock.calls.map(([graph, options]) => ({ bodies: graph.order, iterations: (options as { iterations: number }).iterations }));
+    assign.mockRestore();
+    const full = TOKENS.layout.capabilityIterations;
+    const small = runs.find((run) => run.bodies >= 40 && run.bodies < 64);
+    expect(small?.iterations, "the 40-member cluster").toBe(full);
+    const crowded = runs.filter((run) => run.bodies >= 170);
+    expect(crowded.length).toBe(2);
+    const ceiling = full * 64 ** 2;
+    for (const run of crowded) expect(run.iterations * run.bodies ** 2, `${run.bodies} bodies`).toBeLessThanOrEqual(ceiling * 1.15);
+    for (const run of crowded) expect(run.iterations).toBeGreaterThan(0);
   });
 });
