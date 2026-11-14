@@ -1,21 +1,83 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-import { seedFirstRunSeen } from "../../first-run-seed";
-import { installDesktopBridge, openRounds } from "../../rounds-desktop-bridge";
+import { seedFirstRunSeen } from "../first-run-seed";
+import { installDesktopBridge, openDocumentAutomations } from "../rounds-desktop-bridge";
 
 /**
- * The real thumb under a real pointer: `page.mouse` presses the track 40% across, the sentence shows
- * the new interval, the unit switch carries the value, and the index row matches the store.
+ * The document schedule sheet, opened from Automations' Documents lane: the scope sentence, the
+ * cadence rail under a real pointer and the keyboard, and the record it writes into `rounds.json`.
+ * The desktop bridge is stubbed.
  */
 
-async function openNewDocumentSchedule(page: import("@playwright/test").Page) {
-  await page.getByTestId("library-rounds-new").click();
-  await expect(page.getByTestId("automations")).toHaveAttribute("data-automations-lane", "documents");
+async function openNewDocumentSchedule(page: Page) {
+  await openDocumentAutomations(page);
   await page.getByTestId("automations-new").click();
+  await expect(page.getByTestId("library-rounds-sheet")).toBeVisible();
 }
 
-test.describe("Library rounds — the cadence rail", () => {
-  test("drag the thumb, switch the unit, name a place, and the index says all three", async ({ page }) => {
+function storedRounds(page: Page) {
+  return page.evaluate(() => {
+    const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
+    return JSON.parse(files[".ontology-atlas/rounds.json"]);
+  });
+}
+
+test.describe("Document schedule sheet", () => {
+  test("a new schedule is registered under a stated scope and lands in rounds.json", async ({ page }) => {
+    await seedFirstRunSeen(page);
+    await installDesktopBridge(page, { seedRounds: false });
+    await openNewDocumentSchedule(page);
+    const sheet = page.getByTestId("library-rounds-sheet");
+    await expect(sheet).toHaveAttribute("aria-modal", "true");
+
+    // The sentence above the controls says what will happen, and follows every press.
+    const readback = page.getByTestId("library-rounds-readback");
+    await expect(readback).toHaveText(
+      "Every hour, check that every page still matches its originals, and redraft the stale ones. It runs once as soon as you save.",
+    );
+
+    const scope = page.getByTestId("library-rounds-scope");
+    await expect(scope).toContainText("read this folder and its map");
+    await expect(scope).toContainText("write pages under wiki/");
+    await expect(scope).toContainText("nothing else");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("only on a pass that finds something stale");
+
+    // Mark only: no write at all, and the cost line says so.
+    await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Flag for review" }).click();
+    await expect(readback).toContainText("and only mark the stale ones");
+    await expect(scope).not.toContainText("write pages under wiki/");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent turn");
+
+    // Naming a service place is what makes this a service round, so the bill and the connector sentence follow it.
+    await page.getByTestId("library-rounds-add-place").click();
+    await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
+    await expect(scope).toContainText("ask Confluence to read, never to write there");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("about 24 a day");
+
+    await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Day" }).click();
+    await page.getByTestId("library-rounds-cadence-day").getByRole("radio", { name: "Weekdays" }).click();
+    await expect(page.getByTestId("library-rounds-time")).toBeVisible();
+    await expect(readback).toContainText("On weekdays at 09:00");
+    await expect(readback).toContainText("Confluence");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("about 1 a day");
+
+    await page.getByTestId("library-rounds-allow").click();
+    await expect(sheet).toBeHidden();
+    await expect(page.getByTestId("automations-list")).toContainText("Weekdays at 09:00");
+
+    const stored = await storedRounds(page);
+    expect(stored.v).toBe(1);
+    expect(stored.rounds).toHaveLength(1);
+    expect(stored.rounds[0]).toMatchObject({
+      kind: "service",
+      connectorId: "c1",
+      connectorName: "confluence",
+      enabled: true,
+      cadence: { daily: "09:00", weekdaysOnly: true },
+    });
+  });
+
+  test("drag the cadence thumb, switch the unit, name two places, and the record says all three", async ({ page }) => {
     const problems: string[] = [];
     page.on("console", (message) => {
       if (message.type() === "error" || message.type() === "warning") problems.push(message.text());
@@ -23,25 +85,15 @@ test.describe("Library rounds — the cadence rail", () => {
     page.on("pageerror", (error) => problems.push(`pageerror: ${error.message}`));
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });
-    await openRounds(page);
-
     await openNewDocumentSchedule(page);
-    const sheet = page.getByTestId("library-rounds-sheet");
-    await expect(sheet).toBeVisible();
 
     const readback = page.getByTestId("library-rounds-readback");
     const thumb = page.getByTestId("library-rounds-cadence-thumb");
     const rail = page.getByTestId("library-rounds-cadence-rail");
-
-    // It opens on the cadence every round had before the rail existed.
     await expect(readback).toContainText("Every hour");
     await expect(thumb).toHaveAttribute("aria-valuetext", "every hour");
 
-    /*
-     * Minutes, then a real drag. Five detents sit at 0 / 25 / 50 / 75 / 100 percent, so 40%
-     * across is nearest the third — ten minutes. The press is on the track rather than the
-     * thumb because pressing anywhere on the track is the behaviour the spec asks for.
-     */
+    // Five detents sit at 0 / 25 / 50 / 75 / 100 percent, so a press 40% across the track is nearest ten minutes.
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Minutes" }).click();
     const track = await rail.boundingBox();
     if (!track) throw new Error("the cadence rail was not drawn");
@@ -52,11 +104,7 @@ test.describe("Library rounds — the cadence rail", () => {
     await page.mouse.up();
     await expect(thumb).toHaveAttribute("aria-valuetext", "every 10 minutes");
 
-    /*
-     * The thumb ends where the detent is drawn, not where the finger let go. The spring is
-     * still running at this instant, so the distance is polled until it settles rather than
-     * read once after a sleep — the condition is what matters, not a copy of the duration.
-     */
+    // The thumb settles on the detent, not where the finger let go; the spring is polled, not slept past.
     const offsetFrom = async (minutes: number) => {
       const settled = await thumb.boundingBox();
       const detent = await page.locator(`[data-cadence-detent='${minutes}']`).boundingBox();
@@ -70,15 +118,10 @@ test.describe("Library rounds — the cadence rail", () => {
     await expect(thumb).toHaveAttribute("aria-valuetext", "every hour");
     await expect.poll(() => offsetFrom(60)).toBeLessThan(2);
 
-    // Back to ten minutes for the round that is actually saved.
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Minutes" }).click();
     await page.locator("[data-cadence-detent='10']").click();
     await expect(readback).toContainText("Every 10 minutes");
 
-    /*
-     * Two places: the scope sentence and the readback name each, and the record carries both while the
-     * legacy fields carry the first.
-     */
     await page.getByTestId("library-rounds-add-place").click();
     await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
     await page.getByTestId("library-rounds-place-0-where").fill("ENG space");
@@ -89,17 +132,10 @@ test.describe("Library rounds — the cadence rail", () => {
     await expect(page.getByTestId("library-rounds-add-menu")).toHaveCount(0);
 
     await page.getByTestId("library-rounds-allow").click();
-    await expect(sheet).toBeHidden();
-    await page.getByTestId("automations-open-library-rounds").click();
+    await expect(page.getByTestId("library-rounds-sheet")).toBeHidden();
+    await expect(page.getByTestId("automations-list")).toContainText("Every 10 minutes");
 
-    // The index row says how often first — the column's own job — then where.
-    const list = page.getByTestId("library-rounds-list");
-    await expect(list).toContainText("Every 10 minutes · Confluence · ENG space");
-
-    const stored = await page.evaluate(() => {
-      const files = (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles;
-      return JSON.parse(files[".ontology-atlas/rounds.json"]);
-    });
+    const stored = await storedRounds(page);
     expect(stored.rounds).toHaveLength(1);
     expect(stored.rounds[0]).toMatchObject({
       kind: "service",
@@ -112,22 +148,15 @@ test.describe("Library rounds — the cadence rail", () => {
       { kind: "service", connectorId: "c1", connectorName: "confluence", location: "ENG space" },
     ]);
 
-    /*
-     * The registration sheet raises nothing in the console. The dev overlay's issue counter
-     * is the reason this is asserted rather than eyeballed: a screenshot of the sheet carried
-     * "1 Issue" in its corner, and nobody could tell whose it was from the picture.
-     */
-    if (problems.length > 0) console.log("console during the round sheet:\n" + problems.join("\n"));
+    if (problems.length > 0) console.log("console during the schedule sheet:\n" + problems.join("\n"));
     // The dev server's own advice about the shell's `scroll-behavior` is not this screen's.
     const noise = /Download the React DevTools|Turbopack|hot-update|Fast Refresh|scroll-behavior/i;
     expect(problems.filter((line) => !noise.test(line))).toEqual([]);
   });
 
-  test("the rail answers the keyboard, so nobody has to drag", async ({ page }) => {
+  test("the cadence rail answers the keyboard, so nobody has to drag", async ({ page }) => {
     await seedFirstRunSeen(page);
     await installDesktopBridge(page, { seedRounds: false });
-    await openRounds(page);
-
     await openNewDocumentSchedule(page);
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Minutes" }).click();
     const thumb = page.getByTestId("library-rounds-cadence-thumb");

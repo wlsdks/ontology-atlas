@@ -41,9 +41,34 @@ Unreadable or malformed files remain protected from overwrite; when Atlas cannot
 `.ontology-atlas/rounds.json`, as after the folder moved, the screen names that file and asks
 to check the folder is where Atlas opened it, instead of asking for the file to be fixed.
 Switching lanes temporarily disables the previous lane's create action until navigation
-commits. A link that names a schedule (`?round=<id>`, as Library check history sends for the
-round it shows) opens that schedule's row, and the Documents lane's link to Library check
-history selects that round there. A failed run states what stopped it and what to do next,
+commits. A link that names a schedule (`?round=<id>`) opens that schedule's row.
+
+A document schedule is a rule the Library keeps on its own while Atlas is open on this Mac:
+what to check, how often, and what it may write. **Pages still match their sources** hashes
+every cited source and runs the page check with no agent turn; when a page went stale it either
+marks it or spends one agent turn redrafting only the stale sources, and the new page waits as
+a draft. **Documents from a service** is one agent turn per pass through one attached connector:
+re-read what the service sent, bring in what is new (capped), and redraft the pages that
+changed. Registration is one sheet whose primary press reads **Allow and save** above the exact
+scope granted and the daily agent-turn bill in words; during a pass that standing scope answers
+every permission request and refuses anything outside `sources/` and draft `wiki/` pages,
+naming the refusal in the run. Schedules live in `.ontology-atlas/rounds.json` and their runs
+in `.ontology-atlas/rounds-ledger.jsonl`. Decision:
+`docs/records/decisions/2026-09-17-library-rounds-standing-scope-*.md`.
+
+The Documents lane owns its run history. Once a document pass has run, a **Run history**
+section stands below the schedule list: the ledger of passes on a time axis, newest first,
+with columns for time, schedule and result. A held pass is one quiet line; a pass that found a
+stale page, wrote, refused or failed is a card naming its pages, each a press into Wiki; a pass
+in flight stands at the top while it runs. Sleep gaps stay out until the person ticks the
+checkbox that counts them, which appears only when a gap was recorded. Before any document
+pass has run, or with only sleep gaps recorded, nothing is drawn: the schedule list already
+says nothing has run. A `?round=<id>` link narrows the history to that schedule, named beside
+the heading, until the person opens or closes a row. The retired Library address
+`/library/?tab=rounds` replaces itself with `/automations/?kind=documents`, keeping `round`.
+Decision: `docs/records/decisions/2026-11-14-automations-own-run-records-*.md`.
+
+A failed run states what stopped it and what to do next,
 and a run that found no agent links to Agents. A run whose result or next time could not be
 written still moves the schedule on, and its row says which file refused the write.
 

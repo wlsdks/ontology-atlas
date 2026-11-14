@@ -1,15 +1,15 @@
 "use client";
 
-import { LibraryBig, Plus, TriangleAlert } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { Plus, TriangleAlert } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
-import type { RoundRecord } from "@/entities/library-round";
+import type { RoundPassEntry, RoundRecord } from "@/entities/library-round";
+import { useLocalVault } from "@/entities/vault-session";
 import type { RoundsRunnerValue } from "@/features/library-rounds";
-import { Link, useRouter } from "@/i18n/navigation";
-import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
+import { useRouter } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
@@ -17,7 +17,8 @@ import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-
 import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { RoundsLedger } from "@/widgets/round-ledger";
+import { Button, EmptyState, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -33,6 +34,7 @@ const subscribeToRuntime = () => () => {};
 const serverRuntimeSnapshot = (): boolean | null => null;
 
 const EMPTY_RUNNER_ROUNDS: RoundRecord[] = [];
+const EMPTY_LEDGER: RoundPassEntry[] = [];
 
 const ARRIVAL_MS = Math.max(springSettleMs(SPRING.surface), MOTION.settle.duration * 1000);
 
@@ -51,6 +53,7 @@ export function AutomationsPage({
 }) {
   const t = useTranslations("automations");
   const tRounds = useTranslations("library.rounds");
+  const locale = useLocale();
   const desktop = useSyncExternalStore(subscribeToRuntime, isTauriVaultRuntime, serverRuntimeSnapshot);
   const params = useSearchParams();
   const router = useRouter();
@@ -68,9 +71,12 @@ export function AutomationsPage({
   const allRounds = runner?.rounds ?? EMPTY_RUNNER_ROUNDS;
   const rounds = useMemo(() => allRounds.filter((round) => isLaneRound(round, lane)), [allRounds, lane]);
   const requestedRound = params.get("round");
+  const linkedRound = rounds.find((round) => round.id === requestedRound) ?? null;
   const selected = selectedId === undefined
-    ? rounds.find((round) => round.id === requestedRound) ?? rounds[0] ?? null
+    ? linkedRound ?? rounds[0] ?? null
     : rounds.find((round) => round.id === selectedId) ?? null;
+  // The link's filter holds until the person picks a row themselves.
+  const documentLedger = useDocumentLedger(runner, lane === "documents", selectedId === undefined ? linkedRound : null);
 
   const selectLane = (nextLane: AutomationLane) => {
     const query = new URLSearchParams(params.toString());
@@ -135,7 +141,7 @@ export function AutomationsPage({
   const staged = !loading && empty;
   const broken = state === "malformed" || state === "unavailable";
   const stageCopy = state === "app-required"
-    ? { body: t("appRequiredDescription"), action: <GetAppLink>{t("getApp")}</GetAppLink> }
+    ? { body: t("appRequiredDescription"), action: <GetAppLink data-testid="automations-get-app">{t("getApp")}</GetAppLink> }
     : state === "no-vault"
       ? { body: t("openFolderDescription"),
         action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
@@ -200,10 +206,6 @@ export function AutomationsPage({
                     columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
                     trailing={<>
                       {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                      {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
-                      {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
-                        <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
-                      </Link> : null}
                     </>}>
                     <ul data-testid="automations-list" className="flex flex-col">
                       {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
@@ -211,6 +213,15 @@ export function AutomationsPage({
                         onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
                     </ul>
                   </AutomationListPanel>
+                  {documentLedger && runner ? <section data-testid="automations-run-ledger" aria-labelledby="automations-run-ledger-title" className="min-w-0">
+                    <RoundsLedger entries={documentLedger.entries} locale={locale} titleFor={documentLedger.titleFor}
+                      onOpenPage={(slug) => router.push(`/docs/?slug=${encodeURIComponent(slug.replace(/\.md$/, ""))}`)}
+                      running={runner.running && rounds.some((round) => round.id === runner.running?.roundId) ? runner.running : null}
+                      heading={<h2 id="automations-run-ledger-title" className={listStyles.panelTitle}>
+                        {t("historyTitle")}
+                        {documentLedger.round ? <span className="ml-2 font-normal text-[color:var(--color-text-tertiary)]">· {documentLedger.round.name}</span> : null}
+                      </h2>} />
+                  </section> : null}
                   <AutomationLaneFacts facts={[
                     { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
                     { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
@@ -226,4 +237,19 @@ export function AutomationsPage({
       </div>
     </main>
   );
+}
+
+/**
+ * The Documents lane's passes, narrowed to the schedule a link named; null until one has run,
+ * because the schedule list already says nothing has.
+ */
+function useDocumentLedger(runner: RoundsRunnerValue | null, shown: boolean, round: RoundRecord | null) {
+  const vault = useLocalVault();
+  const ledger = runner?.ledger ?? EMPTY_LEDGER;
+  const entries = useMemo(() => shown ? ledger.filter((entry) => entry.kind !== "ontology"
+    && (!round || entry.roundId === round.id || entry.outcome === "asleep")) : EMPTY_LEDGER, [ledger, round, shown]);
+  const pageTitles = useMemo(() => new Map((vault.manifest?.docs ?? []).map((doc) => [doc.slug, doc.title])), [vault.manifest]);
+  if (!entries.some((entry) => entry.outcome !== "asleep")) return null;
+  const titleFor = (slug: string) => pageTitles.get(slug.replace(/\.md$/, "")) || slug.replace(/^wiki\//, "").replace(/\.md$/, "");
+  return { entries, round, titleFor };
 }

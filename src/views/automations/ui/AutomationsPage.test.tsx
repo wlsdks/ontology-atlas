@@ -48,6 +48,12 @@ function runner(overrides: Partial<RoundsRunnerValue> = {}): RoundsRunnerValue {
   };
 }
 
+function pass(overrides: Partial<RoundPassEntry> = {}): RoundPassEntry {
+  return { v: 1, id: 'p', roundId: 'r', roundName: 'Pages match sources', kind: 'consistency',
+    startedAt: '2026-09-25T15:08:00Z', endedAt: '2026-09-25T15:08:01Z', outcome: 'held', checked: 2, stale: [],
+    written: [], refused: [], called: [], agentTurns: 0, summary: '', trigger: 'clock', ...overrides };
+}
+
 function renderPage(value: RoundsRunnerValue | null = runner(), onOpenDocumentSchedule = vi.fn(), onEditDocumentSchedule = vi.fn()) {
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
@@ -248,14 +254,36 @@ describe('Automations manager', () => {
     expect(unreachable.refresh).toHaveBeenCalledTimes(1);
   });
 
-  it('opens the schedule a link names, not the first one in the lane, and links back to that round in the Library', () => {
+  it('opens the schedule a link names, not the first one in the lane, and narrows the run history to it', () => {
     search = 'kind=documents&round=second';
     const first: RoundRecord = { id: 'first', kind: 'consistency', name: 'First check', enabled: true, onStale: 'mark',
       cadence: { every: 'hour' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
-    renderPage(runner({ rounds: [first, { ...first, id: 'second', name: 'Second check' }] }));
+    const ledger = [pass({ id: 'p-first', roundId: 'first' }), pass({ id: 'p-second', roundId: 'second' })];
+    renderPage(runner({ rounds: [first, { ...first, id: 'second', name: 'Second check' }], ledger }));
     expect(screen.getByTestId('automation-second')).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByTestId('automation-first')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('automations-open-library-rounds')).toHaveAttribute('href', '/library/?tab=rounds&round=second');
+    const history = screen.getByTestId('automations-run-ledger');
+    expect(within(history).getByRole('heading', { level: 2 })).toHaveTextContent('Second check');
+    expect(within(history).getByTestId('round-ledger-pass-p-second')).toBeInTheDocument();
+    expect(within(history).queryByTestId('round-ledger-pass-p-first')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('automation-first'));
+    expect(within(history).getByTestId('round-ledger-pass-p-first')).toBeInTheDocument();
+  });
+
+  it('draws the documents run history only once a document pass has run', () => {
+    search = 'kind=documents';
+    const docs: RoundRecord = { id: 'docs', kind: 'consistency', name: 'Pages match sources', enabled: true, onStale: 'mark',
+      cadence: { every: 'hour' }, createdAt: '2026-09-25T00:00:00Z', nextDueAt: '2026-09-26T01:00:00Z' };
+    const asleep = pass({ id: 'sleep', roundId: undefined, outcome: 'asleep' });
+    const view = renderPage(runner({ rounds: [docs], ledger: [asleep, pass({ id: 'review', kind: 'ontology' })] }));
+    expect(screen.queryByTestId('automations-run-ledger')).toBeNull();
+    view.unmount();
+    renderPage(runner({ rounds: [docs], ledger: [asleep, pass({ id: 'held', roundId: 'docs' })] }));
+    const history = screen.getByTestId('automations-run-ledger');
+    expect(within(history).getByRole('heading', { level: 2 })).toHaveTextContent(en.automations.historyTitle);
+    expect(within(history).getByTestId('round-ledger-pass-held')).toBeInTheDocument();
+    expect(within(history).getByTestId('round-ledger-show-sleep')).not.toBeChecked();
   });
 
   it('says what stopped a failed pass and what to do next, instead of the raw error', () => {

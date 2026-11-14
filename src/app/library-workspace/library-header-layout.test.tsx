@@ -5,8 +5,7 @@ vi.mock('next/dynamic', () => ({ default: () => () => null }));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('tab=ontology') }));
 vi.mock('next-intl', () => ({ useTranslations: () => (key: string) => key, useFormatter: () => ({ number: String }) }));
 vi.mock('@/views/library', () => ({
-  LibraryConstellations: () => null, LibraryPage: () => null, LibraryRounds: () => null,
-  useLibraryRounds: () => null,
+  LibraryConstellations: () => null, LibraryPage: () => null,
 }));
 vi.mock('@/entities/vault-session', () => ({ useLocalVault: () => ({ status: 'loaded', handle: null, manifest: { docs: [] } }) }));
 vi.mock('@/entities/docs-vault', () => ({ selectWikiPages: () => [] }));
