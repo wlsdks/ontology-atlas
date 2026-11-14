@@ -79,6 +79,8 @@ export const ACCEPTED = {
       'architecture.patternLabels.feature-sliced-design': 'the name of a published architecture pattern',
       'architecture.patternLabels.mvp': 'an acronym used as the pattern name',
       'architecture.inspectorEscHint': 'the name of a keyboard key',
+      'atlasGit.remoteFetch': 'a Git command name, shown as developers type it',
+      'atlasGit.remotePush': 'a Git command name, shown as developers type it',
       'connectors.source.claude': 'a lowercase connector identifier shown as written',
       'connectors.source.codex': 'a lowercase connector identifier shown as written',
       'connectors.source.cursor': 'a lowercase connector identifier shown as written',

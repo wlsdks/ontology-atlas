@@ -43,7 +43,7 @@ export const WEBVIEW_WORKBENCH_MARKERS = [
 
 const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
   /에이전트|Agents/,
-  /이 컴퓨터의 도구|MCP 연결|Tools on this computer|MCP connection/,
+  /이 컴퓨터의 에이전트|MCP 연결|Agents on this computer|MCP connection/,
 ];
 
 /*
