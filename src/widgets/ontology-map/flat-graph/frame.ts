@@ -830,12 +830,13 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
   }
 
   const fontFamily = labelFontFamily();
+  const unmeasuredLine = evidence !== null && !evidence.measured ? input.labels?.evidenceUnmeasured?.() ?? null : null;
   const admitUnder = (a: GraphAttention) => admittedNames({
     model, layout, tokens: P, labels: input.labels, measureText, fontFamily, scale: input.scale, growth: stepGrowth,
     elementLabel: input.elementLabel, staleByDomain: measured ? evidence!.staleByDomain : null,
     lit: contextMode ? null : a.lit, focusId: a.focusId, attentionKey: a.key, agentFocusId: contextMode ? null : input.agentFocusNodeId,
     selected: a.selected, named: a.named, reach: a.reach, lines: contextMode ? NO_LINES : a.lines,
-    discRadius: stepRadius, elementSpacingPx,
+    discRadius: stepRadius, elementSpacingPx, hubCaption: unmeasuredLine,
   });
   const admission = admitUnder(attention);
   const leaving = F.leavingId;
@@ -876,7 +877,7 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
       L.names.add(nameMark(name, hub.x, hub.y + dy, inkOf(hub.id), inks.name, P.nameHaloPx));
     };
     hubLine(dialPlacementLine(placement.state, placement.progress, input.labels));
-    if (evidence !== null && !evidence.measured) hubLine(input.labels?.evidenceUnmeasured?.());
+    hubLine(unmeasuredLine);
   }
 
   L.names.seal();
