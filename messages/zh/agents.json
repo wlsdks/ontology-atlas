@@ -97,7 +97,6 @@
     "clearKey": "移除密钥",
     "localOneAtATime": "对话一次只使用一个运行器。连接这个会释放 {current}。",
     "auditSummary": "此文件夹中的发送记录：{count, plural, other {# 条}}",
-    "auditNoVault": "打开一个文件夹后，每次发送都会记录在其中。",
     "auditRecent": "最近 {count} 条",
     "auditPurposeJudgment": "依据检查",
     "jev": {

@@ -97,7 +97,6 @@
     "clearKey": "キーを削除",
     "localOneAtATime": "会話で使えるランナーは一度に1つです。これを接続すると、{current}は切断されます。",
     "auditSummary": "このフォルダーに残した送信記録{count, plural, other {#件}}",
-    "auditNoVault": "フォルダを開くと、すべての送信がその中に記録されます。",
     "auditRecent": "最新{count}件",
     "auditPurposeJudgment": "根拠の確認",
     "jev": {

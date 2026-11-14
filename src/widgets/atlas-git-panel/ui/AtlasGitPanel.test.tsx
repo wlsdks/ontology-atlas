@@ -391,7 +391,7 @@ describe("AtlasGitPanel desktop", () => {
     // Scoped to the setup stage, since the title and undo line sit in its h1 and last line.
     await screen.findByTestId("atlas-git-not-initialized");
     const setup = screen.getByTestId("atlas-git-setup");
-    expect(setup).toHaveTextContent("git을 연동하면 변경이 쌓여요");
+    expect(setup).toHaveTextContent("이 폴더는 아직 Git 저장소가 아니에요");
     expect(screen.getByTestId("atlas-git-init")).toBeEnabled();
     // Say what will be created, and how to undo it, before it is pressed.
     expect(setup).toHaveTextContent(".git");
@@ -712,7 +712,7 @@ describe("AtlasGitPanel setup mode", () => {
     expect(steps[0]).toHaveAttribute("data-step-state", "current");
     expect(steps[1]).toHaveAttribute("data-step-state", "todo");
     expect(steps[2]).toHaveAttribute("data-step-state", "todo");
-    expect(ladder).not.toHaveTextContent("보낼");
+    expect(ladder).not.toHaveTextContent("Push");
   });
 
   it("marks the third ladder step current before recording starts", async () => {
@@ -832,8 +832,8 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   it("puts each divergence count on the button it justifies", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("보내기 2");
-    expect(screen.getByRole("button", { name: "받아오기 · 전체 저장소 1" })).toBeEnabled();
+    expect(await screen.findByTestId("atlas-git-remote-push")).toHaveTextContent("푸시 2");
+    expect(screen.getByRole("button", { name: "Pull · 전체 저장소 1" })).toBeEnabled();
     // The numbers themselves stay for assistive technology (losing the visual chip does not lose the fact).
     expect(screen.getByTestId("atlas-git-divergence")).toHaveTextContent("2");
   });
@@ -865,14 +865,14 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
   it("names the repository-wide Pull and does not invent unknown counts", async () => {
     installDesktopGit({ status: { ...STATUS_WITH_CHANGES, ahead: null, behind: null } });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
-    expect(await screen.findByRole("button", { name: "받아오기 · 전체 저장소" })).toBeEnabled();
+    expect(await screen.findByRole("button", { name: "Pull · 전체 저장소" })).toBeEnabled();
     expect(screen.queryByTestId("atlas-git-divergence")).toBeNull();
-    expect(screen.getByText(/받아오면 저장소 전체 파일이 바뀔 수 있어요/)).toBeVisible();
+    expect(screen.getByText(/Pull하면 저장소 전체 파일이 바뀔 수 있어요/)).toBeVisible();
   });
 
   it.each([
-    { ahead: null, behind: null, hint: "보낼 커밋 수를 확인하지 못했어요" },
-    { ahead: 0, behind: 1, hint: "마지막으로 확인한 원격 기준 보낼 커밋이 없어요" },
+    { ahead: null, behind: null, hint: "Push할 커밋 수를 확인하지 못했어요" },
+    { ahead: 0, behind: 1, hint: "마지막으로 확인한 원격 기준 Push할 커밋이 없어요" },
   ])("describes Push for ahead=$ahead and behind=$behind", async ({ ahead, behind, hint }) => {
     installDesktopGit({
       status: { ...STATUS_WITH_CHANGES, changedCount: 0, ahead, behind },
@@ -898,7 +898,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     const sections = await screen.findAllByTestId("atlas-git-section");
     const text = sections.map((el) => el.textContent).join(" ");
-    expect(text).toContain("아직 안 보냄 1");
+    expect(text).toContain("Push 안 한 커밋 1");
     // Steps that exist only on the remote are not in local history, so they are **guidance, not a row**.
     expect(screen.getByTestId("atlas-git-behind-row")).toHaveAccessibleName(/저장소 전체 파일이 바뀔 수 있어요/);
   });
@@ -923,7 +923,7 @@ describe("AtlasGitPanel remote actions Fetch, Pull and Push", () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     fireEvent.click(await screen.findByTestId("atlas-git-remote-fetch"));
-    await waitFor(() => expect(screen.getByText(/내 걸음 2개/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/로컬 커밋 2개/)).toBeInTheDocument());
     expect(screen.queryByText(/remote-diverged/)).toBeNull();
   });
 
@@ -1199,7 +1199,7 @@ describe("AtlasGitPanel selected concept properties and neighbours", () => {
     expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
     expect(ego).toHaveTextContent("아틀라스");
     expect(ego).toHaveTextContent("capabilities/foo");
-    expect(ego).toHaveTextContent("AI에게 말할 때 쓰는 이름");
+    expect(ego).toHaveTextContent("에이전트에게 알려줄 이름");
     expect(ego).not.toHaveTextContent("에이전트 이름");
 
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.
@@ -1316,8 +1316,8 @@ describe("AtlasGitPanel changes without git", () => {
     });
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     // Before status arrives this is the loading frame, so wait for the connect button.
-    expect(await screen.findByTestId("atlas-git-init")).toHaveTextContent("git 연동하기");
-    expect(screen.getByTestId("atlas-git-setup")).toHaveTextContent("git을 연동하면 변경이 쌓여요");
+    expect(await screen.findByTestId("atlas-git-init")).toHaveTextContent("Git 저장소 만들기");
+    expect(screen.getByTestId("atlas-git-setup")).toHaveTextContent("이 폴더는 아직 Git 저장소가 아니에요");
   });
 
   it("uses the same summary component in the web fallback", async () => {
@@ -2415,17 +2415,17 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
 
     const location = await screen.findByTestId("atlas-git-location");
     expect(location).toHaveTextContent("feature-x");
-    expect(location).toHaveTextContent("origin에 아직 보낸 적 없는 브랜치예요");
+    expect(location).toHaveTextContent("origin에 아직 Push하지 않은 브랜치예요");
     expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
     // Nothing on this screen can reach the form that rewrites `origin`.
     expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
     expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
-    expect(screen.getByTestId("atlas-git-dock-never-sent")).toHaveTextContent("아직 보낸 적이 없어요");
+    expect(screen.getByTestId("atlas-git-dock-never-sent")).toHaveTextContent("아직 Push한 적이 없어요");
 
     const push = screen.getByTestId("atlas-git-remote-push");
     act(() => push.focus());
     const [hint] = await screen.findAllByTestId("atlas-git-remote-push-hint");
-    expect(hint).toHaveTextContent("feature-x 브랜치를 origin에 처음 보내요");
+    expect(hint).toHaveTextContent("feature-x 브랜치를 origin에 처음 Push해요");
     expect(hint).toHaveTextContent("git push -u origin feature-x");
 
     fireEvent.click(push);
@@ -2435,7 +2435,7 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     }));
     expect(snapshotInvokeCalls()).toHaveLength(0);
     expect(await screen.findByTestId("atlas-git-remote-notice")).toHaveTextContent(
-      "feature-x 브랜치를 origin에 보냈어요",
+      "feature-x 브랜치를 origin에 Push했어요",
     );
     expect(setRemoteCalls()).toHaveLength(0);
   });
@@ -2451,7 +2451,7 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     expect(tick).toBeChecked();
     expect(tick).toBeEnabled();
     expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent(
-      "feature-x 브랜치를 처음 보내고",
+      "feature-x 브랜치를 처음 Push하고",
     );
 
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
@@ -2509,7 +2509,7 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     const location = await screen.findByTestId("atlas-git-location");
     expect(screen.getByTestId("atlas-git-location-ref")).toHaveTextContent("f3e793f");
     expect(screen.getByTestId("atlas-git-location-ref")).not.toHaveTextContent("HEAD");
-    expect(location).toHaveTextContent("보내려면 브랜치가 필요해요");
+    expect(location).toHaveTextContent("Push하려면 브랜치가 필요해요");
     expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
     expect(screen.getByTestId("atlas-git-dock-detached")).toHaveTextContent("f3e793f");
     for (const id of [
@@ -2532,7 +2532,7 @@ describe("AtlasGitPanel — the remote state is told as it is", () => {
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
 
     const location = await screen.findByTestId("atlas-git-location");
-    expect(location).toHaveTextContent("이 브랜치는 보낼 곳이 정해지지 않았어요");
+    expect(location).toHaveTextContent("이 브랜치는 Push할 곳이 정해지지 않았어요");
     expect(location).not.toHaveTextContent("원격 저장소가 아직 없어요");
     expect(screen.queryByTestId("atlas-git-remote-toggle")).toBeNull();
     expect(screen.queryByTestId("atlas-git-dock-connect-remote")).toBeNull();
@@ -2742,7 +2742,7 @@ describe("AtlasGitPanel — a saved remote is not a dead end", () => {
       expect(calls[0][1]).toMatchObject({ expectedBranch: "main", setUpstream: true });
     });
     const notice = await screen.findByTestId("atlas-git-remote-notice");
-    expect(notice).toHaveTextContent("main 브랜치를 origin에 보냈어요");
+    expect(notice).toHaveTextContent("main 브랜치를 origin에 Push했어요");
     // Said with the screen it describes: the three remote actions are already there.
     expect(within(screen.getByTestId("atlas-git-location")).queryByTestId("atlas-git-remote-state")).toBeNull();
     expect(screen.getByTestId("atlas-git-remote-fetch")).toBeInTheDocument();
@@ -2761,7 +2761,7 @@ describe("AtlasGitPanel — a saved remote is not a dead end", () => {
     const optIn = screen.getByTestId("atlas-git-push-optin");
     expect(optIn).toBeEnabled();
     expect(optIn).toBeChecked();
-    expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent("main 브랜치를 처음 보내고");
+    expect(screen.getByTestId("atlas-git-confirm-step")).toHaveTextContent("main 브랜치를 처음 Push하고");
     fireEvent.click(screen.getByTestId("atlas-git-confirm-button"));
     await waitFor(() => {
       const calls = snapshotInvokeCalls();
@@ -2846,7 +2846,7 @@ describe("AtlasGitPanel — a saved remote is not a dead end", () => {
     fireEvent.click(await screen.findByTestId("atlas-git-confirm-button"));
     const line = await screen.findByTestId("atlas-git-snapshot-result");
     // "Saved 2 · Saved 2 and sent to …" said the save twice.
-    expect(line.textContent).toBe("2개 커밋하고 git@github.com:me/repo.git으로 보냈어요");
+    expect(line.textContent).toBe("2개 커밋하고 git@github.com:me/repo.git에 Push했어요");
     sent.unmount();
 
     tauriApiMock.invoke.mockReset();

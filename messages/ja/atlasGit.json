@@ -88,7 +88,6 @@
   "noVaultBody": "文書のフォルダを選ぶと、その変更の記録をここで始められます。",
   "noVaultAction": "フォルダを選ぶ",
   "conceptChipsAria": "変更された概念を選ぶ",
-  "othersTitle": "その他のファイル{count}件",
   "diffSkippedHint": "間に変更のない行があります",
   "stepNoConcepts": "概念の変更なし",
   "remoteToggle": "リモートを接続",
