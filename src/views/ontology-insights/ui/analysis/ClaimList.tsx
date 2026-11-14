@@ -13,6 +13,7 @@ import styles from './analysis.module.css';
 
 export type BoardMarker = 'moved' | 'missing';
 const name = (node: KnowledgeGraphNode) => node.display ?? node.title;
+const GAP_COLUMNS = ['document', 'anchor', 'definition', 'boundary', 'uncertainty'] as const;
 
 export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, vaultKey, onSelectClaim, empty }: {
   board: AnalysisBoard; selectedClaim: string | null; markers: ReadonlyMap<string, BoardMarker>; matches: ReadonlySet<string> | null; onlyGaps: boolean; vaultKey: string;
@@ -27,7 +28,14 @@ export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, va
   const tabStop = stopOf(shownIds, selectedClaim);
 
   return <div className={styles.claimList} data-testid="analysis-board" data-mode="evidence" role="group" aria-label={t('board')}>
-    {lanes.length ? null : empty}
+    {lanes.length ? <p className={styles.claimColumns} aria-hidden="true" data-testid="analysis-gap-columns">
+      <span />
+      {GAP_COLUMNS.map(gap => <span key={gap} className={styles.claimColumn}>{t(`gapColumn.${gap}`)}</span>)}
+      <span className={styles.claimLegend}>
+        <span className={styles.claimCell} data-missing />{t('gapLegendMissing')}
+        <span className={styles.claimCell} />{t('gapLegendRecorded')}
+      </span>
+    </p> : empty}
     {lanes.map(({ lane, claims }, index) => {
       const motion = stagger(lane.id, index), laneName = lane.domain ? name(lane.domain) : t('laneUnassigned');
       return <section key={lane.id} data-board-lane={lane.id} aria-labelledby={`claim-lane-${index}`} className={`${styles.claimLane} ${motion.className ?? ''}`} style={motion.style}>
@@ -40,13 +48,16 @@ export function ClaimList({ board, selectedClaim, markers, matches, onlyGaps, va
           {claims.map(claim => {
             const id = claim.node.id, pressed = id === selectedClaim, marker = markers.get(id);
             const gaps = claim.gaps.map(gap => t(`gapShort.${gap}`));
+            const recorded = [claim.roles.length ? t('recordedRoles', { count: claim.roles.length }) : null, claim.paths.length ? t('recordedPaths', { count: claim.paths.length }) : null].filter(Boolean).join(' · ');
             const state = [marker ? t(`sourceShort.${marker}`) : null, ...gaps].filter(Boolean).join(' · ');
             return <li key={id}>
               <button type="button" data-testid="analysis-claim" data-analysis-claim-id={id} aria-pressed={pressed} tabIndex={id === tabStop ? 0 : -1}
                 aria-label={[name(claim.node), state].filter(Boolean).join(' · ')} onClick={() => onSelectClaim(id)} onFocus={() => setRoving(id)} onKeyDown={moveFocus}
                 className={controlClass({ shape: 'row', size: 'md', tone: pressed ? 'strong' : 'secondary', active: pressed, hoverSurface: 'lift', hoverInk: 'strong', className: styles.claimRow })}>
                 <span className={styles.claimName} title={name(claim.node)}>{name(claim.node)}</span>
-                <span className={styles.claimGaps} data-clean={!gaps.length || undefined}>{gaps.length ? gaps.join(' · ') : [claim.roles.length ? t('recordedRoles', { count: claim.roles.length }) : null, claim.paths.length ? t('recordedPaths', { count: claim.paths.length }) : null].filter(Boolean).join(' · ')}</span>
+                {GAP_COLUMNS.map(gap => <span key={gap} className={styles.claimCell} data-gap={gap} data-missing={claim.gaps.includes(gap) || undefined} title={claim.gaps.includes(gap) ? t(`gapShort.${gap}`) : undefined} />)}
+                <span className={styles.claimGaps} data-clean={!gaps.length || undefined}>{gaps.length ? gaps.join(' · ') : recorded}</span>
+                <span className={styles.claimRecorded}>{recorded}</span>
                 {marker ? <span className={styles.claimSource} data-marker={marker}><span className={styles.boardMarker} data-marker={marker} aria-hidden="true" />{t(`sourceShort.${marker}`)}</span> : null}
               </button>
             </li>;

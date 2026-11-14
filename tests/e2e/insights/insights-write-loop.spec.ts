@@ -46,6 +46,9 @@ test('Analysis correction reviews one typed relation before writing its exact do
   await page.goto('/en/ontology/insights/?tab=do-next&guides=off');
   await expect(page.getByRole('main')).toContainText('Insight Shop');
   const claim = page.getByTestId('analysis-claim').filter({ hasText: 'Pay' });
+  await expect(claim.locator('[data-gap="anchor"]')).not.toHaveAttribute('data-missing');
+  const unanchored = page.getByTestId('analysis-claim').filter({ hasText: 'Receipt' });
+  await expect(unanchored.locator('[data-gap="anchor"]')).toHaveAttribute('data-missing');
   await claim.click();
   const claimId = await claim.getAttribute('data-analysis-claim-id');
   await page.getByTestId('analysis-evidence').locator('a[href*="workbench=edit"]').click();
@@ -66,7 +69,8 @@ test('Analysis correction reviews one typed relation before writing its exact do
   await expect(review).toContainText('depends_on');
   await expectOriginalFiles(page);
   await page.getByTestId('meaning-editor-apply').click();
-  await expect.poll(() => readVaultFile(page, 'capabilities/pay.md')).toContain(RATIONALE);
+  // A read that lands while the app replaces the file rejects; the poll reads again.
+  await expect.poll(() => readVaultFile(page, 'capabilities/pay.md').catch(() => '')).toContain(RATIONALE);
   const written = parseFrontmatter(await readVaultFile(page, 'capabilities/pay.md')) as ParsedDocument;
   const original = parseFrontmatter(SEED['capabilities/pay.md']) as ParsedDocument;
   expect(written.frontmatter).toMatchObject({

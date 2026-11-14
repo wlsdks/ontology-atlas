@@ -399,6 +399,15 @@
         "boundary": "Boundary missing",
         "uncertainty": "Unknowns not recorded"
       },
+      "gapLegendMissing": "Gap",
+      "gapLegendRecorded": "Recorded",
+      "gapColumn": {
+        "document": "Doc",
+        "anchor": "Anchor",
+        "definition": "Definition",
+        "boundary": "Boundary",
+        "uncertainty": "Unknowns"
+      },
       "declaringDocument": "Declared in",
       "recordedRoles": "{count, plural, one {# implementation element} other {# implementation elements}}",
       "recordedPaths": "{count, plural, one {# source path} other {# source paths}}",
