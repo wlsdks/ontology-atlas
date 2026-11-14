@@ -436,6 +436,8 @@
    */
   --git-timeline-w: clamp(460px, 34vw, 720px);
   --git-setup-measure: 520px;
+  /* The harness draft stage: wide enough for the preview's folder column and layer column side by side. */
+  --architecture-draft-stage-max: 880px;
   /* Visual timestamp column in the list. At 72px, "29 minutes ago" was clipped
      in measurement, and a clipped timestamp is not a timestamp. English is
      longer than Korean, so it determines the width. This column **does not
