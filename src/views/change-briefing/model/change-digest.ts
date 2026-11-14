@@ -56,6 +56,34 @@ export function changeTitle(subject: string, message?: string) {
   return ownTitle(subject, message).replace(TRAILING_PR, '').trim() || subject;
 }
 
+/** The title without its `type(label):` head, for a list that already names the label. */
+export function titleWithoutHead(subject: string, message?: string) {
+  const title = changeTitle(subject, message);
+  return title.replace(CONVENTIONAL_HEAD, '').trim() || title;
+}
+
+const BODY_LINES = 3;
+const TRAILER = /^[\w-]+: \S/;
+/** The first lines an author wrote under the title; echoes of the title and trailers are not prose. */
+export function changeBody(subject: string, message?: string): string[] {
+  if (!message) return [];
+  const title = changeTitle(subject, message);
+  const lines = message.split('\n').map(line => line.trim());
+  const prose = lines.filter(line => line && line !== subject && !line.includes(title) && !TRAILER.test(line) && !/^#\d+\s/.test(line));
+  return prose.slice(0, BODY_LINES);
+}
+
+/** Top-level directories of a change with their file counts, most files first. O(paths). */
+export function directoryCounts(paths: readonly string[]): [string, number][] {
+  const counts = new Map<string, number>();
+  for (const path of new Set(paths)) {
+    const slash = path.indexOf('/');
+    const directory = slash < 0 ? '.' : path.slice(0, slash);
+    counts.set(directory, (counts.get(directory) ?? 0) + 1);
+  }
+  return [...counts].sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0]));
+}
+
 export function pullRequestNumber(subject: string): number | null {
   const found = MERGE_PREFIX.exec(subject) ?? HOSTED_MERGE.exec(subject) ?? TRAILING_PR.exec(subject);
   return found ? Number(found[1]) : null;

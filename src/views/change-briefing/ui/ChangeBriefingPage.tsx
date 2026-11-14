@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowLeft, CalendarCheck, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronLeft, ChevronRight, RefreshCw, Settings2 } from 'lucide-react';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { useLocalVault, useVaultSessionIdentityScope } from '@/entities/vault-session';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
@@ -393,7 +393,7 @@ export function ChangeBriefingPage() {
     </div>
     <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
     <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('chooseDates')} aria-haspopup="dialog" aria-expanded={datesOpen} onClick={event => { event.currentTarget.focus({ preventScroll: true }); setDatesOpen(true); }}><CalendarDays size={16} /></IconButton>
-    {period !== 'custom' && <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('today')} onClick={() => setAnchor(today)}><CalendarCheck size={16} /></IconButton>}
+    {period !== 'custom' && range && (today < range.start || today > range.end) && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" onClick={() => setAnchor(today)}>{t('today')}</Button>}
     <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={readAgain}><RefreshCw size={16} /></IconButton>
   </section>;
   const digestStatus = seekingLatest ? 'loading' : status === 'empty' ? null : status;
