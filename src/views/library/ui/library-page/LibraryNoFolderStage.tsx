@@ -18,12 +18,9 @@ export function LibraryNoFolderStage({ t }: { t: ReturnType<typeof useTranslatio
         titleAs="h1"
         art={() => (
           <>
-            <div data-testid="library-empty-object" className="relative aspect-square w-full">
+            {/* A mask, not a painted vignette: the stage's plate shows through the object's rim. */}
+            <div data-testid="library-empty-object" className="relative aspect-square w-full [mask-image:radial-gradient(closest-side,black_62%,transparent)]">
               <LibraryConstellation />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,var(--color-canvas-a70)_82%,var(--color-canvas)_100%)]"
-              />
             </div>
             {/* The object's two marks, named: a cube is a source, a sphere the wiki page that cites it. */}
             <div className="mt-2 flex items-center justify-center gap-5 text-label text-[color:var(--color-text-tertiary)]">
