@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { FileText, Presentation, Table2 } from 'lucide-react';
 
 import { MOTION, STAGGER } from '@/shared/motion';
-import type { FeatureStageMotion } from '@/shared/ui';
+import { FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';
 
 const SOURCES = [
   { icon: FileText, tileY: 52, citeY: 103 },
@@ -27,6 +27,7 @@ export function LibraryCitedWikiArtwork({ arriving, engaged, reduced, sourcesLab
       {SOURCES.map(({ icon: Icon, tileY, citeY }, index) => {
         const tileMidY = tileY + TILE.height / 2;
         const tileEdge = TILE.x + TILE.width;
+        const cite = `M${tileEdge + 6} ${tileMidY}C${tileEdge + 54} ${tileMidY} ${PAGE.x - 48} ${citeY} ${PAGE.x} ${citeY}`;
         return <g key={tileY}>
           <motion.g
             initial={reduced ? false : { opacity: 0, x: -16 }}
@@ -37,10 +38,11 @@ export function LibraryCitedWikiArtwork({ arriving, engaged, reduced, sourcesLab
             <Icon x={TILE.x + 20} y={tileY + 16} width="24" height="24" className="text-[color:var(--color-text-secondary)]" />
           </motion.g>
           <motion.path
-            d={`M${tileEdge + 6} ${tileMidY}C${tileEdge + 54} ${tileMidY} ${PAGE.x - 48} ${citeY} ${PAGE.x} ${citeY}`}
+            d={cite}
             stroke={engaged ? 'var(--color-indigo-line-a54)' : 'var(--color-indigo-line-a35)'} strokeWidth="2"
             initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={after(index, 2)}
           />
+          <FeatureStagePulse d={cite} delay={beat * 4 + STAGGER * index} engaged={engaged} reduced={reduced} />
           <motion.circle cx={PAGE.x} cy={citeY} r="5" fill="var(--color-indigo-accent)"
             initial={reduced ? false : { opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={after(index, 3)} />
           {[0, 1].map(line => <motion.rect key={line} x={PAGE.x + 20} y={citeY - 3 + line * 14} width={line === 0 ? 88 : 60} height="6" rx="3"
