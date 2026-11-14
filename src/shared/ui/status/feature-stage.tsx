@@ -37,7 +37,7 @@ export function FeatureStage({
   title: ReactNode;
   /** `h1` where the page has no header bar naming it. */
   titleAs?: 'h1' | 'h2';
-  body: ReactNode;
+  body?: ReactNode;
   alert?: ReactNode;
   action?: ReactNode;
   note?: ReactNode;
@@ -75,7 +75,7 @@ export function FeatureStage({
         <div className="relative">{art({ arriving: !reduced && arriving, engaged: !reduced && (hovered || focused), reduced })}</div>
       </div>
       <Title className="mt-10 text-hero leading-hero font-[var(--font-weight-signature)] tracking-[var(--tracking-display)]">{title}</Title>
-      <p className="mt-4 max-w-md text-balance text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p>
+      {body ? <p className="mt-4 max-w-md text-balance text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">{body}</p> : null}
       {alert}
       {action ? (
         <div

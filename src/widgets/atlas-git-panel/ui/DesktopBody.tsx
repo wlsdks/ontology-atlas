@@ -210,8 +210,8 @@ export function DesktopBody({
         body={t("install.body")}
         note={t("scopeNotice")}
       >
-        <div className="flex flex-col gap-3" data-testid="atlas-git-not-installed">
-          <ul className="flex flex-col gap-2">
+        <div className="flex flex-col items-center gap-3" data-testid="atlas-git-not-installed">
+          <ul className="flex flex-col items-center gap-2">
             {options.map((option) => (
               <li key={option.labelKey} className="flex items-center gap-2">
                 <span className="text-label text-[color:var(--color-text-tertiary)]">
@@ -242,7 +242,7 @@ export function DesktopBody({
             onClick={() => {
               onRecheckGit();
             }}
-            className={cn(SETUP_ACTION_PLACEMENT, "self-start")}
+            className={SETUP_ACTION_PLACEMENT}
           >
             <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t("install.recheck")}
@@ -264,14 +264,14 @@ export function DesktopBody({
         body={loadErrorText ?? undefined}
         note={t("scopeNotice")}
       >
-        <div className="flex flex-col gap-3" data-testid="atlas-git-load-error">
+        <div className="flex flex-col items-center gap-3" data-testid="atlas-git-load-error">
           <RemoteResultLine notice={remoteActionNotice} error={remoteActionError} />
           <Button
             variant="outline"
             size="sm"
             data-testid="atlas-git-retry"
             onClick={onRetry}
-            className={cn(SETUP_ACTION_PLACEMENT, "self-start")}
+            className={SETUP_ACTION_PLACEMENT}
           >
             <RefreshCw size={ICON_SIZE.md} aria-hidden />
             {t("retryButton")}
@@ -292,13 +292,13 @@ export function DesktopBody({
         body={t("notInitializedHint")}
         note={t("initEscape")}
       >
-        <div className="flex flex-col gap-4" data-testid="atlas-git-not-initialized">
+        <div className="flex w-full flex-col items-center gap-4" data-testid="atlas-git-not-initialized">
           {/* Say what will be created **before** it is pressed. */}
           <p className="text-body leading-body text-[color:var(--color-text-tertiary)]">
             {t("initWhatHappens")}
           </p>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
             <Button
               variant="primary"
               size="sm"

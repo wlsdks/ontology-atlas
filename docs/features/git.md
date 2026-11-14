@@ -45,7 +45,7 @@ change-review, snapshot, and history links.
 The screen layout splits into two stages. First, **is this screen even in a state to do work** (`data-stage`) — if the browser can't run git or the vault hasn't been selected yet, it stops here. If it can work, it then splits by **whether there is something to decide now** (`data-shape`).
 
 #### State where work cannot start yet (`web` · `no-vault` · `not-initialized` · `loading` · `error`)
-- These states (`web` · `no-vault` · `not-initialized` · `error`) are drawn at the same size and position (`--git-setup-measure`, one 520px cell), centred in the window under the header bar. `loading` is the centred wait every page uses, since the state after it is usually the workbench
+- These states (`web` · `no-vault` · `not-initialized` · `error`) are drawn as the shared feature stage (`FeatureStage`), centred in the window under the header bar: an artwork of a history rail whose top change is not recorded yet, the task as the title, the three connect steps in one row and this state's action. While the action is hovered or focused, the pending change in the artwork becomes a commit. `loading` is the centred wait every page uses, since the state after it is usually the workbench
 - The header bar names the destination; from 1024px the workbench's location line stands at the bar's right; below that it is the workbench's first row. A branch too long for the bar truncates, and hovering it shows the whole branch and upstream
 - Shows what to do in one line: Open app → select folder → start recording.
   Registering a remote repository is optional so it's not included in this line. No additional menus or decorative links here
