@@ -689,7 +689,7 @@ export function OntologyHexBoardMap({
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const next = readHexRoom(canvasRef.current, r.width, r.height, chrome?.free ?? null);
+      const next = readHexRoom(canvasRef.current, r.width, r.height, wrap);
       setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };

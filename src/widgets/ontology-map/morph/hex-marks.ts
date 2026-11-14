@@ -35,12 +35,14 @@ export interface MapChrome {
   blocks: Rect[];
 }
 
-export function hexMapChrome(canvas: HTMLCanvasElement | null): MapChrome | null {
+/** Chrome is every control over the canvas except those inside `board`. */
+export function hexMapChrome(canvas: HTMLCanvasElement | null, board: Element | null = canvas): MapChrome | null {
   if (!canvas) return null;
   const r = canvas.getBoundingClientRect();
   const canvasRect = { x: r.x, y: r.y, width: r.width, height: r.height };
-  const free = computeFreeArea(canvasRect, collectCanvasObstacles(canvas, canvasRect));
-  const small = collectCanvasObstacles(canvas, canvasRect, { minSide: 12 });
+  const own = board ?? canvas;
+  const free = computeFreeArea(canvasRect, collectCanvasObstacles(own, canvasRect));
+  const small = collectCanvasObstacles(own, canvasRect, { minSide: 12 });
   const lane = small.filter(
     (b) => b.cameraObstacle !== "side-panel" && b.height < canvasRect.height * 0.6 && b.width < canvasRect.width * 0.6,
   );
@@ -62,8 +64,8 @@ export function hexMapChrome(canvas: HTMLCanvasElement | null): MapChrome | null
   return { free: rel(out), blocks: small.map(rel) };
 }
 
-export function hexFreeArea(canvas: HTMLCanvasElement | null): Rect | null {
-  return hexMapChrome(canvas)?.free ?? null;
+export function hexFreeArea(canvas: HTMLCanvasElement | null, board: Element | null = canvas): Rect | null {
+  return hexMapChrome(canvas, board)?.free ?? null;
 }
 
 const ROOM_REST_SLACK = 12;
@@ -78,12 +80,15 @@ export function roomMovesRest(prev: Rect | null, next: Rect): boolean {
   );
 }
 
-export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, height: number, measured: Rect | null = hexFreeArea(canvas)): Rect {
-  const free = measured ?? { x: 0, y: 0, width, height };
+/**
+ * The room the board rests in. A glide into the board predicts it before the board mounts, so
+ * only chrome outside `board` is measured and the board's own footer is reserved instead.
+ */
+export function readHexRoom(canvas: HTMLCanvasElement | null, width: number, height: number, board: Element | null = canvas): Rect {
+  const free = hexFreeArea(canvas, board) ?? { x: 0, y: 0, width, height };
   const x = free.x + ROOM_LEFT_PAD;
   const y = Math.max(free.y + ROOM_UNDER_TOOLBAR, ROOM_TOP);
   const right = Math.min(free.x + free.width, width - ROOM_RIGHT);
-  // Reserve the footer and the same clearance used below the toolbar before it mounts.
   const bottom = Math.min(free.y + free.height, height - ROOM_BOTTOM - ROOM_UNDER_TOOLBAR);
   return { x: Math.round(x), y: Math.round(y), width: Math.max(80, Math.round(right - x)), height: Math.max(80, Math.round(bottom - y)) };
 }
