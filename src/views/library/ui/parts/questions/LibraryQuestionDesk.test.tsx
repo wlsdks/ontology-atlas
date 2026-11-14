@@ -420,8 +420,8 @@ describe('Library question desk transfer boundary', () => {
     fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
     expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 wiki pages and 1 of 1 source files.');
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
-    expect(screen.queryByText('No matching Wiki fact or decision in the pages read.')).not.toBeInTheDocument();
-    expect(screen.queryByText('No matching text unit in the originals Atlas could read.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No matching wiki fact or decision in the pages read.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No matching text in the sources Atlas could read/)).not.toBeInTheDocument();
   });
 
   it('reuses the unchanged source units for a second question in the same folder', async () => {

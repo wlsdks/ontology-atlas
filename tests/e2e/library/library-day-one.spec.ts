@@ -147,7 +147,7 @@ async function installDesktopBridge(page: Page) {
 async function openLibrary(page: Page) {
   await page.goto("/en/");
   await page.waitForLoadState("networkidle");
-  const door = page.getByRole("button", { name: /^Open a folder/ });
+  const door = page.getByRole("button", { name: /^Open (?:a|my) folder/ });
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
   const navigation = page.getByTestId("app-nav-rail");

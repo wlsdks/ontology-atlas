@@ -228,7 +228,7 @@ test('a round and a connector a cloned folder switched on wait for this Mac, and
   const row = page.getByTestId('automation-r-confluence');
   const item = page.locator('li', { has: row });
   await expect(row).toContainText('Off on this Mac');
-  await expect(item.getByTestId('automation-allow-here')).toContainText('Switched on in this folder, not on this Mac');
+  await expect(item.getByTestId('automation-allow-here')).toContainText('Switched on in this folder but not allowed on this Mac');
   await expect(item.getByTestId('automation-allow-here-line')).toContainText('confluence · looks for “pages changed in the last day” · at most 20 new documents per run');
   const before = await page.evaluate(() => (window as unknown as { __roundsStubFiles: Record<string, string> }).__roundsStubFiles['.ontology-atlas/rounds.json']);
   await item.getByTestId('automation-allow-here-button').click();

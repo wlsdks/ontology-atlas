@@ -52,7 +52,7 @@ test.describe("Document schedule sheet", () => {
     await page.getByTestId("library-rounds-add-place").click();
     await page.getByTestId("library-rounds-add-menu").getByRole("menuitem", { name: "Confluence" }).click();
     await expect(scope).toContainText("ask Confluence to read, never to write there");
-    await expect(page.getByTestId("library-rounds-cost")).toContainText("about 24 a day");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("about 24 times a day");
 
     await page.getByTestId("library-rounds-cadence-unit").getByRole("radio", { name: "Day" }).click();
     await page.getByTestId("library-rounds-cadence-day").getByRole("radio", { name: "Weekdays" }).click();

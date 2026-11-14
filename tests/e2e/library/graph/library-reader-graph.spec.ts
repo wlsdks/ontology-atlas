@@ -21,7 +21,7 @@ test("a home popup returns its door on every close, and the canvas stands still"
     "sources/notes.txt": "Workshop source notes.\n",
   } });
   await page.goto("/en/");
-  await page.getByRole("button", { name: /Open a folder/i }).click();
+  await page.getByRole("button", { name: /Open (?:a|my) folder/i }).click();
   await expect(page.getByTestId("library-page")).toBeVisible();
 
   // Wiki returns to the inquiry; Sources owns the graph whose popup is measured below.

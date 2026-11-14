@@ -266,7 +266,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     name: "planning: folder reads are proven only in the macOS app",
     url: "/ko/planning/",
     card: "planning-stage",
-    reason: /macOS 앱에서 지원하며/,
+    reason: /macOS 앱에서만 사용할 수 있어요/,
     destination: "planning-get-app",
   },
   {
@@ -302,7 +302,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     },
     needsVault: true,
     card: "agent-server-unavailable",
-    reason: /브라우저는[\s\S]*설정 파일을 대신 저장하지 못해요/,
+    reason: /브라우저는[\s\S]*설정 파일을 저장하지 못해요/,
     destination: "agent-connect-web-get-app",
   },
   {
@@ -397,7 +397,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     },
     needsVault: true,
     card: "find-documents-web-limit",
-    reason: /여기서는 지금 연 폴더만[\s\S]*절대 경로가 필요하고/,
+    reason: /여기서는 지금 연 폴더만[\s\S]*앱에서만 읽을 수 있어요/,
     destination: "find-documents-web-get-app",
   },
 ];
