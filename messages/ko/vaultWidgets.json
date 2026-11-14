@@ -220,7 +220,6 @@
   "parts": {
     "meta": {
       "recordProofAria": "지도 근거",
-      "recordProofLabel": "지도 근거",
       "wordsUnit": "{count} 단어",
       "readingMinutes": "≈ {minutes}분 읽기",
       "topologyLinkLabel": "지도",
