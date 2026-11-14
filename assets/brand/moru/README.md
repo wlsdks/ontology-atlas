@@ -40,8 +40,8 @@ Use `preview.html?clip=pup-peek` to open a particular motion.
 `poses/` contains individual transparent PNGs. Raw source sheets are retained
 unchanged in `source/`; export processing handles palette, binary alpha, body
 registration and shared neutral transitions. Clips are processed on a 256px
-grid and halved to each size; eyes, nose and whiskers are reduced by their own
-size so equal marks stay equal, the outline's gray fringe joins the outline, and
+grid and halved to each size; eyes, nose and whiskers are reduced to their own
+size so equal marks stay equal, the outline's soft gray edge joins the outline, and
 ink drawn away from every fill is exported in indigo so it reads on the dark canvas
 ([Brand](../../../docs/design/brand.md#raster-grids-and-palette)). The peekaboo scene reserves a fixed
 inset for the blanket. Rosy temper and the heart gift opt into two coral inks; ordinary gray,

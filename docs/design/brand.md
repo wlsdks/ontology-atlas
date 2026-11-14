@@ -105,23 +105,29 @@ character ink, never error or control colors. New clips preserve their initial
 body scale across the gesture. Raw source files remain unchanged.
 
 Clips are cut, registered and cleaned on one 256px grid, then halved to 128px
-and 64px. A source pixel at least half opaque is kept, because a thin stroke's
-soft edge is about that opaque. Cleaning replaces a pixel that at most one
-neighbour agrees with, and folds the thin dark gray fringe of the outline into
-the outline: on the dark canvas that fringe showed as gray dashes around the
-silhouette. A gray surface thicker than a drawn pixel stays gray.
+and 64px. A source pixel at least half opaque is kept unless the clip declares
+its own cutoff, because a thin stroke's soft edge is about that opaque. Cleaning
+replaces a piece of one colour smaller than a quarter of a drawn pixel with the
+colour around it. The source's ink fades through dark gray, which showed as
+gray dashes around the silhouette on the dark canvas: within half a drawn pixel
+the soft edge of the outline joins the outline, and the soft edge of a facial
+mark dissolves into the fill around it. Gray farther in is a drawn surface and
+stays gray.
 
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
-becomes half as long and a square stays a square wherever it sits on the grid.
-An ink stroke, or the silhouette, that is half an exported pixel wide keeps one
-whole pixel; a coloured detail inside a fill is kept from one exported pixel.
-Facial marks (ink enclosed in a fill, such as an eye, the nose or a whisker)
-are lifted out first and drawn back at their own reduced size, so a mark's
-size never depends on where the frame happens to sit on the grid. Marks within
-half a drawn pixel of each other that share most of their pixels are one
-drawing made twice and are exported identically. A mark that would touch the
-outline or another mark moves up to one pixel to stay apart; where the face is
-too crowded for that, it keeps its place and may touch.
+halves in length and a filled square stays a filled rectangle within a pixel of
+its true size wherever it sits on the grid. An upright or level ink stroke, or
+piece of silhouette, half an exported pixel wide keeps one whole pixel; a
+diagonal that thin can be lost at some grid positions, and a coloured detail
+inside a fill is kept from one exported pixel. Facial marks (ink enclosed in a
+fill, such as an eye, the nose or a whisker) are lifted out first and drawn
+back at their own reduced size, centred where the body's sampling puts them, so
+a mark's size never depends on where the frame sits on the grid; a size exactly
+between two takes the smaller. Marks of one reduced size that share at least
+three quarters of their pixels are one drawing made twice and are exported
+identically. A mark takes the place within one pixel that covers and touches
+the least other ink; where the face is too crowded for a clear place, it may
+touch.
 
 Outline ink is 1.14:1 on the app canvas and reads only beside a fill, so ink
 drawn away from every fill (a note, a fishing line, an emphasis tick) is
