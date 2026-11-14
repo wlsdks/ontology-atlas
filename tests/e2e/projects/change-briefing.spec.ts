@@ -22,18 +22,18 @@ test('reads grouped source evidence and actual changed lines without leaving Atl
   await enter(page);
   const group = page.getByTestId('briefing-group-capabilities/checkout');
   await group.click();
-  await expect(page.getByRole('region', { name: 'Source evidence', exact: true })).toBeFocused();
-  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Code changes', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('-limit = 10\n+limit = 20');
   await expect(page.getByTestId('briefing-group-unmapped')).toBeHidden();
-  await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
+  await page.getByRole('button', { name: 'Back to list', exact: true }).click();
   await expect(group).toBeFocused();
   await expect(group).toHaveAttribute('aria-pressed', 'false');
   await group.click();
   await page.getByTestId('briefing-comparison').click();
   await page.getByTestId('briefing-net-paths').click();
-  await page.getByRole('button', { name: 'Read changed lines: outside-period.ts', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Changed lines: outside-period.ts', exact: true })).toContainText('outside-period.ts');
+  await page.getByRole('button', { name: 'Show diff: outside-period.ts', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Diff: outside-period.ts', exact: true })).toContainText('outside-period.ts');
 });
 
 test('navigates calendar periods and applies an inclusive custom interval', async ({ page }) => {
@@ -53,7 +53,7 @@ test('navigates calendar periods and applies an inclusive custom interval', asyn
   await expect(page.getByTestId('briefing-dates-dialog').getByRole('alert')).toBeVisible();
   await capture(page, 'invalid-dates');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-29');
-  await page.getByRole('button', { name: 'Read this period', exact: true }).click();
+  await page.getByRole('button', { name: 'Show this period', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('Feb 29, 2024');
   await expect.poll(() => page.evaluate(() => {
     const calls = (window as unknown as { __briefingProbe: { calls: { args: Record<string, unknown> }[] } }).__briefingProbe.calls;
@@ -66,7 +66,7 @@ for (const mode of ['partial', 'empty', 'stale', 'no-history', 'ungranted'] as c
   test(`preserves date recovery for ${mode} source evidence`, async ({ page }) => {
     await enter(page);
     await setBriefingMode(page, mode);
-    await page.getByRole('button', { name: 'Read again', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     if (mode === 'partial') await expect(page.getByTestId('briefing-ready')).toBeVisible();
     else await expect(page.getByTestId('briefing-status')).toBeVisible();
     await expect(page.getByTestId('briefing-range')).toBeVisible();
@@ -80,12 +80,12 @@ for (const mode of ['binary', 'truncated', 'revert', 'patch-error'] as const) {
     await enter(page);
     await setBriefingMode(page, mode);
     await page.getByTestId('briefing-group-capabilities/checkout').click();
-    await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
-    const evidence = page.getByRole('region', { name: 'Source evidence', exact: true });
+    await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
+    const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
     if (mode === 'binary') await expect(evidence).toContainText('binary');
     if (mode === 'truncated') await expect(evidence).toContainText('32 KiB');
-    if (mode === 'revert') await expect(evidence).toContainText('no differences');
-    if (mode === 'patch-error') await expect(page.getByRole('button', { name: 'Retry file comparison', exact: true })).toBeVisible();
+    if (mode === 'revert') await expect(evidence).toContainText('same in both commits');
+    if (mode === 'patch-error') await expect(page.getByRole('button', { name: 'Retry diff', exact: true })).toBeVisible();
     await page.getByRole('radio', { name: 'Commits', exact: true }).click();
     await expect(evidence).toBeHidden();
     await expect(page.getByRole('button', { name: /author claim: changed checkout/ })).toBeVisible();
@@ -110,9 +110,9 @@ test('does not insert an obsolete file comparison into a newly selected group', 
   await enter(page);
   await page.getByTestId('briefing-group-capabilities/checkout').click();
   await page.evaluate(() => { const probe = (window as unknown as { __briefingProbe: { hold: boolean; holdCommand: string } }).__briefingProbe; probe.holdCommand = '_patch'; probe.hold = true; });
-  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
-  await expect(page.getByText('Reading this file between the shown revisions…', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
+  await expect(page.getByText('Reading the diff for this file…', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to list', exact: true }).click();
   await page.getByTestId('briefing-group-unmapped').click();
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { release(): void } }).__briefingProbe.release(); });
   await expect(page.getByTestId('briefing-patch')).toHaveCount(0);
@@ -127,9 +127,9 @@ test('returns from the map to the same calendar range and selected comparison', 
   await page.getByLabel('Date in this period', { exact: true }).fill('2024-02-20');
   await page.getByTestId('briefing-dates-dialog').getByRole('button', { name: 'Close', exact: true }).click();
   await page.getByTestId('briefing-group-capabilities/checkout').click();
-  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toBeVisible();
-  await page.getByRole('link', { name: 'Open capability on map', exact: true }).click();
+  await page.getByRole('link', { name: 'Show capability on map', exact: true }).click();
   await expect(page).toHaveURL(/\/topology\//);
   await openChangesFromRail(page);
   await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Month');
@@ -137,7 +137,7 @@ test('returns from the map to the same calendar range and selected comparison', 
   await expect(page.getByTestId('briefing-group-capabilities/checkout')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('briefing-patch')).toContainText('+limit = 20');
   await setBriefingMode(page, 'changed-head');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await expect(page.getByTestId('briefing-group-capabilities/checkout')).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByTestId('briefing-patch')).toHaveCount(0);
   await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toContainText('Month');
@@ -146,19 +146,19 @@ test('returns from the map to the same calendar range and selected comparison', 
 test('narrows unmapped evidence by literal source area and expands every counted file', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByTestId('briefing-group-unmapped').click();
   await page.getByRole('button', { name: 'mcp · 61', exact: true }).click();
-  const evidence = page.getByRole('region', { name: 'Source evidence', exact: true });
-  await expect(evidence.getByRole('button', { name: /^Read changed lines: mcp\// })).toHaveCount(40);
+  const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
+  await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(40);
   await evidence.getByRole('button', { name: 'Show 21 more files', exact: true }).click();
-  await expect(evidence.getByRole('button', { name: /^Read changed lines: mcp\// })).toHaveCount(61);
-  await expect(evidence.getByRole('button', { name: 'Read changed lines: mcp/src/tool-40.ts', exact: true })).toBeFocused();
-  await evidence.getByRole('button', { name: 'Source areas', exact: true }).click();
+  await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(61);
+  await expect(evidence.getByRole('button', { name: 'Show diff: mcp/src/tool-40.ts', exact: true })).toBeFocused();
+  await evidence.getByRole('button', { name: 'By folder', exact: true }).click();
   await expect(page.getByRole('button', { name: 'mcp · 61', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await capture(page, 'source-area-expanded');
-  await page.getByRole('button', { name: 'All unmapped changes', exact: true }).click();
-  await expect(evidence.getByRole('button', { name: 'Read changed lines: 한글/unmapped.ts', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'All changes not linked to a capability', exact: true }).click();
+  await expect(evidence.getByRole('button', { name: 'Show diff: 한글/unmapped.ts', exact: true })).toBeVisible();
 });
 
 test('offers an honest browser limit without fabricated source history', async ({ page }) => {
@@ -184,8 +184,8 @@ test('draws the prerendered stage settled as soon as reduced motion is known', a
 test('never presents an empty partial read as proof that the period has no commits', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'partial-empty');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
-  await expect(page.getByText('Showing a limited read of this period. Narrow the dates for a more complete briefing.', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+  await expect(page.getByText('Only part of this period was read. Narrow the dates to see all of it.', { exact: true })).toBeVisible();
   await expect(page.getByText('No commits found in this period.', { exact: true })).toHaveCount(0);
 });
 
@@ -193,20 +193,20 @@ test('never presents an empty partial read as proof that the period has no commi
 test('opens a literal source area directly from the overview and returns focus to its entry', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'many');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   const area = page.getByTestId('briefing-area-mcp');
   await area.click();
-  const evidence = page.getByRole('region', { name: 'Source evidence', exact: true });
+  const evidence = page.getByRole('region', { name: 'Code changes', exact: true });
   await expect(evidence.getByRole('heading', { name: 'mcp', exact: true })).toBeVisible();
-  await expect(evidence.getByRole('button', { name: /^Read changed lines: mcp\// })).toHaveCount(40);
-  await expect(evidence.getByRole('button', { name: 'Read changed lines: 한글/unmapped.ts', exact: true })).toHaveCount(0);
-  await evidence.getByRole('button', { name: 'Read changed lines: mcp/src/tool-0.ts', exact: true }).click();
+  await expect(evidence.getByRole('button', { name: /^Show diff: mcp\// })).toHaveCount(40);
+  await expect(evidence.getByRole('button', { name: 'Show diff: 한글/unmapped.ts', exact: true })).toHaveCount(0);
+  await evidence.getByRole('button', { name: 'Show diff: mcp/src/tool-0.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toBeVisible();
   await expect(page.getByTestId('briefing-file-list')).toBeVisible();
-  await evidence.getByRole('button', { name: 'Read changed lines: mcp/src/tool-1.ts', exact: true }).click();
+  await evidence.getByRole('button', { name: 'Show diff: mcp/src/tool-1.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-file-list')).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-1.ts', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Back to groups', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Diff: mcp/src/tool-1.ts', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to list', exact: true }).click();
   await expect(area).toBeFocused();
   await expect(area).toHaveAttribute('aria-pressed', 'false');
 });
@@ -215,9 +215,9 @@ test('opens a literal source area directly from the overview and returns focus t
 test('keeps file switching reachable during a long diff and scopes navigation to its area', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'long');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByTestId('briefing-area-mcp').click();
-  await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-0.ts', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: mcp/src/tool-0.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('value259');
   const navigation = page.getByRole('navigation', { name: 'Files in this group', exact: true });
   await expect(navigation).toBeVisible();
@@ -230,24 +230,24 @@ test('keeps file switching reachable during a long diff and scopes navigation to
   await expect(navigation.getByRole('button', { name: 'Previous file', exact: true })).toBeDisabled();
   const next = navigation.getByRole('button', { name: 'Next file', exact: true });
   await next.press('Enter');
-  await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-1.ts', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Diff: mcp/src/tool-1.ts', exact: true })).toBeVisible();
   await expect(next).toBeFocused();
   await next.press('Enter');
-  await expect(page.getByRole('region', { name: 'Changed lines: mcp/src/tool-2.ts', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Diff: mcp/src/tool-2.ts', exact: true })).toBeVisible();
   await expect(page.getByTestId('briefing-file-list')).toBeVisible();
-  await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-39.ts', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: mcp/src/tool-39.ts', exact: true }).click();
   await next.click();
   await expect(page.getByTestId('briefing-file-position')).toHaveText('File 41 of 61');
-  const current = page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-40.ts', exact: true });
+  const current = page.getByRole('button', { name: 'Show diff: mcp/src/tool-40.ts', exact: true });
   await expect(current).toBeVisible();
   await expect(current).toHaveAttribute('aria-pressed', 'true');
-  await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-60.ts', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: mcp/src/tool-60.ts', exact: true }).click();
   await expect(next).toBeDisabled();
   await expect(page.getByTestId('briefing-file-position')).toHaveText('File 61 of 61');
   await page.getByTestId('briefing-comparison').click();
   await page.getByTestId('briefing-net-paths').click();
-  await page.getByRole('button', { name: 'Read changed lines: outside-period.ts', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Changed lines: outside-period.ts', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Show diff: outside-period.ts', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Diff: outside-period.ts', exact: true })).toBeVisible();
   await expect(navigation).toHaveCount(0);
 });
 
@@ -273,7 +273,7 @@ test('starts from a cold native launch and reads source history without opening 
   await page.getByRole('link', { name: 'Choose model', exact: true }).click();
   await expect(page).toHaveURL(/tab=models/);
   await expect(page.locator('[data-tabbar=primary]')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Back to explanation', exact: true }).click();
+  await page.getByRole('link', { name: 'Back to summary', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Period', exact: true })).toHaveText('Month');
   await expect(page.getByTestId('briefing-range')).toHaveText('October 2026');
   await page.getByTestId('briefing-group-unmapped').click();
@@ -291,7 +291,7 @@ test('opens code context from a labelled control and returns focus when it close
   await page.getByTestId('briefing-originals').click();
   await page.getByRole('button', { name: /author claim: changed checkout/ }).click();
   const original = page.getByTestId('briefing-original');
-  const opener = original.getByRole('button', { name: 'Read code changes for the whole period', exact: true });
+  const opener = original.getByRole('button', { name: 'Show code changes for the whole period', exact: true });
   await opener.focus(); await opener.press('Enter');
   await expect(page.getByTestId('briefing-code-heading')).toBeVisible();
   const close = page.getByRole('button', { name: 'Close code changes', exact: true });

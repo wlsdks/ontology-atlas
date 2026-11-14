@@ -77,7 +77,7 @@ test('keeps an applied custom range and unfinished invalid draft when returning 
   await choosePeriod(page, 'Custom dates');
   await page.getByLabel('Start date', { exact: true }).fill('2024-02-10');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-12');
-  await page.getByRole('button', { name: 'Read this period', exact: true }).click();
+  await page.getByRole('button', { name: 'Show this period', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 12, 2024');
   await page.getByRole('button', { name: 'Choose dates', exact: true }).click();
   await page.getByLabel('End date', { exact: true }).fill('2024-02-09');
@@ -88,10 +88,10 @@ test('keeps an applied custom range and unfinished invalid draft when returning 
   await expect(page.getByLabel('Start date', { exact: true })).toHaveValue('2024-02-10');
   await expect(page.getByLabel('End date', { exact: true })).toHaveValue('2024-02-09');
   await expect(page.getByTestId('briefing-dates-dialog').getByRole('alert')).toBeVisible();
-  await page.getByRole('button', { name: 'Read this period', exact: true }).click();
+  await page.getByRole('button', { name: 'Show this period', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 12, 2024');
   await page.getByLabel('End date', { exact: true }).fill('2024-02-13');
-  await page.getByRole('button', { name: 'Read this period', exact: true }).click();
+  await page.getByRole('button', { name: 'Show this period', exact: true }).click();
   await expect(page.getByTestId('briefing-range')).toHaveText('Feb 10 – 13, 2024');
 });
 

@@ -376,7 +376,7 @@ describe("AgentActivityChip", () => {
     expect(row).toHaveAttribute("data-kind", "task-end");
     // The row says what the work did, not that a task ended: four rows reading
     // Four rows reading "<agent> finished a task" is the repetition this slice removed.
-    expect(row.textContent).toContain("개념 34개를 새로 적었어요");
+    expect(row.textContent).toContain("개념 34개를 추가했어요");
   });
 
   /*
@@ -404,7 +404,7 @@ describe("AgentActivityChip", () => {
     const rows = screen.getAllByTestId("agent-inbox-history-row");
     expect(rows[0].textContent).toContain("Codex");
     // A start with no end of its own is one running task, not a second event.
-    expect(rows[1].textContent).toContain("아직 하는 중");
+    expect(rows[1].textContent).toContain("실행 중");
     expect(rows[1].textContent).not.toContain("Codex");
   });
 
@@ -438,8 +438,8 @@ describe("AgentActivityChip", () => {
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
     const row = screen.getByTestId("agent-inbox-todo-row");
     expect(row).toHaveAttribute("data-todo-kind", "folder-problem");
-    expect(row.textContent).toContain("끊어진 연결 3개");
-    expect(row.textContent).toContain("서로 되짚는 연결 1쌍");
+    expect(row.textContent).toContain("끊어진 관계 3개");
+    expect(row.textContent).toContain("순환 의존 1개");
     expect(row.querySelector('[class*="--color-status-warning"]')).not.toBeNull();
     // The bell says what waits, not how many lines were appended.
     expect(screen.getByTestId("agent-activity-unread")).toHaveAttribute(
@@ -461,7 +461,7 @@ describe("AgentActivityChip", () => {
       ],
     });
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
-    expect(screen.getByTestId("agent-inbox-todo-row").textContent).toContain("서로 되짚는 연결 497쌍 이상");
+    expect(screen.getByTestId("agent-inbox-todo-row").textContent).toContain("순환 의존 497개 이상");
   });
 });
 
@@ -537,7 +537,7 @@ describe('inbox: three tabs', () => {
     expect(screen.getByTestId('agent-inbox-panel-todo')).toBeInTheDocument();
     const rows = screen.getAllByTestId('agent-inbox-todo-row');
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveTextContent('Claude Agent가 허락을 기다려요');
+    expect(rows[0]).toHaveTextContent('Claude Agent의 권한 요청이 있어요');
     expect(rows[0]).toHaveTextContent('주문 도메인의 관계를 정리해줘');
     expect(rows[1]).toHaveAttribute('data-todo-kind', 'folder-problem');
     expect(screen.getByTestId('agent-activity-unread')).toHaveTextContent('2');
@@ -563,8 +563,8 @@ describe('inbox: three tabs', () => {
     expect(rows).toHaveLength(4);
     expect(rows.filter((row) => row.textContent?.includes('×2'))).toHaveLength(1);
     // A verb-first sentence with its object, then the facts — not four states in a row.
-    expect(rows[1]).toHaveTextContent('개념 3개를 지웠어요');
-    expect(rows[2]).toHaveTextContent('개념 12개를 새로 적었어요');
+    expect(rows[1]).toHaveTextContent('개념 3개를 삭제했어요');
+    expect(rows[2]).toHaveTextContent('개념 12개를 추가했어요');
     expect(rows[2]).toHaveTextContent('주문');
     expect(rows[2]).toHaveTextContent('2분');
   });
@@ -623,7 +623,7 @@ describe('inbox: three tabs', () => {
     fireEvent.click(screen.getByRole('tab', { name: /할 일/ }));
     // The sentence says what reached this list, not what is true of the world: Atlas never
     // receives the ask itself, and the repair queue stays one press away.
-    expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent('여기 올라온 기다리는 일은 없어요.');
+    expect(screen.getByTestId('agent-inbox-todo-empty')).toHaveTextContent('기다리는 일이 없어요.');
     expect(screen.getByTestId('agent-inbox-todo-empty-repair')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('tab', { name: /기록/ }));
     // A decision that wrote nothing is in no log, so the timeline takes it from the receipt.

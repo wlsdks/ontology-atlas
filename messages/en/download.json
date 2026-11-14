@@ -18,7 +18,7 @@
   "heroTitleLine2": "Keep understanding your system.",
   "heroFactContains": "{parent} contains {child}",
   "heroFactDepends": "{from} depends on {to}",
-  "heroLead": "Give Claude Code or Codex task context over MCP from one shared Markdown vault. Inspect recorded capabilities and rules, their evidence, and what remains unknown. Decide which proposed meaning changes to keep.",
+  "heroLead": "Give Claude Code or Codex task context over MCP from one shared Markdown folder. Inspect recorded capabilities and rules, their evidence, and what remains unknown. Decide which proposed meaning changes to keep.",
   "factUnpublished": "not published yet",
   "factVersionLabel": "Version",
   "factRequiresLabel": "Requires",
@@ -28,7 +28,7 @@
   "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "The checksum file for {file} on the release page",
   "demoTitle": "Inspect the context your agent reads",
-  "demoSub": "This recorded demo selects a concept and its evidence, then Codex follows a declared path in the same vault. It shows a bounded lookup, not a complete change-impact check.",
+  "demoSub": "This recorded demo selects a concept and its evidence, then Codex follows a recorded path in the same folder. It shows a bounded lookup, not a complete change-impact check.",
   "demoPromptLabel": "What Codex was asked in this take",
   "demoAgentPrompt": "Use only `get_concept` and `find_path` to explain the path from `capabilities/mcp-tool-server` to `capabilities/ontology-map` in one sentence. Do not change files.",
   "demoProvisionalNote": "{seconds}s from one take. Only the agent's thinking time is cut; nothing is sped up, and there is no sound.",
@@ -40,8 +40,8 @@
     "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
     "agentCommit": "Your agent's commit",
     "filesChanged": "{count, plural, one {# file changed} other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark the map gives a meaning whose code moved, and each file's path moves into a brief, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example.",
-    "briefMoved": "{count, plural, one {# concept whose} other {# concepts whose}} meaning stands while the code under it moved",
+    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark the map gives a concept whose code changed, and each file's path moves into a summary card, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example.",
+    "briefMoved": "{count, plural, one {# concept whose} other {# concepts whose}} code changed after the meaning was written",
     "briefDetail": "changed {moved} · document {doc}",
     "askAgent": "Ask the agent"
   },
@@ -66,13 +66,13 @@
     "door": "Open {name}",
     "alt": "The {name} screen of the Atlas app",
     "caption": {
-      "architecture": "This repository's own agent setup, read from its files: what agents are told, what stops them, what runs afterwards. Captured from the app.",
-      "library": "A sample library of five sources and six pages beside this repository's ontology. The page whose source changed is marked before you open it. Captured from the app.",
+      "architecture": "This repository's own agent setup, read from its files: the instructions agents get, the hooks that stop them, and the checks that run afterwards. Captured from the app.",
+      "library": "A sample library of five sources and six wiki pages beside this repository's ontology. The page whose source changed is marked before you open it. Captured from the app.",
       "planning": "The docs folder of this repository, read in place: a file list on the left, FEATURES.md open on the right. Nothing is copied or edited. Captured from the app.",
-      "automations": "A weekday check of that sample library, and the run that found one page's source had changed. Captured from the app.",
+      "automations": "A weekday check of that sample library, and the run that found one wiki page's source had changed. Captured from the app.",
       "projects": "Ontology Atlas on one page: its domains, concepts, library and harness together. Captured from the app.",
       "changes": "One week of this repository's history, listed as commits: what changed, in which files. Captured from the app.",
-      "git": "The Git history of this repository's ontology folder, read as the concepts each step changed. Captured from the app."
+      "git": "The Git history of this repository's ontology folder, read as the concepts each commit changed. Captured from the app."
     }
   },
   "closingTitle": "Ready to open your own folder?"

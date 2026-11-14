@@ -6,10 +6,10 @@
   "githubLabel": "GitHubのソース",
   "changelogTitle": "更新履歴",
   "changelogLead": "何がいつ変わったかを新しい順に掲載します。",
-  "guideLead": "1つのフォルダから、AIエージェントが読めるマップまで。",
+  "guideLead": "1つのフォルダから、コーディングエージェントが読めるマップまで。",
   "guideUnknownSegment": "指定された章が見つからなかったため、ガイドの最初の章を表示しています。目次から読みたい章を選んでください。",
   "bodyLanguageNote": "本文は英語の原文で表示しています。",
-  "truncatedNote": "古い{count}件は折りたたまれています。この一覧には最近のものだけを表示しています。",
+  "truncatedNote": "古い{count}件は非表示です。この一覧には最近のものだけを表示しています。",
   "emptyBody": "このビルドにはこの文書が含まれていません。原本はリポジトリにあります。",
   "readFullSource": "GitHubでファイル全文を読む",
   "guidePages": {
@@ -21,10 +21,10 @@
     "relations": "つながりのしくみ",
     "studio": "マップで概念とつながりを編集",
     "fromYourRepo": "リポジトリから始める",
-    "connectAgent": "AIエージェントを接続",
+    "connectAgent": "コーディングエージェントを接続",
     "growingVault": "フォルダが育ったら",
     "cli": "CLI",
-    "trust": "信頼について"
+    "trust": "データとセキュリティ"
   },
   "guidePrev": "前の章",
   "guideNext": "次の章",

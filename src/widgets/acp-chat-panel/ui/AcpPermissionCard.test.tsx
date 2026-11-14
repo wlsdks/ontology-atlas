@@ -607,7 +607,7 @@ describe('ontology write: a card a person reads in eight sentences', () => {
     expect(
       document.getElementById('acp-permission-title')?.textContent,
       '제목이 모든 요청에 똑같이 참이면 아무것도 답해 주지 않는다',
-    ).toBe('ontology-atlas 문서에 연결 이유 8개를 적어요');
+    ).toBe('ontology-atlas 문서에 관계 이유 8개를 추가해요');
   });
 
   it('eight sentences read as eight lines, without asking the reader to parse JSON', () => {
@@ -809,7 +809,7 @@ describe('a one-field patch: the decision first, the evidence after', () => {
 
   it('shows the new name and its document in the summary and draws no empty row', () => {
     titlePatch();
-    expect(document.getElementById('acp-permission-title')?.textContent).toBe('probe-delivery 문서의 이름 항목을 고쳐요');
+    expect(document.getElementById('acp-permission-title')?.textContent).toBe('probe-delivery 문서의 이름 항목을 수정해요');
     expect(screen.getByTestId('task-review-scope')).toHaveTextContent('capabilities/probe-delivery');
     const value = screen.getByTestId('task-review-value');
     expect(value.getAttribute('data-field-key')).toBe('title');
