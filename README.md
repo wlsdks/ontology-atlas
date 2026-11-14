@@ -90,7 +90,7 @@ your-repo/
 
 A Markdown file whose frontmatter has `kind:` is one concept. Its `uid` never
 changes, its `slug` is its current address, and its `path` names the code it
-describes. The map, documents, Library, Insights and Git screens all read these
+describes. The map, documents, Library and Git screens all read these
 files.
 
 Your agent reaches the folder two ways:

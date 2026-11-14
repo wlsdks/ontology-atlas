@@ -214,9 +214,6 @@ files; the browser cannot see a dot directory at all and says so instead of draw
 The retired `/ontology/insights?tab=harness` address replaces itself with
 `/architecture/?view=overview`, keeping the other flags and adding no history entry. The measured/null availability contract, scanner, join, and write
 authority remain unchanged; declaration counts, discovered tests, and execution evidence are not merged.
-The `relationship-preview` widget supplies explicitly
-labelled Wiki/Guidance examples and their real next action, shared with unavailable Harness
-states. Its decorative motion pauses offscreen and under reduced motion; it never creates data.
 
 ## Surface contract — web and app
 
@@ -718,7 +715,7 @@ until a local manifest, or the first part of one, exists.
 /docs                      vault picker / editor / unified palette
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
-/ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
+/ontology/studio           compatibility redirect; translates node/mode/edit to /topology
 /ontology/insights         compatibility redirect (src/views/insights-redirect/): tab=harness →
                            /architecture/?view=overview with other flags kept; tab=library →
                            /library/?tab=wiki; review=analysis:<id> or node=<slug> →

@@ -854,6 +854,15 @@ describe('focused check suggestions', () => {
     );
   });
 
+  it('routes an installed-app DOM probe change to the suite that evaluates the probe', () => {
+    const result = suggestFocusedChecks(['src-tauri/src/webview_verify/dom_marker_probe.js']);
+
+    assert.ok(
+      result.commands.some((row) => row.command === 'pnpm test:desktop:check'),
+      'a DOM probe edit must run the payload contract that reads the probe',
+    );
+  });
+
   it('routes every ACP launch-boundary input to the registry compatibility gate', () => {
     const subjects = [
       'scripts/registry-snapshots/build-acp-registry.mjs',

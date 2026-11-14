@@ -100,7 +100,7 @@ ingress paths converge on the same shape. The dialog never says "ontology".
   writes via the meaning editor or the document editor can read and edit in
   the Library.
 - **Relation vocabulary** — one dictionary (formal/plain × 7 types × ko/en)
-  feeds the map legend, Insights, the meaning editor, and datasheet
+  feeds the map's relation guide, the meaning editor, and datasheet
   (contract-tested); the "?" sheet footer defines domain/capability/element in
   plain language.
 
