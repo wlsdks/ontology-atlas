@@ -11,7 +11,7 @@ import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { useArrivalMemory } from '@/shared/lib/navigation/route-arrival-memory';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
-import { Chip, Dialog, EmptyState, GetAppLink, InfoHint, Surface } from '@/shared/ui';
+import { Chip, Dialog, Disclosure, FeatureStage, GetAppLink, InfoHint, Surface } from '@/shared/ui';
 import { Input } from '@/shared/ui/fields/input';
 import { TermHint } from '@/shared/ui/hints/term-hint';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -30,6 +30,7 @@ import {
   SettingsRow,
 } from './settings-primitives';
 import { APP_CODING_TOOLS } from '../model/app-coding-tools';
+import { AgentConversationArtwork } from './AgentConversationArtwork';
 
 /**
  * The coding agents this machine can invoke. Each row says whether the tool can be used from
@@ -110,50 +111,47 @@ export function AcpRuntimeSettings({
   // the place to go are stated together (`.claude/rules/surfaces.md`).
   if (!isAcpBridgeAvailable()) {
     /*
-     * On the web this empty state is the tab: why, what works from here, then the app and MCP
-     * as the ways on. No icon tile, which `EmptyState` would indent apart from the actions.
+     * On the web the tab is one stage: what the app does with these tools, why a browser cannot,
+     * the app as the way on, and MCP as what already works from here.
      */
     return (
-      <div data-testid="app-settings-runtimes-web" className="grid min-w-0 gap-3">
-        <EmptyState
-          tone="solid"
-          /* The quiet next-step card surface; the surface-vocabulary ratchet refuses a new combination. */
-          className="rounded-card border-[color:var(--color-border-soft)]"
-          title={t('webLabel')}
-          description={<span className="block">{t('webCaption')}</span>}
-          action={
-            <>
-              {/* The tab's only way forward; MCP below is another destination, so it stays a link. */}
-              <GetAppLink data-testid="app-settings-runtimes-get-app">{t('webGetApp')}</GetAppLink>
+      <div className="my-auto flex min-w-0 flex-col items-center">
+        <FeatureStage
+          data-testid="app-settings-runtimes-web"
+          className="my-0"
+          art={(motionState) => <AgentConversationArtwork {...motionState} tools={APP_CODING_TOOLS} />}
+          title={t('webTitle')}
+          body={<>{t('webBody')} {t('webLabel')}</>}
+          action={<GetAppLink data-testid="app-settings-runtimes-get-app">{t('webGetApp')}</GetAppLink>}
+          note={
+            <span className="flex flex-col items-center gap-1">
+              <span className="text-balance">{t('webCaption')}</span>
+              {/* Another destination, so it stays a link under the tab's one press. */}
               <Link
                 href={DESTINATION_HREF.mcp}
                 data-testid="app-settings-runtimes-mcp-link"
-                className={controlClass({
-                  shape: 'link',
-                  size: 'lg',
-                  tone: 'default',
-                  hoverInk: 'strong',
-                })}
+                className={controlClass({ shape: 'link', size: 'lg', tone: 'default', hoverInk: 'strong', className: 'atlas-touch-floor' })}
               >
                 {t('webMcpLink')}
               </Link>
-            </>
+            </span>
           }
         />
         {/*
           The tools the app would look for, from the bundled registry: marks and names only,
           since a browser has no state to report and nothing to press.
         */}
-        <section
-          className="min-w-0"
-          aria-labelledby="app-settings-runtimes-web-tools-heading"
-          data-testid="app-settings-runtimes-web-tools"
+        <Disclosure
+          className="w-full max-w-[var(--measure-stage-column)] text-center"
+          summaryClassName="atlas-touch-floor"
+          summaryTestId="app-settings-runtimes-web-tools-toggle"
+          summary={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
         >
-          <SettingsGroupHeading
-            id="app-settings-runtimes-web-tools-heading"
-            label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
-          />
-          <ul className="mt-1.5 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 md:grid-cols-3 xl:grid-cols-4">
+          <ul
+            data-testid="app-settings-runtimes-web-tools"
+            aria-label={t('webToolsHeading', { count: APP_CODING_TOOLS.length })}
+            className="mt-3 grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 text-left md:grid-cols-3"
+          >
             {APP_CODING_TOOLS.map((tool) => (
               <li
                 key={tool.id}
@@ -170,7 +168,7 @@ export function AcpRuntimeSettings({
               </li>
             ))}
           </ul>
-        </section>
+        </Disclosure>
       </div>
     );
   }

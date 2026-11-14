@@ -47,11 +47,10 @@ describe('agents destination', () => {
     expect(screen.getByText(ko.agents.lede)).toBeInTheDocument();
   });
 
-  it('makes the desktop app the lede subject on the web, since the card below says a browser cannot launch agents', () => {
+  it('draws no lede over the agents tab on the web, where the stage states it', () => {
     bridge = false;
     renderPage();
-    expect(screen.getByText(ko.agents.ledeWeb)).toBeInTheDocument();
-    expect(screen.queryByText(ko.agents.lede)).toBeNull();
+    expect(screen.queryByTestId('agents-lede')).toBeNull();
   });
 
   it('tells the runtime panel not to draw its own intro because the page already did', () => {

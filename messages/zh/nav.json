@@ -141,7 +141,9 @@
       "noneReadyCaption": "安装 Claude Agent 或 Codex 后会出现在这里，安装指南见下方列表。",
       "noneReadyCaptionNoList": "安装 Claude Agent 或 Codex 后会出现在这里，装好后请点“重新检查”。",
       "waitingNote": "完成 {names} 的安装或登录后，点击“重新检查”，即可使用该工具打开对话。",
-      "webLabel": "浏览器无权启动这台电脑上的程序",
+      "webTitle": "直接与编码工具对话",
+      "webBody": "桌面应用会找出这台电脑上的编码工具，并在 Atlas 里打开对话。",
+      "webLabel": "浏览器无权启动这台电脑上的程序。",
       "webCaption": "把自己启动的工具指向此文件夹，现在就可以在 MCP 标签页的“共享此文件夹”部分完成。",
       "webGetApp": "下载应用",
       "state": {
