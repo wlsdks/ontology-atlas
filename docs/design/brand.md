@@ -201,7 +201,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
 | Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
-| First run / missing page | Playful companion / static curious `BrandPortrait` |
+| First run / missing page and route error | Playful companion / static curious `BrandPortrait` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og-image.png`, 1200×630 |
