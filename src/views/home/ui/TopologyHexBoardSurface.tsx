@@ -62,7 +62,7 @@ export function TopologyHexBoardSurface({
 
   const labels: HexBoardLabels = useMemo(
     () => ({
-      staleOnly: (count) => (measured ? t("staleOnly", { count }) : t("staleOnlyUnmeasured")),
+      staleOnly: (count) => t("staleOnly", { count }),
       regionsOnly: t("regionsOnly"),
       widened: t("widened"),
       tooltip: ({ name, stale, needs, users, elements, dependents }) =>
@@ -75,7 +75,7 @@ export function TopologyHexBoardSurface({
       dependents: (count) => tr("dependents", { count }),
       regionDependents: (count) => tr("regionDependents", { count }),
     }),
-    [t, tr, measured, conceptCount],
+    [t, tr, conceptCount],
   );
 
   const capabilityCount = useMemo(() => nodes.filter((n) => n.kind === "capability").length, [nodes]);

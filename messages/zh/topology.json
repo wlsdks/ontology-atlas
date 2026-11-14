@@ -4,7 +4,6 @@
     "canvasAriaLabel": "六边形视图：一个能力一格，一个领域一片区域。方向键可移到相邻格。",
     "listLabel": "六边形视图中的格子",
     "staleOnly": "◐ 仅过时 · {count}",
-    "staleOnlyUnmeasured": "◐ 仅过时 · 未知",
     "regionsOnly": "⬡ 仅领域名",
     "widened": "视图已加宽：有领域超出了自己的区域，所有格子已重新排布。",
     "tooltipStale": "◐ 过时",

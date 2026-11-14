@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TreeInputEdge, TreeInputNode } from "../model/containment-tree";
 import { computeHexBoard, hexGutter, HEX_TYPE, type HexBoardLayout, type HexTextRole } from "../model/board/hex-board";
 import { SQRT3 } from "../model/board/hex-grid";
@@ -21,6 +21,8 @@ interface Call {
   lineWidth: number;
 }
 
+const PATTERN = { hatch: true };
+
 function recorder() {
   const calls: Call[] = [];
   const props: Record<string, unknown> = { globalAlpha: 1, shadowBlur: 0, lineWidth: 1, fillStyle: "", strokeStyle: "" };
@@ -30,7 +32,7 @@ function recorder() {
     measureText: (t) => ({ width: [...String(t)].length * 6.5 }),
     createLinearGradient: () => gradient,
     createRadialGradient: () => gradient,
-    createPattern: () => null,
+    createPattern: () => PATTERN,
     save: () => stack.push({ ...props }),
     restore: () => Object.assign(props, stack.pop()),
   };
@@ -135,6 +137,7 @@ function stateFor(over: Partial<HexDrawState> = {}): HexDrawState {
     focusRegion: null,
     dimT: 0,
     evidence: new Map(layout.capabilities.map((c) => [c.id, "current" as HexEvidenceState])),
+    evidenceMeasured: true,
     staleFiles: new Map(),
     staleByDomain: null,
     domainMeta: new Map(),
@@ -281,6 +284,34 @@ describe("drawBoard at pitch 0", () => {
     const firstFace = calls.findIndex((c) => c.op === "fill" && c.fillStyle === T.riser);
     expect(halo).toBeGreaterThan(-1);
     expect(halo).toBeLessThan(firstFace);
+  });
+});
+
+describe("drawBoard and unknown evidence", () => {
+  afterEach(() => vi.restoreAllMocks());
+  const hatchable = () => {
+    const tile = { fillRect() {}, beginPath() {}, moveTo() {}, lineTo() {}, stroke() {} };
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(tile as unknown as CanvasRenderingContext2D);
+  };
+  const hatchedFills = (calls: Call[]) => calls.filter((c) => c.op === "fill" && c.fillStyle === PATTERN).length;
+  const dashedRims = (calls: Call[]) => calls.filter((c) => c.op === "setLineDash" && (c.args[0] as number[]).length > 0).length;
+
+  it("paints an unmeasured board top-down exactly as one whose capabilities are all current", () => {
+    hatchable();
+    const unmeasured = paint({ evidence: new Map(), evidenceMeasured: false }).calls;
+    expect(hatchedFills(unmeasured)).toBe(0);
+    expect(dashedRims(unmeasured)).toBe(0);
+    const ink = (v: unknown) => (typeof v === "string" ? v : v === PATTERN ? "pattern" : "gradient");
+    const style = (calls: Call[]) => calls.map((c) => [c.op, c.args, ink(c.fillStyle), ink(c.strokeStyle), c.lineWidth]);
+    expect(style(unmeasured)).toEqual(style(paint().calls));
+  });
+
+  it("hatches and dashes the one unknown capability on a measured board", () => {
+    hatchable();
+    const evidence = new Map(caps.map((c, i) => [c.id, (i === 0 ? "unknown" : "current") as HexEvidenceState]));
+    const { calls } = paint({ evidence, evidenceMeasured: true });
+    expect(hatchedFills(calls)).toBe(1);
+    expect(dashedRims(calls)).toBe(1);
   });
 });
 

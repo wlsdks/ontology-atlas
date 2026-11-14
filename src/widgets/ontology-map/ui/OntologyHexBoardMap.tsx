@@ -205,7 +205,8 @@ export function OntologyHexBoardMap({
   const tipRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [room, setRoom] = useState<Rect | null>(null);
-  const [staleOnly, setStaleOnly] = useState(false);
+  const [staleOnlyPressed, setStaleOnly] = useState(false);
+  const staleOnly = evidenceMeasured && staleOnlyPressed;
   const [regionsOnly, setRegionsOnly] = useState(false);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [band, setBand] = useState<HexBand>("names");
@@ -597,6 +598,7 @@ export function OntologyHexBoardMap({
           focusRegion: focus.region,
           dimT: dim.t,
           evidence,
+          evidenceMeasured,
           staleFiles,
           staleByDomain,
           domainMeta,
@@ -636,7 +638,7 @@ export function OntologyHexBoardMap({
       if (hoverRef.current) placeTipRef.current(hoverRef.current);
       return again;
     },
-    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera, pose],
+    [size, layout, scene, lattice, blocked, selectedId, hoverId, focus, staleOnly, regionsOnly, evidence, evidenceMeasured, staleFiles, staleByDomain, domainMeta, labels.projectMeta, plateSub, canalRoutes, ports, namesFrom, measure, reducedMotion, arrivedByMorph, arrivalKey, band, drawnR, writeMirror, clampCamera, pose],
   );
 
   const paintRef = useRef(paint);
@@ -1265,18 +1267,19 @@ export function OntologyHexBoardMap({
         className="absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center gap-2"
       >
         <div className="pointer-events-auto flex gap-1 rounded-chip bg-[color:var(--chrome-surface)] p-1">
-          <Chip
-            size="md"
-            tone={staleOnly ? "warning" : "secondary"}
-            active={staleOnly}
-            hoverSurface="lift"
-            data-testid="hex-board-stale-only"
-            aria-pressed={staleOnly}
-            disabled={!evidenceMeasured}
-            onClick={toggleStale}
-          >
-            {labels.staleOnly(staleTotal)}
-          </Chip>
+          {evidenceMeasured ? (
+            <Chip
+              size="md"
+              tone={staleOnly ? "warning" : "secondary"}
+              active={staleOnly}
+              hoverSurface="lift"
+              data-testid="hex-board-stale-only"
+              aria-pressed={staleOnly}
+              onClick={toggleStale}
+            >
+              {labels.staleOnly(staleTotal)}
+            </Chip>
+          ) : null}
           <Chip
             size="md"
             tone={regionsOnly ? "strong" : "secondary"}

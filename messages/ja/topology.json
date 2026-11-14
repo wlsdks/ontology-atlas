@@ -4,7 +4,6 @@
     "canvasAriaLabel": "ヘックス表示：ケイパビリティ1つにつきタイル1枚、ドメイン1つにつき区域1つ。矢印キーで隣のタイルに移動します。",
     "listLabel": "ヘックス表示のタイル",
     "staleOnly": "◐ 古いもののみ · {count}",
-    "staleOnlyUnmeasured": "◐ 古いもののみ · 不明",
     "regionsOnly": "⬡ ドメイン名のみ",
     "widened": "表示を広げました。1つのドメインが区域に収まらなくなり、すべてのタイルを配置し直しました。",
     "tooltipStale": "◐ 古い",

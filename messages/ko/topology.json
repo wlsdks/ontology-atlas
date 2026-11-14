@@ -4,7 +4,6 @@
     "canvasAriaLabel": "육각 보기: 역량 하나가 칸 하나, 도메인 하나가 구역 하나예요. 화살표 키로 옆 칸으로 이동해요.",
     "listLabel": "육각 보기의 칸 목록",
     "staleOnly": "◐ 오래됨만 보기 · {count}",
-    "staleOnlyUnmeasured": "◐ 오래됨만 보기 · 알 수 없음",
     "regionsOnly": "⬡ 도메인 이름만",
     "widened": "보기가 넓어졌어요. 한 도메인이 자기 구역보다 커져서 모든 칸을 다시 배치했어요.",
     "tooltipStale": "◐ 오래됨",

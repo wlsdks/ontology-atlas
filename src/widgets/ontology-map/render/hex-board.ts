@@ -81,6 +81,8 @@ export interface HexDrawState {
   /** 0 → nothing dimmed, 1 → the rest fully receded. */
   dimT: number;
   evidence: ReadonlyMap<string, HexEvidenceState>;
+  /** Unknown is hatched only on a measured board, where it is the exception rather than every tile. */
+  evidenceMeasured: boolean;
   /** Capability → the moved file's name, shown under the name in stale-only mode. */
   staleFiles: ReadonlyMap<string, string>;
   /** Stale capabilities per domain; null when evidence is not measured. */

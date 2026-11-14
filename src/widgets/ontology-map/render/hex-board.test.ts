@@ -129,6 +129,7 @@ describe("hex board stale-only paint", () => {
         focusRegion: null,
         dimT: 1,
         evidence,
+        evidenceMeasured: true,
         staleFiles,
         staleByDomain: new Map(layout.regions.map((r) => [r.domainId, r.capabilityIds.length])),
         domainMeta: new Map(layout.regions.map((r) => [r.domainId, { meta: `역량 ${r.capabilityIds.length} · 요소 ${r.elementCount}`, stale: `◐ 낡음 ${r.capabilityIds.length}` }])),

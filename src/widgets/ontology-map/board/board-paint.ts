@@ -289,7 +289,8 @@ export function drawBoard(
     }
     ctx.beginPath();
     face(ctx, x, yt, ri, c);
-    ctx.fillStyle = !isSel && t.kind === "capability" && ev === "unknown" ? hatch(ctx, m.topCss, T.hatch) : m.topCss;
+    const unknown = state.evidenceMeasured && t.kind === "capability" && ev === "unknown";
+    ctx.fillStyle = unknown && !isSel ? hatch(ctx, m.topCss, T.hatch) : m.topCss;
     ctx.fill();
     ctx.lineWidth = R >= 28 ? 1.4 : 0.8;
     ctx.beginPath();
@@ -318,7 +319,7 @@ export function drawBoard(
     } else if (ev === "stale") {
       rim = staleRim;
       rimW = 1.6 + 0.4 * light;
-    } else if (ev === "unknown") {
+    } else if (unknown) {
       rim = T.rimUnknown;
       dash = R >= 28 ? [4, 3] : [2, 2];
     }

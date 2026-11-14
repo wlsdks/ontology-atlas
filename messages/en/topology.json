@@ -4,7 +4,6 @@
     "canvasAriaLabel": "Hex view: one tile per capability, one area per domain. Arrow keys move to the next tile.",
     "listLabel": "Tiles in the hex view",
     "staleOnly": "◐ Stale only · {count}",
-    "staleOnlyUnmeasured": "◐ Stale only · unknown",
     "regionsOnly": "⬡ Domain names only",
     "widened": "The view widened: one domain outgrew its area, so every tile was placed again.",
     "tooltipStale": "◐ stale",
