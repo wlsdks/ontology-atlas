@@ -110,7 +110,7 @@ export function RecentVaultList({
           scroll === 'contained' && 'max-h-[var(--recent-vault-list-max-h)] overflow-y-auto overscroll-contain',
           scroll === 'viewport' && 'min-h-0 auto-rows-max overflow-y-auto overscroll-contain',
           emphasis
-            ? 'border-[color:var(--color-indigo-line-a32)]'
+            ? 'border-[color:var(--color-indigo-accent-a50)]'
             : 'border-[color:var(--color-border-soft)]',
           className,
         )}

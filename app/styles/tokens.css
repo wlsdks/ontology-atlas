@@ -136,8 +136,8 @@
    * Alpha steps of the accent #7170ff, not a new colour; the colour gate only contrasts registered
    * tuples, so literals must not be written inline.
    */
-  --color-indigo-accent-a32: rgba(233, 231, 224, 0.192);
-  --color-indigo-accent-a50: rgba(233, 231, 224, 0.3);
+  --color-indigo-accent-a32: rgba(143, 176, 234, 0.32);
+  --color-indigo-accent-a50: rgba(143, 176, 234, 0.5);
 
   /* Text color for search match `<mark>`. The only value readable on `--color-indigo-line-a22` surface, so named for purpose — 3 consumption sites were copying the same literal (highlighted-text · document palette · document viewer). */
   --color-search-mark-text: rgba(210, 218, 255, 0.98);
