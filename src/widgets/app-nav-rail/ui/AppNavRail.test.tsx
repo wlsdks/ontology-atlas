@@ -74,14 +74,14 @@ describe("AppNavRail", () => {
     expect(screen.queryByText("Atlas")).toBeNull();
   });
 
-  it("renders eight destinations with ontology documents inside Library", () => {
+  it("renders nine destinations with ontology documents inside Library", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-item-docs")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-automations")).toBeInTheDocument();
-    expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
+    expect(screen.queryByTestId("app-nav-rail-item-insights")).not.toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
     expect(screen.queryByTestId("app-nav-rail-item-mcp")).not.toBeInTheDocument();
@@ -97,7 +97,7 @@ describe("AppNavRail", () => {
     expect(screen.getByTestId("app-nav-rail-item-automations")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
-    for (const hidden of ["map", "architecture", "docs", "insights", "projects"]) {
+    for (const hidden of ["map", "architecture", "docs", "projects"]) {
       expect(screen.queryByTestId(`app-nav-rail-item-${hidden}`)).not.toBeInTheDocument();
     }
   });
@@ -105,19 +105,19 @@ describe("AppNavRail", () => {
   it("carries the destination reading-start intent across installed-app navigation", () => {
     window.sessionStorage.clear();
     renderRail();
-    const insights = screen.getByTestId("app-nav-rail-item-insights");
+    const automations = screen.getByTestId("app-nav-rail-item-automations");
 
-    expect(insights).toHaveAttribute("href", "/ontology/insights/?focus=main");
-    fireEvent.click(insights);
+    expect(automations).toHaveAttribute("href", "/automations/?focus=main");
+    fireEvent.click(automations);
 
     expect(
       JSON.parse(
         window.sessionStorage.getItem("ontology-atlas:route-focus-intent") ?? "null",
       ),
-    ).toMatchObject({ surfacePath: "/ontology/insights" });
+    ).toMatchObject({ surfacePath: "/automations" });
 
     window.sessionStorage.clear();
-    fireEvent.click(insights, { metaKey: true });
+    fireEvent.click(automations, { metaKey: true });
     expect(
       window.sessionStorage.getItem("ontology-atlas:route-focus-intent"),
     ).toBeNull();
@@ -125,16 +125,16 @@ describe("AppNavRail", () => {
 
   it('emits the navigation signal only on clicks that actually navigate', () => {
     renderRail();
-    const insights = screen.getByTestId("app-nav-rail-item-insights");
+    const automations = screen.getByTestId("app-nav-rail-item-automations");
     const seen: Event[] = [];
     const listener = (event: Event) => seen.push(event);
     window.addEventListener("ontology-atlas:navigation-intent", listener);
     try {
-      fireEvent.click(insights);
+      fireEvent.click(automations);
       expect(seen).toHaveLength(1);
 
       // A click that opens a new tab does not leave this screen — no reason to put the map to sleep.
-      fireEvent.click(insights, { metaKey: true });
+      fireEvent.click(automations, { metaKey: true });
       expect(seen).toHaveLength(1);
     } finally {
       window.removeEventListener("ontology-atlas:navigation-intent", listener);
@@ -142,28 +142,28 @@ describe("AppNavRail", () => {
   });
 
   it("marks the current route active via aria-current + data-active", () => {
-    mocks.pathname = "/ontology/insights/";
+    mocks.pathname = "/automations/";
     renderRail();
-    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("aria-current", "page");
-    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("aria-current", "page");
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("data-active", "true");
     expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("data-active", "false");
     expect(screen.getByTestId("app-nav-rail-item-map")).not.toHaveAttribute("aria-current");
   });
 
   it("moves the active mark to the map on the press while the page it leaves stays current", () => {
-    mocks.pathname = "/ontology/insights/";
+    mocks.pathname = "/automations/";
     renderRail();
     act(() => {
-      beginMapNavigation(vi.fn(), "/ontology/insights/");
+      beginMapNavigation(vi.fn(), "/automations/");
     });
     try {
       expect(screen.getByTestId("app-nav-rail-item-map")).toHaveAttribute("data-active", "true");
-      expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "false");
-      expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("aria-current", "page");
+      expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("data-active", "false");
+      expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("aria-current", "page");
     } finally {
       act(() => cancelMapNavigation());
     }
-    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute("data-active", "true");
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute("data-active", "true");
   });
 
   it("renders the settingsSlot passed in at the bottom of the rail", () => {
@@ -214,9 +214,9 @@ describe("AppNavRail", () => {
       "href",
       "/topology/?focus=main",
     );
-    expect(screen.getByTestId("app-nav-rail-item-insights")).toHaveAttribute(
+    expect(screen.getByTestId("app-nav-rail-item-automations")).toHaveAttribute(
       "href",
-      "/ontology/insights/?focus=main",
+      "/automations/?focus=main",
     );
     expect(screen.getByTestId("app-nav-rail-item-projects")).toHaveAttribute(
       "href",

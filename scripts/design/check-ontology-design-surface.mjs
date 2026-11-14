@@ -14,7 +14,6 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/features/ontology-change-review",
   "src/widgets/acp-chat-panel",
   "src/views/ontology-edit-redirect",
-  "src/views/ontology-insights",
   "src/widgets/app-nav-rail",
   "src/widgets/app-settings-menu",
   "src/widgets/bottom-tab-bar",
@@ -87,32 +86,6 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     ],
     reason:
       "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
-  },
-  {
-    id: "insights-relationship-analysis",
-    files: [
-      "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-      "src/views/ontology-insights/ui/analysis/AnalysisWorkspace.tsx",
-      "src/views/ontology-insights/ui/analysis/ConnectionExplorer.tsx",
-      "src/views/ontology-insights/ui/analysis/AnalysisRecords.tsx",
-    ],
-    markers: [
-      'data-insights-surface="relationship-analysis"',
-      'data-insights-question-model="claim-evidence"',
-      'role="tabpanel"',
-      '<TabBar',
-      '<AnalysisWorkspace',
-      'data-testid="analysis-board"',
-      'data-testid="analysis-witness"',
-      'data-testid="analysis-evidence"',
-      'buildDocsVaultHref',
-      '<InsightsAgentDock',
-      'planInsightsAgentPrompt',
-      'data-testid="analysis-inspect-selected"',
-      'onClick={() => onInspect(inspection.text)}',
-      'testId="analysis-copy-selected"',
-    ],
-    reason: "Analysis must connect a named relationship to its exact evidence, retain keyboard section navigation and preserve explicit agent prefill/send boundaries.",
   },
 ];
 

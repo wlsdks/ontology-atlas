@@ -92,6 +92,26 @@ describe('empty tab', () => {
   });
 });
 
+/** Both "things to fix" doors open the place the map INDEX's "docs the checks caught" row opens. */
+describe('things-to-fix doors', () => {
+  it('opens the ontology documents from the empty To do tab', () => {
+    window.localStorage.clear();
+    renderPanel(undefined, { todos: [], results: [], history: [], unreadResults: 0 });
+    expect(screen.getByTestId('agent-inbox-todo-empty-repair').getAttribute('href')).toMatch(/^\/ko\/docs\/?$/);
+  });
+
+  it('opens the ontology documents from a folder-problem row', () => {
+    window.localStorage.clear();
+    renderPanel(undefined, {
+      todos: [{ kind: 'folder-problem', id: 'problem:1', at: NOW - MINUTE, problems: { unresolvedEdges: 2, dependencyCycles: 0 } }],
+      results: [],
+      history: [],
+      unreadResults: 0,
+    });
+    expect(screen.getByTestId('agent-inbox-problem-door').getAttribute('href')).toMatch(/^\/ko\/docs\/?$/);
+  });
+});
+
 /**
  * Indigo marks what needs the person, and the strip counts only what can be acted on. A settled
  * timeline's node names are not accent-coloured; a result row, whose whole row is the button, gains

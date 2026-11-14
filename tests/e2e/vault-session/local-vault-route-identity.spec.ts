@@ -107,7 +107,7 @@ async function stopFrameTextTrace(page: Page): Promise<string[]> {
 
 async function expectLocalOnlyTransition(
   page: Page,
-  destination: 'architecture' | 'library' | 'insights' | 'projects',
+  destination: 'architecture' | 'library' | 'projects',
   localMarker: string,
   section?: 'ontology',
 ) {
@@ -172,7 +172,6 @@ test('switching the LNB in a chosen local vault draws the bundled sample in no f
   ).toBeGreaterThan(0);
   await expectLocalOnlyTransition(page, 'library', 'Local Only Capability', 'ontology');
   await expect(page.getByTestId('docs-missing-slug-banner')).toHaveCount(0);
-  await expectLocalOnlyTransition(page, 'insights', '로컬 전용 역량');
   // On a Korean screen every destination draws a concept by `display_<locale>`, including projects;
   // the canonical `title` stays what identifies the document.
   await expectLocalOnlyTransition(page, 'projects', '로컬 전용 프로젝트');

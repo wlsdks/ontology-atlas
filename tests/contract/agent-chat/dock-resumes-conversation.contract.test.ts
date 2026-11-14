@@ -9,7 +9,7 @@ function chatPanelProps(source: string): string[] {
 
 describe('agent docks resume the conversation a person left', () => {
   it('finds every dock that mounts the chat panel', () => {
-    expect(DOCKS.length).toBeGreaterThanOrEqual(5);
+    expect(DOCKS.length).toBeGreaterThanOrEqual(4);
   });
 
   it.each(DOCKS)('%s reopens the latest conversation of its folder', (file) => {

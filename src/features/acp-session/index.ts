@@ -41,4 +41,4 @@ export type {
 export { permissionIntent } from "./model/permissions/permission-intent";
 export { permissionScope } from "./model/permissions/permission-scope";
 export { permissionLocality } from "./model/permissions/permission-locality";
-export { atlasBareToolMode, atlasToolMode } from "./model/permissions/atlas-tool-policy";
+export { atlasToolMode } from "./model/permissions/atlas-tool-policy";

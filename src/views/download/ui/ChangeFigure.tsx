@@ -97,7 +97,6 @@ function measureThreads(stage: HTMLElement, wide: boolean): Thread[] {
 
 export function ChangeSection({ graph }: { graph: StageGraph }) {
   const t = useTranslations('download.change');
-  const tBrief = useTranslations('ontologyPages.insights.brief');
   const format = useFormatter();
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
@@ -140,9 +139,9 @@ export function ChangeSection({ graph }: { graph: StageGraph }) {
   );
   const { setRoot, setFigure, state, canAnimate, finished, userPaused, press } = useShowpiece({ duration: CHANGE_DURATION, build, layoutKey: `${wide}:${threads.length}` });
 
-  const moved = tBrief('line.ontology-evidence-moved', { count: CHANGE_CAST.length });
-  const askAgent = tBrief('askAgent');
-  const detail = tBrief('detailMoved', {
+  const moved = t('briefMoved', { count: CHANGE_CAST.length });
+  const askAgent = t('askAgent');
+  const detail = t('briefDetail', {
     moved: format.relativeTime(MOVED_AT, NOW),
     doc: format.relativeTime(WRITTEN_AT, NOW),
   });
@@ -341,17 +340,12 @@ function BriefPanel({
   detail: string;
   askAgent: string;
 }) {
-  const tInsights = useTranslations('navRail');
-  const tTab = useTranslations('ontologyPages.insights.tab');
   return (
     <div
       className="relative min-w-0 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-[var(--card-pad)] shadow-elevation-2"
       {...part('brief')}
     >
-      <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
-        {tInsights('insights')} · {tTab('brief')}
-      </p>
-      <p className="mt-3 flex min-w-0 items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]" {...part('line')}>
+      <p className="flex min-w-0 items-start gap-2 text-body leading-body text-[color:var(--color-text-primary)]" {...part('line')}>
         <span aria-hidden className="mt-[0.45rem] size-2.5 shrink-0 rounded-full bg-[color:var(--color-amber-source-a90)]" {...part('line-dot')} />
         <ChevronDown size={ICON_SIZE.sm} aria-hidden className="mt-1 shrink-0 text-[color:var(--color-text-tertiary)]" />
         <span className="min-w-0 font-[var(--font-weight-signature)]">{moved}</span>

@@ -5,11 +5,11 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { AlertTriangle, Bot, Check } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
-import { buildOntologyInsightsReturnHref } from '@/entities/knowledge-graph';
 import { getTopologyFocusHref } from '@/entities/project';
 import { agentDisplayName } from '@/shared/lib/agent-activity/agent-display-name';
 import type { VaultProblemCounts } from '@/shared/lib/agent-activity/agent-notifications';
 import { cn } from '@/shared/lib/cn';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { Chip, RowButton } from '@/shared/ui/controls/controls';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
@@ -373,7 +373,7 @@ export function AgentInboxPanel({
             <InboxEmpty testId="agent-inbox-todo-empty">
               {t('todoEmpty')}
               <Link
-                href={buildOntologyInsightsReturnHref('do-next')}
+                href={DESTINATION_HREF.docs}
                 data-testid="agent-inbox-todo-empty-repair"
                 onClick={() => onClose?.()}
                 className={controlClass({
@@ -649,7 +649,7 @@ function TodoRow({
         </span>
       </span>
       <Link
-        href={buildOntologyInsightsReturnHref('do-next')}
+        href={DESTINATION_HREF.docs}
         aria-label={t('problemDoorAria')}
         data-testid="agent-inbox-problem-door"
         onClick={() => onClose?.()}

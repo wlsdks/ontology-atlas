@@ -22,14 +22,14 @@ describe('HiddenCountLine', () => {
     expect(screen.queryByTestId('hidden-count-line')).toBeNull();
   });
 
-  it('carries the difference, not either operand, and always a route', () => {
+  it('carries the difference, not either operand, and the route it was given', () => {
     render(
       <HiddenCountLine
         total={9}
         shown={4}
         label={(n) => `${n} more relation types not shown`}
         route={
-          <button type="button" data-testid="route" data-href="/insights">
+          <button type="button" data-testid="route" data-href="/library">
             All relation types
           </button>
         }
@@ -38,7 +38,14 @@ describe('HiddenCountLine', () => {
     const line = screen.getByTestId('hidden-count-line');
     expect(line).toHaveAttribute('data-hidden-count', '5');
     expect(line).toHaveTextContent('5 more relation types not shown');
-    expect(line.querySelector('[data-testid="route"]')).toHaveAttribute('data-href', '/insights');
+    expect(line.querySelector('[data-testid="route"]')).toHaveAttribute('data-href', '/library');
+  });
+
+  it('states the count alone, with no separator, when no screen lists the rest', () => {
+    render(<HiddenCountLine total={9} shown={7} label={(n) => `${n} more domains`} />);
+    const line = screen.getByTestId('hidden-count-line');
+    expect(line).toHaveTextContent(/^2 more domains$/);
+    expect(line.querySelector('a, button')).toBeNull();
   });
 
   it('computes the difference itself, so a caller cannot print a disagreeing number', () => {

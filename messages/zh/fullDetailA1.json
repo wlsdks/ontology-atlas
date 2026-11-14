@@ -35,8 +35,7 @@
     "mostlyTwo": "数量最多：{a}（{aCount} 个）、{b}（{bCount} 个）。",
     "selfDomainLabel": "本领域",
     "noDomainLabel": "无领域",
-    "domainsHidden": "实际到达的领域比这些条形多 {count} 个",
-    "domainsHiddenRoute": "领域边界"
+    "domainsHidden": "实际到达的领域比这些条形多 {count} 个"
   },
   "handoff": {
     "label": "智能体交接",

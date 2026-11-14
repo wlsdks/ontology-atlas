@@ -180,7 +180,6 @@ describe("formatTopologyOverviewBrief", () => {
           promotion: "Hub candidates",
           url: "URL",
           healthUrl: "Health URL",
-          insightsUrl: "Insights URL",
           agentCheck: "Agent overview check",
           mcpCheck: "MCP overview check",
           mcpQueryPlan: "MCP query plan",
@@ -189,7 +188,6 @@ describe("formatTopologyOverviewBrief", () => {
         },
         url: "http://localhost:3000/en/topology",
         healthUrl: "http://localhost:3000/en/topology?mode=health",
-        insightsUrl: "/ontology/insights/",
       }),
     ).toBe(
       [
@@ -206,7 +204,6 @@ describe("formatTopologyOverviewBrief", () => {
         "- Hub candidates: 3",
         "- URL: http://localhost:3000/en/topology",
         "- Health URL: http://localhost:3000/en/topology?mode=health",
-        "- Insights URL: /ontology/insights/",
         "- Agent overview check: node $ATLAS/cli/src/index.mjs overview [vault] --limit 5",
         '- MCP overview check: query_ontology({"operation":"overview","limit":5})',
         '- MCP query plan: query_ontology({"operation":"query_plan","targetOperation":"overview"})',

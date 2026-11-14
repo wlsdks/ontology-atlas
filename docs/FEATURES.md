@@ -82,11 +82,6 @@ Saved analysis history separates list failures from selected-artifact failures,
 ignores stale reads, and presents a localized remedy with optional technical details.
 The full project editor confirms leaving unsaved changes inside the app, so Cancel and Back work in the macOS WebView as well as the browser.
 
-The Analysis review summary lists the agent-authored concepts without a recorded human review, with exact concept links and five more entries per expansion. Opening a concept does not mark it reviewed.
-
-Analysis can narrow capabilities by source changes, missing paths or unchecked
-evidence alongside name search and recorded gaps, preserving the selected claim.
-
 Primary navigation and the G M shortcut restore the selected map concept after
 visiting another screen. The Concepts search also survives panel and route
 remounts. Both stay in memory for the same opened folder handle; a different
@@ -198,7 +193,6 @@ The desktop rail's order and hrefs come from
 | Library | `/library` (`/docs` is its ontology-tab compatibility entry) | [`features/library/`](features/library/workspace.md) — source import feedback, local Wiki questions, cited ACP reports, document export, Ontology bookmarks, and optional Jev advice |
 | Planning | `/planning` | Described below this table — a session-only, read-only project folder, distinct from Library imports |
 | Automations | `/automations` | [`automations.md`](features/automations.md) |
-| Analysis: searchable relationships, implementation connections and claim evidence | `/ontology/insights` | [`analysis.md`](features/analysis.md) |
 | Projects | `/projects`, `/project/*` | [`projects.md`](features/projects.md) |
 | Agents | `/agents` (tabs: `src/views/agents/lib/agents-tab-state.ts`) | [`agents.md`](features/agents.md) |
 | Git | `/git` | [`git.md`](features/git.md) |
@@ -206,9 +200,7 @@ The desktop rail's order and hrefs come from
 | Download | `/download` | [`download.md`](features/download.md) |
 | Guide | `/guide`, `/guide/[segment]` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
 | Changelog | `/changelog` | [`guide-and-changelog.md`](features/guide-and-changelog.md) |
-| Redirects | `/ontology`, `/ontology/edit`, `/ontology/studio`, `/mcp` | [`compatibility-redirects.md`](features/compatibility-redirects.md) |
-
-In the macOS app, Analysis compares document and implementation Git dates across the granted vault and its single bound code repository. Windows keeps these dates unknown because the confined source reader is unavailable there. Missing access or history remains unknown; the source picker must match the existing connection and never rebinds it. See [Analysis source currentness](features/analysis.md#source-currentness).
+| Redirects | `/ontology`, `/ontology/edit`, `/ontology/studio`, `/ontology/insights`, `/mcp` | [`compatibility-redirects.md`](features/compatibility-redirects.md) |
 
 Planning reads Markdown and bounded PNG/JPEG images in place from a folder selected in the macOS app, with name/path search, a dated recheck, and links to source history and the ontology map. WebP and AVIF are listed but not rendered until bounded decoding is proven. Browser and non-macOS desktop folder access are unavailable pending separate verification. The inventory distinguishes checked entries, exclusions, unreadable entries, scan limits and an unknown remainder. Markdown previews bound image references, retained bytes, total unique-image pixels and concurrent reads; this is not a bound on browser memory. Return navigation restores the position and originating control only after the selected file identity is rechecked. Selection does not authorize source or vault commands, edit originals, or assert a relationship. The read boundary starts when the folder descriptor opens; earlier replacement, external hardlinks or descriptors, and secrets within otherwise allowed content are not detected.
 

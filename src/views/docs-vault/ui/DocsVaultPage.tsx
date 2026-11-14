@@ -81,8 +81,6 @@ function DocsVaultContent({
   const address = useDocsVaultAddress();
   const {
     view,
-    insightsReturnTab,
-    workspaceHref,
     getDocHref,
     getProjectHref,
     libraryOntologyHref,
@@ -385,8 +383,6 @@ function DocsVaultContent({
         legacyDocumentMode={legacyDocumentMode}
         docListCollapsed={docListCollapsed}
         libraryOntologyHref={libraryOntologyHref}
-        insightsReturnTab={insightsReturnTab}
-        workspaceHref={workspaceHref}
         setSourceTreeOpen={setSourceTreeOpen}
         toggleDocListCollapsed={toggleDocListCollapsed}
         vaultChipIdentity={vaultChipIdentity}

@@ -1,4 +1,3 @@
-import { buildOntologyInsightsReturnHref } from "@/entities/knowledge-graph";
 import { AgentActivityChip } from "@/features/agent-activity";
 import { buildConstellationAgentPrompt } from "@/features/saved-constellations";
 import { Link } from "@/i18n/navigation";
@@ -34,7 +33,6 @@ import type { useTopologyPreferences } from "../model/use-topology-preferences";
 import type { useTopologyRouteControls } from "../model/route-state/use-topology-route-controls";
 import type { useTopologySceneControls } from "../model/map-canvas/use-topology-scene-controls";
 import type { useTopologyVaultReadModel } from "../model/use-topology-vault-read-model";
-import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
 import { TopologyTrailChip } from "./TopologyTrailChip";
@@ -51,8 +49,6 @@ interface TopologyCommandChromeProps {
   setTopologyRelayoutToken: React.Dispatch<React.SetStateAction<number>>;
   toast: ReturnType<typeof useToast>;
   expandAllActive: boolean;
-  insightsReturnTab: string | null;
-  insightsReturnReviewId: string | null;
   analysisMode: import("@/views/home/model/route-state/url-state").TopologyAnalysisMode;
   footprintTrailEntries: import("@/views/home/lib/trail/footprint-trail").FootprintTrailEntry[];
   footprintTrailStepCaptions: (import("@/views/home/lib/trail/footprint-trail").TrailStepCaption | null)[];
@@ -126,7 +122,7 @@ interface TopologyCommandChromeProps {
 export function TopologyCommandChrome({
   grayAreaAction, grayAreaContinuation,
   routeState, setRouteState, setVaultAgentPrefill, setOntologySearchOpen, setTopologyRelayoutToken, toast,
-  expandAllActive, insightsReturnTab, insightsReturnReviewId, analysisMode, footprintTrailEntries,
+  expandAllActive, analysisMode, footprintTrailEntries,
   footprintTrailStepCaptions, footprintPacketCopied, copyFootprintPacket, clearFootprintTrail,
   handleFootprintLens, handleFootprintBrush, pastWalkRows, pastTrailNotice, handleDeletePastWalk,
   handleClearPastWalks, agentDockTouchedRef, sampleModeSettled, sampleModeKnown, requestVaultOpen, v2DatasheetModel,
@@ -361,25 +357,6 @@ export function TopologyCommandChrome({
                   afterLabel={t("realm.chipViewing", { title: "\u0000" }).split("\u0000")[1] ?? ""}
                   clearAriaLabel={t("realm.chipClear")}
                   onClear={handleExitRealm}
-                />
-              ) : undefined
-            }
-            returnChip={
-              insightsReturnTab ? (
-                <TopologyInsightsReturnChip
-                  href={buildOntologyInsightsReturnHref(
-                    insightsReturnTab,
-                    insightsReturnReviewId,
-                  )}
-                  label={t("insightsReturn.label")}
-                  ariaLabel={t("insightsReturn.ariaLabel")}
-                  dismissAriaLabel={t("insightsReturn.dismissAriaLabel")}
-                  onDismiss={() => {
-                    setRouteState({
-                      insightsReturnTab: null,
-                      insightsReturnReviewId: null,
-                    });
-                  }}
                 />
               ) : undefined
             }

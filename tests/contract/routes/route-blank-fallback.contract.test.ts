@@ -72,15 +72,6 @@ describe("blank-screen gate on route entry", () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 
-  it("analysis has a named, busy destination while its implementation loads", () => {
-    const shell = readFileSync("src/views/ontology-insights/ui/InsightsLoadingView.tsx", "utf8");
-    expect(shell).toContain('<PageHeaderBar');
-    expect(shell, 'the loading view names the page, so its title is the h1').not.toContain('titleAs=');
-    expect(shell).toContain('aria-busy="true"');
-    expect(shell).toContain('<WaitStage');
-    expect(shell).toContain('data-route-loading="true"');
-  });
-
   it("the placeholder wording exists in both ko and en", () => {
     for (const messages of [koMessages, enMessages]) {
       const value = (messages as { nav: Record<string, unknown> }).nav

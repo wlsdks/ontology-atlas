@@ -35,8 +35,7 @@
     "mostlyTwo": "上位の分布：{a}（{aCount}件）、{b}（{bCount}件）。",
     "selfDomainLabel": "このドメイン",
     "noDomainLabel": "ドメインなし",
-    "domainsHidden": "バーに表示しきれない{count}件のドメインにも届いています",
-    "domainsHiddenRoute": "ドメインの境界"
+    "domainsHidden": "バーに表示しきれない{count}件のドメインにも届いています"
   },
   "handoff": {
     "label": "エージェントへの引き継ぎ",
