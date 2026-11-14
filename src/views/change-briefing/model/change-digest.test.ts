@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
-import { buildChangeDigest, changeTitle, latestChangeDay, mainDirectory, pullRequestNumber, titleLabel } from './change-digest';
+import { buildChangeDigest, changeBody, changeTitle, directoryCounts, titleWithoutHead, latestChangeDay, mainDirectory, pullRequestNumber, titleLabel } from './change-digest';
 
 let sequence = 0;
 function change(subject: string, options: { files?: number; paths?: string[]; message?: string; at?: string } = {}): BriefingCommit {
@@ -158,5 +158,22 @@ describe('groups', () => {
   it('finds the local day of the newest change', () => {
     expect(latestChangeDay([change('a', { at: '2026-11-10T12:00:00' }), change('b', { at: '2026-11-13T12:00:00' })])).toBe('2026-11-13');
     expect(latestChangeDay([])).toBeNull();
+  });
+});
+
+describe('one change opened where it is listed', () => {
+  it('drops the head a label group already names and keeps a title that has none', () => {
+    expect(titleWithoutHead('Merge #3114: fix(map): keep the camera')).toBe('keep the camera');
+    expect(titleWithoutHead('Update the readme')).toBe('Update the readme');
+  });
+
+  it('keeps the prose under the title and leaves out its echoes and trailers', () => {
+    const message = 'Merge #3114: fix(map): keep the camera\n\nfix(map): keep the camera (#3114)\n\nThe camera jumped when a panel opened.\nIt now holds its centre.\n\nCo-Authored-By: Someone <a@b.c>';
+    expect(changeBody('Merge #3114: fix(map): keep the camera', message)).toEqual(['The camera jumped when a panel opened.', 'It now holds its centre.']);
+    expect(changeBody('fix(map): keep the camera')).toEqual([]);
+  });
+
+  it('counts each file once under its top-level directory, most files first', () => {
+    expect(directoryCounts(['src/a.ts', 'src/b.ts', 'src/a.ts', 'docs/x.md', 'README.md'])).toEqual([['src', 2], ['.', 1], ['docs', 1]]);
   });
 });

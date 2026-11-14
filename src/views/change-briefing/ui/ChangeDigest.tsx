@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { ChevronRight } from 'lucide-react';
 import { translateOntologyDeeplinkToTopologyParam } from '@/entities/knowledge-graph';
@@ -10,15 +10,19 @@ import type { BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { Button, RowButton } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { changeTitle, type ChangeDigest as Digest, type DigestChange, type DigestGroup, type NotableReason } from '../model/change-digest';
+import { changeBody, changeTitle, directoryCounts, titleWithoutHead, type ChangeDigest as Digest, type DigestChange, type DigestGroup, type NotableReason } from '../model/change-digest';
 import { DigestSummarySeat } from './DigestSummarySeat';
 
 const PAGE_SIZE = 40;
 const CONCEPTS_SHOWN = 3;
+/** A period this small is read faster as its changes than as bars to open. */
+const LISTED_OUTRIGHT = 8;
+const DIRECTORIES_SHOWN = 4;
+const PATHS_SHOWN = 6;
 
 interface ChangeDigestProps {
   digest: Digest;
-  /** Changes listed per expanded group key; a missing key is a collapsed group. */
+  /** Changes listed per group key; 0 is closed, and a missing key takes the period's default. */
   shown: Record<string, number>;
   onShown: (next: Record<string, number>) => void;
   /** Newest changes read when the period was cut short; null for a complete read. */
@@ -36,11 +40,10 @@ export function ChangeDigest({ digest, shown, onShown, partialCount, conceptTitl
   const largest = Math.max(...digest.groups.map(group => group.changes.length));
   const accent = digest.groups.find(group => group.kind !== 'other')?.key;
   const reason = (value: NotableReason) => value.kind === 'revert' ? t('reasonRevert') : value.kind === 'breaking' ? t('reasonBreaking') : value.kind === 'reach' ? t('reasonReach', { count: value.count }) : t('reasonSize', { count: value.count });
-  const toggle = (key: string) => {
-    const next = { ...shown };
-    if (next[key]) delete next[key]; else next[key] = PAGE_SIZE;
-    onShown(next);
-  };
+  const [detail, setDetail] = useState<string | null>(null);
+  const listed = (key: string) => shown[key] ?? (digest.changes <= LISTED_OUTRIGHT ? PAGE_SIZE : 0);
+  const toggle = (key: string) => onShown({ ...shown, [key]: listed(key) > 0 ? 0 : PAGE_SIZE });
+  const rows = { detail, onDetail: (key: string) => setDetail(detail === key ? null : key), conceptTitle, pullUrl, onOpen };
   return <div data-testid="change-digest" className="space-y-10">
     {partialCount !== null && <p role="status" data-testid="change-digest-partial" className="text-body text-[color:var(--color-status-warning)]">{partialCount === 'limited' ? t('partialOther') : t('partial', { count: partialCount })}</p>}
     <div className="space-y-1">
@@ -51,23 +54,30 @@ export function ChangeDigest({ digest, shown, onShown, partialCount, conceptTitl
       <h3 id={`${headlineId}-notable`} className="text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-secondary)]">{t('notable')}</h3>
       <ul className="-mx-3" data-digest-list="notable">
         {digest.notable.map(({ change, reason: why }) => <li key={change.commit.hash}>
-          <ChangeRow change={change} lead={reason(why)} leadClassName="basis-full md:basis-auto md:w-48" pullUrl={pullUrl} onOpen={onOpen} emphasis />
+          <ChangeRow change={change} list="notable" lead={reason(why)} leadClassName="basis-full md:basis-auto md:w-48" emphasis {...rows} />
         </li>)}
       </ul>
     </section>}
     <DigestSummarySeat />
     <ul className="-mx-3 border-t border-[color:var(--color-border-soft)]" data-testid="change-digest-groups">
       {digest.groups.map(group => <GroupRow key={group.key} group={group} share={group.changes.length / largest} accent={group.key === accent} compare={digest.groups.length > 1}
-        shown={shown[group.key] ?? 0} onToggle={() => toggle(group.key)} onMore={() => onShown({ ...shown, [group.key]: (shown[group.key] ?? 0) + PAGE_SIZE })}
-        conceptTitle={conceptTitle} formatTime={formatTime} pullUrl={pullUrl} onOpen={onOpen} />)}
+        shown={listed(group.key)} onToggle={() => toggle(group.key)} onMore={() => onShown({ ...shown, [group.key]: listed(group.key) + PAGE_SIZE })}
+        formatTime={formatTime} rows={rows} />)}
     </ul>
   </div>;
 }
 
-function GroupRow({ group, share, accent, compare, shown, onToggle, onMore, conceptTitle, formatTime, pullUrl, onOpen }: {
+interface RowShared extends Pick<ChangeDigestProps, 'conceptTitle' | 'pullUrl' | 'onOpen'> {
+  /** The one change whose detail is open, as `list:hash`. */
+  detail: string | null;
+  onDetail: (key: string) => void;
+}
+
+function GroupRow({ group, share, accent, compare, shown, onToggle, onMore, formatTime, rows }: {
   group: DigestGroup; share: number; accent: boolean; compare: boolean; shown: number;
-  onToggle: () => void; onMore: () => void;
-} & Pick<ChangeDigestProps, 'conceptTitle' | 'formatTime' | 'pullUrl' | 'onOpen'>) {
+  onToggle: () => void; onMore: () => void; rows: RowShared;
+} & Pick<ChangeDigestProps, 'formatTime'>) {
+  const { conceptTitle } = rows;
   const t = useTranslations('changeDigest');
   const briefing = useTranslations('changeBriefing');
   const panelId = useId();
@@ -93,7 +103,7 @@ function GroupRow({ group, share, accent, compare, shown, onToggle, onMore, conc
         </div>}
         <ul className="lg:-ml-3" data-digest-list={group.key}>
           {group.changes.slice(0, shown).map(change => <li key={change.commit.hash}>
-            <ChangeRow change={change} lead={formatTime(change.commit.committedAt)} leadClassName="w-14 whitespace-nowrap font-mono tabular-nums" pullUrl={pullUrl} onOpen={onOpen} />
+            <ChangeRow change={change} list={group.key} headless={group.kind === 'label'} lead={formatTime(change.commit.committedAt)} leadClassName="w-14 whitespace-nowrap font-mono tabular-nums" {...rows} />
           </li>)}
         </ul>
         {remaining > 0 && <Button className="atlas-touch-floor atlas-touch-floor-wide mx-3" variant="ghost" size="sm" onClick={onMore}>{t('more', { count: Math.min(PAGE_SIZE, remaining) })}</Button>}
@@ -102,19 +112,55 @@ function GroupRow({ group, share, accent, compare, shown, onToggle, onMore, conc
   </li>;
 }
 
-function ChangeRow({ change, lead, leadClassName, pullUrl, onOpen, emphasis = false }: {
-  change: DigestChange; lead: ReactNode; leadClassName: string; emphasis?: boolean;
-} & Pick<ChangeDigestProps, 'pullUrl' | 'onOpen'>) {
-  const t = useTranslations('changeDigest');
-  const title = changeTitle(change.commit.subject, change.commit.message);
-  const url = change.number === null ? null : pullUrl(change.number);
-  return <div className="group/change flex items-center gap-2">
-    <RowButton hoverSurface="lift" hoverInk="strong" aria-label={t('readOriginal', { title })} title={title} data-change-hash={change.commit.hash} onClick={() => onOpen(change.commit)}
-      className="min-h-10 min-w-0 flex-1 flex-wrap gap-x-3 gap-y-0.5 px-3 py-2 md:flex-nowrap md:gap-x-4">
-      <span className={cn('shrink-0 text-label text-[color:var(--color-text-tertiary)]', leadClassName)}>{lead}</span>
-      <span className={cn('min-w-0 flex-1 truncate', emphasis ? 'text-body-lg text-[color:var(--color-text-primary)]' : 'text-body text-[color:var(--color-text-secondary)]')}>{title}</span>
+function ChangeRow({ change, list, lead, leadClassName, emphasis = false, headless = false, detail, onDetail, conceptTitle, pullUrl, onOpen }: {
+  change: DigestChange; list: string; lead: ReactNode; leadClassName: string; emphasis?: boolean;
+  /** The list already names the label, so the title drops its `type(label):` head. */
+  headless?: boolean;
+} & RowShared) {
+  const panelId = useId();
+  const { commit } = change;
+  const title = changeTitle(commit.subject, commit.message);
+  const key = `${list}:${commit.hash}`;
+  const open = detail === key;
+  return <>
+    <RowButton hoverSurface="lift" hoverInk="strong" aria-expanded={open} aria-controls={panelId} title={title} data-change-hash={commit.hash} onClick={() => onDetail(key)}
+      className={cn('min-h-10 w-full min-w-0 flex-wrap gap-x-3 gap-y-0.5 px-3 py-2 md:flex-nowrap md:gap-x-4', open && 'bg-[color:var(--color-overlay-2)]')}>
+      <span className={cn('shrink-0 text-label', emphasis ? 'text-[color:var(--color-text-secondary)]' : 'text-[color:var(--color-text-tertiary)]', leadClassName)}>{lead}</span>
+      <span className={cn('min-w-0 flex-1 truncate', emphasis || open ? 'text-[color:var(--color-text-primary)]' : 'text-[color:var(--color-text-secondary)]', emphasis ? 'text-body-lg' : 'text-body')}>{headless ? titleWithoutHead(commit.subject, commit.message) : title}</span>
       {change.number !== null && <span className="shrink-0 font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]">#{change.number}</span>}
     </RowButton>
-    {url && <a href={url} target="_blank" rel="noopener noreferrer" className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'touch-hit-expand shrink-0 px-2 text-label max-md:hidden focus-visible:opacity-100 group-hover/change:opacity-100 [@media(hover:hover)]:opacity-0' })}>{t('onGitHub')}</a>}
+    <div id={panelId} hidden={!open}>
+      {open && <ChangeDetail change={change} title={title} conceptTitle={conceptTitle} url={change.number === null ? null : pullUrl(change.number)} onOpen={onOpen} />}
+    </div>
+  </>;
+}
+
+function ChangeDetail({ change, title, conceptTitle, url, onOpen }: { change: DigestChange; title: string; url: string | null } & Pick<ChangeDigestProps, 'conceptTitle' | 'onOpen'>) {
+  const t = useTranslations('changeDigest');
+  const briefing = useTranslations('changeBriefing');
+  const { commit } = change;
+  const paths = [...new Set(commit.paths)];
+  const directories = directoryCounts(paths);
+  const body = changeBody(commit.subject, commit.message);
+  return <div data-testid="change-detail" className="space-y-3 px-3 pb-4 pt-2">
+    {body.length > 0 && <p className="whitespace-pre-line text-body text-[color:var(--color-text-secondary)]">{body.join('\n')}</p>}
+    {change.concepts.length > 0 && <div className="flex flex-wrap items-center gap-2">
+      <span className="text-label text-[color:var(--color-text-tertiary)]">{t('concepts')}</span>
+      {change.concepts.slice(0, CONCEPTS_SHOWN).map(id => <Link key={id} href={'/topology/?p=' + encodeURIComponent(translateOntologyDeeplinkToTopologyParam(id))} className={controlClass({ shape: 'chip', size: 'xs', hoverSurface: 'lift', hoverInk: 'strong', className: 'border-[color:var(--color-border-soft)] text-label' })}>{conceptTitle(id)}</Link>)}
+    </div>}
+    {paths.length > 0 && <div className="space-y-1.5">
+      <p className="text-label text-[color:var(--color-text-tertiary)]">
+        <span className="text-[color:var(--color-text-secondary)]">{t('detailFiles', { count: paths.length })}</span>
+        {directories.slice(0, DIRECTORIES_SHOWN).map(([directory, count]) => <span key={directory} className="ml-3 font-mono tabular-nums">{directory === '.' ? briefing('rootFiles') : directory} {count}</span>)}
+      </p>
+      <ul className="space-y-0.5 font-mono text-label text-[color:var(--color-text-tertiary)]">
+        {paths.slice(0, PATHS_SHOWN).map(path => <li key={path} className="truncate" title={path}>{path}</li>)}
+        {paths.length > PATHS_SHOWN && <li>{t('moreFiles', { count: paths.length - PATHS_SHOWN })}</li>}
+      </ul>
+    </div>}
+    <div className="flex flex-wrap items-center gap-2">
+      <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" size="sm" aria-label={t('readOriginal', { title })} onClick={() => onOpen(commit)}>{t('openOriginal')}</Button>
+      {url && <a href={url} target="_blank" rel="noopener noreferrer" className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'touch-hit-expand px-2 text-label' })}>{t('onGitHub')}</a>}
+    </div>
   </div>;
 }
