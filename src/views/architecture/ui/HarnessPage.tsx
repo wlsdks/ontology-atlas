@@ -38,11 +38,11 @@ import { HARNESS_FRAME_CONTAINER, HARNESS_GUTTER_X } from './harness-frame';
 /** The Harness destination. One chrome row holds the `h1` and the single tab set, so the ladder keeps its height. */
 
 /**
- * How long a read may take before the progress screen is shown. 1000ms is the response-time limit
- * where a person starts wondering whether the system is working (Miller 1968; Card, Robertson and
- * Mackinlay 1991). No minimum visible duration: holding the panel would delay the answer.
+ * How long a read may take before the progress screen is shown: the app's anti-flash delay, the
+ * same 400ms `route-loading-in` waits. No minimum visible duration: holding the panel would delay
+ * the answer.
  */
-const PROGRESS_REVEAL_MS = 1000;
+const PROGRESS_REVEAL_MS = 400;
 
 /** The read never changes within a session, so nothing has to be watched. */
 const subscribeNever = () => () => {};
