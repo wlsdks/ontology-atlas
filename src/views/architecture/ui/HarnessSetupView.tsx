@@ -170,7 +170,7 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
       <ul
         aria-label={t('problemsAria')}
         data-testid="harness-problems"
-        className="flex flex-col divide-y divide-[color:var(--color-amber-source-a35)] overflow-hidden rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]"
+        className="flex shrink-0 flex-col divide-y divide-[color:var(--color-amber-source-a35)] overflow-hidden rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]"
       >
         {setup.problems.map((problem) => (
           <li key={problem.key}>

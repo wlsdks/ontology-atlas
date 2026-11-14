@@ -5,6 +5,7 @@ import {
   installProfilelessHarnessRuntime,
   mountHarnessVault,
 } from "../harness-tab-fixture";
+import { waitForAnimationsDone } from "../settle";
 
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
@@ -74,6 +75,8 @@ test.describe("harness tab", () => {
     });
 
     await test.step("the open detail adds no WCAG violation", async () => {
+      /* A disclosure still opening covers the toggle above it; axe reads that as a small target. */
+      await waitForAnimationsDone(page.getByTestId("harness-setup"));
       if (!(await page.evaluate(() => "axe" in window))) await page.addScriptTag({ path: AXE_PATH });
       const audit = await page.evaluate(async (tags) => {
         type Run = { violations: Array<{ id: string; nodes: unknown[] }>; passes: unknown[] };

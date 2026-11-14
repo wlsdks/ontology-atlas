@@ -26,7 +26,7 @@ const problem = (page: Page, kind: string) =>
 test.describe("harness Setup files and statuses", () => {
   test("a hook command that runs no script file is shown as written, with no status and no problem", async ({ page }) => {
     await openSetup(page, { source: UNRESOLVED_HOOK_SOURCE });
-    await expect(page.getByTestId("harness-problems")).not.toContainText("npx prettier");
+    await expect(page.locator("[data-harness-problem]").filter({ hasText: "npx prettier" })).toHaveCount(0);
     const verification = page.locator('[data-harness-section="verification"]');
     await verification.locator('[data-harness-group="hooks"] button[aria-expanded]').click();
     const row = verification.locator("[data-harness-item]").filter({ hasText: "npx prettier --write ." });
@@ -68,8 +68,11 @@ test.describe("harness Setup files and statuses", () => {
     await blocking.locator("button[aria-expanded]").click();
     await expect(blocking.locator("[data-harness-item]")).toHaveCount(21);
     const scroll = page.getByTestId("harness-setup-scroll");
-    const overflow = await scroll.evaluate((node) => node.scrollHeight - node.clientHeight);
-    expect(overflow, "the expanded list should scroll inside its slot").toBeGreaterThan(0);
+    await expect
+      .poll(() => scroll.evaluate((node) => node.scrollHeight - node.clientHeight), {
+        message: "the expanded list should scroll inside its slot",
+      })
+      .toBeGreaterThan(0);
     const box = (await page.getByTestId("harness-setup").boundingBox())!;
     expect(box.y + box.height, "the Setup slot grew past the window").toBeLessThanOrEqual(900);
   });
