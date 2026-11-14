@@ -81,6 +81,8 @@ export interface HexDrawState {
   /** 0 → nothing dimmed, 1 → the rest fully receded. */
   dimT: number;
   evidence: ReadonlyMap<string, HexEvidenceState>;
+  /** Unknown is hatched only on a measured board, where it is the exception rather than every tile. */
+  evidenceMeasured: boolean;
   /** Capability → the moved file's name, shown under the name in stale-only mode. */
   staleFiles: ReadonlyMap<string, string>;
   /** Stale capabilities per domain; null when evidence is not measured. */
@@ -91,8 +93,6 @@ export interface HexDrawState {
   /** Region nameplate words for the far band: name plus "caps · ◐ stale". */
   plateSub: ReadonlyMap<string, string>;
   routes: readonly HexDrawRoute[];
-  /** Edge ticks at rest: capability → sides (0–5) facing regions it relies on. */
-  ports: ReadonlyMap<string, readonly number[]>;
   /** Arrival: ms since the board first drew, or null when it has fully arrived. */
   arrivalMs: number | null;
   reducedMotion: boolean;

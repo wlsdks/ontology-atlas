@@ -75,7 +75,8 @@ function buildRow(tiles: readonly HexTile[], state: HexDrawState, T: HexBoardTok
     const yt = yb - h;
     if (isSel && t.kind === "capability") face(at(0, "glow", alpha * 0.55, T.indigo), x, yt, RI + 4, c);
     if (h > 0.3) for (const k of FRONT_SIDES) wall(at(1, "fill", alpha, m.walls[k]!), x, yt, yb, RI, c, k);
-    face(at(2, "fill", alpha, m.topCss, 0, false, !isSel && t.kind === "capability" && ev === "unknown"), x, yt, RI, c);
+    const unknown = state.evidenceMeasured && t.kind === "capability" && ev === "unknown";
+    face(at(2, "fill", alpha, m.topCss, 0, false, unknown && !isSel), x, yt, RI, c);
     const [color, width, dash] =
       t.kind === "domain"
         ? state.focusRegion === t.id
@@ -89,7 +90,7 @@ function buildRow(tiles: readonly HexTile[], state: HexDrawState, T: HexBoardTok
               ? [T.indigoBright, 2, false]
               : ev === "stale"
                 ? [f.staleRim, 1.6 + 0.4 * light, false]
-                : ev === "unknown"
+                : unknown
                   ? [T.rimUnknown, 1, true]
                   : [f.rimLit, 1, false];
     face(at(3, "stroke", alpha, color, width, dash), x, yt, RI, c);
@@ -136,7 +137,7 @@ export function drawReliefFloors(
   const { c, RI, FAPO } = f;
   const { R, ox, oy, width, height } = state;
   const dy = f.pivot * (1 - c) + oy * c;
-  const key = [R, c, state.dimT, state.staleOnly, f.light, f.rimLit, identity(state.evidence), identity(state.lit)].join("|");
+  const key = [R, c, state.dimT, state.staleOnly, f.light, f.rimLit, state.evidenceMeasured, identity(state.evidence), identity(state.lit)].join("|");
   const marked = (t: HexTile) =>
     t.id === state.selectedId || t.id === state.hoverId || t.id === state.focusId || t.id === state.focusRegion || f.usedBy.has(t.id);
   let rc = cache.get(scene);

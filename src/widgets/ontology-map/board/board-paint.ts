@@ -2,7 +2,7 @@ import { hexGutter, type HexBoardLayout, type HexTextLine, type HexTile } from "
 import { SQRT3 } from "../model/board/hex-grid";
 import { type HexDrawRoute, type HexDrawState, type HexFrameStats, type HexTextBox } from "../render/hex-board";
 import type { HexBoardTokens } from "../tokens/read-hex-board-tokens";
-import { edges, face, FRONT_SIDES, notch, pips, prismPolygons, smooth, startDot, stubHead, ticks, wall, type PaintedFace } from "./board-geometry";
+import { edges, face, FRONT_SIDES, notch, pips, prismPolygons, smooth, startDot, stubHead, wall, type PaintedFace } from "./board-geometry";
 import { drawReliefFloors } from "./board-relief-floors";
 import { drawFloors, drawPlate, drawSlabs, TileRects } from "./board-plates";
 import { arrivalOf, BOARD_ARRIVAL, isSlabBand, lowerBound, SLAB_BELOW, type BoardScene } from "./board-scene";
@@ -16,6 +16,9 @@ export interface BoardPose {
   rise?: ((id: string) => number) | null;
   record?: PaintedFace[] | null;
 }
+
+/** Among named tiles a resting canal stays under the names and the selected routes. */
+const CANAL_TILE_BAND_ALPHA = 0.55;
 
 export interface BoardFrameStats extends HexFrameStats {
   pitch: number;
@@ -119,7 +122,7 @@ export function drawBoard(
     ctx.lineWidth = w;
     ctx.stroke();
   };
-  const canalAlpha = routesAlpha * (1 - dimT);
+  const canalAlpha = routesAlpha * (1 - dimT) * (band === "regions" ? 1 : CANAL_TILE_BAND_ALPHA);
   const drawCanals = () => {
     if (canalAlpha <= 0.01) return;
     ctx.globalAlpha = canalAlpha;
@@ -224,7 +227,6 @@ export function drawBoard(
   }
   ctx.globalAlpha = 1;
 
-  const showTicks = !lit && !state.hoverId && band !== "regions";
   const names = band === "names";
   const room = c >= 1 ? Infinity : FAPO * c - 2;
   const rimLit = tone(T, `rim-lit|${Math.round(light * 16)}`, () => cssOf(mix(solid(T.rim, ground), accent, 0.45 * light)));
@@ -289,7 +291,8 @@ export function drawBoard(
     }
     ctx.beginPath();
     face(ctx, x, yt, ri, c);
-    ctx.fillStyle = !isSel && t.kind === "capability" && ev === "unknown" ? hatch(ctx, m.topCss, T.hatch) : m.topCss;
+    const unknown = state.evidenceMeasured && t.kind === "capability" && ev === "unknown";
+    ctx.fillStyle = unknown && !isSel ? hatch(ctx, m.topCss, T.hatch) : m.topCss;
     ctx.fill();
     ctx.lineWidth = R >= 28 ? 1.4 : 0.8;
     ctx.beginPath();
@@ -318,7 +321,7 @@ export function drawBoard(
     } else if (ev === "stale") {
       rim = staleRim;
       rimW = 1.6 + 0.4 * light;
-    } else if (ev === "unknown") {
+    } else if (unknown) {
       rim = T.rimUnknown;
       dash = R >= 28 ? [4, 3] : [2, 2];
     }
@@ -330,11 +333,6 @@ export function drawBoard(
     if (R >= 20 && t.kind === "project") ring(x, yt, ri - 6, T.hubHairline, 1, alpha);
     if ((isSel || isHov) && ev === "stale") ring(x, yt, ri - 4, T.stale, 1.2, alpha * 0.9);
     if (usedBy.has(t.id)) ring(x, yt, ri - 3.5, T.usedBy, 1.4, 0.8 * dimT);
-    const sides = showTicks ? state.ports.get(t.id) : undefined;
-    if (sides) {
-      ctx.globalAlpha = 0.7 * routesAlpha;
-      ticks(ctx, x, yt, RI, c, sides, T.indigoBright);
-    }
     if (band !== "regions" && t.kind === "capability" && t.elementCount > 0) {
       pips(ctx, t, x, yt + FAPO * c, R, c, alphaOf(t) * arr.a, names, (id) => state.evidence.get(id) === "stale", T);
     }
