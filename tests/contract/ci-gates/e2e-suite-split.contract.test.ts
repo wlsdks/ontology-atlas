@@ -156,13 +156,19 @@ describe('Playwright projects come from that list', () => {
   });
 });
 
-describe('only the static-export CI uses the runner\'s two CPUs', () => {
-  it('raises workers to two only when CI and static export are declared together', () => {
+describe('only the static export runs browser tests in parallel', () => {
+  it('uses two workers on the CI runner, four locally, and one against the dev server', () => {
     expect(resolvePlaywrightWorkers({ CI: 'true', PLAYWRIGHT_STATIC: '1' })).toBe(2);
     expect(resolvePlaywrightWorkers({ CI: '1', PLAYWRIGHT_STATIC: '1' })).toBe(2);
+    expect(resolvePlaywrightWorkers({ PLAYWRIGHT_STATIC: '1' })).toBe(4);
+    expect(resolvePlaywrightWorkers({ CI: 'false', PLAYWRIGHT_STATIC: '1' })).toBe(4);
     expect(resolvePlaywrightWorkers({ CI: 'true' })).toBe(1);
-    expect(resolvePlaywrightWorkers({ PLAYWRIGHT_STATIC: '1' })).toBe(1);
-    expect(resolvePlaywrightWorkers({ CI: 'false', PLAYWRIGHT_STATIC: '1' })).toBe(1);
+    expect(resolvePlaywrightWorkers({})).toBe(1);
+  });
+
+  it('lets a machine shared by several sessions name its own count', () => {
+    expect(resolvePlaywrightWorkers({ PLAYWRIGHT_STATIC: '1', PLAYWRIGHT_WORKERS: '2' })).toBe(2);
+    expect(resolvePlaywrightWorkers({ PLAYWRIGHT_STATIC: '1', PLAYWRIGHT_WORKERS: 'many' })).toBe(4);
   });
 
   it('the loaded config resolves workers from the actual environment', () => {

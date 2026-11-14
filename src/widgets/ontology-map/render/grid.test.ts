@@ -87,24 +87,6 @@ describe("render/grid draw() — background variant routing (#20)", () => {
   });
 });
 
-/**
- * `render/grid.ts`'s `draw()`/`buildGridPattern()` bodies are Canvas 2D
- * painting with no extractable pure-geometry invariant beyond the two
- * formulas below (the pattern tile itself needs a real `HTMLCanvasElement`
- * 2D context to build, which jsdom does not implement meaningfully). Those
- * two `test.todo`s are left as-is — P5's production-build screenshot gate
- * (`docs/design/ontology-map.md` §4 P5) is the actual verification for visual
- * correctness there.
- */
-describe("render/grid", () => {
-  it.todo(
-    "buildGridPattern produces a 120px tile (24px minor x5) matching the prototype's buildGrid() — needs a real canvas 2D context, not jsdom",
-  );
-  it.todo(
-    "vignette stays a transparent-center gradient (regression guard for the prototype's own noted opaque-vignette bug) — needs pixel-level readback, deferred to P5",
-  );
-});
-
 describe("lerpColorHex", () => {
   it("is hexA at t=0", () => {
     expect(lerpColorHex("#0a0a0d", "#050507", 0)).toBe("rgb(10, 10, 13)");
