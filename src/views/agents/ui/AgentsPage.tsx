@@ -84,6 +84,7 @@ export function AgentsPage({
   };
 
   const staged = tab !== 'mcp' && !isAcpBridgeAvailable();
+  const webAgentsStage = staged && tab === 'agents';
 
   return (
     /*
@@ -140,19 +141,16 @@ export function AgentsPage({
         layoutDependency={staged}
         transition={framerSpring(SPRING.surface)}
       >
-      <p
-        data-testid="agents-lede"
-        className={`max-w-2xl ${PAGE_LEDE}`}
-      >
-        {/* On the web the card below says a browser cannot start programs, so the app is the subject. */}
-        {tab === 'mcp'
-          ? <>{tMcp('lede')} <TermHint term="mcp" /></>
-          : tab === 'models'
-            ? t('models.lede')
-            : isAcpBridgeAvailable()
-              ? t('lede')
-              : t('ledeWeb')}
-      </p>
+      {/* On the web the agents tab is a stage that says this itself. */}
+      {webAgentsStage ? null : (
+        <p data-testid="agents-lede" className={`max-w-2xl ${PAGE_LEDE}`}>
+          {tab === 'mcp'
+            ? <>{tMcp('lede')} <TermHint term="mcp" /></>
+            : tab === 'models'
+              ? t('models.lede')
+              : t('lede')}
+        </p>
+      )}
 
       {/* Only the selected tab mounts, so the panel's id and aria-labelledby follow the tab. */}
       <div
@@ -161,7 +159,7 @@ export function AgentsPage({
         id={`agents-tabpanel-${tab}`}
         aria-labelledby={`agents-tab-${tab}`}
         data-testid="agents-tabpanel"
-        className="mt-5 min-w-0"
+        className={cn('min-w-0', !webAgentsStage && 'mt-5')}
       >
         {tab === 'agents' ? (
           /* No sr-only heading: the tool group inside already shows this name visibly. */
