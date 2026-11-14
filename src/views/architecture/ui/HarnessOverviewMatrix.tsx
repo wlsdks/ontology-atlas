@@ -39,7 +39,7 @@ const TILE_BASE =
 
 /** Hover is a fill: neutral on a count, amber on a gap, so a gap stays calm until it is reached for. */
 const HOVER_FILL = 'hover:bg-[color:var(--color-overlay-2)]';
-const HOVER_GAP = 'hover:bg-[color:var(--color-amber-signal-a07)]';
+const HOVER_GAP = 'hover:border-[color:var(--color-amber-source-a45)] hover:bg-[color:var(--color-amber-signal-a07)]';
 
 type CellState = 'filled' | 'gap' | 'everywhere';
 
@@ -92,7 +92,7 @@ export function HarnessOverviewMatrix({
               active: open,
               className: cn(
                 TILE_BASE,
-                state === 'gap' ? 'border-dashed border-[color:var(--color-amber-source-a45)] bg-transparent' : null,
+                state === 'gap' ? 'border-dashed border-[color:var(--color-amber-source-a25)] bg-transparent' : null,
                 open && state !== 'gap' && 'bg-[color:var(--color-indigo-a14)] shadow-[inset_0_0_0_1px_var(--color-indigo-accent-a50)]',
                 open && state === 'gap' && 'border-transparent bg-[color:var(--color-amber-signal-a16)] shadow-[inset_0_0_0_1px_var(--color-amber-source-a90)]',
               ),
@@ -103,7 +103,7 @@ export function HarnessOverviewMatrix({
           {state === 'gap' ? (
             <>
               <span aria-hidden className="size-2 shrink-0 rounded-full bg-[color:var(--color-amber-source-a90)]" />
-              <span className={cn('whitespace-nowrap text-body-lg font-[var(--font-weight-emphasis)]', AMBER_INK)}>
+              <span className={cn('whitespace-nowrap text-body-lg', AMBER_INK)}>
                 {t('coverageNone')}
               </span>
             </>
