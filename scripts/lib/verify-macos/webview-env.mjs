@@ -55,9 +55,8 @@ const WEBVIEW_MCP_WORKBENCH_MARKERS = [
   /MCP/,
   // The payload carries only the first few hundred characters of the body, and the tab strip's
   // labels arrive uppercase through CSS text-transform, so the route is recognised by its own
-  // lede sentence (both locales) with the tab words as a fallback (measured 2026-09-05: the
-  // body text ended at "SHARE THIS F").
-  /MCP is the wire|AI 코딩 에이전트가 쓰는 선|Share this folder|Connectors|이 폴더 공유|커넥터/i,
+  // lede sentence with the tab words as a fallback.
+  /through an MCP server|MCP 서버로 이 폴더를|Connect this folder to an agent|에이전트에 이 폴더 연결|MCP servers|MCP 서버|このフォルダをエージェントに接続|将此文件夹连接到智能体/i,
 ];
 
 /*
@@ -84,7 +83,7 @@ const WEBVIEW_INSIGHTS_WORKBENCH_MARKERS = [
 ];
 
 const WEBVIEW_PLANNING_WORKBENCH_MARKERS = [
-  /Planning documents|企画ドキュメント|기획 문서|规划文档/i,
+  /Planning|企画|기획|规划/i,
   /Choose folder|フォルダを選択|폴더 선택|选择文件夹/i,
 ];
 

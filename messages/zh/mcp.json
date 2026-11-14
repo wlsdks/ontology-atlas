@@ -1,8 +1,8 @@
 {
   "title": "MCP",
-  "lede": "MCP 是编码智能体读写此文件夹的通道，外部服务也在这里接入。",
-  "shareHeading": "共享此文件夹",
-  "connectorsHeading": "连接器",
-  "connectorsHeadingCount": "连接器 · 已开启 {on}/{total}",
-  "connectorsNeedFolder": "连接器写在文件夹里。先在上方打开一个文件夹，它们就会出现在这里。"
+  "lede": "编码智能体通过 MCP 服务器读写此文件夹。其他服务的 MCP 服务器也在这里添加。",
+  "shareHeading": "将此文件夹连接到智能体",
+  "connectorsHeading": "MCP 服务器",
+  "connectorsHeadingCount": "MCP 服务器 · 已开启 {on}/{total}",
+  "connectorsNeedFolder": "MCP 服务器设置保存在文件夹里。先在上方打开一个文件夹，它们就会出现在这里。"
 }

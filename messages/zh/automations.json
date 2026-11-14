@@ -18,36 +18,36 @@
     "waiting": "已在此文件夹中开启，但这台 Mac 尚未允许，所以不会在这里运行。请按下面所写的内容原样允许。",
     "changed": "已在此文件夹中开启，且在这台 Mac 允许之后有改动，需重新允许后才会在这里运行。",
     "paused": "这台 Mac 尚未允许，所以“立即运行”也在等待。请按下面所写的内容原样允许。",
-    "state": "此 Mac 未允许",
+    "state": "此 Mac 上已关闭",
     "noNextRun": "允许后才会在这里运行",
     "wholeFolder": "整个文件夹",
     "query": "查找“{query}”",
     "staleRedraft": "重写过时的页面",
     "staleMark": "只标记过时的页面",
-    "limit": "每轮最多新增 {count} 份文档",
+    "limit": "每次运行最多新增 {count} 份文档",
     "button": "允许此 Mac"
   },
   "title": "自动化",
-  "lede": "安排定期审阅，再查看每次运行的发现。Atlas 打开时，它们在这台电脑上运行。",
-  "stageTitle": "按设定周期运行的检查",
-  "tabsAria": "自动化分类",
+  "lede": "安排定期检查，再查看每次运行的结果。Atlas 打开时，它们在这台电脑上运行。",
+  "stageTitle": "定时检查",
+  "tabsAria": "自动化类型",
   "tabs": {
     "ontology": "本体",
     "documents": "文档"
   },
   "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
   "getApp": "获取应用",
-  "loadingTitle": "正在加载自动检查",
+  "loadingTitle": "正在加载定时检查",
   "malformedTitle": "计划文件需要处理",
-  "malformedDescription": "Atlas 无法读取本地计划文件，已保持原样。请修复后重新读取。",
+  "malformedDescription": "Atlas 无法读取本地计划文件，已保持原样。请修复后刷新。",
   "unavailableTitle": "Atlas 无法读取此文件夹的计划",
-  "unavailableDescription": "Atlas 无法读取此文件夹中的 .ontology-atlas/rounds.json，因此无法显示或运行其中的计划。请确认文件夹仍在 Atlas 打开时的位置，然后重新读取。",
+  "unavailableDescription": "Atlas 无法读取此文件夹中的 .ontology-atlas/rounds.json，因此无法显示或运行其中的计划。请确认文件夹仍在 Atlas 打开时的位置，然后刷新。",
   "unrecorded": {
     "short": "未记录",
     "ledger": "{time} 的运行已结束，但无法写入 {file}，所以不在此历史中。计划已转到下一次时间。请检查此文件夹是否可写。",
     "schedule": "{time} 的运行已结束，但无法把下一次时间写入 {file}。在文件可写之前，Atlas 会在这台 Mac 上保留该时间。请检查此文件夹是否可写。"
   },
-  "retry": "重新读取",
+  "retry": "刷新",
   "saved": "已安排 {name}。",
   "edited": "已保存对 {name} 的更改。",
   "edit": "编辑",
@@ -68,8 +68,8 @@
   "historyTitle": "运行历史",
   "latestTitle": "上次结果",
   "noRuns": "还没有运行过。",
-  "noSummary": "本轮已结束，但没有保存摘要。",
-  "failedNoResult": "智能体这一轮没有完成，所以本次运行没有结果。",
+  "noSummary": "运行已结束，但没有保存摘要。",
+  "failedNoResult": "智能体没有完成回复，所以本次运行没有结果。",
   "noAgentReview": "这台 Mac 上没有可用的编码智能体，所以这次审阅没有运行。请打开“智能体”登录后再运行。",
   "openAgents": "打开智能体",
   "failedError": "本次运行因错误停止：{detail}。请再运行一次；如果同样的错误再次出现，请重新打开文件夹。",
@@ -80,8 +80,8 @@
     "failed": "Atlas 无法在本次运行后恢复 {page}。请先打开检查，再决定是否采用。"
   },
   "leftAsIs": "{page} 在本次运行写入后又有改动，Atlas 保持原样。",
-  "refused": "已拒绝：{tools}",
-  "called": "已读取：{tools}",
+  "refused": "已拦截：{tools}",
+  "called": "使用的工具：{tools}",
   "saving": "正在安排…",
   "saveFailed": "无法保存计划，未做任何更改。",
   "state": {
@@ -97,7 +97,7 @@
     "redrafted": "草稿已更新",
     "refused": "已拦截",
     "failed": "失败",
-    "asleep": "未运行"
+    "asleep": "已关闭"
   },
   "cadence": {
     "hour": "每小时",
@@ -110,12 +110,12 @@
     "time": "时间"
   },
   "ontology": {
-    "new": "新建本体审阅",
-    "title": "本体优化",
+    "new": "安排本体检查",
+    "title": "本体检查",
     "facts": {
       "runs": {
         "title": "做什么",
-        "body": "应用内的编码智能体读取图谱及其源码链接，然后留下一份有范围限制的改进提案。"
+        "body": "编码智能体读取本体及其关联的代码，然后提出一项小的改进。"
       },
       "when": {
         "title": "何时运行",
@@ -132,26 +132,26 @@
       "cadence": "频率",
       "last": "上次结果"
     },
-    "defaultName": "本体优化",
+    "defaultName": "本体检查",
     "sheet": {
-      "title": "安排本体审阅",
-      "editTitle": "编辑本体审阅",
-      "description": "Atlas 会在选定时间开启一轮受限的 ACP 对话，检查本体和代码依据，并留下仅供审阅的审阅包。",
+      "title": "安排本体检查",
+      "editTitle": "编辑本体检查",
+      "description": "到了选定时间，智能体会读取本体和代码并提出更改。在你批准之前不会写入任何内容。",
       "focus": "重点（可选）",
-      "focusPlaceholder": "源码绑定缺口、过时的能力、关系依据…",
-      "focusHint": "留空则由 Atlas 根据当前依据选一个有范围限制的区域。",
+      "focusPlaceholder": "没有代码位置的概念、过时的能力、关系依据…",
+      "focusHint": "留空则由智能体根据当前依据选一个小范围。",
       "scopeTitle": "允许的操作",
-      "mayRead": "通过 atlas-vault 读取本体和当前源码依据。",
+      "mayRead": "通过 Atlas MCP 服务器读取本体和当前代码依据。",
       "mayPropose": "用准确的 slug、路径和不确定之处描述拟议的更改。",
-      "mayNeverWrite": "绝不写入概念、关系、文件或语义回执。"
+      "mayNeverWrite": "不写入概念、关系、文件或批准记录。"
     }
   },
   "documents": {
-    "new": "新建文档轮次",
+    "new": "安排文档检查",
     "facts": {
       "runs": {
         "title": "做什么",
-        "body": "检查来源与 Wiki 页面是否仍然一致，并从已连接的服务拉取有变化的页面。"
+        "body": "检查来源与 Wiki 页面是否仍然一致，并从已连接的服务导入有变化的文档。"
       },
       "when": {
         "title": "何时运行",
@@ -159,7 +159,7 @@
       },
       "writes": {
         "title": "可更改什么",
-        "body": "只改已批准的资料库范围内的来源和 Wiki 草稿，绝不改本体。"
+        "body": "只改已批准的资料库范围内的来源和 Wiki 页面草稿，不改本体。"
       }
     },
     "preview": {
