@@ -39,6 +39,11 @@ change and its risks. Escalate on evidence, keep required CI, and do not repeat
 passing checks. This overrides conflicting test instructions.
 `.claude/rules/testing.md` owns test shape. Report evidence and limits.
 
+Write a report for a reader who saw none of the tool calls or files: lead with
+what is now true, use full sentences and the same word for the same thing,
+define any name coined during the work, and say what was not done or checked.
+During a long turn, say in a line what you are doing every few tool calls.
+
 A fact the source can answer comes from a script: run or extend the `pnpm`
 command (README's command table) and read its output instead of re-deriving it.
 Write no plans, retrospectives, handoffs or notes into the repository or
