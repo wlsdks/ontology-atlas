@@ -10,11 +10,10 @@ import {
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import type { OntologyChangeset } from "@/entities/knowledge-graph";
-import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
-import { buttonVariants, GetAppLink } from "@/shared/ui";
+import { buttonVariants, FeatureStage, GetAppLink } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
-import { PAGE_TITLE } from "@/shared/ui/tokens/page-frame";
 import type { Translator } from "../lib/translator";
+import { GitHistoryArtwork } from "./GitHistoryArtwork";
 
 export const SETUP_ACTION_PLACEMENT = "atlas-touch-floor atlas-touch-floor-wide shrink-0";
 
@@ -37,15 +36,10 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
  * complete state. Each step has a name and a description on a hairline progress rail; done is
  * an indigo-outlined check, current a filled indigo mark, later neutral.
  */
-const LADDER_NOTE_KEY = ["stepAppNote", "stepFolderNote", "stepStartNote"] as const;
-
 function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
   const steps = [t("stepApp"), t("stepFolder"), t("stepStart")];
   return (
-    <ol
-      data-testid="atlas-git-ladder"
-      className="flex flex-col border-l border-[color:var(--color-divider)]"
-    >
+    <ol data-testid="atlas-git-ladder" className="mt-6 flex w-full max-w-md items-start justify-center">
       {steps.map((label, index) => {
         const step = index + 1;
         const done = step < current;
@@ -55,13 +49,16 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             key={label}
             data-step-state={done ? "done" : active ? "current" : "todo"}
             aria-current={active ? "step" : undefined}
-            className="relative grid grid-cols-[24px_minmax(0,1fr)] items-start gap-3 py-2 pl-4"
+            className="relative flex min-w-0 flex-1 flex-col items-center gap-2 px-1"
           >
-            {/* Only the current step paints indigo over the existing hairline. */}
-            {active ? (
+            {/* The hairline back to the previous step; indigo once that step is done. */}
+            {index > 0 ? (
               <span
                 aria-hidden
-                className="absolute top-0 bottom-0 -left-px w-px bg-[color:var(--color-indigo-accent)]"
+                className={cn(
+                  "absolute top-3 right-[calc(50%+16px)] left-[calc(-50%+16px)] h-px",
+                  step <= current ? "bg-[color:var(--color-indigo-line-a35)]" : "bg-[color:var(--color-divider)]",
+                )}
               />
             ) : null}
             <span
@@ -79,21 +76,15 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
             >
               {done ? <Check size={ICON_SIZE.sm} /> : step}
             </span>
-            <span className="flex min-w-0 flex-col">
-              <span
-                className={cn(
-                  "truncate text-body font-[var(--font-weight-emphasis)]",
-                  active
-                    ? "text-[color:var(--color-text-primary)]"
-                    : "text-[color:var(--color-text-tertiary)]",
-                )}
-              >
-                {label}
-              </span>
-              <span className="text-label text-[color:var(--color-text-quaternary)]">
-                {done ? t("stepDoneA11y") : t(LADDER_NOTE_KEY[index])}
-              </span>
+            <span
+              className={cn(
+                "text-body font-[var(--font-weight-emphasis)]",
+                active ? "text-[color:var(--color-text-primary)]" : "text-[color:var(--color-text-tertiary)]",
+              )}
+            >
+              {label}
             </span>
+            {done ? <span className="sr-only">{t("stepDoneA11y")}</span> : null}
             {active ? <span className="sr-only">{t("stepCurrentA11y")}</span> : null}
           </li>
         );
@@ -103,126 +94,8 @@ function ConnectLadder({ t, current }: { t: Translator; current: SetupStep }) {
 }
 
 /**
- * A miniature of the connected workbench, so the setup's one request shows what it offers.
- * No data is invented: names are redaction bars, and kinds use `OntologyMapKindGlyph`. The
- * classes `opacity-45` and `aria-hidden` keep it out of assistive technology and the keyboard.
- */
-const PREVIEW_ROW_KINDS = [
-  "capability",
-  "domain",
-  "element",
-  "capability",
-  "element",
-  "capability",
-] as const;
-/** Satellite coordinates (%) on the four `EGO_BEARINGS`, the real layout of the ego drawing. */
-const PREVIEW_SATELLITES = [
-  { x: 50, y: 14, kind: "domain" },
-  { x: 86, y: 50, kind: "element" },
-  { x: 50, y: 86, kind: "capability" },
-  { x: 14, y: 50, kind: "element" },
-] as const;
-
-function SetupPreview({ t }: { t: Translator }) {
-  return (
-    <div className="hidden min-w-0 flex-col gap-3 lg:flex">
-      <div
-        aria-hidden
-        data-testid="atlas-git-setup-preview"
-        className="overflow-hidden rounded-[var(--radius-panel)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] opacity-45"
-      >
-        <div className="flex items-center gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
-          <span className="h-1.5 w-24 rounded-full bg-[color:var(--color-overlay-3)]" />
-          <span className="ml-auto h-4 w-10 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)]" />
-        </div>
-        {/* Between `lg` and `xl` only the timeline survives — forcing two cells
-            into a narrow width gives a mangled diagram, not a smaller one. */}
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-          <div className="flex flex-col py-1.5 xl:border-r xl:border-[color:var(--color-divider)]">
-            <span className="flex h-[var(--git-row-h)] items-center gap-2 border-l-2 border-dashed border-l-[color:var(--color-indigo-a46)] pr-3 pl-2.5">
-              <span className="h-1.5 w-8 rounded-full bg-[color:var(--color-overlay-2)]" />
-              <span className="h-1.5 flex-1 rounded-full bg-[color:var(--color-overlay-3)]" />
-            </span>
-            {PREVIEW_ROW_KINDS.map((kind, index) => (
-              <span
-                key={`${kind}-${String(index)}`}
-                className={cn(
-                  "flex h-[var(--git-row-h)] items-center gap-2 border-l-2 pr-3 pl-2.5",
-                  index === 0
-                    ? "border-l-[color:var(--color-indigo-brand)] bg-[color:var(--color-overlay-2)]"
-                    : "border-l-transparent",
-                )}
-              >
-                <span className="h-1.5 w-6 rounded-full bg-[color:var(--color-overlay-2)]" />
-                <OntologyMapKindGlyph kind={kind} size={11} />
-                <span
-                  className="h-1.5 rounded-full bg-[color:var(--color-overlay-3)]"
-                  style={{ width: `${String(46 + index * 9)}%` }}
-                />
-              </span>
-            ))}
-          </div>
-          <div className="hidden min-w-0 flex-col gap-2.5 p-3 xl:flex">
-            <span className="h-1.5 w-2/3 rounded-full bg-[color:var(--color-overlay-3)]" />
-            {/* Bars, not words: no ink passes AA at `opacity-45`. The caption step stays for its
-                leading, which sets the chip height. */}
-            <div className="flex flex-wrap gap-1.5">
-              {(["capability", "element"] as const).map((kind) => (
-                <span
-                  key={kind}
-                  className="inline-flex items-center gap-1.5 rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] px-1.5 py-0.5 text-caption"
-                >
-                  <OntologyMapKindGlyph kind={kind} size={9} />
-                  <span className="h-1.5 w-4 rounded-full bg-[color:var(--color-overlay-3)]" />
-                </span>
-              ))}
-            </div>
-            <div className="relative h-32 rounded-[var(--radius-card)] border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)]">
-              <svg
-                viewBox="0 0 100 100"
-                preserveAspectRatio="none"
-                className="absolute inset-0 h-full w-full"
-              >
-                {PREVIEW_SATELLITES.map((s) => (
-                  <line
-                    key={`${String(s.x)}-${String(s.y)}-${s.kind}`}
-                    x1="50"
-                    y1="50"
-                    x2={s.x}
-                    y2={s.y}
-                    stroke="var(--map-edge-contains)"
-                    strokeWidth={1}
-                    vectorEffect="non-scaling-stroke"
-                  />
-                ))}
-              </svg>
-              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-canvas)] p-1">
-                <OntologyMapKindGlyph kind="capability" size={17} />
-              </span>
-              {PREVIEW_SATELLITES.map((s) => (
-                <span
-                  key={`g-${String(s.x)}-${String(s.y)}`}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-canvas)] p-1"
-                  style={{ left: `${String(s.x)}%`, top: `${String(s.y)}%` }}
-                >
-                  <OntologyMapKindGlyph kind={s.kind} size={11} />
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      <p className="text-center text-label text-[color:var(--color-text-quaternary)]">
-        {t("previewCaption")}
-      </p>
-    </div>
-  );
-}
-
-/**
- * The centred setup stage every not-yet-recording state shares: the telling cell with the
- * task as h1 and, from `xl`, the showing cell (`SetupPreview`). It enters with
- * `.topology-chrome-in`, whose reduced-motion equivalent the globals layer supplies.
+ * The centred setup stage every not-yet-recording state shares: the history artwork, the task as
+ * h1, the connect steps and this state's action.
  */
 export function SetupFrame({
   t,
@@ -240,40 +113,23 @@ export function SetupFrame({
   /** This moment's task in one sentence — the screen's h1. */
   title: string;
   body?: string;
-  /** The promise on the last line, by default the recording-scope notice, just before the action. */
+  /** The promise on the last line, by default the recording-scope notice. */
   note?: string;
   children?: React.ReactNode;
 }) {
   return (
-    <div
+    <FeatureStage
       data-testid="atlas-git-setup"
       data-setup-state={state}
       data-placement="stage"
-      className="topology-chrome-in grid my-auto w-full grid-cols-1 items-center gap-9 lg:grid-cols-[minmax(0,var(--git-setup-measure))_minmax(0,var(--git-setup-preview-max))] lg:justify-center lg:gap-10 xl:gap-14"
-    >
-      {/* Capped at the prose measure at every width, or below `lg` the divider and CLI line stretch. */}
-      <div className="flex min-w-0 max-w-[var(--git-setup-measure)] flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <h1 className={PAGE_TITLE}>
-            {title}
-          </h1>
-          {body ? (
-            <p className="max-w-[34em] text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-              {body}
-            </p>
-          ) : null}
-        </div>
-        {step ? <ConnectLadder t={t} current={step} /> : null}
-        {children}
-        {note ? (
-          <p className="flex items-start gap-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
-            <ShieldCheck size={ICON_SIZE.sm} aria-hidden className="mt-0.5 shrink-0" />
-            <span>{note}</span>
-          </p>
-        ) : null}
-      </div>
-      <SetupPreview t={t} />
-    </div>
+      titleAs="h1"
+      art={(motionState) => <GitHistoryArtwork {...motionState} />}
+      title={title}
+      body={body}
+      alert={step ? <ConnectLadder t={t} current={step} /> : undefined}
+      action={children ? <div className="flex w-full flex-col items-center gap-4">{children}</div> : undefined}
+      note={note ? <><ShieldCheck size={ICON_SIZE.sm} aria-hidden className="shrink-0" /><span>{note}</span></> : undefined}
+    />
   );
 }
 
@@ -305,11 +161,11 @@ export function SessionChangeSummary({
   return (
     <div
       data-testid="atlas-git-session-changes"
-      className="flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4"
+      className="flex w-full max-w-md flex-col items-center gap-1.5 border-t border-[color:var(--color-divider)] pt-4"
     >
       <SectionLabel>{title}</SectionLabel>
       {rows.length > 0 ? (
-        <ul className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <ul className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
           <li aria-hidden className="flex items-center">
             <span className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-status-warning)]" />
           </li>
@@ -342,7 +198,7 @@ export function WebSetup({
       body={t("webDesktopHint")}
       note={t("scopeNotice")}
     >
-      <GetAppLink data-testid="atlas-git-web-get-app" className="shrink-0 self-start">{t("webGetApp")}</GetAppLink>
+      <GetAppLink data-testid="atlas-git-web-get-app" className="shrink-0">{t("webGetApp")}</GetAppLink>
 
       {/* What changed this time — the **basis** for the action, so it sits below the primary action. */}
       <SessionChangeSummary t={t} changeset={sessionChangeset} title={t("webSummaryTitle")} />
@@ -370,7 +226,7 @@ export function NoVaultSetup({ t }: { t: Translator }) {
       <Link
         href="/docs"
         data-testid="atlas-git-pick-vault"
-        className={cn(buttonVariants({ variant: "primary", size: "sm" }), SETUP_ACTION_PLACEMENT, "self-start")}
+        className={cn(buttonVariants({ variant: "primary", size: "sm" }), SETUP_ACTION_PLACEMENT)}
       >
         <FolderOpen size={ICON_SIZE.md} aria-hidden />
         {t("noVaultAction")}

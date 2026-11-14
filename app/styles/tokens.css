@@ -428,16 +428,7 @@
     var(--doc-reading-back-to-top-inset) + var(--chrome-tile-size) + 12px
   );
 
-  /*
-   * One column width for all three `/git/` disconnected steps so they read as one task surface; 520px
-   * holds 45 to 55 characters at 12.5px without clipping the CLI line. Consumers use `w-full
-   * max-w-[var(--git-setup-measure)]`; unit tests check `data-testid="atlas-git-setup"`.
-   */
-
-  /*
-   * This token measures only the left (speaking) column of the stage; the right `1fr` shows a preview,
-   * so the 45 to 55 character prose measure still holds.
-   */
+  /* One 520px task column: 45 to 55 characters at 12.5px. The harness draft and two captions wear it. */
   /*
    * `clamp(min, ideal, max)`: the minimum fits three columns on laptops, the ideal is a viewport
    * ratio, the maximum is where extra width would become whitespace. Fixed px fits one window only:
@@ -445,17 +436,6 @@
    */
   --git-timeline-w: clamp(460px, 34vw, 720px);
   --git-setup-measure: 520px;
-  /*
-   * Max width for the **promise image** (preview of how it fills when connected) on the setup screen.
-   *
-   * ⚠️ This image has **height fixed by content** (229px) but no width cap.
-   * The left speaking column is bound to 520px, and the right consumes all remaining width, so as screens widen, the ratio distorts — measured: from 2.3:1 at 1280 to
-   * **5.1:1** at 1920, and **7.9:1** at 2560. The screen image becomes a strip.
-   *
-   * 700px comes from «height 229 × 3» — measured up to 3.0:1 (1440 width) read as screen preview, collapsing above that. Width shrinks proportionally if narrower than this
-   * (536px at 1280 is below the cap, same as before).
-   */
-  --git-setup-preview-max: 700px;
   /* Visual timestamp column in the list. At 72px, "29 minutes ago" was clipped
      in measurement, and a clipped timestamp is not a timestamp. English is
      longer than Korean, so it determines the width. This column **does not
