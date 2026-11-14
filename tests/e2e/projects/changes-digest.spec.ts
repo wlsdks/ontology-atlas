@@ -16,12 +16,11 @@ async function calls(page: Page) {
   return page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string; args: Record<string, unknown> }[] } }).__briefingProbe.calls);
 }
 
-test('names the destination Changes in the rail and heading, apart from the Insights tab', async ({ page }) => {
+test('names the destination Changes in the rail and heading', async ({ page }) => {
   await open(page, 'digest', 'ko');
   const name = korean('navRail').changes;
   await expect(page.getByTestId('app-nav-rail').getByRole('link', { name, exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
-  expect(name).not.toBe(korean('ontologyPages').insights.tab.brief);
 });
 
 test('opens a busy day on one number, at most eight groups that add up and only local Git reads', async ({ page }) => {

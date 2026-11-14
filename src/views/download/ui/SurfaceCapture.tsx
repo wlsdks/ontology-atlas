@@ -12,7 +12,6 @@ export type SurfaceHref =
   | '/library'
   | '/planning'
   | '/automations'
-  | '/ontology/insights'
   | '/projects'
   | '/changes'
   | '/git';

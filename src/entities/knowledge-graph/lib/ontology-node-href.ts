@@ -1,57 +1,23 @@
 import type { KnowledgeGraphNode } from "../model";
 import { translateOntologyDeeplinkToTopologyParam } from "./translate-ontology-deeplink";
 
-/**
- * `/ontology/?node=<encoded-id>`, encoded like `translateOntologyDeeplinkToTopologyParam`.
- * `options.via` is an origin marker from `buildInsightsReturnMarker`.
- */
+/** `/ontology/?node=<encoded-id>`, encoded like `translateOntologyDeeplinkToTopologyParam`. */
 export function buildOntologyNodeHref(
   nodeId: string,
-  options?: { via?: string; reviewId?: string; ask?: string },
+  options?: { ask?: string },
 ): string {
   const base = `/ontology/?node=${encodeURIComponent(nodeId)}`;
-  const params: string[] = [];
-  if (options?.via) {
-    params.push(
-      `${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`,
-    );
-  }
-  if (options?.via && options.reviewId) {
-    params.push(
-      `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
-    );
-  }
   // Only the ask kind travels in the URL; the destination writes the sentence in its language.
-  if (options?.ask) {
-    params.push(`${ONTOLOGY_DEEPLINK_ASK_KEY}=${encodeURIComponent(options.ask)}`);
-  }
-  return params.length > 0 ? `${base}&${params.join("&")}` : base;
+  return options?.ask
+    ? `${base}&${ONTOLOGY_DEEPLINK_ASK_KEY}=${encodeURIComponent(options.ask)}`
+    : base;
 }
 
 /** The `ask` value meaning "explain the whole product". */
 export const BUSINESS_FLOW_ASK_VALUE = "business-flow";
 
-/** Query key for the deeplink origin marker. */
-export const ONTOLOGY_DEEPLINK_VIA_KEY = "via";
-/** The insights review row id; read only with a valid `via` marker. */
-export const ONTOLOGY_DEEPLINK_REVIEW_KEY = "review";
 /** The kind of opening line for the agent; stripped from the address on arrival. */
 export const ONTOLOGY_DEEPLINK_ASK_KEY = "ask";
-
-const INSIGHTS_RETURN_MARKER_PATTERN = /^insights:([a-z][a-z0-9-]*)$/;
-
-export function buildInsightsReturnMarker(tab: string): string {
-  return `insights:${tab}`;
-}
-
-/** `insights:<slug>` → slug, else null; the destination validates the slug. */
-export function parseInsightsReturnMarker(
-  raw: string | null | undefined,
-): string | null {
-  if (!raw) return null;
-  const match = INSIGHTS_RETURN_MARKER_PATTERN.exec(raw);
-  return match ? match[1] : null;
-}
 
 const TOPOLOGY_RETURN_MARKER_PATTERN = /^topology:(.+)$/;
 
@@ -72,15 +38,6 @@ export function buildTopologyReturnHref(nodeId: string): string {
   return `/topology/?p=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}`;
-}
-
-export function buildOntologyInsightsReturnHref(
-  tab: string,
-  reviewId?: string | null,
-): string {
-  const params = new URLSearchParams({ tab });
-  if (reviewId) params.set(ONTOLOGY_DEEPLINK_REVIEW_KEY, reviewId);
-  return `/ontology/insights/?${params.toString()}`;
 }
 
 const KIND_TO_VAULT_FOLDER: Record<string, string> = {
@@ -104,25 +61,10 @@ export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): strin
 }
 
 /** Map editor link with the canonical `<kind>:<slug>` in `?p=`, normalized like the map's own `?p=`. */
-export function buildTopologyMeaningEditorNodeHref(
-  nodeId: string,
-  options?: { via?: string | null; reviewId?: string | null },
-): string {
-  const base = `/topology/?p=${encodeURIComponent(
+export function buildTopologyMeaningEditorNodeHref(nodeId: string): string {
+  return `/topology/?p=${encodeURIComponent(
     translateOntologyDeeplinkToTopologyParam(nodeId),
   )}&workbench=edit`;
-  const params: string[] = [];
-  if (options?.via) {
-    params.push(
-      `${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(options.via)}`,
-    );
-  }
-  if (options?.via && options.reviewId) {
-    params.push(
-      `${ONTOLOGY_DEEPLINK_REVIEW_KEY}=${encodeURIComponent(options.reviewId)}`,
-    );
-  }
-  return params.length > 0 ? `${base}&${params.join("&")}` : base;
 }
 
 /** The four relations the map's editor can write. */
@@ -214,12 +156,4 @@ export function resolveOntologyBuilderNodeSlug(
   if (sourceSlug) return sourceSlug;
 
   return resolveOntologyBuilderNodeSlugFromGraphId(node.id);
-}
-
-export function buildOntologyInsightsNodeHref(
-  node: KnowledgeGraphNode,
-): string {
-  return `/ontology/insights/?node=${encodeURIComponent(
-    resolveOntologyBuilderNodeSlug(node),
-  )}`;
 }

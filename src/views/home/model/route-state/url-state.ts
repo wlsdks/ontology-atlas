@@ -2,12 +2,8 @@ import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences"
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
-  buildInsightsReturnMarker,
   BUSINESS_FLOW_ASK_VALUE,
   ONTOLOGY_DEEPLINK_ASK_KEY,
-  ONTOLOGY_DEEPLINK_REVIEW_KEY,
-  ONTOLOGY_DEEPLINK_VIA_KEY,
-  parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
 import {
   parseNodeIntentKind,
@@ -44,14 +40,6 @@ export interface HomeRouteState {
    * round-trip.
    */
   indexState: IndexPanelState | null;
-  /**
-   * `?via=insights:<tab>`: renders the "back to insights" chip. It survives other map interactions
-   * and Back navigation, and clears only on the chip's dismiss or a new URL without it; not part of
-   * the Esc ladder.
-   */
-  insightsReturnTab: string | null;
-  /** `?review=`, read only with a valid insights `via` marker and preserved with it. */
-  insightsReturnReviewId: string | null;
   /**
    * `?ask=`: only the intent kind, since the map composes the sentence and prose does not belong in
    * an address. Never copied into React state; closing the agent panel clears it. Unknown values
@@ -122,8 +110,6 @@ export const HOME_QUERY_KEYS = {
   realm: "realm",
   recent: "recent",
   constellation: "constellation",
-  via: ONTOLOGY_DEEPLINK_VIA_KEY,
-  review: ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ask: ONTOLOGY_DEEPLINK_ASK_KEY,
   view: "view",
 } as const;
@@ -210,8 +196,6 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   meaningEditorIntent: false,
   meaningEditParam: null,
   indexState: null,
-  insightsReturnTab: null,
-  insightsReturnReviewId: null,
   askIntent: null,
   askBusinessFlow: false,
   expandedParents: [],
@@ -417,9 +401,6 @@ export function parseHomeRouteState(
     : VALID_IMPACT.includes(impactParam as ProjectImpactMode)
       ? (impactParam as ProjectImpactMode)
       : DEFAULT_HOME_ROUTE_STATE.impactMode;
-  const insightsReturnTab = parseInsightsReturnMarker(
-    searchParams.get(HOME_QUERY_KEYS.via),
-  );
   const workbench = searchParams.get(HOME_QUERY_KEYS.workbench);
   const meaningEditorIntent = workbench === "edit";
 
@@ -443,10 +424,6 @@ export function parseHomeRouteState(
       ? searchParams.get(HOME_QUERY_KEYS.edit)
       : null,
     indexState: parseIndexPanelStateParam(searchParams.get(HOME_QUERY_KEYS.index)),
-    insightsReturnTab,
-    insightsReturnReviewId: insightsReturnTab
-      ? searchParams.get(HOME_QUERY_KEYS.review)
-      : null,
     askIntent: parseNodeIntentKind(searchParams.get(HOME_QUERY_KEYS.ask)),
     askBusinessFlow: searchParams.get(HOME_QUERY_KEYS.ask) === BUSINESS_FLOW_ASK_VALUE,
     expandedParents: parseExpandedParentsParam(
@@ -591,18 +568,6 @@ export function applyHomeRouteState(
     next,
     HOME_QUERY_KEYS.ask,
     state.askBusinessFlow ? BUSINESS_FLOW_ASK_VALUE : state.askIntent,
-  );
-  setOrDelete(
-    next,
-    HOME_QUERY_KEYS.via,
-    state.insightsReturnTab
-      ? buildInsightsReturnMarker(state.insightsReturnTab)
-      : null,
-  );
-  setOrDelete(
-    next,
-    HOME_QUERY_KEYS.review,
-    state.insightsReturnTab ? state.insightsReturnReviewId : null,
   );
 
   return next;

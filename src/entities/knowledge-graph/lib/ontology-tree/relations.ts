@@ -3,17 +3,6 @@ import type {
   KnowledgeGraphNode,
 } from "../../model";
 
-/** Counts per edge type in input order. */
-export function computeEdgeTypeDistribution(
-  edges: readonly KnowledgeGraphEdge[],
-): Map<string, number> {
-  const map = new Map<string, number>();
-  for (const e of edges) {
-    map.set(e.type, (map.get(e.type) ?? 0) + 1);
-  }
-  return map;
-}
-
 /** Disjoint `projectIds`; an empty side assumes the same project. */
 function isCrossProjectEdgeProjects(
   fromProjects: ReadonlyArray<string> | undefined,

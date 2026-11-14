@@ -134,8 +134,8 @@ test("the rail stays painted and pressable across every rail navigation", async 
   for (const destination of DESTINATIONS) {
     // Leave, settle, then measure the arrival — a half-finished departure would put its own
     // transition inside the window measured on the way in.
-    await rail.getByTestId("app-nav-rail-item-insights").click({ noWaitAfter: true });
-    await expect(page).toHaveURL(/\/insights\//);
+    await rail.getByTestId("app-nav-rail-item-automations").click({ noWaitAfter: true });
+    await expect(page).toHaveURL(/\/automations\//);
     await waitForAnimationsDone(page.locator("html"));
     await sampleCrossing(page, MAX_SAMPLE_MS);
     await rail.getByTestId(`app-nav-rail-item-${destination}`).click({ noWaitAfter: true });

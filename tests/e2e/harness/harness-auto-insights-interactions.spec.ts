@@ -136,12 +136,3 @@ test.describe('Harness hints stay whole', () => {
     await expect(button).toBeFocused();
   });
 });
-
-test('Analysis evidence uses visible named selection without the retired handoff footer', async ({ page }) => {
-  await page.goto('/ko/ontology/insights/?tab=do-next&guides=off');
-  const choice = page.getByTestId('analysis-claim').nth(1);
-  await choice.click();
-  await expect(choice).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByTestId('analysis-evidence')).toBeVisible();
-  await expect(page.getByTestId('insights-handoff-row')).toHaveCount(0);
-});

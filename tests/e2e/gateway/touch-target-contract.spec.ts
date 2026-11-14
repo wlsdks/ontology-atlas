@@ -107,9 +107,6 @@ test.describe("minimum target contract (pointer: fine, WCAG 2.5.8 AA)", () => {
     "/ko/download/?guides=off",
     "/ko/docs/?guides=off",
     "/ko/guide/?guides=off",
-    // The not-held list's hide control is an icon button with no label beside it, so it is
-    // the shape 2.5.8 catches first. Inventory taken before switching it on: zero.
-    "/ko/ontology/insights/?tab=unmatched&guides=off",
   ]) {
     test(`a target on ${route} under 24×24 must prove either the inline exemption or the spacing exception`, async ({ page }) => {
       await page.goto(

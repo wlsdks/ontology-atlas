@@ -17,7 +17,6 @@ import {
   // Aliased: a bare `History` can resolve to the DOM History constructor under some HMR states.
   History as HistoryIcon,
   Library,
-  LineChart,
   Map as MapIcon,
   Newspaper,
   NotebookPen,
@@ -141,8 +140,6 @@ export function AppNavRail({
     { id: "library", href: contextHrefs?.docs ?? DESTINATION_HREF.library, label: t("library"), Icon: Library },
     { id: "planning", href: DESTINATION_HREF.planning, label: t("planning"), Icon: NotebookPen },
     { id: "automations", href: DESTINATION_HREF.automations, label: t("automations"), Icon: CalendarClock },
-    /* `LineChart`, not `BarChart3`: a bar chart shares the Library icon's silhouette at 20px. */
-    { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: LineChart },
     { id: "projects", href: contextHrefs?.projects ?? DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
     // `Bot`, not `SquareTerminal`, which collides with `FolderKanban` at 20px.
     {

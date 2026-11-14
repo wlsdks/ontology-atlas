@@ -222,33 +222,6 @@ export function validateWebviewVerifyPayload(payload, {
     webviewUrl.searchParams.get("p"),
   );
   const blockingComposerOpen = payload.markers.topologyCreateNodeOpen === true;
-  // One section tab row; the selected analytical question remains inside its section.
-  const INSIGHTS_SUBJECT_COUNT = 3;
-  if (webviewPath.includes("/ontology/insights")) {
-    if (payload.markers.insightsMaintenanceBoard !== true) {
-      return "WebView did not report the insights relationship analysis marker";
-    }
-    if (payload.markers.insightsQuestionModel !== "claim-evidence") {
-      return `WebView insights question model was ${payload.markers.insightsQuestionModel || "missing"}`;
-    }
-    if (payload.markers.insightsSubjectCount !== INSIGHTS_SUBJECT_COUNT) {
-      return `WebView insights subject count was ${payload.markers.insightsSubjectCount ?? "missing"}, expected ${INSIGHTS_SUBJECT_COUNT}`;
-    }
-    const expectedTabCount = INSIGHTS_SUBJECT_COUNT;
-    if (payload.markers.insightsTabCount !== expectedTabCount) {
-      return `WebView insights question tab count was ${payload.markers.insightsTabCount ?? "missing"}, expected ${expectedTabCount} on ${payload.markers.insightsSelectedSubject || "an unnamed subject"}`;
-    }
-    if (payload.markers.insightsSelectedTabCount !== 1) {
-      return `WebView insights selected tab count was ${payload.markers.insightsSelectedTabCount ?? "missing"} on ${payload.markers.insightsSelectedSubject || "an unnamed subject"}`;
-    }
-    if (!payload.markers.insightsSelectedPanelKey) {
-      return "WebView insights analysis drew no panel for the selected subject";
-    }
-    if (payload.markers.insightsSelectedPanelVisible !== true) {
-      return "WebView insights selected panel was not visible";
-    }
-
-  }
   if (
     webviewPath.includes("/topology") &&
     webviewPath.startsWith("/ko/") &&

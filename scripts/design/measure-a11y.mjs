@@ -18,7 +18,6 @@ const DEFAULT_ROUTES = [
   "/ko",
   "/ko/topology",
   "/ko/docs",
-  "/ko/ontology/insights",
   "/ko/projects",
   "/ko/download",
   "/ko/guide",

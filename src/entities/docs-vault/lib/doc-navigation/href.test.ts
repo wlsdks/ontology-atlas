@@ -45,21 +45,14 @@ describe('buildDocsVaultHref', () => {
     );
   });
 
-  it('preserves a local return target for review flows', () => {
+  it('preserves a local return target', () => {
     expect(
       buildDocsVaultHref({
         slug: 'capabilities/mcp-server',
-        via: 'insights:do-next',
-        reviewId: 'neglected-hub:capability:mcp-server',
+        via: 'topology:capability:mcp-server',
       }),
     ).toBe(
-      '/docs/?slug=capabilities%2Fmcp-server&via=insights%3Ado-next&review=neglected-hub%3Acapability%3Amcp-server',
+      '/docs/?slug=capabilities%2Fmcp-server&via=topology%3Acapability%3Amcp-server',
     );
-    expect(
-      buildDocsVaultHref({
-        slug: 'capabilities/mcp-server',
-        reviewId: 'orphan:capability:mcp-server',
-      }),
-    ).toBe('/docs/?slug=capabilities%2Fmcp-server');
   });
 });

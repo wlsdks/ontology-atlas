@@ -49,11 +49,10 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 <td width="50%"><img src="public/gateway/changes.ko.png" alt="변경: 한 주 동안의 커밋과 각 커밋의 날짜" /><br /><b>변경</b> — 기간 동안 무엇이 바뀌었는지 풀 리퀘스트, 커밋, 파일로 나눠 봐요.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/insights.ko.png" alt="분석: 책임 사이의 관계와 각 주장 옆의 근거" /><br /><b>분석</b> — 무엇이 무엇에 기대는지, 근거와 함께 봐요.</td>
 <td width="50%"><img src="public/gateway/git.ko.png" alt="Git: 아직 커밋하지 않은 개념 변경과 그 마크다운 diff" /><br /><b>Git</b> — 커밋하기 전에 정확한 마크다운 diff를 봐요.</td>
+<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 저장소가 코딩 에이전트에게 말해 두고, 막고, 지켜보는 것" /><br /><b>하네스</b> — 저장소가 에이전트에게 말해 두고, 막고, 지켜보는 것.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 저장소가 코딩 에이전트에게 말해 두고, 막고, 지켜보는 것" /><br /><b>하네스</b> — 저장소가 에이전트에게 말해 두고, 막고, 지켜보는 것.</td>
 <td width="50%"><img src="public/gateway/automations.ko.png" alt="자동화: 폴더를 최신으로 유지하는 예약 점검" /><br /><b>자동화</b> — 폴더를 최신으로 유지하는 예약 점검.</td>
 </tr>
 </table>
@@ -91,7 +90,7 @@ your-repo/
 
 frontmatter에 `kind:`가 있는 마크다운 파일 하나가 개념 하나예요. `uid`는 바뀌지 않고,
 `slug`는 지금의 주소이며, `path`는 그 개념이 설명하는 코드를 가리켜요. 지도, 문서,
-자료실, 분석, Git 화면이 모두 이 파일을 읽어요.
+자료실, Git 화면이 모두 이 파일을 읽어요.
 
 에이전트가 폴더에 닿는 길은 둘이에요.
 

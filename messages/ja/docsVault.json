@@ -6,8 +6,6 @@
   "header": {
     "openTreeAriaLabel": "文書一覧を開く",
     "openTreeTitle": "文書一覧",
-    "backToReviewAriaLabel": "分析レビューに戻る",
-    "reviewBack": "← 分析レビュー",
     "title": "オントロジー",
     "docCount": "文書{count}件",
     "localBadge": "ローカル",
@@ -458,7 +456,7 @@
   },
   "linkCopied": "文書のリンクをコピーしました",
   "linkCopyFailed": "文書のリンクをコピーできませんでした",
-  "proofHealthOpenQueue": "次にやることで開く",
+  "proofHealthOpenQueue": "オントロジー文書を開く",
   "review": {
     "writeFailed": "レビューをファイルに保存できませんでした。何も変更されていません。"
   }

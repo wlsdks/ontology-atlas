@@ -74,7 +74,7 @@ test.describe("real browser text size setting at 200%", () => {
     await page.addInitScript(() => {
       window.localStorage.setItem("demo:sample-source:v1", "storefront");
     });
-    await page.goto("/ko/ontology/insights/?guides=off&tab=do-next", { waitUntil: "domcontentloaded" });
+    await page.goto("/ko/library/?guides=off", { waitUntil: "domcontentloaded" });
     const selected = page.locator('[role="tab"][aria-selected="true"]');
     await expect(selected).toHaveCount(1);
     await expect(selected).toBeVisible({ timeout: 30_000 });

@@ -45,11 +45,10 @@
 <td width="50%"><img src="public/gateway/changes.en.png" alt="变更：一周内的提交及其日期" /><br /><b>变更</b> — 一段时间内改了什么，按拉取请求、提交和文件分开看。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/insights.en.png" alt="分析：职责之间的关系，以及每个主张旁边的依据" /><br /><b>分析</b> — 哪些部分依赖哪些部分，依据就在旁边。</td>
 <td width="50%"><img src="public/gateway/git.en.png" alt="Git：尚未保存的概念更改及其精确的 Markdown diff" /><br /><b>Git</b> — 保存前就能看到精确的 Markdown diff。</td>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：仓库向编码智能体告知、拦截和监测的内容" /><br /><b>Harness</b> — 仓库向智能体告知、拦截和监测的内容。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：仓库向编码智能体告知、拦截和监测的内容" /><br /><b>Harness</b> — 仓库向智能体告知、拦截和监测的内容。</td>
 <td width="50%"><img src="public/gateway/automations.en.png" alt="自动化：让文件夹保持最新的定时检查" /><br /><b>自动化</b> — 让文件夹保持最新的定时检查。</td>
 </tr>
 </table>
@@ -85,7 +84,7 @@ your-repo/
     └── wiki/              据这些文档撰写的页面，每条事实都有出处
 ```
 
-frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `uid` 永不改变，`slug` 是它当前的地址，`path` 指向它所描述的代码。地图、文档、资料库、分析和 Git 界面读取的都是这些文件。
+frontmatter 中带有 `kind:` 的 Markdown 文件就是一个概念。它的 `uid` 永不改变，`slug` 是它当前的地址，`path` 指向它所描述的代码。地图、文档、资料库和 Git 界面读取的都是这些文件。
 
 你的智能体通过两种方式接触这个文件夹：
 
