@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { FileCode2, FolderGit2, GitCommitHorizontal, GitPullRequest } from 'lucide-react';
 import { MOTION, STAGGER } from '@/shared/motion';
-import { Button, FeatureStage, GetAppLink, type FeatureStageMotion } from '@/shared/ui';
+import { Button, FeatureStage, FeatureStagePulse, GetAppLink, type FeatureStageMotion } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 const BRANCH_YS = [76, 160, 244];
@@ -16,6 +16,7 @@ function BriefingArtwork({ arriving, engaged, reduced, labels }: FeatureStageMot
     <svg viewBox="0 0 320 320" className="absolute inset-0 h-full w-full text-[color:var(--color-indigo-line-a32)]" fill="none">
       <motion.path d="M52 44v232M52 76c0 50 54 4 54 58v112M52 244c0-50 54-4 54-58V76" stroke="currentColor" strokeWidth="2"
         initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={lineDraw} />
+      <FeatureStagePulse d="M52 44v232" delay={MOTION.choreography.duration} engaged={engaged} reduced={reduced} />
       {BRANCH_YS.map((y, index) => <motion.circle key={y} cx="52" cy={y} r="6" fill="var(--color-canvas)" stroke="currentColor" strokeWidth="2"
         initial={reduced ? false : { opacity: 0 }} animate={{ opacity: 1 }}
         transition={reduced ? MOTION.fast : { ...MOTION.base, delay: MOTION.slow.duration * (index + 1) }} />)}
@@ -25,7 +26,7 @@ function BriefingArtwork({ arriving, engaged, reduced, labels }: FeatureStageMot
         initial={reduced ? false : { opacity: 0, x: 16 }}
         animate={{ opacity: 1, x: engaged ? (index === 1 ? -6 : 6) : 0 }}
         transition={reduced ? MOTION.fast : arriving ? { ...MOTION.expressive, delay: MOTION.slow.duration * (index + 1) + STAGGER } : MOTION.settle}
-        className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-5 shadow-[var(--shadow-elevation-1)]">
+        className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] bg-[linear-gradient(180deg,var(--color-overlay-2),transparent_60%)] px-4 py-5 shadow-[var(--shadow-elevation-1)]">
         <Icon size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-accent)]" />
         <span className="text-body-lg font-[var(--font-weight-strong)]">{label}</span>
       </motion.div>)}

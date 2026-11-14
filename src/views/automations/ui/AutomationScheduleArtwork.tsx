@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { CalendarClock, Check } from 'lucide-react';
 
 import { MOTION, STAGGER } from '@/shared/motion';
-import type { FeatureStageMotion } from '@/shared/ui';
+import { FeatureStagePulse, type FeatureStageMotion } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 
 const RUN_XS = [64, 160, 256];
@@ -18,7 +18,7 @@ export function AutomationScheduleArtwork({ arriving, engaged, reduced, name, ca
   return <div data-automation-artwork>
     <motion.div data-testid="automations-ghost-row"
       initial={reduced ? false : { opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={reduced ? MOTION.fast : MOTION.expressive}
-      className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] px-4 py-4 text-left shadow-[var(--shadow-elevation-1)]">
+      className="flex items-center gap-3 rounded-card border border-[color:var(--color-border-strong)] bg-[color:var(--color-panel)] bg-[linear-gradient(180deg,var(--color-overlay-2),transparent_60%)] px-4 py-4 text-left shadow-[var(--shadow-elevation-1)]">
       <CalendarClock size={ICON_SIZE.lg} className="flex-none text-[color:var(--color-indigo-accent)]" />
       <span className="min-w-0">
         <span className="block break-words text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">{name}</span>
@@ -28,6 +28,7 @@ export function AutomationScheduleArtwork({ arriving, engaged, reduced, name, ca
     <svg viewBox="0 0 320 132" className="mt-2 w-full" fill="none">
       <motion.path d={`M24 ${LINE_Y}H296`} stroke="var(--color-indigo-line-a35)" strokeWidth="2" strokeLinecap="round"
         initial={reduced ? false : { pathLength: 0 }} animate={{ pathLength: 1 }} transition={reduced ? MOTION.fast : MOTION.choreography} />
+      <FeatureStagePulse d={`M24 ${LINE_Y}H296`} delay={MOTION.choreography.duration} engaged={engaged} reduced={reduced} />
       {RUN_XS.map((x, index) => <g key={x}>
         <motion.circle cx={x} cy={LINE_Y} r="6" fill="var(--color-indigo-accent)"
           initial={reduced ? false : { opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={after(index)} />
