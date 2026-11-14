@@ -92,7 +92,7 @@ test("payload contract · the Agents route proves itself by its own body without
   const markers = webviewWorkbenchMarkersForPath("/ko/agents/");
   assert.equal(
     markers.every((marker) =>
-      marker.test("에이전트\n이 컴퓨터의 도구\nMCP 연결"),
+      marker.test("에이전트\n이 컴퓨터의 에이전트\nMCP 연결"),
     ),
     true,
   );
