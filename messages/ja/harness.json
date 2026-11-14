@@ -23,8 +23,6 @@
   "hookWiredHint": "設定が指すスクリプトがディスク上にあります。実際に動いているかは、ファイルからは分かりません。",
   "hookMissing": "スクリプトなし",
   "hookMissingHint": "設定はこのパスを指していますが、ファイルがありません。エラーも停止も起きないため、頼りにしていたガードが気づかないうちに無くなっています。",
-  "hookUnresolved": "パスを解決できません",
-  "hookUnresolvedHint": "コマンドがスクリプトのパスではないため、ファイルが存在するか確認できませんでした。",
   "hookApprovalGateHint": "Codexはフックの各エントリをハッシュ化し、新規または変更されたものは/hooksで人が信頼するまで実行しません。この承認はどのファイルにも残らないため、読み取れません。",
   "browserOnly": "ブラウザでは読み取れません",
   "browserOnlyBody": "ハーネスのファイルは「.claude」のようなドットディレクトリにあり、ブラウザからは見えません。デスクトップアプリならすべて読み取れます。",
@@ -58,9 +56,7 @@
   "toolAll": "すべて",
   "problemsAria": "修正が必要な問題",
   "problemHookMissing": "hookスクリプトがありません：{path}",
-  "problemHookUnresolved": "hookのパスを確認できませんでした：{command}",
   "problemCodexCap": "Codexが読むAGENTS.mdが上限32 KiBを超えています（{size}）",
-  "problemCopyDrift": "ClaudeとCodexのコピーが異なります：{count}件",
   "sections": {
     "context": {
       "title": "コンテキスト",
@@ -97,7 +93,8 @@
   "loadingPath": "パス指定",
   "hookApprovalGate": "Codexで承認が必要",
   "permissionRules": "拒否・確認ルール{count}件",
-  "copyDiffers": "コピーが異なる",
+  "differsFromCodex": "Codexのコピーと異なる",
+  "differsFromClaude": "Claude Codeのコピーと異なる",
   "detailPath": "パス",
   "detailReadBy": "読むツール",
   "detailSize": "サイズ",

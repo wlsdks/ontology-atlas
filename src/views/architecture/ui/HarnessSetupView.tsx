@@ -43,10 +43,9 @@ function useDetailBeside(slot: HTMLElement | null): boolean {
 }
 
 function problemText(problem: SetupProblem, t: TranslateFn): string {
-  if (problem.kind === 'hook-missing') return t('problemHookMissing', { path: problem.path });
-  if (problem.kind === 'hook-unresolved') return t('problemHookUnresolved', { command: problem.command });
-  if (problem.kind === 'codex-cap') return t('problemCodexCap', { size: formatBytes(problem.bytes) });
-  return t('problemCopyDrift', { count: problem.count });
+  return problem.kind === 'hook-missing'
+    ? t('problemHookMissing', { path: problem.path })
+    : t('problemCodexCap', { size: formatBytes(problem.bytes) });
 }
 
 function groupKey(section: SetupSectionId, group: SetupGroup): string {
@@ -127,7 +126,11 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
 
   const problems =
     setup.problems.length > 0 ? (
-      <ul aria-label={t('problemsAria')} data-testid="harness-problems" className="flex flex-col gap-1">
+      <ul
+        aria-label={t('problemsAria')}
+        data-testid="harness-problems"
+        className="flex flex-col divide-y divide-[color:var(--color-amber-source-a35)] overflow-hidden rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]"
+      >
         {setup.problems.map((problem) => (
           <li key={problem.key}>
             <RowButton
@@ -135,7 +138,7 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
               hoverSurface="lift"
               size="md"
               onClick={() => select(problem.itemKey)}
-              className="w-full gap-2.5 border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)]"
+              className="w-full gap-2.5 rounded-none"
             >
               <AlertTriangle size={ICON_SIZE.sm} aria-hidden className="shrink-0 text-[color:var(--color-amber-source-a90)]" />
               <span className="min-w-0 flex-1 break-all text-left text-body text-[color:var(--color-text-primary)]">

@@ -26,15 +26,27 @@ export interface HookConfigFacts {
   approvalGate: boolean;
 }
 
-/** Strips `${CLAUDE_PROJECT_DIR:-.}/`; `null` when the command is not a script invocation. */
+/** Programs that take a script as their first non-flag argument. */
+const SCRIPT_RUNNERS = new Set(['bash', 'sh', 'zsh', 'node', 'python', 'python3', 'bun', 'deno', 'tsx']);
+
+const SCRIPT_FILE = /\.(?:sh|mjs|cjs|js|py)$/;
+
+/** The project-directory prefixes Claude Code documents, quoted or not, with or without a default. */
+const PROJECT_DIR_PREFIX = /^\$(?:\{CLAUDE_PROJECT_DIR(?::-\.)?\}|CLAUDE_PROJECT_DIR)\//;
+
+/**
+ * The script a hook command runs: its first word, or a runner's first non-flag argument. A later
+ * argument (`npx prettier --write src/index.js`) is never taken for the script; `null` when the
+ * command runs no script file this scan can test on disk.
+ */
 export function hookScriptPath(command: string): string | null {
-  const match = command.match(/[\w./${}:@-]*\.(?:sh|mjs|cjs|js|py)\b/);
-  if (!match) return null;
-  if (match.index! > 0 && command[match.index! - 1] === '~') return null;
-  const raw = match[0]
-    .replace(/^\$\{CLAUDE_PROJECT_DIR:-\.\}\//, '')
-    .replace(/^\$CLAUDE_PROJECT_DIR\//, '')
-    .replace(/^\.\//, '');
+  const words = command.trim().split(/\s+/).map((word) => word.replace(/["']/g, ''));
+  const program = words[0] ?? '';
+  const script = SCRIPT_RUNNERS.has(program.split('/').pop() ?? '')
+    ? (words.slice(1).find((word) => !word.startsWith('-')) ?? '')
+    : program;
+  if (!SCRIPT_FILE.test(script)) return null;
+  const raw = script.replace(PROJECT_DIR_PREFIX, '').replace(/^\.\//, '');
   // An unexpanded variable cannot be tested against the filesystem.
   if (raw.includes('$') || raw.length === 0) return null;
   return raw.startsWith('/') || raw.startsWith('~') || raw.split('/').includes('..') ? null : raw;

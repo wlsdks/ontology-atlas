@@ -22,14 +22,18 @@ const problem = (page: Page, kind: string) =>
   page.getByTestId("harness-problems").locator(`[data-harness-problem="${kind}"]`);
 
 test.describe("harness Setup files and statuses", () => {
-  test("a hook whose command names no script file is unresolved, not wired", async ({ page }) => {
+  test("a hook command that runs no script file is shown as written, with no status and no problem", async ({ page }) => {
     await openSetup(page, { source: UNRESOLVED_HOOK_SOURCE });
-    await expect(problem(page, "hook-unresolved")).toContainText("npx prettier --write .");
-    await problem(page, "hook-unresolved").click();
+    await expect(page.getByTestId("harness-problems")).not.toContainText("npx prettier");
+    const verification = page.locator('[data-harness-section="verification"]');
+    await verification.locator('[data-harness-group="hooks"] button[aria-expanded]').click();
+    const row = verification.locator("[data-harness-item]").filter({ hasText: "npx prettier --write ." });
+    await expect(row).toBeVisible();
+    await expect(row.locator("[data-harness-status]")).toHaveCount(0);
+    await row.click();
     const detail = page.getByTestId("harness-item-detail");
-    await expect(detail.locator('[data-harness-status="unresolved"]')).toBeVisible();
-    await expect(detail.locator('[data-harness-status="wired"]')).toHaveCount(0);
     await expect(detail).toContainText("PostToolUse");
+    await expect(detail.locator("[data-harness-status]")).toHaveCount(0);
   });
 
   test("a Codex hook says it needs approval in Codex beside its own status", async ({ page }) => {
@@ -43,12 +47,15 @@ test.describe("harness Setup files and statuses", () => {
     await expect(problem(page, "hook-missing").filter({ hasText: "block-npm-publish.sh" })).toHaveCount(2);
   });
 
-  test("Claude and Codex copies that differ open side by side", async ({ page }) => {
-    await openSetup(page);
-    await expect(problem(page, "copy-drift")).toBeVisible();
-    await problem(page, "copy-drift").click();
+  test("Claude and Codex copies that differ are a neutral fact that opens side by side", async ({ page }) => {
+    await openSetup(page, { locale: "en" });
+    await expect(page.getByTestId("harness-problems").locator("[data-harness-problem]")).toHaveCount(1);
+    await expect(problem(page, "hook-missing")).toHaveCount(1);
+    const context = page.locator('[data-harness-section="context"]');
+    await context.locator('[data-harness-group="skills"] button[aria-expanded]').click();
+    await context.locator('[data-harness-item="file:.claude/skills/po-pass/SKILL.md"]').click();
     const detail = page.getByTestId("harness-item-detail");
-    await expect(detail.locator('[data-harness-status="copy"]')).toBeVisible();
+    await expect(detail.locator('[data-harness-status="copy"]')).toHaveText("Differs from Codex copy");
     const diff = page.getByTestId("harness-drift-diff");
     await expect(diff).toContainText(".claude/skills/po-pass/SKILL.md");
     await expect(diff).toContainText(".agents/skills/po-pass/SKILL.md");

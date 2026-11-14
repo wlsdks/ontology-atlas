@@ -44,7 +44,9 @@ const REPO: Record<string, string> = {
     permissions: { deny: ['Read(./.env*)'], ask: ['Bash(git push:*)'] },
     hooks: {
       PreToolUse: [{ hooks: [{ command: '.claude/hooks/guard.sh' }, { command: '.claude/hooks/gone.sh' }] }],
-      PostToolUse: [{ hooks: [{ command: '.claude/hooks/format.sh' }, { command: 'npx prettier --write .' }] }],
+      PostToolUse: [
+        { hooks: [{ command: '.claude/hooks/format.sh' }, { command: 'npx prettier --write .' }, { command: '.claude/hooks/gone.sh' }] },
+      ],
       SessionStart: [{ hooks: [{ command: '.claude/hooks/census.sh' }] }],
     },
   }),
@@ -76,7 +78,7 @@ describe('buildHarnessSetup', () => {
     ['context', 'contextHooks', ['.claude/hooks/census.sh']],
     ['guardrails', 'permissions', ['.claude/settings.json']],
     ['guardrails', 'blockingHooks', ['.claude/hooks/gone.sh', '.claude/hooks/guard.sh', '.claude/hooks/guard.sh']],
-    ['verification', 'hooks', ['.claude/hooks/format.sh', 'npx prettier --write .']],
+    ['verification', 'hooks', ['.claude/hooks/format.sh', '.claude/hooks/gone.sh', 'npx prettier --write .']],
     ['verification', 'scripts', ['lint', 'test:cart']],
     ['verification', 'gitHooks', ['pre-commit']],
     ['verification', 'workflows', ['ci.yml']],
@@ -94,15 +96,25 @@ describe('buildHarnessSetup', () => {
     );
   });
 
-  it('lists only what a person must fix, each pointing at an item on the page', () => {
+  it('lists only what a person must fix, one row per missing script however many events name it', () => {
     const setup = buildHarnessSetup(report);
-    expect(setup.problems.map((problem) => problem.kind).sort()).toEqual([
-      'codex-cap',
-      'copy-drift',
-      'hook-missing',
-      'hook-unresolved',
-    ]);
+    expect(setup.problems.map((problem) => problem.kind).sort()).toEqual(['codex-cap', 'hook-missing']);
     for (const problem of setup.problems) expect(setup.items.has(problem.itemKey)).toBe(true);
+  });
+
+  it('shows a command that runs no script as written, with no status to judge', () => {
+    const command = buildHarnessSetup(report)
+      .sections.flatMap((section) => section.groups.flatMap((group) => group.items))
+      .find((item) => item.label === 'npx prettier --write .');
+    expect(command?.hookStatus).toBe('unresolved');
+    expect(buildHarnessSetup(report).problems.some((problem) => problem.itemKey === command?.key)).toBe(false);
+  });
+
+  it('names the twin a differing copy differs from, and gives a copy with no twin no such fact', () => {
+    const setup = buildHarnessSetup(report);
+    expect(setup.items.get('file:.claude/skills/review/SKILL.md')?.differsFrom).toBe('codex');
+    expect(setup.items.get('file:.agents/skills/review/SKILL.md')?.differsFrom).toBe('claude-code');
+    expect(setup.items.get('file:.claude/agents/scout.md')?.differsFrom).toBeUndefined();
   });
 
   it('narrows every list to one tool while keeping checks no tool claims', () => {
@@ -112,7 +124,7 @@ describe('buildHarnessSetup', () => {
     expect(labelsIn('context', 'rules', 'codex')).toEqual([]);
     expect(labelsIn('guardrails', 'blockingHooks', 'codex')).toEqual(['.claude/hooks/guard.sh']);
     expect(labelsIn('verification', 'scripts', 'codex').sort()).toEqual(['lint', 'test:cart']);
-    expect(setup.problems.map((problem) => problem.kind).sort()).toEqual(['codex-cap', 'copy-drift']);
+    expect(setup.problems.map((problem) => problem.kind)).toEqual(['codex-cap']);
     expect(setup.claudeSessionBytes).toBeNull();
   });
 });

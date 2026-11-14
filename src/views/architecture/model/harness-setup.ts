@@ -57,8 +57,11 @@ export interface SetupItem {
   denyAndAskRuleCount?: number;
   /** The text that put the item here, quoted from its file. */
   declaration?: string;
-  /** A Claude or Codex copy that differs from its declared twin, or has none. */
-  copyDiffers?: boolean;
+  /**
+   * The tool whose copy of this skill or subagent differs from this one. Information only: the
+   * two trees are maintained independently (decision e47518a9), and a file with no twin has none.
+   */
+  differsFrom?: 'claude-code' | 'codex';
   /** Claude's copy, then Codex's, when both exist and differ. */
   pairPaths?: readonly [string, string];
 }
@@ -77,9 +80,7 @@ export interface SetupSection {
 
 export type SetupProblem =
   | { kind: 'hook-missing'; key: string; itemKey: string; path: string; tools: readonly AgentTool[] }
-  | { kind: 'hook-unresolved'; key: string; itemKey: string; command: string; tools: readonly AgentTool[] }
-  | { kind: 'codex-cap'; key: string; itemKey: string; bytes: number; tools: readonly AgentTool[] }
-  | { kind: 'copy-drift'; key: string; itemKey: string; count: number; tools: readonly AgentTool[] };
+  | { kind: 'codex-cap'; key: string; itemKey: string; bytes: number; tools: readonly AgentTool[] };
 
 export interface CodexSessionSize {
   used: number;
@@ -167,6 +168,7 @@ function fileItem(
   pairs: ReadonlyMap<string, readonly [string, string]>,
 ): SetupItem {
   const rule = rules.get(record.path);
+  const pair = pairs.get(record.path);
   return {
     key: fileItemKey(record.path),
     label: record.path,
@@ -177,8 +179,8 @@ function fileItem(
     ruleId: record.ruleId,
     loading: rule ? (rule.declaration ? 'path' : 'always') : undefined,
     declaration: rule?.declaration || undefined,
-    copyDiffers: record.drift.some(isPairDrift) || undefined,
-    pairPaths: pairs.get(record.path),
+    differsFrom: pair ? (record.path === pair[0] ? 'codex' : 'claude-code') : undefined,
+    pairPaths: pair,
   };
 }
 
@@ -264,13 +266,14 @@ function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' 
 
 function problemsOf(report: HarnessReport, items: ReadonlyMap<string, SetupItem>): SetupProblem[] {
   const out: SetupProblem[] = [];
+  /* A script named on several events is one missing file: one row per config and script. */
+  const missing = new Set<string>();
   for (const item of items.values()) {
-    if (!item.key.startsWith('hook:')) continue;
-    if (item.hookStatus === 'missing') {
-      out.push({ kind: 'hook-missing', key: `missing:${item.key}`, itemKey: item.key, path: item.label, tools: item.tools });
-    } else if (item.hookStatus === 'unresolved') {
-      out.push({ kind: 'hook-unresolved', key: `unresolved:${item.key}`, itemKey: item.key, command: item.label, tools: item.tools });
-    }
+    if (item.hookStatus !== 'missing') continue;
+    const key = `missing:${item.namedBy}:${item.label}`;
+    if (missing.has(key)) continue;
+    missing.add(key);
+    out.push({ kind: 'hook-missing', key, itemKey: item.key, path: item.label, tools: item.tools });
   }
   const cap = report.analysis.checks.codexSizeCap;
   if (cap.status === 'drift' && cap.worstCaseBytes !== null) {
@@ -280,17 +283,6 @@ function problemsOf(report: HarnessReport, items: ReadonlyMap<string, SetupItem>
       itemKey: fileItemKey(cap.worstNestedPath ?? 'AGENTS.md'),
       bytes: cap.worstCaseBytes,
       tools: ['codex'],
-    });
-  }
-  const pairDrift = report.analysis.drift.filter((finding) => isPairDrift(finding.code));
-  if (pairDrift.length > 0) {
-    const firstDiffering = [...items.values()].find((item) => item.copyDiffers);
-    out.push({
-      kind: 'copy-drift',
-      key: 'copy-drift',
-      itemKey: firstDiffering?.key ?? '',
-      count: pairDrift.length,
-      tools: ['claude-code', 'codex'],
     });
   }
   return out;

@@ -139,7 +139,7 @@ function GroupRow({
   t: TranslateFn;
 }) {
   const listId = `harness-group-${section}-${group.id}`;
-  const failing = group.items.some((item) => item.hookStatus === 'missing' || item.hookStatus === 'unresolved' || item.copyDiffers);
+  const failing = group.items.some((item) => item.hookStatus === 'missing');
   return (
     <li data-harness-group={group.id}>
       <RowButton

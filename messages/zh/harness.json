@@ -23,8 +23,6 @@
   "hookWiredHint": "配置中指明的脚本在磁盘上存在。它是否运行，仅凭文件无法得知。",
   "hookMissing": "脚本缺失",
   "hookMissingHint": "配置指向了这个路径，但文件不存在。这既不会报错也不会拦截：你以为在起作用的防护其实悄悄缺失了。",
-  "hookUnresolved": "路径无法解析",
-  "hookUnresolvedHint": "该命令不是脚本路径，所以无法确认文件是否存在。",
   "hookApprovalGateHint": "Codex 会对每个钩子条目计算哈希，新增或有改动的条目在有人于 /hooks 中信任之前不会运行。这项批准不记录在任何文件里，所以无法读取。",
   "browserOnly": "浏览器读不到这些内容",
   "browserOnlyBody": "Harness 文件位于 .claude 这类点开头的目录，浏览器看不到。桌面应用可以读取全部。",
@@ -58,9 +56,7 @@
   "toolAll": "全部",
   "problemsAria": "需要修复的问题",
   "problemHookMissing": "hook 脚本不存在：{path}",
-  "problemHookUnresolved": "无法确认 hook 路径：{command}",
   "problemCodexCap": "Codex 读取的 AGENTS.md 超过了 32 KiB 上限（{size}）",
-  "problemCopyDrift": "Claude 与 Codex 副本不一致：{count} 个",
   "sections": {
     "context": {
       "title": "上下文",
@@ -97,7 +93,8 @@
   "loadingPath": "按路径",
   "hookApprovalGate": "需在 Codex 中批准",
   "permissionRules": "拒绝与确认规则 {count} 条",
-  "copyDiffers": "副本不一致",
+  "differsFromCodex": "与 Codex 副本不同",
+  "differsFromClaude": "与 Claude Code 副本不同",
   "detailPath": "路径",
   "detailReadBy": "读取工具",
   "detailSize": "大小",

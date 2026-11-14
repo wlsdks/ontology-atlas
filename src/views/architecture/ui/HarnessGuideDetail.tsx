@@ -82,20 +82,22 @@ function CodexShare({ report, t }: { report: HarnessReport; t: TranslateFn }) {
 }
 
 interface StatusTag {
-  key: 'missing' | 'unresolved' | 'wired' | 'approval' | 'always' | 'path' | 'permissions' | 'copy';
+  key: 'missing' | 'wired' | 'approval' | 'always' | 'path' | 'permissions' | 'copy';
   warning: boolean;
 }
 
-/** Every status the item carries, in reading order; a warning is something that fails. */
+/**
+ * Every status the item carries, in reading order; a warning is something that fails. A command
+ * that runs no script file carries none: it is shown as written, not judged.
+ */
 export function statusTags(item: SetupItem): StatusTag[] {
   const tags: StatusTag[] = [];
   if (item.hookStatus === 'missing') tags.push({ key: 'missing', warning: true });
-  if (item.hookStatus === 'unresolved') tags.push({ key: 'unresolved', warning: true });
   if (item.hookStatus === 'wired') tags.push({ key: 'wired', warning: false });
   if (item.approvalGate) tags.push({ key: 'approval', warning: false });
   if (item.loading) tags.push({ key: item.loading, warning: false });
   if (item.denyAndAskRuleCount !== undefined) tags.push({ key: 'permissions', warning: false });
-  if (item.copyDiffers) tags.push({ key: 'copy', warning: true });
+  if (item.differsFrom) tags.push({ key: 'copy', warning: false });
   return tags;
 }
 
@@ -103,8 +105,6 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
   switch (tag.key) {
     case 'missing':
       return { text: t('hookMissing'), title: t('hookMissingHint') };
-    case 'unresolved':
-      return { text: t('hookUnresolved'), title: t('hookUnresolvedHint') };
     case 'wired':
       return { text: t('hookWired'), title: t('hookWiredHint') };
     case 'approval':
@@ -116,7 +116,7 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
     case 'permissions':
       return { text: t('permissionRules', { count: item.denyAndAskRuleCount ?? 0 }) };
     case 'copy':
-      return { text: t('copyDiffers') };
+      return { text: t(item.differsFrom === 'codex' ? 'differsFromCodex' : 'differsFromClaude') };
   }
 }
 
