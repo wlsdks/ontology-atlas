@@ -17,7 +17,10 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await expect(button).toHaveAttribute('aria-busy', 'true');
     await expect(button).toHaveText('Add files');
     const during = await button.boundingBox();
-    expect(during).toEqual(before);
+    /* Layout floats differ by 1e-4 px between reads; the button moving is a whole-pixel event. */
+    for (const side of ['x', 'y', 'width', 'height'] as const) {
+      expect(during![side], `the button's ${side} changed when work began`).toBeCloseTo(before![side], 2);
+    }
     const seat = await button.locator('[data-action-feedback]').boundingBox();
     const glyph = await button.locator('[data-work-glyph]').boundingBox();
     expect(glyph).toEqual(seat);

@@ -74,7 +74,7 @@ describe('the ledger', () => {
 
   it('the live row names the phase the pass is in', () => {
     draw({ running: { ...RUNNING, phase: 'agent' } });
-    expect(screen.getByTestId('round-ledger-live')).toHaveTextContent('Agent turn in progress');
+    expect(screen.getByTestId('round-ledger-live')).toHaveTextContent('Agent running');
   });
 
   it('names a page by its title, and falls back to the slug when the page is gone', () => {

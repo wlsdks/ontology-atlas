@@ -80,7 +80,7 @@ async function openLibraryHome(page: Page, files: Record<string, string> = FILES
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { files });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();
 }
@@ -172,7 +172,7 @@ test.describe('the Library spine at one saved answer', () => {
     const observation = popup.getByTestId('answer-observation').first();
     await expect(observation).toHaveAttribute('data-state', 'unchanged');
     expect(await observation.evaluate((el) => el.querySelector('svg') !== null)).toBe(true);
-    await expect(row).toHaveAccessibleDescription(/No change since source observation/);
+    await expect(row).toHaveAccessibleDescription(/No change since the last source check/);
 
     // The row is a door, and it opens the answer it names.
     await row.click();
@@ -200,7 +200,7 @@ test.describe('the Library index with an empty wiki', () => {
       },
     });
     await page.goto('/en/');
-    await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+    await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-workspace-wiki').click();
     await expect(page.getByTestId('library-wiki-empty')).toBeVisible();
@@ -217,7 +217,7 @@ test.describe('the Library spine names one lead step', () => {
     await seedFirstRunSeen(page);
     await installLibraryWorkHarness(page, { files: FILES_WITH_WAITING_SOURCE });
     await page.goto('/en/');
-    await page.getByRole('button', { name: /Open my folder|내 폴더 열기/i }).click();
+    await page.getByRole('button', { name: /Open (?:a|my) folder|폴더 열기/i }).click();
     await page.getByTestId('app-nav-rail-item-library').click();
     await page.getByTestId('library-graph-canvas').waitFor();
     await page.getByTestId('library-guide-open').click();
@@ -310,7 +310,7 @@ async function openLocalRouteLibrary(page: Page, keepLocalAddress: boolean) {
     });
   }
   await page.goto('/en/?guides=off', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   await expect(page.getByRole('heading', { name: 'Map', level: 1 })).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Library' }).click();
   await page.getByTestId('library-workspace-sources').click();
@@ -360,7 +360,7 @@ test.describe('the Library home states availability once per surface', () => {
     await openLocalRouteLibrary(page, true);
     const questions = await openQuestionsSurface(page);
     const reason = questions.getByTestId('library-questions-ask-blocked');
-    await expect(reason).toContainText('A local model can only compile');
+    await expect(reason).toContainText('A local model can only write wiki pages');
     const ask = questions.getByTestId('library-questions-ask');
     await expect(ask).toBeVisible();
     await expect(ask).toBeDisabled();
@@ -381,7 +381,7 @@ test.describe('the Library home states availability once per surface', () => {
     await expect(lint).toBeDisabled();
     await expect(lint).toHaveAttribute('aria-describedby', 'library-stage-lint-blocked');
     await expect(guide.getByTestId('library-stage-lint-blocked')).toContainText(
-      'A local model can only compile',
+      'A local model can only write wiki pages',
     );
   });
 });

@@ -1,9 +1,8 @@
 {
   "title": "MCP",
-  "lede": "MCPは、コーディングエージェントがこのフォルダを読み書きするための経路です。外部サービスもここに接続します。",
-  "shareHeading": "このフォルダを共有",
-  "connectorsHeading": "コネクタ",
-  "connectorsHeadingCount": "コネクタ・{total}件中{on}件オン",
-  "connectorsNeedFolder": "コネクタはフォルダ内に書き込まれます。上でフォルダを開くと、ここに表示されます。",
-  "connectorsCountTitle": "オンのコネクタ"
+  "lede": "コーディングエージェントはMCPサーバを通してこのフォルダを読み書きします。ほかのサービスのMCPサーバもここで追加します。",
+  "shareHeading": "このフォルダをエージェントに接続",
+  "connectorsHeading": "MCPサーバ",
+  "connectorsHeadingCount": "MCPサーバ・{total}件中{on}件オン",
+  "connectorsNeedFolder": "MCPサーバの設定はフォルダ内に保存されます。上でフォルダを開くと、ここに表示されます。"
 }

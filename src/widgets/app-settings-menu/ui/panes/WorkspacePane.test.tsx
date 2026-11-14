@@ -109,7 +109,7 @@ describe('the Ontology folder pane', () => {
   it('reads what the folder keeps and says where it lives', async () => {
     mount();
     await waitFor(() =>
-      expect(screen.getByTestId('app-settings-folder-door-schedules').textContent).toContain('3 schedules · 1 paused'),
+      expect(screen.getByTestId('app-settings-folder-door-schedules').textContent).toContain('3 scheduled checks · 1 paused'),
     );
     expect(screen.getByTestId('app-settings-folder-door-connectors').textContent).toContain(
       '2 in this folder · 1 allowed here',
@@ -117,7 +117,7 @@ describe('the Ontology folder pane', () => {
     await waitFor(() =>
       expect(screen.getByTestId('app-settings-folder-door-git').textContent).toContain('Branch main · remote set'),
     );
-    expect(screen.getByTestId('app-settings-folder-door-projects').textContent).toContain('1 project connected');
+    expect(screen.getByTestId('app-settings-folder-door-projects').textContent).toContain('1 code folder connected');
     expect(env.gitStatus).toHaveBeenCalledWith('/Users/probe/atlas-vault');
     expect(screen.getByTestId('app-settings-folder-kept').textContent).toContain('This folder');
     expect(screen.getByTestId('app-settings-folder-kept-caption').textContent).toContain('.ontology-atlas/');

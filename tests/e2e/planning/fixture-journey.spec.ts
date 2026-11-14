@@ -387,20 +387,20 @@ test('mocked native Planning keeps the selected document across explicit evidenc
     };
   });
   await page.goto('/ko/planning/');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
-  await page.getByRole('button', { name: '읽기·이력 범위' }).click();
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeVisible();
-  await page.getByRole('button', { name: '읽기·이력 범위' }).click();
+  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeHidden();
+  await page.getByRole('button', { name: '읽은 범위' }).click();
+  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeVisible();
+  await page.getByRole('button', { name: '읽은 범위' }).click();
   await page.getByRole('button', { name: '폴더 선택' }).click();
   await page.getByRole('button', { name: 'plans/checkout.md' }).click();
-  const details = page.getByRole('button', { name: '읽기·이력 범위' });
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
+  const details = page.getByRole('button', { name: '읽은 범위' });
+  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeHidden();
   await details.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeVisible();
+  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeVisible();
   await expect(page.getByText(planning.historyLimit)).toBeVisible();
   await page.keyboard.press('Enter');
-  await expect(page.getByText(/선택 폴더를 연 이후의 교체는 확인해요/)).toBeHidden();
+  await expect(page.getByText(/폴더를 연 뒤 파일이 바뀌면 알려요/)).toBeHidden();
   await expect(page.getByText(planning.historyBrief)).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Checkout plan' })).toBeVisible();
   await expect(page.getByAltText('design')).toHaveAttribute('src', /^blob:/);
@@ -430,11 +430,11 @@ test('mocked native Planning keeps the selected document across explicit evidenc
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect(page.getByText('Updated decision')).toBeVisible();
   await expect(page.getByRole('button', { name: planning.openHistory })).toBeFocused();
-  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.getByRole('button', { name: '지도 열기' }).click();
   await expect(page.getByRole('button', { name: '기획으로 돌아가기' })).toBeVisible();
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect(page.getByText('Updated decision')).toBeVisible();
-  await expect(page.getByRole('button', { name: '온톨로지 맵 열기' })).toBeFocused();
+  await expect(page.getByRole('button', { name: '지도 열기' })).toBeFocused();
 });
 
 test('file names lead the list while relative paths disambiguate and remain searchable', async ({ page }) => {
@@ -601,13 +601,13 @@ test('return waits for delayed images and never restores a replaced document', a
   expect(await reader.evaluate((node) => node.scrollTop)).toBeLessThan(saved);
   await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(false));
   await expect.poll(() => reader.evaluate((node) => node.scrollTop)).toBeGreaterThan(saved - 2);
-  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.getByRole('button', { name: '지도 열기' }).click();
   await page.evaluate(() => { delete (window as unknown as { releaseImage?: unknown }).releaseImage; });
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);
   await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(true));
   await expect.poll(() => reader.evaluate((node) => Math.abs(node.scrollHeight - node.clientHeight - node.scrollTop))).toBeLessThan(2);
-  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.getByRole('button', { name: '지도 열기' }).click();
   await page.evaluate(() => { delete (window as unknown as { releaseImage?: unknown }).releaseImage; });
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect.poll(() => page.evaluate(() => Boolean((window as unknown as { releaseImage?: unknown }).releaseImage))).toBe(true);
@@ -615,7 +615,7 @@ test('return waits for delayed images and never restores a replaced document', a
   await page.evaluate(() => (window as unknown as { releaseImage: (fail: boolean) => void }).releaseImage(false));
   await expect(page.getByAltText('delayed')).toBeVisible();
   expect(await reader.evaluate((node) => node.scrollTop)).toBe(40);
-  await page.getByRole('button', { name: '온톨로지 맵 열기' }).click();
+  await page.getByRole('button', { name: '지도 열기' }).click();
   await page.evaluate(() => { (window as unknown as { identity: string }).identity = 'b'.repeat(32); });
   await page.getByRole('button', { name: '기획으로 돌아가기' }).click();
   await expect(page.getByRole('alert').filter({ hasText: '파일이 변경' })).toBeVisible();

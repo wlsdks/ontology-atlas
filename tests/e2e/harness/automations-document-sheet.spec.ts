@@ -33,20 +33,20 @@ test.describe("Document schedule sheet", () => {
     // The sentence above the controls says what will happen, and follows every press.
     const readback = page.getByTestId("library-rounds-readback");
     await expect(readback).toHaveText(
-      "Every hour, check that every page still matches its originals, and redraft the stale ones. It runs once as soon as you save.",
+      "Every hour, check that every page still matches its sources, and redraft the stale ones. It runs once as soon as you save.",
     );
 
     const scope = page.getByTestId("library-rounds-scope");
     await expect(scope).toContainText("read this folder and its map");
     await expect(scope).toContainText("write pages under wiki/");
     await expect(scope).toContainText("nothing else");
-    await expect(page.getByTestId("library-rounds-cost")).toContainText("only on a pass that finds something stale");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("only when a run finds something stale");
 
     // Mark only: no write at all, and the cost line says so.
     await page.getByTestId("library-rounds-on-stale").getByRole("radio", { name: "Flag for review" }).click();
     await expect(readback).toContainText("and only mark the stale ones");
     await expect(scope).not.toContainText("write pages under wiki/");
-    await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent turn");
+    await expect(page.getByTestId("library-rounds-cost")).toContainText("No agent run");
 
     // Naming a service place is what makes this a service round, so the bill and the connector sentence follow it.
     await page.getByTestId("library-rounds-add-place").click();

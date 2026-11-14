@@ -26,7 +26,7 @@ test("filing a retained answer preserves unmeasured evidence and the outstanding
     "wiki/room.md": ORIGINAL_PAGE,
   } });
   await page.goto("/en/");
-  await page.getByRole("button", { name: /Open my folder/i }).click();
+  await page.getByRole("button", { name: /Open (?:a|my) folder/i }).click();
   await page.getByRole("heading", { name: "Map", level: 1 }).waitFor();
   await page.getByTestId("app-nav-rail-item-library").click();
   const sourceRow = page.getByTestId(`library-source-${SOURCE}`);

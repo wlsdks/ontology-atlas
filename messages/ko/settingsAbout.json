@@ -2,7 +2,7 @@
   "groups": {
     "app": "이 앱",
     "help": "도움말",
-    "trouble": "문제가 생겼을 때"
+    "trouble": "문제 해결"
   },
   "rows": {
     "version": "현재 버전",
@@ -55,7 +55,7 @@
     "buildApp": "앱 {version}",
     "buildWeb": "웹사이트 {version}",
     "buildUnknown": "알 수 없음",
-    "surface": "화면",
+    "surface": "실행 환경",
     "surfaceDesktop": "데스크톱",
     "surfaceWeb": "웹",
     "userAgent": "사용자 에이전트",

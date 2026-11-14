@@ -2,7 +2,7 @@
   "groups": {
     "app": "This app",
     "help": "Help",
-    "trouble": "When something breaks"
+    "trouble": "Troubleshooting"
   },
   "rows": {
     "version": "Current version",
@@ -55,7 +55,7 @@
     "buildApp": "App {version}",
     "buildWeb": "Website {version}",
     "buildUnknown": "unknown",
-    "surface": "Surface",
+    "surface": "Platform",
     "surfaceDesktop": "desktop",
     "surfaceWeb": "web",
     "userAgent": "User agent",
