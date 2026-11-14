@@ -133,13 +133,15 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 70개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 74개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
 
 폴더 선택 화면에서는 모루가 인사하고 작은 폴더를 보여주며 기다리고, 폴더를 여는 동안에는 장난스러운 동작을 멈추고 기존 대기 화면으로 넘어갑니다. 다운로드 페이지에서는 별도의 환영 동작을 보여줍니다. 이동은 발이 공중에 뜬 짧은 점프 구간에만 일어납니다. 커서를 올리면 뛰던 동작을 착지까지 마친 뒤 기다립니다. 모루를 누르면 수줍어하기·박수·춤·생각하기·고민하기·하트·웃음·지느러미 춤으로 짧게 반응하며, 우클릭 또는 Shift+F10 메뉴에서 일시정지할 수 있습니다. 캐릭터 옆에는 재생 버튼이 표시되지 않습니다. 동작 줄이기에서는 정지된 표정으로 반응합니다.
 
-새로운 32포즈 동작으로 인사·하이파이브·모자 인사를 더했고, 다운로드 환영 화면에서는 물고기 마술도 볼 수 있습니다. 클릭하면 작은 말풍선에 하트·음표·반짝임이 나오고, 혼자 돌아오는 점프에서도 가끔 음표를 띄웁니다. 작업 대기 중에는 조용히 기다립니다. 까꿍·빨개지는 얼굴·비눗방울 놀이는 모션 스튜디오에서 볼 수 있습니다.
+새로운 32포즈 동작으로 인사·하이파이브·모자 인사를 더했고, 다운로드 환영 화면에서는 물고기 마술도 볼 수 있습니다. 클릭하면 작은 말풍선에 하트·음표·반짝임이 나오고, 혼자 돌아오는 점프에서도 가끔 음표를 띄웁니다. 작업 대기 중에는 조용히 기다립니다. 까꿍과 빨개지는 얼굴은 모션 스튜디오에서 볼 수 있습니다.
 
 모루는 작은 고개 인사에서도 둥근 몸을 유지합니다. 평소에는 서로 다른 세 가지 동작 흐름과 쉼을 이어가고, 클릭 반응은 최근 두 동작을 피해서 골고루 보여줍니다. 작업 대기 중에는 조용히 제자리에서 기다립니다.
+
+코끝 별 균형잡기·반짝 재채기·아기 모루와 숨바꼭질·하트 선물을 각각 32포즈로 더했고, 지느러미 춤도 32포즈로 새로 그렸습니다. 두 번째 클릭부터 새 장난을 만나고 이후에는 최근 동작을 피해서 골고루 반응합니다. 가만히 기다리는 동안에도 가끔 아기 모루가 고개를 내밉니다. 폴더 선택 화면에는 14가지, 다운로드 환영 화면에는 소리 없는 노래와 비눗방울 놀이를 포함한 18가지 반응이 있습니다. 소품이 있는 동작에는 말풍선을 겹치지 않습니다.
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -180,6 +182,10 @@ pnpm checks:changed -- --run
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="하이파이브 하는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="폴더를 들여다보는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="비눗방울을 따라가는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="코끝으로 별을 받치는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="반짝 재채기하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="아기 모루와 노는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="하트를 건네는 모루" />
 
 
 </details>

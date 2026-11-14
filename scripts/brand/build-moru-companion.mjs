@@ -9,8 +9,8 @@ const sharp = createRequire(require.resolve('next/package.json'))('sharp');
 export async function buildMoruCompanion() {
   const root = 'assets/brand/moru';
   const catalogue = JSON.parse(await readFile(`${root}/moru.json`, 'utf8'));
-  await exportSheet('moru-companion', ['wave', 'blink', 'tilt', 'hop', 'folder-open', 'folder-peek', 'soft-bow'], catalogue, root);
-  await exportSheet('moru-reactions', ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish'], catalogue, root);
+  await exportSheet('moru-companion', ['wave', 'blink', 'tilt', 'hop', 'folder-open', 'folder-peek', 'soft-bow', 'pup-peek'], catalogue, root);
+  await exportSheet('moru-reactions', ['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'nose-balance', 'pup-peek', 'heart-gift', 'magic-fish', 'star-sneeze', 'bubble-chase', 'sing'], catalogue, root);
   // Large pending fallbacks need native 128px source pixels, not an enlarged 64px export.
   for (const [state, id] of Object.entries({ waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) {
     await writeFile(`public/brand/mascot-${state}-row-128.png`, await readFile(`${root}/${catalogue.clips[id].sprite}`));

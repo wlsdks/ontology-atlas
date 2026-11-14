@@ -59,9 +59,9 @@ full character's face. Owner selection does not prove unfamiliar users recognize
 | Moru as every app/OS/browser mark | One character everywhere; small face carries both identity and expression | Existing pipeline is close, local assets; loses the selected independent compass role |
 | Compass identity plus Moru companion | Stable app identification and expressive company in existing slots | Moderate fan-out, entirely local; chosen |
 
-The first slice covers all requested surfaces and **70 distinct named animation clips
+The current pack covers all requested surfaces and **74 distinct named animation clips
 and 16 static expressions/poses**. The owner subsequently requested more expressive gestures beyond the initial 30–50 range;
-54 clips are authored motions and 16 are explicitly labelled compositions.
+58 clips are authored motions and 16 are explicitly labelled compositions.
 Sizes/formats do not count
 as new clips or poses. Each clip records its authored source or constituent poses
 and timing; compositions are labelled. Keep references, prompts, masters, exports,
@@ -176,7 +176,7 @@ Sources: `messages/en/{firstRun,acpChat,agentActivity}.json` and corresponding K
    no unintended indigo eye edge, clipping, jitter, or ground-contact drift.
    Check preview captures and `brand-asset-parity.contract.test.ts`; preserve eye evidence.
 2. **Given** the catalogue, **when** manifest and preview are inspected, **then**
-   70 distinct clips and 16 static poses resolve to project sources and
+   74 distinct clips and 16 static poses resolve to project sources and
    exports, with compositions/timing identified. Open every clip in `assets/brand/moru/preview.html` at 64px and 128px.
 3. **Given** current consumers, **when** pipeline/parity checks run, **then**
    compass symbols and Moru slots consistently replace traveler art; compass at
@@ -256,3 +256,13 @@ gestures, and uses three quiet ambient phrases with a stable starting variation.
 Click responses draw the whole contextual repertoire without recently repeated
 gestures; the first response remains gentle. Visibility, resize, explicit pause
 and reduced motion preserve their existing guards.
+
+The November 14 expansion adds four 32-pose encounters: nose-star balancing, a
+sparkle sneeze, pup peekaboo and a heart gift, and redraws the flipper groove with
+32 poses. The gentle first pet remains; the second discovers a new encounter.
+The complete contextual bag still avoids recent repeats. Folder entry uses 14
+responses; welcome uses 18, adding the sneeze, fish trick, singing and bubble
+chase. Props and drawn notes replace an extra speech bubble. A pup occasionally
+peeks out during the longer idle routine; waiting remains quiet and stationary.
+Sources, prompts and the four localized README examples ship with the 74-clip
+pack. Existing scene framing keeps blanket peekaboo in the catalogue.
