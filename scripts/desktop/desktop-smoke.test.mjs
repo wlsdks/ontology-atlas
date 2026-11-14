@@ -194,11 +194,7 @@ test("desktop smoke chunks prove current route meaning", () => {
     "/ontology": ["/topology/?", "index", "expanded"],
     "/topology": ["ontology-map-canvas", "topology-concept-search"],
     "/ontology/edit": ["/topology/?p=", "/topology/?workbench=create"],
-    "/ontology/insights": [
-      "relationship-analysis",
-      "claim-evidence",
-      "analysis-board",
-    ],
+    "/ontology/insights": ["/library/?tab=wiki", "/architecture/?"],
   });
 
   const retired = JSON.stringify(DESKTOP_SMOKE_ROUTE_CHUNK_TEXT);
@@ -319,12 +315,12 @@ test("desktop smoke refuses an export without the third-party license texts", ()
 
 test("desktop smoke detects stale route metadata without prescribing another build", () => {
   const outDir = makeCurrentOut();
-  const routePath = routeIndexPath("en", "/ontology/insights");
+  const routePath = routeIndexPath("en", "/ontology");
   const html = fs.readFileSync(path.join(outDir, routePath), "utf8");
   write(
     outDir,
     routePath,
-    html.replace("Analysis · Ontology Atlas", "Verify Graph · Ontology Atlas"),
+    html.replace("Ontology · Ontology Atlas", "Verify Graph · Ontology Atlas"),
   );
 
   const report = evaluateDesktopSmoke({
@@ -335,7 +331,7 @@ test("desktop smoke detects stale route metadata without prescribing another bui
   assert.equal(report.ok, false);
   assert.ok(
     report.missing.some(
-      (check) => check.id === "route-title:en:/ontology/insights",
+      (check) => check.id === "route-title:en:/ontology",
     ),
   );
   assert.match(report.nextAction, /contract drift|current route/i);
@@ -344,9 +340,9 @@ test("desktop smoke detects stale route metadata without prescribing another bui
 
 test("desktop smoke detects a missing current component marker", () => {
   const outDir = makeCurrentOut();
-  const chunkPath = routeChunkPath("ko", "/ontology/insights");
+  const chunkPath = routeChunkPath("ko", "/ontology");
   const chunk = fs.readFileSync(path.join(outDir, chunkPath), "utf8");
-  write(outDir, chunkPath, chunk.replace("analysis-board", ""));
+  write(outDir, chunkPath, chunk.replace("expanded", ""));
 
   const report = evaluateDesktopSmoke({
     outDir,
@@ -356,7 +352,7 @@ test("desktop smoke detects a missing current component marker", () => {
   assert.equal(report.ok, false);
   assert.ok(
     report.missing.some(
-      (check) => check.id === "route-chunk-text:ko:/ontology/insights",
+      (check) => check.id === "route-chunk-text:ko:/ontology",
     ),
   );
   assert.match(report.nextAction, /contract drift|current route/i);
@@ -364,10 +360,10 @@ test("desktop smoke detects a missing current component marker", () => {
 
 test("desktop smoke follows reachable lazy chunks without accepting unrelated output", () => {
   const outDir = makeCurrentOut();
-  const entry = routeChunkPath("en", "/ontology/insights");
+  const entry = routeChunkPath("en", "/ontology");
   const lazy = "_next/static/chunks/insights-lazy.js";
   const nested = "_next/static/chunks/insights-handoff.js";
-  const markers = DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology/insights"];
+  const markers = DESKTOP_SMOKE_ROUTE_CHUNK_TEXT["/ontology"];
   const evaluate = () => evaluateDesktopSmoke({ outDir, routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT });
   try {
     write(outDir, entry, 'load("static/chunks/insights-lazy.js")');
@@ -379,7 +375,7 @@ test("desktop smoke follows reachable lazy chunks without accepting unrelated ou
     write(outDir, "_next/static/chunks/unrelated.js", markers[2]);
     const missing = evaluate();
     assert.equal(missing.ok, false, "an unrelated chunk cannot replace a missing descendant");
-    assert.ok(missing.missing.some((check) => check.id === "route-chunk-text:en:/ontology/insights"));
+    assert.ok(missing.missing.some((check) => check.id === "route-chunk-text:en:/ontology"));
 
     write(outDir, nested, markers[2]);
     assert.equal(evaluate().ok, true, "restoring the reachable artifact restores the gate");

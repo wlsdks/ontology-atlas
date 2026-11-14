@@ -33,7 +33,7 @@ describe("surfaceForPathname", () => {
     expect(surfaceForPathname("/en/docs/")).toBe("docs");
   });
 
-  // Studio, insights and projects have no dedicated shortcuts — we do not claim what is not there.
+  // Studio and projects have no dedicated shortcuts — we do not claim what is not there.
   it('maps a screen without its own shortcuts to global only', () => {
     expect(surfaceForPathname("/ko/ontology/studio/")).toBe("global");
     expect(surfaceForPathname("/ko/projects/")).toBe("global");

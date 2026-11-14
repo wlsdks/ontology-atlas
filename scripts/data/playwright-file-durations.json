@@ -232,74 +232,6 @@
       "seconds": 62.989,
       "tests": 22
     },
-    "insights/analysis-evidence-quality.spec.ts": {
-      "seconds": 23.669,
-      "tests": 19
-    },
-    "insights/analysis-implementation.spec.ts": {
-      "seconds": 9.898,
-      "tests": 5
-    },
-    "insights/analysis-list-search.spec.ts": {
-      "seconds": 2.43,
-      "tests": 3
-    },
-    "insights/analysis-loading-identity.spec.ts": {
-      "seconds": 7.352,
-      "tests": 4
-    },
-    "insights/analysis-relationships.spec.ts": {
-      "seconds": 2.746,
-      "tests": 2
-    },
-    "insights/analysis-retired-sections.spec.ts": {
-      "seconds": 10.692,
-      "tests": 6
-    },
-    "insights/analysis-source-dates.spec.ts": {
-      "seconds": 5.403,
-      "tests": 2
-    },
-    "insights/analysis-source-scope.spec.ts": {
-      "seconds": 10.439,
-      "tests": 7
-    },
-    "insights/analysis-workbench.spec.ts": {
-      "seconds": 45.164,
-      "tests": 18
-    },
-    "insights/continuous-analysis-entry.spec.ts": {
-      "seconds": 2.898,
-      "tests": 1
-    },
-    "insights/insights-agent-retention.spec.ts": {
-      "seconds": 3.107,
-      "tests": 1
-    },
-    "insights/insights-app-contract.spec.ts": {
-      "seconds": 4.278,
-      "tests": 4
-    },
-    "insights/insights-badge-agreement.spec.ts": {
-      "seconds": 4.931,
-      "tests": 2
-    },
-    "insights/insights-board-stability.spec.ts": {
-      "seconds": 3.466,
-      "tests": 4
-    },
-    "insights/insights-brief.spec.ts": {
-      "seconds": 12.781,
-      "tests": 4
-    },
-    "insights/insights-loading.spec.ts": {
-      "seconds": 2.105,
-      "tests": 2
-    },
-    "insights/insights-write-loop.spec.ts": {
-      "seconds": 5.052,
-      "tests": 1
-    },
     "library/answers/library-acp-provider-routes.spec.ts": {
       "seconds": 6.726,
       "tests": 3
@@ -448,6 +380,10 @@
       "seconds": 9.687,
       "tests": 2
     },
+    "map/analysis-workbench.spec.ts": {
+      "seconds": 45.164,
+      "tests": 18
+    },
     "map/camera/camera-transition.spec.ts": {
       "seconds": 7.905,
       "tests": 4
@@ -482,6 +418,10 @@
     },
     "map/chrome/map-utility-tiles-pressable.spec.ts": {
       "seconds": 5.444,
+      "tests": 1
+    },
+    "map/continuous-analysis-entry.spec.ts": {
+      "seconds": 2.898,
       "tests": 1
     },
     "map/flat-graph/map-flat-graph-achromatic-rest.spec.ts": {

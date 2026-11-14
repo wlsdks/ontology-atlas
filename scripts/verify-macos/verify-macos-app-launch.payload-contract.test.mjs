@@ -200,32 +200,13 @@ test("Planning probe requires a visible heading and an enabled folder action", (
 test("payload contract · topology route accepts the current map shell", () => {
   const markers = webviewWorkbenchMarkersForPath("/en/topology/");
   // Body samples are truncated; the route title already proves app identity.
-  const currentMapBody = "Map\nLibrary\nAutomations\nInsights\nProjects\nAgents\nINDEX";
+  const currentMapBody = "Map\nLibrary\nAutomations\nProjects\nAgents\nINDEX";
   assert.equal(markers.length, 2);
   assert.equal(markers.every((marker) => marker.test(currentMapBody)), true);
   assert.equal(markers.every((marker) => marker.test("지도\n자료실\n자동화\nINDEX")), true);
   assert.equal(markers.every((marker) => marker.test("Map\nLibrary\nAutomations")), false);
   assert.equal(markers.every((marker) => marker.test("INDEX")), false);
   assert.equal(markers.every((marker) => marker.test("Atlas\nDocs\nWorkshop")), false);
-});
-
-test("Insights accepts both localized subject previews without map or brand body copy", () => {
-  const locales = ["en", "ko"];
-  assert.equal(locales.length, 2);
-  for (const locale of locales) {
-    const messages = JSON.parse(readFileSync(new URL(`../../messages/${locale}.json`, import.meta.url), "utf8"));
-    const insights = messages.ontologyPages.insights;
-    const markers = webviewWorkbenchMarkersForPath(`/${locale}/ontology/insights/?tab=library`);
-    assert.equal(markers.length, 2, "both destination and subject content must be checked");
-    for (const subject of ["records", "wiki"]) {
-      const body = `${insights.title}\n${insights.analysis[subject]}`;
-      assert.equal(markers.every((marker) => marker.test(body)), true, `${locale} ${subject}`);
-    }
-    assert.equal(markers.every((marker) => marker.test(insights.title)), false);
-    assert.equal(markers.every((marker) => marker.test(insights.analysis.system)), false);
-    assert.equal(markers.every((marker) => marker.test("Atlas\nMap\nINDEX")), false);
-    assert.equal(markers.every((marker) => marker.test("")), false);
-  }
 });
 
 test("payload contract · a valid payload passes", () => {
@@ -496,64 +477,6 @@ test("payload contract · topology routes require the ontology-map engine", () =
       validPayload({ href: "tauri://localhost/en/topology/", markers: { topologyMapEngine: "v2" } }),
     ),
     "string",
-  );
-});
-
-/**
- * The insights board has **two rows that are not the same kind of control**: the
- * subject row is a radiogroup (brief · concepts · library · harness) and only the
- * concepts subject opens a row of question tabs underneath it.
- *
- * Measured 2026-09-20: the contract pinned one number, `[role="tab"] === 10`, from
- * the era when every entry was a tab. After the split the board opens on the brief,
- * which draws **zero** tabs, so the packaged-app verification could not pass on that
- * route under any correct rendering. These cases hold each landing separately.
- */
-function insightsPayload(markerOverrides) {
-  return validPayload({
-    href: "tauri://localhost/ko/ontology/insights/",
-    markers: {
-      insightsMaintenanceBoard: true,
-      insightsQuestionModel: "claim-evidence",
-      insightsSubjectCount: 3,
-      insightsSelectedSubject: "insights-core-brief",
-      insightsSelectedPanelKey: "brief",
-      insightsSelectedPanelVisible: true,
-      insightsTabCount: 3,
-      insightsSelectedTabCount: 1,
-      ...markerOverrides,
-    },
-  });
-}
-
-test("payload contract · the insights brief landing passes with no question tabs", () => {
-  assert.equal(validateWebviewVerifyPayload(insightsPayload()), null);
-});
-
-test("payload contract · relationship analysis needs its selected section and visible evidence panel", () => {
-  const selected = { insightsSelectedSubject: "insights-core-ontology", insightsSelectedPanelKey: "analysis" };
-  assert.equal(validateWebviewVerifyPayload(insightsPayload(selected)), null);
-  assert.match(validateWebviewVerifyPayload(insightsPayload({ ...selected, insightsTabCount: 4 })), /question tab count/);
-  assert.match(validateWebviewVerifyPayload(insightsPayload({ ...selected, insightsSelectedTabCount: 0 })), /selected tab count/);
-});
-
-test("payload contract · a vanished insights subject or panel fails", () => {
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ insightsSubjectCount: 5 })),
-    /subject count/,
-  );
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ insightsSelectedPanelKey: "" })),
-    /drew no panel/,
-  );
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ insightsSelectedPanelVisible: false })),
-    /not visible/,
-  );
-  // The pre-split shape: ten tabs on a subject that draws none.
-  assert.match(
-    validateWebviewVerifyPayload(insightsPayload({ insightsTabCount: 10, insightsSelectedTabCount: 1 })),
-    /question tab count/,
   );
 });
 

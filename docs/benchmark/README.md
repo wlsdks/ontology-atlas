@@ -340,10 +340,9 @@ noise. It reports `compile_ontology` full/indexed/summary timings plus
 `all_paths`, `pattern_walk`, `schema`, `relation_check`, `blast_radius`,
 `domain_matrix`, `centrality`, `match_nodes`, `match_edges`, and `project_map`
 timings against generated vaults. It also measures the full 10-call
-`graph_db_pack` sequence used by `/ontology/insights`: node scan plan/run, edge
+`graph_db_pack` sequence: node scan plan/run, edge
 scan plan/run, domain coupling, centrality plan/run, path plan/run, and
-`explain_relation`. The query set mirrors the Agent query recipes shown in
-`/ontology/insights`, so the UI handoff path and the scale audit stay aligned.
+`explain_relation`.
 `pnpm perf:graph:check` runs each hot path three times on a 1k-node synthetic
 graph, reports the median, and fails if compile or query latency exceeds the
 configured budget. `pnpm perf:graph:scale` keeps the fast package gate separate

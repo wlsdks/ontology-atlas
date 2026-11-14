@@ -6,8 +6,6 @@
   "header": {
     "openTreeAriaLabel": "Open document list",
     "openTreeTitle": "Document list",
-    "backToReviewAriaLabel": "Back to insight review",
-    "reviewBack": "← Insight review",
     "title": "Ontology",
     "docCount": "{count} documents",
     "localBadge": "Local",
@@ -458,7 +456,7 @@
   },
   "linkCopied": "Copied the document link",
   "linkCopyFailed": "Could not copy the document link",
-  "proofHealthOpenQueue": "Open in Do next",
+  "proofHealthOpenQueue": "Open Ontology documents",
   "review": {
     "writeFailed": "Could not save your review to the file. Nothing was changed."
   }

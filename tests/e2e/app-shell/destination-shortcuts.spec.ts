@@ -8,7 +8,6 @@ const DESTINATIONS = [
   { key: "r", path: "/architecture" },
   { key: "d", path: "/library" },
   { key: "l", path: "/library" },
-  { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
   { key: "c", path: "/agents/?tab=mcp" },
@@ -88,7 +87,7 @@ test.describe("destination shortcuts", () => {
     }
   });
 
-  test("G A works, and the retired G K and G S go nowhere", async ({ page }) => {
+  test("G A works, and the retired G K, G S and G I go nowhere", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
     await dismissBlockingSurface(page);
@@ -100,7 +99,7 @@ test.describe("destination shortcuts", () => {
     );
 
     const before = page.url();
-    for (const retired of ["k", "s"]) {
+    for (const retired of ["k", "s", "i"]) {
       await go(page, retired);
       /*
        * An **absence**: nothing positive marks "this keystroke did nothing", so the

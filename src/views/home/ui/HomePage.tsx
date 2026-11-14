@@ -217,8 +217,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
     meaningEditorIntent,
     meaningEditParam,
     indexState,
-    insightsReturnTab,
-    insightsReturnReviewId,
     expandedParents: expandedParentSlugs,
     realmSlug,
     recentWindow,
@@ -568,8 +566,6 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
               setTopologyRelayoutToken={setTopologyRelayoutToken}
               toast={toast}
               expandAllActive={expandAllActive}
-              insightsReturnTab={insightsReturnTab}
-              insightsReturnReviewId={insightsReturnReviewId}
               analysisMode={analysisMode}
               footprintTrailEntries={footprintTrailEntries}
               footprintTrailStepCaptions={footprintTrailStepCaptions}

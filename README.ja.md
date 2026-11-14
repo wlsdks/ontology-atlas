@@ -45,11 +45,10 @@
 <td width="50%"><img src="public/gateway/changes.en.png" alt="変更：1 週間分のコミットと、それぞれの日時" /><br /><b>変更</b> — 期間中に何が変わったかを、プルリクエスト、コミット、ファイルに分けて見ます。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/insights.en.png" alt="分析：責務どうしの関係と、各主張の横に並ぶ根拠" /><br /><b>分析</b> — 何が何に依存しているかを、根拠とともに見ます。</td>
 <td width="50%"><img src="public/gateway/git.en.png" alt="Git：未保存の概念の変更と、その Markdown の diff" /><br /><b>Git</b> — 保存する前に、正確な Markdown の diff を確認できます。</td>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="ハーネス：リポジトリがコーディングエージェントに伝え、止め、見守っているもの" /><br /><b>ハーネス</b> — リポジトリがエージェントに伝え、止め、見守っているもの。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="ハーネス：リポジトリがコーディングエージェントに伝え、止め、見守っているもの" /><br /><b>ハーネス</b> — リポジトリがエージェントに伝え、止め、見守っているもの。</td>
 <td width="50%"><img src="public/gateway/automations.en.png" alt="自動化：フォルダを最新に保つ定期チェック" /><br /><b>自動化</b> — フォルダを最新に保つ定期チェック。</td>
 </tr>
 </table>
@@ -85,7 +84,7 @@ your-repo/
     └── wiki/              それらから書いたページ。すべての事実に出典つき
 ```
 
-frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。マップ、文書、資料室、分析、Git の各画面は、すべてこれらのファイルを読んで表示します。
+frontmatter に `kind:` を持つ Markdown ファイル 1 つが、概念 1 つです。`uid` は変わらず、`slug` は現在のアドレスで、`path` はその概念が説明するコードを指します。マップ、文書、資料室、Git の各画面は、すべてこれらのファイルを読んで表示します。
 
 エージェントがフォルダに届く道は 2 つあります。
 

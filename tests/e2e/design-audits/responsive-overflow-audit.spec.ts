@@ -16,12 +16,8 @@ const WIDTHS = [
 const ROUTES = [
   "/ko/topology/",
   "/ko/docs/",
-  "/ko/ontology/insights/",
-  /*
-   * English tab labels are longer (insights strip 783px at en against 493px at ko), so one English
-   * route is swept too.
-   */
-  "/en/ontology/insights/",
+  /* English tab labels are longer than Korean ones, so one English route with a tab strip is swept too. */
+  "/en/library/",
   "/ko/projects/",
   "/ko/download/",
 ] as const;

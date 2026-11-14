@@ -48,7 +48,6 @@ body:
         - "/ — topology hub (map + INDEX + datasheet)"
         - "/topology"
         - "/ontology/studio (workshop)"
-        - "/ontology/insights"
         - "/projects, /project/*"
         - "/docs (vault picker)"
         - "/download"
