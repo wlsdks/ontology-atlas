@@ -79,7 +79,10 @@ export function TopologyHexBoardSurface({
   );
 
   const capabilityCount = useMemo(() => nodes.filter((n) => n.kind === "capability").length, [nodes]);
-  const staleTotal = measured ? nodes.filter((n) => n.kind === "capability" && evidence.states.get(n.id) === "stale").length : 0;
+  const countOf = (state: "stale" | "unknown") =>
+    measured ? nodes.filter((n) => n.kind === "capability" && (evidence.states.get(n.id) ?? "unknown") === state).length : 0;
+  const staleTotal = countOf("stale");
+  const unknownTotal = countOf("unknown");
   const note: Record<MapEvidenceAvailability, string> = {
     measured: t("evidenceMeasured", { stale: staleTotal, total: capabilityCount }),
     reading: t("evidenceReading"),
@@ -92,79 +95,81 @@ export function TopologyHexBoardSurface({
     <div
       data-testid="hex-board-legend"
       data-evidence-availability={evidence.availability}
-      className="pointer-events-none flex max-w-full flex-wrap items-center justify-center gap-x-4 gap-y-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
+      className="pointer-events-none flex max-w-full flex-col items-center gap-1 rounded-chip bg-[color:var(--chrome-surface)] px-3 py-1.5 text-label text-[color:var(--map-panel-text-secondary)]"
     >
       {tilted ? (
-        <span data-testid="hex-board-relief-legend" className="flex items-center gap-1.5">
+        <span data-testid="hex-board-relief-legend" className="text-center">
           {dependentsMax > 0 ? tr("legend") : tr("legendNone")}
         </span>
       ) : null}
-      <span className="flex items-center gap-1.5">
-        <svg aria-hidden width="46" height="14" viewBox="0 0 46 14">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <rect key={i} x={i * 9} y="1" width="8" height="12" rx="1.5" style={{ fill: `var(--map-hex-face-${i})`, stroke: "var(--map-hex-rim)" }} strokeWidth="0.6" />
-          ))}
-        </svg>
-        {t("legendBrightness")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <svg aria-hidden width="30" height="14" viewBox="0 0 30 14">
-          {[0, 1, 2].map((i) => (
-            <circle key={i} cx={5 + i * 8} cy="7" r="2.6" style={{ fill: i === 2 ? "var(--color-status-warning)" : "var(--map-hex-accent)" }} />
-          ))}
-        </svg>
-        {t("legendPips")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <svg aria-hidden width="16" height="14" viewBox="0 0 16 14">
-          <polygon points={HEX_SWATCH} style={{ fill: "var(--map-hex-face-stale-2)", stroke: "var(--color-status-warning)" }} strokeWidth="1.6" />
-        </svg>
-        {t("legendStale")}
-      </span>
-      <span className="flex items-center gap-1.5">
-        <svg aria-hidden width="16" height="14" viewBox="0 0 16 14">
-          <polygon points={HEX_SWATCH} style={{ fill: "var(--map-hex-face-0)", stroke: "var(--map-hex-rim-unknown)" }} strokeDasharray="3 2" />
-        </svg>
-        {t("legendUnknown")}
-      </span>
-      {focused ? (
-        <>
+      <div data-testid="hex-board-legend-marks" className="flex max-w-full flex-wrap items-center justify-center gap-x-3 gap-y-1">
+        <span className="flex items-center gap-1.5">
+          <svg aria-hidden width="46" height="14" viewBox="0 0 46 14">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <rect key={i} x={i * 9} y="1" width="8" height="12" rx="1.5" style={{ fill: `var(--map-hex-face-${i})`, stroke: "var(--map-hex-rim)" }} strokeWidth="0.6" />
+            ))}
+          </svg>
+          {t("legendBrightness")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg aria-hidden width="30" height="14" viewBox="0 0 30 14">
+            {[0, 1, 2].map((i) => (
+              <circle key={i} cx={5 + i * 8} cy="7" r="2.6" style={{ fill: measured && i === 2 ? "var(--color-status-warning)" : "var(--map-hex-accent)" }} />
+            ))}
+          </svg>
+          {measured ? t("legendPipsStale") : t("legendPips")}
+        </span>
+        {staleTotal > 0 ? (
+          <span className="flex items-center gap-1.5">
+            <svg aria-hidden width="16" height="14" viewBox="0 0 16 14">
+              <polygon points={HEX_SWATCH} style={{ fill: "var(--map-hex-face-stale-2)", stroke: "var(--color-status-warning)" }} strokeWidth="1.6" />
+            </svg>
+            {t("legendStale")}
+          </span>
+        ) : null}
+        {unknownTotal > 0 ? (
+          <span className="flex items-center gap-1.5">
+            <svg aria-hidden width="16" height="14" viewBox="0 0 16 14">
+              <polygon points={HEX_SWATCH} style={{ fill: "var(--map-hex-face-0)", stroke: "var(--map-hex-rim-unknown)" }} strokeDasharray="3 2" />
+            </svg>
+            {t("legendUnknown")}
+          </span>
+        ) : null}
+        {focused ? (
+          <>
+            <span className="flex items-center gap-1.5">
+              <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
+                <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2" strokeLinecap="round" style={{ stroke: "var(--map-hex-accent)" }} />
+                <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-hex-accent)" }} />
+              </svg>
+              {t("legendNeeds")}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
+                <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2" strokeLinecap="round" style={{ stroke: "var(--map-edge-selected)" }} />
+                <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-edge-selected)" }} />
+              </svg>
+              {t("legendUsers")}
+            </span>
+          </>
+        ) : band !== "regions" ? (
           <span className="flex items-center gap-1.5">
             <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
-              <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2" strokeLinecap="round" style={{ stroke: "var(--map-hex-accent)" }} />
-              <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-hex-accent)" }} />
+              <line x1="7" y1="7" x2="17" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-indigo-bright)" }} />
             </svg>
-            {t("legendNeeds")}
+            {t("legendNotches")}
           </span>
+        ) : !staleOnly ? (
           <span className="flex items-center gap-1.5">
             <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
-              <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2" strokeLinecap="round" style={{ stroke: "var(--map-edge-selected)" }} />
-              <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-edge-selected)" }} />
+              <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-hex-canal)" }} />
+              <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-hex-canal-head)" }} />
             </svg>
-            {t("legendUsers")}
+            {t("legendCanals")}
           </span>
-        </>
-      ) : band !== "regions" ? (
-        <span className="flex items-center gap-1.5">
-          <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
-            <line x1="7" y1="7" x2="17" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-indigo-bright)" }} />
-          </svg>
-          {t("legendNotches")}
-        </span>
-      ) : !staleOnly ? (
-        <span className="flex items-center gap-1.5">
-          <svg aria-hidden width="24" height="14" viewBox="0 0 24 14">
-            <line x1="2" y1="7" x2="15" y2="7" strokeWidth="2.4" strokeLinecap="round" style={{ stroke: "var(--map-hex-canal)" }} />
-            <polygon points="14,3 22,7 14,11" style={{ fill: "var(--map-hex-canal-head)" }} />
-          </svg>
-          {t("legendCanals")}
-        </span>
-      ) : null}
-      <span className="flex items-center gap-1.5">
-        <kbd className="rounded-micro border border-[color:var(--color-border-soft)] px-1 text-label text-[color:var(--map-panel-text-secondary)]">←↑↓→</kbd>
-        {t("legendKeys")}
-      </span>
-      <span data-testid="hex-board-evidence-note" className="basis-full text-center text-[color:var(--map-panel-text-tertiary)]">
+        ) : null}
+      </div>
+      <span data-testid="hex-board-evidence-note" className="text-center text-[color:var(--map-panel-text-tertiary)]">
         {note[evidence.availability]}
       </span>
     </div>

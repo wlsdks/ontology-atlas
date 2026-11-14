@@ -146,6 +146,19 @@ function useHexMeasure(): HexMeasure {
 
 /** A route keeps this far (CSS px) from the free map's edges and from every piece of chrome. */
 const ROUTE_CLEAR = 10;
+/** The resting board keeps this far (CSS px) above its own footer. */
+const FOOTER_CLEAR = 8;
+
+/**
+ * The room ends above the footer's real top: the reserve `readHexRoom` predicts for a glide
+ * holds a one-line legend, and a legend that wraps would otherwise sit over the lowest tiles.
+ */
+function roomAboveFooter(room: Rect, footerTop: number | null): Rect {
+  if (footerTop == null) return room;
+  const bottom = footerTop - FOOTER_CLEAR;
+  if (room.y + room.height <= bottom) return room;
+  return { ...room, height: Math.max(80, Math.round(bottom - room.y)) };
+}
 
 /** Where routes may run, in the board's unit space, for one camera. */
 interface RouteFrame {
@@ -203,6 +216,7 @@ export function OntologyHexBoardMap({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
   const tipRef = useRef<HTMLDivElement | null>(null);
+  const footerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [room, setRoom] = useState<Rect | null>(null);
   const [staleOnlyPressed, setStaleOnly] = useState(false);
@@ -691,13 +705,18 @@ export function OntologyHexBoardMap({
       setSize((prev) => (prev && prev.w === r.width && prev.h === r.height ? prev : { w: r.width, h: r.height }));
       if (selectedRef.current && roomTakenRef.current !== "none") return;
       roomTakenRef.current = selectedRef.current ? "selection" : "rest";
-      const next = readHexRoom(canvasRef.current, r.width, r.height, wrap);
-      setRoom((prev) => (roomMovesRest(prev, next) ? next : prev));
+      const footer = footerRef.current?.getBoundingClientRect();
+      const predicted = readHexRoom(canvasRef.current, r.width, r.height, wrap);
+      const next = roomAboveFooter(predicted, footer ? footer.top - r.top : null);
+      // A footer that grew always lifts the floor, however little: the slack is for the glide's prediction.
+      const lifted = (prev: Rect | null) => next !== predicted && prev != null && next.y + next.height < prev.y + prev.height;
+      setRoom((prev) => (roomMovesRest(prev, next) || lifted(prev) ? next : prev));
       setAspect((prev) => prev ?? next.width / Math.max(1, next.height));
     };
     read();
     const ro = new ResizeObserver(read);
     ro.observe(wrap);
+    if (footerRef.current) ro.observe(footerRef.current);
     /*
      * INDEX folding or opening changes the free map without resizing the board (it floats
      * over it). Once its transition is over, re-read the room and lay the routes again. A
@@ -1263,6 +1282,7 @@ export function OntologyHexBoardMap({
         </p>
       ) : null}
       <div
+        ref={footerRef}
         data-testid="hex-board-footer"
         className="absolute bottom-4 left-[calc(var(--map-safe-inset-left)*1px)] right-[calc(var(--map-safe-inset-right)*1px)] flex flex-col items-center gap-2"
       >
