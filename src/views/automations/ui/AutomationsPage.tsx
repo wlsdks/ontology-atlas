@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, TriangleAlert } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
@@ -18,7 +18,8 @@ import { MOTION } from "@/shared/motion";
 import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { RoundsLedger } from "@/widgets/round-ledger";
-import { Button, EmptyState, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { Button, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
@@ -193,9 +194,12 @@ export function AutomationsPage({
               </section>
             ) : null}
             {staged && broken ? (
-              <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="my-auto">
-                <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
-                  action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
+              <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col">
+                <FeatureStage data-testid="automations-unread" data-automations-unread={state}
+                  art={() => <div className="flex justify-center"><BrandPortrait expression="curious" /></div>}
+                  title={<span className="block text-balance">{t(`${state}Title`)}</span>}
+                  body={<span className="break-words">{t(`${state}Description`)}</span>}
+                  action={<Button variant="outline" size="lg" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
               </section>
             ) : null}
             {!staged && runner ? (
