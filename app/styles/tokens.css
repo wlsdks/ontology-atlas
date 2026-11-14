@@ -133,9 +133,10 @@
   --color-indigo-text-soft: rgba(196, 213, 244, 0.92);
 
   /*
-   * Alpha steps of the accent #7170ff, not a new colour; the colour gate only contrasts registered
+   * Alpha steps of the accent, not a new colour; the colour gate only contrasts registered
    * tuples, so literals must not be written inline.
    */
+  --color-indigo-accent-a12: rgba(143, 176, 234, 0.12);
   --color-indigo-accent-a32: rgba(143, 176, 234, 0.32);
   --color-indigo-accent-a50: rgba(143, 176, 234, 0.5);
 
