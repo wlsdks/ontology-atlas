@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../../messages/ko.json";
-import type { VaultDoc } from "@/entities/docs-vault";
+import type { ReviewQueueRow, VaultDoc } from "@/entities/docs-vault";
 import { DocMetaBar } from "./DocMetaBar";
 
 vi.mock("@/i18n/navigation", () => ({
@@ -49,14 +49,17 @@ function renderMetaBar(targetDoc: VaultDoc = doc) {
 }
 
 describe("DocMetaBar", () => {
-  // A document on the map says so once, as a chip, with words a person reads.
-  it("states in-graph status only as a chip without repeating it as a sentence", () => {
+  // A document on the map says so once: the link to the map is the statement.
+  it("states in-graph status only through the map link, without a second chip or a sentence", () => {
     renderMetaBar();
 
     expect(
       screen.getByRole("region", { name: "지도 근거" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("지도 근거")).toBeInTheDocument();
+    const evidence = screen.getByTestId("doc-map-evidence");
+    expect(evidence).toHaveAttribute("data-in-graph", "true");
+    expect(evidence).toContainElement(screen.getByTestId("doc-map-open"));
+    expect(screen.queryByText("지도 근거")).not.toBeInTheDocument();
     expect(
       screen.queryByText("docs/ontology/capabilities/agent-graph-readiness.md"),
     ).not.toBeInTheDocument();
@@ -64,8 +67,26 @@ describe("DocMetaBar", () => {
       screen.queryByText(/개념으로 연결됩니다/),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/frontmatter/)).not.toBeInTheDocument();
-    // The way to the map stays.
-    expect(screen.getByTestId("doc-map-open")).toBeInTheDocument();
+  });
+
+  // A state is read, an action is pressed: the review state must not be drawn as a control.
+  it("draws the review state as a sentence above the actions, not as a chip among them", () => {
+    render(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocMetaBar
+          doc={doc}
+          reviewRow={{ reason: "raised" } as ReviewQueueRow}
+          review={{ reserved: true, busy: false, onConfirm: () => {}, onRelease: () => {} }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    const state = screen.getByTestId("doc-review-chip");
+    expect(state.tagName).toBe("P");
+    expect(state.className).not.toContain("border");
+    const confirm = screen.getByTestId("doc-review-action");
+    expect(state.compareDocumentPosition(confirm) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(state.parentElement).not.toBe(confirm.parentElement);
   });
 
   // A document absent from the graph must not call itself "map evidence".

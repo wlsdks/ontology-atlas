@@ -10,7 +10,6 @@ import { LOCALE_META, type LocaleMeta } from "@/i18n/locales";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
 import { controlClass } from '@/shared/ui/control-class';
-import { badgeClass } from '@/shared/ui/badge-class';
 
 const actionLinkClass = controlClass({
   shape: "chip",
@@ -74,18 +73,14 @@ export function DocMetaBar({
     >
       {proofBody ? (
         <div className="flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1.5">
-        <span
+          {/* Not being on the map is a fact, not an alarm. */}
+          <span
             data-testid="doc-map-evidence"
-            data-in-graph={inGraph ? "true" : "false"}
-            className={
-              inGraph
-                ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
-                : // Not being on the map is a fact, not an alarm.
-                  "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
-            }
+            data-in-graph="false"
+            className="inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
           >
             <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-            {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
+            {t("notOnMapLabel")}
           </span>
           <span className="min-h-7 min-w-0 flex-1 py-1 text-[color:var(--color-text-tertiary)]">
             {proofBody}
@@ -93,44 +88,41 @@ export function DocMetaBar({
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        {/* On the map, the chip joins this row. */}
-        {proofBody ? null : (
-        <span
-            data-testid="doc-map-evidence"
-            data-in-graph={inGraph ? "true" : "false"}
-            className={
-              inGraph
-                ? "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]"
-                : // Not being on the map is a fact, not an alarm.
-                  "inline-flex min-h-8 shrink-0 items-center gap-1.5 rounded-chip border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-recessed-a12)] px-2.5 text-label text-[color:var(--color-text-quaternary)]"
-            }
-          >
-            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-            {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
-          </span>
-        )}
-        {/* Stated on the document for readers who never saw the sidebar row; neutral, not an alarm. */}
-        {reviewRow ? (
-          <span
-            data-testid="doc-review-chip"
-            // Geometry from the shared badge; the two older chips above are the whole hand-written ledger.
-            className={badgeClass({
-              shape: "tag",
-              className:
-                "min-h-8 gap-1.5 border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 text-label text-[color:var(--color-text-secondary)]",
-            })}
-          >
-            {reviewRow.reason === "raised" ? (
-              <UserRoundPen className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
+      {/* What a person has to judge reads as a sentence above the controls, never as one of them. */}
+      {reviewRow ? (
+        <p
+          data-testid="doc-review-chip"
+          className="flex min-w-0 items-center gap-1.5 py-1 text-label text-[color:var(--color-text-secondary)]"
+        >
+          {reviewRow.reason === "raised" ? (
+            <UserRoundPen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          ) : (
+            <CircleDashed className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          )}
+          <span className="min-w-0">
             {reviewRow.reason === "raised"
               ? tReview("docChipRaised")
               : reviewRow.reviewedBy
                 ? tReview("changedBy", { name: reviewRow.reviewedBy })
                 : tReview("changedPlain")}
+          </span>
+        </p>
+      ) : null}
+
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        {/* One entrance to the map (`/ontology` only redirects), and the one statement that the */}
+        {/* document is on it. With no address nothing is drawn (`.claude/rules/surfaces.md`). */}
+        {topologyHref ? (
+          <span data-testid="doc-map-evidence" data-in-graph="true" className="contents">
+            <Link
+              href={topologyHref}
+              title={t("topologyLinkTitle")}
+              data-testid="doc-map-open"
+              className={actionLinkClass}
+            >
+              <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{t("topologyLinkLabel")}</span>
+            </Link>
           </span>
         ) : null}
         {review ? (
@@ -157,35 +149,14 @@ export function DocMetaBar({
             {tReview("actionRelease")}
           </button>
         ) : null}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="tabular-nums">
-            {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}
-          </span>
-          <span className="tabular-nums">
-            {t("readingMinutes", { minutes: readingMinutes })}
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          {/* One entrance to the map: `/ontology` is only a redirect to `/topology`. */}
-          {/* With no address the CTA is not drawn (`.claude/rules/surfaces.md`: no dead CTAs). */}
-          {topologyHref ? (
-            <Link
-              href={topologyHref}
-              title={t("topologyLinkTitle")}
-              data-testid="doc-map-open"
-              className={actionLinkClass}
-            >
-              <Network className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span>{t("topologyLinkLabel")}</span>
-            </Link>
+        <span className="ml-auto flex min-w-0 flex-wrap items-baseline justify-end gap-x-2 gap-y-1 tabular-nums">
+          <span>{t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}</span>
+          <span>{t("readingMinutes", { minutes: readingMinutes })}</span>
+          {doc.tags.length > 0 ? (
+            <span className="font-mono">
+              {doc.tags.map((tag) => `#${tag}`).join(" ")}
+            </span>
           ) : null}
-        </div>
-        {doc.tags.length > 0 ? (
-          <span className="font-mono">
-            {doc.tags.map((tag) => `#${tag}`).join(" ")}
-          </span>
-        ) : null}
-        <span className="ml-auto flex min-w-0 items-baseline gap-2 tabular-nums">
           {reviewedAt ? (
             <span
               data-testid="doc-meaning-time"
