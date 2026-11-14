@@ -78,7 +78,7 @@ describe('the new round sheet', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not save');
     expect(screen.getByTestId('library-rounds-allow')).toBeEnabled();
-    expect(screen.getByTestId('library-rounds-rename')).toHaveTextContent('Pages still match');
+    expect(screen.getByTestId('library-rounds-rename')).toHaveTextContent('Source consistency');
     view.close();
   });
 
@@ -105,15 +105,15 @@ describe('the new round sheet', () => {
 
   it('offers a name no sibling is already wearing', () => {
     const first = open();
-    expect(first.name()).toContain('Pages still match');
+    expect(first.name()).toContain('Source consistency');
     first.close();
 
-    const second = open({ existingNames: ['Pages still match'] });
-    expect(second.name()).toContain('Pages still match 2');
+    const second = open({ existingNames: ['Source consistency'] });
+    expect(second.name()).toContain('Source consistency 2');
     second.close();
 
-    const third = open({ existingNames: ['Pages still match', 'Pages still match 2'] });
-    expect(third.name()).toContain('Pages still match 3');
+    const third = open({ existingNames: ['Source consistency', 'Source consistency 2'] });
+    expect(third.name()).toContain('Source consistency 3');
     third.close();
   });
 
@@ -121,7 +121,7 @@ describe('the new round sheet', () => {
     const view = open();
     fireEvent.click(screen.getByTestId('library-rounds-rename'));
     const field = screen.getByTestId('library-rounds-name') as HTMLInputElement;
-    expect(field.value).toContain('Pages still match');
+    expect(field.value).toContain('Source consistency');
     fireEvent.change(field, { target: { value: 'Release watch' } });
     fireEvent.keyDown(field, { key: 'Enter' });
     expect(screen.getByTestId('library-rounds-rename').textContent).toContain('Release watch');
@@ -191,7 +191,7 @@ describe('the new round sheet', () => {
     expect(sentence).toContain('Slack #release-room, Confluence ENG space');
     expect(sentence).toContain('sources/planning');
     expect(sentence).toContain('redraft');
-    expect(sentence).toContain('One agent turn per pass.');
+    expect(sentence).toContain('The agent runs once each time.');
     view.close();
   });
 

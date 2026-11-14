@@ -23,12 +23,12 @@
     },
     "github": {
       "title": "GitHub",
-      "body": "Issues, pull requests and wiki pages from a repository.",
+      "body": "Issues, PRs and wiki pages from a repository.",
       "example": "the design discussions in this repo"
     },
     "other": {
       "title": "Another service",
-      "body": "Set one up by hand in the MCP section of Agents, where the connection details live.",
+      "body": "Add one by hand under MCP servers in Agents.",
       "example": ""
     }
   },
@@ -60,11 +60,11 @@
   "whatLabel": "What should it bring?",
   "whatNext": "A conversation opens next. It searches, shows you at most {limit} documents, and waits for you to pick; each one you pick is written under {folder} and asks your permission first. Nothing outside that folder is touched.",
   "bringAction": "Start bringing them in",
-  "whatRuntime": "This works in a Claude conversation. Codex has not been measured for it yet, so a Codex conversation reaches this folder and nothing else.",
+  "whatRuntime": "This works in a Claude conversation. Codex has not been checked for it yet, so a Codex conversation can use only this folder.",
   "revokeWhere": "Where to take it back in {service}",
-  "noAgentTitle": "The fetching needs a coding tool this app can start",
+  "noAgentTitle": "Bringing documents in needs a coding agent the app can start",
   "noAgentGetApp": "Get the app",
-  "noAgentBodyWeb": "A browser cannot start a coding tool. Open this folder in the app to review the service settings, or download the documents and use Add files here.",
-  "noAgentBodyRuntime": "No coding tool is ready on this Mac yet. The service setup is saved, but access has not been checked. Set up a coding tool, then return here to choose documents.",
-  "noAgentSeeRuntimes": "See your coding tools"
+  "noAgentBodyWeb": "A browser cannot start a coding agent. Open this folder in the app to review the service settings, or download the documents and use Add files here.",
+  "noAgentBodyRuntime": "No coding agent is ready on this Mac yet. The service setup is saved, but access has not been checked. Set up a coding agent, then return here to choose documents.",
+  "noAgentSeeRuntimes": "See agents"
 }

@@ -121,7 +121,7 @@ describe('StartSection', () => {
 
   it('renders the app’s own words for each step, and a description that tells the whole story', () => {
     mount();
-    expect(screen.getByRole('figure', { name: /illustration/i })).toHaveAccessibleDescription(/Open a folder to start working/);
+    expect(screen.getByRole('figure', { name: /illustration/i })).toHaveAccessibleDescription(/Open a Markdown folder and see it as a map/);
     const section = screen.getByTestId('download-start-section').textContent ?? '';
     for (const key of [
       'firstRun.eyebrow',

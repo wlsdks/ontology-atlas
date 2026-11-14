@@ -106,11 +106,9 @@ export const ACCEPTED = {
     'keep-terms': {
       'agentConnect.manualIssueRelative': 'the Korean text writes the platform name in Hangul',
       'analysisWorkbench.relationNotesPrompt': 'the Korean prompt names the field without the word frontmatter',
-      'automations.ontology.sheet.description': 'the Korean text says agent where English says ACP turn',
       'docsVault.desktopWelcome.contractFilesBody': 'the Korean text names the command git diff in lowercase',
       'featuresMisc.starterCta.copyCliCopied': 'the Korean text says terminal where English says CLI',
       'featuresMisc.starterCta.copyCliFailed': 'the Korean text says terminal where English says CLI',
-      'firstRun.subtitle': 'the Korean text uses the short product name Atlas',
       'gatewayNav.readFullSource': 'the Korean text says repository where English names GitHub',
       'metadata.descriptions.guide': 'the Korean text uses the short product name Atlas',
       'ontologyPages.insights.flow.request': 'the Korean request says Atlas tools where English says MCP',

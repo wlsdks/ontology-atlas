@@ -223,7 +223,7 @@ describe('i18n message catalog', () => {
       settings.mcpProofCopied,
     ].join('\n');
 
-    assert.equal(settings.mcpProofTitle, '실제로 연결됐는지 확인하기');
+    assert.equal(settings.mcpProofTitle, '연결 확인');
     assert.match(visibleCopy, /에이전트/);
     const doorRows = [
       ko.settingsAgents.codingToolsLabel,
@@ -523,7 +523,7 @@ describe('i18n message catalog', () => {
      */
     assert.equal(
       settings.mcpProofBody,
-      '이 화면만으로는 연결을 장담할 수 없어요. Codex나 Claude에서 이 서버가 보이면, 아래 첫 질문을 복사해 붙여넣어 에이전트가 이 폴더의 개념으로 답하는지 확인해 보세요.',
+      'Codex나 Claude에서 이 서버가 보이면 아래 프롬프트를 복사해 붙여 넣고, 에이전트가 이 폴더의 개념으로 답하는지 확인하세요.',
     );
     assert.doesNotMatch(
       mixedLanguageCopy,

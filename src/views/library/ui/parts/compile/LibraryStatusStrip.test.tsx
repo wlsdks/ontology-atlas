@@ -112,7 +112,7 @@ describe("LibraryStatusStrip — the off-template clause still counts pages", ()
 describe("LibraryStatusStrip — the waiting clauses are the home's own", () => {
   it("prints not-compiled and changed apart, under the home's words, never their sum", () => {
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 12, notCompiledCount: 2, staleCount: 10 });
-    expect(text).toContain("정리 전 2개");
+    expect(text).toContain("위키 문서 없음 2개");
     expect(text).toContain("원문 10개 달라짐");
     expect(text).not.toContain("기다림");
   });
@@ -127,7 +127,7 @@ describe("LibraryStatusStrip — the waiting clauses are the home's own", () => 
   it("names only the remainder the three states do not cover as waiting", () => {
     // Four sources Compile acts on; two not compiled, one changed, one compiled with a page to review.
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 4, notCompiledCount: 2, staleCount: 1 });
-    expect(text).toContain("정리 전 2개");
+    expect(text).toContain("위키 문서 없음 2개");
     expect(text).toContain("원문 1개 달라짐");
     expect(text).toContain("1개 기다림");
   });
@@ -140,7 +140,7 @@ describe("LibraryStatusStrip — the waiting clauses are the home's own", () => 
 describe("LibraryStatusStrip — counts past a thousand are grouped", () => {
   it("groups the not-compiled and changed counts the way the index chip does", () => {
     const text = strip({ "wiki/a": [] }, { needsCompileCount: 3000, notCompiledCount: 1400, staleCount: 1600 });
-    expect(text).toContain("정리 전 1,400개");
+    expect(text).toContain("위키 문서 없음 1,400개");
     expect(text).toContain("원문 1,600개 달라짐");
     expect(text).not.toMatch(/\d{4}/);
   });
@@ -169,15 +169,15 @@ describe("LibraryStatusStrip — the next step names its file", () => {
   };
 
   it("prints the file Compile would start on", () => {
-    expect(withSources(false)).toContain("정리 다음: chargeback-runbook.md");
+    expect(withSources(false)).toContain("위키 문서 만들기: chargeback-runbook.md");
   });
 
   it("leaves the not-compiled count to the Sources index when it is beside the strip", () => {
-    expect(withSources(true)).not.toContain("정리 전 2개");
+    expect(withSources(true)).not.toContain("위키 문서 없음 2개");
   });
 
   it("keeps the count when the index shows the wiki", () => {
-    expect(withSources(false)).toContain("정리 전 2개");
+    expect(withSources(false)).toContain("위키 문서 없음 2개");
   });
 });
 
@@ -203,7 +203,7 @@ describe("LibraryStatusStrip — the next file is the home's press", () => {
     );
     const press = screen.getByTestId("library-status-compile");
     expect(press.tagName).toBe("BUTTON");
-    expect(press.textContent).toBe("정리 다음: chargeback-runbook.md");
+    expect(press.textContent).toBe("위키 문서 만들기: chargeback-runbook.md");
     expect(press.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(press);
     expect(onCompileNext).toHaveBeenCalledTimes(1);
@@ -233,11 +233,11 @@ describe("LibraryStatusStrip — the named file is said once", () => {
 
   it("drops the not-compiled count when it is the one file already named", () => {
     const text = withNotCompiled(1);
-    expect(text).toContain("정리 다음: new-uncompiled-notes.md");
-    expect(text).not.toContain("정리 전 1개");
+    expect(text).toContain("위키 문서 만들기: new-uncompiled-notes.md");
+    expect(text).not.toContain("위키 문서 없음 1개");
   });
 
   it("keeps the count when it says more than the name", () => {
-    expect(withNotCompiled(3)).toContain("정리 전 3개");
+    expect(withNotCompiled(3)).toContain("위키 문서 없음 3개");
   });
 });

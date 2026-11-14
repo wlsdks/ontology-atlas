@@ -15,40 +15,39 @@
   "noNextRun": "No run scheduled while paused",
   "nextRunAt": "Next · {time}",
   "allowHere": {
-    "waiting": "Switched on in this folder, not on this Mac, so it does not run here. Allow it to run it exactly as written below.",
+    "waiting": "Switched on in this folder but not allowed on this Mac, so it does not run here. Allow it to run exactly as written below.",
     "changed": "Switched on in this folder and changed since this Mac allowed it, so it does not run here until you allow it again.",
-    "paused": "Not allowed on this Mac yet, so Run now waits too. Allow it to run it exactly as written below.",
-    "state": "Not on this Mac",
-    "noNextRun": "Runs here only after you allow it",
+    "paused": "Not allowed on this Mac yet, so Run now waits too. Allow it to run exactly as written below.",
+    "state": "Off on this Mac",
+    "noNextRun": "Runs here after you allow it",
     "wholeFolder": "the whole folder",
     "query": "looks for “{query}”",
     "staleRedraft": "rewrites a stale page",
     "staleMark": "only marks a stale page",
-    "limit": "at most {count} new documents a pass",
+    "limit": "at most {count} new documents per run",
     "button": "Allow on this Mac"
   },
   "title": "Automations",
-  "lede": "Schedule recurring reviews, then inspect what each run found. They run on this computer while Atlas is open.",
-  "stageTitle": "Reviews that run on a schedule",
-  "tabsAria": "Automation lanes",
+  "lede": "Schedule recurring checks, then see what each run found. They run on this computer while Atlas is open.",
+  "stageTitle": "Scheduled checks",
+  "tabsAria": "Automation types",
   "tabs": {
     "ontology": "Ontology",
     "documents": "Documents"
   },
-  "indexAria": "Schedules in this folder",
   "appRequiredDescription": "Open your folder in the app to create schedules right on this screen.",
   "getApp": "Get the app",
-  "loadingTitle": "Loading automations",
+  "loadingTitle": "Loading scheduled checks",
   "malformedTitle": "The schedules file needs attention",
-  "malformedDescription": "Atlas could not read the local schedule file and left it unchanged. Fix it, then read again.",
+  "malformedDescription": "Atlas could not read the local schedule file and left it unchanged. Fix it, then refresh.",
   "unavailableTitle": "Atlas could not read this folder's schedules",
-  "unavailableDescription": "Atlas could not read .ontology-atlas/rounds.json in this folder, so its schedules cannot be shown or run. Check the folder is where Atlas opened it, then read again.",
+  "unavailableDescription": "Atlas could not read .ontology-atlas/rounds.json in this folder, so its schedules cannot be shown or run. Check the folder is where Atlas opened it, then refresh.",
   "unrecorded": {
     "short": "Not recorded",
     "ledger": "The run at {time} ended but could not be written to {file}, so it is not in this history. The schedule moved on to its next time. Check that this folder can be written to.",
     "schedule": "The run at {time} ended but its next time could not be written to {file}. Atlas keeps that time on this Mac until the file can be written. Check that this folder can be written to."
   },
-  "retry": "Read again",
+  "retry": "Refresh",
   "saved": "Scheduled {name}.",
   "edited": "Saved the changes to {name}.",
   "edit": "Edit",
@@ -68,9 +67,9 @@
   "removeNamed": "Remove {name}",
   "historyTitle": "Run history",
   "latestTitle": "Last result",
-  "noRuns": "No pass has run yet.",
-  "noSummary": "The pass finished without a stored summary.",
-  "failedNoResult": "The agent turn did not finish, so this run left no result.",
+  "noRuns": "No runs yet.",
+  "noSummary": "The run finished without a saved summary.",
+  "failedNoResult": "The agent did not finish its reply, so this run left no result.",
   "noAgentReview": "No coding agent was ready on this Mac, so this review did not run. Open Agents to sign in, then run it again.",
   "openAgents": "Open Agents",
   "failedError": "This run stopped on an error: {detail}. Run it again; if the same error comes back, open the folder again.",
@@ -81,8 +80,8 @@
     "failed": "Atlas could not put {page} back after this run. Open it and check it before you rely on it."
   },
   "leftAsIs": "{page} changed after this run wrote it; Atlas left it as is.",
-  "refused": "Refused: {tools}",
-  "called": "Read: {tools}",
+  "refused": "Blocked: {tools}",
+  "called": "Tools used: {tools}",
   "saving": "Scheduling…",
   "saveFailed": "The schedule could not be saved. Nothing was changed.",
   "state": {
@@ -98,7 +97,7 @@
     "redrafted": "Draft updated",
     "refused": "Blocked",
     "failed": "Failed",
-    "asleep": "Not running"
+    "asleep": "Off"
   },
   "cadence": {
     "hour": "Every hour",
@@ -111,12 +110,12 @@
     "time": "Time"
   },
   "ontology": {
-    "new": "New ontology review",
-    "title": "Ontology refinement",
+    "new": "Schedule ontology check",
+    "title": "Ontology check",
     "facts": {
       "runs": {
         "title": "What it does",
-        "body": "The in-app coding agent reads the graph and its source links, then leaves one bounded improvement proposal."
+        "body": "The coding agent reads the ontology and its linked code, then proposes one small improvement."
       },
       "when": {
         "title": "When it runs",
@@ -133,26 +132,26 @@
       "cadence": "Cadence",
       "last": "Last result"
     },
-    "defaultName": "Ontology refinement",
+    "defaultName": "Ontology check",
     "sheet": {
-      "title": "Schedule an ontology review",
-      "editTitle": "Edit the ontology review",
-      "description": "Atlas will open one guarded ACP turn at the chosen time, inspect the ontology and code evidence, and leave a review-only packet.",
+      "title": "Schedule an ontology check",
+      "editTitle": "Edit ontology check",
+      "description": "At the chosen time the agent reads the ontology and code, then proposes changes. It writes nothing until you approve.",
       "focus": "Focus (optional)",
-      "focusPlaceholder": "source binding gaps, stale capabilities, relation evidence…",
-      "focusHint": "Leave it empty and Atlas chooses one bounded area from the current evidence.",
+      "focusPlaceholder": "concepts without a code location, stale capabilities, relation evidence…",
+      "focusHint": "Leave it empty and the agent picks one small area from the current evidence.",
       "scopeTitle": "Allowed actions",
-      "mayRead": "Read the ontology and current source evidence through atlas-vault.",
+      "mayRead": "Read the ontology and current code evidence through the Atlas MCP server.",
       "mayPropose": "Describe proposed changes with exact slugs, paths, and uncertainty.",
-      "mayNeverWrite": "Never write concepts, relations, files, or a meaning receipt."
+      "mayNeverWrite": "Never write concepts, relations, files or approval records."
     }
   },
   "documents": {
-    "new": "New document round",
+    "new": "Schedule document check",
     "facts": {
       "runs": {
         "title": "What it does",
-        "body": "Checks that sources and wiki pages still match, and pulls changed pages from a connected service."
+        "body": "Checks that sources and wiki pages still match, and brings in changed documents from a connected service."
       },
       "when": {
         "title": "When it runs",
@@ -160,7 +159,7 @@
       },
       "writes": {
         "title": "What it may change",
-        "body": "Only sources and wiki drafts inside the approved Library scope. Never the ontology."
+        "body": "Only sources and wiki page drafts inside the approved Library scope. Never the ontology."
       }
     },
     "preview": {

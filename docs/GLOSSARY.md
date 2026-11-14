@@ -105,7 +105,7 @@ the composed `messages/<locale>.json`.
 | Internal | Plain concept | English screen |
 |---|---|---|
 | frontmatter | file top info block | the info block at the top of the file |
-| node | circle (on the map) · document (as a file) | dot · document |
+| node | concept | concept |
 | edge | connection | connection |
 | graph | map | map |
 | render | draw on screen | draw · show |
@@ -116,11 +116,34 @@ the composed `messages/<locale>.json`.
 | handle (filesystem) | "folder opened by browser" | "the folder your browser opened" |
 | contract | how it runs · original info | where this reads from |
 | schema | format | format |
-| vault | folder · workspace | folder · workspace |
+| vault | ontology folder, then folder | ontology folder, then folder |
 | ontology | ontology | ontology |
 
 `ontology` keeps its name. `.claude/rules/design.md` already restricts it to
 brand positions and to sentences that define the word.
+
+### One word per thing
+
+Each thing has one name on screen, and every locale keeps the one word its
+message files already use for it (`settingsFolder.json` names the folder).
+
+| Thing | English screen |
+|---|---|
+| Folder Atlas opens | ontology folder, then folder |
+| The user's source code | code folder |
+| Git repository | repository |
+| AI coding tool | coding agent, then agent |
+| Text copied for an agent | prompt · Copy prompt |
+| Library input / output | source / wiki page |
+| Library actions | Write wiki page · Check wiki · Save to wiki |
+| Named set of concepts | concept set |
+| Scheduled job / one execution | scheduled check / run |
+| Settings reference | Settings › Ontology folder |
+
+A button names its action and a heading is a noun. Option labels describe what
+the option looks like, not a design nickname. Placeholders use a role or a
+product example, never a person's name. An empty state that names a button
+uses that button's label.
 
 ### The parenthesis rule
 

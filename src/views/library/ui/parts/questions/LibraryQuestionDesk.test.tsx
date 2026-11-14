@@ -393,7 +393,7 @@ describe('Library question desk transfer boundary', () => {
     expect(mocks.status).not.toHaveBeenCalled();
     await search();
     fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
-    expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 0 of 0 Wiki pages and 1 of 1 original files.');
+    expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 0 of 0 wiki pages and 1 of 1 source files.');
     expect(screen.getByText('Refund approval queues a stock restoration job.')).toBeInTheDocument();
     expect(mocks.status).not.toHaveBeenCalled();
   });
@@ -416,12 +416,12 @@ describe('Library question desk transfer boundary', () => {
     const unknown = await screen.findByTestId('question-desk-unknown');
     expect(unknown).toHaveTextContent('Word search can miss documents in another language');
     expect(unknown).not.toHaveClass('border-t');
-    expect(screen.getByTestId('question-desk-summarize')).toHaveTextContent('Investigate originals');
+    expect(screen.getByTestId('question-desk-summarize')).toHaveTextContent('Investigate sources');
     fireEvent.click(screen.getByTestId('question-desk-coverage-toggle'));
-    expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 Wiki pages and 1 of 1 original files.');
+    expect(screen.getByTestId('question-desk-results')).toHaveTextContent('Searched 1 of 1 wiki pages and 1 of 1 source files.');
     expect(screen.getByTestId('question-desk-summarize')).toBeEnabled();
-    expect(screen.queryByText('No matching Wiki fact or decision in the pages read.')).not.toBeInTheDocument();
-    expect(screen.queryByText('No matching text unit in the originals Atlas could read.')).not.toBeInTheDocument();
+    expect(screen.queryByText('No matching wiki fact or decision in the pages read.')).not.toBeInTheDocument();
+    expect(screen.queryByText(/No matching text in the sources Atlas could read/)).not.toBeInTheDocument();
   });
 
   it('reuses the unchanged source units for a second question in the same folder', async () => {

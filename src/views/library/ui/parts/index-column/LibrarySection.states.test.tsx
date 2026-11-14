@@ -73,7 +73,7 @@ describe("the source list says its common state once", () => {
     const head = screen.getByTestId("library-source-states");
     expect(head).toHaveAttribute("data-folded-state", "stale");
     expect(screen.getByTestId("library-source-states-stale")).toHaveTextContent("needs review · 13");
-    expect(screen.getByTestId("library-source-states-not-compiled")).toHaveTextContent("not compiled 1");
+    expect(screen.getByTestId("library-source-states-not-compiled")).toHaveTextContent("no wiki page 1");
     // Thirteen folded rows keep their word for a screen reader; no row wears the amber pill.
     expect(screen.getAllByTestId("library-source-state-folded")).toHaveLength(13);
     expect(screen.queryByTestId("library-source-state-stale")).toBeNull();
@@ -198,7 +198,7 @@ describe("the wiki head with no coding agent", () => {
   it("draws one notice that names both jobs and ends in the agents door", () => {
     mountNoAgent(true);
     const notice = screen.getByTestId("library-agent-missing");
-    expect(notice).toHaveTextContent("check page format");
+    expect(notice).toHaveTextContent("check the wiki");
     expect(screen.getByTestId("library-agent-missing-door")).toHaveAttribute("href", expect.stringContaining("agents"));
     expect(screen.queryByTestId("library-lint")).toBeNull();
     expect(screen.queryByTestId("library-compile")).toBeNull();

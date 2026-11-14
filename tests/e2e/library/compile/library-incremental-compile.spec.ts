@@ -34,7 +34,7 @@ test("a current source write-up revises an outdated related page; approval updat
     ],
   });
   await browser.goto("/en/?guides=off");
-  await browser.getByRole("button", { name: /Open my folder/i }).click();
+  await browser.getByRole("button", { name: /Open (?:a|my) folder/i }).click();
   await browser.getByTestId("app-nav-rail-item-library").click();
   await browser.getByTestId("library-workspace-sources").click();
   /* The waiting line sits under the Compile press it is about; Escape returns the walk to the home. */

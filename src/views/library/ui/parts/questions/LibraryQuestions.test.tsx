@@ -20,8 +20,8 @@ describe('the retained question entrance', () => {
     const onOpen = vi.fn();
     render(<NextIntlClientProvider locale="en" messages={en}><Fixture onOpen={onOpen} hashes={new Map([['sources/policy.md', 'b'.repeat(64)]])} /></NextIntlClientProvider>);
     expect(screen.getAllByText('2 alternative revisions')).toHaveLength(2);
-    expect(screen.getAllByText('Cited originals changed')).toHaveLength(2);
-    expect(screen.getByRole('button', { name: 'Which policy? (two)' })).toHaveAccessibleDescription('Cited originals changed 2 alternative revisions');
+    expect(screen.getAllByText('Cited sources changed')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Which policy? (two)' })).toHaveAccessibleDescription('Cited sources changed 2 alternative revisions');
     fireEvent.click(screen.getByRole('button', { name: 'Which policy? (two)' }));
     expect(onOpen).toHaveBeenCalledWith('wiki/answers/two');
   });
