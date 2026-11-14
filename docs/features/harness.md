@@ -36,41 +36,54 @@ way forward (get the app in a browser, connect a source folder in the app). The 
 **Setup** (`harness.views.overview`) opens with one sentence, `harness.explainer`, and beside it a
 filter of the agent tools the scan found (All · Claude Code · Codex · …), hidden when one tool or
 none is found. The filter narrows every list to the files that tool reads; scripts, Git hooks and CI
-workflows, which no tool claims, stay under every filter because they run whichever agent worked.
-Below 76rem of content the filter wraps as chips.
+workflows stay under every filter because they run whichever agent worked, while an ignore file no
+listed tool reads (`.codeiumignore`, `.aiexclude`, `.aiignore`) shows only under All. A selected file
+the filter hides closes its detail. Below 76rem of content the filter wraps as chips.
 
-**A problems strip appears only when a person has something to fix**, one amber row each, and a row
-opens the item concerned: a hook whose script the config names and the disk does not have
-(`harness.problemHookMissing`), a hook command that names no script path
-(`harness.problemHookUnresolved`), the merged `AGENTS.md` Codex reads over its 32 KiB
-`project_doc_max_bytes` default (`harness.problemCodexCap`), and Claude and Codex skill or subagent
-copies that differ or have no twin (`harness.problemCopyDrift`). With none, nothing is drawn: no
-"all good" banner.
+**A problems strip appears only when a person has something to fix**: one amber bordered block, a
+row per problem, and a row opens the item concerned. It holds two kinds only: a hook script a config
+names and the disk does not have (`harness.problemHookMissing`), one row per config file and script
+however many events name it; and the root plus largest nested `AGENTS.md` Codex reads over its
+default 32 KiB `project_doc_max_bytes` (`harness.problemCodexCap`). With none, nothing is drawn: no
+"all good" banner. Claude and Codex trees are maintained independently (`e47518a9`), so a skill or
+subagent that differs from its twin is a neutral tag on the file (`harness.differsFromCodex`,
+`harness.differsFromClaude`), and a file with no twin carries none.
 
 **Three sections in the order of the agent's loop**, three equal-height columns at `lg` and wider,
 stacked below. Each has a title, a one-line caption and a total, then group rows that show the
 artefact's name, its count and, for read files, its total size; a group expands in place to its
-files, and a file opens the detail. Groups with no items are not drawn.
+files, and a file opens the detail. Groups with no items are not drawn. Counts in rows are bare
+numbers; only the section total carries a unit. A skill counts once per directory, and its row,
+when selected, lists the directory's files, each of which opens on its own.
 
 | Section | Groups |
 |---|---|
-| Context — files the agent reads | Instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, nested `AGENTS.md`, `copilot-instructions.md`); Rules, each tagged Always or By path from its `paths:`; Skills; Subagents; MCP config; Ignore files; Hooks on `SessionStart` or `UserPromptSubmit`, which add context rather than block |
-| Guardrails — what stops an action before it runs | Permission rules (each settings file with its deny and ask rule count); Blocking hooks (events named `Pre…` or `Before…`) |
-| Verification — what checks the work afterwards | Hooks on every other event; Scripts (`package.json` lint, typecheck and test scripts); Git hooks (`.githooks/`); CI workflows (`.github/workflows/`) |
+| Context — files the agent reads | Instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, nested `AGENTS.md`, `copilot-instructions.md`); Rules, each tagged Always or By path from its `paths:`, list or inline; Skills; Subagents; MCP config; Config files (`.codex/*`, a settings file with no permission rules); Ignore files; Hooks on `SessionStart` or `UserPromptSubmit` |
+| Guardrails — what stops an action before it runs | Permission rules (each settings file with its deny, ask and allow counts, only the lists that hold a rule); Blocking hooks on `PreToolUse`, `PermissionRequest` or `PreCompact` |
+| Verification — what checks the work afterwards | Hooks on `PostToolUse`, `Stop` or `SubagentStop`; Scripts (`package.json` lint, typecheck and test scripts); Git hooks (`.githooks/` files with a name Git runs, not their helper modules); CI workflows (`.github/workflows/`) |
+
+One table in `entities/agent-files` (`hookEventStep`) sorts hook events, for this screen and for the
+coverage the Analysis brief counts. An event it does not name is listed under Verification as Other
+events, and a hook script on disk no config names as Unwired hooks with `harness.hookUnwired`; neither
+counts toward Verification's total.
 
 A hook row shows its event as the config writes it (`PreToolUse`), the tool that reads its config,
 and its status: `harness.hookWired` means only that the script exists on disk, never that it runs;
-`harness.hookMissing` and `harness.hookUnresolved` are amber; a `.codex` hook also carries
-`harness.hookApprovalGate`, because Codex runs a new or changed hook only after a person trusts it
-in `/hooks`, which no file records. The Context header also states what each tool reads at session
-start where the scan knows it: Claude Code's `CLAUDE.md` plus every rule with no `paths:`, and
-Codex's merged root plus largest nested `AGENTS.md` against its 32 KiB limit as a bar.
+`harness.hookMissing` is amber; a command that runs no script file (`pnpm lint`) is shown as written
+with no status; a `.codex` hook also carries `harness.hookApprovalGate`, because Codex runs a new or
+changed hook only after a person trusts it in `/hooks`, which no file records. The Context header
+also states what each tool reads at session start where the scan knows it: Claude Code's
+`CLAUDE.md`, every rule with no `paths:`, and root `AGENTS.md` when `CLAUDE.md` imports it (that
+file is then listed under the Claude Code filter, tagged `harness.importedByClaudeMd`); and Codex's
+root plus largest nested `AGENTS.md` against its default 32 KiB limit as a bar.
 
 **The detail sits beside the lists** in a 24rem panel when the content is at least 76rem wide, and
 on arrival shows the first problem's item, or the first file. Below that width it waits for a press
-and then takes the place of the lists, with "Back to the list". It stays short: the path, the
-tools that read it (each claim cited where a tool's documentation was checked), the size, the event
-and config for a hook, the status, the declaring text for a script or workflow, then the content. A
+and then takes the place of the lists, with "Back to the list", which takes focus; Back or Escape
+returns focus to the row that opened it and the list to where it stood. It stays short: the path,
+the tools that read it (each claim cited where a tool's documentation was checked), the size, the
+event and config for a hook, the status with its explanation as text, the declaring text for a
+script or workflow, then the content. A
 skill or subagent whose Claude and Codex copies differ shows both copies side by side on shared rows
 (`HarnessDriftDiff`); a hook whose script is missing shows the config that names it, where the line
 to fix is.
