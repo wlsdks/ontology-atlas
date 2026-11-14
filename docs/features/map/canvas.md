@@ -178,12 +178,12 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   and empty cells between regions keep them apart. A tile's brightness and its row
   of dots count its elements (a gold dot is a stale element); a gold rim is stale
   and a dashed, hatched tile is unknown, by the same rule and Git walk as
-  the MCP server; the web says every state is unknown rather than guess. Placement is append-only per folder: a new capability takes a free
+  the MCP server. Where the evidence was not read at all (the web, or a folder without
+  Git history) no tile is marked and one line under the legend says so. Placement is append-only per folder: a new capability takes a free
   cell of its region and a new domain the next free slot, so nothing already placed
   moves; only a region that outgrows its room re-seeds the board, and the board says
-  so. In the far band, strokes between regions grow thicker with
-  their dependencies; closer in, each tile's notches point at the regions it relies
-  on. Hovering a tile shows a one-line summary; hovering or selecting a capability
+  so. Strokes between regions, thicker with their dependencies, show at rest at
+  every zoom and step back while a concept is selected. Hovering a tile shows a one-line summary; hovering or selecting a capability
   routes what it needs and what uses it, and selecting a region routes what it
   needs. Selecting opens the flat map's inspector with those routes kept. Routes run only in the
   gaps between tiles, never across one. "◐ Stale only" keeps stale tiles, naming the
