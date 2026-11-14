@@ -86,7 +86,7 @@ is local, has no persistent state and never supplies work or emotional status.
 | Compact | `mascot-compact-32.png` in that directory | Separately simplified 32px face |
 | Micro | `mascot-micro-16.png` | Independently simplified 16px face |
 | Presentation | `mascot-presentation-128.png` | Larger character compositions |
-| Curious portrait | `assets/brand/moru/sprites/128/authored/moru-tilt.png` | Native 128px `tilt` cells on the missing page, the route error, a project the open folder lacks, and a harness, schedule file or Git status that could not be read; a tilted body has no readable face at 32px |
+| Curious portrait | `assets/brand/moru/sprites/128/authored/moru-tilt.png` | Native 128px `tilt` cells on the missing page, the route error, the startup failure, a project the open folder lacks, and a harness, schedule file or Git status that could not be read; a tilted body has no readable face at 32px |
 | Compass | `assets/brand/moru/icons/atlas-compass-1024.png` | Smoothly resampled app identity, 16–1024px |
 | macOS template | `mascot-tray-template-{16,32}.png` | Black/clear compass mask; 2× is the same logical drawing |
 
@@ -155,6 +155,7 @@ a clipped frame.
 | Verified read (`read`) | `source-read` | Existing finite cycle, then still |
 | Verified completion (`success`) | `dance` | One finite celebration, then existing hide timer |
 | Dead end: missing page, route error, missing project, unread harness, schedule or Git status | `tilt` / curious row | One tilt per 7.2 s cycle while visible, slower than the waiting loop; the held tilt under reduced motion. It sits beside the recovery text and claims no pending work or success |
+| Startup failure (`app/global-error.tsx`) | `tilt` / curious row, held | The held tilt only, with no hook or observer: the screen reports that the runtime failed, so its figure reads nothing from it |
 | Permission / quiet | Existing recovery text; no mark | No pending loop or invented success |
 
 `src/features/agent-activity/model/mascot-state.ts` remains the authority for
@@ -204,7 +205,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
 | Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
-| First run / missing page, route error, missing project and an unread harness, schedule or Git status | Playful companion / curious `BrandPortrait` → `public/brand/mascot-curious-row-128.png` |
+| First run / missing page, route error, startup failure, missing project and an unread harness, schedule or Git status | Playful companion / curious `BrandPortrait` → `public/brand/mascot-curious-row-128.png` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og-image.png`, 1200×630 |
