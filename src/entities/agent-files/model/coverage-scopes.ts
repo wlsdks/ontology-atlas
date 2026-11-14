@@ -67,15 +67,23 @@ export function scopeReaches(scope: string, capabilityPath: string): boolean {
 export function ruleGlobs(text: string): string[] {
   const frontmatter = /^---\n([\s\S]*?)\n---/.exec(String(text ?? ''));
   if (!frontmatter) return [];
+  const unquote = (glob: string) => glob.trim().replace(/^["']|["']$/g, '');
   const block = /^paths:[ \t]*\n((?:[ \t]+-[ \t]*.*\n?)+)/m.exec(frontmatter[1]);
-  if (!block) return [];
-  const globs: string[] = [];
-  for (const line of block[1].split('\n')) {
-    const item = /^[ \t]+-[ \t]*(.+?)[ \t]*$/.exec(line);
-    if (!item) continue;
-    globs.push(item[1].replace(/^["']|["']$/g, ''));
+  if (block) {
+    const globs: string[] = [];
+    for (const line of block[1].split('\n')) {
+      const item = /^[ \t]+-[ \t]*(.+?)[ \t]*$/.exec(line);
+      if (item) globs.push(unquote(item[1]));
+    }
+    return globs;
   }
-  return globs;
+  /* The inline forms: `paths: src/**`, `paths: "a/**, b/**"` and `paths: [a/**, b/**]`. */
+  const inline = /^paths:[ \t]*(\S.*?)[ \t]*$/m.exec(frontmatter[1]);
+  if (!inline) return [];
+  return unquote(inline[1].replace(/^\[|\]$/g, ''))
+    .split(',')
+    .map(unquote)
+    .filter((glob) => glob.length > 0);
 }
 
 /**

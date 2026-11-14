@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -136,27 +136,10 @@ describe('the destination identity', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('하네스');
   });
 
-  it('says in one line what it is about, except where the line below already does', () => {
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
-    mount();
-    expect(
-      screen.getByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
-    ).toBeInTheDocument();
-  });
-
-  it('drops the explainer in the blueprint, where 20px is a third of a layer row', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
-    mount();
-    expect(
-      screen.queryByText('에이전트가 이 저장소에서 어떻게 일하도록 되어 있는지'),
-    ).toBeNull();
-  });
-
-  it('opens on At a glance, which is what the destination is named after', () => {
+  it('opens on Setup, which lists what the agent reads, what stops it and what checks it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
     expect(screen.queryByTestId('architecture-page')).toBeNull();
   });
 
@@ -165,7 +148,7 @@ describe('the destination identity', () => {
     state.bridge = false;
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-overview')).toBeNull();
+    expect(screen.queryByTestId('harness-setup')).toBeNull();
   });
 
   it('arrives on the blueprint when a bridge exists but no harness can be read', () => {
@@ -174,7 +157,7 @@ describe('the destination identity', () => {
     state.report = { status: 'no-source' };
     mount();
     expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
-    expect(screen.queryByTestId('harness-overview')).toBeNull();
+    expect(screen.queryByTestId('harness-setup')).toBeNull();
   });
 
   it('still opens the overview when an address names it, source or not', () => {
@@ -190,7 +173,7 @@ describe('the destination identity', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     window.history.replaceState(null, '', '/ko/architecture/?focus=main');
     mount();
-    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
   });
 
   it('keeps one tab set above the panel, never inside it', () => {
@@ -200,7 +183,7 @@ describe('the destination identity', () => {
     mount();
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-embedded', 'true');
     expect(screen.getAllByRole('tablist')).toHaveLength(1);
-    expect(screen.getAllByRole('tab')).toHaveLength(3);
+    expect(screen.getAllByRole('tab')).toHaveLength(2);
     expect(screen.getByTestId('architecture-page')).toHaveAttribute('data-has-identity', 'false');
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
   });
@@ -216,40 +199,30 @@ describe('the destination identity', () => {
     expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'harness-tabpanel-overview');
   });
 
-  it('offers At a glance, Guides and Architecture with a reading, and arrives on the first', () => {
+  it('offers Setup and Architecture with a reading, and arrives on the first', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.map((tab) => tab.textContent)).toEqual([
-      koMessages.harness.views.overview,
-      koMessages.harness.views.guides,
-      koMessages.harness.views.architecture,
-    ]);
+    expect(tabs.map((tab) => tab.id)).toEqual(['harness-tab-overview', 'harness-tab-architecture']);
     expect(tabs[0]).toHaveAttribute('aria-selected', 'true');
   });
 
-  it.each(['structure', 'coverage', 'sensors'])(
+  it.each(['structure', 'coverage', 'sensors', 'guides'])(
     'rewrites the retired ?view=%s address to the overview and opens it',
     (retired) => {
       state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
       window.history.replaceState(null, '', `/ko/architecture/?view=${retired}&guides=off`);
       mount();
       expect(window.location.search).toBe('?view=overview&guides=off');
-      expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+      expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
     },
   );
 });
 
 describe('the segmented control', () => {
-  it('moves between the three views and writes the view into the address', () => {
+  it('moves between the two views and writes the view into the address', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-guides')!);
-    });
-    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
-    expect(window.location.search).toBe('?view=guides');
-
     act(() => {
       fireEvent.click(document.querySelector('#harness-tab-architecture')!);
     });
@@ -259,7 +232,7 @@ describe('the segmented control', () => {
     act(() => {
       fireEvent.click(document.querySelector('#harness-tab-overview')!);
     });
-    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
     expect(window.location.search).toBe('');
   });
 
@@ -285,31 +258,13 @@ describe('the segmented control', () => {
   it('follows the address when history moves under it', () => {
     state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
     mount();
-    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
     act(() => {
-      window.history.replaceState(null, '', '/ko/architecture/?view=guides');
+      window.history.replaceState(null, '', '/ko/architecture/?view=architecture');
       window.dispatchEvent(new PopStateEvent('popstate'));
     });
     // The address and the screen must name the same view; that is what putting it in the URL is for.
-    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
-  });
-
-  it('opens the view the address names', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
-  });
-
-  it('keeps the census on Guides only', () => {
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    expect(screen.queryByTestId('harness-sentence')).toBeNull();
-
-    act(() => {
-      fireEvent.click(document.querySelector('#harness-tab-guides')!);
-    });
-    expect(screen.getByTestId('harness-sentence')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-page')).toBeInTheDocument();
   });
 
   it('opens the blueprint for an address that carries a role but names no view', () => {
@@ -385,7 +340,7 @@ describe('the segmented control', () => {
       );
     });
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
-    expect(screen.getByTestId('harness-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-setup')).toBeInTheDocument();
   });
 
   it('never invents a denominator for a pass whose length it cannot know', () => {
@@ -405,44 +360,19 @@ describe('the segmented control', () => {
   });
 });
 
-describe('the sentence', () => {
-  it('prints two measured numbers and shows the parts the check number is made of', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    const sentence = screen.getByTestId('harness-sentence');
-    expect(sentence).toHaveTextContent('문서 93개');
-    expect(sentence).toHaveTextContent('검사 80개');
-    /* The number never stands bare: each part names what it counts (a mirrored hook is two scripts for one guard). */
-    expect(sentence).toHaveTextContent('훅 스크립트 20개');
-    expect(sentence).toHaveTextContent('.githooks/ 파일 3개');
-    expect(sentence).toHaveTextContent('스크립트 57개');
-  });
-
-  it('keeps the coverage claim out of the counted sentence', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-    mount();
-    /* Both numbers are file counts; the coverage claim has its own denominator and stays out. */
-    const counted = within(screen.getByTestId('harness-sentence')).getByText(/문서 93개/);
-    expect(counted.textContent).not.toMatch(/영역/);
-  });
-});
-
 describe('honest degradation', () => {
   it('names what a browser cannot reach instead of drawing a shorter list', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = { status: 'unsupported' };
     mount();
-    expect(screen.getByText('브라우저에서는 읽을 수 없어요')).toBeInTheDocument();
-    expect(screen.getByText(/점으로 시작하는 폴더/)).toBeInTheDocument();
+    expect(screen.getByTestId('harness-unread-stage')).toHaveAttribute('data-harness-unread', 'browser');
   });
 
   it('says no repository is connected rather than guessing which one was meant', () => {
-    window.history.replaceState(null, '', '/ko/architecture/?view=guides');
+    window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = { status: 'no-source' };
     mount();
-    expect(screen.getByText('연결된 저장소가 없어요')).toBeInTheDocument();
+    expect(screen.getByTestId('harness-unread-stage')).toHaveAttribute('data-harness-unread', 'no-source');
   });
 
   it('says the source could not be read, in words, instead of counting an empty harness', () => {
@@ -461,199 +391,3 @@ describe('honest degradation', () => {
     expect(screen.getByTestId('harness-failed-reason')).toHaveTextContent('macOS');
   });
 });
-
-describe('the at-a-glance table', () => {
-  const shopDocs = () => [
-    {
-      slug: 'shop',
-      title: 'Shop',
-      excerpt: 'Sells things.',
-      frontmatter: { kind: 'domain', slug: 'shop', display_ko: '가게 영역' },
-    },
-    {
-      slug: 'cart',
-      title: 'Cart',
-      excerpt: 'Holds items.',
-      frontmatter: { kind: 'capability', slug: 'cart', domain: 'shop', path: 'src/shop/cart.ts' },
-    },
-    {
-      slug: 'notes',
-      title: 'Notes',
-      excerpt: 'Keeps notes.',
-      frontmatter: { kind: 'domain', slug: 'notes' },
-    },
-  ];
-
-  const ready = () => {
-    state.docs = shopDocs();
-    state.report = { status: 'ready', sourceRoot: '/repo', report: fakeReport() };
-  };
-
-  it('shows an amber gap in every column of a domain no file names, and counts only those', () => {
-    ready();
-    mount();
-    const row = document.querySelector('[data-harness-area="shop"]')!;
-    const gaps = row.querySelectorAll('[data-harness-cell-state="gap"]');
-    expect(gaps).toHaveLength(3);
-    for (const cell of gaps) expect(cell).toHaveTextContent(koMessages.harness.coverageNone);
-
-    const pathless = document.querySelector('[data-harness-area="notes"]')!;
-    expect(pathless.querySelector('[data-harness-cell="path"]')).toHaveTextContent(
-      koMessages.harness.overviewNoPath,
-    );
-    expect(pathless.querySelectorAll('[data-harness-cell-state="gap"]')).toHaveLength(0);
-    expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '3');
-  });
-
-  it('opens a cell in a panel and closes it with Escape, returning focus to the cell', () => {
-    ready();
-    mount();
-    const cell = document.querySelector<HTMLButtonElement>(
-      '[data-harness-area="shop"] [data-harness-cell="watched"]',
-    )!;
-    act(() => {
-      fireEvent.click(cell);
-    });
-    expect(cell).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|watched');
-    act(() => {
-      fireEvent.keyDown(window, { key: 'Escape' });
-    });
-    expect(cell, 'Escape from outside the table and panel leaves it open').toHaveAttribute('aria-expanded', 'true');
-    act(() => {
-      fireEvent.keyDown(cell, { key: 'Escape' });
-    });
-    expect(cell).toHaveAttribute('aria-expanded', 'false');
-    expect(cell).toHaveFocus();
-  });
-
-  it('opens the first gap on arrival without moving focus', () => {
-    ready();
-    mount();
-    const first = document.querySelector<HTMLButtonElement>('[data-harness-area="shop"] [data-harness-cell="told"]')!;
-    expect(first).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', 'shop|told');
-    expect(document.body).toHaveFocus();
-  });
-
-  it('leaves the panel open when Escape was already handled or a modal is open', () => {
-    ready();
-    mount();
-    const cell = document.querySelector<HTMLButtonElement>('[data-harness-area="shop"] [data-harness-cell="told"]')!;
-    const modal = document.createElement('div');
-    modal.setAttribute('aria-modal', 'true');
-    document.body.appendChild(modal);
-    act(() => {
-      fireEvent.keyDown(window, { key: 'Escape' });
-    });
-    expect(cell).toHaveAttribute('aria-expanded', 'true');
-    modal.remove();
-    act(() => {
-      const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
-      event.preventDefault();
-      window.dispatchEvent(event);
-    });
-    expect(cell).toHaveAttribute('aria-expanded', 'true');
-  });
-
-  it('copies a request that carries slugs and paths, never a display name, and sends nothing', async () => {
-    ready();
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-    const fetchSpy = vi.spyOn(globalThis, 'fetch');
-    mount();
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
-    });
-    expect(writeText).toHaveBeenCalledTimes(1);
-    const text = writeText.mock.calls[0]![0] as string;
-    expect(text).toContain('shop');
-    expect(text).toContain('src/shop/cart.ts');
-    expect(text).toContain('/repo');
-    expect(text).toContain('.claude/settings.json');
-    expect(text).toContain('`permissions`');
-    expect(text).not.toContain('가게 영역');
-    expect(fetchSpy).not.toHaveBeenCalled();
-    expect(screen.getByTestId('harness-overview-handoff-status')).toHaveTextContent(
-      koMessages.harness.overviewHandoffCopied,
-    );
-    fetchSpy.mockRestore();
-  });
-
-  it('says the clipboard refused and shows the same text to copy by hand', async () => {
-    ready();
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
-    Object.defineProperty(document, 'execCommand', { value: vi.fn(() => false), configurable: true });
-    mount();
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
-    });
-    expect(screen.getByTestId('harness-overview-handoff-status')).toHaveTextContent(
-      koMessages.harness.overviewHandoffCopyFailed,
-    );
-    act(() => {
-      fireEvent.click(screen.getByTestId('harness-overview-request-toggle'));
-    });
-    const shown = screen.getByTestId('harness-overview-request').textContent;
-
-    writeText.mockResolvedValue(undefined);
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('harness-overview-handoff'));
-    });
-    expect(writeText).toHaveBeenLastCalledWith(shown);
-  });
-
-  it('closes the panel and puts focus on the tab panel when the reading is asked for again', () => {
-    ready();
-    mount();
-    const cell = document.querySelector<HTMLButtonElement>(
-      '[data-harness-area="shop"] [data-harness-cell="gated"]',
-    )!;
-    act(() => {
-      fireEvent.click(cell);
-    });
-    expect(cell).toHaveAttribute('aria-expanded', 'true');
-    act(() => {
-      fireEvent.click(screen.getByTestId('harness-overview-retry'));
-    });
-    const again = document.querySelector<HTMLButtonElement>(
-      '[data-harness-area="shop"] [data-harness-cell="gated"]',
-    )!;
-    expect(again).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('tabpanel')).toHaveFocus();
-  });
-
-  it('says no gaps and offers no copy action when every column has a file', () => {
-    state.docs = shopDocs().slice(0, 2);
-    state.report = {
-      status: 'ready',
-      sourceRoot: '/repo',
-      report: fakeReport({
-        coverage: (['told', 'gated', 'watched'] as const).map((column) => ({
-          column,
-          id: `src/${column}.sh`,
-          label: `src/${column}.sh`,
-          origin: 'script' as const,
-          declaration: 'src/shop',
-          declaresPath: true,
-          scopes: ['src/shop'],
-          tools: [],
-        })),
-      }),
-    };
-    mount();
-    expect(screen.getByTestId('harness-overview-gaps')).toHaveAttribute('data-gap-count', '0');
-    expect(screen.queryByTestId('harness-overview-handoff')).toBeNull();
-    expect(screen.getByTestId('harness-overview-panel')).toHaveAttribute('data-panel-cell', '#everywhere|told');
-    act(() => {
-      fireEvent.keyDown(document.querySelector('[data-harness-area="#everywhere"] [data-harness-cell="told"]')!, {
-        key: 'Escape',
-      });
-    });
-    expect(screen.getByTestId('harness-overview-panel-empty')).toHaveTextContent(
-      koMessages.harness.overviewPanelEmpty,
-    );
-  });
-});
-
