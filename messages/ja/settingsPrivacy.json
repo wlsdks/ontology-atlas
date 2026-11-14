@@ -40,7 +40,7 @@
     "git-remote": "Gitのプッシュ・プル・フェッチ",
     "coding-tools": "コーディングエージェント",
     "website-files": "Webサイトのファイル",
-    "git-pr-descriptions": "GitHub PR descriptions"
+    "git-pr-descriptions": "GitHub PRの説明の取得"
   },
   "updateOn": "自動確認オン",
   "updateOff": "自動確認オフ",
