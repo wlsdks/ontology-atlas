@@ -90,7 +90,9 @@ capability and its own fanned element runs straight along that spoke as a
 hair, so an element the capability also depends on reads brighter than one it
 only contains. The fan slides
 along its arc to the nearest place where no dot stands on a line leaving the
-capability. A fanned name sits on the side away from the capability, on its
+capability; that place is chosen once per layout, so the fan holds it through
+every zoom, and a half-closed dot swings round the ring instead of cutting
+across it. A fanned name sits on the side away from the capability, on its
 row or one row off with a leader, keeps off every fanned dot, and may cross a
 disc the selection has sunk but none still lit. An element of a pointed capability is named only once its
 dot stands a name gap clear of that capability's disc: beside a dot the disc

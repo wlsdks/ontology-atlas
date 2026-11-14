@@ -13,6 +13,8 @@ const CLOSE_BAND = 1.25;
 /** How finely the fan's place along its arc is searched for one clear of the capability's lines. */
 const SLIDE_STEP = (2 * Math.PI) / 180;
 const FULL_TURN = 2 * Math.PI;
+/** How many times a dot's bare clearance from a line the slide looks for, so the dot's name has a side as well. */
+const ROOMY = 2;
 
 const turnOf = (x: number, y: number) => (Math.atan2(y, x) + Math.PI / 2 + FULL_TURN) % FULL_TURN;
 
@@ -57,8 +59,51 @@ function clearance(first: number, step: number, count: number, lines: readonly n
   return least;
 }
 
+const fanMiddleCache = new WeakMap<FlatGraphLayout, Map<string, number>>();
+
+/**
+ * The turn a capability's fan is centred on: its elements' own mean direction, slid to the nearest
+ * place where no dot stands on a line leaving the capability. It is judged once per layout and
+ * capability at the resting disc size, so the fan holds its place through every zoom.
+ * O(arc ÷ slide step × n × lines).
+ */
+function fanMiddle(
+  model: DialModel, layout: FlatGraphLayout, capabilityId: string, own: readonly string[], natural: readonly { turn: number }[], tokens: FlatGraphPaintTokens,
+): number {
+  let byId = fanMiddleCache.get(layout);
+  if (!byId) fanMiddleCache.set(layout, (byId = new Map()));
+  const known = byId.get(capabilityId);
+  if (known !== undefined) return known;
+  const dotPx = graphDiscRadiusPx("element", 0, tokens, 1);
+  const radius = Math.max(tokens.selectedDiscPx + tokens.selectedRingGapPx + tokens.selectedRingPx + dotPx + tokens.nameGapPx + FAN_AIR_PX, ((natural.length - 1) * tokens.elementNameSpacingPx) / (2 * (Math.PI - TITLE_WEDGE)));
+  const step = natural.length > 1 ? Math.min((2 * (Math.PI - TITLE_WEDGE)) / (natural.length - 1), tokens.elementNameSpacingPx / radius) : 0;
+  const width = step * (natural.length - 1);
+  const last = FULL_TURN - TITLE_WEDGE - width;
+  // A circular mean: elements either side of the top average to the top, not to the bottom.
+  const mean = (Math.atan2(natural.reduce((sum, n) => sum + Math.sin(n.turn), 0), natural.reduce((sum, n) => sum + Math.cos(n.turn), 0)) + FULL_TURN) % FULL_TURN;
+  const wanted = Math.min(last, Math.max(TITLE_WEDGE, mean - width / 2));
+  const lines = capabilityLineTurns(model, layout, capabilityId, own, tokens.lineBow);
+  const keep = (dotPx + tokens.lineTaperMaxPx) / radius;
+  let first = wanted;
+  let best = clearance(wanted, step, natural.length, lines);
+  for (let slide = SLIDE_STEP; best < keep * ROOMY && slide <= last - TITLE_WEDGE; slide += SLIDE_STEP) {
+    for (const at of [wanted - slide, wanted + slide]) {
+      if (at < TITLE_WEDGE || at > last) continue;
+      const clear = clearance(at, step, natural.length, lines);
+      if (clear > best) {
+        best = clear;
+        first = at;
+      }
+    }
+  }
+  byId.set(capabilityId, first + width / 2);
+  return first + width / 2;
+}
+
 export interface OpenedElements {
   capabilityId: string;
+  /** 1 while the elements stand fully fanned, falling to 0 as the zoom shows them apart on their own. */
+  open: number;
   /** Each element's place in screen pixels from the capability's centre. */
   offsets: ReadonlyMap<string, Point>;
 }
@@ -67,7 +112,7 @@ export interface OpenedElements {
  * A selected capability's elements fanned round its disc so each stands a name's spacing from the
  * next and clear of the selection ring. Where the zoom already shows them that far apart they keep
  * their own places, and the fan closes smoothly as the zoom nears that. O(n²) over one capability's
- * elements, to find the tightest pair, plus O(arc ÷ slide step × n × lines) to clear its lines.
+ * elements, to find the tightest pair.
  */
 export function openedElements(
   model: DialModel, layout: FlatGraphLayout, capabilityId: string | null, tokens: FlatGraphPaintTokens, selectedRadiusPx: number, scale: number, growth: number,
@@ -100,30 +145,16 @@ export function openedElements(
   const radius = Math.max(clearPx + FAN_AIR_PX, gaps > 0 ? (gaps * pitchPx) / arc : 0);
   const step = gaps > 0 ? Math.min(arc / gaps, pitchPx / radius) : 0;
   const width = step * gaps;
-  const mean = natural.reduce((sum, n) => sum + n.turn, 0) / natural.length;
-  const last = FULL_TURN - TITLE_WEDGE - width;
-  const wanted = Math.min(last, Math.max(TITLE_WEDGE, mean - width / 2));
-  // The fan slides along its arc to the nearest place where no dot stands on one of the capability's lines.
-  const lines = capabilityLineTurns(model, layout, capability.id, capability.elementIds, tokens.lineBow);
-  const keep = (graphDiscRadiusPx("element", 0, tokens, growth) + tokens.lineTaperMaxPx) / radius;
-  let first = wanted;
-  let best = clearance(wanted, step, natural.length, lines);
-  for (let slide = SLIDE_STEP; best < keep && slide <= last - TITLE_WEDGE; slide += SLIDE_STEP) {
-    for (const at of [wanted - slide, wanted + slide]) {
-      if (at < TITLE_WEDGE || at > last) continue;
-      const clear = clearance(at, step, natural.length, lines);
-      if (clear > best) {
-        best = clear;
-        first = at;
-      }
-    }
-  }
+  const middle = fanMiddle(model, layout, capability.id, capability.elementIds, natural, tokens);
+  const first = Math.min(FULL_TURN - TITLE_WEDGE - width, Math.max(TITLE_WEDGE, middle - width / 2));
   const offsets = new Map<string, Point>();
   natural.forEach((n, k) => {
-    const turn = first + k * step;
-    const x = radius * Math.sin(turn);
-    const y = -radius * Math.cos(turn);
-    offsets.set(n.id, { x: n.x + (x - n.x) * open, y: n.y + (y - n.y) * open });
+    // Distance and turn close apart, so a half-closed dot swings round the ring and never cuts across it.
+    const swing = ((first + k * step - n.turn + Math.PI + FULL_TURN) % FULL_TURN) - Math.PI;
+    const turn = n.turn + swing * open;
+    const reach = Math.hypot(n.x, n.y);
+    const at = reach + (radius - reach) * open;
+    offsets.set(n.id, { x: at * Math.sin(turn), y: -at * Math.cos(turn) });
   });
-  return { capabilityId: capability.id, offsets };
+  return { capabilityId: capability.id, open, offsets };
 }

@@ -29,6 +29,8 @@ const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 const DOT_ALPHA = 0.7;
 const LIT_DOT_SHARE = 1.5;
+/** World units a fanned element may sit from its laid-out place before it counts as dragged. */
+const DRAG_SLACK = 1e-6;
 /** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
 const ELEMENT_PITCH_FILL = 0.33;
 const LIGHT_SINK_GAIN = 1.4;
@@ -400,7 +402,11 @@ function screenOf(id: string): StampedPoint {
     const fan = F.opened[i]!;
     const offset = fan.elements.offsets.get(id);
     if (!offset) continue;
-    const centre = F.layout.positions.get(fan.elements.capabilityId)!;
+    const rest = F.layout.positions.get(fan.elements.capabilityId)!;
+    const centre = F.input.nodeAt?.(fan.elements.capabilityId) ?? rest;
+    const own = F.layout.positions.get(id);
+    // A dot dragged away from its capability follows the pointer; the rest follow the capability wherever it goes.
+    if (own && Math.hypot(home.x - own.x - (centre.x - rest.x), home.y - own.y - (centre.y - rest.y)) > DRAG_SLACK) continue;
     x += (centre.x * F.scale + F.originX + offset.x - x) * fan.share;
     y += (centre.y * F.scale + F.originY + offset.y - y) * fan.share;
   }
@@ -414,7 +420,7 @@ function screenOf(id: string): StampedPoint {
 function fanShare(id: string): number {
   let share = 0;
   for (let i = 0; i < F.opened.length; i += 1) {
-    if (F.opened[i]!.elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share);
+    if (F.opened[i]!.elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * F.opened[i]!.elements.open);
   }
   return share;
 }
@@ -667,7 +673,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   for (let i = 0; i < it.elementIds.length; i += 1) {
     const el = it.elementIds[i]!;
     const lit = attention.lit?.has(el) === true;
-    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
     shownElements.add(el);

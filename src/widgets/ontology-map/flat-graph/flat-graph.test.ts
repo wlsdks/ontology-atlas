@@ -25,7 +25,7 @@ import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
-import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
+import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
 import { capabilityLineTurns, openedElements } from "./open";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
@@ -478,7 +478,7 @@ describe("a selected capability's fan", () => {
     let fans = 0;
     for (const cap of model.capabilityById.values()) {
       const fan = openedElements(model, layout, cap.id, t, selectedPx, 0.35, 1);
-      if (!fan || cap.elementIds.length > 12) continue;
+      if (!fan) continue;
       fans += 1;
       const at = [...fan.offsets.values()];
       expect(at.length, cap.id).toBe(cap.elementIds.filter((id) => layout.positions.has(id)).length);
@@ -516,23 +516,31 @@ describe("a selected capability's fan", () => {
 
   it.each(VAULTS)("leaves a %s capability's elements where they are once the zoom shows them apart, and closes without a jump", (_name, model) => {
     const layout = layoutOf(model);
-    const cap = [...model.capabilityById.values()].find((c) => c.elementIds.length >= 3 && layout.positions.has(c.id))!;
-    expect(openedElements(model, layout, cap.id, t, selectedPx, 64, 1)).toBeNull();
-    const centre = layout.positions.get(cap.id)!;
-    let before: ReadonlyMap<string, { x: number; y: number }> | null = null;
     let widestStepPx = 0;
-    for (let k = 0; k <= 400; k += 1) {
-      const scale = 0.3 * 2 ** (k / 50);
-      const fan = openedElements(model, layout, cap.id, t, selectedPx, scale, 1);
-      const now = new Map(cap.elementIds.filter((id) => layout.positions.has(id)).map((id) => {
-        const home = layout.positions.get(id)!;
-        return [id, fan?.offsets.get(id) ?? { x: (home.x - centre.x) * scale, y: (home.y - centre.y) * scale }];
-      }));
-      if (before) for (const [id, p] of now) widestStepPx = Math.max(widestStepPx, Math.hypot(p.x - before.get(id)!.x, p.y - before.get(id)!.y) / Math.max(1, Math.hypot(p.x, p.y) / 40));
-      before = now;
+    let fans = 0;
+    for (const cap of model.capabilityById.values()) {
+      const centre = layout.positions.get(cap.id);
+      if (!centre || cap.elementIds.length < 2) continue;
+      fans += 1;
+      expect(openedElements(model, layout, cap.id, t, selectedPx, 64, 1), cap.id).toBeNull();
+      let before: ReadonlyMap<string, { x: number; y: number }> | null = null;
+      // The disc grows with the zoom as the frame grows it, so the fan's radius and spacing move under the sweep.
+      for (let k = 0; k <= 400; k += 1) {
+        const growth = zoomGrowth(2 ** (k / 50), t);
+        const scale = 0.3 * 2 ** (k / 50);
+        const fan = openedElements(model, layout, cap.id, t, selectedDiscRadius(graphDiscRadiusPx("capability", 0, t, growth), t, growth), scale, growth);
+        const now = new Map(cap.elementIds.filter((id) => layout.positions.has(id)).map((id) => {
+          const home = layout.positions.get(id)!;
+          return [id, fan?.offsets.get(id) ?? { x: (home.x - centre.x) * scale, y: (home.y - centre.y) * scale }];
+        }));
+        if (before) for (const [id, p] of now) widestStepPx = Math.max(widestStepPx, Math.hypot(p.x - before.get(id)!.x, p.y - before.get(id)!.y) / Math.max(1, Math.hypot(p.x, p.y) / 40));
+        before = now;
+      }
     }
-    // Measured 4.4 px per fiftieth of an octave on both vaults (2026-11-14); a jump would be the fan's radius, about 32 px.
+    expect(fans).toBeGreaterThan(3);
+    // Measured 8.1 px per fiftieth of an octave at most; a fan that jumped along its arc moved 18 to 51 px.
     expect(widestStepPx).toBeLessThan(16);
+
   });
 
   it("names a selected capability's fanned elements with no name over another", () => {

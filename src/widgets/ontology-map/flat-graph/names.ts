@@ -37,6 +37,8 @@ export interface NameAdmission {
   ids: ReadonlySet<string>;
   /** Which of its candidate sides each capability or element name took, so the step above keeps it there. */
   sides: ReadonlyMap<string, number>;
+  /** Where each fanned element's name is anchored, in world units; every other name is anchored at its concept. */
+  anchors: ReadonlyMap<string, Point>;
 }
 
 export interface NameInput {
@@ -844,7 +846,9 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   if (polylines.length > 0) {
     for (const n of names) if (input.lit!.has(n.id) && crossed(anchor(n.id), [n])) n.backed = true;
   }
-  return { step, names, ids, sides };
+  const anchors = new Map<string, Point>();
+  if (fan) for (const id of fan.offsets.keys()) anchors.set(id, anchor(id));
+  return { step, names, ids, sides, anchors };
 }
 
 const degreeCache = new WeakMap<DialModel, Map<string, number>>();
