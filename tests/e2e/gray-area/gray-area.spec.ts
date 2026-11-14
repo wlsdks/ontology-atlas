@@ -34,7 +34,7 @@ test('reviews the exact folder before any scan and shows bounded actual source w
 test('prepares an editable investigation without sending a provider turn or writing',async({page})=>{
   await install(page);await inspect(page);
   await page.getByRole('button',{name:'Prepare editable draft',exact:true}).first().click();
-  const composer=page.getByRole('textbox',{name:'Write what you want done'});await expect(composer).toContainText('Retry dispatch');
+  const composer=page.getByRole('textbox',{name:'Message'});await expect(composer).toContainText('Retry dispatch');
   await page.getByTestId('acp-chat-seated-detail').click();
   const detail=page.getByTestId('acp-chat-seated-detail-text');await expect(detail).toContainText('grayAreaInvestigation:v1');
   await expect(detail).toContainText('Passes the request to the local write-policy decision.');
@@ -157,7 +157,7 @@ test('a prepared pair draft leads with its localized topic, retains folded evide
   await page.getByRole('button',{name:'수정 가능한 대화 초안',exact:true}).first().click();
   const dock=page.getByTestId('analysis-workbench');const heading=dock.getByRole('heading',{level:2});
   await expect(heading).toContainText('재시도 전달');await expect(heading).toContainText('쓰기 권한 규칙');
-  const composer=page.getByRole('textbox',{name:'무엇을 시킬지 적어요',exact:true});
+  const composer=page.getByRole('textbox',{name:'메시지',exact:true});
   await expect(composer).toContainText('재시도 전달');await expect(composer).toContainText('쓰기 권한 규칙');
   await expect(composer).not.toContainText('grayAreaInvestigation:v1');
   await expect(page.getByTestId('acp-chat-suggestions')).toHaveCount(0);await expect(page.getByTestId('acp-starting-suggestions')).toHaveCount(0);
@@ -181,7 +181,7 @@ test('a new explicit investigation restores its topic after an ordinary draft wa
   await page.setViewportSize({width:1512,height:949});await install(page);
   await page.getByTestId('map-detail-panel-more-menu-trigger').click();await page.getByTestId('map-detail-panel-action-meaning').click();
   await page.getByTestId('analysis-workbench').getByRole('tab',{name:'Conversation',exact:true}).click();
-  const composer=page.getByRole('textbox',{name:'Write what you want done',exact:true});
+  const composer=page.getByRole('textbox',{name:'Message',exact:true});
   await expect(composer).toBeVisible();await composer.fill('An ordinary draft');await composer.fill('');
   await page.getByTestId('analysis-workbench').getByRole('button',{name:/close/i}).click();
   await inspect(page);

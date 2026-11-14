@@ -1,57 +1,57 @@
 {
   "ariaLabel": "Conversation with {runtime}",
   "emptyHint": "The agent answers from the files in this folder.",
-  "emptySeatedHint": "This screen has written a question for you. Edit it below, or send it as it is.",
+  "emptySeatedHint": "A suggested question is in the box below. Edit it, or send it as it is.",
   "codeCopy": "Copy",
   "codeCopied": "Copied",
   "jumpToLatest": "Jump to latest",
-  "composerLabel": "Write what you want done",
+  "composerLabel": "Message",
   "send": "Send",
   "stop": "Stop",
   "stoppedBeforeAnswer": "Stopped before the agent answered. Nothing was written.",
-  "turnSilent": "The agent has said nothing for {minutes} minutes",
-  "turnSilentHint": "It may still be working, or it may have finished without telling us. Press Stop to type again.",
+  "turnSilent": "The agent has not responded for {minutes} minutes",
+  "turnSilentHint": "It may still be working, or it may have finished without saying so. Press Stop to type again.",
   "status": {
     "idle": "Off",
     "starting": "Connecting",
     "ready": "Ready",
     "thinking": "Thinking",
-    "awaiting": "Waiting for you",
+    "awaiting": "Waiting for approval",
     "error": "Problem",
     "exited": "Ended",
     "stopped": "Stopped"
   },
   "firstRun": {
-    "title": "Getting this tool ready",
-    "body": "The first run downloads the tool (a few hundred MB) and can take a few minutes. Please keep the app open.",
+    "title": "Getting the agent ready",
+    "body": "The first run downloads the agent (a few hundred MB) and can take a few minutes. Please keep the app open.",
     "progress": "{mb} MB downloaded so far"
   },
   "starting": {
-    "title": "Connecting to the tool",
-    "body": "The tool is starting on this computer. You can ask as soon as it is ready."
+    "title": "Connecting to the agent",
+    "body": "The agent is starting on this computer. You can ask as soon as it is ready."
   },
   "connectStopped": {
     "title": "Stopped connecting",
-    "body": "The tool was not started, and nothing was sent.",
+    "body": "The agent was not started, and nothing was sent.",
     "again": "Connect again"
   },
   "permission": {
-    "title": "It wants to touch something outside this folder",
-    "body": "Nothing happens until you allow it. Check below where it wants to write.",
+    "title": "It wants to access something outside this folder",
+    "body": "Nothing happens until you allow it. Check below what it wants to access.",
     "ontologyWriteTitle": "Review the proposed change",
     "ontologyWriteBody": "Allowing writes it into the Markdown files in this folder. Nothing changes before then.",
-    "consentTitle": "There is a change to make in this folder",
+    "consentTitle": "It wants to change a file in this folder",
     "consentBody": "Nothing changes until you allow it. What it wants to change is written below, in its own words.",
     "unknownTarget": "Cannot tell what it wants to do",
-    "reject": "No thanks",
+    "reject": "Deny",
     "allowOnce": "Allow once",
     "answered": {
       "allow": "Allowed once. The agent carries on.",
       "allowNamed": "Allowed once. The agent runs this write to “{name}”.",
-      "reject": "Declined. The agent does not do this.",
-      "rejectWrite": "Declined. Nothing is written.",
-      "rejectNamed": "Declined. Nothing is written to “{name}”.",
-      "correct": "Declined. A correction request is drafted in the composer, not sent.",
+      "reject": "Denied. The agent does not do this.",
+      "rejectWrite": "Denied. Nothing is written.",
+      "rejectNamed": "Denied. Nothing is written to “{name}”.",
+      "correct": "Denied. A correction request is drafted in the composer, not sent.",
       "always": "Allowed for the rest of this chat.",
       "failed": "The answer was not sent. Press it again."
     },
@@ -94,9 +94,9 @@
         "source_binding_changed": "The project's source binding changed during this task.",
         "source_diff_unavailable": "The source change set for this task is unavailable. No task ownership is inferred."
       },
-      "correct": "Reject and edit",
+      "correct": "Deny and edit",
       "defer": "Keep pending",
-      "correctEffect": "Declines this write and drafts a correction request in the composer. It does not send it or roll back code.",
+      "correctEffect": "Denies this write and drafts a correction request in the composer. It does not send it or roll back code.",
       "deferEffect": "Postpones the answer. The request waits only in this conversation and is not saved.",
       "provenance": "Request provenance and guards",
       "requestId": "request",
@@ -165,7 +165,7 @@
     "insideFolderTitle": "It wants to change a file in this folder",
     "insideFolderBody": "The path is below. Nothing happens until you allow it.",
     "insideProjectTitle": "It wants to look at code in your project",
-    "insideProjectBody": "That is outside the map folder but inside the project you picked. Nothing happens until you allow it.",
+    "insideProjectBody": "That is outside the ontology folder but inside the project you picked. Nothing happens until you allow it.",
     "ontologyWriteUnverifiedBody": "This request writes the proposed ontology files only after Allow once. Check the target before allowing."
   },
   "close": "Close conversation",
@@ -175,14 +175,14 @@
   "composerHint": "Enter to send · ⇧Enter for a new line",
   "history": "Past chats",
   "newChat": "New chat",
-  "newChatWhenReady": "You can start a new chat once the tool is connected",
-  "sendWhenReady": "You can send once the tool is connected",
+  "newChatWhenReady": "You can start a new chat once the agent is connected",
+  "sendWhenReady": "You can send once the agent is connected",
   "untitled": "Untitled chat",
   "model": "Model",
   "mode": "Mode",
   "modeUnverified": "{name} · Not checked",
-  "modeUnverifiedHint": "Not measured yet.",
-  "runtimePicker": "Which tool to chat with",
+  "modeUnverifiedHint": "Not checked yet.",
+  "runtimePicker": "Agent to chat with",
   "tool": {
     "connect": "Connect to the folder",
     "read": "Read the map",
@@ -191,7 +191,7 @@
     "editNode": "Edit a concept",
     "renameNode": "Rename a concept",
     "mergeNodes": "Merge two concepts",
-    "addRelation": "Link a relation",
+    "addRelation": "Add a relation",
     "findEvidence": "Look for evidence",
     "findOrphans": "Look for unconnected concepts",
     "readConstellation": "Read a saved bookmark",
@@ -219,7 +219,7 @@
     "fetch": "Fetch"
   },
   "fullRequest": "Full request",
-  "seatedDetail": "{lines, plural, one {# instruction this screen attached} other {# instructions this screen attached}}",
+  "seatedDetail": "{lines, plural, one {# instruction added by this screen} other {# instructions added by this screen}}",
   "toolRepeat": "Repeated {count} times",
   "toolOutcome": {
     "foundUnit": " found",
@@ -229,7 +229,7 @@
     "failed": "failed",
     "cancelled": "stopped",
     "unfinished": "never finished",
-    "declined": "you declined"
+    "declined": "you denied"
   },
   "workGroup": "Work details · {count, plural, one {# step} other {# steps}}",
   "workGroupActive": "Working · {count, plural, one {# step} other {# steps}}",
@@ -237,8 +237,8 @@
   "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
   "closeHistory": "Close the past chats list",
   "presentation": {
-    "ariaLabel": "Ontology DNA presentation",
-    "eyebrow": "Ontology DNA",
+    "ariaLabel": "Business flow presentation",
+    "eyebrow": "Ontology-based answer",
     "title": "Business flow presentation",
     "open": "Present this answer",
     "openHint": "Follow this ontology-only answer through {count} scenes.",
@@ -250,14 +250,14 @@
       "full_body_read_budget_exceeded": "More than 12 concept bodies were read. Narrow it to one representative flow.",
       "scene_count_out_of_range": "The answer does not contain between three and seven explicit scenes.",
       "scene_uncited": "At least one scene has no evidence slug.",
-      "citation_not_read": "A scene cites a concept whose full body was not read in this turn.",
+      "citation_not_read": "A scene cites a concept whose full body was not read in this answer.",
       "relation_not_in_graph": "The explanation uses a relation that is not in the current ontology."
     },
     "progress": "Scene {current} of {total}",
     "progressAria": "Presentation progress",
     "sourceHidden": "Ontology only · {count} full bodies",
     "qualification": {
-      "cited": "Read in this turn",
+      "cited": "Read in this answer",
       "limited": "Includes a limit or unknown"
     },
     "sceneFallback": "Scene {current}",
@@ -272,48 +272,48 @@
   },
   "trouble": {
     "limit": {
-      "title": "This tool has hit its usage limit",
-      "hint": "Not the app: the tool's own plan is out of room. If Details names when it resets, press Retry then; until then pick another tool below and carry on.",
-      "hintOnlyTool": "Not the app: the tool's own plan is out of room, and it is the only tool set up here. If Details names when it resets, press Retry then. Connecting a second tool on the Agents screen is what gives you somewhere to carry on."
+      "title": "This agent has hit its usage limit",
+      "hint": "Not the app: the agent's own plan is out of room. If \"Details\" names when it resets, press \"Try again\" then; until then pick another agent below and carry on.",
+      "hintOnlyTool": "Not the app: the agent's own plan is out of room, and it is the only agent set up here. If \"Details\" names when it resets, press \"Try again\" then. Connecting a second agent on the Agents screen gives you somewhere to carry on."
     },
     "auth": {
-      "title": "An old app-scoped sign-in is getting in the way",
-      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-scoped sign-in: it shadows the shared one and has already expired. Press 「Try again」 below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under 「Details」 into a terminal."
+      "title": "Saved sign-in has expired",
+      "hint": "You do not need a separate sign-in. This app uses the same one you use in your terminal. What is in the way is a keychain entry from an earlier app-only sign-in: it hides the shared one and has already expired. Press \"Try again\" below and the app clears that entry and falls back to your real sign-in. If that still fails, paste the one-line command under \"Details\" into a terminal."
     },
     "install": {
-      "title": "A broken piece from an interrupted download is in the way",
-      "hint": "The first-run download was cut off halfway, and the leftover pieces make it fail at the same spot every time. Press 「Try again」 below and the app clears them and downloads again from scratch. Check your internet connection and keep the app open while it downloads (a few hundred MB)."
+      "title": "An interrupted download left broken files",
+      "hint": "The first-run download was cut off halfway, and the leftover files make it fail at the same spot every time. Press \"Try again\" below and the app clears them and downloads again from scratch. Check your internet connection and keep the app open while it downloads (a few hundred MB)."
     },
     "timeout": {
-      "title": "The tool is not responding",
-      "hint": "Nothing came back from the tool for 45 seconds. A download in progress keeps the wait alive, so this is closer to a genuine stall. Press 「Try again」 below. If it keeps happening, check that the tool starts on its own in a terminal."
+      "title": "The agent is not responding",
+      "hint": "Nothing came back from the agent for 45 seconds. A download in progress keeps the wait alive, so this is closer to a real stall. Press \"Try again\" below. If it keeps happening, check that the agent starts on its own in a terminal."
     },
     "launch": {
-      "title": "The tool could not be started",
-      "hint": "Agents shows what state this tool is in. The button below opens it.",
+      "title": "The agent could not be started",
+      "hint": "Agents shows what state this agent is in. The button below opens it.",
       "door": "Open Agents"
     },
     "network": {
-      "title": "No connection to the outside",
-      "hint": "Check your internet connection, then press 「Try again」 below. Reading and editing the map works offline."
+      "title": "Cannot connect to the network",
+      "hint": "Check your internet connection, then press \"Try again\" below. Reading and editing the map works offline."
     },
     "unknown": {
       "title": "Something went wrong",
-      "hint": "Press 「Try again」 below. If it keeps happening, what is under 「Details」 is what to report."
+      "hint": "Press \"Try again\" below. If it keeps happening, what is under \"Details\" is what to report."
     },
     "retry": "Try again",
     "details": "Details",
-    "diagnosticsLabel": "What the tool printed"
+    "diagnosticsLabel": "Error output"
   },
   "notice": {
-    "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly.",
+    "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is accessed. The agent follows the settings you gave it directly.",
     "diedMidTurn": "The agent stopped in the middle of answering. What you see is everything that arrived. Start a new chat above and ask again.",
-    "profileModeMoved": "The tool moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits.",
-    "profileModeMovedServerGate": "The tool moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits. Changes made through Atlas tools still stop at the server for your approval.",
-    "modeMoved": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
-    "modeMovedServerGate": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
-    "autoAllowed": "{detail} was written without asking: it fits the wiki page contract.",
-    "autoRefused": "Refused without asking · {detail}. It is outside what this conversation may do.",
+    "profileModeMoved": "The agent moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits.",
+    "profileModeMovedServerGate": "The agent moved this conversation into {mode}, a locally configured permission profile. Atlas has not verified whether it asks before file edits. Changes made through Atlas tools still stop at the server for your approval.",
+    "modeMoved": "The agent moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
+    "modeMovedServerGate": "The agent moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval.",
+    "autoAllowed": "{detail} was written without asking: it matches the wiki page format.",
+    "autoRefused": "Denied without asking · {detail}. It is outside what this conversation may do.",
     "openPage": "Open",
     "askNext": "Ask next time"
   },
@@ -356,15 +356,15 @@
   "modeName": {
     "default": "Ask first",
     "plan": "Plan only",
-    "auto": "Decide for me",
-    "dontask": "Never ask",
+    "auto": "Auto",
+    "dontask": "Deny without asking",
     "read-only": "Read only"
   },
   "modeHint": {
     "default": "Asks you before anything that could be risky.",
     "plan": "Plans what it would do. Nothing actually runs.",
-    "auto": "The tool decides for itself whether to ask.",
-    "dontask": "Never asks. Anything not pre-approved is refused.",
+    "auto": "The agent decides whether to ask.",
+    "dontask": "Never asks. Anything not pre-approved is denied.",
     "read-only": "Reads only. Changes go through Atlas tools."
   },
   "doctor": {
@@ -385,42 +385,42 @@
     "failed": "The check could not finish. Try again in a moment.",
     "allClear": "No problems right now",
     "restFine": "The rest look fine",
-    "whatWeChecked": "What we looked at",
+    "whatWeChecked": "What was checked",
     "state": {
       "ok": "fine",
-      "problem": "blocked",
-      "unknown": "could not tell"
+      "problem": "problem",
+      "unknown": "could not check"
     },
     "check": {
-      "cli": "Is the tool on this computer",
-      "launcher": "Can we launch it",
+      "cli": "Is the agent on this computer",
+      "launcher": "Can it start",
       "npx-cache": "Is the downloaded copy intact",
       "config-dir": "Is the app's own config ready",
       "credentials-link": "Does it reuse your terminal sign-in",
       "shadow-keychain": "Is an old sign-in record in the way",
       "login": "Is this folder signed in",
-      "gate": "Does it ask before touching anything outside the folder"
+      "gate": "Does it ask before accessing anything outside the folder"
     },
     "next": {
-      "cli": "Open that tool’s install guide from this list, install it, then press Re-check above.",
-      "launcher": "Launching that tool needs Node. Install Node, then press Re-check.",
-      "login": "Sign in to that tool once in your terminal. The app reuses that sign-in.",
-      "gate": "For this tool the app cannot stand in front of work outside your folder. That is ours to fix; until then another tool is the safer choice."
+      "cli": "Open that agent’s install guide from this list, install it, then press \"Check again\" above.",
+      "launcher": "Starting that agent needs Node. Install Node, then press \"Check again\".",
+      "login": "Sign in to that agent once in your terminal. The app reuses that sign-in.",
+      "gate": "For this agent the app cannot block work outside your folder. That is ours to fix; until then another agent is the safer choice."
     },
     "progress": {
       "node": {
         "downloading": "Downloading Node",
         "verifying": "Checking the downloaded file against its hash",
         "extracting": "Unpacking",
-        "verifying-install": "Measuring again to confirm it landed",
-        "done": "Node is here",
+        "verifying-install": "Checking that it installed correctly",
+        "done": "Node downloaded",
         "failed": "Could not download Node"
       },
       "cli": {
         "installing": "Installing",
         "verifying": "Checking",
         "extracting": "Unpacking",
-        "verifying-install": "Measuring again to confirm it landed",
+        "verifying-install": "Checking that it installed correctly",
         "done": "Installed",
         "failed": "Could not install"
       }
