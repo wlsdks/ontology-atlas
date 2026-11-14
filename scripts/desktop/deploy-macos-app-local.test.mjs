@@ -170,9 +170,6 @@ test("local macOS app deploy builds without release updater signing, installs, a
   ]);
 });
 
-test("local macOS app deploy keeps drag proof only for the plain topology route", () => {
-});
-
 test("local macOS app deploy does not let drag proof rewrite a query-specific route", () => {
   const options = parseDeployMacosAppArgs([
     "--route=/ko/topology/?mode=path",
