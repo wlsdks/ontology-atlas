@@ -56,7 +56,7 @@ describe("RelationsZone reach groups", () => {
     expect(groups).toEqual(["needs", "neededBy"]);
     expect(group(container, "needs").querySelector("[data-datasheet-group-total]")?.textContent).toBe("2");
     expect(group(container, "neededBy").querySelector("[data-datasheet-group-total]")?.textContent).toBe("1");
-    expect(group(container, "needs")).toHaveTextContent(/^Needs2/);
+    expect(group(container, "needs")).toHaveTextContent(new RegExp(`^${enMessages.conceptReach.needs}2`));
     expect(group(container, "needs").querySelector('[data-reach-sample="needs"] path')?.getAttribute("fill")).toBe("var(--map-graph-arc)");
     expect(group(container, "neededBy").querySelector('[data-reach-sample="neededBy"] path')?.getAttribute("fill")).toBe("var(--map-graph-reach)");
   });
@@ -76,7 +76,7 @@ describe("RelationsZone reach groups", () => {
   it("drops both headings when only other links exist, and folds those into one line", () => {
     const { container } = renderZone({ reach: { needs: [], neededBy: [], other: [reachRow("capability:search", "relates")] } });
     expect(container.querySelector('[data-datasheet-group="needs"]')).toBeNull();
-    expect(screen.getByRole("button", { name: "Other links 1" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: enMessages.conceptReach.otherLinks.replace("{count, number}", "1") })).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText(labels.noConnections)).toBeNull();
   });
 
@@ -153,7 +153,7 @@ describe("RelationsZone reasons", () => {
     act(() => vi.advanceTimersByTime(150));
     const card = screen.getByTestId("map-edge-hover-card");
     expect(within(card).getByTestId("map-edge-hover-why")).toHaveTextContent(reason);
-    expect(card).toHaveTextContent("Needs");
+    expect(card).toHaveTextContent(enMessages.conceptReach.needs);
     expect(container.contains(card)).toBe(false);
     fireEvent.pointerLeave(pay);
     expect(screen.queryByTestId("map-edge-hover-card")).toBeNull();
@@ -214,7 +214,7 @@ describe("RelationsZone folded lines", () => {
       },
     });
     expect(rowIds(group(container, "other"))).toEqual([]);
-    fireEvent.click(screen.getByRole("button", { name: "Other links 2" }));
+    fireEvent.click(screen.getByRole("button", { name: enMessages.conceptReach.otherLinks.replace("{count, number}", "2") }));
     expect(rowIds(group(container, "other"))).toEqual(["capability:search", "capability:commerce"]);
     expect([...group(container, "other").querySelectorAll("[data-reach-sample]")].map((s) => s.getAttribute("data-reach-sample"))).toEqual(["relates", "broader"]);
   });

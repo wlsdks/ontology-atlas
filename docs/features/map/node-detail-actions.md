@@ -32,8 +32,8 @@ routes: [/topology]
   word. A project's source receipt sits in the same slot, and its remedy is
   the project's filled action.
 - The footer holds the slug, **Edit** (relation editing, linked-node creation),
-  **More** and a quiet **Full detail**. **More** starts with **Meaning review**,
-  then **Ask the agent** in the installed app and **Copy handoff**, then
+  **More** and a quiet **Details**. **More** starts with **Meaning review**,
+  then **Ask agent** in the installed app and **Copy prompt**, then
   explore overlooked areas, the document and the realm. A document selection's
   footer is the slug, **More** and **Open document**, its one filled control.
 - The relation-line guide is pull-only in the existing `?` shortcut sheet. The

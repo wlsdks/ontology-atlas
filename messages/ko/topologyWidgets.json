@@ -8,7 +8,7 @@
     "expandAriaLabel": "허브 바 펼치기",
     "collapseTooltip": "허브 바 접기",
     "collapseAriaLabel": "허브 바 접기",
-    "itemTitle": "{name} · 연결 {degree}"
+    "itemTitle": "{name} · 관계 {degree}"
   },
   "keyboardWalk": {
     "deadEnd": "이 방향엔 이어진 개념이 없어요"

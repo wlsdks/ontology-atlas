@@ -1,3 +1,3 @@
 {
-  "reasonsMissing": "{count, plural, one {# connection has} other {# connections have}} no reason written"
+  "reasonsMissing": "{count, plural, one {# relation has} other {# relations have}} no reason written"
 }

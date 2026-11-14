@@ -6,7 +6,7 @@ import { waitForDomeAssembled, waitForFlatMap, waitForMapStill, waitFrames } fro
  * Switching 2D -> 3D -> 2D must leave the flat map's trail and `open=` state untouched.
  * Dismissing the picker over a node must not also press the canvas.
  */
-const trailChip = (page: import("@playwright/test").Page) => page.getByText(/걸어온 길/);
+const trailChip = (page: import("@playwright/test").Page) => page.getByText(/방문 기록/);
 
 async function openPicker(page: import("@playwright/test").Page) {
   await page.getByTestId("topology-view-3d").click();

@@ -950,7 +950,7 @@ describe("OntologyMapDetailPanel: judgment and the one emphasised thing", () => 
       groups: reasonedGroups(["first is explained", undefined, undefined]),
       reach: reachOf(3),
     });
-    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent("2 connections have no reason written");
+    expect(screen.getByTestId("map-detail-panel-judgment")).toHaveTextContent("2 relations have no reason written");
     const action = screen.getByTestId("map-detail-panel-judgment-action");
     expect(screen.getByTestId("map-detail-panel")).toHaveAttribute("data-panel-emphasis", "meaning-review");
     expect(filledControls()).toEqual([action]);

@@ -1,10 +1,10 @@
 {
-  "contains": "Contained items",
-  "belongs_to": "Containers",
-  "depends_on": "Depends on",
+  "contains": "contains",
+  "belongs_to": "part of",
+  "depends_on": "depends on",
   "implements": "implements",
   "uses": "uses",
-  "describes": "evidence",
+  "describes": "describes",
   "related_to": "related",
   "is_a": "a kind of"
 }

@@ -50,7 +50,7 @@ for (const target of ["elements/checkout", "elements/deleted", "capabilities/for
       await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
       await page.goto("/en/topology/?e2e=1&guides=off&p=project%3Astorefront", { waitUntil: "domcontentloaded" });
       await expect(receipt).toHaveAttribute("data-source-action", "repair_source_path");
-      await page.getByRole("button", { name: "Full detail", exact: true }).click();
+      await page.getByRole("button", { name: "Details", exact: true }).click();
       const fullDetail = page.getByTestId("full-detail-a1");
       await expect(fullDetail.getByRole("heading", { level: 1 })).toHaveText("Storefront");
       await expect(fullDetail).toContainText("nextActionTarget: elements/checkout");

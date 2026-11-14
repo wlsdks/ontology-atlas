@@ -41,7 +41,7 @@ describe("TopologyEmptyState", () => {
     expect(
       screen.getByRole("status", { name: new RegExp(EMPTY.titleNoProjects) }),
     ).toBeInTheDocument();
-    expect(screen.getByText("저장·편집 열기").closest("a")).toHaveAttribute(
+    expect(screen.getByText(EMPTY.ctaBuilder).closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?workbench=create"),
     );
@@ -82,9 +82,7 @@ describe("TopologyEmptyState", () => {
     });
 
     expect(panel).toHaveTextContent("지도 · 개념 1개 · 관계 0개");
-    expect(panel).toHaveTextContent(
-      "저장·편집에서 개념 사이 관계를 하나 저장하면 이 화면에 선이 나타나요.",
-    );
+    expect(panel).toHaveTextContent(EMPTY.bodyNoDeps);
     expect(screen.getByText("관계 만들기").closest("a")).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?workbench=create"),
