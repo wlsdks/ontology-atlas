@@ -141,7 +141,9 @@
       "noneReadyCaption": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
       "noneReadyCaptionNoList": "Claude Agent나 Codex를 설치하면 여기에 나타나요. 설치한 뒤 「다시 확인」을 누르세요.",
       "waitingNote": "{names} 설치나 로그인을 마친 뒤 「다시 확인」을 누르면 해당 도구로 대화를 열 수 있어요.",
-      "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
+      "webTitle": "코딩 도구와 바로 대화",
+      "webBody": "데스크톱 앱은 이 컴퓨터에 있는 코딩 도구를 찾아 Atlas 안에서 대화를 열어요.",
+      "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요.",
       "webCaption": "직접 띄운 도구를 이 폴더에 붙이는 일은 지금도 MCP 탭의 「이 폴더 내주기」 칸에서 돼요.",
       "webGetApp": "앱 받기",
       "state": {

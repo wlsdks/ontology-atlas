@@ -647,8 +647,10 @@ describe('runtime rows: marks, columns and the result block', () => {
     bridge.available = false;
     const registry = (await import('@/src-tauri/src/acp-registry.json')).default;
     render(<AcpRuntimeSettings embedded />);
-    const list = screen.getByTestId('app-settings-runtimes-web-tools');
-    expect(within(list).getByText(`webToolsHeading:${JSON.stringify({ count: registry.agents.length })}`)).toBeInTheDocument();
+    const toggle = screen.getByTestId('app-settings-runtimes-web-tools-toggle');
+    expect(toggle).toHaveTextContent(`webToolsHeading:${JSON.stringify({ count: registry.agents.length })}`);
+    fireEvent.click(toggle);
+    const list = await screen.findByTestId('app-settings-runtimes-web-tools');
     for (const agent of registry.agents) {
       expect(within(list).getByTestId(`app-settings-runtimes-web-tool-${agent.id}`)).toHaveTextContent(agent.name);
     }
