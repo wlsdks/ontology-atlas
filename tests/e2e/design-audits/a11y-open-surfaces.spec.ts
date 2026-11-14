@@ -147,13 +147,6 @@ const OPENERS: readonly Opener[] = [
     dogfood: true,
   },
   {
-    name: "Architecture evidence flow",
-    route: "/ko/architecture/?view=architecture",
-    trigger: "architecture-evidence-rail",
-    surface: '[data-testid="architecture-evidence-dock"]',
-    dogfood: true,
-  },
-  {
     name: "Library work receipt history",
     route: "/en/library/",
     trigger: "library-work-history-toggle",

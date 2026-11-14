@@ -42,12 +42,14 @@ function buildRecord({
   violationCount = 3,
   excludedByUsage = 18 as number | undefined,
   observedRoleEdges = [] as ArchitectureRoleEdge[],
+  violations = [] as unknown[],
 }: {
   source?: ArchitectureRecord['brief']['measured']['source'];
   status?: 'conforms' | 'violated' | 'unknown';
   violationCount?: number;
   excludedByUsage?: number | undefined;
   observedRoleEdges?: ArchitectureRoleEdge[];
+  violations?: unknown[];
 } = {}) {
   return parseArchitectureRecord({
     contract: 'architectureRecord:v1',
@@ -67,7 +69,7 @@ function buildRecord({
       conformance: {
         status,
         violationCount,
-        violations: [],
+        violations,
         observedRoleEdges,
         ...(excludedByUsage === undefined ? {} : { excludedByUsage }),
         unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
@@ -76,8 +78,8 @@ function buildRecord({
   });
 }
 
-function renderWithRecord(record: ReturnType<typeof buildRecord>) {
-  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+function renderWithRecord(record: ReturnType<typeof buildRecord>, frontmatter: unknown = FSD_PROFILE_FRONTMATTER) {
+  const profile = parseArchitectureProfile(frontmatter as never);
   return render(
     <NextIntlClientProvider locale="en" messages={en}>
       <ArchitectureWorkbench profiles={[profile]} recordsByProfile={{ [profile.slug]: record }} />
@@ -85,10 +87,14 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>) {
   );
 }
 
-function openEvidence() {
-  fireEvent.click(screen.getByTestId('architecture-evidence-rail'));
-  return screen.getByTestId('architecture-evidence-dock');
-}
+const FSD_TRAFFIC: ArchitectureRoleEdge[] = [
+  { fromRole: 'views', toRole: 'widgets', count: 56 },
+  { fromRole: 'views', toRole: 'shared', count: 61 },
+  { fromRole: 'widgets', toRole: 'shared', count: 88 },
+  { fromRole: 'features', toRole: 'shared', count: 97 },
+  { fromRole: 'views', toRole: 'views', count: 300 },
+  { fromRole: 'shared', toRole: 'features', count: 1 },
+];
 
 /* The zero-profile screen is unreachable in a browser (both samples carry a profile), so jsdom is the only place to measure it. */
 /* The chosen role lives in the address and jsdom shares one window per file, so reset it. */
@@ -168,7 +174,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
 });
 
 describe('ArchitectureWorkbench', () => {
-  it('projects live ACP inspection into the observation lane without calling it a receipt', () => {
+  it('names a live agent turn in the header instead of the last record', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -183,16 +189,10 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-
-    openEvidence();
-    const observation = screen.getByTestId('architecture-source-check');
-    expect(observation).toHaveTextContent('Agent is inspecting source');
-    expect(observation).toHaveTextContent('inspect_architecture');
-    expect(observation).toHaveTextContent('not an inspection receipt yet');
-    expect(screen.getAllByTestId('architecture-observation-motion')).toHaveLength(2);
+    expect(screen.getByTestId('architecture-status')).toHaveTextContent('Agent is inspecting source');
   });
 
-  it('starts an in-tab inspection from the evidence plane instead of navigating to Map', () => {
+  it('starts an in-tab inspection from the header action instead of navigating to Map', () => {
     const onAgentRequest = vi.fn();
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
@@ -218,38 +218,20 @@ describe('ArchitectureWorkbench', () => {
     expect(window.location.pathname).toBe('/ko/architecture/');
   });
 
-  it('opens the evidence dock without erasing unrelated route state', () => {
+  it('writes the chosen role into the address without erasing unrelated route state', () => {
     window.history.replaceState({}, '', '/ko/architecture/?guides=off&fixture=storefront');
     renderWorkbench();
-
-    openEvidence();
-
-    expect(window.location.search).toBe('?guides=off&fixture=storefront');
-    expect(screen.getByTestId('architecture-evidence-rail')).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    expect(window.location.search).toBe('?guides=off&fixture=storefront&role=views');
   });
 
-  it('opens with a scoped living blueprint instead of an ontology graph', () => {
+  it('opens with the profile, its status and every role, with the rules a click away', () => {
     renderWorkbench();
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    expect(screen.getByTestId('architecture-evidence-rail')).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
-    openEvidence();
-    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
-    const evidencePlane = screen.getByTestId('architecture-evidence-plane');
-    expect(evidencePlane).toHaveTextContent('Human contract');
-    expect(evidencePlane).toHaveTextContent('Reviewed structure');
-    expect(evidencePlane).toHaveTextContent('Source observation');
-    expect(evidencePlane).toHaveTextContent('Delta');
-    expect(evidencePlane).toHaveTextContent('Unknown until inspection');
+    expect(screen.getByTestId('architecture-status')).toHaveTextContent('Not scanned yet');
     expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
-    expect(screen.getAllByText('Source check required').length).toBeGreaterThanOrEqual(2);
     expect(
       screen.getByText(
         'Rules apply to connections that pull in running code. Connections that pull in only type definitions are shown but never counted as violations.',
@@ -279,68 +261,73 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getByTestId('architecture-graph-box-adapter')).toBeInTheDocument();
   });
 
-  /* One band per role carries name, globs and allowances; a separate list repeated them. */
-  it('draws each role exactly once', () => {
+  it('draws each role once, in profile order, and no arc before a record exists', () => {
     renderWorkbench();
-    for (const id of ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared']) {
-      expect(
-        screen.getAllByTestId(`architecture-graph-box-${id}`),
-        `${id} must be drawn once, not once per block`,
-      ).toHaveLength(1);
-    }
+    const graph = screen.getByTestId('architecture-graph');
+    const order = [...graph.querySelectorAll('[data-graph-box]')].map((box) => box.getAttribute('data-graph-box'));
+    expect(order).toEqual(['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared']);
+    expect(graph).toHaveAttribute('data-arc-count', '0');
+    expect(screen.queryByTestId('architecture-arcs')).toBeNull();
+    expect(screen.queryByTestId('architecture-legend')).toBeNull();
     /* The glob appears only in the detail panel of a selected role. */
     expect(screen.queryByText('src/shared/**')).toBeNull();
   });
 
-  /*
-   * Under `lower-only` drawing all 21 permitted edges restate the order; the six adjacent pairs make
-   * it a chain.
-   */
-  it('states the whole policy through the columns and the spine, drawing no skip', () => {
-    renderWorkbench();
-    const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
-
-    const graph = screen.getByTestId('architecture-graph');
-    const boxOrder = [...graph.querySelectorAll('[data-graph-box]')].map(
-      (box) => box.getAttribute('data-graph-box')!,
+  it('draws one arc per observed crossing between roles, each named by its sentence', () => {
+    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC, violations: [{ fromRole: 'shared', toRole: 'features' }] }));
+    const arcs = [...screen.getByTestId('architecture-arcs').querySelectorAll('[data-arc-from]')].map(
+      (arc) => `${arc.getAttribute('data-arc-from')}>${arc.getAttribute('data-arc-to')}`,
     );
-    expect(boxOrder, 'boxes must appear in dependency order').toEqual(order);
-    expect(graph).toHaveAttribute('data-edge-source', 'permitted');
-    const drawn = [...graph.querySelectorAll('path[data-edge-drawn="true"]')].map(
-      (path) => `${path.getAttribute('data-edge-from')}>${path.getAttribute('data-edge-to')}`,
-    );
-    expect(drawn.sort()).toEqual([
-      'app>views',
-      'entities>shared',
-      'features>entities',
-      'routing>app',
-      'views>widgets',
-      'widgets>features',
-    ]);
-
+    expect(arcs.sort()).toEqual(['features>shared', 'shared>features', 'views>shared', 'views>widgets', 'widgets>shared']);
+    expect(screen.getByRole('img', { name: 'Features → Shared foundation: 97 imports' })).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Routes: may depend on Application shell, Views, Widgets, Features, Entities, Shared foundation',
-      ),
+      screen.getByRole('img', { name: 'Shared foundation → Features: 1 import against the rules' }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Shared foundation: depends on no other role')).toBeInTheDocument();
   });
 
-  it("draws every permitted edge when the policy is an explicit graph", () => {
-    /* Under `explicit` the strokes are the information: adapter reaches three roles directly. */
-    const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
-    render(
-      <NextIntlClientProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[profile]} />
-      </NextIntlClientProvider>,
+  it('draws a violation dashed in the danger tone with one short label, and keys both marks', () => {
+    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC, violations: [{ fromRole: 'shared', toRole: 'features' }] }));
+    const violation = screen.getByTestId('architecture-arc-shared-features');
+    expect(violation).toHaveAttribute('data-arc-violated', 'true');
+    expect(violation.querySelector('[data-arc-stroke]')).toHaveAttribute('stroke-dasharray', '4 4');
+    expect(violation.querySelector('[data-arc-stroke]')?.getAttribute('class')).toContain('--color-danger-text');
+    expect(screen.getByTestId('architecture-arc-violation-shared-features')).toHaveTextContent(
+      'Shared foundation → Features 1',
     );
-    expect(screen.getByTestId('architecture-graph')).toHaveAttribute(
-      'data-edge-source',
-      'permitted',
+    const legend = screen.getByTestId('architecture-legend');
+    expect(legend).toHaveTextContent('allowed import · width is count');
+    expect(legend).toHaveTextContent('import against the rules');
+  });
+
+  it('draws nothing red and keys no violation when the record has none', () => {
+    renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0, observedRoleEdges: FSD_TRAFFIC.slice(0, 4) }));
+    expect(screen.queryAllByTestId(/^architecture-arc-violation-/)).toHaveLength(0);
+    expect(screen.getByTestId('architecture-legend')).not.toHaveTextContent('import against the rules');
+  });
+
+  it('brightens and numbers the arcs of a chosen band and dims the rest', () => {
+    renderWithRecord(buildRecord({ observedRoleEdges: FSD_TRAFFIC }));
+    expect(screen.queryAllByTestId(/^architecture-arc-count-/)).toHaveLength(0);
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    expect(screen.getByTestId('architecture-arc-views-widgets')).toHaveAttribute('data-arc-state', 'bright');
+    expect(screen.getByTestId('architecture-arc-features-shared')).toHaveAttribute('data-arc-state', 'dim');
+    expect(screen.getByTestId('architecture-arc-count-views-widgets')).toHaveTextContent('56');
+    expect(screen.getByTestId('architecture-arc-count-views-shared')).toHaveTextContent('61');
+    expect(screen.queryByTestId('architecture-arc-count-features-shared')).toBeNull();
+  });
+
+  /* Allowed-but-unobserved rules are not drawn: the arcs are the code's, the rules live in the panel. */
+  it('draws only observed crossings for an explicit profile', () => {
+    renderWithRecord(
+      buildRecord({
+        observedRoleEdges: [{ fromRole: 'adapter', toRole: 'application', count: 4 }],
+      }),
+      HEXAGONAL_PROFILE_FRONTMATTER,
     );
-    expect(screen.getByText('Adapters may depend on Domain')).toBeInTheDocument();
-    expect(screen.getByText('Adapters may depend on Ports')).toBeInTheDocument();
-    expect(screen.getByText('Ports may depend on Domain')).toBeInTheDocument();
+    const arcs = [...screen.getByTestId('architecture-arcs').querySelectorAll('[data-arc-from]')];
+    expect(arcs.map((arc) => `${arc.getAttribute('data-arc-from')}>${arc.getAttribute('data-arc-to')}`)).toEqual([
+      'adapter>application',
+    ]);
   });
 
   it("writes a role's reach in role names in its detail panel", () => {
@@ -378,7 +365,7 @@ describe('ArchitectureWorkbench', () => {
     const shared = screen.getByTestId('architecture-graph-box-shared');
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
 
-    /* Closing the panel lets go of the role, so no pressed face sits without an answer. */
+    /* Closing the panel lets go of the role, so no pressed band sits without an answer. */
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(shared).toHaveAttribute('aria-pressed', 'false');
     expect(shared).toHaveAttribute('aria-expanded', 'false');
@@ -392,7 +379,7 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /* Modules come from a read-only directory walk, never an import scan, so they exist only with a listing. */
-  it('fills the panel with the source modules a role\'s globs contain, when a listing exists', () => {
+  it("fills the band and the panel with the source modules a role's globs contain, when a listing exists", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -412,13 +399,11 @@ describe('ArchitectureWorkbench', () => {
       </NextIntlClientProvider>,
     );
 
-    /* A role that declares a summary prints it instead of counts; `widgets` declares none and keeps them. */
-    /* The break is the box's, so the whole sentence is asserted on the accessible name. */
-    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
-      'One module per route-level screen',
-    );
-    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
-    expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveTextContent('0 modules');
+    const views = screen.getByTestId('architecture-band-views');
+    expect(views).toHaveTextContent('home');
+    expect(views).toHaveTextContent('docs-vault');
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveAccessibleName('Views · 2 modules');
+    expect(screen.getByTestId('architecture-band-widgets').querySelectorAll('[data-testid="architecture-member-chip"]')).toHaveLength(0);
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const listed = screen.getByTestId('architecture-modules-views');
@@ -427,7 +412,7 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /* Reviewed concepts are the meaning layer, separate from source modules, answering the selection alike. */
-  it("answers a selection with the role's recorded concepts, labeled as concepts", () => {
+  it("fills the band with the modules recorded concepts sit in, and the panel with the concepts", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -440,7 +425,7 @@ describe('ArchitectureWorkbench', () => {
                   slug: 'elements/home',
                   title: 'Home',
                   kind: 'element',
-                  path: 'src/views/home',
+                  path: 'src/views/home/ui/Home.tsx',
                   dependsOn: [],
                   relatesTo: [],
                 },
@@ -450,10 +435,7 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
-      'One module per route-level screen',
-    );
-    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
+    expect(screen.getByTestId('architecture-band-views')).toHaveTextContent('home');
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
@@ -548,31 +530,36 @@ describe('ArchitectureWorkbench', () => {
 });
 
 /*
- * A receipt is a snapshot, not a live claim: the stamp, counts beside the result, and an admission
- * that the surface cannot re-verify the source.
+ * A receipt is a snapshot, not a live claim: the header states its result and date in one phrase,
+ * and the rules panel carries the stamp and counts beside the verdict.
  */
 describe('ArchitectureWorkbench — persisted conformance receipt', () => {
+  it('states a violated record as a count and a date in one header phrase', () => {
+    renderWithRecord(buildRecord());
+    const status = screen.getByTestId('architecture-status');
+    expect(status).toHaveTextContent(/^3 imports against the rules · checked /);
+    expect(status.closest('[data-architecture-status]')).toHaveAttribute('data-architecture-status', 'violated');
+  });
+
+  it('states a clean record without naming a count', () => {
+    renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
+    expect(screen.getByTestId('architecture-status')).toHaveTextContent(/^No import against the rules · checked /);
+  });
+
   it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
     renderWithRecord(buildRecord());
-    expect(screen.getByTestId('architecture-role-ledger-routing')).toHaveTextContent(
-      'none recorded',
+    expect(screen.getByTestId('architecture-record-summary')).toHaveTextContent(
+      'Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges',
     );
-    openEvidence();
-    const pill = screen.getByTestId('architecture-record-summary');
-    expect(pill).toHaveTextContent('Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges');
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
       'Checked 2026-08-27 at commit a8df66d',
     );
-    // The receipt replaces the amber "not measured" pill; both at once would be two claims.
+    // The receipt replaces the "not measured" line; both at once would be two claims.
     expect(screen.queryByText('Source check required')).toBeNull();
-    expect(screen.getByTestId('architecture-record-cannot-confirm')).toHaveTextContent(
-      'This screen does not re-check now. The record below is the result of the last check.',
-    );
   });
 
   it('marks a dirty git measurement as taken with uncommitted edits', () => {
     renderWithRecord(buildRecord({ source: { kind: 'git', revision: 'a8df66d', dirty: true } }));
-    openEvidence();
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
       'Checked 2026-08-27 at commit a8df66d with uncommitted edits',
     );
@@ -587,7 +574,6 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
         excludedByUsage: undefined,
       }),
     );
-    openEvidence();
     const stamp = screen.getByTestId('architecture-record-stamp');
     expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
@@ -598,44 +584,27 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
 
   it('wears the existing signal tone families: error for violated, success for conforms, amber for unknown', () => {
     const { unmount } = renderWithRecord(buildRecord());
-    openEvidence();
     expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-danger');
     unmount();
 
     const conforming = renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
-    openEvidence();
     expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-success');
     conforming.unmount();
 
     renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
-    openEvidence();
     expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-amber-source');
-  });
-
-  it('keeps the unchanged amber "Source check required" state when no record exists', () => {
-    renderWorkbench();
-    expect(screen.getByText('Source check required')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-record-summary')).toBeNull();
-    expect(screen.queryByTestId('architecture-record-stamp')).toBeNull();
-    expect(screen.queryByTestId('architecture-record-cannot-confirm')).toBeNull();
   });
 
   /* It names the command that writes the record, and offers no control to measure source itself. */
   it('tells the reader what produces the missing measurement, without offering to run it', () => {
     renderWorkbench();
-    openEvidence();
-    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
-      'atlas architecture --record',
-    );
-    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
-      '.ontology-atlas/architecture/profile-slug.json',
-    );
-    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
-      'never changes the reviewed structure',
-    );
-    expect(
-      screen.getByTestId('architecture-source-check').querySelector('button, a'),
-    ).toBeNull();
+    expect(screen.getByText('Source check required')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-record-summary')).toBeNull();
+    const next = screen.getByTestId('architecture-source-check-next');
+    expect(next).toHaveTextContent('atlas architecture --record');
+    expect(next).toHaveTextContent('.ontology-atlas/architecture/profile-slug.json');
+    expect(next).toHaveTextContent('never changes the reviewed structure');
+    expect(screen.getByTestId('architecture-source-check').querySelector('button, a')).toBeNull();
   });
 });
 
@@ -661,13 +630,11 @@ describe('the source-listing note', () => {
   });
 });
 
-
-
 /*
  * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>` stays
  * the fact that briefs, prompts and CLI lines print.
  */
-describe('the role sentence in the reader\'s language', () => {
+describe("the role sentence in the reader's language", () => {
   const KOREAN_VIEWS = '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.';
 
   function renderIn(locale: 'en' | 'ko') {
@@ -679,23 +646,18 @@ describe('the role sentence in the reader\'s language', () => {
     );
   }
 
-  it('prints the Korean sentence on the views card and in the role dock at ko', () => {
+  it('prints the Korean sentence in the role dock at ko', () => {
     renderIn('ko');
-    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
-      KOREAN_VIEWS,
-    );
-    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^라우트가/);
-
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     expect(screen.getByTestId('architecture-role-summary-views')).toHaveTextContent(KOREAN_VIEWS);
   });
 
   it('prints the canonical English sentence at en', () => {
     renderIn('en');
-    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    expect(screen.getByTestId('architecture-role-summary-views')).toHaveTextContent(
       'One module per route-level screen',
     );
-    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
   });
 
   /* A profile translated one role at a time shows reviewed English for the rest, never a blank. */
