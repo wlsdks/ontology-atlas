@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type Ref } from 'react';
 import { withBasePath } from '@/shared/lib/public-pages/base-path';
 import { usePrefersReducedMotion } from '@/shared/lib/render-timing/use-prefers-reduced-motion';
 
@@ -10,16 +10,20 @@ export function BrandWaitingMark({
   initialVisibility = 'observed',
   scale = 1,
   motion = 'waiting',
+  held = false,
 }: {
   active: boolean;
   /** Only full-screen pending fallbacks can know they are visible before hydration. */
   initialVisibility?: 'observed' | 'visible';
+  /** The still pose with no hook or observer, for a screen reporting that the runtime itself failed. */
+  held?: boolean;
 } & (
   | { scale?: 1 | 2; motion?: Exclude<WaitingMotion, 'curious'> }
   /** The curious tilt exists only as native 128px cells. */
   | { scale: 2; motion: 'curious' }
 )) {
-  return active ? <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} motion={motion} /> : null;
+  if (!active) return null;
+  return held ? <WaitingMarkCell state="still" scale={scale} motion={motion} /> : <ActiveWaitingMark initialVisibility={initialVisibility} scale={scale} motion={motion} />;
 }
 
 type WaitingMotion = 'waiting' | 'connect' | 'compile' | 'greeting' | 'curious';
@@ -60,12 +64,16 @@ function ActiveWaitingMark({ initialVisibility, scale, motion }: { initialVisibi
     };
   }, [initialVisibility, reducedMotion, motion]);
 
+  return <WaitingMarkCell ref={ref} state={reducedMotion ? 'still' : initialVisibility === 'visible' ? 'running' : 'paused'} scale={scale} motion={motion} />;
+}
+
+function WaitingMarkCell({ ref, state, scale, motion }: { ref?: Ref<HTMLSpanElement>; state: 'still' | 'running' | 'paused'; scale: 1 | 2; motion: WaitingMotion }) {
   const mark = (
     <span
       ref={ref}
       aria-hidden="true"
       data-testid="brand-waiting-mark"
-      data-waiting-motion={reducedMotion ? 'still' : initialVisibility === 'visible' ? 'running' : 'paused'}
+      data-waiting-motion={state}
       data-moru-motion={motion}
       className={`${motion === 'greeting' ? 'atlas-moru-greeting atlas-mascot-sprite' : 'atlas-waiting-mark'} pointer-events-none inline-block size-16 shrink-0`}
       style={{ backgroundImage: `url(${withBasePath(`/brand/mascot-${motion}-row${scale === 2 ? '-128' : ''}.png`)})` }}
