@@ -88,7 +88,7 @@ test('an explicit question report still asks before a write when the folder allo
   const permission = page.getByTestId('acp-permission-card');
   await expect(permission).toBeVisible();
   expect((await harness.snapshot(page)).writes).toEqual([]);
-  await permission.getByRole('button', { name: 'No thanks', exact: true }).click();
+  await permission.getByRole('button', { name: 'Deny', exact: true }).click();
   await expect(permission).toHaveCount(0);
   expect((await harness.snapshot(page)).writes).toEqual([]);
 });
@@ -117,7 +117,7 @@ test('an exact report retry on another runtime keeps its read-only authority', a
   await harness.wait(page);
   const permission = page.getByTestId('acp-permission-card');
   await expect(permission).toBeVisible();
-  await permission.getByRole('button', { name: 'No thanks', exact: true }).click();
+  await permission.getByRole('button', { name: 'Deny', exact: true }).click();
   await expect(permission).toHaveCount(0);
   expect((await harness.snapshot(page)).writes).toEqual([]);
 });

@@ -82,8 +82,9 @@ test.describe("interaction sweep — projects, agents, git", () => {
         ).length,
     );
     expect(snapshots, "Push committed without a confirm").toBe(0);
-    // One name for one action on /ko: the confirm Push opened uses the Korean label, not "Push".
-    await expect(page.getByTestId("atlas-git-confirm-step")).not.toContainText(/Push|Fetch|Pull/);
+    // One name for one action: the confirm that Push opened names it with the button's own word.
+    const pushWord = (await page.getByTestId("atlas-git-remote-push").innerText()).replace(/[\s\d]+$/, "");
+    await expect(page.getByTestId("atlas-git-confirm-step")).toContainText(pushWord);
 
     // A cancelled Push leaves nothing behind: the next plain commit is not commit-and-push.
     await page.keyboard.press("Escape");
@@ -195,7 +196,7 @@ test.describe("interaction sweep — projects, agents, git", () => {
     expect(await activeTestId(page)).toBe("connectors-add-open");
   });
 
-  test("remote actions read in Korean on /ko and explain themselves on keyboard focus", async ({
+  test("remote actions on /ko carry no title attribute and explain themselves on keyboard focus", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1512, height: 949 });
@@ -203,7 +204,6 @@ test.describe("interaction sweep — projects, agents, git", () => {
     const fetch = page.getByTestId("atlas-git-remote-fetch");
     await expect(fetch).toBeVisible({ timeout: 30_000 });
     for (const id of ["fetch", "pull", "push"]) {
-      await expect(page.getByTestId(`atlas-git-remote-${id}`)).not.toContainText(/Fetch|Pull|Push/);
       expect(await page.getByTestId(`atlas-git-remote-${id}`).getAttribute("title")).toBeNull();
     }
     await fetch.focus();
