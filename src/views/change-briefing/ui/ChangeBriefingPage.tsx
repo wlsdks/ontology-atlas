@@ -308,15 +308,15 @@ export function ChangeBriefingPage() {
     <BriefingSettings showFolderEntry={!vault.handle} open={settingsOpen} close={() => setSettingsOpen(false)} repository={repository} onCleared={() => setClearedAt(Date.now())} />
   </main>;
   return <main ref={mainRef} id="main" data-briefing-surface className="h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
-    <div className="mx-auto max-w-screen-xl space-y-4 px-4 pt-6 md:px-8 md:pt-8">
-      <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
-          <h1 tabIndex={-1} className="text-title font-[var(--font-weight-strong)]">{git('title')}</h1><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span>
-          <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-label={git('changeRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button>
-        </div>
-        <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>
-        </div>
+    <PageHeaderBar
+      frame="page"
+      className="static z-auto"
+      title={git('title')}
+      meta={<><span className={badgeClass({ shape: 'tag' })}>{t('prototype')}</span><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="ghost" size="sm" aria-label={git('changeRepository')} onClick={() => void chooseRepository()}>{(sourceChoice ?? data?.sourceRoot)?.split('/').at(-1) || git('chooseRepository')}</Button></>}
+      actions={<IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>}
+    />
+    <div className="mx-auto max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
+      <header className="border-b border-[color:var(--color-border-soft)] pb-5">
       <section aria-label={t('period')} className="flex min-w-0 flex-wrap items-center gap-2">
         <Select size="md" className="max-[769px]:[&>button]:min-h-11" ariaLabel={t('period')} value={period} onChange={value => changePeriod(value as BriefingPeriod)} options={PERIODS.map(value => ({ value, label: t(value) }))} />
         <div className="flex min-h-8 min-w-0 items-center gap-1 rounded-chip border border-[color:var(--color-border-soft)] px-1">
