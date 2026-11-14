@@ -86,7 +86,7 @@ is local, has no persistent state and never supplies work or emotional status.
 | Compact | `mascot-compact-32.png` in that directory | Separately simplified 32px face |
 | Micro | `mascot-micro-16.png` | Independently simplified 16px face |
 | Presentation | `mascot-presentation-128.png` | Larger character compositions |
-| Curious portrait | `mascot-curious-128.png` | Native tilted pose on the missing page, the route error, a project the open folder lacks, and a harness or schedule file that could not be read; a tilted body has no readable face at 32px |
+| Curious portrait | `mascot-curious-128.png` | Native tilted pose on the missing page, the route error, a project the open folder lacks, and a harness, schedule file or Git status that could not be read; a tilted body has no readable face at 32px |
 | Compass | `assets/brand/moru/icons/atlas-compass-1024.png` | Smoothly resampled app identity, 16–1024px |
 | macOS template | `mascot-tray-template-{16,32}.png` | Black/clear compass mask; 2× is the same logical drawing |
 
@@ -201,7 +201,7 @@ No mark roams over graph ink; no idle state pretends work is occurring.
 | Gateway header | `AtlasSymbol` → `public/brand/atlas-symbol.png` |
 | Download closing invitation | Playful `BrandCompanion`, outside graph illustrations |
 | Character marks | `BrandMark` → `public/brand/mascot-{full,compact,micro}.png` |
-| First run / missing page, route error, missing project and an unread harness or schedule | Playful companion / static curious `BrandPortrait` |
+| First run / missing page, route error, missing project and an unread harness, schedule or Git status | Playful companion / static curious `BrandPortrait` |
 | Browser / Apple Touch | `app/icon.png`, `app/favicon.ico`, `app/apple-icon.png` |
 | PWA / platform icons | `public/brand-icon-512.png`, `src-tauri/icons/**` |
 | Open Graph | `public/og-image.png`, 1200×630 |

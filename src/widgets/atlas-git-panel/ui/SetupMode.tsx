@@ -103,6 +103,7 @@ export function SetupFrame({
   state,
   title,
   body,
+  figure,
   note,
   children,
 }: {
@@ -112,7 +113,9 @@ export function SetupFrame({
   state: string;
   /** This moment's task in one sentence — the screen's h1. */
   title: string;
-  body?: string;
+  body?: React.ReactNode;
+  /** Stands in place of the history artwork where no history could be read. */
+  figure?: React.ReactNode;
   /** The promise on the last line, by default the recording-scope notice. */
   note?: string;
   children?: React.ReactNode;
@@ -123,8 +126,8 @@ export function SetupFrame({
       data-setup-state={state}
       data-placement="stage"
       titleAs="h1"
-      art={(motionState) => <GitHistoryArtwork {...motionState} />}
-      title={title}
+      art={(motionState) => figure ? <div className="flex justify-center">{figure}</div> : <GitHistoryArtwork {...motionState} />}
+      title={<span className="block text-balance">{title}</span>}
       body={body}
       alert={step ? <ConnectLadder t={t} current={step} /> : undefined}
       action={children ? <div className="flex w-full flex-col items-center gap-4">{children}</div> : undefined}
