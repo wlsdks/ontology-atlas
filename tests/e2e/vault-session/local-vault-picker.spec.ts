@@ -39,7 +39,7 @@ async function expectSourceIs(page: import("@playwright/test").Page, which: "sam
    * **Wait for the exit.** A `Surface` stays in the DOM as `inert` while leaving
    * (EXIT_WINDOW_MS in `use-presence.ts`), and Playwright's text selectors still find
    * inert elements — which really did kill the very next assertion with a strict-mode
-   * conflict (the menu's "Built-in sample (this tool's own documents)" matched a
+   * conflict (the menu's "Built-in sample (Atlas's own documents)" matched a
    * second time). Without waiting for the close, this helper contaminates the
    * assertions that follow.
    */
@@ -67,7 +67,7 @@ test.describe("local workspace capability gate (N1)", () => {
     // FSA-capable browser: the Local source is selected and the picker surface appears.
     await expectSourceIs(page, "local");
     await expect(
-      page.getByRole("heading", { name: /Open or create a local workspace/ }),
+      page.getByRole("heading", { name: /Open or create a local folder/ }),
     ).toBeVisible();
     // The old read-only gate copy must not return.
     await expect(

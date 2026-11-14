@@ -41,7 +41,7 @@ export async function openGrayAreaPreview(page:Page){
   await page.getByTestId('map-detail-panel-action-gray-area').click();
   await expect(page.getByTestId('gray-area-scope-preview')).toContainText('/fixture/connected-code');
 }
-export async function inspectGrayArea(page:Page){await openGrayAreaPreview(page);await page.getByRole('button',{name:'Inspect this folder',exact:true}).click();await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();}
+export async function inspectGrayArea(page:Page){await openGrayAreaPreview(page);await page.getByRole('button',{name:'Check this folder',exact:true}).click();await expect(page.getByTestId('gray-area-missing-link')).toBeVisible();}
 
 
 export async function waitForGrayAreaTop(page:Page) {

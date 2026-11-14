@@ -40,7 +40,7 @@ test('returns to the same long original and reading position after leaving Chang
   const audit = await auditPage(page, { width: 1920, rampNames, scope: 'main' });
   await testInfo.attach('restored-reading-audit', { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
   expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
-  await original.getByRole('button', { name: 'Back to source list', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to commits and PRs', exact: true }).first().click();
   await expect(row).toBeFocused();
   await expect.poll(() => row.evaluate(element => element.closest('main')!.scrollTop)).toBe(listPosition);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
@@ -50,10 +50,10 @@ test('returns to the same long original and reading position after leaving Chang
 test('retains the expanded source list and original return row across routes', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'source-pages');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await page.getByTestId('briefing-originals').click();
   const sources = page.getByTestId('briefing-sources');
-  await sources.getByRole('button', { name: /Read \d+ more sources/ }).click();
+  await sources.getByRole('button', { name: /^Show \d+ more$/ }).click();
   const row = sources.locator('[data-control="row"]').nth(44);
   const before = await row.evaluate(element => {
     const main = element.closest('main')!;
@@ -66,7 +66,7 @@ test('retains the expanded source list and original return row across routes', a
   await leaveAndReturn(page);
   await expect(original.getByRole('heading')).toHaveText(title);
   await expect(original).toBeFocused();
-  await original.getByRole('button', { name: 'Back to source list', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to commits and PRs', exact: true }).first().click();
   await expect(row).toBeFocused();
   await expect.poll(() => row.evaluate(element => ({ scroll: element.closest('main')!.scrollTop, top: element.getBoundingClientRect().top }))).toEqual(before);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
@@ -76,14 +76,14 @@ test('retains the expanded source list and original return row across routes', a
 test('restores a citation return target without carrying the reader into another period', async ({ page }) => {
   await enter(page);
   await prepare(page);
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   const citation = page.getByTestId('briefing-theme').getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).last();
   await citation.click();
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeFocused();
   await leaveAndReturn(page);
   await expect(original).toBeVisible();
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   await expect(citation).toBeFocused();
   await citation.press('Enter');
   await page.getByRole('button', { name: 'Next period', exact: true }).click();
@@ -97,7 +97,7 @@ test('restores a citation return target without carrying the reader into another
 test('returns to the summary heading when the originating explanation was replaced', async ({ page }) => {
   await enter(page);
   await prepare(page);
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await page.getByTestId('briefing-theme').getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).first().click();
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeFocused();
@@ -105,14 +105,14 @@ test('returns to the summary heading when the originating explanation was replac
   await page.getByTestId('briefing-summary-mode').click();
   await setBriefingMode(page, 'model-three');
   await page.getByRole('button', { name: 'Rebuild summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect(page.getByTestId('briefing-theme')).toHaveCount(3);
   await page.getByRole('button', { name: 'Previous period', exact: true }).click();
   await page.getByTestId('briefing-originals').click();
   await expect(original).toBeVisible();
   await leaveAndReturn(page);
   await expect(original).toBeVisible();
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   await expect(page.locator('#git-briefing-title')).toBeFocused();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(2);
 });

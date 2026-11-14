@@ -29,15 +29,15 @@ function renderNote(
 describe("SampleWelcomeNote", () => {
   it("explains what this doc space is in plain Korean", () => {
     renderNote("ko", false);
-    expect(screen.getByText("이 문서함은 무엇인가요?")).toBeInTheDocument();
+    expect(screen.getByText("이 샘플은 무엇인가요?")).toBeInTheDocument();
     expect(
-      screen.getByText(/Atlas 자신의 문서를 읽기 전용 샘플로/),
+      screen.getByText(/Atlas 자체 문서를 읽기 전용 샘플로/),
     ).toBeInTheDocument();
   });
 
   it("reads its English copy from the English catalog", () => {
     renderNote("en", false);
-    expect(screen.getByText("What is this document space?")).toBeInTheDocument();
+    expect(screen.getByText("What is this sample?")).toBeInTheDocument();
   });
 
   it("offers the open-folder CTA and calls it", () => {

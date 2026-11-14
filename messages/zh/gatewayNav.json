@@ -6,10 +6,10 @@
   "githubLabel": "GitHub 源码",
   "changelogTitle": "更新日志",
   "changelogLead": "改了什么、何时改的，最新的在前。",
-  "guideLead": "从一个文件夹到 AI 智能体能读懂的地图。",
+  "guideLead": "从一个文件夹到编码智能体能读懂的地图。",
   "guideUnknownSegment": "没有找到你要的章节，这里显示的是指南第一章。请从目录中选择想看的章节。",
   "bodyLanguageNote": "正文显示英文原文。",
-  "truncatedNote": "已折叠 {count} 条较早的记录，此列表只显示最近的。",
+  "truncatedNote": "已隐藏 {count} 条较早的记录，此列表只显示最近的。",
   "emptyBody": "此版本未包含该文档，原文在代码仓库中。",
   "readFullSource": "在 GitHub 阅读全文",
   "guidePages": {
@@ -21,10 +21,10 @@
     "relations": "关系如何运作",
     "studio": "在地图上编辑概念和关系",
     "fromYourRepo": "从你的仓库开始",
-    "connectAgent": "连接 AI 智能体",
+    "connectAgent": "连接编码智能体",
     "growingVault": "文件夹变大之后",
     "cli": "CLI",
-    "trust": "关于信任"
+    "trust": "数据与安全"
   },
   "guidePrev": "上一章",
   "guideNext": "下一章",

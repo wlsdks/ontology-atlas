@@ -8,11 +8,11 @@ import { setBriefingMode } from './change-briefing-fixture';
 
 test('inspects sources and request details before sending, cancels and resets the next preview', async ({ page }) => {
   await enter(page); await prepare(page);
-  const dialog = page.getByRole('dialog', { name: 'Explain this period', exact: true });
+  const dialog = page.getByRole('dialog', { name: 'Summarize this period', exact: true });
   await expect(dialog.locator('dl')).toContainText('fixture-text-model');
   await expect(dialog.locator('dl')).toContainText('http://localhost:11434');
   await expect(page.getByTestId('briefing-plan-requests')).toHaveAttribute('data-reading-parts', '1');
-  const sources = dialog.getByRole('button', { name: 'Review text to send', exact: true });
+  const sources = dialog.getByRole('button', { name: 'Preview what will be sent', exact: true });
   const details = dialog.getByRole('button', { name: 'Request details', exact: true });
   await expect(sources).toHaveAttribute('aria-expanded', 'false');
   await expect(details).toHaveAttribute('aria-expanded', 'false');
@@ -37,15 +37,15 @@ test('discloses the extra overview request and keeps oversized originals inspect
   await enter(page);
   await setBriefingMode(page, 'batch');
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 1800; });
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   await prepare(page);
   const dialog = page.getByRole('dialog');
   const parts = Number(await page.getByTestId('briefing-plan-requests').getAttribute('data-reading-parts'));
   expect(parts).toBeGreaterThan(1);
   await expect(page.getByTestId('briefing-plan-requests')).toContainText(String(parts + 1));
   await expect(page.getByTestId('briefing-plan-requests')).toContainText('1800');
-  await dialog.getByRole('button', { name: 'Review text to send', exact: true }).click();
-  const part = dialog.getByRole('combobox', { name: 'Choose reading request to inspect', exact: true });
+  await dialog.getByRole('button', { name: 'Preview what will be sent', exact: true }).click();
+  const part = dialog.getByRole('combobox', { name: 'Choose a request to preview', exact: true });
   await part.click();
   await page.getByRole('option').last().click();
   await expect(dialog).toContainText('Earlier work 8');
@@ -54,7 +54,7 @@ test('discloses the extra overview request and keeps oversized originals inspect
   await setBriefingMode(page, 'long-original');
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 1000; });
   await prepare(page);
-  const gap = dialog.getByRole('button', { name: /source records cannot be sent/ });
+  const gap = dialog.getByRole('button', { name: /commits or PRs cannot be sent/ });
   await expect(gap).toBeVisible();
   await gap.click();
   await dialog.getByRole('button', { name: 'Keep map navigation readable', exact: true }).click();
@@ -70,7 +70,7 @@ test('wraps a long unbroken source title in the expanded request preview', async
   await page.setViewportSize({ width: 390, height: 900 });
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: /source records cannot be sent/ }).click();
+  await dialog.getByRole('button', { name: /commits or PRs cannot be sent/ }).click();
   const title = dialog.getByRole('button', { name: /LongUnbrokenPullRequestTitle/ });
   await expect(title).toBeVisible();
   const geometry = await title.evaluate(element => ({ width: element.getBoundingClientRect().width, scrollWidth: element.scrollWidth, parentWidth: element.parentElement!.getBoundingClientRect().width }));
@@ -86,7 +86,7 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
   test(`keeps the default and expanded request preview reachable at ${width}`, async ({ page }, testInfo) => {
     await enter(page); await prepare(page);
     await page.setViewportSize({ width, height });
-    const dialog = page.getByRole('dialog', { name: 'Explain this period', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Summarize this period', exact: true });
     const ramps = parseRampNames(readdirSync('app/styles').filter(name => name.endsWith('.css')).map(name => readFileSync(`app/styles/${name}`, 'utf8')).join('\n'));
     for (const expanded of [false, true]) {
       if (expanded) await dialog.getByRole('button', { name: 'Request details', exact: true }).click();
@@ -94,7 +94,7 @@ for (const [width, height] of [[390, 844], [600, 900], [768, 1024], [834, 1112],
       const audit = await auditPage(page, { width, rampNames: ramps, scope: '[role="dialog"]' });
       await testInfo.attach(`preview-${width}-${expanded}`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
       expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
-      await expect(dialog.getByRole('button', { name: 'Create period explanation', exact: true })).toBeInViewport();
+      await expect(dialog.getByRole('button', { name: 'Create period summary', exact: true })).toBeInViewport();
     }
   });
 }
@@ -103,14 +103,14 @@ for (const width of [390, 1512]) {
   test(`keeps original inspection and part selection bounded at ${width}`, async ({ page }, testInfo) => {
     await enter(page);
     await setBriefingMode(page, 'batch');
-    await page.getByRole('button', { name: 'Read again', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await setBriefingMode(page, 'long-original');
     await page.evaluate(() => { (window as unknown as { __briefingProbe: { capacity: number } }).__briefingProbe.capacity = 20000; });
     await prepare(page);
     await page.setViewportSize({ width, height: 900 });
     const dialog = page.getByRole('dialog');
-    await dialog.getByRole('button', { name: 'Review text to send', exact: true }).click();
-    const part = dialog.getByRole('combobox', { name: 'Choose reading request to inspect', exact: true });
+    await dialog.getByRole('button', { name: 'Preview what will be sent', exact: true }).click();
+    const part = dialog.getByRole('combobox', { name: 'Choose a request to preview', exact: true });
     await part.click();
     await expect(page.getByRole('listbox')).toBeInViewport({ ratio: 1 });
     await page.getByRole('option').first().click();
@@ -124,7 +124,7 @@ for (const width of [390, 1512]) {
       const audit = await auditPage(page, { width, rampNames: ramps, scope: '[role="dialog"]' });
       await testInfo.attach(`preview-${width}-original-${end}`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
       expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
-      await expect(dialog.getByRole('button', { name: 'Create period explanation', exact: true })).toBeInViewport();
+      await expect(dialog.getByRole('button', { name: 'Create period summary', exact: true })).toBeInViewport();
     }
     expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
   });
@@ -133,7 +133,7 @@ for (const width of [390, 1512]) {
     await enter(page); await prepare(page);
     await page.setViewportSize({ width, height: 900 });
     const dialog = page.getByRole('dialog');
-    const title = dialog.getByRole('heading', { name: 'Explain this period', exact: true });
+    const title = dialog.getByRole('heading', { name: 'Summarize this period', exact: true });
     const original = await title.evaluate(element => parseFloat(getComputedStyle(element).fontSize));
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
     await expect.poll(() => title.evaluate(element => parseFloat(getComputedStyle(element).fontSize))).toBe(original * 2);
@@ -142,6 +142,6 @@ for (const width of [390, 1512]) {
     const audit = await auditPage(page, { width, rampNames: ramps, scope: '[role="dialog"]' });
     await testInfo.attach(`preview-${width}-text-zoom`, { body: JSON.stringify(audit, null, 2), contentType: 'application/json' });
     expect(shouldFail([audit]), JSON.stringify(audit.findings)).toBe(false);
-    await expect(dialog.getByRole('button', { name: 'Create period explanation', exact: true })).toBeInViewport();
+    await expect(dialog.getByRole('button', { name: 'Create period summary', exact: true })).toBeInViewport();
   });
 }
