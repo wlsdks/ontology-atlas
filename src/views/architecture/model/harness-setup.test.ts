@@ -90,7 +90,7 @@ describe('buildHarnessSetup', () => {
     const setup = buildHarnessSetup(report);
     expect(setup.items.get('file:.claude/rules/always.md')?.loading).toBe('always');
     expect(setup.items.get('file:.claude/rules/scoped.md')?.loading).toBe('path');
-    expect(setup.items.get('permissions:.claude/settings.json')?.denyAndAskRuleCount).toBe(2);
+    expect(setup.items.get('permissions:.claude/settings.json')?.permissionCounts).toEqual({ allow: 0, ask: 1, deny: 1 });
   });
 
   it('counts the AGENTS.md that CLAUDE.md imports in what Claude Code reads at session start', () => {
@@ -132,5 +132,75 @@ describe('buildHarnessSetup', () => {
     expect(labelsIn('verification', 'scripts', 'codex').sort()).toEqual(['lint', 'test:cart']);
     expect(setup.problems.map((problem) => problem.kind)).toEqual(['codex-cap']);
     expect(setup.claudeSessionBytes).toBeNull();
+  });
+});
+
+describe('buildHarnessSetup — hooks are sorted by the step their event runs in', () => {
+  async function setupOf(settings: unknown, extra: Record<string, string> = {}) {
+    const files = { '.claude/settings.json': JSON.stringify(settings), '.claude/hooks/h.sh': '#!/bin/sh\n', ...extra };
+    return buildHarnessSetup(await scanHarness(memoryPort(files)));
+  }
+
+  function groupsOf(setup: ReturnType<typeof buildHarnessSetup>) {
+    return setup.sections.flatMap((section) =>
+      [...section.groups, ...(section.other ? [section.other] : [])].map((group) => ({ section: section.id, group })),
+    );
+  }
+
+  function placeOf(setup: ReturnType<typeof buildHarnessSetup>, label: string): string[] {
+    return groupsOf(setup)
+      .filter(({ group }) => group.items.some((item) => item.label === label))
+      .map(({ section, group }) => `${section}/${group.id}`);
+  }
+
+  it.each([
+    ['UserPromptSubmit', 'context/contextHooks'],
+    ['SessionStart', 'context/contextHooks'],
+    ['PreToolUse', 'guardrails/blockingHooks'],
+    ['PermissionRequest', 'guardrails/blockingHooks'],
+    ['PreCompact', 'guardrails/blockingHooks'],
+    ['PostToolUse', 'verification/hooks'],
+    ['Stop', 'verification/hooks'],
+    ['SubagentStop', 'verification/hooks'],
+    ['Notification', 'verification/otherHooks'],
+  ])('files a %s hook under %s', async (event, place) => {
+    const setup = await setupOf({ hooks: { [event]: [{ hooks: [{ command: '.claude/hooks/h.sh' }] }] } });
+    expect(placeOf(setup, '.claude/hooks/h.sh')).toEqual([place]);
+  });
+
+  it('keeps an unknown event out of what Verification counts as checks', async () => {
+    const setup = await setupOf({ hooks: { Notification: [{ hooks: [{ command: '.claude/hooks/h.sh' }] }] } });
+    const verification = setup.sections.find((section) => section.id === 'verification');
+    expect(verification?.other?.items).toHaveLength(1);
+    expect(verification?.total).toBe(0);
+  });
+
+  it('files a hook behind a matcher by its event alone', async () => {
+    const setup = await setupOf({
+      hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ command: '.claude/hooks/h.sh' }] }] },
+    });
+    expect(placeOf(setup, '.claude/hooks/h.sh')).toEqual(['guardrails/blockingHooks']);
+  });
+
+  it('gives a script named on two events a row per event and one problem when it is missing', async () => {
+    const setup = await setupOf({
+      hooks: {
+        PreToolUse: [{ hooks: [{ command: '.claude/hooks/gone.sh' }] }],
+        Stop: [{ hooks: [{ command: '.claude/hooks/gone.sh' }] }],
+      },
+    });
+    expect(placeOf(setup, '.claude/hooks/gone.sh')).toEqual(['guardrails/blockingHooks', 'verification/hooks']);
+    expect(setup.problems.map((problem) => problem.kind)).toEqual(['hook-missing']);
+  });
+
+  it('draws no hook group for a config that names no hooks', async () => {
+    const setup = await setupOf({ hooks: {} });
+    const hookGroups = groupsOf(setup).filter(({ group }) => /hooks$/i.test(group.id) && group.id !== 'gitHooks');
+    expect(hookGroups).toEqual([]);
+  });
+
+  it('counts a settings file with only allow rules as allow rules, with no deny or ask', async () => {
+    const setup = await setupOf({ permissions: { allow: ['Bash(pnpm test:*)', 'Read(./src/**)'] } });
+    expect(setup.items.get('permissions:.claude/settings.json')?.permissionCounts).toEqual({ allow: 2, ask: 0, deny: 0 });
   });
 });

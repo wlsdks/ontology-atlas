@@ -1,9 +1,11 @@
 import {
   AGENT_TOOL_LABELS,
+  hookEventStep,
   isPairDrift,
   type AgentTool,
   type HarnessReport,
   type HookConfigFacts,
+  type HookEventStep,
   type ScopeDeclaration,
 } from '@/entities/agent-files';
 
@@ -26,6 +28,7 @@ export type SetupGroupId =
   | 'permissions'
   | 'blockingHooks'
   | 'hooks'
+  | 'otherHooks'
   | 'scripts'
   | 'gitHooks'
   | 'workflows';
@@ -54,7 +57,8 @@ export interface SetupItem {
   approvalGate?: boolean;
   /** Rules only: loaded every session, or only for the paths it lists. */
   loading?: 'always' | 'path';
-  denyAndAskRuleCount?: number;
+  /** A settings file's permission rules, counted per list. */
+  permissionCounts?: PermissionCounts;
   /** The text that put the item here, quoted from its file. */
   declaration?: string;
   /** Root AGENTS.md when CLAUDE.md imports it: Claude Code reads it through that import. */
@@ -68,6 +72,12 @@ export interface SetupItem {
   pairPaths?: readonly [string, string];
 }
 
+export interface PermissionCounts {
+  allow: number;
+  ask: number;
+  deny: number;
+}
+
 export interface SetupGroup {
   id: SetupGroupId;
   items: SetupItem[];
@@ -77,6 +87,8 @@ export interface SetupGroup {
 export interface SetupSection {
   id: SetupSectionId;
   groups: SetupGroup[];
+  /** Hooks on an event no step names; shown beside Verification, never counted as its checks. */
+  other: SetupGroup | null;
   total: number;
 }
 
@@ -124,28 +136,22 @@ const RECORD_GROUP: Readonly<Record<string, SetupGroupId>> = Object.freeze({
   exclusion: 'ignore',
 });
 
-const BEFORE_ACTION_EVENT = /^(pre|before)[-_]?/i;
-/* The same events `coverage-collect` files under Told: they add context, they do not block a tool. */
-const CONTEXT_EVENT = /^(session[-_]?start|user[-_]?prompt[-_]?submit)$/i;
-
-export function hookEventSection(event: string): SetupSectionId {
-  if (BEFORE_ACTION_EVENT.test(event)) return 'guardrails';
-  if (CONTEXT_EVENT.test(event)) return 'context';
-  return 'verification';
-}
-
-const HOOK_GROUP: Readonly<Record<SetupSectionId, SetupGroupId>> = Object.freeze({
+const HOOK_GROUP: Readonly<Record<HookEventStep, SetupGroupId>> = Object.freeze({
   context: 'contextHooks',
   guardrails: 'blockingHooks',
   verification: 'hooks',
+  other: 'otherHooks',
 });
+
+/** Settings files whose `permissions` lists Claude Code enforces before a tool runs. */
+const PERMISSION_FILE = /^\.claude\/settings(?:\.local)?\.json$/;
 
 export function fileItemKey(path: string): string {
   return `file:${path}`;
 }
 
-function hookItemKey(group: HookConfigFacts, ref: string, section: SetupSectionId): string {
-  return `hook:${section}:${group.configPath}:${ref}`;
+function hookItemKey(group: HookConfigFacts, ref: string, step: HookEventStep): string {
+  return `hook:${step}:${group.configPath}:${ref}`;
 }
 
 function declarationsById(coverage: readonly ScopeDeclaration[], origin: ScopeDeclaration['origin']) {
@@ -195,24 +201,25 @@ function fileItem(
   };
 }
 
-function hookItems(report: HarnessReport): Array<{ section: SetupSectionId; item: SetupItem }> {
+/** One row per script and step: a script named on a guardrail and a check event appears in both. */
+function hookItems(report: HarnessReport): Array<{ step: HookEventStep; item: SetupItem }> {
   const toolsByPath = new Map(report.analysis.records.map((record) => [record.path, record.tools]));
   const bytesByPath = new Map(report.analysis.records.map((record) => [record.path, record.bytes]));
-  const out: Array<{ section: SetupSectionId; item: SetupItem }> = [];
+  const out: Array<{ step: HookEventStep; item: SetupItem }> = [];
   for (const group of report.hookGroups) {
     const tools = toolsByPath.get(group.configPath) ?? [];
     for (const hook of group.hooks) {
       const ref = hook.ref.path ?? hook.ref.command;
-      const bySection = new Map<SetupSectionId, string[]>();
+      const byStep = new Map<HookEventStep, string[]>();
       for (const event of hook.events.split(' · ')) {
-        const section = hookEventSection(event);
-        bySection.set(section, [...(bySection.get(section) ?? []), event]);
+        const step = hookEventStep(event);
+        byStep.set(step, [...(byStep.get(step) ?? []), event]);
       }
-      for (const [section, events] of bySection) {
+      for (const [step, events] of byStep) {
         out.push({
-          section,
+          step,
           item: {
-            key: hookItemKey(group, ref, section),
+            key: hookItemKey(group, ref, step),
             label: ref,
             path: hook.ref.path ?? group.configPath,
             hasContent: hook.ref.path !== null && report.contents.has(hook.ref.path),
@@ -232,20 +239,40 @@ function hookItems(report: HarnessReport): Array<{ section: SetupSectionId; item
   return out;
 }
 
+function permissionCounts(text: string): PermissionCounts | null {
+  let permissions: unknown;
+  try {
+    permissions = (JSON.parse(text) as { permissions?: unknown } | null)?.permissions;
+  } catch {
+    return null;
+  }
+  if (!permissions || typeof permissions !== 'object') return null;
+  const count = (key: keyof PermissionCounts) => {
+    const list = (permissions as Record<string, unknown>)[key];
+    return Array.isArray(list) ? list.length : 0;
+  };
+  const counts = { allow: count('allow'), ask: count('ask'), deny: count('deny') };
+  return counts.allow + counts.ask + counts.deny > 0 ? counts : null;
+}
+
 function permissionItems(report: HarnessReport): SetupItem[] {
-  const toolsByPath = new Map(report.analysis.records.map((record) => [record.path, record.tools]));
-  return report.coverage
-    .filter((entry) => entry.origin === 'permissions')
-    .map((entry) => ({
-      key: `permissions:${entry.label}`,
-      label: entry.label,
-      path: entry.label,
-      hasContent: report.contents.has(entry.label),
-      tools: toolsByPath.get(entry.label) ?? entry.tools,
+  const out: SetupItem[] = [];
+  for (const record of report.analysis.records) {
+    const text = PERMISSION_FILE.test(record.path) ? report.contents.get(record.path) : undefined;
+    const counts = text === undefined ? null : permissionCounts(text);
+    if (!counts) continue;
+    out.push({
+      key: `permissions:${record.path}`,
+      label: record.path,
+      path: record.path,
+      hasContent: true,
+      tools: record.tools,
       bytes: null,
       ruleId: null,
-      denyAndAskRuleCount: entry.denyAndAskRuleCount ?? 0,
-    }));
+      permissionCounts: counts,
+    });
+  }
+  return out;
 }
 
 function repositoryChecks(report: HarnessReport): Record<'scripts' | 'gitHooks' | 'workflows', SetupItem[]> {
@@ -343,7 +370,7 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
     if (group) push(group, fileItem(record, report, rules, pairs));
   }
   for (const item of permissionItems(report)) push('permissions', item);
-  for (const { section, item } of hookItems(report)) push(HOOK_GROUP[section], item);
+  for (const { step, item } of hookItems(report)) push(HOOK_GROUP[step], item);
   const checks = repositoryChecks(report);
   for (const item of checks.scripts) push('scripts', item);
   for (const item of checks.gitHooks) push('gitHooks', item);
@@ -352,14 +379,19 @@ export function buildHarnessSetup(report: HarnessReport, filter: ToolFilter = nu
   const items = new Map<string, SetupItem>();
   for (const list of byGroup.values()) for (const item of list) items.set(item.key, item);
 
+  const visibleGroup = (id: SetupGroupId): SetupGroup | null => {
+    const visible = (byGroup.get(id) ?? []).filter((item) => visibleTo(item.tools, filter));
+    if (visible.length === 0) return null;
+    return { id, items: visible, bytes: visible.reduce((sum, item) => sum + (item.bytes ?? 0), 0) };
+  };
   const sections: SetupSection[] = (Object.keys(SECTION_GROUPS) as SetupSectionId[]).map((id) => {
-    const groups = SECTION_GROUPS[id]
-      .map((groupId) => {
-        const visible = (byGroup.get(groupId) ?? []).filter((item) => visibleTo(item.tools, filter));
-        return { id: groupId, items: visible, bytes: visible.reduce((sum, item) => sum + (item.bytes ?? 0), 0) };
-      })
-      .filter((group) => group.items.length > 0);
-    return { id, groups, total: groups.reduce((sum, group) => sum + group.items.length, 0) };
+    const groups = SECTION_GROUPS[id].map(visibleGroup).filter((group) => group !== null);
+    return {
+      id,
+      groups,
+      other: id === 'verification' ? visibleGroup('otherHooks') : null,
+      total: groups.reduce((sum, group) => sum + group.items.length, 0),
+    };
   });
 
   const found = new Set(report.analysis.records.flatMap((record) => record.tools));

@@ -28,5 +28,5 @@ export {
   type HarnessScanProgress,
 } from './model/repo-scan';
 export { citesPath } from './model/document-reach';
-export { type HookConfigFacts } from './model/hook-wiring';
+export { hookEventStep, type HookConfigFacts, type HookEventStep } from './model/hook-wiring';
 export { guideCitation } from './model/guide-citations';

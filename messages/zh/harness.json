@@ -82,6 +82,7 @@
     "permissions": "权限规则",
     "blockingHooks": "拦截 hook",
     "hooks": "hook",
+    "otherHooks": "其他事件",
     "scripts": "脚本",
     "gitHooks": "Git hook",
     "workflows": "CI 工作流"
@@ -93,7 +94,9 @@
   "loadingAlways": "始终",
   "loadingPath": "按路径",
   "hookApprovalGate": "需在 Codex 中批准",
-  "permissionRules": "拒绝与确认规则 {count} 条",
+  "permissionDeny": "拒绝 {count}",
+  "permissionAsk": "确认 {count}",
+  "permissionAllow": "允许 {count}",
   "differsFromCodex": "与 Codex 副本不同",
   "differsFromClaude": "与 Claude Code 副本不同",
   "importedByClaudeMd": "由 CLAUDE.md 导入",

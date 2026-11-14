@@ -82,6 +82,7 @@
     "permissions": "Permission rules",
     "blockingHooks": "Blocking hooks",
     "hooks": "Hooks",
+    "otherHooks": "Other events",
     "scripts": "Scripts",
     "gitHooks": "Git hooks",
     "workflows": "CI workflows"
@@ -93,7 +94,9 @@
   "loadingAlways": "Always",
   "loadingPath": "By path",
   "hookApprovalGate": "Needs approval in Codex",
-  "permissionRules": "{count, plural, one {# deny or ask rule} other {# deny and ask rules}}",
+  "permissionDeny": "Deny {count}",
+  "permissionAsk": "Ask {count}",
+  "permissionAllow": "Allow {count}",
   "differsFromCodex": "Differs from Codex copy",
   "differsFromClaude": "Differs from Claude Code copy",
   "importedByClaudeMd": "Imported by CLAUDE.md",

@@ -82,9 +82,18 @@ function CodexShare({ report, t }: { report: HarnessReport; t: TranslateFn }) {
 }
 
 interface StatusTag {
-  key: 'missing' | 'wired' | 'approval' | 'always' | 'path' | 'permissions' | 'copy' | 'imported';
+  key: 'missing' | 'wired' | 'approval' | 'always' | 'path' | 'allow' | 'ask' | 'deny' | 'copy' | 'imported';
   warning: boolean;
 }
+
+/** Deny first: what a person reads first is what is refused outright. */
+const PERMISSION_LISTS = ['deny', 'ask', 'allow'] as const;
+
+const PERMISSION_LABEL = Object.freeze({
+  allow: 'permissionAllow',
+  ask: 'permissionAsk',
+  deny: 'permissionDeny',
+} as const);
 
 /**
  * Every status the item carries, in reading order; a warning is something that fails. A command
@@ -96,7 +105,9 @@ export function statusTags(item: SetupItem): StatusTag[] {
   if (item.hookStatus === 'wired') tags.push({ key: 'wired', warning: false });
   if (item.approvalGate) tags.push({ key: 'approval', warning: false });
   if (item.loading) tags.push({ key: item.loading, warning: false });
-  if (item.denyAndAskRuleCount !== undefined) tags.push({ key: 'permissions', warning: false });
+  for (const list of PERMISSION_LISTS) {
+    if (item.permissionCounts?.[list]) tags.push({ key: list, warning: false });
+  }
   if (item.differsFrom) tags.push({ key: 'copy', warning: false });
   if (item.importedByClaudeMd) tags.push({ key: 'imported', warning: false });
   return tags;
@@ -114,8 +125,10 @@ function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: strin
       return { text: t('loadingAlways') };
     case 'path':
       return { text: t('loadingPath') };
-    case 'permissions':
-      return { text: t('permissionRules', { count: item.denyAndAskRuleCount ?? 0 }) };
+    case 'allow':
+    case 'ask':
+    case 'deny':
+      return { text: t(PERMISSION_LABEL[tag.key], { count: item.permissionCounts?.[tag.key] ?? 0 }) };
     case 'copy':
       return { text: t(item.differsFrom === 'codex' ? 'differsFromCodex' : 'differsFromClaude') };
     case 'imported':

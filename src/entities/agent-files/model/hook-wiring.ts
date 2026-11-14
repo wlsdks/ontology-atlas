@@ -26,6 +26,28 @@ export interface HookConfigFacts {
   approvalGate: boolean;
 }
 
+/** The step of the agent's loop a hook event runs in; `other` for an event this table does not name. */
+export type HookEventStep = 'context' | 'guardrails' | 'verification' | 'other';
+
+/**
+ * Context adds to what the agent reads, guardrails run before an action can happen, verification
+ * runs after it. Event names as Claude Code and Codex write them; matching is exact.
+ */
+const HOOK_EVENT_STEPS: Readonly<Record<string, Exclude<HookEventStep, 'other'>>> = Object.freeze({
+  UserPromptSubmit: 'context',
+  SessionStart: 'context',
+  PreToolUse: 'guardrails',
+  PermissionRequest: 'guardrails',
+  PreCompact: 'guardrails',
+  PostToolUse: 'verification',
+  Stop: 'verification',
+  SubagentStop: 'verification',
+});
+
+export function hookEventStep(event: string): HookEventStep {
+  return Object.hasOwn(HOOK_EVENT_STEPS, event) ? HOOK_EVENT_STEPS[event]! : 'other';
+}
+
 /** Programs that take a script as their first non-flag argument. */
 const SCRIPT_RUNNERS = new Set(['bash', 'sh', 'zsh', 'node', 'python', 'python3', 'bun', 'deno', 'tsx']);
 

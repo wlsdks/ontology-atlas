@@ -82,6 +82,7 @@
     "permissions": "権限ルール",
     "blockingHooks": "ブロックするhook",
     "hooks": "hook",
+    "otherHooks": "その他のイベント",
     "scripts": "スクリプト",
     "gitHooks": "Git hook",
     "workflows": "CIワークフロー"
@@ -93,7 +94,9 @@
   "loadingAlways": "常時",
   "loadingPath": "パス指定",
   "hookApprovalGate": "Codexで承認が必要",
-  "permissionRules": "拒否・確認ルール{count}件",
+  "permissionDeny": "拒否{count}",
+  "permissionAsk": "確認{count}",
+  "permissionAllow": "許可{count}",
   "differsFromCodex": "Codexのコピーと異なる",
   "differsFromClaude": "Claude Codeのコピーと異なる",
   "importedByClaudeMd": "CLAUDE.mdが読み込む",

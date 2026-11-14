@@ -82,6 +82,7 @@
     "permissions": "권한 규칙",
     "blockingHooks": "차단 훅",
     "hooks": "훅",
+    "otherHooks": "기타 이벤트",
     "scripts": "스크립트",
     "gitHooks": "Git 훅",
     "workflows": "CI 워크플로"
@@ -93,7 +94,9 @@
   "loadingAlways": "항상",
   "loadingPath": "경로 지정",
   "hookApprovalGate": "Codex에서 승인 필요",
-  "permissionRules": "금지·확인 규칙 {count}개",
+  "permissionDeny": "금지 {count}",
+  "permissionAsk": "확인 {count}",
+  "permissionAllow": "허용 {count}",
   "differsFromCodex": "Codex 사본과 다름",
   "differsFromClaude": "Claude Code 사본과 다름",
   "importedByClaudeMd": "CLAUDE.md가 불러옴",
