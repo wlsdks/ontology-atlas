@@ -330,7 +330,7 @@ export function FirstRunStarterModule({
               <Link
                 href="/download/"
                 data-testid="first-run-starter-unsupported-cta"
-                className={controlClass({ shape: "link", tone: "accentOnTint", className: "mt-2 gap-1.5 text-body font-[var(--font-weight-signature)] hover:text-[color:var(--map-panel-text-primary)]" })}
+                className={controlClass({ shape: "link", tone: "accent", className: "mt-2 gap-1.5 text-body font-[var(--font-weight-signature)] hover:text-[color:var(--map-panel-text-primary)]" })}
               >
                 {t("unsupportedCta")}
               </Link>

@@ -514,7 +514,7 @@ export function AcpChatPanelBody({
       <div
         data-testid="acp-chat-composer"
         inert={presentationVisible ? true : undefined}
-        className="@container/composer relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
+        className="@container/composer relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-focus-ring)]"
       >
         {composerFocused && draft.length === 0 ? (
           <span

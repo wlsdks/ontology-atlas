@@ -68,8 +68,8 @@ describe('a canvas colour fallback is the token it stands in for', () => {
     const planted = [
       'const a = cssColor(tokenEl, "--color-text-secondary", "#b4b5bd");',
       "const b = styles.getPropertyValue('--color-text-quaternary').trim() || '#61626c';",
-      'const c = cssVar(rootEl, "--color-text-secondary", "#d0d6e0");',
-      "const d = styles.getPropertyValue('--color-text-quaternary').trim() || '#82828a';",
+      'const c = cssVar(rootEl, "--color-text-secondary", "#d2d0c9");',
+      "const d = styles.getPropertyValue('--color-text-quaternary').trim() || '#86847e';",
     ].join('\n');
     const entries = fallbacks('planted.ts', planted);
     expect(entries).toHaveLength(4);

@@ -794,7 +794,7 @@ function KeyDraftForm({
       </Chip>
       <Chip
         size="lg"
-        tone="accentOnTint"
+        tone="accent"
         data-testid={`ai-save-${testSuffix}`}
         onClick={() => void handleSave()}
         disabled={!draftKey.trim() || saving}
@@ -1047,7 +1047,7 @@ function LocalRunnerRow({
             <Chip
               ref={detailCheckRef}
               size="lg"
-              tone="accentOnTint"
+              tone="accent"
               data-testid="ai-verify-local"
               onClick={() => void runVerify(draftUrl, detailCheckRef)}
               disabled={verify.kind === 'checking' || !draftUrl.trim()}

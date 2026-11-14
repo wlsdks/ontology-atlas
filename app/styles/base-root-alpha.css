@@ -12,26 +12,26 @@
     --color-tap-highlight: rgba(255, 255, 255, 0.04);
 
     /* Builder v2 (A2) alpha scale — subject to the same Tailwind v4 emit regression as the @theme block above, so explicitly define dark defaults here as well. */
-    --color-indigo-a06: rgba(94, 106, 210, 0.06);
-    --color-indigo-a08: rgba(94, 106, 210, 0.08);
-    --color-indigo-a10: rgba(94, 106, 210, 0.1);
-    --color-indigo-a12: rgba(94, 106, 210, 0.12);
-    --color-indigo-a14: rgba(94, 106, 210, 0.14);
-    --color-indigo-a16: rgba(94, 106, 210, 0.16);
-    --color-indigo-a18: rgba(94, 106, 210, 0.18);
-    --color-indigo-a22: rgba(94, 106, 210, 0.22);
-    --color-indigo-a26: rgba(94, 106, 210, 0.26);
-    --color-indigo-a28: rgba(94, 106, 210, 0.28);
-    --color-indigo-a32: rgba(94, 106, 210, 0.32);
-    --color-indigo-a38: rgba(94, 106, 210, 0.38);
-    --color-indigo-a40: rgba(94, 106, 210, 0.4);
-    --color-indigo-a46: rgba(94, 106, 210, 0.46);
-    --color-indigo-focus-ring: rgb(94, 106, 210);
-    --color-indigo-a50: rgba(94, 106, 210, 0.5);
-    --color-indigo-a55: rgba(94, 106, 210, 0.55);
-    --color-indigo-a66: rgba(94, 106, 210, 0.66);
-    --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
-    --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
+    --color-indigo-a06: rgba(233, 231, 224, 0.03);
+    --color-indigo-a08: rgba(233, 231, 224, 0.04);
+    --color-indigo-a10: rgba(233, 231, 224, 0.05);
+    --color-indigo-a12: rgba(233, 231, 224, 0.06);
+    --color-indigo-a14: rgba(233, 231, 224, 0.07);
+    --color-indigo-a16: rgba(233, 231, 224, 0.08);
+    --color-indigo-a18: rgba(233, 231, 224, 0.09);
+    --color-indigo-a22: rgba(233, 231, 224, 0.11);
+    --color-indigo-a26: rgba(233, 231, 224, 0.13);
+    --color-indigo-a28: rgba(233, 231, 224, 0.14);
+    --color-indigo-a32: rgba(233, 231, 224, 0.16);
+    --color-indigo-a38: rgba(233, 231, 224, 0.19);
+    --color-indigo-a40: rgba(233, 231, 224, 0.2);
+    --color-indigo-a46: rgba(233, 231, 224, 0.23);
+    --color-indigo-focus-ring: rgb(127, 160, 224);
+    --color-indigo-a50: rgba(233, 231, 224, 0.25);
+    --color-indigo-a55: rgba(233, 231, 224, 0.275);
+    --color-indigo-a66: rgba(233, 231, 224, 0.33);
+    --color-indigo-text-strong: rgba(160, 188, 236, 0.95);
+    --color-indigo-text-soft: rgba(196, 213, 244, 0.92);
     --color-danger-a08: rgba(229, 72, 77, 0.08);
     --color-danger-a10: rgba(229, 72, 77, 0.1);
     --color-danger-a32: rgba(229, 72, 77, 0.32);
@@ -42,23 +42,23 @@
     --color-overlay-recessed: rgba(0, 0, 0, 0.16);
 
     /* Builder A4 alpha scale — subject to the same Tailwind v4 emit regression as the @theme block above, so explicitly define dark defaults here as well. */
-    --color-indigo-a20: rgba(94, 106, 210, 0.2);
-    --color-indigo-a24: rgba(94, 106, 210, 0.24);
-    --color-indigo-a30: rgba(94, 106, 210, 0.3);
-    --color-indigo-a34: rgba(94, 106, 210, 0.34);
-    --color-indigo-a60: rgba(94, 106, 210, 0.6);
-    --color-indigo-line-a06: rgba(139, 151, 255, 0.06);
-    --color-indigo-line-a13: rgba(139, 151, 255, 0.13);
-    --color-indigo-line-a15: rgba(139, 151, 255, 0.15);
-    --color-indigo-line-a20: rgba(139, 151, 255, 0.2);
-    --color-indigo-line-a22: rgba(139, 151, 255, 0.22);
-    --color-indigo-line-a32: rgba(139, 151, 255, 0.32);
-    --color-indigo-line-a35: rgba(139, 151, 255, 0.35);
-    --color-indigo-line-a40: rgba(139, 151, 255, 0.4);
-    --color-indigo-line-a42: rgba(139, 151, 255, 0.42);
-    --color-indigo-line-a45: rgba(139, 151, 255, 0.45);
-    --color-indigo-line-a54: rgba(139, 151, 255, 0.54);
-    --color-indigo-line-a90: rgba(139, 151, 255, 0.9);
+    --color-indigo-a20: rgba(233, 231, 224, 0.1);
+    --color-indigo-a24: rgba(233, 231, 224, 0.12);
+    --color-indigo-a30: rgba(233, 231, 224, 0.15);
+    --color-indigo-a34: rgba(233, 231, 224, 0.17);
+    --color-indigo-a60: rgba(233, 231, 224, 0.3);
+    --color-indigo-line-a06: rgba(233, 231, 224, 0.036);
+    --color-indigo-line-a13: rgba(233, 231, 224, 0.078);
+    --color-indigo-line-a15: rgba(233, 231, 224, 0.09);
+    --color-indigo-line-a20: rgba(233, 231, 224, 0.12);
+    --color-indigo-line-a22: rgba(233, 231, 224, 0.132);
+    --color-indigo-line-a32: rgba(233, 231, 224, 0.192);
+    --color-indigo-line-a35: rgba(233, 231, 224, 0.21);
+    --color-indigo-line-a40: rgba(233, 231, 224, 0.24);
+    --color-indigo-line-a42: rgba(233, 231, 224, 0.252);
+    --color-indigo-line-a45: rgba(233, 231, 224, 0.27);
+    --color-indigo-line-a54: rgba(233, 231, 224, 0.324);
+    --color-indigo-line-a90: rgba(233, 231, 224, 0.54);
     --color-danger-a12: rgba(229, 72, 77, 0.12);
     --color-danger-text-strong: rgba(236, 116, 116, 0.95);
     --color-amber-source-a07: rgba(244, 183, 49, 0.07);
@@ -429,7 +429,7 @@
      * instruction, and the room the page owes it is the page's side of that.
      */
     --topology-bottom-tab-content: calc(1.5rem + 0.125rem + var(--leading-caption));
-    --topology-bottom-tab-surface: #08090a;
+    --topology-bottom-tab-surface: #0b0b0a;
     /* 2026-08-06 audit: value was `rgba(255,255,255,0.09)` — the third value **sandwiched between** global `--color-divider` (0.08) and `--color-overlay-3` (0.1). The job of this line is to separate the bar from content, which is the definition of a divider, so it now references the global token. Alpha difference of 0.01 means screen appearance is effectively unchanged. */
     --topology-bottom-tab-border: var(--color-divider);
     --topology-mobile-bottom-tab-reserve: calc(

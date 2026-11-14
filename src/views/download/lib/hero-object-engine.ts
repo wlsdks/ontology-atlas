@@ -245,10 +245,10 @@ export function mountHeroObject(
 
   const rootEl = opts.tokenEl ?? document.documentElement;
   // The token's value follows the accent switch despite its name.
-  const accent = hexRgb(cssVar(rootEl, '--color-indigo-brand', '#5e6ad2'));
-  const accent2 = hexRgb(cssVar(rootEl, '--color-indigo-accent', '#7170ff'));
-  const ink = hexRgb(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
-  const fill = hexRgb(cssVar(rootEl, '--color-panel', '#0f1011'));
+  const accent = hexRgb(cssVar(rootEl, '--color-indigo-brand', '#e9e7e0'));
+  const accent2 = hexRgb(cssVar(rootEl, '--color-indigo-accent', '#8fb0ea'));
+  const ink = hexRgb(cssVar(rootEl, '--color-text-primary', '#f3f2ee'));
+  const fill = hexRgb(cssVar(rootEl, '--color-panel', '#121211'));
 
   const PERIOD = opts.periodMs ?? HERO_TURN_MS.plane;
   const PITCH = opts.pitch ?? (flat ? 0.95 : 0.34);

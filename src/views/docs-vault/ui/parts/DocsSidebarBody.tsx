@@ -435,7 +435,7 @@ export function DocsSidebarBody({
         </p>
       ) : null}
       {searchExpanded ? (
-        <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-line-a45)] focus-within:text-[color:var(--color-text-secondary)]">
+        <label className="mx-3 mt-1.5 flex h-8 flex-none items-center gap-2 rounded-chip border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2 text-[color:var(--color-text-quaternary)] focus-within:border-[color:var(--color-indigo-focus-ring)] focus-within:text-[color:var(--color-text-secondary)]">
           <Search size={ICON_SIZE.sm} aria-hidden />
           <span className="sr-only">{t("searchLabel")}</span>
           <input

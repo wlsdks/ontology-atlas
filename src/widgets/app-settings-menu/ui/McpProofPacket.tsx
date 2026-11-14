@@ -88,7 +88,7 @@ export function McpProofPacket({
       </p>
       {/* No `font-mono`: the label is prose, and monospace has no Hangul metrics. */}
       <Chip
-        tone="accentOnTint"
+        tone="accent"
         data-testid="agents-mcp-proof-copy"
         onClick={() => void copy(packet)}
         className="mt-2 w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"

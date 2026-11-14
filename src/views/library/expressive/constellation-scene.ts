@@ -118,10 +118,10 @@ export function mountLibraryConstellation(
    * cube takes `--color-text-secondary` with lower roughness and emissive on so the shaded faces
    * stay visible.
    */
-  const inkSource = cssColor(tokenEl, "--color-text-secondary", "#d0d6e0");
-  const inkPage = cssColor(tokenEl, "--color-text-primary", "#f7f8f8");
-  const accent = cssColor(tokenEl, "--color-indigo-accent", "#7170ff");
-  const line = cssColor(tokenEl, "--color-indigo-brand", "#5e6ad2");
+  const inkSource = cssColor(tokenEl, "--color-text-secondary", "#d2d0c9");
+  const inkPage = cssColor(tokenEl, "--color-text-primary", "#f3f2ee");
+  const accent = cssColor(tokenEl, "--color-indigo-accent", "#8fb0ea");
+  const line = cssColor(tokenEl, "--color-indigo-brand", "#e9e7e0");
 
   renderer.setClearColor(0x000000, 0);
   // 1.5 is where an edge stops showing steps on a Retina display; 2 doubles the fill cost

@@ -110,7 +110,7 @@ export function ConnectionExplorer({ board, selectedEdge, matches, vaultKey, onS
         aria-label={`${label} · ${t('nodeDeclarations', { count: linksOf(id).length })}`} title={label} onClick={() => selectFromCard(id)} {...hoverProps(id)}
         tabIndex={id === cardStop ? 0 : -1} onFocus={() => { cards.setRoving(id); setHover(id); }} onKeyDown={cards.moveFocus}
         style={{ '--structure-item-delay': `calc(var(--motion-stagger) * ${Math.min(index, 6)})` } as CSSProperties}
-        className={controlClass({ shape: 'card', size: 'md', tone: pressed ? 'accentOnTint' : 'secondary', active: pressed, hoverSurface: 'lift', hoverBorder: 'strong', className: `${styles.pairCard} structure-item-in` })}>
+        className={controlClass({ shape: 'card', size: 'md', tone: pressed ? 'accent' : 'secondary', active: pressed, hoverSurface: 'lift', hoverBorder: 'strong', className: `${styles.pairCard} structure-item-in` })}>
         {concept && concept.kind === 'capability' ? null : <OntologyMapKindGlyph kind={concept?.kind ?? 'domain'} size={14} />}
         <span className="min-w-0 truncate">{label}</span>
         {whole ? <span className={styles.pairCardNote}>{t('pairWholeDomain')}</span> : null}
