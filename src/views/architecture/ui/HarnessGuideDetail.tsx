@@ -27,9 +27,10 @@ import {
 export const WARNING_BADGE =
   'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]';
 
-/** Only a difference wears a tag; "same content" is plain text and "not applicable" is the dash. */
+/** A content difference wears the same blue its lines wear in the comparison; file counts stay plain text. */
 export const PAIR_DRIFT_BADGE =
-  'border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-secondary)]';
+  'border border-[color:var(--color-indigo-accent-a32)] bg-[color:var(--color-indigo-accent-a12)] text-[color:var(--color-indigo-text-soft)]';
+export const PAIR_COUNT_TEXT = 'whitespace-nowrap text-label text-[color:var(--color-text-tertiary)]';
 
 const FACT_LABEL =
   'text-label font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]';
@@ -148,12 +149,12 @@ function PairFact({ row, twin, t }: { row: GuideRow; twin: string; t: TranslateF
           </span>
         ) : null}
         {oneSided > 0 ? (
-          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+          <span className={PAIR_COUNT_TEXT}>
             {t('pairFilesNoTwin', { count: oneSided })}
           </span>
         ) : null}
         {missing > 0 ? (
-          <span className={badgeClass({ shape: 'tag', className: PAIR_DRIFT_BADGE })}>
+          <span className={PAIR_COUNT_TEXT}>
             {t('pairFilesMissing', { count: missing })}
           </span>
         ) : null}

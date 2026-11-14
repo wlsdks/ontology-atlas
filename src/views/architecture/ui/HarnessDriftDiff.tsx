@@ -17,6 +17,8 @@ import {
 import type { TranslateFn } from './HarnessGuideDetail';
 
 const MARKED_TEXT = 'text-[color:var(--color-text-primary)]';
+const MARKED_ROW = 'bg-[color:var(--color-indigo-accent-a12)]';
+const MARK_INK = 'text-[color:var(--color-indigo-accent)]';
 const PLAIN_TEXT = 'text-[color:var(--color-text-secondary)]';
 
 function LegacyFile({
@@ -69,7 +71,7 @@ function LegacyFile({
             <span
               key={index}
               data-harness-drift-line={only ? 'only-here' : undefined}
-              className={cn('block px-3', only && 'bg-[color:var(--color-overlay-3)] text-[color:var(--color-text-primary)]')}
+              className={cn('block px-3', only && MARKED_ROW, only && MARKED_TEXT)}
             >
               {line === '' ? '\u00a0' : line}
             </span>
@@ -99,14 +101,17 @@ function Cell({ line, marked, divided }: { line: AlignedLine | null; marked: boo
     <div
       className={cn(
         'grid grid-cols-[2.5rem_1ch_minmax(0,1fr)] gap-x-2 px-2 font-mono text-label',
-        marked && 'bg-[color:var(--color-overlay-3)]',
+        marked && MARKED_ROW,
         edge,
       )}
     >
-      <span aria-hidden className="select-none text-right tabular-nums text-[color:var(--color-text-tertiary)]">
+      <span
+        aria-hidden
+        className={cn('select-none text-right tabular-nums', marked ? MARK_INK : 'text-[color:var(--color-text-tertiary)]')}
+      >
         {line.no}
       </span>
-      <span className={cn('select-none', MARKED_TEXT)}>
+      <span className={cn('select-none', MARK_INK)}>
         {marked ? '+' : ''}
       </span>
       <span
