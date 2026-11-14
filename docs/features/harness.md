@@ -8,138 +8,72 @@ routes: [/architecture]
 
 # Harness
 
-### `/architecture` — Harness: at a glance, guides, architecture
+### `/architecture` — Harness: Setup, architecture
 
-**The tab is Harness (`harness.title`) and it answers "how are agents set up to work in this repository"**
-(2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). The route is unchanged, the label moved: the destination
-already held one half of the answer (the reviewed structure) and nothing at all of the other
-(what the agents were told, and what catches them). Under the title one line says what the tab
-is for, and a tab set picks one of three views on `?view=`.
+**The tab is Harness (`harness.title`) and it answers "what does an agent meet in this repository"**
+(2026-09-13, `docs/records/decisions/2026-09-13-architecture-tab-becomes-harness-3a63ada4-031c-41af-8b9d-6d6f7f2a5138.md`). A tab set picks one of two views on
+`?view=`: **Setup** (`overview`, the arrival) and **Architecture** (`architecture`).
 
-**The layer ladder became its own tab on 2026-09-19** (owner). It had been living under the name
-Structure inside a destination called Harness, and it is the product's **architecture** — which,
-in the vocabulary this tab borrows, is one of the three things a harness *regulates*
-(maintainability · architecture fitness · behaviour) rather than a part of the harness itself. So
-`?view=architecture` holds the architecture picture under its own name. **Structure and Coverage became one view on
-2026-10-20** (owner, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`): they asked the same three questions, one by harness part and one
-by domain, filed a hook in different columns and offered no next step. `?view=structure`,
-`?view=coverage` and `?view=sensors` are rewritten in place to `?view=overview`, so an old link and
-the tab a person presses agree.
+**The layer ladder became its own tab on 2026-09-19** (owner). It is the product's
+**architecture** — one of the things a harness regulates rather than a part of the harness — so
+`?view=architecture` holds it under its own name. **Setup replaced At a glance and Guides on
+2026-11-15** (owner, `docs/records/decisions/2026-11-15-harness-follows-the-agent-loop-c52ae218-e053-4eb6-8d45-84efad283ff1.md`): a harness is what an agent
+reads, what stops it before it acts and what checks its work afterwards, and nobody files it by
+product domain. `?view=structure`, `?view=coverage`, `?view=sensors` and `?view=guides` are
+rewritten in place to `?view=overview`, so an old link and the tab a person presses agree.
 
-**The arrival depends on the surface, because one of the views cannot answer on the web.** Almost
-the whole harness lives in dot directories and a browser's folder permission cannot see a dot entry
-at all, so the installed app arrives on At a glance and a browser arrives on the blueprint, which is built
-from the bundled profile and answers there. Without a reading the tabs are At a glance and
-Architecture, and an address that names a view always wins; `?role=` or `?stage=` with no `?view=`
-opens Architecture, the only view with either.
+**The arrival depends on the surface, because Setup cannot answer on the web.** Almost the whole
+harness lives in dot directories and a browser's folder permission cannot see a dot entry at all,
+so the installed app arrives on Setup and a browser arrives on the blueprint, which is built from
+the bundled profile. An address that names a view always wins; `?role=` or `?stage=` with no
+`?view=` opens Architecture, the only view with either.
 
-Without a reading, At a glance is one centred stage (`HarnessUnreadStage`): a code path forking to
-the three guards the matrix reads, the third drawn missing, then the reason in one sentence and the
-one way forward (get the app in a browser, connect a source folder in the app).
-The shell-wide `?focus=main` skip anchor every left-rail link carries is deliberately not a deep
-link: keying the carve-out on it made one rail click open Architecture and left the default
-unreachable from the rail (measured in the installed app, 2026-09-13).
+Without a reading, Setup is one centred stage (`HarnessUnreadStage`): a repository card forking to
+the three sections (Context, Guardrails, Verification), then the reason in one sentence and the one
+way forward (get the app in a browser, connect a source folder in the app). The shell-wide
+`?focus=main` skip anchor every left-rail link carries is deliberately not a deep link.
 
-**On Guides, one sentence at the top, computed from files only**: how many guide documents this repository
-speaks to agents through, and how many checks it has in place. Both numbers print their working
-— the check number shows its three parts (hook scripts wired · files under `.githooks/` ·
-`package.json` lint/typecheck/test scripts) and a caption states the counting rule — because a
-bare count invites a reader to hear "N things are protecting you" where what was measured is "N
-things are declared". The unguarded-domain question is **not** in that sentence: At a glance
-answers it per domain.
+**Setup** (`harness.views.overview`) opens with one sentence, `harness.explainer`, and beside it a
+filter of the agent tools the scan found (All · Claude Code · Codex · …), hidden when one tool or
+none is found. The filter narrows every list to the files that tool reads; scripts, Git hooks and CI
+workflows, which no tool claims, stay under every filter because they run whichever agent worked.
+Below 76rem of content the filter wraps as chips.
 
-**Guides (`harness.views.guides`)** — a list and a detail: the list on the left holds one row per
-guide file or directory found (path, file count, size, how many files differ from an existing
-twin, how many have no twin (`harness.pairFilesNoTwin`; the file's own row says `harness.driftOneSided`),
-and how many files the twin has that the folder lacks (`harness.pairFilesMissing`)), then one row per hook config, which says wired only when every script it names is
-on disk and says so when a command names no script file (`harness.hookUnresolved`). A row's status
-tags wrap below its name rather than truncate it. Each row carries a folder or file icon. Only a content difference wears a tag, in the same blue that lines without a twin wear in the comparison; the two file counts are plain text. The detail on the right holds the selected
-row's facts, and each pane scrolls on its own, so the page itself does not scroll at 1512x900. A
-folder says it has the same content as its twin (`harness.pairMatchesTwin`) only when both file sets
-are equal and every pair matches; a folder that lacks files names them and the folder they are in.
-From a 48rem frame the list and the detail sit side by side, with a narrower list below 68rem;
-below 48rem the list stacks over the detail. A guide's detail names which tools
-read it, each claim carrying the document it came from and the date a person last opened it (a
-claim we cannot cite says so (`harness.toolsUncited`) rather than rendering like the sourced rows);
-size against a documented cap, where the Codex bar measures the **merged** root + worst-nested
-`AGENTS.md`, because that is what Codex truncates and a per-file bar reads green while the merge is
-already being cut; the reference comparison with its declared twin, shown only where a twin was
-compared; the file's modification time on
-this disk, labelled as that rather than as a commit date; and, for a directory, its files. A
-directory with differing files unfolds them as indented rows. Initially only the selected
-folder is expanded; other folders retain their count summaries. Explicitly opened folders stay
-open until the person closes them, and a file on one side only is listed
-once, under the folder that holds it. Choosing a file that has a twin shows both complete files
-side by side on shared rows (one above the other in a narrow detail), so a line and its counterpart
-sit on the same y; each side is headed by the mark and name of the tool that reads it (Claude Code, Codex) and the
-count of its lines with no match in the other tool's file, and such a line carries a `+`
-(`harness.driftLineMark`), facing a hatched empty cell. When the texts differ only in line endings,
-trailing spaces or the final newline, one line says so in place of the caption
-(`harness.driftInvisibleOnly`). Trimming the equal head and tail first, a pair is aligned when the
-differing middle fits a cell cap and the two files together fit a row cap; a larger pair is not
-aligned, says so (`harness.driftLineMarkUnaligned`), and marks lines by line set under the same
-tool-headed sides. Choosing a file with no twin shows its one copy and names the folder it is
-only in (`harness.driftOnlyIn`). The view opens on the first file that differs from its twin. Comparison counts do not claim that the pairs match, and
-tool-specific differences are informational rather than a synchronization requirement. A hook
-config's detail lists it by script: wired (`harness.hookWired`) means the script the config names
-exists on disk, never that it runs — a script the config names and the disk does not have is
-called out, because that failure produces no error at all, and the Codex row carries its approval
-requirement (`harness.hookApprovalGate`) as a standing fact instead of a green, since `/hooks` trust
-lives in no file. Arrow keys move the selection through the list, and Right and Left open and
-close a directory. Measured on this repository:
-98 guide documents in 9 groups, 85 checks (20 + 6 + 59), `AGENTS.md` 12,142 B merging to
-13,090 of 32,768, 20 of 20 hook scripts wired.
+**A problems strip appears only when a person has something to fix**, one amber row each, and a row
+opens the item concerned: a hook whose script the config names and the disk does not have
+(`harness.problemHookMissing`), a hook command that names no script path
+(`harness.problemHookUnresolved`), the merged `AGENTS.md` Codex reads over its 32 KiB
+`project_doc_max_bytes` default (`harness.problemCodexCap`), and Claude and Codex skill or subagent
+copies that differ or have no twin (`harness.problemCopyDrift`). With none, nothing is drawn: no
+"all good" banner.
 
-**At a glance (`harness.views.overview`)** — the arrival (2026-10-20, `docs/records/decisions/2026-10-20-harness-opens-at-a-glance-6a495b79-8e98-42a4-98b0-351ee722a1d8.md`). One
-table: rows are the domains the ontology records for this repository, columns are **Told**,
-**Gated** and **Watched**. A file counts in a domain's cell when a path **it declares** reaches a
-path the ontology records there — a nested `AGENTS.md`'s folder, a rule's `paths:`, a hook
-script's anchored filter, a check command's file arguments, a workflow's trigger `paths:`
-(`paths-ignore:` is no path) — never because of where the file itself lives, and every entry carries
-the text that put it there. A file whose paths reach every domain fills each of their cells. The
-last row, **Reaches every domain**, holds what declares no path: the root guides, the
-`permissions` deny and ask rules, the exclusion files, hooks and scripts that name no path, and a
-glob with no literal folder such as `**/*.tsx`.
+**Three sections in the order of the agent's loop**, three equal-height columns at `lg` and wider,
+stacked below. Each has a title, a one-line caption and a total, then group rows that show the
+artefact's name, its count and, for read files, its total size; a group expands in place to its
+files, and a file opens the detail. Groups with no items are not drawn.
 
-Told holds the root guides, rules, nested guides and the context hooks (SessionStart,
-UserPromptSubmit); Gated holds the hooks that run before a tool call, the files under `.githooks/`,
-the deny and ask rules and the exclusion files; Watched holds every other hook event, the check
-scripts a command names and the workflows. A script wired for both a pre- and a post-tool event
-appears in both columns. Mirrored hooks under `.claude/hooks/` and `.codex/hooks/` list as two
-files, each naming its own tool, and a `.codex` hook carries `harness.hookApprovalGate` because it
-runs only after a person trusts it in `/hooks`.
+| Section | Groups |
+|---|---|
+| Context — files the agent reads | Instruction files (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, nested `AGENTS.md`, `copilot-instructions.md`); Rules, each tagged Always or By path from its `paths:`; Skills; Subagents; MCP config; Ignore files; Hooks on `SessionStart` or `UserPromptSubmit`, which add context rather than block |
+| Guardrails — what stops an action before it runs | Permission rules (each settings file with its deny and ask rule count); Blocking hooks (events named `Pre…` or `Before…`) |
+| Verification — what checks the work afterwards | Hooks on every other event; Scripts (`package.json` lint, typecheck and test scripts); Git hooks (`.githooks/`); CI workflows (`.github/workflows/`) |
 
-**A gap is named, counted and handed over.** A gap is a cell of a domain with a recorded path that
-no file fills: an amber dot and `harness.coverageNone`, counted in one sentence above the table
-(`harness.overviewGapCount`). A domain with no recorded path reads `harness.overviewNoPath` and is
-not a gap, because no file could name it. One action, `harness.overviewHandoff`, copies a request
-to paste into the coding agent that runs in that repository: each gap with its domain slug and
-paths, what already reaches every domain, an instruction to judge each gap first, propose the
-smallest file and wait for a yes before writing, and the rule a file must meet to fill the cell.
-Atlas sends nothing and writes nothing; `harness.overviewRequestShow` shows the same text and is
-where a refused copy points, and "Read the files again" re-reads them after the agent writes. **No
-score, grade, level or percentage is rendered**: the count is of cells a reader can count
-(`docs/records/decisions/2026-09-13-harness-spine-is-a-coverage-matrix-b9dba267-d755-4ad5-b854-6f930c7e5922.md`).
+A hook row shows its event as the config writes it (`PreToolUse`), the tool that reads its config,
+and its status: `harness.hookWired` means only that the script exists on disk, never that it runs;
+`harness.hookMissing` and `harness.hookUnresolved` are amber; a `.codex` hook also carries
+`harness.hookApprovalGate`, because Codex runs a new or changed hook only after a person trusts it
+in `/hooks`, which no file records. The Context header also states what each tool reads at session
+start where the scan knows it: Claude Code's `CLAUDE.md` plus every rule with no `paths:`, and
+Codex's merged root plus largest nested `AGENTS.md` against its 32 KiB limit as a bar.
 
-**A cell opens its files beside the table** from 1280px, in a reserved column so no cell moves
-under the pointer, and below its row under that. Beside the table the first gap's panel is open on
-arrival without taking focus, as Guides opens on its first difference; with no gap nothing opens. The panel quotes the domain's purpose
-as the ontology wrote it, then each file by kind with its path, declaring text and the tools that
-read it; a gap shows the empty sentence, the domain's recorded paths, how many files reach every
-domain and, for Watched, the test files discovered under or beside those paths. Escape or Close returns focus
-to the cell. Under the table a missing hook script is called out (`harness.anatomySilentGuards`),
-because a config naming a script the disk lacks fails with no error at all, and "How this screen
-counts" holds the counting rule, the paths nothing reaches, the files that reach no domain, the
-domains without a path, and the agent loop and model, which files cannot show.
-
-**What the repository keeps out of sight is a gate too** (2026-09-20). Gated carries the exclusion
-files under the name each product actually uses: `.cursorignore` (Cursor), `.codeiumignore`
-(Windsurf, not `.windsurfignore`), `.aiexclude` (Gemini **Code Assist**), `.geminiignore` (Gemini
-**CLI**), `.aiignore` (JetBrains AI). `.claudeignore` does not exist — Claude Code uses `.gitignore`
-for discovery and `permissions.deny` for the rest — and `.agentignore` is a proposal rather than a
-standard. Two files are not counted: `.cursorindexingignore` only keeps files out of the index, and
-`.cursorrules` is ignored in Cursor's agent mode. A repository can write an exclusion file; whether
-the tool honours it is the tool's business.
+**The detail sits beside the lists** in a 24rem panel when the content is at least 76rem wide, and
+on arrival shows the first problem's item, or the first file. Below that width it waits for a press
+and then takes the place of the lists, with "Back to the list". It stays short: the path, the
+tools that read it (each claim cited where a tool's documentation was checked), the size, the event
+and config for a hook, the status, the declaring text for a script or workflow, then the content. A
+skill or subagent whose Claude and Codex copies differ shows both copies side by side on shared rows
+(`HarnessDriftDiff`); a hook whose script is missing shows the config that names it, where the line
+to fix is.
 
 **The wait screen is held back, never the read.** The scan reports each pass it runs and fills a
 bar only where the denominator was known before the pass started — but it appears only once a read
