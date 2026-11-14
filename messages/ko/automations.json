@@ -67,6 +67,7 @@
   "resume": "다시 켜기",
   "removeNamed": "{name} 삭제",
   "historyTitle": "실행 기록",
+  "latestTitle": "마지막 결과",
   "noRuns": "아직 실행한 적이 없어요.",
   "noSummary": "실행은 끝났지만 저장된 요약이 없어요.",
   "failedNoResult": "에이전트 턴이 끝나지 않아 이번 실행은 결과를 남기지 못했어요.",

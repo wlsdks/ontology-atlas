@@ -18,7 +18,7 @@ export function AutomationRunHistory({ entries, unrecorded }: { entries: readonl
   const recent = [...entries].reverse();
   return (
     <section data-testid="automations-history" className="space-y-3">
-      <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('historyTitle')}</h3>
+      <h3 className="text-label font-[var(--font-weight-emphasis)] text-[color:var(--color-text-tertiary)]">{t('latestTitle')}</h3>
       {unrecorded ? <p data-testid="automations-unrecorded" role="status" className={cn('break-words text-body', WARNING_INK)}>
         {unrecorded.files.map((file) => t(file.endsWith('.jsonl') ? 'unrecorded.ledger' : 'unrecorded.schedule', { time: automationDate(locale, unrecorded.endedAt), file })).join(' ')}
       </p> : null}

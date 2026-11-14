@@ -67,6 +67,7 @@
   "resume": "再開",
   "removeNamed": "{name}を削除",
   "historyTitle": "実行履歴",
+  "latestTitle": "前回の結果",
   "noRuns": "まだ実行されていません。",
   "noSummary": "実行は終了しましたが、保存された要約がありません。",
   "failedNoResult": "エージェントの処理が完了しなかったため、この実行の結果はありません。",
