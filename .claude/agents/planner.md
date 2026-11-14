@@ -1,8 +1,8 @@
 ---
 name: planner
-description: Turns a request into slices with disjoint file ownership, cross-slice decisions, order and acceptance, at xhigh effort. Use before fanning out development across agents, or when a change crosses several modules; not for a change the lead can plan in a few reads.
+description: Turns a request into slices with disjoint file ownership, cross-slice decisions, order and acceptance. Use before fanning out development across agents, or when a change crosses several modules; not for a change the lead can plan in a few reads.
 model: fable
-effort: xhigh
+effort: high
 maxTurns: 200
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 ---
