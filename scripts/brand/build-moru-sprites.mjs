@@ -11,9 +11,14 @@ const ROOT = 'assets/brand/moru';
 const COLORS = ['171923', '17192d', '50569c', '6d73d2', '555451', '777572', '99968f', 'aaa9a5', 'b8b4aa', 'd6d3c9', 'fff1d7', '9399e5'];
 const PALETTE = COLORS.map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
 const NEUTRALS = PALETTE.filter(p => Math.max(...p) - Math.min(...p) < 30);
+const COOL = PALETTE.filter(p => p[2] > p[0] + 8);
 const [STONE, IVORY] = ['d6d3c9', 'fff1d7'].map(hex => PALETTE[COLORS.indexOf(hex)]);
 
-/** Dark achromatic shading must not become indigo; bright warm ivory remains ivory. */
+/**
+ * Dark achromatic shading must not become indigo; bright warm ivory remains ivory. A pixel
+ * that is plainly blue stays in the ink and indigo family: a dim flipper is nearer the dark
+ * gray by distance, and took it.
+ */
 export function moruColor(r, g, b, accents = []) {
   const distance = q => (r - q[0]) ** 2 + (g - q[1]) ** 2 + (b - q[2]) ** 2;
   if (accents.length) {
@@ -24,7 +29,7 @@ export function moruColor(r, g, b, accents = []) {
   if (r >= 235 && r - g >= 5 && r - b >= 18) return IVORY;
   const achromatic = Math.max(r, g, b) - Math.min(r, g, b) < 35;
   if (achromatic && Math.min(r, g, b) >= 150) return STONE;
-  const candidates = achromatic ? NEUTRALS : PALETTE;
+  const candidates = achromatic ? NEUTRALS : b - Math.max(r, g) >= 35 ? COOL : PALETTE;
   return candidates.reduce((best, p) => {
     return distance(p) < distance(best) ? p : best;
   });
@@ -55,6 +60,109 @@ function translate(data, size, dx, dy) {
   return out;
 }
 
+/**
+ * A source cell is about 256px and its drawn pixels are about four source pixels wide, so
+ * sampling one source pixel per exported pixel dropped eye columns and broke note stems.
+ * Clips are registered on this grid and reduced once, by vote, to each exported size.
+ */
+const WORK = 256;
+const pack = (r, g, b) => r << 16 | g << 8 | b;
+const INK = new Set([COLORS[0], COLORS[1]].map(hex => parseInt(hex, 16)));
+const FREE_INK = PALETTE[COLORS.indexOf('6d73d2')];
+
+/**
+ * Each exported pixel takes the colour most of its source block agrees on. A stroke that
+ * straddles two blocks fills half of each; it lands in the block where it sits toward the
+ * lower right, so it stays one pixel wide instead of doubling or vanishing. Ink that fills
+ * about half a block (`inkTie` sets how near) without arriving from the block above or to
+ * the left is a thin stroke of its own and is kept.
+ */
+export function reduceMoru(data, from, to, inkTie = 1.5) {
+  const k = from / to;
+  if (!Number.isInteger(k) || k < 1) throw new Error(`Moru cannot reduce ${from}px to ${to}px by whole blocks`);
+  if (k === 1) return Buffer.from(data);
+  const out = Buffer.alloc(to * to * 4), counts = new Map(), half = (k - 1) / 2;
+  const isInk = i => data[i + 3] !== 0 && INK.has(pack(data[i], data[i + 1], data[i + 2]));
+  for (let y = 0; y < to; y++) for (let x = 0; x < to; x++) {
+    counts.clear();
+    let opaque = 0, lean = 0, ink = 0, inkLean = 0, arrives = false;
+    for (let by = 0; by < k; by++) for (let bx = 0; bx < k; bx++) {
+      const i = ((y * k + by) * from + x * k + bx) * 4;
+      if (!data[i + 3]) continue;
+      const key = pack(data[i], data[i + 1], data[i + 2]), towardLowerRight = by - half + bx - half;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      opaque++; lean += towardLowerRight;
+      if (!INK.has(key)) continue;
+      ink++; inkLean += towardLowerRight;
+      if (bx === 0 && x > 0 && isInk(i - 4) || by === 0 && y > 0 && isInk(i - from * 4)) arrives = true;
+    }
+    if (opaque * 2 < k * k || opaque * 2 === k * k && lean <= 0) continue;
+    let fill = -1, fillCount = 0, inkKey = -1, inkCount = 0;
+    for (const [key, count] of counts) {
+      if (INK.has(key)) { if (count > inkCount || count === inkCount && key < inkKey) { inkKey = key; inkCount = count; } }
+      else if (count > fillCount || count === fillCount && key < fill) { fill = key; fillCount = count; }
+    }
+    const notInk = opaque - ink, nearHalf = ink * inkTie > notInk;
+    const key = ink > notInk || nearHalf && (inkLean > 0 || !arrives) ? inkKey : fill, o = (y * to + x) * 4;
+    out[o] = key >> 16; out[o + 1] = key >> 8 & 255; out[o + 2] = key & 255; out[o + 3] = 255;
+  }
+  return out;
+}
+
+const eightNeighbours = (p, size, visit) => {
+  const x = p % size, y = (p - x) / size;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const xx = x + dx, yy = y + dy;
+    if ((dx || dy) && xx >= 0 && yy >= 0 && xx < size && yy < size) visit(yy * size + xx);
+  }
+};
+
+/** The connected pixels of `member` reachable from `start`; O(pixels) across one frame. */
+function floodGroup(start, member, seen, size) {
+  const group = [start]; seen[start] = 1;
+  for (let i = 0; i < group.length; i++) eightNeighbours(group[i], size, n => { if (member[n] && !seen[n]) { seen[n] = 1; group.push(n); } });
+  return group;
+}
+
+/**
+ * Outline ink is 1.14:1 on the app's canvas: it reads only beside a fill. Ink drawn away
+ * from every fill (a note, a cable, a fishing line) takes the flipper indigo, which reads on
+ * the dark canvas and on a light page alike. A stroke that touches no fill changes whole, so
+ * a note beside the head is one colour; a stroke attached to a fill changes past `reach`.
+ * A piece smaller than `crumb` is source noise: detached it is removed, attached it stays
+ * outline.
+ */
+export function liftFreeInk(data, size, reach = 6, crumb = 64) {
+  const total = size * size, isInk = new Uint8Array(total), near = new Uint8Array(total), free = new Uint8Array(total);
+  let frontier = [];
+  for (let p = 0; p < total; p++) {
+    if (!data[p * 4 + 3]) continue;
+    if (INK.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]))) isInk[p] = 1;
+    else { near[p] = 1; frontier.push(p); }
+  }
+  for (let step = 0; step < reach && frontier.length; step++) {
+    const next = [];
+    for (const p of frontier) eightNeighbours(p, size, n => { if (!near[n]) { near[n] = 1; next.push(n); } });
+    frontier = next;
+  }
+  const out = Buffer.from(data), seen = new Uint8Array(total);
+  for (let start = 0; start < total; start++) {
+    if (!isInk[start] || seen[start]) continue;
+    const stroke = floodGroup(start, isInk, seen, size);
+    let attached = false;
+    for (const p of stroke) eightNeighbours(p, size, n => { if (!isInk[n] && data[n * 4 + 3]) attached = true; });
+    if (!attached && stroke.length < crumb) { for (const p of stroke) out.fill(0, p * 4, p * 4 + 4); continue; }
+    for (const p of stroke) if (!attached || !near[p]) free[p] = 1;
+  }
+  seen.fill(0);
+  for (let start = 0; start < total; start++) {
+    if (!free[start] || seen[start]) continue;
+    const piece = floodGroup(start, free, seen, size);
+    if (piece.length >= crumb) for (const p of piece) out.set(FREE_INK, p * 4);
+  }
+  return out;
+}
+
 async function cell(source, columns, rows, index, size, alphaCutoff = 240, accents = []) {
   const file = join(ROOT, source), meta = await sharp(file).metadata();
   const left = Math.round(index % columns * meta.width / columns);
@@ -76,7 +184,9 @@ async function strip(frames, size) {
 }
 
 export function moruBodyAnchor(data, size) {
-  const isBody = p => data[p * 4 + 3] && data[p * 4] > 64 && data[p * 4 + 2] <= data[p * 4] + 30;
+  // Skin and blush only: the dark grays shade props and floor lines, which once joined a
+  // plug to the body and lifted the seal off the ground for those frames.
+  const isBody = p => data[p * 4 + 3] && data[p * 4] > 160 && data[p * 4 + 2] <= data[p * 4] + 30;
   const seen = new Uint8Array(size * size), queue = new Uint32Array(size * size);
   let largest;
   for (let pixel = 0; pixel < seen.length; pixel++) {
@@ -113,37 +223,46 @@ function registerBody(frame, reference, size, airborneOrigin, scaleReference) {
 export async function buildMoru() {
   const spec = JSON.parse(await readFile(join(ROOT, 'moru-source.json'), 'utf8'));
   const clips = {}, framesBySize = { 64: {}, 128: {} };
-  for (const size of [64, 128]) {
-    let neutral;
-    for (const clip of spec.authored) {
-      const count = clip.frames;
-      if (!Number.isInteger(count) || count < 2 || clip.durationsMs.length !== count || clip.offset + count > clip.columns * clip.rows || clip.durationsMs.some(ms => !Number.isFinite(ms) || ms <= 0)) throw new Error(`${clip.id} must declare a valid grid of timed source poses`);
-      const accents = (clip.accents ?? []).map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
-      let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff, accents)));
-      // A scene keeps one fixed camera; reserve an equal transparent inset for its props.
-      if (clip.sceneInset) {
-        const inset = Math.round(size * clip.sceneInset);
-        frames = await Promise.all(frames.map(f => raw(f, size).resize(size - 2 * inset, size - 2 * inset, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: inset, bottom: inset, background: '#00000000' }).raw().toBuffer()));
-      }
-      const anchor = Math.round(size * 0.78);
-      if (!neutral) {
-        const fit = size * 7 / 8, inset = (size - fit) / 2;
-        const padded = await raw(frames[0], size).resize(fit, fit, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: 0, bottom: size - fit, background: '#00000000' }).raw().toBuffer();
-        neutral = translate(padded, size, 0, anchor - bounds(padded, size)[3]);
-      }
-      const reference = clip.scene ? frames[0] : neutral;
-      frames = frames.map((f, i) => {
-        if (i === 0 || i === count - 1) return Buffer.from(reference);
-        try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
-        catch (error) { throw new Error(`${clip.id} frame ${i + 1} at ${size}px: ${error.message}`); }
-      });
-      framesBySize[size][clip.id] = frames;
+  const size = WORK;
+  let neutral;
+  for (const clip of spec.authored) {
+    const count = clip.frames;
+    if (!Number.isInteger(count) || count < 2 || clip.durationsMs.length !== count || clip.offset + count > clip.columns * clip.rows || clip.durationsMs.some(ms => !Number.isFinite(ms) || ms <= 0)) throw new Error(`${clip.id} must declare a valid grid of timed source poses`);
+    const accents = (clip.accents ?? []).map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
+    let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff ?? 128, accents)));
+    // A scene keeps one fixed camera; reserve an equal transparent inset for its props.
+    if (clip.sceneInset) {
+      const inset = Math.round(size * clip.sceneInset);
+      frames = await Promise.all(frames.map(f => raw(f, size).resize(size - 2 * inset, size - 2 * inset, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: inset, bottom: inset, background: '#00000000' }).raw().toBuffer()));
     }
-    for (const clip of spec.compositions) {
-      const [a, b] = clip.sequence.map(id => framesBySize[size][id]);
-      if (!a || !b) throw new Error(`Missing constituent in ${clip.id}`);
-      framesBySize[size][clip.id] = [...a, ...b.slice(1)];
+    const anchor = Math.round(size * 0.78);
+    if (!neutral) {
+      const fit = size * 7 / 8, inset = (size - fit) / 2;
+      const padded = await raw(frames[0], size).resize(fit, fit, { kernel: 'nearest' }).extend({ left: inset, right: inset, top: 0, bottom: size - fit, background: '#00000000' }).raw().toBuffer();
+      neutral = translate(padded, size, 0, anchor - bounds(padded, size)[3]);
     }
+    const reference = clip.scene ? frames[0] : neutral;
+    frames = frames.map((f, i) => {
+      if (i === 0 || i === count - 1) return reference;
+      try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
+      catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
+    }).map(f => liftFreeInk(f, size));
+    for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
+      const reduced = reduceMoru(f, size, exported);
+      // A prop tip may reach the last exported pixel; more than a sliver there is clipped art.
+      let shaved = 0;
+      for (let p = 0; p < exported * exported; p++) {
+        const x = p % exported, y = (p - x) / exported;
+        if ((!x || !y || x === exported - 1 || y === exported - 1) && reduced[p * 4 + 3]) { reduced.fill(0, p * 4, p * 4 + 4); shaved++; }
+      }
+      if (shaved > exported / 16) throw new Error(`${clip.id} frame ${i + 1} is clipped by the ${exported}px cell edge: ${shaved} pixels`);
+      return reduced;
+    });
+  }
+  for (const exported of [64, 128]) for (const clip of spec.compositions) {
+    const [a, b] = clip.sequence.map(id => framesBySize[exported][id]);
+    if (!a || !b) throw new Error(`Missing constituent in ${clip.id}`);
+    framesBySize[exported][clip.id] = [...a, ...b.slice(1)];
   }
   for (const clip of [...spec.authored, ...spec.compositions]) {
     const authored = !clip.sequence, group = authored ? 'authored' : 'composed';
@@ -178,7 +297,9 @@ export async function buildMoru() {
   await put(join(ROOT, 'moru-full-512.png'), await sharp(join(ROOT, 'moru-full-128.png')).resize(512, 512, { kernel: 'nearest' }).png().toBuffer());
   const canonical = 'assets/brand/mascot';
   for (const [name, source] of Object.entries({ 'full-64': 'moru-full-64.png', 'presentation-128': 'moru-full-128.png', 'compact-32': poses['compact-portrait'].path, 'micro-16': poses['micro-portrait'].path })) await put(`${canonical}/mascot-${name}.png`, await readFile(join(ROOT, source)));
-  for (const [name, pose] of Object.entries({ welcome: 'compact-portrait', curious: 'tilt-right' })) await put(`${canonical}/mascot-${name}-32.png`, await sharp(join(ROOT, poses[pose].path)).resize(32, 32, { kernel: 'nearest' }).png().toBuffer());
+  await put(`${canonical}/mascot-welcome-32.png`, await readFile(join(ROOT, poses['compact-portrait'].path)));
+  // A tilted full body has no readable face at 32px, so the missing page shows the native pose.
+  await put(`${canonical}/mascot-curious-128.png`, await readFile(join(ROOT, poses['tilt-right'].path)));
   for (const [state, id] of Object.entries({ walk: 'wave', read: 'source-read', success: 'dance', waiting: 'blink', connect: 'connect', compile: 'source-read', greeting: 'wave' })) await put(`${canonical}/mascot-${state}-row-64.png`, await strip(framesBySize[64][id], 64));
   for (const size of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) await put(join(ROOT, `icons/atlas-compass-${size}.png`), await sharp(join(ROOT, spec.compass)).resize(size, size).png().toBuffer());
   const proof = [];
