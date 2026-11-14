@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
-import { liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
+import { despeckle, inkFringe, liftFreeInk, moruBodyAnchor, moruColor, reduceMoru } from './build-moru-sprites.mjs';
 
 const require = createRequire(import.meta.url);
 const sharp = createRequire(require.resolve('next/package.json'))('sharp');
-const INK = [23, 25, 35], SKIN = [214, 211, 201], FREE_INK = [109, 115, 210];
+const INK = [23, 25, 35], SKIN = [214, 211, 201], IVORY = [255, 241, 215], FREE_INK = [109, 115, 210], FRINGE_GRAY = [85, 84, 81];
 
 function canvas(size) {
   const data = Buffer.alloc(size * size * 4);
@@ -181,29 +181,199 @@ test('every catalogue export has complete frames, clear margins and a shared neu
   }
 });
 
-test('a drawn pixel that straddles two exported pixels lands in exactly one of them', () => {
-  const { data, paint, at } = canvas(16);
-  paint(6, 0, 10, 16, INK);
-  const reduced = reduceMoru(data, 16, 4);
-  for (let y = 0; y < 4; y++) assert.deepEqual([0, 1, 2, 3].map(x => at(reduced, x, y, 4) ? 1 : 0), [0, 1, 0, 0], 'a one-pixel stroke doubled or vanished');
+const drawnMap = (buffer, size, drawn) => Array.from({ length: size }, (_, y) => Array.from({ length: size }, (_, x) => {
+  const p = (y * size + x) * 4;
+  return buffer[p + 3] && drawn.every((channel, i) => buffer[p + i] === channel) ? '#' : '.';
+}).join(''));
+
+/** Bounding-box drawings of the ink marks enclosed in a fill, in reading order. */
+function enclosedInk(buffer, size) {
+  const ink = p => buffer[p * 4 + 3] === 255 && buffer[p * 4] < 32, seen = new Uint8Array(size * size), marks = [];
+  for (let start = 0; start < size * size; start++) {
+    if (seen[start] || !ink(start)) continue;
+    const group = [start]; seen[start] = 1;
+    let enclosed = true, x0 = size, x1 = 0, y0 = size, y1 = 0;
+    for (let j = 0; j < group.length; j++) {
+      const p = group[j], x = p % size, y = (p - x) / size;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
+        const xx = x + dx, yy = y + dy, n = yy * size + xx;
+        if (xx < 0 || yy < 0 || xx >= size || yy >= size || !buffer[n * 4 + 3]) enclosed = false;
+        else if (!seen[n] && ink(n)) { seen[n] = 1; group.push(n); }
+      }
+    }
+    if (!enclosed) continue;
+    const rows = Array.from({ length: y1 - y0 + 1 }, () => Array(x1 - x0 + 1).fill('.'));
+    for (const p of group) rows[(p - p % size) / size - y0][p % size - x0] = '#';
+    marks.push({ x0, y0, width: x1 - x0 + 1, height: y1 - y0 + 1, drawing: rows.map(row => row.join('')).join('/') });
+  }
+  return marks;
+}
+
+// Ink and the silhouette are kept from half an exported pixel; a colour inside a fill from a whole one.
+for (const [stroke, strokeName, ground, groundName, widths] of [
+  [INK, 'an ink', SKIN, 'a fill', [2, 3, 4]],
+  [INK, 'an ink', null, 'the transparent canvas', [2, 3, 4]],
+  [IVORY, 'a coloured', null, 'the transparent canvas', [2, 3, 4]],
+  [IVORY, 'a coloured', SKIN, 'a fill', [4]],
+]) test(`${strokeName} stroke on ${groundName} keeps one whole pixel wherever it sits on the grid`, () => {
+  for (const width of widths) for (let start = 4; start < 8; start++) for (const upright of [true, false]) {
+    const { data, paint } = canvas(16);
+    if (ground) paint(0, 0, 16, 16, ground);
+    if (upright) paint(start, 0, start + width, 16, stroke); else paint(0, start, 16, start + width, stroke);
+    const rows = drawnMap(reduceMoru(data, 16, 4), 4, stroke);
+    const lines = upright ? rows : [0, 1, 2, 3].map(x => rows.map(row => row[x]).join(''));
+    const place = `${width}px ${upright ? 'upright' : 'level'} stroke at ${start}`;
+    assert.equal(new Set(lines).size, 1, `${place} broke along its length: ${rows.join('/')}`);
+    assert.equal(lines[0].replaceAll('.', '').length, 1, `${place} doubled or vanished: ${rows.join('/')}`);
+  }
 });
 
-test('a stroke on a fill that straddles two exported pixels stays one pixel wide', () => {
+test('a filled square reduces to a filled rectangle within a pixel of its true size at every grid position', () => {
+  for (const factor of [2, 4]) for (let side = factor; side <= 3 * factor; side++) for (let x = 0; x < factor; x++) for (let y = 0; y < factor; y++) for (const colour of [INK, SKIN]) {
+    const from = 8 * factor, { data, paint } = canvas(from);
+    paint(x, y, x + side, y + side, colour);
+    const rows = drawnMap(reduceMoru(data, from, 8), 8, colour).filter(row => row.includes('#')).map(row => row.replace(/^\.+|\.+$/g, ''));
+    const place = `a ${side}px square at ${x},${y} reduced by ${factor}: ${rows.join('/')}`;
+    assert.ok(rows.length && rows.every(row => row === rows[0] && !row.includes('.')), `${place} is not a filled rectangle`);
+    for (const length of [rows.length, rows[0].length]) assert.ok(length >= Math.floor(side / factor) && length <= Math.ceil(side / factor), `${place} is the wrong size`);
+  }
+});
+
+test('an outline stays one pixel wide all round its fill at either grid position', () => {
+  for (const shift of [0, 1, 2, 3]) {
+    const { data, paint } = canvas(32);
+    paint(4 + shift, 4 + shift, 28 + shift, 28 + shift, INK);
+    paint(8 + shift, 8 + shift, 24 + shift, 24 + shift, SKIN);
+    const reduced = reduceMoru(data, 32, 8), inked = drawnMap(reduced, 8, INK).filter(row => row.includes('#'));
+    assert.deepEqual(inked.map(row => row.replace(/^\.+|\.+$/g, '')), ['######', '#....#', '#....#', '#....#', '#....#', '######'], `shift ${shift}`);
+    assert.equal(drawnMap(reduced, 8, SKIN).join('').replaceAll('.', '').length, 16, `shift ${shift}: the fill changed size`);
+  }
+});
+
+test('one mark drawn at four grid positions reduces to the same pixels at both sizes', () => {
+  const { data, paint } = canvas(128);
+  paint(0, 0, 128, 128, SKIN);
+  for (const [x, y] of [[10, 20], [41, 21], [72, 22], [103, 23]]) { paint(x + 1, y, x + 8, y + 17, INK); paint(x, y + 3, x + 9, y + 14, INK); }
+  for (const size of [64, 32]) {
+    const eyes = enclosedInk(reduceMoru(data, 128, size), size);
+    assert.equal(eyes.length, 4, `${size}px lost or merged an eye`);
+    assert.equal(new Set(eyes.map(eye => eye.drawing)).size, 1, `${size}px eyes differ: ${eyes.map(eye => eye.drawing).join(' | ')}`);
+  }
+});
+
+const oval = (paint, x, y, width, height) => {
+  for (let dy = 0; dy < height; dy++) for (let dx = 0; dx < width; dx++) {
+    if (((dx + 0.5) * 2 / width - 1) ** 2 + ((dy + 0.5) * 2 / height - 1) ** 2 <= 1) paint(x + dx, y + dy, x + dx + 1, y + dy + 1, INK);
+  }
+};
+
+test('two marks of one reduced size that differ by a source pixel share one drawing', () => {
+  const { data, paint } = canvas(256);
+  paint(0, 0, 256, 256, SKIN);
+  oval(paint, 90, 100, 10, 14);
+  oval(paint, 150, 101, 11, 15);
+  const [left, right] = enclosedInk(reduceMoru(data, 256, 128), 128);
+  assert.equal(left.drawing, right.drawing);
+});
+
+test('a nose between two eyes keeps its own drawing, and so do the eyes', () => {
+  const face = parts => {
+    const { data, paint } = canvas(256);
+    paint(0, 0, 256, 256, SKIN);
+    if (parts.includes('eyes')) { oval(paint, 90, 100, 10, 14); oval(paint, 150, 100, 10, 14); }
+    if (parts.includes('nose')) oval(paint, 122, 118, 12, 12);
+    return data;
+  };
+  for (const size of [128, 64]) {
+    const drawings = parts => enclosedInk(reduceMoru(face(parts), 256, size), size).map(mark => mark.drawing);
+    const [eye] = drawings(['eyes']), [nose] = drawings(['nose']);
+    assert.notEqual(eye, nose, `${size}px: the probe needs two different drawings`);
+    assert.deepEqual(drawings(['eyes', 'nose']), [eye, eye, nose], `${size}px: a mark took the drawing of its neighbour`);
+  }
+});
+
+test('a mark exactly between two sizes takes the smaller', () => {
+  const { data, paint } = canvas(128);
+  paint(0, 0, 128, 128, SKIN);
+  paint(40, 40, 52, 46, INK);
+  assert.deepEqual(enclosedInk(reduceMoru(data, 128, 32), 32).map(mark => mark.drawing), ['###']);
+});
+
+test('the marks stay centred on the body across grid positions', () => {
+  for (const size of [128, 64]) {
+    let leaning = 0;
+    for (let shift = 0; shift < 256 / size; shift++) for (let inset = 14; inset < 22; inset++) for (const eyeWidth of [10, 12]) {
+      const { data, paint } = canvas(256);
+      paint(60 + shift, 60, 160 + shift, 160, INK);
+      paint(64 + shift, 64, 156 + shift, 156, SKIN);
+      paint(64 + shift + inset, 90, 64 + shift + inset + eyeWidth, 110, INK);
+      paint(156 + shift - inset - eyeWidth, 90, 156 + shift - inset, 110, INK);
+      const row = drawnMap(reduceMoru(data, 256, size), size, INK)[Math.round(100 * size / 256)].replace(/^\.+|\.+$/g, '');
+      const [, left, right] = row.match(/^#+(\.+)#+\.+#+(\.+)#+$/) ?? [];
+      const place = `${size}px shift ${shift} inset ${inset}`;
+      assert.ok(left && right, `${place}: the face lost an eye: ${row}`);
+      assert.ok(Math.abs(left.length - right.length) <= 1, `${place}: the eyes sit ${left.length} and ${right.length} from the outline`);
+      leaning += left.length - right.length;
+    }
+    assert.equal(leaning, 0, `${size}px: the eyes lean to one side of the body across grid positions`);
+  }
+});
+
+test('the larger mark keeps its place when a smaller one crowds it', () => {
+  const eyeAlone = (() => { const { data, paint } = canvas(128); paint(0, 0, 128, 128, SKIN); paint(40, 40, 49, 57, INK); return enclosedInk(reduceMoru(data, 128, 32), 32)[0]; })();
+  const { data, paint } = canvas(128);
+  paint(0, 0, 128, 128, SKIN);
+  paint(40, 40, 49, 57, INK);
+  paint(50, 44, 62, 49, INK);
+  const marks = enclosedInk(reduceMoru(data, 128, 32), 32), eye = marks.find(mark => mark.height === eyeAlone.height);
+  assert.equal(marks.length, 2, 'the eye and the whisker merged');
+  assert.deepEqual([eye.x0, eye.y0, eye.drawing], [eyeAlone.x0, eyeAlone.y0, eyeAlone.drawing]);
+});
+
+test('marks drawn apart stay apart after the reduction', () => {
+  const { data, paint } = canvas(128);
+  paint(0, 0, 128, 128, SKIN);
+  const pairs = [[9, 20], [50, 21], [89, 22], [9, 61], [50, 63]];
+  for (const [x, y] of pairs) { paint(x, y, x + 12, y + 5, INK); paint(x, y + 7, x + 12, y + 12, INK); }
+  for (const size of [64, 32]) {
+    const whiskers = enclosedInk(reduceMoru(data, 128, size), size);
+    assert.equal(whiskers.length, pairs.length * 2, `${size}px merged two whiskers that the source keeps apart`);
+    assert.equal(new Set(whiskers.map(whisker => whisker.drawing)).size, 1, `${size}px whiskers differ`);
+  }
+});
+
+test('a piece smaller than a quarter of a drawn pixel takes the colour around it', () => {
   const { data, paint, at } = canvas(16);
   paint(0, 0, 16, 16, SKIN);
-  paint(6, 0, 10, 16, INK);
-  const reduced = reduceMoru(data, 16, 4);
-  for (let y = 0; y < 4; y++) assert.deepEqual([0, 1, 2, 3].map(x => at(reduced, x, y, 4)), [SKIN, INK, SKIN, SKIN], 'a whisker doubled or vanished');
+  paint(2, 2, 3, 3, INK);
+  paint(6, 2, 9, 3, INK);
+  paint(2, 8, 4, 10, INK);
+  paint(12, 2, 14, 14, INK);
+  const cleaned = despeckle(data, 16);
+  assert.deepEqual(at(cleaned, 2, 2), SKIN, 'a lone pixel survived');
+  assert.deepEqual([6, 7, 8].map(x => at(cleaned, x, 2)), [SKIN, SKIN, SKIN], 'a three-pixel run survived or left its middle behind');
+  assert.deepEqual(at(cleaned, 2, 8), INK, 'a four-pixel piece was erased');
+  assert.deepEqual(at(cleaned, 12, 8), INK, 'a drawn stroke was erased');
 });
 
-test('an outline that shares its block with a fill survives the reduction', () => {
-  const { data, paint, at } = canvas(8);
-  paint(0, 0, 8, 8, SKIN);
-  paint(4, 0, 6, 8, INK);
-  paint(0, 4, 1, 8, INK);
-  const reduced = reduceMoru(data, 8, 2);
-  assert.deepEqual(at(reduced, 1, 0, 2), INK, 'an outline covering half its block lost to the fill');
-  assert.deepEqual(at(reduced, 0, 1, 2), SKIN, 'a sliver of ink replaced the fill');
+test('the soft gray edge of the outline joins it, that of a facial mark dissolves, and a gray surface stays', () => {
+  const { data, paint, at } = canvas(64);
+  paint(8, 8, 40, 40, INK);
+  paint(12, 12, 36, 36, SKIN);
+  paint(6, 8, 8, 40, FRINGE_GRAY);
+  paint(12, 12, 14, 36, FRINGE_GRAY);
+  paint(40, 20, 52, 32, FRINGE_GRAY);
+  paint(20, 20, 26, 26, FRINGE_GRAY);
+  paint(22, 22, 24, 24, INK);
+  paint(30, 30, 32, 32, FRINGE_GRAY);
+  const joined = inkFringe(data, 64);
+  assert.deepEqual(at(joined, 6, 20), INK, 'the fringe outside the outline stayed gray');
+  assert.deepEqual(at(joined, 13, 20), INK, 'the fringe inside the outline stayed gray');
+  assert.deepEqual(at(joined, 41, 26), INK, 'the edge of a gray surface on the outline stayed gray');
+  assert.deepEqual([44, 48, 51].map(x => at(joined, x, 26)), [FRINGE_GRAY, FRINGE_GRAY, FRINGE_GRAY], 'a gray surface turned to ink');
+  assert.deepEqual([at(joined, 21, 21), at(joined, 22, 22)], [SKIN, INK], 'the soft edge of a facial mark did not dissolve into the fill');
+  assert.deepEqual(at(joined, 31, 31), FRINGE_GRAY, 'gray that touches no ink turned to ink');
 });
 
 test('ink drawn away from every fill takes the indigo that reads on the dark canvas', () => {
@@ -226,30 +396,14 @@ test('a dim blue flipper stays in the indigo family instead of turning gray', ()
   }
 });
 
-test('the resting face keeps both eyes at the same width at both exported sizes', async () => {
+test('the resting face shows two identical level eyes at both exported sizes', async () => {
   const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
   for (const [file, size] of [[clips.blink.sprite64, 64], [clips.blink.sprite, 128]]) {
-    const data = await frameOf(`assets/brand/moru/${file}`, 0, size);
-    const ink = p => data[p * 4 + 3] === 255 && data[p * 4] < 32, seen = new Uint8Array(size * size), eyes = [];
-    for (let start = 0; start < size * size; start++) {
-      if (seen[start] || !ink(start)) continue;
-      const group = [start]; seen[start] = 1;
-      let enclosed = true, x0 = size, x1 = 0, y0 = size, y1 = 0;
-      for (let j = 0; j < group.length; j++) {
-        const p = group[j], x = p % size, y = (p - x) / size;
-        x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-        for (const dx of [-1, 0, 1]) for (const dy of [-1, 0, 1]) {
-          const xx = x + dx, yy = y + dy, n = yy * size + xx;
-          if (xx < 0 || yy < 0 || xx >= size || yy >= size || !data[n * 4 + 3]) enclosed = false;
-          else if (!seen[n] && ink(n)) { seen[n] = 1; group.push(n); }
-        }
-      }
-      if (enclosed) eyes.push({ width: x1 - x0 + 1, height: y1 - y0 + 1 });
-    }
-    // The eyes are the two tallest marks inside the face; whiskers and the nose are shorter.
-    eyes.sort((a, b) => b.height - a.height);
-    assert.ok(eyes.length >= 3 && eyes[1].height > eyes[2].height, `${size}px resting face does not show two eyes`);
-    assert.equal(eyes[0].width, eyes[1].width, `${size}px resting face has one eye narrower than the other`);
+    const marks = enclosedInk(await frameOf(`assets/brand/moru/${file}`, 0, size), size);
+    const tallest = Math.max(...marks.map(mark => mark.height)), eyes = marks.filter(mark => mark.height === tallest);
+    assert.equal(eyes.length, 2, `${size}px resting face does not show two eyes of one height`);
+    assert.equal(eyes[0].drawing, eyes[1].drawing, `${size}px resting eyes differ`);
+    assert.equal(eyes[0].y0, eyes[1].y0, `${size}px resting eyes are not level`);
   }
 });
 

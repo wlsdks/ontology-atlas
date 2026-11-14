@@ -40,18 +40,25 @@ test('opens a busy day on one number, at most eight groups that add up and only 
   expect([...commands].filter(command => !GIT_READS.has(command))).toEqual([]);
 });
 
-test('expands a group in place, opens a change original and returns to that row', async ({ page }) => {
+test('expands a group, opens a change where it is listed, then its original and returns to that row', async ({ page }) => {
   await open(page, 'digest');
   const map = page.getByRole('button', { name: 'map: 18 changes', exact: true });
   await map.click();
   await expect(map).toHaveAttribute('aria-expanded', 'true');
-  const rows = page.getByRole('button', { name: /^Read the original: fix\(map\)/ });
-  await expect(rows).toHaveCount(17);
-  await expect(page.getByRole('link', { name: '결제 승인', exact: true })).toHaveAttribute('href', /\/topology\/\?p=/);
+  const rows = page.locator('[data-digest-list="label:map"] [data-change-hash]');
+  await expect(rows).toHaveCount(18);
+  await expect(page.getByRole('link', { name: '결제 승인', exact: true }).first()).toHaveAttribute('href', /\/topology\/\?p=/);
   const row = rows.nth(2);
   const title = (await row.getAttribute('title'))!;
+  await expect(row).not.toContainText('(map)');
   await row.click();
-  await expect(page.getByRole('heading', { name: `Merge #3114: ${title}`, exact: true })).toBeVisible();
+  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  const detail = page.getByTestId('change-detail');
+  await expect(detail).toHaveCount(1);
+  await expect(detail).toContainText(/files? changed/);
+  await expect(page.getByTestId('change-digest')).toBeVisible();
+  await detail.getByRole('button', { name: `Read the original: ${title}`, exact: true }).click();
+  await expect(page.locator('[data-commit-reader]').getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByTestId('change-digest')).toBeHidden();
   await page.locator('[data-commit-reader]').getByRole('button', { name: 'Back to summary', exact: true }).click();
   await expect(row).toBeFocused();

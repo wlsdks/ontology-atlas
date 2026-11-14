@@ -12,12 +12,13 @@ const COLORS = ['171923', '17192d', '50569c', '6d73d2', '555451', '777572', '999
 const PALETTE = COLORS.map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
 const NEUTRALS = PALETTE.filter(p => Math.max(...p) - Math.min(...p) < 30);
 const COOL = PALETTE.filter(p => p[2] > p[0] + 8);
+/** Channel spread from which a source pixel counts as coloured rather than gray. */
+const CHROMATIC_SPREAD = 35;
 const [STONE, IVORY] = ['d6d3c9', 'fff1d7'].map(hex => PALETTE[COLORS.indexOf(hex)]);
 
 /**
- * Dark achromatic shading must not become indigo; bright warm ivory remains ivory. A pixel
- * that is plainly blue stays in the ink and indigo family: a dim flipper is nearer the dark
- * gray by distance, and took it.
+ * Dark achromatic shading must not become indigo; bright warm ivory remains ivory. A plainly
+ * blue pixel stays in the ink and indigo family even where a dark gray is nearer by distance.
  */
 export function moruColor(r, g, b, accents = []) {
   const distance = q => (r - q[0]) ** 2 + (g - q[1]) ** 2 + (b - q[2]) ** 2;
@@ -27,9 +28,9 @@ export function moruColor(r, g, b, accents = []) {
     if (distance(accent) < distance(base)) return accent;
   }
   if (r >= 235 && r - g >= 5 && r - b >= 18) return IVORY;
-  const achromatic = Math.max(r, g, b) - Math.min(r, g, b) < 35;
+  const achromatic = Math.max(r, g, b) - Math.min(r, g, b) < CHROMATIC_SPREAD;
   if (achromatic && Math.min(r, g, b) >= 150) return STONE;
-  const candidates = achromatic ? NEUTRALS : b - Math.max(r, g) >= 35 ? COOL : PALETTE;
+  const candidates = achromatic ? NEUTRALS : b - Math.max(r, g) >= CHROMATIC_SPREAD ? COOL : PALETTE;
   return candidates.reduce((best, p) => {
     return distance(p) < distance(best) ? p : best;
   });
@@ -60,54 +61,36 @@ function translate(data, size, dx, dy) {
   return out;
 }
 
-/**
- * A source cell is about 256px and its drawn pixels are about four source pixels wide, so
- * sampling one source pixel per exported pixel dropped eye columns and broke note stems.
- * Clips are registered on this grid and reduced once, by vote, to each exported size.
- */
+/** Clips are cut, registered and cleaned on this grid, then halved to each exported size. */
 const WORK = 256;
+/** A thin stroke's soft edge is about half opaque; a higher cutoff drops the stroke. */
+const CLIP_ALPHA_CUTOFF = 128;
+/** Enclosed ink no wider or taller than this share of the cell is one facial mark. */
+const MARK_SPAN_SHARE = 5 / 32;
+/** Work pixels, half a drawn pixel: marks this close in size can be one drawing made twice. */
+const TWIN_TOLERANCE = 2;
+/** Two marks are one drawing when at most this share of the smaller is not common to both. */
+const TWIN_UNSHARED_SHARE = 1 / 4;
+/** Exported pixels a mark may move so that it touches no other ink. */
+const MARK_NUDGE = 1;
+/** Work pixels: the last halving samples this far past the centre of each exported pixel. */
+const SAMPLE_BIAS = 0.5;
+/** Work pixels of area, a quarter of a drawn pixel: a smaller piece of one colour is noise. */
+const SPECK_AREA = 4;
+/** Work pixels: ink this near a fill reads as that fill's outline. */
+const FILL_REACH = 6;
+/** Work pixels of area, four drawn pixels: a smaller detached piece is source noise. */
+const CRUMB_AREA = 64;
+/** Exported pixels a prop tip may put on the cell edge before the frame counts as clipped. */
+const EDGE_SLIVER = 2;
 const pack = (r, g, b) => r << 16 | g << 8 | b;
 const INK = new Set([COLORS[0], COLORS[1]].map(hex => parseInt(hex, 16)));
 const FREE_INK = PALETTE[COLORS.indexOf('6d73d2')];
-
-/**
- * Each exported pixel takes the colour most of its source block agrees on. A stroke that
- * straddles two blocks fills half of each; it lands in the block where it sits toward the
- * lower right, so it stays one pixel wide instead of doubling or vanishing. Ink that fills
- * about half a block (`inkTie` sets how near) without arriving from the block above or to
- * the left is a thin stroke of its own and is kept.
- */
-export function reduceMoru(data, from, to, inkTie = 1.5) {
-  const k = from / to;
-  if (!Number.isInteger(k) || k < 1) throw new Error(`Moru cannot reduce ${from}px to ${to}px by whole blocks`);
-  if (k === 1) return Buffer.from(data);
-  const out = Buffer.alloc(to * to * 4), counts = new Map(), half = (k - 1) / 2;
-  const isInk = i => data[i + 3] !== 0 && INK.has(pack(data[i], data[i + 1], data[i + 2]));
-  for (let y = 0; y < to; y++) for (let x = 0; x < to; x++) {
-    counts.clear();
-    let opaque = 0, lean = 0, ink = 0, inkLean = 0, arrives = false;
-    for (let by = 0; by < k; by++) for (let bx = 0; bx < k; bx++) {
-      const i = ((y * k + by) * from + x * k + bx) * 4;
-      if (!data[i + 3]) continue;
-      const key = pack(data[i], data[i + 1], data[i + 2]), towardLowerRight = by - half + bx - half;
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-      opaque++; lean += towardLowerRight;
-      if (!INK.has(key)) continue;
-      ink++; inkLean += towardLowerRight;
-      if (bx === 0 && x > 0 && isInk(i - 4) || by === 0 && y > 0 && isInk(i - from * 4)) arrives = true;
-    }
-    if (opaque * 2 < k * k || opaque * 2 === k * k && lean <= 0) continue;
-    let fill = -1, fillCount = 0, inkKey = -1, inkCount = 0;
-    for (const [key, count] of counts) {
-      if (INK.has(key)) { if (count > inkCount || count === inkCount && key < inkKey) { inkKey = key; inkCount = count; } }
-      else if (count > fillCount || count === fillCount && key < fill) { fill = key; fillCount = count; }
-    }
-    const notInk = opaque - ink, nearHalf = ink * inkTie > notInk;
-    const key = ink > notInk || nearHalf && (inkLean > 0 || !arrives) ? inkKey : fill, o = (y * to + x) * 4;
-    out[o] = key >> 16; out[o + 1] = key >> 8 & 255; out[o + 2] = key & 255; out[o + 3] = 255;
-  }
-  return out;
-}
+const FRINGE = new Set(['555451', '777572'].map(hex => parseInt(hex, 16)));
+/** Work pixels, half a drawn pixel: the outline's soft edge reaches this far from its ink. */
+const FRINGE_REACH = 2;
+const isOpaque = (data, p) => data[p * 4 + 3] !== 0;
+const isInk = (data, p) => isOpaque(data, p) && INK.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]));
 
 const eightNeighbours = (p, size, visit) => {
   const x = p % size, y = (p - x) / size;
@@ -124,41 +107,260 @@ function floodGroup(start, member, seen, size) {
   return group;
 }
 
+/** A piece of one colour smaller than `SPECK_AREA` is source noise and takes the commonest colour around it; O(pixels). */
+export function despeckle(data, size) {
+  const total = size * size, colour = new Int32Array(total), seen = new Uint8Array(total), out = Buffer.from(data);
+  for (let p = 0; p < total; p++) colour[p] = isOpaque(data, p) ? pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]) : -1;
+  for (let start = 0; start < total; start++) {
+    if (seen[start]) continue;
+    const piece = [start], around = new Map();
+    seen[start] = 1;
+    for (let i = 0; i < piece.length; i++) eightNeighbours(piece[i], size, n => {
+      if (colour[n] !== colour[start]) around.set(colour[n], (around.get(colour[n]) ?? 0) + 1);
+      else if (!seen[n]) { seen[n] = 1; piece.push(n); }
+    });
+    if (piece.length >= SPECK_AREA || !around.size) continue;
+    const commonest = [...around].reduce((best, next) => next[1] > best[1] || next[1] === best[1] && next[0] < best[0] ? next : best)[0];
+    for (const p of piece) {
+      if (commonest < 0) out.fill(0, p * 4, p * 4 + 4);
+      else out.set([commonest >> 16, commonest >> 8 & 255, commonest & 255, 255], p * 4);
+    }
+  }
+  return out;
+}
+
+/** The pixels repainted outside in with the fill beside them, never with ink; O(pixels × depth). */
+function paintedOver(data, size, pixels) {
+  const out = Buffer.from(data), pending = new Uint8Array(size * size);
+  for (const p of pixels) pending[p] = 1;
+  for (let layer = pixels; layer.length;) {
+    const painted = [], inner = [];
+    for (const p of layer) {
+      let fill = -1;
+      eightNeighbours(p, size, n => { if (fill < 0 && !pending[n] && !isInk(out, n)) fill = n; });
+      if (fill < 0) inner.push(p); else painted.push([p, fill]);
+    }
+    if (!painted.length) break;
+    for (const [p, fill] of painted) out.copyWithin(p * 4, fill * 4, fill * 4 + 4);
+    for (const [p] of painted) pending[p] = 0;
+    layer = inner;
+  }
+  return out;
+}
+
+/** Dark gray pixels within `FRINGE_REACH` of the given ink, nearest first; O(pixels). */
+function fringeOf(data, size, ink, taken) {
+  const isFringe = p => isOpaque(data, p) && FRINGE.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2])), fringe = [];
+  let edge = ink.map(p => [p, p]);
+  for (let step = 0; step < FRINGE_REACH && edge.length; step++) {
+    const next = [];
+    for (const [p, source] of edge) eightNeighbours(p, size, n => { if (!taken[n] && isFringe(n)) { taken[n] = 1; next.push([n, source]); } });
+    fringe.push(...next);
+    edge = next;
+  }
+  return fringe;
+}
+
 /**
- * Outline ink is 1.14:1 on the app's canvas: it reads only beside a fill. Ink drawn away
- * from every fill (a note, a cable, a fishing line) takes the flipper indigo, which reads on
- * the dark canvas and on a light page alike. A stroke that touches no fill changes whole, so
- * a note beside the head is one colour; a stroke attached to a fill changes past `reach`.
- * A piece smaller than `crumb` is source noise: detached it is removed, attached it stays
- * outline.
+ * The source's ink fades through dark gray, which shows as gray dashes on the app's dark
+ * canvas. Within `FRINGE_REACH`, the soft edge of a facial mark dissolves into the fill around
+ * it and the soft edge of the outline joins the outline; gray farther in is a drawn surface.
  */
-export function liftFreeInk(data, size, reach = 6, crumb = 64) {
-  const total = size * size, isInk = new Uint8Array(total), near = new Uint8Array(total), free = new Uint8Array(total);
+export function inkFringe(data, size) {
+  const total = size * size, taken = new Uint8Array(total), markInk = enclosedMarks(data, size).flatMap(mark => mark.pixels), outline = [];
+  for (const p of markInk) taken[p] = 1;
+  for (let p = 0; p < total; p++) if (isInk(data, p) && !taken[p]) { taken[p] = 1; outline.push(p); }
+  const out = paintedOver(data, size, fringeOf(data, size, markInk, taken).map(([p]) => p));
+  for (const [p, source] of fringeOf(data, size, outline, taken)) data.copy(out, p * 4, source * 4, source * 4 + 4);
+  return out;
+}
+
+/** Ink components drawn inside a fill and small enough to be one facial mark; O(pixels). */
+function enclosedMarks(data, size) {
+  const total = size * size, ink = new Uint8Array(total), seen = new Uint8Array(total), marks = [];
+  for (let p = 0; p < total; p++) if (isInk(data, p)) ink[p] = 1;
+  for (let start = 0; start < total; start++) {
+    if (!ink[start] || seen[start]) continue;
+    const pixels = floodGroup(start, ink, seen, size);
+    let x0 = size, y0 = size, x1 = 0, y1 = 0, enclosed = true;
+    for (const p of pixels) {
+      const x = p % size, y = (p - x) / size;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+      eightNeighbours(p, size, n => { if (!isOpaque(data, n)) enclosed = false; });
+    }
+    const w = x1 - x0 + 1, h = y1 - y0 + 1, insideCell = x0 > 0 && y0 > 0 && x1 < size - 1 && y1 < size - 1;
+    if (enclosed && insideCell && Math.max(w, h) <= size * MARK_SPAN_SHARE) marks.push({ pixels, x0, y0, w, h, rgb: [...data.subarray(start * 4, start * 4 + 3)] });
+  }
+  return marks;
+}
+
+/** The share of each cell that the mark covers when its bounding box is cut into W×H cells. */
+function markCover(mark, W, H, size) {
+  const cover = new Float32Array(W * H), cellW = new Uint16Array(W), cellH = new Uint16Array(H);
+  const column = x => Math.min(W - 1, Math.floor(x * W / mark.w)), row = y => Math.min(H - 1, Math.floor(y * H / mark.h));
+  for (let x = 0; x < mark.w; x++) cellW[column(x)]++;
+  for (let y = 0; y < mark.h; y++) cellH[row(y)]++;
+  for (const p of mark.pixels) { const x = p % size, y = (p - x) / size; cover[row(y - mark.y0) * W + column(x - mark.x0)]++; }
+  return cover.map((count, cell) => count / (cellW[cell % W] * cellH[(cell - cell % W) / W] || 1));
+}
+
+/** A cell is drawn when the mark covers half of it; the fullest cell is always drawn. */
+function drawnCells(cover) {
+  const cells = Uint8Array.from(cover, share => share >= 0.5);
+  if (!cells.includes(1)) cells[cover.indexOf(Math.max(...cover))] = 1;
+  return cells;
+}
+
+/** Pixels only one of two marks has once their boxes are centred on each other; O(mark pixels). */
+function unsharedPixels(a, b, size) {
+  const key = (mark, p, dx, dy) => ((p - p % size) / size - mark.y0 + dy + TWIN_TOLERANCE) * size + p % size - mark.x0 + dx + TWIN_TOLERANCE;
+  const first = new Set(a.pixels.map(p => key(a, p, 0, 0))), dx = Math.round((a.w - b.w) / 2), dy = Math.round((a.h - b.h) / 2);
+  const shared = b.pixels.filter(p => first.has(key(b, p, dx, dy))).length;
+  return a.pixels.length + b.pixels.length - 2 * shared;
+}
+
+/**
+ * Each mark reduces to its own size, never by where it sits; a size exactly between two takes
+ * the smaller, which keeps the gap beside it. Marks of one reduced size that match the largest
+ * of them are one drawing made twice and share its pixels. O(marks² × mark pixels), few marks.
+ */
+function reducedMarks(marks, size, factor) {
+  const reduced = length => Math.max(1, Math.ceil(length / factor - 0.5)), grouped = new Set();
+  const sameDrawing = (a, b) => reduced(a.w) === reduced(b.w) && reduced(a.h) === reduced(b.h)
+    && Math.abs(a.w - b.w) <= TWIN_TOLERANCE && Math.abs(a.h - b.h) <= TWIN_TOLERANCE
+    && unsharedPixels(a, b, size) <= Math.min(a.pixels.length, b.pixels.length) * TWIN_UNSHARED_SHARE;
+  return [...marks].sort((a, b) => b.pixels.length - a.pixels.length).flatMap(largest => {
+    if (grouped.has(largest)) return [];
+    const members = marks.filter(mark => !grouped.has(mark) && (mark === largest || sameDrawing(largest, mark)));
+    for (const mark of members) grouped.add(mark);
+    const W = reduced(largest.w), H = reduced(largest.h), pooled = new Float32Array(W * H);
+    for (const mark of members) markCover(mark, W, H, size).forEach((share, cell) => { pooled[cell] += share / members.length; });
+    const cells = drawnCells(pooled), centre = (start, length) => (start + length / 2 - SAMPLE_BIAS) / factor;
+    return members.map(mark => ({ W, H, cells, rgb: largest.rgb, left: centre(mark.x0, mark.w) - W / 2, top: centre(mark.y0, mark.h) - H / 2 }));
+  });
+}
+
+/**
+ * Draws the reduced marks, largest first. A mark takes the place within `MARK_NUDGE` that
+ * covers and touches the least other ink, then the nearest; a crowded face can leave none
+ * clear. O(pixels + mark cells).
+ */
+function stampMarks(out, size, stamps) {
+  const inked = new Uint8Array(size * size);
+  for (let p = 0; p < size * size; p++) if (isInk(out, p)) inked[p] = 1;
+  const cellsAt = (stamp, [left, top]) => {
+    const cells = [];
+    for (let y = 0; y < stamp.H; y++) for (let x = 0; x < stamp.W; x++) {
+      const xx = left + x, yy = top + y;
+      if (stamp.cells[y * stamp.W + x] && xx >= 0 && yy >= 0 && xx < size && yy < size) cells.push(yy * size + xx);
+    }
+    return cells;
+  };
+  const clash = cells => cells.reduce((sum, p) => {
+    let touching = 0;
+    eightNeighbours(p, size, n => { touching += inked[n]; });
+    return sum + (isOpaque(out, p) && !inked[p] ? 0 : size * size) + touching;
+  }, 0);
+  const cellCount = stamp => stamp.cells.reduce((sum, cell) => sum + cell, 0);
+  for (const stamp of [...stamps].sort((a, b) => cellCount(b) - cellCount(a))) {
+    const left = Math.round(stamp.left), top = Math.round(stamp.top), places = [];
+    for (let dy = -MARK_NUDGE; dy <= MARK_NUDGE; dy++) for (let dx = -MARK_NUDGE; dx <= MARK_NUDGE; dx++) places.push([left + dx, top + dy]);
+    const drift = ([x, y]) => (x - stamp.left) ** 2 + (y - stamp.top) ** 2;
+    const ranked = places.map(place => ({ place, clash: clash(cellsAt(stamp, place)), drift: drift(place) })).sort((a, b) => a.clash - b.clash || a.drift - b.drift);
+    for (const p of cellsAt(stamp, ranked[0].place)) { inked[p] = 1; out.set([...stamp.rgb, 255], p * 4); }
+  }
+}
+
+/**
+ * A one-pixel stroke can lose every block it crosses to the fill beside it. A stroke that
+ * crosses a block and reached neither neighbouring block is kept; O(pixels).
+ */
+function keepThinStrokes(out, base, size, drawn) {
+  const half = size / 2, crossesRows = new Uint8Array(half * half), crossesColumns = new Uint8Array(half * half), from = new Int32Array(half * half);
+  for (let y = 0; y < half; y++) for (let x = 0; x < half; x++) {
+    const block = y * half + x, topLeft = 2 * y * size + 2 * x, topRight = topLeft + 1, bottomLeft = topLeft + size;
+    if (drawn(out, block)) continue;
+    const a = drawn(base, topLeft), b = drawn(base, topRight), c = drawn(base, bottomLeft), count = a + b + c;
+    if ((a || b) && c) crossesRows[block] = count;
+    if ((a || c) && b) crossesColumns[block] = count;
+    from[block] = c ? bottomLeft : b ? topRight : topLeft;
+  }
+  const kept = [];
+  const lost = (crosses, block, before, after) => {
+    const reached = n => n >= 0 && drawn(out, n);
+    return crosses[block] > 0 && !reached(before) && !reached(after)
+      && !(before >= 0 && crosses[before] >= crosses[block]) && !(after >= 0 && crosses[after] > crosses[block]);
+  };
+  for (let y = 0; y < half; y++) for (let x = 0; x < half; x++) {
+    const block = y * half + x;
+    if (lost(crossesRows, block, x > 0 ? block - 1 : -1, x + 1 < half ? block + 1 : -1)
+      || lost(crossesColumns, block, y > 0 ? block - half : -1, y + 1 < half ? block + half : -1)) kept.push(block);
+  }
+  for (const block of kept) base.copy(out, block * 4, from[block] * 4, from[block] * 4 + 4);
+}
+
+/** One halving, O(pixels): each 2×2 block becomes the pixel at one fixed corner, so a run of n becomes n/2. */
+function halveMoru(base, size, corner) {
+  const half = size / 2, out = Buffer.alloc(half * half * 4);
+  for (let y = 0; y < half; y++) for (let x = 0; x < half; x++) {
+    const sampled = ((2 * y + corner) * size + 2 * x + corner) * 4;
+    base.copy(out, (y * half + x) * 4, sampled, sampled + 4);
+  }
+  return out;
+}
+
+/**
+ * Reduces a frame by a power of two. Earlier halvings sample the top-left pixel and the last
+ * the bottom-right, which lands `SAMPLE_BIAS` from the centre; an upright or level stroke half
+ * an exported pixel wide keeps one pixel. Marks are lifted out and drawn back at their own size.
+ */
+export function reduceMoru(data, from, to) {
+  const factor = from / to;
+  if (!Number.isInteger(to) || factor < 1 || !Number.isInteger(Math.log2(factor))) throw new Error(`Moru reduces by halving: ${from}px cannot become ${to}px`);
+  if (factor === 1) return Buffer.from(data);
+  const marks = enclosedMarks(data, from);
+  let frame = paintedOver(data, from, marks.flatMap(mark => mark.pixels));
+  for (let size = from; size > to; size /= 2) {
+    const last = size === to * 2, halved = halveMoru(frame, size, last ? 1 : 0);
+    if (last) for (const drawn of [isInk, isOpaque]) keepThinStrokes(halved, frame, size, drawn);
+    frame = halved;
+  }
+  stampMarks(frame, to, reducedMarks(marks, from, factor));
+  return frame;
+}
+
+/**
+ * Outline ink is 1.14:1 on the app's canvas and reads only beside a fill. Ink touching no fill,
+ * or past `FILL_REACH` of the fill it is attached to, turns indigo. A detached piece under
+ * `CRUMB_AREA` is removed; an attached far tip that small stays outline. O(pixels).
+ */
+export function liftFreeInk(data, size) {
+  const total = size * size, ink = new Uint8Array(total), near = new Uint8Array(total), free = new Uint8Array(total);
   let frontier = [];
   for (let p = 0; p < total; p++) {
-    if (!data[p * 4 + 3]) continue;
-    if (INK.has(pack(data[p * 4], data[p * 4 + 1], data[p * 4 + 2]))) isInk[p] = 1;
+    if (!isOpaque(data, p)) continue;
+    if (isInk(data, p)) ink[p] = 1;
     else { near[p] = 1; frontier.push(p); }
   }
-  for (let step = 0; step < reach && frontier.length; step++) {
+  for (let step = 0; step < FILL_REACH && frontier.length; step++) {
     const next = [];
     for (const p of frontier) eightNeighbours(p, size, n => { if (!near[n]) { near[n] = 1; next.push(n); } });
     frontier = next;
   }
   const out = Buffer.from(data), seen = new Uint8Array(total);
   for (let start = 0; start < total; start++) {
-    if (!isInk[start] || seen[start]) continue;
-    const stroke = floodGroup(start, isInk, seen, size);
+    if (!ink[start] || seen[start]) continue;
+    const stroke = floodGroup(start, ink, seen, size);
     let attached = false;
-    for (const p of stroke) eightNeighbours(p, size, n => { if (!isInk[n] && data[n * 4 + 3]) attached = true; });
-    if (!attached && stroke.length < crumb) { for (const p of stroke) out.fill(0, p * 4, p * 4 + 4); continue; }
+    for (const p of stroke) eightNeighbours(p, size, n => { if (!ink[n] && isOpaque(data, n)) attached = true; });
+    if (!attached && stroke.length < CRUMB_AREA) { for (const p of stroke) out.fill(0, p * 4, p * 4 + 4); continue; }
     for (const p of stroke) if (!attached || !near[p]) free[p] = 1;
   }
   seen.fill(0);
   for (let start = 0; start < total; start++) {
     if (!free[start] || seen[start]) continue;
     const piece = floodGroup(start, free, seen, size);
-    if (piece.length >= crumb) for (const p of piece) out.set(FREE_INK, p * 4);
+    if (piece.length >= CRUMB_AREA) for (const p of piece) out.set(FREE_INK, p * 4);
   }
   return out;
 }
@@ -183,10 +385,12 @@ async function strip(frames, size) {
     .composite(await Promise.all(frames.map(async (frame, i) => ({ input: await png(frame, size), left: i * size, top: 0 })))).png().toBuffer();
 }
 
+/** Red channel above both dark grays (`555451`, `777572`) and below every skin fill. */
+const DARK_GRAY_RED = 160;
+
 export function moruBodyAnchor(data, size) {
-  // Skin and blush only: the dark grays shade props and floor lines, which once joined a
-  // plug to the body and lifted the seal off the ground for those frames.
-  const isBody = p => data[p * 4 + 3] && data[p * 4] > 160 && data[p * 4 + 2] <= data[p * 4] + 30;
+  // Light warm fills only: the dark grays also shade props and floor lines, which are not body.
+  const isBody = p => data[p * 4 + 3] && data[p * 4] > DARK_GRAY_RED && data[p * 4 + 2] <= data[p * 4] + 30;
   const seen = new Uint8Array(size * size), queue = new Uint32Array(size * size);
   let largest;
   for (let pixel = 0; pixel < seen.length; pixel++) {
@@ -229,7 +433,7 @@ export async function buildMoru() {
     const count = clip.frames;
     if (!Number.isInteger(count) || count < 2 || clip.durationsMs.length !== count || clip.offset + count > clip.columns * clip.rows || clip.durationsMs.some(ms => !Number.isFinite(ms) || ms <= 0)) throw new Error(`${clip.id} must declare a valid grid of timed source poses`);
     const accents = (clip.accents ?? []).map(hex => [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)));
-    let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff ?? 128, accents)));
+    let frames = await Promise.all(Array.from({ length: count }, (_, i) => cell(clip.source, clip.columns, clip.rows, clip.offset + i, size, clip.alphaCutoff ?? CLIP_ALPHA_CUTOFF, accents)));
     // A scene keeps one fixed camera; reserve an equal transparent inset for its props.
     if (clip.sceneInset) {
       const inset = Math.round(size * clip.sceneInset);
@@ -246,16 +450,15 @@ export async function buildMoru() {
       if (i === 0 || i === count - 1) return reference;
       try { return clip.scene ? f : registerBody(f, reference, size, clip.airborne ? frames[0] : undefined, clip.preserveScale ? frames[0] : undefined); }
       catch (error) { throw new Error(`${clip.id} frame ${i + 1}: ${error.message}`); }
-    }).map(f => liftFreeInk(f, size));
+    }).map(f => inkFringe(liftFreeInk(despeckle(f, size), size), size));
     for (const exported of [64, 128]) framesBySize[exported][clip.id] = frames.map((f, i) => {
       const reduced = reduceMoru(f, size, exported);
-      // A prop tip may reach the last exported pixel; more than a sliver there is clipped art.
       let shaved = 0;
       for (let p = 0; p < exported * exported; p++) {
         const x = p % exported, y = (p - x) / exported;
         if ((!x || !y || x === exported - 1 || y === exported - 1) && reduced[p * 4 + 3]) { reduced.fill(0, p * 4, p * 4 + 4); shaved++; }
       }
-      if (shaved > exported / 16) throw new Error(`${clip.id} frame ${i + 1} is clipped by the ${exported}px cell edge: ${shaved} pixels`);
+      if (shaved > EDGE_SLIVER) throw new Error(`${clip.id} frame ${i + 1} is clipped by the ${exported}px cell edge: ${shaved} pixels`);
       return reduced;
     });
   }

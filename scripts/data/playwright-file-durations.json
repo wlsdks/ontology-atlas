@@ -700,9 +700,21 @@
       "seconds": 74.268,
       "tests": 21
     },
-    "projects/git-pr-briefing.spec.ts": {
-      "seconds": 267.219,
-      "tests": 44
+    "projects/git-pr-briefing-explanation.spec.ts": {
+      "seconds": 72.878,
+      "tests": 12
+    },
+    "projects/git-pr-briefing-reading.spec.ts": {
+      "seconds": 66.805,
+      "tests": 11
+    },
+    "projects/git-pr-briefing-retries.spec.ts": {
+      "seconds": 66.805,
+      "tests": 11
+    },
+    "projects/git-pr-briefing-saved-copies.spec.ts": {
+      "seconds": 60.732,
+      "tests": 10
     },
     "projects/ix-projects-agents-git.spec.ts": {
       "seconds": 33.32,
