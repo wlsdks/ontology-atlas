@@ -231,7 +231,7 @@ test.describe("the Library destination", () => {
      */
     await page.getByTestId("library-strip-compile").click();
     const footer = page.getByTestId("library-needs-compile");
-    await expect(footer).toContainText("1 not written up yet");
+    await expect(footer).toContainText("1 without a wiki page yet");
     await expect(footer).toContainText("1 source version needs review");
   });
 
@@ -252,7 +252,7 @@ test.describe("the Library destination", () => {
     await page.getByTestId("library-strip-compile").click();
     const footer = page.getByTestId("library-needs-compile");
     await expect(footer).toContainText("1 read only in part");
-    await expect(footer).not.toContainText("not written up yet");
+    await expect(footer).not.toContainText("without a wiki page yet");
   });
 
   test("shelves the wiki pages with their freshness on them, before any of them is opened", async ({
@@ -357,7 +357,7 @@ test.describe("the Library destination", () => {
     const writeUp = page.getByTestId("library-source-writeup-wiki/quarter-plan");
     await expect(writeUp).toBeVisible();
     await expect(writeUp).toContainText("Quarter plan");
-    await expect(writeUp).toContainText("behind");
+    await expect(writeUp).toContainText("older than source");
     await expect(writeUp).toHaveAttribute("title", "wiki/quarter-plan");
     await expect(summary).toContainText("needs review");
     // The one door: a browser cannot reveal in Finder, so it offers the bytes instead.
