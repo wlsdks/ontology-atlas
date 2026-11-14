@@ -44,6 +44,8 @@ export interface FlatGraphPaintTokens {
   linkElementAlpha: number;
   linkCapWidthPx: number;
   linkElementWidthPx: number;
+  fanSpokeAlpha: number;
+  fanSpokeMaxPx: number;
   lightAlpha: number;
   lightReach: number;
   arcBow: number;

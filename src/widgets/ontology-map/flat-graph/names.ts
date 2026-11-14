@@ -4,6 +4,7 @@ import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { domainPartners } from "../model/containment-tree";
 import type { GraphLine } from "./attention";
 import { arcPathInto, crowdShare, emptyArcPath, litLineTrimsInto, ORPHAN_ROOM } from "./marks";
+import { openedElements, type OpenedElements } from "./open";
 import { byId } from "./seed";
 import type { FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTitle } from "./types";
 
@@ -36,6 +37,8 @@ export interface NameAdmission {
   ids: ReadonlySet<string>;
   /** Which of its candidate sides each capability or element name took, so the step above keeps it there. */
   sides: ReadonlyMap<string, number>;
+  /** Where each fanned element's name is anchored, in world units; every other name is anchored at its concept. */
+  anchors: ReadonlyMap<string, Point>;
 }
 
 export interface NameInput {
@@ -531,16 +534,41 @@ export function nameReachBox(input: NameReachInput, id: string): Box {
   return union(boxes);
 }
 
+/**
+ * A fanned element's name on the side that faces away from its capability, or centred under a dot
+ * at the foot of the fan: the other side would run back across the fan.
+ */
+function fannedNames(input: NameShape, id: string, text: string, offset: Point): PlacedName[][] {
+  const { tokens: t } = input;
+  const f = font(FONT_WEIGHT.signature, t.elementNamePx, input.fontFamily);
+  const w = input.measureText(text, f);
+  const x = t.elementDotPx * input.growth + t.nameGapPx;
+  const half = t.elementNamePx / 2 + t.namePadPx;
+  const side = offset.x >= 0 ? 1 : -1;
+  const row = (dy: number): PlacedName[] => [{
+    id, role: "element", text, font: f, dx: side * x, dy, align: side === 1 ? "left" : "right",
+    box: { minX: side === 1 ? x - t.namePadPx : -x - w - t.namePadPx, maxX: side === 1 ? x + w + t.namePadPx : -x + t.namePadPx, minY: dy - half, maxY: dy + half },
+    ...(dy === 0 ? {} : { leader: true }),
+  }];
+  const rise = t.elementNamePx + t.namePadPx * 2;
+  // The row that leans away from the capability comes first, so a leader never runs back over the fan.
+  const away = offset.y >= 0 ? rise : -rise;
+  const rows = [row(0), row(away), row(-away)];
+  if (offset.y <= Math.abs(offset.x)) return rows;
+  const dy = x + t.elementNamePx / 2;
+  return [...rows, [{ id, role: "element", text, font: f, dx: 0, dy, align: "center", box: { minX: -w / 2 - t.namePadPx, maxX: w / 2 + t.namePadPx, minY: dy - half, maxY: dy + half } }]];
+}
+
 interface Candidate { id: string; element: boolean; tries: () => PlacedName[][] }
 
-function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale: number): Candidate[] {
+function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale: number, fan: OpenedElements | null): Candidate[] {
   const { model, layout, tokens } = input;
   // The focused capability's element is named once its dot stands a name gap clear of the disc and ring: beside a dot they hide, a name points at nothing.
   const standsClear = (id: string) => {
     const ownerId = model.capabilityOf.get(id) ?? model.domainOf.get(id);
     const at = layout.positions.get(id);
     const owner = ownerId === undefined || ownerId === null ? undefined : layout.positions.get(ownerId);
-    if (!at || !owner) return true;
+    if (!at || !owner || fan?.offsets.has(id)) return true;
     if (ownerId !== input.focusId) return true;
     const ring = input.selected ? tokens.selectedRingGapPx + tokens.selectedRingPx : 0;
     return Math.hypot(at.x - owner.x, at.y - owner.y) * scale >= input.discRadius(ownerId!) + ring + input.discRadius(id) + tokens.nameGapPx;
@@ -551,7 +579,11 @@ function candidates(input: NameInput, degree: ReadonlyMap<string, number>, scale
   const capCandidate = (c: { id: string; label: string }): Candidate => ({ id: c.id, element: false, tries: () => sideNames(input, c.id, "capability", c.label) });
   const showElements = input.elementSpacingPx >= input.tokens.elementNameSpacingPx;
   const elementIds = showElements ? [...model.capabilityOf.keys(), ...model.domains.flatMap((d) => d.directElementIds)].filter((id) => layout.positions.has(id)).sort(byId) : [];
-  const elementCandidate = (id: string): Candidate => ({ id, element: true, tries: () => { const label = input.elementLabel(id); return label ? sideNames(input, id, "element", label) : []; } });
+  const elementCandidate = (id: string): Candidate => ({ id, element: true, tries: () => {
+    const label = input.elementLabel(id);
+    const offset = fan?.offsets.get(id);
+    return !label ? [] : offset ? fannedNames(input, id, label, offset) : sideNames(input, id, "element", label);
+  } });
   const focusFirst = (a: { id: string }, b: { id: string }) => (a.id === input.focusId ? -1 : b.id === input.focusId ? 1 : rank(a, b));
   const litCaps = lit ? caps.filter((c) => lit.has(c.id)).sort(focusFirst) : [];
   const namesElements = lit !== null && input.focusId !== null && !model.domainById.has(input.focusId);
@@ -641,11 +673,14 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   for (const id of layout.orphanIds) discs.push([id, input.discRadius(id)]);
   const selectedId = input.selected ? input.focusId : null;
   const marks = new Occupancy(CELL_PX / scale);
+  // A fanned name may cross a disc the selection has sunk; it keeps off every disc still lit.
+  const litMarks = new Occupancy(CELL_PX / scale);
   for (const [id, r] of discs) {
     // A disc and the name beside it share an anchor and scale together, so discs keep their box at the step's own scale.
     const box = worldBox(layout.positions.get(id)!, { minX: -r, maxX: r, minY: -r, maxY: r }, scale);
     grid.add(box);
     marks.add(box);
+    if (input.lit?.has(id)) litMarks.add(box);
   }
   const ringCentre = selectedId !== null ? layout.positions.get(selectedId) ?? null : null;
   const ringRadius = selectedId !== null ? (input.discRadius(selectedId) + tokens.selectedRingGapPx + tokens.selectedRingPx) / scale : 0;
@@ -656,10 +691,28 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     const dy = Math.max(b.minY - ringCentre.y, 0, ringCentre.y - b.maxY);
     return dx * dx + dy * dy < ringRadius * ringRadius;
   });
+  const fan = input.selected ? openedElements(model, layout, input.focusId, tokens, input.focusId === null ? 0 : input.discRadius(input.focusId), scale, input.growth) : null;
+  const fanCentre = fan ? layout.positions.get(fan.capabilityId)! : null;
+  // A fanned element is anchored where the fan draws it, in world units at the step's own scale.
+  const anchor = (id: string): Point => {
+    const offset = fan?.offsets.get(id);
+    return offset ? { x: fanCentre!.x + offset.x / scale, y: fanCentre!.y + offset.y / scale } : layout.positions.get(id)!;
+  };
+  if (fan) {
+    // A fanned dot is a mark a name keeps off while any side is clear of it; a forced name with none may still stand.
+    const r = (tokens.elementDotPx * input.growth) / scale;
+    for (const id of fan.offsets.keys()) {
+      const at = anchor(id);
+      const box = { minX: at.x - r, maxX: at.x + r, minY: at.y - r, maxY: at.y + r };
+      marks.add(box);
+      litMarks.add(box);
+    }
+  }
   const place = (n: PlacedName) => {
-    grid.add(worldBox(layout.positions.get(n.id)!, n.box, scale));
-    words.add(layout.positions.get(n.id)!, n.box);
-    glyphs.push(worldBox(layout.positions.get(n.id)!, grown(n.box, -tokens.namePadPx), scale));
+    const at = anchor(n.id);
+    grid.add(worldBox(at, n.box, scale));
+    words.add(at, n.box);
+    glyphs.push(worldBox(at, grown(n.box, -tokens.namePadPx), scale));
     names.push(n);
     ids.add(n.id);
   };
@@ -697,7 +750,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     words.add(layout.positions.get(caption.id)!, caption.box);
     names.push(caption);
   }
-  const pending = candidates(input, degreeOf(model), scale);
+  const pending = candidates(input, degreeOf(model), scale, fan);
   // The overview fit pads the extent by the domain name size; a name past that pad would leave the
   // free map. Checked at the smallest scale this step stands for, so the whole step stays inside.
   const reach = tokens.domainNamePx / lowest;
@@ -716,7 +769,7 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
   // the selection and the agent's focus keeps to the sides clear of title blocks when any is, and
   // drops when each of those prints over a concept's name; an element also keeps off discs and the ring.
   const tryPlace = (cand: Candidate, force: boolean, mayOverprint = force) => {
-    const at = layout.positions.get(cand.id)!;
+    const at = anchor(cand.id);
     const all = cand.tries();
     const kept = seed?.sides.get(cand.id);
     // A name the step below placed tries that side first, so names do not trade sides and crowd one another out.
@@ -732,7 +785,8 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
       return glyphs.some((b) => segmentCrossesBox(at.x + s.x0 / scale, at.y + s.y0 / scale, at.x + s.x1 / scale, at.y + s.y1 / scale, b));
     });
     // Names are tested against names at the step's ends and centre; a disc is tested at the step's own scale.
-    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => marks.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
+    const discs = fan?.offsets.has(cand.id) ? litMarks : marks;
+    const free = (group: readonly PlacedName[]) => inside(at, group) && !group.some((n) => discs.hits(worldBox(at, n.box, scale))) && !hits(words, at, group) && (!keepsOffTitles || offTitles(at, group)) && offRing(group) && leaderClear(group);
     let fit = chooseSide(tries, free, (group) => lit && crossed(at, group))?.side;
     // A forced name with no side clear across the whole step takes one clear at the step's own scale.
     if (!fit && force) {
@@ -790,9 +844,11 @@ function admit(input: NameInput, step: number, seed: NameAdmission | null, ceili
     if (ids.has(cand.id)) countName(cand.id);
   }
   if (polylines.length > 0) {
-    for (const n of names) if (input.lit!.has(n.id) && crossed(layout.positions.get(n.id)!, [n])) n.backed = true;
+    for (const n of names) if (input.lit!.has(n.id) && crossed(anchor(n.id), [n])) n.backed = true;
   }
-  return { step, names, ids, sides };
+  const anchors = new Map<string, Point>();
+  if (fan) for (const id of fan.offsets.keys()) anchors.set(id, anchor(id));
+  return { step, names, ids, sides, anchors };
 }
 
 const degreeCache = new WeakMap<DialModel, Map<string, number>>();

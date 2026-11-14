@@ -16,6 +16,7 @@ import {
 import { FLAT_MOTION, graphMotionOf, MOTION_SHARE, waveDelays, type GraphMotion } from "./motion";
 import { admittedNames, boxUnderAny, nameBlockDraws, leaderSegment, nameBlockEnd, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { FLAT_TIER_TIMING, tierNameAlpha } from "../morph/tier-assembly";
+import { openedElements, type OpenedElements } from "./open";
 import type { FlatGraphCluster, FlatGraphItem, FlatGraphLayout, FlatGraphPaintTokens, FlatGraphTokens } from "./types";
 
 const CULL_PX = 80;
@@ -28,6 +29,8 @@ const TAPER_TIP_PX = 0.35;
 const ARROW_WIDTH_PX = 1.3;
 const DOT_ALPHA = 0.7;
 const LIT_DOT_SHARE = 1.5;
+/** World units a fanned element may sit from its laid-out place before it counts as dragged. */
+const DRAG_SLACK = 1e-6;
 /** The most of the pitch between two elements a dot's radius takes, so a lit dot (`LIT_DOT_SHARE`) still stops short of its neighbour. */
 const ELEMENT_PITCH_FILL = 0.33;
 const LIGHT_SINK_GAIN = 1.4;
@@ -41,7 +44,7 @@ const measureText = createMeasureText();
 
 interface Disc { id: string; x: number; y: number; r: number; hue: string; ink: number; focus: boolean; state: "current" | "stale" | "unknown" }
 interface Dot { x: number; y: number; r: number; hue: string; ink: number; alpha: number; lit: boolean }
-interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; alpha: number }
+interface Segment { x0: number; y0: number; x1: number; y1: number; ink: string; toElement: boolean; spoke: boolean; alpha: number }
 /** 0 is a resting domain arc; the rest index `LINE_KINDS`. */
 /** `fadeStart` and `fadeEnd` are the shares of the curve that fade in from transparent at each end. */
 interface Arc { path: ArcPath; width: number; alpha: number; head: boolean; glow: number; kind: number; key: string; reach: number; fadeStart: number; fadeEnd: number }
@@ -94,7 +97,7 @@ class FrameList<T> {
   }
 }
 
-const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, alpha: 0 }));
+const segments = markPool<Segment>(() => ({ x0: 0, y0: 0, x1: 0, y1: 0, ink: "", toElement: false, spoke: false, alpha: 0 }));
 const dots = markPool<Dot>(() => ({ x: 0, y: 0, r: 0, hue: "", ink: 0, alpha: 0, lit: false }));
 const discs = markPool<Disc>(() => ({ id: "", x: 0, y: 0, r: 0, hue: "", ink: 0, focus: false, state: "current" }));
 const glows = markPool<Glow>(() => ({ x: 0, y: 0, r: 0, ink: "", alpha: 0 }));
@@ -325,6 +328,8 @@ interface FrameState {
   focusness: number;
   required: ReadonlySet<string>;
   evidence: DialEvidenceView | null;
+  /** The fans this frame draws open: the selection's, and a deselected capability's while it closes. */
+  opened: { elements: OpenedElements; share: number }[];
   /** The selected capability, element or orphan, drawn at the selected radius; null otherwise. */
   selectedId: string | null;
   selectedR: number;
@@ -335,7 +340,7 @@ interface FrameState {
   projectShare: number;
   lineKinds: number;
 }
-const F = { stamp: 0 } as FrameState;
+const F = { stamp: 0, opened: [] as FrameState["opened"] } as FrameState;
 
 /**
  * A domain's hue. The map rests achromatic, so every mark takes the neutral ink until attention
@@ -391,12 +396,41 @@ function screenOf(id: string): StampedPoint {
     at = { x: 0, y: 0, stamp: 0 };
     F.screen.set(id, at);
   }
-  const x = home.x * F.scale + F.originX;
-  const y = home.y * F.scale + F.originY;
+  let x = home.x * F.scale + F.originX;
+  let y = home.y * F.scale + F.originY;
+  for (let i = 0; i < F.opened.length; i += 1) {
+    const fan = F.opened[i]!;
+    const offset = fan.elements.offsets.get(id);
+    if (!offset) continue;
+    const rest = F.layout.positions.get(fan.elements.capabilityId)!;
+    const centre = F.input.nodeAt?.(fan.elements.capabilityId) ?? rest;
+    const own = F.layout.positions.get(id);
+    // A dot dragged away from its capability follows the pointer; the rest follow the capability wherever it goes.
+    if (own && Math.hypot(home.x - own.x - (centre.x - rest.x), home.y - own.y - (centre.y - rest.y)) > DRAG_SLACK) continue;
+    x += (centre.x * F.scale + F.originX + offset.x - x) * fan.share;
+    y += (centre.y * F.scale + F.originY + offset.y - y) * fan.share;
+  }
   if (at.x !== x) at.x = x;
   if (at.y !== y) at.y = y;
   at.stamp = F.stamp;
   return at;
+}
+
+/** How far `id` has moved into an opened fan, 0 when it is in none. */
+function fanShare(id: string): number {
+  let share = 0;
+  for (let i = 0; i < F.opened.length; i += 1) {
+    if (F.opened[i]!.elements.offsets.has(id)) share = Math.max(share, F.opened[i]!.share * F.opened[i]!.elements.open);
+  }
+  return share;
+}
+
+function alongSpoke(from: string, to: string): boolean {
+  for (let i = 0; i < F.opened.length; i += 1) {
+    const { capabilityId, offsets } = F.opened[i]!.elements;
+    if ((from === capabilityId && offsets.has(to)) || (to === capabilityId && offsets.has(from))) return true;
+  }
+  return false;
 }
 
 function screenAt(id: string): StampedPoint | undefined {
@@ -537,6 +571,7 @@ function segmentBetween(a: Point, b: Point, ink: string, toElement: boolean): Se
   if (s.y1 !== b.y) s.y1 = b.y;
   s.ink = ink;
   s.toElement = toElement;
+  s.spoke = false;
   return s;
 }
 
@@ -638,7 +673,7 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
   for (let i = 0; i < it.elementIds.length; i += 1) {
     const el = it.elementIds[i]!;
     const lit = attention.lit?.has(el) === true;
-    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
+    const shown = lensHidden(el) ? 0 : Math.max(F.dotAlpha, lit ? F.focusness : 0, fanShare(el), F.required.has(el) || el === input.agentFocusNodeId ? 1 : 0);
     if (shown <= DRAWN_INK) continue;
     alphas.set(el, 1);
     shownElements.add(el);
@@ -646,8 +681,17 @@ function planElements(it: FlatGraphItem, itemAt: Point, hue: string): void {
     loadMarkInk(el);
     const elInk = scratch[0]!;
     if (!contextMode && segmentOnScreen(itemAt, elAt)) {
+      const fanned = fanShare(el);
       const s = segmentBetween(itemAt, elAt, hue, true);
-      const alpha = P.linkElementAlpha * Math.min(itemInk, elInk) * shown;
+      s.spoke = fanned > 0;
+      if (s.spoke) {
+        // A spoke starts outside the selection ring, so the ring stays one unbroken circle.
+        const length = Math.hypot(elAt.x - itemAt.x, elAt.y - itemAt.y) || 1;
+        const start = Math.min(1, ((discRadius(it.id) + P.selectedRingGapPx + P.selectedRingPx) * fanned) / length);
+        s.x0 = itemAt.x + (elAt.x - itemAt.x) * start;
+        s.y0 = itemAt.y + (elAt.y - itemAt.y) * start;
+      }
+      const alpha = (P.linkElementAlpha + (P.fanSpokeAlpha - P.linkElementAlpha) * fanned) * Math.min(itemInk, elInk) * shown;
       if (s.alpha !== alpha) s.alpha = alpha;
       L.segments.add(s);
     }
@@ -704,12 +748,20 @@ function buildPlan(input: DialFrameInput, tokens: FlatGraphTokens, motion: Graph
     const r = own + (grown - own) * share;
     if (F.selectedR !== r) F.selectedR = r;
   }
+  F.opened.length = 0;
+  if (F.selectedId !== null) {
+    const share = attention.selected && attention.focusId === F.selectedId ? mix : 1;
+    const elements = openedElements(model, layout, F.selectedId, P, selectedDiscRadius(radiusNow(F.selectedId), P, growth), input.scale, growth);
+    if (elements !== null && share > 0) F.opened.push({ elements, share });
+  }
   const left = motion.previous.focusId;
   F.leavingId = !motion.settled && motion.previous.selected && left !== null && left !== F.selectedId && left !== model.projectId && !model.domainById.has(left) ? left : null;
   if (F.leavingId !== null) {
     const own = radiusNow(F.leavingId);
     const r = own + (selectedDiscRadius(own, P, growth) - own) * (1 - mix);
     if (F.leavingR !== r) F.leavingR = r;
+    const elements = openedElements(model, layout, F.leavingId, P, selectedDiscRadius(own, P, growth), input.scale, growth);
+    if (elements !== null && mix < 1) F.opened.push({ elements, share: 1 - mix });
   }
   const projectShare = motion.share(MOTION_SHARE.project, attention.focusId !== null && attention.focusId === model.projectId ? 1 : 0);
   if (F.projectShare !== projectShare) F.projectShare = projectShare;
@@ -964,8 +1016,14 @@ function focusLinks(motion: GraphMotion): void {
     const tapered = line.kind === "needs" || line.kind === "neededBy";
     const betweenDomains = F.model.domainById.has(line.from) && F.model.domainById.has(line.to);
     litLineTrimsInto(LINE_TRIMS, F.layout, line, Math.hypot(b.x - a.x, b.y - a.y), F.scale, F.growth, discRadius(line.from), discRadius(line.to), P);
-    const width = tapered ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
-    const mark = arcMark(a, b, P.lineBow, LINE_TRIMS[0]!, LINE_TRIMS[1]!, width, P.lineAlpha, false, 0, kind);
+    // A line to a fanned element is a fan's length long: a taper that short reads as a blot, so it draws as a hair.
+    const withinFan = fanShare(line.from) > 0 || fanShare(line.to) > 0;
+    const width = tapered && !withinFan ? Math.min(P.lineTaperMaxPx, P.lineTaperPx + P.lineTaperGainPx * (line.weight - 1)) : line.kind === "relates" ? P.lineDotPx : P.lineHairPx;
+    // A relation between a capability and its own fanned element runs straight along that element's spoke, from outside the ring.
+    const spoke = alongSpoke(line.from, line.to);
+    const ring = spoke ? P.selectedRingGapPx + P.selectedRingPx : 0;
+    const ownsFrom = spoke && F.model.capabilityById.has(line.from) && fanShare(line.to) > 0;
+    const mark = arcMark(a, b, spoke ? 0 : P.lineBow, LINE_TRIMS[0]! + (ownsFrom ? ring : 0), LINE_TRIMS[1]! + (spoke && !ownsFrom ? ring : 0), width, P.lineAlpha, false, 0, kind);
     if (!mark) continue;
     const { a: start, b: end } = mark.path;
     if (reach * Math.hypot(end.x - start.x, end.y - start.y) * devicePxPerCss < 1) continue;
@@ -1170,7 +1228,7 @@ function group<T>(into: Buckets<T>, items: readonly T[], key: (item: T) => numbe
 
 const level = (share: number): number => Math.round(Math.min(1, Math.max(0, share)) * (GROUP_LEVELS - 1)) | 0;
 const discKey = (d: Disc): number => (((inkCode(d.hue) * GROUP_LEVELS + level(d.ink)) * 2 + (d.focus ? 1 : 0)) * 2 + (d.state === "unknown" ? 1 : 0)) | 0;
-const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 2 + (s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
+const segmentKey = (s: Segment): number => ((inkCode(s.ink) * 3 + (s.spoke ? 2 : s.toElement ? 1 : 0)) * GROUP_LEVELS + level(s.alpha * 8)) | 0;
 const segmentDrawn = (s: Segment): boolean => s.alpha > 0.004;
 const dotLit = (d: Dot): boolean => d.lit;
 const dotUnlit = (d: Dot): boolean => !d.lit;
@@ -1274,7 +1332,8 @@ function strokeSegments(ctx: CanvasRenderingContext2D, list: FrameList<Segment>,
   const first = list.items[0]!;
   ctx.globalAlpha = first.alpha;
   ctx.strokeStyle = first.ink;
-  ctx.lineWidth = first.toElement ? P.linkElementWidthPx : P.linkCapWidthPx;
+  // A fan's spoke keeps its weight beside the selected disc, which grows with the zoom.
+  ctx.lineWidth = first.spoke ? Math.min(P.fanSpokeMaxPx, P.linkCapWidthPx * Math.max(1, F.growth)) : first.toElement ? P.linkElementWidthPx : P.linkCapWidthPx;
   ctx.beginPath();
   for (let sIndex = 0; sIndex < list.size; sIndex += 1) {
     const s = list.items[sIndex]!;
