@@ -33,10 +33,15 @@ Folder entry and the download invitation use native-resolution Moru in a bounded
 Folder selection offers a small folder; opening yields to the existing waiting view.
 A busy chooser that stays mounted uses quiet stationary poses.
 The download invitation has its own welcome. Short hops move only while airborne and finish landing before a pointer/keyboard hold.
-Petting Moru plays one shy, clap, dance, thinking, pondering, hearts, laughter, flipper-groove, bow, flipper-five or hat-greeting response after an airborne hop lands;
-the download welcome also offers a fish trick. A wordless pixel bubble shows a
+Petting Moru plays one finite response after an airborne hop lands. Folder entry
+offers 14 reactions, adding nose-star balancing, pup peekaboo and a heart gift;
+the download welcome offers 18, including a sparkle sneeze, fish trick, silent
+singing and bubble chasing. The four new encounters and redrawn flipper groove
+have 32 timed poses. The gentle first pet stays; the second reveals a playful
+encounter. A pup also peeks out once per longer idle cycle. A wordless pixel bubble shows a
 heart, note or sparkle on touch and a note on occasional return hops. Waiting
-uses gentle reactions without bubbles; repeated presses do not queue more reactions. Ambient play combines three
+uses gentle reactions without bubbles; prop-led encounters keep the extra bubble
+out of their headroom. Repeated presses do not queue more reactions. Ambient play combines three
 phrases with varied quiet rests; petting avoids the two most recent gestures
 while visiting every context-allowed response before refilling its choices. Pause/resume lives in Moru’s context menu (right-click or Shift+F10), with no persistent playback button beside the character.
 Pointer/keyboard interaction and hidden/offscreen state suspend ambient motion;

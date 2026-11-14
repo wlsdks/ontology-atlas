@@ -5,12 +5,12 @@ import { moruFrame } from './moru-frame';
 const folderPhrases = [
   [['wave', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['folder-peek', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['soft-bow', 0, 1], ['blink', 0, 1]],
   [['blink', 0, 1], ['folder-peek', 0, 1], ['tilt', 0, 1], ['hop', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['wave', 0, 1], ['blink', 0, 1]],
-  [['soft-bow', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['folder-open', 1, 1], ['tilt', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['blink', 0, 1]],
+  [['soft-bow', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['folder-open', 1, 1], ['tilt', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['pup-peek', 0, 1], ['blink', 0, 1]],
 ] as const;
 const welcomePhrases = [
   [['soft-bow', 0, 1], ['hop', 1, 1], ['tilt', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['wave', 0, 1], ['blink', 0, 1]],
   [['blink', 0, 1], ['tilt', 0, 1], ['wave', 0, 1], ['hop', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['blink', 0, 1]],
-  [['wave', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['soft-bow', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['tilt', 0, 1], ['blink', 0, 1]],
+  [['wave', 0, 1], ['blink', 0, 1], ['hop', 1, 1], ['soft-bow', 1, 1], ['blink', 1, 1], ['hop', 0, -1], ['tilt', 0, 1], ['pup-peek', 0, 1], ['blink', 0, 1]],
 ] as const;
 const waitingItinerary = [['blink', 0, 1], ['tilt', 0, 1], ['blink', 0, 1]] as const;
 export type CompanionContext = 'folder' | 'welcome' | 'waiting';

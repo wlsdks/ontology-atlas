@@ -31,6 +31,12 @@ export function companionPlayer({ image, reactionImage, body, bubble, bounds, an
   const playAmbient = () => { for (const animation of animations) animation.play(); };
   const showEmotion = (id: CompanionGesture, animated: boolean, duration = 0) => {
     if (context === 'waiting') return;
+    // These encounters carry their own props and expression. Keep their headroom
+    // clear rather than putting another bubble over a pup, star or heart.
+    if (['nose-balance', 'pup-peek', 'heart-gift', 'star-sneeze', 'bubble-chase', 'sing'].includes(id)) {
+      delete bubble.dataset.emotion; bubble.style.opacity = '0';
+      return;
+    }
     // The still fish is already an expression; keep its prop space clear.
     if (id === 'magic-fish' && !animated) {
       delete bubble.dataset.emotion; bubble.style.opacity = '0';

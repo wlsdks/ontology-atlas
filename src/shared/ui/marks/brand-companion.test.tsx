@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { BrandCompanion } from './brand-companion';
 import { companionMotion } from './moru-companion-motion';
+import reactions from './moru-reactions.json';
 
 const labels = { pause: 'pause', resume: 'resume', still: 'still', interact: 'pet' };
 let hidden = false, reduced = false;
@@ -160,7 +161,7 @@ it('finishes one reaction before accepting another and does not lose an explicit
   act(() => first.onfinish?.());
   for (const animation of animations.slice(0, 3)) animation.play.mockClear();
   fireEvent.click(pet);
-  expect(pet).toHaveAttribute('data-moru-reaction', 'clap');
+  expect(pet).toHaveAttribute('data-moru-reaction', 'nose-balance');
   for (const animation of animations.slice(0, 3)) expect(animation.play).not.toHaveBeenCalled();
   expect(pet).toHaveAttribute('data-moru-paused', 'true');
 });
@@ -224,9 +225,10 @@ it('shows a finite wordless emotion on touch and clears it with the response', (
   const pet = screen.getByRole('button', { name: 'pet' });
   const bubble = pet.querySelector('[data-moru-emote]');
   expect(bubble).toHaveAttribute('aria-hidden', 'true');
-  for (const emotion of ['heart', 'spark', 'note']) {
+  for (const emotion of ['heart', null, 'spark', 'note']) {
     fireEvent.click(pet);
-    expect(bubble).toHaveAttribute('data-emotion', emotion);
+    if (emotion) expect(bubble).toHaveAttribute('data-emotion', emotion);
+    else expect(bubble).not.toHaveAttribute('data-emotion');
     act(() => animations.at(-1)?.onfinish?.());
     expect(bubble).not.toHaveAttribute('data-emotion');
   }
@@ -249,7 +251,7 @@ it.each(['folder', 'welcome'] as const)('reserves the fish trick for the welcome
   act(() => reveal(true));
   const pet = screen.getByRole('button', { name: 'pet' });
   const seen = new Set<string>();
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < Object.keys(reactions.clips).length; i++) {
     fireEvent.click(pet);
     seen.add(pet.dataset.moruReaction!);
     act(() => animations.at(-1)?.onfinish?.());
@@ -262,8 +264,11 @@ it('keeps a finished magic bubble hidden when visibility returns', () => {
   render(<BrandCompanion labels={labels} context="welcome" />);
   act(() => reveal(true));
   const pet = screen.getByRole('button', { name: 'pet' });
-  for (let i = 0; i < 11; i++) { fireEvent.click(pet); act(() => animations.at(-1)?.onfinish?.()); }
-  fireEvent.click(pet);
+  for (let i = 0; i < Object.keys(reactions.clips).length; i++) {
+    fireEvent.click(pet);
+    if (pet.dataset.moruReaction === 'magic-fish') break;
+    act(() => animations.at(-1)?.onfinish?.());
+  }
   expect(pet).toHaveAttribute('data-moru-reaction', 'magic-fish');
   const bubble = animations.at(-2)!;
   Object.assign(bubble, { playState: 'finished' });
@@ -278,7 +283,7 @@ it('clears the previous still bubble when the fish prop supplies the expression'
   reduced = true;
   render(<BrandCompanion labels={labels} context="welcome" />);
   const pet = screen.getByRole('button', { name: 'pet' });
-  for (let i = 0; i < 12; i++) fireEvent.click(pet);
+  for (let i = 0; i < Object.keys(reactions.clips).length && pet.dataset.moruReaction !== 'magic-fish'; i++) fireEvent.click(pet);
   expect(pet).toHaveAttribute('data-moru-reaction', 'magic-fish');
   expect(pet.querySelector('[data-moru-emote]')).not.toHaveAttribute('data-emotion');
   expect(animations).toHaveLength(0);

@@ -72,6 +72,8 @@ test('a pending folder choice replaces play with the existing waiting state', as
 });
 
 test('petting has no pressed backdrop and returns to ambient play after a finite response', async ({ page }) => {
+  // One full pass now covers eighteen finite responses, including longer encounters.
+  test.setTimeout(120_000);
   await page.goto('/en/download/?guides=off');
   const pet = page.locator('[data-moru-companion]');
   await expect(page.locator('[data-moru-playground]')).toHaveAttribute('data-moru-context', 'welcome');
@@ -97,15 +99,16 @@ test('petting has no pressed backdrop and returns to ambient play after a finite
   // Every new expression must finish and hand back to the same companion,
   // without adding a control or leaving the reaction strip visible forever.
   const seen = new Set(['shy']);
-  for (let i = 0; i < 11; i++) {
+  for (let i = 0; i < 17; i++) {
     await pet.click();
     await expect(pet).toHaveAttribute('data-moru-reaction');
     const gesture = (await pet.getAttribute('data-moru-reaction'))!;
+    if (i === 0) expect(['nose-balance', 'pup-peek', 'heart-gift', 'star-sneeze']).toContain(gesture);
     expect(seen.has(gesture), `repeated ${gesture} before completing the repertoire`).toBe(false);
     seen.add(gesture);
     await expect(pet).not.toHaveAttribute('data-moru-reaction');
   }
-  expect([...seen].sort()).toEqual(['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish'].sort());
+  expect([...seen].sort()).toEqual(['shy', 'clap', 'dance', 'thinking', 'pondering', 'hearts', 'laugh', 'flipper-groove', 'soft-bow', 'flipper-five', 'hat-tip', 'magic-fish', 'nose-balance', 'pup-peek', 'heart-gift', 'star-sneeze', 'bubble-chase', 'sing'].sort());
   await expect(pet.locator('..').locator('..').getByRole('button')).toHaveCount(1);
 });
 

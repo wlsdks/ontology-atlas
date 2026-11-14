@@ -31,7 +31,7 @@ a curled forked left tail with an ivory notch. Preserve the selected silhouette.
 Moru is a character, not an ontology kind, assistant persona or work detector.
 
 The complete project pack is [assets/brand/moru](../../assets/brand/moru/):
-54 authored motions (46 with 24 poses and eight with 32), 16 explicitly labelled composed sequences and
+58 authored motions (45 with 24 poses and 13 with 32), 16 explicitly labelled composed sequences and
 16 static poses. Sizes/formats never count as additional designs.
 Open [preview.html](../../assets/brand/moru/preview.html) locally to play, pause,
 scrub frames, inspect 64/128px exports, and download individual assets.
@@ -47,7 +47,7 @@ samples; an application error does not make Moru angry at the person.
 Eight further gestures add a soft bow, hat greeting, fish trick, blanket peekaboo,
 rosy temper, flipper five, folder peek and bubble chase. The bow, flipper five and
 hat greeting join petting; the fish trick is reserved for the download welcome.
-Peekaboo, rosy temper and bubble chase remain catalogue scenes. A small pixel
+Peekaboo and rosy temper remain catalogue scenes. A small pixel
 speech bubble responds with a heart, note or sparkle. One note accompanies a
 return hop in each longer three-phrase sequence; waiting has no bubble. These original SVG
 ornaments stay within the actor bounds, ignore pointer input and share its pause,
@@ -69,7 +69,13 @@ settle timing. Ambient play joins three different phrases with quiet holds of
 different lengths. The starting phrase is chosen once per mounted companion;
 resize and visibility changes preserve it. Petting starts gently, then draws a
 full context-allowed repertoire in varied order, excluding the two most recent
-responses across refills (waiting alternates its two gentle choices). Randomness
+responses across refills (waiting alternates its two gentle choices). The second
+pet reveals a nose-star balance, pup peekaboo or heart gift; the welcome also
+offers a sparkle sneeze. These four encounters use 32 poses, as does the redrawn
+flipper groove. Folder entry has 14 responses; welcome has 18, including singing
+and bubble chasing. Prop-led encounters use their own art without an extra
+bubble. A pup peeks out once per long idle cycle, never during pending work.
+Randomness
 is local, has no persistent state and never supplies work or emotional status.
 
 ## Raster grids and palette

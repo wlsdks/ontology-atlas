@@ -122,13 +122,15 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[70のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
+MoruはAtlasのピクセルアザラシのキャラクターで、コンパスはアプリのシンボルです。[74のモーション、16のポーズと原本](assets/brand/moru/README.md)を同梱しています。[ローカルモーションスタジオ](assets/brand/moru/preview.html)で再生・停止や各フレームを確認できます。
 
 フォルダー選択画面では、モルが挨拶して小さなフォルダーを見せ、開いている間は遊ぶ動きを止め、既存の待機画面に切り替わります。ダウンロードページでは別のお迎え動作をします。移動するのはジャンプで足が地面を離れている間だけです。カーソルを重ねると、着地を終えてから待ちます。モルを押すと照れたり、拍手、ダンス、考え込むしぐさ、ハート、笑顔やひれのダンスで短く反応し、右クリックまたは Shift+F10 のメニューで一時停止できます。キャラクターの隣に再生ボタンは表示しません。動きを減らす設定では静止した表情で反応します。
 
-新しい32ポーズの動作には、お辞儀、ハイタッチ、帽子の挨拶が加わり、ダウンロード画面では魚の手品も楽しめます。クリックすると小さな吹き出しにハート、音符、きらめきが出て、戻るジャンプにも時々音符が現れます。処理待ちでは静かに待ちます。いないいないばあ、赤くなる顔、泡遊びはスタジオで確認できます。
+新しい32ポーズの動作には、お辞儀、ハイタッチ、帽子の挨拶が加わり、ダウンロード画面では魚の手品も楽しめます。クリックすると小さな吹き出しにハート、音符、きらめきが出て、戻るジャンプにも時々音符が現れます。処理待ちでは静かに待ちます。いないいないばあと赤くなる顔はスタジオで確認できます。
 
 小さくうなずくときも丸い体を保ちます。普段は休み方の違う三つの動作の流れをつなぎ、クリック時は直前の二つの動作を避けて反応します。処理待ちでは静かにその場で待ちます。
+
+鼻先の星のバランス、きらめくくしゃみ、子どものMoruとのかくれんぼ、ハートの贈り物をそれぞれ32ポーズで追加し、ひれのダンスも32ポーズで描き直しました。二回目のクリックで新しい遊びに出会い、その後は直前の動作を避けて反応します。待っている間にも時々子どものMoruが顔を出します。フォルダー選択では14種類、ダウンロード画面では音のない歌と泡遊びを含む18種類の反応があります。小道具のある動作には吹き出しを重ねません。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -169,6 +171,10 @@ MoruはAtlasのピクセルアザラシのキャラクターで、コンパス�
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="ハイタッチするモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="フォルダーをのぞくモル" />
 <img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="泡を追うモル" />
+<img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="星を支えるMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="きらめくくしゃみをするMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="子どもと遊ぶMoru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="ハートを贈るMoru" />
 
 
 </details>

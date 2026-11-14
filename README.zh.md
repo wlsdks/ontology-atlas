@@ -122,13 +122,15 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[70个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[74个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
 在文件夹选择画面，Moru 会打招呼并展示小文件夹；打开文件夹时停止玩耍，切换到现有的等待画面。下载页面使用独立的欢迎动作。只有双脚离地的短跳跃期间才会移动。悬停时会先完成落地，再停下来等待。点击 Moru 会短暂地害羞、鼓掌、跳舞、思考、冒出爱心、欢笑或挥动鳍跳舞，右键点击或按 Shift+F10 可打开暂停菜单。角色旁不显示播放按钮。启用减少动态效果时，仅改变静态表情。
 
-新的32姿势动作增加了鞠躬、击掌和帽子问候，下载欢迎画面还会表演小鱼魔术。点击时，小气泡会显示爱心、音符或闪光，返回跳跃时也会偶尔出现音符。等待操作时保持安静。躲猫猫、脸红和泡泡游戏可在动作预览中查看。
+新的32姿势动作增加了鞠躬、击掌和帽子问候，下载欢迎画面还会表演小鱼魔术。点击时，小气泡会显示爱心、音符或闪光，返回跳跃时也会偶尔出现音符。等待操作时保持安静。躲猫猫和脸红可在动作预览中查看。
 
 轻轻点头时也会保持圆润的身体。平时会交替播放三段节奏与休息不同的动作，点击反应会避开最近的两个动作。等待操作时仍安静地待在原地。
+
+新增鼻尖平衡星星、闪光喷嚏、与小Moru捉迷藏和赠送爱心四个32姿势动作，并将挥鳍舞重新绘制为32姿势。第二次点击即可遇见新游戏，之后会避开最近动作，轮流展示完整反应。闲暇时，小Moru也会偶尔探出头来。文件夹选择画面有14种反应，下载欢迎画面有18种，包括无声唱歌和追泡泡。带有道具的动作不会叠加额外的表情气泡。
 
 <img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
 
@@ -169,6 +171,10 @@ Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[7
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="击掌的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="查看文件夹的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="追泡泡的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="平衡星星的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="打出闪光喷嚏的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="与小Moru玩耍" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="赠送爱心的Moru" />
 
 
 </details>
