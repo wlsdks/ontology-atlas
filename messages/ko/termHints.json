@@ -6,7 +6,7 @@
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
-    "explanation": "Atlas 같은 앱이 코딩 에이전트와 대화하고, 쓰기 전에 매번 허락을 묻는 표준 방식이에요."
+    "explanation": "Atlas 같은 앱이 코딩 에이전트와 대화하고, 쓰기 전에 매번 승인을 받는 표준 방식이에요."
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",

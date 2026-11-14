@@ -102,12 +102,12 @@ describe("ShortcutSheet — topology section", () => {
     renderSheet();
     expect(screen.getByText("Select a concept")).toBeInTheDocument();
     expect(
-      screen.getByText("Pan the map (empty space) or move a concept (spring rebound)"),
+      screen.getByText("Pan the map (empty space) or move a concept"),
     ).toBeInTheDocument();
     expect(screen.getByText("Zoom in or out")).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Context menu.*edit relations.*copy handoff/,
+        /Context menu.*edit relations.*copy prompt/,
       ),
     ).toBeInTheDocument();
   });

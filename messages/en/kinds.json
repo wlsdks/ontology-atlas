@@ -4,6 +4,6 @@
   "capability": "Capability",
   "element": "Element",
   "document": "Document",
-  "vault-readme": "Repository guide",
-  "unknown": "Unresolved"
+  "vault-readme": "Folder guide",
+  "unknown": "Unknown kind"
 }

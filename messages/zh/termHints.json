@@ -2,7 +2,7 @@
   "trigger": "关于 {term}",
   "mcp": {
     "expansion": "MCP (Model Context Protocol)",
-    "explanation": "让 AI 智能体以统一方式调用外部工具、读取外部数据的开放协议。"
+    "explanation": "编码智能体读写外部工具和数据（例如这个文件夹）的标准方式。"
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
@@ -10,10 +10,10 @@
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",
-    "explanation": "调用服务时用来验证身份的一串字符，请勿泄露给他人。"
+    "explanation": "模型服务商签发的密钥字符串，让程序能用你的账户调用模型。"
   },
   "cli": {
     "expansion": "CLI (Command-Line Interface)",
-    "explanation": "在终端里输入命令来操作的方式。"
+    "explanation": "不用在窗口里点击，而是在终端输入命令来运行的程序。"
   }
 }

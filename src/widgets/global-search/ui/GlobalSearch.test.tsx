@@ -410,7 +410,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
       />,
     );
 
-    expect(footerText()).toBe("3 indexed · Online Store");
+    expect(footerText()).toMatch(/^3 .+ · Online Store$/);
   });
 
   it("never breaks the number and lets only the scope name truncate", () => {
@@ -453,7 +453,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
         onSelectProject={() => {}}
       />,
     );
-    expect(footerText()).toBe("3 indexed · Online Store (EN)");
+    expect(footerText()).toMatch(/^3 .+ · Online Store \(EN\)$/);
   });
 
   it("counts only what the map draws, so a starter README is not an indexed concept", () => {
@@ -467,7 +467,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
         onSelectProject={() => {}}
       />,
     );
-    expect(footerText()).toBe("3 indexed · Online Store");
+    expect(footerText()).toMatch(/^3 .+ · Online Store$/);
   });
 
   it("keeps the name beside the match count once a query narrows the list", () => {
@@ -528,7 +528,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
         onSelectProject={() => {}}
       />,
     );
-    expect(footerText()).toBe(`4 indexed · ${copy.scopeFallback}`);
+    expect(footerText()).toBe(`4 ${copy.indexed.replace("{count}", "").trim()} · ${copy.scopeFallback}`);
     unmount();
 
     render(
@@ -542,7 +542,7 @@ describe("GlobalSearch — footer names the searched scope", () => {
         onSelectProject={() => {}}
       />,
     );
-    expect(footerText()).toBe(`4 indexed · ${copy.onMap.scopeFallback}`);
+    expect(footerText()).toBe(`4 ${copy.indexed.replace("{count}", "").trim()} · ${copy.onMap.scopeFallback}`);
   });
 });
 

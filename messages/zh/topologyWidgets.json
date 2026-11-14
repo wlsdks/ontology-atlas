@@ -8,7 +8,7 @@
     "expandAriaLabel": "展开枢纽栏",
     "collapseTooltip": "收起枢纽栏",
     "collapseAriaLabel": "收起枢纽栏",
-    "itemTitle": "{name} · {degree} 条连线"
+    "itemTitle": "{name} · {degree} 条关系"
   },
   "keyboardWalk": {
     "deadEnd": "这个方向没有相连的概念"
