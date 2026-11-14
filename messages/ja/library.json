@@ -746,8 +746,6 @@
     "wiki": "Wiki",
     "wikiCount": "Wikiページ",
     "ontology": "オントロジー",
-    "rounds": "点検履歴",
-    "roundsCount": "有効な定期点検",
     "ontologyViews": "オントロジーの表示",
     "conceptDocuments": "概念の文書",
     "conceptSets": "ブックマーク"
@@ -796,97 +794,31 @@
     }
   },
   "rounds": {
-    "eyebrow": "自動化が残したもの",
-    "title": "点検履歴",
-    "lede": "自動化でスケジュールした文書の点検を確認します。スケジュールと実行設定は、自動化で管理します。",
-    "indexAria": "このMacがこのフォルダ用に保持している点検",
-    "manageAutomations": "自動化で管理",
-    "limit": "このMacでOntology Atlasを開いている間に実行されます。スリープ中は止まり、復帰後の次の実行でまとめて追いつきます。",
-    "appRequiredTitle": "点検はデスクトップアプリで実行されます",
-    "appRequiredDescription": "点検は、席を外している間も時計を保ち、エージェントを起動します。これができるのはデスクトップアプリだけです。点検はそこで登録してください。",
-    "getApp": "アプリを入手",
-    "loadingTitle": "このフォルダの点検を読み込み中",
-    "malformedTitle": "点検のファイルに問題があります",
-    "malformedDescription": "Atlasは「.ontology-atlas/rounds.json」を読み取れず、そのままにしました。直すか削除してから、もう一度読み込んでください。",
-    "unavailableTitle": "このフォルダの点検を読み取れませんでした",
-    "unavailableDescription": "Atlasはこのフォルダの「.ontology-atlas/rounds.json」を読み取れなかったため、点検を表示も実行もできません。Atlasが開いた場所にフォルダがあるか確認してから、もう一度読み込んでください。",
-    "retry": "もう一度読み込む",
-    "emptyTitle": "最初の文書点検をスケジュールしましょう",
-    "emptyDescription": "スケジュールした点検が実行されるたびに、その結果が新しい順にここへ入ります。",
-    "emptyAction": "自動化でスケジュール",
-    "emptyKinds": "スケジュールできる点検",
-    "signal": {
-      "stale": "古い",
-      "redrafted": "書き直し済み",
-      "refused": "拒否",
-      "held": "変更なし"
-    },
     "kind": {
       "consistency": "ページがソースと一致しているか",
-      "consistencyBody": "このMacで、引用されているすべてのソースのハッシュを計算し、ページの確認を実行します。エージェントのターンはありません。",
-      "service": "サービスの文書",
-      "serviceBody": "1回の実行につきエージェントのターンは1回です。サービスが送った内容を読み直し、新しいものを取り込み、変更があったページを書き直します。"
+      "service": "サービスの文書"
     },
     "cadence": {
-      "hour": "1時間ごと",
-      "6h": "6時間ごと",
-      "daily": "毎日{time}",
-      "weekdays": "平日の{time}",
       "dailyChip": "毎日",
       "weekdaysChip": "平日",
       "everyMinutes": "{count, number}分ごと",
       "everyHours": "{count, number}時間ごと"
     },
-    "state": {
-      "on": "オン",
-      "paused": "一時停止中",
-      "running": "実行中",
-      "notHere": "このMacでは実行されません"
-    },
     "outcome": {
-      "held": "変更なし",
       "reviewed": "確認済み",
       "stale": "古い{count, number}件",
       "redrafted": "書き直し{count, number}件",
       "refused": "拒否",
-      "failed": "完了せず",
-      "asleep": "スリープ中",
-      "none": "まだ実行なし"
+      "failed": "完了せず"
     },
-    "header": {
-      "rounds": "点検{count, number}件",
-      "next": "次回{time} · {name}",
-      "running": "実行中 · {name}",
-      "nothingYet": "まだ実行なし",
-      "paused": "すべて一時停止中",
-      "waitingHere": "自動化で、このMacでの実行が許可されるのを待っています"
-    },
-    "runNow": "今すぐ実行",
-    "pause": "一時停止",
-    "resume": "再開",
-    "remove": "削除",
-    "removeNamed": "{name}を削除",
     "since": {
-      "title": "前回以降",
-      "todayTitle": "今日",
       "span": "{from} → {to}",
-      "nothing": "変更はありません。{count, number}回の実行で、すべてのページが引き続きソースと一致しています。",
-      "noPasses": "この期間に実行はありませんでした。",
-      "stale": "{count, number}ページが古くなりました",
-      "redrafted": "書き直しの下書き{count, number}件があなたの確認待ちです",
-      "held": "変更なしの実行{count, number}回",
-      "refused": "拒否されたリクエスト{count, number}件",
-      "failed": "完了しなかった実行{count, number}回",
-      "openPage": "{page}をWikiで開く",
-      "showRefused": "台帳で確認"
+      "openPage": "{page}をWikiで開く"
     },
     "ledger": {
-      "title": "台帳",
       "aria": "実行（新しい順）",
       "today": "今日",
       "yesterday": "昨日",
-      "empty": "まだ実行されていません。最初の実行は{time}です。",
-      "emptyPaused": "まだ実行されておらず、すべての点検が一時停止中です。",
       "checked": "{count, number}ページを確認",
       "agentTurn": "エージェントのターン1回",
       "noAgentTurn": "エージェントのターンなし",
@@ -924,10 +856,7 @@
       "columnTime": "時刻",
       "columnRound": "点検",
       "columnOutcome": "結果",
-      "ghostTime": "––:––",
-      "ghostAria": "最初の実行が入る場所",
-      "includeSleep": "スリープ区間も表示（{count}件）",
-      "noPasses": "まだ実行されたチェックはありません。"
+      "includeSleep": "スリープ区間も表示（{count}件）"
     },
     "sheet": {
       "readbackHour": "1時間ごと",
@@ -1009,10 +938,6 @@
       "dayAria": "曜日",
       "valueMinutes": "{count, number}分ごと",
       "valueHours": "{count, number}時間ごと"
-    },
-    "index": {
-      "title": "スケジュール済みの点検",
-      "subtitle": "{cadence} · {places}"
     }
   }
 }

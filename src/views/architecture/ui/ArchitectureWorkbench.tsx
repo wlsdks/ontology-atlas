@@ -12,7 +12,7 @@ import {
   type ArchitectureProfile,
   type ArchitectureProfileProblem,
 } from '@/entities/architecture-profile';
-import type { ArchitectureRecord } from '@/entities/architecture-record';
+import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
@@ -22,7 +22,6 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
-import { useHeldValue } from '@/shared/lib/render-timing/use-presence';
 import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { copyText } from '@/shared/lib/clipboard/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
@@ -35,10 +34,8 @@ import { useVaultSessionIdentityScope } from '@/entities/vault-session';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, Chip, CloseButton, RowButton, Surface } from '@/shared/ui';
+import { Button, CloseButton, RowButton, Surface, Tooltip } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
-import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
-import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
 import { ArchitectureRules } from './ArchitectureRules';
 import { ArchitectureDraftHero } from './ArchitectureDraftHero';
 import { HARNESS_GUTTER_LEFT, HARNESS_GUTTER_X } from './harness-frame';
@@ -53,7 +50,14 @@ const XL_COLUMNS = {
   inspector: 'xl:grid-cols-[minmax(0,1fr)_380px]',
 } as const;
 
-const XL_EVIDENCE_COLUMNS = 'xl:grid-cols-[minmax(0,1fr)_360px]';
+type RecordState = ArchitectureRecordStatus | 'missing';
+
+const STATUS_DOT_CLASS: Record<RecordState, string> = {
+  conforms: 'bg-[color:var(--color-success-a45)]',
+  violated: 'bg-[color:var(--color-danger-text)]',
+  unknown: 'bg-[color:var(--color-amber-source-a50)]',
+  missing: 'bg-[color:var(--color-text-quaternary)]',
+};
 
 /** The same document with another role selected; defaults stay bare and obsolete stage parameters are dropped. */
 function buildArchitectureHref(role: string | null, pathname: string): string {
@@ -150,7 +154,6 @@ export function ArchitectureWorkbench({
     [profiles, selectedSlug],
   );
 
-  const [evidenceOpen, setEvidenceOpen] = useState(false);
   /*
    * At `xl` the scopes, rules, receipt and chosen role open in a dock beside the canvas, which keeps
    * the height; stacked under it they were squeezed out of reach. Below `xl` the page stays a
@@ -160,10 +163,8 @@ export function ArchitectureWorkbench({
     return readArchitectureRole() !== null ? 'role' : null;
   });
   const inspectorOpen = inspector !== null && !contextDockOpen;
-  const rightDockOpen = inspectorOpen || evidenceOpen;
-  const railCompact = rightDockOpen || contextDockOpen;
   const stackedGutter = embedded ? HARNESS_GUTTER_X : 'px-5 md:px-8';
-  const columnLayout = contextDockOpen ? 'context' : evidenceOpen ? 'evidence' : inspectorOpen ? 'inspector' : 'closed';
+  const columnLayout = contextDockOpen ? 'context' : inspectorOpen ? 'inspector' : 'closed';
   const flowHostRef = useRef<HTMLDivElement | null>(null);
   const previousColumnLayout = useRef(columnLayout);
   useLayoutEffect(() => {
@@ -181,7 +182,6 @@ export function ArchitectureWorkbench({
       easing: style.getPropertyValue('--motion-ease').trim() || undefined,
     });
   }, [columnLayout]);
-  const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
   const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
   /* Owned here because the canvas and the panel answering it sit in different grid rows. */
@@ -205,7 +205,6 @@ export function ArchitectureWorkbench({
   function openInspector(kind: 'role' | 'rules', trigger?: HTMLElement | SVGElement) {
     if (contextDockOpen && selected) { onOpenReview?.(selected.slug, selectedRole); return; }
     if (trigger) inspectorTriggerRef.current = trigger;
-    setEvidenceOpen(false);
     setInspector(kind);
   }
 
@@ -221,11 +220,6 @@ export function ArchitectureWorkbench({
     window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
   }, [inspector]);
 
-  const closeEvidence = useCallback(() => {
-    setEvidenceOpen(false);
-    window.requestAnimationFrame(() => evidenceTriggerRef.current?.focus());
-  }, [setEvidenceOpen]);
-
   const [copyState, setCopyState] = useState<CopyState>('idle');
   /* Which task the last copy carried, so the confirmation names it. */
   const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
@@ -240,7 +234,6 @@ export function ArchitectureWorkbench({
     }, copyFeedbackMs);
     return () => window.clearTimeout(timer);
   }, [copyFeedbackMs, copyState]);
-  const evidencePanelRef = useRef<HTMLElement>(null);
 
   const selectedRecord = selected ? recordsByProfile[selected.slug] ?? null : null;
   const roleTraffic = selectedRecord?.brief.conformance.observedRoleEdges;
@@ -269,29 +262,6 @@ export function ArchitectureWorkbench({
     return () => window.removeEventListener('keydown', onKey);
   }, [closeInspector, inspectorOpen]);
 
-  useEffect(() => {
-    if (!evidenceOpen) return undefined;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeEvidence();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [closeEvidence, evidenceOpen]);
-
-  /* Reveal when the panel exists: `Surface` mounts one commit after the flag, so the press arms it and the panel's ref fires it. */
-  const revealEvidence = useRef(false);
-  const attachEvidencePanel = useCallback((node: HTMLElement | null) => {
-    evidencePanelRef.current = node;
-    if (!node || !revealEvidence.current) return;
-    revealEvidence.current = false;
-    if (window.matchMedia('(min-width: 1280px)').matches) return;
-    window.requestAnimationFrame(() => {
-      const scroller = node.closest<HTMLElement>('.architecture-workbench-grid');
-      const tall = scroller ? node.offsetHeight > scroller.clientHeight : false;
-      node.scrollIntoView?.({ block: tall ? 'start' : 'nearest' });
-    });
-  }, []);
-
   /* One button with a derived default task, and a chooser offering the other two with a line each. */
   const primaryAgentKind: ArchitectureAgentTaskKind =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
@@ -301,8 +271,6 @@ export function ArchitectureWorkbench({
   const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
   const requestedAgentKind: ArchitectureAgentTaskKind = chosenAgentKind ?? primaryAgentKind;
   const [taskMenuOpen, setTaskMenuOpen] = useState(false);
-  /* Null until the canvas knows whether the empty column carries the action; the toolbar waits outlined. */
-  const [emptyActionSeated, setEmptyActionSeated] = useState<boolean | null>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -386,8 +354,6 @@ export function ArchitectureWorkbench({
           : agentRoute === 'clipboard' && copyState === 'error'
             ? t('copyHandoffError')
             : idleAgentLabel;
-  /* Held while the empty column leaves, so its label does not turn into the re-check as it fades. */
-  const emptyActionText = useHeldValue(selectedRecord === null ? agentActionText : null);
 
   /* The detail panel's facts come from the same layout the canvas draws, so they never disagree. */
   /* `selected` is null on the zero-profile screen, which renders an empty stage, so derived maps must survive it. */
@@ -482,32 +448,27 @@ export function ArchitectureWorkbench({
           : []),
       ].join(' · ')
     : null;
-  const observationTitle = agentActivity
+  const recordStamp = measured
+    ? `${
+        measured.source.kind === 'git'
+          ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
+          : t('recordCheckedFolder', { date: recordDate })
+      }${recordDirty ? ` ${t('recordDirty')}` : ''}`
+    : null;
+  const recordState: RecordState = conformance?.status ?? 'missing';
+  const shortDate = measured
+    ? new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }).format(new Date(measured.at))
+    : '';
+  /* One phrase on the header: a live agent turn first, then the last record's result, then its absence. */
+  const statusPhrase = agentActivity
     ? t(`agentActivity.${agentActivity.state}`)
-    : record && measured
-      ? t('observationRecorded')
-      : t('sourceCheckRequired');
-  const observationBody = agentActivity
-    ? agentActivity.toolName ?? agentActivity.summary ?? t('agentActivity.waiting')
-    : record && measured
-      ? `${
-          measured.source.kind === 'git'
-            ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
-            : t('recordCheckedFolder', { date: recordDate })
-        }${recordDirty ? ` ${t('recordDirty')}` : ''}`
-      : t('sourceCheckNext');
-  const observationNote = agentActivity
-    ? t('agentActivity.volatile')
-    : record && measured
-      ? t('recordCannotConfirm')
-      : undefined;
-  const deltaTitle =
-    conformance && recordCounts
-      ? `${t(`recordStatus.${conformance.status}`)} · ${recordCounts}`
-      : t('deltaUnknown');
-  const deltaStatus = conformance?.status ?? 'missing';
-  const deltaCompactTitle =
-    deltaStatus === 'missing' ? t('recordStatus.unknown') : t(`recordStatus.${deltaStatus}`);
+    : conformance === null
+      ? t('statusNotScanned')
+      : conformance.status === 'conforms'
+        ? t('statusClean', { date: shortDate })
+        : conformance.status === 'violated'
+          ? t('statusViolated', { count: conformance.violationCount, date: shortDate })
+          : t('statusUnknownResult', { date: shortDate });
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
   /* An untranslated free-text axis gets no explanation: inventing one would infer from a name (`docs/DECISIONS.md`). */
@@ -536,7 +497,6 @@ export function ArchitectureWorkbench({
     setTaskMenuOpen(false);
     if (agentRoute === 'agent') {
       setInspector(null);
-      setEvidenceOpen(false);
       writeArchitectureAddress(selectedRole);
       onAgentRequest?.({ kind, prompt: promptFor(kind), profileSlug: selected.slug, roleId: selectedRole });
       return;
@@ -555,20 +515,6 @@ export function ArchitectureWorkbench({
     ) : (
       <Bot size={ICON_SIZE.sm} aria-hidden />
     );
-  const observationEmptyAction = (
-    <Button
-      variant="primary"
-      size="md"
-      className="atlas-touch-floor h-auto min-h-10 w-full whitespace-normal px-3 py-2 text-balance"
-      disabled={agentRoute === 'checking' || copyState === 'pending'}
-      data-testid="architecture-observation-empty-action"
-      onClick={runRequestedTask}
-    >
-      {agentActionIcon}
-      <span>{emptyActionText}</span>
-    </Button>
-  );
-
   return (
     <main inert={contextDockOpen && reviewUsesSheet} className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
       <div
@@ -577,9 +523,7 @@ export function ArchitectureWorkbench({
           /* One non-scrolling row at workbench width: the canvas owns the height and docks open beside it. */
           'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] xl:grid-rows-1 xl:overflow-hidden',
           contextDockOpen ? 'grid-rows-1 overflow-hidden' : 'lg:grid-cols-[220px_minmax(0,1fr)]',
-          contextDockOpen ? 'xl:grid-cols-1' : evidenceOpen
-            ? XL_EVIDENCE_COLUMNS
-            : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
+          contextDockOpen ? 'xl:grid-cols-1' : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
         )}
       >
         {/* The canvas takes the full width with the columns under it; inside a column a seven-role graph was cut. */}
@@ -589,7 +533,7 @@ export function ArchitectureWorkbench({
             'min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3',
             !embedded
               ? 'md:px-8'
-              : inspectorOpen || evidenceOpen
+              : inspectorOpen
                 ? cn(HARNESS_GUTTER_LEFT, 'pr-5 md:pr-10')
                 : HARNESS_GUTTER_X,
           )}
@@ -616,55 +560,62 @@ export function ArchitectureWorkbench({
               </div>
             )}
             {profileNotices ? <div className={embedded ? 'mb-3' : 'mt-3'}>{profileNotices}</div> : null}
-            {!embedded && onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
-          <div className={cn('mb-3 flex min-w-0 flex-wrap items-center gap-2', !railCompact && 'xl:flex-nowrap')}>
+          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-x-5 gap-y-2">
               {embedded ? (
-                /* The profile's name and the door to its history are one group, the name a label, not a control. */
-                <div className="flex min-w-0 items-center gap-2">
-                  <h2 className="max-w-[16rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                    {selected.title}
-                  </h2>
-                  {/* The same `Button` md as every other control in this row. */}
-                  {onOpenReview ? (
-                    <Button
-                      variant="outline"
-                      size="md"
-                      className="atlas-touch-floor shrink-0"
+                <h2 className="min-w-0 max-w-[20rem] truncate text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                  {selected.title}
+                </h2>
+              ) : null}
+              {/* The result is the door to its history: the issues and records it summarises. */}
+              {recordsLoaded ? (
+                onOpenReview ? (
+                  <Tooltip content={tReview('history')} side="bottom">
+                    <button
+                      type="button"
                       data-testid="architecture-review-open"
+                      data-architecture-status={recordState}
                       onClick={() => {
                         setInspector(null);
-                        setEvidenceOpen(false);
                         onOpenReview(selected.slug, selectedRole);
                       }}
+                      className="-mx-2 inline-flex h-8 min-w-0 items-center gap-2 rounded-chip px-2 text-body text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)]"
                     >
-                      {tReview('history')}
-                    </Button>
-                  ) : null}
-                </div>
+                      <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])} />
+                      <span className="truncate" data-testid="architecture-status">{statusPhrase}</span>
+                    </button>
+                  </Tooltip>
+                ) : (
+                  <p
+                    className="m-0 flex min-w-0 items-center gap-2 text-body text-[color:var(--color-text-tertiary)]"
+                    data-architecture-status={recordState}
+                  >
+                    <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])} />
+                    <span className="truncate" data-testid="architecture-status">{statusPhrase}</span>
+                  </p>
+                )
               ) : null}
-              <ArchitectureEvidenceRail
-                ariaLabel={evidenceOpen ? t('evidenceClose') : t('evidenceOpen')}
-                buttonRef={evidenceTriggerRef}
-                expanded={evidenceOpen}
-                onToggle={() => {
-                  const next = !evidenceOpen;
-                  if (!next) {
-                    closeEvidence();
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+              <Button
+                variant="ghost"
+                size="md"
+                className="atlas-touch-floor shrink-0 text-[color:var(--color-text-secondary)] max-md:w-10 max-md:px-0"
+                onClick={(event) => {
+                  if (!window.matchMedia('(min-width: 1280px)').matches) {
+                    rulesSectionRef.current?.scrollIntoView({ block: 'start' });
+                    rulesSectionRef.current?.focus({ preventScroll: true });
                     return;
                   }
-                  revealEvidence.current = true;
-                  setEvidenceOpen(true);
-                  setInspector(null);
+                  if (inspector === 'rules') closeInspector();
+                  else openInspector('rules', event.currentTarget);
                 }}
-                contractTitle={t('contractReviewed')}
-                observationTitle={observationTitle}
-                observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
-                deltaCompactTitle={deltaCompactTitle}
-                deltaStatus={deltaStatus}
-                compact={railCompact}
-              />
-              <div className="ml-auto flex shrink-0 items-center gap-2">
+                aria-expanded={inspector === 'rules'}
+                aria-controls="architecture-blueprint"
+                data-testid="architecture-inspector-toggle"
+              >
+                <PanelRight size={ICON_SIZE.sm} aria-hidden />
+                <span className="max-md:sr-only">{t('inspectorTitle')}</span>
+              </Button>
               <div
                 ref={taskMenuRef}
                 className="relative flex shrink-0 items-stretch"
@@ -686,9 +637,8 @@ export function ArchitectureWorkbench({
                   event.preventDefault();
                 }}
               >
-                {/* Primary once a receipt exists; until then the empty column carries the task. */}
                 <Button
-                  variant={record === null && emptyActionSeated !== false ? 'outline' : 'primary'}
+                  variant="primary"
                   size="md"
                   className="atlas-touch-floor rounded-r-none"
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
@@ -790,26 +740,6 @@ export function ArchitectureWorkbench({
                     ? t('copyHandoffError')
                   : ''}
               </span>
-              <Button
-                variant="outline"
-                size="md"
-                className={cn('atlas-touch-floor shrink-0 max-xl:w-10 max-xl:px-0', railCompact && 'w-10 px-0')}
-                onClick={(event) => {
-                  if (!window.matchMedia('(min-width: 1280px)').matches) {
-                    rulesSectionRef.current?.scrollIntoView({ block: 'start' });
-                    rulesSectionRef.current?.focus({ preventScroll: true });
-                    return;
-                  }
-                  if (inspector === 'rules') closeInspector();
-                  else openInspector('rules', event.currentTarget);
-                }}
-                aria-expanded={inspector === 'rules'}
-                aria-controls="architecture-blueprint"
-                data-testid="architecture-inspector-toggle"
-              >
-                <PanelRight size={ICON_SIZE.sm} aria-hidden />
-                <span className={cn('max-xl:sr-only', railCompact && 'sr-only')}>{t('inspectorTitle')}</span>
-              </Button>
               </div>
           </div>
           <div ref={flowHostRef} className="relative flex min-h-0 flex-1">
@@ -818,49 +748,8 @@ export function ArchitectureWorkbench({
                 modules={selectedModules}
                 concepts={conceptsByProfile[selected.slug] ?? {}}
                 roleLabel={roleLabel}
-                /* Undefined without a record; under lower-only these are the only strokes, so losing the prop loses the drawing. */
                 roleTraffic={roleTraffic}
                 violatedPairs={violatedPairs}
-                roleSummary={(id) => roleSummaryOf.get(id) ?? null}
-                edgeSentence={(edge) =>
-                  `${edge.violated ? '⊘ ' : ''}${
-                    edge.kind === 'permitted'
-                      ? t('permittedEdge', { from: roleLabel(edge.from), to: roleLabel(edge.to) })
-                      : t('trafficEdge', {
-                          from: roleLabel(edge.from),
-                          to: roleLabel(edge.to),
-                          count: edge.count ?? 0,
-                        })
-                  }`
-                }
-                /* Without a receipt a box shows no ledger, never zeros: an unmeasured role must not read as clean. */
-                record={record}
-                ledgerStatusLabel={(ledger) =>
-                  ledger.state === 'no-source'
-                    ? t('roleLedgerNoSource')
-                    : ledger.state === 'clean'
-                      ? t('roleLedgerClean', { count: ledger.outgoing })
-                      : ledger.sampleLimited
-                        ? t('roleLedgerViolatedAtLeast', { count: ledger.violated })
-                        : t('roleLedgerViolated', {
-                            count: ledger.violated,
-                            total: ledger.outgoing,
-                          })
-                }
-                ledgerImportsLabel={(count) => t('roleLedgerImports', { count })}
-                deltaUnknownLabel={t('deltaUnknown')}
-                contractTrackLabel={t('contractTrackLabel')}
-                observationTrackLabel={t('observationTrackLabel')}
-                observationStamp={measured ? t('observationStamp', { date: recordDate }) : null}
-                deltaTrackLabel={t('deltaLabel')}
-                deltaColumnHint={t('deltaColumnHint')}
-                observationMissingLabel={t('observationMissingShort')}
-                observationEmptyTitle={t('observationEmptyTitle')}
-                observationEmptyBody={t('observationEmptyBody')}
-                observationKnown={recordsLoaded}
-                observationEmptyAction={observationEmptyAction}
-                onObservationEmptyActionSeated={setEmptyActionSeated}
-                lowerOnlyRuleLabel={t('dependencyLowerOnly')}
                 selected={selectedRole}
                 roleInspectorOpen={inspector === 'role'}
                 onSelect={(id, trigger) => {
@@ -874,76 +763,9 @@ export function ArchitectureWorkbench({
                   else openInspector('role', trigger);
                   writeArchitectureAddress(next);
                 }}
-                reachLabel={(role, targets) => t('reachAria', { role, targets })}
-                sinkLabel={t('reachNone')}
-                moduleCountLabel={(count) => t('moduleCount', { count })}
-                conceptCountLabel={(count) => t('conceptCount', { count })}
-                hiddenRightLabel={(count) => t('hiddenRight', { count })}
-                hiddenLeftLabel={(count) => t('hiddenLeft', { count })}
-                hiddenAboveLabel={(count) => t('hiddenAbove', { count })}
-                hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
               />
           </div>
         </div>
-
-        <Surface
-          ref={attachEvidencePanel}
-          open={evidenceOpen}
-          as="aside"
-          motion="overlay"
-          origin="right center"
-          id="architecture-evidence-dock"
-          aria-label={t('evidenceOverlayTitle')}
-          data-testid="architecture-evidence-dock"
-          data-architecture-presentation="dock"
-          className="min-w-0 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] lg:col-span-2 xl:col-span-1 xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:border-b-0 xl:border-l"
-        >
-          <div className={cn('flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] py-3', stackedGutter, 'xl:px-4')}>
-            <div className="min-w-0">
-              <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                {t('evidenceOverlayTitle')}
-              </p>
-              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-caption text-[color:var(--color-text-tertiary)]">
-                <span>{t('contractLabel')}</span>
-                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                <span>{t('observationLabel')}</span>
-                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
-                <span>{t('deltaLabel')}</span>
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1">
-              <span className="text-caption text-[color:var(--color-text-quaternary)]">
-                {t('inspectorEscHint')}
-              </span>
-              <CloseButton
-                onClick={closeEvidence}
-                label={t('evidenceClose')}
-                data-testid="architecture-evidence-close"
-              />
-            </div>
-          </div>
-          <div className={cn('min-w-0 py-3 xl:flex-1', stackedGutter, 'xl:p-4')}>
-            <ArchitectureEvidencePlane
-              ariaLabel={t('evidencePlaneAria')}
-              contractLabel={t('contractLabel')}
-              contractTitle={t('contractReviewed')}
-              contractBody={t('contractBody', {
-                pattern: selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · '),
-                roles: selected.roles.length,
-                evidence: selected.evidence.length,
-              })}
-              observationLabel={t('observationLabel')}
-              observationTitle={observationTitle}
-              observationBody={observationBody}
-              observationNote={observationNote}
-              observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
-              deltaLabel={t('deltaLabel')}
-              deltaTitle={deltaTitle}
-              deltaBody={conformance ? t('deltaMeasuredBody') : t('deltaUnknownBody')}
-              deltaStatus={deltaStatus}
-            />
-          </div>
-        </Surface>
 
         {/* Below `xl` two stacked sections via `display: contents`; at `xl` a column mounted only when asked for. */}
         <div
@@ -1127,6 +949,48 @@ export function ArchitectureWorkbench({
               </p>
             ) : null}
 
+            {/* The record behind the header's status phrase: its result, counts and what it was measured against. */}
+            <div
+              className="mt-4 border-t border-[color:var(--color-divider)] pt-3"
+              data-testid="architecture-source-check"
+            >
+              <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                {t('lastCheck')}
+              </p>
+              {conformance && recordCounts && recordStamp ? (
+                <>
+                  <p
+                    className="mt-1.5 flex items-start gap-2 break-keep text-body text-[color:var(--color-text-secondary)]"
+                    data-testid="architecture-record-summary"
+                  >
+                    <span
+                      aria-hidden
+                      data-testid="architecture-record-marker"
+                      className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', STATUS_DOT_CLASS[recordState])}
+                    />
+                    <span>{`${t(`recordStatus.${conformance.status}`)} · ${recordCounts}`}</span>
+                  </p>
+                  <p
+                    className="mt-1 break-keep text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-record-stamp"
+                  >
+                    {recordStamp}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1.5 text-body text-[color:var(--color-text-secondary)]">
+                    {t('sourceCheckRequired')}
+                  </p>
+                  <p
+                    className="mt-1 break-keep text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-source-check-next"
+                  >
+                    {t('sourceCheckNext')}
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </section>
           {rulesGraph === null ? null : (

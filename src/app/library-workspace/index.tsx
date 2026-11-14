@@ -5,11 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentProps, type ComponentType } from 'react';
 
-import { LibraryConstellations, LibraryPage, LibraryRounds, useLibraryRounds } from '@/views/library';
+import { LibraryConstellations, LibraryPage } from '@/views/library';
 import type { DocsVaultPage } from '@/views/docs-vault';
 import { useLocalVault } from '@/entities/vault-session';
 import { selectWikiPages } from '@/entities/docs-vault';
 import { useRouter } from '@/i18n/navigation';
+import { DESTINATION_HREF, withQuery } from '@/shared/config/destinations';
 import { useLibraryIndexSegment, writeLibraryIndexSegment } from '@/shared/lib/preferences/appearance-preferences';
 import { selectOpenVaultHandle } from '@/shared/lib/vault-folder/select-open-vault-handle';
 import { PageHeaderBar, RouteLoadingFallback, TabBar } from '@/shared/ui';
@@ -55,12 +56,14 @@ export function LibraryWorkspace() {
   const wikiCount = useMemo(() => selectWikiPages(vault.manifest?.docs ?? []).length, [vault.manifest?.docs]);
   const preferredSegment = useLibraryIndexSegment();
   const requested = params.get('tab');
-  const rounds = useLibraryRounds();
-  const roundsOn = rounds ? rounds.rounds.filter((round) => round.kind !== 'ontology' && round.enabled).length : 0;
-  const tab: LibraryTab = requested === 'collections' ? 'ontology' : requested === 'ontology' || requested === 'rounds'
-    ? requested
+  const tab: LibraryTab = requested === 'collections' || requested === 'ontology' ? 'ontology'
     : requested === 'sources' || requested === 'wiki' ? requested : preferredSegment;
   const ontologyView: OntologyView = requested === 'collections' || params.get('ontologyView') === 'sets' ? 'sets' : 'documents';
+  useEffect(() => {
+    if (requested !== 'rounds') return;
+    const round = params.get('round');
+    router.replace(withQuery(DESTINATION_HREF.automations, round ? { kind: 'documents', round } : { kind: 'documents' }));
+  }, [params, requested, router]);
   useEffect(() => {
     if (requested !== 'collections') return;
     const query = new URLSearchParams(params.toString());
@@ -189,13 +192,6 @@ export function LibraryWorkspace() {
                     label: t('workspace.ontology'),
                     testId: 'library-workspace-ontology',
                   },
-                  {
-                    key: 'rounds',
-                    label: t('workspace.rounds'),
-                    count: rounds && rounds.storeStatus !== 'no-vault' && roundsOn > 0 ? format.number(roundsOn) : undefined,
-                    countTitle: t('workspace.roundsCount'),
-                    testId: 'library-workspace-rounds',
-                  },
                 ]}
               />
               {tab === 'ontology' && !tabsNeedTheWholeHeader ? (
@@ -233,8 +229,6 @@ export function LibraryWorkspace() {
                 )}
             </div>
           </div>
-        ) : tab === 'rounds' ? (
-          <LibraryRounds />
         ) : (
           <LibraryPage segment={tab} onSegmentChange={selectTab} toolsHost={toolsHost} />
         )}

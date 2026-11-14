@@ -137,37 +137,6 @@ test.describe('Harness hints stay whole', () => {
   });
 });
 
-test.describe('Surfaces below xl', () => {
-  test('below xl the evidence rail brings its panel on screen', async ({ page }) => {
-    await installHarnessRuntime(page);
-    await mountHarnessVault(page);
-    for (const [width, height] of [[1040, 720]] as const) {
-      await page.setViewportSize({ width, height });
-      await page.goto('/ko/architecture/?view=architecture&guides=off');
-      const rail = page.getByTestId('architecture-evidence-rail');
-      await expect(rail).toBeVisible({ timeout: 30_000 });
-      await rail.click();
-      await expect(rail).toHaveAttribute('aria-expanded', 'true');
-      const close = page.getByTestId('architecture-evidence-close');
-      /* Before: the panel opened below the fold and nothing moved (measured at 900×900). */
-      await expect
-        .poll(async () => {
-          const rect = await close.boundingBox();
-          return rect ? rect.y >= 0 && rect.y + rect.height <= height : false;
-        }, { message: `${width}×${height}: the evidence close stayed off-screen` })
-        .toBe(true);
-      await expect
-        .poll(() => close.evaluate((node) => {
-          const r = node.getBoundingClientRect();
-          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-          return !!hit && node.contains(hit);
-        }))
-        .toBe(true);
-    }
-  });
-});
-
-
 test('Analysis evidence uses visible named selection without the retired handoff footer', async ({ page }) => {
   await page.goto('/ko/ontology/insights/?tab=do-next&guides=off');
   const choice = page.getByTestId('analysis-claim').nth(1);

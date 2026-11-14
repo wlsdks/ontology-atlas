@@ -67,6 +67,7 @@
   "resume": "Resume",
   "removeNamed": "Remove {name}",
   "historyTitle": "Run history",
+  "latestTitle": "Last result",
   "noRuns": "No pass has run yet.",
   "noSummary": "The pass finished without a stored summary.",
   "failedNoResult": "The agent turn did not finish, so this run left no result.",
@@ -167,7 +168,6 @@
       "name": "Name",
       "cadence": "Cadence",
       "last": "Last result"
-    },
-    "openRounds": "Open Library check history"
+    }
   }
 }

@@ -67,6 +67,7 @@
   "resume": "恢复",
   "removeNamed": "移除 {name}",
   "historyTitle": "运行历史",
+  "latestTitle": "上次结果",
   "noRuns": "还没有运行过。",
   "noSummary": "本轮已结束，但没有保存摘要。",
   "failedNoResult": "智能体这一轮没有完成，所以本次运行没有结果。",
@@ -167,7 +168,6 @@
       "name": "名称",
       "cadence": "频率",
       "last": "上次结果"
-    },
-    "openRounds": "打开资料库检查历史"
+    }
   }
 }
