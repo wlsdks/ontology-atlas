@@ -62,9 +62,9 @@ test('reads PR Markdown as a whole document without fetching embedded content an
   await expect(original.getByRole('link', { name: 'Contact author', exact: true })).toHaveCount(0);
   expect(external).toEqual([]);
   expect(await page.evaluate(() => '__untrustedOriginal' in window)).toBe(false);
-  await original.getByRole('button', { name: 'View source text', exact: true }).click();
+  await original.getByRole('button', { name: 'View raw text', exact: true }).click();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${body}`);
-  await original.getByRole('button', { name: 'View formatted text', exact: true }).click();
+  await original.getByRole('button', { name: 'View formatted', exact: true }).click();
   await expect(original.getByRole('heading', { name: 'Changes', exact: true })).toBeVisible();
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
 });
@@ -73,7 +73,7 @@ test('opens a late cited passage in view and returns to the exact summary claim'
   await openSources(page);
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: 'Create summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   const citations = page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true });
   const reason = citations.nth(1);
   await reason.click();
@@ -81,7 +81,7 @@ test('opens a late cited passage in view and returns to the exact summary claim'
   const selected = original.locator('[data-source-passage]').filter({ hasText: 'Why: panels hid navigation.' });
   await expect(selected).toContainText('Why: panels hid navigation.');
   await expect(selected).toBeInViewport();
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).last().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).last().click();
   await expect(reason).toBeFocused();
 });
 
@@ -91,13 +91,13 @@ test('keeps a cited passage inside a multi-paragraph code fence attached to the 
   await openSources(page, text);
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: 'Create summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1).click();
   const original = page.getByTestId('briefing-original');
   const code = original.locator('pre[data-source-selected="true"]');
   await expect(code).toHaveText('Why: panels hid navigation.\n\n한글 + emoji 🧭 stay in the same fence.\n');
   await expect(code).toBeInViewport();
-  await original.getByRole('button', { name: 'View source text', exact: true }).click();
+  await original.getByRole('button', { name: 'View raw text', exact: true }).click();
   expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${title}\n\n${text}`);
   await page.getByTestId('app-nav-rail').getByRole('link', { name: 'Map', exact: true }).click();
   await openChangesFromRail(page);
@@ -111,7 +111,7 @@ test('falls back to exact text for a citation into an unpainted Markdown definit
   await openSources(page, text);
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: 'Create summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1).click();
   const original = page.getByTestId('briefing-original');
   const selected = original.locator('[data-source-selected="true"]');
@@ -125,11 +125,11 @@ test('keeps an explicit formatted citation view through route and period returns
   await openSources(page, text);
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: 'Create summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1).click();
   const original = page.getByTestId('briefing-original');
   await expect(original.getByTestId('briefing-source-text')).toBeVisible();
-  await original.getByRole('button', { name: 'View formatted text', exact: true }).click();
+  await original.getByRole('button', { name: 'View formatted', exact: true }).click();
   await expect(original.getByRole('heading', { name: 'Changes', exact: true })).toBeVisible();
   await original.evaluate(element => { element.closest('main')!.scrollTop = 800; });
   await page.getByRole('button', { name: 'Next period', exact: true }).scrollIntoViewIfNeeded();
@@ -143,7 +143,7 @@ test('keeps an explicit formatted citation view through route and period returns
   await openChangesFromRail(page);
   await expect(original.getByTestId('briefing-source-reading')).toBeVisible();
   await expect.poll(() => original.evaluate(element => element.closest('main')!.scrollTop)).toBe(position);
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   const citation = page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1);
   await expect(citation).toBeFocused();
   await citation.click();
@@ -158,7 +158,7 @@ test('shows exact text when a cited passage begins far inside a long code block'
   await openSources(page, text);
   await page.getByTestId('briefing-summary-mode').click();
   await page.getByRole('button', { name: 'Create summary', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await page.getByTestId('briefing-theme').getByRole('button', { name: `Read source ${title}`, exact: true }).nth(1).click();
   const original = page.getByTestId('briefing-original');
   await expect(original.getByTestId('briefing-source-text')).toBeVisible();
@@ -178,7 +178,7 @@ for (const descriptionTitle of ['[reason]: https://example.invalid/from-title', 
     await expect(original.getByTestId('briefing-source-reading').getByRole('link')).toHaveCount(0);
     await expect(original.getByTestId('briefing-source-reading').locator('pre')).toHaveCount(0);
     await expect(original.getByTestId('briefing-source-reading')).toContainText('Body uses [rationale][reason].');
-    await original.getByRole('button', { name: 'View source text', exact: true }).click();
+    await original.getByRole('button', { name: 'View raw text', exact: true }).click();
     expect(await original.getByTestId('briefing-source-text').textContent()).toBe(`${descriptionTitle}\n\n${text}`);
   });
 }

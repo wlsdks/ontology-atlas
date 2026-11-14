@@ -11,9 +11,9 @@ test('keeps coverage beside the combined briefing return and restores focus afte
   await mountDesktopVault(page);
   await gotoOriginals(page, '/en/changes/?guides=off');
   await page.getByTestId('briefing-mixed').click();
-  const mode = await page.getByRole('button', { name: 'Back to pull requests' }).boundingBox();
+  const mode = await page.getByRole('button', { name: 'Back to PRs' }).boundingBox();
   const coverage = await page.getByTestId('briefing-coverage').boundingBox();
-  const heading = await page.getByRole('heading', { name: 'Earlier combined briefing' }).boundingBox();
+  const heading = await page.getByRole('heading', { name: 'Earlier commit and PR summary' }).boundingBox();
   expect(mode && coverage && heading).toBeTruthy();
   expect(Math.abs((mode!.y + mode!.height / 2) - (coverage!.y + coverage!.height / 2))).toBeLessThan(2);
   expect(heading!.y - (mode!.y + mode!.height)).toBeLessThan(80);
@@ -37,14 +37,14 @@ test('keeps grouped evidence and file comparison reachable across responsive ban
     await expect(page.getByTestId('briefing-ready')).toBeVisible();
     await page.setViewportSize({ width, height: 900 });
     await setBriefingMode(page, 'long');
-    await page.getByRole('button', { name: 'Read again', exact: true }).click();
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
     await expect(page.getByTestId('briefing-area-mcp')).toBeVisible();
     await page.addStyleTag({ content: FREEZE_CSS });
     const overview = await auditPage(page, { width, rampNames, scope: 'main' });
     measurements.push({ width, state: 'overview', ...overview });
     expect(shouldFail([overview]), JSON.stringify(overview.findings)).toBe(false);
     await page.getByTestId('briefing-area-mcp').click();
-    await page.getByRole('button', { name: 'Read changed lines: mcp/src/tool-0.ts', exact: true }).click();
+    await page.getByRole('button', { name: 'Show diff: mcp/src/tool-0.ts', exact: true }).click();
     await expect(page.getByTestId('briefing-patch')).toBeVisible();
     await page.evaluate(() => {
       document.querySelector('[data-testid="briefing-patch"]')?.scrollIntoView({ block: 'start' });

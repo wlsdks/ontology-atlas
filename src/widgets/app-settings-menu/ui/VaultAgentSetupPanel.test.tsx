@@ -187,20 +187,20 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByTestId('agent-setup-step-2')).toBeInTheDocument();
     expect(screen.getByTestId('agent-setup-step-3')).toBeInTheDocument();
     expect(
-      screen.getByLabelText('지금 확인된 것'),
+      screen.getByLabelText('현재 확인 상태'),
     ).toBeInTheDocument();
     expect(screen.getByText('폴더')).toBeInTheDocument();
     expect(screen.getByText('이 폴더에서 문서 1개를 읽었어요')).toBeInTheDocument();
     expect(screen.getByText('상태')).toBeInTheDocument();
     expect(screen.getByText('아직 검사 결과가 없어요')).toBeInTheDocument();
-    expect(screen.getByText('여는 자리')).toBeInTheDocument();
+    expect(screen.getByText('여는 폴더')).toBeInTheDocument();
     expect(
       screen.getByText('다른 코드 폴더에서 열기 전에 연결 설정을 복사하세요'),
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(screen.getByText('자체 점검')).toBeInTheDocument();
     expect(screen.getByText('고치기 전에 아래 명령을 복사해 실행하세요')).toBeInTheDocument();
-    expect(screen.getByLabelText('첫 연결에서 확인되는 것')).toBeInTheDocument();
+    expect(screen.getByLabelText('첫 연결 확인 항목')).toBeInTheDocument();
     // 「Connection file status」 appears in two places — the fold's group title and the first
     // connection evidence's item name. Both point at the same thing, so only
     // existence is checked.
@@ -216,7 +216,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
-      screen.getByText('agent-brief --verify-fallbacks --json --exit-zero이 고치기 전에 「되나」와 「빠른가」를 알려줘요.'),
+      screen.getByText('agent-brief --verify-fallbacks --json --exit-zero이 수정하기 전에 「동작하는지」와 「빠른지」를 알려줘요.'),
     ).toBeInTheDocument();
     expect(screen.getByText('폴더 요약')).toBeInTheDocument();
     expect(
@@ -227,7 +227,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('터미널만')).toBeInTheDocument();
     expect(screen.getByText('도구에 연결')).toBeInTheDocument();
-    expect(screen.getByText('그래프 묶음')).toBeInTheDocument();
+    expect(screen.getByText('그래프 팩')).toBeInTheDocument();
     expect(screen.getByText('먼저 확인')).toBeInTheDocument();
     expect(
       screen.getByText('Claude Code·Codex·Cursor가 서버의 현재 도구를 직접 부르고, 고칠 때 안전장치를 받아요.'),
@@ -236,7 +236,7 @@ describe('VaultAgentSetupPanel', () => {
       screen.getByLabelText('서버 연결 확인 명령 미리보기'),
     ).toHaveTextContent('node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000');
     expect(
-      screen.getByText('설정이 애매하거나 다른 코드 폴더에서 열었을 때, 고치기 전에 「되나」와 「빠른가」를 먼저 봐요.'),
+      screen.getByText('설정이 애매하거나 다른 코드 폴더에서 열었을 때, 수정하기 전에 「동작하는지」와 「빠른지」를 먼저 봐요.'),
     ).toBeInTheDocument();
     expect(
       screen.getByLabelText('확인 명령 결과 읽는 법'),
@@ -249,27 +249,27 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('코드를 고친 뒤')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '도메인·역량·요소·관계가 새로 생기거나 이름이 바뀌었으면 끝내기 전에 이 폴더를 맞춰 주세요. 오타·주석·서식·설정·픽스처만 바뀐 변경은 건너뛰어요.',
+        '도메인·역량·요소·관계가 새로 생기거나 이름이 바뀌었으면 끝내기 전에 이 폴더를 동기화하세요. 오타·주석·서식·설정·픽스처만 바뀐 변경은 건너뛰어요.',
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '맞추기 절차 복사' }),
+      screen.getByRole('button', { name: '동기화 절차 복사' }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: '상태 확인 명령 복사' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('어느 폴더에서 여느냐')).toBeInTheDocument();
+    expect(screen.getByLabelText('여는 폴더')).toBeInTheDocument();
     expect(screen.getByText('이 폴더에서')).toBeInTheDocument();
     expect(
       screen.getByText('이 폴더 자체를 열면 확인·요약 명령이 현재 폴더(.)를 그대로 써요.'),
     ).toBeInTheDocument();
     expect(screen.getByText('다른 코드 폴더에서')).toBeInTheDocument();
     expect(
-      screen.getByText('제품 코드 폴더에서 열면 상태 확인·수리·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 해요.'),
+      screen.getByText('제품 코드 폴더에서 열면 상태 확인·고치기·서버 확인 명령 모두 이 폴더의 절대경로를 적어야 해요.'),
     ).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.mcp.json')).toBeInTheDocument();
     expect(within(screen.getByTestId('agent-setup-inspection')).getByText('.codex/config.toml')).toBeInTheDocument();
-    expect(screen.getByText(/\.mcp\.json\.example은 다른 폴더에서 쓸 본보기/)).toBeInTheDocument();
+    expect(screen.getByText(/\.mcp\.json\.example은 다른 폴더에서 쓸 템플릿/)).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole('button', { name: '빠진 연결 파일 만들기' }),
@@ -337,7 +337,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(within(connections).queryByText('.mcp.json.example')).not.toBeInTheDocument();
     expect(within(connections).getAllByText('파일 준비됨')).toHaveLength(2);
     expect(
-      screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 본보기라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 다시 켠 뒤 각 도구에서 실제 연결을 확인하세요.'),
+      screen.getByText('.mcp.json.example은 다른 폴더에서 쓸 템플릿이라 연결 파일 수에 넣지 않아요. 여기는 실행 방식과 이 폴더 경로까지만 확인하므로, 에이전트를 다시 시작한 뒤 각 도구에서 실제 연결을 확인하세요.'),
     ).toBeInTheDocument();
 
     // The per-tool «how do I check» is the check section's content, inside the dialog.
@@ -358,15 +358,15 @@ describe('VaultAgentSetupPanel', () => {
       { validationSummary: { errorCount: 0, warningCount: 2 } },
     );
 
-    expect(screen.getByText(/경고 2개: 훑어보면/)).toBeInTheDocument();
+    expect(screen.getByText(/경고 2개: 확인해 보세요/)).toBeInTheDocument();
     expect(
-      screen.getByText('이 폴더에서 다시 켜거나, 다른 코드 폴더에서는 본보기를 복사해 쓰세요'),
+      screen.getByText('이 폴더에서 다시 시작하거나, 다른 코드 폴더에서는 템플릿을 복사해 쓰세요'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('이 폴더의 연결 파일은 폴더 자신을 가리키도록 준비됐어요'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('이 폴더에서 다시 켜거나, 다른 코드 폴더에서는 본보기를 복사해 쓰세요'),
+      screen.getByText('이 폴더에서 다시 시작하거나, 다른 코드 폴더에서는 템플릿을 복사해 쓰세요'),
     ).toBeInTheDocument();
   });
 
@@ -428,7 +428,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(
       within(validationGate).getByText(
-        '오류가 있으면 커밋(되돌릴 지점 남기기)이 거절돼요. 읽기와 고치기는 그대로 되지만, 되돌릴 자리를 못 만들어요.',
+        '오류가 있으면 커밋이 거절돼요. 읽기와 수정은 그대로 돼요.',
       ),
     ).toBeInTheDocument();
   });
@@ -454,7 +454,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '이미 있는 파일은 덮어쓰지 않아요. 연결 설정이나 본보기를 복사해 점검 대상 파일을 직접 바꿔주세요.',
+        '이미 있는 파일은 덮어쓰지 않아요. 연결 설정이나 템플릿을 복사해 점검 대상 파일을 직접 바꿔주세요.',
       ),
     ).toBeInTheDocument();
     expect(
@@ -1135,7 +1135,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: '맞추기 절차 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '동기화 절차 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1160,7 +1160,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('node $ATLAS/cli/src/index.mjs validate [vault]'),
     );
     expect(
-      await screen.findByRole('button', { name: '맞추기 절차 복사됨' }),
+      await screen.findByRole('button', { name: '동기화 절차 복사됨' }),
     ).toBeInTheDocument();
   });
 

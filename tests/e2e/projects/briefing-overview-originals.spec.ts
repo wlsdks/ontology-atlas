@@ -19,7 +19,7 @@ test('opens a recorded original without starting a model or PR request and retur
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeVisible();
   await expect(original).toContainText('Why: keep the return action visible.');
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   await expect(row).toBeFocused();
   const calls = await page.evaluate(() => (window as unknown as { __briefingProbe: { calls: { command: string }[] } }).__briefingProbe.calls);
   expect(calls.filter(call => ['source_briefing_chat', 'git_briefing_pull_descriptions'].includes(call.command))).toEqual([]);
@@ -57,11 +57,11 @@ test('returns to a visible original when saved PRs arrive and preserves both loo
   await expect.poll(() => page.evaluate(() => typeof (window as unknown as { __releaseSavedPr?: () => void }).__releaseSavedPr)).toBe('function');
   await originalRow.click();
   await page.evaluate(() => (window as unknown as { __releaseSavedPr: () => void }).__releaseSavedPr());
-  await expect(page.getByText('Saved PRs · latest GitHub content unchecked')).toBeVisible();
-  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await expect(page.getByText('Saved PRs · not checked against GitHub')).toBeVisible();
+  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   await expect(originalRow).toBeVisible();
   await expect(originalRow).toBeFocused();
-  await expect(page.getByText('PR lookup incomplete', { exact: true })).toBeVisible();
+  await expect(page.getByText('PR lookup did not finish', { exact: true })).toBeVisible();
   await expect(page.getByText('This PR could not be tied to the selected history.', { exact: false })).toBeVisible();
 });
 
@@ -78,7 +78,7 @@ test('shows incomplete lookup and unlinked PR gaps together for a fresh lookup',
   await gotoOriginals(page, '/en/changes/?guides=off');
     await page.getByTestId('briefing-mixed').click();
   await page.getByRole('button', { name: 'Read GitHub PR descriptions', exact: true }).click();
-  await expect(page.getByText('PR lookup incomplete', { exact: true })).toBeVisible();
+  await expect(page.getByText('PR lookup did not finish', { exact: true })).toBeVisible();
   await expect(page.getByText('This PR could not be tied to the selected history.', { exact: false })).toBeVisible();
 });
 

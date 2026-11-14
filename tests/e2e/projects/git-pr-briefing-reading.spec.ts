@@ -6,7 +6,7 @@ import { calls, chooseModel, enter, prepare, readPrs } from './git-pr-briefing-h
 test('keeps reading modes exclusive and loads further originals into keyboard focus', async ({ page }) => {
   await enter(page);
   await setBriefingMode(page, 'source-pages');
-  await page.getByRole('button', { name: 'Read again', exact: true }).click();
+  await page.getByRole('button', { name: 'Refresh', exact: true }).click();
   const summary = page.getByTestId('briefing-summary-mode');
   await summary.focus(); await summary.press('ArrowRight');
   const sources = page.getByTestId('briefing-sources');
@@ -24,10 +24,10 @@ test('keeps reading modes exclusive and loads further originals into keyboard fo
   });
   await next.press('Enter');
   await expect(page.getByTestId('briefing-original')).toBeFocused();
-  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to source list', exact: true }).first().click();
+  await page.getByTestId('briefing-original').getByRole('button', { name: 'Back to commits and PRs', exact: true }).first().click();
   await expect(next).toBeFocused();
   await expect.poll(() => next.evaluate(element => ({ scroll: element.closest('main')!.scrollTop, top: element.getBoundingClientRect().top }))).toEqual(before);
-  await page.getByRole('button', { name: 'Back to pull requests' }).click();
+  await page.getByRole('button', { name: 'Back to PRs' }).click();
   await page.getByTestId('briefing-source-browser').click();
   await expect(sources).not.toBeVisible();
   await expect(page.getByTestId('briefing-ready')).toBeVisible();
@@ -47,7 +47,7 @@ test('returns from an original to its source-list entry before an explanation ex
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeFocused();
   await expect(page.getByTestId('briefing-theme')).toHaveCount(0);
-  const back = original.getByRole('button', { name: 'Back to source list', exact: true });
+  const back = original.getByRole('button', { name: 'Back to commits and PRs', exact: true });
   await expect(back).toHaveCount(2);
   await back.first().click();
   await expect(entry).toBeFocused();
@@ -67,10 +67,10 @@ test('offers explicit PR reading, previews sources and opens exact originals fro
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
   await prepare(page);
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(0);
-  await page.getByRole('dialog').getByRole('button', { name: 'Review text to send', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Preview what will be sent', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Keep map navigation readable', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('53 ms and 57 ms');
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   const theme = page.getByTestId('briefing-theme');
   await expect(theme).toContainText('53 ms and 57 ms against a 50 ms bar');
   await expect(page.locator('#git-briefing-title')).toBeFocused();
@@ -85,21 +85,21 @@ test('offers explicit PR reading, previews sources and opens exact originals fro
   const original = page.getByTestId('briefing-original');
   await expect(original).toBeFocused();
   await expect(original).toContainText('Checks: 131 author-reported tests passed.');
-  await original.getByRole('button', { name: 'Back to overview', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to summary', exact: true }).first().click();
   await expect(citation).toBeFocused();
   await citation.press('Enter');
   await expect(original).toBeVisible();
-  await original.getByRole('button', { name: 'Read code changes for the whole period', exact: true }).click();
+  await original.getByRole('button', { name: 'Show code changes for the whole period', exact: true }).click();
   await expect(page.getByTestId('briefing-source-browser')).toHaveAttribute('aria-checked', 'true');
   await page.getByTestId('briefing-group-capabilities/checkout').click();
-  await page.getByRole('button', { name: 'Read changed lines: src/features/checkout/service.ts', exact: true }).click();
+  await page.getByRole('button', { name: 'Show diff: src/features/checkout/service.ts', exact: true }).click();
   await expect(page.getByTestId('briefing-patch')).toContainText('+limit = 20');
 });
 
 test('keeps the original reader in focus when a waiting explanation finishes', async ({ page }) => {
   await enter(page); await prepare(page);
   await page.evaluate(() => { (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true; });
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
   await page.getByTestId('briefing-originals').click();
   const source = page.getByRole('button', { name: /Keep map navigation readable PR #2925/ });
@@ -115,7 +115,7 @@ test('keeps the original reader in focus when a waiting explanation finishes', a
   await expect(original).toBeFocused();
   await expect(original).toBeInViewport();
   expect(Math.abs(await original.evaluate(element => element.getBoundingClientRect().top) - readerTop)).toBeLessThanOrEqual(1);
-  await original.getByRole('button', { name: 'Back to source list', exact: true }).first().click();
+  await original.getByRole('button', { name: 'Back to commits and PRs', exact: true }).first().click();
   await expect(source).toBeFocused();
 });
 
@@ -126,7 +126,7 @@ test('keeps the original in place when an explanation finishes at doubled text s
     document.documentElement.style.fontSize = '200%';
     (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true;
   });
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
   await page.getByTestId('briefing-originals').click();
   await page.getByRole('button', { name: /Keep map navigation readable PR #2925/ }).click();
@@ -155,7 +155,7 @@ test('offers a visible return at the end of a long original and restores its cit
     };
   });
   await prepare(page);
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   for (const width of [1512, 390]) {
     await page.setViewportSize({ width, height: 900 });
     const citation = page.getByTestId('briefing-theme').getByRole('button', { name: 'Read source Keep map navigation readable', exact: true }).first();
@@ -165,7 +165,7 @@ test('offers a visible return at the end of a long original and restores its cit
     await expect(original).toContainText('Original inspection note 79:');
     await original.locator('[data-source-passage]').last().evaluate(element => element.scrollIntoView({ block: 'end' }));
     await page.mouse.wheel(0, 160);
-    const back = original.getByRole('button', { name: 'Back to overview', exact: true }).last();
+    const back = original.getByRole('button', { name: 'Back to summary', exact: true }).last();
     await expect(back).toBeInViewport();
     await back.click();
     await expect(original).toBeHidden();
@@ -177,15 +177,15 @@ test('offers a visible return at the end of a long original and restores its cit
 test('does not apply old-run citation badges to new originals with reused positional IDs', async ({ page }) => {
   await enter(page);
   await page.getByRole('button', { name: 'Summarize commit messages only', exact: true }).click();
-  await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+  await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
   await expect(page.getByTestId('briefing-theme')).toBeVisible();
   await setBriefingMode(page, 'fresh-period');
   await page.getByRole('button', { name: 'Previous period', exact: true }).click();
-  await expect(page.locator('#git-briefing-title')).toHaveText('Explanation from the previous run');
+  await expect(page.locator('#git-briefing-title')).toHaveText('Summary from the previous run');
   await page.getByTestId('briefing-originals').click();
   const fresh = page.getByRole('button', { name: /^New period work/ });
   await expect(fresh).toContainText('99999999');
-  await expect(fresh).not.toContainText('Cited in explanation');
+  await expect(fresh).not.toContainText('Cited in the summary');
   await fresh.click();
   await expect(page.getByTestId('briefing-original')).toContainText('A separately dated change.');
   expect(await calls(page, 'source_briefing_chat')).toHaveLength(1);
@@ -197,7 +197,7 @@ for (const [triggerId, dialogId] of [['briefing-coverage', 'briefing-coverage-di
     await page.evaluate(() => document.addEventListener('mousedown', event => {
       if ((event.target as Element).closest('button')) event.preventDefault();
     }));
-    await page.getByRole('button', { name: 'Read again', exact: true }).focus();
+    await page.getByRole('button', { name: 'Refresh', exact: true }).focus();
     const trigger = page.getByTestId(triggerId);
     await trigger.click();
     const dialog = page.getByTestId(dialogId);
@@ -217,7 +217,7 @@ for (const [triggerId, dialogId, closeName] of [
   test(`keeps ${dialogId} in focus when the explanation finishes`, async ({ page }) => {
     await enter(page); await prepare(page);
     await page.evaluate(() => { (window as unknown as { __briefingProbe: { hold: boolean } }).__briefingProbe.hold = true; });
-    await page.getByRole('button', { name: 'Create period explanation', exact: true }).click();
+    await page.getByRole('button', { name: 'Create period summary', exact: true }).click();
     await expect.poll(() => calls(page, 'source_briefing_chat').then(values => values.length)).toBe(1);
     const trigger = page.getByTestId(triggerId);
     await trigger.click();

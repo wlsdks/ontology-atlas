@@ -57,7 +57,7 @@ test('expands a group, opens a change where it is listed, then its original and 
   await expect(detail).toHaveCount(1);
   await expect(detail).toContainText(/files? changed/);
   await expect(page.getByTestId('change-digest')).toBeVisible();
-  await detail.getByRole('button', { name: `Read the original: ${title}`, exact: true }).click();
+  await detail.getByRole('button', { name: `Read commit: ${title}`, exact: true }).click();
   await expect(page.locator('[data-commit-reader]').getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByTestId('change-digest')).toBeHidden();
   await page.locator('[data-commit-reader]').getByRole('button', { name: 'Back to summary', exact: true }).click();

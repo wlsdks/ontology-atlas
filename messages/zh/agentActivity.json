@@ -13,7 +13,7 @@
     "reading": "智能体正在读取本体。",
     "success": "已验证的智能体工作已完成。"
   },
-  "quietUnknown": "安静",
+  "quietUnknown": "无活动",
   "recentWrite": "检测到更改 {age}",
   "recentWriteAgent": "{agent} · 检测到更改 {age}",
   "recentWriteShort": "检测到更改",
@@ -43,9 +43,9 @@
     "not-run": "未运行"
   },
   "summaryJoin": " · ",
-  "problemUnresolved": "{count} 个失效链接",
-  "problemCycles": "{count} 对互相指向的概念",
-  "problemCyclesAtLeast": "至少 {count} 对互相指向的概念",
+  "problemUnresolved": "{count} 个断开的关系",
+  "problemCycles": "{count} 个循环依赖",
+  "problemCyclesAtLeast": "至少 {count} 个循环依赖",
   "bridgeChildren": "已把 {count} 个子概念移到一个新的中间概念之下",
   "event": {
     "taskStart": "任务已开始",
@@ -64,8 +64,8 @@
     "results": "结果",
     "history": "历史"
   },
-  "tabTodoTitle": "此刻等你处理的事",
-  "tabResultsTitle": "已写入更改并结束的轮次",
+  "tabTodoTitle": "等待批准",
+  "tabResultsTitle": "更改了文件的已完成工作",
   "markAllRead": "全部标为已读",
   "markAllReadCount": "将全部 {count} 条标为已读",
   "unreadRow": "未读",
@@ -73,15 +73,15 @@
   "todoEmptyRepair": "看看文件夹里有没有需要修复的地方",
   "resultsEmpty": "还没有完成的工作。",
   "historyEmpty": "还没有任何记录。",
-  "askSentence": "{agent} 正在等待你的许可",
-  "askSentenceUnknown": "智能体正在等待你的许可",
+  "askSentence": "{agent} 正在请求权限",
+  "askSentenceUnknown": "智能体正在请求权限",
   "askDoor": "审阅",
   "askDoorAria": "打开对话以审阅等待中的请求",
   "problemSentence": "文件夹里有需要修复的地方",
   "problemDoor": "查看",
   "problemDoorAria": "打开地图上的待修复列表",
-  "resultAdded": "新写入 {count} 个概念",
-  "resultEdited": "修订了 {count} 个概念",
+  "resultAdded": "添加了 {count} 个概念",
+  "resultEdited": "编辑了 {count} 个概念",
   "resultRemoved": "删除了 {count} 个概念",
   "resultNothing": "已结束，未更改任何内容",
   "resultRepeat": "×{count}",
@@ -100,5 +100,5 @@
   "dayYesterday": "昨天",
   "bellTodoAria": "打开通知：{count} 项等你处理",
   "openRecord": "打开 {name}",
-  "runningTask": "仍在运行"
+  "runningTask": "运行中"
 }
