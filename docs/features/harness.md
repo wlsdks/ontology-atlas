@@ -53,7 +53,7 @@ guide file or directory found (path, file count, size, how many files differ fro
 twin, how many have no twin (`harness.pairFilesNoTwin`; the file's own row says `harness.driftOneSided`),
 and how many files the twin has that the folder lacks (`harness.pairFilesMissing`)), then one row per hook config, which says wired only when every script it names is
 on disk and says so when a command names no script file (`harness.hookUnresolved`). A row's status
-tags wrap below its name rather than truncate it. The detail on the right holds the selected
+tags wrap below its name rather than truncate it. Each row carries a folder or file icon. Only a content difference wears a tag, in the same blue that lines without a twin wear in the comparison; the two file counts are plain text. The detail on the right holds the selected
 row's facts, and each pane scrolls on its own, so the page itself does not scroll at 1512x900. A
 folder says it has the same content as its twin (`harness.pairMatchesTwin`) only when both file sets
 are equal and every pair matches; a folder that lacks files names them and the folder they are in.

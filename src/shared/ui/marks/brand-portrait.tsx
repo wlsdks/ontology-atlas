@@ -8,15 +8,15 @@ export function BrandPortrait(props: { expression: 'welcome'; labels: CompanionL
   return (
     <Image
       src={withBasePath(`/brand/mascot-${expression}.png`)}
-      width={32}
-      height={32}
+      width={128}
+      height={128}
       alt=""
       aria-hidden="true"
       draggable={false}
       unoptimized
       data-brand-portrait={expression}
-      data-brand-native-size="32"
-      className="atlas-inline-waiting-mark size-8 shrink-0"
+      data-brand-native-size="128"
+      className="atlas-inline-waiting-mark size-32 shrink-0"
       style={{ imageRendering: 'pixelated' }}
     />
   );

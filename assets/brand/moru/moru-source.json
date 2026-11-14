@@ -1001,7 +1001,7 @@
         1200
       ],
       "scene": false,
-      "airborne": true
+      "airborne": false
     },
     {
       "id": "chorus",

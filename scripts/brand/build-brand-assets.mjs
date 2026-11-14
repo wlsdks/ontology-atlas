@@ -50,7 +50,7 @@ export const MASCOT_PRESENTATION_MASTER = Object.freeze({
 
 const MASCOT_PORTRAITS = Object.freeze({
   welcome: Object.freeze({ path: 'assets/brand/mascot/mascot-welcome-32.png', width: 32, height: 32 }),
-  curious: Object.freeze({ path: 'assets/brand/mascot/mascot-curious-32.png', width: 32, height: 32 }),
+  curious: Object.freeze({ path: 'assets/brand/mascot/mascot-curious-128.png', width: 128, height: 128 }),
 });
 
 export function readMascotPortraits(root = process.cwd()) {
