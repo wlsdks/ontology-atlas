@@ -14,7 +14,7 @@ import { useLocalVault } from "@/entities/vault-session";
 export interface OpenVaultCtaProps {
   testId: string;
   variant?: "primary" | "outline";
-  tone?: "default" | "accentOnTint";
+  tone?: "default" | "accent";
   className?: string;
   onOpen?: () => void;
 }
@@ -22,7 +22,7 @@ export interface OpenVaultCtaProps {
 export function OpenVaultCta({ testId, variant, tone, className, onOpen }: OpenVaultCtaProps) {
   const t = useTranslations("openVaultCta");
   const vault = useLocalVault();
-  const emphasis = variant ?? (tone === "accentOnTint" ? "primary" : "outline");
+  const emphasis = variant ?? (tone === "accent" ? "primary" : "outline");
 
   if (vault.status === "unsupported") {
     return (

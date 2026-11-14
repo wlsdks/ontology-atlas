@@ -46,7 +46,7 @@ export function LibraryNoFolderStage({ t }: { t: ReturnType<typeof useTranslatio
         action={
           <OpenVaultCta
             testId="library-open-vault"
-            tone="accentOnTint"
+            tone="accent"
             className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
           />
         }

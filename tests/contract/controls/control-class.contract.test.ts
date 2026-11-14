@@ -22,7 +22,6 @@ const TONES: ControlTone[] = [
   'secondary',
   'strong',
   'accent',
-  'accentOnTint',
   'warning',
   'danger',
   'success',
@@ -378,7 +377,7 @@ describe('controlClass — the eighth shape and the three axes', () => {
   });
 
   it('the three signals and indigo ignore `scope` — colours fixed by meaning do not look at the background', () => {
-    for (const tone of ['accent', 'accentOnTint', 'warning', 'danger', 'success'] as const) {
+    for (const tone of ['accent', 'warning', 'danger', 'success'] as const) {
       expect(
         controlClass({ shape: 'chip', tone, scope: 'panel' }),
         `${tone} became a different colour in the panel`,

@@ -411,7 +411,7 @@ export function ConnectorsPanel({
           <Chip
             ref={addOpenRef}
             size="lg"
-            tone="accentOnTint"
+            tone="accent"
             data-testid={`${testIdPrefix}-add-open`}
             className="mt-3 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
             onClick={() => setAddOpen(true)}

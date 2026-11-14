@@ -519,7 +519,7 @@ still recedes compared to primary. Guardian follow-up #2. */
      * Raised to ~4.7:1 on the dark panel to pass AA 4.5; stays just below tertiary (#868690, ~4.9:1) to
      * keep the 4-step text ladder order.
      */
-    --map-panel-text-quaternary: #82828a;
+    --map-panel-text-quaternary: #86847e;
 
     /*
      * Node popover surfaces live only in the `--map-panel-*` namespace and reference the global

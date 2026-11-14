@@ -29,7 +29,7 @@ export function CopyAgentTextButton({
 
   const statusLabel = copyState === "copied" ? copiedLabel : copyState === "failed" ? t("agentCopyFailed") : "";
   const ariaLabel = statusLabel ? `${label} · ${statusLabel}` : label;
-  // The `accentOnTint` ink, not `accent`: the button carries an indigo tint whose hover step drops accent ink below
+  // The `accent` ink, not `accent`: the button carries an indigo tint whose hover step drops accent ink below
   // AA, as `.claude/rules/design.md` prescribes for tinted controls.
   const toneClass =
     copyState === "failed"

@@ -123,7 +123,7 @@ export function NodeExplanationEdit({
             disabled={saving}
             aria-label={labels.save}
             data-testid="node-explanation-save"
-            className={controlClass({ shape: "icon", size: "xs", tone: "accentOnTint", className: "h-6 w-6 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]" })}
+            className={controlClass({ shape: "icon", size: "xs", tone: "accent", className: "h-6 w-6 rounded-full border border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]" })}
           >
             <Check size={ICON_SIZE.sm} aria-hidden />
           </button>

@@ -146,29 +146,10 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
       /** What must win right now — primary. Several on one screen means no hierarchy. */
       strong: 'text-[color:var(--color-text-primary)]',
       /**
-       * Indigo accent for bare ground only: `--color-indigo-accent` falls below AA 4.5 over an indigo
-       * tint or amber hint. Controls carrying a tint use `accentOnTint`. Gate:
+       * The one accent ink, AA on every base and every tint the app lays under it. Gate:
        * `tests/contract/design-tokens/accent-ink-contrast.contract.test.ts`.
        */
       accent: 'text-[color:var(--color-indigo-accent)]',
-      /**
-       * **Indigo accent on a tint** — the ink for a "primary action" that
-       * carries a fill or hover fill (indigo a08–a24, `line-a13`, amber hint).
-       *
-       * **Why it was split in two**: indigo ink has two solutions in this app,
-       * the same grammar as the `scope` axis — one indigo, two grounds, two
-       * answers. The marker indigo (#7170ff) breaks AA the moment a tint is laid
-       * under it (26 of 29 inventoried sites measured below AA), while the text
-       * token `--color-indigo-text-soft` (rgba 188,195,255,.92) stays at 6.46:1
-       * or better on every surface composite in this app. The value is not new —
-       * the studio and map panels already used it by hand; this registers it on
-       * the ramp.
-       *
-       * The hue is the same single indigo, so the "primary action" meaning
-       * survives; what is lost is saturation. In exchange no consumer has to
-       * redo the contrast homework for its own ground.
-       */
-      accentOnTint: 'text-[color:var(--color-indigo-text-soft)]',
       /** The three signals the charter allows — warning · error · success. Do not extend. */
       warning: 'text-[color:var(--color-status-warning)]',
       danger: 'text-[color:var(--color-danger-text)]',
@@ -353,7 +334,7 @@ const control = cva(`${DISABLED} ${FOCUS}`, {
      */
     { scope: 'panel', tone: 'default', class: 'text-[color:var(--map-panel-text-tertiary)]' },
     /*
-     * No panel compound for `muted`: both ramps' quaternary are `#82828a`. If they diverge, the
+     * No panel compound for `muted`: both ramps' quaternary are one value. If they diverge, the
      * contract test's convergence assertion fails and says to restore this compound.
      */
     { scope: 'panel', tone: 'secondary', class: 'text-[color:var(--map-panel-text-secondary)]' },

@@ -149,11 +149,11 @@ export function mountHeroAtlas(host: HTMLElement, data: AtlasData, opts: AtlasOp
   const rootEl = opts.tokenEl ?? document.documentElement;
   const reduced =
     opts.reducedMotion ?? (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-  const accent = new THREE.Color(cssVar(rootEl, '--color-indigo-brand', '#5e6ad2'));
-  const accentBright = new THREE.Color(cssVar(rootEl, '--color-indigo-accent', '#7170ff'));
-  const ink = new THREE.Color(cssVar(rootEl, '--color-text-primary', '#f7f8f8'));
-  const inkSoft = new THREE.Color(cssVar(rootEl, '--color-text-tertiary', '#9a9fa8'));
-  const inkDim = new THREE.Color(cssVar(rootEl, '--color-text-quaternary', '#82828a'));
+  const accent = new THREE.Color(cssVar(rootEl, '--color-indigo-brand', '#e9e7e0'));
+  const accentBright = new THREE.Color(cssVar(rootEl, '--color-indigo-accent', '#8fb0ea'));
+  const ink = new THREE.Color(cssVar(rootEl, '--color-text-primary', '#f3f2ee'));
+  const inkSoft = new THREE.Color(cssVar(rootEl, '--color-text-tertiary', '#a4a29b'));
+  const inkDim = new THREE.Color(cssVar(rootEl, '--color-text-quaternary', '#86847e'));
 
   renderer.setClearColor(0x000000, 0);
   // 1.5 hides sphere edge steps on Retina; 2 doubles fill cost for nothing visible through fog.

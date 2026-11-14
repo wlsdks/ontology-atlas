@@ -59,7 +59,7 @@ export function LibrarySynapseField({
      * route, and a ground that carries no fact must not wear the ink a fact wears.
      */
     const fieldInk =
-      styles.getPropertyValue("--color-text-quaternary").trim() || "#82828a";
+      styles.getPropertyValue("--color-text-quaternary").trim() || "#86847e";
 
     let width = 1;
     let height = 1;

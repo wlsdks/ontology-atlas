@@ -249,7 +249,7 @@ export function OntologyBootstrapForm({
           // type size.
           className={controlClass({
             shape: "pill",
-            tone: "accentOnTint",
+            tone: "accent",
             className:
               "h-[var(--control-h-lg)] justify-center gap-1.5 border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] px-3 text-body-lg font-[var(--font-weight-signature)] hover:bg-[color:var(--color-indigo-a24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-inset",
           })}
