@@ -32,9 +32,9 @@ async function expectCensus(page: Page, text: string) {
 
 async function pinCurrentDocument(page: Page) {
   await page.getByRole('button', { name: 'Open palette (search · commands · tags)' }).click();
-  const palette = page.getByRole('dialog', { name: 'Ontology workspace palette' });
+  const palette = page.getByRole('dialog', { name: 'Ontology documents palette' });
   const search = palette.getByRole('combobox', {
-    name: 'Ontology workspace search, command, tag',
+    name: 'Search, command or tag in Ontology documents',
   });
   await search.fill('> Pin this doc');
   await expect(palette.getByRole('option', { name: /Pin this doc/ })).toHaveCount(1);

@@ -1,6 +1,6 @@
 {
   "title": "도메인 구조",
-  "description": "기록된 구조를 따라 도메인, 기능, 구현 요소를 살펴보세요.",
+  "description": "기록된 구조를 따라 도메인, 역량, 구현 요소를 살펴보세요.",
   "breadcrumb": "구조 탐색 경로",
   "overview": "전체 개념",
   "back": "{name}(으)로 돌아가기",
@@ -10,8 +10,8 @@
   "other": "기타 개념",
   "unassigned": "기록된 구조 밖의 개념",
   "unassignedDescription": "기록된 최상위 개념에서 이어지는 경로가 없는 개념이에요. 개념을 열어 문서와 관계를 확인하세요.",
-  "shared": "다른 상위 개념 {count}곳에도 표시됨",
-  "childCount": "직접 연결된 하위 개념 {count}개",
+  "shared": "다른 상위 개념 {count}개에도 표시됨",
+  "childCount": "직접 하위 개념 {count}개",
   "conceptCount": "개념 {count}개",
   "empty": "이 폴더에는 아직 개념이 없어요.",
   "emptyChildren": "{name}에 직접 연결된 하위 개념이 기록되지 않았어요. 문서를 읽어 기록된 관계를 확인하세요.",

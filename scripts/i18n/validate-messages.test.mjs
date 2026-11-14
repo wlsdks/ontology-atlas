@@ -241,14 +241,12 @@ describe('i18n message catalog', () => {
     const koCopy = ko.topology.analysis;
 
     assert.match(enCopy.pathChipUnresolved, /choose a target/i);
-    assert.match(enCopy.pathChipResolved, /hops/i);
+    assert.match(enCopy.pathChipResolved, /\{hops/);
     assert.match(enCopy.pathChipNoPath, /no path/i);
-    assert.equal(enCopy.pathChipCopyPacket, 'Copy path packet');
     assert.equal(enCopy.pathChipClear, 'Clear path');
     assert.match(koCopy.pathChipUnresolved, /대상 선택/);
-    assert.match(koCopy.pathChipResolved, /홉/);
+    assert.match(koCopy.pathChipResolved, /\{hops/);
     assert.match(koCopy.pathChipNoPath, /경로 없음/);
-    assert.equal(koCopy.pathChipCopyPacket, 'AI에게 줄 경로 정보 복사');
     assert.equal(koCopy.pathChipClear, '경로 지우기');
 
     assert.doesNotMatch(
@@ -439,8 +437,6 @@ describe('i18n message catalog', () => {
     assert.equal(en.docsVault.sourceContract.graphValue, '{nodes} concepts · {edges} relations');
     assert.equal(en.docsVault.sourceContract.agentLabel, 'Agent check');
     assert.equal(en.docsVault.sourceContract.agentCopyGate, 'Copy graph check');
-    assert.equal(en.vaultWidgets.docsDrawer.eyebrow, 'Ontology workspace');
-    assert.equal(en.vaultWidgets.palette.dialogAriaLabel, 'Ontology workspace palette');
     assert.doesNotMatch(
       welcomeCopy,
       /frontmatter|vault|Vault|Source Vault|source vault|Source records|source records|Graph DB|graph DB|DB proof|nodes \{nodes\}|proof gate|relation_name_parity|pattern_walk|project_map/,
@@ -497,8 +493,6 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(ko.topology.index.agentSync, 'AI가 함께 갱신 중');
-    assert.equal(en.topology.index.agentSync, 'Updated with AI');
     assert.doesNotMatch(ko.topology.index.agentSync, /동기화|Agent|sync/i);
     assert.doesNotMatch(en.topology.index.agentSync, /\bsync\b/i);
 

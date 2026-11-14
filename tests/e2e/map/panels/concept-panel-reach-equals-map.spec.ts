@@ -111,7 +111,7 @@ test("each capability's and domain's reach groups hold what the map's count line
     expect(needs.rows.length, `${id}: every needs row opens`).toBe(needs.total);
     expect(neededBy.rows.length, `${id}: every needed-by row opens`).toBe(neededBy.total);
     expect([...needs.kinds, ...neededBy.kinds], `${id}: no document is reach`).not.toContain("document");
-    const expected = [needs.total > 0 ? `Needs ${needs.total}` : null, neededBy.total > 0 ? `Needed by ${neededBy.total}` : null]
+    const expected = [needs.total > 0 ? `Depends on ${needs.total}` : null, neededBy.total > 0 ? `Used by ${neededBy.total}` : null]
       .filter(Boolean)
       .join(" · ");
     expect(await countLine(page, id), `${id}: the map's count line is the panel's`).toBe(expected);

@@ -13,7 +13,8 @@ import {
 import { isTauriVaultRuntime } from '@/shared/lib/vault-folder/tauri-vault-fs';
 import { RefreshCw } from 'lucide-react';
 
-import { Button, buttonVariants, Chip, EmptyState, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
+import { Button, buttonVariants, FeatureStage, GetAppLink, PageHeaderBar, Surface, TabBar } from '@/shared/ui';
+import { BrandPortrait } from '@/shared/ui/marks/brand-portrait';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
@@ -191,7 +192,7 @@ function HarnessPageInner() {
   );
 
   const overviewFills = view === 'overview' && reportState.status === 'ready';
-  const staged = harnessUnavailable && view !== 'architecture';
+  const staged = (harnessUnavailable || reportState.status === 'failed') && view !== 'architecture';
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col overflow-hidden', HARNESS_FRAME_CONTAINER)}>
@@ -273,17 +274,19 @@ function HarnessPageInner() {
               />
             ) : reportState.status === 'failed' ? (
               /* A dead end with no way out was the one irreversible state on a read-only screen. */
-              <EmptyState
+              <FeatureStage
+                data-testid="harness-failed-stage"
+                art={() => <div className="flex justify-center"><BrandPortrait expression="curious" /></div>}
                 title={t('failed')}
-                description={
-                  <span data-testid="harness-failed-reason" data-failure-code={reportState.code ?? ''} data-failure-detail={reportState.message}>
+                body={
+                  <span className="break-words" data-testid="harness-failed-reason" data-failure-code={reportState.code ?? ''} data-failure-detail={reportState.message}>
                     {t(failedReasonKey(reportState.code), { path: reportState.sourceRoot })}
                   </span>
                 }
                 action={
-                  <Chip data-testid="harness-retry" onClick={() => setReloadNonce((n) => n + 1)}>
+                  <Button variant="outline" size="lg" data-testid="harness-retry" className="atlas-touch-floor atlas-touch-floor-wide" onClick={() => setReloadNonce((n) => n + 1)}>
                     {t('retry')}
-                  </Chip>
+                  </Button>
                 }
               />
             ) : (

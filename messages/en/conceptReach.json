@@ -1,7 +1,7 @@
 {
-  "needs": "Needs",
-  "neededBy": "Needed by",
-  "otherLinks": "Other links {count, number}",
+  "needs": "Depends on",
+  "neededBy": "Used by",
+  "otherLinks": "Other relations {count, number}",
   "elements": "Implementation elements {count, number}",
   "domains": "Domains {count, number}",
   "describes": "Describes",

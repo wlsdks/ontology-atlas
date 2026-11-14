@@ -10,7 +10,7 @@
   "mcp": "MCP",
   "git": "Git",
   "getApp": "Get the app",
-  "getAppTitle": "The desktop app remembers your folder, opens offline, and handles history and AI connections",
+  "getAppTitle": "The desktop app remembers your folder, opens offline, and handles Git history and agent connections",
   "changes": "Changes",
   "planning": "Planning"
 }

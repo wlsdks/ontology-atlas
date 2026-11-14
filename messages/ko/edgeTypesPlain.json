@@ -1,10 +1,10 @@
 {
-  "contains": "포함된 항목",
-  "belongs_to": "포함하는 곳",
-  "depends_on": "의존하는 항목",
-  "implements": "구현 항목",
-  "uses": "사용 항목",
+  "contains": "포함",
+  "belongs_to": "속함",
+  "depends_on": "의존",
+  "implements": "구현",
+  "uses": "사용",
   "describes": "근거 문서",
-  "related_to": "관련 항목",
+  "related_to": "관련",
   "is_a": "상위 개념"
 }

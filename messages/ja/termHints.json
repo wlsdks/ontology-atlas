@@ -2,7 +2,7 @@
   "trigger": "{term}について",
   "mcp": {
     "expansion": "MCP (Model Context Protocol)",
-    "explanation": "AIエージェントが外部のツールやデータに共通の方法でアクセスするための、オープンな規格です。"
+    "explanation": "コーディングエージェントが、このフォルダのような外部のツールやデータを読み書きするための標準の方式です。"
   },
   "acp": {
     "expansion": "ACP (Agent Client Protocol)",
@@ -10,10 +10,10 @@
   },
   "apiKey": {
     "expansion": "API key (Application Programming Interface key)",
-    "explanation": "サービスを利用するときに本人を確かめるための文字列です。他人に見せないでください。"
+    "explanation": "モデルの提供元が発行する秘密の文字列で、プログラムがあなたのアカウントでモデルを呼び出せるようにします。"
   },
   "cli": {
     "expansion": "CLI (Command-Line Interface)",
-    "explanation": "ターミナルにコマンドを入力して操作する方法です。"
+    "explanation": "ウィンドウをクリックする代わりに、ターミナルでコマンドを入力して動かすプログラムです。"
   }
 }
