@@ -93,7 +93,7 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
     const admission = admissionAt(scale);
     const marks = new Map<string, FramedMark>();
     for (const id of input.framed) {
-      const p = at(id);
+      const p = admission.anchors.get(id) ?? at(id);
       if (!p) continue;
       const r = discAt(id, scale) + (id === focus ? paint.selectedRingGapPx + paint.selectedRingPx : 0);
       marks.set(id, { x: p.x, y: p.y, box: { minX: -r, maxX: r, minY: -r, maxY: r } });
@@ -113,7 +113,7 @@ function zoomReading(input: GraphSelectionZoomInput): ZoomReading {
     const admission = admissionAt(scale);
     const pad = paint.namePadPx;
     const glyphs = admission.names.filter((n) => near.has(n.id)).map((n) => {
-      const p = at(n.id)!;
+      const p = admission.anchors.get(n.id) ?? at(n.id)!;
       return { id: n.id, box: { minX: p.x * scale + n.box.minX + pad, maxX: p.x * scale + n.box.maxX - pad, minY: p.y * scale + n.box.minY + pad, maxY: p.y * scale + n.box.maxY - pad } };
     });
     const weighed = (a: string, b: string) => a !== b && (of === null || a === of || b === of);

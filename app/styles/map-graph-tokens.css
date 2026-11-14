@@ -47,6 +47,8 @@
     --map-graph-link-element-alpha: 0.16;
     --map-graph-link-cap-width-px: 1.1;
     --map-graph-link-element-width-px: 0.7;
+    --map-graph-fan-spoke-alpha: 0.5;
+    --map-graph-fan-spoke-max-px: 1.8;
     --map-graph-light-alpha: 0.2;
     --map-graph-light-reach: 1.8;
     --map-graph-arc-bow: 0.14;

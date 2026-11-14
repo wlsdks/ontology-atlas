@@ -25,7 +25,8 @@ import { circularDomainOrder } from "../dial/order";
 import type { DialLabels, DialModel } from "../dial/types";
 import { cachedGraphAttention, inkUnder, resolveGraphAttention } from "./attention";
 import { layoutFlatGraph } from "./layout";
-import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto } from "./marks";
+import { arcPathInto, crowdShare, emptyArcPath, graphDiscRadiusPx, litLineTrimsInto, zoomGrowth } from "./marks";
+import { capabilityLineTurns, openedElements } from "./open";
 import { admittedNames, chooseSide, domainTitleBlocks, leaderSegment, linePolylines, nameBlockClear, nameBlockDraws, nameBlockEnd, reachText, segmentCrossesBox, selectedDiscRadius, stepScale, zoomStep, type PlacedName } from "./names";
 import { buildFlatGraphScene, claimFlatGraphFolder, flatGraphPins, settleFlatGraph } from "./scene";
 import { resolveFlatGraphTokens } from "./tokens";
@@ -105,10 +106,19 @@ function namesAt(model: DialModel, layout: FlatGraphLayout, scale: number, focus
   });
 }
 
-function overlapping(names: readonly PlacedName[], layout: FlatGraphLayout, scale: number): string[] {
+/** A selected capability's fan as `namesAt` admits it: each fanned element's anchor in world units. */
+function fanAnchors(model: DialModel, layout: FlatGraphLayout, scale: number, focusId: string): Map<string, { x: number; y: number }> {
+  const t = TOKENS.paint;
+  const step = stepScale(zoomStep(scale, t.zoomStepsPerOctave), t.zoomStepsPerOctave);
+  const fan = openedElements(model, layout, focusId, t, selectedDiscRadius(4, t, 1), step, 1);
+  const centre = fan ? layout.positions.get(fan.capabilityId)! : null;
+  return new Map([...(fan?.offsets ?? [])].map(([id, o]) => [id, { x: centre!.x + o.x / step, y: centre!.y + o.y / step }]));
+}
+
+function overlapping(names: readonly PlacedName[], layout: FlatGraphLayout, scale: number, fanned: ReadonlyMap<string, { x: number; y: number }> = new Map()): string[] {
   const pad = TOKENS.paint.namePadPx;
   const boxes = names.map((n) => {
-    const at = layout.positions.get(n.id) ?? { x: 0, y: 0 };
+    const at = fanned.get(n.id) ?? layout.positions.get(n.id) ?? { x: 0, y: 0 };
     const x = at.x * scale;
     const y = at.y * scale;
     return { id: `${n.role}:${n.id}`, minX: x + n.box.minX + pad, maxX: x + n.box.maxX - pad, minY: y + n.box.minY + pad, maxY: y + n.box.maxY - pad };
@@ -343,28 +353,32 @@ describe("attention and discs", () => {
     expect(inkUnder(attention, cap, TOKENS.paint.sinkInk)).toBe(1);
   });
 
-  it.each(VAULTS)("names a %s capability's lit element only once its dot stands clear of the capability's disc and ring", (_name, model) => {
+  it.each(VAULTS)("names a pointed %s capability's element only once its dot stands clear of the capability's disc", (_name, model) => {
     const layout = layoutOf(model);
     const t = TOKENS.paint;
     let hidden = 0;
     let named = 0;
     for (const cap of model.capabilityById.values()) {
       if (!layout.positions.has(cap.id)) continue;
+      const pointed = cachedGraphAttention(model, cap.id, false);
       for (const scale of [0.35, 0.7, 1.4, 2.8]) {
-        const ids = namesAt(model, layout, scale, cap.id).ids;
+        const ids = admittedNames({
+          model, layout, tokens: t, labels: LABELS, measureText: measure, fontFamily: "sans-serif", scale, growth: 1,
+          elementLabel: (id) => id, staleByDomain: null, lit: pointed.lit, focusId: cap.id, attentionKey: pointed.key, agentFocusId: null,
+          selected: false, named: pointed.named, reach: pointed.reach, lines: pointed.lines, discRadius: () => 4, elementSpacingPx: 0, hubCaption: null,
+        }).ids;
         const owner = layout.positions.get(cap.id)!;
         for (const id of cap.elementIds) {
           const at = layout.positions.get(id);
           if (!at) continue;
-          const clearPx = Math.hypot(at.x - owner.x, at.y - owner.y) * stepScale(zoomStep(scale, t.zoomStepsPerOctave), t.zoomStepsPerOctave)
-            - (selectedDiscRadius(4, t, 1) + t.selectedRingGapPx + t.selectedRingPx + 4 + t.nameGapPx);
+          const clearPx = Math.hypot(at.x - owner.x, at.y - owner.y) * stepScale(zoomStep(scale, t.zoomStepsPerOctave), t.zoomStepsPerOctave) - (4 + 4 + t.nameGapPx);
           if (clearPx < 0) hidden += 1;
           if (ids.has(id)) named += 1;
           if (ids.has(id)) expect(clearPx, `${id} under ${cap.id} at ${scale}`).toBeGreaterThanOrEqual(0);
         }
       }
     }
-    expect(hidden, "some element dot sits under its selected capability at the overview").toBeGreaterThan(0);
+    expect(hidden, "some element dot sits against its pointed capability at the overview").toBeGreaterThan(0);
     expect(named, "elements are named once they stand clear").toBeGreaterThan(0);
   });
 
@@ -451,6 +465,92 @@ describe("attention and discs", () => {
     expect(r(4)).toBeGreaterThan(r(1));
     expect(r(4) - r(0)).toBeCloseTo(2 * (r(1) - r(0)));
     expect(r(10_000)).toBe(TOKENS.paint.capDiscMaxPx);
+  });
+});
+
+describe("a selected capability's fan", () => {
+  const t = TOKENS.paint;
+  const selectedPx = selectedDiscRadius(graphDiscRadiusPx("capability", 0, t, 1), t, 1);
+  const clearPx = selectedPx + t.selectedRingGapPx + t.selectedRingPx + t.elementDotPx + t.nameGapPx;
+
+  it.each(VAULTS)("opens every %s capability's elements clear of its ring, a name's spacing apart and below its title", (_name, model) => {
+    const layout = layoutOf(model);
+    let fans = 0;
+    for (const cap of model.capabilityById.values()) {
+      const fan = openedElements(model, layout, cap.id, t, selectedPx, 0.35, 1);
+      if (!fan) continue;
+      fans += 1;
+      const at = [...fan.offsets.values()];
+      expect(at.length, cap.id).toBe(cap.elementIds.filter((id) => layout.positions.has(id)).length);
+      for (const p of at) {
+        expect(Math.hypot(p.x, p.y), `${cap.id} keeps off the ring`).toBeGreaterThanOrEqual(clearPx - 1e-6);
+        expect(Math.atan2(p.x, -p.y) === 0 || Math.abs(Math.atan2(p.x, -p.y)) >= (69 * Math.PI) / 180, `${cap.id} leaves the title's wedge`).toBe(true);
+      }
+      for (let i = 0; i < at.length; i += 1) {
+        for (let j = i + 1; j < at.length; j += 1) expect(Math.hypot(at[i]!.x - at[j]!.x, at[i]!.y - at[j]!.y), `${cap.id} elements ${i} and ${j}`).toBeGreaterThan(t.elementNameSpacingPx * 0.85);
+      }
+    }
+    expect(fans).toBeGreaterThan(3);
+  });
+
+  it.each(VAULTS)("slides a %s fan so its dots stand off the lines leaving the capability", (_name, model) => {
+    const layout = layoutOf(model);
+    const turnOf = (p: { x: number; y: number }) => (Math.atan2(p.y, p.x) + Math.PI / 2 + 2 * Math.PI) % (2 * Math.PI);
+    let fans = 0;
+    let onLine = 0;
+    for (const cap of model.capabilityById.values()) {
+      const fan = openedElements(model, layout, cap.id, t, selectedPx, 0.35, 1);
+      const lines = fan ? capabilityLineTurns(model, layout, cap.id, cap.elementIds, t.lineBow) : [];
+      if (!fan || lines.length === 0) continue;
+      fans += 1;
+      const stands = [...fan.offsets.values()].some((p) => lines.some((turn) => {
+        const apart = Math.abs(turnOf(p) - turn);
+        return Math.min(apart, 2 * Math.PI - apart) < (t.elementDotPx + t.lineTaperMaxPx) / Math.hypot(p.x, p.y) - 1e-9;
+      }));
+      if (stands) onLine += 1;
+    }
+    expect(fans).toBeGreaterThan(10);
+    // A fan that fills its arc beside many lines has no clear place: 3 of 17 and 1 of 39 with the slide, 5 and 9 without.
+    expect(onLine, "fans with a dot on a line").toBeLessThanOrEqual(3);
+  });
+
+  it.each(VAULTS)("leaves a %s capability's elements where they are once the zoom shows them apart, and closes without a jump", (_name, model) => {
+    const layout = layoutOf(model);
+    let widestStepPx = 0;
+    let fans = 0;
+    for (const cap of model.capabilityById.values()) {
+      const centre = layout.positions.get(cap.id);
+      if (!centre || cap.elementIds.length < 2) continue;
+      fans += 1;
+      expect(openedElements(model, layout, cap.id, t, selectedPx, 64, 1), cap.id).toBeNull();
+      let before: ReadonlyMap<string, { x: number; y: number }> | null = null;
+      // The disc grows with the zoom as the frame grows it, so the fan's radius and spacing move under the sweep.
+      for (let k = 0; k <= 400; k += 1) {
+        const growth = zoomGrowth(2 ** (k / 50), t);
+        const scale = 0.3 * 2 ** (k / 50);
+        const fan = openedElements(model, layout, cap.id, t, selectedDiscRadius(graphDiscRadiusPx("capability", 0, t, growth), t, growth), scale, growth);
+        const now = new Map(cap.elementIds.filter((id) => layout.positions.has(id)).map((id) => {
+          const home = layout.positions.get(id)!;
+          return [id, fan?.offsets.get(id) ?? { x: (home.x - centre.x) * scale, y: (home.y - centre.y) * scale }];
+        }));
+        if (before) for (const [id, p] of now) widestStepPx = Math.max(widestStepPx, Math.hypot(p.x - before.get(id)!.x, p.y - before.get(id)!.y) / Math.max(1, Math.hypot(p.x, p.y) / 40));
+        before = now;
+      }
+    }
+    expect(fans).toBeGreaterThan(3);
+    // Measured 8.1 px per fiftieth of an octave at most; a fan that jumped along its arc moved 18 to 51 px.
+    expect(widestStepPx).toBeLessThan(16);
+
+  });
+
+  it("names a selected capability's fanned elements with no name over another", () => {
+    const model = VAULTS[0][1];
+    const layout = layoutOf(model);
+    const cap = model.capabilityById.get("capability:project-source-binding")!;
+    const fanned = namesAt(model, layout, 0.4, cap.id);
+    expect(cap.elementIds.filter((id) => fanned.ids.has(id)).length).toBeGreaterThanOrEqual(2);
+    const anchors = fanAnchors(model, layout, 0.4, cap.id);
+    expect(overlapping(fanned.names.filter((n) => n.role === "element" || n.role === "capability"), layout, 0.4, anchors)).toEqual([]);
   });
 });
 
@@ -556,18 +656,19 @@ describe("selection reach", () => {
       for (const id of [...vault.capabilityById.keys(), ...vault.capabilityOf.keys()]) {
         const admitted = namesAt(vault, layout, scale, id);
         const concepts = admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project");
-        for (const pair of overlapping(concepts, layout, scale)) overprinted.push(`${id} at ${at}: ${pair}`);
+        const fanned = fanAnchors(vault, layout, scale, id);
+        for (const pair of overlapping(concepts, layout, scale, fanned)) overprinted.push(`${id} at ${at}: ${pair}`);
         const mustName = cachedGraphAttention(vault, id, true).named;
         for (const end of mustName) if (vault.capabilityById.has(end) && !admitted.ids.has(end)) leftOut += 1;
         for (const n of concepts) {
-          if (!n.leader) continue;
+          if (!n.leader || fanned.has(n.id)) continue;
           leaders += 1;
           if (!mustName.has(n.id) || n.id === id) strayLeaders.push(`${id} at ${at}: ${n.id}`);
           const mark = layout.positions.get(n.id)!;
           const s = leaderSegment(n, Math.abs(n.dx) - TOKENS.paint.nameGapPx, TOKENS.paint.namePadPx);
           for (const other of admitted.names) {
             if (other === n) continue;
-            const p = layout.positions.get(other.id) ?? { x: 0, y: 0 };
+            const p = fanned.get(other.id) ?? layout.positions.get(other.id) ?? { x: 0, y: 0 };
             const pad = TOKENS.paint.namePadPx;
             const glyphs = { minX: p.x * scale + other.box.minX + pad, maxX: p.x * scale + other.box.maxX - pad, minY: p.y * scale + other.box.minY + pad, maxY: p.y * scale + other.box.maxY - pad };
             if (segmentCrossesBox(mark.x * scale + s.x0, mark.y * scale + s.y0, mark.x * scale + s.x1, mark.y * scale + s.y1, glyphs)) struckNames.push(`${id} at ${at}: ${n.id} over ${other.id}`);
@@ -629,7 +730,7 @@ describe("selection reach", () => {
       const scale = scales[k]!;
       expect(admitted.ids.has("a"), `selection at ${scale}`).toBe(true);
       for (const id of ["b", "c", "e", "f", "g"]) expect(admitted.ids.has(id), `capability ${id} at ${scale}`).toBe(true);
-      expect(overlapping(admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project"), layout, scale), `at ${scale}`).toEqual([]);
+      expect(overlapping(admitted.names.filter((n) => n.role !== "domain" && n.role !== "units" && n.role !== "project"), layout, scale, fanAnchors(crowded, layout, scale, "a")), `at ${scale}`).toEqual([]);
     });
     const namedElements = admissions.map((admitted) => elementIds.filter((id) => admitted.ids.has(id)).length);
     expect(namedElements[0], "a crowded zoom drops element names").toBeLessThan(elementIds.length);
