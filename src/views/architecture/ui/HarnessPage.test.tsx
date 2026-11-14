@@ -299,7 +299,7 @@ describe('the segmented control', () => {
   });
 
   it('shows no wait screen at all for a read that finishes inside the threshold', () => {
-    /* A fast read flashes nothing: the panel is held back for a second. This assertion is the gate on that threshold. */
+    /* A fast read flashes nothing: the panel is held back for the anti-flash delay. This assertion is the gate on that threshold. */
     vi.useFakeTimers();
     window.history.replaceState(null, '', '/ko/architecture/?view=overview');
     state.report = {
@@ -309,11 +309,11 @@ describe('the segmented control', () => {
     };
     mount();
     act(() => {
-      vi.advanceTimersByTime(600);
+      vi.advanceTimersByTime(300);
     });
     expect(screen.queryByTestId('harness-scan-progress')).toBeNull();
     act(() => {
-      vi.advanceTimersByTime(400);
+      vi.advanceTimersByTime(100);
     });
     expect(screen.getByTestId('harness-scan-progress')).toBeInTheDocument();
   });
