@@ -8,7 +8,6 @@
   "changeFailed": "无法保存更改，请重试。",
   "checked": "已检查 {count} 份文档。",
   "earlierRuns": "更早的运行 · {count}",
-  "openFolderTitle": "打开文件夹以安排审阅",
   "openFolderDescription": "计划及其运行历史保存在你打开的文件夹中。",
   "staleLabel": "待审阅",
   "writtenLabel": "已更新文件",
@@ -30,13 +29,13 @@
   },
   "title": "自动化",
   "lede": "安排定期审阅，再查看每次运行的发现。Atlas 打开时，它们在这台电脑上运行。",
+  "stageTitle": "按设定周期运行的检查",
   "tabsAria": "自动化分类",
   "tabs": {
     "ontology": "本体",
     "documents": "文档"
   },
   "indexAria": "此文件夹中的计划",
-  "appRequiredTitle": "自动化在桌面应用中运行",
   "appRequiredDescription": "在应用中打开文件夹，即可在此界面直接创建计划。",
   "getApp": "获取应用",
   "loadingTitle": "正在加载自动检查",
@@ -127,8 +126,6 @@
         "body": "什么也不改。每份提案由你审阅，并在地图上自行应用。"
       }
     },
-    "emptyTitle": "还没有安排本体审阅",
-    "emptyDescription": "只需名称和频率，审阅重点可不填。",
     "preview": {
       "title": "计划",
       "name": "名称",
@@ -165,8 +162,6 @@
         "body": "只改已批准的资料库范围内的来源和 Wiki 草稿，绝不改本体。"
       }
     },
-    "emptyTitle": "还没有安排文档轮次",
-    "emptyDescription": "逐页审阅和完整的运行记录请在资料库中继续。",
     "preview": {
       "title": "计划",
       "name": "名称",

@@ -1,10 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { LibraryBig, Plus, TriangleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition, type CSSProperties } from "react";
 
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import type { RoundRecord } from "@/entities/library-round";
@@ -13,16 +12,17 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { DESTINATION_HREF, withQuery } from "@/shared/config/destinations";
 import { isTauriVaultRuntime } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { cn } from "@/shared/lib/cn";
-import { usePanelPresence, useSwapHeight } from "@/shared/lib/render-timing/use-presence";
+import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { MOTION } from "@/shared/motion";
-import { framerSpring, SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
+import { SPRING, springEasing, springSettleMs } from "@/shared/motion/spring";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
-import { Button, buttonVariants, EmptyState, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
+import { Button, buttonVariants, EmptyState, FeatureStage, GetAppLink, PageHeaderBar, TabBar, useToast, WaitStage } from "@/shared/ui";
 
 import { PAGE_FRAME_FORM, PAGE_LEDE, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { AutomationScheduleRow } from "./AutomationScheduleRow";
-import { AutomationGhostRow, AutomationLaneFacts, AutomationLaneIntro, AutomationListPanel } from "./AutomationListFrame";
+import { AutomationLaneFacts, AutomationListPanel } from "./AutomationListFrame";
+import { AutomationScheduleArtwork } from "./AutomationScheduleArtwork";
 import listStyles from "./automation-list-frame.module.css";
 
 import { NewOntologyRoundSheet } from "./NewOntologyRoundSheet";
@@ -56,6 +56,7 @@ export function AutomationsPage({
   const router = useRouter();
   const toast = useToast();
   const reduced = usePrefersReducedMotion();
+  const newButtonRef = useRef<HTMLButtonElement>(null);
   const requested = params.get("kind");
   const lane: AutomationLane = requested === "documents" ? "documents" : "ontology";
   const [selectedId, setSelectedId] = useState<string | null | undefined>(undefined);
@@ -106,15 +107,12 @@ export function AutomationsPage({
   } : onOpenDocumentSchedule;
 
   const empty = !ready || rounds.length === 0;
-  const { hostRef: introHostRef, capture: captureIntro } = useSwapHeight(empty);
-  const intro = usePanelPresence(empty);
-  const ghost = usePanelPresence(empty);
+  const stage = usePanelPresence(empty);
   /* Empty to filled (or back) within one lane, not a tab switch or a load. */
   const [seen, setSeen] = useState<{ lane: AutomationLane; ready: boolean; empty: boolean; arrived: ReadonlySet<string> | null }>(
     { lane, ready, empty, arrived: null });
   if (seen.lane !== lane || seen.ready !== ready || seen.empty !== empty) {
     const inPlace = seen.lane === lane && seen.ready && ready;
-    if (inPlace) captureIntro();
     const arrived = inPlace && seen.empty && !empty;
     setSeen({ lane, ready, empty, arrived: arrived ? new Set(rounds.map((round) => round.id)) : null });
     if (arrived) setSelectedId(null);
@@ -135,17 +133,18 @@ export function AutomationsPage({
 
   const loading = state === "loading";
   const staged = !loading && empty;
-  const canHoldSchedules = state === "ready";
-  const introCopy = state === "app-required"
-    ? { title: t("appRequiredTitle"), description: t("appRequiredDescription"),
-      action: <GetAppLink>{t("getApp")}</GetAppLink> }
+  const broken = state === "malformed" || state === "unavailable";
+  const stageCopy = state === "app-required"
+    ? { body: t("appRequiredDescription"), action: <GetAppLink>{t("getApp")}</GetAppLink> }
     : state === "no-vault"
-      ? { title: t("openFolderTitle"), description: t("openFolderDescription"),
+      ? { body: t("openFolderDescription"),
         action: <OpenVaultCta testId="automations-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" /> }
-      : { title: t(`${lane}.emptyTitle`), description: t(`${lane}.emptyDescription`) };
-  const ghostRow = (className?: string) => <AutomationGhostRow className={className}
-    name={t("ghostExample", { name: lane === "ontology" ? t("ontology.defaultName") : tRounds("name.consistency") })}
-    cadence={lane === "ontology" ? t("cadence.6h") : t("cadence.hour")} outcome={t("outcome.none")} />;
+      : { body: t(`${lane}.facts.runs.body`),
+        action: <Button size="lg" data-testid="automations-stage-new" disabled={lanePending} onClick={() => {
+          // The header button outlives this stage, so it is the sheet's return point.
+          newButtonRef.current?.focus({ preventScroll: true });
+          add();
+        }}><Plus size={ICON_SIZE.lg} aria-hidden />{t(`${lane}.new`)}</Button> };
 
   return (
     <main id="main" tabIndex={-1} data-testid="automations" data-automations-state={state} data-automations-lane={lane}
@@ -157,7 +156,7 @@ export function AutomationsPage({
             { key: "ontology", label: t("tabs.ontology"), testId: "automations-tab-ontology" },
             { key: "documents", label: t("tabs.documents"), testId: "automations-tab-documents" },
           ]} />}
-        actions={ready ? <Button size="sm" variant={rounds.length === 0 ? "primary" : "outline"} onClick={(event) => {
+        actions={ready ? <Button ref={newButtonRef} size="sm" variant="outline" onClick={(event) => {
           // WebKit may activate without focus; keep this opener as the sheet's return point.
           event.currentTarget.focus({ preventScroll: true });
           add();
@@ -171,51 +170,56 @@ export function AutomationsPage({
             <WaitStage mark="mascot" title={t("loadingTitle")} data-testid="automations-loading" aria-busy="true" delayed className={PAGE_WAIT_LIFT} />
           </section>
         ) : (
-          <motion.div data-placement={staged ? "stage" : "list"} layout={reduced ? false : "position"} layoutDependency={staged}
-            transition={framerSpring(SPRING.surface)} className={cn("flex min-w-0 flex-col gap-6", staged ? "my-auto" : "flex-1")}>
-            <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
-
-            <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="flex min-w-0 flex-1 flex-col gap-5">
-              {state === "malformed" || state === "unavailable" ? (
+          <div data-placement={staged ? "stage" : "list"} className="relative flex min-w-0 flex-1 flex-col">
+            {stage.mounted && !broken ? (
+              <section id={staged ? `automations-tabpanel-${lane}` : undefined} role={staged ? "tabpanel" : undefined}
+                aria-labelledby={staged ? `automations-tab-${lane}` : undefined}
+                inert={stage.exiting} aria-hidden={stage.exiting || undefined}
+                className={cn("flex min-w-0 flex-1 flex-col", stage.exiting && "motion-swap-out pointer-events-none absolute inset-0")}>
+                <FeatureStage data-testid="automations-empty-workbench"
+                  art={(motionState) => <AutomationScheduleArtwork {...motionState}
+                    name={t("ghostExample", { name: lane === "ontology" ? t("ontology.defaultName") : tRounds("name.consistency") })}
+                    cadence={lane === "ontology" ? t("cadence.6h") : t("cadence.hour")} />}
+                  title={t("stageTitle")}
+                  body={stageCopy.body}
+                  action={stageCopy.action}
+                  note={state === "ready" || stage.exiting ? t(`${lane}.facts.writes.body`) : undefined} />
+              </section>
+            ) : null}
+            {staged && broken ? (
+              <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="my-auto">
                 <EmptyState title={t(`${state}Title`)} description={t(`${state}Description`)} icon={<TriangleAlert />} tone="solid"
                   action={<Button variant="outline" onClick={() => void runner?.refresh()} className="atlas-touch-floor atlas-touch-floor-wide">{t("retry")}</Button>} />
-              ) : (
-                <div className="grid min-w-0 gap-8">
-                  <div className="flex min-w-0 flex-col">
-                    <div ref={introHostRef} className="relative min-w-0 overflow-hidden">
-                      {intro.mounted ? <div inert={intro.exiting} aria-hidden={intro.exiting || undefined}
-                        className={cn(intro.exiting && "motion-swap-out pointer-events-none absolute inset-x-0 top-0")}>
-                        <AutomationLaneIntro {...introCopy} />
-                      </div> : null}
-                    </div>
-                    <AutomationListPanel title={t(`${lane}.preview.title`)} count={canHoldSchedules ? rounds.length : null}
-                      columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
-                      trailing={runner && canHoldSchedules ? <>
-                        {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
-                        {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
-                        {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
-                          <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
-                        </Link> : null}
-                      </> : null}>
-                      {empty || !runner ? ghostRow() : <div className="relative">
-                        <ul data-testid="automations-list" className="flex flex-col">
-                          {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
-                            expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
-                            onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
-                        </ul>
-                        {ghost.mounted && seen.arrived ? ghostRow("motion-swap-out pointer-events-none absolute inset-x-0 top-0") : null}
-                      </div>}
-                    </AutomationListPanel>
-                  </div>
+              </section>
+            ) : null}
+            {!staged && runner ? (
+              <div className={cn("flex min-w-0 flex-1 flex-col gap-6", seen.arrived && "motion-swap-in")}>
+                <p className={`max-w-prose ${PAGE_LEDE}`}>{t("lede")}</p>
+                <section id={`automations-tabpanel-${lane}`} role="tabpanel" aria-labelledby={`automations-tab-${lane}`} className="grid min-w-0 gap-8">
+                  <AutomationListPanel title={t(`${lane}.preview.title`)} count={rounds.length}
+                    columns={[t(`${lane}.preview.name`), t(`${lane}.preview.cadence`), t(`${lane}.preview.last`)]}
+                    trailing={<>
+                      {runner.running ? <p role="status" className="text-body text-[color:var(--color-indigo-text-soft)]">{t("running", { name: runner.running.roundName })}</p> : null}
+                      {/* -mr-3.5 cancels the ghost button's px-3.5 so the label ends on the panel's inner edge. */}
+                      {lane === "documents" ? <Link href={withQuery(DESTINATION_HREF.library, selected ? { tab: "rounds", round: selected.id } : { tab: "rounds" })} data-testid="automations-open-library-rounds" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "atlas-touch-floor atlas-touch-floor-wide -mr-3.5")}>
+                        <LibraryBig size={ICON_SIZE.sm} aria-hidden />{t("documents.openRounds")}
+                      </Link> : null}
+                    </>}>
+                    <ul data-testid="automations-list" className="flex flex-col">
+                      {rounds.map((round) => <AutomationScheduleRow key={round.id} round={round} runner={runner}
+                        expanded={selected?.id === round.id} onToggle={() => setSelectedId(selected?.id === round.id ? null : round.id)}
+                        onEdit={() => edit(round)} arrival={arrival(round.id)} />)}
+                    </ul>
+                  </AutomationListPanel>
                   <AutomationLaneFacts facts={[
                     { title: t(`${lane}.facts.runs.title`), body: t(`${lane}.facts.runs.body`) },
                     { title: t(`${lane}.facts.when.title`), body: t(`${lane}.facts.when.body`) },
                     { title: t(`${lane}.facts.writes.title`), body: t(`${lane}.facts.writes.body`) },
                   ]} />
-                </div>
-              )}
-            </section>
-          </motion.div>
+                </section>
+              </div>
+            ) : null}
+          </div>
         )}
         <NewOntologyRoundSheet key={ontologyDraft} open={ready && ontologySheetOpen} onClose={() => setOntologySheetOpen(false)} onSave={saveOntology}
           round={editingOntology} allowedHere={editingOntology ? !runner?.notAllowedHere.has(editingOntology.id) : true} />

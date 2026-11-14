@@ -151,30 +151,28 @@ describe('Automations manager', () => {
     expect(screen.getByTestId('automations-last-run')).toHaveTextContent('query_ontology');
   });
 
-  it.each(['ontology', 'documents'] as const)('says an empty %s lane once, over one ghost row in the real row geometry', (lane) => {
+  it.each(['ontology', 'documents'] as const)('draws an empty %s lane as one stage around an example schedule', (lane) => {
     search = `kind=${lane}`;
     renderPage(runner({ storeStatus: 'missing' }));
-    const list = screen.getByRole('region', { name: en.automations[lane].preview.title });
-    expect(within(list).getByTestId('automations-list-count')).toHaveTextContent('0');
-    expect(within(list).getByTestId('automations-list-head')).toHaveTextContent(en.automations[lane].preview.last);
-    const ghost = within(list).getByTestId('automations-ghost-row');
-    expect(ghost).toHaveAttribute('aria-hidden', 'true');
-    expect(ghost).toHaveTextContent(lane === 'ontology' ? en.automations.ontology.defaultName : en.library.rounds.name.consistency);
-    expect(ghost).toHaveTextContent(lane === 'ontology' ? en.automations.cadence['6h'] : en.automations.cadence.hour);
-    expect(ghost).toHaveTextContent(en.automations.outcome.none);
-    expect(screen.getAllByText(en.automations[lane].emptyTitle)).toHaveLength(1);
-    expect(screen.getByTestId('automations-new').className).toMatch(/bg-\[color:var\(--color-indigo/);
+    const stage = screen.getByTestId('automations-empty-workbench');
+    expect(within(stage).getByRole('heading', { name: en.automations.stageTitle })).toBeInTheDocument();
+    const example = within(stage).getByTestId('automations-ghost-row');
+    expect(example.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(example).toHaveTextContent(lane === 'ontology' ? en.automations.ontology.defaultName : en.library.rounds.name.consistency);
+    expect(example).toHaveTextContent(lane === 'ontology' ? en.automations.cadence['6h'] : en.automations.cadence.hour);
+    expect(within(stage).getByTestId('automations-stage-new')).toHaveTextContent(en.automations[lane].new);
+    expect(screen.queryByTestId('automations-list-panel')).toBeNull();
   });
 
-  it('keeps the list a bare frame where no schedule can exist yet, without a count', () => {
+  it('offers the folder, not a schedule, where no schedule can exist yet', () => {
     renderPage(runner({ storeStatus: 'no-vault' }));
-    const list = screen.getByRole('region', { name: en.automations.ontology.preview.title });
-    expect(within(list).queryByTestId('automations-list-count')).toBeNull();
-    expect(within(list).getByTestId('automations-ghost-row')).toBeInTheDocument();
+    const stage = screen.getByTestId('automations-empty-workbench');
+    expect(stage).toHaveTextContent(en.automations.openFolderDescription);
+    expect(screen.queryByTestId('automations-stage-new')).toBeNull();
     expect(screen.queryByTestId('automations-new')).toBeNull();
   });
 
-  it('turns the ghost row into the first schedule in place, keeping the button in its slot', () => {
+  it('swaps the stage for the list when the first schedule is saved, keeping the header button in its slot', () => {
     const round: RoundRecord = { id: 'first', kind: 'ontology', name: 'Morning review', enabled: true,
       cadence: { every: '6h' }, createdAt: '2026-09-20T08:00:00Z', nextDueAt: '2026-09-21T14:00:00Z' };
     const view = renderPage(runner({ storeStatus: 'missing' }));
@@ -185,14 +183,12 @@ describe('Automations manager', () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByTestId('automations-new')).toBe(button);
-    expect(screen.getByTestId('automations-new').className).not.toMatch(/bg-\[color:var\(--color-indigo/);
     expect(screen.getByTestId('automations-list-count')).toHaveTextContent('1');
     const row = screen.getByTestId('automation-first');
     expect(row).toHaveAttribute('aria-expanded', 'false');
     expect(row.closest('li')?.className).toMatch(/arriving|motion-swap-in/);
-    for (const leaving of [screen.queryByTestId('automations-ghost-row'), screen.queryByTestId('automations-empty-workbench')]) {
-      if (leaving) expect(leaving.closest('[aria-hidden="true"]')).not.toBeNull();
-    }
+    const leaving = screen.queryByTestId('automations-empty-workbench');
+    if (leaving) expect(leaving.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
   it('an empty lane is a stage and a lane with a schedule is a list', () => {
