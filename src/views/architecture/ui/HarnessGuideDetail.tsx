@@ -114,14 +114,14 @@ export function statusTags(item: SetupItem): StatusTag[] {
   return tags;
 }
 
-function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: string; title?: string } {
+function tagText(tag: StatusTag, item: SetupItem, t: TranslateFn): { text: string; hint?: string } {
   switch (tag.key) {
     case 'missing':
-      return { text: t('hookMissing'), title: t('hookMissingHint') };
+      return { text: t('hookMissing'), hint: t('hookMissingHint') };
     case 'wired':
-      return { text: t('hookWired'), title: t('hookWiredHint') };
+      return { text: t('hookWired'), hint: t('hookWiredHint') };
     case 'approval':
-      return { text: t('hookApprovalGate'), title: t('hookApprovalGateHint') };
+      return { text: t('hookApprovalGate'), hint: t('hookApprovalGateHint') };
     case 'always':
       return { text: t('loadingAlways') };
     case 'path':
@@ -146,11 +146,10 @@ export function ItemStatus({ item, t }: { item: SetupItem; t: TranslateFn }) {
   return (
     <span className="flex flex-wrap items-center gap-1.5">
       {tags.map((tag) => {
-        const { text, title } = tagText(tag, item, t);
+        const { text } = tagText(tag, item, t);
         return (
           <span
             key={tag.key}
-            title={title}
             data-harness-status={tag.key}
             className={badgeClass({ shape: 'tag', className: cn('whitespace-nowrap', tag.warning ? WARNING_BADGE : NEUTRAL_BADGE) })}
           >
@@ -159,6 +158,21 @@ export function ItemStatus({ item, t }: { item: SetupItem; t: TranslateFn }) {
         );
       })}
     </span>
+  );
+}
+
+/** What each status means, as text a person can read without hovering. */
+function StatusHints({ item, t }: { item: SetupItem; t: TranslateFn }) {
+  const hints = statusTags(item).flatMap((tag) => tagText(tag, item, t).hint ?? []);
+  if (hints.length === 0) return null;
+  return (
+    <ul data-harness-status-hints className="mt-1.5 flex flex-col gap-1">
+      {hints.map((hint) => (
+        <li key={hint} className="text-pretty text-label text-[color:var(--color-text-tertiary)]">
+          {hint}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -212,6 +226,7 @@ export function SetupItemDetail({
         {statusTags(item).length > 0 ? (
           <Fact label={t('detailStatus')}>
             <ItemStatus item={item} t={t} />
+            <StatusHints item={item} t={t} />
           </Fact>
         ) : null}
         {item.declaration ? (

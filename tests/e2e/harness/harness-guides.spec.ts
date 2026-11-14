@@ -76,7 +76,29 @@ test.describe("harness Setup files and statuses", () => {
     await expect(page.getByTestId("harness-item-detail")).toBeVisible();
     await expect(page.locator("[data-harness-section]")).toHaveCount(0);
 
+    await expect(page.getByTestId("harness-detail-back")).toBeFocused();
     await page.getByTestId("harness-detail-back").click();
     await expect(page.locator("[data-harness-section]")).toHaveCount(3);
+    await expect(problem(page, "hook-missing")).toBeFocused();
+  });
+
+  test("at phone width Escape closes an opened file and returns to its row where the list stood", async ({ page }) => {
+    await openSetup(page, { viewport: { width: 390, height: 844 } });
+    const verification = page.locator('[data-harness-section="verification"]');
+    await verification.locator('[data-harness-group="scripts"] button[aria-expanded]').click();
+    const row = verification.locator('[data-harness-item="script:test:cart"]');
+    await row.scrollIntoViewIfNeeded();
+    const scroll = page.getByTestId("harness-setup-scroll");
+    const before = await scroll.evaluate((node) => node.scrollTop);
+    expect(before, "the row should sit below the first screen").toBeGreaterThan(0);
+
+    await row.click();
+    await expect(page.getByTestId("harness-item-detail")).toBeVisible();
+    await expect(page.getByTestId("harness-detail-back")).toBeFocused();
+
+    await page.keyboard.press("Escape");
+    await expect(page.locator("[data-harness-section]")).toHaveCount(3);
+    await expect(row).toBeFocused();
+    expect(await scroll.evaluate((node) => node.scrollTop)).toBe(before);
   });
 });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
@@ -87,11 +87,53 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
     [selectedKey],
   );
 
-  const select = useCallback((key: string) => {
-    setChosen(key);
-    const pane = detailRef.current;
-    if (pane) pane.scrollTop = 0;
-  }, []);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const backRef = useRef<HTMLButtonElement | null>(null);
+  /* The row that opened the drill-in and where the list stood, so closing it returns there. */
+  const returnTo = useRef<{ selector: string; scrollTop: number } | null>(null);
+
+  const open = useCallback(
+    (key: string, opener: string) => {
+      if (!beside) {
+        returnTo.current = { selector: opener, scrollTop: scrollRef.current?.scrollTop ?? 0 };
+        /* Keep the row's group open after the drill-in closes, so focus has a row to land on. */
+        const holder = setup.sections.flatMap((section) =>
+          [...section.groups, ...section.aside].filter((group) => group.items.some((item) => itemHolds(item, key))).map((group) => groupKey(section.id, group)),
+        );
+        if (holder.length > 0) setToggled((current) => new Map(current).set(holder[0]!, true));
+      }
+      setChosen(key);
+      const pane = detailRef.current;
+      if (pane) pane.scrollTop = 0;
+    },
+    [beside, setup.sections],
+  );
+  const select = useCallback((key: string) => open(key, `[data-harness-item="${CSS.escape(key)}"]`), [open]);
+  const close = useCallback(() => setChosen(null), []);
+
+  const drillIn = !beside && selected !== null;
+  useLayoutEffect(() => {
+    if (drillIn) {
+      backRef.current?.focus();
+      return;
+    }
+    const target = returnTo.current;
+    if (!target) return;
+    returnTo.current = null;
+    if (scrollRef.current) scrollRef.current.scrollTop = target.scrollTop;
+    scrollRef.current?.querySelector<HTMLElement>(target.selector)?.focus();
+  }, [drillIn]);
+
+  useEffect(() => {
+    if (!drillIn) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      event.preventDefault();
+      close();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [drillIn, close]);
 
   const toolOptions = useMemo(
     () => [
@@ -105,8 +147,6 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
   if (total === 0 && filter === null) {
     return <EmptyState title={t('empty')} description={t('emptyBody')} />;
   }
-
-  const drillIn = !beside && selected !== null;
 
   const lead = (
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
@@ -138,7 +178,8 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
               data-harness-problem={problem.kind}
               hoverSurface="lift"
               size="md"
-              onClick={() => select(problem.itemKey)}
+              data-harness-problem-key={problem.key}
+              onClick={() => open(problem.itemKey, `[data-harness-problem-key="${CSS.escape(problem.key)}"]`)}
               className="w-full gap-2.5 rounded-none"
             >
               <AlertTriangle size={ICON_SIZE.sm} aria-hidden className="shrink-0 text-[color:var(--color-amber-source-a90)]" />
@@ -185,10 +226,17 @@ export function HarnessSetupView({ report, sourceRoot }: { report: HarnessReport
         beside ? 'grid-cols-[minmax(0,1fr)_24rem] gap-5' : 'grid-cols-[minmax(0,1fr)]',
       )}
     >
-      <div data-testid="harness-setup-scroll" className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
+      <div ref={scrollRef} data-testid="harness-setup-scroll" className="flex min-h-0 flex-col gap-4 overflow-y-auto overscroll-contain">
         {drillIn ? (
           <div className="flex flex-col gap-3">
-            <Button variant="ghost" size="sm" className="self-start" onClick={() => setChosen(null)} data-testid="harness-detail-back">
+            <Button
+              ref={backRef}
+              variant="ghost"
+              size="sm"
+              className="atlas-touch-floor self-start"
+              onClick={close}
+              data-testid="harness-detail-back"
+            >
               <ArrowLeft size={ICON_SIZE.sm} aria-hidden />
               {t('back')}
             </Button>
