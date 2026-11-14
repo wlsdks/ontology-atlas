@@ -11,9 +11,6 @@ const STAGE_LABEL: Readonly<Record<HarnessScanProgress['stage'], string>> = {
   nested: 'loadingStageNested',
   'agent-directories': 'loadingStageAgentDirectories',
   hooks: 'loadingStageHooks',
-  documents: 'loadingStageDocuments',
-  'citation-hops': 'loadingStageCitationHops',
-  coverage: 'loadingStageCoverage',
 };
 
 const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
@@ -21,9 +18,6 @@ const STAGE_ORDER: ReadonlyArray<HarnessScanProgress['stage']> = [
   'nested',
   'agent-directories',
   'hooks',
-  'coverage',
-  'documents',
-  'citation-hops',
 ];
 
 const WIDEST_COUNT = 999;

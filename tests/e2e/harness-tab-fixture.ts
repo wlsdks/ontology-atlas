@@ -101,12 +101,7 @@ const VAULT_FILES: Record<string, string> = {
     "# Storefront Web Architecture",
     "",
   ].join("\n"),
-  /*
-   * Two areas with implementation paths, which is what the coverage matrix's rows are made of. They
-   * are deliberately asymmetric: the shop front is told, gated and watched, while the shop's API is
-   * told and gated and no check names it. A fixture where every cell filled could not show the
-   * thing this view exists for.
-   */
+  /* Two ordinary areas with implementation paths, so the vault behind the Harness tab is a real ontology. */
   "domains/shop-front.md": [
     "---",
     "uid: 7a2b1c3d-4e5f-4061-8273-9a0b1c2d3e4f",
@@ -204,7 +199,7 @@ const SOURCE_FILES: Record<string, string> = {
       lint: "eslint",
       typecheck: "tsc --noEmit",
       "test:run": "vitest run",
-      // Names one area's path and not the other's — the asymmetry the matrix has to show.
+      // A check script whose command names one path, shown as its declaration.
       "test:cart": "vitest run src/features/cart",
       "agents:check": "node cli/src/index.mjs agent-files",
     },
@@ -212,9 +207,9 @@ const SOURCE_FILES: Record<string, string> = {
   "AGENTS.md": "# Storefront\n\nCanonical contributor guide. Checkout rules live in docs/checkout.md.\n",
   "CLAUDE.md": "# CLAUDE.md\n\n@AGENTS.md\n",
   "src/AGENTS.md": "# src\n\nCodex merges this one root-down. Claude Code never auto-loads it.\n",
-  // No `paths:`, so it is always loaded and reaches every area: the universal row, once.
+  // No `paths:`, so it reads as Always.
   ".claude/rules/forbidden.md": "# Forbidden\n",
-  // A path-scoped rule: it reaches recorded capabilities under the shared `src/features/` prefix.
+  // A path-scoped rule, read as By path.
   ".claude/rules/cart.md": ['---', 'paths:', '  - "src/features/**"', '---', '', '# Cart rules', ''].join("\n"),
   ".claude/rules/a-very-long-outside-domain-mapping-identity.md": ['---', 'paths:', '  - "packages/not-recorded/**"', '---', '', '# Outside mapping declaration label', ''].join("\n"),
   "src/features/cart/index.ts": "export const cart = [];\n",
@@ -228,7 +223,7 @@ const SOURCE_FILES: Record<string, string> = {
   "src/entities/library-round/index.ts": "export const rounds = [];\n",
   "scripts/release-check.mjs": "export const release = true;\n",
   "api/AGENTS.md": "# api\n\nCodex merges this one root-down.\n",
-  // A document a guide names by path, and one nothing names.
+  // Ordinary documents outside the harness, which the scan never opens.
   "docs/checkout.md": "# Checkout\n",
   "docs/forgotten.md": "# Nobody points at this\n",
   ".claude/skills/po-pass/SKILL.md": SKILL_BODY,

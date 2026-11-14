@@ -14,12 +14,7 @@ export {
   type AgentFilesUiModel,
   type AgentTool,
 } from './model/agent-files';
-export {
-  buildCoverageMatrix,
-  type CoverageAreaInput,
-  type CoverageCapability,
-} from './model/coverage-matrix';
-export { type ScopeDeclaration } from './model/coverage-scopes';
+export { type ScopeDeclaration } from './model/scope-declarations';
 export {
   isPairDrift,
   scanHarness,
@@ -27,6 +22,5 @@ export {
   type HarnessScanPort,
   type HarnessScanProgress,
 } from './model/repo-scan';
-export { citesPath } from './model/document-reach';
 export { hookEventStep, type HookConfigFacts, type HookEventStep } from './model/hook-wiring';
 export { guideCitation } from './model/guide-citations';

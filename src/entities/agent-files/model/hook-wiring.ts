@@ -129,11 +129,3 @@ export async function collectHookFacts(
 
   return { configPath, hooks, approvalGate: options.approvalGate };
 }
-
-/** Scripts found on disk across every config. */
-export function wiredHookCount(groups: readonly HookConfigFacts[]): number {
-  return groups.reduce(
-    (sum, group) => sum + group.hooks.filter((hook) => hook.status === 'wired').length,
-    0,
-  );
-}

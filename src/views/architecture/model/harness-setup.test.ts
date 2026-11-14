@@ -101,6 +101,22 @@ describe('buildHarnessSetup', () => {
     expect(setup.items.get('permissions:.claude/settings.json')?.permissionCounts).toEqual({ allow: 0, ask: 1, deny: 1 });
   });
 
+  it('reads a rule as By path from its paths: alone, even when no listed path is on disk', async () => {
+    const rules = await scanHarness(
+      memoryPort({
+        'CLAUDE.md': '# Repo\n',
+        '.claude/rules/everywhere.md': '# Everywhere\n',
+        '.claude/rules/elsewhere.md': ['---', 'paths:', '  - "gone/**"', '  - "**/*.tsx"', '---', '# Elsewhere', ''].join('\n'),
+      }),
+    );
+    const setup = buildHarnessSetup(rules);
+    expect(setup.items.get('file:.claude/rules/everywhere.md')?.loading).toBe('always');
+    expect(setup.items.get('file:.claude/rules/elsewhere.md')).toMatchObject({
+      loading: 'path',
+      declaration: 'paths: gone/** · **/*.tsx',
+    });
+  });
+
   it('counts the AGENTS.md that CLAUDE.md imports in what Claude Code reads at session start', () => {
     const size = (path: string) => new TextEncoder().encode(REPO[path]).length;
     const setup = buildHarnessSetup(report, 'claude-code');
