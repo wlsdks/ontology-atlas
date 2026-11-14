@@ -250,7 +250,7 @@ export function HarnessGuidesView({
                           row.key,
                           <>
                             <span className={ROW_NAME}>
-                              <RowKindIcon folder={row.fileCount > 1} />
+                              <RowKindIcon folder={row.label.endsWith('/') || row.fileCount > 1} />
                               <span
                                 className={cn(
                                   'min-w-0 truncate text-body text-[color:var(--color-text-primary)]',
@@ -348,6 +348,7 @@ export function HarnessGuidesView({
                             key,
                             <>
                               <span className={ROW_NAME}>
+                                <RowKindIcon folder={false} />
                                 <span className="min-w-0 truncate font-mono text-body text-[color:var(--color-text-primary)]">
                                   {group.configPath}
                                 </span>
