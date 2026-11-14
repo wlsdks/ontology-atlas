@@ -1,8 +1,8 @@
 {
-  "title": "Git·PR 브리핑",
+  "title": "변경",
   "sourcePrompt": "Git 저장소를 골라 커밋과 PR 설명을 따라잡으세요. 온톨로지는 없어도 돼요.",
   "chooseRepository": "Git 저장소 고르기",
-  "webBody": "설치한 앱에서 저장소 폴더를 골라 로컬 Git 이력을 읽고 연결한 모델로 설명을 만들 수 있어요.",
+  "webBody": "로컬 Git 저장소는 설치한 앱에서만 읽을 수 있어요. 브라우저에서는 내역을 보여 주지 않아요.",
   "sourceUnavailable": "저장소를 읽을 수 없거나 폴더 접근 권한이 만료됐어요. 날짜는 그대로 두고 폴더를 다시 골라 주세요.",
   "noHistory": "이 폴더에는 읽을 수 있는 Git 이력이 없어요. 다른 저장소를 고르거나 첫 커밋 뒤에 다시 시도해 주세요.",
   "loading": "선택한 저장소와 기간의 이력을 읽고 있어요…",
@@ -185,7 +185,7 @@
   "summaryEmptyBody": "원문을 읽거나 요약을 만들 수 있어요.",
   "summaryModelMissing": "요약을 만들려면 로컬 모델을 골라 주세요. 원문은 지금 읽을 수 있어요.",
   "briefingSettings": "설정",
-  "settingsTitle": "브리핑 설정",
+  "settingsTitle": "변경 설정",
   "closeSettings": "설정 닫기",
   "settingsModel": "요약 모델",
   "settingsPrs": "GitHub PR 원문",
@@ -203,7 +203,7 @@
   "savedPrStatus": "저장한 PR · GitHub 최신 내용 미확인",
   "sourceListTitle": "커밋·PR 원문",
   "sourceList": "원문 목록",
-  "backSummary": "브리핑으로 돌아가기",
+  "backSummary": "한눈에 보기로 돌아가기",
   "commitIdentity": "커밋 {hash}",
   "originalsDisclaimer": "작성자 기록 · 동작 미검증",
   "sourceInventoryUnchecked": "커밋 {commits}개 · PR 설명 미조회",
@@ -221,6 +221,5 @@
   "previewDetails": "요청 세부 정보",
   "previewCancel": "취소",
   "startTitle": "무엇이 달라졌는지, 한눈에",
-  "startBody": "PR과 커밋, 변경된 파일을 나눠 살펴보세요. 로컬 Git 저장소를 열면 시작할 수 있어요.",
-  "startHint": "PR 읽기는 공개 GitHub 저장소를 지원해요."
+  "startBody": "로컬 Git 저장소를 열면 머지된 변경을 묶어서 세어 보여 줘요."
 }

@@ -1,0 +1,20 @@
+{
+  "headline": "{count}件の変更がマージされました · ファイル{files}件",
+  "notable": "確認したい変更",
+  "reasonRevert": "以前の変更を取り消します",
+  "reasonBreaking": "作成者が互換性のない変更と記しています",
+  "reasonReach": "記録された概念{count}件に関わります",
+  "reasonSize": "ファイル{count}件",
+  "other": "その他の変更",
+  "groupName": "{group}: 変更{count}件",
+  "concepts": "関わる概念",
+  "readOriginal": "原本を読む：{title}",
+  "onGitHub": "↗ GitHub",
+  "more": "さらに{count}件表示",
+  "originals": "原本",
+  "backToSummary": "要約に戻る",
+  "empty": "この期間にマージされた変更はありません。",
+  "goLatest": "最新の変更を見る",
+  "partial": "この期間は最新の{count}件まで読みました。期間を短くすると残りを確認できます。",
+  "partialOther": "この期間の一部を読めなかったため、数値は不完全です。期間を短くすると、さらに読めます。"
+}

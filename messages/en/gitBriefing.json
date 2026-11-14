@@ -1,8 +1,8 @@
 {
-  "title": "Git and PR briefing",
+  "title": "Changes",
   "sourcePrompt": "Choose a Git repository to catch up on its commits and PR descriptions. An ontology is optional.",
   "chooseRepository": "Choose Git repository",
-  "webBody": "Choose a repository folder in the installed app to read local Git history and create an explanation with your connected model.",
+  "webBody": "A local Git repository can only be read in the installed app. This page shows no history in a browser.",
   "sourceUnavailable": "This repository is unavailable or its folder permission expired. Choose it again; your dates are kept.",
   "noHistory": "This folder has no readable Git history. Choose another repository or retry after its first commit.",
   "loading": "Reading the selected repository and period…",
@@ -185,7 +185,7 @@
   "summaryEmptyBody": "Read the originals, or create a summary.",
   "summaryModelMissing": "Choose a local model to create a summary. You can read the originals now.",
   "briefingSettings": "Settings",
-  "settingsTitle": "Briefing settings",
+  "settingsTitle": "Changes settings",
   "closeSettings": "Close settings",
   "settingsModel": "Summary model",
   "settingsPrs": "GitHub PRs",
@@ -221,6 +221,5 @@
   "previewDetails": "Request details",
   "previewCancel": "Cancel",
   "startTitle": "Catch up on what changed",
-  "startBody": "Read pull requests, commits, and changed files in one place. Start with a local Git repository.",
-  "startHint": "PR reading supports public GitHub repositories."
+  "startBody": "Open a local Git repository to see what was merged, grouped and counted."
 }

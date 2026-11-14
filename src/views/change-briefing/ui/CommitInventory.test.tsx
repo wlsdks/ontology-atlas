@@ -27,6 +27,14 @@ it('does not show an incomplete commit body as the complete author original', ()
   expect(screen.queryByText('truncated')).toBeNull();
 });
 
+it('starts on a commit opened from the digest and hands its back control to the opener', () => {
+  const onBack = vi.fn();
+  render(<CommitInventory data={data} onExplain={vi.fn()} opened={{ hash: 'b'.repeat(40), backLabel: 'backToSummary', onBack }} />);
+  expect(screen.getByRole('heading', { name: 'Incomplete commit' })).toBeVisible();
+  fireEvent.click(screen.getByRole('button', { name: 'backToSummary' }));
+  expect(onBack).toHaveBeenCalledOnce();
+});
+
 it('drops the selected commit on a new period', () => {
   const view = render(<CommitInventory data={data} onExplain={vi.fn()} />);
   fireEvent.click(screen.getByRole('button', { name: /First commit/ }));

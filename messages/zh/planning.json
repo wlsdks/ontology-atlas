@@ -12,7 +12,7 @@
   "observationLimit": "文件可能在下次检查前发生变化。",
   "findFile": "查找文件名或路径",
   "refresh": "刷新文件夹",
-  "openHistory": "打开仓库简报",
+  "openHistory": "打开变更",
   "historyLimit": "提交历史仅包含当前分支的第一父提交，不包含未提交的更改。",
   "comparisonLimit": "代码比较使用所选时段的整个仓库端点，并非单个提交的比较。",
   "openMap": "打开本体地图",

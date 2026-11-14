@@ -8,15 +8,21 @@ import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import type { BriefingCommit, ChangeBriefing } from '@/shared/lib/git/tauri-change-briefing';
 
-export function CommitInventory({ data, onExplain, onFiles }: { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void }) {
-  return <CommitInventoryScope key={JSON.stringify([data.sourceRoot, data.head, data.snapshot])} data={data} onExplain={onExplain} onFiles={onFiles} />;
+/** A commit opened from elsewhere: the reader starts on it and its back control returns there. */
+export interface OpenedCommit { hash: string; backLabel: string; onBack: () => void }
+
+type CommitInventoryProps = { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void; opened?: OpenedCommit | null };
+
+export function CommitInventory({ data, opened, ...props }: CommitInventoryProps) {
+  return <CommitInventoryScope key={JSON.stringify([data.sourceRoot, data.head, data.snapshot, opened?.hash])} data={data} opened={opened} {...props} />;
 }
 
-function CommitInventoryScope({ data, onExplain, onFiles }: { data: ChangeBriefing; onExplain: () => void; onFiles?: (paths: string[]) => void }) {
+function CommitInventoryScope({ data, onExplain, onFiles, opened }: CommitInventoryProps) {
   const t = useTranslations('prBriefing');
   const git = useTranslations('gitBriefing');
   const locale = useLocale();
-  const [selected, setSelected] = useState<BriefingCommit | null>(null);
+  const [selected, setSelected] = useState<BriefingCommit | null>(() => data.commits.find(commit => commit.hash === opened?.hash) ?? null);
+  const fromElsewhere = Boolean(opened && selected?.hash === opened.hash);
   const [visible, setVisible] = useState(40);
   const list = useRef<HTMLDivElement>(null);
   const reader = useRef<HTMLElement>(null);
@@ -31,8 +37,8 @@ function CommitInventoryScope({ data, onExplain, onFiles }: { data: ChangeBriefi
     return Number.isNaN(parsed.getTime()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
   };
   return <section className="space-y-5" aria-label={t('commitsTab')}>
-    {selected ? <section ref={reader} tabIndex={-1} className="max-w-4xl space-y-4 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
-      <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={back}><ArrowLeft size={ICON_SIZE.lg} aria-hidden />{t('backToCommits')}</button>
+    {selected ? <section ref={reader} tabIndex={-1} data-commit-reader className="max-w-4xl space-y-4 rounded-panel border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">
+      <button type="button" className={controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={fromElsewhere ? opened!.onBack : back}><ArrowLeft size={ICON_SIZE.lg} aria-hidden />{fromElsewhere ? opened!.backLabel : t('backToCommits')}</button>
       <h2 className="min-w-0 break-words text-title font-[var(--font-weight-strong)]">{selected.subject}</h2>
       <p className="break-all font-mono text-label text-[color:var(--color-text-secondary)]">{selected.hash} · {clock(selected.committedAt)}</p>
       {selected.messageComplete === false ? <p role="status">{git('sourceUnavailableInline')}</p> : <pre className="whitespace-pre-wrap break-words font-mono text-body">{selected.message ?? selected.subject}</pre>}

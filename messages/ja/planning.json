@@ -12,7 +12,7 @@
   "observationLimit": "次の確認までにファイルが変わることがあります。",
   "findFile": "ファイル名またはパスを探す",
   "refresh": "フォルダを更新",
-  "openHistory": "リポジトリのブリーフィングを開く",
+  "openHistory": "変更を開く",
   "historyLimit": "コミット履歴は現在のブランチのfirst-parentコミットのみで、未コミットの変更を含みません。",
   "comparisonLimit": "コード比較は期間のリポジトリ全体の端点を比較し、個別コミットの比較ではありません。",
   "openMap": "オントロジーマップを開く",

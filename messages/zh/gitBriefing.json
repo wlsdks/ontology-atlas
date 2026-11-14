@@ -1,8 +1,8 @@
 {
-  "title": "Git and PR briefing",
+  "title": "变更",
   "sourcePrompt": "Choose a Git repository to catch up on its commits and PR descriptions. An ontology is optional.",
   "chooseRepository": "选择 Git 仓库",
-  "webBody": "在已安装的应用中选择仓库文件夹，即可读取本地 Git 历史，并用已连接的模型生成说明。",
+  "webBody": "本地 Git 仓库只能在已安装的应用中读取。浏览器中不显示历史。",
   "sourceUnavailable": "This repository is unavailable or its folder permission expired. Choose it again; your dates are kept.",
   "noHistory": "This folder has no readable Git history. Choose another repository or retry after its first commit.",
   "loading": "Reading the selected repository and period…",
@@ -185,7 +185,7 @@
   "summaryEmptyBody": "Read the originals, or create a summary.",
   "summaryModelMissing": "Choose a local model to create a summary. You can read the originals now.",
   "briefingSettings": "设置",
-  "settingsTitle": "Briefing settings",
+  "settingsTitle": "变更设置",
   "closeSettings": "Close settings",
   "settingsModel": "Summary model",
   "settingsPrs": "GitHub PRs",
@@ -220,7 +220,6 @@
   "previewOverview": "分批读取原文，再发送最多 {bytes} 字节的所选原文来生成概要。",
   "previewDetails": "请求详情",
   "previewCancel": "取消",
-  "startTitle": "一眼看清变化",
-  "startBody": "分别查看 PR、提交和变更文件。打开本地 Git 仓库即可开始。",
-  "startHint": "PR 阅读支持公开的 GitHub 仓库。"
+  "startTitle": "一眼看清改了什么",
+  "startBody": "打开本地 Git 仓库，即可看到已合并的变更，按类归组并计数。"
 }
