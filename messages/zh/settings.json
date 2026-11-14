@@ -57,7 +57,7 @@
       "tagsPlaceholder": "AI, MCP, 作品集",
       "stackPlaceholder": "Next.js, Tauri",
       "dependenciesHint": "选择此项目所连接的枢纽或上游项目。",
-      "ownerPlaceholder": "姓名",
+      "ownerPlaceholder": "支付团队",
       "iconPlaceholder": "🗺️",
       "progressPlaceholder": "50",
       "isHubLabel": "标为枢纽",
@@ -91,7 +91,7 @@
         "protocol": "第 {index} 行链接：网址必须以 http:// 或 https:// 开头。",
         "invalidUrl": "第 {index} 行链接：请输入有效的网址。"
       },
-      "demoModeBanner": "需先打开 Markdown 文件夹才能保存。",
+      "demoModeBanner": "需先打开文件夹才能保存。",
       "demoModeBannerHint": "在地图界面选择文件夹即可启用保存"
     },
     "actions": {
@@ -178,7 +178,7 @@
     "fieldDescriptionPlaceholder": "用一句话描述这个项目…",
     "fieldOwner": "负责人",
     "optionalHint": "可选",
-    "fieldOwnerPlaceholder": "例如：小明",
+    "fieldOwnerPlaceholder": "例如：支付团队",
     "fieldTags": "标签",
     "fieldTagsPlaceholder": "例如：auth, gateway",
     "labelName": "名称",
@@ -188,7 +188,7 @@
     "applying": "正在应用…",
     "apply": "应用更改",
     "reset": "重置输入",
-    "openDocument": "登记文档",
+    "openDocument": "添加文档",
     "openSettings": "完整编辑",
     "errorEmpty": "名称和一句话描述不能为空。",
     "errorGeneric": "无法应用更改。",
@@ -199,13 +199,13 @@
   "workspaceShapeMap": "本体地图",
   "workspaceShapeWiki": "Wiki",
   "workspaceShapeCaption": "由文件内容判断，不是设置。添加一部分会写入它的起始文件，标签页随之变化。",
-  "workspaceShapeStartMap": "建地图",
-  "workspaceShapeStartWiki": "建 Wiki",
+  "workspaceShapeStartMap": "添加地图",
+  "workspaceShapeStartWiki": "添加 Wiki",
   "workspaceShapeStarted": "已添加到此文件夹。",
   "workspaceShapeFailed": "无法添加到此文件夹，请重试。",
   "wikiWriteModeLabel": "智能体写 Wiki 页面时",
-  "wikiWriteModeAuto": "直接写入",
+  "wikiWriteModeAuto": "无需询问直接写入",
   "wikiWriteModeAsk": "每次询问",
-  "wikiWriteModeAutoCaption": "符合约定的来源整理会直接写入。保留的回答始终需要单独审阅；其他页面如果格式需要留意，会停在权限卡片上。",
-  "wikiWriteModeAskCaption": "每个页面都会停在权限卡片上。"
+  "wikiWriteModeAutoCaption": "符合页面格式的 Wiki 页面会直接保存。保存的回答始终需要单独审阅；格式需要留意的页面会在保存前请求许可。",
+  "wikiWriteModeAskCaption": "每个页面写入前都会请求许可。"
 }

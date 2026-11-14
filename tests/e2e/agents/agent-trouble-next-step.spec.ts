@@ -12,7 +12,7 @@ async function openDockWithFailingStart(page: Page, startError: string) {
   await seedFirstRunSeen(page);
   await installLibraryWorkHarness(page, { startError });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   /*
    * ⚠️ **Opening a folder lands on the map, and the walk has to wait for it.** Navigating
    * straight to the Library raced the vault opening: on the static export the goto won often

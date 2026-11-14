@@ -103,7 +103,7 @@ async function openLibrary(page: Page, runtimeId: LibraryWorkRuntimeId): Promise
     : BASE_FILES;
   const harness = await installLibraryWorkHarness(page, { files, runtimeId });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   await page.getByRole('heading', { name: 'Map' }).waitFor();
   await page.getByTestId('app-nav-rail-item-library').click();
   await page.getByTestId('library-graph-canvas').waitFor();

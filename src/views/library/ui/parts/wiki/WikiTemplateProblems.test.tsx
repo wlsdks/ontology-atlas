@@ -313,10 +313,10 @@ describe("WikiTemplateProblems — one action per card, or none", () => {
     const { unmount } = renderPanel([UNCITED], "en", {
       fix: { mode: "agent", onPress: vi.fn(), askEveryWrite: true },
     });
-    expect(en.library.wiki.fixWithAgentTooltipAsk).toContain("Writing stops at the permission card");
+    expect(en.library.wiki.fixWithAgentTooltipAsk).toContain("Each write asks for your permission");
     unmount();
     renderPanel([UNCITED], "en", { fix: { mode: "agent", onPress: vi.fn() } });
-    expect(en.library.wiki.fixWithAgentTooltip).not.toContain("Writing stops at the permission card");
+    expect(en.library.wiki.fixWithAgentTooltip).not.toContain("Each write asks for your permission");
     expect(en.library.wiki.fixWithAgentTooltip).toContain("is saved as it is");
   });
 });

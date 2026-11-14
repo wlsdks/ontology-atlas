@@ -94,8 +94,8 @@ describe('Privacy · data says what can leave and what this computer remembers',
     mount();
     const rows = screen.getAllByTestId('app-settings-allowances-folder');
     expect(rows.map((row) => row.textContent)).toEqual([
-      expect.stringContaining('1 connector · 1 schedule'),
-      expect.stringContaining('1 schedule'),
+      expect.stringContaining('1 MCP server · 1 scheduled check'),
+      expect.stringContaining('1 scheduled check'),
     ]);
     expect(screen.getByTestId('app-settings-privacy-allowances').textContent).not.toContain('definition-value');
     const forget = screen.getAllByTestId('app-settings-allowances-forget')[0]!;
@@ -127,19 +127,19 @@ describe('Privacy · data says what can leave and what this computer remembers',
     ];
     vault.forgetRecent.mockRejectedValueOnce(new Error('blocked'));
     mount();
-    expect(screen.getByTestId('app-settings-recent-folders').textContent).toContain('2 folders remembered');
+    expect(screen.getByTestId('app-settings-recent-folders').textContent).toContain('2 folders');
     const all = screen.getByTestId('app-settings-recent-forget-all');
     fireEvent.click(all);
     await act(async () => {
       fireEvent.click(all);
     });
     expect(vault.forgetRecent).toHaveBeenCalledWith(vault.recentVaults);
-    expect(screen.getByTestId('app-settings-recent-folders').textContent).toContain('Could not forget');
+    expect(screen.getByTestId('app-settings-recent-folders').textContent).toContain('Could not clear');
   });
 
   it('draws in Korean', () => {
     mount('ko');
-    expect(screen.getByTestId('app-settings-privacy-outbound-sends-content').textContent).toContain('폴더 내용을 보낼 수 있는 것');
+    expect(screen.getByTestId('app-settings-privacy-outbound-sends-content').textContent).toContain('폴더 내용 전송');
     expect(screen.getByTestId('app-settings-outbound-git-remote').textContent).toContain('Git 원격 저장소');
   });
 

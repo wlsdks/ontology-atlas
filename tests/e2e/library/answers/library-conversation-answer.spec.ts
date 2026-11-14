@@ -19,7 +19,7 @@ test('ordinary Library questions can be explicitly filed and do not impersonate 
     'wiki/room.md': PAGE,
   } });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   await expect(page.getByTestId('library-page')).toBeVisible();
   await expect(page.getByTestId('app-nav-rail-item-map')).toHaveCount(0);
   await page.getByTestId('library-workspace-wiki').click();
@@ -75,7 +75,7 @@ async function openConversation(page: import('@playwright/test').Page) {
   await seedFirstRunSeen(page);
   const harness = await installLibraryWorkHarness(page, { files: { [SOURCE]: SOURCE_TEXT, 'wiki/room.md': PAGE } });
   await page.goto('/en/');
-  await page.getByRole('button', { name: /Open my folder/i }).click();
+  await page.getByRole('button', { name: /Open (?:a|my) folder/i }).click();
   await page.getByTestId('library-workspace-wiki').click();
   await page.getByTestId('library-open-conversation').click();
   const chat = page.getByTestId('acp-chat-panel');
