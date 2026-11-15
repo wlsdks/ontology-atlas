@@ -76,14 +76,15 @@ export function LoopSection({ graph }: { graph: StageGraph }) {
 
   return (
     <section id="how" data-testid="gateway-loop-section" className={SECTION}>
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+      {/* The column, not the window, decides the row: the origin leaves it 640px wide at 1040. */}
+      <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} sub={t('sub')} />
 
         <ul
           ref={cards}
           data-testid="gateway-loop-cards"
           data-gateway-entrance={entrance}
-          className="mt-9 grid min-w-0 gap-4 min-[64rem]:grid-cols-3"
+          className="mt-9 grid min-w-0 gap-4 @min-[52rem]:grid-cols-3"
         >
           <LoopCard title={t('read.title')} body={t('read.body')}>
             <ReadDrawing labelOf={labelOf} />
@@ -114,7 +115,7 @@ function LoopCard({ title, body, children }: { title: string; body: string; chil
       {/* One height for all three, so the row's text starts on one line. */}
       <div
         aria-hidden
-        className="gateway-loop-drawing flex h-60 min-w-0 flex-col justify-center border-b border-[color:var(--color-border-soft)] px-6"
+        className="gateway-loop-drawing flex min-h-60 min-w-0 flex-col justify-center border-b border-[color:var(--color-border-soft)] px-6 py-5"
       >
         {children}
       </div>
@@ -141,7 +142,7 @@ function Concept({ id, label, className }: { id: string; label: string; classNam
   return (
     <span className={cn('inline-flex min-w-0 items-center gap-1.5', className)}>
       <OntologyMapKindGlyph kind={kindOf(id)} size={10} />
-      <span className="truncate">{label}</span>
+      <span className="min-w-0">{label}</span>
     </span>
   );
 }
@@ -156,9 +157,9 @@ function ReadDrawing({ labelOf }: { labelOf: (id: string) => string }) {
     <div className="min-w-0">
       <Line index={0} className={cn(MONO, 'flex items-center gap-2 text-[color:var(--color-text-primary)]')}>
         <SquareTerminal size={ICON_SIZE.sm} className={cn('shrink-0', QUIET)} />
-        <span className="truncate">{LOOP_READ.tool}</span>
+        <span className="min-w-0 break-all">{LOOP_READ.tool}</span>
       </Line>
-      <Line index={1} className={cn(MONO, 'truncate pl-5', QUIET)}>
+      <Line index={1} className={cn(MONO, 'break-all pl-5', QUIET)}>
         {LOOP_READ.slug}
       </Line>
       <Line
@@ -194,7 +195,7 @@ function MarkDrawing({ labelOf, commit }: { labelOf: (id: string) => string; com
       </Line>
       {LOOP_CHANGED.map((row, index) => (
         <Line key={row.file} index={2 + index * 2} className="mt-2.5">
-          <p className={cn(MONO, 'truncate text-[color:var(--color-text-secondary)]')}>{fileName(row.file)}</p>
+          <p className={cn(MONO, 'break-all text-[color:var(--color-text-secondary)]')}>{fileName(row.file)}</p>
           <p className="mt-1 flex min-w-0 items-center gap-2 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-1 text-label leading-label text-[color:var(--color-text-primary)]">
             <Concept id={row.concept} label={labelOf(row.concept)} />
             <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-[color:var(--color-status-warning)]" />
@@ -264,14 +265,14 @@ export function StartSection() {
 
   return (
     <section id="start" data-testid="gateway-start-section" className={SECTION}>
-      <div className={cn(PAGE_COLUMN, 'min-w-0')}>
+      <div className={cn(PAGE_COLUMN, '@container min-w-0')}>
         <SectionIntro eyebrow={t('eyebrow')} title={t('title')} />
 
         <ol
           ref={steps}
           data-testid="gateway-start-steps"
           data-gateway-entrance={entrance}
-          className="mt-9 grid min-w-0 gap-4 min-[64rem]:grid-cols-3"
+          className="mt-9 grid min-w-0 gap-4 @min-[52rem]:grid-cols-3"
         >
           {rows.map((row, index) => (
             <li key={row.title} className={cn(CARD, 'p-6')}>
@@ -284,7 +285,7 @@ export function StartSection() {
                   aria-hidden
                   className="inline-flex min-h-7 min-w-0 items-center rounded-chip border border-[color:var(--color-border-strong)] px-3 text-label leading-label text-[color:var(--color-text-primary)]"
                 >
-                  <span className="truncate">{row.press}</span>
+                  {row.press}
                 </span>
               </Line>
               <h3 className={cn(CARD_TITLE, 'mt-5')}>{row.title}</h3>
