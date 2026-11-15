@@ -123,7 +123,12 @@ export function createCouplingCloudRelaxer(
   const membersOf = new Uint32Array(domainIds.length);
   for (let i = 0; i < n; i += 1) if (domainIndexOf[i] >= 0) membersOf[domainIndexOf[i]] += 1;
   const reachOf = Float64Array.from(membersOf, clusterRadius);
-  const anchors = clusterRingAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT);
+  // Concepts no domain reaches, the project among them, gather as one group at the ring's centre.
+  let looseCount = 0;
+  for (let i = 0; i < n; i += 1) if (domainIndexOf[i] < 0) looseCount += 1;
+  const looseReach = domainIds.length >= 2 ? clusterRadius(looseCount) : Infinity;
+  const anchors = clusterRingAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, Number.isFinite(looseReach) ? looseReach : 0);
+  const looseY = anchors.length > 0 ? anchors[0].y : 0;
   const anchorX = Float64Array.from(anchors, (a) => a.x);
   const anchorY = Float64Array.from(anchors, (a) => a.y);
   const anchorZ = Float64Array.from(anchors, (a) => a.z);
@@ -141,6 +146,14 @@ export function createCouplingCloudRelaxer(
     const heartX = Float64Array.from(domainNodeIndex, (d) => px[d]);
     const heartY = Float64Array.from(domainNodeIndex, (d) => py[d]);
     const heartZ = Float64Array.from(domainNodeIndex, (d) => pz[d]);
+    if (Number.isFinite(looseReach)) {
+      for (let i = 0; i < n; i += 1) {
+        if (domainIndexOf[i] >= 0) continue;
+        const r = Math.hypot(px[i], pz[i]) || 1;
+        const k = Math.min(1, (looseReach * CLOUD_SEED_SHARE_OF_REACH) / r);
+        px[i] *= k; pz[i] *= k; py[i] = looseY;
+      }
+    }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
       if (slot < 0) continue;
@@ -159,14 +172,17 @@ export function createCouplingCloudRelaxer(
     }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
-      if (slot < 0) continue;
-      const dx = px[i] - anchorX[slot];
-      const dy = py[i] - anchorY[slot];
-      const dz = pz[i] - anchorZ[slot];
+      const cx = slot >= 0 ? anchorX[slot] : 0;
+      const cy = slot >= 0 ? anchorY[slot] : looseY;
+      const cz = slot >= 0 ? anchorZ[slot] : 0;
+      const reach = slot >= 0 ? reachOf[slot] : looseReach;
+      const dx = px[i] - cx;
+      const dy = py[i] - cy;
+      const dz = pz[i] - cz;
       const d = Math.hypot(dx, dy, dz);
-      if (d <= reachOf[slot]) continue;
-      const k = reachOf[slot] / d;
-      px[i] = anchorX[slot] + dx * k; py[i] = anchorY[slot] + dy * k; pz[i] = anchorZ[slot] + dz * k;
+      if (d <= reach) continue;
+      const k = reach / d;
+      px[i] = cx + dx * k; py[i] = cy + dy * k; pz[i] = cz + dz * k;
     }
   }
 

@@ -24,12 +24,14 @@ function restAngle(k: number, n: number): number {
  * Cluster centres on horizontal rings round the dome's spin axis, placed for the rest pose:
  * seen from `pitch`, a ring is an ellipse, and its R is the least that keeps every pair of
  * clusters on it `gap` apart where the rest pose draws them. Turning away from the rest pose
- * may bring two clusters across each other, as any 3D turn does. O(k²) per ring, k ≤ 8.
+ * may bring two clusters across each other, as any 3D turn does. The first ring also clears a
+ * group of `centreRadius` at its centre. O(k²) per ring, k ≤ 8.
  */
 export function clusterRingAnchors(
   radii: readonly number[],
   restYaw: number,
   pitch: number,
+  centreRadius = 0,
   gap = CLUSTER_GAP,
 ): { x: number; y: number; z: number }[] {
   const out: { x: number; y: number; z: number }[] = [];
@@ -37,9 +39,14 @@ export function clusterRingAnchors(
   for (let i = 0; i < radii.length; i += CLUSTER_RING_MAX) rings.push(radii.slice(i, i + CLUSTER_RING_MAX).map((_, k) => i + k));
   const sinPitch = Math.max(0.1, Math.sin(pitch));
   const cosPitch = Math.max(0.1, Math.cos(pitch));
-  const ringRadius = rings.map((members) => {
+  const ringRadius = rings.map((members, ring) => {
     let need = 0;
     for (let a = 0; a < members.length; a += 1) {
+      if (ring === 0 && centreRadius > 0) {
+        const pa = restAngle(a, members.length);
+        const fromCentre = Math.hypot(Math.cos(pa), Math.sin(pa) * sinPitch);
+        need = Math.max(need, ((radii[members[a]] + centreRadius) * CLUSTER_NEAR_GROWTH + gap) / fromCentre);
+      }
       for (let b = a + 1; b < members.length; b += 1) {
         const pa = restAngle(a, members.length);
         const pb = restAngle(b, members.length);
