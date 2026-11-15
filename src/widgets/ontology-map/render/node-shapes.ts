@@ -286,9 +286,6 @@ export function projectPinTicks(cx: number, cy: number, r: number): PinTick[] {
 function resolveBodyFill(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, farT: number, fill: string, sheenTop: string): string | CanvasGradient {
     if (r <= SHEEN_MIN_RADIUS || farT >= SHEEN_MAX_FAR_T)
         return fill;
-    // Identical stops draw the flat fill; skip building the gradient.
-    if (sheenTop === fill)
-        return fill;
     const grad = ctx.createLinearGradient(x, y - r, x, y + r);
     grad.addColorStop(0, sheenTop);
     grad.addColorStop(1, fill);

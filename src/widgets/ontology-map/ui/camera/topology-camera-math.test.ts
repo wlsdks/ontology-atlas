@@ -599,6 +599,27 @@ describe("hitTestWorld: the render offset", () => {
   };
   const tokens = { radiusProject: 30, radiusDomain: 17, radiusCapability: 11, radiusElement: 7 } as unknown as Parameters<typeof hitTestWorld>[4];
 
+  const worldOf = (nodes: { id: string; kind: string; x: number; y: number }[]) => {
+    const full = nodes.map((n) => ({ ...n, magnitudeScale: 1 }));
+    return { nodes: full, nodeById: new Map(full.map((n) => [n.id, n])) } as unknown as Parameters<typeof hitTestWorld>[0];
+  };
+
+  it("when both discs hold the press, distance to the centre wins", () => {
+    const world = worldOf([
+      { id: "far", kind: "domain", x: 0, y: 0 },
+      { id: "near", kind: "domain", x: 4, y: 0 },
+    ]);
+    expect(hitTestWorld(world, camera as never, 800, 600, tokens, 400, 300)).toBe("far");
+  });
+
+  it("the middle of a far node's drawn disc is not stolen by a nearer node's margin ring", () => {
+    const world = worldOf([
+      { id: "domain", kind: "domain", x: 0, y: 0 },
+      { id: "element", kind: "element", x: 25, y: 0 },
+    ]);
+    expect(hitTestWorld(world, camera as never, 800, 600, tokens, 415, 300)).toBe("domain");
+  });
+
   it("the hit disc uses the same projection as the screen coordinates the instrument reports, one projection", () => {
     const offset = (n: { id: string;
         }) => (n.id === "element" ? { x: 120, y: -80 } : { x: 0, y: 0 });

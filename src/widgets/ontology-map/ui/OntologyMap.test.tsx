@@ -166,5 +166,6 @@ describe("OntologyMap", () => {
     render(<OntologyMap {...realmProps} />);
 
     expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent("이 노드 안쪽만 봐요");
+    expect(screen.getByTestId("topology-realm-enter-button")).toHaveAttribute("aria-label", "이것만 보기");
   });
 });

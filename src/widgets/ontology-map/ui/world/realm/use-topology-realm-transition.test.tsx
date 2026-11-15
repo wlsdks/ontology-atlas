@@ -117,6 +117,21 @@ describe("interruptible realm entry", () => {
     expect(nodes.map(node => ({ x: node.x, y: node.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
   });
 
+  it("exits to the camera from before entry even after its world is rebuilt", () => {
+    const f = fixture();
+    f.step(1200);
+    f.sources.cameraRef.current.x.value = 12;
+    f.sources.cameraRef.current.y.value = 34;
+    const previous = f.sources.worldRef.current;
+    const nodes = previous.nodes.map(node => ({ ...node }));
+    f.sources.worldRef.current = { ...previous, nodes, nodeById: new Map(nodes.map(node => [node.id, node])) };
+    f.hook.rerender({ root: "root" });
+    f.step(1201);
+    f.hook.rerender({ root: null });
+    f.step(1202);
+    expect(f.sources.cameraTargetRef.current).toEqual({ tx: 91, ty: 82, tscale: 0.9 });
+  });
+
   it("preserves a dragged realm member through a render without a world rebuild", () => {
     const f = fixture(true);
     f.step(0);

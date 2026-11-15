@@ -69,6 +69,13 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 /** Linear RGB lerp between two `#rrggbb` hex colors — ported from the prototype's `lerpColor()`. */
+// `rgb()` form keeps the contains inks a hard cut in the trace's ink mix,
+// which blends only `#rrggbb`; a hex token there would change transitions.
+export function hexToRgbCss(hex: string): string {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export function lerpColorHex(hexA: string, hexB: string, t: number): string {
   const a = hexToRgb(hexA);
   const b = hexToRgb(hexB);

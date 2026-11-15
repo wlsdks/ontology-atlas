@@ -51,8 +51,6 @@ describe("map inspection hook (window.__atlasMap)", () => {
   });
 
   it("edges expose their control points, since measuring the chord would count crossings that are not on screen", () => {
-    // Keep the public coordinate fields; the curve's accuracy is a paint
-    // comparison, not a shared formula pinned here.
     expect(source).toMatch(/controlX:\s*toScreenX\(/);
     expect(source).toMatch(/controlY:\s*toScreenY\(/);
   });

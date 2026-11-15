@@ -62,8 +62,6 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--map-canvas-bg-far": "#050507",
   "--map-grid-minor": "#0e0e13",
   "--map-grid-major": "#121218",
-  // Not a `--map-*` name: the raised plane ring borrows the application's
-  // own tertiary text step rather than adding a colour for one hover state.
   "--map-vignette-base-alpha": "0.32",
   "--map-vignette-far-alpha": "0.18",
 

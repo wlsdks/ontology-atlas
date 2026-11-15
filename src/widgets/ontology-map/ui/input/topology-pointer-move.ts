@@ -100,20 +100,19 @@ export function createPointerMoveHandler(
     if (next.phase === "dragging") {
       const sim = simRef.current;
       const { width, height } = viewportRef.current;
-      const grabbedNodeId = pressedNodeId;
       // Start a node pin-drag the moment we cross into dragging on a node.
-      if (nodeDragRef.current === null && grabbedNodeId !== null && sim?.hasNode(grabbedNodeId)) {
-        const grabNode = world.nodeById.get(grabbedNodeId);
+      if (nodeDragRef.current === null && pressedNodeId !== null && sim?.hasNode(pressedNodeId)) {
+        const grabNode = world.nodeById.get(pressedNodeId);
         if (grabNode) {
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(grabNode.x, grabNode.y, pw.x, pw.y);
-          sim.pin(grabbedNodeId, grabNode.x, grabNode.y);
-          nodeDragRef.current = { nodeId: grabbedNodeId, offset };
+          sim.pin(pressedNodeId, grabNode.x, grabNode.y);
+          nodeDragRef.current = { nodeId: pressedNodeId, offset };
           heatRef.current = NODE_DRAG_HEAT_MS;
           // C1 B1/B2 — capture the tug/settle-restriction set + start position
           // once, at grab time (not recomputed per frame).
-          const tugSets = computeDragTugSets(world.neighborMap, grabbedNodeId);
-          dragAffectedSetRef.current = { draggedId: grabbedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
+          const tugSets = computeDragTugSets(world.neighborMap, pressedNodeId);
+          dragAffectedSetRef.current = { draggedId: pressedNodeId, oneHop: tugSets.oneHop, twoHop: tugSets.twoHop };
           dragStartPosRef.current = { x: grabNode.x, y: grabNode.y };
         }
       }

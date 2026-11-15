@@ -1,4 +1,4 @@
-import { lerpColorHex } from "../../render/grid";
+import { hexToRgbCss } from "../../render/grid";
 import { worldToScreen } from "../camera/topology-camera-math";
 import type { WorldEdge } from "../world/topology-world";
 import { EMPTY_NEIGHBOR_SET } from "./frame-state";
@@ -55,12 +55,10 @@ export function prepareFocus(frame: FrameInputs) {
   const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
   resetNodeVisualCacheFor(tokens, reducedMotion);
-  // `rgb()` form keeps the contains inks a hard cut in the trace's ink mix,
-  // which only blends `#rrggbb`; feeding the hex tokens would change transitions.
   const traceTokensFrame = {
-    edgeContains: lerpColorHex(tokens.edgeContains, tokens.edgeContains, 0),
-    edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.edgeContainsL0, 0),
-    edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.edgeContainsL2, 0),
+    edgeContains: hexToRgbCss(tokens.edgeContains),
+    edgeContainsL0: hexToRgbCss(tokens.edgeContainsL0),
+    edgeContainsL2: hexToRgbCss(tokens.edgeContainsL2),
     edgeDepends: tokens.edgeDepends,
     edgeDim: tokens.edgeDim,
     indigo: tokens.indigo,
