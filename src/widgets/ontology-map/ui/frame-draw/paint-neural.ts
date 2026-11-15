@@ -40,8 +40,9 @@ const LIT_DOT_T = 0.96;
 const NAME_GRID_PX = 48;
 const SPRITE_PX = 64;
 const PLATE_EDGE_ALPHA = 0.2;
-/** Points per lit axon a receded domain title must keep clear of. */
+/** Points per lit axon a name or receded domain title must keep clear of: at least this many, and one per step. */
 const LIT_PATH_SAMPLES = 10;
+const LIT_PATH_STEP_PX = 8;
 const LIT_PATH_PAD_PX = 4;
 /** A cluster's soft pool reaches this far past its members' half-span. */
 const CLUSTER_POOL_REACH = 1.6;
@@ -65,6 +66,8 @@ const PLATE_FACT_LESS_PX = 0.5;
 /** The plate holds two lines of names and this many paddings of air. */
 const PLATE_LINES = 2;
 const PLATE_PAD_SHARE = 1.8;
+/** How far, in name heights, a focus's name may stand off its first places to keep clear of lit axons. */
+const NAME_NUDGE_LINES = 1.2;
 /** At most this many names are tried per drawn name, so a dense frame stops early. */
 const NAME_TRIES_PER_NAME = 4;
 /** Off-screen cells this far past an edge may still put a name on screen. */
@@ -77,14 +80,14 @@ const FAR_DISTANCE = 3;
 
 let tokens: NeuralTokens | null = null;
 const sprites = new Map<string, HTMLCanvasElement | null>();
-interface Signal { key: string | null; startMs: number; hops: number; hopMs: number }
+interface Signal { key: string | null; startMs: number; impact: NeuralImpact | null; hops: number; hopMs: number }
 /**
  * The signal plays once per focus: the selection and the hover each keep their own start, so a hover
  * ending over another cell returns to the selection without replaying its signal.
  */
 const signals: { selected: Signal; hovered: Signal } = {
-  selected: { key: null, startMs: 0, hops: 1, hopMs: 0 },
-  hovered: { key: null, startMs: 0, hops: 1, hopMs: 0 },
+  selected: { key: null, startMs: 0, impact: null, hops: 1, hopMs: 0 },
+  hovered: { key: null, startMs: 0, impact: null, hops: 1, hopMs: 0 },
 };
 let activeSignal: Signal = signals.selected;
 
@@ -392,8 +395,15 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   if (signalKey !== signalSlot.key) {
     signalSlot.key = signalKey;
     signalSlot.startMs = now;
-    signalSlot.hops = Math.max(1, impact?.hops ?? 1);
-    signalSlot.hopMs = neuralSpreadHopMs(signalSlot.hops, t.signalMs, impact !== null ? t.spreadMs : t.signalMs);
+    signalSlot.impact = null;
+    signalSlot.hops = 1;
+    signalSlot.hopMs = t.signalMs;
+  }
+  // A selection's focus ramp may light it a frame after its key was set; its spread keeps that start.
+  if (impact !== null && signalSlot.impact !== impact) {
+    signalSlot.impact = impact;
+    signalSlot.hops = Math.max(1, impact.hops);
+    signalSlot.hopMs = neuralSpreadHopMs(signalSlot.hops, t.signalMs, t.spreadMs);
   }
   activeSignal = signalSlot;
   const spread = signalKey === null ? signalSlot.hops : neuralSpreadAt(now, signalSlot.startMs, signalSlot.hops, signalSlot.hopMs, reducedMotion);
@@ -618,6 +628,8 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
 /** 0 for distance 1, 1 for the middle step, 2 for far: one batched stroke per strength and band. */
 const strengthStep = (distance: number) => (distance <= 1 ? 0 : distance < FAR_DISTANCE ? 1 : 2);
 const STEP_DISTANCES = [1, FAR_DISTANCE - 1, FAR_DISTANCE] as const;
+/** A weaker step is also thinner, down to this share of a lit axon's width at zero strength. */
+const IMPACT_WIDTH_FLOOR = 0.45;
 
 /**
  * A selection's dependents in the reach ink, hop k lighting from its nearer end as its signal runs out,
@@ -629,14 +641,15 @@ function paintSpread(ctx: CanvasRenderingContext2D, t: NeuralTokens, litCount: n
   ctx.strokeStyle = reach;
   ctx.fillStyle = reach;
   for (let step = 0; step < STEP_DISTANCES.length; step += 1) {
-    const stepAlpha = t.litAlpha * alpha * impactStrength(t, STEP_DISTANCES[step]);
+    const strength = impactStrength(t, STEP_DISTANCES[step]);
+    const widthShare = IMPACT_WIDTH_FLOOR + (1 - IMPACT_WIDTH_FLOOR) * strength;
     let any = false;
     ctx.shadowColor = reach;
     ctx.shadowBlur = step === 0 ? t.litGlowPx : 0;
     for (let band = 0; band < AXON_BANDS; band += 1) {
       const t1 = (band + 1) / AXON_BANDS;
-      ctx.globalAlpha = stepAlpha;
-      ctx.lineWidth = bandWidthPx(band, t.litStartPx, t.litEndPx);
+      ctx.globalAlpha = t.litAlpha * alpha * strength;
+      ctx.lineWidth = bandWidthPx(band, t.litStartPx, t.litEndPx) * widthShare;
       ctx.beginPath();
       for (let k = 0; k < litCount; k += 1) {
         if (litHop[k] <= 0 || strengthStep(litHop[k]) !== step) continue;
@@ -761,9 +774,11 @@ function paintNeuralNames(
       litOwn += 1;
       if (acx[e] > nx) litRight += 1;
     }
-    for (let j = 1; j < LIT_PATH_SAMPLES; j += 1) {
-      const x = at(ax[e], acx[e], abx[e], j / LIT_PATH_SAMPLES);
-      const y = at(ay[e], acy[e], aby[e], j / LIT_PATH_SAMPLES);
+    const lengthPx = Math.hypot(acx[e] - ax[e], acy[e] - ay[e]) + Math.hypot(abx[e] - acx[e], aby[e] - acy[e]);
+    const samples = Math.max(LIT_PATH_SAMPLES, Math.ceil(lengthPx / LIT_PATH_STEP_PX));
+    for (let j = 1; j < samples; j += 1) {
+      const x = at(ax[e], acx[e], abx[e], j / samples);
+      const y = at(ay[e], acy[e], aby[e], j / samples);
       litPath.add({ minX: x - LIT_PATH_PAD_PX, minY: y - LIT_PATH_PAD_PX, maxX: x + LIT_PATH_PAD_PX, maxY: y + LIT_PATH_PAD_PX });
     }
   }
@@ -810,8 +825,13 @@ function paintNeuralNames(
       [sx[i], sy[i] - gap - t.namePx * 0.5, "center", 0, -1],
     ];
     if (into) tries.sort((a, b) => (a[3] * into.dx + a[4] * into.dy) - (b[3] * into.dx + b[4] * into.dy));
+    // Clear of every lit axon, a name may also stand a line off each side before it crosses one.
+    const nudge = t.namePx * NAME_NUDGE_LINES;
+    const nudged = hot ? tries.flatMap(([x, y, align, dx, dy]): (typeof tries)[number][] => dy === 0
+      ? [[x, y - nudge, align, dx, dy], [x, y + nudge, align, dx, dy]]
+      : [[x, y + dy * nudge, align, dx, dy]]) : [];
     for (const clearOfLit of hot ? [true, false] : [false]) {
-      for (const [x, y, align] of tries) {
+      for (const [x, y, align] of clearOfLit ? [...tries, ...nudged] : tries) {
         const box = boxFor(node.label, x, y, align, t.namePx);
         if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
         // A focus's names may cross a receded cell, never another name, and a lit axon only if no side is clear.
