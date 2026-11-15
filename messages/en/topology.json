@@ -173,6 +173,7 @@
   "light3d": {
     "legendLabel": "3D map key",
     "focusFacts": "depends on {needs} · used by {users}",
+    "focusImpact": "Impact {count}",
     "dependenciesHidden": "{count, plural, one {# dependency} other {# dependencies}} hidden"
   },
   "analysis": {

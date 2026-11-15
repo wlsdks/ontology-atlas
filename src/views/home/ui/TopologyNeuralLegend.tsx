@@ -15,12 +15,15 @@ export function TopologyNeuralLegend({
   evidence,
   nodeIds,
   focused,
+  indirect = false,
   hiddenDependencies = 0,
 }: {
   evidence: MapEvidence;
   /** The stale count is over these. */
   nodeIds: readonly string[];
   focused: boolean;
+  /** The selection has dependents that depend on it only through other concepts. */
+  indirect?: boolean;
   hiddenDependencies?: number;
 }) {
   const t = useTranslations("topology.light3d");
@@ -74,6 +77,12 @@ export function TopologyNeuralLegend({
                 <ArcSwatch ink="var(--map-graph-reach)" />
                 {tDial("keyNeededBy")}
               </span>
+              {indirect ? (
+                <span data-testid="topology-neural-legend-indirect" className="flex items-center gap-1.5 whitespace-nowrap">
+                  <ArcSwatch ink="var(--map-graph-reach)" strength="var(--map-neural-impact-mid)" />
+                  {tDial("keyNeededByIndirectly")}
+                </span>
+              ) : null}
             </>
           ) : null}
           {hiddenDependencies > 0 ? (
@@ -107,8 +116,9 @@ export function useNeuralLabels(measured: boolean): NeuralLabels {
         if (!measured) return meta;
         return `${meta} · ${stale > 0 ? tHex("domainStale", { count: stale }) : tHex("domainStaleNone")}`;
       },
-      focusFacts: ({ stale, needs, usedBy }) => {
-        const facts = t("focusFacts", { needs, users: usedBy });
+      focusFacts: ({ stale, needs, usedBy, impact }) => {
+        const direct = t("focusFacts", { needs, users: usedBy });
+        const facts = impact === undefined ? direct : `${direct} · ${t("focusImpact", { count: impact })}`;
         return stale ? `${tHex("tooltipStale")} · ${facts}` : facts;
       },
     }),

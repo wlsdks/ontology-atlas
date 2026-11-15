@@ -40,7 +40,7 @@ import { useMapLayoutMorph } from "../model/map-canvas/use-map-layout-morph";
 import { TopologyHexBoardSurface } from "./TopologyHexBoardSurface";
 import { TopologyTreeSurface } from "./TopologyTreeSurface";
 import { TopologyNeuralLegend, useNeuralLabels } from "./TopologyNeuralLegend";
-import { DomainStructureMap } from "@/widgets/ontology-map";
+import { DomainStructureMap, neuralImpactOfMapEdges } from "@/widgets/ontology-map";
 import { TopologyFlatKey } from "./TopologyScopeReadout";
 
 export interface TopologyMapRendererProps {
@@ -170,6 +170,10 @@ export function TopologyMapRenderer({
   const overviewFit = expandAllActive ? "full" : "spine";
   const frameRef = useRef<HTMLDivElement | null>(null);
   const { nodes, edges } = ontologyMapGraph;
+  const neuralIndirect = useMemo(
+    () => view3d && neural && canvasSelectedSlug !== null && neuralImpactOfMapEdges(edges, canvasSelectedSlug).hops > 1,
+    [view3d, neural, canvasSelectedSlug, edges],
+  );
   const flatRingMemory = useFlatRingMemory(vaultIdentity);
   const morph = useMapLayoutMorph({
     view: layoutView,
@@ -350,6 +354,7 @@ export function TopologyMapRenderer({
                 evidence={mapEvidence}
                 nodeIds={nodes.map((node) => node.id)}
                 focused={canvasSelectedSlug !== null}
+                indirect={neuralIndirect}
                 hiddenDependencies={hiddenDependencyCount}
               />
             }

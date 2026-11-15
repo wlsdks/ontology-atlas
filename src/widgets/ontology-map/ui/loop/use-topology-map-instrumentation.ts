@@ -8,7 +8,7 @@ import type { PointerMachineState } from "../../interaction/pointer-state-machin
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { isNeuralDependency } from "../../model/dome-view/neural-cells";
-import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
+import { lastNeuralLit, neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
@@ -426,6 +426,8 @@ export function useTopologyMapInstrumentation({
                     flight: d.flight?.slug ?? null,
                     flyPending: d.flyRequest !== null,
                     light: lastLitStateCounts(),
+                    /** Neural's lit focus: its direct ends, a selection's impact by distance, and how far the spread has run. */
+                    neural: lastNeuralLit(),
                     lod: {
                         active: domeLodRef.current.active,
                         capability: domeLodRef.current.planeResolve.capability,

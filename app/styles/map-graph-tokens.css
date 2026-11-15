@@ -164,5 +164,9 @@
     --map-neural-name-budget: 48;
     --map-neural-plate-pad-px: 12;
     --map-neural-plate-radius-px: 8;
+    /* A selection's dependents by distance: 1 as lit as a direct end, then two plainly weaker steps above the veil. */
+    --map-neural-impact-near: 1;
+    --map-neural-impact-mid: 0.62;
+    --map-neural-impact-far: 0.4;
   }
 }

@@ -22,6 +22,7 @@
   "connectionCount": "{count, plural, one {# relation} other {# relations}}",
   "keyNeeds": "Depends on",
   "keyNeededBy": "Used by",
+  "keyNeededByIndirectly": "Depends on it indirectly",
   "keyDomainNeeds": "Domains it depends on",
   "keyDomainNeededBy": "Domains that depend on it",
   "keyRelates": "Related",
