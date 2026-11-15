@@ -265,24 +265,30 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   again. A view switch that arrives in 3D does not replay it, the first input
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
-- **Neural** — real relations, not containment, decide all three coordinates, with
-  deterministic relation communities as a layout aid: tighter local groups
-  gathered around the domains, lit cell bodies, and shallow connection arcs. Group
-  proximity is inferred layout, not a new domain or an accepted relation. Its
-  relations have bounded curves whose paint, pointer hit test and measurement
-  share the same live endpoints, and reciprocal facts take opposite arcs. It is
-  drawn as light in the canvas-2D engine: nodes emit a halo in their kind colour,
-  and **evidence is the light** — a current concept emits fully, a stale one keeps
-  a dimmer core and wears a 1 px amber ring, and an unknown one emits nothing and
-  wears a dashed ring, by the rule the MCP server uses (one Git walk in the app);
-  the web has no Git walk, so everything there is unknown and the legend (kinds
-  and evidence counts) says so. **A click only selects** the concept the frame
-  painted under the pointer; a double-click or Enter flies the node to the front
-  in 800 ms and frames its family, and Esc or Home flies back to the view it left.
-  A focus lights one subtree, apex to leaves, and sinks the rest into a deeper fog
-  (down to 0.28 at the back); particles run only along that subtree's dependency
-  edges. Pitch stays between 0.15 and 0.95 rad. Depth fades a line toward the back,
-  but its ink stops at a floor and its stroke never falls below one device pixel.
-  Labels are larger than in Flat; after closing the detail panel, Fit Map leaves
-  the retained selection and returns to the whole map. Reduced motion: no spin, no
-  particles, the fly-to arrives at once. Gates: `tests/e2e/map/neural/`.
+- **Neural** — the ontology as cells and dependencies. Each domain's concepts
+  gather in their own cluster, set on a ring round the spin axis and sized by its
+  member count, so no two clusters meet at any turn; relations and deterministic
+  relation communities settle positions inside a cluster. Group proximity is
+  inferred layout, not a new domain or an accepted relation. A concept is a filled
+  cell in the strong ink, a capability larger and with a dark nucleus, both growing
+  with the square root of their dependency count; the domain is the ringed heart of
+  its cluster and the project its own ink. In the app a stale concept's cell is
+  amber, by the rule the MCP server uses (one Git walk); the web has no Git walk, so
+  nothing there is amber and the legend's quiet line says why. Kind is not drawn
+  by colour, and containment is not drawn as a line: only declared `depends_on`
+  relations are, as tapered axons that bow a little inside a cluster and share one
+  tract through the gap between clusters. Paint, pointer hit test and measurement
+  use the same route. Every domain carries its name and a count line (capabilities,
+  elements, stale) above its cluster, or below it when above is taken; capability
+  names appear only where they fit, element names only for a focus. **A click only
+  selects** the concept the frame painted under the pointer; a double-click or Enter
+  flies the node to the front in 800 ms and frames its family, and Esc or Home flies
+  back. A focus veils everything else, lights what it depends on in the arc ink and
+  what depends on it in the reach ink, names each far end on the side its axon
+  leaves free, and sets a plate with its name and counts beside it, on the side with
+  fewer lit axons. One signal travels each lit axon once over `--motion-expressive`;
+  reduced motion shows none, has no spin, and the fly-to arrives at once. The legend
+  at the bottom centre names capability, element and stale, and the two arc keys
+  with a focus. Pitch stays between 0.15 and 0.95 rad. After closing the detail
+  panel, Fit Map leaves the retained selection and returns to the whole map. Gates:
+  `tests/e2e/map/neural/`.
