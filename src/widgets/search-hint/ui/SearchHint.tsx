@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
-import { useDomainStructure, useHexBoard, useMapArrangement, useView3d } from '@/shared/lib/preferences/appearance-preferences';
+import { useMapView } from '@/shared/lib/preferences/appearance-preferences';
 import { View3dMenu } from './View3dMenu';
 
 interface Props {
@@ -63,12 +63,8 @@ export function SearchHint({
 }: Props) {
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
-  // Every stored view fact, so the chip names the view the canvas is drawing.
-  const view3d = useView3d();
-  const structure = useDomainStructure();
-  const hexBoard = useHexBoard();
-  const arrangement = useMapArrangement();
-  const currentView = view3d ? arrangement : hexBoard ? 'hex' : structure ? 'structure' : 'flat';
+  const currentView = useMapView();
+  const view3d = currentView === '3d';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
   const view3dChipRef = useRef<HTMLButtonElement | null>(null);
@@ -151,7 +147,7 @@ export function SearchHint({
           </div>
         ) : null}
         {/* Desktop only; the wrapper hides it so ChromeChip's own display utility does not clash. */}
-        {!structure && <div className="hidden md:block">
+        {currentView !== 'structure' && <div className="hidden md:block">
           <ChromeChip
             type="button"
             onClick={() => {
@@ -207,7 +203,7 @@ export function SearchHint({
             data-utility-action-shadow-token="--chrome-shadow"
             data-utility-action-focus-ring-token="--color-indigo-accent"
             icon={<MapIcon />}
-            active={view3d || structure}
+            active={view3d || currentView === 'structure'}
             // Icon-first with the rest of the lane in the crowded density (dock or
             // review panel open); the current view stays in the name and tooltip.
             compact={compact}

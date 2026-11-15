@@ -75,7 +75,7 @@ const URL_KEY_REGISTRY: Record<string, { scope: Scope; note: string;
   index: { scope: "global", note: "expanded|collapsed" },
   recent: { scope: "global", note: "auto|1|7|30" },
   ask: { scope: "global", note: "enumeration of intent kinds" },
-  view: { scope: "global", note: "map view enumeration: hex, structure, strata, coupling" },
+  view: { scope: "global", note: "map view enumeration: hex, structure, 3d; strata and coupling read as 3d" },
 };
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
   { key: "atlas.appearance.territories", kind: "storage", scope: "global", note: "Retired view preference, never read; removed on the next pick" },
   { key: "atlas.appearance.hex-board", kind: "storage", scope: "global", note: "Hex board view preference (one tile per capability) — off by default" },
   { key: "atlas.appearance.hex-relief", kind: "storage", scope: "global", note: "Hex board relief pose preference — off by default" },
-  { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "3D arrangement basis: ownership (dome, default) / coupling (force cloud)" },
+  { key: "atlas.appearance.map-arrangement", kind: "storage", scope: "global", note: "Retired 3D arrangement preference, never read; removed on the next pick" },
   { key: "atlas.appearance.map-drag-speed", kind: "storage", scope: "global", note: "Map drag speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.appearance.map-zoom-speed", kind: "storage", scope: "global", note: "Map zoom speed (0.5x-2x, default 1x), a hand preference of this machine" },
   { key: "atlas.agentActivity.status", kind: "storage", scope: "global", note: "status chip on/off preference" },

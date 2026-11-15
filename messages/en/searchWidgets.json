@@ -214,15 +214,13 @@
     "view3dChoice": {
       "flat": "Flat",
       "hex": "Hex",
-      "strata": "Strata",
-      "coupling": "Neural",
+      "3d": "3D",
       "structure": "Domain structure"
     },
     "view3dChoiceHint": {
       "flat": "the ordinary 2D map",
       "hex": "one tile per capability, one area per domain",
-      "strata": "containment, one layer per level",
-      "coupling": "grouped by what relates to what",
+      "3d": "shows what the project is made of, as a tree",
       "structure": "recorded containment, with readable names"
     },
     "mapViewAriaLabel": "Map view",

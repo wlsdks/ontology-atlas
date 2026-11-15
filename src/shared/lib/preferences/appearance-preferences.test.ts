@@ -8,7 +8,6 @@ import {
   FOOTPRINT_RANGES,
   resolveCanvasBackground,
   resolveFootprint,
-  resolveStoredMapArrangement,
   DEFAULT_GLYPH_SET,
   DEFAULT_MAP_SPEED,
   GLYPH_SETS,
@@ -22,6 +21,7 @@ import {
   useGlyphSet,
   useHexRelief,
   useMapDragSpeed,
+  useMapView,
   useMapZoomSpeed,
   writeCanvasBackground,
   writeGlyphSet,
@@ -92,11 +92,17 @@ describe("appearance-preferences", () => {
     }
   });
 
-  it("preserves the remembered dome arrangement when switching to a flat surface", () => {
-    writeMapView("coupling");
-    writeMapView("flat");
-    expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBe("coupling");
-    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("off");
+  it.each(["ownership", "strata", "coupling"])("a stored 3D flag opens 3D whatever arrangement was stored (%s)", (arrangement) => {
+    window.localStorage.setItem("atlas.appearance.view3d", "on");
+    window.localStorage.setItem("atlas.appearance.map-arrangement", arrangement);
+    expect(renderHook(() => useMapView()).result.current).toBe("3d");
+  });
+
+  it.each(["flat", "hex", "structure", "3d"] as const)("picking a view removes the retired arrangement key (%s)", (view) => {
+    window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
+    writeMapView(view);
+    expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBeNull();
+    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe(view === "3d" ? "on" : "off");
   });
 
   it("never reads a retired Territories pick, and the next pick removes it", () => {
@@ -185,21 +191,6 @@ describe("footprint setting normalization", () => {
       placement: "both",
     });
     expect(out).toEqual({ size: 17, gap: 4, opacity: 0.95, tone: "indigo" });
-  });
-});
-
-describe("map arrangement — the retired Cone", () => {
-  /**
-   * A stored Cone value opens the containment view (Strata), never a value the picker cannot show as
-   * chosen.
-   */
-  it("a stored Cone opens Strata, and today's two values pass through", () => {
-    expect(resolveStoredMapArrangement("ownership")).toBe("strata");
-    expect(resolveStoredMapArrangement("cone")).toBe("strata");
-    expect(resolveStoredMapArrangement("strata")).toBe("strata");
-    expect(resolveStoredMapArrangement("coupling")).toBe("coupling");
-    expect(resolveStoredMapArrangement(null)).toBe("strata");
-    expect(resolveStoredMapArrangement("toString")).toBe("strata");
   });
 });
 

@@ -214,15 +214,13 @@
     "view3dChoice": {
       "flat": "평면",
       "hex": "육각",
-      "strata": "층",
-      "coupling": "뉴런",
+      "3d": "3D",
       "structure": "도메인 구조도"
     },
     "view3dChoiceHint": {
       "flat": "보통의 2D 지도",
       "hex": "역량 하나가 칸 하나, 도메인 하나가 구역 하나",
-      "strata": "포함 관계를 단계별 층으로 나눠 보여요",
-      "coupling": "관계가 가까운 개념끼리 모아 보여요",
+      "3d": "프로젝트를 이루는 것을 나무로 보여요",
       "structure": "포함 관계를 이름으로 한 단계씩 따라가요"
     },
     "mapViewAriaLabel": "지도 보기",
