@@ -317,6 +317,12 @@ describe("FullDetailA1", () => {
     expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
   });
 
+  it('draws the name once when the body opens with a heading that repeats it', () => {
+    renderFullDetail({ bodyMarkdown: "# Domain A\n\n본문 텍스트입니다." });
+    expect(screen.getAllByRole("heading", { name: "Domain A" })).toHaveLength(1);
+    expect(screen.getByText("본문 텍스트입니다.")).toBeInTheDocument();
+  });
+
   it('shows the empty copy without a body', () => {
     renderFullDetail({ bodyMarkdown: null });
     expect(screen.getByText("작성된 본문이 없습니다.")).toBeInTheDocument();

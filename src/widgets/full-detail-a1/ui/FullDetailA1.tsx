@@ -16,6 +16,7 @@ import {
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { truncateMiddlePath } from "@/shared/lib/concept-display/truncate-middle-path";
+import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import {
   formatProjectSourceHandoff,
   type ProjectSourceView,
@@ -214,7 +215,8 @@ export function FullDetailA1({
   const projectSourceAction = projectSource?.nextAction.id === "use_current_evidence"
     ? handleCopyHandoff
     : onProjectSourceAction;
-  const hasBody = Boolean(bodyMarkdown && bodyMarkdown.trim().length > 0);
+  const readBody = stripDuplicateHeading(bodyMarkdown, node.title, node.fullTitle);
+  const hasBody = Boolean(readBody && readBody.trim().length > 0);
 
   return (
     <div
@@ -341,7 +343,7 @@ export function FullDetailA1({
                 "[&_h1]:text-title",
               )}
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{bodyMarkdown}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{readBody}</ReactMarkdown>
             </div>
           ) : (
             <p className="text-body text-[color:var(--map-panel-text-tertiary)]">{t("body.empty")}</p>
