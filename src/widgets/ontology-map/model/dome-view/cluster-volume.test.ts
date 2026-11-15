@@ -93,6 +93,15 @@ describe('clusterVolumeAnchors', () => {
     expect(rows.size).toBeGreaterThan(1);
   });
 
+  it('stands four like clusters round a loose group one to each quarter of the pack', () => {
+    const { discs } = drawn([24, 24, 18, 25], 1);
+    const titled = discs.slice(0, 4);
+    const midX = (Math.min(...titled.map((d) => d.x - d.r)) + Math.max(...titled.map((d) => d.x + d.r))) / 2;
+    const midY = (Math.min(...titled.map((d) => d.y - d.r)) + Math.max(...titled.map((d) => d.y + d.r))) / 2;
+    const quarters = new Set(titled.map((d) => (d.x > midX ? 1 : 0) + (d.y > midY ? 2 : 0)));
+    expect(quarters.size).toBe(4);
+  });
+
   it('fills the middle of nine equal clusters', () => {
     const { discs, box } = drawn(equal(9));
     const midX = (box.left + box.right) / 2;

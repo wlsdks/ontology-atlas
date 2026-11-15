@@ -270,8 +270,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the rest pose draws them (seen from 0.85 rad above), nearest the centre first, and
   set at seven depth levels so that screen neighbours stand at different depths: no
   two clusters meet at rest, a nearer cluster draws larger, and turning shows
-  parallax and may pass one across another. Concepts no domain reaches gather as one
-  small group round the project. Relations and deterministic
+  parallax and may pass one across another. A pack that leaves a quarter of its box
+  bare, as four like clusters do, is packed round instead: two by two. Concepts no
+  domain reaches gather as one small group round the project. Relations and deterministic
   relation communities settle positions inside a cluster. Group proximity is
   inferred layout, not a new domain or an accepted relation. A concept is a filled
   cell in the strong ink, a capability larger and with a dark nucleus, both growing

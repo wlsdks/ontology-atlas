@@ -26,7 +26,12 @@ const LENS_PASSES = 3;
  * The fit frames a whole turn, so a wide pack buys nothing; at 1.7 four titled clusters fall
  * into one flat row, and rounder than 1.4 the title band no longer settles clear at 30 clusters.
  */
-const PACK_ASPECT = 1.4;
+const PACK_ASPECT_WIDE = 1.4;
+/** Four like clusters packed wide stand three in a row over one, a quarter of the pack bare; packed round they stand two by two. */
+const PACK_ASPECT_ROUND = 1;
+/** A quarter of the pack's box holding less than this share of the clusters' area reads as a hole. */
+const BARE_QUARTER_SHARE = 0.05;
+const QUARTER_SAMPLES = 32;
 /** Candidate positions round each placed cluster. */
 const PACK_DIRECTIONS = 24;
 /** Depth spans this share of the pack's drawn height: deep enough that turning shows parallax, shallow enough that far clusters stay legible. */
@@ -132,10 +137,10 @@ function touchingDistance(ux: number, uy: number, c: Footprint, q: Footprint, ga
 
 /**
  * Discs packed in the rest pose's screen plane, the first at the origin and each next one touching
- * a placed disc where it lies nearest the origin under the pack's aspect. A uniform grid keeps
+ * a placed disc where it lies nearest the origin under `aspect`. A uniform grid keeps
  * each validity test O(1), so a pass is O(k² · PACK_DIRECTIONS) for k discs.
  */
-function packDiscs(shapes: readonly Footprint[], order: readonly number[], gap: number, band: number): { x: Float64Array; y: Float64Array } {
+function packDiscs(shapes: readonly Footprint[], order: readonly number[], gap: number, band: number, aspect: number): { x: Float64Array; y: Float64Array } {
   const x = new Float64Array(shapes.length);
   const y = new Float64Array(shapes.length);
   const widest = Math.max(...shapes.map((s) => Math.max(s.r, s.w)));
@@ -203,7 +208,7 @@ function packDiscs(shapes: readonly Footprint[], order: readonly number[], gap: 
       }
       if (blocked[p] === allBlocked) continue;
       const farthest = shapes[p].r + shapes[c].r + shapes[p].w + shapes[c].w + 2 * band + gap;
-      const nearest = Math.max(0, Math.sqrt((x[p] * x[p]) / (PACK_ASPECT * PACK_ASPECT) + y[p] * y[p]) - farthest);
+      const nearest = Math.max(0, Math.sqrt((x[p] * x[p]) / (aspect * aspect) + y[p] * y[p]) - farthest);
       if (nearest * nearest >= bestScore) continue;
       const round = touchingRound(c, p);
       for (let d = 0; d < PACK_DIRECTIONS; d += 1) {
@@ -211,7 +216,7 @@ function packDiscs(shapes: readonly Footprint[], order: readonly number[], gap: 
         const t = round[d];
         const cx = x[p] + ux[d] * t;
         const cy = y[p] + uy[d] * t;
-        const score = (cx * cx) / (PACK_ASPECT * PACK_ASPECT) + cy * cy;
+        const score = (cx * cx) / (aspect * aspect) + cy * cy;
         if (score >= bestScore) continue;
         if (!isClear(c, cx, cy)) {
           blocked[p] |= 1 << d;
@@ -281,6 +286,42 @@ function depthLevels(reach: readonly number[], order: readonly number[], x: Floa
 }
 
 /**
+ * The smallest share of the titled clusters' disc area that one quarter of their box holds,
+ * 0.25 when the four hold alike. Sampled on a grid: O(QUARTER_SAMPLES² · k).
+ */
+function barestQuarterShare(shapes: readonly Footprint[], x: Float64Array, y: Float64Array): number {
+  let left = Infinity;
+  let right = -Infinity;
+  let bottom = Infinity;
+  let top = -Infinity;
+  shapes.forEach((s, i) => {
+    if (s.w === 0) return;
+    left = Math.min(left, x[i] - s.r);
+    right = Math.max(right, x[i] + s.r);
+    bottom = Math.min(bottom, y[i] - s.r);
+    top = Math.max(top, y[i] + s.r);
+  });
+  const held = [0, 0, 0, 0];
+  for (let row = 0; row < QUARTER_SAMPLES; row += 1) {
+    const py = bottom + ((row + 0.5) / QUARTER_SAMPLES) * (top - bottom);
+    for (let col = 0; col < QUARTER_SAMPLES; col += 1) {
+      const px = left + ((col + 0.5) / QUARTER_SAMPLES) * (right - left);
+      if (!shapes.some((s, i) => s.w > 0 && (px - x[i]) ** 2 + (py - y[i]) ** 2 <= s.r * s.r)) continue;
+      held[(col * 2 < QUARTER_SAMPLES ? 0 : 1) + (row * 2 < QUARTER_SAMPLES ? 0 : 2)] += 1;
+    }
+  }
+  const all = held[0] + held[1] + held[2] + held[3];
+  return all === 0 ? 0.25 : Math.min(...held) / all;
+}
+
+interface Arranged {
+  points: Point3[];
+  height: number;
+  focal: number;
+  barestQuarter: number;
+}
+
+/**
  * One pass: pack, give depths, centre the drawn box and back-project through the rest pose.
  * `focal` is the lens in cloud units, the cloud being normalised to `DOME_FIT_RADIUS` later.
  */
@@ -294,18 +335,19 @@ function arrange(
   band: number,
   depthHalf: number,
   focal: number,
-): { points: Point3[]; height: number; focal: number } {
+  aspect: number,
+): Arranged {
   const nearGrowth = Number.isFinite(focal) ? focal / (focal - depthHalf) : 1;
   const reach = radii.map((r) => r * nearGrowth);
   const titleHalf = (CLUSTER_TITLE_ASPECT * band) / 2;
   const farShrink = Number.isFinite(focal) ? focal / (focal + depthHalf) : 1;
   const shapes = radii.map((r, i) => ({ r: reach[i], w: i === loose ? 0 : Math.max(reach[i], titleHalf), base: r * farShrink }));
-  const { x, y } = packDiscs(shapes, order, gap, band);
+  const { x, y } = packDiscs(shapes, order, gap, band, aspect);
   const level = depthLevels(reach, order, x, y, gap, loose);
   const depth = Array.from(level, (l) => depthHalf * (l / MIDDLE_LEVEL - 1));
   let drawn = backProject(radii, x, y, depth, focal, restYaw, pitch);
   for (let pass = 0; pass < LENS_PASSES; pass += 1) drawn = backProject(radii, x, y, depth, drawn.focal, restYaw, pitch);
-  return drawn;
+  return { ...drawn, barestQuarter: barestQuarterShare(shapes, x, y) };
 }
 
 /**
@@ -352,6 +394,7 @@ function backProject(
  * Cluster centres filling a volume: packed `gap` apart where the rest pose draws them, with room for
  * a title above each, then set at depth levels that differ between screen neighbours. A loose group
  * of `centreRadius` sits first, at the pack's centre. Turning may bring two clusters across each other.
+ * A wide pack that leaves a quarter bare is packed again round, and the fuller of the two stays.
  * O(k² · PACK_DIRECTIONS) per pass; 200 clusters took 18-21 ms on an M-series Mac (2026-11-15), budget 50 ms.
  */
 export function clusterVolumeAnchors(
@@ -366,13 +409,21 @@ export function clusterVolumeAnchors(
   const all = loose === null ? [...radii] : [...radii, centreRadius];
   const bySize = radii.map((_, i) => i).sort((a, b) => radii[b] - radii[a] || a - b);
   const order = loose === null ? bySize : [loose, ...bySize];
-  let placed = arrange(all, order, loose, restYaw, pitch, gap, 0, 0, Infinity);
-  let band = 0;
   const bandCap = TITLE_BAND_CAP * Math.max(...radii);
-  for (let pass = 0; pass < SETTLE_PASSES_MAX; pass += 1) {
-    band = Math.min(Math.max(band, CLUSTER_TITLE_SHARE * placed.height), bandCap);
-    placed = arrange(all, order, loose, restYaw, pitch, gap, band, (CLUSTER_DEPTH_SHARE * placed.height) / 2, placed.focal);
-    if (pass >= SETTLE_PASSES - 1 && (CLUSTER_TITLE_SHARE * placed.height <= band || band === bandCap)) break;
+  const settle = (aspect: number): Arranged => {
+    let settled = arrange(all, order, loose, restYaw, pitch, gap, 0, 0, Infinity, aspect);
+    let band = 0;
+    for (let pass = 0; pass < SETTLE_PASSES_MAX; pass += 1) {
+      band = Math.min(Math.max(band, CLUSTER_TITLE_SHARE * settled.height), bandCap);
+      settled = arrange(all, order, loose, restYaw, pitch, gap, band, (CLUSTER_DEPTH_SHARE * settled.height) / 2, settled.focal, aspect);
+      if (pass >= SETTLE_PASSES - 1 && (CLUSTER_TITLE_SHARE * settled.height <= band || band === bandCap)) break;
+    }
+    return settled;
+  };
+  let placed = settle(PACK_ASPECT_WIDE);
+  if (placed.barestQuarter < BARE_QUARTER_SHARE) {
+    const round = settle(PACK_ASPECT_ROUND);
+    if (round.barestQuarter > placed.barestQuarter) placed = round;
   }
   const anchors = placed.points.slice(0, radii.length);
   return { anchors, centre: loose === null ? { x: 0, y: 0, z: 0 } : placed.points[loose] };
