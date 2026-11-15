@@ -177,6 +177,10 @@ and silence keep their existing behavior. Intersection and document visibility
 pause motion; reduced motion uses a still pose and unchanged status/actions.
 The curious row runs under the same visibility and reduced-motion guards but
 accompanies no operation: its 7200ms cycle holds neutral, tilts once and returns.
+Moru is exempt from the five-second bound on ambient motion
+([Design system](../DESIGN-SYSTEM.md), "Motion"): a character's gesture may
+repeat for as long as it is visible. Reduced motion is its stop control, and no
+screen adds a pause button for it.
 The decorative companion keeps native 128px cells and authored jump headroom.
 Its ambient and reaction sheets use 32 columns with explicit row/column addressing
 (maximum width 4096px), so adding motions does not create oversized textures.
