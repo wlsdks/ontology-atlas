@@ -141,7 +141,7 @@ export function ArchitectureImportMatrix({
   const compact = cellWidthPx < COMPACT_BELOW_PX;
   const namesColumns = cellWidthPx >= COLUMN_NAME_MIN_PX;
   const showsRowDetail = size.width === 0 || size.width >= ROW_HEADER_DETAIL_MIN_PX;
-  /* `1.2k` in every locale: developers read it, and the Korean `1.2천` doubles the glyph width. */
+  /* `1.2k` in every locale: developers read it, and a localized unit can double the glyph width. */
   const countFormat = compact
     ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
     : new Intl.NumberFormat(locale);
