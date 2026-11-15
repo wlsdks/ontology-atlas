@@ -319,9 +319,13 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the name budget. Reduced motion lights the whole impact at once. A receded cell keeps a third of its rest opacity
   (`--map-neural-veil`) and a receded title a little less (`--map-neural-title-veil`). While the detail panel is open and the camera sits at
   the rest fit, the whole cloud glides into the area the panel leaves free, on the
-  camera transition a panel opening uses, and returns when it closes; zoomed or
-  turned, the view keeps its zoom and pose and only slides until the selected cell
-  clears the panel. Reduced motion moves it at once. A hovered, selected or path
+  camera transition a panel opening uses, and returns when it closes; zoomed, the
+  view keeps its zoom and pose and only slides until the selected cell clears the
+  panel. A turn keeps the whole cloud inside that free area, with or without a
+  selection: the zoom follows the turn angle, so no cluster leaves the screen at
+  any pose. A name that would run under a panel takes its cell's other side, and
+  is moved inside the free area only when neither side fits. Reduced motion moves
+  it at once. A hovered, selected or path
   dependency is lit the same way with both ends named, and the pointer presses
   exactly the cell Neural paints. One signal travels each lit axon once over `--motion-expressive`;
   reduced motion shows none and the fly-to arrives at once. Auto-arrange, Fit Map
