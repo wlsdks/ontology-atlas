@@ -249,6 +249,7 @@ export function TopologyMapRenderer({
               navigationSpeed={navigationSpeed}
               fitToken={combinedFitToken}
               growthReplayToken={growthReplayToken}
+              onGrowthReplayingChange={setGrowthReplaying}
             />
           ) : morph.surface === "structure" ? (
             <DomainStructureMap
