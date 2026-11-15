@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { installDesktopRailRuntime } from "../../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../../first-run-seed";
 import { liveInstances } from "../../heap-census";
-import { waitForDomeEntered, waitForMapStill } from "../../settle";
+import { waitForDomeEntered, waitForMapStill, waitFrames } from "../../settle";
 import { dogfoodVault, probe } from "./neural-dogfood";
 
 /**
@@ -12,7 +12,12 @@ import { dogfoodVault, probe } from "./neural-dogfood";
 
 type ProbeNode = { id: string; kind: string; x: number; y: number; radius: number; hidden: boolean };
 type MapWindow = Window & {
-  __atlasMap: { nodes(): ProbeNode[]; selection(): { nodeId: string | null }; dome(): { neural: { painter: string } } | null };
+  __atlasMap: {
+    nodes(): ProbeNode[];
+    selection(): { nodeId: string | null };
+    dome(): { neural: { painter: string } } | null;
+    labels(): { minX: number; minY: number; maxX: number; maxY: number }[];
+  };
   __atlasMapNeuralGl: {
     state(): string;
     frames(): number;
@@ -205,7 +210,7 @@ async function fallBackToCanvas(page: Page): Promise<void> {
 }
 
 /** This repository's vault in the desktop runtime, where the Git walk calls some concepts stale. */
-async function openDogfoodNeural(page: Page): Promise<void> {
+async function openDogfoodNeural(page: Page): Promise<ReturnType<typeof dogfoodVault>> {
   const vault = dogfoodVault();
   await installDesktopRailRuntime(page, vault.files, undefined, { replaceFixture: true, gitPathChanges: vault.changes });
   await page.goto("/ko/?guides=off&e2e=1&neuralgl=force", { waitUntil: "domcontentloaded" });
@@ -219,6 +224,57 @@ async function openDogfoodNeural(page: Page): Promise<void> {
   const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
   await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
   await waitForNeuralAlone(page);
+  return vault;
+}
+
+/** How many fixed turns the overlap search may take before the pose counts as missing. */
+const TURN_STEPS = 12;
+const TURN_MOVES = 8;
+const TURN_MOVE_PX = 12;
+
+/** Turns the dome by one fixed drag across the middle of the canvas and waits for it to rest. */
+async function turnDome(page: Page): Promise<void> {
+  const box = (await page.getByTestId("ontology-map-canvas").boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  for (let move = 1; move <= TURN_MOVES; move += 1) {
+    await page.mouse.move(x + move * TURN_MOVE_PX, y);
+    await waitFrames(page, 1);
+  }
+  await page.mouse.up();
+  await page.mouse.move(box.x + box.width - 8, box.y + box.height / 2);
+  await waitForMapStill(page, { what: "dome" });
+}
+
+/**
+ * Whether a point lies outside every drawn name. The canvas painter draws names on the map canvas
+ * and the WebGL painter on a canvas of their own, so a point under a name compares a letter or its
+ * backing with a cell.
+ */
+async function nameFree(page: Page): Promise<(p: Point) => boolean> {
+  const names = await page.evaluate(() => (window as unknown as MapWindow).__atlasMap.labels());
+  return (p) => names.every((n) => p.x < n.minX || p.x > n.maxX || p.y < n.minY || p.y > n.maxY);
+}
+
+/** The middle of each lens where a stale and a current cell overlap, unless a third cell or a name also covers it. */
+async function staleOverlaps(page: Page, stale: ReadonlySet<string>): Promise<Point[]> {
+  const cells = (await cellsOnScreen(page)).filter((c) => c.kind !== "project");
+  const unnamed = await nameFree(page);
+  const clear = (p: Point, a: ProbeNode, b: ProbeNode) =>
+    unnamed(p) && cells.every((c) => c === a || c === b || Math.hypot(c.x - p.x, c.y - p.y) > c.radius + 1);
+  const overlaps: Point[] = [];
+  for (const a of cells) {
+    for (const b of cells) {
+      const d = Math.hypot(b.x - a.x, b.y - a.y);
+      if (a.id >= b.id || stale.has(a.id) === stale.has(b.id) || d >= a.radius + b.radius - 2 || d <= Math.abs(a.radius - b.radius)) continue;
+      const along = (d - b.radius + a.radius) / 2;
+      const lens = { x: a.x + ((b.x - a.x) / d) * along, y: a.y + ((b.y - a.y) / d) * along };
+      if (clear(lens, a, b)) overlaps.push(lens);
+    }
+  }
+  return overlaps;
 }
 
 /** Cells on screen, clear of the canvas edges. */
@@ -250,21 +306,12 @@ test.describe("the WebGL painter against the canvas painter on the same frame", 
   });
 
   test("where a nearer cell covers a farther one, the overlap shows the nearer cell's ink", async ({ page }) => {
-    await openDogfoodNeural(page);
-    const cells = (await cellsOnScreen(page)).filter((c) => c.kind !== "project");
-    const glBodies = await glPixels(page, cells.map(bodyPoint));
-    const amberCell = new Map(cells.map((c, k) => [c.id, isAmber(glBodies[k])]));
-    // Overlapping pairs of a stale and a current cell, probed in the middle of their shared lens.
-    const overlaps: Point[] = [];
-    for (const a of cells) {
-      for (const b of cells) {
-        const d = Math.hypot(b.x - a.x, b.y - a.y);
-        if (a.id >= b.id || amberCell.get(a.id) === amberCell.get(b.id) || d >= a.radius + b.radius - 2 || d <= Math.abs(a.radius - b.radius)) continue;
-        const along = (d - b.radius + a.radius) / 2;
-        overlaps.push({ x: a.x + ((b.x - a.x) / d) * along, y: a.y + ((b.y - a.y) / d) * along });
-      }
-    }
-    expect(overlaps.length, "the dogfood vault draws a stale and a current cell overlapping").toBeGreaterThan(0);
+    const { stale } = await openDogfoodNeural(page);
+    let overlaps = await staleOverlaps(page, stale);
+    for (let step = 0; overlaps.length === 0 && step < TURN_STEPS; step += 1) {
+      await turnDome(page);
+      overlaps = await staleOverlaps(page, stale);    }
+    expect(overlaps.length, "some pose of the dogfood vault draws a stale and a current cell overlapping").toBeGreaterThan(0);
     const gl = (await glPixels(page, overlaps)).map(isAmber);
     await fallBackToCanvas(page);
     // The canvas painter strokes cells far to near, so its overlap shows the nearer cell.
@@ -285,7 +332,8 @@ test.describe("the WebGL painter against the canvas painter on the same frame", 
       const n = p.dome()!.neural;
       return [n.focusId, ...n.needs, ...n.usedBy, ...Object.keys(n.impact ?? {})];
     });
-    const rest = apart(await cellsOnScreen(page)).filter((c) => c.kind === "element" && !lit.includes(c.id));
+    const unnamed = await nameFree(page);
+    const rest = apart(await cellsOnScreen(page)).filter((c) => c.kind === "element" && !lit.includes(c.id) && unnamed(c));
     expect(rest.length, "rest elements stand clear on screen").toBeGreaterThan(3);
     const glLight = (await glPixels(page, rest)).map(luminance);
     await fallBackToCanvas(page);
