@@ -86,7 +86,7 @@
   "unknownReasons": {
     "unruled": "ルールが決めていないimport {count}件",
     "unmapped": "どのレイヤーにも属さないファイルのimport {count}件",
-    "emptyRoles": "ファイルのないレイヤー {roles}",
+    "emptyRoles": "ファイルのないレイヤー：{roles}",
     "coverage": "検査が読めない言語のファイルがあります"
   },
   "figureCrossImports": "レイヤー間のimport",

@@ -477,6 +477,7 @@ export function ArchitectureWorkbench({
                       className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', active: true })}
                     >
                       {profile.title}
+                      <ProfileScope profile={profile} />
                     </span>
                   ) : (
                     <button
@@ -493,6 +494,7 @@ export function ArchitectureWorkbench({
                       className={controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverSurface: 'lift' })}
                     >
                       {profile.title}
+                      <ProfileScope profile={profile} />
                     </button>
                   ),
                 )}
@@ -724,5 +726,16 @@ export function ArchitectureWorkbench({
         className="h-[var(--topology-mobile-bottom-tab-reserve)] shrink-0 lg:hidden"
       />
     </main>
+  );
+}
+
+/** Profiles in one repository differ by where they apply; the chip names that scope after the title. */
+function ProfileScope({ profile }: { profile: ArchitectureProfile }) {
+  if (profile.scopePaths.length === 0) return null;
+  // Tertiary, not quaternary: a pressed chip's surface composites where quaternary fails AA.
+  return (
+    <span className="ml-1.5 truncate font-mono text-[color:var(--color-text-tertiary)]">
+      {profile.scopePaths.join(' · ')}
+    </span>
   );
 }

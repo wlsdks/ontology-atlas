@@ -86,7 +86,7 @@
   "unknownReasons": {
     "unruled": "没有规则覆盖的 import {count} 个",
     "unmapped": "来自不属于任何层的文件的 import {count} 个",
-    "emptyRoles": "没有文件的层 {roles}",
+    "emptyRoles": "没有文件的层：{roles}",
     "coverage": "有检查无法读取的语言的文件"
   },
   "figureCrossImports": "层之间的 import",

@@ -86,7 +86,7 @@
   "unknownReasons": {
     "unruled": "규칙이 정하지 않은 import {count}개",
     "unmapped": "어느 층에도 속하지 않는 파일의 import {count}개",
-    "emptyRoles": "파일이 없는 층 {roles}",
+    "emptyRoles": "파일이 없는 층: {roles}",
     "coverage": "검사가 읽지 못하는 언어의 파일이 있어요"
   },
   "figureCrossImports": "층 사이 import",
