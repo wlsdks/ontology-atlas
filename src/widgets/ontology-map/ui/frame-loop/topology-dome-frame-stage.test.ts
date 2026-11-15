@@ -71,7 +71,7 @@ function stageSources(arrangement: MapArrangement, reducedMotion = false) {
     domeWorldSourceRef: { current: null as unknown },
     domeModelBuildRef: { current: null } as DomeFrameStageSources["domeModelBuildRef"],
     mapArrangementRef: { current: arrangement },
-    domeFitPendingRef: { current: false },
+    domeFitPendingRef: { current: false as boolean },
     domeFitDurationRef: { current: undefined as number | undefined },
     flatFitPendingRef: { current: false as boolean },
     domeFocusPendingRef: { current: null as { slug: string | null } | null },

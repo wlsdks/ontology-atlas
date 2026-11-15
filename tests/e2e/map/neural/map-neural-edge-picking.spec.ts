@@ -13,8 +13,9 @@ test('Neural: visible dependency strokes lie on the curves a pointer selects', a
     localStorage.setItem('atlas.appearance.view3d', 'on');
     localStorage.setItem('atlas.appearance.map-arrangement', 'coupling');
     type Curve = { ax: number; ay: number; cx: number; cy: number; bx: number; by: number };
-    const host = window as unknown as { drawnCurves: Curve[] };
+    const host = window as unknown as { drawnCurves: Curve[]; litCurves: Curve[] };
     host.drawnCurves = [];
+    host.litCurves = [];
     const paths = new WeakMap<CanvasRenderingContext2D, { x: number; y: number; curves: Curve[] }>();
     const proto = CanvasRenderingContext2D.prototype;
     const begin = proto.beginPath, move = proto.moveTo, quad = proto.quadraticCurveTo, stroke = proto.stroke, fill = proto.fillRect;
@@ -31,12 +32,15 @@ test('Neural: visible dependency strokes lie on the curves a pointer selects', a
       quad.call(this, cx, cy, bx, by);
     };
     proto.fillRect = function (x, y, width, height) {
-      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) host.drawnCurves = [];
+      if (this.canvas.dataset.testid === 'ontology-map-canvas' && x === 0 && y === 0 && width > 100 && height > 100) { host.drawnCurves = []; host.litCurves = []; }
       fill.call(this, x, y, width, height);
     };
     proto.stroke = function (path?: Path2D) {
       const recorded = paths.get(this);
-      if (recorded && this.canvas.dataset.testid === 'ontology-map-canvas' && this.globalAlpha > 0.05) host.drawnCurves.push(...recorded.curves);
+      if (recorded && this.canvas.dataset.testid === 'ontology-map-canvas' && this.globalAlpha > 0.05) {
+        host.drawnCurves.push(...recorded.curves);
+        if (this.shadowBlur > 0) host.litCurves.push(...recorded.curves);
+      }
       if (path) stroke.call(this, path); else strokePlain.call(this);
     };
   });
@@ -89,4 +93,16 @@ test('Neural: visible dependency strokes lie on the curves a pointer selects', a
   const canvas = await page.getByTestId('ontology-map-canvas').boundingBox();
   await page.mouse.click(canvas!.x + target.x, canvas!.y + target.y);
   await expect.poll(() => page.evaluate(() => (window as unknown as { __atlasMap: { selection(): { edge: unknown } } }).__atlasMap.selection().edge)).toMatchObject({ sourceId: target.sourceId, targetId: target.targetId });
+  // The picked axon is drawn lit: some glowing piece lies on its curve.
+  await expect.poll(() => page.evaluate((picked) => {
+    type Curve = { ax: number; ay: number; cx: number; cy: number; bx: number; by: number };
+    type Edge = { sourceId: string; targetId: string; ax: number; ay: number; bx: number; by: number; controlX: number; controlY: number };
+    const host = window as unknown as { litCurves: Curve[]; __atlasMap: { edges(): Edge[] } };
+    const edge = host.__atlasMap.edges().find((e) => e.sourceId === picked.sourceId && e.targetId === picked.targetId);
+    if (!edge) return false;
+    const on = (x: number, y: number) => Array.from({ length: 401 }, (_, i) => i / 400).some((t) =>
+      Math.hypot((1 - t) ** 2 * edge.ax + 2 * (1 - t) * t * edge.controlX + t * t * edge.bx - x,
+        (1 - t) ** 2 * edge.ay + 2 * (1 - t) * t * edge.controlY + t * t * edge.by - y) < 0.75);
+    return host.litCurves.some((piece) => on(piece.ax, piece.ay) && on(piece.bx, piece.by));
+  }, { sourceId: target.sourceId, targetId: target.targetId }), 'the picked axon is drawn lit').toBe(true);
 });

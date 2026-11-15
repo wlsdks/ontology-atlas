@@ -7,8 +7,8 @@ import { measureCanvasInsets } from "../../interaction/free-area";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
 import type { ClusterChip } from "../../model/layout/density-gate";
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
-import { neuralTractsFor } from "../frame-draw/paint-neural";
 import { isNeuralDependency } from "../../model/dome-view/neural-cells";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
 import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { ForceSimulation } from "../../model/layout/force-layout";
@@ -188,6 +188,7 @@ export function useTopologyMapInstrumentation({
             ? domeRuntimeRef.current.frame
             : null;
         const drawnAlphas = lastDrawnNodeAlphas();
+        const neuralDome = domeRuntimeRef.current?.model.arrangement === "coupling" ? domeRuntimeRef.current : null;
         return world.nodes.map((n) => {
           const dOff = domeFrame?.get(n.id) ?? { dx: 0, dy: 0, s: 1 };
           return {
@@ -226,7 +227,9 @@ export function useTopologyMapInstrumentation({
               ? radiusForKind(n.kind, tokens) *
               n.magnitudeScale *
               camera.scale.value *
-              dOff.s
+              (neuralDome !== null && domeFrame !== null
+                ? neuralRadiusScale(world, n, dOff.s, camera.scale.value, neuralDome.restFit?.target.tscale ?? neuralDome.fitScale)
+                : dOff.s)
               : 0,
           };
         });

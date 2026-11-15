@@ -1,6 +1,6 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
-import { neuralTractsFor } from "../frame-draw/paint-neural";
+import { neuralRadiusScale, neuralTractsFor } from "../frame-draw/paint-neural";
 import { isNeuralDependency } from "../../model/dome-view/neural-cells";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
@@ -83,6 +83,13 @@ export function createPointerHitTests(ctx: PointerContext) {
     clusterBarLabelsRef, realmParallaxRef, realmTierKindsRef, domeRuntimeRef, neuralRampRef,
     tierRevealRef, pathEdgeIdsRef, visitedTrailRef, domeFrameNow,
   } = ctx;
+  /** The radius factor the 3D draw used for this node: Neural's painted cell, or the dome's perspective. */
+  const domeRadiusScale = (world: TopologyWorld, node: { id: string; kind: "project" | "domain" | "capability" | "element" }, frame: ReadonlyMap<string, DomeNodeFrame>, scale: number): number => {
+    const s = frame.get(node.id)?.s ?? 1;
+    const dome = domeRuntimeRef?.current ?? null;
+    if (dome === null || dome.model.arrangement !== "coupling") return s;
+    return neuralRadiusScale(world, node, s, scale, dome.restFit?.target.tscale ?? dome.fitScale);
+  };
 
   /**
    * Density gate — decides which cluster chip a click or hover point is over. It
@@ -230,8 +237,8 @@ export function createPointerHitTests(ctx: PointerContext) {
           // The alpha the draw used this frame — every see-through channel from one source.
           lastDrawnNodeAlphas()),
       renderOffsetForNode,
-      // 3D perspective factor — the same s the draw multiplied by, applied to the hit disc too.
-      domeFrame ? (node) => domeFrame.get(node.id)?.s ?? 1 : undefined,
+      // 3D: the radius factor the draw multiplied by, so the hit disc is the painted disc.
+      domeFrame ? (node) => domeRadiusScale(world, node, domeFrame, camera.scale.value) : undefined,
       // 3D depth — among overlapping discs the nearer (brighter, larger) node wins.
       domeFrame ? (node) => domeFrame.get(node.id)?.u ?? 0 : undefined);
   };
@@ -315,8 +322,7 @@ export function createPointerHitTests(ctx: PointerContext) {
       const node = world.nodeById.get(id);
       if (!node)
         return undefined;
-      // 3D — the same perspective factor as the node hit disc (identical formula to the draw).
-      const domeS = domeFrame?.get(id)?.s ?? 1;
+      const domeS = domeFrame === null ? 1 : domeRadiusScale(world, node, domeFrame, scale);
       return radiusForKind(node.kind, tokens) * node.magnitudeScale * domeS * scale + HIT_TOUCH_SLACK_PX;
     };
     const candidates: EdgeHitCandidate[] = [];
