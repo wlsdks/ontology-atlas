@@ -17,9 +17,12 @@ const TREE_VISITS_PER_MARK = 4;
 /** Perspective can push a subtree's silhouette past r·unit·scale; slack costs visits, never a visible mark. */
 const TREE_CULL_SLACK = 1.5;
 
-/** How a mark's radius follows the projector's scale. */
+/** Marks grow slower than distances, so zooming in or coming nearer separates them. */
+const MARK_GROWTH = 0.5;
+
+/** How a mark's radius, and the spacing a node needs to open, follow the projector's scale. */
 function markRadiusScale(scale: number): number {
-  return scale;
+  return scale ** MARK_GROWTH;
 }
 
 /**
@@ -295,8 +298,10 @@ export function cutTreeDetail(input: TreeDetailInput, out: TreeDrawList): void {
 function wantsOpen(input: TreeDetailInput, node: number): boolean {
   const { layout } = input;
   const leafHead = layout.model.kinds[node + 1] === "element";
-  const spacingPx = childSpacing(layout, node) * input.projector.unit * screen[node * 4 + 2];
-  return spacingPx >= (leafHead ? input.leafPitchPx : input.openPitchPx);
+  const scale = screen[node * 4 + 2];
+  const spacingPx = childSpacing(layout, node) * input.projector.unit * scale;
+  // The thresholds are a mark's diameter plus a gap where scale is 1, so they grow with the marks.
+  return spacingPx >= (leafHead ? input.leafPitchPx : input.openPitchPx) * markRadiusScale(scale);
 }
 
 /** Far before near; equal depths by node index. */

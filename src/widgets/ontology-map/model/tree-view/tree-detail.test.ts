@@ -210,8 +210,36 @@ describe("cutTreeDetail", () => {
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20, leafPitchPx: 10 }))).toEqual(["capability", "domain", "element", "project"]);
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20, leafPitchPx: 10.01 }))).toEqual(["capability", "domain", "project"]);
     expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 20.01, leafPitchPx: 0 }))).toEqual(["domain", "project"]);
-    expect(kindsDrawn(SMALL, cut(SMALL, { openPitchPx: 30, leafPitchPx: 25 }))).toEqual(["domain", "project"]);
-    expect(kindsDrawn(SMALL, cut(SMALL, { projector: flatProjector(2), openPitchPx: 30, leafPitchPx: 25 }))).toEqual(["capability", "domain", "project"]);
+  });
+
+  it("raises the threshold with the marks, so a node opens under zoom only once spacing passes the scaled threshold", () => {
+    const zoomed = (scale: number) => kindsDrawn(SMALL, cut(SMALL, { projector: flatProjector(scale), openPitchPx: 30, leafPitchPx: 25 }));
+    expect(zoomed(1)).toEqual(["domain", "project"]);
+    // At scale 2 capabilities are 40 px apart: past the token 30, short of 30 x sqrt 2.
+    expect(zoomed(2)).toEqual(["domain", "project"]);
+    // At scale 4 they are 80 px apart, past 30 x 2; elements at 40 px stay short of 25 x 2.
+    expect(zoomed(4)).toEqual(["capability", "domain", "project"]);
+  });
+
+  it("keeps opened siblings from touching when their spacing just reaches a diameter-plus-gap threshold", () => {
+    const gapPx = 2;
+    const openPitchPx = 2 * SIZES.domain + gapPx;
+    for (const scale of [0.25, 1, 4, 9]) {
+      const thresholdPx = openPitchPx * Math.sqrt(scale);
+      const half = (thresholdPx * 1.0001) / (2 * UNIT * scale);
+      const layout = buildTree({
+        kind: "project",
+        at: [0, 0.1, 0],
+        children: [
+          { kind: "domain", at: [-half, 0.2, 0] },
+          { kind: "domain", at: [half, 0.2, 0] },
+        ],
+      });
+      const list = cut(layout, { projector: flatProjector(scale), openPitchPx });
+      const [a, b] = [1, 2].map((node) => list.marks.slice(0, list.count).find((m) => m.node === node)!);
+      expect(a && b).toBeTruthy();
+      expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(a.radius + b.radius);
+    }
   });
 
   it("takes a lone child's spacing from the length of its branch", () => {
@@ -229,12 +257,16 @@ describe("cutTreeDetail", () => {
     expect([...drawn(cut(layout, { openPitchPx: 0 })).keys()].sort()).toEqual([0, 2, 3]);
   });
 
-  it("sizes each mark by its kind times the projected scale", () => {
-    const list = cut(SMALL, { projector: flatProjector(2), openPitchPx: 0, leafPitchPx: 0 });
-    expect(list.count).toBe(SMALL.model.count);
-    for (const mark of list.marks.slice(0, list.count)) {
-      const kind = SMALL.model.kinds[mark.node] as Exclude<TreeNodeKind, "fork">;
-      expect(mark.radius).toBe(SIZES[kind] * 2);
+  it("grows a mark slower than distance: at scale 4 its radius is twice its radius at scale 1", () => {
+    const radii = (scale: number) => {
+      const list = cut(SMALL, { projector: flatProjector(scale), openPitchPx: 0, leafPitchPx: 0 });
+      expect(list.count).toBe(SMALL.model.count);
+      return new Map(list.marks.slice(0, list.count).map((m) => [m.node, m.radius]));
+    };
+    const [near, rest] = [radii(4), radii(1)];
+    for (const [node, radius] of rest) {
+      expect(radius).toBe(SIZES[SMALL.model.kinds[node] as Exclude<TreeNodeKind, "fork">]);
+      expect(near.get(node)).toBe(radius * 2);
     }
   });
 
@@ -341,6 +373,22 @@ describe("cutTreeDetail", () => {
     const touching = [2, 3, 4, 5, 6].filter((leaf) => 500 + layout.position[leaf * 3] * UNIT - SIZES.element <= viewEdgePx);
     expect(touching).toEqual([2, 3, 4, 5]);
     expect(touching.filter((leaf) => drawn(list).has(leaf))).toEqual(touching);
+  });
+
+  it("draws a leaf whose grown mark reaches into the view at a high scale", () => {
+    const scale = 16;
+    const viewEdgePx = 700;
+    const outsideX = (viewEdgePx + 11 - 500) / (UNIT * scale);
+    const layout = buildTree({
+      kind: "project",
+      at: [0, 0.5, 0],
+      children: [{ kind: "capability", at: [1.2, 1, 0], children: [1.2, 1.25, outsideX].map((x) => ({ kind: "element" as const, at: [x, 1.5, 0] as [number, number, number] })) }],
+    });
+    const list = cut(layout, { projector: flatProjector(scale), openPitchPx: 0, leafPitchPx: 0, view: { x: 0, y: 0, width: viewEdgePx, height: 1000 } });
+    const leaf = list.marks.slice(0, list.count).find((m) => m.node === 4);
+    expect(leaf).toBeDefined();
+    expect(leaf!.x - leaf!.radius).toBeLessThanOrEqual(viewEdgePx);
+    expect(leaf!.x).toBeGreaterThan(viewEdgePx);
   });
 
   it("draws a revealed node that lies outside the view", () => {
