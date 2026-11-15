@@ -59,7 +59,7 @@ describe("parseHomeRouteState", () => {
   });
 
   it("round-trips every map view the picker offers, and drops any other value", () => {
-    for (const view of ["hex", "structure", "3d"] as const) {
+    for (const view of ["hex", "structure", "3d", "neural"] as const) {
       const state = parseHomeRouteState(new URLSearchParams(`view=${view}`));
       expect(state.mapView).toBe(view);
       expect(applyHomeRouteState(new URLSearchParams(), state).get("view")).toBe(view);
@@ -69,10 +69,13 @@ describe("parseHomeRouteState", () => {
     expect(parseHomeRouteState(new URLSearchParams("view=territories")).mapView).toBeNull();
   });
 
-  it.each(["strata", "coupling"])("an address naming %s parses to 3d and serialises as 3d", (retired) => {
+  it.each([
+    ["strata", "3d"],
+    ["coupling", "neural"],
+  ] as const)("an address naming %s parses to %s and serialises as it", (retired, view) => {
     const state = parseHomeRouteState(new URLSearchParams(`view=${retired}`));
-    expect(state.mapView).toBe("3d");
-    expect(applyHomeRouteState(new URLSearchParams(`view=${retired}`), state).get("view")).toBe("3d");
+    expect(state.mapView).toBe(view);
+    expect(applyHomeRouteState(new URLSearchParams(`view=${retired}`), state).get("view")).toBe(view);
   });
 
   it("round-trips the contextual editor and legacy create workbench intents", () => {

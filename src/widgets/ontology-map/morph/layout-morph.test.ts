@@ -5,7 +5,7 @@ import { SPRING, springVisualMs } from "@/shared/motion/spring";
 import { MOTION } from "@/shared/motion/tokens";
 import { chooseLayoutSwitch, containmentParents, planLayoutMorph, sampleLayoutMorph } from "./layout-morph";
 
-const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "3d", "structure"];
+const VIEWS: readonly MapLayoutView[] = ["flat", "hex", "3d", "structure", "neural"];
 
 const mark = (id: string, x: number, y: number, extra: Partial<MapLayoutMark> = {}): MapLayoutMark => ({
   id,
@@ -37,7 +37,7 @@ describe("chooseLayoutSwitch", () => {
     expect(chooseLayoutSwitch({ ...base, armed: false, from: "flat", to: "hex" })).toBe("cut");
   });
 
-  it("crossfades all twelve directions under reduced motion", () => {
+  it("crossfades every direction under reduced motion", () => {
     for (const from of VIEWS) {
       for (const to of VIEWS) {
         if (from !== to) expect(chooseLayoutSwitch({ ...base, reducedMotion: true, from, to })).toBe("fade");
@@ -50,6 +50,16 @@ describe("chooseLayoutSwitch", () => {
       expect(chooseLayoutSwitch({ ...base, from: "3d", to: other })).toBe("ghost");
       for (const conceptCount of [2000, 10000]) expect(chooseLayoutSwitch({ ...base, conceptCount, from: other, to: "3d" })).toBe("ghost");
     }
+  });
+
+  it("leaves flat and Neural to the map engine's own morph, and crossfades every other switch into or out of Neural", () => {
+    expect(chooseLayoutSwitch({ ...base, from: "flat", to: "neural" })).toBe("native");
+    expect(chooseLayoutSwitch({ ...base, from: "neural", to: "flat" })).toBe("native");
+    for (const other of ["hex", "3d", "structure"] as const) {
+      expect(chooseLayoutSwitch({ ...base, from: other, to: "neural" })).toBe("fade");
+      expect(chooseLayoutSwitch({ ...base, from: "neural", to: other })).toBe("fade");
+    }
+    expect(chooseLayoutSwitch({ ...base, from: "hex", to: "neural", fromOverlay: true })).toBe("fade");
   });
 
   it("crossfades into the flat and structure views past their measured ceilings", () => {

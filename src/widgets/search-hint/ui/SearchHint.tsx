@@ -6,7 +6,7 @@ import { ListTree, Map as MapIcon, RefreshCcw, Search } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
 import { CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip } from '@/shared/ui/controls/chrome-chip';
 import { useMapView } from '@/shared/lib/preferences/appearance-preferences';
-import { View3dMenu } from './View3dMenu';
+import { View3dMenu, viewMessageKey } from './View3dMenu';
 
 interface Props {
   onOpenSearch: () => void;
@@ -64,7 +64,7 @@ export function SearchHint({
   const t = useTranslations('searchWidgets.hint');
   const isMac = useSyncExternalStore(subscribe, getIsMac, getIsMacServer);
   const currentView = useMapView();
-  const view3d = currentView === '3d';
+  const view3d = currentView === '3d' || currentView === 'neural';
   const [view3dMenuOpen, setView3dMenuOpen] = useState(false);
   const view3dAnchorRef = useRef<HTMLDivElement | null>(null);
   const view3dChipRef = useRef<HTMLButtonElement | null>(null);
@@ -208,12 +208,12 @@ export function SearchHint({
             // review panel open); the current view stays in the name and tooltip.
             compact={compact}
             className={`max-xl:[&_[data-chip-label]]:hidden ${CHROME_CHIP_COMPACT_BELOW_XL}`}
-            aria-label={`${t('mapViewAriaLabel')}: ${t(`view3dChoice.${currentView}`)}`}
+            aria-label={`${t('mapViewAriaLabel')}: ${t(`view3dChoice.${viewMessageKey(currentView)}`)}`}
             title={t('view3dPickerHelp', {
-              view: t(`view3dChoice.${currentView}`),
+              view: t(`view3dChoice.${viewMessageKey(currentView)}`),
             })}
           >
-            {t(`view3dChoice.${currentView}`)}
+            {t(`view3dChoice.${viewMessageKey(currentView)}`)}
           </ChromeChip>
           <View3dMenu
             open={view3dMenuOpen}

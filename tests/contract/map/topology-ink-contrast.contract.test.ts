@@ -163,7 +163,7 @@ describe("topology ink contrast contract", () => {
 
   it("the ink ladder stays above the 3:1 floor even **composited** with the depth clarity alpha", () => {
     // Composited with the alpha the renderer multiplies by (`realmDepthClarityAlpha`), since the
-    // standalone check cannot see the loss.
+    // standalone check cannot see the loss. The 3D dome depth fog is outside this floor.
     const surface = readToken("map-canvas-bg-near");
     const compositeHex = (ink: string, alpha: number, bg: string): string => {
       const ch = (hex: string, i: number) => parseInt(hex.slice(i, i + 2), 16);

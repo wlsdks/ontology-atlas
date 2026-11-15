@@ -110,7 +110,7 @@ export function HomePage() {
 
 function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const topologyPreferences = useTopologyPreferences();
-  const { t, siteT, relationLabelInRegister, activeLocale, view3d, structure } = topologyPreferences;
+  const { t, siteT, relationLabelInRegister, activeLocale, view3d, neural, structure } = topologyPreferences;
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   // Held through the exit window, or the pill empties as it leaves. Keyed by the flattened stack,
   // since the array identity changes every render.
@@ -317,7 +317,7 @@ function HomePageImpl({ mapEntryTicket }: { mapEntryTicket: number | null }) {
   const { reverseDeps, ontologyMapGraph, canvasSelectedSlug } = topologyGraphProjection;
   const topologyExplorationLenses = useTopologyExplorationLenses({
     routeState, setRouteState, topologyVaultReadModel, topologyGraphProjection, topologyRouteControls,
-    foldsApply: topologyGraphProjection.resolvedRealmSlug !== null,
+    foldsApply: neural || topologyGraphProjection.resolvedRealmSlug !== null,
   });
 
   const {

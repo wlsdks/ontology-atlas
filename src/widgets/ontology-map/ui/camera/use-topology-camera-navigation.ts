@@ -13,6 +13,8 @@ import { useLatestRef } from "@/shared/lib/use-latest-ref";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import { type CameraTween, type CameraTweenEase } from "../../model/camera/camera-easing";
 import { recordSelectionCamera, selectionZoomBase, type SelectionCamera } from "../../model/camera/flat-selection-camera";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
+import type { DomeModel } from "../../model/dome-view/types";
 import { isPathTargetPick, type TopologyMapLensKind } from "../../model/visibility/path-lens";
 import {
   type RealmTransitionState
@@ -20,6 +22,7 @@ import {
 import { resolveViewportReframeMode } from "../../model/camera/viewport-reframe";
 import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { landTierAssembly } from "../../morph/tier-assembly";
+import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
 import {
   overviewBoundsFor,
@@ -47,6 +50,8 @@ interface Dependencies {
   dampingRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: CameraTweenEase) => void;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
+  domeFitTarget: (model: DomeModel, yaw: number, pitch: number, width: number, height: number, tokens: OntologyMapTokens) => CameraTarget | null;
   lastActiveMsRef: RefObject<number>;
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -69,6 +74,7 @@ interface Dependencies {
   previousConstellationFocusIdRef: RefObject<string | null>;
   focusedSlugRef: RefObject<string | null>;
   selectedEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType?: string; } | null>;
+  domeFocusPendingRef: RefObject<{ slug: string | null; } | null>;
   reframeViewportRef: RefObject<((motion: ViewportReframeMotion) => boolean) | null>;
   selectionCameraRef: RefObject<SelectionCamera | null>;
   cameraGestureRevisionRef: RefObject<number>;
@@ -97,6 +103,7 @@ export function useTopologyCameraNavigation({
   dampingRef,
   cameraAngularFreqRef,
   beginCameraTween,
+  domeRuntimeRef,
   lastActiveMsRef,
   overviewFitRef,
   spotlightIdsRef,
@@ -118,6 +125,7 @@ export function useTopologyCameraNavigation({
   previousConstellationFocusIdRef,
   focusedSlugRef,
   selectedEdgeRef,
+  domeFocusPendingRef,
   reframeViewportRef,
   selectionCameraRef,
   cameraGestureRevisionRef,
@@ -265,7 +273,7 @@ export function useTopologyCameraNavigation({
    // width and inspector separately.
    *
    // Here we do not unconditionally revert to overview. We recalculate the camera meaning
-   // owned by each selection/area/path-full lens, preserving screens panned/zoomed
+   // owned by each selection/area/path-full lens/3D, preserving screens panned/zoomed
    // directly.
    */
   const viewportReframeImplementation = (motion: ViewportReframeMotion): boolean => {
@@ -292,8 +300,10 @@ export function useTopologyCameraNavigation({
     const realmPhase = realmTransitionRef.current.phase;
     const realmActive = realmPhase === "entering" || realmPhase === "active";
     const focused = focusedSlugRef.current;
+    const dome = domeRuntimeRef.current;
     const mode = resolveViewportReframeMode({
       userDriven: userDrivenCameraRef.current,
+      domeActive: dome !== null && dome.active,
       focused: focused !== null,
       pairFocused: selectedEdgeRef.current !== null,
       realmActive,
@@ -301,6 +311,28 @@ export function useTopologyCameraNavigation({
     });
 
     if (mode === "preserve") return false;
+
+    // 3D must be handled with live projection coordinates held by rAF. Do not reset
+    // orientation; only feed the new viewport into the existing select/deselect reframe path.
+    if (mode === "dome-focus" || mode === "dome-overview") {
+      // The DOM owns its final bbox in its own projection step. Do not restart that
+      // step every frame for width; only hand off the debt once upon settling.
+      if (motion === "tracking") return false;
+      if (mode === "dome-focus") {
+        /*
+         * A selection alone never moved the 3D view (a click only selects), so a new
+         * viewport only re-checks the nudge (the node must not end up under a panel) — unless
+         * a fly-to framed this node, which is re-flown against the new size (return view kept).
+         */
+        if (dome === null || focused === null) return false;
+        dome.flyRequest = dome.flight !== null && dome.flight.slug === focused ? { slug: focused } : { slug: focused, nudge: true };
+        lastActiveMsRef.current = performance.now();
+        return true;
+      }
+      domeFocusPendingRef.current = { slug: null };
+      lastActiveMsRef.current = performance.now();
+      return true;
+    }
 
     const memory = selectionCameraRef.current;
     if (mode === "focus" && focused !== null && (!realmActive || realmDataRef.current?.flat) && memory?.slug === focused && !memory.framed) {

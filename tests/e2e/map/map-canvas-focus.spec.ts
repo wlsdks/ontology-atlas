@@ -98,7 +98,7 @@ test.describe("map canvas focus on the dogfood vault", () => {
     });
     test("MC-17: every picker view is kept in the address", async ({ page }) => {
         await arrive(page, { width: 1512, height: 949 });
-        for (const view of ["3d", "hex"] as const) {
+        for (const view of ["3d", "neural", "hex"] as const) {
             await page.getByTestId("topology-view-3d").click();
             await page.getByTestId(`topology-view-3d-choice-${view}`).click();
             await expect.poll(() => new URL(page.url()).searchParams.get("view")).toBe(view);

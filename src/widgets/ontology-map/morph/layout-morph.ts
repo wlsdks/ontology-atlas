@@ -4,7 +4,10 @@ import { MOTION } from "@/shared/motion/tokens";
 import { readContainmentTree, type TreeInputEdge, type TreeInputNode } from "../model/containment-tree";
 import { createGlideFrame, planGlide, sampleGlide, type Glide, type GlideFrame, type GlideOptions } from "./glide";
 
-export type LayoutSwitch = "none" | "cut" | "ghost" | "fade";
+export type LayoutSwitch = "none" | "cut" | "native" | "ghost" | "fade";
+
+/** Flat and Neural share the map engine, which morphs between them itself. */
+const MAP_ENGINE_VIEWS: ReadonlySet<MapLayoutView> = new Set(["flat", "neural"]);
 
 export const ARRIVAL_GLIDE_CONCEPT_CEILING = 2000;
 
@@ -14,6 +17,7 @@ const GHOST_TARGET_CONCEPT_CEILING: Readonly<Record<MapLayoutView, number>> = {
   flat: 6500,
   structure: 0,
   "3d": Number.POSITIVE_INFINITY,
+  neural: 0,
 };
 
 export function chooseLayoutSwitch({
@@ -34,7 +38,8 @@ export function chooseLayoutSwitch({
   if (from === to && !fromOverlay) return "none";
   if (!armed) return "cut";
   if (reducedMotion || from === "structure" || to === "structure") return "fade";
-  if (conceptCount > GHOST_TARGET_CONCEPT_CEILING[to]) return "fade";
+  if (!fromOverlay && MAP_ENGINE_VIEWS.has(from) && MAP_ENGINE_VIEWS.has(to)) return "native";
+  if ((!fromOverlay && from === "neural") || conceptCount > GHOST_TARGET_CONCEPT_CEILING[to]) return "fade";
   return "ghost";
 }
 

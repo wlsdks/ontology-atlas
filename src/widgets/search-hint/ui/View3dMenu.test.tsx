@@ -35,17 +35,22 @@ describe("View3dMenu view picker", () => {
     expect(screen.getByRole("radiogroup")).toHaveAccessibleName("지도 보기");
   });
 
-  // A stored arrangement from an older build must still leave one row checked: 3D.
-  it("offers flat, hex, 3d and structure, in that order, and checks the stored one", () => {
+  // A Strata arrangement from an older build must still leave one row checked: 3D.
+  it("offers flat, hex, structure, 3d and neural, in that order, and checks the stored one", () => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
-    window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
+    window.localStorage.setItem("atlas.appearance.map-arrangement", "strata");
     mount();
     const rows = screen.getAllByRole("radio");
     expect(rows.map((row) => row.getAttribute("data-testid"))).toEqual(
-      ["flat", "hex", "3d", "structure"].map((view) => `topology-view-3d-choice-${view}`),
+      ["flat", "hex", "structure", "3d", "neural"].map((view) => `topology-view-3d-choice-${view}`),
     );
     expect(rows.filter((row) => row.getAttribute("aria-checked") === "true").map((row) => row.getAttribute("data-testid")))
       .toEqual(["topology-view-3d-choice-3d"]);
+  });
+
+  it("names the Neural row with the label its coupling arrangement had", () => {
+    mount();
+    expect(screen.getByTestId("topology-view-3d-choice-neural")).toHaveTextContent("뉴런");
   });
 
   it("gives every row a hint line under its title", () => {

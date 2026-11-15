@@ -30,6 +30,8 @@ import { type PointerMachineState } from "../../interaction/pointer-state-machin
 import { type CameraTween, type ZoomEase } from "../../model/camera/camera-easing";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
 import type { ClusterChip } from "../../model/layout/density-gate";
+import { commitDomeEntrySweep } from "../../model/dome-view/frame";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { type ForceSimulation } from "../../model/layout/force-layout";
 import {
   type DepthParallaxOffset
@@ -55,6 +57,7 @@ interface Dependencies {
   viewportRef: RefObject<{ width: number; height: number; dpr: number; }>;
   pointerMachineRef: RefObject<PointerMachineState>;
   dragHistoryRef: RefObject<{ x: number; y: number; t: number; }[]>;
+  domeGripRef: RefObject<boolean>;
   camStartAtDownRef: RefObject<{ x: number; y: number; }>;
   canvasRectRef: RefObject<{ left: number; top: number; } | null>;
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -75,13 +78,15 @@ interface Dependencies {
   hoveredEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null; } | null>;
   selectedEdgeRef: RefObject<{ sourceId: string; targetId: string; relationType?: string; } | null>;
   clusterChipsRef: RefObject<readonly ClusterChip[]>;
-  lastTapRef: RefObject<{ nodeId: string; at: number; } | null>;
+  lastTapRef: RefObject<{ nodeId: string; at: number; x?: number; y?: number; } | null>;
   expandPrefRef: RefObject<ExpandPreference>;
   clusterBarLabelsRef: RefObject<ClusterBarLabels | null>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   hoveredClusterIdRef: RefObject<string | null>;
   realmParallaxRef: RefObject<{ depthById: ReadonlyMap<string, number>; depth2: DepthParallaxOffset; depth3: DepthParallaxOffset; } | null>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
+  domeRuntimeRef: RefObject<DomeRuntime | null>;
+  neuralRampRef: RefObject<number>;
   tierRevealRef: RefObject<TierRevealConfig>;
     pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   visitedTrailRef: RefObject<readonly string[]>;
@@ -120,6 +125,7 @@ export function useTopologyInput({
   viewportRef,
   pointerMachineRef,
   dragHistoryRef,
+  domeGripRef,
   camStartAtDownRef,
   canvasRectRef,
   canvasRef,
@@ -147,6 +153,8 @@ export function useTopologyInput({
   hoveredClusterIdRef,
   realmParallaxRef,
   realmTierKindsRef,
+  domeRuntimeRef,
+  neuralRampRef,
   tierRevealRef, pathEdgeIdsRef,
   visitedTrailRef,
   onSelect,
@@ -193,7 +201,8 @@ export function useTopologyInput({
     viewportRef,
     pointerMachineRef,
     dragHistoryRef,
-      camStartAtDownRef,
+    domeGripRef,
+    camStartAtDownRef,
     canvasRectRef,
     canvasRef,
     focusedSlugRef,
@@ -220,6 +229,8 @@ export function useTopologyInput({
     hoveredClusterIdRef,
     realmParallaxRef,
     realmTierKindsRef,
+    domeRuntimeRef,
+    neuralRampRef,
     tierRevealRef,
     pathEdgeIdsRef,
     visitedTrailRef,
@@ -372,13 +383,30 @@ export function useTopologyInput({
    * means selected, so no separate focus ring). Collapsed nodes are skipped: a chip replaced them.
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
-    // Fly-to key, the twin of the double-click: Enter zooms to the selected node.
+    /*
+     * Fly-to keys, the twin of the double-click: Enter zooms to the selected node; on the 3D dome Home
+     * flies back or frames the whole structure, and Esc flies back too and still reaches its other handlers.
+     */
     if (!e.metaKey && !e.ctrlKey && !e.altKey) {
+      const dome = domeRuntimeRef.current;
       const focused = focusedSlugRef.current;
       if (e.key === "Enter" && focused !== null) {
         e.preventDefault();
-        flyToNode(focused);
+        if (dome !== null && dome.active) {
+          dome.flyRequest = { slug: focused };
+          lastActiveMsRef.current = performance.now();
+        } else flyToNode(focused);
         return;
+      }
+      if (dome !== null && dome.active && e.key === "Home") {
+        e.preventDefault();
+        dome.flyRequest = { slug: null };
+        lastActiveMsRef.current = performance.now();
+        return;
+      }
+      if (dome !== null && dome.active && e.key === "Escape" && dome.flight !== null) {
+        dome.flyRequest = { slug: null };
+        lastActiveMsRef.current = performance.now();
       }
     }
     const zoomIntent = keyboardZoomIntent(e, navigationSpeedRef.current.zoom);
@@ -393,7 +421,14 @@ export function useTopologyInput({
       const target = cameraTargetRef.current;
       const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
       const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, worldRef.current?.dialScaleMax ?? undefined);
-      const scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+      let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+      const dome = domeRuntimeRef.current;
+      if (dome !== null && dome.active) {
+        if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+        dome.poseTween = null;
+      }
       const tscale = Math.min(scaleMax, Math.max(scaleMin, target.tscale * zoomIntent.factor));
       if (Math.abs(tscale - target.tscale) < 1e-6) return;
       const camera = cameraRef.current;
@@ -535,7 +570,7 @@ export function useTopologyInput({
         beginCameraTween(cameraTarget);
       }
     }
-  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd, flyToNode]);
+  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, domeRuntimeRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd, flyToNode]);
 
   const wrappedHandlers = useMemo(
     () => ({

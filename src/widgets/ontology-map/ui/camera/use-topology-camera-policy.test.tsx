@@ -31,7 +31,7 @@ describe("the chrome boxes map names yield to", () => {
     document.body.innerHTML = "";
   });
 
-  function setup() {
+  function setup(view3d = false) {
     const canvas = document.createElement("canvas");
     canvas.getBoundingClientRect = () => ({ x: 0, y: 0, left: 0, top: 0, right: 1200, bottom: 800, width: 1200, height: 800, toJSON: () => ({}) });
     const panel = document.createElement("aside");
@@ -42,9 +42,11 @@ describe("the chrome boxes map names yield to", () => {
     const deps = {
       canvasRef: { current: canvas },
       panelInsetsRef: { current: null as PanelInsets | null },
+      domeFitInsetsRef: { current: null },
       reducedMotionRef: { current: false },
       cameraTweenRef: { current: null },
       cameraRef: { current: { x: { value: 0, velocity: 0 }, y: { value: 0, velocity: 0 }, scale: { value: 1, velocity: 0 } } },
+      view3dRef: { current: view3d },
       lastActiveMsRef: { current: 0 },
     };
     const { result } = renderHook(() => useTopologyCameraPolicy(deps));
@@ -68,5 +70,13 @@ describe("the chrome boxes map names yield to", () => {
     expect(names).toHaveBeenCalledTimes(2);
     expect(deps.panelInsetsRef.current?.nameObstacles).toEqual([{ minX: 800, maxX: 1200, minY: 0, maxY: 700 }]);
     expect(deps.lastActiveMsRef.current).toBeGreaterThan(0);
+  });
+
+  it("measures no name boxes in 3D, where no name reads them", () => {
+    const names = vi.spyOn(freeArea, "measureNameObstacles");
+    const { deps, result } = setup(true);
+    result.current.cameraTokens({ safeInsetLeft: 0, safeInsetRight: 0 });
+    expect(names).not.toHaveBeenCalled();
+    expect(deps.panelInsetsRef.current?.nameObstacles).toEqual([]);
   });
 });

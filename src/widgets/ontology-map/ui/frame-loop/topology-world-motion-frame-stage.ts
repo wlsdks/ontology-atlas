@@ -14,6 +14,8 @@ import {
 } from "../../expressive/release-offsets";
 import { tugFactorForHop, tugFalloffForDistance } from "../../interaction/drag-tug";
 import type { CameraTween, CameraTweenAltitude } from "../../model/camera/camera-easing";
+import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
+import type { DomeRuntime } from "../../model/dome-view/runtime";
 import { createForceSimulation, type ForceSimulation } from "../../model/layout/force-layout";
 import {
   isRealmOutsideCulled,
@@ -115,11 +117,19 @@ export interface WorldMotionFrameStageSources {
   prevPinnedNodeIdRef: SourceRef<string | null>;
   clusteredIdsRef: SourceRef<ReadonlySet<string>>;
   expandedParentsRef: SourceRef<ReadonlySet<string>>;
+  view3dRef: SourceRef<boolean>;
+  domeRuntimeRef: SourceRef<DomeRuntime | null>;
   realmDataRef: SourceRef<RealmRuntimeData | null>;
   realmTransitionRef: SourceRef<RealmTransitionState>;
   realmActiveHandedOffRef: SourceRef<boolean>;
   wardingFitRef: SourceRef<WardingFitState | null>;
   reducedMotionRef: SourceRef<boolean>;
+  pendingFlatCameraRef: SourceRef<{
+    target: CameraTarget;
+    overviewScale: number;
+    gestureRevision: number;
+    userDriven: boolean;
+  } | null>;
     cameraGestureRevisionRef: SourceRef<number>;
   cameraRef: SourceRef<CameraAxes>;
   cameraTargetRef: SourceRef<CameraTarget>;
@@ -152,6 +162,8 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
     prevPinnedNodeIdRef,
     clusteredIdsRef,
     expandedParentsRef,
+    view3dRef,
+    domeRuntimeRef,
     realmDataRef,
     realmTransitionRef,
     realmActiveHandedOffRef,
@@ -248,7 +260,20 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
         simRef.current = homing.sim;
       }
     }
-    if (sim && (heatRef.current > 0 || pinned)) {
+    /*
+     * An assembled dome does not run 2D physics: with full tier ramps the drawn position cancels to
+     * `p.wx`, so freezing 2D coordinates moves nothing, while a 3D node drag would run FA2 over all nodes.
+     */
+    const domeAssembled =
+      view3dRef.current &&
+      realmTransitionRef.current.phase === "idle" &&
+      domeRuntimeRef.current !== null &&
+      domeRuntimeRef.current.rampClock >= DOME_ASSEMBLE_TOTAL_MS;
+    if (domeAssembled) {
+      // Heat still drains while the pass is skipped, so leaving 3D does not
+      // inherit a stale settle burst — the same time budget rule as below.
+      if (!pinned && heatRef.current > 0) heatRef.current = Math.max(0, heatRef.current - dt * 1000);
+    } else if (sim && (heatRef.current > 0 || pinned)) {
       // Radius-limited release settle: restrict BOTH the live-drag
       // tick and the post-release settle burst to the dragged node's own
       // cluster (itself + 1-hop + 2-hop), so far nodes never drift via FA2
@@ -260,7 +285,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       // went 137.6 → 137.6 ms, zero gain). A node collapsed off screen moves
       // where nobody can see it, so it is not worth computing.
       const clustered = clusteredIdsRef.current;
-      const dialAlphas = world.dial && realmDataRef.current === null && realmTransitionRef.current.phase === "idle"
+      const dialAlphas = !view3dRef.current && world.dial && realmDataRef.current === null && realmTransitionRef.current.phase === "idle"
         ? lastDialFrame()?.alphas ?? null : null;
       const restrictToIds = affected
         ? collectActiveMotionIds([affected.draggedId, ...affected.oneHop, ...affected.twoHop], clustered, dialAlphas, affected.draggedId)
@@ -526,7 +551,7 @@ export function createWorldMotionFrameStage(sources: WorldMotionFrameStageSource
       }
     }
 
-    if (realmTransitionRef.current.phase !== "idle") settleTierAssembly(world);
+    if (view3dRef.current || realmTransitionRef.current.phase !== "idle") settleTierAssembly(world);
     if (isTierAssembling(world)) {
       const running = stepTierAssembly(world, now);
       recomputeWorldGeometry(world, tokens);

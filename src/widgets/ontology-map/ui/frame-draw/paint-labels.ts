@@ -22,6 +22,7 @@ import {
 import {
   ellipsizeToWidth,
   greedyPlaceLabels,
+  filterFadingLabelCollisions,
   ReservedBoxIndex,
   clampAnchorIntoSafeRect,
   isSafeRectProtectedLabel,
@@ -62,6 +63,7 @@ interface LabelPayload {
   emphasisAlpha: number;
   lensSink: number;
   agentFocus: boolean;
+  depthU: number;
 }
 
 export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, layer: NodeLayer, chipReservations: readonly ReservedBox[]): SafeRect {
@@ -69,7 +71,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
     expand, focusedNodeId, previewEdge, clusteredIds, selectedEdge, mapLensKind, spotlightIds,
     hoveredNodeId, spotlightRamp, camera, reviewQuestionIds, agentFocusNodeId, labelPresentById,
     now, reducedMotion, appearById, pathLensActive, constellationLensActive, spotlightSink,
-    isTrailKept, lensNodeEgoState, realmParallaxOffsetFor, labelScale } = frame;
+    isTrailKept, lensNodeEgoState, realmParallaxOffsetFor, domeOn, nodeFrameAt, labelScale } = frame;
   const { camX, camY, camScale, halfW, halfH, neighborsOfFocused, egoAllNormal } = focus;
   const { effectiveAlphaById } = alpha;
   const { ctx, drawnScreenRadiusById, nodeDiscReservations } = layer;
@@ -151,12 +153,14 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
     const compactAlpha = constellationKept
       ? Math.max(baseCompactAlpha, spotlightRamp)
       : baseCompactAlpha;
+    const labelDome = nodeFrameAt(index);
     if (compactAlpha <= 0.02) continue;
 
     const labelPOff = realmParallaxOffsetFor(node.id);
+    const labelDOff = labelDome;
     const screen = labelScreenScratch;
-    screen.x = (node.x + labelPOff.x - camX) * camScale + halfW;
-    screen.y = (node.y + labelPOff.y - camY) * camScale + halfH;
+    screen.x = (node.x + labelPOff.x + labelDOff.dx - camX) * camScale + halfW;
+    screen.y = (node.y + labelPOff.y + labelDOff.dy - camY) * camScale + halfH;
     const screenRadius =
       drawnScreenRadiusById.get(node.id) ?? radiusForKind(node.kind, tokens) * camera.scale.value;
     const anchorY = resolveLabelBaselineY(node.kind, screen.y, screenRadius, labelScale);
@@ -227,7 +231,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
       altBbox: flipSlot
         ? { minX: candidateBbox.minX, maxX: candidateBbox.maxX, minY: flipSlot.baselineY - flipSlot.ascent, maxY: flipSlot.baselineY + flipSlot.descent }
         : undefined,
-      order: index,
+      order: domeOn ? Math.round(labelDome.u * 100000) : index,
       ownerId: node.id,
       bbox: candidateBbox,
       payload: {
@@ -244,6 +248,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
         lensSink: pathLabelSink,
         emphasisAlpha: constellationKept ? spotlightRamp : 0,
         agentFocus,
+        depthU: domeOn ? labelDome.u : 0,
       },
     });
   }
@@ -286,7 +291,7 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
   }
   const placedIds = new Set<string>(placedResult.map((c) => c.payload.nodeId));
   const presenceById = labelPresentById;
-  const drawList: {
+  let drawList: {
     payload: LabelPayload;
     presenceAlpha: number;
   }[] = [];
@@ -315,7 +320,12 @@ export function paintLabels(frame: FrameInputs, focus: FrameFocus, alpha: NodeAl
     for (const c of placedResult)
       drawList.push({ payload: c.payload, presenceAlpha: 1 });
   }
+  if (domeOn) {
+    drawList = filterFadingLabelCollisions(drawList, entry => placedIds.has(entry.payload.nodeId), entry => labelBboxById.get(entry.payload.nodeId));
+  }
   prevPlacedLabelIds = placedIds;
+  if (domeOn)
+    drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
   passState.drawnLabelBoxes = [];
   for (const { payload, presenceAlpha } of drawList) {
     if (presenceAlpha > 0.5) {

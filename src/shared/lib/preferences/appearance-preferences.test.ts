@@ -92,17 +92,28 @@ describe("appearance-preferences", () => {
     }
   });
 
-  it.each(["ownership", "strata", "coupling"])("a stored 3D flag opens 3D whatever arrangement was stored (%s)", (arrangement) => {
+  it.each([
+    ["ownership", "3d"],
+    ["strata", "3d"],
+    ["coupling", "neural"],
+  ] as const)("a stored 3D flag with the %s arrangement opens %s", (arrangement, view) => {
     window.localStorage.setItem("atlas.appearance.view3d", "on");
     window.localStorage.setItem("atlas.appearance.map-arrangement", arrangement);
-    expect(renderHook(() => useMapView()).result.current).toBe("3d");
+    expect(renderHook(() => useMapView()).result.current).toBe(view);
   });
 
-  it.each(["flat", "hex", "structure", "3d"] as const)("picking a view removes the retired arrangement key (%s)", (view) => {
+  it.each(["flat", "hex", "structure", "3d"] as const)("picking a view other than Neural removes the arrangement key (%s)", (view) => {
     window.localStorage.setItem("atlas.appearance.map-arrangement", "coupling");
     writeMapView(view);
     expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBeNull();
     expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe(view === "3d" ? "on" : "off");
+  });
+
+  it("picking Neural stores the 3D flag with the coupling arrangement, and reads back as Neural", () => {
+    writeMapView("neural");
+    expect(window.localStorage.getItem("atlas.appearance.view3d")).toBe("on");
+    expect(window.localStorage.getItem("atlas.appearance.map-arrangement")).toBe("coupling");
+    expect(renderHook(() => useMapView()).result.current).toBe("neural");
   });
 
   it("never reads a retired Territories pick, and the next pick removes it", () => {

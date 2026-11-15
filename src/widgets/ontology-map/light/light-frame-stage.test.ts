@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { CameraAxes } from "../engine/camera";
+import type { DomeRuntime } from "../model/dome-view/runtime";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
@@ -139,6 +140,9 @@ interface Harness {
         egoRevealRef: {
             current: Map<string, number>;
         };
+        domeRuntimeRef: {
+            current: DomeRuntime | null;
+        };
         mapLensKindRef: {
             current: TopologyMapLensKind;
         };
@@ -166,6 +170,7 @@ function harness(options: Partial<LightStageOptions> = {}): Harness {
   const refs: Harness["refs"] = {
     reducedMotionRef: { current: false },
     egoRevealRef: { current: new Map() },
+    domeRuntimeRef: { current: null },
     mapLensKindRef: { current: "recent" },
     pathEdgeIdsRef: { current: null },
     spotlightIdsRef: { current: null },
@@ -421,6 +426,17 @@ describe("light frame stage", () => {
     expect(isEdgeSignalled(a, c, b)).toBe(true);
     for (let now = 3 * FRAME_MS; now < SPENT_MS; now += FRAME_MS) h.frame(now, "d1");
     expect(isEdgeSignalled(a, c, b)).toBe(false);
+    h.stage.dispose();
+  });
+
+  it("draws no light in a 3D arrangement", async () => {
+    const h = harness();
+    await ready(h);
+    h.refs.domeRuntimeRef.current = { rampClock: 10 } as unknown as DomeRuntime;
+    fake.reset();
+    h.frame(2 * FRAME_MS, "d0");
+    expect(h.lightActiveRef.current).toBe(false);
+    expect(fake.count("drawArraysInstanced")).toBe(0);
     h.stage.dispose();
   });
 

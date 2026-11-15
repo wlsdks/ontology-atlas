@@ -1,7 +1,9 @@
-import { hexToRgbCss } from "../../render/grid";
+import type { DomeNodeFrame } from "../../model/dome-view/runtime";
+import { lerpColorHex } from "../../render/grid";
 import { worldToScreen } from "../camera/topology-camera-math";
+import { domeFamily } from "../frame-cache/structure";
 import type { WorldEdge } from "../world/topology-world";
-import { EMPTY_NEIGHBOR_SET } from "./frame-state";
+import { EMPTY_NEIGHBOR_SET, passState, lodHoverEgoReused } from "./frame-state";
 import { resetNodeVisualCacheFor } from "./node-visual";
 import type { FrameInputs } from "./frame-begin";
 import { lastDialFrame } from "../../dial/frame/frame";
@@ -15,16 +17,16 @@ const edgePointsScratch = {
 };
 
 export function prepareFocus(frame: FrameInputs) {
-  const { camera, viewportWidth, viewportHeight, colorFocusedNodeId, focusRampById,
-    focusedNodeId, world, selectedEdge, colorSelectedEdge, tokens,
-    reducedMotion, footprintStepColor, trailLensKeepIds } = frame;
+  const { camera, viewportWidth, viewportHeight, domeControlFor, colorFocusedNodeId, focusRampById,
+    focusedNodeId, world, domeLight, hoveredNodeId, selectedEdge, colorSelectedEdge, tokens,
+    reducedMotion, footprintStepColor, trailLensKeepIds, domeOn, neural, domeFrameFor } = frame;
   const project = (x: number, y: number) => worldToScreen(camera, viewportWidth, viewportHeight, x, y);
   const camX = camera.x.value;
   const camY = camera.y.value;
   const camScale = camera.scale.value;
   const halfW = viewportWidth / 2;
   const halfH = viewportHeight / 2;
-  const projectEdgePoints = (edge: WorldEdge): {
+  const projectEdgePoints = (edge: WorldEdge, knownOffA?: DomeNodeFrame, knownOffB?: DomeNodeFrame): {
     a: {
       x: number;
       y: number;
@@ -39,26 +41,65 @@ export function prepareFocus(frame: FrameInputs) {
     };
   } => {
     const out = edgePointsScratch;
-    out.a.x = (edge.ax - camX) * camScale + halfW;
-    out.a.y = (edge.ay - camY) * camScale + halfH;
-    out.b.x = (edge.bx - camX) * camScale + halfW;
-    out.b.y = (edge.by - camY) * camScale + halfH;
-    out.control.x = (edge.controlX - camX) * camScale + halfW;
-    out.control.y = (edge.controlY - camY) * camScale + halfH;
-    return clipBranchRelation(lastDialFrame(), edge.sourceId, edge.targetId, out);
+    if (!domeOn) {
+      out.a.x = (edge.ax - camX) * camScale + halfW;
+      out.a.y = (edge.ay - camY) * camScale + halfH;
+      out.b.x = (edge.bx - camX) * camScale + halfW;
+      out.b.y = (edge.by - camY) * camScale + halfH;
+      out.control.x = (edge.controlX - camX) * camScale + halfW;
+      out.control.y = (edge.controlY - camY) * camScale + halfH;
+      return clipBranchRelation(lastDialFrame(), edge.sourceId, edge.targetId, out);
+    }
+    const offA = knownOffA ?? domeFrameFor(edge.sourceId);
+    const offB = knownOffB ?? domeFrameFor(edge.targetId);
+    const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
+    const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
+    const curve = domeControlFor === null ? null : domeControlFor(edge);
+    const controlX = curve?.x ?? flatControlX;
+    const controlY = curve?.y ?? flatControlY;
+    out.a.x = (edge.ax + offA.dx - camX) * camScale + halfW;
+    out.a.y = (edge.ay + offA.dy - camY) * camScale + halfH;
+    out.b.x = (edge.bx + offB.dx - camX) * camScale + halfW;
+    out.b.y = (edge.by + offB.dy - camY) * camScale + halfH;
+    out.control.x = (controlX - camX) * camScale + halfW;
+    out.control.y = (controlY - camY) * camScale + halfH;
+    return out;
   };
-  const egoGlowRamp = colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
-  const neighborsOfFocused = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
-  const colorNeighbors = colorFocusedNodeId
+  const egoGlowRamp = (!domeOn || neural > 0.001) && colorFocusedNodeId !== null ? Math.min(1, Math.max(0, focusRampById.get(colorFocusedNodeId) ?? 0)) : 0;
+  const neighborsOfFocusedRaw = focusedNodeId ? world.neighborMap.get(focusedNodeId) ?? EMPTY_NEIGHBOR_SET : EMPTY_NEIGHBOR_SET;
+  const parentOf = (id: string) => world.nodeById.get(id)?.parentId;
+  const litOn = domeOn && domeLight !== null;
+  const family = domeOn && focusedNodeId !== null ? domeFamily(world, focusedNodeId, litOn) : null;
+  const colorFamily = domeOn && colorFocusedNodeId !== null ? domeFamily(world, colorFocusedNodeId, litOn) : null;
+  const domeAncestryOn = family !== null && family.nodes.size > 0;
+  const domeAncestryEdges = family?.edges ?? EMPTY_NEIGHBOR_SET;
+  const domeAncestryColorNodes = colorFamily?.nodes ?? EMPTY_NEIGHBOR_SET;
+  const neighborsOfFocused = domeAncestryOn ? family.neighbors : neighborsOfFocusedRaw;
+  const colorNeighborsRaw = colorFocusedNodeId
     ? world.neighborMap.get(colorFocusedNodeId) ?? EMPTY_NEIGHBOR_SET
     : EMPTY_NEIGHBOR_SET;
+  const colorNeighbors = colorFamily !== null && colorFamily.nodes.size > 0 ? colorFamily.neighbors : colorNeighborsRaw;
+  const litFocusId = litOn ? colorFocusedNodeId : null;
+  const litFocusRamp = litFocusId !== null ? Math.min(1, Math.max(0, focusRampById.get(litFocusId) ?? 0)) : 0;
+  const inLitLine = (id: string): boolean => litFocusId !== null && (id === litFocusId || domeAncestryColorNodes.has(id));
+  const lod = litOn && domeLight !== null && domeLight.lod !== null && domeLight.lod.active ? domeLight.lod : null;
+  if (lod !== null) {
+    if (passState.lodPresenceReused.length < world.nodes.length)
+      passState.lodPresenceReused = new Float32Array(world.nodes.length);
+    lodHoverEgoReused.clear();
+    if (hoveredNodeId !== null) {
+      lodHoverEgoReused.add(hoveredNodeId);
+      for (const id of world.neighborMap.get(hoveredNodeId) ?? EMPTY_NEIGHBOR_SET)
+        lodHoverEgoReused.add(id);
+    }
+  }
   const egoAllNormal = focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
   const colorAllNormal = colorFocusedNodeId === null && colorSelectedEdge === null && trailLensKeepIds === null;
   resetNodeVisualCacheFor(tokens, reducedMotion);
   const traceTokensFrame = {
-    edgeContains: hexToRgbCss(tokens.edgeContains),
-    edgeContainsL0: hexToRgbCss(tokens.edgeContainsL0),
-    edgeContainsL2: hexToRgbCss(tokens.edgeContainsL2),
+    edgeContains: lerpColorHex(tokens.edgeContains, tokens.indigo, neural * 0.12),
+    edgeContainsL0: lerpColorHex(tokens.edgeContainsL0, tokens.indigoBright, neural * 0.12),
+    edgeContainsL2: lerpColorHex(tokens.edgeContainsL2, tokens.indigo, neural * 0.12),
     edgeDepends: tokens.edgeDepends,
     edgeDim: tokens.edgeDim,
     indigo: tokens.indigo,
@@ -83,8 +124,9 @@ export function prepareFocus(frame: FrameInputs) {
     hoverShimmerColor: tokens.indigoBright,
   };
   return {
-    project, camX, camY, camScale, halfW, halfH, projectEdgePoints, egoGlowRamp,
-    neighborsOfFocused, colorNeighbors, egoAllNormal, colorAllNormal, traceTokensFrame, nodeShapeTokensFrame,
+    project, camX, camY, camScale, halfW, halfH, projectEdgePoints, egoGlowRamp, neighborsOfFocusedRaw,
+    parentOf, litOn, domeAncestryOn, domeAncestryEdges, neighborsOfFocused, colorNeighbors, litFocusId,
+    litFocusRamp, inLitLine, lod, egoAllNormal, colorAllNormal, traceTokensFrame, nodeShapeTokensFrame,
   };
 }
 

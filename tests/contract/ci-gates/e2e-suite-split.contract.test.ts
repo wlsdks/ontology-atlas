@@ -126,6 +126,8 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'map/frame-loop/map-sleep-frames.spec.ts',
   'map/hex-board/map-hex-board.spec.ts',
   'map/hex-board/map-hex-frame-work.spec.ts',
+  'map/neural/map-neural-grip.spec.ts',
+  'map/neural/map-neural-lit.spec.ts',
   'typography/cjk-locale-sweep.spec.ts',
 ];
 

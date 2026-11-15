@@ -1,9 +1,10 @@
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
 import type { DialEvidence, DialLabels, DialMemory } from "../../dial/types";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { SelectionSource } from "../../model/camera/flat-selection-camera";
+import { type TierNameAnchor } from "../../model/dome-view/tier-names";
 import { type TierRevealConfig, type ZoomTier } from "../../model/visibility/tier-visibility";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
 import type { HoverAvoidRect } from "../input/topology-pointer-types";
@@ -79,6 +80,14 @@ export interface UseTopologyLoopArgs {
    * the canvas instead of restating the zoom tier's rule.
    */
   onDrawnCountChange?: (drawn: number) => void;
+  /**
+   * Where each Strata tier name stands this frame, beside its plane's rim, in canvas
+   * CSS px (`model/dome-view/tier-names.ts`). Emitted only when a name moved by more than half a
+   * pixel, so an idle frame does not re-render the overlay, and `null` whenever the
+   * arrangement is not Strata or its rings are not up yet.
+   */
+  onDomeTierAnchorsChange?: (anchors: readonly TierNameAnchor[] | null) => void;
+
   /**
    * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
    * on transitions only, not per frame, and is driven by the same reveal bands
@@ -211,6 +220,21 @@ export interface UseTopologyLoopArgs {
    * `"depth"` (perspective grid). All remain restrained, non-particle fields.
    */
   canvasBackground?: CanvasBackground;
+  /**
+   * Opt-in 3D view: lit Strata or the relation-driven Neural cloud (`model/dome-view/`). Draw, hit
+   * testing, DOM anchors and the inspection hook read the same frame map. Omitted keeps 2D.
+   */
+  view3d?: boolean;
+  /** Which 3D structure is drawn — Strata or the coupling (Neural) cloud. */
+  mapArrangement?: MapArrangement;
+  /**
+   * Node id to evidence state from `shared/lib/git/evidence-states.ts`. Absent id is unknown; null means
+   * nothing was measured. It decides how much each node emits.
+   */
+  domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  onHiddenDependenciesChange?: (count: number) => void;
+  /** 3D reframe input: is the detail panel covering the viewport (`OntologyMap` JSDoc). */
+  detailPanelVisible?: boolean;
   /** Footprint appearance settings. Omitted or `null` draws no footprints. */
   footprint?: FootprintPreference | null;
   /**
