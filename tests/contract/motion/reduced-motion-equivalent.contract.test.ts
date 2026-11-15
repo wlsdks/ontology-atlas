@@ -36,6 +36,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // Driven by scroll position via `animation-timeline: view()`, with no duration to shorten. They live
   // only inside `no-preference`, so reduced-motion users see everything from the start. The exemption
   // holds only inside that media query, which the test below measures.
+  "gateway-entrance-line":
+    "One-shot arrival of a small drawing's lines on the download page. The declaration lives only inside no-preference, so under reduced motion the lines are there from the first paint; the card's text beside the drawing says the same thing, and download-still.spec.ts requires that page to hold no animation at all.",
   "gateway-scroll-stage":
     "Driven by scroll (view() timeline); with no duration there is nothing to give a reduced time to. Under reduced motion the declaration does not exist at all and the stage (video, map, ACP scenes) is fully visible from the start.",
   // Each typed character firms up over `--motion-settle`, inside `no-preference` only; under reduced

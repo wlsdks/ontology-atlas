@@ -26,28 +26,41 @@
   "factShaLink": "The checksum file for {file} on the release page",
   "demoProvisionalNote": "{seconds}s from one take of the app window. Nothing is cut or sped up, and there is no sound.",
   "acpUserLabel": "You",
-  "change": {
-    "eyebrow": "After a commit",
-    "title": "When your agent commits, you see <key>which meanings to recheck</key>",
-    "sub": "Concepts on the map name the files they describe. When a commit in your Git repository changes one of those files after its concept was last written, the app marks that concept in amber on the map. Reread it yourself or ask your agent to; its answer waits for you.",
-    "label": "Illustration · concepts and files from this repository's ontology; the commit is an example",
-    "agentCommit": "Your agent's commit",
-    "filesChanged": "{count, plural, one {# file changed} other {# files changed}}",
-    "description": "An illustration. A coding agent's commit changes three files in this repository: {files}. Each is the file a concept on the map names: {concepts}. A light runs from each changed file to its concept, the concept takes the amber mark the map gives a concept whose code changed, and each file's path moves into a summary card, which reads “{line}” and offers “{askAgent}”. The concepts and files are this repository's own; the commit is an example.",
-    "briefMoved": "{count, plural, one {# concept whose} other {# concepts whose}} code changed after the meaning was written",
-    "briefDetail": "changed {moved} · document {doc}",
-    "askAgent": "Ask the agent"
+  "loop": {
+    "eyebrow": "With your coding agent",
+    "title": "Your agent reads it, a commit marks it, you allow it",
+    "sub": "The map is Markdown in your repository, so the same folder works at three moments.",
+    "read": {
+      "title": "Your agent reads the map before the code",
+      "body": "Claude Code and Codex ask the folder over MCP what a concept is, what it contains and depends on, and which file holds it."
+    },
+    "mark": {
+      "title": "After a commit, the concepts to recheck are marked",
+      "body": "Each concept names the file it describes. When a commit changes that file after the concept was last written, the map marks the concept in amber.",
+      "commit": "Your agent's commit · {count, plural, one {# file} other {# files}} changed"
+    },
+    "allow": {
+      "title": "Nothing is written until you allow it",
+      "body": "In the app's chat, an agent's change to the map waits as a card. Allow it once or deny it. What gets written is Markdown in the folder, never your code.",
+      "agent": "The agent proposes"
+    },
+    "note": "The concept and file names are from this repository's own ontology. The commit and the proposal are examples."
   },
   "start": {
     "eyebrow": "After you install",
-    "title": "Open your project, and <key>let your agent draft the map</key>",
-    "sub": "The app opens by asking for a folder. Open your project's, and the first card offers to have your coding agent read the code and draft the map. Nothing is written until you allow it, and what is written is Markdown in that folder, never your code.",
-    "label": "Illustration · the app's own screens and words, drawn small",
-    "step1": "The first screen asks for a folder.",
-    "step2": "In a code folder, the first card offers your agent's draft.",
-    "step3": "The draft waits for your answer, then fills the map.",
-    "description": "An illustration in three steps. First, the app's first screen, “{firstTitle}”, with the button “{openFolder}”. Second, a code folder is open and the first card reads “{draftTitle}”: {draftBody} Its button “{askAgent}” hands the request to the coding agent. Third, the draft arrives as one card, “{headline}”: {writeBody} After “{allowOnce}”, the card reads “{allowed}”, {count} concepts fill the map, and a line reads “{unreviewed}”.",
-    "unreviewed": "{count, plural, one {# concept} other {# concepts}} an agent wrote that no person has looked at"
+    "title": "Three steps to your own map",
+    "step1": {
+      "title": "Open your project's folder",
+      "body": "Atlas reads the Markdown already there, or starts an atlas/ folder in your repository, and shows the path before it writes anything."
+    },
+    "step2": {
+      "title": "Let your agent draft the map",
+      "body": "The first card offers to have your coding agent read the code and propose the concepts it finds. Nothing is written until you allow it."
+    },
+    "step3": {
+      "title": "Connect the agent you code with",
+      "body": "In {agents} › {mcp}, press {connect} for Claude Code or Codex and restart it. From then on it reads the same folder while it works."
+    }
   },
   "screens": {
     "eyebrow": "Screens",

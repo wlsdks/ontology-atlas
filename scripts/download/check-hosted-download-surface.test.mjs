@@ -82,9 +82,9 @@ const alignedDownload = `<!doctype html>
   <p>${koDownloadCopy.eyebrow}</p>
   <a href="https://github.com/wlsdks/ontology-atlas/releases">${koDownloadCopy.webCta}</a>
   <p>${koDownloadCopy.trustLine}</p>
-  <h2>${koDownloadCopy.change.title.replace(/<\/?key>/g, "")}</h2>
+  <h2>${koDownloadCopy.loop.title}</h2>
   <h2>${koDownloadCopy.screens.title}</h2>
-  <h2>${koDownloadCopy.start.title.replace(/<\/?key>/g, "")}</h2>
+  <h2>${koDownloadCopy.start.title}</h2>
 </main>`;
 
 test("hosted download surface check passes for promo/download-aligned pages", async () => {
@@ -101,21 +101,6 @@ test("hosted download surface check passes for promo/download-aligned pages", as
     assert.equal(result.rootUrl, `${server.baseUrl}/ko/`);
     assert.equal(result.downloadUrl, `${server.baseUrl}/ko/download/`);
     assert.equal(result.updaterUrl, `${server.baseUrl}/update/latest.json`);
-  } finally {
-    await server.close();
-  }
-});
-
-test("hosted copy preserves adjacent text through styled inline spans", async () => {
-  const plain = koDownloadCopy.change.title.replace(/<\/?key>/g, "");
-  const rich = koDownloadCopy.change.title.replace(/<key>/g, '<span class="emphasis">')
-    .replace(/<\/key>/g, '<span aria-hidden="true"></span></span>');
-  const server = await startServer({
-    "/ko/": { body: alignedLanding },
-    "/ko/download/": { body: alignedDownload.replace(plain, rich) },
-  });
-  try {
-    await evaluateHostedSurface({ baseUrl: server.baseUrl, timeoutMs: 5000 });
   } finally {
     await server.close();
   }
