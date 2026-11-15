@@ -40,11 +40,10 @@ test('opens a busy day on one number, at most eight groups that add up and only 
   expect([...commands].filter(command => !GIT_READS.has(command))).toEqual([]);
 });
 
-test('expands a group, opens a change where it is listed, then its original and returns to that row', async ({ page }) => {
+test('selects a group, opens a change in its detail, then its original and returns to that row', async ({ page }) => {
   await open(page, 'digest');
-  const map = page.getByRole('button', { name: 'map: 18 changes', exact: true });
-  await map.click();
-  await expect(map).toHaveAttribute('aria-expanded', 'true');
+  const map = page.getByRole('option', { name: 'map: 18 changes', exact: true });
+  await expect(map).toHaveAttribute('aria-selected', 'true');
   const rows = page.locator('[data-digest-list="label:map"] [data-change-hash]');
   await expect(rows).toHaveCount(18);
   await expect(page.getByRole('link', { name: '결제 승인', exact: true }).first()).toHaveAttribute('href', /\/topology\/\?p=/);
@@ -52,17 +51,76 @@ test('expands a group, opens a change where it is listed, then its original and 
   const title = (await row.getAttribute('title'))!;
   await expect(row).not.toContainText('(map)');
   await row.click();
-  await expect(row).toHaveAttribute('aria-expanded', 'true');
+  await expect(row).toHaveAttribute('aria-pressed', 'true');
   const detail = page.getByTestId('change-detail');
   await expect(detail).toHaveCount(1);
   await expect(detail).toContainText(/files? changed/);
-  await expect(page.getByTestId('change-digest')).toBeVisible();
   await detail.getByRole('button', { name: `Read commit: ${title}`, exact: true }).click();
   await expect(page.locator('[data-commit-reader]').getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByTestId('change-digest')).toBeHidden();
   await page.locator('[data-commit-reader]').getByRole('button', { name: 'Back to summary', exact: true }).click();
   await expect(row).toBeFocused();
-  await expect(map).toHaveAttribute('aria-expanded', 'true');
+  await expect(map).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('change-detail')).toHaveCount(1);
+  await detail.getByRole('button', { name: 'Back to the list', exact: true }).click();
+  await expect(page.getByTestId('change-detail')).toHaveCount(0);
+  await expect(row).toBeFocused();
+});
+
+test('reads the kinds of work from commit types and adds them up to the headline', async ({ page }) => {
+  await open(page, 'digest');
+  const kinds = page.getByTestId('change-digest-headline').getByTestId('change-digest-kinds');
+  await expect(kinds.locator('[data-digest-kind]')).toHaveCount(5);
+  const counts = await kinds.locator('[data-kind-count]').allTextContents();
+  expect(counts.reduce((sum, count) => sum + Number(count), 0)).toBe(33);
+  await expect(kinds.locator('[data-digest-kind]').first()).toHaveAttribute('data-digest-kind', 'fix');
+});
+
+test('draws one timeline mark per change of a day, and pressing one selects its group and change', async ({ page }) => {
+  await open(page, 'digest');
+  const marks = page.getByTestId('change-digest-timeline').locator('[data-timeline-mark]');
+  await expect(marks).toHaveCount(33);
+  const mark = marks.nth(26);
+  await expect(mark).toHaveAttribute('aria-label', '15:30: 1 change');
+  await mark.focus();
+  await expect(page.getByTestId('change-digest-timeline-readout')).toHaveText('15:30 · design(harness): tell guidance lines apart 2');
+  await mark.click();
+  await expect(page.getByRole('option', { name: 'harness: 3 changes', exact: true })).toHaveAttribute('aria-selected', 'true');
+  const row = page.locator(`[data-digest-list="label:harness"] [data-change-hash="${await mark.getAttribute('data-timeline-mark')}"]`);
+  await expect(row).toHaveAttribute('aria-pressed', 'true');
+  await expect(row).toBeFocused();
+  await expect(page.getByTestId('change-detail')).toBeVisible();
+});
+
+test('keeps exactly one group selected without unfolding rows and moves the selection with arrow keys', async ({ page }) => {
+  await open(page, 'digest');
+  const digest = page.getByTestId('change-digest');
+  await expect(digest).toBeVisible();
+  await expect(digest.locator('[aria-expanded]')).toHaveCount(0);
+  const listbox = page.getByTestId('change-digest-groups').getByRole('listbox');
+  await expect(listbox.locator('[role="option"][aria-selected="true"]')).toHaveCount(1);
+  await listbox.getByRole('option', { name: 'map: 18 changes', exact: true }).focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(listbox.getByRole('option', { name: 'brand: 6 changes', exact: true })).toBeFocused();
+  await expect(listbox.getByRole('option', { name: 'brand: 6 changes', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('change-digest-group').getByRole('heading')).toHaveText(/^brand\s*6$/);
+  await page.keyboard.press('End');
+  await expect(listbox.getByRole('option', { name: 'Other changes: 2 changes', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Home');
+  await expect(listbox.getByRole('option', { name: 'map: 18 changes', exact: true })).toBeFocused();
+  await expect(listbox.locator('[role="option"][aria-selected="true"]')).toHaveCount(1);
+});
+
+test('gives the notable cards in one row one height when their titles wrap differently', async ({ page }) => {
+  await open(page, 'digest');
+  const cards = page.getByTestId('change-digest-notable').locator('[data-notable-card]');
+  await expect(cards).toHaveCount(2);
+  await page.setViewportSize({ width: 900, height: 900 });
+  const boxes = await cards.evaluateAll(elements => elements.map(element => element.getBoundingClientRect()).map(box => ({ top: box.top, height: box.height })));
+  const titles = await cards.locator('[data-change-hash]').evaluateAll(elements => elements.map(element => element.getBoundingClientRect().height));
+  expect(titles[0]).toBeGreaterThan(titles[1]);
+  expect(boxes[1].top).toBe(boxes[0].top);
+  expect(boxes[1].height).toBe(boxes[0].height);
 });
 
 test('shows the readers for the same period in Originals and returns focus to Originals', async ({ page }) => {
