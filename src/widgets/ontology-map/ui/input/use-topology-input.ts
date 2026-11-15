@@ -535,7 +535,7 @@ export function useTopologyInput({
         beginCameraTween(cameraTarget);
       }
     }
-  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, lastActiveMsRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd, flyToNode]);
+  }, [worldRef, cameraRef, clusteredIdsRef, focusedSlugRef, onSelect, viewportRef, canvasRef, cameraTargetRef, cameraTweenRef, zoomEaseRef, overviewScaleRef, userDrivenCameraRef, cameraGestureRevisionRef, dampingRef, cameraAngularFreqRef, beginCameraTween, runOverviewFit, announceDeadEnd, flyToNode]);
 
   const wrappedHandlers = useMemo(
     () => ({

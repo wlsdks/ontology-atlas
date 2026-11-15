@@ -8,7 +8,7 @@ import { computeZoomRatio, DEFAULT_TIER_REVEAL, isNodeHittable } from "../../mod
 import type { EdgeHitCandidate } from "./topology-edge-hit";
 import { clusterBadgeLabel, clusterBadgeRect, clusterBarLabel, clusterBarRect, clusterChipLabel, clusterChipRect, clusterChipScale, clusterControlForm } from "../../render/cluster-chips";
 import { DEFAULT_EXPAND } from "@/shared/lib/preferences/appearance-preferences";
-import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../../model/realm/realm-depth-parallax";
+import { depthParallaxOffsetFor } from "../../model/realm/realm-depth-parallax";
 import { HIT_TOUCH_SLACK_PX, hitTestWorld, worldToScreen } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { radiusForKind, type TopologyWorld } from "../world/topology-world";
@@ -72,7 +72,7 @@ export type PointerHitTests = ReturnType<typeof createPointerHitTests>;
 
 export function createPointerHitTests(ctx: PointerContext) {
   const {
-    worldRef, cameraRef, viewportRef, focusedSlugRef, hoveredNodeIdRef, reducedMotionRef,
+    worldRef, cameraRef, viewportRef, focusedSlugRef, hoveredNodeIdRef,
     overviewScaleRef, selectedEdgeRef, clusterChipsRef, clusteredIdsRef, expandPrefRef,
     clusterBarLabelsRef, realmParallaxRef, realmTierKindsRef,
     tierRevealRef, pathEdgeIdsRef, visitedTrailRef,

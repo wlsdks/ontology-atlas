@@ -365,7 +365,6 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     dampingRef,
     cameraAngularFreqRef,
     beginCameraTween,
-    lastActiveMsRef,
     overviewFitRef,
     spotlightIdsRef,
     runSpotlightFitRef,

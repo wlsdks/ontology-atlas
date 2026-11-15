@@ -1,6 +1,5 @@
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { transitionPointerState } from "../../interaction/pointer-state-machine";
-import { screenToWorld } from "../camera/topology-camera-math";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import type { PointerContext } from "./topology-pointer-context";
 import type { PointerHitTests } from "./topology-pointer-hit-tests";
@@ -12,7 +11,7 @@ export function createPointerPressHandlers(
   handlePointerCancel: TopologyPointerHandlers["handlePointerCancel"],
 ): Pick<TopologyPointerHandlers, "handlePointerDown" | "handleContextMenu"> {
   const {
-    zoomEaseRef, worldRef, cameraRef, cameraTargetRef, cameraTweenRef, dampingRef, viewportRef,
+    zoomEaseRef, worldRef, cameraRef, cameraTargetRef, cameraTweenRef, dampingRef,
     pointerMachineRef, dragHistoryRef, camStartAtDownRef, canvasRectRef, activeTouchesRef, pinchRef,
     onContextMenuNode, onContextMenuPane, currentRect,
   } = ctx;

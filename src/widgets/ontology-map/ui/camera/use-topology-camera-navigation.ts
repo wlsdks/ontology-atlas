@@ -20,7 +20,6 @@ import {
 import { resolveViewportReframeMode } from "../../model/camera/viewport-reframe";
 import { spotlightRevealsHidden } from "../../model/visibility/tier-visibility";
 import { landTierAssembly } from "../../morph/tier-assembly";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeFocusCameraTarget, computeLensFitTarget, computeOverviewCameraTarget, computeOverviewFitScale, type FocusLeashPx } from "./topology-camera-math";
 import {
   overviewBoundsFor,

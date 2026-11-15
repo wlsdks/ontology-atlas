@@ -9,7 +9,6 @@ import {
   type RealmTransitionState
 } from "../../model/realm/realm-transition";
 import { landTierAssembly } from "../../morph/tier-assembly";
-import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "./topology-camera-math";
 import {
   overviewBoundsFor,
@@ -32,7 +31,6 @@ interface Dependencies {
   dampingRef: RefObject<number>;
   cameraAngularFreqRef: RefObject<number | null>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number) => void;
-  lastActiveMsRef: RefObject<number>;
   overviewFitRef: RefObject<"full" | "spine">;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
   runSpotlightFitRef: RefObject<(() => boolean) | null>;
@@ -54,7 +52,6 @@ export function useTopologyOverviewNavigation({
   dampingRef,
   cameraAngularFreqRef,
   beginCameraTween,
-  lastActiveMsRef,
   overviewFitRef,
   spotlightIdsRef,
   runSpotlightFitRef,
@@ -121,6 +118,6 @@ export function useTopologyOverviewNavigation({
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, expandedParentsRef, hasInitializedRef, lastActiveMsRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
+  }, [beginCameraTween, cameraAngularFreqRef, cameraTargetRef, cameraTokens, clusteredIdsRef, dampingRef, expandedParentsRef, hasInitializedRef, overviewFitRef, overviewScaleRef, realmDataRef, realmTransitionRef, runSpotlightFitRef, spotlightIdsRef, userDrivenCameraRef, viewportRef, worldRef]);
   return { runOverviewFit };
 }
