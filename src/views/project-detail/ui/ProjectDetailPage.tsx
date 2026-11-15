@@ -5,7 +5,9 @@ import dynamic from "next/dynamic";
 import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, FileText, Layers, Waypoints } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_STAGE_FILL, PAGE_TITLE, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
 import { BrandPortrait } from "@/shared/ui/marks/brand-portrait";
@@ -13,16 +15,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { useTypingShortcuts } from "@/shared/lib/keyboard/use-typing-shortcut";
 import { useClaimShellKey } from "@/shared/lib/keyboard/shell-key-claims";
-import { useCopyFeedback } from "@/shared/lib/clipboard/use-copy-feedback";
 import { formatDate } from "@/shared/lib/locale-text/format-date";
 import { MOTION } from "@/shared/motion";
 import {
   Button,
-  EmptyState,
   FeatureStage,
   InlineEditable,
   OntologyMapKindGlyph,
-  Tooltip,
   WaitStage,
   buttonVariants,
   controlClass,
@@ -32,7 +31,6 @@ import { cn } from "@/shared/lib/cn";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,
-  getTopologyProjectNodeHref,
   projectDisplayName,
   projectHasDisplayName,
   type Project,
@@ -44,33 +42,33 @@ import {
   useVaultDocs,
   useVaultManifest,
 } from "@/features/project-data-source";
-import { buildDocsVaultHref, findProjectDocInList, hasSeveralProjectDocs } from "@/entities/docs-vault";
+import { buildDocsVaultHref, countWikiPages, findProjectDocInList } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/entities/vault-session";
-import { buildProjectOntologyMetrics, computeCanonicalCensus, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
+import { buildProjectOntologyMetrics, resolveNodeAgentTarget } from "@/entities/knowledge-graph";
 import { getTauriVaultRootPath } from "@/shared/lib/vault-folder/tauri-vault-fs";
 import { useChatWidth } from "@/widgets/acp-chat-panel";
 import { useProjectAgent } from "../lib/use-project-agent";
 import { ProjectAgentDock } from "./parts/ProjectAgentDock";
 import { useOntologyInsight } from "@/features/vault-ontology";
-import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/public-pages/use-document-title";
 import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { useFailureSentence } from "@/shared/lib/failures/use-failure-sentence";
 import { useTaxonomy } from "@/features/taxonomy";
-import { ProjectQuickEditPanel } from "@/features/project-quick-edit";
 import { useConstructionReviewSession } from "@/features/construction-review-local";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { resolveProjectTagline } from "../model/project-tagline";
 import { stripDuplicateHeading } from "@/shared/lib/vault-document/strip-duplicate-heading";
 import { buildProjectDomainComposition } from "../model/domain-composition";
-import { buildSurfaceComposition } from "../model/surface-composition";
 import { buildConnectedProjects, findRelatesGraphProjectSlugs } from "../model/connected-projects";
 import { buildAgentHandoffSnippet } from "../model/agent-handoff-snippet";
-import { DomainCompositionRows } from "./DomainCompositionRows";
-import { ProjectBriefSummary } from "./ProjectBriefSummary";
-import { SurfaceCompositionBoard } from "./SurfaceCompositionBoard";
 import { splitProjectBrief } from "../model/project-brief";
+import { resolveProjectLead } from "../model/project-lead";
+import { DomainMasterDetail } from "./DomainMasterDetail";
+import { ProjectActions } from "./ProjectActions";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
+
+/* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
+const LEAD_MARKDOWN_COMPONENTS: Components = { img: ({ alt }) => <span>{alt}</span> };
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
@@ -118,65 +116,21 @@ function ProjectDetailShell({
   );
 }
 
-function ProjectDetailTopBar({
-  slug,
-  projectName,
-  projectDocSlug,
-}: {
-  slug?: string;
-  projectName?: string | null;
-  /** When known, the documents door opens the file this page is drawn from, not the vault root. */
-  projectDocSlug?: string | null;
-}) {
+function ProjectDetailTopBar({ slug, projectName }: { slug?: string; projectName?: string | null }) {
   const t = useTranslations("projectPages.detail");
-  /** The map's address, not `/`, which is the gateway. */
-  const workspaceHref = '/topology/';
-  const projectsListHref = '/projects/';
-  const docsVaultHref = projectDocSlug ? buildDocsVaultHref({ slug: projectDocSlug }) : '/docs/';
   return (
-    /* Every piece on a ramp step, or the separator inherits 16px and outweighs the data. */
-    <nav className="flex flex-wrap items-center gap-3">
+    <nav className="flex min-w-0 items-center gap-2.5">
       <Link
-        href={workspaceHref}
-        className={controlClass({
-          shape: "link",
-          size: "lg",
-          className:
-            "touch-hit-expand gap-1.5 break-keep hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]",
-        })}
-        aria-label={t("topBarBackToWorkspaceAria")}
-      >
-        <ArrowLeft size={ICON_SIZE.md} />
-        {t("topBarWorkspaceFallback")}
-      </Link>
-      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
-        ▸
-      </span>
-      <Link
-        href={projectsListHref}
-        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "hover:text-[color:var(--color-text-primary)]" })}
+        href="/projects/"
+        className={controlClass({ shape: "link", size: "lg", tone: "muted", className: "touch-hit-expand hover:text-[color:var(--color-text-primary)]" })}
       >
         {t("topBarProjectsLabel")}
       </Link>
-      <span aria-hidden className="text-label text-[color:var(--color-text-quaternary)]">
-        ▸
-      </span>
+      <ChevronRight aria-hidden size={ICON_SIZE.sm} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
       {/* The display name in sans, since mono doubles Korean word gaps; truncates in the room left. */}
-      <span aria-current="page" className="min-w-0 flex-1 basis-32 truncate text-body text-[color:var(--color-text-primary)]">
+      <span aria-current="page" className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
         {projectName ?? slug ?? t("topBarProjectFallback")}
       </span>
-
-      <div className="ml-auto hidden items-center gap-2 sm:flex">
-        <Link href={docsVaultHref} data-testid="project-detail-docs-vault-link">
-          <Button type="button" variant="ghost" size="sm">
-            <BookOpen size={ICON_SIZE.md} aria-hidden="true" />
-            {t("topBarDocsVault")}
-          </Button>
-        </Link>
-        {slug ? (
-          <CopyProjectLinkButton slug={slug} testId="project-detail-copy-link" className="justify-center" />
-        ) : null}
-      </div>
     </nav>
   );
 }
@@ -241,6 +195,7 @@ export function ProjectDetailPage({
   initialRelated = [],
 }: Props) {
   const t = useTranslations("projectPages.detail");
+  const tMapDial = useTranslations("mapDial");
   const failureSentence = useFailureSentence();
   const router = useRouter();
   const constructionReview = useConstructionReviewSession(slug);
@@ -348,8 +303,6 @@ export function ProjectDetailPage({
     [insightNodeList],
   );
 
-  const handoffCopy = useCopyFeedback();
-  const briefCopy = useCopyFeedback();
   const vaultDocs = useVaultDocs();
   // One manifest, so sources and wiki pages are counted from the same folder.
   const vaultManifest = useVaultManifest();
@@ -382,41 +335,15 @@ export function ProjectDetailPage({
 
   const projectDoc = findProjectDocInList(vaultDocs, project.slug);
   const metrics = buildProjectOntologyMetrics(insightNodes, insightEdges, project.slug);
-  const folderCensus = computeCanonicalCensus(insightNodes, insightEdges);
   const domainComposition = buildProjectDomainComposition(insightNodes, insightEdges, project.slug);
   const soleProject = insightNodes.filter((node) => node.kind === "project").length <= 1;
   const domainsOverlap =
     domainComposition.domains.reduce((sum, row) => sum + row.total, 0) > metrics.capabilities + metrics.elements;
-  // Ontology figures are this project's; sources and wiki pages are the folder's, as the caption says.
-  const surfaceCells = buildSurfaceComposition({
-    metrics,
-    domains: domainComposition.domains,
-    manifest: vaultManifest,
-    docs: vaultDocs,
-    labels: {
-      domains: t("metricDomains"),
-      capabilities: t("metricCapabilities"),
-      elements: t("metricElements"),
-      sources: t("surfaceSources"),
-      wikiPages: t("surfaceWikiPages"),
-      planOnlyDomains: (count) => t("surfacePlanOnly", { count }),
-      relations: (count) => t("surfaceRelations", { count }),
-      ontologyEmpty: t("surfaceOntologyEmpty"),
-      libraryEmpty: t("surfaceLibraryEmpty"),
-      harnessHolds: t("surfaceHarnessHolds"),
-    },
-    hrefs: {
-      ontology: getTopologyProjectNodeHref(project.slug),
-      library: "/library/",
-      harness: "/architecture/",
-    },
-  });
+  // Sources and wiki pages are the folder's; nothing ties a file to one project.
+  const librarySources = vaultManifest?.sources?.length ?? 0;
+  const libraryWikiPages = countWikiPages(vaultDocs);
   const relatesGraphSlugs = findRelatesGraphProjectSlugs(insightNodes, insightEdges, project.slug);
   const connectedProjects = buildConnectedProjects(project, related, relatesGraphSlugs);
-  // One project cannot be connected, so the card is not drawn; documents decide, not `related`,
-  // which starts as every bundled project and would flash the card.
-  const folderHasSeveralProjects = hasSeveralProjectDocs(vaultDocs);
-  const handoffSnippet = buildAgentHandoffSnippet(project.slug);
 
   const canManageProject = projectMutations.canEdit;
   /* A sentence in the page's language inside `saveErrorPrefix`; the raw error goes to the console only. */
@@ -451,38 +378,20 @@ export function ProjectDetailPage({
 
   const heroTagline = resolveProjectTagline({ description: project.description });
   const dedupedBodyContent = stripDuplicateHeading(bodyContent, project.name);
+  const leadParagraph = bodyContent ? resolveProjectLead(dedupedBodyContent ?? bodyContent, heroTagline) : "";
   const heroMeta = [
     project.isHub ? t("heroLabelHub") : soleProject ? null : t("heroLabel"),
     // statusLabel(undefined) is a truthy "—" that would survive the filter.
     project.status ? statusLabel(project.status) : null,
+    t("heroUpdatedAt", { date: formatDate(project.updatedAt) }),
   ]
     .filter(Boolean)
     .join(" · ");
-  /* Hierarchy from weight and space within the existing ramp, not a new size step; the size lives
-     here, not string-patched at the call site where a renamed token would silently do nothing. */
-  const storyMarkdownClassName =
-    "text-body-lg leading-prose text-[color:var(--color-text-secondary)] [&>*:first-child]:mt-0 [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-[color:var(--color-border-strong)] [&_blockquote]:pl-3.5 [&_blockquote]:text-[color:var(--color-text-tertiary)] [&_code]:rounded-micro [&_code]:border [&_code]:border-[color:var(--color-border-soft)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-body [&_code]:text-[color:var(--color-text-tertiary)] [&_h1]:mt-9 [&_h1]:mb-3 [&_h1]:text-title [&_h1]:font-[var(--font-weight-strong)] [&_h1]:tracking-title [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-9 [&_h2]:mb-3 [&_h2]:text-title [&_h2]:font-[var(--font-weight-strong)] [&_h2]:tracking-title [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-7 [&_h3]:mb-2 [&_h3]:text-body-lg [&_h3]:font-[var(--font-weight-strong)] [&_h3]:text-[color:var(--color-text-primary)] [&_hr]:my-7 [&_hr]:border-[color:var(--color-border-soft)] [&_li]:mb-1.5 [&_li]:list-disc [&_li]:pl-1 [&_li::marker]:text-[color:var(--color-text-quaternary)] [&_ol]:my-3 [&_ol]:pl-5.5 [&_p]:mb-3.5 [&_pre]:my-4 [&_pre]:overflow-x-auto [&_pre]:rounded-[var(--radius-card)] [&_pre]:border [&_pre]:border-[color:var(--color-border-soft)] [&_pre]:bg-[color:var(--color-overlay-1)] [&_pre]:p-3.5 [&_pre_code]:border-0 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-body [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)] [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border-t [&_td]:border-[color:var(--color-divider)] [&_td]:py-2 [&_td]:pr-4 [&_th]:pb-2 [&_th]:pr-4 [&_th]:text-left [&_th]:font-mono [&_th]:text-caption [&_th]:uppercase [&_th]:tracking-caption [&_th]:text-[color:var(--color-text-quaternary)] [&_ul]:my-3 [&_ul]:pl-5.5";
-  const projectFullEditHref = getProjectEditHref(project.slug, {
-    returnTo: getProjectRuntimeDetailHref(project.slug),
-  });
-
-  const handleCopyHandoff = () => {
-    void handoffCopy.copy(handoffSnippet);
-  };
-  const handoffCopyLabel =
-    handoffCopy.state === "copied"
-      ? t("handoffCopiedLabel")
-      : handoffCopy.state === "failed"
-        ? t("handoffCopyErrorLabel")
-        : t("handoffCopyLabel");
+  const projectHref = getProjectRuntimeDetailHref(project.slug);
+  const documentHref = projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/";
   const briefIsStructured = splitProjectBrief(dedupedBodyContent).sections.length > 0;
-  const briefPrompt = t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` });
-  const briefCopyLabel =
-    briefCopy.state === "copied"
-      ? t("briefAskCopied")
-      : briefCopy.state === "failed"
-        ? t("briefAskCopyError")
-        : t("briefAskCopy");
+  const hasLibrary = librarySources + libraryWikiPages > 0;
+  const quietLinkClass = controlClass({ shape: "link", tone: "accent", className: "touch-hit-expand" });
 
   return (
     <ProjectDetailShell
@@ -505,107 +414,91 @@ export function ProjectDetailPage({
         ) : null
       }
     >
-      <ProjectDetailTopBar
-        slug={slug}
-        projectName={displayName ?? project.name}
-        projectDocSlug={projectDoc?.slug ?? null}
-      />
+      <ProjectDetailTopBar slug={slug} projectName={displayName ?? project.name} />
 
-      <header className="@container/project-hero mt-6 flex flex-col gap-6 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]">
-        <div className="flex min-w-0 flex-1 flex-col">
-          {/* Actions sit beside the name only when the band itself is `@5xl` wide, not the viewport,
-              which the dock narrows; otherwise the buttons take their own row. */}
-          <div className="flex min-w-0 flex-wrap items-start gap-x-8 gap-y-4 @5xl/project-hero:flex-nowrap">
-            <div className="min-w-0 flex-1 basis-96">
-              {/* The glyph leads the name inside its line, as the list's cards draw it, so the band has one start line. */}
-              <div className="flex min-w-0 items-center gap-2.5">
-                <OntologyMapKindGlyph kind="project" size={ICON_SIZE.lg} className="shrink-0" />
-                <InlineEditable
-                  as="h1"
-                  value={displayName ?? project.name}
-                  editable={canManageProject}
-                  onSave={(next) => saveProjectField("name", next)}
-                  ariaLabel={t("inlineNameAria")}
-                  className={`min-w-0 text-pretty ${PAGE_TITLE}`}
-                />
-              </div>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-body text-[color:var(--color-text-tertiary)]">
-                {heroMeta ? (
-                  <>
-                    <span>{heroMeta}</span>
-                    <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
-                      ·
-                    </span>
-                  </>
-                ) : null}
-                <span>{t("heroUpdatedAt", { date: formatDate(project.updatedAt) })}</span>
-              </div>
-              <InlineEditable
-                as="p"
-                multiline
-                value={heroTagline ?? project.description}
-                editable={canManageProject}
-                onSave={(next) => saveProjectField("description", next)}
-                ariaLabel={t("inlineDescriptionAria")}
-                placeholder={t("inlineDescriptionPlaceholder")}
-                dataTestId="project-detail-description"
-                className="mt-2.5 max-w-[var(--measure-prose)] break-keep text-body-lg leading-body-lg text-pretty text-[color:var(--color-text-secondary)]"
-              />
-            </div>
-            <div
-              data-testid="project-detail-hero-actions"
-              className="grid min-w-0 basis-full grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center @5xl/project-hero:ml-auto @5xl/project-hero:basis-auto"
-            >
-              <Link href={getTopologyProjectNodeHref(project.slug)} data-testid="project-detail-topology-link">
-                <Button type="button" variant="primary" size="sm" className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto">
-                  {t("topBarTopologyView")}
-                </Button>
-              </Link>
-              <input
-                {...constructionReview.inputProps}
-                data-testid="construction-review-ingress"
-                aria-label={t("constructionReview.openResult")}
-                hidden
-              />
-              {/* The hint concerns this one action, so it shows when the action is reached for. */}
-              <Tooltip content={t("constructionReview.fileHint")} side="bottom" panelClassName="max-w-xs text-pretty">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={constructionReview.status === "reading"}
-                  onClick={openReviewPicker}
-                  data-testid="construction-review-open"
-                  aria-describedby="construction-review-file-hint"
-                  className="atlas-touch-floor atlas-touch-floor-wide w-full sm:w-auto"
-                >
-                  <FileText size={ICON_SIZE.md} aria-hidden="true" />
-                  {constructionReview.status === "reading"
-                    ? t("constructionReview.readingResult")
-                    : t("constructionReview.openResult")}
-                </Button>
-              </Tooltip>
-              {canManageProject ? (
-                <div className="col-span-2 flex [&>button]:w-full sm:[&>button]:w-auto">
-                  <ProjectQuickEditPanel
-                    project={project}
-                    settingsHref={projectFullEditHref}
-                    triggerVariant="outline"
-                    displayName={displayName ?? null}
-                    displayLocale={locale}
-                  />
-                </div>
-              ) : null}
-            </div>
+      {/* Name and actions share the first line only where the page column is wide enough for both. */}
+      <header
+        data-testid="project-detail-identity"
+        className="mt-8 grid min-w-0 grid-cols-1 gap-x-10 gap-y-5 [grid-template-areas:'name'_'text'_'actions'] @5xl/project-page:grid-cols-[minmax(0,1fr)_auto] @5xl/project-page:[grid-template-areas:'name_actions'_'text_text']"
+      >
+        <div className="min-w-0 [grid-area:name]">
+          <div className="flex min-w-0 items-center gap-3">
+            <OntologyMapKindGlyph kind="project" size={ICON_SIZE.lg} className="shrink-0" />
+            <InlineEditable
+              as="h1"
+              value={displayName ?? project.name}
+              editable={canManageProject}
+              onSave={(next) => saveProjectField("name", next)}
+              ariaLabel={t("inlineNameAria")}
+              className={`min-w-0 text-pretty ${PAGE_TITLE}`}
+            />
           </div>
+          <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">{heroMeta}</p>
+        </div>
 
-          <p id="construction-review-file-hint" className="sr-only">
-            {t("constructionReview.fileHint")}
-          </p>
+        <div className="min-w-0 [grid-area:actions]">
+          <ProjectActions
+            project={project}
+            displayName={displayName ?? null}
+            canManage={canManageProject}
+            fullEditHref={getProjectEditHref(project.slug, { returnTo: projectHref })}
+            projectHref={projectHref}
+            documentHref={documentHref}
+            handoffSnippet={buildAgentHandoffSnippet(project.slug)}
+            brief={{
+              prompt: t("briefPrompt", { slug: project.slug, doc: projectDoc?.path ?? `${project.slug}.md` }),
+              explanation:
+                agent.route === "agent"
+                  ? t("briefAskAgent")
+                  : briefIsStructured
+                    ? t("briefAskStructured")
+                    : t("briefAskUnstructured"),
+              startAgent: agent.route === "agent" ? agent.start : null,
+            }}
+            review={{
+              inputProps: constructionReview.inputProps,
+              openPicker: constructionReview.openPicker,
+              reading: constructionReview.status === "reading",
+            }}
+          />
+        </div>
 
+        <div data-testid="project-detail-body" className="min-w-0 [grid-area:text]">
+          <InlineEditable
+            as="p"
+            multiline
+            value={heroTagline ?? project.description}
+            editable={canManageProject}
+            onSave={(next) => saveProjectField("description", next)}
+            ariaLabel={t("inlineDescriptionAria")}
+            placeholder={t("inlineDescriptionPlaceholder")}
+            dataTestId="project-detail-description"
+            className="max-w-[var(--measure-prose)] break-keep text-pretty text-title leading-title text-[color:var(--color-text-primary)]"
+          />
+          {leadParagraph ? (
+            <div
+              data-testid="project-detail-lead"
+              className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
+            </div>
+          ) : null}
+          {bodyContent ? (
+            <Link
+              href={documentHref}
+              data-testid="project-detail-body-continue"
+              className={cn(quietLinkClass, "mt-3")}
+            >
+              {t("bodyContinue")}
+            </Link>
+          ) : (
+            <p data-testid="project-detail-body-empty" className="mt-3 text-body text-[color:var(--color-text-tertiary)]">
+              {t("bodyEmptyHint")}
+            </p>
+          )}
           {/* View-only: the reason and the control that makes it editable, under the words it concerns. */}
           {canManageProject ? null : (
-            <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="mt-5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
               <span
                 data-testid="project-detail-readonly-badge"
                 className="min-w-0 break-keep text-label leading-body text-[color:var(--color-text-tertiary)]"
@@ -615,7 +508,6 @@ export function ProjectDetailPage({
               <OpenVaultCta testId="project-detail-open-vault" className="atlas-touch-floor atlas-touch-floor-wide" />
             </div>
           )}
-
         </div>
       </header>
 
@@ -651,333 +543,103 @@ export function ProjectDetailPage({
         </div>
       ) : null}
 
-      {/* The page's first answer: how much of each Atlas surface is built for this project. */}
-      <section data-testid="project-detail-composition" className="mt-[var(--section-gap)]">
-        <div className="mb-2.5 flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-          <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+      <section
+        data-testid="project-detail-composition"
+        aria-labelledby="project-detail-composition-title"
+        className="mt-[var(--section-gap)] border-t border-[color:var(--color-divider)] pt-8"
+      >
+        <div className="mb-5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <h2
+            id="project-detail-composition-title"
+            className="text-title font-[var(--font-weight-strong)] tracking-title text-[color:var(--color-text-primary)]"
+          >
             {t("compositionHeading")}
           </h2>
-          {/* Only the ontology half is this project's; the caption says the rest counts the folder. */}
-          {soleProject ? null : (
-            <>
-              <span className="text-label text-[color:var(--color-text-quaternary)]">
-                {t("surfaceFolderScope")}
-              </span>
-              {/* The folder's concept count by the map INDEX's rule; no folder relation count. */}
-              <span
-                data-testid="project-detail-global-census"
-                className="ml-auto hidden text-label tabular-nums text-[color:var(--color-text-tertiary)] md:inline"
-              >
-                {t("globalCensus", { concepts: folderCensus.conceptCount })}
-              </span>
-            </>
-          )}
-        </div>
-        <SurfaceCompositionBoard
-          cells={surfaceCells}
-          titles={{
-            ontology: t("surfaceOntology"),
-            library: t("surfaceLibrary"),
-            harness: t("surfaceHarness"),
-          }}
-          // No ontology door: the hero's primary action already opens the map.
-          openLabels={{
-            library: t("surfaceOpenLibrary"),
-            harness: t("surfaceOpenHarness"),
-          }}
-        />
-      </section>
-
-      {/* One column of bands: nothing beside a list of unknown length can match its height. The
-          hero draws no domain map or rows, so the domain list lives only here. */}
-      <section
-        data-testid="project-detail-domains"
-        className="mt-[var(--section-gap)] min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
-      >
-        <div className="mb-2.5 flex items-baseline gap-2">
-          <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {t("domainsCardTitle")}
-          </span>
-          <span className="text-body tabular-nums text-[color:var(--color-text-tertiary)]">
-            {domainComposition.domains.length}
-          </span>
+          <p data-testid="project-detail-composition-counts" className="text-body-lg tabular-nums text-[color:var(--color-text-tertiary)]">
+            {t("compositionCounts", {
+              domains: metrics.domains,
+              capabilities: metrics.capabilities,
+              elements: metrics.elements,
+              relations: metrics.relations,
+            })}
+          </p>
         </div>
         {domainComposition.domains.length > 0 ? (
-          <DomainCompositionRows
+          <DomainMasterDetail
             domains={domainComposition.domains}
+            maxTotal={domainComposition.maxTotal}
             labels={{
+              listLabel: t("metricDomains"),
               capabilityUnit: t("domainCapabilityLabel"),
               elementUnit: t("domainElementLabel"),
               legendCaption: t("domainRowsLegendCaption"),
               overlapNote: domainsOverlap ? t("domainOverlapNote") : "",
-              rowToggleAria: (row) =>
-                t("domainRowToggleAria", {
+              optionAria: (row) =>
+                t("domainOptionAria", {
                   title: row.title,
                   total: row.total,
                   capabilities: row.capabilityCount,
                   elements: row.elementCount,
                 }),
-              mapLinkLabel: t("domainRowMapLink"),
+              counts: (row) => t("domainCounts", { capabilities: row.capabilityCount, elements: row.elementCount }),
               capabilityLinkAria: (title) => t("domainCapabilityLinkAria", { name: title }),
               capabilitiesEmpty: t("domainRowCapabilitiesEmpty"),
+              showMore: (count) => tMapDial("moreMembers", { count }),
+              elementCount: (count) => t("capabilityElementCount", { count }),
+              mapLinkLabel: t("domainRowMapLink"),
             }}
           />
         ) : (
-          <div data-testid="project-detail-composition-empty">
-            <EmptyState
-              size="compact"
-              icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
-              title={t("domainEmptyTitle")}
-              description={t("domainEmptyHint")}
-              action={
-                <Link
-                  href="/topology/?workbench=create"
-                  data-testid="project-detail-composition-empty-action"
-                  className={controlClass({
-                    shape: "link",
-                    tone: "accent",
-                    hoverInk: "strong",
-                    className: "rounded-chip hover:underline",
-                  })}
-                >
-                  {t("domainEmptyAction")}
-                </Link>
-              }
-            />
-          </div>
+          <p
+            data-testid="project-detail-composition-empty"
+            className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-body-lg text-[color:var(--color-text-secondary)]"
+          >
+            {t("domainEmptyTitle")}
+            <Link href="/topology/?workbench=create" data-testid="project-detail-composition-empty-action" className={quietLinkClass}>
+              {t("domainEmptyAction")}
+            </Link>
+          </p>
         )}
       </section>
 
-      <article
-        data-testid="project-detail-body"
-        className="mt-[var(--section-gap)] min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
+      {/* One quiet line: what else the folder holds, where this project connects, and the file it is drawn from. */}
+      <footer
+        data-testid="project-detail-closing"
+        className="mt-[var(--section-gap)] flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-[color:var(--color-divider)] pt-5 pb-[var(--page-bottom-breath)] text-body text-[color:var(--color-text-tertiary)]"
       >
-        <div className="p-[var(--card-pad)]">
-          <div className="mb-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t("bodyCardTitle")}
+        {hasLibrary ? (
+          <span data-testid="project-detail-library-line" className="flex flex-wrap items-baseline gap-x-3">
+            <span className="tabular-nums">
+              {t("libraryCounts", { sources: librarySources, wikiPages: libraryWikiPages })}
+              {soleProject ? null : ` · ${t("surfaceFolderScope")}`}
             </span>
-            {bodyContent ? (
-              <Link
-                href={projectDoc ? buildDocsVaultHref({ slug: projectDoc.slug }) : "/docs/"}
-                data-testid="project-detail-body-continue"
-                className={controlClass({ shape: "link", tone: "accent", className: "ml-auto" })}
-              >
-                {t("bodyContinue")}
-              </Link>
-            ) : null}
-          </div>
-          {bodyContent ? (
-            <ProjectBriefSummary
-              body={dedupedBodyContent ?? bodyContent}
-              proseClassName={`${storyMarkdownClassName} max-w-[var(--measure-prose)]`}
-              coversLabel={t("bodyCovers")}
-              leadSentence={heroTagline}
-              sectionNames={{
-                includes: t("bodySectionIncludes"),
-                excludes: t("bodySectionExcludes"),
-                uncertainty: t("bodySectionUncertainty"),
-                competencyAnswers: t("bodySectionCompetencyAnswers"),
-              }}
-            />
-          ) : (
-            <div data-testid="project-detail-body-empty">
-              <EmptyState
-                size="compact"
-                icon={<FileText size={ICON_SIZE.lg} aria-hidden />}
-                title={t("bodyEmptyHint")}
-              />
-            </div>
-          )}
-        </div>
-        {/* The ask that rewrites this overview sits under it, since it is about these words. */}
-        <div
-          data-testid="project-detail-brief-ask"
-          data-brief-state={briefIsStructured ? "structured" : "unstructured"}
-          data-agent-route={agent.route}
-          className="border-t border-[color:var(--color-divider)] px-[var(--card-pad)] py-3"
-        >
-          <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2.5">
-            <p className="min-w-0 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] flex-1 basis-80 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-              {agent.route === "agent"
-                ? t("briefAskAgent")
-                : briefIsStructured
-                  ? t("briefAskStructured")
-                  : t("briefAskUnstructured")}
-            </p>
-            {agent.route === "agent" ? (
-              <Button
-                type="button"
-                variant={briefIsStructured ? "outline" : "primary"}
-                size="sm"
-                onClick={() => agent.start(briefPrompt)}
-                data-testid="project-detail-brief-ask-open"
-                className="ml-auto"
-              >
-                {t("briefAskOpen")}
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant={briefIsStructured ? "outline" : "primary"}
-                size="sm"
-                onClick={() => void briefCopy.copy(briefPrompt)}
-                data-testid="project-detail-brief-ask-copy"
-                className="ml-auto"
-              >
-                {briefCopyLabel}
-              </Button>
-            )}
-          </div>
-          <details className="mt-2">
-            <summary className="w-fit select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-              {t("handoffHumanCaption")}
-            </summary>
-            <pre className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap break-keep text-[color:var(--color-text-quaternary)]">
-              {briefPrompt}
-            </pre>
-          </details>
-        </div>
-      </article>
-
-      <aside
-        data-testid="project-detail-connected"
-        className={`mt-[var(--section-gap)] grid min-w-0 grid-cols-1 gap-[var(--card-gap)] ${
-          connectedProjects.length > 0 || folderHasSeveralProjects ? "@3xl/project-page:grid-cols-2" : ""
-        }`}
-      >
-        {connectedProjects.length > 0 || folderHasSeveralProjects ? (
-          <section
-            data-testid="project-detail-connected-card"
-            className="min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
-          >
-            {/* No relation mark: `map-kind-glyph.tsx` is one per row, never a heading marker. */}
-            <div className="mb-2.5 flex items-baseline gap-2">
-              <span className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("connectedTitle")}
-              </span>
-              <span className="font-mono text-caption uppercase tracking-[var(--tracking-caps-12)] text-[color:var(--color-text-quaternary)]">
-                {t("connectedRelation")}
-              </span>
-            </div>
-            {connectedProjects.length > 0 ? (
-              <div className="space-y-2.5">
-                {connectedProjects.slice(0, 1).map((candidate) => (
-                  <Link
-                    key={candidate.slug}
-                    href={getProjectRuntimeDetailHref(candidate.slug)}
-                    className={controlClass({ shape: "card", size: "lg", tone: "secondary", className: "gap-3 px-3 py-3 hover:border-[color:var(--color-indigo-a28)] hover:text-[color:var(--color-text-primary)]" })}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                        {projectDisplayName(candidate, locale)}
-                      </p>
-                      <p className="mt-1 truncate text-body text-[color:var(--color-text-tertiary)]">
-                        {candidate.description || candidate.slug}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-                {connectedProjects.length > 1 ? (
-                  <p className="text-body text-[color:var(--color-text-tertiary)]">
-                    {t("connectedMoreNote", { count: connectedProjects.length - 1 })}
-                  </p>
-                ) : null}
-              </div>
-            ) : (
-              <div data-testid="project-detail-connected-empty">
-                <EmptyState
-                  size="compact"
-                  icon={<Waypoints size={ICON_SIZE.lg} aria-hidden />}
-                  title={t("connectedEmpty")}
-                  /* Keeps Korean words whole; the shared `EmptyState` paragraph cannot carry it. */
-                  description={<span className="break-keep">{t("connectedEmptyHint")}</span>}
-                  action={
-                    <Link
-                      href="/projects/"
-                      data-testid="project-detail-connected-empty-action"
-                      className={controlClass({
-                        shape: "link",
-                        tone: "accent",
-                        hoverInk: "strong",
-                        className: "rounded-chip hover:underline",
-                      })}
-                    >
-                      {t("connectedEmptyAction")}
-                    </Link>
-                  }
-                />
-              </div>
-            )}
-          </section>
+            <Link href="/library/" prefetch={false} className={quietLinkClass}>
+              {t("surfaceOpenLibrary")}
+            </Link>
+          </span>
         ) : null}
-
-        <section
-          data-testid="project-detail-handoff"
-          className="@container/handoff min-w-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] shadow-[inset_0_1px_0_var(--color-overlay-1)]"
-        >
-          <div className="flex min-w-0 flex-col gap-3 @2xl/handoff:flex-row @2xl/handoff:items-center @2xl/handoff:gap-6">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                {t("handoffTitle")}
-              </h2>
-              <p className="mt-1.5 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
-                {t("handoffDesc")}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleCopyHandoff}
-              data-testid="project-detail-handoff-copy"
-              className="self-start @2xl/handoff:self-center"
-            >
-              {/* The longest label reserves the width, so "copied" does not resize the button. */}
-              <span className="inline-grid">
-                {[t("handoffCopyLabel"), t("handoffCopiedLabel"), t("handoffCopyErrorLabel")].map((option) => (
-                  <span
-                    key={option}
-                    aria-hidden={option === handoffCopyLabel ? undefined : true}
-                    className={
-                      option === handoffCopyLabel ? "col-start-1 row-start-1" : "invisible col-start-1 row-start-1"
-                    }
-                  >
-                    {option}
-                  </span>
-                ))}
-              </span>
-            </Button>
-            <span className="sr-only" aria-live="polite" aria-atomic="true">
-              {handoffCopy.state === "idle" ? "" : handoffCopyLabel}
-            </span>
-          </div>
-          <details className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
-            <summary className="w-fit select-none text-body leading-body text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
-              {t("handoffHumanCaption")}
-            </summary>
-            <pre className="mt-2 max-w-[calc(var(--measure-doc-column)-2*var(--measure-doc-gutter))] overflow-x-auto font-mono text-body leading-prose whitespace-pre-wrap text-[color:var(--color-text-quaternary)]">
-              {handoffSnippet}
-            </pre>
-          </details>
-        </section>
-      </aside>
-      <footer className="mt-[var(--section-gap)] border-t border-[color:var(--color-overlay-2)] pt-6 pb-[var(--page-bottom-breath)]">
+        {nativeVaultRootPath !== null ? (
+          <Link href="/architecture/" prefetch={false} data-testid="project-detail-harness-link" className={quietLinkClass}>
+            {t("surfaceOpenHarness")}
+          </Link>
+        ) : null}
+        {connectedProjects.length > 0 ? (
+          <span data-testid="project-detail-connected" className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+            {t("connectedTitle")}
+            <Link href={getProjectRuntimeDetailHref(connectedProjects[0].slug)} className={quietLinkClass}>
+              {projectDisplayName(connectedProjects[0], locale)}
+            </Link>
+            {connectedProjects.length > 1 ? <span>{t("connectedMoreNote", { count: connectedProjects.length - 1 })}</span> : null}
+          </span>
+        ) : null}
         {/* The slug and Markdown path a person types next; slug and date when the document is unknown. */}
-        <p
-          data-testid="project-detail-footer"
-          className="font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]"
-        >
+        <p data-testid="project-detail-footer" className="ml-auto min-w-0 break-all font-mono text-label text-[color:var(--color-text-quaternary)]">
           {projectDoc
-            ? t.rich("footerSummaryDoc", {
-                slug: project.slug,
-                path: projectDoc.path,
-                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
-              })
+            ? t.rich("footerSummaryDoc", { slug: project.slug, path: projectDoc.path, value: (chunks) => <span>{chunks}</span> })
             : t.rich("footerSummary", {
                 slug: project.slug,
                 date: formatDate(project.updatedAt),
-                value: (chunks) => <span className="normal-case tracking-normal">{chunks}</span>,
+                value: (chunks) => <span>{chunks}</span>,
               })}
         </p>
       </footer>

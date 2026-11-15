@@ -14,7 +14,15 @@ export interface ProjectBrief {
   sections: ProjectBriefSection[];
 }
 
-const SECTION_HEADING = /^##\s+(.+?)\s*#*\s*$/;
+/* The closing `#` run is trimmed in code: a lazy title before optional runs backtracks cubically. */
+const SECTION_HEADING = /^##\s+(\S.*)$/;
+
+function headingTitle(rest: string): string {
+  const trimmed = rest.trimEnd();
+  let end = trimmed.length;
+  while (end > 0 && trimmed[end - 1] === "#") end -= 1;
+  return trimmed.slice(0, end).trimEnd() || trimmed;
+}
 const FENCE = /^(```|~~~)/;
 
 /**
@@ -33,7 +41,7 @@ export function splitProjectBrief(body: string | null | undefined): ProjectBrief
     const heading = inFence ? null : SECTION_HEADING.exec(line);
     if (heading) {
       if (current) sections.push({ title: current.title, markdown: current.lines.join("\n").trim() });
-      current = { title: heading[1], lines: [] };
+      current = { title: headingTitle(heading[1]), lines: [] };
       continue;
     }
     (current ? current.lines : leadLines).push(line);

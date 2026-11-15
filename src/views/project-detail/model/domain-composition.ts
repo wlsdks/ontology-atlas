@@ -1,16 +1,28 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { computeDegreeCentrality, computeDomainCensusRows } from "@/entities/knowledge-graph";
+import { compactOntologyDescription } from "@/shared/lib/concept-display/ontology-description";
 
-/** Every capability of the domain, since the row expands in place instead of saying "N more". */
+/** One sentence; a domain summary longer than this is cut at a word with an ellipsis. */
+const DOMAIN_DEFINITION_MAX_CHARS = 240;
+
+interface DomainCapability {
+  id: string;
+  title: string;
+  /** Elements under this capability, by the same first-parent census as the domain's counts. */
+  elementCount: number;
+}
+
 export interface DomainCompositionRow {
   /** Node id such as `domain:views`, used verbatim in a map deep link. */
   id: string;
   title: string;
+  /** The first sentence of the domain's own summary; null when the document says nothing. */
+  definition: string | null;
   capabilityCount: number;
   elementCount: number;
   total: number;
   /** Degree descending, ties by title; `id` makes each name a map deep link. */
-  capabilities: { id: string; title: string }[];
+  capabilities: DomainCapability[];
 }
 
 export interface ProjectDomainComposition {
@@ -19,8 +31,8 @@ export interface ProjectDomainComposition {
 }
 
 /**
- * Counts come from `computeDomainCensusRows`, the BFS the map INDEX, insights and `/projects` use,
- * or the surfaces disagree; this module owns only the degree ranking and row shape.
+ * Counts come from `computeDomainCensusRows`, the census the map INDEX, insights and `/projects`
+ * use, or the surfaces disagree; this module owns only the ranking and the row shape.
  */
 export function buildProjectDomainComposition(
   nodes: readonly KnowledgeGraphNode[],
@@ -35,8 +47,12 @@ export function buildProjectDomainComposition(
       .filter((node) => node.kind === "domain" && node.projectIds.includes(projectSlug))
       .map((domain) => domain.id),
   );
+  if (projectDomainIds.size === 0) return { domains: [], maxTotal: 0 };
 
   const rows = computeDomainCensusRows(nodes, edges, ["domain"], { collectCapabilityIds: true });
+  const elementsByCapability = new Map(
+    computeDomainCensusRows(nodes, edges, ["capability"]).map((row) => [row.id, row.elementCount] as const),
+  );
 
   const composed: DomainCompositionRow[] = rows
     .filter((row) => projectDomainIds.has(row.id))
@@ -52,10 +68,15 @@ export function buildProjectDomainComposition(
       return {
         id: row.id,
         title: row.title,
+        definition: compactOntologyDescription(nodeById.get(row.id)?.summary, DOMAIN_DEFINITION_MAX_CHARS) ?? null,
         capabilityCount: row.capabilityCount,
         elementCount: row.elementCount,
         total: row.total,
-        capabilities: capabilities.map((cap) => ({ id: cap.id, title: cap.display ?? cap.title })),
+        capabilities: capabilities.map((cap) => ({
+          id: cap.id,
+          title: cap.display ?? cap.title,
+          elementCount: elementsByCapability.get(cap.id) ?? 0,
+        })),
       };
     });
 
