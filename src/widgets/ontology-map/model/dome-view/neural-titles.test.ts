@@ -56,6 +56,11 @@ describe('standingDomainTitles', () => {
     }
   });
 
+  it.each([4, 9])('names every one of %i clusters at the rest pose', (count) => {
+    const candidates = candidatesAt([17, 12, 14, 15, 7, 18, 15, 16, 10].slice(0, count), DOME_YAW_DEFAULT);
+    expect(standingDomainTitles(candidates).size).toBe(count);
+  });
+
   it('lets the nearer of two colliding titles stand', () => {
     const near: TitleCandidate = { id: 'near', box: { minX: 0, minY: 0, maxX: 100, maxY: 20 }, disc: { x: 50, y: 200, r: 10 }, depth: -5 };
     const far: TitleCandidate = { id: 'far', box: { minX: 50, minY: 10, maxX: 150, maxY: 30 }, disc: { x: 400, y: 200, r: 10 }, depth: 5 };
