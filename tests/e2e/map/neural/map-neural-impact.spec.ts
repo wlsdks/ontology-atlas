@@ -39,9 +39,19 @@ function impactFromFiles(files: Record<string, string>, slug: string) {
       queue.push(next);
     }
   }
-  distance.delete(slug);
   const id = (s: string) => idOf(kindOf.get(s)!, s);
+  // The subject's own needs at hop 0, and each dependency whose target is at distance d and source at d + 1.
+  const axons = new Set<string>();
+  for (const [from, refs] of dependsOn) {
+    for (const ref of refs) {
+      if (!kindOf.has(ref) || ref === from) continue;
+      const hop = from === slug ? 0 : distance.get(ref) !== undefined && distance.get(from) === distance.get(ref)! + 1 ? distance.get(from)! : -1;
+      if (hop >= 0) axons.add(`${id(from)}>${id(ref)}@${hop}`);
+    }
+  }
+  distance.delete(slug);
   return {
+    axons: [...axons].sort(),
     needs: (dependsOn.get(slug) ?? []).filter((ref) => kindOf.has(ref)).map(id).sort(),
     impact: Object.fromEntries([...distance].map(([s, d]) => [id(s), d])),
   };
@@ -134,6 +144,7 @@ test.describe("Neural's impact on the dogfood vault", () => {
     expect(lit.focusId).toBe(id);
     expect(lit.impact).toEqual(expected.impact);
     expect(lit.needs).toEqual(expected.needs);
+    expect([...new Set(lit.axons.map((a) => `${a.sourceId}>${a.targetId}@${a.hop}`))].sort(), "the lit axons are not the impact's hops").toEqual(expected.axons);
     expect(lit.liftedCells, "an impact cell was still under the veil after the spread").toBe(size);
     expect(lit.plateFacts).toContain(`영향 범위 ${size}`);
     await expect(legend.getByTestId("topology-neural-legend-indirect")).toBeVisible();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { neuralGraphOf } from './neural-cells';
-import { carriesImpact, neuralImpact, neuralSpreadAt, neuralSpreadHopMs } from './neural-impact';
+import { impactHopsByIndex, isOutwardHop, neuralImpact, neuralSpreadAt, neuralSpreadHopMs } from './neural-impact';
 
 const depends = (sourceId: string, targetId: string, relationType = 'depends_on') =>
   ({ sourceId, targetId, kind: 'depends' as const, relationType });
@@ -32,25 +32,36 @@ describe("a selection's impact", () => {
 });
 
 describe('which dependencies carry the change', () => {
-  const edges = [depends('b', 'a'), depends('c', 'a'), depends('d', 'b'), depends('c', 'b'), depends('d', 'a'), depends('a', 'x')];
-  const impact = impactOf(edges, 'a');
+  /** The dependencies the painter lights for a selection, as "source>target@hop", from its hop index. */
+  const carried = (edges: ReturnType<typeof depends>[], nodes: string[], focusId: string) => {
+    const indexOf = new Map(nodes.map((id, i) => [id, i]));
+    const hopOf = impactHopsByIndex(impactOf(edges, focusId), indexOf, nodes.length);
+    return edges
+      .filter((edge) => isOutwardHop(hopOf[indexOf.get(edge.targetId)!], hopOf[indexOf.get(edge.sourceId)!]))
+      .map((edge) => `${edge.sourceId}>${edge.targetId}@${hopOf[indexOf.get(edge.sourceId)!]}`);
+  };
 
-  it('lights a dependency whose source is one hop farther than its target', () => {
-    expect(carriesImpact(impact, 'b', 'a')).toBe(true);
-    expect(carriesImpact(impact, 'd', 'a')).toBe(true);
+  it('lights only dependencies whose source is one hop farther out than their target', () => {
+    const edges = [depends('b', 'a'), depends('c', 'a'), depends('d', 'b'), depends('c', 'b'), depends('d', 'a'), depends('a', 'x')];
+    // c→b joins two concepts at distance 1; a→x is the selection's own need, and x lies outside.
+    expect(carried(edges, ['a', 'b', 'c', 'd', 'x'], 'a')).toEqual(['b>a@1', 'c>a@1', 'd>a@1']);
   });
 
-  it('leaves receded one between two concepts at the same distance, and the selection\'s own needs', () => {
-    expect(carriesImpact(impact, 'c', 'b')).toBe(false);
-    expect(carriesImpact(impact, 'd', 'b')).toBe(false);
-    expect(carriesImpact(impact, 'a', 'x')).toBe(false);
+  it('lights the next hop out and not one that skips back a level', () => {
+    const edges = [depends('b', 'a'), depends('c', 'b'), depends('d', 'c'), depends('b', 'd')];
+    expect(carried(edges, ['a', 'b', 'c', 'd'], 'a')).toEqual(['b>a@1', 'c>b@2', 'd>c@3']);
   });
 
-  it('leaves receded one that skips a level', () => {
-    const chain = impactOf([depends('b', 'a'), depends('c', 'b'), depends('d', 'c'), depends('b', 'd')], 'a');
-    expect(chain.distance.get('d')).toBe(3);
-    expect(carriesImpact(chain, 'd', 'c')).toBe(true);
-    expect(carriesImpact(chain, 'b', 'd')).toBe(false);
+  it('leaves the selection\'s own need and dependencies outside the impact unlit', () => {
+    // a→y runs from the selection (0) to y outside (−1): the sentinel must not read as one hop short of it.
+    const edges = [depends('b', 'a'), depends('a', 'y'), depends('y', 'x')];
+    expect(carried(edges, ['a', 'b', 'x', 'y'], 'a')).toEqual(['b>a@1']);
+    expect(isOutwardHop(-1, 0)).toBe(false);
+  });
+
+  it('reads its arguments as target then source', () => {
+    expect(isOutwardHop(0, 1)).toBe(true);
+    expect(isOutwardHop(1, 0)).toBe(false);
   });
 });
 

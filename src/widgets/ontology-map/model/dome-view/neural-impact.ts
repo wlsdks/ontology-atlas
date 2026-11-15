@@ -49,15 +49,24 @@ export function neuralImpactOfMapEdges(edges: readonly MapEdgeInput[], focusId: 
   return neuralImpact(graph, focusId);
 }
 
-/** A dependency whose target is at `targetDistance` d and whose source is at d + 1; the focus is at 0. */
-export function isOutwardHop(targetDistance: number | undefined, sourceDistance: number | undefined): boolean {
-  return targetDistance !== undefined && sourceDistance !== undefined && targetDistance >= 0 && sourceDistance === targetDistance + 1;
+/** Each node index's distance in the impact: 0 the focus, −1 outside it. O(nodes + impact). */
+export function impactHopsByIndex(impact: NeuralImpact, indexOf: ReadonlyMap<string, number>, nodeCount: number): Int32Array {
+  const hopOf = new Int32Array(nodeCount).fill(-1);
+  const focusIndex = indexOf.get(impact.focusId);
+  if (focusIndex !== undefined) hopOf[focusIndex] = 0;
+  for (const [id, distance] of impact.distance) {
+    const i = indexOf.get(id);
+    if (i !== undefined) hopOf[i] = distance;
+  }
+  return hopOf;
 }
 
-/** The change crosses this dependency one hop outward, from its target to its source. */
-export function carriesImpact(impact: NeuralImpact, sourceId: string, targetId: string): boolean {
-  const distanceOf = (id: string) => (id === impact.focusId ? 0 : impact.distance.get(id));
-  return isOutwardHop(distanceOf(targetId), distanceOf(sourceId));
+/**
+ * The change crosses a dependency one hop outward when its target is at distance d and its source at
+ * d + 1, from `impactHopsByIndex`; −1 is outside the impact.
+ */
+export function isOutwardHop(targetHop: number, sourceHop: number): boolean {
+  return targetHop >= 0 && sourceHop === targetHop + 1;
 }
 
 /** One hop's travel: `hopMs`, shortened equally when the whole spread would outlast `wholeMs`. */

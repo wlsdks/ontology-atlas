@@ -12,7 +12,7 @@ import {
   type NeuralTracts,
   neuralSignalProgress,
 } from "../../model/dome-view/neural-cells";
-import { isOutwardHop, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural-impact";
+import { impactHopsByIndex, isOutwardHop, neuralImpact, neuralSpreadAt, neuralSpreadHopMs, type NeuralImpact } from "../../model/dome-view/neural-impact";
 import { standingDomainTitles, type TitleCandidate } from "../../model/dome-view/neural-titles";
 import { isPathLensEdge } from "../../model/visibility/path-lens";
 import { labelFontFamily } from "../../render/labels";
@@ -99,15 +99,7 @@ let impactCache: { graph: NeuralGraph; nodes: readonly { id: string }[]; impact:
 function selectionImpact(graph: NeuralGraph, nodes: readonly { id: string }[], focusId: string) {
   if (impactCache?.graph === graph && impactCache.nodes === nodes && impactCache.impact.focusId === focusId) return impactCache;
   const impact = neuralImpact(graph, focusId);
-  const indexOf = nodeIndexOf(nodes);
-  const hopOf = new Int32Array(nodes.length).fill(-1);
-  const focusIndex = indexOf.get(focusId);
-  if (focusIndex !== undefined) hopOf[focusIndex] = 0;
-  for (const [id, distance] of impact.distance) {
-    const i = indexOf.get(id);
-    if (i !== undefined) hopOf[i] = distance;
-  }
-  impactCache = { graph, nodes, impact, hopOf };
+  impactCache = { graph, nodes, impact, hopOf: impactHopsByIndex(impact, nodeIndexOf(nodes), nodes.length) };
   return impactCache;
 }
 
@@ -121,11 +113,22 @@ const lastLit = {
   hops: 0,
   liftedCells: 0,
   plateFacts: null as string | null,
+  edges: [] as readonly { sourceId: string; targetId: string }[],
+  litCount: 0,
 };
 
-/** The focus Neural lit in the last frame, its direct ends and a selection's impact with distances. */
+/**
+ * The focus Neural lit in the last frame, its direct ends, a selection's impact with distances, and
+ * each lit axon on screen as its two ends and hop.
+ */
 export function lastNeuralLit() {
+  const axons: { sourceId: string; targetId: string; hop: number }[] = [];
+  for (let k = 0; k < lastLit.litCount; k += 1) {
+    const edge = lastLit.edges[litEdge[k]];
+    if (edge) axons.push({ sourceId: edge.sourceId, targetId: edge.targetId, hop: litHop[k] });
+  }
   return {
+    axons,
     focusId: lastLit.focusId,
     selected: lastLit.selected,
     needs: lastLit.sets ? [...lastLit.sets.needs].sort() : [],
@@ -155,9 +158,13 @@ let acy = new Float64Array(0);
 let abx = new Float64Array(0);
 let aby = new Float64Array(0);
 let aGroup = new Int8Array(0);
-/** Lit axons this frame: drawn axon index, far end's node index, and hop (0 a need, k ≥ 1 a dependent k hops out). */
+/**
+ * Lit axons this frame: drawn axon index, far end's node index, world edge index, and hop (0 a need,
+ * k ≥ 1 a dependent k hops out).
+ */
 let litAxon = new Int32Array(0);
 let litFarNode = new Int32Array(0);
+let litEdge = new Int32Array(0);
 let litHop = new Int32Array(0);
 
 function ensure(nodes: number, edges: number): void {
@@ -170,7 +177,7 @@ function ensure(nodes: number, edges: number): void {
     ax = new Float64Array(edges); ay = new Float64Array(edges); acx = new Float64Array(edges);
     acy = new Float64Array(edges); abx = new Float64Array(edges); aby = new Float64Array(edges);
     aGroup = new Int8Array(edges);
-    litAxon = new Int32Array(edges); litFarNode = new Int32Array(edges); litHop = new Int32Array(edges);
+    litAxon = new Int32Array(edges); litFarNode = new Int32Array(edges); litHop = new Int32Array(edges); litEdge = new Int32Array(edges);
   }
 }
 
@@ -504,7 +511,8 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   let axons = 0;
   const indexOf = nodeIndexOf(world.nodes);
   let litCount = 0;
-  for (const edge of world.edges) {
+  for (let edgeIndex = 0; edgeIndex < world.edges.length; edgeIndex += 1) {
+    const edge = world.edges[edgeIndex];
     if (!isNeuralDependency(edge)) continue;
     const s = indexOf.get(edge.sourceId);
     const e = indexOf.get(edge.targetId);
@@ -527,6 +535,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     if (started) {
       litAxon[litCount] = axons;
       litFarNode[litCount] = hop === 0 ? e : s;
+      litEdge[litCount] = edgeIndex;
       litHop[litCount] = hop;
       litCount += 1;
     }
@@ -540,6 +549,8 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     }
     axons += 1;
   }
+  lastLit.edges = world.edges;
+  lastLit.litCount = litCount;
   ctx.lineCap = "round";
   ctx.strokeStyle = ink.arc;
   ctx.fillStyle = ink.arc;

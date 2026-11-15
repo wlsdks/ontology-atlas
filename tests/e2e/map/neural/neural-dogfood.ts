@@ -107,6 +107,7 @@ export type NeuralLit = {
   hops: number;
   liftedCells: number;
   plateFacts: string | null;
+  axons: { sourceId: string; targetId: string; hop: number }[];
 };
 
 export type Probe = {
