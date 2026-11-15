@@ -18,21 +18,27 @@
     --map-tree-name-gap-px: 6;
     --map-tree-name-pad-px: 3;
 
-    --map-tree-open-pitch-px: 18;
-    --map-tree-leaf-pitch-px: 7;
+    --map-tree-open-pitch-px: 20;
+    --map-tree-leaf-pitch-px: 9;
     --map-tree-element-name-pitch-px: 22;
     --map-tree-pick-slop-px: 6;
 
     --map-tree-tone-far: 0.42;
     --map-tree-branch-min-px: 0.9;
-    --map-tree-branch-ink: 0.5;
-    --map-tree-branch-core-share: 0.34;
-    --map-tree-branch-core-min-px: 2.4;
-    --map-tree-branch-core-ink: 0.78;
+    --map-tree-branch-ink: 0.44;
+    --map-tree-branch-mid-share: 0.66;
+    --map-tree-branch-mid-ink: 0.72;
+    --map-tree-branch-core-share: 0.32;
+    --map-tree-branch-core-min-px: 1.6;
+    --map-tree-branch-core-ink: 0.97;
+    --map-tree-branch-lit-ink: 0.92;
     --map-tree-mark-ink: 0.92;
-    --map-tree-ring-share: 0.24;
+    --map-tree-ring-share: 0.1;
     --map-tree-ring-min-px: 1.2;
-    --map-tree-domain-core-share: 0.42;
+    --map-tree-domain-core-share: 0.46;
+    --map-tree-domain-core-ring-px: 1.4;
+    --map-tree-hub-glow-alpha: 0.055;
+    --map-tree-hub-glow-reach: 2.3;
     --map-tree-closed-ring-gap-px: 2.5;
     --map-tree-closed-ring-px: 1.2;
     --map-tree-stale-dot-share: 0.5;

@@ -22,6 +22,7 @@ const POOL_MID_STOP = 0.35;
 const STALE_DOT_ANGLE = -Math.PI / 4;
 const TAU = Math.PI * 2;
 const NEAREST_TONE = TREE_TONE_STEPS - 1;
+const HUB_GLOW_STEPS = 5;
 const ARC_NEEDS = 0;
 const ARC_USED_BY = 1;
 
@@ -60,11 +61,18 @@ const point: TreeScreenPoint = { x: 0, y: 0, scale: 0, depth: 0 };
 const sampleX = new Float32Array(BRANCH_SAMPLES + 1);
 const sampleY = new Float32Array(BRANCH_SAMPLES + 1);
 const sampleW = new Float32Array(BRANCH_SAMPLES + 1);
+/** Branch slots: one per node drawn this frame, a listed node's or one of its ancestors'. */
 let polyX = new Float32Array(0);
 let polyY = new Float32Array(0);
 let polyW = new Float32Array(0);
 let polyLength = new Int32Array(0);
 let polyWidest = new Float32Array(0);
+let polyCaps = new Uint8Array(0);
+let branchNode = new Int32Array(0);
+let branchTone = new Uint8Array(0);
+let branchCount = 0;
+let branchAt = new Int32Array(0);
+let branchStamp = new Uint32Array(0);
 let markAt = new Int32Array(0);
 let markStamp = new Uint32Array(0);
 let litStamp = new Uint32Array(0);
@@ -75,6 +83,10 @@ let arcTo = new Int32Array(0);
 let arcRole = new Uint8Array(0);
 let stamp = 0;
 
+const CAP_START = 1;
+const CAP_END = 2;
+const MIN_BRANCH_SLOTS = 64;
+
 let staleSource: Uint8Array | null = null;
 let staleCount = -1;
 let staleSums = new Int32Array(1);
@@ -84,13 +96,10 @@ function ensureCapacity(nodes: number, marks: number, arcs: number): void {
     markAt = new Int32Array(nodes);
     markStamp = new Uint32Array(nodes);
     litStamp = new Uint32Array(nodes);
+    branchAt = new Int32Array(nodes);
+    branchStamp = new Uint32Array(nodes);
   }
-  if (polyLength.length < marks) {
-    polyX = new Float32Array(marks * POLY_STRIDE);
-    polyY = new Float32Array(marks * POLY_STRIDE);
-    polyW = new Float32Array(marks * POLY_STRIDE);
-    polyLength = new Int32Array(marks);
-    polyWidest = new Float32Array(marks);
+  if (needsStamp.length < marks) {
     needsStamp = new Uint32Array(marks);
     usedByStamp = new Uint32Array(marks);
   }
@@ -102,11 +111,42 @@ function ensureCapacity(nodes: number, marks: number, arcs: number): void {
   if (stamp >= 0xffffffff) {
     markStamp.fill(0);
     litStamp.fill(0);
+    branchStamp.fill(0);
     needsStamp.fill(0);
     usedByStamp.fill(0);
     stamp = 0;
   }
   stamp += 1;
+  branchCount = 0;
+}
+
+/** Doubles the branch slots, keeping this frame's, when one more is needed: amortised O(1). */
+function claimBranchSlot(): number {
+  const slot = branchCount;
+  if (slot >= polyLength.length) {
+    const size = Math.max(MIN_BRANCH_SLOTS, polyLength.length * 2);
+    const grow = <A extends Float32Array | Int32Array | Uint8Array>(old: A, make: (n: number) => A, stride: number): A => {
+      const next = make(size * stride);
+      next.set(old);
+      return next;
+    };
+    polyX = grow(polyX, (n) => new Float32Array(n), POLY_STRIDE);
+    polyY = grow(polyY, (n) => new Float32Array(n), POLY_STRIDE);
+    polyW = grow(polyW, (n) => new Float32Array(n), POLY_STRIDE);
+    polyLength = grow(polyLength, (n) => new Int32Array(n), 1);
+    polyWidest = grow(polyWidest, (n) => new Float32Array(n), 1);
+    polyCaps = grow(polyCaps, (n) => new Uint8Array(n), 1);
+    branchNode = grow(branchNode, (n) => new Int32Array(n), 1);
+    branchTone = grow(branchTone, (n) => new Uint8Array(n), 1);
+  }
+  branchCount += 1;
+  return slot;
+}
+
+function toneAtDepth(depth: number, frame: TreeFrameInput): number {
+  const { near, far } = frame.projector;
+  const nearness = far > near ? (far - depth) / (far - near) : 1;
+  return Math.min(NEAREST_TONE, Math.max(0, Math.round(nearness * NEAREST_TONE)));
 }
 
 /** Prefix sums over `stale`, rebuilt only when the array or the model size changes: O(V) then O(1) per query. */
@@ -217,14 +257,13 @@ function pushBetween(slot: number, n: number, i: number, f: number): number {
 }
 
 /**
- * The visible stretch of the branch from a drawn node's parent to it, cut at the growth front and
- * at the edge of the marks at both ends. Returns its point count, 0 when nothing shows.
+ * The visible stretch of the branch from `node`'s parent to it, cut at the growth front and at
+ * the edge of a mark at either end. Returns its point count, 0 when nothing shows; an end that
+ * no mark covers (the trunk top, an open fork, the growth front) gets a round cap.
  */
-function traceBranch(frame: TreeFrameInput, slot: number, tokens: TreeTokens): number {
+function traceBranch(frame: TreeFrameInput, node: number, slot: number, tokens: TreeTokens): number {
   const { layout, list } = frame;
   const model = layout.model;
-  const mark = list.marks[slot]!;
-  const node = mark.node;
   const parent = model.parent[node]!;
   const fromReach = parent < 0 ? 0 : layout.reach[parent]!;
   const toReach = layout.reach[node]!;
@@ -233,9 +272,10 @@ function traceBranch(frame: TreeFrameInput, slot: number, tokens: TreeTokens): n
   sampleCubic(frame, node, tEnd, tokens);
 
   // Node 0's mark is at the trunk base, which is where the trunk starts; the trunk top has no mark.
-  const startMark = parent < 0 ? slot : parent === 0 ? -1 : markIndexOf(parent);
-  const start = startMark >= 0 && drawsDisc(model, list.marks[startMark]!) ? list.marks[startMark]! : null;
-  const end = node !== 0 && tEnd === 1 && drawsDisc(model, mark) ? mark : null;
+  const startAt = parent < 0 ? markIndexOf(0) : parent === 0 ? -1 : markIndexOf(parent);
+  const start = startAt >= 0 && drawsDisc(model, list.marks[startAt]!) ? list.marks[startAt]! : null;
+  const endAt = node === 0 || tEnd < 1 ? -1 : markIndexOf(node);
+  const end = endAt >= 0 && drawsDisc(model, list.marks[endAt]!) ? list.marks[endAt]! : null;
 
   let first = 0;
   let firstCut = -1;
@@ -255,6 +295,7 @@ function traceBranch(frame: TreeFrameInput, slot: number, tokens: TreeTokens): n
   }
 
   polyWidest[slot] = 0;
+  polyCaps[slot] = (start ? 0 : CAP_START) | (end ? 0 : CAP_END);
   let n = 0;
   if (firstCut >= 0) n = pushBetween(slot, n, first - 1, firstCut);
   for (let s = first; s <= last; s += 1) n = pushPoly(slot, n, sampleX[s]!, sampleY[s]!, sampleW[s]!);
@@ -262,7 +303,24 @@ function traceBranch(frame: TreeFrameInput, slot: number, tokens: TreeTokens): n
   return n >= 2 ? n : 0;
 }
 
-/** A closed ribbon along the traced branch, `share` of its width. */
+/** Each listed node's chain of branches down to the trunk, every node's branch traced once. */
+function traceBranches(frame: TreeFrameInput, tokens: TreeTokens): void {
+  const { list, layout, projector } = frame;
+  const P = layout.position;
+  for (let i = 0; i < list.count; i += 1) {
+    for (let node = list.marks[i]!.node; node >= 0 && branchStamp[node] !== stamp; node = layout.model.parent[node]!) {
+      branchStamp[node] = stamp;
+      const slot = claimBranchSlot();
+      branchAt[node] = slot;
+      branchNode[slot] = node;
+      projector.project(P[node * 3]!, P[node * 3 + 1]!, P[node * 3 + 2]!, point);
+      branchTone[slot] = toneAtDepth(point.depth, frame);
+      polyLength[slot] = traceBranch(frame, node, slot, tokens);
+    }
+  }
+}
+
+/** A closed ribbon along a traced branch, `share` of its width, with a disc on each capped end. */
 function addRibbon(ctx: CanvasRenderingContext2D, slot: number, share: number): void {
   const n = polyLength[slot]!;
   const base = slot * POLY_STRIDE;
@@ -282,6 +340,15 @@ function addRibbon(ctx: CanvasRenderingContext2D, slot: number, share: number): 
     }
   }
   ctx.closePath();
+  if (polyCaps[slot]! & CAP_START) addCap(ctx, base, share);
+  if (polyCaps[slot]! & CAP_END) addCap(ctx, base + n - 1, share);
+}
+
+/** Wound anticlockwise like every ribbon, so a cap over a ribbon adds to the nonzero fill. */
+function addCap(ctx: CanvasRenderingContext2D, at: number, share: number): void {
+  const r = (polyW[at]! * share) / 2;
+  ctx.moveTo(polyX[at]! + r, polyY[at]!);
+  ctx.arc(polyX[at]!, polyY[at]!, r, 0, TAU, true);
 }
 
 function paintGlows(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
@@ -336,32 +403,28 @@ function paintGlows(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens
   ctx.globalAlpha = 1;
 }
 
-/** Branches batched by tone, far tones first: one body fill and one core fill per tone. */
-function paintBranches(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
-  const { list } = frame;
-  for (let i = 0; i < list.count; i += 1) polyLength[i] = traceBranch(frame, i, tokens);
-  for (let tone = 0; tone < TREE_TONE_STEPS; tone += 1) {
-    let body = 0;
-    ctx.beginPath();
-    for (let i = 0; i < list.count; i += 1) {
-      if (list.marks[i]!.tone !== tone || polyLength[i] === 0) continue;
-      addRibbon(ctx, i, 1);
-      body += 1;
-    }
-    if (body === 0) continue;
-    ctx.fillStyle = tokens.tones.branch[tone]!;
-    ctx.fill();
-    let cores = 0;
-    ctx.beginPath();
-    for (let i = 0; i < list.count; i += 1) {
-      if (list.marks[i]!.tone !== tone || polyLength[i] === 0 || polyWidest[i]! < tokens.paint.branchCoreMinPx) continue;
-      addRibbon(ctx, i, tokens.paint.branchCoreShare);
-      cores += 1;
-    }
-    if (cores === 0) continue;
-    ctx.fillStyle = tokens.tones.branchCore[tone]!;
-    ctx.fill();
+/**
+ * Three nested ribbons, each narrower and lighter, stand in for a soft edge. Each layer is
+ * painted for every tone, far first, before the next, so no body covers a core at a joint.
+ */
+function paintBranches(ctx: CanvasRenderingContext2D, tokens: TreeTokens): void {
+  const { tones, paint } = tokens;
+  for (let tone = 0; tone < TREE_TONE_STEPS; tone += 1) fillBranches(ctx, tone, 1, 0, tones.branch[tone]!);
+  for (let tone = 0; tone < TREE_TONE_STEPS; tone += 1) fillBranches(ctx, tone, paint.branchMidShare, paint.branchCoreMinPx, tones.branchMid[tone]!);
+  for (let tone = 0; tone < TREE_TONE_STEPS; tone += 1) fillBranches(ctx, tone, paint.branchCoreShare, paint.branchCoreMinPx, tones.branchCore[tone]!);
+}
+
+function fillBranches(ctx: CanvasRenderingContext2D, tone: number, share: number, minWidthPx: number, ink: string): void {
+  let drawn = 0;
+  ctx.beginPath();
+  for (let slot = 0; slot < branchCount; slot += 1) {
+    if (branchTone[slot] !== tone || polyLength[slot] === 0 || polyWidest[slot]! < minWidthPx) continue;
+    addRibbon(ctx, slot, share);
+    drawn += 1;
   }
+  if (drawn === 0) return;
+  ctx.fillStyle = ink;
+  ctx.fill();
 }
 
 function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fill: string): void {
@@ -373,6 +436,19 @@ function disc(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, fi
 
 function hasStaleInside(sums: Int32Array | null, from: number, to: number): boolean {
   return sums !== null && sums[to]! - sums[from]! > 0;
+}
+
+/** A soft light behind a domain hub: stacked translucent discs, no filter and no gradient. */
+function paintHubGlow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, tone: number, tokens: TreeTokens): void {
+  const { hubGlowAlpha, hubGlowReach } = tokens.paint;
+  ctx.fillStyle = tokens.inks.nameStrong;
+  ctx.globalAlpha = (hubGlowAlpha * (tone + 1)) / TREE_TONE_STEPS;
+  for (let step = 0; step < HUB_GLOW_STEPS; step += 1) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius * (1 + ((hubGlowReach - 1) * (HUB_GLOW_STEPS - step)) / HUB_GLOW_STEPS), 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function paintMark(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, mark: TreeDrawMark, tone: number, sums: Int32Array | null, tokens: TreeTokens): void {
@@ -388,11 +464,19 @@ function paintMark(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, mark: T
     ctx.strokeStyle = tones.mark[tone]!;
     ctx.stroke();
   }
+  if (kind === "domain") paintHubGlow(ctx, x, y, radius, tone, tokens);
   const selfStale = frame.stale !== null && frame.stale[node] === 1;
-  disc(ctx, x, y, radius + ring, inks.discFill);
+  // A hub's light disc stands on its glow; smaller marks keep a dark ring to part them from wood.
+  if (kind !== "domain") disc(ctx, x, y, radius + ring, inks.discFill);
   const fill = kind === "project" ? tones.project : kind === "element" && selfStale ? tones.stale : tones.mark;
   disc(ctx, x, y, radius, fill[tone]!);
-  if (kind === "domain") disc(ctx, x, y, radius * paint.domainCoreShare, inks.discFill);
+  if (kind === "domain") {
+    ctx.beginPath();
+    ctx.arc(x, y, radius * paint.domainCoreShare, 0, TAU);
+    ctx.lineWidth = paint.domainCoreRingPx;
+    ctx.strokeStyle = inks.discFill;
+    ctx.stroke();
+  }
 
   const end = model.subtreeEnd[node]!;
   const dot = kind === "element"
@@ -503,9 +587,7 @@ function paintFocus(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, sums: 
   const focusAt = markHolding(model, focus.node);
   if (focusAt < 0 || !isGrown(frame, list.marks[focusAt]!.node)) return;
 
-  litStamp[focus.node] = stamp;
-  litStamp[list.marks[focusAt]!.node] = stamp;
-  for (let i = 0; i < focus.path.length; i += 1) litStamp[focus.path[i]!] = stamp;
+  for (let node = focus.node; node >= 0; node = model.parent[node]!) litStamp[node] = stamp;
   const arcs = collectArcs(frame, focusAt, TREE_ARC_BUDGET);
   for (let i = 0; i < arcs; i += 1) litStamp[list.marks[arcFrom[i] === focusAt ? arcTo[i]! : arcFrom[i]!]!.node] = stamp;
 
@@ -514,17 +596,7 @@ function paintFocus(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, sums: 
   ctx.fillRect(0, 0, width, height);
   ctx.globalAlpha = 1;
 
-  ctx.beginPath();
-  let path = 0;
-  for (let i = 0; i < list.count; i += 1) {
-    if (polyLength[i] === 0 || litStamp[list.marks[i]!.node] !== stamp || !isOnPath(focus.path, focus.node, list.marks[i]!.node)) continue;
-    addRibbon(ctx, i, 1);
-    path += 1;
-  }
-  if (path > 0) {
-    ctx.fillStyle = inks.nameStrong;
-    ctx.fill();
-  }
+  paintFocusPath(ctx, frame, tokens);
 
   for (let i = 0; i < list.count; i += 1) {
     const mark = list.marks[i]!;
@@ -559,10 +631,28 @@ function paintFocus(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, sums: 
   ctx.stroke();
 }
 
-function isOnPath(path: readonly number[], focus: number, node: number): boolean {
-  if (node === focus) return true;
-  for (let i = 0; i < path.length; i += 1) if (path[i] === node) return true;
-  return false;
+/** The focus's own branches down to the trunk: the same three layers, mid and core in the lit inks. */
+function paintFocusPath(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
+  const { paint, inks, tones } = tokens;
+  fillFocusPath(ctx, frame, 1, 0, tones.branch[NEAREST_TONE]!);
+  fillFocusPath(ctx, frame, paint.branchMidShare, paint.branchCoreMinPx, inks.branchLit);
+  fillFocusPath(ctx, frame, paint.branchCoreShare, paint.branchCoreMinPx, inks.nameStrong);
+}
+
+function fillFocusPath(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, share: number, minWidthPx: number, ink: string): void {
+  const parent = frame.layout.model.parent;
+  let drawn = 0;
+  ctx.beginPath();
+  for (let node = frame.focus!.node; node >= 0; node = parent[node]!) {
+    if (branchStamp[node] !== stamp) continue;
+    const slot = branchAt[node]!;
+    if (polyLength[slot] === 0 || polyWidest[slot]! < minWidthPx) continue;
+    addRibbon(ctx, slot, share);
+    drawn += 1;
+  }
+  if (drawn === 0) return;
+  ctx.fillStyle = ink;
+  ctx.fill();
 }
 
 /**
@@ -588,7 +678,8 @@ export function paintTreeFrame(ctx: CanvasRenderingContext2D, frame: TreeFrameIn
   ctx.fillStyle = tokens.inks.ground;
   ctx.fillRect(0, 0, width, height);
   paintGlows(ctx, frame, tokens);
-  paintBranches(ctx, frame, tokens);
+  traceBranches(frame, tokens);
+  paintBranches(ctx, tokens);
   for (let i = 0; i < list.count; i += 1) {
     const mark = list.marks[i]!;
     if (drawsDisc(model, mark) && isGrown(frame, mark.node)) paintMark(ctx, frame, mark, mark.tone, sums, tokens);

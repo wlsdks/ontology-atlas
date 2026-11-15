@@ -20,7 +20,9 @@ interface Paint {
   op: "fill" | "stroke" | "fillRect";
   style: unknown;
   points: Point[];
-  arcs: { x: number; y: number; r: number }[];
+  /** The path's polygons, split at each moveTo. */
+  subpaths: Point[][];
+  arcs: { x: number; y: number; r: number; anticlockwise: boolean }[];
   curves: number;
 }
 
@@ -29,6 +31,7 @@ function recorder() {
   const sets: { key: string; value: unknown }[] = [];
   let gradients = 0;
   let points: Point[] = [];
+  let subpaths: Point[][] = [];
   let arcs: Paint["arcs"] = [];
   let curves = 0;
   const props: Record<string, unknown> = { globalAlpha: 1, globalCompositeOperation: "source-over", fillStyle: "", strokeStyle: "" };
@@ -36,21 +39,28 @@ function recorder() {
   const gradient = { addColorStop: () => {} };
   const reset = () => {
     points = [];
+    subpaths = [];
     arcs = [];
     curves = 0;
   };
   const methods: Record<string, (...a: number[]) => unknown> = {
     beginPath: reset,
-    moveTo: (x, y) => points.push({ x: x!, y: y! }),
-    lineTo: (x, y) => points.push({ x: x!, y: y! }),
+    moveTo: (x, y) => {
+      points.push({ x: x!, y: y! });
+      subpaths.push([{ x: x!, y: y! }]);
+    },
+    lineTo: (x, y) => {
+      points.push({ x: x!, y: y! });
+      subpaths.at(-1)?.push({ x: x!, y: y! });
+    },
     quadraticCurveTo: (_cx, _cy, x, y) => {
       curves += 1;
       points.push({ x: x!, y: y! });
     },
-    arc: (x, y, r) => arcs.push({ x: x!, y: y!, r: r! }),
-    fill: () => paints.push({ op: "fill", style: props.fillStyle, points, arcs, curves }),
-    stroke: () => paints.push({ op: "stroke", style: props.strokeStyle, points, arcs, curves }),
-    fillRect: () => paints.push({ op: "fillRect", style: props.fillStyle, points: [], arcs: [], curves: 0 }),
+    arc: (x, y, r, _from, _to, anticlockwise) => arcs.push({ x: x!, y: y!, r: r!, anticlockwise: Boolean(anticlockwise) }),
+    fill: () => paints.push({ op: "fill", style: props.fillStyle, points, subpaths, arcs, curves }),
+    stroke: () => paints.push({ op: "stroke", style: props.strokeStyle, points, subpaths, arcs, curves }),
+    fillRect: () => paints.push({ op: "fillRect", style: props.fillStyle, points: [], subpaths: [], arcs: [], curves: 0 }),
     createRadialGradient: () => {
       gradients += 1;
       return gradient;
@@ -202,6 +212,27 @@ const isAmber = (style: unknown) => T.tones.stale.includes(style as string) || s
 const amberDiscs = (paints: Paint[]) => paints.filter((p) => p.op === "fill" && isAmber(p.style)).flatMap((p) => p.arcs);
 const strokesIn = (paints: Paint[], ink: string) => paints.filter((p) => p.op === "stroke" && p.style === ink && p.curves > 0);
 
+/** Signed crossings of a rightward ray, the count Canvas's nonzero rule sums over subpaths. */
+function winding(p: Point, polygon: readonly Point[]): number {
+  let w = 0;
+  for (let i = 0; i < polygon.length; i += 1) {
+    const a = polygon[i]!;
+    const b = polygon[(i + 1) % polygon.length]!;
+    const side = (b.x - a.x) * (p.y - a.y) - (p.x - a.x) * (b.y - a.y);
+    if (a.y <= p.y && b.y > p.y && side > 0) w += 1;
+    else if (a.y > p.y && b.y <= p.y && side < 0) w -= 1;
+  }
+  return w;
+}
+
+/** Inside a fill by the nonzero rule: ribbons and cap discs sum their windings. */
+function filledAt(p: Point, paint: Paint): boolean {
+  let w = 0;
+  for (const s of paint.subpaths) if (s.length > 2) w += winding(p, s);
+  for (const d of paint.arcs) if (distance(p, d) < d.r) w += d.anticlockwise ? -1 : 1;
+  return w !== 0;
+}
+
 describe("paintTreeFrame", () => {
   it("draws nothing amber when evidence was not measured", () => {
     const layout = layoutOf(SMALL);
@@ -223,7 +254,7 @@ describe("paintTreeFrame", () => {
     const amber = amberDiscs(r.paints);
     const leaf = markAt(list, 3);
     const capability = markAt(list, 5);
-    expect(amber).toContainEqual({ x: leaf.x, y: leaf.y, r: leaf.radius });
+    expect(amber).toContainEqual(expect.objectContaining({ x: leaf.x, y: leaf.y, r: leaf.radius }));
     expect(amber.some((d) => Math.abs(distance(d, capability) - capability.radius) < 1e-6 && d.r < capability.radius)).toBe(true);
     expect(amber.some((d) => distance(d, capability) < 1e-6)).toBe(false);
     expect(amber).toHaveLength(2);
@@ -255,6 +286,36 @@ describe("paintTreeFrame", () => {
       expect(nearest).toBeGreaterThanOrEqual(mark.radius);
       expect(nearest).toBeLessThan(mark.radius * 3 + 8);
     }
+  });
+
+  it("draws a domain under an open fork with an unbroken run of branch from the trunk base to its mark", () => {
+    const specs: Spec[] = [
+      { kind: "project", parent: -1, x: 0, y: 100 },
+      { kind: "fork", parent: 0, x: 0, y: 170 },
+      { kind: "domain", parent: 1, x: -90, y: 260 },
+      { kind: "domain", parent: 1, x: 90, y: 260 },
+    ];
+    const layout = layoutOf(specs);
+    const list = drawListOf(layout, [0, 2, 3]);
+    const r = recorder();
+    paintTreeFrame(r.ctx, frameOf(layout, list), T);
+    const wood = r.paints.filter((p) => p.op === "fill" && T.tones.branch.includes(p.style as string));
+    const covered = (p: Point) => wood.some((fill) => filledAt(p, fill));
+    const base = markAt(list, 0);
+    const hub = markAt(list, 2);
+    const corners = [{ x: 0, y: 0 }, { x: 0, y: 100 }, { x: 0, y: 170 }, { x: -90, y: 260 }].map((w) => ({ x: 400 + w.x, y: 600 - w.y }));
+    let tested = 0;
+    for (let leg = 0; leg + 1 < corners.length; leg += 1) {
+      const a = corners[leg]!;
+      const b = corners[leg + 1]!;
+      for (let step = 0; step <= 100; step += 1) {
+        const p = { x: a.x + ((b.x - a.x) * step) / 100, y: a.y + ((b.y - a.y) * step) / 100 };
+        if (distance(p, base) < base.radius * 2 || distance(p, hub) < hub.radius * 2) continue;
+        tested += 1;
+        expect(covered(p), `uncovered at ${p.x.toFixed(1)}, ${p.y.toFixed(1)}`).toBe(true);
+      }
+    }
+    expect(tested).toBeGreaterThan(200);
   });
 
   it("draws no dependency arc without a focus", () => {
