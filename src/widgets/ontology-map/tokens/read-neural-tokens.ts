@@ -79,3 +79,28 @@ export function readNeuralTokens(): NeuralTokens {
   if (missing.length > 0) throw new Error(`Neural tokens missing: ${missing.join(", ")}`);
   return { ...numbers, signalMs, spreadMs, inks };
 }
+
+/** The alphas only the WebGL painter (`neural-gl/`) draws with. */
+export interface NeuralGlTokens {
+  /** A cluster shell's rim at full strength. */
+  shellAlpha: number;
+  /** The soft light under a lit connection, at its centre line. */
+  litGlowAlpha: number;
+}
+
+const GL_NUMBER_KEYS: readonly (keyof NeuralGlTokens)[] = ["shellAlpha", "litGlowAlpha"];
+
+/** Reads the WebGL painter's tokens; a missing or non-numeric one throws, never falls back. */
+export function readNeuralGlTokens(): NeuralGlTokens {
+  const style = getComputedStyle(document.documentElement);
+  const missing: string[] = [];
+  const numbers = {} as NeuralGlTokens;
+  for (const key of GL_NUMBER_KEYS) {
+    const raw = style.getPropertyValue(cssVarOf(key)).trim();
+    const value = Number(raw);
+    if (!raw || !Number.isFinite(value)) missing.push(cssVarOf(key));
+    numbers[key] = value;
+  }
+  if (missing.length > 0) throw new Error(`Neural tokens missing: ${missing.join(", ")}`);
+  return numbers;
+}

@@ -7,7 +7,9 @@ import { paintBranchContext, paintDial, prepareBranchContext } from "./paint-dia
 import { paintDomeStage } from "./paint-dome-stage";
 import { paintEdges } from "./paint-edges";
 import { paintLabels } from "./paint-labels";
-import { paintNeural } from "./paint-neural";
+import { buildNeuralFrame } from "./neural-frame";
+import { paintNeuralNames } from "./neural-names";
+import { strokeNeural, type NeuralLabels } from "./paint-neural";
 import { paintNodes } from "./paint-nodes";
 import { paintRelationCaptions } from "./paint-captions";
 import { paintWardingRing } from "./paint-warding";
@@ -15,6 +17,7 @@ import { prepareEdges } from "./edge-prep";
 import { prepareFocus } from "./frame-focus";
 import type { FrameDrawParams } from "./frame-draw-params";
 import type { FrameInputs } from "./frame-begin";
+import type { FrameFocus } from "./frame-focus";
 import type { NodeLayer } from "./node-layer";
 
 export type { FrameDrawParams } from "./frame-draw-params";
@@ -40,6 +43,21 @@ function crossfadeToNeural(frame: FrameInputs, layer: NodeLayer): void {
   ctx.fillStyle = frame.tokens.canvasBgNear;
   ctx.fillRect(0, 0, frame.viewportWidth, frame.viewportHeight);
   ctx.globalAlpha = 1;
+}
+
+/**
+ * Neural: builds this frame's `NeuralFrame`, lets `neuralSurface` paint it when it can and strokes it
+ * on canvas 2D otherwise, then draws the names on the context the painter returns.
+ */
+function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLayer, labels: NeuralLabels | null): void {
+  const nf = buildNeuralFrame(frame, focus);
+  let namesCtx = frame.neuralSurface?.paint(nf) ?? null;
+  if (namesCtx === null) {
+    strokeNeural(layer.ctx, nf);
+    namesCtx = layer.ctx;
+  }
+  paintNeuralNames(namesCtx, frame, nf, labels);
+  namesCtx.globalAlpha = 1;
 }
 
 // Order is paint order; each pass takes the stage results it reads.

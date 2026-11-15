@@ -7,6 +7,7 @@ import type { DialEvidence, DialLabels } from "../dial/types";
 import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/map-canvas/focus-map-canvas";
 import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } from "@/shared/lib/map-canvas/map-layout-morph-store";
+import { composeNeuralSnapshot } from "../neural-gl/neural-gl-stage";
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
@@ -549,7 +550,9 @@ export function OntologyMap(props: OntologyMapProps) {
     return () => {
       if (!isMapLayoutMorphArmed()) return;
       const ground = readOntologyMapTokensOrNull()?.canvasBgNear ?? "transparent";
-      publishMapLayoutSnapshot({ marks: readLayoutMarks(), bitmap: copyCanvasAtCssSize(canvas), ground });
+      const bitmap = copyCanvasAtCssSize(canvas);
+      composeNeuralSnapshot(canvas, bitmap);
+      publishMapLayoutSnapshot({ marks: readLayoutMarks(), bitmap, ground });
     };
   }, [canvasRef, readLayoutMarks]);
 

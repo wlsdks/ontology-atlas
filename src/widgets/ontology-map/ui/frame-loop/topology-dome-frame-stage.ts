@@ -46,8 +46,10 @@ import {
   createDomeRuntime,
   DOME_FLY_MS,
   settleDomeRuntimeOffscreen,
+  type DomeFitTarget,
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
+import { followTurnWithZoom } from "../../model/dome-view/turn-follow";
 import type { DomeModel } from "../../model/dome-view/types";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
@@ -105,7 +107,7 @@ export interface DomeFrameStageSources {
     width: number,
     height: number,
     tokens: OntologyMapTokens,
-  ) => CameraTarget | null;
+  ) => DomeFitTarget | null;
 }
 
 const REST_POSE_EPSILON = 1e-3;
@@ -118,6 +120,9 @@ function cameraAtRestFit(
 ): boolean {
   const rest = dome.restFit;
   if (rest === null) return false;
+  // Turned from a fit with the zoom still following it, the camera is that fit at this yaw.
+  const follow = dome.turnFollow;
+  if (follow?.followed && sameTarget(current, follow.followed)) return true;
   if (Math.abs(rest.yaw - dome.yaw) > REST_POSE_EPSILON || Math.abs(rest.pitch - dome.pitch) > REST_POSE_EPSILON) return false;
   const view = dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed) ? dome.nudgeReturn.before : current;
   return sameTarget(view, rest.target);
@@ -152,6 +157,24 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
     cameraTokens,
     domeFitTarget,
   } = sources;
+
+  /*
+   * Neural's zoom follows the turn while the camera holds its fit (`followTurnWithZoom`), set on camera
+   * and target together so it has no motion of its own and rests when the turn does.
+   */
+  const followTurn = (dome: DomeRuntime) => {
+    if (dome.turnFollow === null || dome.poseTween !== null || dome.flight !== null) return;
+    const next = followTurnWithZoom(dome.turnFollow, cameraTargetRef.current, dome.yaw);
+    if (next === null) return;
+    cameraTargetRef.current = next;
+    const cam = cameraRef.current;
+    cam.x.value = next.tx;
+    cam.y.value = next.ty;
+    cam.scale.value = next.tscale;
+    cam.x.velocity = 0;
+    cam.y.velocity = 0;
+    cam.scale.velocity = 0;
+  };
   let orbitCadence: OrbitCadence | null = null;
 
   return function runDomeFrameStage(
@@ -293,6 +316,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             // against a zoom that does not exist (see the `fitScale` JSDoc).
             dome.fitScale = target.tscale;
             dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
+            dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -404,6 +428,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 cameraTargetRef.current = target;
                 dome.fitScale = target.tscale;
                 dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
+                dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
                 userDrivenCameraRef.current = false;
                 dampingRef.current = tokens.cameraDampingDefault;
                 cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -508,6 +533,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                   ? dome.nudgeReturn.before
                   : { ...current };
               dome.nudgeReturn = { before, landed: { ...target } };
+              dome.turnFollow = { target, yaw: dome.yaw, followed: null };
               dome.fitScale = Math.min(dome.fitScale ?? target.tscale, target.tscale);
               cameraTargetRef.current = target;
               userDrivenCameraRef.current = false;
@@ -605,6 +631,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 if (target !== null) {
                   dome.fitScale = target.tscale;
                   dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
+                  dome.turnFollow = { target: dome.restFit.target, yaw: dome.yaw, followed: null };
                   flyCamera(target);
                 }
               }
@@ -735,6 +762,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           dome.yawTarget = dome.yaw;
           dome.pitchTarget = dome.pitch;
         }
+        followTurn(dome);
         // Tier torsion decay (spring-back) — the hero's elastic torsion.
         const lagDecay = Math.pow(DOME_TIER_LAG_DECAY_PER_MS, dtMs);
         dome.lag.domain = Math.abs(dome.lag.domain) < 1e-5 ? 0 : dome.lag.domain * lagDecay;

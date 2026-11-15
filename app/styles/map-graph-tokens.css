@@ -168,5 +168,8 @@
     --map-neural-impact-near: 1;
     --map-neural-impact-mid: 0.5;
     --map-neural-impact-far: 0.28;
+    /* WebGL painter only: a cluster shell's rim, and the soft light under a lit connection. */
+    --map-neural-shell-alpha: 0.06;
+    --map-neural-lit-glow-alpha: 0.14;
   }
 }

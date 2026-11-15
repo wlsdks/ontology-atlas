@@ -266,10 +266,13 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
 - **Neural** — the ontology as cells and dependencies. Each domain's concepts
-  gather in their own cluster, set on a ring round the spin axis and sized by its
-  member count, so no two clusters meet at the rest pose (seen from 0.85 rad above;
-  turning may pass one across another). Concepts no domain reaches gather as one
-  small group round the project at the ring's centre. Relations and deterministic
+  gather in their own cluster, sized by its member count. Clusters are packed where
+  the rest pose draws them (seen from 0.85 rad above), nearest the centre first, and
+  set at seven depth levels so that screen neighbours stand at different depths: no
+  two clusters meet at rest, a nearer cluster draws larger, and turning shows
+  parallax and may pass one across another. A pack that leaves a quarter of its box
+  bare, as four like clusters do, is packed round instead: two by two. Concepts no
+  domain reaches gather as one small group round the project. Relations and deterministic
   relation communities settle positions inside a cluster. Group proximity is
   inferred layout, not a new domain or an accepted relation. A concept is a filled
   cell in the strong ink, a capability larger and with a dark nucleus, both growing
@@ -280,7 +283,13 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   by colour, and containment is not drawn as a line: only declared `depends_on`
   relations are, as tapered axons that bow a little inside a cluster and share one
   tract through the gap between clusters. Paint, pointer hit test and measurement
-  use the same route. Every domain carries its name and a count line (capabilities,
+  use the same route. Where the browser opens a hardware WebGL2 context, three.js
+  paints the frame on a canvas beside the map canvas: a cell is a lit sphere that
+  hides what stands behind it, an axon is a ribbon, and each cluster carries a
+  faint shell round its own cells. Without that context, or when the painter's code
+  or context fails, the canvas painter draws the same frame as flat discs and lines
+  with no shell; picking, names and every count are the same in both
+  (`src/widgets/ontology-map/neural-gl/README.md`). Every domain carries its name and a count line (capabilities,
   elements, stale) above its cluster, placed before any capability name. Titles
   stand nearest first: a title that would sit on another cluster or a nearer title
   fades out, and with a focus a receded title gives way to the lit names. While any
@@ -311,9 +320,13 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   the name budget. Reduced motion lights the whole impact at once. A receded cell keeps a third of its rest opacity
   (`--map-neural-veil`) and a receded title a little less (`--map-neural-title-veil`). While the detail panel is open and the camera sits at
   the rest fit, the whole cloud glides into the area the panel leaves free, on the
-  camera transition a panel opening uses, and returns when it closes; zoomed or
-  turned, the view keeps its zoom and pose and only slides until the selected cell
-  clears the panel. Reduced motion moves it at once. A hovered, selected or path
+  camera transition a panel opening uses, and returns when it closes; zoomed, the
+  view keeps its zoom and pose and only slides until the selected cell clears the
+  panel. A turn at the fit's tilt keeps the whole cloud inside that free area, with
+  or without a selection: the zoom follows the turn angle. A change of tilt is not
+  followed and can carry cells past the area's edge. A name that would run under a panel takes its cell's other side, and
+  is moved inside the free area only when neither side fits. Reduced motion moves
+  it at once. A hovered, selected or path
   dependency is lit the same way with both ends named, and the pointer presses
   exactly the cell Neural paints. One signal travels each lit axon once over `--motion-expressive`;
   reduced motion shows none and the fly-to arrives at once. Auto-arrange, Fit Map

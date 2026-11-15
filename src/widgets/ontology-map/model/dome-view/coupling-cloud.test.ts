@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { clusterRadius, clusterRingAnchors } from './cluster-ring';
+import { clusterRadius, clusterVolumeAnchors } from './cluster-volume';
 import { buildDomeModel } from './model-build';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import type { DomeInputNode } from './types';
@@ -49,7 +49,7 @@ describe('the Neural coupling cloud', () => {
     }
     expect(members.get(`d${domains - 1}`)).toBe(1);
     const radii = domainIds.map((id) => clusterRadius(members.get(id)!));
-    const anchors = clusterRingAnchors(radii, DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, clusterRadius(loose));
+    const { anchors } = clusterVolumeAnchors(radii, DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT, clusterRadius(loose));
     const heart = (id: string) => model.coords.get(id)!;
     const first = heart(domainIds[0]);
     const norm = Math.hypot(first.px, first.py, first.pz) / Math.hypot(anchors[0].x, anchors[0].y, anchors[0].z);

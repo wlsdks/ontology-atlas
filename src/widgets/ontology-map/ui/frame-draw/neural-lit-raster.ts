@@ -1,4 +1,5 @@
-import { abx, aby, acx, acy, at, ax, ay } from "./neural-axons";
+import { at } from "./neural-axons";
+import type { NeuralFrame } from "./neural-frame";
 
 /** A lit axon is sampled every step into a raster of cells a name or receded title must keep clear of. */
 const LIT_PATH_STEP_PX = 5;
@@ -21,7 +22,8 @@ class LitRaster {
     if (col >= 0 && row >= 0 && col < this.cols && row < this.rows) this.cells[row * this.cols + col] = 1;
   }
   /** Marks the cells drawn axon `e` passes through. O(its length / LIT_PATH_STEP_PX). */
-  markAxon(e: number): void {
+  markAxon(f: NeuralFrame, e: number): void {
+    const { axonAX: ax, axonAY: ay, axonCX: acx, axonCY: acy, axonBX: abx, axonBY: aby } = f;
     const lengthPx = Math.hypot(acx[e] - ax[e], acy[e] - ay[e]) + Math.hypot(abx[e] - acx[e], aby[e] - acy[e]);
     const samples = Math.ceil(lengthPx / LIT_PATH_STEP_PX);
     for (let j = 1; j < samples; j += 1) this.mark(at(ax[e], acx[e], abx[e], j / samples), at(ay[e], acy[e], aby[e], j / samples));

@@ -3,8 +3,8 @@ import { MOMENTUM_TAU_MS } from '../motion-physics';
 import type { DomeCoord, DomeModel, DomeViewKind } from './types';
 
 /**
- * Neural's cluster ring is seen from well above, so neighbours on it stay apart at every turn
- * while each cluster keeps a large share of the frame (`cluster-ring.ts`).
+ * Neural's clusters are seen from well above, so neighbours stay apart at most turns
+ * while each cluster keeps a large share of the frame (`cluster-volume.ts`).
  */
 export const DOME_PITCH_DEFAULT = 0.85;
 /** The yaw a dome opens at, before anyone turns it. */

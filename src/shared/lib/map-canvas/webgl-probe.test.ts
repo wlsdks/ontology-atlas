@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { isSoftwareRenderer, probeWebglAccelerated } from "./webgl-probe";
+import { isSoftwareRenderer, probeWebgl } from "./webgl-probe";
 
 const UNMASKED_RENDERER_WEBGL = 0x9246;
 const RENDERER = 0x1f01;
@@ -37,7 +37,7 @@ describe("webgl renderer probe", () => {
   it("accepts a hardware renderer and releases the probe context", () => {
     const { gl, loseContext } = fakeContext("ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max)");
     stubCanvas(gl);
-    expect(probeWebglAccelerated()).toBe(true);
+    expect(probeWebgl()).toEqual({ webgl2: true, accelerated: true });
     expect(loseContext).toHaveBeenCalledOnce();
   });
 
@@ -46,10 +46,19 @@ describe("webgl renderer probe", () => {
     (renderer) => {
       const { gl, loseContext } = fakeContext(renderer);
       stubCanvas(gl);
-      expect(probeWebglAccelerated()).toBe(false);
+      expect(probeWebgl().accelerated).toBe(false);
       expect(loseContext).toHaveBeenCalledOnce();
     },
   );
+
+  it("says WebGL2 is missing when only a WebGL1 context opens", () => {
+    const { gl } = fakeContext("ANGLE (Apple, ANGLE Metal Renderer: Apple M2 Max)");
+    const canvas = document.createElement("canvas");
+    vi.spyOn(canvas, "getContext").mockImplementation(((kind: string) => (kind === "webgl" ? gl : null)) as typeof canvas.getContext);
+    const create = document.createElement.bind(document);
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => (tag === "canvas" ? canvas : create(tag)));
+    expect(probeWebgl()).toEqual({ webgl2: false, accelerated: true });
+  });
 
   it("reads the plain renderer name when the debug extension is withheld", () => {
     const { gl } = fakeContext("SwiftShader", { debugInfo: false });
@@ -58,12 +67,12 @@ describe("webgl renderer probe", () => {
 
   it("reports no acceleration without a context or when the probe throws", () => {
     stubCanvas(null);
-    expect(probeWebglAccelerated()).toBe(false);
+    expect(probeWebgl()).toEqual({ webgl2: false, accelerated: false });
     vi.restoreAllMocks();
     stubCanvas(() => {
       throw new Error("blocked");
     });
-    expect(probeWebglAccelerated()).toBe(false);
+    expect(probeWebgl()).toEqual({ webgl2: false, accelerated: false });
   });
 
   it("treats a context that cannot name its renderer as software", () => {
