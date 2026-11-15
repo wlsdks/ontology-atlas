@@ -1,0 +1,727 @@
+import type {
+  TreeDrawList,
+  TreeFocus,
+  TreeModel,
+  TreeNameBox,
+  TreeNameCandidate,
+  TreeNamePlacement,
+  TreeNameSide,
+  TreeNameSizes,
+  TreeNodeKind,
+  TreeProjector,
+  TreeRect,
+  TreeScreenPoint,
+} from "./types";
+import { TREE_ARC_BUDGET } from "./types";
+
+/** Side length of the overlap grid's cells, CSS pixels: a few name heights. */
+const PLACE_CELL_PX = 48;
+
+const RANK_BLOCK = 0;
+const RANK_PINNED = 1;
+const RANK_CAPABILITY = 2;
+const RANK_ELEMENT = 3;
+const UNNAMED = -1;
+
+const PIN_ARC_END = 1;
+const PIN_FOCUS = 2;
+
+/** After a candidate's own side, placement tries the rest in `TreeNameSide` order: right, left, above, below. */
+const SIDE_RIGHT: TreeNameSide = 0;
+const SIDE_LEFT: TreeNameSide = 1;
+const SIDE_ABOVE: TreeNameSide = 2;
+const SIDE_BELOW: TreeNameSide = 3;
+const SIDE_COUNT = 4;
+/** Up to this many domains each keep their block: with no clear side left it goes over marks. */
+const ALWAYS_NAMED_DOMAINS = 12;
+
+let markOfNode = new Int32Array(0);
+let pinnedMark = new Uint8Array(0);
+let spacedMark = new Uint8Array(0);
+let elementMarks = new Int32Array(0);
+let elementCellX = new Int32Array(0);
+let elementCellY = new Int32Array(0);
+let elementNext = new Int32Array(0);
+let elementHead = new Int32Array(0);
+
+/**
+ * Fills `out[0..n)` with the names worth trying, in placement order, and returns n.
+ * O(m log m) for m marks: one pass over the marks and the focus, then a heap sort.
+ * A sub line is sized `domainSub` and measured as "domain" text scaled to that size.
+ * Each name leans away from the trunk base and the trunk's block sits below it. With a focus
+ * only the blocks and the pinned names are offered, so the lit names stand alone.
+ */
+export function treeNameCandidates(
+  list: TreeDrawList,
+  model: TreeModel,
+  focus: TreeFocus | null,
+  measure: (text: string, kind: TreeNodeKind) => number,
+  subOf: (node: number) => string | null,
+  sizes: TreeNameSizes,
+  elementNamePitchPx: number,
+  out: TreeNameCandidate[],
+): number {
+  const count = list.count;
+  growCandidateScratch(model.count, count);
+  for (let i = 0; i < count; i += 1) markOfNode[list.marks[i]!.node] = i;
+  if (focus) pinFocus(focus, model);
+  markSpacedElements(list, model, elementNamePitchPx);
+  const trunkMark = model.count > 0 ? markOfNode[0]! : -1;
+  const trunkX = trunkMark >= 0 ? list.marks[trunkMark]!.x : Number.NaN;
+
+  let n = 0;
+  for (let i = 0; i < count; i += 1) {
+    const mark = list.marks[i]!;
+    const node = mark.node;
+    const pinned = pinnedMark[i]! > 0;
+    const rank = rankOf(node, model, pinned, spacedMark[i] === 1);
+    if (rank === UNNAMED || (focus && rank !== RANK_BLOCK && !pinned)) continue;
+    const text = model.labels[node] ?? "";
+    if (text === "") continue;
+    const kind = model.kinds[node]!;
+    const sub = rank === RANK_BLOCK ? subOf(node) : null;
+    const subWidth = sub ? (measure(sub, "domain") * sizes.domainSub) / sizes.domain : 0;
+    const candidate = (out[n] ??= emptyCandidate());
+    candidate.node = node;
+    candidate.text = text;
+    candidate.sub = sub;
+    candidate.x = mark.x;
+    candidate.y = mark.y;
+    candidate.radius = mark.radius;
+    candidate.width = Math.max(measure(text, kind), subWidth);
+    candidate.height = (fontSizeOf(kind, sizes) + (sub ? sizes.domainSub : 0)) * sizes.leading;
+    candidate.priority = rank;
+    candidate.pinned = pinned;
+    candidate.side = node === 0 ? SIDE_BELOW : mark.x < trunkX ? SIDE_LEFT : SIDE_RIGHT;
+    n += 1;
+  }
+
+  sortCandidates(out, n, model);
+  for (let i = 0; i < n; i += 1) out[i]!.priority = i;
+  for (let i = 0; i < count; i += 1) {
+    markOfNode[list.marks[i]!.node] = -1;
+    pinnedMark[i] = 0;
+    spacedMark[i] = 0;
+  }
+  return n;
+}
+
+function rankOf(node: number, model: TreeModel, pinned: boolean, spaced: boolean): number {
+  switch (model.kinds[node]) {
+    case "project":
+      return model.ids[node] === null ? UNNAMED : RANK_BLOCK;
+    case "domain":
+      return RANK_BLOCK;
+    case "fork":
+      return RANK_BLOCK;
+    case "capability":
+      return pinned ? RANK_PINNED : RANK_CAPABILITY;
+    case "element":
+      if (pinned) return RANK_PINNED;
+      return spaced ? RANK_ELEMENT : UNNAMED;
+    default:
+      return UNNAMED;
+  }
+}
+
+/** A fork is named only as the loose shoot, whose caption is its label. */
+function fontSizeOf(kind: TreeNodeKind, sizes: TreeNameSizes): number {
+  switch (kind) {
+    case "project":
+      return sizes.project;
+    case "domain":
+      return sizes.domain;
+    case "element":
+      return sizes.element;
+    default:
+      return sizes.capability;
+  }
+}
+
+function emptyCandidate(): TreeNameCandidate {
+  return { node: -1, text: "", sub: null, x: 0, y: 0, radius: 0, width: 0, height: 0, priority: 0, pinned: false, side: SIDE_RIGHT };
+}
+
+function growCandidateScratch(nodes: number, marks: number): void {
+  if (markOfNode.length < nodes) {
+    markOfNode = new Int32Array(nodes);
+    markOfNode.fill(-1);
+  }
+  if (pinnedMark.length < marks) {
+    pinnedMark = new Uint8Array(marks);
+    spacedMark = new Uint8Array(marks);
+    elementMarks = new Int32Array(marks);
+    elementCellX = new Int32Array(marks);
+    elementCellY = new Int32Array(marks);
+    elementNext = new Int32Array(marks);
+  }
+}
+
+/** Pins the focus and the ends of the arcs the painter draws: `needs`, then `usedBy`, within the budget. */
+function pinFocus(focus: TreeFocus, model: TreeModel): void {
+  pinHolder(focus.node, model, PIN_FOCUS);
+  const needs = Math.min(focus.needs.length, TREE_ARC_BUDGET);
+  const usedBy = Math.min(focus.usedBy.length, TREE_ARC_BUDGET - needs);
+  for (let i = 0; i < needs; i += 1) pinHolder(focus.needs[i]!, model, PIN_ARC_END);
+  for (let i = 0; i < usedBy; i += 1) pinHolder(focus.usedBy[i]!, model, PIN_ARC_END);
+}
+
+/** Pins the node's mark, or the closed mark it is folded into. O(depth). */
+function pinHolder(node: number, model: TreeModel, pin: number): void {
+  let at = node;
+  while (at >= 0 && at < model.count && markOfNode[at]! < 0) at = model.parent[at]!;
+  if (at < 0 || at >= model.count) return;
+  const mark = markOfNode[at]!;
+  pinnedMark[mark] = Math.max(pinnedMark[mark]!, pin);
+}
+
+/**
+ * An element mark is spaced when no other drawn element lies closer than the pitch.
+ * Expected O(e) for e element marks: a hash of pitch-sized cells, each looking at 3 x 3 cells.
+ */
+function markSpacedElements(list: TreeDrawList, model: TreeModel, pitchPx: number): void {
+  let e = 0;
+  for (let i = 0; i < list.count; i += 1) {
+    if (model.kinds[list.marks[i]!.node] === "element") elementMarks[e++] = i;
+  }
+  if (e === 0 || !(pitchPx < Infinity)) return;
+  if (!(pitchPx > 0)) {
+    for (let k = 0; k < e; k += 1) spacedMark[elementMarks[k]!] = 1;
+    return;
+  }
+  let tableSize = 1;
+  while (tableSize < e * 2) tableSize *= 2;
+  if (elementHead.length < tableSize) elementHead = new Int32Array(tableSize);
+  elementHead.fill(-1, 0, tableSize);
+  const mask = tableSize - 1;
+  for (let k = 0; k < e; k += 1) {
+    const mark = list.marks[elementMarks[k]!]!;
+    const cx = Math.floor(mark.x / pitchPx);
+    const cy = Math.floor(mark.y / pitchPx);
+    elementCellX[k] = cx;
+    elementCellY[k] = cy;
+    const slot = cellHash(cx, cy) & mask;
+    elementNext[k] = elementHead[slot]!;
+    elementHead[slot] = k;
+  }
+  const pitchSq = pitchPx * pitchPx;
+  for (let k = 0; k < e; k += 1) {
+    const mark = list.marks[elementMarks[k]!]!;
+    if (!hasElementWithin(k, mark.x, mark.y, pitchSq, list, mask)) spacedMark[elementMarks[k]!] = 1;
+  }
+}
+
+function hasElementWithin(k: number, x: number, y: number, pitchSq: number, list: TreeDrawList, mask: number): boolean {
+  const cx = elementCellX[k]!;
+  const cy = elementCellY[k]!;
+  for (let dy = -1; dy <= 1; dy += 1) {
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let j = elementHead[cellHash(cx + dx, cy + dy) & mask]!; j >= 0; j = elementNext[j]!) {
+        if (j === k || elementCellX[j] !== cx + dx || elementCellY[j] !== cy + dy) continue;
+        const other = list.marks[elementMarks[j]!]!;
+        const ox = other.x - x;
+        const oy = other.y - y;
+        if (ox * ox + oy * oy < pitchSq) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function cellHash(cx: number, cy: number): number {
+  return Math.imul(cx, 73856093) ^ Math.imul(cy, 19349663);
+}
+
+/** Rank; the focus before arc ends; capabilities by element count and id; then the nearer mark. */
+function compareCandidates(a: TreeNameCandidate, b: TreeNameCandidate, model: TreeModel): number {
+  if (a.priority !== b.priority) return a.priority - b.priority;
+  if (a.priority === RANK_PINNED) {
+    const byPin = pinnedMark[markOfNode[b.node]!]! - pinnedMark[markOfNode[a.node]!]!;
+    if (byPin !== 0) return byPin;
+  }
+  if (a.priority === RANK_CAPABILITY) {
+    const byElements = model.elements[b.node]! - model.elements[a.node]!;
+    if (byElements !== 0) return byElements;
+    const idA = model.ids[a.node] ?? "";
+    const idB = model.ids[b.node] ?? "";
+    if (idA !== idB) return idA < idB ? -1 : 1;
+  }
+  return markOfNode[b.node]! - markOfNode[a.node]!;
+}
+
+/** In-place heap sort of `items[0..n)`: O(n log n), no allocation. */
+function sortCandidates(items: TreeNameCandidate[], n: number, model: TreeModel): void {
+  for (let start = (n >> 1) - 1; start >= 0; start -= 1) siftDown(items, start, n, model);
+  for (let end = n - 1; end > 0; end -= 1) {
+    const top = items[0]!;
+    items[0] = items[end]!;
+    items[end] = top;
+    siftDown(items, 0, end, model);
+  }
+}
+
+function siftDown(items: TreeNameCandidate[], start: number, end: number, model: TreeModel): void {
+  let root = start;
+  for (;;) {
+    let child = root * 2 + 1;
+    if (child >= end) return;
+    if (child + 1 < end && compareCandidates(items[child]!, items[child + 1]!, model) < 0) child += 1;
+    if (compareCandidates(items[root]!, items[child]!, model) >= 0) return;
+    const swap = items[root]!;
+    items[root] = items[child]!;
+    items[child] = swap;
+    root = child;
+  }
+}
+
+let cellHead = new Int32Array(0);
+let entryNext = new Int32Array(0);
+let entryOccupant = new Int32Array(0);
+let occupantStamp = new Int32Array(0);
+let entryCount = 0;
+let gridCols = 0;
+let gridRows = 0;
+
+/**
+ * Each drawn domain's crown on screen, by node index, CSS pixels: the circle around the marks
+ * drawn from its subtree (radius 0 where there is none), and where its bough leaves its parent.
+ * `nodes[0..count)` are the domains with a circle.
+ */
+export interface TreeCrowns {
+  x: Float32Array;
+  y: Float32Array;
+  radius: Float32Array;
+  boughX: Float32Array;
+  boughY: Float32Array;
+  nodes: Int32Array;
+  count: number;
+}
+
+export function createTreeCrowns(nodes: number): TreeCrowns {
+  const floats = () => new Float32Array(nodes);
+  return { x: floats(), y: floats(), radius: floats(), boughX: floats(), boughY: floats(), nodes: new Int32Array(nodes), count: 0 };
+}
+
+/** Each node's domain (the node itself for a domain), or -1 outside every domain. O(n x domain depth). */
+export function treeDomainOf(model: TreeModel): Int32Array {
+  const domainOf = new Int32Array(model.count).fill(-1);
+  for (let node = 0; node < model.count; node += 1) {
+    if (model.kinds[node] === "domain") domainOf.fill(node, node, model.subtreeEnd[node]!);
+  }
+  return domainOf;
+}
+
+let crownDrawn = new Uint8Array(0);
+let crownMinX = new Float32Array(0);
+let crownMinY = new Float32Array(0);
+let crownMaxX = new Float32Array(0);
+let crownMaxY = new Float32Array(0);
+const boughStart: TreeScreenPoint = { x: 0, y: 0, scale: 0, depth: 0 };
+
+/**
+ * Sets `out` to the crown of each domain whose mark is drawn: the circle around the marks drawn
+ * from its subtree, and its parent's projected `position`, where its bough leaves. `domainOf` is
+ * from `treeDomainOf`; `out` from `createTreeCrowns` for this model. Three passes, O(drawn marks).
+ */
+export function findTreeCrowns(
+  model: TreeModel,
+  position: Float32Array,
+  domainOf: Int32Array,
+  list: TreeDrawList,
+  projector: Pick<TreeProjector, "project">,
+  out: TreeCrowns,
+): void {
+  if (crownDrawn.length < model.count) {
+    crownDrawn = new Uint8Array(model.count);
+    crownMinX = new Float32Array(model.count);
+    crownMinY = new Float32Array(model.count);
+    crownMaxX = new Float32Array(model.count);
+    crownMaxY = new Float32Array(model.count);
+  }
+  for (let k = 0; k < out.count; k += 1) out.radius[out.nodes[k]!] = 0;
+  out.count = 0;
+  for (let i = 0; i < list.count; i += 1) {
+    const node = list.marks[i]!.node;
+    if (model.kinds[node] !== "domain") continue;
+    out.nodes[out.count++] = node;
+    crownDrawn[node] = 1;
+    crownMinX[node] = Infinity;
+    crownMinY[node] = Infinity;
+    crownMaxX[node] = -Infinity;
+    crownMaxY[node] = -Infinity;
+  }
+  for (let i = 0; i < list.count; i += 1) {
+    const mark = list.marks[i]!;
+    const domain = domainOf[mark.node]!;
+    if (domain < 0 || crownDrawn[domain] === 0) continue;
+    crownMinX[domain] = Math.min(crownMinX[domain]!, mark.x - mark.radius);
+    crownMinY[domain] = Math.min(crownMinY[domain]!, mark.y - mark.radius);
+    crownMaxX[domain] = Math.max(crownMaxX[domain]!, mark.x + mark.radius);
+    crownMaxY[domain] = Math.max(crownMaxY[domain]!, mark.y + mark.radius);
+  }
+  for (let k = 0; k < out.count; k += 1) {
+    const node = out.nodes[k]!;
+    out.x[node] = (crownMinX[node]! + crownMaxX[node]!) / 2;
+    out.y[node] = (crownMinY[node]! + crownMaxY[node]!) / 2;
+    const parent = model.parent[node]!;
+    projector.project(position[parent * 3]!, position[parent * 3 + 1]!, position[parent * 3 + 2]!, boughStart);
+    out.boughX[node] = boughStart.x;
+    out.boughY[node] = boughStart.y;
+  }
+  for (let i = 0; i < list.count; i += 1) {
+    const mark = list.marks[i]!;
+    const domain = domainOf[mark.node]!;
+    if (domain < 0 || crownDrawn[domain] === 0) continue;
+    const reach = Math.hypot(mark.x - out.x[domain]!, mark.y - out.y[domain]!) + mark.radius;
+    if (reach > out.radius[domain]!) out.radius[domain] = reach;
+  }
+  for (let k = 0; k < out.count; k += 1) crownDrawn[out.nodes[k]!] = 0;
+}
+
+/** What may refuse a crown position, strictest first: other crowns, then marks, then only names. */
+const AVOID_CROWNS = 0;
+const AVOID_MARKS = 1;
+const AVOID_NAMES = 2;
+
+let query = 0;
+
+/** The trunk's block height plus its gap and the base mark, CSS pixels; 0 when the trunk is unnamed. */
+export function trunkBlockReservePx(model: TreeModel, subOf: (node: number) => string | null, sizes: TreeNameSizes, baseMarkPx: number): number {
+  if (model.count === 0 || model.ids[0] === null || (model.labels[0] ?? "") === "") return 0;
+  return baseMarkPx + sizes.gap + (sizes.project + (subOf(0) ? sizes.domainSub : 0)) * sizes.leading;
+}
+
+/**
+ * Places `candidates[0..count)` greedily in array order (ascending `priority`), each on the
+ * first side that is inside `free` and keeps `spacing.pad` from every mark and placed box: its
+ * own `side` first, then the rest in order. A domain block with a crown in `crowns` touches its
+ * crown's circle, away from the trunk, then above, the other side, below, each centred then slid
+ * along the circle's tangent; never across its own bough, and clear of other crowns while it can be. While at most `ALWAYS_NAMED_DOMAINS` blocks have
+ * crowns, a block with no clear side is set over marks, never over a name; the trunk's block is
+ * always set, below the base. With `keep`, only kept nodes are tried, each on its recorded side,
+ * a block re-anchored to its crown. Expected O(c + m + b x d) for b blocks and d crowns.
+ */
+export function placeTreeNames(
+  candidates: readonly TreeNameCandidate[],
+  count: number,
+  list: TreeDrawList,
+  free: TreeRect,
+  keep: ReadonlyMap<number, TreeNameSide> | null,
+  out: TreeNamePlacement,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+  crowns: TreeCrowns | null = null,
+): void {
+  out.count = 0;
+  out.dropped = 0;
+  out.tested = 0;
+  resetGrid(free, list.count + count);
+  for (let i = 0; i < list.count; i += 1) {
+    const mark = list.marks[i]!;
+    const r = mark.radius + spacing.pad;
+    insertOccupant(i, mark.x - r, mark.y - r, mark.x + r, mark.y + r, free);
+  }
+  if (crowns) placeCrownBlocks(candidates, count, crowns, list, free, keep, out, spacing);
+  for (let c = 0; c < count; c += 1) {
+    const candidate = candidates[c]!;
+    const node = candidate.node;
+    if (crownRadiusOf(crowns, node) > 0) continue;
+    const kept = keep ? keep.get(node) : undefined;
+    if (keep && kept === undefined) continue;
+    const box = (out.boxes[out.count] ??= emptyBox());
+    let placed: boolean;
+    if (node === 0) {
+      const side = kept ?? SIDE_BELOW;
+      placed =
+        tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, side, 1, list, out, free, spacing, true) ||
+        tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, side, 1, list, out, free, spacing, false);
+    } else {
+      placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, kept ?? candidate.side, kept === undefined ? SIDE_COUNT : 1, list, out, free, spacing, true);
+    }
+    if (placed) acceptBox(box, candidate, list, out, free);
+    else out.dropped += 1;
+  }
+}
+
+let crownPlaced = new Uint8Array(0);
+
+/**
+ * Places the blocks with crowns one level at a time, strictest first, so no block settles for a
+ * looser position while another still holds a stricter one it would take. O(levels x b x d).
+ */
+function placeCrownBlocks(
+  candidates: readonly TreeNameCandidate[],
+  count: number,
+  crowns: TreeCrowns,
+  list: TreeDrawList,
+  free: TreeRect,
+  keep: ReadonlyMap<number, TreeNameSide> | null,
+  out: TreeNamePlacement,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+): void {
+  if (crownPlaced.length < count) crownPlaced = new Uint8Array(count);
+  let crowned = 0;
+  for (let c = 0; c < count; c += 1) {
+    crownPlaced[c] = 0;
+    if (crownRadiusOf(crowns, candidates[c]!.node) > 0) crowned += 1;
+  }
+  const firstLevel = keep ? AVOID_MARKS : AVOID_CROWNS;
+  const lastLevel = !keep && crowned <= ALWAYS_NAMED_DOMAINS ? AVOID_NAMES : AVOID_MARKS;
+  for (let level = firstLevel; level <= lastLevel; level += 1) {
+    for (let c = 0; c < count; c += 1) {
+      const candidate = candidates[c]!;
+      if (crownPlaced[c] === 1 || crownRadiusOf(crowns, candidate.node) === 0) continue;
+      const kept = keep ? keep.get(candidate.node) : undefined;
+      if (keep && kept === undefined) continue;
+      const box = (out.boxes[out.count] ??= emptyBox());
+      if (!placeAtCrown(box, candidate, crowns, kept, level, list, out, free, spacing)) continue;
+      acceptBox(box, candidate, list, out, free);
+      crownPlaced[c] = 1;
+    }
+  }
+  for (let c = 0; c < count; c += 1) {
+    const node = candidates[c]!.node;
+    if (crownPlaced[c] === 0 && crownRadiusOf(crowns, node) > 0 && (!keep || keep.has(node))) out.dropped += 1;
+  }
+}
+
+function acceptBox(box: TreeNameBox, candidate: TreeNameCandidate, list: TreeDrawList, out: TreeNamePlacement, free: TreeRect): void {
+  box.node = candidate.node;
+  box.text = candidate.text;
+  box.sub = candidate.sub;
+  insertOccupant(list.count + out.count, box.x, box.y, box.x + box.width, box.y + box.height, free);
+  out.count += 1;
+}
+
+function emptyBox(): TreeNameBox {
+  return { node: -1, text: "", sub: null, x: 0, y: 0, width: 0, height: 0, side: 0 };
+}
+
+function crownRadiusOf(crowns: TreeCrowns | null, node: number): number {
+  return crowns !== null && node < crowns.radius.length ? crowns.radius[node]! : 0;
+}
+
+/** A crown's sides in the order a block tries them: away from the trunk, above, toward it, below. */
+function crownSide(away: TreeNameSide, k: number): TreeNameSide {
+  if (k === 0) return away;
+  if (k === 1) return SIDE_ABOVE;
+  if (k === 2) return away === SIDE_LEFT ? SIDE_RIGHT : SIDE_LEFT;
+  return SIDE_BELOW;
+}
+
+/** Sets the block in contact with its crown's circle at the first position `level` allows, or reports none. */
+function placeAtCrown(
+  box: TreeNameBox,
+  candidate: TreeNameCandidate,
+  crowns: TreeCrowns,
+  kept: TreeNameSide | undefined,
+  level: number,
+  list: TreeDrawList,
+  out: TreeNamePlacement,
+  free: TreeRect,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+): boolean {
+  const node = candidate.node;
+  const away = candidate.side === SIDE_LEFT ? SIDE_LEFT : SIDE_RIGHT;
+  const positions = kept === undefined ? SIDE_COUNT * CROWN_SLIDES : 1;
+  for (let k = 0; k < positions; k += 1) {
+    const side = kept ?? crownSide(away, Math.floor(k / CROWN_SLIDES));
+    setBoxOnSide(box, crowns.x[node]!, crowns.y[node]!, crowns.radius[node]!, candidate, side, spacing.gap);
+    slideAlongSide(box, side, away, k % CROWN_SLIDES, spacing.gap);
+    query += 1;
+    if (!insideRect(box, free)) continue;
+    if (segmentMeetsBox(candidate.x, candidate.y, crowns.boughX[node]!, crowns.boughY[node]!, box)) continue;
+    if (level === AVOID_CROWNS && nearOtherCrown(box, node, crowns, spacing.gap)) continue;
+    if (isClear(box, node, list, out, free, spacing.pad, query, level !== AVOID_NAMES)) return true;
+  }
+  return false;
+}
+
+/** Positions per side: centred on the contact point, then slid away from the trunk (or up), then the other way. */
+const CROWN_SLIDES = 3;
+
+/** Slides the box along its side so it still touches the circle at the same point, `gapPx` short of its end. */
+function slideAlongSide(box: TreeNameBox, side: TreeNameSide, away: TreeNameSide, slide: number, gapPx: number): void {
+  if (slide === 0) return;
+  const sign = slide === 1 ? -1 : 1;
+  if (side === SIDE_ABOVE || side === SIDE_BELOW) {
+    box.x += (away === SIDE_RIGHT ? -sign : sign) * Math.max(0, box.width / 2 - gapPx);
+  } else {
+    box.y += sign * Math.max(0, box.height / 2 - gapPx);
+  }
+}
+
+/** Whether the box comes within `gapPx` of another crown, so it would not read as nearer its own. */
+function nearOtherCrown(box: TreeNameBox, node: number, crowns: TreeCrowns, gapPx: number): boolean {
+  for (let k = 0; k < crowns.count; k += 1) {
+    const other = crowns.nodes[k]!;
+    if (other !== node && circleNearBox(crowns.x[other]!, crowns.y[other]!, crowns.radius[other]! + gapPx + 1, box)) return true;
+  }
+  return false;
+}
+
+/** Whether the segment from (x0, y0) to (x1, y1) crosses the box: the segment's x and y slabs overlap, O(1). */
+function segmentMeetsBox(x0: number, y0: number, x1: number, y1: number, box: TreeNameBox): boolean {
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const [enterX, leaveX] = slab(x0, dx, box.x, box.x + box.width);
+  const [enterY, leaveY] = slab(y0, dy, box.y, box.y + box.height);
+  return Math.max(0, enterX, enterY) <= Math.min(1, leaveX, leaveY);
+}
+
+const slabSpan: [number, number] = [0, 0];
+
+/** The parameter range in which `start + t * delta` lies in [low, high]; empty as [1, 0]. Reuses one pair. */
+function slab(start: number, delta: number, low: number, high: number): [number, number] {
+  if (delta === 0) {
+    slabSpan[0] = start >= low && start <= high ? -Infinity : 1;
+    slabSpan[1] = start >= low && start <= high ? Infinity : 0;
+    return slabSpan;
+  }
+  const a = (low - start) / delta;
+  const b = (high - start) / delta;
+  slabSpan[0] = Math.min(a, b);
+  slabSpan[1] = Math.max(a, b);
+  return slabSpan;
+}
+
+/**
+ * Tries `sides` sides around the circle at (x, y) of `radius`, `first` before the rest in order;
+ * with `marksBlock` false only the free area and placed names can refuse a side.
+ */
+function tryAnchor(
+  box: TreeNameBox,
+  candidate: TreeNameCandidate,
+  x: number,
+  y: number,
+  radius: number,
+  first: TreeNameSide,
+  sides: number,
+  list: TreeDrawList,
+  out: TreeNamePlacement,
+  free: TreeRect,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+  marksBlock: boolean,
+): boolean {
+  for (let k = 0; k < sides; k += 1) {
+    const side = (k === 0 ? first : k <= first ? k - 1 : k) as TreeNameSide;
+    setBoxOnSide(box, x, y, radius, candidate, side, spacing.gap);
+    query += 1;
+    if (insideRect(box, free) && isClear(box, candidate.node, list, out, free, spacing.pad, query, marksBlock)) return true;
+  }
+  return false;
+}
+
+/** Sets the box beside the circle at (x, y) of `radius`, sized as the candidate's text block. */
+function setBoxOnSide(box: TreeNameBox, x: number, y: number, radius: number, size: TreeNameCandidate, side: TreeNameSide, gapPx: number): void {
+  const reach = radius + gapPx;
+  box.width = size.width;
+  box.height = size.height;
+  box.side = side;
+  if (side === 0 || side === 1) {
+    box.x = side === 0 ? x + reach : x - reach - size.width;
+    box.y = y - size.height / 2;
+  } else {
+    box.x = x - size.width / 2;
+    box.y = side === 2 ? y - reach - size.height : y + reach;
+  }
+}
+
+function insideRect(box: TreeNameBox, rect: TreeRect): boolean {
+  return (
+    box.x >= rect.x &&
+    box.y >= rect.y &&
+    box.x + box.width <= rect.x + rect.width &&
+    box.y + box.height <= rect.y + rect.height
+  );
+}
+
+function resetGrid(free: TreeRect, occupants: number): void {
+  gridCols = Math.max(1, Math.ceil(free.width / PLACE_CELL_PX));
+  gridRows = Math.max(1, Math.ceil(free.height / PLACE_CELL_PX));
+  const cells = gridCols * gridRows;
+  if (cellHead.length < cells) cellHead = new Int32Array(cells);
+  cellHead.fill(-1, 0, cells);
+  if (occupantStamp.length < occupants) occupantStamp = new Int32Array(occupants);
+  occupantStamp.fill(0, 0, occupants);
+  query = 0;
+  entryCount = 0;
+}
+
+function insertOccupant(occupant: number, x0: number, y0: number, x1: number, y1: number, free: TreeRect): void {
+  const c0 = Math.max(0, Math.min(gridCols - 1, Math.floor((x0 - free.x) / PLACE_CELL_PX)));
+  const c1 = Math.min(gridCols - 1, Math.floor((x1 - free.x) / PLACE_CELL_PX));
+  const r0 = Math.max(0, Math.min(gridRows - 1, Math.floor((y0 - free.y) / PLACE_CELL_PX)));
+  const r1 = Math.min(gridRows - 1, Math.floor((y1 - free.y) / PLACE_CELL_PX));
+  for (let row = r0; row <= r1; row += 1) {
+    for (let col = c0; col <= c1; col += 1) {
+      if (entryCount === entryNext.length) growEntries();
+      const cell = row * gridCols + col;
+      entryOccupant[entryCount] = occupant;
+      entryNext[entryCount] = cellHead[cell]!;
+      cellHead[cell] = entryCount;
+      entryCount += 1;
+    }
+  }
+}
+
+function growEntries(): void {
+  const size = Math.max(256, entryNext.length * 2);
+  const next = new Int32Array(size);
+  const occupant = new Int32Array(size);
+  next.set(entryNext);
+  occupant.set(entryOccupant);
+  entryNext = next;
+  entryOccupant = occupant;
+}
+
+/** Tests the box once against each occupant of the cells it reaches; its own node's mark is skipped. */
+function isClear(
+  box: TreeNameBox,
+  node: number,
+  list: TreeDrawList,
+  out: TreeNamePlacement,
+  free: TreeRect,
+  padPx: number,
+  query: number,
+  marksBlock: boolean,
+): boolean {
+  const c0 = Math.max(0, Math.min(gridCols - 1, Math.floor((box.x - padPx - free.x) / PLACE_CELL_PX)));
+  const c1 = Math.min(gridCols - 1, Math.floor((box.x + box.width + padPx - free.x) / PLACE_CELL_PX));
+  const r0 = Math.max(0, Math.min(gridRows - 1, Math.floor((box.y - padPx - free.y) / PLACE_CELL_PX)));
+  const r1 = Math.min(gridRows - 1, Math.floor((box.y + box.height + padPx - free.y) / PLACE_CELL_PX));
+  for (let row = r0; row <= r1; row += 1) {
+    for (let col = c0; col <= c1; col += 1) {
+      for (let e = cellHead[row * gridCols + col]!; e >= 0; e = entryNext[e]!) {
+        const occupant = entryOccupant[e]!;
+        if (occupantStamp[occupant] === query) continue;
+        occupantStamp[occupant] = query;
+        if (occupant < list.count) {
+          const mark = list.marks[occupant]!;
+          if (mark.node === node || !marksBlock) continue;
+          out.tested += 1;
+          if (circleNearBox(mark.x, mark.y, mark.radius + padPx, box)) return false;
+        } else {
+          out.tested += 1;
+          if (boxesNear(out.boxes[occupant - list.count]!, box, padPx)) return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+function circleNearBox(cx: number, cy: number, reach: number, box: TreeNameBox): boolean {
+  const dx = cx - Math.min(Math.max(cx, box.x), box.x + box.width);
+  const dy = cy - Math.min(Math.max(cy, box.y), box.y + box.height);
+  return dx * dx + dy * dy < reach * reach;
+}
+
+function boxesNear(a: TreeNameBox, b: TreeNameBox, padPx: number): boolean {
+  return (
+    a.x < b.x + b.width + padPx &&
+    b.x < a.x + a.width + padPx &&
+    a.y < b.y + b.height + padPx &&
+    b.y < a.y + a.height + padPx
+  );
+}
+

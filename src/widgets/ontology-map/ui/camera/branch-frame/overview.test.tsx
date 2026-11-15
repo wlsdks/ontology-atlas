@@ -28,7 +28,7 @@ function fixture(phase: "entering" | "active") {
     worldRef: ref(world), viewportRef: ref({ width: 976, height: 720, dpr: 1 }), hasInitializedRef: ref(true),
     realmDataRef: ref(realm), realmTransitionRef: ref({ phase }), expandedParentsRef: ref(new Set()),
     cameraTargetRef, userDrivenCameraRef: ref(false), dampingRef: ref(1), cameraAngularFreqRef: ref(null),
-    beginCameraTween, domeRuntimeRef: ref(null), domeFitTarget: vi.fn(), lastActiveMsRef: ref(0),
+    beginCameraTween, lastActiveMsRef: ref(0),
     overviewFitRef: ref("spine"), spotlightIdsRef: ref(null), runSpotlightFitRef: ref(null), clusteredIdsRef: ref(new Set()),
     cameraTokens: <T,>(t: T) => ({ ...t, safeInsetLeft: 324, safeInsetRight: 120, obstacleInsetLeft: 324, obstacleInsetRight: 60 }),
     overviewScaleRef: ref(0.4),

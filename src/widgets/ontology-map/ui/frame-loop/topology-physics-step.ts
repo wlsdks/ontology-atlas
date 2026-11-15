@@ -57,27 +57,10 @@ export interface PhysicsStepInput {
   /** True while the pointer is actively dragging — suppresses the elastic pan-bounds clamp (see `engine/camera.ts`). */
   isDragging: boolean;
   /**
-   * World bbox of the nodes actually drawn. The dome has its own projection, so anchoring the pan leash
-   * to 2D `world.bounds` drags the camera off. Null/omitted uses the 2D bounds.
-   */
-  worldBoundsOverride?: { minX: number; minY: number; maxX: number; maxY: number } | null;
-  /**
-   * 3D dome view — where the focused node is **drawn** (world). The focus pan leash
-   * binds the camera to the node's 2D coordinates (`node.x/y`), but in the dome that
-   * node is drawn a frame offset away, so the leash ends up guarding empty space.
-   * null/omitted keeps the previous behaviour.
-   */
-  focusAnchorOverride?: { x: number; y: number } | null;
-  /**
    * The focus leash in screen pixels (`focusLeashPx`), converted with the live
    * scale each frame so a zoom-in tightens it. Null keeps the token alone.
    */
   focusLeashPx?: FocusLeashPx | null;
-  /**
-   * Overrides the camera minimum zoom (`DomeRuntime.fitScale`): the dome fit can sit below the 2D
-   * minimum, which would make the fit target unreachable.
-   */
-  scaleMinOverride?: number | null;
   /**
    * A8 — `prefers-reduced-motion: reduce`. Springs and ramps snap straight to
    * their targets: the user gets every end state (focus dive lands, ripple
@@ -200,11 +183,8 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
     hoveredNodeId,
     panelEmphasisNodeId,
     isDragging,
-    worldBoundsOverride = null,
-    focusAnchorOverride = null,
     altitudeScale = null,
     focusLeashPx = null,
-    scaleMinOverride = null,
     reducedMotion,
     ambientFactor,
     userDrivenCamera = false,
@@ -244,14 +224,11 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // Unfocused clamp uses the visible tier's bounds: at spine-only zoom the full-graph bounds include
   // empty de-pileup space and would strand the camera. Uses the pre-step scale.
   const preStepZoomRatio = computeZoomRatio(camera.scale.value, overviewScale * tokens.overviewEntryRatio);
-  // 3D dome — the leash anchor follows where the node is «drawn» (see the two
-  // overrides' JSDoc above). The dome always draws every tier, so the override
-  // replaces the spine-only special case too.
-  const focusAnchor = focusNode ? (focusAnchorOverride ?? { x: focusNode.x, y: focusNode.y }) : null;
+  const focusAnchor = focusNode ? { x: focusNode.x, y: focusNode.y } : null;
   const panBounds = focusAnchor
     ? focusPanBounds(focusAnchor, focusLeashPx, camera.scale.value, tokens.cameraFocusPanMargin)
     : computeUnfocusedPanBounds(
-        worldBoundsOverride ?? (isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds),
+        isSpineOnlyZoom(preStepZoomRatio, tierReveal) ? world.spineBounds : world.bounds,
         camera.scale.value,
         tokens,
       );
@@ -261,11 +238,7 @@ export function stepTopologyPhysics(input: PhysicsStepInput): PhysicsStepResult 
   // `topology-camera-math.ts#computeEffectiveCameraScaleMax`'s JSDoc for the
   // audit finding this fixes (capability/element tiers were unreachable).
   const effectiveScaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax, world.dialScaleMax ?? undefined);
-  const effectiveScaleMin = Math.min(
-    computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin),
-    // 3D dome — if the dome's fit zoom sits below the 2D minimum, drop that far (`DomeRuntime.fitScale`).
-    scaleMinOverride ?? Infinity,
-  );
+  const effectiveScaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
   // The spring aims inside the same box the elastic clamp holds; aimed past it, the two would hold
   // the camera still-moving at a stalemate outside the box for as long as the target stood there.
   const heldTarget = isDragging ? target : { ...target, ...clampTargetToPanBounds(target, panBounds) };

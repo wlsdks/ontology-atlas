@@ -77,12 +77,20 @@ export interface HomeRouteState {
 }
 
 /** Every picker view except the flat map, which is the parameter's absence. */
-const HOME_MAP_VIEWS = ["hex", "structure", "strata", "coupling"] as const;
+const HOME_MAP_VIEWS = ["hex", "structure", "3d"] as const;
 export type HomeMapView = (typeof HOME_MAP_VIEWS)[number];
 
+/** Retired view names old links still carry, read as the view that replaced them. */
+const RETIRED_HOME_MAP_VIEWS: Readonly<Record<string, HomeMapView>> = {
+  galaxy: "structure",
+  strata: "3d",
+  coupling: "3d",
+};
+
 function parseHomeMapView(value: string | null): HomeMapView | null {
-  if (value === "galaxy") return "structure";
-  return value !== null && (HOME_MAP_VIEWS as readonly string[]).includes(value) ? (value as HomeMapView) : null;
+  if (value === null) return null;
+  if (Object.hasOwn(RETIRED_HOME_MAP_VIEWS, value)) return RETIRED_HOME_MAP_VIEWS[value];
+  return (HOME_MAP_VIEWS as readonly string[]).includes(value) ? (value as HomeMapView) : null;
 }
 
 type RecentSpotlightWindow = "auto" | 1 | 7 | 30;

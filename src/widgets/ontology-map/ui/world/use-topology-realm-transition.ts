@@ -36,7 +36,6 @@ import { branchFocusTarget } from "../camera/branch-frame/target";
 import type { DialLabels } from "../../dial/types";
 
 interface Dependencies {
-  view3d?: boolean;
   cameraTokens?: <T extends { safeInsetLeft: number; safeInsetRight: number }>(tokens: T) => T;
   dialLabels?: DialLabels | null;
   realmRootId: string | null;
@@ -73,7 +72,7 @@ interface Dependencies {
 
 /** Coordinate realm entry, root switches, and return to overview. */
 export function useTopologyRealmTransition({
-  view3d = false, cameraTokens, dialLabels,
+  cameraTokens, dialLabels,
   realmRootId,
   prevRealmRootIdRef,
   lastActiveMsRef,
@@ -111,7 +110,7 @@ export function useTopologyRealmTransition({
   useEffect(() => {
     const world = worldRef.current;
     const sameRoot = realmRootId === prevRealmRootIdRef.current;
-    if (sameRoot && (realmRootId === null || (world === realmWorldRef.current && realmDataRef.current !== null && Boolean(realmDataRef.current.flat) === !view3d))) return;
+    if (sameRoot && (realmRootId === null || (world === realmWorldRef.current && realmDataRef.current !== null && Boolean(realmDataRef.current.flat)))) return;
     const savedEntry = realmDataRef.current?.entryCamera;
     const savedPositions = realmDataRef.current?.returnPositions;
     prevRealmRootIdRef.current = realmRootId;
@@ -144,7 +143,7 @@ export function useTopologyRealmTransition({
         realmRootId,
         tokens,
         new Set([...expandedParentsRef.current, realmRootId]),
-        !view3d ? { tokens: readDialTokens(), labels: dialLabels ?? null, measureText: createMeasureText(), rememberOrder: false, memory: null } : undefined,
+        { tokens: readDialTokens(), labels: dialLabels ?? null, measureText: createMeasureText(), rememberOrder: false, memory: null },
       );
       if (!data) return;
       data.returnPositions = savedPositions ?? new Map(world.nodes.map(n => [n.id, { x: n.x, y: n.y }]));

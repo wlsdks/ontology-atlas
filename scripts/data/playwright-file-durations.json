@@ -364,22 +364,6 @@
       "seconds": 14.029,
       "tests": 6
     },
-    "map/3d/map-3d-edge-picking.spec.ts": {
-      "seconds": 1.77,
-      "tests": 2
-    },
-    "map/3d/map-3d-grip.spec.ts": {
-      "seconds": 8.814,
-      "tests": 2
-    },
-    "map/3d/map-3d-lit-strata.spec.ts": {
-      "seconds": 34.121,
-      "tests": 4
-    },
-    "map/3d/map-3d-return.spec.ts": {
-      "seconds": 9.687,
-      "tests": 2
-    },
     "map/analysis-workbench.spec.ts": {
       "seconds": 45.164,
       "tests": 18

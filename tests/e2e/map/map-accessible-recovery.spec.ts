@@ -1,18 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { installDesktopRailRuntime } from '../desktop-rail-arrival-harness';
-import { waitForDomeEntered, waitForMapStill } from '../settle';
+import { waitForMapSettled, waitForMapStill } from '../settle';
 
 async function openMap(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installDesktopRailRuntime(page, { 'notes/audit.md': '# Inspection notes\nUncataloged document for the recovery target.\n' });
-  await page.addInitScript(() => {
-    localStorage.setItem('atlas.appearance.view3d', 'on');
-    localStorage.setItem('atlas.appearance.map-arrangement', 'coupling');
-  });
   await page.goto('/ko/?guides=off&e2e=1');
   await page.getByTestId('first-run-open').click();
-  await waitForDomeEntered(page);
-  await waitForMapStill(page);
+  await waitForMapSettled(page);
 }
 
 test('keyboard focus stays visible across the canvas and related concept replacement', async ({ page }) => {

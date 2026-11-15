@@ -1,6 +1,6 @@
 import type { DialWorld } from '../../dial/types';
 import type { PanelInsets } from "../../interaction/free-area";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import {
   type RefObject
@@ -8,14 +8,7 @@ import {
 import type { CameraAxes } from "../../engine/camera";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import type { ClusterChip } from "../../model/layout/density-gate";
-import { DOME_ASSEMBLE_TOTAL_MS } from "../../model/dome-view/frame";
-import { domeRingAlphaFor } from "../../model/dome-view/ink";
-import type { DomeRuntime } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
 import { stepFocusRamp } from "../../model/visibility/focus-state";
-import { fadeStrataLodOut, restStrataLod, stepStrataLod, type StrataLodState } from "../../model/dome-view/strata-lod";
-import { createStrataStage, sampleStrataStage } from "../../model/dome-view/strata-stage";
-import { hexToRgb, parseRgbTriple, type DomeLightFrame, type EvidenceLight, type Rgb } from "../../render/dome-view/dome-light";
 import {
   buildFootprintSteps,
   buildWalkedEdgeArrivalSteps,
@@ -28,7 +21,6 @@ import {
   type DepthParallaxOffset
 } from "../../model/realm/realm-depth-parallax";
 import { stepSpotlightPhase } from "../../model/ambient/spotlight-motion";
-import { placeTierNames, sameTierNames, type TierNameAnchor, type TierPlane } from "../../model/dome-view/tier-names";
 import { type TierRevealConfig } from "../../model/visibility/tier-visibility";
 import { type AnimatedBackground } from "../../render/animated-background";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
@@ -37,26 +29,12 @@ import type { DustPoint } from "../../render/starfield";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapProps } from "../OntologyMap";
 import { worldToScreen } from "../camera/topology-camera-math";
-import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "../frame-draw/topology-frame-draw";
+import { drawTopologyFrame, lastDrawnNodeCount } from "../frame-draw/topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "../loop/topology-loop-contract";
 import { dialFrameSummary } from "../../dial/frame/frame";
-import { type TopologyWorld, type WorldEdge } from "../world/topology-world";
-
-const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
-const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
-const DOME_LEGEND_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
-
-/**
- * The Strata planes the last frame placed tier names against, canvas CSS px — the
- * drawn rims, for the `?e2e=1` probe to measure the names against.
- */
-let lastPlanes: readonly TierPlane[] = [];
-export function lastTierPlanes(): readonly TierPlane[] {
-  return lastPlanes;
-}
+import { type TopologyWorld } from "../world/topology-world";
 
 interface Dependencies {
-    domeRuntimeRef: RefObject<DomeRuntime | null>;
   clusterChipsRef: RefObject<readonly ClusterChip[]>;
   clusteredIdsRef: RefObject<ReadonlySet<string>>;
   realmTierKindsRef: RefObject<ReadonlyMap<string, "capability" | "domain" | "element" | "project"> | null>;
@@ -69,9 +47,7 @@ interface Dependencies {
   spotlightDashOffsetRef: RefObject<number>;
   trailLensOpenedAtRef: RefObject<number>;
   trailLensRampRef: RefObject<number>;
-  view3dRef: RefObject<boolean>;
-  neuralRampRef: RefObject<number>;
-    animatedBgRef: RefObject<AnimatedBackground | null>;
+  animatedBgRef: RefObject<AnimatedBackground | null>;
   lastInputMsRef: RefObject<number>;
   ambientSleepDelayRef: RefObject<number | undefined>;
   bgPointerRef: RefObject<{ x: number; y: number; } | null>;
@@ -113,30 +89,18 @@ interface Dependencies {
   tierRevealRef: RefObject<TierRevealConfig>;
   glyphStyleRef: RefObject<"fill" | "line">;
   canvasBackgroundRef: RefObject<CanvasBackground>;
-  domeEdgeControlForFrame: (edge: WorldEdge) => { x: number; y: number; } | null;
   nodeLayerRef: RefObject<((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null>;
   depthDotPatternsRef: RefObject<(CanvasPattern | null)[]>;
   expandPrefRef: RefObject<ExpandPreference>;
   getClusterBarLabels: () => ClusterBarLabels | null;
-  mapArrangementRef: RefObject<MapArrangement>;
-  domeTierRaisedKindRef: RefObject<DomeViewKind | null>;
   drawnTrailLensRef: RefObject<boolean>;
   drawnNodeCountRef: RefObject<number>;
   onDrawnCountChangeRef: RefObject<((drawn: number) => void) | undefined>;
-  domeTierAnchorsSentRef: RefObject<TierNameAnchor[] | null>;
-  onDomeTierAnchorsChangeRef: RefObject<((anchors: readonly TierNameAnchor[] | null) => void) | undefined>;
-  domeTierNameWidthsRef: RefObject<Readonly<Record<string, number>>>;
-  domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
-  /** Lit 3D — node id → evidence state from the product's one rule; null when nothing was measured. */
-  domeEvidenceRef: RefObject<ReadonlyMap<string, EvidenceLight> | null>;
-  domeLodRef: RefObject<StrataLodState>;
-  onHiddenDependenciesChangeRef: RefObject<((count: number) => void) | undefined>;
-  hiddenDependenciesSentRef: RefObject<number>;
   flatDialRef: RefObject<FlatDialFrameProps>;
 }
 
 /** Advance visual ramps, publish hit-test visibility, paint the canvas, and report screen anchors. */
-export function createPresentationFrameStage({ domeRuntimeRef,
+export function createPresentationFrameStage({
   clusterChipsRef,
   clusteredIdsRef,
   realmTierKindsRef,
@@ -149,8 +113,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   spotlightDashOffsetRef,
   trailLensOpenedAtRef,
   trailLensRampRef,
-  view3dRef,
-  neuralRampRef, animatedBgRef, lastInputMsRef, ambientSleepDelayRef, bgPointerRef, ctx,
+  animatedBgRef, lastInputMsRef, ambientSleepDelayRef, bgPointerRef, ctx,
   panelInsetsRef,
   gridPatternRef,
   dustPointsRef,
@@ -187,86 +150,16 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   tierRevealRef,
   glyphStyleRef,
   canvasBackgroundRef,
-  domeEdgeControlForFrame,
   nodeLayerRef,
   depthDotPatternsRef,
   expandPrefRef,
   getClusterBarLabels,
-  mapArrangementRef,
-  domeTierRaisedKindRef,
   drawnTrailLensRef,
   drawnNodeCountRef,
   onDrawnCountChangeRef,
-  domeTierAnchorsSentRef,
-  onDomeTierAnchorsChangeRef,
-  domeTierNameWidthsRef,
-  domeFitInsetsRef,
-  domeEvidenceRef,
-  domeLodRef,
-  onHiddenDependenciesChangeRef,
-  hiddenDependenciesSentRef,
   flatDialRef,
 }: Dependencies) {
-  const strataStage = createStrataStage();
-  let litInkKey = "";
-  let litInks: Pick<DomeLightFrame, "kindRgb" | "warningRgb" | "focusRgb"> | null = null;
-  const resolveLitInks = (tokens: OntologyMapTokens) => {
-    const key = `${tokens.kindRgbProject}|${tokens.kindRgbDomain}|${tokens.kindRgbCapability}|${tokens.kindRgbElement}|${tokens.statusWarning}|${tokens.indigoBright}`;
-        if (key === litInkKey && litInks !== null)
-            return litInks;
-        const fallback: Rgb = [128, 128, 140];
-        litInks = {
-            kindRgb: {
-                project: parseRgbTriple(tokens.kindRgbProject) ?? fallback,
-                domain: parseRgbTriple(tokens.kindRgbDomain) ?? fallback,
-                capability: parseRgbTriple(tokens.kindRgbCapability) ?? fallback,
-                element: parseRgbTriple(tokens.kindRgbElement) ?? fallback,
-            },
-            warningRgb: hexToRgb(tokens.statusWarning) ?? parseRgbTriple(tokens.statusWarning) ?? fallback,
-            focusRgb: hexToRgb(tokens.indigoBright) ?? fallback,
-        };
-        litInkKey = key;
-        return litInks;
-    };
-    const stepDomeLod = (dt: number, tokens: OntologyMapTokens, camera: CameraAxes, width: number, height: number, world: TopologyWorld, hoveredNodeId: string | null): StrataLodState | null => {
-        const dome = domeRuntimeRef.current;
-        const state = domeLodRef.current;
-        if (dome === null || dome.rampClock <= 0) {
-            if (state.active || state.settling || state.primed)
-                restStrataLod(state);
-            return null;
-        }
-        if (dome.model.arrangement !== "strata") {
-            return fadeStrataLodOut(state, world, dt * 1000, tokens.tipFadeMs, domeEvidenceRef.current) ? state : null;
-        }
-        return stepStrataLod(state, {
-            runtime: dome,
-            world,
-            camera: { x: camera.x.value, y: camera.y.value, scale: camera.scale.value, width, height },
-            hoveredId: hoveredNodeId,
-            focusedId: colorFocusRef.current?.focusedNodeId ?? null,
-            pointer: bgPointerRef.current,
-            evidence: domeEvidenceRef.current,
-            dtMs: dt * 1000,
-            fadeMs: tokens.tipFadeMs,
-        });
-    };
-    const domeLightFor = (tokens: OntologyMapTokens, lod: StrataLodState | null): DomeLightFrame | null => {
-        const dome = domeRuntimeRef.current;
-        if (dome === null || dome.rampClock <= 0)
-            return null;
-        const inks = resolveLitInks(tokens);
-        return {
-            ...inks,
-            evidence: domeEvidenceRef.current,
-            reducedMotion: reducedMotionRef.current,
-            sampleStage: dome.model.arrangement === "strata"
-                ? (litIds) => sampleStrataStage(dome, litIds, strataStage)
-                : null,
-            lod,
-        };
-    };
-    return function runPresentationFrameStage(frameChips: readonly ClusterChip[], frameClusteredIds: ReadonlySet<string>, realmTierKinds: ReadonlyMap<string, DomeViewKind> | null, now: number, dt: number, tokens: OntologyMapTokens, trailLensActive: boolean, camera: CameraAxes, width: number, height: number, dpr: number, world: TopologyWorld, farT: number, zoomRatio: number, focusedNodeId: string | null, hoveredNodeId: string | null, panelEmphasisNodeId: string | null, realmWarding: {
+    return function runPresentationFrameStage(frameChips: readonly ClusterChip[], frameClusteredIds: ReadonlySet<string>, realmTierKinds: ReadonlyMap<string, "project" | "domain" | "capability" | "element"> | null, now: number, dt: number, tokens: OntologyMapTokens, trailLensActive: boolean, camera: CameraAxes, width: number, height: number, dpr: number, world: TopologyWorld, farT: number, zoomRatio: number, focusedNodeId: string | null, hoveredNodeId: string | null, panelEmphasisNodeId: string | null, realmWarding: {
         centerX: number;
         centerY: number;
         radius: number;
@@ -275,13 +168,12 @@ export function createPresentationFrameStage({ domeRuntimeRef,
     } | null, realmDepthById: ReadonlyMap<string, number> | null, realmDepthParallax: {
         depth2: DepthParallaxOffset;
         depth3: DepthParallaxOffset;
-    } | null, realmDustParallax: number, realmOutsideReturnAlphaById: Map<string, number> | null, captionGateFold: ReadonlySet<string> | null = null, realmDial: DialWorld | null = null) {
-        const modeShowsEveryNode = (domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0);
-        clusterChipsRef.current = modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips;
+    } | null, realmDustParallax: number, realmOutsideReturnAlphaById: Map<string, number> | null, realmDial: DialWorld | null = null) {
+        clusterChipsRef.current = frameChips;
         // Publish this frame's NOT-DRAWN set for hit-testing (density-gate
         // collapsed plus selective-ego hidden neighbours), so draw and hit see
         // the same set.
-        clusteredIdsRef.current = modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds;
+        clusteredIdsRef.current = frameClusteredIds;
         // Publish the depth override the draw used for this frame's tier alphas
         // to hit-testing as well (null when no realm is active), keeping draw and
         // hit in lockstep.
@@ -324,19 +216,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             trailLensOpenedAtRef.current = now;
         else if (!trailLensActive && trailLensRampRef.current < 0.01)
             trailLensOpenedAtRef.current = 0;
-        const neuralTarget = view3dRef.current && domeRuntimeRef.current?.model.arrangement === "coupling";
-        // Reduced motion keeps geometry at its destination; only the cell material
-        // crossfades. Curve projection separately uses the destination mix above.
-        if (reducedMotionRef.current) {
-            const target = neuralTarget ? 1 : 0;
-            const delta = target - neuralRampRef.current;
-            const stride = dt * 1000 / Math.max(1, tokens.trailReducedFadeMs);
-            neuralRampRef.current = Math.abs(delta) <= stride
-                ? target : neuralRampRef.current + Math.sign(delta) * stride;
-        }
-        else {
-            neuralRampRef.current = stepFocusRamp(neuralRampRef.current, neuralTarget, dt, tokens.focusDimTau);
-        }
         if (reducedMotionRef.current) {
             /*
              * Reduced motion gets an opacity crossfade, not a cut: it carries no position or scale, so no
@@ -371,7 +250,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
                 });
             }
         }
-        const domeLod = stepDomeLod(dt, tokens, camera, width, height, world, hoveredNodeId);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, width, height);
         drawTopologyFrame({
@@ -379,16 +257,11 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             world,
             camera,
             farT,
-            neuralRamp: neuralRampRef.current,
             zoomRatio,
             now,
             viewportWidth: width,
             viewportHeight: height,
             panelInsets: panelInsetsRef.current,
-            // The ratio this frame is really rasterising at — the adaptive one while a
-            // drag has lowered it, not `window.devicePixelRatio`. Only the 3D resting
-            // line's width floor reads it.
-            devicePixelRatio: dpr,
             gridPattern: gridPatternRef.current,
             dustPoints: dustPointsRef.current,
             tokens,
@@ -407,8 +280,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             hoveredEdge: hoveredEdgeRef.current,
             selectedEdge: selectedEdgeRef.current,
             relationCaptions: annotationRef.current.captions,
-            // A view that draws every concept still captions only what the flat map would.
-            captionFoldedIds: modeShowsEveryNode ? (captionGateFold ?? frameClusteredIds) : null,
             reviewQuestionIds: annotationRef.current.questions,
             previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
                 ? {
@@ -432,8 +303,8 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             pulses: pulsesRef.current,
             selectionPulse: selectionPulseRef.current,
             agentFocusNodeId: agentFocusNodeIdRef.current,
-            clusteredIds: modeShowsEveryNode ? EMPTY_DOME_CLUSTERED : frameClusteredIds,
-            clusterChips: modeShowsEveryNode ? EMPTY_DOME_CHIPS : frameChips,
+            clusteredIds: frameClusteredIds,
+            clusterChips: frameChips,
             hoveredClusterId: hoveredClusterIdRef.current,
             wardingRing: realmWarding,
             realmTierKinds,
@@ -469,17 +340,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             tierReveal: tierRevealRef.current,
             glyphStyle: glyphStyleRef.current,
             backgroundVariant: canvasBackgroundRef.current,
-            domeFrame: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-                ? domeRuntimeRef.current.frame
-                : null,
-            domeRamp: domeRuntimeRef.current !== null ? domeRuntimeRef.current.rampClock / DOME_ASSEMBLE_TOTAL_MS : 0,
-            domeRings: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-                ? domeRuntimeRef.current.rings
-                : null,
-            domeControlFor: domeRuntimeRef.current !== null && domeRuntimeRef.current.rampClock > 0
-                ? domeEdgeControlForFrame
-                : null,
-            domeLight: domeLightFor(tokens, domeLod),
             paintAnimatedBackground: animatedBgRef.current
                 ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
                 : null,
@@ -487,10 +347,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
             depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
             expand: expandPrefRef.current,
             clusterBarLabels: getClusterBarLabels(),
-            domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
-            domeTierRaisedKind: domeTierRaisedKindRef.current,
-            // Concept names give way to the tier names placed last frame (`model/dome-view/tier-names.ts`).
-            tierNameBoxes: domeTierAnchorsSentRef.current,
             dial: flatDialRef.current,
         });
         reportFlatDial(flatDialRef.current, dialFrameSummary());
@@ -504,73 +360,6 @@ export function createPresentationFrameStage({ domeRuntimeRef,
         if (painted !== drawnNodeCountRef.current) {
             drawnNodeCountRef.current = painted;
             onDrawnCountChangeRef.current?.(painted);
-        }
-        const hiddenDependencies = domeLod !== null && domeLod.active ? lastHiddenDependencies() : 0;
-        if (hiddenDependencies !== hiddenDependenciesSentRef.current) {
-            hiddenDependenciesSentRef.current = hiddenDependencies;
-            onHiddenDependenciesChangeRef.current?.(hiddenDependencies);
-        }
-        /*
-         * **Where each Strata tier name stands this frame** (`model/dome-view/tier-names.ts`). The
-         * planes are the rings the frame just drew, not the model: during an orbit or a
-         * morph the two are different numbers. The room is the fit's own free box — the
-         * canvas minus the chrome it measured on each side — so a name never lands where
-         * the drawing was kept from.
-         */
-        {
-            const runtime = domeRuntimeRef.current;
-            let names: TierNameAnchor[] | null = null;
-            lastPlanes = [];
-            if (runtime !== null && runtime.rampClock > 0 && runtime.model.arrangement === "strata") {
-                const strongest = new Map<DomeViewKind, (typeof runtime.rings)[number]>();
-                for (const ring of runtime.rings) {
-                    if (ring.label === null || ring.a <= 0.01)
-                        continue;
-                    const seen = strongest.get(ring.kind);
-                    // A morph draws the old model's rings behind the new ones; the tier
-                    // belongs to whichever of the two is currently the stronger.
-                    if (seen && seen.a >= ring.a)
-                        continue;
-                    strongest.set(ring.kind, ring);
-                }
-                const planes: TierPlane[] = [];
-                for (const kind of DOME_LEGEND_KINDS) {
-                    const ring = strongest.get(kind);
-                    if (!ring || ring.label === null)
-                        continue;
-                    let left = Infinity;
-                    let right = -Infinity;
-                    let top = Infinity;
-                    let bottom = -Infinity;
-                    for (const point of ring.points) {
-                        const at = worldToScreen(camera, width, height, point.wx, point.wy);
-                        if (at.x < left)
-                            left = at.x;
-                        if (at.x > right)
-                            right = at.x;
-                        if (at.y < top)
-                            top = at.y;
-                        if (at.y > bottom)
-                            bottom = at.y;
-                    }
-                    if (!Number.isFinite(left))
-                        continue;
-                    const y = worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y;
-                    planes.push({ kind, left, right, top, bottom, y, a: ring.a });
-                }
-                lastPlanes = planes;
-                const fit = domeFitInsetsRef.current;
-                names = placeTierNames(planes, domeTierNameWidthsRef.current, {
-                    left: fit?.left ?? tokens.safeInsetLeft,
-                    right: width - (fit?.right ?? tokens.safeInsetRight),
-                    top: fit?.top ?? tokens.domeFitInsetTop,
-                    bottom: height - (fit?.bottom ?? tokens.domeFitInsetBottom),
-                });
-            }
-            if (!sameTierNames(domeTierAnchorsSentRef.current, names)) {
-                domeTierAnchorsSentRef.current = names;
-                onDomeTierAnchorsChangeRef.current?.(names);
-            }
         }
     };
 }

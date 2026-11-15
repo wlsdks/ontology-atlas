@@ -58,15 +58,14 @@ function fixture(reducedMotion = false) {
     cameraAngularFreqRef: ref(null), beginCameraTween: vi.fn(), simRef: ref(null), overviewFitRef: ref("full"), clusteredIdsRef: ref(new Set()), overviewScaleRef: ref(1),
     dragVelRef: ref({ x: 0, y: 0 }), dragPrevPosRef: ref(null), dropSeededRef: ref(false),
     geomPrevXRef: ref(null), geomPrevYRef: ref(null), sepDisplacedIdsRef: ref(new Set()), prevPinnedNodeIdRef: ref(null),
-    view3dRef: ref(false), domeRuntimeRef: ref(null), realmParallaxRef: ref(null), realmEnterButtonElRef: ref(null),
+    realmParallaxRef: ref(null), realmEnterButtonElRef: ref(null),
     focusedSlugRef: ref(null), onEnterRealmRef: ref(undefined), realmEnterTargetRef: ref(null), getRealmCaption: () => null,
   };
   const step = createWorldMotionFrameStage(sources as unknown as WorldMotionFrameStageSources);
   const paint = createRealmFrameStage(sources as unknown as RealmFrameStageSources);
-  const hook = renderHook(({ root, mode }) => {
-    sources.view3dRef.current = mode;
-    useTopologyRealmTransition({ ...sources, realmRootId: root, view3d: mode } as unknown as Parameters<typeof useTopologyRealmTransition>[0]);
-  }, { initialProps: { root: "root" as string | null, mode: false } });
+  const hook = renderHook(({ root }) => {
+    useTopologyRealmTransition({ ...sources, realmRootId: root } as unknown as Parameters<typeof useTopologyRealmTransition>[0]);
+  }, { initialProps: { root: "root" as string | null } });
   return {
     hook, sources, nodes,
     step: (now: number) => { mocks.now = now; step(now, 1 / 60, tokens, sources.worldRef.current, 1200, 800); },
@@ -86,7 +85,7 @@ describe("interruptible realm entry", () => {
     const f = fixture();
     f.step(elapsed);
     const live = f.nodes.map(n => ({ x: n.x, y: n.y }));
-    f.hook.rerender({ root: null, mode: false });
+    f.hook.rerender({ root: null });
     f.step(elapsed);
     expect(f.nodes.map(n => ({ x: n.x, y: n.y }))).toEqual(live);
     expect(f.paint(elapsed).realmOutsideReturnAlphaById?.get("outside")).toBe(elapsed < 420 ? 1 : 0);
@@ -97,35 +96,10 @@ describe("interruptible realm entry", () => {
   it("returns to the saved positions even when the next frame skips the entire exit", () => {
     const f = fixture();
     f.step(600);
-    f.hook.rerender({ root: null, mode: false });
+    f.hook.rerender({ root: null });
     f.step(1500);
     expect(f.nodes.map(n => ({ x: n.x, y: n.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
     expect(f.sources.realmDataRef.current).toBeNull();
-  });
-
-  it("rebuilds the same root for both modes and returns to the original camera and coordinates", () => {
-    const f = fixture();
-    f.step(1200);
-    f.sources.cameraRef.current.x.value = 12;
-    f.sources.cameraRef.current.y.value = 34;
-    f.hook.rerender({ root: "root", mode: true });
-    expect(f.sources.realmDataRef.current?.flat).toBe(false);
-    expect(f.sources.realmDataRef.current?.entryCamera).toEqual({ tx: 91, ty: 82, tscale: 0.9 });
-    f.hook.rerender({ root: "root", mode: false });
-    expect(f.sources.realmDataRef.current?.flat).toBe(true);
-    f.hook.rerender({ root: null, mode: false });
-    expect(f.sources.cameraTargetRef.current).toEqual({ tx: 91, ty: 82, tscale: 0.9 });
-    f.step(2200);
-    expect(f.nodes.map(n => ({ x: n.x, y: n.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
-  });
-
-  it("does not flash an undrawn ward when a 3D entry is cancelled", () => {
-    const f = fixture();
-    f.hook.rerender({ root: "root", mode: true });
-    f.step(100);
-    expect(f.paint(100).realmWarding?.drawProgress).toBe(0);
-    f.hook.rerender({ root: null, mode: true });
-    expect(f.paint(100).realmWarding?.drawProgress).toBe(0);
   });
 
   it("keeps a reduced-motion realm aligned when its world is rebuilt", () => {
@@ -134,20 +108,35 @@ describe("interruptible realm entry", () => {
     const previous = f.sources.worldRef.current;
     const nodes = previous.nodes.map(node => ({ ...node, x: node.homeX, y: node.homeY }));
     f.sources.worldRef.current = { ...previous, nodes, nodeById: new Map(nodes.map(node => [node.id, node])) };
-    f.hook.rerender({ root: "root", mode: false });
+    f.hook.rerender({ root: "root" });
     f.step(1);
     expect(nodes.find(node => node.id === "root")).toMatchObject({ x: 0, y: 0 });
     expect(f.sources.cameraTargetRef.current).toEqual({ tx: 0, ty: 0, tscale: 1 });
-    f.hook.rerender({ root: null, mode: false });
+    f.hook.rerender({ root: null });
     f.step(2);
     expect(nodes.map(node => ({ x: node.x, y: node.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);
+  });
+
+  it("exits to the camera from before entry even after its world is rebuilt", () => {
+    const f = fixture();
+    f.step(1200);
+    f.sources.cameraRef.current.x.value = 12;
+    f.sources.cameraRef.current.y.value = 34;
+    const previous = f.sources.worldRef.current;
+    const nodes = previous.nodes.map(node => ({ ...node }));
+    f.sources.worldRef.current = { ...previous, nodes, nodeById: new Map(nodes.map(node => [node.id, node])) };
+    f.hook.rerender({ root: "root" });
+    f.step(1201);
+    f.hook.rerender({ root: null });
+    f.step(1202);
+    expect(f.sources.cameraTargetRef.current).toEqual({ tx: 91, ty: 82, tscale: 0.9 });
   });
 
   it("preserves a dragged realm member through a render without a world rebuild", () => {
     const f = fixture(true);
     f.step(0);
     f.nodes[0].x = 24;
-    f.hook.rerender({ root: "root", mode: false });
+    f.hook.rerender({ root: "root" });
     f.step(1);
     expect(f.nodes[0].x).toBe(24);
   });
@@ -156,7 +145,7 @@ describe("interruptible realm entry", () => {
     const f = fixture(true);
     f.step(0);
     expect(f.nodes[0].x).toBe(0);
-    f.hook.rerender({ root: null, mode: false });
+    f.hook.rerender({ root: null });
     f.step(0);
     expect(f.sources.realmTransitionRef.current.phase).toBe("idle");
     expect(f.nodes.map(n => ({ x: n.x, y: n.y }))).toEqual([{ x: 120, y: 40 }, { x: 600, y: 180 }]);

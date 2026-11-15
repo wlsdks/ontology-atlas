@@ -118,8 +118,6 @@ const UNMAPPED_POST_MERGE_SPECS = [
   'design-audits/focus-ring-contrast.spec.ts',
   'design-audits/hover-contrast.spec.ts',
   'design-audits/responsive-overflow-audit.spec.ts',
-  'map/3d/map-3d-grip.spec.ts',
-  'map/3d/map-3d-lit-strata.spec.ts',
   'map/camera/camera-transition.spec.ts',
   'map/chrome/map-trail.spec.ts',
   'map/flat-graph/map-flat-graph-scale.spec.ts',

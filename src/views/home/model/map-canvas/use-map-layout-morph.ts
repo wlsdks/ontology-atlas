@@ -4,9 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } fro
 import { disarmMapLayoutMorph, isMapLayoutMorphArmed, type MapLayoutView } from "@/shared/lib/map-canvas/map-layout-morph-store";
 import { chooseLayoutSwitch, installMapLayoutMorphProbe, type MapLayoutMorphJob } from "@/widgets/ontology-map";
 
-type MapSurfaceView = "map" | "hex" | "structure";
+type MapSurfaceView = "map" | "hex" | "structure" | "tree";
 
-const surfaceOf = (view: MapLayoutView): MapSurfaceView => (view === "hex" || view === "structure" ? view : "map");
+const surfaceOf = (view: MapLayoutView): MapSurfaceView => (view === "hex" || view === "structure" ? view : view === "3d" ? "tree" : "map");
 
 interface MorphTransition {
   id: number;

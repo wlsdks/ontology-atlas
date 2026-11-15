@@ -5,9 +5,6 @@ import type { EdgePairFocus } from "../../model/visibility/focus-state";
 import type { TopologyMapLensKind } from "../../model/visibility/path-lens";
 import type { FootprintInk } from "@/shared/lib/map-canvas/footprint-glyph";
 import type { ExpandPreference, FootprintPreference } from "@/shared/lib/preferences/appearance-preferences";
-import type { DomeNodeFrame } from "../../model/dome-view/runtime";
-import type { DomeViewKind } from "../../model/dome-view/types";
-import type { DomeLightFrame } from "../../render/dome-view/dome-light";
 import type { TierRevealConfig } from "../../model/visibility/tier-visibility";
 import type { CanvasBackgroundVariant } from "../../render/grid";
 import type { ClusterBarLabels } from "../../render/cluster-chips";
@@ -15,7 +12,7 @@ import type { ClusterChip } from "../../model/layout/density-gate";
 import type { DustPoint } from "../../render/starfield";
 import type { Pulse } from "../../render/edge-fireflies";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
-import type { TopologyWorld, WorldEdge } from "../world/topology-world";
+import type { TopologyWorld } from "../world/topology-world";
 import type { FlatDialFrameProps } from "../loop/topology-loop-contract";
 
 export interface FrameDrawParams {
@@ -23,13 +20,11 @@ export interface FrameDrawParams {
   world: TopologyWorld;
   camera: CameraAxes;
   farT: number;
-  neuralRamp?: number;
   zoomRatio: number;
   now: number;
   viewportWidth: number;
   viewportHeight: number;
   panelInsets?: PanelInsets | null;
-  devicePixelRatio?: number;
   gridPattern: CanvasPattern | null;
   dustPoints: readonly DustPoint[];
   tokens: OntologyMapTokens;
@@ -45,7 +40,6 @@ export interface FrameDrawParams {
   } | null;
   selectedEdge: EdgePairFocus | null;
   relationCaptions?: ReadonlyMap<string, string> | null;
-  captionFoldedIds?: ReadonlySet<string> | null;
   reviewQuestionIds?: ReadonlySet<string> | null;
   previewEdge: {
     sourceId: string;
@@ -129,34 +123,6 @@ export interface FrameDrawParams {
   depthDotPatterns?: readonly (CanvasPattern | null)[];
   expand?: ExpandPreference;
   clusterBarLabels?: ClusterBarLabels | null;
-  domeFrame?: ReadonlyMap<string, DomeNodeFrame> | null;
-  domeRamp?: number;
-  domeRings?: readonly {
-    kind: DomeViewKind;
-    a: number;
-    points: readonly {
-      wx: number;
-      wy: number;
-      u: number;
-    }[];
-    label?: {
-      wx: number;
-      wy: number;
-    } | null;
-  }[] | null;
-  domeRingAlpha?: number;
-  tierNameBoxes?: readonly {
-    minX: number;
-    maxX: number;
-    minY: number;
-    maxY: number;
-  }[] | null;
-  domeTierRaisedKind?: DomeViewKind | null;
-  domeControlFor?: ((edge: WorldEdge) => {
-    x: number;
-    y: number;
-  } | null) | null;
-  domeLight?: DomeLightFrame | null;
   trailLensRamp?: number;
   dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
 }

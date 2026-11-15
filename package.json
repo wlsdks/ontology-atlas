@@ -168,7 +168,6 @@
     "benchmark:lifecycle": "node scripts/benchmark/benchmark-lifecycle.mjs",
     "benchmark:scale": "node scripts/benchmark/benchmark-scale.mjs",
     "evaluate:wiki": "node scripts/benchmark/evaluate-wiki-accumulation.mjs",
-    "perf:dome": "node scripts/perf/perf-dome.mjs",
     "perf:graph": "node scripts/perf/perf-graph.mjs",
     "perf:graph:check": "node scripts/perf/perf-graph.mjs --check --n=1000",
     "perf:graph:scale": "node scripts/perf/perf-graph.mjs --check --sizes=1000,5000 --runs=3 --max-compile-ms=1500 --max-query-ms=1500",

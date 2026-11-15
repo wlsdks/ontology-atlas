@@ -20,7 +20,7 @@ export interface TierTiming {
   totalMs: number;
 }
 
-const DOME_TIMING: TierTiming = { delayMs: TIER_DELAY_MS, riseMs: TIER_RISE_MS, staggerMs: 0, totalMs: TIER_ASSEMBLE_TOTAL_MS };
+const TIER_TIMING: TierTiming = { delayMs: TIER_DELAY_MS, riseMs: TIER_RISE_MS, staggerMs: 0, totalMs: TIER_ASSEMBLE_TOTAL_MS };
 
 const FAST_MS = MOTION.fast.duration * 1000;
 const BASE_MS = MOTION.base.duration * 1000;
@@ -40,11 +40,6 @@ export const FLAT_TIER_TIMING: TierTiming = {
 };
 
 const REDUCED_FADE_MS = MOTION.fast.duration * 1000;
-
-export function tierProgress(clockMs: number, kind: TierKind): number {
-  const t = (clockMs - TIER_DELAY_MS[kind]) / TIER_RISE_MS;
-  return t <= 0 ? 0 : t >= 1 ? 1 : t;
-}
 
 export function easeOutCubic(t: number): number {
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
@@ -112,7 +107,7 @@ const KIND_ORDER: readonly TierKind[] = ["project", "domain", "capability", "ele
 const schedules = new WeakMap<object, AssemblySchedule>();
 const assembledSources = new Set<string>();
 
-export function armTierAssembly(world: AssemblyWorld, sourceKey: string | null, reducedMotion: boolean, timing: TierTiming = DOME_TIMING): boolean {
+export function armTierAssembly(world: AssemblyWorld, sourceKey: string | null, reducedMotion: boolean, timing: TierTiming = TIER_TIMING): boolean {
   if (sourceKey !== null) {
     if (assembledSources.has(sourceKey)) return false;
     assembledSources.add(sourceKey);

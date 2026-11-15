@@ -1,17 +1,17 @@
 export type ConeKind = "project" | "domain" | "capability" | "element";
 
-export const TAU = Math.PI * 2;
+const TAU = Math.PI * 2;
 
-export const CONE_HEIGHT_SCALE = 0.8;
+const CONE_HEIGHT_SCALE = 0.8;
 
-export const DOME_PLANE: Readonly<Record<ConeKind, { y: number; r: number }>> = {
+const DOME_PLANE: Readonly<Record<ConeKind, { y: number; r: number }>> = {
   project: { y: 148 * CONE_HEIGHT_SCALE, r: 0 },
   domain: { y: 56 * CONE_HEIGHT_SCALE, r: 148 },
   capability: { y: -48 * CONE_HEIGHT_SCALE, r: 192 },
   element: { y: -150 * CONE_HEIGHT_SCALE, r: 224 },
 };
 
-export function domeHash01(str: string): number {
+function domeHash01(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -28,13 +28,13 @@ export interface ConeInputNode {
   parentId: string | null;
 }
 
-export interface ConeCoord {
+interface ConeCoord {
   px: number;
   py: number;
   pz: number;
 }
 
-export interface ConeCircle {
+interface ConeCircle {
   kind: ConeKind;
   cx: number;
   cz: number;
@@ -52,9 +52,9 @@ const CONE_SPACING: Readonly<Record<ConeKind, number>> = {
 const CONE_MIN_R: Readonly<Record<ConeKind, number>> = { project: 0, domain: 0, capability: 10, element: 6 };
 const CONE_MAX_R: Readonly<Record<ConeKind, number>> = { project: 0, domain: 0, capability: 96, element: 40 };
 const CONE_ROOM_FILL = 0.82;
-export const CONE_STAGGER_FROM = 8;
-export const CONE_STAGGER_OUT = 1.12;
-export const CONE_STAGGER_IN = 0.9;
+const CONE_STAGGER_FROM = 8;
+const CONE_STAGGER_OUT = 1.12;
+const CONE_STAGGER_IN = 0.9;
 
 export function layoutCone(nodes: readonly ConeInputNode[]): { coords: Map<string, ConeCoord>; circles: ConeCircle[] } {
   const byId = new Map(nodes.map((n) => [n.id, n]));
