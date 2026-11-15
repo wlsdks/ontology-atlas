@@ -7,10 +7,12 @@ import { TREE_POSE_REST } from "../model/tree-view/tree-camera";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel, readTreeFocus } from "../model/tree-view/tree-model";
 import type { TreeModel, TreeRect } from "../model/tree-view/types";
+import { treeMarks } from "../morph/tree-marks";
 import { adoptBodyLabelFont, labelFontFamily } from "../render/labels";
 import { readTreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "./OntologyMap";
 import { readTreeFreeArea, useTreeFrame } from "./tree-view/use-tree-frame";
+import { useTreeMorphSnapshot } from "./tree-view/use-tree-morph-snapshot";
 
 export type TreeEvidenceState = "current" | "stale" | "unknown";
 
@@ -133,6 +135,7 @@ export function OntologyTreeMap({
   const subOf = useMemo(() => (node: number) => subs[node] ?? null, [subs]);
 
   const frame = useTreeFrame(canvasRef, { layout, nameModel, tokens, size, dpr, free, stale, focus, subOf, fontFamily });
+  useTreeMorphSnapshot(canvasRef, () => (tokens ? treeMarks(frame.list.current, model, tokens) : []), tokens?.inks.ground ?? "transparent");
 
   useEffect(() => {
     let live = true;

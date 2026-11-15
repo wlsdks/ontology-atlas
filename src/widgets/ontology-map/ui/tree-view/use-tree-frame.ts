@@ -45,6 +45,11 @@ export function readTreeFreeArea(canvas: HTMLCanvasElement | null, board: Elemen
 }
 
 /** Aims `projector` at `pose` to fit the tree in `fit`, and cuts its detail for a canvas of `width` x `height` CSS px. */
+/** The rectangle the camera fits: `free` less the room the trunk's name block needs under the base. */
+export function treeFitRect(free: TreeRect, trunkReservePx: number): TreeRect {
+  return trunkReservePx > 0 && trunkReservePx < free.height ? { ...free, height: free.height - trunkReservePx } : free;
+}
+
 export function cutTreeAtPose(
   layout: TreeLayout,
   tokens: Pick<TreeTokens, "marks" | "detail">,
@@ -195,7 +200,7 @@ export function useTreeFrame(canvasRef: RefObject<HTMLCanvasElement | null>, sou
       if (!cutKey.current || !sameCut(cutKey.current, nextCut)) {
         reveal.current.length = 0;
         if (revealNode >= 0) reveal.current.push(revealNode);
-        const fit = trunkReservePx > 0 && trunkReservePx < free.height ? { ...free, height: free.height - trunkReservePx } : free;
+        const fit = treeFitRect(free, trunkReservePx);
         cutTreeAtPose(layout, tokens, pose, size, fit, reveal.current, projector.current, list.current);
         if (!crowns.current || crowns.current.radius.length < layout.model.count) crowns.current = createTreeCrowns(layout.model.count);
         findTreeCrowns(layout.model, layout.position, domainOf, list.current, projector.current, crowns.current);

@@ -2,10 +2,11 @@ import type { MapLayoutMark } from "@/shared/lib/map-canvas/map-layout-morph-sto
 import { createTreeProjector, TREE_POSE_REST } from "../model/tree-view/tree-camera";
 import { layoutTree } from "../model/tree-view/tree-layout";
 import { buildTreeModel } from "../model/tree-view/tree-model";
+import { trunkBlockReservePx } from "../model/tree-view/tree-names";
 import type { TreeDrawList, TreeDrawMark, TreeModel } from "../model/tree-view/types";
 import { readTreeTokens, type TreeTokens } from "../tokens/read-tree-tokens";
 import type { OntologyMapEdge, OntologyMapNode } from "../ui/OntologyMap";
-import { cutTreeAtPose, readTreeFreeArea } from "../ui/tree-view/use-tree-frame";
+import { cutTreeAtPose, readTreeFreeArea, treeFitRect } from "../ui/tree-view/use-tree-frame";
 import type { MapLayoutTarget } from "./MapLayoutMorphOverlay";
 
 function treeMark(id: string, mark: TreeDrawMark, model: TreeModel, tokens: TreeTokens): MapLayoutMark {
@@ -54,6 +55,8 @@ function readTreeTokensOrNull(): TreeTokens | null {
 
 /** The tree's footer band from the canvas bottom: its 16 px inset and a two-line legend, 48 px on the web at 1400x860. */
 const TREE_FOOTER_BAND_PX = 64;
+/** The mounted tree always gives a named trunk a meta line; only its presence sizes the reserve. */
+const trunkMetaPresent = (node: number) => (node === 0 ? "meta" : null);
 
 /**
  * The marks the tree draws at its rest pose over `host`, through the tree's own pipeline. Its
@@ -72,6 +75,7 @@ export function predictTreeTarget(
   const model = buildTreeModel(nodes, edges);
   const layout = layoutTree(model);
   const list: TreeDrawList = { marks: [], count: 0, visited: 0, folded: 0 };
-  cutTreeAtPose(layout, tokens, TREE_POSE_REST, { width: box.width, height: box.height }, free, [], createTreeProjector(), list);
+  const fit = treeFitRect(free, trunkBlockReservePx(model, trunkMetaPresent, tokens.names, tokens.marks.project));
+  cutTreeAtPose(layout, tokens, TREE_POSE_REST, { width: box.width, height: box.height }, fit, [], createTreeProjector(), list);
   return { marks: treeMarks(list, model, tokens), ground: tokens.inks.ground };
 }
