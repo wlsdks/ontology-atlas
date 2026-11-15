@@ -59,6 +59,8 @@ export interface TreePose { yaw: number; pitch: number; zoom: number; panX: numb
 export interface TreeRect { x: number; y: number; width: number; height: number }
 
 export const TREE_TONE_STEPS = 8;
+/** Dependency arcs drawn for one focus, and the arc ends whose names are pinned. */
+export const TREE_ARC_BUDGET = 64;
 export interface TreeDrawMark {
   node: number;
   /** CSS pixels; `radius` is the kind's size from `TreeMarkSizes` scaled for this depth and zoom. */
@@ -73,8 +75,14 @@ export interface TreeDrawList { marks: TreeDrawMark[]; count: number; visited: n
 
 /** Mark radii in CSS pixels where the projector's `scale` is 1; `bud` is a closed fork. */
 export interface TreeMarkSizes { project: number; domain: number; capability: number; element: number; bud: number }
-/** Font sizes, the gap from a mark to its name and the padding kept around a name, CSS pixels. */
-export interface TreeNameSizes { domain: number; domainSub: number; capability: number; element: number; gap: number; pad: number }
+/**
+ * Font sizes, the gap from a mark to its name and the padding kept around a name, CSS pixels;
+ * `leading` is the line height as a multiple of the font size.
+ */
+export interface TreeNameSizes {
+  project: number; domain: number; domainSub: number; capability: number; element: number;
+  gap: number; pad: number; leading: number;
+}
 export interface TreeDetailInput {
   layout: TreeLayout; projector: TreeProjector; view: TreeRect; marks: TreeMarkSizes;
   openPitchPx: number; leafPitchPx: number; markBudget: number;
