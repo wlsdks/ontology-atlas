@@ -13,6 +13,7 @@
   "conditionSettingsContext": "only when wired in settings",
   "capMergedValue": "{used} / default limit {cap}",
   "capOver": "Over the cap",
+  "capLimit": "default limit {cap}",
   "driftLineMark": "Matching lines share a row; a line with no match is marked +.",
   "driftSideMarked": "{count, plural, one {# line with no match in the {other} file} other {# lines with no match in the {other} file}}",
   "driftSideShared": "Every line matches the {other} file",
@@ -52,9 +53,10 @@
   "reread": "Read files again",
   "toolFilterAria": "Show one agent tool",
   "toolAll": "All",
-  "problemsAria": "Problems to fix",
   "problemHookMissing": "Hook script is missing: {path}",
   "problemCodexCap": "The AGENTS.md Codex reads is over its default 32 KiB limit ({size})",
+  "problemCount": "{count, plural, one {# problem} other {# problems}}",
+  "problemShow": "{count, plural, =1 {Show} other {Show the first}}",
   "sections": {
     "context": {
       "title": "Context",
@@ -106,5 +108,5 @@
   "detailEvent": "Event",
   "detailStatus": "Status",
   "detailDeclared": "Declared as",
-  "back": "Back to the list"
+  "close": "Close"
 }

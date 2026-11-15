@@ -16,10 +16,12 @@ import { Input } from '@/shared/ui/fields/input';
 import { SegmentedControl } from '@/shared/ui/fields/segmented-control';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
-import { PAGE_COLUMN_FORM, PAGE_FRAME_FORM, PAGE_STAGE_FILL } from '@/shared/ui/tokens/page-frame';
+import { PAGE_FRAME, PAGE_FRAME_FORM, PAGE_STAGE_FILL, PAGE_WAIT_LIFT } from '@/shared/ui/tokens/page-frame';
+import { WaitStage } from '@/shared/ui/status/wait-stage';
 import { gitBriefingRepositories, gitChangeBriefing, gitSourceBriefing, type BriefingCommit } from '@/shared/lib/git/tauri-change-briefing';
 import { briefingRange, groupSourceAreas, localDate, movePeriod, periodLabel, type BriefingPeriod } from '../model/briefing-model';
 import { findLatestChangeDay } from '../model/latest-change-day';
+import { timelineUnit } from '../model/digest-timeline';
 import { useBriefing } from '../model/use-briefing';
 import { useChangeDigest } from '../model/use-change-digest';
 import { BriefingPatch } from './BriefingPatch';
@@ -30,7 +32,7 @@ import { BriefingSettings } from './BriefingSettings';
 import { BriefingOverview } from './BriefingOverview';
 import { CommitInventory } from './CommitInventory';
 import { BriefingRepositoryStage } from './BriefingRepositoryStage';
-import { ChangeDigest } from './ChangeDigest';
+import { ChangeDigest, EmptyDigest, type DigestSelection } from './ChangeDigest';
 import { PublicPullInventory } from './PublicPullInventory';
 
 const subscribe = () => () => {};
@@ -363,7 +365,7 @@ export function ChangeBriefingPage() {
     });
   }
   const activeDigestOrigin = digestOrigin?.scope === scopeKey ? digestOrigin : null;
-  const [digestShown, setDigestShown] = useArrivalMemory<Record<string, number>>(`${scopeKey}:digest-shown`, {});
+  const [digestSelection, setDigestSelection] = useArrivalMemory<DigestSelection>(`${scopeKey}:digest-selection`, { group: null, change: null, shown: {} });
   async function chooseRepository() {
     const path = await pickTauriSourceDirectory(git('chooseRepository'));
     if (!path) {
@@ -397,7 +399,7 @@ export function ChangeBriefingPage() {
     <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={t('refresh')} onClick={readAgain}><RefreshCw size={16} /></IconButton>
   </section>;
   const digestStatus = seekingLatest ? 'loading' : status === 'empty' ? null : status;
-  return <main ref={mainRef} id="main" data-briefing-surface className="h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
+  return <main ref={mainRef} id="main" data-briefing-surface className="flex h-[calc(100%_-_var(--topology-mobile-bottom-tab-reserve))] min-h-0 flex-col overflow-y-auto bg-[color:var(--color-canvas)] pb-8 text-body text-[color:var(--color-text-primary)] lg:h-full">
     <PageHeaderBar
       frame="page"
       className="static z-auto"
@@ -408,26 +410,24 @@ export function ChangeBriefingPage() {
         <IconButton className="atlas-touch-floor atlas-touch-floor-wide" label={git('briefingSettings')} data-testid="briefing-settings" onClick={event => { event.currentTarget.focus({ preventScroll: true }); setSettingsOpen(true); }}><Settings2 size={16} aria-hidden /></IconButton>
       </>}
     />
-    <div ref={digestRef} hidden={view !== 'digest'} className={`${PAGE_COLUMN_FORM} space-y-10 px-5 pt-8 md:px-10`}>
+    <div ref={digestRef} hidden={view !== 'digest'} className={`${PAGE_FRAME} flex flex-1 flex-col gap-10`}>
       {view === 'digest' && periodBar}
-      {view === 'digest' && digestStatus && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
+      {view === 'digest' && digestStatus === 'loading' && <div className={`${PAGE_STAGE_FILL} relative`}>
+        <WaitStage mark="mascot" delayed data-testid="briefing-status" className={PAGE_WAIT_LIFT} title={t('loading')} />
+      </div>}
+      {view === 'digest' && digestStatus && digestStatus !== 'loading' && <section role="status" data-testid="briefing-status" className="space-y-3 py-6">
         <h2 className="text-title font-[var(--font-weight-strong)]">{t(digestStatus)}</h2>
         {digestStatus === 'sourceUnavailable' && <div className="flex flex-wrap gap-3"><Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void chooseRepository()}>{t('retry')}</Button><Link className={controlClass({ shape: 'chip', hoverSurface: 'lift', hoverInk: 'strong' })} href="/projects/">{t('openProjects')}</Link></div>}
         {(digestStatus === 'readError' || digestStatus === 'stale' || digestStatus === 'noHistory') && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={readAgain}>{t('retry')}</Button>}
       </section>}
-      {view === 'digest' && !digestStatus && status === 'empty' && <section data-testid="change-digest-empty" className="space-y-6">
-        <div className="space-y-1">
-          <h2 className="font-mono text-hero font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-tertiary)]">0</h2>
-          <p className="text-body-lg text-[color:var(--color-text-secondary)]">{digestCopy('empty')}</p>
-        </div>
-        {latestDay !== null && <Button className="atlas-touch-floor atlas-touch-floor-wide" variant="outline" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>}
-      </section>}
-      {!digestStatus && digest && <ChangeDigest digest={digest} shown={digestShown} onShown={setDigestShown} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
+      {view === 'digest' && !digestStatus && status === 'empty' && range && <EmptyDigest range={range} unit={timelineUnit(period, range)} title={digestCopy('empty')}
+        action={latestDay !== null && <Button size="lg" onClick={() => void goLatest()}>{digestCopy('goLatest')}</Button>} />}
+      {!digestStatus && digest && range && <ChangeDigest digest={digest} range={range} unit={timelineUnit(period, range)} selection={digestSelection} onSelection={setDigestSelection} partialCount={data?.status !== 'partial' ? null : data.partialReasons.some(reason => reason === 'commit-limit' || reason === 'byte-limit') ? data.commits.length : 'limited'}
         conceptTitle={id => conceptTitles.get(id) ?? id} formatTime={formatTime}
         pullUrl={number => githubRepository ? `https://github.com/${githubRepository}/pull/${number}` : null} onOpen={openChange} />}
       {view === 'digest' && !digestStatus && !digest && data?.status === 'partial' && <p role="status" className="text-body text-[color:var(--color-status-warning)]">{t('partial')}</p>}
     </div>
-    {originalsStarted && <div hidden={view !== 'originals'} className="mx-auto max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
+    {originalsStarted && <div hidden={view !== 'originals'} className="mx-auto w-full max-w-screen-xl space-y-4 px-4 pt-5 md:px-8">
       <header className="space-y-4 border-b border-[color:var(--color-border-soft)] pb-5">
       <button type="button" data-testid="change-back-to-summary" className={controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong', className: 'atlas-touch-floor atlas-touch-floor-wide gap-2' })} onClick={backToSummary}><ArrowLeft size={ICON_SIZE.md} aria-hidden />{digestCopy('backToSummary')}</button>
       {view === 'originals' && periodBar}

@@ -12,14 +12,14 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 const MIN_AXE_RULES_PASSED = 15;
 
 const section = (page: Page, id: string) => page.locator(`[data-harness-section="${id}"]`);
-const group = (page: Page, sectionId: string, id: string) =>
-  section(page, sectionId).locator(`[data-harness-group="${id}"]`);
+const category = (page: Page, id: string) => page.getByTestId("harness-categories").locator(`[data-harness-group="${id}"]`);
+const items = (page: Page) => page.getByTestId("harness-items").locator("[role=option]");
 
 /**
  * **The Harness Setup page, read on a repository that actually has a harness.**
  *
  * The fixture's source carries a hook script the config names and the disk does not have, and a
- * declared skill pair whose two copies differ: the two problems the strip exists for.
+ * declared skill pair whose two copies differ.
  */
 test.describe("harness tab", () => {
   test.beforeEach(async ({ page }) => {
@@ -33,49 +33,61 @@ test.describe("harness tab", () => {
     await expect(page.getByTestId("harness-setup")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("하네스");
     await expect(page.locator("#harness-tab-overview")).toHaveAttribute("aria-selected", "true");
+    const detail = page.getByTestId("harness-item-detail");
 
-    await test.step("the three sections name their totals", async () => {
+    await test.step("the three areas name their totals", async () => {
       await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("15");
       await expect(section(page, "guardrails").locator("[data-harness-section-total]")).toContainText("4");
       await expect(section(page, "verification").locator("[data-harness-section-total]")).toContainText("5");
     });
 
-    await test.step("the three sections share one row and one height", async () => {
+    await test.step("nothing folds: categories, items and the detail sit side by side", async () => {
+      await expect(page.getByTestId("harness-setup").locator("[aria-expanded]")).toHaveCount(0);
       const boxes = await Promise.all(
-        ["context", "guardrails", "verification"].map(async (id) => (await section(page, id).boundingBox())!),
+        ["harness-categories", "harness-items", "harness-detail-pane"].map(async (id) => (await page.getByTestId(id).boundingBox())!),
       );
+      expect(boxes[0]!.x + boxes[0]!.width).toBeLessThanOrEqual(boxes[1]!.x + 1);
+      expect(boxes[1]!.x + boxes[1]!.width).toBeLessThanOrEqual(boxes[2]!.x + 1);
       expect(new Set(boxes.map((box) => Math.round(box.y))).size).toBe(1);
-      expect(new Set(boxes.map((box) => Math.round(box.height))).size).toBe(1);
     });
 
-    await test.step("a missing hook script is a problem that opens its hook", async () => {
-      const problem = page.getByTestId("harness-problems").locator('[data-harness-problem="hook-missing"]');
-      await expect(problem).toContainText(".claude/hooks/block-npm-publish.sh");
-      await problem.click();
-      const detail = page.getByTestId("harness-item-detail");
+    await test.step("the missing hook script is where the page arrives, counted on its category", async () => {
+      await expect(category(page, "blockingHooks")).toHaveAttribute("aria-selected", "true");
+      await expect(category(page, "blockingHooks").locator("[data-harness-problem-count]")).toHaveAttribute("data-harness-problem-count", "1");
+      await expect(section(page, "guardrails").locator("header [data-harness-problem-count]")).toHaveAttribute("data-harness-problem-count", "1");
       await expect(detail).toHaveAttribute("data-harness-item", /block-npm-publish\.sh$/);
       await expect(detail.locator('[data-harness-status="missing"]')).toBeVisible();
       await expect(detail).toContainText("PreToolUse");
+      await expect(page.getByTestId("harness-problems")).toContainText(".claude/hooks/block-npm-publish.sh");
     });
 
-    await test.step("a group expands in place and a file opens its detail", async () => {
-      const scripts = group(page, "verification", "scripts");
-      const toggle = scripts.locator("button[aria-expanded]");
-      await expect(toggle).toHaveAttribute("aria-expanded", "false");
-      await toggle.click();
-      await expect(toggle).toHaveAttribute("aria-expanded", "true");
-      await expect(scripts.locator("[data-harness-item]")).toHaveCount(4);
+    await test.step("choosing a category lists its items and shows the first one", async () => {
+      await category(page, "scripts").click();
+      await expect(category(page, "scripts")).toHaveAttribute("aria-selected", "true");
+      await expect(items(page)).toHaveCount(4);
+      await expect(items(page).first()).toHaveAttribute("aria-selected", "true");
+      const first = await items(page).first().getAttribute("data-harness-item");
+      await expect(detail).toHaveAttribute("data-harness-item", first!);
 
-      const instructions = group(page, "context", "instructions");
-      await instructions.locator("button[aria-expanded]").click();
-      await instructions.locator('[data-harness-item="file:CLAUDE.md"]').click();
-      const detail = page.getByTestId("harness-item-detail");
+      await category(page, "instructions").click();
+      await page.getByTestId("harness-items").locator('[data-harness-item="file:CLAUDE.md"]').click();
       await expect(detail).toHaveAttribute("data-harness-item", "file:CLAUDE.md");
       await expect(detail).toContainText("@AGENTS.md");
     });
 
+    await test.step("arrow keys move the selection in a pane, and the problem chip returns to the problem", async () => {
+      await category(page, "instructions").focus();
+      await page.keyboard.press("ArrowDown");
+      await expect(category(page, "rules")).toBeFocused();
+      await expect(category(page, "rules")).toHaveAttribute("aria-selected", "true");
+      await expect(items(page)).toHaveCount(3);
+
+      await page.getByTestId("harness-problems").locator('[data-harness-problem="hook-missing"]').click();
+      await expect(category(page, "blockingHooks")).toHaveAttribute("aria-selected", "true");
+      await expect(detail).toHaveAttribute("data-harness-item", /block-npm-publish\.sh$/);
+    });
+
     await test.step("the open detail adds no WCAG violation", async () => {
-      /* A disclosure still opening covers the toggle above it; axe reads that as a small target. */
       await waitForAnimationsDone(page.getByTestId("harness-setup"));
       if (!(await page.evaluate(() => "axe" in window))) await page.addScriptTag({ path: AXE_PATH });
       const audit = await page.evaluate(async (tags) => {
@@ -90,11 +102,13 @@ test.describe("harness tab", () => {
       expect(audit.violations).toEqual([]);
     });
 
-    await test.step("the tool filter narrows every list", async () => {
+    await test.step("the tool filter changes the counts and keeps an emptied category, dimmed", async () => {
+      await expect(category(page, "rules").locator("[data-harness-group-count]")).toHaveText("3");
       await page.getByTestId("harness-tool-filter").getByRole("radio", { name: "Codex" }).click();
       await expect(section(page, "context").locator("[data-harness-section-total]")).toContainText("7");
-      await expect(group(page, "context", "rules")).toHaveCount(0);
-      await expect(page.getByTestId("harness-problems").locator('[data-harness-problem="hook-missing"]')).toHaveCount(0);
+      await expect(category(page, "rules").locator("[data-harness-group-count]")).toHaveText("0");
+      await expect(category(page, "rules")).toBeDisabled();
+      await expect(page.getByTestId("harness-problems")).toHaveCount(0);
       await expect(section(page, "verification").locator("[data-harness-section-total]")).toContainText("5");
     });
   });
