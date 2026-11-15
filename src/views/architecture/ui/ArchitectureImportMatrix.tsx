@@ -9,7 +9,7 @@ import { fillStep, type ImportCell, type ImportMatrix } from '../model/import-ma
 
 /** The smallest square that still holds a two-line row header and an abbreviated `1.2k`. */
 const CELL_MIN_PX = 34;
-const CELL_MAX_PX = 64;
+const CELL_MAX_PX = 72;
 /** Unmeasured (first paint, a test renderer), cells take this size. */
 const CELL_FALLBACK_PX = 48;
 /** Below this a count of four digits or more abbreviates (`1.2k`). */
@@ -17,7 +17,8 @@ const COMPACT_BELOW_PX = 52;
 /** Below this the column header names the role by its number instead of its name. */
 const COLUMN_NAME_MIN_PX = 48;
 const GRID_GAP_PX = 1;
-const COLUMN_HEADER_PX = 28;
+/* Two `text-label` lines, so a two-word name such as "Shared foundation" wraps instead of cutting. */
+const COLUMN_HEADER_PX = 34;
 /** Room the row header column takes before it is measured. */
 const ROW_HEADER_FALLBACK_PX = 200;
 
@@ -38,19 +39,30 @@ interface FigureSize {
   height: number;
 }
 
-/** The host's content box; height counts only when the workbench holds the figure to the window. */
+/**
+ * The room the grid may take: the figure's box less its readout and caption lines, so the caption
+ * sits right under the grid instead of at the bottom of the window. Height counts only when the
+ * workbench holds the figure to the window.
+ */
 function useFigureSize(heightBound: boolean): [FigureSize, (element: HTMLDivElement | null) => void] {
   const [size, setSize] = useState<FigureSize>({ width: 0, height: 0 });
   const observer = useRef<ResizeObserver | null>(null);
   const attach = useCallback(
-    (host: HTMLDivElement | null) => {
+    (figure: HTMLDivElement | null) => {
       observer.current?.disconnect();
       observer.current = null;
-      if (!host || typeof ResizeObserver === 'undefined') return;
-      const read = () => setSize({ width: host.clientWidth, height: heightBound ? host.clientHeight : 0 });
+      if (!figure || typeof ResizeObserver === 'undefined') return;
+      const read = () => {
+        const lines = [...figure.querySelectorAll<HTMLElement>('[data-figure-line]')];
+        const linesPx = lines.reduce((sum, line) => {
+          const style = getComputedStyle(line);
+          return sum + line.offsetHeight + Number.parseFloat(style.marginTop) + Number.parseFloat(style.marginBottom);
+        }, 0);
+        setSize({ width: figure.clientWidth, height: heightBound ? Math.max(0, figure.clientHeight - linesPx) : 0 });
+      };
       read();
       observer.current = new ResizeObserver(read);
-      observer.current.observe(host);
+      observer.current.observe(figure);
     },
     [heightBound],
   );
@@ -94,7 +106,7 @@ export function ArchitectureImportMatrix({
 }) {
   const t = useTranslations('architecture');
   const locale = useLocale();
-  const [size, attachHost] = useFigureSize(heightBound);
+  const [size, attachFigure] = useFigureSize(heightBound);
   const [rowHeaderPx, setRowHeaderPx] = useState(ROW_HEADER_FALLBACK_PX);
   const measureRowHeader = useCallback((node: HTMLElement | null) => {
     if (node) setRowHeaderPx(node.offsetWidth);
@@ -102,7 +114,10 @@ export function ArchitectureImportMatrix({
   const roles = matrix.order.length;
   const cellPx = cellSizePx(roles, size, rowHeaderPx);
   const compact = cellPx < COMPACT_BELOW_PX;
-  const countFormat = new Intl.NumberFormat(locale, compact ? { notation: 'compact', maximumFractionDigits: 1 } : {});
+  /* `1.2k` in every locale: developers read it, and the Korean `1.2천` doubles the glyph width. */
+  const countFormat = compact
+    ? new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
+    : new Intl.NumberFormat(locale);
 
   const [pointed, setPointed] = useState<ImportCell | null>(null);
   const [focusAt, setFocusAt] = useState<{ row: number; column: number } | null>(null);
@@ -146,8 +161,9 @@ export function ArchitectureImportMatrix({
   const pointedColumn = pointed ? matrix.order.indexOf(pointed.to) : -1;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-testid="architecture-figure">
+    <div ref={attachFigure} className="flex min-h-0 min-w-0 flex-1 flex-col" data-testid="architecture-figure">
       <p
+        data-figure-line
         className={cn(
           'mb-2 h-5 shrink-0 truncate text-body tabular-nums',
           readout?.kind === 'violation'
@@ -158,7 +174,7 @@ export function ArchitectureImportMatrix({
       >
         {readout ? sentenceOf(readout) : null}
       </p>
-      <div ref={attachHost} className="min-h-0 min-w-0 flex-1 overflow-auto">
+      <div className="min-h-0 min-w-0 shrink overflow-auto">
         <div
           ref={gridRef}
           role="group"
@@ -180,7 +196,7 @@ export function ArchitectureImportMatrix({
               aria-hidden
               title={roleLabel(id)}
               className={cn(
-                'flex min-w-0 items-end justify-center truncate px-0.5 pb-1 text-label transition-colors',
+                'flex min-w-0 items-end justify-center px-0.5 pb-1 text-center text-label transition-colors',
                 column === pointedColumn || column === markedColumn
                   ? 'text-[color:var(--color-text-primary)]'
                   : 'text-[color:var(--color-text-tertiary)]',
@@ -188,7 +204,7 @@ export function ArchitectureImportMatrix({
               )}
               data-testid={`architecture-column-${id}`}
             >
-              <span className="truncate">
+              <span className="line-clamp-2 break-words">
                 {cellPx < COLUMN_NAME_MIN_PX ? String(column + 1).padStart(2, '0') : roleLabel(id)}
               </span>
             </span>
@@ -241,7 +257,7 @@ export function ArchitectureImportMatrix({
                   measured={measured}
                   sentence={sentenceOf(cell)}
                   fill={fillStep(cell.count, matrix.maxCount, FILL_CLASSES.length)}
-                  countText={countFormat.format(cell.kind === 'violation' ? cell.violations : cell.count)}
+                  countText={countFormat.format(cell.kind === 'violation' ? cell.violations : cell.count).toLowerCase()}
                   marked={rowIndex === selectedRow && column === markedColumn}
                   tabbable={rowIndex === rovingAt.row && column === rovingAt.column}
                   onPoint={setPointed}
@@ -258,6 +274,7 @@ export function ArchitectureImportMatrix({
         </div>
       </div>
       <p
+        data-figure-line
         className="mt-3 flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 text-label text-[color:var(--color-text-tertiary)]"
         data-testid="architecture-matrix-caption"
       >

@@ -223,7 +223,8 @@ function ImportList({
                   </span>
                   <span
                     className={cn(
-                      'font-mono text-label tabular-nums',
+                      'text-label tabular-nums',
+                      !violated && 'font-mono',
                       violated ? 'text-[color:var(--color-danger-text)]' : 'text-[color:var(--color-text-tertiary)]',
                     )}
                   >
