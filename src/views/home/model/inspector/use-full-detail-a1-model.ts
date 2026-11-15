@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import {
-  computeCanonicalCensus,
   deriveCodeLocations,
   resolveNodeAgentTarget,
   type KnowledgeGraphEdge,
@@ -55,8 +54,6 @@ export function useFullDetailA1Model({
     return {
       reach: buildFullDetailReachModel(activeNodeId, insight.nodes, insight.edges),
       codeLocations: deriveCodeLocations(activeNodeId, insight.nodes, insight.edges),
-      projectTitle: insight.nodes.find((node) => node.kind === "project")?.title ?? null,
-      census: computeCanonicalCensus(insight.nodes, insight.edges),
     };
   }, [activeNodeId, insight]);
   const directGroups = useMemo(() => {
@@ -97,6 +94,8 @@ export function useFullDetailA1Model({
         title: nodeFocus.displayTitle,
         fullTitle: nodeFocus.title,
         kind: nodeFocus.kind,
+        ownerTitle:
+          datasheet?.nodeId === selectedOntologyNode.id ? datasheet.owner?.title ?? null : null,
         slug,
         // The name the vault knows, not the manifest slug.
         ...(() => {
@@ -120,11 +119,6 @@ export function useFullDetailA1Model({
       groups,
       reach: graphFacts.reach,
       codeLocations: graphFacts.codeLocations,
-      breadcrumb: {
-        projectTitle: graphFacts.projectTitle,
-        totalConcepts: graphFacts.census.conceptCount,
-        totalRelations: graphFacts.census.relationCount,
-      },
       bodyMarkdown,
       explanationEdit,
       documentHref,
