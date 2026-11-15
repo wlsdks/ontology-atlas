@@ -15,8 +15,6 @@
   "createBusy": "スターター構成を書き込み中…",
   "closeLabel": "閉じる",
   "closeAriaLabel": "スタートガイドを閉じる",
-  "moreWaysToggle": "ほかの始め方",
-  "glossaryToggle": "ドメイン・ケイパビリティ・要素とは",
   "plainModeHint": "もっと見やすくしたい場合は、左下の歯車で「一般」をオンにします",
   "errorFallback": "フォルダを開けませんでした。もう一度お試しください。",
   "unsupportedNotice": "このブラウザではローカルフォルダを開けません。デスクトップアプリかChrome/Edgeで開くと、フォルダをマップで見られます。",

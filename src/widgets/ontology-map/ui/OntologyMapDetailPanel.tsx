@@ -22,7 +22,7 @@ import { useTranslations } from "next-intl";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useHeldValue } from "@/shared/lib/render-timing/use-presence";
 import { useRowDisclosure } from "@/shared/lib/list-rows/use-row-disclosure";
-import { Disclosure, Surface, SummaryFreshnessRow } from "@/shared/ui";
+import { Surface, SummaryFreshnessRow } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
 import { type DetailActionItem, DetailActionMenu } from "./detail-panel/DetailActionMenu";
 import { IdentityZone } from "./detail-panel/IdentityZone";
@@ -308,6 +308,8 @@ export function OntologyMapDetailPanel({
 
           <hr className="h-px border-0 bg-[color:var(--map-panel-zone-divider)]" />
 
+          <JudgmentZone items={judgmentItems} />
+
           <div className="pt-3">
             {/* The project's source receipt sits in the judgment slot. While it is read the same
                 element holds its place, so the rows arrive where they will stay and the live region
@@ -420,17 +422,14 @@ export function OntologyMapDetailPanel({
                     </span>
                   ) : null}
                   {showProjectSource ? (
-                    <Disclosure summary={labels.sourceRecord ?? labels.sourceHeading} summaryTestId="map-project-source-record">
-                      <div className="flex flex-col gap-1 pb-2 text-label text-[color:var(--map-panel-text-tertiary)]">
-                        <span>{labels.sourceMeasuredAt}</span>
-                        <span>{labels.sourceKind} · {labels.sourceCurrentness}</span>
-                      </div>
-                    </Disclosure>
+                    <p data-testid="map-project-source-record" className="truncate text-label text-[color:var(--map-panel-text-tertiary)]">
+                      {labels.sourceRecord ? <span className="sr-only">{labels.sourceRecord}: </span> : null}
+                      {[labels.sourceMeasuredAt, labels.sourceKind, labels.sourceCurrentness].filter(Boolean).join(" · ")}
+                    </p>
                   ) : null}
                 </div>
               </div>
             ) : null}
-            <JudgmentZone items={judgmentItems} actionFilled={lead?.action !== undefined && emphasis === lead.action.emphasis} />
             <MeaningZone definition={definition} />
           </div>
 
@@ -443,6 +442,7 @@ export function OntologyMapDetailPanel({
             labels={labels}
             onSelectConnection={onSelectConnection}
             onHoverConnection={onHoverConnection}
+            onOpenFullDetail={onOpenFullDetail}
           />
         </div>
         <PanelFooter

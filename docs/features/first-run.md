@@ -18,8 +18,13 @@ reads the folder, so a teammate who pulls it sees the same thing. A wiki without
 on `/library`. Settings › Workspace carries an add-only row, "This folder holds", whose one
 chip writes the missing part's starter files; the tabs follow the files.
 
-The sample starter keeps its folder-opening action, sample switch, glossary and
-folded alternative starts. It does not launch a step-by-step popup tour. The
+The sample starter keeps its folder-opening action and sample switch, and nothing
+on it unfolds in place. Under the folder action one row of quiet text buttons
+creates a new folder (through the folder guide) and opens the map's glossary in a
+small centred dialog with the plain-view action. The terminal command is the
+folder guide's last section; a browser without folder access shows it from the
+row instead, in its own dialog. The installed app also shows the build-from-code
+door on the card. It does not launch a step-by-step popup tour. The
 optional automatic folder-opening guide remains controlled in Screen settings.
 
 Entering Map from another screen reveals the existing start actions for an empty

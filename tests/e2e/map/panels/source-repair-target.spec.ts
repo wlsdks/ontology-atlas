@@ -44,7 +44,7 @@ for (const target of ["elements/checkout", "elements/deleted", "capabilities/for
       const repair = page.getByRole("button", { name: "Fix code location", exact: true });
       await repair.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByTestId("full-detail-a1").getByRole("heading", { level: 1 })).toHaveText("Checkout implementation");
+      await expect(page.getByTestId("full-detail-a1").getByTestId("full-detail-a1-title")).toHaveText("Checkout implementation");
       await expect(page.getByTestId("full-detail-a1")).toHaveAttribute("data-fulldetail-node", "element:checkout");
       await page.keyboard.press("Escape");
       await expect(page.getByTestId("full-detail-a1")).toHaveCount(0);
@@ -52,7 +52,7 @@ for (const target of ["elements/checkout", "elements/deleted", "capabilities/for
       await expect(receipt).toHaveAttribute("data-source-action", "repair_source_path");
       await page.getByRole("button", { name: "Details", exact: true }).click();
       const fullDetail = page.getByTestId("full-detail-a1");
-      await expect(fullDetail.getByRole("heading", { level: 1 })).toHaveText("Storefront");
+      await expect(fullDetail.getByTestId("full-detail-a1-title")).toHaveText("Storefront");
       await expect(fullDetail).toContainText("nextActionTarget: elements/checkout");
       await expect(fullDetail).toContainText("missingSourcePath: src/missing-checkout.ts");
       await expect(fullDetail).not.toContainText("/private/source-repair-fixture");
@@ -63,7 +63,7 @@ for (const target of ["elements/checkout", "elements/deleted", "capabilities/for
       expect(copied).toContain("missingSourcePath: src/missing-checkout.ts");
       expect(copied).not.toContain("/private/source-repair-fixture");
       await fullDetail.getByRole("button", { name: "Fix code location", exact: true }).click();
-      await expect(fullDetail.getByRole("heading", { level: 1 })).toHaveText("Checkout implementation");
+      await expect(fullDetail.getByTestId("full-detail-a1-title")).toHaveText("Checkout implementation");
     } else {
       await expect(receipt).toHaveAttribute("data-source-action", "remeasure_source");
       await expect(receipt).toHaveAttribute("data-source-top-gap", "receipt_malformed");

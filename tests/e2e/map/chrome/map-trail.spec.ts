@@ -19,28 +19,30 @@ test("the trail accumulates, lists correctly, jumps back and clears", async ({ p
       () => (window as unknown as { __atlasMap: { selection: () => { nodeId: string | null } } }).__atlasMap.selection().nodeId,
     );
 
+  const clickNode = async (label: string) => {
+    await waitForMapStill(page);
+    const at = await page.evaluate((name) => {
+      const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; label: string; x: number; y: number }> } }).__atlasMap;
+      const box = document.querySelector('[data-testid="ontology-map-canvas"]')?.getBoundingClientRect();
+      const n = m?.nodes().find((n) => !n.hidden && n.label === name);
+      return n && box ? { px: box.left + n.x, py: box.top + n.y } : null;
+    }, label);
+    expect(at, `${label} was not found on the map, so the spec spins idle`).not.toBeNull();
+    await page.mouse.click(at!.px, at!.py);
+  };
+
   // Step 1 — click the orders domain (canvas coordinates)
-  const t = await page.evaluate(() => {
-    const m = (window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; label: string; x: number; y: number }> } }).__atlasMap;
-    const box = document.querySelector('[data-testid="ontology-map-canvas"]')?.getBoundingClientRect();
-    const n = m?.nodes().find((n) => !n.hidden && n.label === "주문");
-    return n && box ? { px: box.left + n.x, py: box.top + n.y } : null;
-  });
-  expect(t, "the order domain was not found, so the spec spins idle").not.toBeNull();
-  await page.mouse.click(t!.px, t!.py);
+  await clickNode("주문");
   await expect
     .poll(selection, { timeout: 15_000, message: "did not walk to domain:order" })
     .toBe("domain:order");
 
-  // Steps 2 and 3 — move via the panel's rows; a domain keeps what it contains behind one folded line.
-  const contains = page.locator('[data-datasheet-group="contains"]');
-  await contains.locator("[data-reach-line]").click();
-  const cart = contains.getByText("장바구니", { exact: true });
-  if (!(await cart.isVisible())) await contains.getByTestId("map-group-more-contains").click();
-  await cart.click();
+  // Step 2 — a domain's panel only counts what it contains, so the cart is clicked on the map.
+  await clickNode("장바구니");
   await expect
     .poll(selection, { timeout: 15_000, message: "did not walk to capability:cart" })
     .toBe("capability:cart");
+  // Step 3 — move via the panel's rows.
   await page.getByText("주문서 작성", { exact: true }).first().click();
   await expect
     .poll(selection, { timeout: 15_000, message: "did not walk to capability:checkout" })

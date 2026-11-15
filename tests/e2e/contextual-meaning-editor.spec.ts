@@ -38,11 +38,7 @@ async function openCheckoutEditor(page: import('@playwright/test').Page) {
 
 async function openRelationEditorFromDetail(page: import('@playwright/test').Page) {
   const detailPanel = page.getByTestId('map-detail-panel');
-  await detailPanel.getByTestId('map-detail-panel-edit-menu-trigger').click();
-  await detailPanel
-    .getByTestId('map-detail-panel-edit-menu')
-    .getByTestId('map-detail-panel-action-edit')
-    .click();
+  await detailPanel.getByTestId('map-detail-panel-action-edit').click();
 }
 
 async function chooseOption(

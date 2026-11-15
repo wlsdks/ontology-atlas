@@ -9,12 +9,15 @@ const FILLED_SKIN =
 const QUIET_SKIN =
   "border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] text-[color:var(--map-panel-text-secondary)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)] hover:text-[color:var(--map-panel-text-primary)]";
 
-/** A panel action chip: filled only for the one emphasised control, quiet everywhere else. */
-export function panelActionClass(filled: boolean): string {
+/**
+ * A panel action chip: filled only for the one emphasised control, quiet everywhere else. `row`
+ * is the label-type chip raised to the panel's 28px row, which is also its pressable floor.
+ */
+export function panelActionClass(filled: boolean, size: "row" | "md" = "md"): string {
   return controlClass({
     shape: "chip",
-    size: "md",
-    className: `atlas-touch-floor shrink-0 ${filled ? FILLED_SKIN : QUIET_SKIN}`,
+    size: size === "row" ? "sm" : "md",
+    className: `atlas-touch-floor shrink-0 ${size === "row" ? "min-h-7" : ""} ${filled ? FILLED_SKIN : QUIET_SKIN}`,
   });
 }
 

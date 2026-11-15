@@ -154,8 +154,9 @@ see [`gateway.md`](gateway.md)). `/topology` draws the bundled sample
 read-only, with a first-run starter module inside the INDEX panel (`FirstRunStarterModule`,
 `src/features/first-run-starter/`). It leads with one line naming the sample beside a quiet
 Close, a heading, one sentence and two actions (open my markdown folder, the two-minute tour);
-the sample switch and its size sit below them, and creating a folder, the terminal command and
-the meanings of domain, capability and element wait behind two closed disclosures. Opening a
+one row of quiet buttons under the folder action creates a folder or opens the glossary
+dialog, and the sample switch and its size sit below them; the terminal command is the
+folder guide's last section. Opening a
 folder from it first shows a guide sheet (`VaultOpenGuideSheet`,
 `src/features/docs-vault-local/`): any
 markdown folder is fine; Atlas opens it locally and does not upload it to an

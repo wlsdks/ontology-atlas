@@ -1,9 +1,10 @@
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { Link } from "@/i18n/navigation";
 import { controlClass, Surface } from "@/shared/ui";
 import { transientSurface } from "@/shared/ui/surfaces/transient-surface";
+import { panelActionClass } from "./PanelFooter";
 
 export interface DetailActionItem {
   label: string;
@@ -13,6 +14,18 @@ export interface DetailActionItem {
   onSelect?: () => void;
 }
 
+const TRIGGER_SKIN =
+  "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]";
+
+/** The panel's own side padding, kept between an open menu and the panel's left edge. */
+function panelLeftLimit(anchor: HTMLElement): number {
+  const panel = anchor.closest<HTMLElement>('[data-testid="map-detail-panel"]');
+  if (!panel) return 0;
+  const pad = Number.parseFloat(getComputedStyle(panel).getPropertyValue("--map-panel-pad")) || 0;
+  return panel.getBoundingClientRect().left + pad;
+}
+
+/** One action stands as itself, labelled with its own name; two or more open a menu above the trigger. */
 export function DetailActionMenu({
   label,
   triggerTestId,
@@ -32,6 +45,7 @@ export function DetailActionMenu({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const [maxWidthPx, setMaxWidthPx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -52,7 +66,26 @@ export function DetailActionMenu({
     };
   }, [open, onOpenChange]);
 
+  // The menu keeps its right edge on the trigger's, so its width stops at the panel's left padding.
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!open || !container) return;
+    setMaxWidthPx(container.getBoundingClientRect().right - panelLeftLimit(container));
+  }, [open]);
+
   if (items.length === 0) return null;
+  if (items.length === 1) {
+    const [only] = items as [DetailActionItem];
+    return only.href ? (
+      <Link href={only.href} data-testid={only.testId} className={panelActionClass(false)}>
+        {only.label}
+      </Link>
+    ) : (
+      <button type="button" data-testid={only.testId} onClick={only.onSelect} className={panelActionClass(false)}>
+        {only.label}
+      </button>
+    );
+  }
   const itemClass = controlClass({
     shape: "row",
     size: "sm",
@@ -75,8 +108,7 @@ export function DetailActionMenu({
           shape: iconOnly ? "icon" : "chip",
           size: iconOnly ? "lg" : "md",
           tone: "default",
-          className:
-            "atlas-touch-floor atlas-touch-floor-wide border-[color:var(--map-panel-action-border)] bg-[color:var(--map-panel-action-surface)] hover:border-[color:var(--map-panel-domain-border-hover)] hover:bg-[color:var(--map-panel-row-hover)]",
+          className: TRIGGER_SKIN,
         })}
       >
         {iconOnly ? <MoreHorizontal size={ICON_SIZE.md} aria-hidden /> : label}
@@ -89,14 +121,16 @@ export function DetailActionMenu({
           />
         ) : null}
       </button>
-      {/* The menus live in the panel's footer, so they open upward into the panel. */}
+      {/* A layer above the panel: the app's menu surface, the popover elevation and a line-ramp edge. */}
       <Surface
         open={open}
         origin="bottom right"
         role="menu"
+        aria-label={label}
         data-testid={menuTestId}
         {...transientSurface("menu")}
-        className="absolute bottom-full right-0 z-30 mb-1 flex min-w-44 flex-col gap-0.5 rounded-chip border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] p-1 shadow-[var(--map-panel-shadow)]"
+        style={maxWidthPx === null ? undefined : { maxWidth: maxWidthPx }}
+        className="absolute bottom-full right-0 z-30 mb-1.5 flex w-max min-w-44 flex-col gap-0.5 rounded-card border border-[color:var(--color-indigo-line-a90)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-2)]"
       >
         {items.map((item) =>
           item.href ? (
@@ -109,7 +143,7 @@ export function DetailActionMenu({
               className={itemClass}
             >
               {item.icon}
-              {item.label}
+              <span className="min-w-0 truncate">{item.label}</span>
             </Link>
           ) : (
             <button
@@ -124,7 +158,7 @@ export function DetailActionMenu({
               className={itemClass}
             >
               {item.icon}
-              {item.label}
+              <span className="min-w-0 truncate">{item.label}</span>
             </button>
           ),
         )}

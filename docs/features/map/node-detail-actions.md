@@ -22,19 +22,26 @@ routes: [/topology]
   else the changed label inside the recent window, else nothing.
 - The definition shows as written, without a label, cut at three lines and
   opened in place by a press. A concept without one says so in a quiet line.
-- A judgment block stands above the definition only when a fact holds, in this
-  order: the document is marked for a person to decide (with its note, two
-  lines), a confirmation the file has since outgrown, a confirmation whose file
-  could not be read, connections without a recorded reason, then the edit
-  conflict and summary lines. The first item carries the one filled action
-  (**Open document**, or **Meaning review** for missing reasons); the rest fold
-  under "+N more". A concept with no review mark shows no block and no review
-  word. A project's source receipt sits in the same slot, and its remedy is
-  the project's filled action.
-- The footer holds the slug, **Edit** (relation editing, linked-node creation),
-  **More** and a quiet **Details**. **More** starts with **Meaning review**,
-  then **Ask agent** in the installed app and **Copy prompt**, then
-  explore overlooked areas, the document and the realm. A document selection's
+- A judgment row stands between the header and the definition only when a
+  fact holds, in this order: the document is marked for a person to decide
+  (with its note, two lines), a confirmation the file has since outgrown, a
+  confirmation whose file could not be read, connections without a recorded
+  reason, then the edit conflict and summary lines. The first fact is one row
+  of the panel's row height: a warning icon, the sentence and its action
+  (**Open document**, or **Meaning review** for missing reasons) as a quiet
+  chip at the right edge, set off by a hairline, never a filled or bordered
+  box. The rest open under a plain "+N more". A concept with no review mark
+  shows no row and no review word. A project's source receipt sits below it,
+  and its remedy is the project's filled action.
+- The footer holds the slug, the edit actions, **More** and a quiet
+  **Details**. A menu holding one action is that action, named by it: a
+  capability, element or project shows **Edit relations** itself, while a
+  domain, which can also create a linked concept, keeps the **Edit** menu.
+  **More** starts with **Meaning review**, then **Ask agent** in the installed
+  app and **Copy prompt**, then explore overlooked areas, the document and the
+  realm. A menu opens directly above its trigger with their right edges
+  aligned, on the app's raised menu surface with the popover shadow and a
+  bright edge, never past the panel's left padding. A document selection's
   footer is the slug, **More** and **Open document**, its one filled control.
 - The relation-line guide is pull-only in the existing `?` shortcut sheet. The
   map corner no longer carries a persistent legend, and INDEX no longer repeats

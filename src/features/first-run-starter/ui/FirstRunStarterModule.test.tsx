@@ -95,8 +95,8 @@ function makeVault(): MockVault {
   };
 }
 
-const openMoreWays = () => fireEvent.click(screen.getByTestId('first-run-starter-more-toggle'));
-const openWords = () => fireEvent.click(screen.getByTestId('first-run-starter-glossary-toggle'));
+const openWords = () => fireEvent.click(screen.getByTestId('first-run-starter-glossary-open'));
+const CLI_COMMAND = 'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap';
 
 describe('FirstRunStarterModule', () => {
   beforeEach(() => {
@@ -135,31 +135,32 @@ describe('FirstRunStarterModule', () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
-  it('keeps the folder action on the face and folds the rest', () => {
+  it('puts every action on the face with nothing that unfolds in place', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable onEnablePlainMode={vi.fn()} />);
     const card = screen.getByTestId('first-run-starter');
-    const faceButtons = [...card.querySelectorAll('button')]
-      .filter((button) => !button.closest('[inert]'))
-      .map((button) => button.getAttribute('data-testid'));
+    expect(card.querySelectorAll('[aria-expanded]')).toHaveLength(0);
+    const faceButtons = [...card.querySelectorAll('button')].map((button) => button.getAttribute('data-testid'));
     expect(faceButtons).toEqual([
       'first-run-starter-dismiss',
       'first-run-starter-open',
+      'first-run-starter-create',
+      'first-run-starter-glossary-open',
+      'first-run-build-from-code',
       'first-run-starter-sample-source-storefront',
       'first-run-starter-sample-source-dogfood',
-      'first-run-starter-more-toggle',
-      'first-run-starter-glossary-toggle',
     ]);
-    for (const folded of [
-      'first-run-starter-create',
-      'first-run-starter-cli-toggle',
-      'first-run-plain-toggle',
-      'first-run-build-from-code',
-      'first-run-starter-glossary',
-    ]) {
-      expect(screen.queryByTestId(folded), folded).not.toBeInTheDocument();
-    }
-    expect(screen.getByTestId('first-run-starter-more-toggle')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByTestId('first-run-starter-glossary-toggle')).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('first-run-starter-glossary')).not.toBeInTheDocument();
+  });
+
+  it('opens the glossary in a dialog with the plain-mode action, and closes it', () => {
+    const onEnablePlainMode = vi.fn();
+    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} onEnablePlainMode={onEnablePlainMode} />);
+    openWords();
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toContainElement(screen.getByTestId('first-run-starter-glossary'));
+    expect(screen.getByTestId('first-run-starter')).not.toContainElement(dialog);
+    fireEvent.click(screen.getByTestId('first-run-dialog-close'));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('names the other sample in the sample line once it is chosen', () => {
@@ -249,7 +250,6 @@ describe('FirstRunStarterModule', () => {
     mocks.vault.open = vi.fn(async () => ({ opened: true, starterWritten: 12, starterError: null }));
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
-    openMoreWays();
     fireEvent.click(screen.getByTestId('first-run-starter-create'));
     expect(screen.getByTestId('vault-guide-sheet')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('vault-guide-create-new'));
@@ -353,43 +353,21 @@ describe('FirstRunStarterModule', () => {
     expect(screen.queryByTestId('first-run-starter')).not.toBeInTheDocument();
   });
 
-  it('keeps the CLI bootstrap command folded under more ways to start, then under its own row', () => {
+  it('keeps the CLI bootstrap command off the card and closes the folder guide with it', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-
-    expect(screen.queryByTestId('first-run-starter-cli-toggle')).not.toBeInTheDocument();
-    openMoreWays();
-    expect(screen.getByTestId('first-run-starter-cli-toggle')).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByTestId('first-run-starter-cli-bridge')).not.toBeInTheDocument();
-    expect(
-      screen.queryByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),
-    ).not.toBeInTheDocument();
-  });
-
-  it('reveals the source-checkout command and says it is source-only when expanded', () => {
-    render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
-    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
-
-    expect(screen.getByTestId('first-run-starter-cli-bridge')).toBeInTheDocument();
-    expect(screen.getByTestId('first-run-starter-cli-source-only')).toHaveTextContent(
-      'cliBridgeSourceOnly',
-    );
-    expect(
-      screen.getByText('node cli/src/index.mjs init && node cli/src/index.mjs bootstrap'),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText('npx node $ATLAS/cli/src/index.mjs init && npx node $ATLAS/cli/src/index.mjs bootstrap'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(CLI_COMMAND)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('first-run-starter-create'));
+    const last = screen.getByTestId('vault-guide-last-section');
+    expect(screen.getByTestId('vault-guide-sheet')).toContainElement(last);
+    expect(last).toContainElement(screen.getByTestId('first-run-starter-cli-bridge'));
+    expect(screen.getByTestId('first-run-starter-cli-source-only')).toHaveTextContent('cliBridgeSourceOnly');
   });
 
   it('renders the command as a full-width wrapping code line — never mid-word ellipsis', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
-    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
+    fireEvent.click(screen.getByTestId('first-run-starter-open'));
 
-    const code = screen.getByText(
-      'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap',
-    );
+    const code = screen.getByText(CLI_COMMAND);
     expect(code.tagName).toBe('CODE');
     expect(code.className).not.toContain('truncate');
     expect(code.className).toContain('whitespace-pre-wrap');
@@ -409,12 +387,11 @@ describe('FirstRunStarterModule', () => {
     );
     expect(screen.getByTestId('first-run-starter-context')).toHaveTextContent('bodyNoFolderAccess');
     expect(screen.getByTestId('first-run-starter-dismiss')).toBeInTheDocument();
-    openMoreWays();
-    expect(screen.queryByTestId('first-run-starter-create')).not.toBeInTheDocument();
-    expect(screen.getByTestId('first-run-starter-cli-toggle')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('first-run-starter-cli-open'));
+    expect(screen.getByRole('dialog')).toContainElement(screen.getByTestId('first-run-starter-cli-bridge'));
   });
 
-  it('falls back to the plain-mode gear hint under the words disclosure without a callback', () => {
+  it('falls back to the plain-mode gear hint in the glossary without a callback', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
 
     expect(screen.queryByTestId('first-run-starter-plain-mode-hint')).not.toBeInTheDocument();
@@ -499,19 +476,16 @@ describe('FirstRunStarterModule', () => {
     expect(screen.getByTestId('first-run-starter-sample-line')).not.toHaveTextContent('sampleSourceDogfood');
   });
 
-  it('copies the CLI bootstrap command to the clipboard once the disclosure is open', async () => {
+  it('copies the CLI bootstrap command to the clipboard from the folder guide', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, { clipboard: { writeText } });
 
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
-    fireEvent.click(screen.getByTestId('first-run-starter-cli-toggle'));
+    fireEvent.click(screen.getByTestId('first-run-starter-open'));
     fireEvent.click(screen.getByTestId('first-run-starter-cli-bridge-copy'));
 
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith(
-        'node cli/src/index.mjs init && node cli/src/index.mjs bootstrap',
-      );
+      expect(writeText).toHaveBeenCalledWith(CLI_COMMAND);
     });
   });
 });
@@ -619,10 +593,8 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
     expect(screen.getByTestId('index-body'), 'the tree disappeared when the lens turned off').toBeInTheDocument();
   });
 
-  it('offers the build-from-code door under more ways to start and says it asks before writing', async () => {
+  it('offers the build-from-code door on the card and says it asks before writing', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    expect(screen.queryByTestId('first-run-build-from-code')).toBeNull();
-    openMoreWays();
     const door = screen.getByTestId('first-run-build-from-code');
     expect(door).toHaveTextContent('buildFromCodeLabel');
     expect(screen.getByTestId('first-run-starter')).toHaveTextContent('buildFromCodeHint');
@@ -650,7 +622,6 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
 
   it('creates nothing and clears the path on cancel', async () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
@@ -688,7 +659,6 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
   it('reports a failure that happens before the project pick', async () => {
     mocks.pickerThrows = true;
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
     await act(async () => {
       fireEvent.click(screen.getByTestId('first-run-build-from-code'));
     });
@@ -697,7 +667,6 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
 
   it('does not draw the door without an agent to hand off to', () => {
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} />);
-    openMoreWays();
     expect(screen.getByTestId('first-run-starter-create')).toBeInTheDocument();
     expect(screen.queryByTestId('first-run-build-from-code')).toBeNull();
     expect(screen.getByTestId('first-run-starter-open')).toBeInTheDocument();
@@ -717,7 +686,6 @@ describe('FirstRunStarterModule yields to INDEX when a lens is active', () => {
   it('has no door at all on the web', () => {
     mocks.desktop = false;
     render(<FirstRunStarterModule concepts={1} relations={1} domains={1} agentAvailable />);
-    openMoreWays();
     expect(screen.getByTestId('first-run-starter-create')).toBeInTheDocument();
     expect(
       screen.queryByTestId('first-run-build-from-code'),
