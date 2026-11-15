@@ -116,12 +116,6 @@
       "witness": "resetStaggerSessionForTests"
     },
     {
-      "key": "frontend:runtime:exports:src/views/download/ui/showpiece-player.ts:TEST_ENV",
-      "reason": "Figure tests build tracks against a fixed environment instead of computed styles jsdom cannot resolve; test files are not runtime entries, so the lane cannot see this consumer.",
-      "consumer": "src/views/download/ui/ChangeFigure.test.tsx",
-      "witness": "TEST_ENV"
-    },
-    {
       "key": "frontend:runtime:duplicates:src/shared/motion/tokens.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
       "reason": "The two reduced-motion tokens are named separately on purpose: each surface keeps its own reduced-motion equivalent even while their values coincide.",
       "consumer": "src/shared/motion/tokens.ts",

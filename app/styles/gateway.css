@@ -426,3 +426,25 @@
     1250px 58px 0 0 var(--gateway-star),
     120px 110px 0 0 var(--gateway-star-dim);
 }
+
+/*
+ * A drawing's lines arrive once, in reading order, when its block scrolls into view
+ * (`useEntrance`). With scripting off, and under reduced motion, they are simply there.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  [data-gateway-entrance='waiting'] .gateway-entrance-line {
+    opacity: 0;
+  }
+
+  [data-gateway-entrance='entering'] .gateway-entrance-line {
+    animation: motionStaggerIn var(--motion-slow) var(--motion-ease) both;
+    animation-delay: calc(var(--motion-stagger-index, 0) * var(--motion-stagger) * 3);
+  }
+}
+
+/* The hero window's light at card size: it falls from the top of each drawing. */
+.gateway-loop-drawing {
+  background:
+    radial-gradient(70% 55% at 50% 0%, var(--gateway-hero-light-wing) 0%, transparent 100%),
+    var(--color-canvas);
+}
