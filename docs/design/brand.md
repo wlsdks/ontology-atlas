@@ -111,8 +111,12 @@ replaces a piece of one colour smaller than a quarter of a drawn pixel with the
 colour around it. The source's ink fades through dark gray, which showed as
 gray dashes around the silhouette on the dark canvas: within half a drawn pixel
 the soft edge of the outline joins the outline, and the soft edge of a facial
-mark dissolves into the fill around it. Gray farther in is a drawn surface and
-stays gray.
+mark dissolves into the fill around it. The lighter gray step of the same fade
+(`99968f`) left a one-pixel sliver beside whiskers and under the belly, which at
+64px was a whole drawn pixel; within the same reach of any ink it dissolves into
+the fill, or clears where it lay outside the outline. Haze thicker than that
+reach keeps its inner part, so a few slivers remain (`star-sneeze` beside the
+left whiskers). Gray farther in is a drawn surface and stays gray.
 
 Each halving keeps one fixed pixel of every 2×2 block, so a run of pixels
 halves in length and a filled square stays a filled rectangle within a pixel of
