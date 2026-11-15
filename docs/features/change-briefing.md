@@ -26,7 +26,8 @@ is built only from local history; it makes no agent, model or network request.
 The digest uses the workbench page width.
 
 - **Headline.** One number: the changes merged in the period, with the count of
-  distinct files they touched. Under it, the kinds of work: each title's
+  distinct files they touched. Under it, the kinds of work, drawn as one
+  segmented bar over a legend of counts: each title's
   conventional-commit type exactly as its author typed it (`feat`, `fix`), the
   five most used first and the rest, including titles without a type, summed
   under "Other changes". The line is not drawn when under half the titles carry
@@ -67,7 +68,9 @@ The digest uses the workbench page width.
   the map, and lists its changes (time, title, `#number`) newest first, 40 at a
   time. On narrow screens the list sits above the selected group.
 - Pressing a change shows its detail (description, changed files, read commit)
-  in place of the lower part of the list, with a way back to the list. A
+  beside the whole list where the selected group's pane is at least 820px wide,
+  and under a shortened list where it is narrower. Close, Escape or pressing
+  the row again closes it and returns focus to the row. A
   change's GitHub link appears only when the repository has exactly one
   github.com remote. Reading the commit opens it in Originals; going back
   returns focus to that row with the same group and change selected.
