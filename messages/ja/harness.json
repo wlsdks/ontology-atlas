@@ -13,6 +13,7 @@
   "conditionSettingsContext": "設定で有効にした場合のみ",
   "capMergedValue": "{used} / {cap}（既定の上限）",
   "capOver": "上限超過",
+  "capLimit": "既定の上限{cap}",
   "driftLineMark": "対応する行は同じ高さに並べ、対応のない行は+で示します。",
   "driftSideMarked": "{other}のファイルと対応しない行{count}行",
   "driftSideShared": "すべての行が{other}のファイルと対応しています",
@@ -52,9 +53,10 @@
   "reread": "ファイルを読み直す",
   "toolFilterAria": "エージェントツールを1つだけ表示",
   "toolAll": "すべて",
-  "problemsAria": "修正が必要な問題",
   "problemHookMissing": "hookスクリプトがありません：{path}",
   "problemCodexCap": "Codexが読むAGENTS.mdが既定の上限32 KiBを超えています（{size}）",
+  "problemCount": "問題{count}件",
+  "problemShow": "{count, plural, =1 {表示} other {最初の問題を表示}}",
   "sections": {
     "context": {
       "title": "コンテキスト",
@@ -106,5 +108,5 @@
   "detailEvent": "イベント",
   "detailStatus": "状態",
   "detailDeclared": "宣言",
-  "back": "一覧に戻る"
+  "close": "閉じる"
 }

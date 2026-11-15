@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { DESKTOP_VAULT_ROOT, installDesktopRailRuntime } from "../desktop-rail-arrival-harness";
 import { seedFirstRunSeen } from "../first-run-seed";
-import { installHarnessRuntime, mountHarnessVault } from "../harness-tab-fixture";
 import { expectSmoothMotion, startSmoothness, stopSmoothness } from "../motion-sampler";
 import { waitForAnimationsDone } from "../settle";
 import { installDesktopBridge, openDocumentAutomations } from "../rounds-desktop-bridge";
@@ -59,19 +59,58 @@ function firstStepShare(values: number[]): number {
   return firstChange < 0 ? 0 : Math.abs(values[firstChange]! - values[0]!) / total;
 }
 
-async function openSetupGroup(page: Page) {
-  await installHarnessRuntime(page);
-  await mountHarnessVault(page);
-  await page.goto("/en/architecture/?view=overview");
-  await expect(page.getByTestId("harness-setup")).toBeVisible({ timeout: 30_000 });
-  const trigger = page.locator('[data-harness-group="scripts"] button[aria-expanded]');
-  const box = page.locator(`#${(await trigger.getAttribute("aria-controls"))!.replace(/:/g, "\\:")}`);
+const GONE_FOLDERS = ["/Users/probe/moved-away-a", "/Users/probe/moved-away-b"];
+
+/** Known folders, two of them gone from disk, so the folder switcher shows its missing-folder line. */
+async function seedGoneFolders(page: Page) {
+  await page.addInitScript(
+    ({ gone, current }) => {
+      const internals = (window as unknown as {
+        __TAURI_INTERNALS__: { invoke(command: string, args?: Record<string, unknown>): Promise<unknown> };
+      }).__TAURI_INTERNALS__;
+      const invoke = internals.invoke.bind(internals);
+      internals.invoke = (command, args = {}) =>
+        command === "vault_path_exists" && gone.includes(String(args.rootPath))
+          ? Promise.reject("No such file or directory (os error 2)")
+          : invoke(command, args);
+      const now = Date.now();
+      const record = (path: string, hoursAgo: number) => {
+        const name = path.split("/").pop();
+        return { id: "current", handle: { name }, desktopRootPath: path, name, createdAt: now, lastAccessedAt: now - hoursAgo * 3600_000 };
+      };
+      const records = [record(current, 1), ...gone.map((path, index) => record(path, index + 2))];
+      const request = indexedDB.open("demo-kv", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("kv");
+      request.onsuccess = () => {
+        const db = request.result;
+        const store = db.transaction("kv", "readwrite").objectStore("kv");
+        const existing = store.get("docs-vault:fs-handle:current");
+        existing.onsuccess = () => {
+          if (existing.result) return;
+          store.put(records[0], "docs-vault:fs-handle:current");
+          store.put(records, "docs-vault:fs-handle:recent");
+        };
+      };
+    },
+    { gone: GONE_FOLDERS, current: DESKTOP_VAULT_ROOT },
+  );
+}
+
+/** The rail's folder switcher reviews gone folders in place: the app's live `RowDisclosure`. */
+async function openMissingFolderLine(page: Page) {
+  await installDesktopRailRuntime(page);
+  await seedGoneFolders(page);
+  await page.goto("/en/?guides=off");
+  await page.getByTestId("vault-switch-rail-tile").click();
+  const trigger = page.getByTestId("vault-switch-popover").getByTestId("recent-vault-missing-toggle");
+  await expect(trigger).toHaveAttribute("aria-expanded", "false", { timeout: 30_000 });
+  const box = page.locator(`[id="${await trigger.getAttribute("aria-controls")}"]`);
   return { trigger, box };
 }
 
 test.describe("Disclosure motion", () => {
-  test("a Setup group opens and closes on the row curve with no height jump", async ({ page }) => {
-    const { trigger, box } = await openSetupGroup(page);
+  test("the missing-folder review opens and closes on the row curve with no height jump", async ({ page }) => {
+    const { trigger, box } = await openMissingFolderLine(page);
     await waitForAnimationsDone(page.locator("html"));
     await startSmoothness(page);
 
@@ -88,11 +127,11 @@ test.describe("Disclosure motion", () => {
     expect(closing.inertAtFirstFrame).toBe(true);
     expect(closing.height.at(-1)!).toBeLessThan(closing.height[0]!);
     expect(maxStepShare(closing.height)).toBeLessThanOrEqual(MAX_HEIGHT_STEP);
-    expectSmoothMotion(await stopSmoothness(page, '[data-testid="harness-setup"]'), { reflow: ["height"] });
+    expectSmoothMotion(await stopSmoothness(page, '[data-testid="vault-switch-popover"]'), { reflow: ["height"] });
   });
 
   test("an immediate second key press reverses the disclosure", async ({ page }) => {
-    const { trigger } = await openSetupGroup(page);
+    const { trigger } = await openMissingFolderLine(page);
     await trigger.focus();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Enter");
@@ -103,7 +142,7 @@ test.describe("Disclosure motion", () => {
 
   test("reduced motion sets the height at once and keeps the content fade", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    const { trigger, box } = await openSetupGroup(page);
+    const { trigger, box } = await openMissingFolderLine(page);
     const opening = await sampleToggle(page, trigger, box);
     expect(maxStepShare(opening.height)).toBeGreaterThan(0.9);
     expect(opening.opacity.some((value) => value > 0 && value < 1)).toBe(true);

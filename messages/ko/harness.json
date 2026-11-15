@@ -13,6 +13,7 @@
   "conditionSettingsContext": "설정에서 연결했을 때만",
   "capMergedValue": "{used} / 기본 한도 {cap}",
   "capOver": "한도 초과",
+  "capLimit": "기본 한도 {cap}",
   "driftLineMark": "짝이 맞는 줄은 같은 높이에 놓고, 짝이 없는 줄은 + 로 표시해요.",
   "driftSideMarked": "{other} 파일과 짝이 없는 줄 {count}개",
   "driftSideShared": "모든 줄이 {other} 파일과 짝이 맞아요",
@@ -52,9 +53,10 @@
   "reread": "파일 다시 읽기",
   "toolFilterAria": "에이전트 도구 하나만 보기",
   "toolAll": "전체",
-  "problemsAria": "고쳐야 할 문제",
   "problemHookMissing": "훅 스크립트가 없어요: {path}",
   "problemCodexCap": "Codex가 읽는 AGENTS.md가 기본 한도 32 KiB를 넘었어요 ({size})",
+  "problemCount": "문제 {count}개",
+  "problemShow": "{count, plural, =1 {보기} other {첫 문제 보기}}",
   "sections": {
     "context": {
       "title": "컨텍스트",
@@ -106,5 +108,5 @@
   "detailEvent": "이벤트",
   "detailStatus": "상태",
   "detailDeclared": "선언",
-  "back": "목록으로 돌아가기"
+  "close": "닫기"
 }
