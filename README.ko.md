@@ -41,31 +41,35 @@ diff로 보고 그대로 두거나, 고치거나, 거절해요.
 
 <table>
 <tr>
-<td width="50%"><img src="public/gateway/projects.ko.png" alt="프로젝트: 프로젝트마다 도메인, 역량, 코드 근거 상태가 보여요" /><br /><b>프로젝트</b> — 모든 프로젝트와, 그중 코드 근거가 얼마나 있는지.</td>
-<td width="50%"><img src="public/gateway/library.ko.png" alt="자료실: 왼쪽에 원문이 있고, 그 원문으로 쓴 위키 페이지와 그 페이지가 가리키는 개념이 이어져요" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 페이지가 나와요.</td>
+<td width="50%"><img src="docs/assets/readme/neural.png" alt="지도의 뉴런 보기: 온톨로지를 입체로 그린 화면에서 역량 하나를 고르면, 그 역량이 기대는 것과 그 역량을 쓰는 것이 패널에 나와요" /><br /><b>지도 · 뉴런</b> — 같은 개념을 돌려 볼 수 있는 입체로 그려요. 하나를 고르면 무엇에 기대고 무엇이 그것을 쓰는지 보여요.</td>
+<td width="50%"><img src="public/gateway/projects.ko.png" alt="프로젝트: 프로젝트 설명, 담긴 개념 수만큼 긴 도메인 막대, 고른 도메인 안의 역량 목록" /><br /><b>프로젝트</b> — 프로젝트가 무엇을 위한 것인지, 어떤 도메인으로 나뉘는지, 도메인마다 무엇이 들어 있는지.</td>
 </tr>
 <tr>
+<td width="50%"><img src="public/gateway/library.ko.png" alt="자료실: 왼쪽에 위키 문서와 원문 일치 여부, 가운데에 찾기 입력란, 그 아래 먼저 읽을 원문" /><br /><b>자료실</b> — 문서가 들어가면 출처가 달린 위키 문서가 나와요. 구절을 찾고 원문에서 확인해요.</td>
 <td width="50%"><img src="public/gateway/planning.ko.png" alt="기획: 왼쪽에 프로젝트 폴더의 마크다운 파일 목록, 오른쪽에 열어 둔 문서" /><br /><b>기획</b> — 프로젝트 폴더의 마크다운을 복사하지 않고 그 자리에서 읽어요.</td>
-<td width="50%"><img src="public/gateway/changes.ko.png" alt="변경: 한 주 동안의 커밋과 각 커밋의 날짜" /><br /><b>변경</b> — 기간 동안 무엇이 바뀌었는지 풀 리퀘스트, 커밋, 파일로 나눠 봐요.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/git.ko.png" alt="Git: 아직 커밋하지 않은 개념 변경과 그 마크다운 diff" /><br /><b>Git</b> — 커밋하기 전에 정확한 마크다운 diff를 봐요.</td>
-<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 저장소가 코딩 에이전트에게 말해 두고, 막고, 지켜보는 것" /><br /><b>하네스</b> — 저장소가 에이전트에게 말해 두고, 막고, 지켜보는 것.</td>
+<td width="50%"><img src="public/gateway/changes.ko.png" alt="변경: 하루 동안 머지된 변경 수, 머지된 시간대, 스코프별로 묶은 변경" /><br /><b>변경</b> — 기간 동안 무엇이 머지됐는지 세고 묶어서 보여 주고, 그 뒤의 풀 리퀘스트·커밋·파일로 이어져요.</td>
+<td width="50%"><img src="public/gateway/git.ko.png" alt="Git: 왼쪽에 커밋 기록, 오른쪽에 한 커밋이 바꾼 개념과 그 관계" /><br /><b>Git</b> — 커밋마다 어떤 개념이 바뀌었는지 보여요. 고친 문서는 커밋하기 전에 여기에 나타나요.</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/automations.ko.png" alt="자동화: 폴더를 최신으로 유지하는 예약 점검" /><br /><b>자동화</b> — 폴더를 최신으로 유지하는 예약 점검.</td>
+<td width="50%"><img src="public/gateway/harness.ko.png" alt="하네스: 에이전트가 읽는 파일, 실행 전에 막는 규칙, 끝난 뒤 검사하는 것, 그리고 열어 둔 지침 파일 하나" /><br /><b>하네스</b> — 에이전트가 이 저장소에서 읽는 것, 실행 전에 막히는 것, 끝나고 검사받는 것.</td>
+<td width="50%"><img src="public/gateway/automations.ko.png" alt="자동화: 예약한 문서 점검 하나의 주기와 마지막 결과, 그리고 실행 기록" /><br /><b>자동화</b> — 예약 점검과, 실행마다 무엇을 찾았는지.</td>
 </tr>
 </table>
 
-**v1.9의 새 기능:** 저장소의 풀 리퀘스트, 커밋, 파일을 따로 읽는 Git·PR 브리핑과, 프로젝트 폴더의 마크다운을 그 자리에서 읽는 기획. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에서 확인하세요.
+**v2.0의 새 기능:** 지도를 돌려 볼 수 있는 입체로 그리는 뉴런 보기와 나무 모양의 3D 보기, 에이전트가 읽는 것·막히는 것·검사받는 것을 한 화면에 모은 하네스 구성, 변경 맨 위의 머지 요약, 자동화의 예약별 실행 기록. 분석은 더 이상 따로 있는 화면이 아니에요. [릴리스](https://github.com/wlsdks/ontology-atlas/releases)에서 확인하세요.
 
 시작하기 전에 알아 두면 좋은 것:
 
-- 지도의 선은 선언된 관계이지 실행 영향의 증거가 아니에요. 범례가 모든 표시와 방향을 설명해요. [지도](docs/features/map/flat-dial.md)
+- 지도의 선은 선언된 관계이지 실행 영향의 증거가 아니에요. 보기는 다섯 가지예요: 평면, 육각, 도메인 구조도, 3D, 뉴런. [지도](docs/features/map/README.md)
 - 빈 폴더에서는 시작 동작이 나타나고, 시작이 실패하면 파일을 덮어쓰지 않고 다시 시도할 수 있어요. 팝업 투어는 없어졌어요. [첫 실행](docs/features/first-run.md)
 - 자료실 설정과 점검은 앱에서 해요. 브라우저에서는 앱을 받거나 파일을 추가할 수 있어요. [자료실](docs/features/library/workspace.md)
 - 기획은 읽기 전용이고, macOS 앱에서 고른 폴더에서 동작해요. 마크다운과 PNG/JPEG 이미지를 보여 줘요. [기획](docs/FEATURES.md)
 - Git의 보내기 전용 동작은 새 파일 변경을 커밋하지 않아요. 폴더나 브랜치의 상태가 달라졌다면 다시 확인할 수 있어요. 받아오기는 저장소 전체의 파일을 바꿀 수 있어요. [Git](docs/features/git.md)
+- 변경은 앱에서 고른 Git 저장소를 열어요. 온톨로지가 없어도 돼요. 공개 GitHub 풀 리퀘스트는 직접 눌러야 읽고, 목록이 일부만 나올 수 있어요. 비공개 풀 리퀘스트는 읽지 않아요. [변경 브리핑](docs/features/change-briefing.md)
+- 프로젝트 문서가 마지막 의미 검토 뒤에 바뀌었으면 다시 검토하고 직접 확정하라고 알려 줘요. 저장했거나 코드 경로가 맞는다고 해서 의미가 받아들여지지는 않아요. [MCP 서버](docs/features/mcp-server.md)
+- 앱 안 대화에서 에이전트의 쓰기는 내가 허락할 때까지 기다려요. Codex는 읽기 전용으로 시작하고, 내 컴퓨터에 설정된 Codex 권한 프로필은 승인 방식이 공개되어 있지 않아 고를 수 없어요. [에이전트](docs/features/agents.md) · [기능 목록](docs/FEATURES.md)
 - 폴더를 연결하기 전에도 앱은 자료실, 기획, 에이전트, 변경을 열어 둬요. [기능 목록](docs/FEATURES.md)
 
 ## 빠른 시작
@@ -132,60 +136,116 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 74개·포즈 16개와 원본](assets/brand/moru/README.md)을 프로젝트에 담았어요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지와 프레임별 확인을 할 수 있어요.
+모루는 아틀라스의 픽셀 물개 캐릭터이고, 나침반은 앱을 나타내는 심볼이에요. [동작 74개·포즈 16개와 원본](assets/brand/moru/README.md)이 저장소에 들어 있어요. 직접 그린 동작이 58개, 그 동작을 이어 붙인 장면이 16개예요. [로컬 모션 스튜디오](assets/brand/moru/preview.html)를 열면 재생·정지하고 프레임마다 확인할 수 있어요.
 
-폴더 선택 화면에서는 모루가 인사하고 작은 폴더를 보여주며 기다리고, 폴더를 여는 동안에는 장난스러운 동작을 멈추고 기존 대기 화면으로 넘어갑니다. 다운로드 페이지에서는 별도의 환영 동작을 보여줍니다. 이동은 발이 공중에 뜬 짧은 점프 구간에만 일어납니다. 커서를 올리면 뛰던 동작을 착지까지 마친 뒤 기다립니다. 모루를 누르면 수줍어하기·박수·춤·생각하기·고민하기·하트·웃음·지느러미 춤으로 짧게 반응하며, 우클릭 또는 Shift+F10 메뉴에서 일시정지할 수 있습니다. 캐릭터 옆에는 재생 버튼이 표시되지 않습니다. 동작 줄이기에서는 정지된 표정으로 반응합니다.
-
-새로운 32포즈 동작으로 인사·하이파이브·모자 인사를 더했고, 다운로드 환영 화면에서는 물고기 마술도 볼 수 있습니다. 클릭하면 작은 말풍선에 하트·음표·반짝임이 나오고, 혼자 돌아오는 점프에서도 가끔 음표를 띄웁니다. 작업 대기 중에는 조용히 기다립니다. 까꿍과 빨개지는 얼굴은 모션 스튜디오에서 볼 수 있습니다.
-
-모루는 작은 고개 인사에서도 둥근 몸을 유지합니다. 평소에는 서로 다른 세 가지 동작 흐름과 쉼을 이어가고, 클릭 반응은 최근 두 동작을 피해서 골고루 보여줍니다. 작업 대기 중에는 조용히 제자리에서 기다립니다.
-
-코끝 별 균형잡기·반짝 재채기·아기 모루와 숨바꼭질·하트 선물을 각각 32포즈로 더했고, 지느러미 춤도 32포즈로 새로 그렸습니다. 두 번째 클릭부터 새 장난을 만나고 이후에는 최근 동작을 피해서 골고루 반응합니다. 가만히 기다리는 동안에도 가끔 아기 모루가 고개를 내밉니다. 폴더 선택 화면에는 14가지, 다운로드 환영 화면에는 소리 없는 노래와 비눗방울 놀이를 포함한 18가지 반응이 있습니다. 소품이 있는 동작에는 말풍선을 겹치지 않습니다.
-
-<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
-
-<details>
-<summary>모루의 움직임 보기</summary>
-
+<p>
 <img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="인사하는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="자료를 읽는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="사람의 결정을 기다리는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="확인된 완료를 반기는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="노래하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="물고기와 노는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="춤추는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="모루들의 합동 춤" />
-<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="수줍게 웃는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="친구와 공놀이하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="새끼 모루 셋과 안기는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="비 오는 날 우산 쓴 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="눈송이를 바라보는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="산들바람을 느끼는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="공중제비 도는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="낚싯줄 물고기 장난감을 갖고 노는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="노트북으로 코딩하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="코끝으로 별을 받치는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="하트를 건네는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" height="128" alt="춤추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="아기 모루와 노는 모루" />
+</p>
+
+**나오는 자리.** 폴더를 고르는 화면에서 모루가 인사하고 작은 폴더를 내밀며 기다려요. 폴더가 열리기 시작하면 장난을 멈추고 대기 화면으로 넘어가요. 다운로드 페이지에는 따로 환영 동작이 있어요. 원문을 읽거나, 내 허락을 기다리거나, 끝난 점검을 반기는 동작은 앱이 실제로 그 상태를 확인했을 때만 나와요. 그래서 모루는 확인되지 않은 진행을 보여 주지 않아요.
+
+**쓰다듬기.** 모루를 누르면 짧게 한 번 반응해요. 첫 번째는 얌전하고, 두 번째에 장난스러운 동작이 나오고, 그다음부터는 바로 앞 두 동작을 피해 가며 가진 동작을 골고루 보여 줘요. 폴더 화면에서 14가지, 다운로드 환영 화면에서 18가지예요. 글자 없는 작은 말풍선에 하트·음표·반짝임이 뜨기도 하고, 오래 가만히 두면 아기 모루가 한 번 고개를 내밀어요.
+
+**방해하지 않기.** 모루는 공중에 뜬 동안에만 자리를 옮기고, 커서를 올리면 착지를 마친 뒤 기다려요. 작업을 기다릴 때는 제자리에서 조용히 있어요. 일시정지와 다시 재생은 모루의 메뉴(우클릭 또는 Shift+F10)에 있고, 캐릭터 옆에 재생 버튼은 없어요. 동작 줄이기를 켜면 정지된 표정으로 반응해요.
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="모루의 포즈 16개" />
+
+<details>
+<summary>직접 그린 동작 58개 모두 보기</summary>
+
+<p><b>기다릴 때</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-blink.gif" width="128" height="128" alt="기다리며 눈을 깜빡이는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-tail.gif" width="128" height="128" alt="꼬리를 흔드는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-doze.gif" width="128" height="128" alt="꾸벅꾸벅 조는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hop.gif" width="128" height="128" alt="살짝 뛰는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-tilt.gif" width="128" height="128" alt="궁금한 듯 고개를 기울이는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-stretch.gif" width="128" height="128" alt="기지개 켜는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rest-return.gif" width="128" height="128" alt="쉬다가 돌아오는 모루" />
+</p>
+
+<p><b>인사</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="살짝 고개 숙여 인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="작은 모자로 인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="하이파이브 하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" height="128" alt="수줍게 웃는 모루" />
+</p>
+
+<p><b>일할 때</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-open.gif" width="128" height="128" alt="폴더를 여는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="폴더를 들여다보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="자료를 읽는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-search.gif" width="128" height="128" alt="찾아보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-follow-link.gif" width="128" height="128" alt="링크를 따라가는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-compare.gif" width="128" height="128" alt="둘을 비교하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-review-proposal.gif" width="128" height="128" alt="제안을 검토하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="사람의 결정을 기다리는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-uncertain.gif" width="128" height="128" alt="확신이 없는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-stop.gif" width="128" height="128" alt="멈추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-retry.gif" width="128" height="128" alt="다시 시도하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-save.gif" width="128" height="128" alt="저장하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-refresh.gif" width="128" height="128" alt="새로 고치는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-connect.gif" width="128" height="128" alt="연결하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-reply-ready.gif" width="128" height="128" alt="답이 준비된 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-no-results.gif" width="128" height="128" alt="아무것도 찾지 못한 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="노트북으로 코딩하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="확인된 완료를 반기는 모루" />
+</p>
+
+<p><b>감정</b></p>
+
+<p>
 <img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="생각하는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="고민하는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="작은 하트를 보내는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="깔깔 웃는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="살짝 찡그리는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="귀엽게 화내는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="얼굴이 빨개졌다 진정하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="하트를 건네는 모루" />
+</p>
+
+<p><b>놀이</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" height="128" alt="노래하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" height="128" alt="춤추는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" height="128" alt="모루들의 합동 춤" />
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="지느러미로 춤추는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="떠오르는 온톨로지 모형을 보는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="온톨로지 모형과 함께 춤추는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="살짝 고개 숙여 인사하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="작은 모자로 인사하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="공중제비 도는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="낚싯줄 물고기 장난감을 갖고 노는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" height="128" alt="물고기와 노는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="마술로 물고기를 보여주는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="까꿍 놀이하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="얼굴이 빨개졌다 진정하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="하이파이브 하는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="폴더를 들여다보는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="비눗방울을 따라가는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="코끝으로 별을 받치는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="반짝 재채기하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" height="128" alt="친구와 공놀이하는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" height="128" alt="새끼 모루 셋과 안기는 모루" />
 <img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="아기 모루와 노는 모루" />
-<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="하트를 건네는 모루" />
+</p>
 
+<p><b>장면</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" height="128" alt="비 오는 날 우산 쓴 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" height="128" alt="눈송이를 바라보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" height="128" alt="산들바람을 느끼는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="떠오르는 온톨로지 모형을 보는 모루" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="온톨로지 모형과 함께 춤추는 모루" />
+</p>
 
 </details>
 
