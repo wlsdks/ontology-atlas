@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  OntologyMapKindGlyph,
-  OntologyMapTraceMark,
-} from "@/shared/ui/ontology-node/map-kind-glyph";
+import { OntologyMapKindGlyph } from "@/shared/ui/ontology-node/map-kind-glyph";
 import type {
   FullDetailConnectionRow,
   FullDetailDomainLink,
@@ -14,8 +11,8 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * The relations section: structure (contains, contained by) in one column and direction
- * (incoming, outgoing, related) in the other. A group with no rows is not drawn; each row has a
- * trace mark (solid containment, dashed depends) and navigates on click.
+ * (incoming, outgoing, related) in the other. A group with no rows is not drawn; its heading
+ * names the relation, so a row is only the concept's kind and name, and navigates on click.
  */
 
 export interface FullDetailA1GroupsLabels {
@@ -51,7 +48,6 @@ function Row({
 }) {
   return (
     <button type="button" onClick={() => onSelectNode(row.id)} data-fulldetail-row={row.id} className={ROW_CLASS}>
-      <OntologyMapTraceMark containment={row.containment} />
       <OntologyMapKindGlyph kind={row.kind} size={14} />
       <span className="min-w-0 flex-1 truncate">{row.title}</span>
       {row.fresh ? (
@@ -78,7 +74,6 @@ function DomainRow({
 }) {
   return (
     <button type="button" onClick={() => onSelectNode(link.id)} data-fulldetail-domain-row={link.id} className={ROW_CLASS}>
-      <OntologyMapTraceMark containment={false} />
       <OntologyMapKindGlyph kind="domain" size={14} />
       <span className="min-w-0 flex-1 truncate">{link.title}</span>
       <span title={linksTitle} className={COUNT_CLASS}>

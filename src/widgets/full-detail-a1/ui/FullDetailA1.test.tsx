@@ -278,7 +278,7 @@ describe("FullDetailA1", () => {
   });
 
   it('lists a related concept in its own card and never under a direction', () => {
-    const relatedRow = { id: "domain:c", title: "Domain C", kind: "domain", containment: false, childCount: 0, fresh: false };
+    const relatedRow = { id: "domain:c", title: "Domain C", kind: "domain", childCount: 0, fresh: false };
     const groups = { ...buildFullDetailGroups("domain:a", nodes, edges), related: { rows: [relatedRow], total: 1 } };
     const { container } = renderFullDetailWithContainer({ groups });
     const card = container.querySelector('[data-fulldetail-group="related"]')!;

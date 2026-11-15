@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import {
-  buildConnections, groupConnectionsByRole, isContainmentRelation,
+  buildConnections, groupConnectionsByRole,
   type ConnectionSourceEdge, type ConnectionSourceNode, type DatasheetConnection,
 } from "@/entities/knowledge-graph";
 import { buildFullDetailGroups, type FullDetailGroups } from "./full-detail-groups";
@@ -16,7 +16,7 @@ function scanPerRow(nodeId: string, nodes: ConnectionSourceNode[], edges: Connec
       }
       return {
         id: connection.id, title: connection.title, kind: connection.kind,
-        containment: isContainmentRelation(connection.relationType), fresh: false, childCount,
+        fresh: false, childCount,
       };
     });
     return { rows, total: rows.length };
