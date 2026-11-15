@@ -99,6 +99,8 @@ export interface TreeNameCandidate {
   node: number; text: string; sub: string | null;
   x: number; y: number; radius: number; width: number; height: number;
   priority: number; pinned: boolean;
+  /** The side tried first. */
+  side: TreeNameSide;
 }
 /** `x`, `y` are the block's top-left corner, CSS pixels. */
 export interface TreeNameBox { node: number; text: string; sub: string | null; x: number; y: number; width: number; height: number; side: TreeNameSide }

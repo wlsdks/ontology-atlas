@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { aimTreeProjector, createTreeProjector } from "../../model/tree-view/tree-camera";
 import { cutTreeDetail, TREE_MARK_BUDGET } from "../../model/tree-view/tree-detail";
-import { placeTreeNames, treeNameCandidates } from "../../model/tree-view/tree-names";
+import { placeTreeNames, treeNameCandidates, type TreeCrownCircles } from "../../model/tree-view/tree-names";
 import type {
   TreeDrawList,
   TreeFocus,
@@ -16,6 +16,7 @@ import type {
   TreePose,
   TreeProjector,
   TreeRect,
+  TreeScreenPoint,
 } from "../../model/tree-view/types";
 import { hexMapChrome } from "../../morph/hex-marks";
 import type { TreeTokens } from "../../tokens/read-tree-tokens";
@@ -61,6 +62,37 @@ export function cutTreeAtPose(
     },
     out,
   );
+}
+
+/** Pooled crown circles; `written` lists the nodes set last time so a refill clears only those. */
+interface CrownScratch { circles: TreeCrownCircles; written: number[]; point: TreeScreenPoint }
+
+function createCrownScratch(): CrownScratch {
+  return { circles: { x: new Float32Array(0), y: new Float32Array(0), radius: new Float32Array(0) }, written: [], point: { x: 0, y: 0, scale: 0, depth: 0 } };
+}
+
+/** Projects the bound sphere of each drawn domain's subtree to a screen circle. O(drawn marks). */
+function projectTreeCrowns(layout: TreeLayout, list: TreeDrawList, projector: TreeProjector, scratch: CrownScratch): TreeCrownCircles {
+  const { circles, written, point } = scratch;
+  const { model, bound } = layout;
+  if (circles.radius.length < model.count) {
+    circles.x = new Float32Array(model.count);
+    circles.y = new Float32Array(model.count);
+    circles.radius = new Float32Array(model.count);
+    written.length = 0;
+  }
+  for (const node of written) circles.radius[node] = 0;
+  written.length = 0;
+  for (let i = 0; i < list.count; i += 1) {
+    const node = list.marks[i]!.node;
+    if (model.kinds[node] !== "domain") continue;
+    projector.project(bound[node * 4]!, bound[node * 4 + 1]!, bound[node * 4 + 2]!, point);
+    circles.x[node] = point.x;
+    circles.y[node] = point.y;
+    circles.radius[node] = bound[node * 4 + 3]! * projector.unit * point.scale;
+    written.push(node);
+  }
+  return circles;
 }
 
 let measureContext: CanvasRenderingContext2D | null | undefined;
@@ -164,6 +196,7 @@ export function useTreeFrame(canvasRef: RefObject<HTMLCanvasElement | null>, sou
   const projector = useRef<TreeProjector>(pooledProjector);
   const frames = useRef(0);
   const candidates = useRef<TreeNameCandidate[]>([]);
+  const crowns = useRef<CrownScratch | null>(null);
   const reveal = useRef<number[]>([]);
   const cutVersion = useRef(0);
   const cutKey = useRef<CutKey | null>(null);
@@ -180,13 +213,14 @@ export function useTreeFrame(canvasRef: RefObject<HTMLCanvasElement | null>, sou
         reveal.current.length = 0;
         if (revealNode >= 0) reveal.current.push(revealNode);
         cutTreeAtPose(layout, tokens, pose, size, free, reveal.current, projector.current, list.current);
+        projectTreeCrowns(layout, list.current, projector.current, (crowns.current ??= createCrownScratch()));
         cutKey.current = nextCut;
         cutVersion.current += 1;
       }
       const nextNames: NamesKey = { cut: cutVersion.current, nameModel, focus, subOf, measure, keep };
       if (!namesKey.current || !sameNames(namesKey.current, nextNames)) {
         const count = treeNameCandidates(list.current, nameModel, focus, measure, subOf, tokens.names, tokens.detail.elementNamePitchPx, candidates.current);
-        placeTreeNames(candidates.current, count, list.current, free, keep, names.current, tokens.names);
+        placeTreeNames(candidates.current, count, list.current, free, keep, names.current, tokens.names, crowns.current?.circles ?? null);
         namesKey.current = nextNames;
       }
       const backingWidth = Math.round(size.width * dpr);

@@ -24,9 +24,13 @@ const UNNAMED = -1;
 const PIN_ARC_END = 1;
 const PIN_FOCUS = 2;
 
-/** Placement tries the sides in their `TreeNameSide` order: right, left, above, below. */
-const FIRST_SIDE: TreeNameSide = 0;
-const LAST_SIDE: TreeNameSide = 3;
+/** After a candidate's own side, placement tries the rest in `TreeNameSide` order: right, left, above, below. */
+const SIDE_RIGHT: TreeNameSide = 0;
+const SIDE_LEFT: TreeNameSide = 1;
+const SIDE_BELOW: TreeNameSide = 3;
+const SIDE_COUNT = 4;
+/** Up to this many domains each keep their block: with no clear place left it goes beside the hub, over marks. */
+const ALWAYS_NAMED_DOMAINS = 12;
 
 let markOfNode = new Int32Array(0);
 let pinnedMark = new Uint8Array(0);
@@ -41,6 +45,8 @@ let elementHead = new Int32Array(0);
  * Fills `out[0..n)` with the names worth trying, in placement order, and returns n.
  * O(m log m) for m marks: one pass over the marks and the focus, then a heap sort.
  * A sub line is sized `domainSub` and measured as "domain" text scaled to that size.
+ * Each name leans away from the trunk base and the trunk's block sits below it. With a focus
+ * only the blocks and the pinned names are offered, so the lit names stand alone.
  */
 export function treeNameCandidates(
   list: TreeDrawList,
@@ -57,6 +63,8 @@ export function treeNameCandidates(
   for (let i = 0; i < count; i += 1) markOfNode[list.marks[i]!.node] = i;
   if (focus) pinFocus(focus, model);
   markSpacedElements(list, model, elementNamePitchPx);
+  const trunkMark = model.count > 0 ? markOfNode[0]! : -1;
+  const trunkX = trunkMark >= 0 ? list.marks[trunkMark]!.x : Number.NaN;
 
   let n = 0;
   for (let i = 0; i < count; i += 1) {
@@ -64,7 +72,7 @@ export function treeNameCandidates(
     const node = mark.node;
     const pinned = pinnedMark[i]! > 0;
     const rank = rankOf(node, model, pinned, spacedMark[i] === 1);
-    if (rank === UNNAMED) continue;
+    if (rank === UNNAMED || (focus && rank !== RANK_BLOCK && !pinned)) continue;
     const text = model.labels[node] ?? "";
     if (text === "") continue;
     const kind = model.kinds[node]!;
@@ -81,6 +89,7 @@ export function treeNameCandidates(
     candidate.height = (fontSizeOf(kind, sizes) + (sub ? sizes.domainSub : 0)) * sizes.leading;
     candidate.priority = rank;
     candidate.pinned = pinned;
+    candidate.side = node === 0 ? SIDE_BELOW : mark.x < trunkX ? SIDE_LEFT : SIDE_RIGHT;
     n += 1;
   }
 
@@ -127,7 +136,7 @@ function fontSizeOf(kind: TreeNodeKind, sizes: TreeNameSizes): number {
 }
 
 function emptyCandidate(): TreeNameCandidate {
-  return { node: -1, text: "", sub: null, x: 0, y: 0, radius: 0, width: 0, height: 0, priority: 0, pinned: false };
+  return { node: -1, text: "", sub: null, x: 0, y: 0, radius: 0, width: 0, height: 0, priority: 0, pinned: false, side: SIDE_RIGHT };
 }
 
 function growCandidateScratch(nodes: number, marks: number): void {
@@ -271,9 +280,22 @@ let gridCols = 0;
 let gridRows = 0;
 
 /**
+ * Screen circles holding each domain's crown, by node index, in CSS pixels; a radius of 0 means
+ * the node has no crown to anchor to.
+ */
+export interface TreeCrownCircles { x: Float32Array; y: Float32Array; radius: Float32Array }
+
+let query = 0;
+
+/**
  * Places `candidates[0..count)` greedily in array order (ascending `priority`), each on the
- * first side that is inside `free` and keeps `spacing.pad` from every mark and placed box.
- * With `keep`, only kept nodes are tried, each on its recorded side. Expected O(c + m) with a grid.
+ * first side that is inside `free` and keeps `spacing.pad` from every mark and placed box: its
+ * own `side` first, then the rest in order. A name with a crown in `crowns` (a domain block) is
+ * set outside the crown's circle, beside its hub only when no side of the crown is free; the
+ * trunk's block (node 0) only ever sits below the base. While at most `ALWAYS_NAMED_DOMAINS`
+ * blocks have crowns, a block with no clear place is set beside its hub over marks, never over
+ * a name. With `keep`, only kept nodes are tried, each on its recorded side, at its crown before
+ * its hub. Expected O(c + m) with a grid.
  */
 export function placeTreeNames(
   candidates: readonly TreeNameCandidate[],
@@ -283,6 +305,7 @@ export function placeTreeNames(
   keep: ReadonlyMap<number, TreeNameSide> | null,
   out: TreeNamePlacement,
   spacing: Pick<TreeNameSizes, "gap" | "pad">,
+  crowns: TreeCrownCircles | null = null,
 ): void {
   out.count = 0;
   out.dropped = 0;
@@ -293,21 +316,23 @@ export function placeTreeNames(
     const r = mark.radius + spacing.pad;
     insertOccupant(i, mark.x - r, mark.y - r, mark.x + r, mark.y + r, free);
   }
-  let query = 0;
+  let crowned = 0;
+  for (let c = 0; c < count; c += 1) if (crownRadiusOf(crowns, candidates[c]!.node) > 0) crowned += 1;
+  const blocksAlwaysPlaced = !keep && crowned <= ALWAYS_NAMED_DOMAINS;
   for (let c = 0; c < count; c += 1) {
     const candidate = candidates[c]!;
     const kept = keep ? keep.get(candidate.node) : undefined;
     if (keep && kept === undefined) continue;
     const box = (out.boxes[out.count] ??= emptyBox());
-    let placed = false;
-    const lastSide = kept ?? LAST_SIDE;
-    for (let side = kept ?? FIRST_SIDE; side <= lastSide; side += 1) {
-      setBoxOnSide(box, candidate, side as TreeNameSide, spacing.gap);
-      query += 1;
-      if (insideRect(box, free) && isClear(box, candidate.node, list, out, free, spacing.pad, query)) {
-        placed = true;
-        break;
-      }
+    const node = candidate.node;
+    const crownRadius = crownRadiusOf(crowns, node);
+    const first = kept ?? candidate.side;
+    const sides = kept !== undefined || node === 0 ? 1 : SIDE_COUNT;
+    let placed =
+      crownRadius > 0 && tryAnchor(box, candidate, crowns!.x[node]!, crowns!.y[node]!, crownRadius, first, sides, list, out, free, spacing, true);
+    if (!placed) placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, first, sides, list, out, free, spacing, true);
+    if (!placed && blocksAlwaysPlaced && (crownRadius > 0 || node === 0)) {
+      placed = tryAnchor(box, candidate, candidate.x, candidate.y, candidate.radius, first, sides, list, out, free, spacing, false);
     }
     if (!placed) {
       out.dropped += 1;
@@ -325,17 +350,49 @@ function emptyBox(): TreeNameBox {
   return { node: -1, text: "", sub: null, x: 0, y: 0, width: 0, height: 0, side: 0 };
 }
 
-function setBoxOnSide(box: TreeNameBox, candidate: TreeNameCandidate, side: TreeNameSide, gapPx: number): void {
-  const reach = candidate.radius + gapPx;
-  box.width = candidate.width;
-  box.height = candidate.height;
+function crownRadiusOf(crowns: TreeCrownCircles | null, node: number): number {
+  return crowns !== null && node < crowns.radius.length ? crowns.radius[node]! : 0;
+}
+
+/**
+ * Tries `sides` sides around the circle at (x, y) of `radius`, `first` before the rest in order;
+ * with `marksBlock` false only the free area and placed names can refuse a side.
+ */
+function tryAnchor(
+  box: TreeNameBox,
+  candidate: TreeNameCandidate,
+  x: number,
+  y: number,
+  radius: number,
+  first: TreeNameSide,
+  sides: number,
+  list: TreeDrawList,
+  out: TreeNamePlacement,
+  free: TreeRect,
+  spacing: Pick<TreeNameSizes, "gap" | "pad">,
+  marksBlock: boolean,
+): boolean {
+  for (let k = 0; k < sides; k += 1) {
+    const side = (k === 0 ? first : k <= first ? k - 1 : k) as TreeNameSide;
+    setBoxOnSide(box, x, y, radius, candidate, side, spacing.gap);
+    query += 1;
+    if (insideRect(box, free) && isClear(box, candidate.node, list, out, free, spacing.pad, query, marksBlock)) return true;
+  }
+  return false;
+}
+
+/** Sets the box beside the circle at (x, y) of `radius`, sized as the candidate's text block. */
+function setBoxOnSide(box: TreeNameBox, x: number, y: number, radius: number, size: TreeNameCandidate, side: TreeNameSide, gapPx: number): void {
+  const reach = radius + gapPx;
+  box.width = size.width;
+  box.height = size.height;
   box.side = side;
   if (side === 0 || side === 1) {
-    box.x = side === 0 ? candidate.x + reach : candidate.x - reach - candidate.width;
-    box.y = candidate.y - candidate.height / 2;
+    box.x = side === 0 ? x + reach : x - reach - size.width;
+    box.y = y - size.height / 2;
   } else {
-    box.x = candidate.x - candidate.width / 2;
-    box.y = side === 2 ? candidate.y - reach - candidate.height : candidate.y + reach;
+    box.x = x - size.width / 2;
+    box.y = side === 2 ? y - reach - size.height : y + reach;
   }
 }
 
@@ -356,6 +413,7 @@ function resetGrid(free: TreeRect, occupants: number): void {
   cellHead.fill(-1, 0, cells);
   if (occupantStamp.length < occupants) occupantStamp = new Int32Array(occupants);
   occupantStamp.fill(0, 0, occupants);
+  query = 0;
   entryCount = 0;
 }
 
@@ -395,6 +453,7 @@ function isClear(
   free: TreeRect,
   padPx: number,
   query: number,
+  marksBlock: boolean,
 ): boolean {
   const c0 = Math.max(0, Math.min(gridCols - 1, Math.floor((box.x - padPx - free.x) / PLACE_CELL_PX)));
   const c1 = Math.min(gridCols - 1, Math.floor((box.x + box.width + padPx - free.x) / PLACE_CELL_PX));
@@ -408,7 +467,7 @@ function isClear(
         occupantStamp[occupant] = query;
         if (occupant < list.count) {
           const mark = list.marks[occupant]!;
-          if (mark.node === node) continue;
+          if (mark.node === node || !marksBlock) continue;
           out.tested += 1;
           if (circleNearBox(mark.x, mark.y, mark.radius + padPx, box)) return false;
         } else {
