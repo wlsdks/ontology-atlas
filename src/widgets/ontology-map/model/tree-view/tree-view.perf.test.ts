@@ -85,9 +85,8 @@ describe("the tree at rest draws a bounded amount of a synth vault", () => {
     expect(list.count).toBeLessThanOrEqual(TREE_MARK_BUDGET);
   });
 
-  it("visits no more nodes at 10,000 concepts than at 5,000 plus a tenth", () => {
-    const small = restCut(5_000, tokens);
-    const large = restCut(10_000, tokens);
-    expect(large.visited, `visited ${small.visited} -> ${large.visited}`).toBeLessThanOrEqual(small.visited * 1.1);
+  it.each([5_000, 10_000])("visits at most four nodes for each mark it draws at %i concepts", (concepts) => {
+    const { count, visited } = restCut(concepts, tokens);
+    expect(visited, `visited ${visited} for ${count} marks`).toBeLessThanOrEqual(count * 4);
   });
 });
