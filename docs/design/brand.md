@@ -133,6 +133,19 @@ identically. A mark takes the place within one pixel that covers and touches
 the least other ink; where the face is too crowded for a clear place, it may
 touch.
 
+The source redraws the whole figure in every pose, so the outline, tail and
+flippers of two poses differ by a pixel even where nothing moves. A clip that
+declares `restingBody` in `moru-source.json` (today `blink`, the waiting mark)
+keeps its first pose's body in every pose between the first and the last. Each
+facial mark of a pose claims a mark of the first pose within one and a half
+drawn pixels, nearest boxes first and then nearest centres, one each. A pose
+whose marks all sit within half a drawn pixel of the marks they claim is the
+first pose. Otherwise a claimed mark that is not the same drawing is redrawn
+from the pose in the place it took; a pose mark that claims nothing is source
+noise, and a first-pose mark that nothing claims stays. The export stops when a
+pose leaves an eye unclaimed. The cheek boundary rests with the body, so a
+closed eye sits a little further into the ivory than the source drew it.
+
 Outline ink is 1.14:1 on the app canvas and reads only beside a fill, so ink
 drawn away from every fill (a note, a fishing line, an emphasis tick) is
 exported in indigo `#6D73D2`, and a detached piece smaller than four drawn
@@ -267,8 +280,8 @@ The repository [license](../../LICENSE) remains unchanged.
   compass fan-out, binary templates and exact installed motion rows.
 - `build-moru-sprites.test.mjs` covers the observed eye/ivory regressions,
   identical level eyes at both sizes, the floor line of every grounded clip,
-  the cleaning, reduction, facial-mark and free-ink rules, a nonempty clip
-  inventory, frame count, hard alpha, margins and loop seams.
+  the cleaning, reduction, facial-mark, resting-body and free-ink rules, a
+  nonempty clip inventory, frame count, hard alpha, margins and loop seams.
 - `mascot-state.test.ts`, `AgentMascotPresence.test.tsx` and waiting-mark tests
   cover evidence, Stop, visibility, reduced motion and finite work behavior. Companion tests cover independent decorative play and pause/resume.
 - Motion approval additionally requires a real recording through
