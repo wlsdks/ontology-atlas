@@ -19,5 +19,12 @@
   "empty": "这段时间没有合并任何变更。",
   "goLatest": "查看最新变更",
   "partial": "这段时间只读取了最新的 {count} 项变更。缩短时间范围即可查看其余部分。",
-  "partialOther": "这段时间有一部分未能读取，因此数字不完整。缩短时间范围可以读取更多。"
+  "partialOther": "这段时间有一部分未能读取，因此数字不完整。缩短时间范围可以读取更多。",
+  "kinds": "提交类型",
+  "timelineDay": "按时段的合并",
+  "timelineDays": "按日的合并",
+  "timelineWeeks": "按周的合并",
+  "groupsByScope": "按范围的变更",
+  "groupsByDirectory": "按目录的变更",
+  "backToList": "返回列表"
 }

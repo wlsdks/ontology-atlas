@@ -19,5 +19,12 @@
   "empty": "이 기간에는 머지된 변경이 없어요.",
   "goLatest": "가장 최근 변경 보기",
   "partial": "이 기간은 최근 변경 {count}건까지만 읽었어요. 기간을 줄이면 나머지를 볼 수 있어요.",
-  "partialOther": "이 기간의 일부를 읽지 못해서 숫자가 완전하지 않아요. 기간을 줄이면 더 읽을 수 있어요."
+  "partialOther": "이 기간의 일부를 읽지 못해서 숫자가 완전하지 않아요. 기간을 줄이면 더 읽을 수 있어요.",
+  "kinds": "커밋 타입",
+  "timelineDay": "시간대별 머지",
+  "timelineDays": "날짜별 머지",
+  "timelineWeeks": "주별 머지",
+  "groupsByScope": "스코프별 변경",
+  "groupsByDirectory": "디렉터리별 변경",
+  "backToList": "목록으로"
 }
