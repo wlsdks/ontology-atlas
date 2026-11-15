@@ -8,8 +8,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 /**
  * Playback contract: one per-locale clip, muted, no captions. Reduced motion keeps the poster and
- * a play button. The section owns the `--gateway-stage-max` cap (`app/styles/tokens.css`), or
- * video and caption edges split.
+ * a play button. The hero's window owns the width, so the clip and its note share one edge.
  */
 export function DemoStage({ available }: { available?: readonly DemoClip['id'][] }) {
   const t = useTranslations('download');
@@ -18,7 +17,7 @@ export function DemoStage({ available }: { available?: readonly DemoClip['id'][]
   if (!clip) return null;
 
   return (
-    /* The visible title is the section head's (`SectionIntro`); the name stays as aria. */
+    /* The window carries no visible title; the name stays as aria. */
     <section
       data-testid="demo-stage"
       aria-label={t('demoHeading')}

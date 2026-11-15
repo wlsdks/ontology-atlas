@@ -72,10 +72,9 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = resolveRouteTitles();
  */
 export const DESKTOP_SMOKE_ROUTE_TEXT_KEYS = {
   // `eyebrow` is one line (the hero's `stageTitle` has a line break, so its rendered text differs
-  // from the source). All three keys are section titles that render in every release state.
+  // from the source). Both keys render in every release state.
   "/download": [
     "download.eyebrow",
-    "download.demoTitle",
     "download.screens.title",
   ],
 };

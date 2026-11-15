@@ -319,11 +319,6 @@
    * section.
    */
   --gateway-section-gap: 80px;
-  /*
-   * Proportional stage width: floor 48rem (equals 40vw at 1920, so nothing moves below it), slope
-   * 40vw, cap 80rem (the demo clip is 1512px wide).
-   */
-  --gateway-stage-max: clamp(48rem, 40vw, 80rem);
 
   /*
    * ── Gateway Field (FX) Token — `--gateway-fx-*` ──────────────
@@ -335,8 +330,6 @@
    * Colors are not defined here — the light source ink reads and writes
    * `--color-indigo-brand` at the consumer (automatically following accent transitions).
    */
-  /* Stage floor sinking locally just behind the hero object, one depth level deeper than canvas (#08090a). This is not changing the page background but creating depth of field for the object. */
-  --gateway-fx-deep: #050506;
   /* Film grain overlay alpha cap — raising it further turns texture into noise. */
   --gateway-fx-grain-alpha: 0.05;
   /* Field light source (radial) alpha cap — background sets the mood only; it must not compete with body ink. */

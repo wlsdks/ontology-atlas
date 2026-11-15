@@ -35,7 +35,7 @@ test.describe("download — still", () => {
 
     const probe = await readFrameProbe(page);
     expect(probe.field, "the field drew more than its one still frame").toBe(1);
-    expect(probe.hero, "the hero drew more than its one still frame").toBe(1);
+    expect(probe.hero, "the hero draws on a canvas, which it no longer has").toBe(0);
   });
 
   test.describe("with scripting off", () => {

@@ -228,39 +228,6 @@
   background: currentColor;
 }
 
-/* Hero object stage — no entrance of its own: the object assembles as the headline is typed
- * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
- * present from the first frame and carries only the atmosphere behind the ink. */
-/*
- * The stage is positioned by its utility classes; an unlayered `position: relative` would outrank
- * them and collapse the stage to 0px. Only `::before` needs a containing block.
- */
-.gateway-hero-stage {
-  isolation: isolate;
-}
-
-/* The reserved caption line under the hero object — ink arrives, the box never moves. */
-.gateway-hero-caption {
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--motion-ease);
-}
-
-.gateway-hero-caption.is-on {
-  opacity: 1;
-}
-
-.gateway-hero-stage::before {
-  content: "";
-  position: absolute;
-  inset: -12%;
-  background: radial-gradient(
-    ellipse 42% 52% at 68% 50%,
-    var(--gateway-fx-deep) 0%,
-    transparent 72%
-  );
-}
-
-
 /*
  * The hero's app window: the product is the picture. The light behind it is still; the clip, the
  * field and Moru are what move.
@@ -304,9 +271,91 @@
   background: linear-gradient(90deg, transparent, var(--gateway-window-edge), transparent);
 }
 
-/* Twice the native cell on whole pixels, so each drawn pixel stays a square. */
-.gateway-hero-moru {
+/*
+ * Twice the native cell on whole pixels, so each drawn pixel stays a square. Only the playground
+ * is zoomed: the menu beside it keeps its own size, and the region is as wide as the zoomed stage.
+ */
+.gateway-hero-moru [data-moru-companion-region] {
+  width: 20rem;
+}
+
+.gateway-hero-moru [data-moru-playground] {
   zoom: 2;
+}
+
+.gateway-hero-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gateway-hero-text {
+  width: 100%;
+}
+
+/* The cell's empty rows under Moru overlap the link, which stays on top and takes its own press. */
+.gateway-hero-chip {
+  position: relative;
+  z-index: 1;
+  margin-top: -2rem;
+}
+
+/*
+ * Stacked, the app window takes the screen's width, not the page column's: between `md` and 80rem
+ * the origin leaves the column too narrow for a recording. The centred flex item overhangs both sides.
+ */
+.gateway-hero-window {
+  flex: none;
+  width: min(76rem, calc(100vw - 3rem));
+  margin-top: 3.5rem;
+}
+
+/*
+ * From 80rem the claim and the app share the first screen. The app's column runs past the page
+ * column to 2rem from the window's edge, since a recording of a 1512px window needs the width
+ * more than the margin does. Moru's playground stands near the app window's left corner and ends
+ * 56px into it: the cell's ground line (row 100 of 128, doubled) then rests on the window's top edge.
+ */
+@media (min-width: 80rem) {
+  .gateway-hero-grid {
+    display: grid;
+    grid-template-columns: minmax(24rem, 5fr) minmax(0, 8fr);
+    grid-template-areas:
+      'text moru'
+      'text window';
+    column-gap: 3.5rem;
+    align-items: start;
+    width: calc(100% + var(--gateway-origin) - 2rem);
+    max-width: 112rem;
+  }
+
+  .gateway-hero-text {
+    grid-area: text;
+    align-self: center;
+  }
+
+  .gateway-hero-title {
+    font-size: clamp(2.25rem, 8cqw, 4.5rem);
+  }
+
+  .gateway-hero-chip {
+    margin-top: 0;
+  }
+
+  .gateway-hero-moru {
+    grid-area: moru;
+    position: relative;
+    z-index: 2;
+    justify-content: flex-start;
+    margin-bottom: -56px;
+    padding-left: 2.5rem;
+  }
+
+  .gateway-hero-window {
+    grid-area: window;
+    width: auto;
+    margin-top: 0;
+  }
 }
 
 /*

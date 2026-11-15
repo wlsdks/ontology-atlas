@@ -213,16 +213,14 @@ function HeroSection({
   return (
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'gateway-hero relative flex w-full flex-col')}
+      className={cn(PAGE_GUTTER, 'gateway-hero relative flex w-full flex-col overflow-x-clip')}
     >
       <div aria-hidden className="gateway-hero-stars" />
-      {/* The container sizes `--text-monument` against the full column, one line per sentence. */}
-      <div
-        className={cn(
-          PAGE_COLUMN,
-          '@container relative z-[1] flex min-w-0 flex-col items-center text-center',
-        )}
-      >
+      {/*
+        One column on a narrow window: Moru, the claim, the app. From 80rem the claim takes the left
+        and the app the right, where Moru walks along the window's top edge (`.gateway-hero-grid`).
+      */}
+      <div className={cn(PAGE_COLUMN, 'gateway-hero-grid relative min-w-0')}>
         <div className={cn(rise('gateway-t240'), 'gateway-hero-moru flex justify-center')}>
           <BrandCompanion
             context="welcome"
@@ -235,61 +233,68 @@ function HeroSection({
           />
         </div>
 
-        <a
-          href={GITHUB_REPO_URL}
-          target="_blank"
-          rel="noreferrer noopener"
-          data-testid="gateway-hero-source"
-          className={cn(
-            rise('gateway-t240'),
-            controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }),
-            'gateway-hero-chip -mt-10 gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label',
-          )}
-        >
-          <GithubMark />
-          <span>{t('eyebrow')}</span>
-        </a>
-
-        <h1
-          // The visible characters are aria-hidden.
-          aria-label={heroSentence(heroLines)}
-          className="mt-7 w-fit break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
-        >
-          {/* The first line is a step down in ink: the second line is the sentence's subject. */}
-          <HeroTypewriter start={heroIn} lines={heroLines} />
-        </h1>
-
-        <div data-hero-text className="mt-7 flex min-w-0 max-w-[45rem] flex-col items-center">
-          <p
+        {/* The container sizes the headline against this column, one line per sentence. */}
+        <div className="gateway-hero-text @container relative z-[1] flex min-w-0 flex-col items-center text-center min-[80rem]:items-start min-[80rem]:text-left">
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            data-testid="gateway-hero-source"
             className={cn(
               rise('gateway-t240'),
-              'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
+              controlClass({ shape: 'link', tone: 'secondary', hoverInk: 'strong' }),
+              'gateway-hero-chip gap-2 rounded-chip border border-[color:var(--color-border-strong)] px-3.5 py-1.5 text-label leading-label',
             )}
           >
-            {t('heroLead')}
-          </p>
+            <GithubMark />
+            <span>{t('eyebrow')}</span>
+          </a>
 
-          {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
-          <DownloadActions
-            scope="hero"
-            className={cn(rise('gateway-t320'), 'mt-9 justify-center')}
-            fileWins={fileWins}
-            primaryAsset={primaryAsset}
-            windowsInstaller={windowsInstaller}
-            windowsPrimary={heroWindowsPrimary}
-          />
+          <h1
+            // The visible characters are aria-hidden.
+            aria-label={heroSentence(heroLines)}
+            className="gateway-hero-title mt-7 w-fit break-keep [text-wrap:balance] text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]"
+          >
+            {/* The first line is a step down in ink: the second line is the sentence's subject. */}
+            <HeroTypewriter start={heroIn} lines={heroLines} />
+          </h1>
 
-          <TrustLine
-            testId="gateway-hero-trust"
-            className={cn(rise('gateway-t400'), 'mt-5')}
-            windowsPrimary={heroWindowsPrimary}
-          />
+          <div
+            data-hero-text
+            className="mt-7 flex min-w-0 max-w-[45rem] flex-col items-center min-[80rem]:items-start"
+          >
+            <p
+              className={cn(
+                rise('gateway-t240'),
+                'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
+              )}
+            >
+              {t('heroLead')}
+            </p>
+
+            {/* Three controls: the visitor's platform filled, the others outlined at the same height. */}
+            <DownloadActions
+              scope="hero"
+              className={cn(rise('gateway-t320'), 'mt-9 justify-center min-[80rem]:justify-start')}
+              fileWins={fileWins}
+              primaryAsset={primaryAsset}
+              windowsInstaller={windowsInstaller}
+              windowsPrimary={heroWindowsPrimary}
+            />
+
+            <TrustLine
+              testId="gateway-hero-trust"
+              className={cn(rise('gateway-t400'), 'mt-5')}
+              windowsPrimary={heroWindowsPrimary}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Below the text column's layer, so the window's light falls behind the buttons. */}
-      <div className={cn(PAGE_COLUMN, 'relative mt-14 flex min-w-0 justify-center')}>
-        <div className="gateway-window gateway-scroll-stage w-full min-w-0 max-w-[76rem]">
+        <div
+          id="demo"
+          data-testid="gateway-demo-section"
+          className="gateway-hero-window gateway-window min-w-0 scroll-mt-24"
+        >
           <DemoStage />
         </div>
       </div>
@@ -449,7 +454,6 @@ function ClosingSection({
   fileWins: boolean;
 }) {
   const t = useTranslations('download');
-  const moru = useTranslations('moru');
   return (
     <section
       data-testid="gateway-closing"
@@ -457,7 +461,6 @@ function ClosingSection({
       className={cn(PAGE_GUTTER, 'mt-[var(--gateway-section-gap)]', 'w-full')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <div className="mb-3 w-full max-w-lg"><BrandCompanion context="welcome" labels={{ pause: moru('pause'), resume: moru('resume'), still: moru('still'), interact: moru('interact') }} /></div>
         <h2
           id="gateway-closing-title"
           className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]"
