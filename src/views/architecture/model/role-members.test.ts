@@ -10,19 +10,30 @@ function concept(slug: string, path: string): RoleConcept {
   return { slug, title: slug, kind: 'element', path, dependsOn: [], relatesTo: [] };
 }
 
-describe('a role band holds', () => {
+describe('the modules a role holds', () => {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
 
-  it('the listed source modules when the source can be listed', () => {
+  it('are the listed source modules, each with the recorded concepts inside it, when the source can be listed', () => {
     const members = buildRoleMembers(
       profile,
-      { views: [{ name: 'home', path: 'src/views/home', kind: 'dir' }] },
+      {
+        views: [
+          { name: 'home', path: 'src/views/home', kind: 'dir' },
+          { name: 'library', path: 'src/views/library', kind: 'dir' },
+        ],
+      },
       { views: [concept('elements/library', 'src/views/library/ui/Page.tsx')] },
     );
-    expect(members.views).toEqual({ names: ['home'], source: 'modules' });
+    expect(members.views).toEqual({
+      members: [
+        { name: 'home', path: 'src/views/home', concepts: 0 },
+        { name: 'library', path: 'src/views/library', concepts: 1 },
+      ],
+      source: 'modules',
+    });
   });
 
-  it('the modules recorded concepts sit in, most recorded first, without a listing', () => {
+  it('are the modules recorded concepts sit in, most recorded first, without a listing', () => {
     const members = buildRoleMembers(profile, null, {
       views: [
         concept('elements/a', 'src/views/library/ui/A.tsx'),
@@ -30,8 +41,14 @@ describe('a role band holds', () => {
         concept('elements/c', 'src/views/library/model/c.ts'),
       ],
     });
-    expect(members.views).toEqual({ names: ['library', 'home'], source: 'concepts' });
-    expect(members.shared).toEqual({ names: [], source: 'none' });
+    expect(members.views).toEqual({
+      members: [
+        { name: 'library', path: null, concepts: 2 },
+        { name: 'home', path: null, concepts: 1 },
+      ],
+      source: 'concepts',
+    });
+    expect(members.shared).toEqual({ members: [], source: 'none' });
   });
 });
 
