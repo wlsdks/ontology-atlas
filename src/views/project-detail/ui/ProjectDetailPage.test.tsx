@@ -762,6 +762,19 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("project-detail-lead")).toHaveTextContent("A storefront that sells one thing");
   });
 
+  it("renders hostile Markdown in the lead as text, without an image, script or script link", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody =
+      "Lead <img src=x onerror=alert(1)> [x](javascript:alert(1)) ![p](https://attacker.example/p.png) end.";
+    renderPage();
+
+    const lead = screen.getByTestId("project-detail-lead");
+    expect(lead.querySelector("img, script")).toBeNull();
+    expect(lead.querySelectorAll("a[href^='javascript:' i]")).toHaveLength(0);
+    expect(lead).toHaveTextContent("<img src=x onerror=alert(1)>");
+  });
+
   it("asks to lay out an unsectioned body, with the prompt shown before it is copied", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;

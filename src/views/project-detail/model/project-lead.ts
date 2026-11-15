@@ -1,3 +1,5 @@
+import { readWikilinks } from "@/shared/lib/concept-display/ontology-description";
+
 import { splitProjectBrief } from "./project-brief";
 
 const NON_PROSE_BLOCK = /^(#{1,6}\s|[-*+]\s|\d+\.\s|>|```|~~~|\|)/;
@@ -19,13 +21,6 @@ function withoutLeadSentence(paragraph: string, leadSentence: string | null | un
   const lead = leadSentence.replace(/\s+/g, " ").trim();
   if (!lead || !normalized.startsWith(lead)) return paragraph;
   return normalized.slice(lead.length).trim();
-}
-
-/** `[[a/b|Label]]` reads as Label and `[[a/b]]` as a/b, since Markdown would print the brackets. */
-function readWikilinks(markdown: string): string {
-  return markdown.replace(/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g, (_, target: string, label?: string) =>
-    (label ?? target.split("#")[0]).trim(),
-  );
 }
 
 /**

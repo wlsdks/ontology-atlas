@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { PAGE_STAGE_FILL, PAGE_TITLE, PAGE_WAIT_LIFT } from "@/shared/ui/tokens/page-frame";
@@ -66,6 +66,9 @@ import { resolveProjectLead } from "../model/project-lead";
 import { DomainMasterDetail } from "./DomainMasterDetail";
 import { ProjectActions } from "./ProjectActions";
 import { ConstructionReviewPanel } from "./construction-review/ConstructionReviewPanel";
+
+/* A lead paragraph needs no picture, and a remote one would be a request the reader did not ask for. */
+const LEAD_MARKDOWN_COMPONENTS: Components = { img: ({ alt }) => <span>{alt}</span> };
 
 const SearchPalette = dynamic(
   () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
@@ -477,7 +480,7 @@ export function ProjectDetailPage({
               data-testid="project-detail-lead"
               className="mt-3 max-w-[var(--measure-prose)] break-keep text-pretty text-reading leading-prose text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_code]:font-mono [&_code]:text-body-lg [&_p+p]:mt-3 [&_strong]:font-[var(--font-weight-strong)] [&_strong]:text-[color:var(--color-text-primary)]"
             >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{leadParagraph}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={LEAD_MARKDOWN_COMPONENTS}>{leadParagraph}</ReactMarkdown>
             </div>
           ) : null}
           {bodyContent ? (
