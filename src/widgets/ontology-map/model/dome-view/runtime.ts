@@ -57,6 +57,7 @@ export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
   // A fly-to belongs to the 3D view it moved.
   runtime.flyRequest = null;
   runtime.nudgeReturn = null;
+  runtime.restFit = null;
   runtime.flight = null;
   runtime.lag.project = 0;
   runtime.lag.domain = 0;
@@ -174,6 +175,12 @@ export interface DomeRuntime {
    * return to the whole dome. null = dome off.
    */
   fitScale: number | null;
+  /**
+   * The whole-cloud fit a fit control or the entry last chose, and the pose it was made for. Neural's
+   * zoom growth measures from its scale, and a click refits the cloud only while the camera still sits
+   * on it. A panel's refit never changes it. null = no fit yet.
+   */
+  restFit: { target: { tx: number; ty: number; tscale: number }; yaw: number; pitch: number } | null;
   /** Invalidates the edge candidate cache, since entries update in place. */
   frameEpoch: number;
   yaw: number;
@@ -243,6 +250,7 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     zSpan: 0,
     drawnBounds: null,
     fitScale: null,
+    restFit: null,
     frameEpoch: 0,
     yaw: DOME_YAW_DEFAULT,
     pitch: DOME_PITCH_DEFAULT,

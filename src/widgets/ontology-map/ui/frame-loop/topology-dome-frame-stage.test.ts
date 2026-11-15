@@ -13,6 +13,7 @@ import { createDomeFrameStage, type DomeFrameStageSources } from "./topology-dom
 import { buildTopologyWorld, type TopologyWorld } from "../world/topology-world";
 import { computeOverviewCameraTarget, computeOverviewFitScale } from "../camera/topology-camera-math";
 import { overviewBoundsFor } from "../camera/topology-overview-fit";
+import { projectDomeCoord } from "../../model/dome-view/projection";
 
 const tokens = {
   radiusProject: 20,
@@ -84,11 +85,8 @@ function stageSources(arrangement: MapArrangement, reducedMotion = false) {
     expandedParentsRef: { current: new Set<string>() as ReadonlySet<string> },
     clusteredIdsRef: { current: new Set<string>() as ReadonlySet<string> },
     pointerMachineRef: { current: { phase: "idle", downPoint: null, pressedNodeId: null } as PointerMachineState },
-    bgPointerRef: { current: null as { x: number; y: number } | null },
     reducedMotionRef: { current: reducedMotion },
-    lastInputMsRef: { current: 0 },
     lastActiveMsRef: { current: 0 },
-    ambientSleepDelayRef: { current: undefined as number | undefined },
     viewportRef: { current: { width: 1400, height: 860, dpr: 1 } },
     beginCameraTween: vi.fn(),
     cameraTokens: (value: OntologyMapTokens) => value,
@@ -263,3 +261,79 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     expect(sources.domeRuntimeRef.current!.model).toBe(settled);
   });
 });
+
+describe("dome frame stage: a Neural click that opens the detail panel", () => {
+  const REST = { tx: 0, ty: 0, tscale: 1 };
+  const PANEL_FIT = { tx: 60, ty: 0, tscale: 0.8 };
+
+  function settledNeural(panelRightPx = 0) {
+    frame = 0;
+    const world = neuralWorld();
+    const sources = stageSources("coupling");
+    const fit = vi.fn(() => ({ ...REST }));
+    sources.domeFitTarget = fit;
+    sources.cameraTokens = (value: OntologyMapTokens) => ({ ...value, safeInsetLeft: 0, safeInsetRight: panelRightPx });
+    const run = createDomeFrameStage(sources);
+    run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    while (sources.domeModelBuildRef.current !== null) run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    const dome = sources.domeRuntimeRef.current!;
+    dome.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    dome.entryArmed = false;
+    sources.domeFitPendingRef.current = true;
+    const step = () => run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    step();
+    fit.mockImplementation(() => ({ ...PANEL_FIT }));
+    return { sources, dome, step };
+  }
+
+  beforeEach(() => {
+    let clock = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => (clock += 0.25));
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("refits the whole cloud into the free area at the rest fit and undoes exactly that on close", () => {
+    const { sources, dome, step } = settledNeural();
+    expect(sources.cameraTargetRef.current).toEqual(REST);
+    dome.flyRequest = { slug: "c3", nudge: true };
+    step();
+    expect(sources.cameraTargetRef.current).toEqual(PANEL_FIT);
+    dome.flyRequest = { slug: null, unnudge: true };
+    step();
+    expect(sources.cameraTargetRef.current).toEqual(REST);
+  });
+
+  it("keeps a zoomed person's zoom and pose and slides only the selected cell out from under the panel", () => {
+    const { sources, dome, step } = settledNeural(800);
+    const at = projectDomeCoord(dome.model, dome.model.coords.get("c3")!, dome.yaw, dome.pitch);
+    const zoomed = { tx: at.wx, ty: at.wy, tscale: 2 };
+    sources.cameraTargetRef.current = { ...zoomed };
+    const pose = { yaw: dome.yaw, pitch: dome.pitch };
+    dome.flyRequest = { slug: "c3", nudge: true };
+    step();
+    const moved = sources.cameraTargetRef.current;
+    expect(moved.tscale).toBe(2);
+    expect(moved.ty).toBe(zoomed.ty);
+    const screenX = (at.wx - moved.tx) * moved.tscale + 700;
+    expect(screenX).toBeCloseTo(1400 - 800 - 64);
+    expect({ yaw: dome.yaw, pitch: dome.pitch }).toEqual(pose);
+    dome.flyRequest = { slug: null, unnudge: true };
+    step();
+    expect(sources.cameraTargetRef.current).toEqual(zoomed);
+  });
+
+  it("measures zoom growth from the rest fit through the panel's refit, so a cell keeps its size after close", () => {
+    const { sources, dome, step } = settledNeural();
+    const growthBase = () => ({ camera: sources.cameraTargetRef.current.tscale, rest: dome.restFit?.target.tscale });
+    const before = growthBase();
+    dome.flyRequest = { slug: "c3", nudge: true };
+    step();
+    expect(dome.restFit?.target).toEqual(REST);
+    dome.flyRequest = { slug: null, unnudge: true };
+    step();
+    expect(growthBase()).toEqual(before);
+  });
+});
+

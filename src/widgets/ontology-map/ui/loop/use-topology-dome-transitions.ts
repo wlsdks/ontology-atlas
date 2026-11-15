@@ -100,8 +100,9 @@ export function useTopologyDomeTransitions({
     const slug = focusedSlugRef.current;
     if (slug === null) return;
     /*
-     * A click only selects in 3D and must not reframe: a fly-to-framed node is re-flown against the new
-     * free area; any other selected node only slides sideways, and only if the panel would cover it.
+     * A click never yanks the camera: a fly-to-framed node is re-flown against the new free area. In
+     * Neural at the rest fit the whole cloud refits into the free area; zoomed or turned, as in every
+     * other view, the view only slides sideways until the panel no longer covers the selected node.
      */
     dome.flyRequest = dome.flight !== null && dome.flight.slug === slug ? { slug } : { slug, nudge: true };
     lastActiveMsRef.current = performance.now();

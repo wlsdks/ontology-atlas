@@ -93,11 +93,8 @@ export interface DomeFrameStageSources {
   expandedParentsRef: SourceRef<ReadonlySet<string>>;
   clusteredIdsRef: SourceRef<ReadonlySet<string>>;
   pointerMachineRef: SourceRef<PointerMachineState>;
-  bgPointerRef: SourceRef<{ x: number; y: number; } | null>;
   reducedMotionRef: SourceRef<boolean>;
-  lastInputMsRef: SourceRef<number>;
   lastActiveMsRef: SourceRef<number>;
-  ambientSleepDelayRef: SourceRef<number | undefined>;
   viewportRef: SourceRef<{ width: number; height: number; dpr: number; }>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out", altitude?: CameraTweenAltitude) => void;
   cameraTokens: (tokens: OntologyMapTokens) => OntologyMapTokens;
@@ -109,6 +106,21 @@ export interface DomeFrameStageSources {
     height: number,
     tokens: OntologyMapTokens,
   ) => CameraTarget | null;
+}
+
+const REST_POSE_EPSILON = 1e-3;
+
+/** Is the camera, or the view a selection move left from, still the whole-cloud fit at its pose? */
+function cameraAtRestFit(
+  dome: DomeRuntime,
+  current: CameraTarget,
+  sameTarget: (a: CameraTarget, b: CameraTarget) => boolean,
+): boolean {
+  const rest = dome.restFit;
+  if (rest === null) return false;
+  if (Math.abs(rest.yaw - dome.yaw) > REST_POSE_EPSILON || Math.abs(rest.pitch - dome.pitch) > REST_POSE_EPSILON) return false;
+  const view = dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed) ? dome.nudgeReturn.before : current;
+  return sameTarget(view, rest.target);
 }
 
 export function createDomeFrameStage(sources: DomeFrameStageSources) {
@@ -280,6 +292,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             // Otherwise target ≠ value persists and the wheel anchor computes
             // against a zoom that does not exist (see the `fitScale` JSDoc).
             dome.fitScale = target.tscale;
+            dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -390,6 +403,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               if (target !== null) {
                 cameraTargetRef.current = target;
                 dome.fitScale = target.tscale;
+                dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
                 userDrivenCameraRef.current = false;
                 dampingRef.current = tokens.cameraDampingDefault;
                 cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -481,10 +495,11 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               beginCameraTween(target);
               lastActiveMsRef.current = now;
             }
-          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0 && dome.model.arrangement === "coupling") {
+          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0 && dome.model.arrangement === "coupling" && cameraAtRestFit(dome, cameraTargetRef.current, sameTarget)) {
             /*
-             * Neural lights dependencies across the whole cloud, so the click's move refits the
-             * cloud into the area the panels leave free; the same move back when they close.
+             * At the rest fit Neural lights dependencies across the whole cloud, so the click's move refits
+             * the cloud into the area the panels leave free; the same move back when they close. Zoomed or
+             * turned, the next branch only slides the selected cell clear.
              */
             const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
             if (target !== null && !sameTarget(cameraTargetRef.current, target)) {
@@ -522,7 +537,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                */
               let eMin = sx;
               let eMax = sx;
-              for (const id of world.neighborMap.get(request.slug) ?? []) {
+              const neighbourhood = dome.model.arrangement === "coupling" ? [] : world.neighborMap.get(request.slug) ?? [];
+              for (const id of neighbourhood) {
                 const c = dome.model.coords.get(id);
                 if (c === undefined) continue;
                 const x = toScreenX(projectDomeCoord(dome.model, c, dome.yaw, dome.pitch).wx);
@@ -589,6 +605,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
                 if (target !== null) {
                   dome.fitScale = target.tscale;
+                  dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
                   flyCamera(target);
                 }
               }
@@ -771,6 +788,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           dome.frame.clear();
           dome.drawnBounds = null;
           dome.fitScale = null;
+          dome.restFit = null;
           dome.frameEpoch++;
         }
       } else if (dome !== null) {
@@ -784,6 +802,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           dome.frame.clear();
           dome.drawnBounds = null;
           dome.fitScale = null;
+          dome.restFit = null;
           dome.frameEpoch++;
         }
       }

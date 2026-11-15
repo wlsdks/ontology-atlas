@@ -122,6 +122,7 @@ export function useTopologyOverviewNavigation({
       if (target !== null) {
         cameraTargetRef.current = target;
         dome.fitScale = target.tscale;
+        dome.restFit = { target: { ...target }, yaw: targetYaw, pitch: DOME_PITCH_DEFAULT };
         userDrivenCameraRef.current = false;
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;

@@ -479,7 +479,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
                 : null,
             domeLight: domeLightFor(tokens, domeLod),
             neuralLabels: neuralLabelsRef.current,
-            domeFitScale: domeRuntimeRef.current?.fitScale ?? null,
+            domeFitScale: domeRuntimeRef.current?.restFit?.target.tscale ?? domeRuntimeRef.current?.fitScale ?? null,
             paintAnimatedBackground: animatedBgRef.current
                 ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
                 : null,
