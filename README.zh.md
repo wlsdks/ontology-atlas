@@ -37,31 +37,35 @@
 
 <table>
 <tr>
-<td width="50%"><img src="public/gateway/projects.en.png" alt="项目：每个项目的领域、能力和代码依据状态" /><br /><b>项目</b> — 每个项目，以及其中有多少已有代码依据。</td>
-<td width="50%"><img src="public/gateway/library.en.png" alt="资料库：左侧是来源，另有据此撰写的 Wiki 页面，以及这些页面提到的概念" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来。</td>
+<td width="50%"><img src="docs/assets/readme/neural.png" alt="地图的神经视图：把本体画成立体，选中一个能力后，面板列出它依赖什么、谁在使用它" /><br /><b>地图 · 神经</b> — 把同样的概念画成可以转动的立体；选中一个，就能看到它依赖什么、被什么使用。</td>
+<td width="50%"><img src="public/gateway/projects.en.png" alt="项目：项目说明、按所含概念数量伸缩的领域条，以及所选领域中的能力列表" /><br /><b>项目</b> — 项目为何存在、分成哪些领域、每个领域里有什么。</td>
 </tr>
 <tr>
+<td width="50%"><img src="public/gateway/library.en.png" alt="资料库：左侧是 Wiki 页面及其与来源是否一致，中间是查找框，下方是建议先读的来源" /><br /><b>资料库</b> — 文档放进去，带出处的 Wiki 页面出来；先找到段落，再到来源中核对。</td>
 <td width="50%"><img src="public/gateway/planning.en.png" alt="规划：左侧是项目文件夹中的 Markdown 文件列表，右侧是打开的文档" /><br /><b>规划</b> — 就地阅读项目文件夹里的 Markdown，不复制。</td>
-<td width="50%"><img src="public/gateway/changes.en.png" alt="变更：一周内的提交及其日期" /><br /><b>变更</b> — 一段时间内改了什么，按拉取请求、提交和文件分开看。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/git.en.png" alt="Git：尚未保存的概念更改及其精确的 Markdown diff" /><br /><b>Git</b> — 保存前就能看到精确的 Markdown diff。</td>
-<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：仓库向编码智能体告知、拦截和监测的内容" /><br /><b>Harness</b> — 仓库向智能体告知、拦截和监测的内容。</td>
+<td width="50%"><img src="public/gateway/changes.en.png" alt="变更：一天内合并的变更数量、合并的时段，以及按范围分组的变更" /><br /><b>变更</b> — 一段时间内合并了什么，先计数、分组，再进入背后的拉取请求、提交和文件。</td>
+<td width="50%"><img src="public/gateway/git.en.png" alt="Git：左侧是提交历史，右侧是某次提交更改的概念及其关系" /><br /><b>Git</b> — 每次提交改了哪些概念；编辑过的文档在提交前就会出现在这里。</td>
 </tr>
 <tr>
-<td width="50%"><img src="public/gateway/automations.en.png" alt="自动化：让文件夹保持最新的定时检查" /><br /><b>自动化</b> — 让文件夹保持最新的定时检查。</td>
+<td width="50%"><img src="public/gateway/harness.en.png" alt="Harness：智能体读取的文件、执行前拦截它的规则、结束后检查它的内容，以及一个打开的指令文件" /><br /><b>Harness</b> — 智能体在这个仓库里读什么、执行前被什么拦住、结束后被什么检查。</td>
+<td width="50%"><img src="public/gateway/automations.en.png" alt="自动化：一项定时文档检查的周期和最近结果，以及运行记录" /><br /><b>自动化</b> — 定时检查，以及每次运行发现了什么。</td>
 </tr>
 </table>
 
-**v1.9 新增：** 把仓库的拉取请求、提交和文件分开阅读的 Git 与 PR 简报，以及就地阅读项目文件夹中 Markdown 的规划。详见[发布页](https://github.com/wlsdks/ontology-atlas/releases)。
+**v2.0 新增：** 把地图画成可以转动的立体的神经视图和树状的 3D 视图；把智能体读什么、被什么拦住、被什么检查集中在一屏的 Harness「配置」；变更顶部的合并摘要；以及自动化中每项定时任务的运行记录。分析不再是单独的界面。详见[发布页](https://github.com/wlsdks/ontology-atlas/releases)。
 
 开始之前值得知道的几点：
 
-- 地图上的线是已声明的关系，不是运行时影响的证明；图例会说明每个标记和方向。[地图](docs/features/map/flat-dial.md)
+- 地图上的线是已声明的关系，不是运行时影响的证明。地图有五种视图：平面、六边形、领域结构、3D 和神经。[地图](docs/features/map/README.md)
 - 空文件夹会给出起步操作，起步失败后可以重试，不会覆盖已有文件。弹窗式导览已取消。[首次运行](docs/features/first-run.md)
 - 资料库的设置和检查需要在应用中进行；浏览器里可以获取应用或添加文件。[资料库](docs/features/library/workspace.md)
 - 规划是只读的，在 macOS 应用中对你选择的文件夹生效，显示 Markdown 和 PNG/JPEG 图片。[规划](docs/FEATURES.md)
 - Git 的仅发送操作不会提交新的文件更改；文件夹或分支状态变化时，可以重新查看。拉取可能更改整个仓库中的文件。[Git](docs/features/git.md)
+- 变更会打开你在应用中选择的 Git 仓库，没有本体也可以使用。读取公开的 GitHub 拉取请求需要你明确操作，列表可能不完整；不会读取私有拉取请求。[变更简报](docs/features/change-briefing.md)
+- 项目文档在上次含义审阅之后被修改时，会提示重新审阅并明确确认；保存更改或代码路径匹配并不代表含义已被接受。[MCP 服务器](docs/features/mcp-server.md)
+- 在应用内的对话中，智能体的每次写入都要等你允许。Codex 以只读方式启动，本机配置的 Codex 权限配置文件不会出现在选项中，因为它们的审批行为没有公开。[智能体](docs/features/agents.md) · [功能清单](docs/FEATURES.md)
 - 连接文件夹之前，应用也会保持资料库、规划、智能体和变更可用。[功能清单](docs/FEATURES.md)
 
 ## 快速开始
@@ -121,60 +125,116 @@ pnpm checks:changed -- --run
 
 ## Moru
 
-Moru是Atlas的像素海豹角色，指南针是应用图标。项目内包含[74个动作、16个姿态和原始素材](assets/brand/moru/README.md)。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
+Moru 是 Atlas 的像素海豹角色，指南针是应用的标志。仓库内包含[74 个动作、16 个姿态和原始素材](assets/brand/moru/README.md)：58 个手绘动作，以及由它们拼接而成的 16 个场景。打开[本地动作预览](assets/brand/moru/preview.html)，即可播放、暂停并逐帧查看。
 
-在文件夹选择画面，Moru 会打招呼并展示小文件夹；打开文件夹时停止玩耍，切换到现有的等待画面。下载页面使用独立的欢迎动作。只有双脚离地的短跳跃期间才会移动。悬停时会先完成落地，再停下来等待。点击 Moru 会短暂地害羞、鼓掌、跳舞、思考、冒出爱心、欢笑或挥动鳍跳舞，右键点击或按 Shift+F10 可打开暂停菜单。角色旁不显示播放按钮。启用减少动态效果时，仅改变静态表情。
-
-新的32姿势动作增加了鞠躬、击掌和帽子问候，下载欢迎画面还会表演小鱼魔术。点击时，小气泡会显示爱心、音符或闪光，返回跳跃时也会偶尔出现音符。等待操作时保持安静。躲猫猫和脸红可在动作预览中查看。
-
-轻轻点头时也会保持圆润的身体。平时会交替播放三段节奏与休息不同的动作，点击反应会避开最近的两个动作。等待操作时仍安静地待在原地。
-
-新增鼻尖平衡星星、闪光喷嚏、与小Moru捉迷藏和赠送爱心四个32姿势动作，并将挥鳍舞重新绘制为32姿势。第二次点击即可遇见新游戏，之后会避开最近动作，轮流展示完整反应。闲暇时，小Moru也会偶尔探出头来。文件夹选择画面有14种反应，下载欢迎画面有18种，包括无声唱歌和追泡泡。带有道具的动作不会叠加额外的表情气泡。
-
-<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru" />
-
-<details>
-<summary>查看Moru的动作</summary>
-
+<p>
 <img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="打招呼的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="阅读资料的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="等待用户决定的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="庆祝已确认完成的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" alt="唱歌的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" alt="和鱼儿玩耍的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" alt="跳舞的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" alt="Moru 一起跳舞" />
-<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" alt="害羞微笑的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" alt="和朋友玩球的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" alt="和三只小 Moru 依偎" />
-<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" alt="雨天撑伞的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" alt="看雪花的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" alt="感受微风的 Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="翻跟头的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="玩钓鱼玩具的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="用笔记本电脑编程的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="平衡星星的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="赠送爱心的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" height="128" alt="跳舞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="与小Moru玩耍" />
+</p>
+
+**出现的位置。** 在选择文件夹的画面，Moru 会打招呼、递出一个小文件夹并等待；文件夹开始打开后，它停止玩耍，切换到等待画面。下载页面有单独的欢迎动作。阅读来源、等待你的许可、庆祝检查完成这类动作，只在应用确实观察到对应状态时才出现，所以 Moru 不会展示未经确认的进展。
+
+**抚摸。** 点击 Moru，它会做出一次简短的反应。第一次很温和，第二次会出现一个俏皮的动作，之后它会避开最近的两个动作，轮流展示全部反应：文件夹画面有 14 种，下载欢迎画面有 18 种。不带文字的小气泡有时会冒出爱心、音符或闪光；长时间闲置时，小 Moru 会探一次头。
+
+**不打扰。** Moru 只在腾空时移动，鼠标悬停时会先落地再等待。等待操作时，它安静地待在原地。暂停和继续在 Moru 的菜单里（右键点击或 Shift+F10），角色旁没有播放按钮。启用减少动态效果后，它以静止的表情回应。
+
+<img src="assets/brand/moru/moru-poses-showcase.png" width="400" height="400" alt="Moru 的 16 个姿态" />
+
+<details>
+<summary>查看全部 58 个手绘动作</summary>
+
+<p><b>等待</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-blink.gif" width="128" height="128" alt="等待时眨眼的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-tail.gif" width="128" height="128" alt="摇尾巴的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-doze.gif" width="128" height="128" alt="打盹的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hop.gif" width="128" height="128" alt="轻轻一跳的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-tilt.gif" width="128" height="128" alt="好奇地歪头的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-stretch.gif" width="128" height="128" alt="伸懒腰的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-rest-return.gif" width="128" height="128" alt="休息后回来的Moru" />
+</p>
+
+<p><b>问候</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-wave.gif" width="128" height="128" alt="打招呼的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="轻轻鞠躬的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="摘小帽子问好的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="击掌的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-shy.gif" width="128" height="128" alt="害羞微笑的 Moru" />
+</p>
+
+<p><b>工作</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-open.gif" width="128" height="128" alt="打开文件夹的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="查看文件夹的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-source-read.gif" width="128" height="128" alt="阅读资料的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-search.gif" width="128" height="128" alt="搜索中的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-follow-link.gif" width="128" height="128" alt="沿着链接前进的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-compare.gif" width="128" height="128" alt="比较两样东西的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-review-proposal.gif" width="128" height="128" alt="查看提案的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-await-permission.gif" width="128" height="128" alt="等待用户决定的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-uncertain.gif" width="128" height="128" alt="拿不准的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-stop.gif" width="128" height="128" alt="停下来的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-retry.gif" width="128" height="128" alt="再试一次的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-save.gif" width="128" height="128" alt="保存中的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-refresh.gif" width="128" height="128" alt="刷新中的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-connect.gif" width="128" height="128" alt="连接中的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-reply-ready.gif" width="128" height="128" alt="准备好回复的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-no-results.gif" width="128" height="128" alt="什么也没找到的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-laptop-code.gif" width="128" height="128" alt="用笔记本电脑编程的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-clap.gif" width="128" height="128" alt="庆祝已确认完成的Moru" />
+</p>
+
+<p><b>情绪</b></p>
+
+<p>
 <img src="assets/brand/moru/animated/gif/authored/moru-thinking.gif" width="128" height="128" alt="思考的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-pondering.gif" width="128" height="128" alt="琢磨问题的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-hearts.gif" width="128" height="128" alt="送出小爱心的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-laugh.gif" width="128" height="128" alt="咯咯笑的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-frown.gif" width="128" height="128" alt="皱眉的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-grumpy.gif" width="128" height="128" alt="有点生气的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="脸红后平静下来的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="赠送爱心的Moru" />
+</p>
+
+<p><b>玩耍</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-sing.gif" width="128" height="128" alt="唱歌的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-dance.gif" width="128" height="128" alt="跳舞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-chorus.gif" width="128" height="128" alt="Moru 一起跳舞" />
 <img src="assets/brand/moru/animated/gif/authored/moru-flipper-groove.gif" width="128" height="128" alt="挥动鳍跳舞的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="看着漂浮本体模型的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="和本体模型一起跳舞的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-soft-bow.gif" width="128" height="128" alt="轻轻鞠躬的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-hat-tip.gif" width="128" height="128" alt="摘小帽子问好的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-somersault.gif" width="128" height="128" alt="翻跟头的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-toy-fishing.gif" width="128" height="128" alt="玩钓鱼玩具的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-fish-play.gif" width="128" height="128" alt="和鱼儿玩耍的 Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-magic-fish.gif" width="128" height="128" alt="变出小鱼的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-peekaboo.gif" width="128" height="128" alt="玩躲猫猫的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-warm-temper.gif" width="128" height="128" alt="脸红后平静下来的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-flipper-five.gif" width="128" height="128" alt="击掌的Moru" />
-<img src="assets/brand/moru/animated/gif/authored/moru-folder-peek.gif" width="128" height="128" alt="查看文件夹的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-bubble-chase.gif" width="128" height="128" alt="追泡泡的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-nose-balance.gif" width="128" height="128" alt="平衡星星的Moru" />
 <img src="assets/brand/moru/animated/gif/authored/moru-star-sneeze.gif" width="128" height="128" alt="打出闪光喷嚏的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-friend-play.gif" width="128" height="128" alt="和朋友玩球的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-pup-cuddle.gif" width="128" height="128" alt="和三只小 Moru 依偎" />
 <img src="assets/brand/moru/animated/gif/authored/moru-pup-peek.gif" width="128" height="128" alt="与小Moru玩耍" />
-<img src="assets/brand/moru/animated/gif/authored/moru-heart-gift.gif" width="128" height="128" alt="赠送爱心的Moru" />
+</p>
 
+<p><b>场景</b></p>
+
+<p>
+<img src="assets/brand/moru/animated/gif/authored/moru-rainy-day.gif" width="128" height="128" alt="雨天撑伞的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-snow-day.gif" width="128" height="128" alt="看雪花的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-breeze.gif" width="128" height="128" alt="感受微风的 Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-orbit.gif" width="128" height="128" alt="看着漂浮本体模型的Moru" />
+<img src="assets/brand/moru/animated/gif/authored/moru-ontology-dance.gif" width="128" height="128" alt="和本体模型一起跳舞的Moru" />
+</p>
 
 </details>
 
