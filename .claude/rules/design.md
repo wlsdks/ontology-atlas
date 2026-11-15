@@ -14,7 +14,7 @@ paths:
 # Design rules for building screens
 
 Working decisions for UI source. Values live in code: `pnpm design:tokens`
-prints them. `docs/DESIGN-SYSTEM.md` (about 50 KB) holds the rules; open the
+prints them. `docs/DESIGN-SYSTEM.md` (about 60 KB) holds the rules; open the
 section you need from its table of contents. Why each gate is shaped as it is:
 `.claude/rules/design-gates.md`.
 
@@ -38,9 +38,9 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
   a `BottomTabBar` folder seat is a separate decision.
 - Do not scale UI at 1920px and wider; only 2400px and wider may use 1.1×.
 - Body type is self-hosted Pretendard Variable.
-- Register every new type step in `TYPE_RAMP_STEPS` and every leading step in
-  `LEADING_RAMP_STEPS` (`src/shared/lib/cn.ts`); tailwind-merge silently drops
-  unregistered steps.
+- Register every new type step in `TYPE_RAMP_STEPS`, leading step in
+  `LEADING_RAMP_STEPS` and radius step in `RADIUS_RAMP_STEPS`
+  (`src/shared/lib/cn.ts`); tailwind-merge silently drops unregistered steps.
 - Size and line height are a pair. Use named ramp utilities: a `--leading-*`
   step for UI, `prose` for authored text, `display-tight` for names or numbers
   of at most two lines. Raw `text-[Npx]` and `text-[var(--text-body)]` lose the
@@ -50,8 +50,7 @@ is a defect. Source: `docs/DESIGN-SYSTEM.md`, "Scale fixed contract" and
   create a gateway token only once a second real consumer exists.
 - Settings sheets and their drill-ins: row labels, interactive text and
   explanatory captions use `text-body`; values, chips and badges `text-label`;
-  `text-caption` (9.5px) only for one uppercase eyebrow. Setting rows use
-  `px-4 py-3`, LNB rows `px-3 py-2`.
+  `text-caption` (9.5px) only for one uppercase eyebrow.
 
 ## Design charter
 
@@ -60,9 +59,13 @@ composition and motion": choose the fact or action that owns the screen and draw
 its real object or causal relationship. Equal cards with correct tokens are not
 a composition.
 
-- Achromatic base, indigo protagonist. Gradients, glass, glow, scale hover,
-  overshoot and extra hues are allowed (2026-09-08), each through a ramp token
-  and naming the fact or state it carries.
+- Chrome is achromatic (2026-11-14): neutral surfaces and ink, a paper-white
+  primary, hue-free selection and hover, one calm blue for links and focus. The
+  `indigo` token names are historical; the map canvas keeps its indigo.
+- Gradients, glass, glow, neon, bloom, animated backgrounds, scale hover,
+  overshoot, bounce and further hues are allowed everywhere (2026-09-08).
+  Values ride tokens: a missing one is minted with its first consumer, never a
+  reason to skip the effect. Only a new hue names the fact it carries.
 - The pixel mascot's raster colours never
   become CSS tokens or UI colours (`docs/design/brand.md`).
 - Signal tones are warning amber, error red and success emerald; success marks
@@ -77,8 +80,8 @@ a composition.
 - No coloured left-edge stripe on a new card or row ("No left-edge selection
   stripe" in `docs/DESIGN-SYSTEM.md`).
 - Workflow categories differ by shape (active underline, planned dashed), not
-  colour alone. Selection stays in one indigo family; edge selection uses
-  `--map-edge-selected` on both endpoints.
+  colour alone. Chrome selection is the neutral tint ladder; on the map, edge
+  selection uses `--map-edge-selected` on both endpoints.
 
 ## One word per thing
 
@@ -105,11 +108,13 @@ One accurate word per thing. Canonical spellings live in
   `render/node-shapes.ts` and `shared/ui/ontology-node/map-kind-glyph.tsx` aligned
   (`node-kind-shape-parity` contract). Radii 30/17/11/7,
   `DOMAIN_HALF_EXTENT_RATIO`, and any bridge-node visual require reopening the
-  map research through a `reviewer` with the `map-marks` lens.
+  map research through a `reviewer` with the `map-marks` lens. Full Flat is
+  outside that ladder: its marks are `--map-graph-*` ("Map marks and ink").
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
-  is licensed only where the mark is light: the gateway hero, the walked-path
-  star (`shared/lib/map-canvas/star-emission.ts`) inside an opened lens. Restore the previous operation in the same function;
-  a node carries at most one diffraction cross per frame.
+  is for a mark that is light itself (today the gateway hero, the walked-path
+  star and its settings preview, the dome's light). Restore the previous
+  operation in the same function; a node carries at most one diffraction cross
+  per frame.
 - The WebGL2 light layer (`light/`) is light by construction: it draws no mark
   with identity, composites `plus-lighter` (licensed only there), and runs only
   for an event in Flat. Gate: `webgl-context-census`.
@@ -138,8 +143,9 @@ literals; weights other than 400/510/560/650; Tailwind palette classes; z-index
 20 and above without `--z-*`; repeated `cursor-pointer`; and hand-built disabled
 states (`CONTROL_DISABLED_CLASS`).
 
-Lint cannot see an unknown utility: `text-large` emits no CSS and silently
-renders 16px. Spacing is deliberately unenforced; do not add unused spacing
+Lint cannot see an unknown utility, which emits no CSS: an unknown type step
+such as `text-large` renders 16px and only the `type-ramp-step-defined` contract
+catches it. Spacing is deliberately unenforced; do not add unused spacing
 tokens. Contract tests cover cross-file values, and `pnpm checks:changed`
 names the ones a change reaches.
 
@@ -149,9 +155,10 @@ names the ones a change reaches.
   `:root` alpha in `base-root-alpha.css`, `--map-*` in `base-map-tokens.css`
   (parts `app/globals.css` imports). Declare translucent values in `:root` as well:
   Tailwind v4 may emit the utility without the root variable.
-- Topology dimensions, surfaces, shadows, radii, insets, camera, focus, panel
-  and drag motion use `--topology-*`. A new clamp, shadow, easing or duration
-  needs a token name, a product reason, and a WebView/test marker.
+- Topology chrome dimensions, surfaces, shadows, radii, insets and panel motion
+  use `--topology-*`; camera and drag timings are canvas values
+  (`motion-physics.ts`, `--map-*`). A new clamp, shadow, easing or duration
+  needs a token name and a product reason.
 - Coarse-pointer targets come only from `@media (pointer: coarse)` and
   `--touch-target-min`, never viewport guesses. Scrollable pages below `lg`
   reserve `--topology-mobile-bottom-tab-reserve`; full-bleed map and docs
@@ -170,12 +177,17 @@ names the ones a change reaches.
   "Motion").
 - Smooth means no frame interval above 50 ms while it runs; loops animate only
   `transform`, `translate`, `scale`, `rotate`, `opacity`, `filter` or
-  `clip-path`; a layout property animates only as a one-shot reflow per input;
+  `clip-path`, or a sprite or text-clipped gradient moved by
+  `background-position` once its keyframe is listed in `PAINT_LICENSED` (a
+  scripted `repeat: Infinity` loop lists its file in `SCRIPTED_LOOPS`; both in
+  the `infinite-motion` contract); a layout property animates only as a
+  one-shot reflow per input;
   the next input settles or retargets any motion; the map draws no frame at
   rest; ambient and infinite motion pauses when hidden or offscreen, except
   loops that show running work, which the `infinite-motion` contract lists and
-  which stop with the work. Ambient motion that starts by itself stops within
-  5 s and rests, or sits beside a visible pause (WCAG 2.2.2). Exempt: loops
+  which stop with the work. DOM ambient motion that starts by itself stops
+  within 5 s and rests, or sits beside a visible pause (WCAG 2.2.2); the map's
+  canvas ambience sleeps 30 s after the last input instead. Exempt: loops
   that show running work, and Moru, a character rather than decoration, whose
   gestures repeat while visible under the hidden, offscreen and reduced-motion
   rules (`docs/design/brand.md`).
@@ -185,12 +197,14 @@ names the ones a change reaches.
 - Durations are the `--motion-*` ramp (`pnpm design:tokens -- --prefix=--motion-`;
   JS `MOTION`); `--motion-fast` is the Tailwind default (omit the class). Hover
   and focus stay at or below `--motion-settle` (lint). Camera and drag timings
-  are canvas-only. Duration and easing move as one family.
+  are canvas-only. Duration and easing move as one family. A loop's period is a
+  multiple of a step (`calc(var(--motion-base) * 24)`), not a new token.
 - A new duration, easing or spring is a named token or `SPRING` entry with a
   line in `docs/DESIGN-SYSTEM.md`. DOM gets `springEasing()` at runtime; never
   type a `linear()` by hand (`motion-token-mirror`).
 - Exits accelerate on `--motion-ease-exit` (JS `EXIT_TRANSITION`) under their own
-  animation name; entries keep `--motion-ease`. Only `-out` /
+  animation name; entries use `--motion-ease`, a `SPRING`, or
+  `--motion-ease-place` for a figure that is set down. Only `-out` /
   `[data-state="closed"]` rules on a `*Out` keyframe may use the exit token,
   never a `transition:`, and only `src/shared/motion` imports
   `MOTION_EASE_EXIT` (`motion-token-mirror`, `exit-motion-restart` contracts).
