@@ -77,7 +77,7 @@ export function GlossaryDialog({
       ) : (
         <p
           data-testid="first-run-starter-plain-mode-hint"
-          className="mt-4 text-label leading-label text-[color:var(--color-text-quaternary)]"
+          className="mt-4 text-label leading-label text-[color:var(--color-text-tertiary)]"
         >
           {t("plainModeHint")}
         </p>
