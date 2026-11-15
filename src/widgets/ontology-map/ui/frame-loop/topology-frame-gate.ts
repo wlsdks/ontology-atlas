@@ -17,7 +17,6 @@ import type { StrataLodState } from "../../model/dome-view/strata-lod";
 import {
   extendsGrace,
   isCameraUnsettled,
-  isDomeSpinAnimating,
   isEgoTailAnimating,
   isSceneActive,
   shouldSkipFrame,
@@ -31,6 +30,7 @@ import type { OntologyMapProps } from "../OntologyMap";
 import type { NodeDragState } from "../input/topology-pointer-types";
 import { readOntologyMapTokensOrNull } from "../../tokens/topology-read-tokens";
 import { type TopologyWorld } from "../world/topology-world";
+import { isNeuralSignalTravelling } from "../frame-draw/paint-neural";
 
 export const IDLE_GRACE_MS = 1200;
 const VIEWPORT_SETTLE_FRAMES = 2;
@@ -161,7 +161,7 @@ export function createFrameGate({
   hoveredClusterIdRef,
   trailLensPropRef,
   trailBrushPropRef,
-  panelHoverPropRef, drawnTrailLensRef,
+  panelHoverPropRef, neuralRampRef, drawnTrailLensRef,
   trailLensRampRef,
   visitedTrailRef,
   colorFocusRef,
@@ -278,7 +278,7 @@ export function createFrameGate({
             }
         }
         // The navigation yield sits **ahead of** the idle gate: whatever the
-        // activity flags say (auto-spin, comets, assembly ramp), a screen that is
+        // activity flags say (comets, assembly ramp, a travelling signal), a screen that is
         // being left does not get drawn.
         if (now < navYieldUntilRef.current) {
             return FRAME_NOT_READY;
@@ -305,11 +305,8 @@ export function createFrameGate({
             // Comets and the fresh breathe sleep rather than switch off (`model/ambient/ambient-sleep.ts`).
             const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             const ambientAsleep = isAmbientAsleep(ambientFactor);
-            // Does the dome still have to move — assembly/teardown ramp, auto-spin,
-            // orbit inertia, twist spring-back, flat-drag spring, or the reset
-            // ease. The auto-spin stops while the pointer is over the canvas
-            // (bgPointer present) so an aimed-at node cannot slide out from under
-            // the cursor.
+            // Does the dome still have to move — assembly/teardown ramp, orbit
+            // inertia, twist spring-back, flat-drag spring, or the reset ease.
             const domeRt = domeRuntimeRef.current;
             const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
             const domeMotion = (domeTargetOn && (domeRt === null || domeRt.rampClock < DOME_ASSEMBLE_TOTAL_MS)) ||
@@ -330,18 +327,7 @@ export function createFrameGate({
                         (domeLodRef.current.pointerSlot >= 0 && bgPointerRef.current === null) ||
                         domeFocusPendingRef.current !== null ||
                         Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
-                        domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
-                        // Keep rAF awake only while auto-spin can run; `!ambientAsleep` ties it to the `ambient-sleep.ts`
-                        // contract so 3D can fall asleep.
-                        (!domeRt.orbiting &&
-                            isDomeSpinAnimating({
-                                domeOn: domeTargetOn,
-                                reducedMotion: reducedMotionRef.current,
-                                ambientAsleep,
-                                spinArmed: domeRt.spinArmed,
-                                pointerOverCanvas: bgPointerRef.current !== null,
-                                assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
-                            }))));
+                        domeRt.pitch !== clampDomePitch(domeRt.pitch)));
             // Growth replay — advance every node's appear value for this frame, and end
             // it when the last node has fully appeared. Nothing is left behind:
             // `appearRef` still holds every node at 1. The deliberate exits are listed
@@ -352,6 +338,8 @@ export function createFrameGate({
                 }
                 lastActiveMsRef.current = now;
             }
+            // Neural paints no comets: once it alone is on screen, a focus rests after its signal.
+            const neuralAlone = neuralRampRef.current >= 0.999;
             const idleFlags = {
                 pointerActive: pointerMachineRef.current.phase !== "idle",
                 // The sim counts as warm only while a drag grab/release is charging
@@ -366,10 +354,10 @@ export function createFrameGate({
                 egoTailAnimating: isEgoTailAnimating({
                     reducedMotion: reducedMotionRef.current,
                     ambientAsleep,
-                    hasDependsEdges: hasDependsEdgesRef.current && lastDialFrame() === null,
+                    hasDependsEdges: hasDependsEdgesRef.current && lastDialFrame() === null && !neuralAlone,
                     edgePulseSpeed: tokens.edgePulseSpeed,
                     focused: focusedSlugRef.current !== null,
-                    hasContainsEdges: hasContainsEdgesRef.current && lastDialFrame() === null,
+                    hasContainsEdges: hasContainsEdgesRef.current && lastDialFrame() === null && !neuralAlone,
                     livePulseCount: pulsesRef.current.length,
                 }),
                 // Lens brushing is an interaction in progress too: folding to idle
@@ -411,6 +399,7 @@ export function createFrameGate({
                 // only inside the frame body.
                 spotlightSettling: Math.abs(spotlightRampRef.current - (spotlightIdsRef.current !== null ? 1 : 0)) > 0.01,
                 lightActive: lightActiveRef.current,
+                neuralSignalTravelling: neuralRampRef.current > 0 && isNeuralSignalTravelling(now, reducedMotionRef.current),
             };
             const activeBesidesLight = extendsGrace(idleFlags) ||
                 previewTransitionRef.current !== null ||

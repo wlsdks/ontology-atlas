@@ -172,17 +172,8 @@
   },
   "light3d": {
     "legendLabel": "3D 地图图例",
-    "kindsHeading": "类型",
-    "evidenceHeading": "依据",
-    "current": "最新 {count, number}",
-    "stale": "过时 {count, number}",
-    "unknown": "未知 {count, number}",
-    "noteReading": "正在读取 Git 历史。读取完成前，所有状态均为未知。",
-    "noteAppOnly": "应用会从 Git 历史检查依据。在这里所有状态均为未知。",
-    "noteUnreadable": "无法读取 Git 历史，所有状态均为未知。",
-    "noteNoPaths": "没有概念写明代码路径，所有状态均为未知。",
-    "dependenciesHidden": "已隐藏 {count} 个依赖",
-    "dependenciesHiddenHint": "指向某个领域即可显示它自己的依赖。"
+    "focusFacts": "依赖 {needs} · 被依赖 {users}",
+    "dependenciesHidden": "已隐藏 {count} 个依赖"
   },
   "analysis": {
     "pathChipUnresolved": "路径：{source} → 选择目标",

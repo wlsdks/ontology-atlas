@@ -5,7 +5,7 @@ import {
   type RefObject
 } from "react";
 import type { CameraTarget } from "../../engine/camera";
-import { DOME_PITCH_DEFAULT, DOME_POSE_MS, domeNearestYawTurn } from "../../model/dome-view/orbit";
+import { DOME_PITCH_DEFAULT, DOME_POSE_MS, DOME_YAW_DEFAULT, domeNearestYawTurn } from "../../model/dome-view/orbit";
 import type { DomeRuntime } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
 import {
@@ -106,26 +106,23 @@ export function useTopologyOverviewNavigation({
       return;
     }
     // 3D "reset" — the way back after spinning the dome until you are lost.
-    // Eases the pose to the default (yaw 0.55, pitch 0.34) and fits the camera
+    // Eases the pose to the rest pose (`DOME_YAW_DEFAULT`, `DOME_PITCH_DEFAULT`) and fits the camera
     // to that pose's dome bbox. The yaw target is the equivalent angle nearest
     // the current one, so it never takes the long way round.
     const dome = domeRuntimeRef.current;
     if (dome !== null && dome.active) {
-      const targetYaw = domeNearestYawTurn(0.55, dome.yaw);
+      const targetYaw = domeNearestYawTurn(DOME_YAW_DEFAULT, dome.yaw);
       dome.yawVel = 0;
       // Drop the landing target too — new input and an explicit reset always win.
       dome.yawSnap = null;
       dome.pitchVel = 0;
       dome.orbiting = false;
       dome.poseTween = { startYaw: dome.yaw, startPitch: dome.pitch, targetYaw, targetPitch: DOME_PITCH_DEFAULT, startMs: performance.now(), durationMs: DOME_POSE_MS };
-      // Auto-align is the explicit reset that sends the pose home, and it is
-      // the one place the attention spin is rearmed after user interaction
-      // lowered `spinArmed`.
-      dome.spinArmed = true;
       const target = domeFitTarget(dome.model, targetYaw, DOME_PITCH_DEFAULT, width, height, tokens);
       if (target !== null) {
         cameraTargetRef.current = target;
         dome.fitScale = target.tscale;
+        dome.restFit = { target: { ...target }, yaw: targetYaw, pitch: DOME_PITCH_DEFAULT };
         userDrivenCameraRef.current = false;
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;

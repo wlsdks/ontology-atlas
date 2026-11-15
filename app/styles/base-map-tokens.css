@@ -333,12 +333,11 @@
        tier visibility rides a separate zoom-ratio signal (model/visibility/tier-visibility). */
     --map-overview-entry-ratio: 0.95;
     /*
-     * Top band 104: the label pipeline culls against `--map-safe-inset-top` (148); a smaller band put
-     * the apex ring through its own name. Used by `computeDomeFitCameraTarget` in
-     * `topology-camera-math.ts`.
+     * Top band 160: Neural names each cluster about 60 px above its topmost cell, and that name must
+     * clear the 104 px chrome band. Used by `computeDomeFitCameraTarget` in `topology-camera-math.ts`.
      */
     --map-dome-fit-fill: 0.98;
-    --map-dome-fit-inset-top: 104;
+    --map-dome-fit-inset-top: 160;
     --map-dome-fit-inset-bottom: 32;
     --map-focus-fit-max-scale: 1.9;
     /*

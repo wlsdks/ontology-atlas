@@ -1,7 +1,6 @@
 import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
-import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient/ambient-sleep";
 import { followOrbitTarget, startOrbitCadence, type OrbitCadence } from "../../model/camera/orbit-cadence";
 import {
   CAMERA_TRANSITION_MIN_MS,
@@ -30,7 +29,6 @@ import {
 import {
   clampDomePitch,
   decayOrbitVelocity,
-  DOME_PERIOD_MS,
   DOME_POSE_MS,
   domeFocusYaw,
   domeNearestYawTurn,
@@ -51,7 +49,6 @@ import {
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
-import { isDomeSpinAnimating } from "../../model/ambient/idle-gate";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import {
@@ -96,11 +93,8 @@ export interface DomeFrameStageSources {
   expandedParentsRef: SourceRef<ReadonlySet<string>>;
   clusteredIdsRef: SourceRef<ReadonlySet<string>>;
   pointerMachineRef: SourceRef<PointerMachineState>;
-  bgPointerRef: SourceRef<{ x: number; y: number; } | null>;
   reducedMotionRef: SourceRef<boolean>;
-  lastInputMsRef: SourceRef<number>;
   lastActiveMsRef: SourceRef<number>;
-  ambientSleepDelayRef: SourceRef<number | undefined>;
   viewportRef: SourceRef<{ width: number; height: number; dpr: number; }>;
   beginCameraTween: (target: CameraTarget, durationOverrideMs?: number, ease?: "out", altitude?: CameraTweenAltitude) => void;
   cameraTokens: (tokens: OntologyMapTokens) => OntologyMapTokens;
@@ -112,6 +106,21 @@ export interface DomeFrameStageSources {
     height: number,
     tokens: OntologyMapTokens,
   ) => CameraTarget | null;
+}
+
+const REST_POSE_EPSILON = 1e-3;
+
+/** Is the camera, or the view a selection move left from, still the whole-cloud fit at its pose? */
+function cameraAtRestFit(
+  dome: DomeRuntime,
+  current: CameraTarget,
+  sameTarget: (a: CameraTarget, b: CameraTarget) => boolean,
+): boolean {
+  const rest = dome.restFit;
+  if (rest === null) return false;
+  if (Math.abs(rest.yaw - dome.yaw) > REST_POSE_EPSILON || Math.abs(rest.pitch - dome.pitch) > REST_POSE_EPSILON) return false;
+  const view = dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed) ? dome.nudgeReturn.before : current;
+  return sameTarget(view, rest.target);
 }
 
 export function createDomeFrameStage(sources: DomeFrameStageSources) {
@@ -136,11 +145,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
     expandedParentsRef,
     clusteredIdsRef,
     pointerMachineRef,
-    bgPointerRef,
     reducedMotionRef,
-    lastInputMsRef,
     lastActiveMsRef,
-    ambientSleepDelayRef,
     viewportRef,
     beginCameraTween,
     cameraTokens,
@@ -286,6 +292,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
             // Otherwise target ≠ value persists and the wheel anchor computes
             // against a zoom that does not exist (see the `fitScale` JSDoc).
             dome.fitScale = target.tscale;
+            dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
@@ -396,16 +403,15 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               if (target !== null) {
                 cameraTargetRef.current = target;
                 dome.fitScale = target.tscale;
+                dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
                 userDrivenCameraRef.current = false;
                 dampingRef.current = tokens.cameraDampingDefault;
                 cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
                 beginCameraTween(target);
               }
             } else {
-              // A selection is interaction, so the attention spin is
-              // lowered here. That holds even for a node with no coordinate
-              // (a kind outside the dome model) — interaction is interaction.
-              dome.spinArmed = false;
+              // A selection is interaction, so the entry sweep folds into the pose, even for a
+              // node with no coordinate (a kind outside the dome model).
               commitDomeEntrySweep(dome);
               const coord = dome.model.coords.get(pending.slug);
               if (coord !== undefined) {
@@ -488,6 +494,28 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               beginCameraTween(target);
               lastActiveMsRef.current = now;
             }
+          } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0 && dome.model.arrangement === "coupling" && cameraAtRestFit(dome, cameraTargetRef.current, sameTarget)) {
+            /*
+             * At the rest fit Neural lights dependencies across the whole cloud, so the click's move refits
+             * the cloud into the area the panels leave free; the same move back when they close. Zoomed or
+             * turned, the next branch only slides the selected cell clear.
+             */
+            const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
+            if (target !== null && !sameTarget(cameraTargetRef.current, target)) {
+              const current = cameraTargetRef.current;
+              const before =
+                dome.nudgeReturn !== null && sameTarget(current, dome.nudgeReturn.landed)
+                  ? dome.nudgeReturn.before
+                  : { ...current };
+              dome.nudgeReturn = { before, landed: { ...target } };
+              dome.fitScale = Math.min(dome.fitScale ?? target.tscale, target.tscale);
+              cameraTargetRef.current = target;
+              userDrivenCameraRef.current = false;
+              dampingRef.current = tokens.cameraDampingDefault;
+              cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+              beginCameraTween(target);
+              lastActiveMsRef.current = now;
+            }
           } else if (request.nudge === true && request.slug !== null && vw > 0 && vh > 0) {
             /*
              * The click's one allowed move (see `DomeRuntime.flyRequest`): slide sideways
@@ -508,7 +536,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                */
               let eMin = sx;
               let eMax = sx;
-              for (const id of world.neighborMap.get(request.slug) ?? []) {
+              const neighbourhood = dome.model.arrangement === "coupling" ? [] : world.neighborMap.get(request.slug) ?? [];
+              for (const id of neighbourhood) {
                 const c = dome.model.coords.get(id);
                 if (c === undefined) continue;
                 const x = toScreenX(projectDomeCoord(dome.model, c, dome.yaw, dome.pitch).wx);
@@ -542,7 +571,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               }
             }
           } else if (vw > 0 && vh > 0) {
-            dome.spinArmed = false;
             commitDomeEntrySweep(dome);
             dome.yawVel = 0;
             dome.pitchVel = 0;
@@ -576,6 +604,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
                 const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, vw, vh, tokens);
                 if (target !== null) {
                   dome.fitScale = target.tscale;
+                  dome.restFit = { target: { ...target }, yaw: dome.yaw, pitch: dome.pitch };
                   flyCamera(target);
                 }
               }
@@ -701,23 +730,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               dome.pitchVel = 0;
             }
           }
-          // Auto-spin runs only while `spinArmed`; any interaction lowers it, and re-entering 3D or auto-align
-          // rearms it. Speed scales by the ambient sleep factor (`model/ambient/ambient-sleep.ts`); 0 if reduced motion.
-          const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
-          if (
-            dome.yawVel === 0 &&
-            !dome.settling &&
-            isDomeSpinAnimating({
-              domeOn: domeTargetOn,
-              reducedMotion: reducedMotionRef.current,
-              ambientAsleep: isAmbientAsleep(spinFactor),
-              spinArmed: dome.spinArmed,
-              pointerOverCanvas: bgPointerRef.current !== null,
-              assembled: dome.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
-            })
-          ) {
-            dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2 * spinFactor;
-          }
           // Invariant outside a drag: the target always follows the current
           // pose, so the next drag does not inherit a stale target gap.
           dome.yawTarget = dome.yaw;
@@ -775,6 +787,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           dome.frame.clear();
           dome.drawnBounds = null;
           dome.fitScale = null;
+          dome.restFit = null;
           dome.frameEpoch++;
         }
       } else if (dome !== null) {
@@ -788,6 +801,7 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
           dome.frame.clear();
           dome.drawnBounds = null;
           dome.fitScale = null;
+          dome.restFit = null;
           dome.frameEpoch++;
         }
       }

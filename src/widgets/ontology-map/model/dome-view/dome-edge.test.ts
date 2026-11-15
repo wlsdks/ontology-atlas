@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { projectDomeEdgeControl } from './dome-edge';
 import type { DomeNodeFrame } from './runtime';
 
-const edge = { sourceId: 'a', targetId: 'b', kind: 'depends' as const,
+const edge = { sourceId: 'a', targetId: 'b', kind: 'depends' as const, relationType: 'depends_on',
   ax: 0, ay: 0, bx: 400, by: 0, controlX: -300, controlY: 500 };
 const frame = new Map<string, DomeNodeFrame>([
   ['a', { dx: 20, dy: 30, s: 1, a: 1, u: 0 }],

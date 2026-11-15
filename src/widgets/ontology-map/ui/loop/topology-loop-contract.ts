@@ -1,3 +1,4 @@
+import type { NeuralLabels } from "../frame-draw/paint-neural";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import type { RefObject } from "react";
 import type { DialFrameSummary } from "../../dial/frame/frame";
@@ -232,6 +233,8 @@ export interface UseTopologyLoopArgs {
    * nothing was measured. It decides how much each node emits.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  /** The words Neural paints on its canvas. */
+  neuralLabels?: NeuralLabels | null;
   onHiddenDependenciesChange?: (count: number) => void;
   /** 3D reframe input: is the detail panel covering the viewport (`OntologyMap` JSDoc). */
   detailPanelVisible?: boolean;

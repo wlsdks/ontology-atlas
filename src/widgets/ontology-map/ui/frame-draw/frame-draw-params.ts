@@ -1,3 +1,4 @@
+import type { NeuralLabels } from "./paint-neural";
 import type { DialWorld } from '../../dial/types';
 import type { PanelInsets } from "../../interaction/free-area";
 import type { CameraAxes } from "../../engine/camera";
@@ -157,6 +158,9 @@ export interface FrameDrawParams {
     y: number;
   } | null) | null;
   domeLight?: DomeLightFrame | null;
+  neuralLabels?: NeuralLabels | null;
+  /** The camera scale the dome was last fitted at; Neural grows its cells past it. */
+  domeFitScale?: number | null;
   trailLensRamp?: number;
   dial?: Pick<FlatDialFrameProps, "labels" | "evidence" | "impactLens"> | null;
 }

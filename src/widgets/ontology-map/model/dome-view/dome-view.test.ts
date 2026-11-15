@@ -447,10 +447,8 @@ describe("dome-view selection reframe and auto-rotate arming", () => {
     expect(domeEgoWorldBounds(model, ["ghost-id"], 0.55, DOME_PITCH_DEFAULT)).toBeNull();
   });
 
-  it("starts a new runtime armed for rotation with no pose movement", () => {
-    // Disarming on intervention belongs to the loop and pointer handlers, not this contract.
+  it("starts a new runtime with no pose movement", () => {
     const runtime = createDomeRuntime(buildDomeModel(NODES));
-    expect(runtime.spinArmed).toBe(true);
     expect(runtime.poseTween).toBeNull();
   });
 });
@@ -862,18 +860,13 @@ describe("coupling cloud lets relations decide positions", () => {
     }
   });
 
-  it("centres the mass at the origin, or a small rotation swings the cloud off screen", () => {
+  it("turns about the clusters' ring axis, or a small rotation swings the cloud off screen", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
-    let mx = 0;
-    let my = 0;
-    let mz = 0;
-    for (const c of cloud.coords.values()) {
-      mx += c.px;
-      my += c.py;
-      mz += c.pz;
-    }
-    const n = cloud.coords.size;
-    expect(Math.hypot(mx / n, my / n, mz / n)).toBeLessThan(1e-6);
+    const hearts = nodes.filter((node) => node.kind === "domain").map((node) => cloud.coords.get(node.id)!);
+    expect(hearts.length).toBeGreaterThan(1);
+    const mx = hearts.reduce((sum, c) => sum + c.px, 0) / hearts.length;
+    const mz = hearts.reduce((sum, c) => sum + c.pz, 0) / hearts.length;
+    expect(Math.hypot(mx, mz)).toBeLessThan(1e-6);
   });
 
   it("keeps the radius on the dome scale, so camera fit and fog apply alike to both layouts", () => {

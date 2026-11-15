@@ -6,6 +6,7 @@ import { createLightFrameStage } from "../../light/light-frame-stage";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { shouldSkipFrame } from "../../model/ambient/idle-gate";
 import { projectDomeEdgeControl } from '../../model/dome-view/dome-edge';
+import { neuralTractsFor } from "../frame-draw/paint-neural";
 import { createStillFrame } from "../frame-cache/still-frame";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createClusterFrameStage } from "./topology-cluster-frame-stage";
@@ -59,9 +60,12 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     const { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef } = recovery;
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const { worldRef } = configuration.frameGate;
     const domeEdgeControlForFrame = (edge: WorldEdge) => {
       const dome = domeRuntimeRef.current;
-      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
+      const world = worldRef.current;
+      const tracts = dome !== null && world !== null && dome.model.arrangement === "coupling" ? neuralTractsFor(world, dome.frame, dome.frameEpoch) : null;
+      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current, tracts);
     };
     const runDomeFrameStage = createDomeFrameStage(configuration.domeFrameStage);
     const runWorldMotionFrameStage = createWorldMotionFrameStage(configuration.worldMotionFrameStage);

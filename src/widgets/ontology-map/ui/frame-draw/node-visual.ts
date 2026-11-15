@@ -20,10 +20,6 @@ export function resetNodeVisualCacheFor(tokens: OntologyMapTokens, reducedMotion
   }
 }
 
-export const neuralPaletteCache = new WeakMap<NodeVisual, {
-  ramp: number; ink: string; fill: string; stroke: string;
-}>();
-
 export const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
 
 export const LIT_KIND_STRENGTH: Readonly<Record<DomeViewKind, number>> = {

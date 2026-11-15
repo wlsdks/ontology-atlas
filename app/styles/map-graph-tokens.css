@@ -111,5 +111,58 @@
     --map-graph-name-strong: #f4f5f9;
     --map-graph-name: #c9cdd8;
     --map-graph-halo: #07080c;
+
+    /* Neural (the dome's coupling cloud): screen pixels at the front of the cloud; inks are the ones above. */
+    --map-neural-cap-px: 4.6;
+    --map-neural-cap-gain-px: 1.5;
+    --map-neural-element-px: 2.8;
+    --map-neural-element-gain-px: 0.85;
+    --map-neural-domain-px: 7.5;
+    --map-neural-project-px: 9;
+    --map-neural-nucleus-share: 0.34;
+    --map-neural-nucleus-alpha: 0.55;
+    --map-neural-ring-gap-px: 3;
+    --map-neural-ring-px: 1.4;
+    --map-neural-glow-reach: 3.4;
+    --map-neural-glow-alpha: 0.26;
+    --map-neural-far-alpha: 0.62;
+    --map-neural-cluster-glow-alpha: 0.06;
+    --map-neural-cluster-glow-pad-px: 70;
+    --map-neural-axon-alpha: 0.3;
+    --map-neural-tract-alpha: 0.13;
+    --map-neural-axon-cap-px: 2.4;
+    --map-neural-axon-element-px: 1.5;
+    --map-neural-axon-end-px: 0.6;
+    --map-neural-axon-dot-px: 1.6;
+    --map-neural-axon-bow: 0.25;
+    --map-neural-tract-pull: 0.35;
+    --map-neural-tract-gain: 1.5;
+    --map-neural-veil: 0.33;
+    /* A receded domain title keeps a little less than a receded cell. */
+    --map-neural-title-veil: 0.3;
+    /* Zooming in grows cells with the camera, up to this many times their size at the fit. */
+    --map-neural-zoom-grow-max: 2.5;
+    /* While its cluster is on screen a title stays this far inside the canvas top and sides, clear of the chrome. */
+    --map-neural-title-pin-px: 136;
+    --map-neural-axon-veil: 0.13;
+    --map-neural-lit-start-px: 3.2;
+    --map-neural-lit-end-px: 1.2;
+    --map-neural-lit-alpha: 0.95;
+    --map-neural-lit-glow-px: 12;
+    --map-neural-lit-dot-px: 3.2;
+    --map-neural-signal-px: 2.2;
+    --map-neural-signal-glow-px: 11;
+    --map-neural-focus-ring-gap-px: 7;
+    --map-neural-focus-ring-px: 1.6;
+    --map-neural-domain-name-px: 24;
+    --map-neural-domain-meta-px: 12.5;
+    --map-neural-domain-name-gap-px: 22;
+    --map-neural-domain-meta-gap-px: 26;
+    --map-neural-name-px: 12.5;
+    --map-neural-name-gap-px: 7;
+    --map-neural-name-halo-px: 5;
+    --map-neural-name-budget: 48;
+    --map-neural-plate-pad-px: 12;
+    --map-neural-plate-radius-px: 8;
   }
 }

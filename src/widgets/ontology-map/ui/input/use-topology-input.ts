@@ -425,7 +425,6 @@ export function useTopologyInput({
       const dome = domeRuntimeRef.current;
       if (dome !== null && dome.active) {
         if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
-        dome.spinArmed = false;
         commitDomeEntrySweep(dome);
         dome.poseTween = null;
       }

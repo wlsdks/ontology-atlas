@@ -1,7 +1,7 @@
 import { DOME_PLANE, TAU } from './cone-layout';
 import { easeOutCubic, TIER_ASSEMBLE_TOTAL_MS, tierProgress } from '../../morph/tier-assembly';
 import { DOME_NODE_PX, DOME_RING_SAMPLES } from './ink';
-import { clampDomePitch } from './orbit';
+import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_PITCH_MAX } from './orbit';
 import { projectWithTrig } from './projection';
 import { DOME_TIER_RAMP_START, type DomeRuntime, type DomeTierRampAnchor } from './runtime';
 import type { DomeCircle, DomeCoord, DomeViewKind } from './types';
@@ -29,10 +29,10 @@ export function chargeTierLag(lag: Record<DomeViewKind, number>, deltaYaw: numbe
 /**
  * The entry sweep: pitch starts from nearly above, so structure reads first, and yaw
  * enters slightly turned, since rotation's motion parallax says "3D" (Ware & Franck 1996).
- * Both scale by the ramp remainder and reach exactly 0 on arrival. 0.45 on the 0.5 default
- * starts on the pitch wall, the steepest angle a drag can return to.
+ * Both scale by the ramp remainder and reach exactly 0 on arrival. The lift starts on the
+ * pitch wall, the steepest angle a drag can return to.
  */
-const DOME_ENTRY_PITCH_LIFT = 0.45;
+const DOME_ENTRY_PITCH_LIFT = DOME_PITCH_MAX - DOME_PITCH_DEFAULT;
 const DOME_ENTRY_YAW_SWEEP = 0.45;
 
 /**

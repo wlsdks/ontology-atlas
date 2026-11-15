@@ -44,3 +44,4 @@ export type { ConeInputNode, ConeKind } from './model/dome-view/cone-layout';
 export { DomainStructureMap } from "./structure/DomainStructureMap";
 export { readDomainUsage, type DomainUsage } from "./model/domain-usage";
 export { readConceptReach, type ConceptReach } from "./model/concept-reach";
+export type { NeuralLabels } from './ui/frame-draw/paint-neural';
