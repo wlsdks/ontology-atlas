@@ -81,7 +81,7 @@ describe("buildProjectDomainComposition", () => {
     const result = buildProjectDomainComposition(nodes, edges, SLUG);
     const [views] = result.domains;
     expect(views.capabilities.map((cap) => cap.title)).toEqual(["Bravo", "Alpha", "Charlie"]);
-    expect(views.capabilities[0]).toEqual({ id: "capability:b", title: "Bravo" });
+    expect(views.capabilities[0]).toEqual({ id: "capability:b", title: "Bravo", elementCount: 1 });
     expect(views.capabilityCount).toBe(3);
   });
 
@@ -107,5 +107,16 @@ describe("buildProjectDomainComposition", () => {
     const edges = [contains("domain:views", "capability:foreign")];
     const result = buildProjectDomainComposition(nodes, edges, SLUG);
     expect(result.domains[0].capabilityCount).toBe(1);
+  });
+
+  it("defines a domain by the first sentence of its own summary, and draws no line without one", () => {
+    const nodes = [
+      { ...n("domain:views", "domain", [SLUG], "Views"), summary: "Everything a person sees. It renders the map." },
+      n("domain:quiet", "domain", [SLUG], "Quiet"),
+    ];
+    const result = buildProjectDomainComposition(nodes, [], SLUG);
+    const byTitle = new Map(result.domains.map((domain) => [domain.title, domain.definition]));
+    expect(byTitle.get("Views")).toBe("Everything a person sees.");
+    expect(byTitle.get("Quiet")).toBeNull();
   });
 });

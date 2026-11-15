@@ -253,18 +253,28 @@ function renderPage(
     project?: Partial<React.ComponentProps<typeof ProjectDetailPage>["initialProject"]>;
   } = {},
 ) {
+  const project = { ...baseProject(), ...overrides.project };
+  // The static source lists the project too, or the page settles to not-found after a press.
+  if (mocks.projectsMode === "static" && mocks.projects.length === 0) {
+    mocks.projects = [project as ReturnType<typeof baseProject>, ...(overrides.related ?? [])];
+  }
   return render(
     // The read-only line's folder door reads vault context.
     <NextIntlClientProvider locale="en" messages={enMessages}>
       <LocalVaultProvider>
       <ProjectDetailPage
         slug={SLUG}
-        initialProject={{ ...baseProject(), ...overrides.project }}
+        initialProject={project}
         initialRelated={overrides.related ?? []}
       />
       </LocalVaultProvider>
     </NextIntlClientProvider>,
   );
+}
+
+function openMoreMenu() {
+  fireEvent.click(screen.getByTestId("project-detail-more"));
+  return screen.getByTestId("project-detail-more-menu");
 }
 
 describe("ProjectDetailPage", () => {
@@ -312,27 +322,16 @@ describe("ProjectDetailPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens this project's own document and names its path when the file is known", () => {
+  it("opens this project's own document from the menu and names its path when the file is known", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.vaultDocs = [
-      {
-        slug: "project",
-        path: "docs/ontology/project.md",
-        title: "ontology-atlas",
-        tags: [],
-        frontmatter: { kind: "project", slug: SLUG },
-        headings: [],
-        excerpt: "",
-        wordCount: 0,
-        updatedAt: "2026-01-02T00:00:00.000Z",
-        linksOut: [],
-      },
-    ];
+    mocks.vaultDocs = [projectDoc("project", SLUG)];
+    mocks.vaultBody = "One paragraph.";
     renderPage();
 
-    const door = screen.getByTestId("project-detail-docs-vault-link");
-    expect(door).toHaveAttribute("href", "/docs/?slug=project");
+    expect(screen.getByTestId("project-detail-body-continue")).toHaveAttribute("href", "/docs/?slug=project");
+    openMoreMenu();
+    expect(screen.getByTestId("project-detail-docs-vault-link")).toHaveAttribute("href", "/docs/?slug=project");
     expect(screen.getByTestId("project-detail-footer")).toHaveTextContent("file docs/ontology/project.md");
   });
 
@@ -341,24 +340,36 @@ describe("ProjectDetailPage", () => {
     mocks.insightEdges = BASE_EDGES;
     renderPage();
 
-    const door = screen.getByTestId("project-detail-docs-vault-link");
-    expect(door).toHaveAttribute("href", "/docs/");
+    openMoreMenu();
+    expect(screen.getByTestId("project-detail-docs-vault-link")).toHaveAttribute("href", "/docs/");
     expect(screen.getByTestId("project-detail-footer")).toHaveTextContent("Updated");
   });
 
-  it("leads with the filled map action and draws no zero document count", () => {
+  it("leads with one filled map action, then the hand-off copy, and keeps the rest in one menu", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
+    mocks.canEdit = true;
     renderPage();
 
     const mapLink = screen.getByTestId("project-detail-topology-link");
-    const picker = screen.getByTestId("construction-review-ingress");
-    expect(mapLink.compareDocumentPosition(picker)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(mapLink.querySelector("button")?.className).toContain("--color-indigo-brand");
-    expect(screen.queryByText(/Documents\s+0/)).not.toBeInTheDocument();
+    const handoff = screen.getByTestId("project-detail-handoff-copy");
+    expect(mapLink.compareDocumentPosition(handoff)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(mapLink.className).toContain("--color-indigo-brand");
+    expect(handoff.className).not.toContain("--color-indigo-brand");
+
+    const menu = openMoreMenu();
+    expect(within(menu).getAllByRole("menuitem").map((item) => item.getAttribute("data-testid"))).toEqual([
+      "project-detail-copy-link",
+      "project-detail-docs-vault-link",
+      "project-detail-quick-edit",
+      "construction-review-open",
+      "project-detail-brief-ask",
+      "project-detail-new-project",
+    ]);
+    expect(screen.getByTestId("project-detail-new-project").getAttribute("href")).toMatch(/^\/project\/new\//);
   });
 
-  it("hands the overview to the agent from the page when a guarded runtime is ready", () => {
+  it("hands the overview to the agent from the page when a guarded runtime is ready", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.vaultBody = "One paragraph.";
@@ -378,8 +389,11 @@ describe("ProjectDetailPage", () => {
     };
     renderPage();
 
-    expect(screen.queryByTestId("project-detail-brief-ask-copy")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("project-detail-brief-ask-open"));
+    openMoreMenu();
+    fireEvent.click(screen.getByTestId("project-detail-brief-ask"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).queryByTestId("project-detail-brief-ask-copy")).not.toBeInTheDocument();
+    fireEvent.click(within(dialog).getByTestId("project-detail-brief-ask-open"));
     expect(start).toHaveBeenCalledTimes(1);
     const seated = start.mock.calls[0][0] as string;
     expect(seated).toContain(`get_concept("${SLUG}"`);
@@ -387,18 +401,21 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("project-agent-dock-frame")).toHaveAttribute("data-dock-state", "empty");
   });
 
-  it("keeps the copy path and mounts no dock when no agent can be opened here", () => {
+  it("keeps the copy path and mounts no dock when no agent can be opened here", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.vaultBody = "One paragraph.";
     renderPage();
 
-    expect(screen.getByTestId("project-detail-brief-ask-copy")).toBeInTheDocument();
-    expect(screen.queryByTestId("project-detail-brief-ask-open")).not.toBeInTheDocument();
+    openMoreMenu();
+    fireEvent.click(screen.getByTestId("project-detail-brief-ask"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByTestId("project-detail-brief-ask-copy")).toBeInTheDocument();
+    expect(within(dialog).queryByTestId("project-detail-brief-ask-open")).not.toBeInTheDocument();
     expect(screen.queryByTestId("project-agent-dock-frame")).not.toBeInTheDocument();
   });
 
-  it("opens one local review result below the hero without persisting it", async () => {
+  it("opens one local review result between the identity and the composition without persisting it", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     const parsed = await import("@/entities/construction-review").then(({ parseConstructionReviewEnvelope }) =>
@@ -418,6 +435,9 @@ describe("ProjectDetailPage", () => {
     expect(screen.getByTestId("construction-review-ingress")).toBeInTheDocument();
     const summary = screen.getByTestId("construction-review-summary");
     expect(summary).toHaveAttribute("data-qualification-status", "qualified");
+    expect(screen.getByTestId("project-detail-identity").compareDocumentPosition(summary)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
     expect(summary.compareDocumentPosition(screen.getByTestId("project-detail-composition"))).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
@@ -443,49 +463,26 @@ describe("ProjectDetailPage", () => {
     expect(screen.queryByTestId("construction-review-summary")).not.toBeInTheDocument();
   });
 
-  it("the ontology cell carries this project's own projectIds-derived counts", () => {
-    mocks.insightNodes = BASE_NODES;
+  it("says this project's own counts in words on the composition heading line", () => {
+    mocks.insightNodes = [...BASE_NODES, ontologyNode("domain:elsewhere", "domain", ["other"], "Elsewhere")];
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     renderPage();
 
-    // A description list, since the row is reversed visually to read "1 Domains" on screen.
-    const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
-    const figures = [...cell.querySelectorAll("dt")].map((term) => [
-      term.textContent,
-      term.parentElement?.querySelector("dd")?.textContent,
-    ]);
-    expect(figures).toEqual([
-      ["Domains", "1"],
-      ["Capabilities", "1"],
-      ["Elements", "2"],
-    ]);
-  });
-
-  it("names the three Atlas surfaces, and the map has one door on the page", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    renderPage();
-
-    const cells = screen.getAllByTestId("project-detail-surface-cell");
-    expect(cells.map((cell) => cell.getAttribute("data-surface"))).toEqual(["ontology", "library", "harness"]);
-    const doors = screen.getAllByTestId("project-detail-surface-open");
-    expect(doors.map((door) => door.getAttribute("href"))).toEqual(["/library/", "/architecture/"]);
-    const mapDoors = screen
-      .getAllByRole("link")
-      .filter((link) => link.getAttribute("href") === `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`);
-    expect(mapDoors).toHaveLength(1);
-  });
-
-  it("opens the map on the project's own node, where its code folder is connected", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    renderPage();
-
-    expect(screen.getByTestId("project-detail-topology-link")).toHaveAttribute(
-      "href",
-      `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`,
+    expect(screen.getByTestId("project-detail-composition-counts")).toHaveTextContent(
+      "1 domain · 1 capability · 2 elements · 3 relations",
     );
+    expect(screen.queryByTestId("project-detail-surface-board")).not.toBeInTheDocument();
+  });
+
+  it("has one door to the project's own node on the map", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    renderPage();
+
+    const href = `/topology/?p=${encodeURIComponent(`project:${SLUG}`)}`;
+    expect(screen.getByTestId("project-detail-topology-link")).toHaveAttribute("href", href);
+    expect(screen.getAllByRole("link").filter((link) => link.getAttribute("href") === href)).toHaveLength(1);
   });
 
   it("keeps the project name the page's level-1 heading when it is editable", () => {
@@ -499,212 +496,185 @@ describe("ProjectDetailPage", () => {
     expect(within(heading).getByRole("button", { name: "ontology-atlas" })).toBeInTheDocument();
   });
 
-  it("counts the sample's sources in the library cell without an open folder", () => {
+  it("counts the folder's sources in one closing line and draws nothing when the folder has none", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.projectsMode = "static";
-    mocks.handle = null;
+    const { unmount } = renderPage();
+    expect(screen.queryByTestId("project-detail-library-line")).not.toBeInTheDocument();
+    unmount();
+
     mocks.vaultManifest = { docs: [], sources: [{ path: "sources/a.md" }, { path: "sources/b.md" }] };
     renderPage();
-
-    const library = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="library"]')!;
-    const figures = [...library.querySelectorAll("dt")].map((node, index) => [
-      node.textContent,
-      library.querySelectorAll("dd")[index]?.textContent,
-    ]);
-    expect(figures).toContainEqual(["sources", "2"]);
+    const line = screen.getByTestId("project-detail-library-line");
+    expect(line).toHaveTextContent("2 sources · 0 wiki pages");
+    expect(within(line).getByRole("link")).toHaveAttribute("href", "/library/");
   });
 
-  it("the harness cell shows no figure, because this surface cannot count from here", () => {
+  it("links the Harness only when the desktop app can read the folder", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    renderPage();
+    const { unmount } = renderPage();
+    expect(screen.queryByTestId("project-detail-harness-link")).not.toBeInTheDocument();
+    unmount();
 
-    const harness = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="harness"]')!;
-    expect(harness.querySelector("dl")).toBeNull();
-    expect(harness).toHaveTextContent(/instructions, structure and sensors/i);
+    mocks.handle = { rootPath: "/vault" };
+    renderPage();
+    expect(screen.getByTestId("project-detail-harness-link")).toHaveAttribute("href", "/architecture/");
   });
 
-  it("shows the relation count as a line in the ontology cell, not a fourth metric", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
-
-    const cell = screen.getByTestId("project-detail-surface-board").querySelector('[data-surface="ontology"]')!;
-    const figureLabels = [...cell.querySelectorAll("dt")].map((node) => node.textContent);
-    expect(figureLabels).toEqual(["Domains", "Capabilities", "Elements"]);
-    // It names its scope: only edges with both ends in this project.
-    expect(cell.querySelector('[data-testid="project-detail-surface-note"]')).toHaveTextContent(
-      "3 relations among these concepts",
-    );
-  });
-
-  /* The raw node array also counts the vault readme. */
-  it("counts folder-wide concepts by the same rule as the map INDEX", () => {
-    mocks.insightNodes = [
-      ...BASE_NODES,
-      ontologyNode("project:other", "project", [], "Other"),
-      ontologyNode("vault-readme:README", "vault-readme", [], "My ontology vault"),
-    ];
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
-
-    expect(screen.getByTestId("project-detail-global-census")).toHaveTextContent(
-      "6 concepts in the whole folder",
-    );
-    expect(screen.getByTestId("project-detail-global-census")).not.toHaveTextContent(/relation/i);
-  });
-
-  it("captions the composition board with its scope, since only the ontology belongs to this project", () => {
+  it("says the library counts are the folder's when the folder holds more than one project", () => {
     mocks.insightNodes = [...BASE_NODES, ontologyNode("project:other", "project", [], "Other")];
     mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
+    mocks.vaultManifest = { docs: [], sources: [{ path: "sources/a.md" }] };
     renderPage();
 
-    expect(screen.getByTestId("project-detail-composition")).toHaveTextContent(
+    expect(screen.getByTestId("project-detail-library-line")).toHaveTextContent(
       "Sources and wiki pages count the whole folder",
     );
   });
 
-  it("drops the folder scope caption, folder census and project-type label when the folder holds one project", () => {
+  it("drops the folder scope caption and project-type label when the folder holds one project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
+    mocks.vaultManifest = { docs: [], sources: [{ path: "sources/a.md" }] };
     renderPage();
 
-    expect(screen.getByTestId("project-detail-composition")).not.toHaveTextContent(
-      "Sources and wiki pages count the whole folder",
-    );
-    expect(screen.queryByTestId("project-detail-global-census")).toBeNull();
+    expect(document.body).not.toHaveTextContent("Sources and wiki pages count the whole folder");
     expect(document.body).not.toHaveTextContent("Individual project");
   });
 
-  it("reveals the domain map deep link when a domain row expands", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    nav.search = "tab=composition";
+  it("selects the first domain on arrival and moves the selection with the arrow keys, Home and End", () => {
+    mocks.insightNodes = [
+      ...BASE_NODES,
+      ontologyNode("domain:storage", "domain", [SLUG], "Storage"),
+      ontologyNode("capability:sync", "capability", [SLUG], "Sync"),
+    ];
+    mocks.insightEdges = [...BASE_EDGES, containsEdge("domain:storage", "capability:sync")];
     renderPage();
 
-    const row = screen.getByTestId("project-detail-domain-row-toggle");
-    expect(row).toHaveTextContent("Views");
-    fireEvent.click(row);
-    expect(screen.getByTestId("project-detail-domain-map-link")).toHaveAttribute(
-      "href",
-      "/topology/?mode=focus&p=domain%3Aviews",
-    );
+    const list = screen.getByRole("listbox");
+    expect(list.querySelector("[aria-expanded]")).toBeNull();
+    const selected = () => screen.getAllByRole("option").filter((option) => option.getAttribute("aria-selected") === "true");
+    const detailTitle = () => screen.getByTestId("project-detail-domain-detail-title").textContent;
+    expect(selected()).toHaveLength(1);
+    expect(detailTitle()).toBe("Views");
+    expect(screen.getByTestId("project-detail-domain-map-link")).toHaveAttribute("href", "/topology/?mode=focus&p=domain%3Aviews");
+
+    fireEvent.keyDown(selected()[0], { key: "ArrowDown" });
+    expect(selected()).toHaveLength(1);
+    expect(detailTitle()).toBe("Storage");
+    expect(document.activeElement).toBe(selected()[0]);
+    fireEvent.keyDown(selected()[0], { key: "Home" });
+    expect(detailTitle()).toBe("Views");
+    fireEvent.keyDown(selected()[0], { key: "End" });
+    expect(detailTitle()).toBe("Storage");
+    fireEvent.keyDown(selected()[0], { key: "ArrowUp" });
+    expect(detailTitle()).toBe("Views");
   });
 
-  it("draws no radial domain map in the hero; the domain list lives only in the domain rows", () => {
+  it("shows twelve capabilities of the selected domain, then the rest behind one press", () => {
+    const capabilities = Array.from({ length: 14 }, (_, index) =>
+      ontologyNode(`capability:c${index}`, "capability", [SLUG], `Capability ${String(index).padStart(2, "0")}`),
+    );
+    mocks.insightNodes = [ontologyNode("domain:views", "domain", [SLUG], "Views"), ...capabilities];
+    mocks.insightEdges = capabilities.map((capability) => containsEdge("domain:views", capability.id));
+    renderPage();
+
+    expect(screen.getAllByTestId("project-detail-capability-link")).toHaveLength(12);
+    fireEvent.click(screen.getByTestId("project-detail-domain-show-more"));
+    expect(screen.getAllByTestId("project-detail-capability-link")).toHaveLength(14);
+  });
+
+  it("draws no domain bar and no radial map in the identity", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    const { container } = renderPage();
-    const header = container.querySelector("header")!;
+    renderPage();
+    const identity = screen.getByTestId("project-detail-identity");
 
     /* An absence check passes forever on a wrong selector, so the selector is probed first. */
     const probe = document.createElement("div");
     probe.innerHTML = '<svg role="img" aria-label="probe"></svg>';
-    header.appendChild(probe);
-    expect(header.querySelector("svg[role='img']")).not.toBeNull();
+    identity.appendChild(probe);
+    expect(identity.querySelector("svg[role='img']")).not.toBeNull();
     probe.remove();
 
-    expect(header.querySelector("svg[role='img']")).toBeNull();
-    expect(header.querySelector("[data-testid='domain-capacity-bar-row']")).toBeNull();
+    expect(identity.querySelector("svg[role='img']")).toBeNull();
+    expect(within(identity).queryByTestId("project-detail-domain-bar")).toBeNull();
   });
 
-  it("shows the overlap footnote once, beside the list", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
+  it("explains once that nested domains count a concept twice", () => {
+    mocks.insightNodes = [...BASE_NODES, ontologyNode("domain:outer", "domain", [SLUG], "Outer")];
+    mocks.insightEdges = [containsEdge("domain:outer", "domain:views"), ...BASE_EDGES];
     renderPage();
 
     expect(screen.getAllByTestId("project-detail-domain-overlap-note")).toHaveLength(1);
   });
 
-  it("draws the composition and the domains on one page, with no tablist", () => {
+  it("unfolds nothing in place: no tablist, no details, and the hand-off preview is a dialog", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
+    mocks.vaultBody = "One paragraph.";
+    const { container } = renderPage();
 
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
-    expect(screen.getByTestId("project-detail-surface-board")).toBeInTheDocument();
-    expect(screen.getByTestId("project-detail-domain-rows")).toBeInTheDocument();
-    expect(screen.getByTestId("project-detail-connected")).toBeInTheDocument();
+    expect(container.querySelector("details")).toBeNull();
+    expect(container.querySelector("[aria-expanded='true']")).toBeNull();
+    fireEvent.click(screen.getByTestId("project-detail-handoff-preview"));
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByText((_, el) => el?.tagName === "PRE" && el.textContent!.includes(`get_concept("${SLUG}")`)),
+    ).toBeInTheDocument();
   });
 
-  it("shows a sentence-form empty state (not a numeral) when no project is connected", () => {
+  it("draws no connection line when nothing connects, even in a folder of several projects", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    // The card is only drawn when the folder holds another project.
     mocks.vaultDocs = [projectDoc("project", SLUG), projectDoc("second", "second")];
     renderPage();
 
-    const empty = screen.getByTestId("project-detail-connected-empty");
-    expect(empty).toHaveTextContent("Not connected to any other project yet.");
-    expect(empty.textContent).not.toMatch(/^0\b/);
-  });
-
-  it("skips the connection card when the folder has one project", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    mocks.vaultDocs = [projectDoc("project", SLUG)];
-    renderPage();
-
-    expect(screen.queryByTestId("project-detail-connected-card")).toBeNull();
-    expect(screen.getByTestId("project-detail-connected")).toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-connected")).not.toBeInTheDocument();
   });
 
   it("omits the status segment (no stray dash) when the project has no status field", () => {
     mocks.insightNodes = [...BASE_NODES, ontologyNode("project:other", "project", [], "Other")];
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
-    // baseProject() has no `status`, so no trailing "· —".
     renderPage();
 
-    expect(screen.getByText("Individual project")).toBeInTheDocument();
+    expect(screen.getByText(/^Individual project · Updated/)).toBeInTheDocument();
     expect(screen.queryByText(/Individual project\s*·\s*—/)).not.toBeInTheDocument();
   });
 
-  it("renders a connected project link when dependencies point at another known project", () => {
+  it("names a connected project in the closing line when dependencies point at another known project", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     const related = [{ ...baseProject(), slug: "sibling", name: "Sibling Project" }];
     renderPage({ project: { dependencies: ["sibling"] }, related });
 
-    expect(screen.getByText("Sibling Project")).toBeInTheDocument();
-    expect(screen.queryByTestId("project-detail-connected-empty")).not.toBeInTheDocument();
+    const line = screen.getByTestId("project-detail-connected");
+    expect(within(line).getByRole("link", { name: "Sibling Project" })).toBeInTheDocument();
     // No decorative arrow on an in-app link.
-    expect(screen.getByTestId("project-detail-connected").textContent).not.toContain("↗");
+    expect(line.textContent).not.toContain("↗");
   });
 
-  it("embeds the project slug into the agent handoff snippet", () => {
-    mocks.insightNodes = BASE_NODES;
-    mocks.insightEdges = BASE_EDGES;
-    mocks.canEdit = false;
-    renderPage();
-
-    expect(screen.getByText((_, el) => el?.tagName === "PRE" && el.textContent!.includes(`get_concept("${SLUG}")`))).toBeInTheDocument();
-  });
-
-  it("shows the quick-edit affordance only when the data source mode allows editing (mode-aware gate preserved)", () => {
+  it("offers quick edit in the menu only when the data source mode allows editing", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
 
     mocks.canEdit = false;
     const { unmount } = renderPage();
-    expect(screen.queryByTestId("public-quick-edit-toggle")).not.toBeInTheDocument();
+    openMoreMenu();
+    expect(screen.queryByTestId("project-detail-quick-edit")).not.toBeInTheDocument();
     unmount();
 
     mocks.canEdit = true;
     renderPage();
-    expect(screen.getByTestId("public-quick-edit-toggle")).toBeInTheDocument();
+    openMoreMenu();
+    fireEvent.click(screen.getByTestId("project-detail-quick-edit"));
+    expect(await screen.findByTestId("public-quick-edit-surface")).toBeInTheDocument();
+    expect(document.activeElement).not.toBe(screen.getByTestId("public-quick-edit-toggle"));
   });
 
   it("explains the read-only state instead of just omitting the edit entry point", () => {
@@ -721,16 +691,17 @@ describe("ProjectDetailPage", () => {
     expect(screen.queryByTestId("project-detail-readonly-badge")).not.toBeInTheDocument();
   });
 
-  it("hides the domain composition zone entirely when the project has no ontology domains", () => {
+  it("says in one line that the project has no domains yet", () => {
     mocks.insightNodes = [];
     mocks.insightEdges = [];
     mocks.canEdit = false;
     renderPage();
 
-    expect(screen.queryByTestId("project-detail-domain-rows")).not.toBeInTheDocument();
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(screen.getByTestId("project-detail-composition-empty")).toHaveTextContent("No domains yet");
   });
 
-  it("shows the empty-body hint when neither project.detail nor the vault body is available (pre-fix behavior preserved)", () => {
+  it("shows the empty-body hint when neither project.detail nor the vault body is available", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
@@ -738,23 +709,21 @@ describe("ProjectDetailPage", () => {
     renderPage();
 
     expect(screen.getByTestId("project-detail-body-empty")).toBeInTheDocument();
-    expect(screen.queryByTestId("project-detail-body-content")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("project-detail-lead")).not.toBeInTheDocument();
   });
 
-  it("renders the real project.md body as a fallback when project.detail (the frontmatter field) is unset — the bug this fix closes", () => {
+  it("reads the lead paragraph from the project file when the frontmatter has no detail field", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.canEdit = false;
     mocks.vaultBody = "## Real project.md content\n\nThis is the actual markdown body.";
     renderPage();
 
-    const content = screen.getByTestId("project-detail-brief-summary");
-    expect(content).toHaveTextContent("Real project.md content");
-    expect(content).toHaveTextContent("This is the actual markdown body.");
+    expect(screen.getByTestId("project-detail-lead")).toHaveTextContent("This is the actual markdown body.");
     expect(screen.queryByTestId("project-detail-body-empty")).not.toBeInTheDocument();
   });
 
-  it("draws a sectioned body as a brief: numbered blocks, a step strip, rows, and document doors", () => {
+  it("leads a sectioned body with its first paragraph and lists none of its headings", () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.vaultBody = [
@@ -763,26 +732,25 @@ describe("ProjectDetailPage", () => {
       "",
       "## How work flows",
       "1. **Browse.** The [[domains/catalog|catalog]] first.",
-      "2. **Buy.** Orders and payment.",
       "",
       "## Where it is uneven",
       "- Loyalty is mostly a plan.",
-      "- Inventory is dense.",
     ].join("\n");
     renderPage();
 
-    const brief = screen.getByTestId("project-detail-brief-summary");
-    expect(brief).toHaveAttribute("data-section-count", "3");
-    const sections = screen.getByTestId("project-detail-brief-sections");
-    expect([...sections.querySelectorAll("li")].map((item) => item.textContent?.replace(/^·\s*/, ""))).toEqual([
-      "What it does",
-      "How work flows",
-      "Where it is uneven",
-    ]);
-    expect(screen.queryByTestId("project-detail-brief-steps")).not.toBeInTheDocument();
-    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("A store.");
+    const lead = screen.getByTestId("project-detail-lead");
+    expect(lead).toHaveTextContent(/^A store\.$/);
+    expect(document.body).not.toHaveTextContent("How work flows");
     expect(screen.getByTestId("project-detail-body-continue")).toBeInTheDocument();
-    expect(screen.getByTestId("project-detail-brief-ask")).toHaveAttribute("data-brief-state", "structured");
+  });
+
+  it("starts the lead after the sentence the description already says", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody = "A local-first ontology workbench for one codebase. It keeps meaning in Markdown.";
+    renderPage({ project: { description: "A local-first ontology workbench for one codebase." } });
+
+    expect(screen.getByTestId("project-detail-lead")).toHaveTextContent(/^It keeps meaning in Markdown\.$/);
   });
 
   it("shows the first block of a body that starts with a list", () => {
@@ -791,38 +759,35 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = "- A storefront that sells one thing\n- Built in the open";
     renderPage();
 
-    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent(
-      "A storefront that sells one thing",
-    );
+    expect(screen.getByTestId("project-detail-lead")).toHaveTextContent("A storefront that sells one thing");
   });
 
-  it("keeps an unsectioned body as prose and leads with the ask to lay it out", async () => {
+  it("renders hostile Markdown in the lead as text, without an image, script or script link", () => {
+    mocks.insightNodes = BASE_NODES;
+    mocks.insightEdges = BASE_EDGES;
+    mocks.vaultBody =
+      "Lead <img src=x onerror=alert(1)> [x](javascript:alert(1)) ![p](https://attacker.example/p.png) end.";
+    renderPage();
+
+    const lead = screen.getByTestId("project-detail-lead");
+    expect(lead.querySelector("img, script")).toBeNull();
+    expect(lead.querySelectorAll("a[href^='javascript:' i]")).toHaveLength(0);
+    expect(lead).toHaveTextContent("<img src=x onerror=alert(1)>");
+  });
+
+  it("asks to lay out an unsectioned body, with the prompt shown before it is copied", async () => {
     mocks.insightNodes = BASE_NODES;
     mocks.insightEdges = BASE_EDGES;
     mocks.vaultBody = "One paragraph.\n\nAnother paragraph.";
-    mocks.vaultDocs = [
-      {
-        slug: "project",
-        path: "docs/ontology/project.md",
-        title: "ontology-atlas",
-        tags: [],
-        frontmatter: { kind: "project", slug: SLUG },
-        headings: [],
-        excerpt: "",
-        wordCount: 0,
-        updatedAt: "2026-01-02T00:00:00.000Z",
-        linksOut: [],
-      },
-    ];
+    mocks.vaultDocs = [projectDoc("project", SLUG)];
     renderPage();
 
-    expect(screen.getByTestId("project-detail-body-content")).toHaveTextContent("One paragraph.");
-    expect(screen.queryByTestId("project-detail-brief-sections")).not.toBeInTheDocument();
-    const ask = screen.getByTestId("project-detail-brief-ask");
-    expect(ask).toHaveAttribute("data-brief-state", "unstructured");
-    const copy = screen.getByTestId("project-detail-brief-ask-copy");
-    expect(copy.className).toContain("--color-indigo-brand");
-    const preview = ask.querySelector("pre")?.textContent ?? "";
+    expect(screen.getByTestId("project-detail-lead")).toHaveTextContent("One paragraph.");
+    openMoreMenu();
+    fireEvent.click(screen.getByTestId("project-detail-brief-ask"));
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("This overview is not laid out yet");
+    const preview = dialog.querySelector("pre")?.textContent ?? "";
     expect(preview).toContain(`get_concept("${SLUG}"`);
     expect(preview).toContain("docs/ontology/project.md");
     expect(preview).toContain("expected_mtime");
@@ -836,8 +801,8 @@ describe("ProjectDetailPage", () => {
     mocks.vaultBody = "Vault body text that should be shadowed.";
     renderPage({ project: { detail: "Explicit detail field wins." } });
 
-    const content = screen.getByTestId("project-detail-body-content");
-    expect(content).toHaveTextContent("Explicit detail field wins.");
-    expect(content).not.toHaveTextContent("Vault body text that should be shadowed.");
+    const lead = screen.getByTestId("project-detail-lead");
+    expect(lead).toHaveTextContent("Explicit detail field wins.");
+    expect(lead).not.toHaveTextContent("Vault body text that should be shadowed.");
   });
 });
