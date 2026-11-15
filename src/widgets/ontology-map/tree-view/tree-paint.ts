@@ -1,5 +1,6 @@
 import { FONT_WEIGHT } from "@/shared/ui/tokens/font-weight";
 import { labelFontFamily } from "../render/labels";
+import { treeScreenGrowth } from "../model/tree-view/tree-detail";
 import {
   TREE_ARC_BUDGET,
   TREE_TONE_STEPS,
@@ -82,6 +83,8 @@ let arcFrom = new Int32Array(0);
 let arcTo = new Int32Array(0);
 let arcRole = new Uint8Array(0);
 let stamp = 0;
+/** This frame's glow strength, 1 at rest and 0 from `glowFadeZoom` in. */
+let glowFade = 1;
 
 const CAP_START = 1;
 const CAP_END = 2;
@@ -182,13 +185,14 @@ function drawsDisc(model: TreeModel, mark: TreeDrawMark): boolean {
   return mark.closed || model.kinds[mark.node] !== "fork";
 }
 
-function ringOf(radius: number, tokens: TreeTokens): number {
-  return Math.max(tokens.paint.ringMinPx, radius * tokens.paint.ringShare);
+function ringOf(radius: number, growth: number, tokens: TreeTokens): number {
+  return Math.max(tokens.paint.ringMinPx * growth, radius * tokens.paint.ringShare);
 }
 
 function outerRadius(mark: TreeDrawMark, tokens: TreeTokens): number {
   const { closedRingGapPx, closedRingPx } = tokens.paint;
-  return mark.radius + ringOf(mark.radius, tokens) + (mark.closed ? closedRingGapPx + closedRingPx : 0);
+  const growth = treeScreenGrowth(mark.scale);
+  return mark.radius + ringOf(mark.radius, growth, tokens) + (mark.closed ? (closedRingGapPx + closedRingPx) * growth : 0);
 }
 
 /** Where segment a→b crosses the circle (cx, cy, r): `leaving` takes the far root, else the near one. */
@@ -232,7 +236,7 @@ function sampleCubic(frame: TreeFrameInput, node: number, tEnd: number, tokens: 
     );
     sampleX[s] = point.x;
     sampleY[s] = point.y;
-    sampleW[s] = Math.max(tokens.paint.branchMinPx, (ws + (we - ws) * t) * projector.unit * point.scale);
+    sampleW[s] = Math.max(tokens.paint.branchMinPx, (ws + (we - ws) * t) * projector.unit * treeScreenGrowth(point.scale));
   }
 }
 
@@ -351,12 +355,21 @@ function addCap(ctx: CanvasRenderingContext2D, at: number, share: number): void 
   ctx.arc(polyX[at]!, polyY[at]!, r, 0, TAU, true);
 }
 
+/**
+ * Glows hold their zoom-1 size and fade out by `glowFadeZoom`, so zooming in never washes the
+ * ground. Zoom is read as the projector's scale at the tree centre, 1 at rest.
+ */
 function paintGlows(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
   const { layout, list, projector, width, height } = frame;
   const { paint, inks } = tokens;
   const [cx, cy, cz] = layout.centre;
   projector.project(cx, cy, cz, point);
-  const backdrop = Math.max(1, layout.radius * projector.unit * point.scale * paint.backdropReach);
+  const zoom = Math.max(1, point.scale);
+  const fade = Math.min(1, Math.max(0, (paint.glowFadeZoom - zoom) / (paint.glowFadeZoom - 1)));
+  glowFade = fade;
+  if (fade === 0) return;
+  ctx.globalAlpha = fade;
+  const backdrop = Math.max(1, layout.radius * projector.unit * (point.scale / zoom) * paint.backdropReach);
   const wash = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, backdrop);
   wash.addColorStop(0, inks.backdropGlow[0]);
   wash.addColorStop(1, inks.backdropGlow[1]);
@@ -366,7 +379,7 @@ function paintGlows(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens
   const trunk = markIndexOf(0);
   if (trunk >= 0) {
     const base = list.marks[trunk]!;
-    const reach = Math.max(1, base.radius * paint.poolReach);
+    const reach = Math.max(1, (base.radius / treeScreenGrowth(zoom)) * paint.poolReach);
     ctx.save();
     ctx.translate(base.x, base.y);
     ctx.scale(1, paint.poolFlatten);
@@ -388,12 +401,12 @@ function paintGlows(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens
     if (layout.model.kinds[mark.node] !== "domain" || !isGrown(frame, mark.node)) continue;
     const b = mark.node * 4;
     projector.project(B[b]!, B[b + 1]!, B[b + 2]!, point);
-    const reach = Math.max(1, B[b + 3]! * projector.unit * point.scale * paint.canopyReach);
+    const reach = Math.max(1, B[b + 3]! * projector.unit * (point.scale / zoom) * paint.canopyReach);
     const glow = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, reach);
     glow.addColorStop(0, inks.canopyGlow[0]);
     glow.addColorStop(CANOPY_MID_STOP, inks.canopyGlow[1]);
     glow.addColorStop(1, inks.canopyGlow[2]);
-    ctx.globalAlpha = (mark.tone + 1) / TREE_TONE_STEPS;
+    ctx.globalAlpha = (fade * (mark.tone + 1)) / TREE_TONE_STEPS;
     ctx.fillStyle = glow;
     ctx.beginPath();
     ctx.arc(point.x, point.y, reach, 0, TAU);
@@ -441,8 +454,9 @@ function hasStaleInside(sums: Int32Array | null, from: number, to: number): bool
 /** A soft light behind a domain hub: stacked translucent discs, no filter and no gradient. */
 function paintHubGlow(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, tone: number, tokens: TreeTokens): void {
   const { hubGlowAlpha, hubGlowReach } = tokens.paint;
+  if (glowFade === 0) return;
   ctx.fillStyle = tokens.inks.nameStrong;
-  ctx.globalAlpha = (hubGlowAlpha * (tone + 1)) / TREE_TONE_STEPS;
+  ctx.globalAlpha = (glowFade * hubGlowAlpha * (tone + 1)) / TREE_TONE_STEPS;
   for (let step = 0; step < HUB_GLOW_STEPS; step += 1) {
     ctx.beginPath();
     ctx.arc(x, y, radius * (1 + ((hubGlowReach - 1) * (HUB_GLOW_STEPS - step)) / HUB_GLOW_STEPS), 0, TAU);
@@ -456,11 +470,12 @@ function paintMark(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, mark: T
   const { paint, inks, tones } = tokens;
   const { node, x, y, radius } = mark;
   const kind = model.kinds[node]!;
-  const ring = ringOf(radius, tokens);
+  const growth = treeScreenGrowth(mark.scale);
+  const ring = ringOf(radius, growth, tokens);
   if (mark.closed) {
     ctx.beginPath();
-    ctx.arc(x, y, radius + ring + paint.closedRingGapPx + paint.closedRingPx / 2, 0, TAU);
-    ctx.lineWidth = paint.closedRingPx;
+    ctx.arc(x, y, radius + ring + (paint.closedRingGapPx + paint.closedRingPx / 2) * growth, 0, TAU);
+    ctx.lineWidth = paint.closedRingPx * growth;
     ctx.strokeStyle = tones.mark[tone]!;
     ctx.stroke();
   }
@@ -473,7 +488,7 @@ function paintMark(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, mark: T
   if (kind === "domain") {
     ctx.beginPath();
     ctx.arc(x, y, radius * paint.domainCoreShare, 0, TAU);
-    ctx.lineWidth = paint.domainCoreRingPx;
+    ctx.lineWidth = paint.domainCoreRingPx * growth;
     ctx.strokeStyle = inks.discFill;
     ctx.stroke();
   }
@@ -483,10 +498,10 @@ function paintMark(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, mark: T
     ? mark.closed && hasStaleInside(sums, node + 1, end)
     : selfStale || (mark.closed && hasStaleInside(sums, node, end));
   if (!dot) return;
-  const r = Math.max(paint.staleDotMinPx, radius * paint.staleDotShare);
+  const r = Math.max(paint.staleDotMinPx * growth, radius * paint.staleDotShare);
   const dx = x + Math.cos(STALE_DOT_ANGLE) * radius;
   const dy = y + Math.sin(STALE_DOT_ANGLE) * radius;
-  disc(ctx, dx, dy, r + ringOf(r, tokens), inks.discFill);
+  disc(ctx, dx, dy, r + ringOf(r, growth, tokens), inks.discFill);
   disc(ctx, dx, dy, r, tones.stale[tone]!);
 }
 
@@ -625,32 +640,41 @@ function paintFocus(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, sums: 
 
   const held = list.marks[focusAt]!;
   ctx.beginPath();
-  ctx.arc(held.x, held.y, outerRadius(held, tokens) + paint.focusRingGapPx, 0, TAU);
+  ctx.arc(held.x, held.y, outerRadius(held, tokens) + paint.focusRingGapPx * treeScreenGrowth(held.scale), 0, TAU);
   ctx.strokeStyle = inks.nameStrong;
   ctx.lineWidth = paint.focusRingPx;
   ctx.stroke();
 }
 
-/** The focus's own branches down to the trunk: the same three layers, mid and core in the lit inks. */
+/**
+ * The focus's own branches down to the trunk, redrawn over the veil in their rest inks and
+ * widths, with only the core in the strong ink: light running inside the wood.
+ */
 function paintFocusPath(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, tokens: TreeTokens): void {
   const { paint, inks, tones } = tokens;
-  fillFocusPath(ctx, frame, 1, 0, tones.branch[NEAREST_TONE]!);
-  fillFocusPath(ctx, frame, paint.branchMidShare, paint.branchCoreMinPx, inks.branchLit);
-  fillFocusPath(ctx, frame, paint.branchCoreShare, paint.branchCoreMinPx, inks.nameStrong);
+  fillFocusPath(ctx, frame, 1, 0, tones.branch);
+  fillFocusPath(ctx, frame, paint.branchMidShare, paint.branchCoreMinPx, tones.branchMid);
+  fillFocusPath(ctx, frame, paint.branchCoreShare, 0, inks.nameStrong);
 }
 
-function fillFocusPath(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, share: number, minWidthPx: number, ink: string): void {
+function fillFocusPath(ctx: CanvasRenderingContext2D, frame: TreeFrameInput, share: number, minWidthPx: number, ink: string | readonly string[]): void {
   const parent = frame.layout.model.parent;
+  const shared = typeof ink === "string";
+  if (shared) ctx.beginPath();
   let drawn = 0;
-  ctx.beginPath();
   for (let node = frame.focus!.node; node >= 0; node = parent[node]!) {
     if (branchStamp[node] !== stamp) continue;
     const slot = branchAt[node]!;
     if (polyLength[slot] === 0 || polyWidest[slot]! < minWidthPx) continue;
+    if (!shared) ctx.beginPath();
     addRibbon(ctx, slot, share);
     drawn += 1;
+    if (!shared) {
+      ctx.fillStyle = ink[branchTone[slot]!]!;
+      ctx.fill();
+    }
   }
-  if (drawn === 0) return;
+  if (!shared || drawn === 0) return;
   ctx.fillStyle = ink;
   ctx.fill();
 }

@@ -13,6 +13,7 @@ import {
   type TreeProjector,
 } from "../model/tree-view/types";
 import { readTreeTokens, type TreeTokens } from "../tokens/read-tree-tokens";
+import { treeScreenGrowth } from "../model/tree-view/tree-detail";
 import { paintTreeFrame } from "./tree-paint";
 
 interface Point { x: number; y: number }
@@ -104,17 +105,21 @@ beforeAll(() => {
 });
 
 /** World y is up; the projector flips it and puts the trunk base at (400, 600). */
-const projector: TreeProjector = {
-  project(x, y, z, out) {
-    out.x = 400 + x;
-    out.y = 600 - y;
-    out.scale = 1;
-    out.depth = 100 + z;
-  },
-  unit: 1,
-  near: 0,
-  far: 200,
-};
+/** A projector at a uniform zoom: positions and scale both grow by `zoom`. */
+function projectorAt(zoom: number): TreeProjector {
+  return {
+    project(x, y, z, out) {
+      out.x = 400 + x * zoom;
+      out.y = 600 - y * zoom;
+      out.scale = zoom;
+      out.depth = 100 + z;
+    },
+    unit: 1,
+    near: 0,
+    far: 200,
+  };
+}
+const projector = projectorAt(1);
 
 interface Spec { kind: TreeNodeKind; parent: number; x: number; y: number }
 const WIDTH: Record<TreeNodeKind, [number, number]> = { project: [12, 8], domain: [6, 4], fork: [4, 3], capability: [3, 2], element: [1, 1] };
@@ -180,14 +185,14 @@ const SMALL: readonly Spec[] = [
   { kind: "element", parent: 8, x: 140, y: 340 },
 ];
 
-function drawListOf(layout: TreeLayout, nodes: readonly number[], closed: readonly number[] = []): TreeDrawList {
+function drawListOf(layout: TreeLayout, nodes: readonly number[], closed: readonly number[] = [], view = projector): TreeDrawList {
   const radius: Record<TreeNodeKind, number> = { ...T.marks, fork: T.marks.bud };
   const marks = nodes.map((node) => {
     const p = { x: 0, y: 0, scale: 0, depth: 0 };
     const P = layout.position;
-    if (node === 0) projector.project(0, 0, 0, p);
-    else projector.project(P[node * 3]!, P[node * 3 + 1]!, P[node * 3 + 2]!, p);
-    return { node, x: p.x, y: p.y, radius: radius[layout.model.kinds[node]!], scale: 1, depth: p.depth, tone: TREE_TONE_STEPS - 1, closed: closed.includes(node) };
+    if (node === 0) view.project(0, 0, 0, p);
+    else view.project(P[node * 3]!, P[node * 3 + 1]!, P[node * 3 + 2]!, p);
+    return { node, x: p.x, y: p.y, radius: radius[layout.model.kinds[node]!] * treeScreenGrowth(p.scale), scale: p.scale, depth: p.depth, tone: TREE_TONE_STEPS - 1, closed: closed.includes(node) };
   });
   return { marks, count: marks.length, visited: marks.length, folded: 0 };
 }
@@ -316,6 +321,48 @@ describe("paintTreeFrame", () => {
       }
     }
     expect(tested).toBeGreaterThan(200);
+  });
+
+  it("redraws the focus path in its rest body and gives only its core the strong ink", () => {
+    const layout = layoutOf(SMALL);
+    const list = drawListOf(layout, ALL);
+    const rest = recorder();
+    paintTreeFrame(rest.ctx, frameOf(layout, list), T);
+    const focused = recorder();
+    paintTreeFrame(focused.ctx, frameOf(layout, list, { focus: focusOn(2, [], []) }), T);
+    const ribbons = (paints: Paint[], inks: readonly string[]) =>
+      paints.filter((p) => p.op === "fill" && inks.includes(p.style as string)).flatMap((p) => p.subpaths.filter((g) => g.length > 2));
+    const veil = focused.paints.findLastIndex((p) => p.op === "fillRect" && p.style === T.inks.ground);
+    const after = focused.paints.slice(veil + 1);
+    const pathBodies = ribbons(after, T.tones.branch);
+    const pathCores = ribbons(after, [T.inks.nameStrong]);
+    expect(pathBodies.length).toBeGreaterThanOrEqual(3);
+    expect(pathCores).toHaveLength(pathBodies.length);
+    for (const body of pathBodies) expect(ribbons(rest.paints, T.tones.branch)).toContainEqual(body);
+    for (const core of pathCores) expect(ribbons(rest.paints, T.tones.branchCore)).toContainEqual(core);
+  });
+
+  it("widens a branch with the square-root growth of scale, twice as wide at scale 4", () => {
+    const layout = layoutOf([{ kind: "project", parent: -1, x: 0, y: 100 }]);
+    const widthAtTop = (zoom: number) => {
+      const view = projectorAt(zoom);
+      const r = recorder();
+      paintTreeFrame(r.ctx, frameOf(layout, drawListOf(layout, [0], [], view), { projector: view }), T);
+      const body = r.paints.find((p) => p.op === "fill" && T.tones.branch.includes(p.style as string))!;
+      const ribbon = body.subpaths.find((g) => g.length > 2)!;
+      const n = ribbon.length / 2;
+      return distance(ribbon[n - 1]!, ribbon[n]!);
+    };
+    expect(widthAtTop(4) / widthAtTop(1)).toBeCloseTo(2, 6);
+  });
+
+  it("lays no gradient over the ground at zoom 4", () => {
+    const view = projectorAt(4);
+    const layout = layoutOf(SMALL);
+    const r = recorder();
+    paintTreeFrame(r.ctx, frameOf(layout, drawListOf(layout, ALL, [], view), { projector: view }), T);
+    expect(r.gradients()).toBe(0);
+    expect(r.paints.filter((p) => typeof p.style !== "string")).toEqual([]);
   });
 
   it("draws no dependency arc without a focus", () => {

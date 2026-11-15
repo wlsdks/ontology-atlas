@@ -20,8 +20,8 @@ const TREE_CULL_SLACK = 1.5;
 /** Marks grow slower than distances, so zooming in or coming nearer separates them. */
 const MARK_GROWTH = 0.5;
 
-/** How a mark's radius, and the spacing a node needs to open, follow the projector's scale. */
-function markRadiusScale(scale: number): number {
+/** How every screen size (mark radius, branch width, the spacing a node needs to open) follows the projector's scale. */
+export function treeScreenGrowth(scale: number): number {
   return scale ** MARK_GROWTH;
 }
 
@@ -124,7 +124,7 @@ function outsideView(layout: TreeLayout, node: number, projector: TreeProjector,
   const gap = probe.depth - radius;
   if (gap <= 0) return false;
   const nearScale = (probe.scale * probe.depth) / gap;
-  const reachPx = radius * projector.unit * nearScale * TREE_CULL_SLACK + padPx * markRadiusScale(nearScale);
+  const reachPx = radius * projector.unit * nearScale * TREE_CULL_SLACK + padPx * treeScreenGrowth(nearScale);
   return (
     probe.x + reachPx < view.x ||
     probe.x - reachPx > view.x + view.width ||
@@ -188,7 +188,7 @@ function emitMark(input: TreeDetailInput, out: TreeDrawList, node: number, close
     mark.scale = screen[s + 2];
     mark.depth = screen[s + 3];
   }
-  mark.radius = markSize(layout.model.kinds[node], input.marks) * markRadiusScale(mark.scale);
+  mark.radius = markSize(layout.model.kinds[node], input.marks) * treeScreenGrowth(mark.scale);
   mark.tone = toneOf(mark.depth, projector);
 }
 
@@ -301,7 +301,7 @@ function wantsOpen(input: TreeDetailInput, node: number): boolean {
   const scale = screen[node * 4 + 2];
   const spacingPx = childSpacing(layout, node) * input.projector.unit * scale;
   // The thresholds are a mark's diameter plus a gap where scale is 1, so they grow with the marks.
-  return spacingPx >= (leafHead ? input.leafPitchPx : input.openPitchPx) * markRadiusScale(scale);
+  return spacingPx >= (leafHead ? input.leafPitchPx : input.openPitchPx) * treeScreenGrowth(scale);
 }
 
 /** Far before near; equal depths by node index. */

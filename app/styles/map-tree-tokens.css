@@ -31,7 +31,6 @@
     --map-tree-branch-core-share: 0.32;
     --map-tree-branch-core-min-px: 1.6;
     --map-tree-branch-core-ink: 0.97;
-    --map-tree-branch-lit-ink: 0.92;
     --map-tree-mark-ink: 0.92;
     --map-tree-ring-share: 0.1;
     --map-tree-ring-min-px: 1.2;
@@ -62,5 +61,6 @@
     --map-tree-pool-alpha: 0.55;
     --map-tree-pool-reach: 7;
     --map-tree-pool-flatten: 0.38;
+    --map-tree-glow-fade-zoom: 4;
   }
 }

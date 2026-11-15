@@ -6,7 +6,7 @@ export interface TreeDetailTokens { openPitchPx: number; leafPitchPx: number; el
 /** Shares mix an ink toward the ground (1 keeps the ink); `-Px` are CSS pixels where scale is 1. */
 export interface TreePaintTokens {
   toneFar: number;
-  branchMinPx: number; branchInk: number; branchMidShare: number; branchMidInk: number; branchCoreShare: number; branchCoreMinPx: number; branchCoreInk: number; branchLitInk: number;
+  branchMinPx: number; branchInk: number; branchMidShare: number; branchMidInk: number; branchCoreShare: number; branchCoreMinPx: number; branchCoreInk: number;
   markInk: number; ringShare: number; ringMinPx: number; domainCoreShare: number; domainCoreRingPx: number;
   hubGlowAlpha: number; hubGlowReach: number;
   closedRingGapPx: number; closedRingPx: number; staleDotShare: number; staleDotMinPx: number;
@@ -14,7 +14,7 @@ export interface TreePaintTokens {
   focusVeilAlpha: number; focusRingGapPx: number; focusRingPx: number;
   nameHaloPx: number; domainNameHaloPx: number; nameSubInk: number;
   backdropAlpha: number; backdropReach: number; canopyAlpha: number; canopyReach: number;
-  poolAlpha: number; poolReach: number; poolFlatten: number;
+  poolAlpha: number; poolReach: number; poolFlatten: number; glowFadeZoom: number;
 }
 
 /** Resolved colours: the flat map's inks, the map ground, and gradient stops derived from them. */
@@ -26,8 +26,6 @@ export interface TreeInks {
   reach: string;
   warning: string;
   ground: string;
-  /** The middle layer of a branch on the focus's path to the trunk. */
-  branchLit: string;
   backdropGlow: readonly [string, string];
   canopyGlow: readonly [string, string, string];
   poolGlow: readonly [string, string, string];
@@ -59,11 +57,11 @@ const NAME_VARS = vars<keyof TreeNameSizes>(
 const DETAIL_VARS = vars<keyof TreeDetailTokens>(["openPitchPx", "leafPitchPx", "elementNamePitchPx", "pickSlopPx"], (k) => `--map-tree-${kebab(k)}`);
 const PAINT_VARS = vars<keyof TreePaintTokens>(
   [
-    "toneFar", "branchMinPx", "branchInk", "branchMidShare", "branchMidInk", "branchCoreShare", "branchCoreMinPx", "branchCoreInk", "branchLitInk",
+    "toneFar", "branchMinPx", "branchInk", "branchMidShare", "branchMidInk", "branchCoreShare", "branchCoreMinPx", "branchCoreInk",
     "markInk", "ringShare", "ringMinPx", "domainCoreShare", "domainCoreRingPx", "hubGlowAlpha", "hubGlowReach", "closedRingGapPx", "closedRingPx", "staleDotShare", "staleDotMinPx",
     "arcWidthPx", "arcHaloPx", "arcBow", "arcGapPx", "focusVeilAlpha", "focusRingGapPx", "focusRingPx",
     "nameHaloPx", "domainNameHaloPx", "nameSubInk",
-    "backdropAlpha", "backdropReach", "canopyAlpha", "canopyReach", "poolAlpha", "poolReach", "poolFlatten",
+    "backdropAlpha", "backdropReach", "canopyAlpha", "canopyReach", "poolAlpha", "poolReach", "poolFlatten", "glowFadeZoom",
   ],
   (k) => `--map-tree-${kebab(k)}`,
 );
@@ -131,7 +129,6 @@ export function readTreeTokens(): TreeTokens {
   const inks: TreeInks = {
     project: read.project, discFill: read.discFill, name: read.name, nameStrong: read.nameStrong, halo: read.halo,
     arc: read.arc, reach: read.reach, warning: read.warning, ground: read.ground,
-    branchLit: cssOf(mix(ground, nameStrong, paint.branchLitInk)),
     backdropGlow: [rgba(rgbOf(read.name), paint.backdropAlpha), rgba(rgbOf(read.name), 0)],
     canopyGlow: [rgba(nameStrong, paint.canopyAlpha), rgba(nameStrong, paint.canopyAlpha * GLOW_MID_SHARE), rgba(nameStrong, 0)],
     poolGlow: [rgba(project, paint.poolAlpha), rgba(project, paint.poolAlpha * GLOW_MID_SHARE), rgba(project, 0)],
