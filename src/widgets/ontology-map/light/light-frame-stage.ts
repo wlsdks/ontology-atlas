@@ -33,6 +33,8 @@ export interface LightStageDependencies {
   lightActiveRef: { current: boolean;
     };
   requestFrame: () => void;
+  /** True while Neural holds the map's WebGL context; the light makes none meanwhile. */
+  contextHeldElsewhereRef?: { current: boolean };
 }
 
 export interface LightStageOptions {
@@ -54,6 +56,8 @@ export interface LightFrameStage {
     trailLensActive: boolean,
     clusteredIds: ReadonlySet<string>): void;
     render(): void;
+    /** Releases the context so another layer can take it; `prepare` makes a new one when it may. */
+    standDown(): void;
     dispose(): void;
 }
 const INK_FLOATS = 12;
@@ -82,7 +86,7 @@ function lightKinematics(tokens: OntologyMapTokens): LightKinematics {
 }
 
 export function createLightFrameStage(dependencies: LightStageDependencies, options: LightStageOptions = {}): LightFrameStage {
-  const { canvasRef, refs, lightActiveRef, requestFrame } = dependencies;
+  const { canvasRef, refs, lightActiveRef, requestFrame, contextHeldElsewhereRef } = dependencies;
   const params = new URLSearchParams(options.search ?? (typeof window === "undefined" ? "" : window.location.search));
   const forced = params.get("light") === "force";
   const loadLayer = options.loadLayer ?? loadLightLayer;
@@ -266,7 +270,7 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         framePathOpen = refs.mapLensKindRef.current === "path" && (refs.pathEdgeIdsRef.current?.size ?? 0) > 0;
       }
       const reducedMotion = refs.reducedMotionRef.current;
-      if (reducedMotion) {
+      if (reducedMotion || contextHeldElsewhereRef?.current) {
         if (state !== "idle" && state !== "off") {
           release();
           state = "idle";
@@ -368,6 +372,12 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         },
         layer,
         canvasRef.current);
+    },
+    standDown() {
+      if (state === "idle" || state === "off") return;
+      release();
+      quiet();
+      state = "idle";
     },
     dispose() {
       disposed = true;
