@@ -4,8 +4,32 @@ import type { DomeTurnReach } from './turn-follow';
 
 type CameraPose = { tx: number; ty: number; tscale: number };
 
-/** A dome fit; Neural's carries the reach table its turn-following zoom reads (`followTurnWithZoom`). */
-export type DomeFitTarget = CameraPose & { turn?: DomeTurnReach };
+/**
+ * A dome fit. Neural's carries the reach table its turn-following zoom reads (`followTurnWithZoom`)
+ * and the free area it fills: its centre's offset from the viewport's and its half-size (px).
+ */
+export type DomeFitTarget = CameraPose & {
+  turn?: DomeTurnReach;
+  freeArea?: { centreX: number; centreY: number; halfW: number; halfH: number };
+};
+
+/**
+ * The leash a focused camera is held in while it aims at a Neural fit: the free area that fit fills,
+ * round the camera that puts the anchor at that area's centre, so the fit is always reachable. null
+ * leaves the focus leash as it is. O(1).
+ */
+export function domeFitFocusLeash(
+  anchor: { x: number; y: number },
+  target: DomeFitTarget,
+  scale: number,
+): { anchor: { x: number; y: number }; leashPx: { x: number; y: number } } | null {
+  const free = target.freeArea;
+  if (free === undefined || !(scale > 0)) return null;
+  return {
+    anchor: { x: anchor.x - free.centreX / scale, y: anchor.y - free.centreY / scale },
+    leashPx: { x: free.halfW, y: free.halfH },
+  };
+}
 
 export interface DomeTierRampAnchor {
   from: number;

@@ -210,7 +210,11 @@ export function useTopologyCameraPolicy({
       if (model.arrangement !== "coupling") return target;
       // Neural fits the pose it is asked for; turning from it then zooms out only as far as each yaw needs.
       const free = domeFitFreeHalfSize(width, height, used, DOME_NODE_FIT_ALLOWANCE_PX, tokens);
-      return { ...target, turn: domeTurnReach(model, yaw, pitch, free) ?? undefined };
+      return {
+        ...target,
+        turn: domeTurnReach(model, yaw, pitch, free) ?? undefined,
+        freeArea: { centreX: (used.left - used.right) / 2, centreY: (used.top - used.bottom) / 2, ...free },
+      };
     },
     [canvasRef, domeFitInsetsRef],
   );
