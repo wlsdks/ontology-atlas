@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { isDesktopShell } from "@/shared/lib/desktop-shell/desktop-shell";
@@ -37,6 +38,8 @@ export interface VaultOpenGuideSheetProps {
    * macOS app path replace them before anything is pressed.
    */
   unsupported?: boolean;
+  /** A caller's own closing section under the actions, such as the first-run card's terminal start. */
+  lastSection?: ReactNode;
 }
 
 const BULLETS = [
@@ -55,6 +58,7 @@ export function VaultOpenGuideSheet({
   onPickExisting,
   onCreateNew,
   unsupported = false,
+  lastSection,
 }: VaultOpenGuideSheetProps) {
   const t = useTranslations("vaultOpenGuide");
   /*
@@ -209,6 +213,11 @@ export function VaultOpenGuideSheet({
                 {t("actionCancel")}
               </button>
             </div>
+            {lastSection ? (
+              <div data-testid="vault-guide-last-section" className="border-t border-[color:var(--color-border-soft)] px-5 py-4">
+                {lastSection}
+              </div>
+            ) : null}
           </motion.section>
         </motion.div>
       )}

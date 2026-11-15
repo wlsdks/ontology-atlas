@@ -1,6 +1,5 @@
 /**
- * Kind silhouettes and relation trace marks drawn as shrunk copies of the canvas nodes and
- * edges, with the `--map-node-*` tokens. In `shared/ui` so several widgets reuse one rendering.
+ * Kind silhouettes drawn as shrunk copies of the canvas nodes, with the `--map-node-*` tokens. In `shared/ui` so several widgets reuse one rendering.
  * The single facade for DOM kind glyphs: it reads `useGlyphSet()`, and only the render style
  * changes between sets, never the kind-to-silhouette mapping. A kind the map does not draw
  * takes the vault tree's page mark, not a borrowed silhouette.
@@ -98,30 +97,6 @@ export function OntologyMapKindGlyph({
           )}
         </g>
       )}
-    </svg>
-  );
-}
-
-/**
- * Solid hairline for containment, dashed for depends, one per row (see the `map-datasheet.ts`
- * module doc).
- */
-export function OntologyMapTraceMark({ containment }: { containment: boolean }) {
-  const stroke = containment
-    ? "var(--map-edge-contains-mark)"
-    : "var(--map-edge-depends-mark)";
-  return (
-    <svg width={14} height={6} viewBox="0 0 14 6" aria-hidden="true" className="shrink-0">
-      <line
-        x1={1}
-        y1={3}
-        x2={13}
-        y2={3}
-        stroke={stroke}
-        strokeWidth={1.4}
-        strokeDasharray={containment ? undefined : "3 3"}
-        strokeLinecap="round"
-      />
     </svg>
   );
 }

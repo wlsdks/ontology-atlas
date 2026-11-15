@@ -1,22 +1,17 @@
 import type { ReactNode } from "react";
-import type { GraphLineKind } from "../../flat-graph/attention";
 
 export const GROUP_GLYPH_SLOT = "flex size-4 shrink-0 items-center justify-center";
 export const GROUP_ROW_LIST = "-mx-2 flex flex-col";
 
-/** The ink the map paints each line kind with; what needs the focus is the only warm line. */
-function lineInk(shape: GraphLineKind): string {
-  return shape === "neededBy" ? "var(--map-graph-reach)" : "var(--map-graph-arc)";
-}
+/** A reach group's line on the map; what needs the focus is the only warm line. */
+export type ReachLineShape = "needs" | "neededBy";
 
 /** A drawn sample of one map line, in the ink and shape the canvas uses for it (the map's key draws the same). */
-export function ReachLineSample({ shape }: { shape: GraphLineKind }) {
-  const ink = lineInk(shape);
+function ReachLineSample({ shape }: { shape: ReachLineShape }) {
+  const ink = shape === "neededBy" ? "var(--map-graph-reach)" : "var(--map-graph-arc)";
   return (
     <svg aria-hidden width="20" height="10" viewBox="0 0 20 10" className="shrink-0 overflow-visible" data-reach-sample={shape}>
-      {shape === "needs" || shape === "neededBy" ? <path d="M1 3.3 L19 4.8 L19 5.2 L1 6.7 Z" fill={ink} /> : null}
-      {shape === "relates" ? <path d="M1 5 H19" fill="none" stroke={ink} strokeWidth="1.2" strokeLinecap="round" strokeDasharray="0 4" /> : null}
-      {shape === "broader" ? <path d="M1 3.7 H19 M1 6.3 H19" fill="none" stroke={ink} strokeWidth="1" /> : null}
+      <path d="M1 3.3 L19 4.8 L19 5.2 L1 6.7 Z" fill={ink} />
     </svg>
   );
 }
@@ -34,7 +29,7 @@ export function RelationGroupShell({
 }: {
   groupKey: string;
   /** Null where the map draws no line of this group for the selection (an element, a document). */
-  sample: GraphLineKind | null;
+  sample: ReachLineShape | null;
   label: string;
   count: number;
   children?: ReactNode;

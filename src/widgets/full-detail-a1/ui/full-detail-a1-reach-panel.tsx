@@ -9,19 +9,14 @@ import { HiddenCountLine } from "@/shared/ui/status/hidden-count-line";
 import { SegmentedControl } from "@/shared/ui/fields/segmented-control";
 
 /**
- * Outward reach sentence, a 1/2/3 step selector and a per-domain bar breakdown. Indigo is reserved
- * for the self domain here (`.claude/rules/design.md`).
+ * Outward reach: one sentence, a 1/2/3 step selector and a per-domain bar breakdown. Indigo is
+ * reserved for the self domain here (`.claude/rules/design.md`).
  */
 export interface FullDetailA1ReachLabels {
-  leadIn: string;
-  stepUnit: string;
-  afterSteps: string;
+  /** The reach sentence for the chosen depth. */
+  summary: (depth: number, count: number, total: number) => string;
   /** The depth control's accessible name; an exclusive choice is a radiogroup and needs one. */
   stepsAria: string;
-  ofTotal: (count: number, total: number) => string;
-  mostlyNone: string;
-  mostlyOne: (a: string, aCount: number) => string;
-  mostlyTwo: (a: string, aCount: number, b: string, bCount: number) => string;
   selfDomainLabel: string;
   noDomainLabel: string;
   /** The remainder sentence for domains past `DOMAIN_ROW_LIMIT`. */
@@ -37,17 +32,6 @@ function domainDisplayName(
 ): string {
   if (row.isSelf) return labels.selfDomainLabel;
   return row.domainTitle ?? labels.noDomainLabel;
-}
-
-function buildMostlyText(
-  rows: readonly FullDetailReachDomainRow[],
-  labels: FullDetailA1ReachLabels,
-): string {
-  if (rows.length === 0) return labels.mostlyNone;
-  const [first, second] = rows;
-  const firstName = domainDisplayName(first, labels);
-  if (!second) return labels.mostlyOne(firstName, first.count);
-  return labels.mostlyTwo(firstName, first.count, domainDisplayName(second, labels), second.count);
 }
 
 export function FullDetailA1ReachPanel({
@@ -67,15 +51,14 @@ export function FullDetailA1ReachPanel({
   const topRows = atDepth.domainRows.slice(0, DOMAIN_ROW_LIMIT);
 
   return (
-    <section data-fulldetail-reach className={["border-y border-[color:var(--map-panel-border)] py-4", className ?? ""].join(" ")}>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-lg leading-prose tracking-[var(--tracking-title)] text-[color:var(--map-panel-text-secondary)]">
-        <span className="inline-flex items-center gap-2">
-        {labels.leadIn}{" "}
-        {/*
-         * `SegmentedControl`: an exclusive choice whose well draws the affordance at rest;
-         * inline-flex keeps it in the sentence, with roving tabindex and the coarse-pointer touch
-         * floor.
-         */}
+    <section data-fulldetail-reach className={className}>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p
+          data-fulldetail-reach-summary
+          className="min-w-0 flex-1 text-body font-[var(--font-weight-signature)] tabular-nums text-[color:var(--map-panel-text-primary)]"
+        >
+          {labels.summary(step, atDepth.reachableCount, reach.totalNodes)}
+        </p>
         <span data-fulldetail-reach-steps className="inline-flex">
           <SegmentedControl<FullDetailReachDepth>
             ariaLabel={labels.stepsAria}
@@ -89,20 +72,11 @@ export function FullDetailA1ReachPanel({
             size="md"
           />
         </span>
-        </span>
-        <p className="min-w-0 max-w-[var(--measure-doc-column)]">
-        {labels.stepUnit} {labels.afterSteps}{" "}
-        <span className="font-mono text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]">
-          {labels.ofTotal(atDepth.reachableCount, reach.totalNodes)}
-        </span>
-        {" — "}
-        {buildMostlyText(topRows, labels)}
-        </p>
       </div>
       {topRows.length > 0 ? (
         <div
           data-fulldetail-domain-bars
-          className="mt-3.5 grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] sm:grid-cols-[170px_1fr_44px] items-center gap-x-3.5 gap-y-1.5"
+          className="mt-3 grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] items-center gap-x-3.5 gap-y-1.5 sm:grid-cols-[170px_1fr_44px]"
         >
           {topRows.map((row) => (
             <DomainBarRow
