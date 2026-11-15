@@ -26,6 +26,31 @@ describe('agent map navigation during relation review', () => {
     expect(options.topologyIndexPresentation.beginExpandedIndexSelection).toHaveBeenCalledOnce();
   });
 
+  it('clears the selection when the panel closes in 3D, as in every view', () => {
+    const setRouteState = vi.fn();
+    const setNodePopoverDismissed = vi.fn();
+    const interactionSelectedSlugRef = { current: 'capability:a' as string | null };
+    const options = {
+      setExpandAllActive: vi.fn(), setRouteState, replayPastWalk: vi.fn(),
+      topologyInspectorState: { panelDatasheetModel: null },
+      topologyAgentOrchestration: { closeVaultAgent: vi.fn() },
+      topologySourceReadiness: { unboundProjectSource: null },
+      topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
+      topologyGraphProjection: { projectBySlug: new Map() },
+      topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge: vi.fn() },
+      topologyPreferences: { structure: false, view3d: true },
+      topologyCanvasFocus: { interactionSelectedSlugRef, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed, chatNodeIndex: new Map() },
+    } as Parameters<typeof useTopologyNavigationActions>[0];
+    const { result } = renderHook(() => useTopologyNavigationActions(options));
+
+    act(() => result.current.handleDatasheetClose());
+
+    const update = setRouteState.mock.calls[0]![0] as (route: { selectedSlug: string | null; analysisMode: string }) => { selectedSlug: string | null };
+    expect(update({ selectedSlug: 'capability:a', analysisMode: 'focus' }).selectedSlug).toBeNull();
+    expect(interactionSelectedSlugRef.current).toBeNull();
+    expect(setNodePopoverDismissed).not.toHaveBeenCalled();
+  });
+
   it.each([['source', 'target', true], ['target', 'source', true], ['source', 'other', false]] as const)(
     'keeps the inspected relation only when the read path joins its endpoints: %s to %s', (from, to, retained) => {
       const relation = { sourceId: 'a', targetId: 'b', relationType: 'contains', declaredBySlug: 'source' };
