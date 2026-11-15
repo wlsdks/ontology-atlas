@@ -14,7 +14,7 @@ export interface DemoClip {
 
 /** Declared before filming, so the post-shoot gate has something to compare against. */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  { id: 'atlas-tour', seconds: 28, basename: 'atlas-tour' },
+  { id: 'atlas-tour', seconds: 36, basename: 'atlas-tour' },
 ];
 
 /**
