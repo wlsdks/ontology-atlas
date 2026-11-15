@@ -21,7 +21,6 @@ const CONSUMERS = [
   'src/widgets/project-drawer/ui/ProjectDrawer.tsx',
   'src/widgets/library-import/ui/LibraryImportDialog.tsx',
   'src/widgets/library-graph/ui/LibraryMarkPopover.tsx',
-  'src/views/architecture/ui/ArchitectureWorkbench.tsx',
   'src/views/docs-vault/ui/parts/DocsVaultAuditModal.tsx',
   'src/views/library/ui/parts/LibraryHomePopover.tsx',
   'src/views/home/ui/TopologyBlockingOverlays.tsx',
