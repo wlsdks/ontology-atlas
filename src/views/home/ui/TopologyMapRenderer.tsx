@@ -330,7 +330,6 @@ export function TopologyMapRenderer({
             realmEnterTooltip={t('realm.enterTooltip')}
             realmCaption={realmCaption}
             clusterBarLabels={clusterBarLabels}
-            domeTierLabels={domeTierLabels}
             canvasLabel={t('canvas.ariaLabel')}
             visitedTrail={footprintVisitedIds}
             trailLensActiveRef={footprintLensActiveRef}

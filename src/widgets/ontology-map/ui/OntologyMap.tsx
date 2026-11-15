@@ -10,12 +10,9 @@ import { copyCanvasAtCssSize, isMapLayoutMorphArmed, publishMapLayoutSnapshot } 
 import { readOntologyMapTokensOrNull } from "../tokens/topology-read-tokens";
 import { ICON_SIZE } from "@/shared/ui/tokens/icon-size";
 import { useTopologyLoop } from "./loop/use-topology-loop";
-import { OntologyMapTierLegend } from "./OntologyMapTierLegend";
-import type { TierNameAnchor } from "../model/dome-view/tier-names";
 import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
-import type { DomeViewKind } from "../model/dome-view/types";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
@@ -259,8 +256,6 @@ export interface OntologyMapProps {
    * catches a broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
-  /** Translated kind names, each standing beside its Strata plane's rim (`OntologyMapTierLegend`). */
-  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
    * is painted pixels and reads to a screen reader as an empty graphic, so
@@ -395,7 +390,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -474,19 +469,8 @@ export function OntologyMap(props: OntologyMapProps) {
     },
     []);
 
-  /*
-   * ── Strata's tier names ────────────────────────────────────────────────────
-   *
-   * Where the frame placed each name beside its plane's rim this frame
-   * (`model/dome-view/tier-names.ts`); `OntologyMapTierLegend` draws them and measures them.
-   */
-  const [tierNames, setTierNames] = useState<readonly TierNameAnchor[] | null>(null);
-  const handleTierNames = useCallback((next: readonly TierNameAnchor[] | null) => {
-    setTierNames(next);
-  }, []);
-  const tierNamesActive = view3d && mapArrangement === "strata" && domeTierLabels !== null;
 
-  const { canvasRef, containerRef, raiseDomeTier, setDomeTierNameWidths, readLayoutMarks, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
+  const { canvasRef, containerRef, readLayoutMarks, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -532,7 +516,6 @@ export function OntologyMap(props: OntologyMapProps) {
       realmEnterButtonRef,
       realmCaption,
       clusterBarLabels,
-      onDomeTierAnchorsChange: handleTierNames,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
@@ -649,7 +632,6 @@ export function OntologyMap(props: OntologyMapProps) {
       {!view3d && props.flatKey ? props.flatKey : null}
       {/* The inspector docks against the same right edge the names favour, and the
                   reader is looking at one concept, so the names step aside while it is open. */}
-      {tierNamesActive && !detailPanelVisible ? (<OntologyMapTierLegend names={tierNames ?? []} labels={domeTierLabels!} onRaise={raiseDomeTier} onWidths={setDomeTierNameWidths}/>) : null}
       {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")}
         /* Read by assistive technology, and non-existent to pointer and focus. */
         role="status" aria-live="polite" data-state={noticePresence.exiting ? "closed" : "open"} className={[
