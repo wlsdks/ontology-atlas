@@ -102,6 +102,19 @@ describe("createNeuralGlStage", () => {
     expect([stage.state(), contextHeldRef.current]).toEqual(["failed", false]);
   });
 
+  it("falls back to canvas 2D when the painter throws while it is created", async () => {
+    const load = async () => ({
+      createNeuralGl: () => {
+        throw new Error("no token");
+      },
+    });
+    const { stage, frame, contextHeldRef, container } = setup("", { load });
+    frame();
+    await flush();
+    expect(frame()).toBeNull();
+    expect([stage.state(), contextHeldRef.current, container.children.length]).toEqual(["failed", false, 1]);
+  });
+
   it("stays on canvas 2D after a lost context until Neural is entered again", async () => {
     const { stage, frame, leave, lose, gl, requestFrame, contextHeldRef } = setup("");
     frame();

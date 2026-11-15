@@ -411,11 +411,6 @@ export function computeLensFitTarget(
   return { ...centerForInsets(fit.tx, fit.ty, insets, fit.tscale), tscale: fit.tscale };
 }
 
-/**
- * The cone's own fit: fill the free canvas, not the safe rect, since the overview fit's static insets
- * describe the 2D map. Free canvas = canvas minus measured panels (`interaction/free-area.ts`) minus
- * the `insets` bands; `nodeRadiusPx` is subtracted (`DOME_NODE_PX`). No padding beyond `fill`.
- */
 /** Half the area a dome fit fills round its centre, in screen px: the free canvas times the fill, less a disc. */
 export function domeFitFreeHalfSize(
   viewportWidth: number,
@@ -430,6 +425,11 @@ export function domeFitFreeHalfSize(
   return { halfW: Math.max(1, effW * fill - nodeRadiusPx * 2) / 2, halfH: Math.max(1, effH * fill - nodeRadiusPx * 2) / 2 };
 }
 
+/**
+ * The cone's own fit: fill the free canvas, not the safe rect, since the overview fit's static insets
+ * describe the 2D map. Free canvas = canvas minus measured panels (`interaction/free-area.ts`) minus
+ * the `insets` bands; `nodeRadiusPx` is subtracted (`DOME_NODE_PX`). No padding beyond `fill`.
+ */
 export function computeDomeFitCameraTarget(
   /** The projected bounds of the node **centres** (world units). */
   bounds: { minX: number; minY: number; maxX: number; maxY: number },

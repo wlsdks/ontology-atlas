@@ -121,7 +121,8 @@ One accurate word per thing. Canonical spellings live in
 - Neural's three.js painter (`neural-gl/`) draws only the shared `NeuralFrame`
   the canvas painter draws: picking, names and the probe never read WebGL. A
   map holds one live WebGL context, so the light layer stands down while
-  Neural paints, and every failure falls back to canvas 2D on the same frame.
+  Neural paints, and a failed chunk, renderer, shader or context falls back to
+  canvas 2D drawing the same frame.
 
 ## Absolute rules point to one source
 

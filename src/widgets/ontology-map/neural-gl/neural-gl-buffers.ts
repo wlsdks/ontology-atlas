@@ -1,6 +1,6 @@
 import { at } from "../ui/frame-draw/neural-axons";
 import type { NeuralFrame } from "../ui/frame-draw/neural-frame";
-import { NEURAL_CELL } from "../ui/frame-draw/paint-neural";
+import { AXON_DOT_GAIN, AXON_DOT_T, IMPACT_WIDTH_FLOOR, LIT_DOT_T, NEURAL_CELL, RING_ALPHA, SIGNAL_GLOW_ALPHA } from "../ui/frame-draw/paint-neural";
 import { IMPACT_STEP_DISTANCES, impactStepOf, impactStrength } from "../ui/frame-draw/neural-spread";
 
 /**
@@ -78,13 +78,6 @@ export interface NeuralGlInks {
   litGlowAlpha: number;
 }
 
-/** Mirrors of the canvas-2D painter's constants (`ui/frame-draw/paint-neural.ts`), so both draw the same marks. */
-const AXON_DOT_T = 0.95;
-const LIT_DOT_T = 0.96;
-const AXON_DOT_GAIN = 1.7;
-const RING_ALPHA = 0.8;
-const SIGNAL_GLOW_ALPHA = 0.85;
-const IMPACT_WIDTH_FLOOR = 0.45;
 /** The canvas painter's shadow blur under a lit axon, drawn here as a wider ribbon that fades across. */
 const LIT_GLOW_WIDTH_SHARE = 0.75;
 /** The GL canvas fades by its CSS opacity, so marks are drawn without the ramp the frame folded in. */

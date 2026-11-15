@@ -139,7 +139,11 @@ export function createNeuralGlStage(dependencies: NeuralGlStageDependencies, opt
     namesCanvas = siblingCanvas(doc, "map-neural-names");
     namesCtx = namesCanvas.getContext("2d");
     claimContext();
-    gl = namesCtx ? module.createNeuralGl(glCanvas, { pixelRatio: () => pixelRatio, onLost }) : null;
+    try {
+      gl = namesCtx ? module.createNeuralGl(glCanvas, { pixelRatio: () => pixelRatio, onLost }) : null;
+    } catch {
+      gl = null;
+    }
     if (!gl) {
       state = "failed";
       release();

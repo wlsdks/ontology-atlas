@@ -17,16 +17,16 @@ export interface NeuralLabels {
 /** `NeuralFrame.cellKind` codes: the one choice a cell's body and ring make by kind. */
 export const NEURAL_CELL = { element: 0, capability: 1, domain: 2, project: 3 } as const satisfies Record<WorldNode["kind"], number>;
 
-const AXON_DOT_T = 0.95;
-const LIT_DOT_T = 0.96;
+export const AXON_DOT_T = 0.95;
+export const LIT_DOT_T = 0.96;
 /** An axon's end dot is this much brighter than its stroke. */
-const AXON_DOT_GAIN = 1.7;
+export const AXON_DOT_GAIN = 1.7;
 /** A domain's or the project's ring under its body. */
-const RING_ALPHA = 0.8;
+export const RING_ALPHA = 0.8;
 /** The travelling signal's glow under its dot. */
-const SIGNAL_GLOW_ALPHA = 0.85;
+export const SIGNAL_GLOW_ALPHA = 0.85;
 /** A weaker impact step is also thinner, down to this share of a lit axon's width at zero strength. */
-const IMPACT_WIDTH_FLOOR = 0.45;
+export const IMPACT_WIDTH_FLOOR = 0.45;
 
 let tokens: NeuralTokens | null = null;
 let tractCache: { world: TopologyWorld; epoch: number; tracts: NeuralTracts } | null = null;

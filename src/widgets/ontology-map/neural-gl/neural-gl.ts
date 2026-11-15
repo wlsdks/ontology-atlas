@@ -49,7 +49,7 @@ const DRAW_ORDER: readonly DrawName[] = ["shells", "halos", "veiledCells", "cell
 export interface NeuralGlOptions {
   /** Backing pixels per CSS pixel for the frame being painted; the loop lowers it while a drag runs. */
   pixelRatio: () => number;
-  /** The context was lost; the painter is spent and the caller falls back to canvas 2D. */
+  /** The context was lost or a shader failed; the painter is spent and the caller falls back to canvas 2D. */
   onLost: () => void;
 }
 
@@ -231,6 +231,11 @@ export function createNeuralGl(canvas: HTMLCanvasElement, options: NeuralGlOptio
   let ratio = 0;
   let painted = false;
   let disposed = false;
+  // three.js only reports a shader that fails to compile or link, and then draws nothing.
+  let shaderFailed = false;
+  renderer.debug.onShaderError = () => {
+    shaderFailed = true;
+  };
 
   const onLost = (event: Event) => {
     event.preventDefault();
@@ -261,6 +266,7 @@ export function createNeuralGl(canvas: HTMLCanvasElement, options: NeuralGlOptio
       for (const name of DRAW_ORDER) draws[name].update(buffers[name]);
       renderer.render(scene, camera);
       painted = true;
+      if (shaderFailed) options.onLost();
     },
     capture() {
       if (disposed || !painted || gl.isContextLost()) return null;
