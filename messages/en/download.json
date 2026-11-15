@@ -29,7 +29,7 @@
   "factShaLink": "The checksum file for {file} on the release page",
   "demoTitle": "Follow a day of changes through the app",
   "demoSub": "Recorded in the app on this repository's own folder. The map marks the concepts changed in the last seven days, and one of them opens with what it depends on. Changes groups the day's merged work, Git reads a commit as the concepts it changed, and Harness lists the hooks that stop an agent before it acts.",
-  "demoProvisionalNote": "{seconds}s from one take of the app window. Nothing is cut or sped up; the pointer is not recorded, and there is no sound.",
+  "demoProvisionalNote": "{seconds}s from one take of the app window. Nothing is cut or sped up, and there is no sound.",
   "acpUserLabel": "You",
   "change": {
     "eyebrow": "After a commit",
