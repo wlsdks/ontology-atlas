@@ -1,5 +1,7 @@
 import { BarnesHutOctree, CollisionHashGrid } from './cloud-spatial-index';
+import { clusterRadius, clusterRingAnchors } from './cluster-ring';
 import { findCouplingGroups } from './coupling-groups';
+import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { DOME_FIT_RADIUS } from './projection';
 import type { DomeCoord, DomeInputNode, DomeViewKind } from './types';
 
@@ -32,12 +34,8 @@ const CLOUD_SPRING = 0.02;
 const CLOUD_COHESION = 0.07;
 const CLOUD_LOCAL_REPULSION = 0.25;
 const CLOUD_REST_LENGTH = 92;
-/**
- * Domain anchors sit about two rest lengths out, so neighbouring clusters keep a gap a
- * relation must visibly cross; the pulls are weak beside springs and repulsion.
- */
-const CLOUD_DOMAIN_ANCHOR_RADIUS = 300;
-const CLOUD_DOMAIN_ANCHOR_PULL = 0.08;
+/** A cluster's warm start opens to this share of its reach, leaving springs room to settle it. */
+const CLOUD_SEED_SHARE_OF_REACH = 0.7;
 /** Strong enough that a cluster gathers round its heart, so its name stands above its own members. */
 const CLOUD_DOMAIN_MEMBER_PULL = 0.16;
 /** A relation between two clusters pulls this much of a relation inside one, so clusters keep apart. */
@@ -102,7 +100,7 @@ export function createCouplingCloudRelaxer(
   }
 
   /*
-   * Each domain is drawn toward a fixed anchor (a deterministic Fibonacci lattice in id order)
+   * Each domain is drawn toward its ring anchor (`cluster-ring.ts`, in id order)
    * and its members toward the domain, so "whose is this" has a place. A layout aid over the
    * declared `contains` chain; no edge is invented and springs decide inside a cluster.
    */
@@ -122,16 +120,54 @@ export function createCouplingCloudRelaxer(
     }
   }
   const domainNodeIndex = domainIds.map((id) => index.get(id)!);
-  const anchorX = new Float64Array(domainIds.length);
-  const anchorY = new Float64Array(domainIds.length);
-  const anchorZ = new Float64Array(domainIds.length);
-  for (let k = 0; k < domainIds.length; k += 1) {
-    const y = domainIds.length === 1 ? 0 : 1 - (2 * (k + 0.5)) / domainIds.length;
-    const ring = Math.sqrt(Math.max(0, 1 - y * y));
-    const theta = k * Math.PI * (3 - Math.sqrt(5));
-    anchorX[k] = Math.cos(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
-    anchorY[k] = y * CLOUD_DOMAIN_ANCHOR_RADIUS * 0.7;
-    anchorZ[k] = Math.sin(theta) * ring * CLOUD_DOMAIN_ANCHOR_RADIUS;
+  const membersOf = new Uint32Array(domainIds.length);
+  for (let i = 0; i < n; i += 1) if (domainIndexOf[i] >= 0) membersOf[domainIndexOf[i]] += 1;
+  const reachOf = Float64Array.from(membersOf, clusterRadius);
+  const anchors = clusterRingAnchors(Array.from(reachOf), DOME_YAW_DEFAULT, DOME_PITCH_DEFAULT);
+  const anchorX = Float64Array.from(anchors, (a) => a.x);
+  const anchorY = Float64Array.from(anchors, (a) => a.y);
+  const anchorZ = Float64Array.from(anchors, (a) => a.z);
+  seedClustersAtAnchors();
+
+  /** Moves each cluster's warm start onto its anchor, its spread scaled to fit its reach. O(n). */
+  function seedClustersAtAnchors(): void {
+    const spread = new Float64Array(domainIds.length);
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const d = domainNodeIndex[slot];
+      spread[slot] = Math.max(spread[slot], Math.hypot(px[i] - px[d], py[i] - py[d], pz[i] - pz[d]));
+    }
+    const heartX = Float64Array.from(domainNodeIndex, (d) => px[d]);
+    const heartY = Float64Array.from(domainNodeIndex, (d) => py[d]);
+    const heartZ = Float64Array.from(domainNodeIndex, (d) => pz[d]);
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const k = spread[slot] > 1e-6 ? (reachOf[slot] * CLOUD_SEED_SHARE_OF_REACH) / spread[slot] : 0;
+      px[i] = anchorX[slot] + (px[i] - heartX[slot]) * k;
+      py[i] = anchorY[slot] + (py[i] - heartY[slot]) * k;
+      pz[i] = anchorZ[slot] + (pz[i] - heartZ[slot]) * k;
+    }
+  }
+
+  /** Each heart stands on its anchor and no member leaves its cluster's reach, so clusters never meet. O(n). */
+  function holdClusters(): void {
+    for (let k = 0; k < domainNodeIndex.length; k += 1) {
+      const d = domainNodeIndex[k];
+      px[d] = anchorX[k]; py[d] = anchorY[k]; pz[d] = anchorZ[k];
+    }
+    for (let i = 0; i < n; i += 1) {
+      const slot = domainIndexOf[i];
+      if (slot < 0) continue;
+      const dx = px[i] - anchorX[slot];
+      const dy = py[i] - anchorY[slot];
+      const dz = pz[i] - anchorZ[slot];
+      const d = Math.hypot(dx, dy, dz);
+      if (d <= reachOf[slot]) continue;
+      const k = reachOf[slot] / d;
+      px[i] = anchorX[slot] + dx * k; py[i] = anchorY[slot] + dy * k; pz[i] = anchorZ[slot] + dz * k;
+    }
   }
 
   const linkSpring = Float64Array.from(links, ([a, b]) =>
@@ -326,12 +362,6 @@ export function createCouplingCloudRelaxer(
       fz[i] += (groupZ[group] / size - pz[i]) * CLOUD_COHESION;
     }
 
-    for (let k = 0; k < domainNodeIndex.length; k += 1) {
-      const d = domainNodeIndex[k];
-      fx[d] += (anchorX[k] - px[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-      fy[d] += (anchorY[k] - py[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-      fz[d] += (anchorZ[k] - pz[d]) * CLOUD_DOMAIN_ANCHOR_PULL;
-    }
     for (let i = 0; i < n; i += 1) {
       const slot = domainIndexOf[i];
       if (slot < 0) continue;
@@ -359,6 +389,7 @@ export function createCouplingCloudRelaxer(
       const moved = Math.hypot(mx2, my2, mz2);
       if (moved > maxStep) maxStep = moved;
     }
+    holdClusters();
     if (maxStep < settleEpsilon) settled = true;
     iter += 1;
     phase = "between";
@@ -375,14 +406,17 @@ export function createCouplingCloudRelaxer(
     let mx = 0;
     let my = 0;
     let mz = 0;
-    for (let i = 0; i < n; i += 1) {
-      mx += px[i];
-      my += py[i];
-      mz += pz[i];
+    // Clusters' rings are centred on the spin axis by construction.
+    if (domainIds.length < 2) {
+      for (let i = 0; i < n; i += 1) {
+        mx += px[i];
+        my += py[i];
+        mz += pz[i];
+      }
+      mx /= n;
+      my /= n;
+      mz /= n;
     }
-    mx /= n;
-    my /= n;
-    mz /= n;
 
     // Normalised so camera fit and fog see the dome's scale.
     let maxR = 0;

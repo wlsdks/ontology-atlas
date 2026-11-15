@@ -1,4 +1,4 @@
-import { clampDomePitch, DOME_PITCH_DEFAULT, type DomeDragSpring } from './orbit';
+import { clampDomePitch, DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT, type DomeDragSpring } from './orbit';
 import type { DomeCircle, DomeCoord, DomeModel, DomeViewKind } from './types';
 
 export interface DomeTierRampAnchor {
@@ -250,9 +250,9 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     drawnBounds: null,
     fitScale: null,
     frameEpoch: 0,
-    yaw: 0.55,
+    yaw: DOME_YAW_DEFAULT,
     pitch: DOME_PITCH_DEFAULT,
-    yawTarget: 0.55,
+    yawTarget: DOME_YAW_DEFAULT,
     pitchTarget: DOME_PITCH_DEFAULT,
     yawVel: 0,
     pitchVel: 0,

@@ -36,6 +36,9 @@ const NAME_GRID_PX = 48;
 const DOMAIN_DIM_IN_FOCUS = 0.45;
 const SPRITE_PX = 64;
 const PLATE_EDGE_ALPHA = 0.2;
+/** Points per lit axon a receded domain title must keep clear of. */
+const LIT_PATH_SAMPLES = 10;
+const LIT_PATH_PAD_PX = 4;
 
 let tokens: NeuralTokens | null = null;
 const sprites = new Map<string, HTMLCanvasElement | null>();
@@ -252,6 +255,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
   const indexOf = nodeIndexOf(world.nodes);
   const litEdges: number[] = [];
   const litRole: boolean[] = [];
+  const litFar: number[] = [];
   for (const edge of world.edges) {
     if (!isNeuralDependency(edge)) continue;
     const s = indexOf.get(edge.sourceId);
@@ -271,6 +275,7 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     if (needs || usedBy) {
       litEdges.push(axons);
       litRole.push(usedBy);
+      litFar.push(needs ? e : s);
       aGroup[axons] = -1;
     } else {
       const cross = graph.clusterOf.get(edge.sourceId) !== graph.clusterOf.get(edge.targetId) ? 1 : 0;
@@ -394,7 +399,8 @@ export function paintNeural(frame: FrameInputs, focus: FrameFocus, layer: NodeLa
     ctx.stroke();
   }
 
-  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp }, pools);
+  const lit = { edges: litEdges, far: litFar, farIsTarget: litRole.map((usedBy) => !usedBy) };
+  paintNeuralNames(ctx, frame, graph, evidence, labels, { focusId, focusIndex, sets, ramp, lit }, pools);
   ctx.globalAlpha = 1;
 }
 
@@ -404,8 +410,14 @@ function paintNeuralNames(
   graph: NeuralGraph,
   evidence: ReadonlyMap<string, "current" | "stale" | "unknown"> | null,
   labels: NeuralLabels | null,
-  focus: { focusId: string | null; focusIndex: number | undefined; sets: { needs: Set<string>; usedBy: Set<string> } | null; ramp: number },
-  pools: ReadonlyMap<string, { minX: number; maxX: number; top: number; a: number }>,
+  focus: {
+    focusId: string | null;
+    focusIndex: number | undefined;
+    sets: { needs: Set<string>; usedBy: Set<string> } | null;
+    ramp: number;
+    lit: { edges: readonly number[]; far: readonly number[]; farIsTarget: readonly boolean[] };
+  },
+  pools: ReadonlyMap<string, { minX: number; maxX: number; maxY: number; top: number; a: number }>,
 ): void {
   const t = tokens!;
   const ink = t.inks;
@@ -438,45 +450,35 @@ function paintNeuralNames(
   };
   const focusId = focus.focusId;
   const sets = focus.sets;
+  // Where each lit axon arrives at its far end, and how many leave the focus to the right.
+  const arrival = new Map<number, { dx: number; dy: number }>();
+  const litPath = new BoxGrid();
+  let litRight = 0;
+  for (let k = 0; k < focus.lit.edges.length; k += 1) {
+    const e = focus.lit.edges[k];
+    const far = focus.lit.far[k];
+    const [fx, fy, nx] = focus.lit.farIsTarget[k] ? [abx[e], aby[e], ax[e]] : [ax[e], ay[e], abx[e]];
+    const into = arrival.get(far) ?? { dx: 0, dy: 0 };
+    const len = Math.hypot(acx[e] - fx, acy[e] - fy) || 1;
+    into.dx += (acx[e] - fx) / len;
+    into.dy += (acy[e] - fy) / len;
+    arrival.set(far, into);
+    if (acx[e] > nx) litRight += 1;
+    for (let j = 1; j < LIT_PATH_SAMPLES; j += 1) {
+      const x = at(ax[e], acx[e], abx[e], j / LIT_PATH_SAMPLES);
+      const y = at(ay[e], acy[e], aby[e], j / LIT_PATH_SAMPLES);
+      litPath.add({ minX: x - LIT_PATH_PAD_PX, minY: y - LIT_PATH_PAD_PX, maxX: x + LIT_PATH_PAD_PX, maxY: y + LIT_PATH_PAD_PX });
+    }
+  }
   const plate = focusId !== null && focus.focusIndex !== undefined && sets !== null && labels
     ? placeFocusPlate(ctx, frame, focus.focusIndex, labels.focusFacts({
       stale: neuralCellIsStale(evidence, focusId), needs: sets.needs.size, usedBy: sets.usedBy.size,
-    }), family)
+    }), family, litRight * 2 <= focus.lit.edges.length)
     : null;
   if (plate) names.add(plate.box);
 
-  // Domain names, above their own cluster; a name that would cover another name stays unpainted.
-  const nameFont = `${FONT_WEIGHT.strong} ${t.domainNamePx}px ${family}`;
-  const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
-  const summaries = clusterSummaries(frame, graph, evidence);
-  const focusCluster = focusId === null ? undefined : graph.clusterOf.get(focusId);
-  const domainOrder = [...pools.entries()].sort((a, b) => b[1].a - a[1].a || (summaries.get(b[0])?.capabilities ?? 0) - (summaries.get(a[0])?.capabilities ?? 0));
-  for (const [domainId, pool] of domainOrder) {
-    if (pool.a <= 0.05) continue;
-    const node = world.nodeById.get(domainId);
-    if (!node) continue;
-    const x = (pool.minX + pool.maxX) / 2;
-    const metaY = pool.top - t.domainMetaGapPx;
-    const nameY = metaY - t.domainNameGapPx;
-    if (x < -200 || x > width + 200 || nameY < -40 || metaY > height + 40) continue;
-    ctx.font = nameFont;
-    const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
-    if (names.hits(nameBox) || cells.hits(nameBox)) continue;
-    const dim = (focusCluster !== undefined && focusCluster !== domainId ? 1 - (1 - DOMAIN_DIM_IN_FOCUS) * focus.ramp : 1) * pool.a * neural;
-    write(node.label, x, nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
-    names.add(nameBox);
-    boxes.push({ nodeId: domainId, text: node.label, ...nameBox });
-    const summary = summaries.get(domainId);
-    if (labels && summary) {
-      const meta = labels.domainMeta(summary);
-      ctx.font = metaFont;
-      const metaBox = boxFor(meta, x, metaY, "center", t.domainMetaPx);
-      write(meta, x, metaY, "center", metaFont, ink.name, 0.85 * dim, t.nameHaloPx);
-      names.add(metaBox);
-    }
-  }
-
-  // Capability names beside their cells at rest; with a focus, the names of its two sets.
+  // Capability names beside their cells at rest; with a focus, its two sets first, each name on
+  // the side its arriving axons leave free.
   const candidates: number[] = [];
   for (let i = 0; i < world.nodes.length; i += 1) {
     const node = world.nodes[i];
@@ -488,34 +490,83 @@ function paintNeuralNames(
   candidates.sort((a, b) => rank(b) - rank(a));
   const hot = sets !== null;
   const font = `${hot ? FONT_WEIGHT.emphasis : FONT_WEIGHT.signature} ${t.namePx}px ${family}`;
-  let named = 0;
-  for (const i of candidates) {
-    if (named >= t.nameBudget) break;
+  const placeName = (i: number): boolean => {
     const node = world.nodes[i];
     const cluster = graph.clusterOf.get(node.id);
     const pool = cluster === undefined ? undefined : pools.get(cluster);
-    const right = pool === undefined || sx[i] >= (pool.minX + pool.maxX) / 2;
+    const into = arrival.get(i);
+    const right = into ? into.dx <= 0 : pool === undefined || sx[i] >= (pool.minX + pool.maxX) / 2;
     const gap = sr[i] + t.nameGapPx;
     ctx.font = font;
-    const tries: [number, number, CanvasTextAlign][] = [
-      [sx[i] + (right ? gap : -gap), sy[i], right ? "left" : "right"],
-      [sx[i] + (right ? -gap : gap), sy[i], right ? "right" : "left"],
-      [sx[i], sy[i] + gap + t.namePx * 0.5, "center"],
-      [sx[i], sy[i] - gap - t.namePx * 0.5, "center"],
+    const tries: [number, number, CanvasTextAlign, number, number][] = [
+      [sx[i] + (right ? gap : -gap), sy[i], right ? "left" : "right", right ? 1 : -1, 0],
+      [sx[i] + (right ? -gap : gap), sy[i], right ? "right" : "left", right ? -1 : 1, 0],
+      [sx[i], sy[i] + gap + t.namePx * 0.5, "center", 0, 1],
+      [sx[i], sy[i] - gap - t.namePx * 0.5, "center", 0, -1],
     ];
-    for (const [x, y, align] of tries) {
-      const box = boxFor(node.label, x, y, align, t.namePx);
-      if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
-      // A focus's names may cross a receded cell, never another name.
-      if (names.hits(box) || (!hot && cells.hits(box))) continue;
-      const alpha = (hot ? focus.ramp : 0.9 * (1 - (1 - t.farAlpha) * su[i])) * neural;
-      write(node.label, x, y, align, font, hot ? ink.strong : ink.name, alpha, t.nameHaloPx);
-      names.add(box);
-      boxes.push({ nodeId: node.id, text: node.label, ...box });
-      named += 1;
-      break;
+    if (into) tries.sort((a, b) => (a[3] * into.dx + a[4] * into.dy) - (b[3] * into.dx + b[4] * into.dy));
+    for (const clearOfLit of hot ? [true, false] : [false]) {
+      for (const [x, y, align] of tries) {
+        const box = boxFor(node.label, x, y, align, t.namePx);
+        if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
+        // A focus's names may cross a receded cell, never another name, and a lit axon only if no side is clear.
+        if (names.hits(box) || (!hot && cells.hits(box)) || (clearOfLit && litPath.hits(box))) continue;
+        const alpha = (hot ? focus.ramp : 0.9 * (1 - (1 - t.farAlpha) * su[i])) * neural;
+        write(node.label, x, y, align, font, hot ? ink.strong : ink.name, alpha, t.nameHaloPx);
+        names.add(box);
+        boxes.push({ nodeId: node.id, text: node.label, ...box });
+        return true;
+      }
     }
+    return false;
+  };
+  let named = 0;
+  if (hot) for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
+
+  // Every domain's name above its cluster, or below when above is taken. With a focus, a receded
+  // title gives way to the lit names and axons.
+  const nameFont = `${FONT_WEIGHT.strong} ${t.domainNamePx}px ${family}`;
+  const metaFont = `${FONT_WEIGHT.signature} ${t.domainMetaPx}px ${family}`;
+  const summaries = clusterSummaries(frame, graph, evidence);
+  const focusCluster = focusId === null ? undefined : graph.clusterOf.get(focusId);
+  const domainOrder = [...pools.entries()].sort((a, b) => b[1].a - a[1].a || (summaries.get(b[0])?.capabilities ?? 0) - (summaries.get(a[0])?.capabilities ?? 0));
+  for (const [domainId, pool] of domainOrder) {
+    if (pool.a <= 0.05) continue;
+    const node = world.nodeById.get(domainId);
+    if (!node) continue;
+    const summary = summaries.get(domainId);
+    const meta = labels && summary ? labels.domainMeta(summary) : null;
+    const x = (pool.minX + pool.maxX) / 2;
+    const titleAt = (metaY: number) => {
+      const nameY = metaY - t.domainNameGapPx;
+      ctx.font = nameFont;
+      const nameBox = boxFor(node.label, x, nameY, "center", t.domainNamePx);
+      ctx.font = metaFont;
+      const metaBox = meta ? boxFor(meta, x, metaY, "center", t.domainMetaPx) : nameBox;
+      const box = {
+        minX: Math.min(nameBox.minX, metaBox.minX), minY: nameBox.minY,
+        maxX: Math.max(nameBox.maxX, metaBox.maxX), maxY: metaBox.maxY,
+      };
+      return { nameY, metaY, nameBox, box };
+    };
+    const above = titleAt(pool.top - t.domainMetaGapPx);
+    const below = titleAt(pool.maxY + t.domainMetaGapPx + t.domainNameGapPx);
+    const receded = focusCluster !== undefined && focusCluster !== domainId;
+    const free = (b: Box) => !names.hits(b) && !(receded && litPath.hits(b));
+    const chosen = free(above.box) && !cells.hits(above.box) ? above
+      : free(below.box) && !cells.hits(below.box) ? below
+      : free(above.box) ? above : null;
+    if (chosen === null && hot) continue;
+    const title = chosen ?? above;
+    if (title.box.maxX < -200 || title.box.minX > width + 200 || title.box.maxY < -40 || title.box.minY > height + 40) continue;
+    const dim = (receded ? 1 - (1 - DOMAIN_DIM_IN_FOCUS) * focus.ramp : 1) * pool.a * neural;
+    write(node.label, x, title.nameY, "center", nameFont, ink.strong, 0.96 * dim, t.nameHaloPx + 1);
+    if (meta) write(meta, x, title.metaY, "center", metaFont, ink.name, 0.85 * dim, t.nameHaloPx);
+    names.add(title.box);
+    boxes.push({ nodeId: domainId, text: node.label, ...title.nameBox });
   }
+
+  if (!hot) for (const i of candidates) if (named < t.nameBudget && placeName(i)) named += 1;
 
   if (plate && focusId !== null) {
     paintFocusPlate(ctx, plate, focus.ramp * neural, neuralCellIsStale(evidence, focusId));
@@ -526,8 +577,8 @@ function paintNeuralNames(
 
 interface FocusPlate { box: Box; title: string; facts: string; titleFont: string; factFont: string }
 
-/** One plate beside the focus: its name, then stale, needs and used-by; on the side that fits. */
-function placeFocusPlate(ctx: CanvasRenderingContext2D, frame: FrameInputs, i: number, facts: string, family: string): FocusPlate {
+/** One plate beside the focus: its name, then stale, needs and used-by; on the side with fewer lit axons that fits. */
+function placeFocusPlate(ctx: CanvasRenderingContext2D, frame: FrameInputs, i: number, facts: string, family: string, preferRight: boolean): FocusPlate {
   const t = tokens!;
   const title = frame.world.nodes[i].label;
   const titleFont = `${FONT_WEIGHT.emphasis} ${t.namePx + 2.5}px ${family}`;
@@ -538,7 +589,9 @@ function placeFocusPlate(ctx: CanvasRenderingContext2D, frame: FrameInputs, i: n
   const w = Math.max(titleW, ctx.measureText(facts).width) + t.platePadPx * 2;
   const h = t.namePx * 2 + t.platePadPx * 1.8;
   const reach = sr[i] + t.focusRingGapPx + t.platePadPx;
-  const x = sx[i] + reach + w > frame.viewportWidth - t.platePadPx ? sx[i] - reach - w : sx[i] + reach;
+  const fitsRight = sx[i] + reach + w <= frame.viewportWidth - t.platePadPx;
+  const fitsLeft = sx[i] - reach - w >= t.platePadPx;
+  const x = (preferRight ? fitsRight || !fitsLeft : !fitsLeft && fitsRight) ? sx[i] + reach : sx[i] - reach - w;
   const y = Math.max(t.platePadPx, sy[i] - h - sr[i]);
   return { box: { minX: x, minY: y, maxX: x + w, maxY: y + h }, title, facts, titleFont, factFont };
 }

@@ -6,6 +6,8 @@ import type { DomeCoord, DomeModel, DomeViewKind } from './types';
 export const DOME_PERIOD_MS = 48000;
 /** Steep enough that the small base circles under each parent read as circles, not lines. */
 export const DOME_PITCH_DEFAULT = 0.5;
+/** The yaw a dome opens at, before anyone turns it. */
+export const DOME_YAW_DEFAULT = 0.55;
 /**
  * Pitch stays between 0.15 and 0.95 rad, always looking down: from below a tier disc reverses
  * the level order, edge-on the discs collapse into one line, and near the top the height
