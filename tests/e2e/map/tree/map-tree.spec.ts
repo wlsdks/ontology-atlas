@@ -240,11 +240,16 @@ test.describe("the 3D tree on the dogfood vault", () => {
     const listed = await readList(page);
     expect(listed.filter((c) => c.evidence === "stale").map((c) => c.id).sort()).toEqual(listed.map((c) => c.id).filter((id) => vault.stale.has(id)).sort());
 
-    // A stale concept carries amber at its upper-right rim, where the dot sits; a current one does not.
+    // A stale concept carries amber at its upper-right rim, where the dot sits; a current one does not,
+    // unless a stale neighbour's own amber reaches into that rim.
     const misdrawn: string[] = [];
     for (const c of listed) {
       if (!c.mark || c.kind === "project") continue;
       const rim = { x: c.mark.x + c.mark.r * Math.SQRT1_2, y: c.mark.y - c.mark.r * Math.SQRT1_2, r: Math.max(2.2, c.mark.r / 2) };
+      const staleNeighbourInRim = listed.some(
+        (o) => o !== c && o.mark && vault.stale.has(o.id) && Math.hypot(o.mark.x - rim.x, o.mark.y - rim.y) <= rim.r + o.mark.r * 2,
+      );
+      if (!vault.stale.has(c.id) && staleNeighbourInRim) continue;
       const amber = await countAmber(page, rim);
       if ((amber > 0) !== vault.stale.has(c.id)) misdrawn.push(`${c.id}: ${amber} amber px, ${vault.stale.has(c.id) ? "stale" : "current"}`);
     }
