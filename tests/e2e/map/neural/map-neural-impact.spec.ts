@@ -2,7 +2,7 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { parseFrontmatter } from "../../../../src/shared/lib/vault-document/parse-frontmatter";
-import { waitForMapStill } from "../../settle";
+import { waitForMapStill, waitFrames } from "../../settle";
 import { idOf, openNeural, probe } from "./neural-dogfood";
 
 /**
@@ -181,7 +181,7 @@ test.describe("Neural's impact on the dogfood vault", () => {
     for (const d of [-14, -7, -3, 0, 3, 7, 14, 32]) {
       await page.mouse.move(x + nx * d, y + ny * d);
       // A step a few frames long, so each pointer position is drawn.
-      await page.waitForTimeout(80);
+      await waitFrames(page, 4);
     }
     await page.getByTestId("app-nav-rail-item-agents").hover();
     // measurement window: longer than a whole spread, so a replay would be sampled while it runs.
