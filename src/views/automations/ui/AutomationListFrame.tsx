@@ -8,15 +8,24 @@ interface AutomationLaneFact {
   body: string;
 }
 
-/** Shared by the column head and every schedule row. */
-export const AUTOMATION_ROW_PAD = 'gap-3 px-[var(--card-pad)] py-4';
+/**
+ * Shared by the column head and every schedule row: name, cadence, last result, actions. Each row
+ * is its own grid, so the actions column is a fixed width rather than `auto`. Below `md` the
+ * actions stay beside the name and cadence and result share the second line.
+ */
 export const AUTOMATION_ROW_GRID =
-  'grid min-w-0 flex-1 grid-cols-2 gap-3 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)] md:items-center';
+  'grid min-w-0 grid-cols-2 items-center gap-x-4 gap-y-3 px-[var(--card-pad)] md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1.3fr)_9rem] md:gap-x-6';
+export const AUTOMATION_CELL = {
+  name: 'col-start-1 row-start-1 min-w-0',
+  cadence: 'col-start-1 row-start-2 min-w-0 self-start md:col-start-2 md:row-start-1 md:self-center',
+  outcome: 'col-start-2 row-start-2 min-w-0 self-start md:col-start-3 md:row-start-1 md:self-center',
+  actions: 'col-start-2 row-start-1 flex items-center justify-end gap-1 md:col-start-4',
+} as const;
 
 export function AutomationListPanel({ title, count, columns, trailing, children }: {
   title: string;
   count: number;
-  columns: readonly [string, string, string];
+  columns: readonly [string, string, string, string];
   trailing?: ReactNode;
   children: ReactNode;
 }) {
@@ -30,16 +39,15 @@ export function AutomationListPanel({ title, count, columns, trailing, children 
       </span>
       {trailing ? <div className={styles.trailing}>{trailing}</div> : null}
     </div>
-    <div className={cn('hidden md:flex', AUTOMATION_ROW_PAD, styles.columnHead)} data-testid="automations-list-head" aria-hidden>
-      <span className="w-4 flex-none" />
-      <span className={AUTOMATION_ROW_GRID}>
-        <span data-automation-col="name">{columns[0]}</span>
-        <span data-automation-col="cadence">{columns[1]}</span>
-        <span data-automation-col="outcome" className="text-right">{columns[2]}</span>
-      </span>
-      <span className="size-4 flex-none" />
+    <div role="grid" aria-labelledby="automations-list-title" className="min-w-0">
+      <div role="row" className={cn(AUTOMATION_ROW_GRID, 'hidden md:grid', styles.columnHead)} data-testid="automations-list-head">
+        <span role="columnheader" className={AUTOMATION_CELL.name}>{columns[0]}</span>
+        <span role="columnheader" className={AUTOMATION_CELL.cadence}>{columns[1]}</span>
+        <span role="columnheader" className={AUTOMATION_CELL.outcome}>{columns[2]}</span>
+        <span role="columnheader" className={AUTOMATION_CELL.actions}><span className="sr-only">{columns[3]}</span></span>
+      </div>
+      <div role="rowgroup" data-testid="automations-list" className={styles.body}>{children}</div>
     </div>
-    {children}
   </section>;
 }
 
