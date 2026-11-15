@@ -1,5 +1,6 @@
 import { projectDomeEdgeControl } from "../../model/dome-view/dome-edge";
 import { lastDrawnLabelBoxes, lastDrawnNodeAlphas } from "../frame-draw/topology-frame-draw";
+import { neuralTractsFor } from "../frame-draw/paint-neural";
 import { lastDialFrame } from "../../dial/frame/frame";
 import { pickDial, pickDialAction } from "../../dial/pick";
 import { clipBranchRelation } from "../../dial/branches/relation-ports";
@@ -322,12 +323,17 @@ export function createPointerHitTests(ctx: PointerContext) {
     // Averaging endpoint offsets onto the flat bow misses the visible 3D line.
     const cam = cameraRef.current;
     const ZERO = { dx: 0, dy: 0, s: 1 };
+    const dome = domeRuntimeRef?.current ?? null;
+    const neural = domeFrame !== null && dome !== null && dome.model.arrangement === "coupling";
+    const tracts = neural ? neuralTractsFor(world, domeFrame, dome.frameEpoch) : null;
     for (const edge of world.edges) {
       if (!hittable.has(edge.sourceId) || !hittable.has(edge.targetId))
         continue;
+      if (neural && edge.kind === "contains")
+        continue;
       const offA = domeFrame?.get(edge.sourceId) ?? ZERO;
       const offB = domeFrame?.get(edge.targetId) ?? ZERO;
-      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current);
+      const control = projectDomeEdgeControl(edge, domeFrame, domeRuntimeRef?.current?.model.arrangement ?? "ownership", scale, reducedMotionRef.current ? undefined : neuralRampRef?.current, tracts);
       candidates.push({
         edge,
         ...clipBranchRelation(dial, edge.sourceId, edge.targetId, {

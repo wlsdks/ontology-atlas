@@ -36,6 +36,7 @@ import type { DustPoint } from "../../render/starfield";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { OntologyMapProps } from "../OntologyMap";
 import { worldToScreen } from "../camera/topology-camera-math";
+import type { NeuralLabels } from "../frame-draw/paint-neural";
 import { drawTopologyFrame, lastDrawnNodeCount, lastHiddenDependencies } from "../frame-draw/topology-frame-draw";
 import { reportFlatDial, type FlatDialFrameProps } from "../loop/topology-loop-contract";
 import { dialFrameSummary } from "../../dial/frame/frame";
@@ -128,6 +129,7 @@ interface Dependencies {
   domeFitInsetsRef: RefObject<{ left: number; right: number; top: number; bottom: number; } | null>;
   /** Lit 3D — node id → evidence state from the product's one rule; null when nothing was measured. */
   domeEvidenceRef: RefObject<ReadonlyMap<string, EvidenceLight> | null>;
+  neuralLabelsRef: RefObject<NeuralLabels | null>;
   domeLodRef: RefObject<StrataLodState>;
   onHiddenDependenciesChangeRef: RefObject<((count: number) => void) | undefined>;
   hiddenDependenciesSentRef: RefObject<number>;
@@ -201,6 +203,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
   domeTierNameWidthsRef,
   domeFitInsetsRef,
   domeEvidenceRef,
+  neuralLabelsRef,
   domeLodRef,
   onHiddenDependenciesChangeRef,
   hiddenDependenciesSentRef,
@@ -475,6 +478,7 @@ export function createPresentationFrameStage({ domeRuntimeRef,
                 ? domeEdgeControlForFrame
                 : null,
             domeLight: domeLightFor(tokens, domeLod),
+            neuralLabels: neuralLabelsRef.current,
             paintAnimatedBackground: animatedBgRef.current
                 ? (target, w, h) => animatedBgRef.current?.paint(target, w, h)
                 : null,

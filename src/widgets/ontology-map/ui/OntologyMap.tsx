@@ -19,6 +19,7 @@ import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet,
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
+import type { NeuralLabels } from "./frame-draw/paint-neural";
 
 /**
  * How long the notice stays on screen.
@@ -342,6 +343,8 @@ export interface OntologyMapProps {
    * unknown and emits none.
    */
   domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  /** The words Neural paints: each domain's counts and the focus's facts. */
+  neuralLabels?: NeuralLabels | null;
   onHiddenDependenciesChange?: (count: number) => void;
   dialLabels?: DialLabels | null;
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
@@ -527,6 +530,7 @@ export function OntologyMap(props: OntologyMapProps) {
       view3d,
       mapArrangement,
       domeEvidence: props.domeEvidence ?? null,
+      neuralLabels: props.neuralLabels ?? null,
       onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       dialLabels: props.dialLabels ?? null,
       evidenceStates: props.evidenceStates ?? null,
