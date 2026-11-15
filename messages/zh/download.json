@@ -29,7 +29,7 @@
   "factShaLink": "发布页面上 {file} 的校验和文件",
   "demoTitle": "在应用里跟着看一天的变更",
   "demoSub": "这是打开本仓库文件夹的应用的原样录屏。地图标出最近 7 天内变更过的概念，打开其中一个就能看到它的依赖关系。变更页按范围归组当天合并的工作，Git 页把提交读成它改动的概念，Harness 页列出在执行前拦住智能体的钩子。",
-  "demoProvisionalNote": "一次录下应用窗口的 {seconds} 秒。没有剪辑，也没有加速；不录鼠标指针，也没有声音。",
+  "demoProvisionalNote": "一次录下应用窗口的 {seconds} 秒。没有剪辑，没有加速，也没有声音。",
   "acpUserLabel": "你",
   "change": {
     "eyebrow": "提交之后",
