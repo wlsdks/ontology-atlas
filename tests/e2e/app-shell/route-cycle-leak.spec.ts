@@ -22,11 +22,7 @@ const STOPS: { go: { rail?: string; tab?: string; push?: string }; url?: RegExp;
   { go: { tab: "agents-tab-mcp" }, ready: '[data-testid="mcp-page"]' },
   { go: { rail: "git" }, url: /\/git\//, ready: '[data-testid="git-page"]' },
   { go: { push: "/en/guide/" }, url: /\/guide\//, ready: '[data-testid="gateway-doc-body"]' },
-  {
-    go: { push: "/en/download/?hero=three" },
-    url: /\/download\//,
-    ready: '[data-testid="gateway-hero-object"][data-hero-engine="three"] canvas',
-  },
+  { go: { push: "/en/download/" }, url: /\/download\//, ready: '[data-testid="demo-stage"] video' },
 ];
 
 async function visit(page: Page, stop: (typeof STOPS)[number]): Promise<void> {

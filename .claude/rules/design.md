@@ -111,7 +111,7 @@ One accurate word per thing. Canonical spellings live in
   map research through a `reviewer` with the `map-marks` lens. Full Flat is
   outside that ladder: its marks are `--map-graph-*` ("Map marks and ink").
 - Canvas paint composites `source-over`. `globalCompositeOperation = "lighter"`
-  is for a mark that is light itself (today the gateway hero, the walked-path
+  is for a mark that is light itself (today the gateway field, the walked-path
   star and its settings preview, the dome's light). Restore the previous
   operation in the same function; a node carries at most one diffraction cross
   per frame.
