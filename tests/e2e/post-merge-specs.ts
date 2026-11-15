@@ -13,6 +13,7 @@
 export const POST_MERGE_SPECS = [
   // Frame, motion and performance instruments sampling wall-clock time
   "map/camera/camera-transition.spec.ts",
+  "map/neural/map-neural-grip.spec.ts",
   "map/flat-graph/map-flat-graph-scale.spec.ts",
   "map/frame-loop/map-frame-allocation.spec.ts",
   "map/hex-board/map-hex-frame-work.spec.ts",
@@ -20,6 +21,7 @@ export const POST_MERGE_SPECS = [
   "map/frame-loop/map-sleep-frames.spec.ts",
   "map/chrome/map-trail.spec.ts",
   "app-shell/route-cycle-leak.spec.ts",
+  "map/neural/map-neural-lit.spec.ts",
   "map/hex-board/map-hex-board.spec.ts",
   "app-shell/route-transition-input.spec.ts",
   // Every route at every width

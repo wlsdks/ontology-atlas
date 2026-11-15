@@ -504,6 +504,18 @@
       "seconds": 8.099,
       "tests": 4
     },
+    "map/neural/map-neural-edge-picking.spec.ts": {
+      "seconds": 0.885,
+      "tests": 1
+    },
+    "map/neural/map-neural-grip.spec.ts": {
+      "seconds": 8.814,
+      "tests": 2
+    },
+    "map/neural/map-neural-lit.spec.ts": {
+      "seconds": 8.53,
+      "tests": 1
+    },
     "map/panels/concept-panel-first-screen.spec.ts": {
       "seconds": 44.21,
       "tests": 9
