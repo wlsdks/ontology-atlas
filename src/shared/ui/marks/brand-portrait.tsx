@@ -5,7 +5,7 @@ export function BrandPortrait(props: { expression: 'welcome'; labels: CompanionL
   const { expression } = props;
   if (props.expression === 'welcome') return <BrandCompanion context={props.busy ? 'waiting' : 'folder'} labels={props.labels} />;
   return (
-    <span data-brand-portrait={expression} data-brand-native-size="128" className="inline-flex shrink-0 [&_.atlas-waiting-mark]:align-top">
+    <span data-brand-portrait={expression} data-brand-native-size="128" className="inline-flex shrink-0">
       <BrandWaitingMark active motion="curious" scale={2} held={props.held} />
     </span>
   );
