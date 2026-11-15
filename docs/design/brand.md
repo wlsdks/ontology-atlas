@@ -133,15 +133,18 @@ identically. A mark takes the place within one pixel that covers and touches
 the least other ink; where the face is too crowded for a clear place, it may
 touch.
 
-The source redraws the whole figure in every pose, so a clip in which only the
-face moves showed its outline, tail and flippers crawling by a pixel from pose
-to pose. A clip that declares `restingBody` in `moru-source.json` (today
-`blink`, the waiting mark) keeps its first pose in every pose between the first
-and the last. Each facial mark of a pose claims the nearest mark of the first
-pose within one and a half drawn pixels, one each: a mark that is the same
-drawing within half a drawn pixel stays the first pose's own, a mark that
-changed is redrawn in its place, and a mark that claims nothing is source
-noise. A mark the pose lost to its outline stays as the first pose drew it.
+The source redraws the whole figure in every pose, so the outline, tail and
+flippers of two poses differ by a pixel even where nothing moves. A clip that
+declares `restingBody` in `moru-source.json` (today `blink`, the waiting mark)
+keeps its first pose's body in every pose between the first and the last. Each
+facial mark of a pose claims a mark of the first pose within one and a half
+drawn pixels, nearest boxes first and then nearest centres, one each. A pose
+whose marks all sit within half a drawn pixel of the marks they claim is the
+first pose. Otherwise a claimed mark that is not the same drawing is redrawn
+from the pose in the place it took; a pose mark that claims nothing is source
+noise, and a first-pose mark that nothing claims stays. The export stops when a
+pose leaves an eye unclaimed. The cheek boundary rests with the body, so a
+closed eye sits a little further into the ivory than the source drew it.
 
 Outline ink is 1.14:1 on the app canvas and reads only beside a fill, so ink
 drawn away from every fill (a note, a fishing line, an emphasis tick) is

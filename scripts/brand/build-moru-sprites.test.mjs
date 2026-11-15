@@ -152,6 +152,7 @@ test('every catalogue export has complete frames, clear margins and a shared neu
     assert.equal(clip.kind, source.sequence ? 'composed' : 'authored', `${name}: wrong authorship label`);
     assert.equal(clip.frames, count, `${name}: source poses were lost`);
     assert.equal(clip.durationsMs.length, clip.frames, `${name}: missing frame timing`);
+    let repeatedPoses = 0;
     for (const [file, size] of [[clip.sprite64, 64], [clip.sprite, 128]]) {
       const { data, info } = await sharp(`${root}/${file}`).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       assert.equal(info.width, size * clip.frames, `${name}: sprite width`);
@@ -167,12 +168,12 @@ test('every catalogue export has complete frames, clear margins and a shared neu
       }
       assert.deepEqual(frames[0], frames.at(-1), `${name}: jumps at loop seam`);
       assert.ok(frames.some(f => !f.equals(frames[0])), `${name}: contains no motion`);
+      if (size === 128) repeatedPoses = frames.filter((frame, f) => f > 0 && frame.equals(frames[f - 1])).length;
     }
     for (const file of [clip.gif, clip.webp]) {
       const metadata = await sharp(`${root}/${file}`, { animated: true }).metadata();
-      // WebP folds a pose identical to the one before it into that pose's delay; GIF rounds each delay to 10 ms.
-      if (file === clip.gif) assert.equal(metadata.pages, clip.frames, `${name}: ${file} lost frames`);
-      else assert.equal(metadata.delay.reduce((total, ms) => total + ms, 0), clip.durationsMs.reduce((total, ms) => total + ms, 0), `${name}: ${file} lost playing time`);
+      // WebP folds a pose identical to the one before it into that pose's page; GIF keeps every page.
+      assert.equal(metadata.pages, file === clip.gif ? clip.frames : clip.frames - repeatedPoses, `${name}: ${file} lost frames`);
       assert.equal(metadata.width, 256); assert.equal(metadata.pageHeight, 256);
     }
     if (clip.source) {
@@ -436,47 +437,74 @@ test('the resting face shows two identical level eyes at both exported sizes', a
   }
 });
 
-test('a resting clip keeps the first pose and redraws only the mark that changed in its place', () => {
-  const draw = ({ shift, leftEye, rightEyeX, crease, crumb }) => {
-    const { data, paint } = canvas(64);
-    paint(8 + shift, 8, 56 + shift, 56, INK);
-    paint(10 + shift, 10, 54 + shift, 54, SKIN);
-    paint(...leftEye, INK);
-    paint(rightEyeX, 20, rightEyeX + 4, 28, INK);
-    if (crease) paint(20, 44, 30, 46, INK);
-    if (crumb) paint(45, 46, 47, 48, INK);
-    return data;
-  };
-  const resting = { shift: 0, leftEye: [20, 20, 24, 28], rightEyeX: 36, crease: true, crumb: false };
-  const closing = draw({ shift: 1, leftEye: [18, 26, 26, 28], rightEyeX: 37, crease: false, crumb: true });
-  const [first, held, last] = holdBody([draw(resting), closing, draw(resting)], 64);
-  const expected = canvas(64);
-  expected.data.set(draw(resting));
-  expected.paint(20, 20, 24, 28, SKIN);
-  expected.paint(18, 26, 26, 28, INK);
-  assert.deepEqual(held, expected.data, 'the pose kept its own outline, a mark the first pose never had, or lost a mark it could not see');
-  assert.deepEqual([first, last], [draw(resting), draw(resting)], 'the first or the last pose changed');
+/** A 64px seal face: two eyes, a nose, a whisker under each eye and a belly crease, each drawable or absent. */
+function restingFace({ shift = 0, leftEye = [20, 20, 24, 28], rightEye = [36, 20, 40, 28], leftWhisker = [17, 30, 25, 32], rightWhisker = [38, 34, 46, 36], nose = [28, 30, 32, 34], noseHole = null, crease = [20, 44, 30, 46], crumb = null } = {}) {
+  const { data, paint } = canvas(64);
+  paint(8 + shift, 8, 56 + shift, 56, INK);
+  paint(10 + shift, 10, 54 + shift, 54, SKIN);
+  for (const mark of [leftEye, rightEye, leftWhisker, rightWhisker, nose, crease, crumb]) if (mark) paint(...mark, INK);
+  if (noseHole) paint(...noseHole, SKIN);
+  return { data, paint };
+}
+
+test('a resting clip keeps the first pose and redraws each changed mark in the place it took', () => {
+  const resting = restingFace().data;
+  const closing = restingFace({
+    shift: 1,
+    // Nearer the lost whisker by centre, yet on the eye's box: it takes the eye's place.
+    leftEye: [16, 27, 26, 29], leftWhisker: null,
+    rightEye: [34, 26, 42, 28],
+    rightWhisker: [38, 38, 46, 40],
+    noseHole: [29, 31, 31, 33],
+    // The crease is drawn one pixel aside with a crumb beside it: the crease holds, the crumb claims nothing.
+    crease: [21, 44, 31, 46], crumb: [32, 47, 34, 49],
+  }).data;
+  const [first, held, last] = holdBody([resting, closing, resting], 64);
+  const expected = restingFace();
+  for (const gone of [[20, 20, 24, 28], [36, 20, 40, 28], [38, 34, 46, 36]]) expected.paint(...gone, SKIN);
+  for (const drawn of [[16, 27, 26, 29], [34, 26, 42, 28], [38, 38, 46, 40]]) expected.paint(...drawn, INK);
+  expected.paint(29, 31, 31, 33, SKIN);
+  assert.deepEqual(held, expected.data, 'the pose kept its own outline or crumb, lost a mark it could not see, or redrew a mark in the wrong place');
+  assert.deepEqual([first, last], [resting, resting], 'the first or the last pose changed');
 });
 
-test('between its first and last pose the blink changes only its facial marks, and the eyes do close', async () => {
+test('a resting pose whose marks moved less than half a drawn pixel is the first pose', () => {
+  const resting = restingFace().data;
+  const drifted = restingFace({ shift: 1, leftEye: [21, 21, 25, 28], rightEye: [35, 20, 39, 28], leftWhisker: [17, 30, 25, 33], nose: [28, 31, 32, 35], crease: null }).data;
+  assert.deepEqual(holdBody([resting, drifted, resting], 64)[1], resting);
+});
+
+test('a resting mark that is as near two marks by their boxes takes the one whose centre is nearer', () => {
+  const resting = restingFace({ rightWhisker: [44, 26, 52, 28], crumb: [38, 38, 46, 40] }).data;
+  const lowered = restingFace({ rightWhisker: [38, 31, 46, 35] }).data;
+  const expected = restingFace({ rightWhisker: [44, 26, 52, 28], crumb: [38, 31, 46, 35] }).data;
+  assert.deepEqual(holdBody([resting, lowered, resting], 64)[1], expected);
+});
+
+test('a resting clip refuses a pose that lost an eye to its outline', () => {
+  const resting = restingFace().data;
+  const winking = restingFace({ leftEye: null, rightEye: [34, 26, 42, 28] }).data;
+  assert.throws(() => holdBody([resting, winking, resting], 64), /pose 2 lost an eye/);
+});
+
+test('between its first and last pose the blink changes only its facial marks, and both eyes close', async () => {
   const { clips } = JSON.parse(await readFile('assets/brand/moru/moru.json', 'utf8'));
   for (const [file, size] of [[clips.blink.sprite64, 64], [clips.blink.sprite, 128]]) {
     const resting = await frameOf(`assets/brand/moru/${file}`, 0, size);
-    const markInk = frame => new Set(enclosedInk(frame, size).flatMap(mark => mark.pixels));
-    const restingInk = markInk(resting);
-    let changedPoses = 0;
+    const restingMarks = enclosedInk(resting, size), eyeHeight = Math.max(...restingMarks.map(mark => mark.height));
+    const restingInk = new Set(restingMarks.flatMap(mark => mark.pixels));
+    let closedPoses = 0;
     for (let frame = 1; frame < clips.blink.frames - 1; frame++) {
-      const pose = await frameOf(`assets/brand/moru/${file}`, frame, size), poseInk = markInk(pose);
-      let changed = 0;
+      const pose = await frameOf(`assets/brand/moru/${file}`, frame, size), marks = enclosedInk(pose, size);
+      const poseInk = new Set(marks.flatMap(mark => mark.pixels));
       for (let p = 0; p < size * size; p++) {
         if (pose.compare(resting, p * 4, p * 4 + 4, p * 4, p * 4 + 4) === 0) continue;
         const besideMark = [-size - 1, -size, -size + 1, -1, 0, 1, size - 1, size, size + 1].some(step => restingInk.has(p + step) || poseInk.has(p + step));
         assert.ok(besideMark, `${size}px blink pose ${frame} redraws the body at ${p % size},${Math.floor(p / size)}`);
-        changed++;
       }
-      if (changed) changedPoses++;
+      if (marks.every(mark => mark.height < eyeHeight)) closedPoses++;
     }
-    assert.ok(changedPoses >= 8, `${size}px blink closes the eyes in only ${changedPoses} poses`);
+    assert.ok(closedPoses >= 8, `${size}px blink lowers both eyelids in only ${closedPoses} poses`);
   }
 });
 
