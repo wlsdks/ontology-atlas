@@ -11,6 +11,7 @@ import { cn } from '@/shared/lib/cn';
 import { Chip, CloseButton, Dialog, DialogBody } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
+import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import listStyles from './automation-list-frame.module.css';
 
@@ -90,7 +91,7 @@ export function AutomationRunHistory({ entries, named }: {
 }) {
   const t = useTranslations('automations');
   const [shown, setShown] = useState(RUNS_PER_PAGE);
-  const recent = entries.filter((entry) => entry.outcome !== 'asleep').reverse();
+  const recent = runsNewestFirst(entries.filter((entry) => entry.outcome !== 'asleep'));
   if (recent.length === 0) return <p className="text-body text-[color:var(--color-text-tertiary)]">{t('noRuns')}</p>;
   const more = recent.length - shown;
   return (
@@ -136,10 +137,10 @@ function RunEntry({ entry, named, latest }: { entry: RoundPassEntry; named: bool
       </div> : null}
       {entry.refused.length > 0 ? <p className="mt-2 text-body text-[color:var(--color-text-secondary)]">{t('blockedActions', { count: entry.refused.length })}</p> : null}
       {tools ? <div className="mt-2">
-        <button type="button" onClick={() => setToolsOpen(true)} data-testid="automations-tool-activity"
-          className={cn(controlClass({ shape: 'link', size: 'lg', tone: 'secondary', hoverInk: 'strong' }), 'atlas-touch-floor')}>
+        <Chip size="md" hoverInk="strong" hoverSurface="lift" onClick={() => setToolsOpen(true)} data-testid="automations-tool-activity"
+          className="atlas-touch-floor">
           {t('toolActivity')}
-        </button>
+        </Chip>
         <Dialog open={toolsOpen} onClose={() => setToolsOpen(false)} labelledBy={toolsTitleId} size="md" testId="automations-tool-activity-dialog">
           <DialogHeading id={toolsTitleId} onClose={() => setToolsOpen(false)}
             subtitle={`${entry.roundName ? `${entry.roundName} · ` : ''}${automationDate(locale, entry.endedAt)}`}>

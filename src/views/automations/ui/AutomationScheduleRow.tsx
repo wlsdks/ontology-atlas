@@ -11,6 +11,7 @@ import { ICON_SIZE } from '@/shared/ui/tokens/icon-size';
 import { AutomationAllowHere } from './AutomationAllowHere';
 import { AutomationRemoveConfirm, AutomationScheduleActions, useScheduleChange } from './AutomationScheduleActions';
 import { useRunLead, useUnrecordedText, WARNING_INK } from './AutomationRunHistory';
+import { runsNewestFirst } from '../model/run-order';
 import { automationDate } from './automation-date';
 import { AUTOMATION_CELL, AUTOMATION_ROW_GRID } from './AutomationListFrame';
 
@@ -58,7 +59,7 @@ export function AutomationScheduleRow({ round, runner, selected, tabbable, onSel
   const change = useScheduleChange();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const menuTrigger = useRef<HTMLButtonElement>(null);
-  const recorded = runner.ledger.findLast((entry) => entry.roundId === round.id);
+  const recorded = runsNewestFirst(runner.ledger.filter((entry) => entry.roundId === round.id))[0];
   const unrecorded = runner.unrecorded.get(round.id);
   const lastIsUnrecorded = unrecorded !== undefined && (!recorded || Date.parse(unrecorded.endedAt) >= Date.parse(recorded.endedAt));
   const last = lastIsUnrecorded ? unrecorded : recorded;
