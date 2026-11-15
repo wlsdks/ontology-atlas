@@ -199,6 +199,20 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
   candidates.sort(sets !== null ? (a, b) => nameStep(a) - nameStep(b) || rank(b) - rank(a) : (a, b) => rank(b) - rank(a));
   const hot = sets !== null;
   const font = `${hot ? FONT_WEIGHT.emphasis : FONT_WEIGHT.signature} ${t.namePx}px ${family}`;
+  // A name keeps its side while it stays inside the free area; one that would cross a panel or the
+  // window's edge takes another side, and only when none fits is it moved inside. O(tries).
+  const freeL = frame.panelInsets?.left ?? 0;
+  const freeR = width - (frame.panelInsets?.right ?? 0);
+  const insideFirst = <T extends [number, number, CanvasTextAlign, ...number[]]>(tries: readonly T[], text: string): T[] => {
+    const inside: T[] = [];
+    const moved: T[] = [];
+    for (const tr of tries) {
+      const box = boxFor(text, tr[0], tr[1], tr[2], t.namePx);
+      if (box.minX >= freeL && box.maxX <= freeR) inside.push(tr);
+      else moved.push([tr[0] + (box.minX < freeL ? freeL - box.minX : freeR - box.maxX), ...tr.slice(1)] as T);
+    }
+    return [...inside, ...moved];
+  };
   const placeName = (i: number): boolean => {
     const node = world.nodes[i];
     const cluster = graph.clusterOf.get(node.id);
@@ -221,7 +235,7 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
       : [[x, y + dy * nudge, align, dx, dy]]) : [];
     const direct = nameStep(i) === 1;
     for (const clearOfLit of hot ? (direct ? [true, false] : [true]) : [false]) {
-      for (const [x, y, align] of clearOfLit ? [...tries, ...nudged] : tries) {
+      for (const [x, y, align] of insideFirst(clearOfLit ? [...tries, ...nudged] : tries, node.label)) {
         const box = boxFor(node.label, x, y, align, t.namePx);
         if (box.maxX < 0 || box.minX > width || box.maxY < 0 || box.minY > height) continue;
         // A focus's names may cross a receded cell, never another name or the focus's ring; only a
@@ -300,13 +314,15 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
     const disc = { x: centre, y: (pool.minY + pool.maxY) / 2, r: Math.max(pool.maxX - pool.minX, pool.maxY - pool.minY) / 2 };
     titles.push({ id: domainId, box, disc, depth: pool.depth, label: node.label, meta, x, nameY, metaY, nameBox, a: pool.alpha });
   }
-  const projectLabels: { i: number; x: number; box: Box }[] = [];
+  const projectLabels: { i: number; x: number; align: CanvasTextAlign; box: Box }[] = [];
   if (!hot) {
     ctx.font = font;
     for (let i = 0; i < world.nodes.length; i += 1) {
       if (world.nodes[i].kind !== "project" || sa[i] <= 0.05) continue;
-      const x = sx[i] + sr[i] + t.nameGapPx;
-      projectLabels.push({ i, x, box: boxFor(world.nodes[i].label, x, sy[i], "left", t.namePx) });
+      const gap = sr[i] + t.nameGapPx;
+      const sides: [number, number, CanvasTextAlign][] = [[sx[i] + gap, sy[i], "left"], [sx[i] - gap, sy[i], "right"]];
+      const [x, , align] = insideFirst(sides, world.nodes[i].label)[0];
+      projectLabels.push({ i, x, align, box: boxFor(world.nodes[i].label, x, sy[i], align, t.namePx) });
     }
   }
   const standing = standingDomainTitles(titles, projectLabels.map((label) => label.box));
@@ -332,9 +348,9 @@ export function paintNeuralNames(ctx: CanvasRenderingContext2D, frame: FrameInpu
   }
 
   if (!hot) {
-    for (const { i, x, box } of projectLabels) {
+    for (const { i, x, align, box } of projectLabels) {
       const label = world.nodes[i].label;
-      write(label, x, sy[i], "left", font, ink.name, 0.9 * neural, t.nameHaloPx);
+      write(label, x, sy[i], align, font, ink.name, 0.9 * neural, t.nameHaloPx);
       names.add(box);
       boxes.push({ nodeId: world.nodes[i].id, text: label, ...box });
     }
@@ -363,9 +379,12 @@ function placeFocusPlate(ctx: CanvasRenderingContext2D, frame: FrameInputs, nf: 
   const w = Math.max(titleW, ctx.measureText(facts).width) + t.platePadPx * 2;
   const h = t.namePx * PLATE_LINES + t.platePadPx * PLATE_PAD_SHARE;
   const reach = sr[i] + t.focusRingGapPx + t.platePadPx;
-  const fitsRight = sx[i] + reach + w <= nf.width - t.platePadPx;
-  const fitsLeft = sx[i] - reach - w >= t.platePadPx;
-  const x = (preferRight ? fitsRight || !fitsLeft : !fitsLeft && fitsRight) ? sx[i] + reach : sx[i] - reach - w;
+  const freeL = (frame.panelInsets?.left ?? 0) + t.platePadPx;
+  const freeR = nf.width - (frame.panelInsets?.right ?? 0) - t.platePadPx;
+  const fitsRight = sx[i] + reach + w <= freeR;
+  const fitsLeft = sx[i] - reach - w >= freeL;
+  const side = (preferRight ? fitsRight || !fitsLeft : !fitsLeft && fitsRight) ? sx[i] + reach : sx[i] - reach - w;
+  const x = fitsRight || fitsLeft ? side : Math.max(freeL, Math.min(side, freeR - w));
   const y = Math.max(t.platePadPx, sy[i] - h - sr[i]);
   return { box: { minX: x, minY: y, maxX: x + w, maxY: y + h }, title, facts, titleFont, factFont };
 }

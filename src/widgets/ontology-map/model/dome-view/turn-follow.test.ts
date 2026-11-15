@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildDomeModel } from './model-build';
 import { DOME_PITCH_DEFAULT, DOME_YAW_DEFAULT } from './orbit';
 import { domeWorldBounds, projectDomeCoord } from './projection';
+import { domeFitFocusLeash } from './runtime';
 import { domeTurnFollowTarget, domeTurnReach, followTurnWithZoom } from './turn-follow';
 import type { DomeInputNode, DomeModel } from './types';
 
@@ -76,5 +77,13 @@ describe("Neural's turn-following zoom", () => {
     expect(followTurnWithZoom(rest, zoomed, DOME_YAW_DEFAULT + 120 * DEG)).toBeNull();
     expect(followTurnWithZoom(rest, fit, DOME_YAW_DEFAULT)).toBeNull();
     expect(followTurnWithZoom(rest, fit, DOME_YAW_DEFAULT + 60 * DEG)).toEqual(turned);
+  });
+
+  it("carries the fit's free area on every turned camera, so a selection's leash still measures from it", () => {
+    const refit = { ...fit, freeArea: { centreX: -240, centreY: 0, halfW: 280, halfH: 330 } };
+    const follow: Parameters<typeof followTurnWithZoom<typeof refit>>[0] = { target: refit, yaw: DOME_YAW_DEFAULT, followed: null };
+    const turned = followTurnWithZoom(follow, refit, DOME_YAW_DEFAULT + 45 * DEG)!;
+    expect(turned.freeArea).toEqual(refit.freeArea);
+    expect(domeFitFocusLeash({ x: 0, y: 0 }, turned, turned.tscale)?.leashPx).toEqual({ x: 280, y: 330 });
   });
 });

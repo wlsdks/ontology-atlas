@@ -111,14 +111,15 @@ export function domeTurnFollowTarget(
 
 /**
  * One frame of Neural's turn-following zoom, O(1). While the camera holds the fit (or the pose a turn
- * last set from it) it returns the camera for `yaw`; a camera anywhere else means the person zoomed or
- * panned, which ends following until the camera is back on the fit at the fit's own yaw.
+ * last set from it) it returns the camera for `yaw`, carrying the fit's free area so a focus leash
+ * measures from it too; a camera anywhere else means the person zoomed or panned, which ends following
+ * until the camera is back on the fit at the fit's own yaw.
  */
-export function followTurnWithZoom(
-  rest: { target: CameraPose & { turn?: DomeTurnReach }; yaw: number; followed?: CameraPose | null },
+export function followTurnWithZoom<F extends CameraPose & { turn?: DomeTurnReach; freeArea?: unknown }>(
+  rest: { target: F; yaw: number; followed?: CameraPose | null },
   camera: CameraPose,
   yaw: number,
-): CameraPose | null {
+): (CameraPose & Pick<F, "freeArea">) | null {
   const table = rest.target.turn;
   if (table === undefined) return null;
   const holds = (pose: CameraPose) =>
@@ -129,7 +130,7 @@ export function followTurnWithZoom(
     rest.followed = undefined;
     return null;
   }
-  const next = domeTurnFollowTarget(rest.target, table, yaw);
+  const next = { ...domeTurnFollowTarget(rest.target, table, yaw), freeArea: rest.target.freeArea };
   rest.followed = next;
   return next.tx === camera.tx && next.ty === camera.ty && next.tscale === camera.tscale ? null : next;
 }
