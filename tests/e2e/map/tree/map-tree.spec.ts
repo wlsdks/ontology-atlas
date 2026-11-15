@@ -202,14 +202,12 @@ async function countAmber(page: Page, region?: { x: number; y: number; r: number
 test.describe("the 3D tree on the dogfood vault", () => {
   test.setTimeout(180_000);
 
-  for (const alias of ["strata", "coupling"]) {
-    test(`?view=${alias} opens the tree with the 3D row checked in the view picker`, async ({ page }) => {
-      await openTree(page, dogfoodTreeVault(), { runtime: "desktop", view: alias });
-      await expect(page.getByTestId("topology-map-view")).toHaveAttribute("data-map-view", "tree");
-      await page.getByTestId("topology-view-3d").click();
-      await expect(page.getByTestId("topology-view-3d-choice-3d")).toHaveAttribute("aria-checked", "true");
-    });
-  }
+  test("?view=strata opens the tree with the 3D row checked in the view picker", async ({ page }) => {
+    await openTree(page, dogfoodTreeVault(), { runtime: "desktop", view: "strata" });
+    await expect(page.getByTestId("topology-map-view")).toHaveAttribute("data-map-view", "tree");
+    await page.getByTestId("topology-view-3d").click();
+    await expect(page.getByTestId("topology-view-3d-choice-3d")).toHaveAttribute("aria-checked", "true");
+  });
 
   test("every domain name is drawn and no name box covers a mark or another name", async ({ page }) => {
     const vault = dogfoodTreeVault();

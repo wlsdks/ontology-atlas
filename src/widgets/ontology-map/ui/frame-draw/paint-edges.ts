@@ -1,8 +1,23 @@
+import { domeAncestryEdgeKey } from "../../model/dome-view/dome-ancestry";
 import { trailGlintLocalPhase } from "../../model/visibility/footprint-steps";
 import { resolveEdgeEgoStateWithPair, type EdgeEgoState } from "../../model/visibility/focus-state";
 import { isPathLensEdge } from "../../model/visibility/path-lens";
 import { isDirectionalRelation } from "@/entities/knowledge-graph";
-import { captionNormal, relationCaptionText } from "../../render/relation-captions";
+import {
+  DOME_HALO_ALPHA_CAP,
+  DOME_HALO_ALPHA_GAIN,
+  domeDetailFactor,
+  domeEdgeFogAlpha,
+  domeEdgeMinWidthPx,
+  domeEdgeWidthFactor,
+  domeHaloPx,
+} from "../../model/dome-view/ink";
+import { focusFogFactor } from "../../render/dome-view/dome-light";
+import {
+  captionNormal,
+  captionWithinFlatBudget,
+  relationCaptionText,
+} from "../../render/relation-captions";
 import { isEdgeCulled, isPassthroughEdge } from "../../render/viewport-cull";
 import { draw as tracesDraw } from "../../render/traces";
 import { drawPreviewEdge } from "../../render/preview-edge";
@@ -10,40 +25,76 @@ import { drawPulses, edgePairMeta } from "../../render/edge-fireflies";
 import { indexedPulseEdges } from "../frame-cache/structure";
 import { radiusForKind } from "../world/topology-world";
 import { beginEdgeGlow, endEdgeGlow } from "../../expressive/ego-light";
-import { passState } from "./frame-state";
-import { TRAIL_IGNITE_MS, igniteCurve, trailIgniteStartMs } from "./trail-curves";
+import {
+  passState,
+  ZERO_DOME_FRAME,
+  domeEdgeFrameAReused,
+  domeEdgeFrameBReused,
+  domeEdgeIndexReused,
+} from "./frame-state";
+import {
+  TRAIL_HALO_ALPHA,
+  TRAIL_HALO_PX,
+  TRAIL_IGNITE_MS,
+  igniteCurve,
+  trailIgniteStartMs,
+} from "./trail-curves";
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
 import type { NodeAlpha } from "./node-alpha";
 import type { EdgePrep } from "./edge-prep";
+import type { DomeStage } from "./paint-dome-stage";
 
 const EDGE_CULL_MARGIN_PX = 24;
+// Shared scratch: use the result before the next call and never keep it.
+const edgeHaloScratch = { color: "", px: 0, alpha: 0 };
 const EDGE_KIND_PASSES = ["contains", "depends"] as const;
 const HOVER_RECEDE_ALPHA_STEP = 0.3;
 
-export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, edges: EdgePrep): void {
-  const { walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep,
+export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, edges: EdgePrep, stage: DomeStage): void {
+  const { walkedEdgeKeys, walkedEdgeDirections, walkedEdgeArrivalStep, devicePixelRatio,
     viewportWidth, viewportHeight, focusedNodeId, selectedEdge, mapLensKind, pathEdgeIds,
     hoveredEdge, emphasizedNeighborId, spotlightIds, trailLensOpenedAtMs, footprintNewestStep, now,
     hoveredNodeId, emphasisById, appearById, tokens, trailStarInk, farT, reducedMotion,
-    relationCaptions, previewEdge, world, camera, pulses, ctx, pathLensActive,
-    spotlightSink, trailLensActive, trailRamp, trailGlint, trailGlintLegs } = frame;
-  const { project, projectEdgePoints, egoGlowRamp, traceTokensFrame } = focus;
+    relationCaptions, captionFoldedIds, previewEdge, world, camera, pulses, ctx, pathLensActive,
+    spotlightSink, trailLensActive, trailRamp, trailGlint, trailGlintLegs, domeOn, domeFrameFor } = frame;
+  const { project, projectEdgePoints, egoGlowRamp, litOn, domeAncestryOn, domeAncestryEdges,
+    litFocusRamp, traceTokensFrame } = focus;
   const { anyExpanded } = alpha;
   const { egoCometEdges, edgeAlphaReused, edgeLiftReused, edgeRestDimReused, edgeFocusRamp,
-    edgeRevealAt, captionCandidates, ambientDependsComets } = edges;
+    edgeRevealAt, captionCandidates, isSpineEndpoint, ambientDependsComets } = edges;
+  const { domeHaloColor, edgeDrawOrder } = stage;
   const trailKeysLive =
     (walkedEdgeKeys?.size ?? 0) > 0 ||
     (walkedEdgeDirections?.size ?? 0) > 0 ||
     (walkedEdgeArrivalStep?.size ?? 0) > 0 ||
     trailGlintLegs !== null;
   for (const kind of EDGE_KIND_PASSES) {
-    for (let edgeIndex = 0; edgeIndex < world.edges.length; edgeIndex += 1) {
-      const edge = world.edges[edgeIndex];
+    for (let drawPos = 0; drawPos < edgeDrawOrder.length; drawPos += 1) {
+      const edge = edgeDrawOrder[drawPos];
       if (edge.kind !== kind) continue;
-      const edgeAlpha = edgeAlphaReused[edgeIndex];
+      const edgeOrigIndex = domeOn ? domeEdgeIndexReused[drawPos] : drawPos;
+      const edgeAlpha = edgeAlphaReused[edgeOrigIndex];
       if (edgeAlpha <= 0.02) continue;
-      const { a, b, control } = projectEdgePoints(edge);
+      const edgeFrameA = domeOn ? domeEdgeFrameAReused[edgeOrigIndex] : ZERO_DOME_FRAME;
+      const edgeFrameB = domeOn ? domeEdgeFrameBReused[edgeOrigIndex] : ZERO_DOME_FRAME;
+      const { a, b, control } = projectEdgePoints(edge, edgeFrameA, edgeFrameB);
+      let domeEdgeFog = 1;
+      let domeWidthScale = 1;
+      let domeMinWidthPx = 0;
+      let domeHaloWidthPx = 0;
+      let domeEdgeDetail = 1;
+      if (domeOn) {
+        const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
+        if (aMin > 0) {
+          const uAvg = (edgeFrameA.u + edgeFrameB.u) / 2;
+          domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
+          domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
+          domeMinWidthPx = domeEdgeMinWidthPx(devicePixelRatio) * aMin;
+          domeHaloWidthPx = litOn ? 0 : domeHaloPx(uAvg) * aMin;
+          domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
+        }
+      }
       if (isEdgeCulled(a, b, control, EDGE_CULL_MARGIN_PX, viewportWidth, viewportHeight)) continue;
       const passthrough = isPassthroughEdge(a, b, 24, viewportWidth, viewportHeight);
       const touches = focusedNodeId !== null && (edge.sourceId === focusedNodeId || edge.targetId === focusedNodeId);
@@ -68,6 +119,14 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         ? "dim"
         : resolveEdgeEgoStateWithPair(touches, focusedNodeId, selectedEdge, isSelectedEdge);
       if (isPathEdge && !trailLensActive) edgeEgoState = "ego";
+      if (
+        domeAncestryOn &&
+        !trailLensActive &&
+        kind === "contains" &&
+        domeAncestryEdges.has(domeAncestryEdgeKey(edge.sourceId, edge.targetId))
+      ) {
+        edgeEgoState = "ego";
+      }
       if (
         anyExpanded &&
         kind !== "contains" &&
@@ -104,17 +163,22 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         : edge.sourceId < edge.targetId
           ? walkedLowToHigh
           : !walkedLowToHigh;
+      const domeEdgeExempt = emphasized || isSelectedEdge || isPathEdge || edgeEgoState === "ego";
+      if (!domeEdgeExempt && domeEdgeDetail < 1)
+        domeHaloWidthPx *= domeEdgeDetail;
       const hoverRamp = focusedNodeId === null && hoveredNodeId !== null && !trailLensActive && !pathLensActive
         ? Math.min(1, Math.max(0, emphasisById.get(hoveredNodeId) ?? 0))
         : 0;
       const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
       const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
       if (focusedNodeId === null) {
-        edgeLiftReused[edgeIndex] = hoverLift;
-        edgeRestDimReused[edgeIndex] = edgeEgoState === "dim" ? 1 : 0;
+        edgeLiftReused[edgeOrigIndex] = hoverLift;
+        edgeRestDimReused[edgeOrigIndex] = edgeEgoState === "dim" ? 1 : 0;
       }
       const directional = isDirectionalRelation(edge.relationType);
       const hoverRecede = hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
+      const domeEdgeFogForEdge = (domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift)) *
+        (litOn && !domeEdgeExempt ? focusFogFactor((edgeFrameA.u + edgeFrameB.u) / 2, litFocusRamp) : 1);
       const edgeAppear = appearById
         ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
         : 1;
@@ -124,7 +188,19 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         edgeSpotlightSink *
         hoverRecede *
         edgeAppear *
-        filament;
+        filament
+        *
+        domeEdgeFogForEdge;
+      if (domeHaloWidthPx > 0.05) {
+        edgeHaloScratch.color = domeHaloColor;
+        edgeHaloScratch.px = domeHaloWidthPx;
+        edgeHaloScratch.alpha = Math.min(DOME_HALO_ALPHA_CAP, ctx.globalAlpha * DOME_HALO_ALPHA_GAIN);
+      }
+      if (walkedTrail > 0.01 && trailStarInk !== null) {
+        edgeHaloScratch.color = trailStarInk;
+        edgeHaloScratch.px = TRAIL_HALO_PX * walkedTrail;
+        edgeHaloScratch.alpha = TRAIL_HALO_ALPHA * walkedTrail;
+      }
       const edgeGlows = walkedTrail > 0.01 && trailStarInk !== null
         ? beginEdgeGlow(ctx, walkedTrail,
           {
@@ -147,8 +223,8 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
           ? {
             progress: edgeRevealAt,
             from: directional || edge.sourceId === focusedNodeId ? "a" : "b",
-            baseLift: edgeLiftReused[edgeIndex],
-            baseDim: edgeRestDimReused[edgeIndex] * (1 - edgeFocusRamp),
+            baseLift: edgeLiftReused[edgeOrigIndex],
+            baseDim: edgeRestDimReused[edgeOrigIndex] * (1 - edgeFocusRamp),
           }
           : null,
         dimRamp: edgeFocusRamp,
@@ -164,6 +240,9 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         hoverLift,
         reducedMotion,
         level: edge.level,
+        widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
+        minWidthPx: domeEdgeExempt ? 0 : domeMinWidthPx,
+        halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
         containsCometEligible: kind === "contains" ? passState.mapCometsOn && egoCometEdges.has(edge) : undefined,
         dependsCometEligible: kind === "depends" ? passState.mapCometsOn && ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
         cometOwner: edge,
@@ -173,7 +252,14 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
       const caption = edge.id ? relationCaptions?.get(edge.id) : null;
       const directionalCaption = isDirectionalRelation(edge.relationType);
       const captionInFocus = selectedEdge ? isSelectedEdge : focusedNodeId ? touches : true;
-      if (caption && captionInFocus && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
+      const captionBudgeted = captionFoldedIds === null ||
+        captionWithinFlatBudget({
+          attended: isSelectedEdge || hovered || isPathEdge,
+          touchesFocus: touches,
+          spine: isSpineEndpoint(edge.sourceId) && isSpineEndpoint(edge.targetId),
+          folded: captionFoldedIds.has(edge.sourceId) || captionFoldedIds.has(edge.targetId),
+        });
+      if (caption && captionInFocus && captionBudgeted && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
         captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1, normal: captionNormal(a, b) });
       }
       ctx.globalAlpha = 1;
@@ -183,11 +269,13 @@ export function paintEdges(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
     const source = world.nodeById.get(previewEdge.sourceId);
     const target = world.nodeById.get(previewEdge.targetId);
     if (source && target) {
+      const sourceFrame = domeFrameFor(source.id);
+      const targetFrame = domeFrameFor(target.id);
       drawPreviewEdge(ctx, {
-        source: project(source.x, source.y),
-        target: project(target.x, target.y),
-        sourceRadius: radiusForKind(source.kind, tokens) * source.magnitudeScale * camera.scale.value,
-        targetRadius: radiusForKind(target.kind, tokens) * target.magnitudeScale * camera.scale.value,
+        source: project(source.x + sourceFrame.dx, source.y + sourceFrame.dy),
+        target: project(target.x + targetFrame.dx, target.y + targetFrame.dy),
+        sourceRadius: radiusForKind(source.kind, tokens) * source.magnitudeScale * sourceFrame.s * camera.scale.value,
+        targetRadius: radiusForKind(target.kind, tokens) * target.magnitudeScale * targetFrame.s * camera.scale.value,
         alpha: previewEdge.alpha,
         solid: previewEdge.phase === "committing",
         solidProgress: previewEdge.commitProgress,

@@ -1,6 +1,6 @@
 
 import { useRelationVocabulary } from "@/entities/knowledge-graph";
-import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapDragSpeed, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { useCanvasBackground, useExpand, useFootprint, useDomainStructure, useGlyphSet, useHexBoard, useMapDragSpeed, useMapView, useMapZoomSpeed, useView3d, type MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { useAudiencePlain } from "@/shared/lib/preferences/audience-preference";
 import { usePrefersReducedMotion } from "@/shared/lib/render-timing/use-prefers-reduced-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -36,7 +36,9 @@ export function useTopologyPreferences() {
   const [audiencePlain, setAudiencePlain] = useAudiencePlain();
   // App-wide stores the DOM glyphs also subscribe to, so canvas and DOM swap in lockstep.
   const canvasBackground = useCanvasBackground();
+  /** On for the 3D tree and for Neural alike; `neural` tells them apart. */
   const view3d = useView3d();
+  const neural = useMapView() === "neural";
   const structure = useDomainStructure();
   /** `OntologyHexBoardMap`. */
   const hexBoard = useHexBoard();
@@ -58,7 +60,7 @@ export function useTopologyPreferences() {
   );
   return {
     expand, t, audiencePlain, setAudiencePlain, reducedMotion, tMeaningEditor, relationVocabulary,
-    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, structure, hexBoard, businessFlowRequestText,
+    relationRegister, siteT, relationLabelInRegister, activeLocale, view3d, neural, structure, hexBoard, businessFlowRequestText,
     tKinds, tWorkbench, tAtlasGit, kindCountsTitle, tTopologyKeyboardWalk, glyphSet, canvasBackground,
     footprint, navigationSpeed
   };

@@ -46,7 +46,7 @@ interface Options {
   setTopologyGraphStats: React.Dispatch<React.SetStateAction<{ key: string; nodes: number; relations: number; } | null>>;
   topologyCanvasFocus: Pick<ReturnType<typeof useTopologyCanvasFocus>, "setFullDetailSlug" | "setSelectedRelationActive" | "interactionSelectedSlugRef">;
   topologyAuthoring: Pick<ReturnType<typeof useTopologyAuthoring>, "setMeaningEditorState" | "setSelectedEdge">;
-  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "activeLocale" | "t" | "relationVocabulary">;
+  topologyPreferences: Pick<ReturnType<typeof useTopologyPreferences>, "activeLocale" | "t" | "relationVocabulary" | "tKinds">;
   topologyRouteControls: Pick<ReturnType<typeof useTopologyRouteControls>, "expandedParentSet">;
   topologyGraphProjection: Pick<
     ReturnType<typeof useTopologyGraphProjection>,
@@ -69,7 +69,7 @@ export function useTopologySceneControls({
   const { selectedOntologyNode, ontologyInsight, vault } = topologyVaultReadModel;
   const { projectBySlug, ontologyMapGraph, resolvedRealmSlug, localGraphProjects } = topologyGraphProjection;
   const { expandedParentSet } = topologyRouteControls;
-  const { activeLocale, t, relationVocabulary } = topologyPreferences;
+  const { activeLocale, t, relationVocabulary, tKinds } = topologyPreferences;
   const { setMeaningEditorState, setSelectedEdge } = topologyAuthoring;
   const { setFullDetailSlug, setSelectedRelationActive, interactionSelectedSlugRef } = topologyCanvasFocus;
 
@@ -174,6 +174,16 @@ export function useTopologySceneControls({
       collapse: t("cluster.barCollapse"),
     }),
     [t],
+  );
+  // Canonical kind names (`kinds.*`), so the Neural legend needs no second vocabulary.
+  const domeTierLabels = useMemo(
+    () => ({
+      project: tKinds("project"),
+      domain: tKinds("domain"),
+      capability: tKinds("capability"),
+      element: tKinds("element"),
+    }),
+    [tKinds],
   );
   const tDial = useTranslations("mapDial");
   const dialLabels = useMemo<DialLabels>(
@@ -284,6 +294,6 @@ export function useTopologySceneControls({
     emptyTopologyNodeCount, clearTopologyFilters,
     topologyRenderState, mapMountTaskReady, handleExpandRequest, handleMapFrameDrawn,
     handleTopologyGraphStatsChange, mapLensIds, mapLensKind, pathLensEdgeIds, pathExpandedParents,
-    allExpandedParentIds, realmCaption, clusterBarLabels, dialLabels
+    allExpandedParentIds, realmCaption, clusterBarLabels, domeTierLabels, dialLabels
   } as const;
 }

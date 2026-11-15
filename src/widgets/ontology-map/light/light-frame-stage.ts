@@ -4,7 +4,9 @@ import type { DialFrameMarks } from "../dial/frame/marks";
 
 import type { CameraAxes } from "../engine/camera";
 import { edgeRevealProgress, type Point } from "../expressive/edge-reveal";
+import type { DomeRuntime } from "../model/dome-view/runtime";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
+import { hexToRgb } from "../render/dome-view/dome-light";
 import type { OntologyMapTokens } from "../tokens/read-map-tokens";
 import type { TopologyWorld } from "../ui/world/topology-world";
 import type { LightBatch, LightLayer } from "./light-layer";
@@ -19,6 +21,7 @@ type LightStageState = "idle" | "pending" | "ready" | "off" | "lost";
 interface LightStageRefs {
   reducedMotionRef: RefObject<boolean>;
   egoRevealRef: RefObject<Map<string, number>>;
+    domeRuntimeRef: RefObject<DomeRuntime | null>;
   mapLensKindRef: RefObject<TopologyMapLensKind>;
   pathEdgeIdsRef: RefObject<ReadonlySet<string> | null>;
   spotlightIdsRef: RefObject<ReadonlySet<string> | null>;
@@ -67,13 +70,6 @@ function idleScheduler(callback: () => void): () => void {
 async function loadLightLayer(): Promise<LightLayerModule> {
   const { createLightLayer, lightBlendMode, SIGNAL_STRIDE, BLOOM_STRIDE, SIGNAL_CAPACITY, BLOOM_CAPACITY } = await import("./light-layer");
   return { createLightLayer, lightBlendMode, SIGNAL_STRIDE, BLOOM_STRIDE, SIGNAL_CAPACITY, BLOOM_CAPACITY };
-}
-
-function hexToRgb(hex: string): [number, number, number] | null {
-  const h = hex.trim();
-  const full = /^#[0-9a-f]{3}$/i.test(h) ? `#${h[1]}${h[1]}${h[2]}${h[2]}${h[3]}${h[3]}` : h;
-  if (!/^#[0-9a-f]{6}$/i.test(full)) return null;
-  return [parseInt(full.slice(1, 3), 16), parseInt(full.slice(3, 5), 16), parseInt(full.slice(5, 7), 16)];
 }
 
 function writeInk(token: string, out: Float32Array, slot: number): void {
@@ -278,11 +274,13 @@ export function createLightFrameStage(dependencies: LightStageDependencies, opti
         quiet();
         return;
       }
-      if (state === "idle" && width > 0 && height > 0 && initialInput === null) {
+      const dome = refs.domeRuntimeRef.current;
+      const flat = dome === null || dome.rampClock <= 0;
+      if (state === "idle" && flat && width > 0 && height > 0 && initialInput === null) {
         initialInput = { now, world, camera, width, height, tokens, kinematics: lightKinematics(tokens), focusedNodeId, trailLensActive, reducedMotion, revealProgress: 1, clusteredIds, mapLensKind: refs.mapLensKindRef.current, pathEdgeIds: refs.pathEdgeIdsRef.current, pathNodeIds: refs.spotlightIdsRef.current };
       }
-      if (state === "idle" && width > 0 && height > 0) schedule();
-      if (state !== "ready" || !batch) {
+      if (state === "idle" && flat && width > 0 && height > 0) schedule();
+      if (state !== "ready" || !flat || !batch) {
         quiet();
         return;
       }

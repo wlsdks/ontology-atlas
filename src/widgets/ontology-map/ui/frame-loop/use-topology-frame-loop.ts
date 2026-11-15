@@ -1,32 +1,37 @@
 "use client";
 import { useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import { clearDialFrame, lastDialFrame } from "../../dial/frame/frame";
+import type { CameraAxes } from "../../engine/camera";
 import { createLightFrameStage } from "../../light/light-frame-stage";
 import { ambientSleepFactor } from "../../model/ambient/ambient-sleep";
 import { shouldSkipFrame } from "../../model/ambient/idle-gate";
+import { projectDomeEdgeControl } from '../../model/dome-view/dome-edge';
 import { createStillFrame } from "../frame-cache/still-frame";
 import { createCameraFrameStage } from "./topology-camera-frame-stage";
 import { createClusterFrameStage } from "./topology-cluster-frame-stage";
+import { createDomeFrameStage } from "./topology-dome-frame-stage";
 import { createFrameGate, FRAME_ASLEEP, FRAME_NOT_READY, IDLE_GRACE_MS } from "./topology-frame-gate";
 import { advanceTopologyComets } from "./topology-physics-step";
 import { createPresentationFrameStage } from "./topology-presentation-frame-stage";
 import { createRealmFrameStage } from "./topology-realm-frame-stage";
 import { createRevealFrameStage } from "./topology-reveal-frame-stage";
+import { type WorldEdge } from "../world/topology-world";
 import { createWorldMotionFrameStage } from "./topology-world-motion-frame-stage";
 
 interface Configuration {
   canvasRef: RefObject<HTMLCanvasElement | null>;
-  motion: Pick<Parameters<typeof createPresentationFrameStage>[0], "reducedMotionRef">;
+  projection: Pick<Parameters<typeof createPresentationFrameStage>[0], "domeRuntimeRef" | "reducedMotionRef" | "neuralRampRef"> & { cameraRef: RefObject<CameraAxes>; };
   recovery: Pick<Parameters<typeof createFrameGate>[0], "lastActiveMsRef" | "viewportRebuildPendingRef"> & {
     wakeFrameLoopRef: RefObject<() => void>;
   };
+  domeFrameStage: Parameters<typeof createDomeFrameStage>[0];
   worldMotionFrameStage: Parameters<typeof createWorldMotionFrameStage>[0];
   cameraFrameStage: Parameters<typeof createCameraFrameStage>[0];
   clusterFrameStage: Parameters<typeof createClusterFrameStage>[0];
   realmFrameStage: Parameters<typeof createRealmFrameStage>[0];
   revealFrameStage: Parameters<typeof createRevealFrameStage>[0];
   frameGate: Omit<Parameters<typeof createFrameGate>[0], "lightActiveRef">;
-  presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "nodeLayerRef">;
+  presentationFrameStage: Omit<Parameters<typeof createPresentationFrameStage>[0], "ctx" | "domeEdgeControlForFrame" | "nodeLayerRef">;
 }
 
 const frameRequests = new Set<() => void>();
@@ -39,7 +44,7 @@ export function requestOntologyMapFrame(): void {
 
 export function useTopologyFrameLoop(configuration: Configuration) {
   const getConfiguration = useEffectEvent(() => configuration);
-  const { beginCameraTween } = configuration.worldMotionFrameStage;
+  const { beginCameraTween, cameraTokens, domeFitTarget } = configuration.domeFrameStage;
   const { endGrowthReplay } = configuration.frameGate;
   const renderedRef = useRef(true);
   useEffect(() => clearDialFrame, []);
@@ -49,11 +54,16 @@ export function useTopologyFrameLoop(configuration: Configuration) {
   });
   useEffect(() => {
     const configuration = getConfiguration();
-    const { canvasRef, motion, recovery } = configuration;
-    const { reducedMotionRef } = motion;
+    const { canvasRef, projection, recovery } = configuration;
+    const { domeRuntimeRef, cameraRef, reducedMotionRef, neuralRampRef } = projection;
     const { lastActiveMsRef, viewportRebuildPendingRef, wakeFrameLoopRef } = recovery;
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const domeEdgeControlForFrame = (edge: WorldEdge) => {
+      const dome = domeRuntimeRef.current;
+      return dome === null ? null : projectDomeEdgeControl(edge, dome.frame, dome.model.arrangement, cameraRef.current.scale.value, reducedMotionRef.current ? undefined : neuralRampRef.current);
+    };
+    const runDomeFrameStage = createDomeFrameStage(configuration.domeFrameStage);
     const runWorldMotionFrameStage = createWorldMotionFrameStage(configuration.worldMotionFrameStage);
     const runCameraFrameStage = createCameraFrameStage(configuration.cameraFrameStage);
     const runClusterFrameStage = createClusterFrameStage(configuration.clusterFrameStage);
@@ -73,12 +83,16 @@ export function useTopologyFrameLoop(configuration: Configuration) {
 
     const nodeLayerRef: { current: ((ctx: CanvasRenderingContext2D) => CanvasRenderingContext2D) | null;
         } = { current: null };
-    const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, nodeLayerRef });
+    const runPresentationFrameStage = createPresentationFrameStage({ ...configuration.presentationFrameStage, ctx, domeEdgeControlForFrame, nodeLayerRef });
     const light = createLightFrameStage({ canvasRef, refs: configuration.presentationFrameStage, lightActiveRef, requestFrame });
 
-    const { trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
+    const { view3dRef, trailLensPropRef, lastInputMsRef, ambientSleepDelayRef } = configuration.frameGate;
     const { animatedBgRef } = configuration.presentationFrameStage;
-    const plain = () =>
+    const flatAndPlain = () =>
+      !view3dRef.current
+            &&
+      neuralRampRef.current <= 0.001 &&
+      (domeRuntimeRef.current?.rampClock ?? 0) <= 0 &&
       animatedBgRef.current === null &&
       !(trailLensPropRef.current?.current ?? false);
     const still = createStillFrame(canvas, ctx);
@@ -87,7 +101,8 @@ export function useTopologyFrameLoop(configuration: Configuration) {
     let stillFocusId: string | null = null;
     let lastDrawnAt = Number.NaN;
 
-    const drawFull = (now: number, { tokens, world, width, height, dpr, dt }: Frame): void => {
+    const drawFull = (now: number, { tokens, world, width, height, dpr, dt }: Frame): boolean => {
+      if (!runDomeFrameStage(now, dt, tokens, world, width, height)) return false;
       runWorldMotionFrameStage(now, dt, tokens, world, width, height);
       const {
         focusedNodeId,
@@ -134,10 +149,11 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         frameChips,
         batchAppearVisible);
       light.prepare(now, tokens, world, camera, width, height, focusedNodeId, trailLensActive, frameClusteredIds);
-      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, realmFrame.realmDial);
+      runPresentationFrameStage(frameChips, frameClusteredIds, realmTierKinds, now, dt, tokens, trailLensActive, camera, width, height, dpr, world, farT, zoomRatio, focusedNodeId, hoveredNodeId, panelEmphasisNodeId, realmWarding, realmDepthById, realmDepthParallax, realmDustParallax, realmOutsideReturnAlphaById, clusterFrame.captionFoldedIds, realmFrame.realmDial);
       if (lastDialFrame()?.branchMembersAnimating) lastActiveMsRef.current = now;
       light.afterPaint();
       stillFocusId = focusedNodeId;
+      return true;
     };
 
     const frame = (now: number) => {
@@ -155,7 +171,7 @@ export function useTopologyFrameLoop(configuration: Configuration) {
         return;
       }
       const { tokens, world, dpr, dt, awake, sceneStill } = frameState;
-      if (bumped || renderedRef.current || !sceneStill || !plain()) {
+      if (bumped || renderedRef.current || !sceneStill || !flatAndPlain()) {
         renderedRef.current = false;
         quietSince = now;
         still.invalidate();
@@ -169,13 +185,18 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       }
       const building = settled && awake && still.begin(world, tokens, dpr, reducedMotionRef.current);
       if (building) nodeLayerRef.current = still.nodeLayer;
+      let drawn = false;
       try {
-        drawFull(now, frameState);
+        drawn = drawFull(now, frameState);
       } finally {
         if (still.building) {
           nodeLayerRef.current = null;
           still.end();
         }
+      }
+      if (!drawn) {
+        requestFrame();
+        return;
       }
       lastDrawnAt = performance.now();
       light.render();
@@ -216,5 +237,5 @@ export function useTopologyFrameLoop(configuration: Configuration) {
       light.dispose();
     };
 
-  }, [beginCameraTween, endGrowthReplay]);
+  }, [beginCameraTween, cameraTokens, domeFitTarget, endGrowthReplay]);
 }

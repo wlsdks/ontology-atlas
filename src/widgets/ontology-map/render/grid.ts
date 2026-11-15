@@ -69,13 +69,6 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 /** Linear RGB lerp between two `#rrggbb` hex colors — ported from the prototype's `lerpColor()`. */
-// `rgb()` form keeps the contains inks a hard cut in the trace's ink mix,
-// which blends only `#rrggbb`; a hex token there would change transitions.
-export function hexToRgbCss(hex: string): string {
-  const { r, g, b } = hexToRgb(hex);
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
 export function lerpColorHex(hexA: string, hexB: string, t: number): string {
   const a = hexToRgb(hexA);
   const b = hexToRgb(hexB);
@@ -141,6 +134,8 @@ export interface BackgroundDrawState {
    * its origin. Consumed only when `variant === "depth"`.
    */
   depthLayers?: readonly { pattern: CanvasPattern | null; originX: number; originY: number; spacing: number }[];
+  /** Opacity for the whole depth-layer set, 0..1 (default 1) — the 3D assembly ramp folds it away continuously. */
+  depthLayersAlpha?: number;
   /**
    * Callback compositing the animated background's buffer for this frame; called
    * only for non-dot variants.
@@ -205,17 +200,22 @@ export function draw(ctx: CanvasRenderingContext2D, state: BackgroundDrawState, 
 
   if (variant === "depth" && state.depthLayers) {
     // Each layer fills from its own parallax origin, so all three stop together
-    // when the camera does.
-    ctx.globalAlpha = 1;
-    for (const layer of state.depthLayers) {
-      if (!layer.pattern) continue;
-      const ox = wrapToTile(layer.originX, layer.spacing);
-      const oy = wrapToTile(layer.originY, layer.spacing);
-      ctx.save();
-      ctx.fillStyle = layer.pattern;
-      ctx.translate(ox - layer.spacing, oy - layer.spacing);
-      ctx.fillRect(0, 0, w + layer.spacing * 2, h + layer.spacing * 2);
-      ctx.restore();
+    // when the camera does. `depthLayersAlpha` lets the caller fold the whole
+    // set away continuously (the 3D assembly ramp) instead of cutting it.
+    const layersAlpha = state.depthLayersAlpha ?? 1;
+    if (layersAlpha > 0.004) {
+      ctx.globalAlpha = layersAlpha;
+      for (const layer of state.depthLayers) {
+        if (!layer.pattern) continue;
+        const ox = wrapToTile(layer.originX, layer.spacing);
+        const oy = wrapToTile(layer.originY, layer.spacing);
+        ctx.save();
+        ctx.fillStyle = layer.pattern;
+        ctx.translate(ox - layer.spacing, oy - layer.spacing);
+        ctx.fillRect(0, 0, w + layer.spacing * 2, h + layer.spacing * 2);
+        ctx.restore();
+      }
+      ctx.globalAlpha = 1;
     }
   } else if (variant !== "dot" && state.paintAnimated) {
     // Animated background — the ink ceiling was already enforced while drawing the

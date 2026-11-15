@@ -87,7 +87,7 @@ describe("separation of drawn map nodes", () => {
       dragPrevPosRef: ref(null), dropSeededRef: ref(false), geomPrevXRef: ref(null), geomPrevYRef: ref(null),
       sepDisplacedIdsRef: ref(new Set()), homeSpringsRef: ref(new Map()), homeTargetOverrideRef: ref(null),
       prevPinnedNodeIdRef: ref("held"), clusteredIdsRef: ref(new Set()), expandedParentsRef: ref(new Set()),
-      realmDataRef: ref(null), realmTransitionRef: ref({ phase: "idle" }),
+      view3dRef: ref(false), domeRuntimeRef: ref(null), realmDataRef: ref(null), realmTransitionRef: ref({ phase: "idle" }),
       realmActiveHandedOffRef: ref(false), wardingFitRef: ref(null), reducedMotionRef: ref(false),
       overviewScaleRef: ref(1), overviewFitRef: ref("spine"),
     } as unknown as WorldMotionFrameStageSources;

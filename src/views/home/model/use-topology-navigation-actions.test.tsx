@@ -14,7 +14,7 @@ describe('agent map navigation during relation review', () => {
       topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
       topologyGraphProjection: { projectBySlug: new Map() },
       topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge },
-      topologyPreferences: { structure: false, view3d: false },
+      topologyPreferences: { structure: false, neural: false },
       topologyCanvasFocus: { interactionSelectedSlugRef: { current: null }, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed: vi.fn(), chatNodeIndex: new Map() },
     } as Parameters<typeof useTopologyNavigationActions>[0];
     const { result } = renderHook(() => useTopologyNavigationActions(options));
@@ -38,7 +38,7 @@ describe('agent map navigation during relation review', () => {
       topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
       topologyGraphProjection: { projectBySlug: new Map() },
       topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge: vi.fn() },
-      topologyPreferences: { structure: false, view3d: true },
+      topologyPreferences: { structure: false, neural: false },
       topologyCanvasFocus: { interactionSelectedSlugRef, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed, chatNodeIndex: new Map() },
     } as Parameters<typeof useTopologyNavigationActions>[0];
     const { result } = renderHook(() => useTopologyNavigationActions(options));
@@ -64,7 +64,7 @@ describe('agent map navigation during relation review', () => {
         topologyIndexPresentation: { beginExpandedIndexSelection: vi.fn() },
         topologyGraphProjection: { projectBySlug: new Map() },
         topologyAuthoring: { setHoverEdge: vi.fn(), setMeaningEditorState: vi.fn(), setSelectedEdge: (next: typeof selected | ((current: typeof selected) => typeof selected)) => { selected = typeof next === 'function' ? next(selected) : next; } },
-        topologyPreferences: { structure: false, view3d: false },
+        topologyPreferences: { structure: false, neural: false },
         topologyCanvasFocus: { interactionSelectedSlugRef: { current: null }, setFullDetailSlug: vi.fn(), setSelectedRelationActive: vi.fn(), setNodePopoverDismissed: vi.fn(), chatNodeIndex: new Map([['source', 'a'], ['target', 'b'], ['other', 'c']]) },
       } as Parameters<typeof useTopologyNavigationActions>[0];
       const { result } = renderHook(() => useTopologyNavigationActions(options));

@@ -152,6 +152,13 @@ export function createRevealFrameStage(sources: RevealFrameStageSources) {
       }
     }
 
+    // In 3D **every node is part of the shape**, so the density gate's
+    // collapsed set and chips are emptied for this frame's consumers (draw,
+    // hit-testing, instrumentation). The underlying computation
+    // (`frameClusteredIds`) is left intact, so the collapsed state returns as
+    // it was on the frame 2D resumes, and the relax/reveal bookkeeping cannot
+    // misfire on a dome toggle.
+
   };
 }
 

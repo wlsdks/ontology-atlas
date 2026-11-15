@@ -127,7 +127,9 @@ describe("useTopologyFocusNavigation", () => {
       worldRef: ref<TopologyWorld | null>(world()),
       viewportRef: ref({ width: 1200, height: 800, dpr: 1 }),
       overviewScaleRef: ref(1),
+      view3dRef: ref(false),
       realmTransitionRef: ref({ phase: "idle" }),
+      domeRuntimeRef: ref(null),
       realmDataRef: ref(null),
       expandedParentsRef: ref<ReadonlySet<string>>(new Set()),
       cameraTokens: <T,>(t: T) => t,
@@ -196,14 +198,27 @@ describe("useTopologyFocusNavigation", () => {
     expect(deps.beginCameraTween).toHaveBeenCalled();
   });
 
-  it("preserves selection and deselection framing inside an active realm", () => {
-    const { deps, select } = setup({ realmTransitionRef: ref({ phase: "active" }) as never });
+  it("preserves selection and deselection framing inside an active 3D realm", () => {
+    const { deps, select } = setup({ view3dRef: ref(true), realmTransitionRef: ref({ phase: "active" }) as never });
     select("f");
     expect(deps.beginCameraTween).toHaveBeenCalledTimes(1);
     expect(deps.lastFocusedSlugRef.current).toBe("f");
     select(null);
     expect(deps.beginCameraTween).toHaveBeenCalledTimes(2);
     expect(deps.lastFocusedSlugRef.current).toBeNull();
+  });
+
+  it("does not apply a pending Flat focus after switching to 3D", () => {
+    const worldRef = ref<TopologyWorld | null>(null);
+    const view3dRef = ref(false);
+    const { deps, hook } = setup({ worldRef, view3dRef });
+    deps.focusedSlugRef.current = "f";
+    hook.rerender("f");
+    frames.shift()?.(performance.now());
+    worldRef.current = world();
+    view3dRef.current = true;
+    frames.shift()?.(performance.now());
+    expect(deps.beginCameraTween).not.toHaveBeenCalled();
   });
 
   it("waits for search modal isolation to release before measuring the selected map", () => {
@@ -443,7 +458,9 @@ describe("useTopologyFocusNavigation", () => {
       worldRef: ref<TopologyWorld | null>(world()),
       viewportRef: ref({ width: 1200, height: 800, dpr: 1 }),
       overviewScaleRef,
+      view3dRef: ref(false),
       realmTransitionRef: ref({ phase: "idle" }),
+      domeRuntimeRef: ref(null),
       realmDataRef: ref(null),
       expandedParentsRef: ref<ReadonlySet<string>>(new Set()),
       cameraTokens: <T,>(t: T) => t,

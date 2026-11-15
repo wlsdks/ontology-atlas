@@ -37,7 +37,9 @@ type MapStillness =
   /** Camera spring only — pan, zoom, fit, focus framing. */
   | "camera"
   /** Camera plus every drawn node coordinate — physics, expansion, auto-arrange. */
-  | "layout";
+  | "layout"
+  /** Neural's dome pose, its inertia and its assembly ramp. */
+  | "dome";
 
 export interface MapStillOptions {
   /** Which of the map's motions must stop. Default `"layout"`. */
@@ -64,6 +66,14 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
         cameraTarget?: () => { x: number; y: number; scale: number };
         nodes?: () => ProbeNode[];
         dialMotionSettled?: () => boolean;
+        dome?: () => {
+          yaw: number;
+          pitch: number;
+          ramp: number;
+          poseTween: boolean;
+          orbiting: boolean;
+          settling: boolean;
+        } | null;
       };
       const probe = (window as unknown as { __atlasMap?: Probe }).__atlasMap;
       if (!probe) return false;
@@ -89,6 +99,17 @@ export async function waitForMapStill(page: Page, options: MapStillOptions = {})
           .filter((node) => !node.hidden)
           .map((node) => `${node.id}:${tenth(node.x)},${tenth(node.y)}`)
           .join(",")}`;
+      }
+      if (argument.what === "dome") {
+        const dome = probe.dome?.() ?? null;
+        if (!dome) return false;
+        // A pose tween or live inertia is motion regardless of how small this
+        // frame's step was, so they are part of the signature rather than a
+        // separate early return: the counter resets while either is live.
+        signature = `${Math.round(dome.yaw * 1e3)},${Math.round(dome.pitch * 1e3)},${Math.round(
+          dome.ramp * 1e3,
+        )},${dome.poseTween},${dome.orbiting}`;
+        settling = dome.settling;
       }
       const store = ((window as unknown as { __atlasStill?: Record<string, { signature: string; count: number }> })
         .__atlasStill ??= {});
@@ -226,6 +247,27 @@ export async function waitFrames(page: Page, count = 2): Promise<void> {
         requestAnimationFrame(step);
       }),
     count,
+  );
+}
+
+/**
+ * Resolve once Neural's dome has assembled, swept in **and** settled its layout.
+ *
+ * The two have separate clocks — the sweep outlives the assembly by 380 ms
+ * (`model/dome-view/`) — so "arrived" is both flags, and while the sweep is alive
+ * the drawn attitude keeps moving and cannot be told apart from what a drag changed.
+ * The pose is not required to be *still*: the dome arrives armed to spin.
+ */
+export async function waitForDomeEntered(page: Page, timeout = HANG_TIMEOUT_MS): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const dome = (
+        window as unknown as { __atlasMap?: { dome?: () => { ramp: number; entryArmed: boolean; settling: boolean } | null } }
+      ).__atlasMap?.dome?.();
+      return dome !== null && dome !== undefined && dome.ramp >= 1 && !dome.entryArmed && !dome.settling;
+    },
+    undefined,
+    { polling: "raf", timeout },
   );
 }
 

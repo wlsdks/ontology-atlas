@@ -60,6 +60,34 @@ export function isEgoTailAnimating(input: EgoTailActivityInput): boolean {
   return input.focused && input.hasContainsEdges;
 }
 
+/**
+ * The autonomous spin sleeps under the same `ambient-sleep.ts` contract as the comets; one
+ * predicate so the condition cannot reach only one of the two sites. Hand-driven terms
+ * (`orbiting`, `yawVel`) stay out.
+ */
+export interface DomeSpinInput {
+  /** No realm transition is in flight. */
+  domeOn: boolean;
+  reducedMotion: boolean;
+  ambientAsleep: boolean;
+  /** Lowered by any intervention: orbit, zoom, node drag, select. */
+  spinArmed: boolean;
+  /** Held still so the aimed node cannot slide away under the cursor. */
+  pointerOverCanvas: boolean;
+  assembled: boolean;
+}
+
+export function isDomeSpinAnimating(input: DomeSpinInput): boolean {
+  return (
+    input.domeOn &&
+    !input.reducedMotion &&
+    !input.ambientAsleep &&
+    input.spinArmed &&
+    !input.pointerOverCanvas &&
+    input.assembled
+  );
+}
+
 export function isCanvasActive(flags: CanvasActivityFlags): boolean {
   return (
     flags.pointerActive ||

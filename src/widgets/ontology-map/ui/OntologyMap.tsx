@@ -14,8 +14,8 @@ import type { TierRevealConfig } from "../model/visibility/tier-visibility";
 import type { TopologyMapLensKind } from "../model/visibility/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
 import type { SelectionSource } from "../model/camera/flat-selection-camera";
-import { DEFAULT_EXPAND, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
-import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
+import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT, DEFAULT_MAP_NAVIGATION_SPEED } from "@/shared/lib/preferences/appearance-preferences";
+import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement, MapNavigationSpeed } from "@/shared/lib/preferences/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
 import { usePanelPresence } from "@/shared/lib/render-timing/use-presence";
 import { measureCanvasInsets } from "../interaction/free-area";
@@ -329,6 +329,20 @@ export interface OntologyMapProps {
    * defaults to `"dot"`.
    */
   canvasBackground?: CanvasBackground;
+  view3d?: boolean;
+    /**
+     * Which structural question places nodes in 3D — `strata` stacks the containment
+     * tiers as lit planes (default); `coupling` lets relations determine all three
+     * Neural axes. The rationale and geometry live in `model/dome-view/`. Ignored
+     * in 2D.
+     */
+    mapArrangement?: MapArrangement;
+  /**
+   * Node id to evidence state; sets how much light each node emits. An absent id, or null, is
+   * unknown and emits none.
+   */
+  domeEvidence?: ReadonlyMap<string, "current" | "stale" | "unknown"> | null;
+  onHiddenDependenciesChange?: (count: number) => void;
   dialLabels?: DialLabels | null;
   evidenceStates?: ReadonlyMap<string, DialEvidence> | null;
   impactLens?: boolean;
@@ -337,9 +351,17 @@ export interface OntologyMapProps {
   loadProgress?: { read: number; total: number;
     } | null;
   placingTierRead?: boolean;
+  /**
+   * The lit 3D map's legend — kinds and evidence, composed by the page in its own words and
+   * shown only while 3D is on. The widget places it; it owns no copy.
+   */
+  domeLightLegend?: ReactNode;
   /** The flat map's key, placed inside the map so it reads the panels' live insets. */
   flatKey?: ReactNode;
-  /** Whether the node detail panel covers the screen: the realm button hides and the live insets are re-read on each flip. */
+  /**
+   * Whether the node detail panel covers the screen. To the dome camera its opening or closing is a
+   * resize, so each flip reframes the selected node. Ignored in 2D.
+   */
   detailPanelVisible?: boolean;
   /** The footprint appearance setting — read with `useFootprint()` and passed down. Omitted means no footprints. */
   footprint?: FootprintPreference | null;
@@ -368,7 +390,7 @@ export interface OntologyMapProps {
 }
 
 export function OntologyMap(props: OntologyMapProps) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, assembleOnOpen = true, arrivingDocuments = 0, overviewFit = "spine", fitViewToken, growthReplayToken = 0, onGrowthReplayingChange, spotlightFitToken = 0, constellationFocusId = null, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", navigationSpeed = DEFAULT_MAP_NAVIGATION_SPEED, ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -447,6 +469,7 @@ export function OntologyMap(props: OntologyMapProps) {
     },
     []);
 
+
   const { canvasRef, containerRef, readLayoutMarks, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handlePointerLeave, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
@@ -501,6 +524,10 @@ export function OntologyMap(props: OntologyMapProps) {
       overviewFit,
       glyphSet,
       canvasBackground,
+      view3d,
+      mapArrangement,
+      domeEvidence: props.domeEvidence ?? null,
+      onHiddenDependenciesChange: props.onHiddenDependenciesChange,
       dialLabels: props.dialLabels ?? null,
       evidenceStates: props.evidenceStates ?? null,
       impactLens: props.impactLens ?? false,
@@ -508,6 +535,7 @@ export function OntologyMap(props: OntologyMapProps) {
       flatRingMemory: props.flatRingMemory ?? null,
       loadProgress: props.loadProgress ?? null,
       placingTierRead: props.placingTierRead ?? false,
+      detailPanelVisible,
       footprint,
       expand,
     });
@@ -593,11 +621,17 @@ export function OntologyMap(props: OntologyMapProps) {
          */
         tabIndex={-1} aria-hidden className={controlClass({ shape: "icon", className: `${props.indexExpanded ? "max-md:hidden " : ""}atlas-touch-floor atlas-touch-floor-wide group absolute left-0 top-0 z-40 flex h-7 w-7 rounded-full border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] text-[color:var(--map-indigo-bright)] shadow-[var(--map-panel-shadow)] transition-[opacity,background-color] hover:bg-[color:var(--map-panel-row-hover)]` })} style={{ opacity: 0, pointerEvents: "none" }}>
           <Orbit size={ICON_SIZE.md} aria-hidden/>
-          {realmEnterTooltip ? (<span role="tooltip" className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)] group-hover:block">
+          {/* Tooltip is not drawn in 3D: the button follows the node's projected position, which keeps moving
+             in the dome, so the text would slide. Only the explanation is disabled; the button and its
+             `aria-label` are unchanged. */}
+          {realmEnterTooltip && !view3d ? (<span role="tooltip" className="pointer-events-none absolute left-1/2 top-full mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-[var(--map-panel-radius)] border border-[color:var(--map-panel-border)] bg-[color:var(--map-panel-surface)] px-2 py-1 text-label font-[var(--font-weight-signature)] text-[color:var(--map-panel-text-primary)] shadow-[var(--map-panel-shadow)] group-hover:block">
               {realmEnterTooltip}
             </span>) : null}
         </button>) : null}
-      {props.flatKey ? props.flatKey : null}
+      {view3d && props.domeLightLegend ? props.domeLightLegend : null}
+      {!view3d && props.flatKey ? props.flatKey : null}
+      {/* The inspector docks against the same right edge the names favour, and the
+                  reader is looking at one concept, so the names step aside while it is open. */}
       {noticePresence.mounted && notice ? (<div key={notice.key} data-walk-notice="" {...transientSurface("notice")}
         /* Read by assistive technology, and non-existent to pointer and focus. */
         role="status" aria-live="polite" data-state={noticePresence.exiting ? "closed" : "open"} className={[

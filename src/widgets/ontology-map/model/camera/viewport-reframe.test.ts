@@ -4,6 +4,7 @@ import { resolveViewportReframeMode } from "./viewport-reframe";
 
 const overview = {
   userDriven: false,
+  domeActive: false,
   focused: false,
   pairFocused: false,
   realmActive: false,
@@ -17,6 +18,11 @@ describe("resolveViewportReframeMode", () => {
 
   it("keeps pair-focus framing instead of replacing it with an unrelated overview", () => {
     expect(resolveViewportReframeMode({ ...overview, pairFocused: true })).toBe("preserve");
+  });
+
+  it("reframes the active 3D dome without resetting its orientation", () => {
+    expect(resolveViewportReframeMode({ ...overview, domeActive: true })).toBe("dome-overview");
+    expect(resolveViewportReframeMode({ ...overview, domeActive: true, focused: true })).toBe("dome-focus");
   });
 
   it("keeps a selected node above realm and spotlight framing", () => {

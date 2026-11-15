@@ -5,17 +5,18 @@ import { worldToScreen } from "../camera/topology-camera-math";
 import type { FrameInputs } from "./frame-begin";
 
 export function paintBackdrop(frame: FrameInputs): void {
-  const { viewportWidth, viewportHeight, farT, backgroundVariant, gridPattern,
+  const { viewportWidth, viewportHeight, farT, domeRamp, backgroundVariant, gridPattern,
     paintAnimatedBackground, depthDotPatterns, reducedMotion, tokens, dustPoints,
     realmDustParallax, wardingRing, realmStarPoints, camera, ctx, gridOrigin, bgOrigin } = frame;
   gridDraw(ctx, {
     viewportWidth,
     viewportHeight,
-    farT: Math.max(farT, 0),
+    farT: Math.max(farT, domeRamp, 0),
     variant: backgroundVariant,
     gridPattern,
-    paintAnimated: paintAnimatedBackground,
-    depthLayers: depthDotPatterns
+    paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
+    depthLayersAlpha: 1 - domeRamp,
+    depthLayers: depthDotPatterns && domeRamp < 0.999
       ? DEPTH_DOT_LAYERS.map((layer, i) => {
         // Parallax comes from gridOrigin, not the already-parallaxed bgOrigin; doubling it collapses the layers.
         const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight }, reducedMotion ? 1 : layer.parallax);

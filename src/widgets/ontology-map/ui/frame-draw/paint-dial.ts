@@ -89,7 +89,7 @@ function paintOwnedDial(frame: FrameInputs, contextAlphas?: ReadonlyMap<string, 
 
 export function prepareBranchContext(frame: FrameInputs, alphas: ReadonlyMap<string, number>): DialFrameResult | null {
   const scene = (frame.realmDial ?? frame.world.dial)?.scene;
-  if (!(scene?.branches || scene?.graph) || (!frame.realmDial && (frame.realmDepthById !== null || frame.wardingRing !== null))) return null;
+  if (!(scene?.branches || scene?.graph) || frame.domeOn || (!frame.realmDial && (frame.realmDepthById !== null || frame.wardingRing !== null))) return null;
   const contextAlphas = new Map(alphas);
   const contextInkAlphas = new Map(alphas);
   if (frame.pathLensActive || frame.constellationLensActive) {
@@ -115,10 +115,10 @@ export function paintBranchContext(frame: FrameInputs, result: DialFrameResult) 
 // True when the dial owned the whole frame, so the map passes must not run.
 export function paintDial(frame: FrameInputs): boolean {
   const { world, realmDepthById, wardingRing, selectedEdge, previewEdge, spotlightIds, pathEdgeIds, dial,
-    focusedNodeId, relationCaptions, hoveredNodeId, trailLensKeepIds } = frame;
+    focusedNodeId, relationCaptions, hoveredNodeId, trailLensKeepIds, domeOn } = frame;
   const dialOwns = (frame.realmDial ?? world.dial) != null && dialOwnsFlatPaint({
     graphScene: (frame.realmDial ?? world.dial)?.scene.graph !== undefined,
-    hasDial: true,
+    hasDial: !domeOn,
     realmActive: !frame.realmDial && (realmDepthById !== null || wardingRing !== null),
     edgeSelected: selectedEdge !== null,
     edgePreviewed: previewEdge !== null,

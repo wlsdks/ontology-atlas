@@ -1,5 +1,7 @@
 import type { NodeEgoState } from "../../model/visibility/focus-state";
 import { resolveFreshnessVisual } from "../../model/ambient/freshness";
+import type { DomeViewKind } from "../../model/dome-view/types";
+import { hexToRgb, mixRgbHex } from "../../render/dome-view/dome-light";
 import { lerpColorHex } from "../../render/grid";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import type { WorldNode } from "../world/topology-world";
@@ -18,7 +20,60 @@ export function resetNodeVisualCacheFor(tokens: OntologyMapTokens, reducedMotion
   }
 }
 
+export const neuralPaletteCache = new WeakMap<NodeVisual, {
+  ramp: number; ink: string; fill: string; stroke: string;
+}>();
+
 export const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
+
+export const LIT_KIND_STRENGTH: Readonly<Record<DomeViewKind, number>> = {
+  project: 1,
+  domain: 1,
+  capability: 0.9,
+  element: 0.7,
+};
+
+const litBodyCache = new Map<string, {
+  fill: string; stroke: string;
+}>();
+
+const WHITE_RGB = [255, 255, 255] as const;
+
+export function litBodyInk(
+  fill: string,
+  stroke: string,
+  rgb: readonly [number, number, number],
+  state: "current" | "stale",
+  ramp: number): {
+    fill: string;
+    stroke: string;
+  } {
+  const q = Math.round(Math.min(1, Math.max(0, ramp)) * 20) / 20;
+  const key = `${fill}|${stroke}|${rgb[0]},${rgb[1]},${rgb[2]}|${state}|${q}`;
+  const hit = litBodyCache.get(key);
+  if (hit)
+    return hit;
+  const base = hexToRgbOrNull(fill) ?? [20, 20, 26];
+  const rim = hexToRgbOrNull(stroke) ?? base;
+  const core = state === "current" ? hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.18)) ?? rgb : rgb;
+  const t = (state === "current" ? 0.94 : 0.38) * q;
+  const out = {
+    fill: mixRgbHex(base, core, t),
+    stroke: mixRgbHex(rim, state === "current" ? (hexToRgbOrNull(mixRgbHex(rgb, WHITE_RGB, 0.35)) ?? rgb) : rgb, (state === "current" ? 0.9 : 0.5) * q),
+  };
+  if (litBodyCache.size > 512)
+    litBodyCache.clear();
+  litBodyCache.set(key, out);
+  return out;
+}
+
+function hexToRgbOrNull(hex: string): readonly [
+  number,
+  number,
+  number
+] | null {
+  return hexToRgb(hex);
+}
 
 const LINE_WIDTH_BY_KIND: Record<WorldNode["kind"], number> = {
   project: 1.5,

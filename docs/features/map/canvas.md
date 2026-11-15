@@ -14,9 +14,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
 
 - **Click node** → on the Flat map the selection is made in place: the camera frames the selection and its lit reach between the panels, zooming in only while every far end it showed stays in view ([`flat-dial.md`](flat-dial.md)), INDEX stays open from 1280 px wide (below that, and in every other view, it folds for the selection), the chrome under the panel fades where it stands (in Hex too, which keeps its two-press Escape), and the right-side panel opens. Clicking the selected node again keeps it; a background click or Escape deselects. A selection from any other source (double-click, Enter, search, INDEX, a panel link, a deep link, an arrow key) frames the node; on the Flat graph INDEX, search, a panel link and a deep link frame it as a click does ([`flat-dial.md`](flat-dial.md)). One Escape clears a Flat selection and its chrome and, whatever made the selection, returns the camera to where it was before the selection framed it unless the reader has panned or zoomed since; a selection a deep link arrived on returns to the overview. The panel: the 352px node datasheet for every kind, a project node's carrying its code-evidence receipt (see "Node datasheet" below). The `ProjectDrawer` opens only for a bare project slug (`?p=<slug>`, the hub rail and a document's project link); the Projects list and a project's page address the project's own node (`?p=project:<slug>`) instead (2026-09-25)
 - **Drag node** → reposition (releases back to physics)
-- **Drag empty canvas** → the map moves with the pointer in every view; in 3D a drag turns the tree instead (see **3D** below). At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
-- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, 3D and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
-- **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or the tree's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
+- **Drag empty canvas** → the map moves with the pointer in every view; in 3D a drag turns the tree instead (see **3D** below), and in Neural a drag that starts on the structure turns it while one that starts beside it pans. Panning in Neural also stops idle rotation, so the structure does not resume turning after the pan. At the default speed the map stays under the pointer: a 300 px drag moves the drawing 300 px with no smoothing, drawn 5–7 ms after the event at 120 Hz (static export, 2026-10-02). A Neural turn follows the pointer just as directly when the pointer reports as often as the display draws; a slower pointer's step is spread evenly over the frames before the next one, so a 60 Hz mouse on a 120 Hz display turns Neural every frame, half a step behind at most. Letting go while still moving glides as far as 180 ms at the release speed (time constant `--motion-base`), slowing like friction with no bounce back; letting go after stopping holds still, and reduced motion never glides. Hex does not glide.
+- **Zoom** → a wheel notch zooms ×1.26 about the pointer and lands 90% of the way in about 0.1 s while the point under the pointer stays put; `+` / `-` step ×1.25 about the centre the same way (Flat, 3D, Neural and Hex) and `0` returns to the fit. A trackpad pinch follows the fingers exactly, read from Chromium's Ctrl-wheel pinch events and from WebKit's gesture events: a Ctrl-wheel run that starts under 50 px stays a pinch until it pauses for 300 ms, even when a busy page merges its events into larger ones, and a run that starts larger (Ctrl with a mouse wheel) zooms one notch at a time. A plain two-finger trackpad scroll zooms rather than pans, and deltas under 4 px are ignored as resting fingers.
+- **Speed** → Settings → Map → *Drag speed* and *Zoom speed* (0.5×, 0.75×, 1×, 1.5×, 2×; default 1×, kept on this computer) apply to every view at once: drag speed multiplies how far the map (or the tree's or Neural's turn) moves per dragged pixel and the glide after it, never a dragged node; zoom speed is the power each wheel notch, pinch and `+` / `-` step is raised to (2× turns a ×1.26 notch into ×1.59).
 - **Double-click node** (or **Enter** on the focused map) → on the Flat overview, selects and zooms in to the node, never toggling a selected one off; one Escape clears the selection and returns the camera it moved from unless the reader moved the view since; inside a realm, opens or folds its children, the same act as its `+N` chip, and keeps it selected (the "local graph" mode this line once described does not exist; 2026-09-19)
 - **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
 - **Shift-click 2 nodes** → highlight shortest path
@@ -170,9 +170,9 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   bootstrap from found docs, create a node, open Topology INDEX, open the new-concept editor (`/topology/?workbench=create`),
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
-- **Four map views, chosen in one picker** — the current-view chip in the top tool
+- **Five map views, chosen in one picker** — the current-view chip in the top tool
   lane opens **Flat** (the ordinary 2D map, default), **Hex board**,
-  **Domain structure**, and **3D**. The **Hex board** gives every capability one hexagonal tile: a domain is a
+  **Domain structure**, **3D**, and **Neural**. The **Hex board** gives every capability one hexagonal tile: a domain is a
   contiguous region of tiles around its title tile, the project sits at the centre
   with the folder's concept count (the map INDEX's rule),
   and empty cells between regions keep them apart. A tile's brightness and its row
@@ -204,13 +204,14 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   without replaying its own entrance. A press, a wheel, a key, a resize, a display
   change or a hidden tab lands the travel at once. A pick into or out of 3D
   travels the same way: each concept lands on the tree mark that draws it, and a
-  concept folded into a closed branch lands on that branch's mark. Into Flat past
-  6,500 concepts, and into or out of Domain structure, the old picture
-  crossfades instead, as every pick does under reduced motion; a view reached by
-  address or from another tab switches without motion. Gate:
+  concept folded into a closed branch lands on that branch's mark. Into or out of
+  Neural, into Flat past 6,500 concepts, and into or out of Domain structure, the
+  old picture crossfades instead, as every pick does under reduced motion; between
+  Flat and Neural the map's own morph moves each concept in place. A view reached
+  by address or from another tab switches without motion. Gate:
   `tests/e2e/map/frame-loop/map-layout-morph.spec.ts`.
-  A stored Cone, Strata or Neural choice, and the addresses `?view=strata` and
-  `?view=coupling`, open 3D.
+  A stored Cone or Strata choice and the address `?view=strata` open 3D; a stored
+  Neural choice and the address `?view=coupling` open Neural (`?view=neural`).
 
   **Domain structure** opens named project/domain/capability/element membership
   without spatial zoom. Press a container to browse its direct children and use
@@ -264,3 +265,24 @@ The Flat overview is the dial: [`flat-dial.md`](flat-dial.md).
   again. A view switch that arrives in 3D does not replay it, the first input
   settles it, and reduced motion draws the tree grown and lands every flight at
   once. At rest the tree draws no frame.
+- **Neural** — real relations, not containment, decide all three coordinates, with
+  deterministic relation communities as a layout aid: tighter local groups
+  gathered around the domains, lit cell bodies, and shallow connection arcs. Group
+  proximity is inferred layout, not a new domain or an accepted relation. Its
+  relations have bounded curves whose paint, pointer hit test and measurement
+  share the same live endpoints, and reciprocal facts take opposite arcs. It is
+  drawn as light in the canvas-2D engine: nodes emit a halo in their kind colour,
+  and **evidence is the light** — a current concept emits fully, a stale one keeps
+  a dimmer core and wears a 1 px amber ring, and an unknown one emits nothing and
+  wears a dashed ring, by the rule the MCP server uses (one Git walk in the app);
+  the web has no Git walk, so everything there is unknown and the legend (kinds
+  and evidence counts) says so. **A click only selects** the concept the frame
+  painted under the pointer; a double-click or Enter flies the node to the front
+  in 800 ms and frames its family, and Esc or Home flies back to the view it left.
+  A focus lights one subtree, apex to leaves, and sinks the rest into a deeper fog
+  (down to 0.28 at the back); particles run only along that subtree's dependency
+  edges. Pitch stays between 0.15 and 0.95 rad. Depth fades a line toward the back,
+  but its ink stops at a floor and its stroke never falls below one device pixel.
+  Labels are larger than in Flat; after closing the detail panel, Fit Map leaves
+  the retained selection and returns to the whole map. Reduced motion: no spin, no
+  particles, the fly-to arrives at once. Gates: `tests/e2e/map/neural/`.

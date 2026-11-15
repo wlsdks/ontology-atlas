@@ -1,6 +1,21 @@
 import { trailNodeInkStrength } from "../../model/visibility/focus-state";
 import { computeSelectionPulse, type SelectionPulseVisual } from "../../model/ambient/selection-pulse";
 import { drawFootprintSteps } from "@/shared/lib/map-canvas/footprint-glyph";
+import {
+  DOME_HALO_ALPHA_CAP,
+  DOME_HALO_ALPHA_GAIN,
+  domeDetailFactor,
+  domeFogAlpha,
+  DOME_RIM_FOG_FLOOR,
+  domeHaloPx,
+} from "../../model/dome-view/ink";
+import {
+  drawEmissiveHalo,
+  drawEvidenceRing,
+  EVIDENCE_EMISSION,
+  focusFogFactor,
+  type EvidenceLight,
+} from "../../render/dome-view/dome-light";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../../model/realm/realm-transition";
 import { HITTABLE_MIN_TIER_ALPHA } from "../../model/visibility/tier-visibility";
 import { lerpColorHex } from "../../render/grid";
@@ -13,13 +28,24 @@ import {
 import { drawDiffractionSpike } from "../../render/starfield";
 import { isNodeCulled } from "../../render/viewport-cull";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../../render/preview-edge";
-import { isSpineNode, radiusForKind } from "../world/topology-world";
+import { isSpineNode, radiusForKind, type WorldNode } from "../world/topology-world";
 import { pressResponse } from "../../expressive/mass-spring";
 import { drawNodeBloom } from "../../expressive/ego-light";
-import { BACKGROUND_DIM_WHEN_EXPANDED, EMPTY_NEIGHBOR_SET, passState } from "./frame-state";
+import { drawNeuralBloom } from "../../expressive/neural-bloom";
+import {
+  BACKGROUND_DIM_WHEN_EXPANDED,
+  EMPTY_NEIGHBOR_SET,
+  passState,
+  ZERO_DOME_FRAME,
+  domeNodeFrameReused,
+  litDrawnStateCounts,
+} from "./frame-state";
 import {
   KIND_CACHE_INDEX,
+  LIT_KIND_STRENGTH,
   type NodeVisual,
+  litBodyInk,
+  neuralPaletteCache,
   nodeVisualCache,
   phaseForId,
   resolveNodeVisual,
@@ -37,6 +63,7 @@ import {
 import type { FrameInputs } from "./frame-begin";
 import type { FrameFocus } from "./frame-focus";
 import type { NodeAlpha } from "./node-alpha";
+import type { DomeStage } from "./paint-dome-stage";
 import type { NodeLayer } from "./node-layer";
 
 // Spike arms reach 2.6 times the radius.
@@ -46,6 +73,9 @@ const EXPANDED_AURA_DASH: readonly number[] = [3, 3];
 const REALM_ROOT_ANCHOR_ALPHA = 0.7;
 const EXPANDED_AURA_ALPHA = 0.55;
 const EXPANDED_COHORT_ALPHA = 0.42;
+const domeNodeOrderReused: WorldNode[] = [];
+const domeNodeDepthReused: number[] = [];
+const domeNodeIndexReused: number[] = [];
 const nodeScreenScratch = { x: 0, y: 0 };
 const sheenTopCache = new Map<string, string>();
 
@@ -53,21 +83,22 @@ let sheenTopCacheTint = "";
 
 let sheenTopCacheBlend = -1;
 
-export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, layer: NodeLayer): void {
+export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlpha, stage: DomeStage, layer: NodeLayer): void {
   const { chipRevealById, world, clusteredIds, previewEdge, focusedNodeId, selectedEdge,
     colorFocusedNodeId, colorSelectedEdge, focusRampById, emphasisById, emphasizedNeighborId,
     tokens, reducedMotion, footprintStepColor, appearById, batchAppearById, expandRevealById, now,
     hoverReleasedNodeId, hoveredNodeId, hoverStartedAt, realmDepthById, camera, viewportWidth,
-    viewportHeight, spotlightIds, selectionPulse, farT,
+    viewportHeight, spotlightIds, domeLight, selectionPulse, devicePixelRatio, farT,
     agentFocusNodeId, spotlightRamp, spotlightDashOffset, glyphStyle, footprintStepsById,
     footprintPref, trailStarInk, trailLensOpenedAtMs, footprintNewestStep, footprintNewestId,
     footprintAppear, footprintInk, wardingRing, spotlightLensActive, recentSpotlightActive,
     spotlightSink, trailLensActive, trailRamp, isTrailKept, lensNodeEgoState, realmDepthOf,
-    realmParallaxOffsetFor, footprintScale } = frame;
-  const { camX, camY, camScale, halfW, halfH, egoGlowRamp, neighborsOfFocused,
-    colorNeighbors, egoAllNormal, colorAllNormal, nodeShapeTokensFrame } = focus;
-  const { effectiveAlphaById, expandedParentIds, expandedDiscIds,
+    realmParallaxOffsetFor, domeOn, neural, footprintScale } = frame;
+  const { camX, camY, camScale, halfW, halfH, egoGlowRamp, litOn, neighborsOfFocused,
+    colorNeighbors, litFocusRamp, inLitLine, egoAllNormal, colorAllNormal, nodeShapeTokensFrame } = focus;
+  const { effectiveAlphaById, effectiveAlphaByIndex, expandedParentIds, expandedDiscIds,
     expandedChildIds, anyExpanded } = alpha;
+  const { domeHaloColor } = stage;
   const { ctx, drawnScreenRadiusById, nodeDiscReservations } = layer;
   const nearestExpandedRevealMul = (nodeId: string): number => {
     if (!chipRevealById || expandedParentIds.size === 0)
@@ -82,8 +113,31 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
     }
     return 1;
   };
+  let nodeDrawOrder: readonly WorldNode[] = world.nodes;
+  if (domeOn) {
+    domeNodeDepthReused.length = 0;
+    domeNodeIndexReused.length = 0;
+    for (let i = 0; i < world.nodes.length; i += 1) {
+      domeNodeDepthReused.push(domeNodeFrameReused[i].u);
+      if (effectiveAlphaByIndex[i] <= HITTABLE_MIN_TIER_ALPHA)
+        continue;
+      const id = world.nodes[i].id;
+      if (isPreviewEndpointHidden(clusteredIds.has(id), previewEdge, id))
+        continue;
+      domeNodeIndexReused.push(i);
+    }
+    domeNodeIndexReused.sort((x, y) => domeNodeDepthReused[y] - domeNodeDepthReused[x]);
+    domeNodeOrderReused.length = 0;
+    for (let i = 0; i < domeNodeIndexReused.length; i += 1)
+      domeNodeOrderReused.push(world.nodes[domeNodeIndexReused[i]]);
+    nodeDrawOrder = domeNodeOrderReused;
+  }
   passState.drawnNodeCount = 0;
-  for (const node of world.nodes) {
+  litDrawnStateCounts.current = 0;
+  litDrawnStateCounts.stale = 0;
+  litDrawnStateCounts.unknown = 0;
+  for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
+    const node = nodeDrawOrder[drawPos];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
     const previewTarget = node.id === previewEdge?.targetId;
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id))
@@ -182,10 +236,26 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         effRadius *= realmDepthClarityScale(depth);
       }
     }
+    const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
+    let domeDetail = 1;
+    let domeRimAlphaScale = 1;
+    if (domeOn) {
+      effRadius *= nodeDome.s;
+      if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
+        const fog = Math.max(domeFogAlpha(nodeDome.u), neural * DOME_RIM_FOG_FLOOR);
+        const domeFog = 1 + (fog - 1) * nodeDome.a;
+        realmClarityAlpha *= domeFog;
+        domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
+        domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
+      }
+      if (litOn && litFocusRamp > 0.001 && !isHoveredNode && egoState !== "center" && egoState !== "neighbor" && !inLitLine(node.id)) {
+        realmClarityAlpha *= focusFogFactor(nodeDome.u, litFocusRamp);
+      }
+    }
     const pOff = realmParallaxOffsetFor(node.id);
     const screen = nodeScreenScratch;
-    screen.x = (node.x + pOff.x - camX) * camScale + halfW;
-    screen.y = (node.y + pOff.y - camY) * camScale + halfH;
+    screen.x = (node.x + pOff.x + nodeDome.dx - camX) * camScale + halfW;
+    screen.y = (node.y + pOff.y + nodeDome.dy - camY) * camScale + halfH;
     const screenRadius = effRadius * camera.scale.value;
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight))
       continue;
@@ -217,7 +287,35 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
       sheenTopCacheTint = tokens.nodeSheenTint;
       sheenTopCacheBlend = tokens.nodeSheenBlend;
     }
-    const bodyFill = visual.fill;
+    let bodyFill = visual.fill;
+    let bodyStroke = visual.stroke;
+    let litState: EvidenceLight | null = null;
+    let litRgb: readonly [
+      number,
+      number,
+      number
+    ] | null = null;
+    if (litOn && domeLight !== null && nodeDome.a > 0.01) {
+      litRgb = domeLight.kindRgb[node.kind] ?? null;
+      litState = domeLight.evidence?.get(node.id) ?? "unknown";
+      if (litRgb !== null && colorEgoState !== "dim" && litState !== "unknown") {
+        const body = litBodyInk(visual.fill, visual.stroke, litRgb, litState, nodeDome.a);
+        bodyFill = body.fill;
+        bodyStroke = body.stroke;
+      }
+    }
+    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
+      const ink = node.kind === "project" ? tokens.amberHub : tokens.indigoBright;
+      let palette = neuralPaletteCache.get(visual);
+      if (!palette || palette.ramp !== neural || palette.ink !== ink) {
+        const fill = lerpColorHex(visual.fill, ink, neural * 0.85);
+        palette = { ramp: neural, ink, fill, stroke: lerpColorHex(visual.stroke, fill, neural * 0.85) };
+        neuralPaletteCache.set(visual, palette);
+      }
+      bodyFill = palette.fill;
+      if (colorEgoState === "normal")
+        bodyStroke = palette.stroke;
+    }
     let sheenTop = sheenTopCache.get(bodyFill);
     if (sheenTop === undefined) {
       sheenTop = lerpColorHex(bodyFill, tokens.nodeSheenTint, tokens.nodeSheenBlend);
@@ -225,30 +323,64 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         sheenTopCache.clear();
       sheenTopCache.set(bodyFill, sheenTop);
     }
-    const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0;
+    if (domeDetail < 1) {
+      sheenTop =
+        domeDetail <= 0.01
+          ? visual.fill
+          : lerpColorHex(visual.fill, tokens.nodeSheenTint, tokens.nodeSheenBlend * domeDetail);
+    }
+    const showCount = (node.kind === "project" || node.kind === "domain") && node.count > 0 && !(domeOn && nodeDome.a > 0.5);
     const isHovered = node.id === hoveredNodeId;
     let selectionPulseVisual: SelectionPulseVisual | null = null;
     if (!reducedMotion && selectionPulse !== null && selectionPulse.nodeId === node.id) {
       selectionPulseVisual = computeSelectionPulse(now - selectionPulse.startAtMs, tokens.selectPulseDurationMs, tokens.selectPulseScaleDelta);
     }
-    const bloomRamp =
-      colorEgoState === "center"
-        ? egoGlowRamp
-        : !focusedNodeId && (node.id === hoveredNodeId || releasedPress)
-          ? Math.min(1, Math.max(0, emphasis))
-          : 0;
-    drawNodeBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, bloomRamp, tokens);
+    if (domeOn && !litOn && nodeDome.a > 0.01) {
+      const haloPx = domeHaloPx(nodeDome.u) * nodeDome.a * domeDetail;
+      if (haloPx > 0.05) {
+        const prevAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = Math.min(DOME_HALO_ALPHA_CAP, prevAlpha * DOME_HALO_ALPHA_GAIN);
+        ctx.fillStyle = domeHaloColor;
+        ctx.beginPath();
+        ctx.arc(screen.x, screen.y, screenRadius + haloPx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = prevAlpha;
+      }
+    }
+    if (!domeOn) {
+      const bloomRamp =
+        colorEgoState === "center"
+          ? egoGlowRamp
+          : !focusedNodeId && (node.id === hoveredNodeId || releasedPress)
+            ? Math.min(1, Math.max(0, emphasis))
+            : 0;
+      drawNodeBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, bloomRamp, tokens);
+    }
+    if (litRgb !== null && litState !== null) {
+      const lineBoost = litFocusRamp > 0.001 ? (inLitLine(node.id) ? 1 : 1 - 0.85 * litFocusRamp) : 1;
+      const strength =
+        EVIDENCE_EMISSION[litState] * LIT_KIND_STRENGTH[node.kind] * lineBoost * nodeDome.a * (colorEgoState === "dim" ? 0.3 : 1);
+      drawEmissiveHalo(ctx, screen.x, screen.y, screenRadius, litRgb, strength);
+    }
+    if (neural > 0.001 && colorEgoState !== "dim" && !litOn) {
+      const strength = attended ? 1 : node.kind === "element" ? 0.35 : 0.6;
+      drawNeuralBloom(ctx, { x: screen.x, y: screen.y, r: screenRadius }, neural, strength, tokens, devicePixelRatio,
+        node.kind === "project" ? { core: tokens.amberHub, halo: tokens.amberHub } : undefined);
+    }
     if (bodyAlpha > 0 || showCount) nodeShapesDraw(
       ctx,
       {
+        depthShade: domeOn ? nodeDome.a * domeDetail : 0,
+        detail: domeDetail,
+        rimAlphaScale: domeRimAlphaScale,
         kind: node.kind,
         screenX: screen.x,
         screenY: screen.y,
         screenRadius,
-        farT,
+        farT: domeOn ? Math.max(farT, nodeDome.a) : farT,
         egoState: colorEgoState,
         fill: bodyFill,
-        stroke: visual.stroke,
+        stroke: bodyStroke,
         lineWidth: visual.lineWidth,
         dash: visual.dash,
         hub: node.isHub,
@@ -270,6 +402,19 @@ export function paintNodes(frame: FrameInputs, focus: FrameFocus, alpha: NodeAlp
         glyphStyle,
       },
       nodeShapeTokensFrame);
+    if (litRgb !== null && litState !== null && litState !== "current" && domeLight !== null) {
+      drawEvidenceRing(
+        ctx,
+        screen.x,
+        screen.y,
+        screenRadius,
+        litState,
+        litRgb,
+        domeLight.warningRgb,
+        nodeLayerAlpha * nodeDome.a * (colorEgoState === "dim" ? 0.45 : 1));
+    }
+    if (litState !== null)
+      litDrawnStateCounts[litState] += 1;
     if (farT > 0.02 && (world.brightStarIds.has(node.id) || node.kind === "project")) {
       drawDiffractionSpike(ctx, {
         screenX: screen.x,
