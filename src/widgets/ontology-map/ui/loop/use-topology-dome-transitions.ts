@@ -75,13 +75,10 @@ export function useTopologyDomeTransitions({
     domeFitPendingRef.current = view3d;
     if (view3d) domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
     if (!view3d) flatFitPendingRef.current = true;
-    // Re-entering 3D restarts an untouched screen, so rearm the attention spin
-    // (the rule that lowers it on interaction is in the spinArmed JSDoc) and
-    // the entry sweep — re-entry is a fresh appearance. The sweep is tied to
-    // the assembly clock (`domeEntrySweep`), so it only means anything at this
+    // Re-entering 3D rearms the entry sweep — re-entry is a fresh appearance. The sweep is
+    // tied to the assembly clock (`domeEntrySweep`), so it only means anything at this
     // moment, when that clock restarts from 0.
     if (view3d && domeRuntimeRef.current !== null) {
-      domeRuntimeRef.current.spinArmed = true;
       domeRuntimeRef.current.entryArmed = true;
       domeRuntimeRef.current.entryClock = 0;
     }

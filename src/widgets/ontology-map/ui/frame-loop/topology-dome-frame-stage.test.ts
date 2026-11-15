@@ -157,7 +157,7 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     for (const [id, coord] of pureCloud(world).coords) expect(dome!.model.coords.get(id)).toEqual(coord);
   });
 
-  it("waits for the cloud to settle before starting the automatic attention spin", () => {
+  it("settles the cloud into its rest pose and never turns it by itself", () => {
     const world = neuralWorld();
     const sources = stageSources("coupling");
     const run = createDomeFrameStage(sources);
@@ -170,8 +170,8 @@ describe("dome frame stage: a Neural layout that is still relaxing", () => {
     expect(dome.settling).toBe(true);
     expect(dome.yaw).toBe(yaw);
     while (sources.domeModelBuildRef.current !== null) run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
-    expect(dome.spinArmed).toBe(true);
-    expect(dome.yaw).toBeGreaterThan(yaw);
+    for (let frame = 0; frame < 120; frame += 1) run(nextFrameMs(), 1 / 60, tokens, world, 1400, 860);
+    expect(dome.yaw).toBe(yaw);
   });
 
   it("keeps the flat map under reduced motion until the layout is final, then shows it assembled", () => {

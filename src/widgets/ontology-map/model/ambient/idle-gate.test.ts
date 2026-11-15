@@ -4,8 +4,7 @@ import {
   extendsGrace,
   isCameraUnsettled,
   isCanvasActive,
-  isDomeSpinAnimating,
-  isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type DomeSpinInput, type EgoTailActivityInput } from "./idle-gate";
+  isEgoTailAnimating, shouldSkipFrame, type CanvasActivityFlags, type EgoTailActivityInput } from "./idle-gate";
 import { stepFocusRamp } from "../visibility/focus-state";
 import { neuralSignalProgress } from "../dome-view/neural-cells";
 
@@ -216,46 +215,6 @@ describe("isEgoTailAnimating: ambient sleep reaches all three branches", () => {
         hasDependsEdges: false,
         hasContainsEdges: false,
       })).toBe(false);
-  });
-});
-
-/** The 3D autonomous spin sleeps under the same ambient contract as the comets. */
-describe("isDomeSpinAnimating", () => {
-  const SPINNING: DomeSpinInput = {
-    domeOn: true,
-    reducedMotion: false,
-    ambientAsleep: false,
-    spinArmed: true,
-    pointerOverCanvas: false,
-    assembled: true,
-  };
-
-  it("rotates when armed, assembled and awake", () => {
-    expect(isDomeSpinAnimating(SPINNING)).toBe(true);
-  });
-
-  it("auto-rotate is not activity during ambient sleep", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, ambientAsleep: true })).toBe(false);
-  });
-
-  it("does not rotate with 3D off", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, domeOn: false })).toBe(false);
-  });
-
-  it("does not rotate under reduced motion", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, reducedMotion: true })).toBe(false);
-  });
-
-  it("does not rotate once intervention disarms it", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, spinArmed: false })).toBe(false);
-  });
-
-  it("stops while the cursor is over the canvas, so the aimed node never slides away", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, pointerOverCanvas: true })).toBe(false);
-  });
-
-  it("does not auto-rotate before the assembly ramp fills", () => {
-    expect(isDomeSpinAnimating({ ...SPINNING, assembled: false })).toBe(false);
   });
 });
 

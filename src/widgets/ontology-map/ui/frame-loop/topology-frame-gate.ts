@@ -17,7 +17,6 @@ import type { StrataLodState } from "../../model/dome-view/strata-lod";
 import {
   extendsGrace,
   isCameraUnsettled,
-  isDomeSpinAnimating,
   isEgoTailAnimating,
   isSceneActive,
   shouldSkipFrame,
@@ -306,11 +305,8 @@ export function createFrameGate({
             // Comets and the fresh breathe sleep rather than switch off (`model/ambient/ambient-sleep.ts`).
             const ambientFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
             const ambientAsleep = isAmbientAsleep(ambientFactor);
-            // Does the dome still have to move — assembly/teardown ramp, auto-spin,
-            // orbit inertia, twist spring-back, flat-drag spring, or the reset
-            // ease. The auto-spin stops while the pointer is over the canvas
-            // (bgPointer present) so an aimed-at node cannot slide out from under
-            // the cursor.
+            // Does the dome still have to move — assembly/teardown ramp, orbit
+            // inertia, twist spring-back, flat-drag spring, or the reset ease.
             const domeRt = domeRuntimeRef.current;
             const domeTargetOn = view3dRef.current && realmTransitionRef.current.phase === "idle";
             const domeMotion = (domeTargetOn && (domeRt === null || domeRt.rampClock < DOME_ASSEMBLE_TOTAL_MS)) ||
@@ -331,18 +327,7 @@ export function createFrameGate({
                         (domeLodRef.current.pointerSlot >= 0 && bgPointerRef.current === null) ||
                         domeFocusPendingRef.current !== null ||
                         Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
-                        domeRt.pitch !== clampDomePitch(domeRt.pitch) ||
-                        // Keep rAF awake only while auto-spin can run; `!ambientAsleep` ties it to the `ambient-sleep.ts`
-                        // contract so 3D can fall asleep.
-                        (!domeRt.orbiting &&
-                            isDomeSpinAnimating({
-                                domeOn: domeTargetOn,
-                                reducedMotion: reducedMotionRef.current,
-                                ambientAsleep,
-                                spinArmed: domeRt.spinArmed,
-                                pointerOverCanvas: bgPointerRef.current !== null,
-                                assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
-                            }))));
+                        domeRt.pitch !== clampDomePitch(domeRt.pitch)));
             // Growth replay — advance every node's appear value for this frame, and end
             // it when the last node has fully appeared. Nothing is left behind:
             // `appearRef` still holds every node at 1. The deliberate exits are listed

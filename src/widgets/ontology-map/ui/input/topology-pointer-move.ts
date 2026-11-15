@@ -122,7 +122,6 @@ export function createPointerMoveHandler(
           const pw = screenToWorld(cameraRef.current, width, height, point.x, point.y);
           const offset = computeGrabOffsetWorld(renderedX, renderedY, pw.x, pw.y);
           // Grabbing a node is intervention — release the attention spin (①).
-          dome.spinArmed = false;
           commitDomeEntrySweep(dome);
           nodeDragRef.current = { nodeId: grabbedNodeId, offset };
           dome.drag = {
@@ -193,7 +192,6 @@ export function createPointerMoveHandler(
         dome.yawTarget += dx * ORBIT_YAW_PER_PX * dragSpeed;
         dome.pitchTarget = resistDomePitch(dome.pitchTarget + dy * ORBIT_PITCH_PER_PX * dragSpeed);
         dome.orbiting = true;
-        dome.spinArmed = false;
         commitDomeEntrySweep(dome);
         dragHistoryRef.current.push({ x: point.x, y: point.y, t: performance.now() });
         if (dragHistoryRef.current.length > 10)
@@ -202,7 +200,6 @@ export function createPointerMoveHandler(
       }
       // Panning is intervention too: the dome must not resume idle rotation on release.
       if (dome) {
-        dome.spinArmed = false;
         commitDomeEntrySweep(dome);
       }
       const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]

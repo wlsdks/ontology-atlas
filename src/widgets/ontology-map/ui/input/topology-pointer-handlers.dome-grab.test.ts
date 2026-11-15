@@ -82,9 +82,8 @@ describe("a drag begun on a node of the 3D map", () => {
 
 
 describe("a pan begun outside the 3D dome", () => {
-  it("disarms idle rotation while moving only the camera", () => {
+  it("moves only the camera, never the pose", () => {
     const pan = pressOnNode(false, false, null);
-    expect(pan.dome.spinArmed).toBe(false);
     expect(pan.dome.orbiting).toBe(false);
     expect(pan.dome.drag).toBeNull();
     expect(pan.refs.cameraRef.current.x.value).toBeLessThan(0);

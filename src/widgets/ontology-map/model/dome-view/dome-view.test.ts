@@ -447,10 +447,8 @@ describe("dome-view selection reframe and auto-rotate arming", () => {
     expect(domeEgoWorldBounds(model, ["ghost-id"], 0.55, DOME_PITCH_DEFAULT)).toBeNull();
   });
 
-  it("starts a new runtime armed for rotation with no pose movement", () => {
-    // Disarming on intervention belongs to the loop and pointer handlers, not this contract.
+  it("starts a new runtime with no pose movement", () => {
     const runtime = createDomeRuntime(buildDomeModel(NODES));
-    expect(runtime.spinArmed).toBe(true);
     expect(runtime.poseTween).toBeNull();
   });
 });

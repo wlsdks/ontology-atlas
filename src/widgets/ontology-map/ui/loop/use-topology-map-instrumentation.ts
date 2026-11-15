@@ -388,7 +388,6 @@ export function useTopologyMapInstrumentation({
                     yawVel: d.yawVel,
                     pitchVel: d.pitchVel,
                     orbiting: d.orbiting,
-                    spinArmed: d.spinArmed,
                     /*
                      * Tier torsion (follow-through) — **from outside the canvas this is
                      * the only thing that says whether the dome reacts to its own

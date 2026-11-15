@@ -189,13 +189,7 @@ export interface DomeRuntime {
    * null; any new input clears it.
    */
   yawSnap: number | null;
-  /**
-   * Idle spin belongs to a screen nobody has touched: any intervention disarms it for good,
-   * so rotation never fights the pose being worked on. Only the auto-align chip and
-   * re-entering 3D re-arm it.
-   */
-  spinArmed: boolean;
-  /** Any gesture clears it and inherits the current pose. */
+    /** Any gesture clears it and inherits the current pose. */
   poseTween: DomePoseTween | null;
   /** Per-kind yaw torsion in rad, charged by orbit drag and decayed every frame. */
   lag: Record<DomeViewKind, number>;
@@ -256,7 +250,6 @@ export function createDomeRuntime(model: DomeModel): DomeRuntime {
     pitchTarget: DOME_PITCH_DEFAULT,
     yawVel: 0,
     pitchVel: 0,
-    spinArmed: true,
     poseTween: null,
     yawSnap: null,
     entryArmed: true,

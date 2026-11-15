@@ -1,7 +1,6 @@
 import type { MapArrangement } from "@/shared/lib/preferences/appearance-preferences";
 import type { CameraAxes, CameraTarget } from "../../engine/camera";
 import type { PointerMachineState } from "../../interaction/pointer-state-machine";
-import { ambientSleepFactor, isAmbientAsleep } from "../../model/ambient/ambient-sleep";
 import { followOrbitTarget, startOrbitCadence, type OrbitCadence } from "../../model/camera/orbit-cadence";
 import {
   CAMERA_TRANSITION_MIN_MS,
@@ -30,7 +29,6 @@ import {
 import {
   clampDomePitch,
   decayOrbitVelocity,
-  DOME_PERIOD_MS,
   DOME_POSE_MS,
   domeFocusYaw,
   domeNearestYawTurn,
@@ -51,7 +49,6 @@ import {
   type DomeRuntime,
 } from "../../model/dome-view/runtime";
 import type { DomeModel } from "../../model/dome-view/types";
-import { isDomeSpinAnimating } from "../../model/ambient/idle-gate";
 import type { RealmTransitionState } from "../../model/realm/realm-transition";
 import type { OntologyMapTokens } from "../../tokens/read-map-tokens";
 import {
@@ -136,11 +133,8 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
     expandedParentsRef,
     clusteredIdsRef,
     pointerMachineRef,
-    bgPointerRef,
     reducedMotionRef,
-    lastInputMsRef,
     lastActiveMsRef,
-    ambientSleepDelayRef,
     viewportRef,
     beginCameraTween,
     cameraTokens,
@@ -405,7 +399,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               // A selection is interaction, so the attention spin is
               // lowered here. That holds even for a node with no coordinate
               // (a kind outside the dome model) — interaction is interaction.
-              dome.spinArmed = false;
               commitDomeEntrySweep(dome);
               const coord = dome.model.coords.get(pending.slug);
               if (coord !== undefined) {
@@ -563,7 +556,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               }
             }
           } else if (vw > 0 && vh > 0) {
-            dome.spinArmed = false;
             commitDomeEntrySweep(dome);
             dome.yawVel = 0;
             dome.pitchVel = 0;
@@ -721,23 +713,6 @@ export function createDomeFrameStage(sources: DomeFrameStageSources) {
               if (Math.abs(clampedPitch - dome.pitch) < 0.0005) dome.pitch = clampedPitch;
               dome.pitchVel = 0;
             }
-          }
-          // Auto-spin runs only while `spinArmed`; any interaction lowers it, and re-entering 3D or auto-align
-          // rearms it. Speed scales by the ambient sleep factor (`model/ambient/ambient-sleep.ts`); 0 if reduced motion.
-          const spinFactor = ambientSleepFactor(now, lastInputMsRef.current, ambientSleepDelayRef.current);
-          if (
-            dome.yawVel === 0 &&
-            !dome.settling &&
-            isDomeSpinAnimating({
-              domeOn: domeTargetOn,
-              reducedMotion: reducedMotionRef.current,
-              ambientAsleep: isAmbientAsleep(spinFactor),
-              spinArmed: dome.spinArmed,
-              pointerOverCanvas: bgPointerRef.current !== null,
-              assembled: dome.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
-            })
-          ) {
-            dome.yaw += (dtMs / DOME_PERIOD_MS) * Math.PI * 2 * spinFactor;
           }
           // Invariant outside a drag: the target always follows the current
           // pose, so the next drag does not inherit a stale target gap.

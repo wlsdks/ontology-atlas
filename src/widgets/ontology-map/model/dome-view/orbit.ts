@@ -2,8 +2,6 @@ import { DOME_PLANE, TAU } from './cone-layout';
 import { MOMENTUM_TAU_MS } from '../motion-physics';
 import type { DomeCoord, DomeModel, DomeViewKind } from './types';
 
-/** Idle spin: one turn per 48 s. */
-export const DOME_PERIOD_MS = 48000;
 /**
  * Neural's cluster ring is seen from well above, so neighbours on it stay apart at every turn
  * while each cluster keeps a large share of the frame (`cluster-ring.ts`).

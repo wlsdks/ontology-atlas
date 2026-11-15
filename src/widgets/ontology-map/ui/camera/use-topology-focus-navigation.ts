@@ -170,7 +170,6 @@ export function useTopologyFocusNavigation({
       selectionPulseRef.current = focusedSlug !== null ? { nodeId: focusedSlug, startAtMs: performance.now() } : null;
       const dome = domeRuntimeRef.current;
       if (focusedSlug !== null) {
-        dome.spinArmed = false;
         commitDomeEntrySweep(dome);
       } else if (dome.nudgeReturn !== null) {
         dome.flyRequest = { slug: null, unnudge: true };
