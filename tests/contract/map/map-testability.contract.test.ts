@@ -51,15 +51,19 @@ describe("map inspection hook (window.__atlasMap)", () => {
   });
 
   it("edges expose their control points, since measuring the chord would count crossings that are not on screen", () => {
+    // Keep the public coordinate fields. Accuracy is checked against actual
+    // canvas stroke commands in map-neural-edge-picking.spec.ts; pinning the old
+    // endpoint-offset formula here had preserved a different curve than paint.
     expect(source).toMatch(/controlX:\s*toScreenX\(/);
     expect(source).toMatch(/controlY:\s*toScreenY\(/);
   });
 
   it("nodes expose their screen radius, since overlap cannot be counted without a radius", () => {
     // Must be **the same expression** as the drawing side: radiusForKind ×
-    // magnitudeScale × camera zoom, ending there.
+    // magnitudeScale × camera zoom (× the 3D frame's perspective factor s — identical
+    // to draw; 1 in 2D).
     expect(source).toMatch(
-      /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value\s*\n?\s*:\s*0/,
+      /radius:\s*tokens\s*\n?\s*\?\s*radiusForKind\(n\.kind, tokens\) \*\s*\n?\s*n\.magnitudeScale \*\s*\n?\s*camera\.scale\.value \*\s*\n?\s*dOff\.s/,
     );
   });
 
