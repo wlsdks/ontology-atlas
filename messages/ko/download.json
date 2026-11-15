@@ -11,7 +11,7 @@
   "heroWindowsCta": "Windows x64 베타",
   "heroPlaygroundCta": "플레이그라운드",
   "windowsUnsignedShort": "미서명",
-  "demoHeading": "사람과 에이전트가 같은 의미를 읽어요",
+  "demoHeading": "이 저장소의 폴더를 연 앱을 녹화한 영상",
   "demoEyebrow": "데모",
   "demoPlay": "재생",
   "heroTitleLine1": "에이전트가 코드를 바꿔도,",
@@ -27,11 +27,9 @@
   "factSourceLabel": "소스",
   "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "릴리스 페이지의 {file} 체크섬 파일",
-  "demoTitle": "에이전트가 읽는 맥락을 직접 살펴보세요",
-  "demoSub": "녹화된 데모에서 개념과 근거를 고르고, Codex가 같은 폴더에 기록된 관계 경로를 따라가요. 제한된 조회의 예시이며 전체 변경 영향 검사는 아니에요.",
-  "demoPromptLabel": "영상에서 Codex에게 보낸 요청",
-  "demoAgentPrompt": "`get_concept`와 `find_path`만 써서 `capabilities/mcp-tool-server`에서 `capabilities/ontology-map`까지의 경로를 한 문장으로 설명해 줘. 파일은 바꾸지 마.",
-  "demoProvisionalNote": "한 번에 찍은 {seconds}초. 에이전트가 생각하는 동안만 잘라냈고, 빨리 감기도 소리도 없어요.",
+  "demoTitle": "하루치 변경을 앱에서 따라가 보세요",
+  "demoSub": "이 저장소의 폴더를 연 앱을 그대로 녹화했어요. 지도가 최근 7일 동안 바뀐 개념을 표시하고, 그중 하나를 열면 의존 관계가 보여요. 변경 탭은 그날 머지된 작업을 영역별로 묶고, Git 탭은 커밋을 바뀐 개념으로 읽고, 하네스 탭은 에이전트를 실행 전에 막는 훅을 보여 줘요.",
+  "demoProvisionalNote": "앱 창을 한 번에 찍은 {seconds}초. 자르거나 빨리 감지 않았어요. 마우스 포인터는 찍히지 않고 소리도 없어요.",
   "acpUserLabel": "나",
   "change": {
     "eyebrow": "커밋 다음",
@@ -71,7 +69,7 @@
       "planning": "이 저장소의 docs 폴더를 그 자리에서 읽어요. 왼쪽은 파일 목록, 오른쪽은 열어 둔 FEATURES.md예요. 복사하거나 고치지 않아요. 앱에서 캡처.",
       "automations": "그 샘플 자료실을 평일마다 점검하는 자동화와, 원문이 바뀐 위키 문서 하나를 찾아낸 실행 기록이에요. 앱에서 캡처.",
       "projects": "Ontology Atlas 한 장이에요. 도메인, 개념, 자료실, 하네스가 한 페이지에 모여 있어요. 앱에서 캡처.",
-      "changes": "이 저장소의 한 주 기록을 커밋 목록으로 보여 줘요. 무엇이 어떤 파일에서 바뀌었는지 알 수 있어요. 앱에서 캡처.",
+      "changes": "이 저장소의 하루 기록이에요. 그날 머지된 변경을 영역별로 묶어 보여 줘요. 앱에서 캡처.",
       "git": "이 저장소 온톨로지 폴더의 Git 기록을, 커밋마다 바뀐 개념으로 읽은 화면이에요. 앱에서 캡처."
     }
   },

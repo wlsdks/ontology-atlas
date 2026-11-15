@@ -429,7 +429,8 @@ function lastChange(repoPaths, vaultPaths) {
 
 const PLANNING_ROOT = `${FAKE_SOURCE_ROOT}/docs`;
 const PLANNING_DIR = path.join(REPO, "docs");
-const BRIEFING_ANCHOR = "2026-10-28";
+// A UTC day (the capture browser's clock) on which this repository has commits.
+const BRIEFING_ANCHOR = "2026-11-10";
 
 const planningInventory = () => walkPlanningFolder(PLANNING_DIR, Math.floor(MTIME / 1000));
 const planningBytes = (relativePath) => readPlanningFile(PLANNING_DIR, relativePath);
@@ -464,7 +465,7 @@ function changeBriefing(startEpoch, endEpoch) {
   const tip = commits[0]?.hash ?? null;
   const base = tip ? git("rev-parse", `${commits.at(-1).hash}^`).trim() : null;
   return {
-    status: commits.length ? "measured" : "no-history",
+    status: "measured",
     sourceRoot: FAKE_SOURCE_ROOT,
     snapshot: sha256(`${head}:${startEpoch}:${endEpoch}`),
     head,
@@ -685,10 +686,11 @@ const SCREENS = [
     name: "changes",
     route: "/changes/",
     async prepare(page) {
-      await page.getByTestId("briefing-range").locator("xpath=following-sibling::button[2]").click();
+      await page.locator('[data-briefing-surface] button[aria-haspopup="dialog"]').first().click();
       await page.locator("input[type=date]").fill(BRIEFING_ANCHOR);
       await page.keyboard.press("Escape");
-      await page.getByTestId("briefing-commits").click();
+      // Closing the dialog returns focus to its button; the picture shows no focus ring.
+      await page.evaluate(() => document.activeElement?.blur());
       await page.waitForTimeout(2500);
     },
   },
@@ -753,6 +755,8 @@ async function main() {
     });
     await installRuntime(context, makeBridge(buildOverlay(locale), unstubbed));
     const page = await context.newPage();
+    // A control a redesign removed fails the run here instead of waiting for ever.
+    page.setDefaultTimeout(30_000);
     if (VERBOSE) page.on("console", (message) => console.log(`[page] ${message.text()}`));
 
     // Open the folder once through the app's own chooser, the way a person does.

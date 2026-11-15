@@ -11,7 +11,7 @@
   "heroWindowsCta": "Windows x64 测试版",
   "heroPlaygroundCta": "在线体验",
   "windowsUnsignedShort": "未签名",
-  "demoHeading": "人和智能体读取同一份语义",
+  "demoHeading": "打开本仓库文件夹的应用录屏",
   "demoEyebrow": "演示",
   "demoPlay": "播放",
   "heroTitleLine1": "智能体改写你的代码。",
@@ -27,11 +27,9 @@
   "factSourceLabel": "源码",
   "factSourceValue": "wlsdks/ontology-atlas",
   "factShaLink": "发布页面上 {file} 的校验和文件",
-  "demoTitle": "查看智能体读取的上下文",
-  "demoSub": "这段录制的演示选中一个概念及其依据，然后 Codex 沿同一个文件夹中声明的路径查找。它展示的是有边界的查询，而不是完整的变更影响检查。",
-  "demoPromptLabel": "这一次录制中向 Codex 提出的问题",
-  "demoAgentPrompt": "只使用 `get_concept` 和 `find_path`，用一句话说明从 `capabilities/mcp-tool-server` 到 `capabilities/ontology-map` 的路径。不要修改文件。",
-  "demoProvisionalNote": "来自一次录制的 {seconds} 秒。只剪掉了智能体的思考时间，没有加速，也没有声音。",
+  "demoTitle": "在应用里跟着看一天的变更",
+  "demoSub": "这是打开本仓库文件夹的应用的原样录屏。地图标出最近 7 天内变更过的概念，打开其中一个就能看到它的依赖关系。变更页按范围归组当天合并的工作，Git 页把提交读成它改动的概念，Harness 页列出在执行前拦住智能体的钩子。",
+  "demoProvisionalNote": "一次录下应用窗口的 {seconds} 秒。没有剪辑，也没有加速；不录鼠标指针，也没有声音。",
   "acpUserLabel": "你",
   "change": {
     "eyebrow": "提交之后",
@@ -71,7 +69,7 @@
       "planning": "就地阅读本仓库的 docs 文件夹：左侧是文件列表，右侧是打开的 FEATURES.md。不复制，也不修改。取自应用截图。",
       "automations": "对该示例资料库的工作日检查，以及发现某个 Wiki 页面的来源已变动的那次运行。取自应用截图。",
       "projects": "Ontology Atlas 的一页总览：它的领域、概念、资料库和 Harness 放在一起。取自应用截图。",
-      "changes": "以提交列表展示本仓库一周的历史：哪些文件改了什么。取自应用截图。",
+      "changes": "本仓库一天的历史：当天合并的变更按所涉及的范围分组展示。取自应用截图。",
       "git": "本仓库本体文件夹的 Git 历史，按每次提交改动的概念来阅读。取自应用截图。"
     }
   },
